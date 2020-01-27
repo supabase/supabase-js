@@ -1,0 +1,164 @@
+import BaseRequest from './BaseRequest'
+
+class BaseApi {
+  constructor(path) {
+    this.path = path
+    this.queryFilters = []
+  }
+
+  /**
+   * REST FUNCTIONALITIES
+   */
+
+  request(method) {
+    return new BaseRequest(method, this.path)
+  }
+
+  addFilters(request, options) {
+    if (Object.keys(options).length != 0) {
+      Object.keys(options).forEach(option => {
+        let setting = options[option]
+        request.set(option, setting)
+      })
+    }
+
+    // loop through this.queryFilters
+    this.queryFilters.forEach(queryFilter => {
+      switch (queryFilter.filter) {
+        case 'filter':
+          request.filter(queryFilter.columnName, queryFilter.operator, queryFilter.criteria)
+          break
+
+        case 'match':
+          request.match(queryFilter.query)
+          break
+
+        case 'order':
+          request.order(queryFilter.property, queryFilter.ascending, queryFilter.nullsFirst)
+          break
+
+        case 'range':
+          request.range(queryFilter.from, queryFilter.to)
+          break
+
+        case 'single':
+          request.single()
+          break
+
+        default:
+          break
+      }
+    })
+  }
+
+  filter(columnName, operator, criteria) {
+    this.queryFilters.push({
+      filter: 'filter',
+      columnName,
+      operator,
+      criteria,
+    })
+
+    return this
+  }
+
+  match(query) {
+    this.queryFilters.push({
+      filter: 'match',
+      query,
+    })
+
+    return this
+  }
+
+  order(property, ascending = false, nullsFirst = false) {
+    this.queryFilters.push({
+      filter: 'order',
+      property,
+      ascending,
+      nullsFirst,
+    })
+
+    return this
+  }
+
+  range(from, to) {
+    this.queryFilters.push({
+      filter: 'range',
+      from,
+      to,
+    })
+
+    return this
+  }
+
+  single() {
+    this.queryFilters.push({ filter: 'single' })
+
+    return this
+  }
+
+  select(columnQuery = '*', options = {}) {
+    let method = 'get'
+    let request = this.request(method)
+
+    request.select(columnQuery)
+    this.addFilters(request, options)
+
+    return request
+  }
+
+  insert(data, options = {}) {
+    let method = 'post'
+    let request = this.request(method)
+
+    if (!Array.isArray(data)) {
+      return {
+        body: null,
+        status: 400,
+        statusCode: 400,
+        statusText: 'Data type should be an array.',
+      }
+    }
+
+    data.forEach(datum => {
+      request.send(datum)
+    })
+
+    this.addFilters(request, options)
+
+    return request
+  }
+
+  update(data, options = {}) {
+    let method = 'patch'
+    let request = this.request(method)
+
+    request.send(data)
+    this.addFilters(request, options)
+
+    return request
+  }
+
+  delete(options = {}) {
+    let method = 'delete'
+    let request = this.request(method)
+
+    this.addFilters(request, options)
+
+    return request
+  }
+}
+
+// pre-empts if any of the filters are used before select
+const advancedFilters = ['eq', 'gt', 'lt', 'gte', 'lte', 'like', 'ilike', 'is', 'in', 'not']
+
+advancedFilters.forEach(
+  operator =>
+    (BaseApi.prototype[operator] = function filterValue(columnName, criteria) {
+      this.filter(columnName, operator, criteria)
+      return this
+    })
+)
+
+export default BaseApi
