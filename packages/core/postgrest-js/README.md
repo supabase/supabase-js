@@ -1,41 +1,39 @@
 # Postgrest JS
 
-Isomorphic JavaScript client for [PostgREST](https://postgrest.org).
+Isomorphic JavaScript client for [PostgREST](https://postgrest.org). The goal of this library is to make an "ORM-like" restful interface. 
+
+To see full examples of usage, see the Supabase docs:
+
+- [Reading](https://supabase.io/docs/library/get)
+- [Creating](https://supabase.io/docs/library/post)
+- [Creating](https://supabase.io/docs/library/post)
+- [Deleting](https://supabase.io/docs/library/delete)
+- [Stored Procedures](https://supabase.io/docs/library/stored-procedures)
 
 **Contents**
-
 - [Usage](#usage)
 - [Development](#development)
-  - [Commands](#commands)
-  - [Publishing](#publishing)
 - [Contributing](#contributing)
 - [License](#license)
 - [Credits](#credits)
 
 ## Usage
 
+@todo
+
 ## Development
 
-### Commands
-
-- `npm run clean` - Remove `lib/` directory
-- `npm test` - Run tests with linting and coverage results.
-- `npm run test:only` - Run tests without linting or coverage.
-- `npm run test:watch` - You can even re-run tests on file changes!
-- `npm run test:prod` - Run tests with minified code.
-- `npm run test:examples` - Test written examples on pure JS for better understanding module usage.
-- `npm run lint` - Run ESlint with airbnb-config
-- `npm run cover` - Get coverage report for your code.
 - `npm run build` - Babel will transpile ES6 => ES5 and minify the code.
-- `npm run prepublish` - Hook for npm. Do all the checks before publishing your module.
+- `npm run clean` - Remove `lib/` directory
+- `npm run cover` - Get coverage report for your code.
+- `npm run deploy` - Bump the semver and push to npm.
+- `npm run docs` - Build the JSDocs.
+- `npm run pretty` - Make the code pretty
+- `npm run test:only` - Run tests without linting or coverage.
+- `npm run test:prod` - Run tests with minified code.
+- `npm run test:watch` - You can even re-run tests on file changes!
+- `npm test` - Run tests with linting and coverage results.
 
-### Publishing
-
-Bump the semver.
-
-```sh
-npm publish --access=public
-```
 
 ## Contributing
 

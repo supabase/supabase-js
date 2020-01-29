@@ -80,7 +80,7 @@
       
     
 
-    <h3>Classes</h3><ul><li id="BaseRequest-nav"><a href="BaseRequest.html">BaseRequest</a><ul class='methods'><li data-type="method" id="BaseRequest-auth-nav"><a href="BaseRequest.html#auth">auth</a></li><li data-type="method" id="BaseRequest-catch-nav"><a href="BaseRequest.html#catch">catch</a></li><li data-type="method" id="BaseRequest-end-nav"><a href="BaseRequest.html#end">end</a></li><li data-type="method" id="BaseRequest-filter-nav"><a href="BaseRequest.html#filter">filter</a></li><li data-type="method" id="BaseRequest-match-nav"><a href="BaseRequest.html#match">match</a></li><li data-type="method" id="BaseRequest-order-nav"><a href="BaseRequest.html#order">order</a></li><li data-type="method" id="BaseRequest-range-nav"><a href="BaseRequest.html#range">range</a></li><li data-type="method" id="BaseRequest-select-nav"><a href="BaseRequest.html#select">select</a></li><li data-type="method" id="BaseRequest-single-nav"><a href="BaseRequest.html#single">single</a></li><li data-type="method" id="BaseRequest-then-nav"><a href="BaseRequest.html#then">then</a></li></ul></li></ul><h3 id="global-nav">Global</h3><ul><li><a href="global.html#Eq">Eq</a></li><li><a href="global.html#filters">filters</a></li><li><a href="global.html#Gt">Gt</a></li><li><a href="global.html#Gte">Gte</a></li><li><a href="global.html#Ilike">Ilike</a></li><li><a href="global.html#In">In</a></li><li><a href="global.html#Is">Is</a></li><li><a href="global.html#Like">Like</a></li><li><a href="global.html#Lt">Lt</a></li><li><a href="global.html#Lte">Lte</a></li><li><a href="global.html#Not">Not</a></li></ul>
+    <h3>Classes</h3><ul><li id="BaseRequest-nav"><a href="BaseRequest.html">BaseRequest</a><ul class='methods'><li data-type="method" id="BaseRequest-auth-nav"><a href="BaseRequest.html#auth">auth</a></li><li data-type="method" id="BaseRequest-catch-nav"><a href="BaseRequest.html#catch">catch</a></li><li data-type="method" id="BaseRequest-end-nav"><a href="BaseRequest.html#end">end</a></li><li data-type="method" id="BaseRequest-match-nav"><a href="BaseRequest.html#match">match</a></li><li data-type="method" id="BaseRequest-order-nav"><a href="BaseRequest.html#order">order</a></li><li data-type="method" id="BaseRequest-range-nav"><a href="BaseRequest.html#range">range</a></li><li data-type="method" id="BaseRequest-select-nav"><a href="BaseRequest.html#select">select</a></li><li data-type="method" id="BaseRequest-single-nav"><a href="BaseRequest.html#single">single</a></li><li data-type="method" id="BaseRequest-then-nav"><a href="BaseRequest.html#then">then</a></li></ul></li><li id="TempRequest-nav"><a href="TempRequest.html">TempRequest</a><ul class='methods'><li data-type="method" id="TempRequest-delete-nav"><a href="TempRequest.html#delete">delete</a></li><li data-type="method" id="TempRequest-insert-nav"><a href="TempRequest.html#insert">insert</a></li><li data-type="method" id="TempRequest-select-nav"><a href="TempRequest.html#select">select</a></li><li data-type="method" id="TempRequest-update-nav"><a href="TempRequest.html#update">update</a></li></ul></li></ul><h3>Modules</h3><ul><li id="Filters-nav"><a href="module-Filters.html">Filters</a><ul class='methods'><li data-type="method" id="Filters-filter-nav"><a href="module-Filters.html#.filter">filter</a></li><li data-type="method" id="Filters-eq-nav"><a href="module-Filters.html#~eq">eq</a></li><li data-type="method" id="Filters-gt-nav"><a href="module-Filters.html#~gt">gt</a></li><li data-type="method" id="Filters-gte-nav"><a href="module-Filters.html#~gte">gte</a></li><li data-type="method" id="Filters-ilike-nav"><a href="module-Filters.html#~ilike">ilike</a></li><li data-type="method" id="Filters-in-nav"><a href="module-Filters.html#~in">in</a></li><li data-type="method" id="Filters-is-nav"><a href="module-Filters.html#~is">is</a></li><li data-type="method" id="Filters-like-nav"><a href="module-Filters.html#~like">like</a></li><li data-type="method" id="Filters-lt-nav"><a href="module-Filters.html#~lt">lt</a></li><li data-type="method" id="Filters-lte-nav"><a href="module-Filters.html#~lte">lte</a></li><li data-type="method" id="Filters-not-nav"><a href="module-Filters.html#~not">not</a></li></ul></li></ul>
   </nav>
 
   <div id="main">
@@ -127,7 +127,7 @@ communicating with a PostgREST server.</p>
       </svg>
     </a>
     <h4 class="name" id="BaseRequest">
-      <span class="type-signature"></span>new BaseRequest<span class="signature">(The, The)</span><span class="type-signature"></span>
+      <span class="type-signature"></span>new BaseRequest<span class="signature">(method, path)</span><span class="type-signature"></span>
     </h4>
   </span>
 
@@ -165,7 +165,7 @@ communicating with a PostgREST server.</p>
     
       <tr>
         
-          <td class="name"><code>The</code></td>
+          <td class="name"><code>method</code></td>
         
 
         <td class="type">
@@ -186,7 +186,7 @@ communicating with a PostgREST server.</p>
         
 
         <td class="description last">
-          <p>HTTP method of the request.</p>
+          <p>The HTTP method of the request.</p>
           
         </td>
       </tr>
@@ -194,7 +194,7 @@ communicating with a PostgREST server.</p>
     
       <tr>
         
-          <td class="name"><code>The</code></td>
+          <td class="name"><code>path</code></td>
         
 
         <td class="type">
@@ -215,7 +215,7 @@ communicating with a PostgREST server.</p>
         
 
         <td class="description last">
-          <p>path to the request.</p>
+          <p>The path representing the database table.</p>
           
         </td>
       </tr>
@@ -259,7 +259,7 @@ communicating with a PostgREST server.</p>
     <dd class="tag-source">
       <ul class="dummy">
         <li>
-          <a href="BaseRequest.js.html">BaseRequest.js</a>, <a href="BaseRequest.js.html#line21">line 21</a>
+          <a href="BaseRequest.js.html">BaseRequest.js</a>, <a href="BaseRequest.js.html#line25">line 25</a>
         </li>
       </ul>
     </dd>
@@ -466,7 +466,7 @@ is interpreted as a bearer token. If an object and nothing else is passed,
     <dd class="tag-source">
       <ul class="dummy">
         <li>
-          <a href="BaseRequest.js.html">BaseRequest.js</a>, <a href="BaseRequest.js.html#line55">line 55</a>
+          <a href="BaseRequest.js.html">BaseRequest.js</a>, <a href="BaseRequest.js.html#line45">line 45</a>
         </li>
       </ul>
     </dd>
@@ -612,7 +612,7 @@ is interpreted as a bearer token. If an object and nothing else is passed,
     <dd class="tag-source">
       <ul class="dummy">
         <li>
-          <a href="BaseRequest.js.html">BaseRequest.js</a>, <a href="BaseRequest.js.html#line204">line 204</a>
+          <a href="BaseRequest.js.html">BaseRequest.js</a>, <a href="BaseRequest.js.html#line196">line 196</a>
         </li>
       </ul>
     </dd>
@@ -704,241 +704,7 @@ pattern, but this function overrides that preference to use a promise.</p>
     <dd class="tag-source">
       <ul class="dummy">
         <li>
-          <a href="BaseRequest.js.html">BaseRequest.js</a>, <a href="BaseRequest.js.html#line162">line 162</a>
-        </li>
-      </ul>
-    </dd>
-  
-
-  
-
-  
-
-  
-</dl>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-      
-        
-
-
-  
-
-  <span class='name-container'>
-    <a class="link-icon" href="#filter">
-      <svg height="20" width="20" style="fill: black;">
-        <use xlink:href="#linkIcon"></use>
-      </svg>
-    </a>
-    <h4 class="name" id="filter">
-      <span class="type-signature"></span>filter<span class="signature">(Name, Name, Value)</span><span class="type-signature"> &rarr; {<a href="BaseRequest.html">BaseRequest</a>}</span>
-    </h4>
-  </span>
-
-  
-
-
-
-  <div class="description">
-    <p>All in one conveniencd function for all filters available.</p>
-  </div>
-
-
-
-
-
-
-
-  <h5>Parameters:</h5>
-  
-
-<table class="params">
-  <thead>
-    <tr>
-      
-        <th>Name</th>
-      
-
-      <th>Type</th>
-
-      
-
-      
-
-      <th class="last">Description</th>
-    </tr>
-  </thead>
-
-  <tbody>
-    
-      <tr>
-        
-          <td class="name"><code>Name</code></td>
-        
-
-        <td class="type">
-          
-            
-    <span class="param-type">
-      string
-    </span>
-
-    
-
-
-          
-        </td>
-
-        
-
-        
-
-        <td class="description last">
-          <p>of the database column.</p>
-          
-        </td>
-      </tr>
-
-    
-      <tr>
-        
-          <td class="name"><code>Name</code></td>
-        
-
-        <td class="type">
-          
-            
-    <span class="param-type">
-      string
-    </span>
-
-    
-
-
-          
-        </td>
-
-        
-
-        
-
-        <td class="description last">
-          <p>of filter operator be utilised.</p>
-          
-        </td>
-      </tr>
-
-    
-      <tr>
-        
-          <td class="name"><code>Value</code></td>
-        
-
-        <td class="type">
-          
-            
-    <span class="param-type">
-      object
-    </span>
-
-    |
-
-    <span class="param-type">
-      array
-    </span>
-
-    |
-
-    <span class="param-type">
-      string
-    </span>
-
-    |
-
-    <span class="param-type">
-      integer
-    </span>
-
-    |
-
-    <span class="param-type">
-      boolean
-    </span>
-
-    |
-
-    <span class="param-type">
-      null
-    </span>
-
-    
-
-
-          
-        </td>
-
-        
-
-        
-
-        <td class="description last">
-          <p>to compare to. Exact data type of criteria would depend on the operator used.</p>
-          
-        </td>
-      </tr>
-
-    
-  </tbody>
-</table>
-
-
-
-
-
-<dl class="details">
-
-  
-
-  
-
-  
-
-  
-
-  
-
-  
-
-  
-
-  
-
-  
-
-  
-
-  
-
-  
-
-  
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source">
-      <ul class="dummy">
-        <li>
-          <a href="BaseRequest.js.html">BaseRequest.js</a>, <a href="BaseRequest.js.html#line78">line 78</a>
+          <a href="BaseRequest.js.html">BaseRequest.js</a>, <a href="BaseRequest.js.html#line154">line 154</a>
         </li>
       </ul>
     </dd>
@@ -1085,7 +851,7 @@ All values are prefixed with <code>eq.</code>.</p>
     <dd class="tag-source">
       <ul class="dummy">
         <li>
-          <a href="BaseRequest.js.html">BaseRequest.js</a>, <a href="BaseRequest.js.html#line91">line 91</a>
+          <a href="BaseRequest.js.html">BaseRequest.js</a>, <a href="BaseRequest.js.html#line83">line 83</a>
         </li>
       </ul>
     </dd>
@@ -1289,7 +1055,7 @@ All values are prefixed with <code>eq.</code>.</p>
     <dd class="tag-source">
       <ul class="dummy">
         <li>
-          <a href="BaseRequest.js.html">BaseRequest.js</a>, <a href="BaseRequest.js.html#line122">line 122</a>
+          <a href="BaseRequest.js.html">BaseRequest.js</a>, <a href="BaseRequest.js.html#line114">line 114</a>
         </li>
       </ul>
     </dd>
@@ -1471,7 +1237,7 @@ not defined, the rest of the collection will be sent back.</p>
     <dd class="tag-source">
       <ul class="dummy">
         <li>
-          <a href="BaseRequest.js.html">BaseRequest.js</a>, <a href="BaseRequest.js.html#line138">line 138</a>
+          <a href="BaseRequest.js.html">BaseRequest.js</a>, <a href="BaseRequest.js.html#line130">line 130</a>
         </li>
       </ul>
     </dd>
@@ -1618,7 +1384,7 @@ set as a query string value. Also always forces a root @id column.</p>
     <dd class="tag-source">
       <ul class="dummy">
         <li>
-          <a href="BaseRequest.js.html">BaseRequest.js</a>, <a href="BaseRequest.js.html#line105">line 105</a>
+          <a href="BaseRequest.js.html">BaseRequest.js</a>, <a href="BaseRequest.js.html#line97">line 97</a>
         </li>
       </ul>
     </dd>
@@ -1710,7 +1476,7 @@ object or 404.</p>
     <dd class="tag-source">
       <ul class="dummy">
         <li>
-          <a href="BaseRequest.js.html">BaseRequest.js</a>, <a href="BaseRequest.js.html#line151">line 151</a>
+          <a href="BaseRequest.js.html">BaseRequest.js</a>, <a href="BaseRequest.js.html#line143">line 143</a>
         </li>
       </ul>
     </dd>
@@ -1887,7 +1653,7 @@ the promise returned from <code>.end()</code>.</p>
     <dd class="tag-source">
       <ul class="dummy">
         <li>
-          <a href="BaseRequest.js.html">BaseRequest.js</a>, <a href="BaseRequest.js.html#line193">line 193</a>
+          <a href="BaseRequest.js.html">BaseRequest.js</a>, <a href="BaseRequest.js.html#line185">line 185</a>
         </li>
       </ul>
     </dd>

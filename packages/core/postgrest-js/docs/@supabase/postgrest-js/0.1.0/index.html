@@ -80,7 +80,7 @@
       
     
 
-    <h3>Classes</h3><ul><li id="BaseRequest-nav"><a href="BaseRequest.html">BaseRequest</a><ul class='methods'><li data-type="method" id="BaseRequest-auth-nav"><a href="BaseRequest.html#auth">auth</a></li><li data-type="method" id="BaseRequest-catch-nav"><a href="BaseRequest.html#catch">catch</a></li><li data-type="method" id="BaseRequest-end-nav"><a href="BaseRequest.html#end">end</a></li><li data-type="method" id="BaseRequest-filter-nav"><a href="BaseRequest.html#filter">filter</a></li><li data-type="method" id="BaseRequest-match-nav"><a href="BaseRequest.html#match">match</a></li><li data-type="method" id="BaseRequest-order-nav"><a href="BaseRequest.html#order">order</a></li><li data-type="method" id="BaseRequest-range-nav"><a href="BaseRequest.html#range">range</a></li><li data-type="method" id="BaseRequest-select-nav"><a href="BaseRequest.html#select">select</a></li><li data-type="method" id="BaseRequest-single-nav"><a href="BaseRequest.html#single">single</a></li><li data-type="method" id="BaseRequest-then-nav"><a href="BaseRequest.html#then">then</a></li></ul></li></ul><h3 id="global-nav">Global</h3><ul><li><a href="global.html#Eq">Eq</a></li><li><a href="global.html#filters">filters</a></li><li><a href="global.html#Gt">Gt</a></li><li><a href="global.html#Gte">Gte</a></li><li><a href="global.html#Ilike">Ilike</a></li><li><a href="global.html#In">In</a></li><li><a href="global.html#Is">Is</a></li><li><a href="global.html#Like">Like</a></li><li><a href="global.html#Lt">Lt</a></li><li><a href="global.html#Lte">Lte</a></li><li><a href="global.html#Not">Not</a></li></ul>
+    <h3>Classes</h3><ul><li id="Builder-nav"><a href="Builder.html">Builder</a><ul class='methods'><li data-type="method" id="Builder-delete-nav"><a href="Builder.html#delete">delete</a></li><li data-type="method" id="Builder-insert-nav"><a href="Builder.html#insert">insert</a></li><li data-type="method" id="Builder-select-nav"><a href="Builder.html#select">select</a></li><li data-type="method" id="Builder-update-nav"><a href="Builder.html#update">update</a></li></ul></li></ul><h3>Modules</h3><ul><li id="Filters-nav"><a href="module-Filters.html">Filters</a><ul class='methods'><li data-type="method" id="Filters-filter-nav"><a href="module-Filters.html#.filter">filter</a></li><li data-type="method" id="Filters-eq-nav"><a href="module-Filters.html#~eq">eq</a></li><li data-type="method" id="Filters-gt-nav"><a href="module-Filters.html#~gt">gt</a></li><li data-type="method" id="Filters-gte-nav"><a href="module-Filters.html#~gte">gte</a></li><li data-type="method" id="Filters-ilike-nav"><a href="module-Filters.html#~ilike">ilike</a></li><li data-type="method" id="Filters-in-nav"><a href="module-Filters.html#~in">in</a></li><li data-type="method" id="Filters-is-nav"><a href="module-Filters.html#~is">is</a></li><li data-type="method" id="Filters-like-nav"><a href="module-Filters.html#~like">like</a></li><li data-type="method" id="Filters-lt-nav"><a href="module-Filters.html#~lt">lt</a></li><li data-type="method" id="Filters-lte-nav"><a href="module-Filters.html#~lte">lte</a></li><li data-type="method" id="Filters-not-nav"><a href="module-Filters.html#~not">not</a></li></ul></li></ul><h3 id="global-nav">Global</h3><ul><li><a href="global.html#objectToQueryString">objectToQueryString</a></li></ul>
   </nav>
 
   <div id="main">
@@ -99,39 +99,38 @@
   <section class="readme">
     <article>
       <h1>Postgrest JS</h1>
-<p>Isomorphic JavaScript client for <a href="https://postgrest.org">PostgREST</a>.</p>
+<p>Isomorphic JavaScript client for <a href="https://postgrest.org">PostgREST</a>. The goal of this library is to make an &quot;ORM-like&quot; restful interface.</p>
+<p>To see full examples of usage, see the Supabase docs:</p>
+<ul>
+<li><a href="https://supabase.io/docs/library/get">Reading</a></li>
+<li><a href="https://supabase.io/docs/library/post">Creating</a></li>
+<li><a href="https://supabase.io/docs/library/post">Creating</a></li>
+<li><a href="https://supabase.io/docs/library/delete">Deleting</a></li>
+<li><a href="https://supabase.io/docs/library/stored-procedures">Stored Procedures</a></li>
+</ul>
 <p><strong>Contents</strong></p>
 <ul>
 <li><a href="#usage">Usage</a></li>
-<li><a href="#development">Development</a>
-<ul>
-<li><a href="#commands">Commands</a></li>
-<li><a href="#publishing">Publishing</a></li>
-</ul>
-</li>
+<li><a href="#development">Development</a></li>
 <li><a href="#contributing">Contributing</a></li>
 <li><a href="#license">License</a></li>
 <li><a href="#credits">Credits</a></li>
 </ul>
 <h2>Usage</h2>
+<p>@todo</p>
 <h2>Development</h2>
-<h3>Commands</h3>
 <ul>
-<li><code>npm run clean</code> - Remove <code>lib/</code> directory</li>
-<li><code>npm test</code> - Run tests with linting and coverage results.</li>
-<li><code>npm run test:only</code> - Run tests without linting or coverage.</li>
-<li><code>npm run test:watch</code> - You can even re-run tests on file changes!</li>
-<li><code>npm run test:prod</code> - Run tests with minified code.</li>
-<li><code>npm run test:examples</code> - Test written examples on pure JS for better understanding module usage.</li>
-<li><code>npm run lint</code> - Run ESlint with airbnb-config</li>
-<li><code>npm run cover</code> - Get coverage report for your code.</li>
 <li><code>npm run build</code> - Babel will transpile ES6 =&gt; ES5 and minify the code.</li>
-<li><code>npm run prepublish</code> - Hook for npm. Do all the checks before publishing your module.</li>
+<li><code>npm run clean</code> - Remove <code>lib/</code> directory</li>
+<li><code>npm run cover</code> - Get coverage report for your code.</li>
+<li><code>npm run deploy</code> - Bump the semver and push to npm.</li>
+<li><code>npm run docs</code> - Build the JSDocs.</li>
+<li><code>npm run pretty</code> - Make the code pretty</li>
+<li><code>npm run test:only</code> - Run tests without linting or coverage.</li>
+<li><code>npm run test:prod</code> - Run tests with minified code.</li>
+<li><code>npm run test:watch</code> - You can even re-run tests on file changes!</li>
+<li><code>npm test</code> - Run tests with linting and coverage results.</li>
 </ul>
-<h3>Publishing</h3>
-<p>Bump the semver.</p>
-<pre class="prettyprint source lang-sh"><code>npm publish --access=public
-</code></pre>
 <h2>Contributing</h2>
 <p>We welcome any issues, pull requests, and feedback.</p>
 <h2>License</h2>

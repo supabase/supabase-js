@@ -8,7 +8,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <title>
-      BaseApi.js - Documentation
+      RequestBuilder.js - Documentation
   </title>
 
   <link href="https://www.braintreepayments.com/images/favicon-ccda0b14.png" rel="icon" type="image/png">
@@ -82,13 +82,13 @@
       
     
 
-    <h3>Classes</h3><ul><li id="BaseRequest-nav"><a href="BaseRequest.html">BaseRequest</a><ul class='methods'><li data-type="method" id="BaseRequest-auth-nav"><a href="BaseRequest.html#auth">auth</a></li><li data-type="method" id="BaseRequest-catch-nav"><a href="BaseRequest.html#catch">catch</a></li><li data-type="method" id="BaseRequest-end-nav"><a href="BaseRequest.html#end">end</a></li><li data-type="method" id="BaseRequest-match-nav"><a href="BaseRequest.html#match">match</a></li><li data-type="method" id="BaseRequest-order-nav"><a href="BaseRequest.html#order">order</a></li><li data-type="method" id="BaseRequest-range-nav"><a href="BaseRequest.html#range">range</a></li><li data-type="method" id="BaseRequest-select-nav"><a href="BaseRequest.html#select">select</a></li><li data-type="method" id="BaseRequest-single-nav"><a href="BaseRequest.html#single">single</a></li><li data-type="method" id="BaseRequest-then-nav"><a href="BaseRequest.html#then">then</a></li></ul></li><li id="TempRequest-nav"><a href="TempRequest.html">TempRequest</a><ul class='methods'><li data-type="method" id="TempRequest-delete-nav"><a href="TempRequest.html#delete">delete</a></li><li data-type="method" id="TempRequest-insert-nav"><a href="TempRequest.html#insert">insert</a></li><li data-type="method" id="TempRequest-select-nav"><a href="TempRequest.html#select">select</a></li><li data-type="method" id="TempRequest-update-nav"><a href="TempRequest.html#update">update</a></li></ul></li></ul><h3>Modules</h3><ul><li id="Filters-nav"><a href="module-Filters.html">Filters</a><ul class='methods'><li data-type="method" id="Filters-filter-nav"><a href="module-Filters.html#.filter">filter</a></li><li data-type="method" id="Filters-eq-nav"><a href="module-Filters.html#~eq">eq</a></li><li data-type="method" id="Filters-gt-nav"><a href="module-Filters.html#~gt">gt</a></li><li data-type="method" id="Filters-gte-nav"><a href="module-Filters.html#~gte">gte</a></li><li data-type="method" id="Filters-ilike-nav"><a href="module-Filters.html#~ilike">ilike</a></li><li data-type="method" id="Filters-in-nav"><a href="module-Filters.html#~in">in</a></li><li data-type="method" id="Filters-is-nav"><a href="module-Filters.html#~is">is</a></li><li data-type="method" id="Filters-like-nav"><a href="module-Filters.html#~like">like</a></li><li data-type="method" id="Filters-lt-nav"><a href="module-Filters.html#~lt">lt</a></li><li data-type="method" id="Filters-lte-nav"><a href="module-Filters.html#~lte">lte</a></li><li data-type="method" id="Filters-not-nav"><a href="module-Filters.html#~not">not</a></li></ul></li></ul>
+    <h3>Classes</h3><ul><li id="RequestBuilder-nav"><a href="RequestBuilder.html">RequestBuilder</a><ul class='methods'><li data-type="method" id="RequestBuilder-delete-nav"><a href="RequestBuilder.html#delete">delete</a></li><li data-type="method" id="RequestBuilder-insert-nav"><a href="RequestBuilder.html#insert">insert</a></li><li data-type="method" id="RequestBuilder-select-nav"><a href="RequestBuilder.html#select">select</a></li><li data-type="method" id="RequestBuilder-update-nav"><a href="RequestBuilder.html#update">update</a></li></ul></li></ul><h3>Modules</h3><ul><li id="Filters-nav"><a href="module-Filters.html">Filters</a><ul class='methods'><li data-type="method" id="Filters-filter-nav"><a href="module-Filters.html#.filter">filter</a></li><li data-type="method" id="Filters-eq-nav"><a href="module-Filters.html#~eq">eq</a></li><li data-type="method" id="Filters-gt-nav"><a href="module-Filters.html#~gt">gt</a></li><li data-type="method" id="Filters-gte-nav"><a href="module-Filters.html#~gte">gte</a></li><li data-type="method" id="Filters-ilike-nav"><a href="module-Filters.html#~ilike">ilike</a></li><li data-type="method" id="Filters-in-nav"><a href="module-Filters.html#~in">in</a></li><li data-type="method" id="Filters-is-nav"><a href="module-Filters.html#~is">is</a></li><li data-type="method" id="Filters-like-nav"><a href="module-Filters.html#~like">like</a></li><li data-type="method" id="Filters-lt-nav"><a href="module-Filters.html#~lt">lt</a></li><li data-type="method" id="Filters-lte-nav"><a href="module-Filters.html#~lte">lte</a></li><li data-type="method" id="Filters-not-nav"><a href="module-Filters.html#~not">not</a></li></ul></li></ul>
   </nav>
 
   <div id="main">
     
       <h1 class="page-title">
-        BaseApi.js
+        RequestBuilder.js
       </h1>
     
 
@@ -99,10 +99,8 @@
   <article>
     <pre class="prettyprint source linenums"><code>import BaseRequest from './BaseRequest'
 
-
 /**
- * Allows the user to stack the filter functions before they 
- * call any of 
+ * Allows the user to stack the filter functions before they call any of 
  * 
  * select() - "get"
  * 
@@ -118,7 +116,7 @@
  * @param {string} path The path representing the database table.
  */
 
-class TempRequest {
+class RequestBuilder {
   constructor(path) {
     this.path = path
     this.queryFilters = []
@@ -283,13 +281,13 @@ const advancedFilters = ['eq', 'gt', 'lt', 'gte', 'lte', 'like', 'ilike', 'is', 
 
 advancedFilters.forEach(
   operator =>
-    (BaseApi.prototype[operator] = function filterValue(columnName, criteria) {
+    (RequestBuilder.prototype[operator] = function filterValue(columnName, criteria) {
       this.filter(columnName, operator, criteria)
       return this
     })
 )
 
-export default BaseApi
+export default RequestBuilder
 </code></pre>
   </article>
 </section>

@@ -1,40 +1,25 @@
 /**
+ * A request building object which contains convenience methods for
+ * communicating with a PostgREST server.
+ * 
  * This files draws heavily from https://github.com/calebmer/postgrest-client
  * License: https://github.com/calebmer/postgrest-client/blob/master/LICENSE
+ *
+ * @class
+ * @param {string} method The HTTP method of the request.
+ * @param {string} url The full URL.
  */
 
-import { Request } from 'superagent'
+import { Request as SuperAgent } from 'superagent'
 import * as Filters from './utils/Filters'
+
 
 const contentRangeStructure = /^(\d+)-(\d+)\/(\d+)$/
 
-/**
- * A request building object which contains convenience methods for
- * communicating with a PostgREST server.
- *
- * @class
- * @param {string} The HTTP method of the request.
- * @param {string} The path to the request.
- */
-
-class BaseRequest extends Request {
-  constructor(method, path) {
-    super(method, path)
+class Request extends SuperAgent {
+  constructor(method, url) {
+    super(method, url)
     this.set('Accept', 'application/json')
-    console.log('path', path)
-
-    this.filterMap = {
-      eq: (columnName, criteria) => Filters.Eq(columnName, criteria),
-      gt: (columnName, criteria) => Filters.Gt(columnName, criteria),
-      lt: (columnName, criteria) => Filters.Lt(columnName, criteria),
-      gte: (columnName, criteria) => Filters.Gte(columnName, criteria),
-      lte: (columnName, criteria) => Filters.Lte(columnName, criteria),
-      like: (columnName, criteria) => Filters.Like(columnName, criteria),
-      ilike: (columnName, criteria) => Filters.Ilike(columnName, criteria),
-      is: (columnName, criteria) => Filters.Is(columnName, criteria),
-      in: (columnName, criteria) => Filters.In(columnName, criteria),
-      not: (columnName, criteria) => Filters.Not(columnName, criteria),
-    }
 
     // Fix for superagent disconnect on client & server.
     if (!this.get) {
@@ -47,9 +32,9 @@ class BaseRequest extends Request {
    * is interpreted as a bearer token. If an object and nothing else is passed,
    * `user` and `pass` keys are extracted from it and used for basic auth.
    *
-   * @param {string|object} The user, bearer token, or user/pass object.
-   * @param {string|void} The pass or undefined.
-   * @returns {BaseRequest} The API request object.
+   * @param {string|object} user The user, bearer token, or user/pass object.
+   * @param {string|void} pass The pass or undefined.
+   * @returns {Request} The API request object.
    */
 
   auth(user, pass) {
@@ -67,16 +52,17 @@ class BaseRequest extends Request {
   }
 
   /**
-   * All in one conveniencd function for all filters available.
-   *
-   * @param {string} Name of the database column.
-   * @param {string} Name of filter operator be utilised.
-   * @param { object | array | string | integer | boolean | null } Value to compare to. Exact data type of criteria would depend on the operator used.
-   * @returns {BaseRequest} The API request object.
+   * Generic filter method.
+   * @param {string} columnName The name of the column.
+   * @param {string} filter The type of filter
+   * @param { object | array | string | integer | boolean | null } criteria The value of the column to be filtered.
+   * @name filter
+   * @function
+   * @memberOf module:Filters
+   * @returns {string}
    */
-
   filter(columnName, operator, criteria) {
-    let newQuery = this.filterMap[operator.toLowerCase()](columnName, criteria)
+    let newQuery = Filters[`_${operator.toLowerCase()}`](columnName, criteria)
     return this.query(newQuery)
   }
 
@@ -84,8 +70,8 @@ class BaseRequest extends Request {
    * Takes a query object and translates it to a PostgREST filter query string.
    * All values are prefixed with `eq.`.
    *
-   * @param {object} The object to match against.
-   * @returns {BaseRequest} The API request object.
+   * @param {object} query The object to match against.
+   * @returns {Request} The API request object.
    */
 
   match(query) {
@@ -98,8 +84,8 @@ class BaseRequest extends Request {
    * Cleans up a select string by stripping all whitespace. Then the string is
    * set as a query string value. Also always forces a root @id column.
    *
-   * @param {string} The unformatted select string.
-   * @returns {BaseRequest} The API request object.
+   * @param {string} select The unformatted select string.
+   * @returns {Request} The API request object.
    */
 
   select(select) {
@@ -113,10 +99,10 @@ class BaseRequest extends Request {
   /**
    * Tells PostgREST in what order the result should be returned.
    *
-   * @param {string} The property name to order by.
-   * @param {bool} True for descending results, false by default.
-   * @param {bool} True for nulls first, false by default.
-   * @returns {BaseRequest} The API request object.
+   * @param {string} property The property name to order by.
+   * @param {bool} ascending True for descending results, false by default.
+   * @param {bool} nullsFirst True for nulls first, false by default.
+   * @returns {Request} The API request object.
    */
 
   order(property, ascending = false, nullsFirst = false) {
@@ -130,9 +116,9 @@ class BaseRequest extends Request {
    * Specify a range of items for PostgREST to return. If the second value is
    * not defined, the rest of the collection will be sent back.
    *
-   * @param {number} The first object to select.
-   * @param {number|void} The last object to select.
-   * @returns {BaseRequest} The API request object.
+   * @param {number} from The first object to select.
+   * @param {number|void} to The last object to select.
+   * @returns {Request} The API request object.
    */
 
   range(from, to) {
@@ -145,7 +131,7 @@ class BaseRequest extends Request {
    * Sets the header which signifies to PostgREST the response must be a single
    * object or 404.
    *
-   * @returns {BaseRequest} The API request object.
+   * @returns {Request} The API request object.
    */
 
   single() {
@@ -181,7 +167,7 @@ class BaseRequest extends Request {
   }
 
   /**
-   * Makes the BaseRequest object then-able. Allows for usage with
+   * Makes the Request object then-able. Allows for usage with
    * `Promise.resolve` and async/await contexts. Just a proxy for `.then()` on
    * the promise returned from `.end()`.
    *
@@ -189,7 +175,6 @@ class BaseRequest extends Request {
    * @param {function} Called when the request errors.
    * @returns {Promise} Resolves when the resolution resolves.
    */
-
   then(resolve, reject) {
     return this.end().then(resolve, reject)
   }
@@ -200,27 +185,18 @@ class BaseRequest extends Request {
    * @param {function} Called when the request errors.
    * @returns {Promise} Resolves when there is an error.
    */
-
   catch(reject) {
     return this.end().catch(reject)
   }
 }
 
-/**
- * For all of the PostgREST filters add a shortcut method to use it.
- *
- * @param {string} The name of the column.
- * @param { object | array | string | integer | boolean | null } The value of the column to be filtered.
- * @returns {BaseRequest} The API request object.
- */
-
+// Attached all the filters
 const filters = ['eq', 'gt', 'lt', 'gte', 'lte', 'like', 'ilike', 'is', 'in', 'not']
-
 filters.forEach(
   filter =>
-    (BaseRequest.prototype[filter] = function filterValue(columnName, criteria) {
+    (Request.prototype[filter] = function filterValue(columnName, criteria) {
       return this.filter(columnName, filter, criteria)
     })
 )
 
-export default BaseRequest
+export default Request
