@@ -1,7 +1,7 @@
 /**
-* This files draws heavily from https://github.com/calebmer/postgrest-client
-* License: https://github.com/calebmer/postgrest-client/blob/master/LICENSE
-*/
+ * This files draws heavily from https://github.com/calebmer/postgrest-client
+ * License: https://github.com/calebmer/postgrest-client/blob/master/LICENSE
+ */
 
 import { Request } from 'superagent'
 import * as Filters from './utils/Filters'
@@ -18,7 +18,7 @@ const contentRangeStructure = /^(\d+)-(\d+)\/(\d+)$/
  */
 
 class BaseRequest extends Request {
-  constructor (method, path) {
+  constructor(method, path) {
     super(method, path)
     this.set('Accept', 'application/json')
 
@@ -51,7 +51,7 @@ class BaseRequest extends Request {
    * @returns {BaseRequest} The API request object.
    */
 
-  auth (user, pass) {
+  auth(user, pass) {
     if (typeof user === 'string' && pass == null) {
       this.set('Authorization', `Bearer ${user}`)
       return this
@@ -74,7 +74,7 @@ class BaseRequest extends Request {
    * @returns {BaseRequest} The API request object.
    */
 
-  filter(columnName, operator, criteria){
+  filter(columnName, operator, criteria) {
     let newQuery = this.filterMap[operator.toLowerCase()](columnName, criteria)
     return this.query(newQuery)
   }
@@ -87,9 +87,9 @@ class BaseRequest extends Request {
    * @returns {BaseRequest} The API request object.
    */
 
-  match (query) {
+  match(query) {
     const newQuery = {}
-    Object.keys(query).forEach(key => newQuery[key] = `eq.${query[key]}`)
+    Object.keys(query).forEach(key => (newQuery[key] = `eq.${query[key]}`))
     return this.query(newQuery)
   }
 
@@ -101,7 +101,7 @@ class BaseRequest extends Request {
    * @returns {BaseRequest} The API request object.
    */
 
-  select (select) {
+  select(select) {
     if (select) {
       this.query({ select: select.replace(/\s/g, '') })
     }
@@ -118,8 +118,10 @@ class BaseRequest extends Request {
    * @returns {BaseRequest} The API request object.
    */
 
-  order (property, ascending = false, nullsFirst = false) {
-    this.query(`order=${property}.${ascending ? 'asc' : 'desc'}.${nullsFirst ? 'nullsfirst' : 'nullslast'}`)
+  order(property, ascending = false, nullsFirst = false) {
+    this.query(
+      `order=${property}.${ascending ? 'asc' : 'desc'}.${nullsFirst ? 'nullsfirst' : 'nullslast'}`
+    )
     return this
   }
 
@@ -132,7 +134,7 @@ class BaseRequest extends Request {
    * @returns {BaseRequest} The API request object.
    */
 
-  range (from, to) {
+  range(from, to) {
     this.set('Range-Unit', 'items')
     this.set('Range', `${from || 0}-${to || ''}`)
     return this
@@ -145,7 +147,7 @@ class BaseRequest extends Request {
    * @returns {BaseRequest} The API request object.
    */
 
-  single () {
+  single() {
     return this.set('Prefer', 'plurality=singular')
   }
 
@@ -156,7 +158,7 @@ class BaseRequest extends Request {
    * @returns {Promise} Resolves when the request has completed.
    */
 
-  end () {
+  end() {
     return new Promise((resolve, reject) =>
       super.end((error, response) => {
         if (error) {
@@ -170,7 +172,7 @@ class BaseRequest extends Request {
           body.fullLength = parseInt(contentRangeStructure.exec(contentRange)[3], 10)
         }
 
-        const returnBody = { body, status, statusCode, statusText}
+        const returnBody = { body, status, statusCode, statusText }
 
         return resolve(returnBody)
       })
@@ -187,7 +189,7 @@ class BaseRequest extends Request {
    * @returns {Promise} Resolves when the resolution resolves.
    */
 
-  then (resolve, reject) {
+  then(resolve, reject) {
     return this.end().then(resolve, reject)
   }
 
@@ -198,7 +200,7 @@ class BaseRequest extends Request {
    * @returns {Promise} Resolves when there is an error.
    */
 
-  catch (reject) {
+  catch(reject) {
     return this.end().catch(reject)
   }
 }
@@ -213,13 +215,11 @@ class BaseRequest extends Request {
 
 const filters = ['eq', 'gt', 'lt', 'gte', 'lte', 'like', 'ilike', 'is', 'in', 'not']
 
-filters.forEach(filter =>
-  BaseRequest.prototype[filter] = function filterValue (columnName, criteria) {
-    return this.filter(columnName, filter, criteria)
-  }
+filters.forEach(
+  filter =>
+    (BaseRequest.prototype[filter] = function filterValue(columnName, criteria) {
+      return this.filter(columnName, filter, criteria)
+    })
 )
 
 export default BaseRequest
-
-
-
