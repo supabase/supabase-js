@@ -8,7 +8,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <title>
-      BaseRequest.js - Documentation
+      Request.js - Documentation
   </title>
 
   <link href="https://www.braintreepayments.com/images/favicon-ccda0b14.png" rel="icon" type="image/png">
@@ -82,13 +82,13 @@
       
     
 
-    <h3>Classes</h3><ul><li id="RequestBuilder-nav"><a href="RequestBuilder.html">RequestBuilder</a><ul class='methods'><li data-type="method" id="RequestBuilder-delete-nav"><a href="RequestBuilder.html#delete">delete</a></li><li data-type="method" id="RequestBuilder-insert-nav"><a href="RequestBuilder.html#insert">insert</a></li><li data-type="method" id="RequestBuilder-select-nav"><a href="RequestBuilder.html#select">select</a></li><li data-type="method" id="RequestBuilder-update-nav"><a href="RequestBuilder.html#update">update</a></li></ul></li></ul><h3>Modules</h3><ul><li id="Filters-nav"><a href="module-Filters.html">Filters</a><ul class='methods'><li data-type="method" id="Filters-filter-nav"><a href="module-Filters.html#.filter">filter</a></li><li data-type="method" id="Filters-eq-nav"><a href="module-Filters.html#~eq">eq</a></li><li data-type="method" id="Filters-gt-nav"><a href="module-Filters.html#~gt">gt</a></li><li data-type="method" id="Filters-gte-nav"><a href="module-Filters.html#~gte">gte</a></li><li data-type="method" id="Filters-ilike-nav"><a href="module-Filters.html#~ilike">ilike</a></li><li data-type="method" id="Filters-in-nav"><a href="module-Filters.html#~in">in</a></li><li data-type="method" id="Filters-is-nav"><a href="module-Filters.html#~is">is</a></li><li data-type="method" id="Filters-like-nav"><a href="module-Filters.html#~like">like</a></li><li data-type="method" id="Filters-lt-nav"><a href="module-Filters.html#~lt">lt</a></li><li data-type="method" id="Filters-lte-nav"><a href="module-Filters.html#~lte">lte</a></li><li data-type="method" id="Filters-not-nav"><a href="module-Filters.html#~not">not</a></li></ul></li></ul>
+    <h3>Classes</h3><ul><li id="Builder-nav"><a href="Builder.html">Builder</a><ul class='methods'><li data-type="method" id="Builder-delete-nav"><a href="Builder.html#delete">delete</a></li><li data-type="method" id="Builder-insert-nav"><a href="Builder.html#insert">insert</a></li><li data-type="method" id="Builder-select-nav"><a href="Builder.html#select">select</a></li><li data-type="method" id="Builder-update-nav"><a href="Builder.html#update">update</a></li></ul></li></ul><h3>Modules</h3><ul><li id="Filters-nav"><a href="module-Filters.html">Filters</a><ul class='methods'><li data-type="method" id="Filters-filter-nav"><a href="module-Filters.html#.filter">filter</a></li><li data-type="method" id="Filters-eq-nav"><a href="module-Filters.html#~eq">eq</a></li><li data-type="method" id="Filters-gt-nav"><a href="module-Filters.html#~gt">gt</a></li><li data-type="method" id="Filters-gte-nav"><a href="module-Filters.html#~gte">gte</a></li><li data-type="method" id="Filters-ilike-nav"><a href="module-Filters.html#~ilike">ilike</a></li><li data-type="method" id="Filters-in-nav"><a href="module-Filters.html#~in">in</a></li><li data-type="method" id="Filters-is-nav"><a href="module-Filters.html#~is">is</a></li><li data-type="method" id="Filters-like-nav"><a href="module-Filters.html#~like">like</a></li><li data-type="method" id="Filters-lt-nav"><a href="module-Filters.html#~lt">lt</a></li><li data-type="method" id="Filters-lte-nav"><a href="module-Filters.html#~lte">lte</a></li><li data-type="method" id="Filters-not-nav"><a href="module-Filters.html#~not">not</a></li></ul></li></ul><h3 id="global-nav">Global</h3><ul><li><a href="global.html#objectToQueryString">objectToQueryString</a></li></ul>
   </nav>
 
   <div id="main">
     
       <h1 class="page-title">
-        BaseRequest.js
+        Request.js
       </h1>
     
 
@@ -106,18 +106,18 @@
  *
  * @class
  * @param {string} method The HTTP method of the request.
- * @param {string} path The path representing the database table.
+ * @param {string} url The full URL.
  */
 
-import { Request } from 'superagent'
+import { Request as SuperAgent } from 'superagent'
 import * as Filters from './utils/Filters'
 
 
 const contentRangeStructure = /^(\d+)-(\d+)\/(\d+)$/
 
-class BaseRequest extends Request {
-  constructor(method, path) {
-    super(method, path)
+class Request extends SuperAgent {
+  constructor(method, url) {
+    super(method, url)
     this.set('Accept', 'application/json')
 
     // Fix for superagent disconnect on client &amp; server.
@@ -133,7 +133,7 @@ class BaseRequest extends Request {
    *
    * @param {string|object} user The user, bearer token, or user/pass object.
    * @param {string|void} pass The pass or undefined.
-   * @returns {BaseRequest} The API request object.
+   * @returns {Request} The API request object.
    */
 
   auth(user, pass) {
@@ -170,7 +170,7 @@ class BaseRequest extends Request {
    * All values are prefixed with `eq.`.
    *
    * @param {object} query The object to match against.
-   * @returns {BaseRequest} The API request object.
+   * @returns {Request} The API request object.
    */
 
   match(query) {
@@ -184,7 +184,7 @@ class BaseRequest extends Request {
    * set as a query string value. Also always forces a root @id column.
    *
    * @param {string} select The unformatted select string.
-   * @returns {BaseRequest} The API request object.
+   * @returns {Request} The API request object.
    */
 
   select(select) {
@@ -201,7 +201,7 @@ class BaseRequest extends Request {
    * @param {string} property The property name to order by.
    * @param {bool} ascending True for descending results, false by default.
    * @param {bool} nullsFirst True for nulls first, false by default.
-   * @returns {BaseRequest} The API request object.
+   * @returns {Request} The API request object.
    */
 
   order(property, ascending = false, nullsFirst = false) {
@@ -217,7 +217,7 @@ class BaseRequest extends Request {
    *
    * @param {number} from The first object to select.
    * @param {number|void} to The last object to select.
-   * @returns {BaseRequest} The API request object.
+   * @returns {Request} The API request object.
    */
 
   range(from, to) {
@@ -230,7 +230,7 @@ class BaseRequest extends Request {
    * Sets the header which signifies to PostgREST the response must be a single
    * object or 404.
    *
-   * @returns {BaseRequest} The API request object.
+   * @returns {Request} The API request object.
    */
 
   single() {
@@ -266,7 +266,7 @@ class BaseRequest extends Request {
   }
 
   /**
-   * Makes the BaseRequest object then-able. Allows for usage with
+   * Makes the Request object then-able. Allows for usage with
    * `Promise.resolve` and async/await contexts. Just a proxy for `.then()` on
    * the promise returned from `.end()`.
    *
@@ -293,12 +293,12 @@ class BaseRequest extends Request {
 const filters = ['eq', 'gt', 'lt', 'gte', 'lte', 'like', 'ilike', 'is', 'in', 'not']
 filters.forEach(
   filter =>
-    (BaseRequest.prototype[filter] = function filterValue(columnName, criteria) {
+    (Request.prototype[filter] = function filterValue(columnName, criteria) {
       return this.filter(columnName, filter, criteria)
     })
 )
 
-export default BaseRequest
+export default Request
 </code></pre>
   </article>
 </section>

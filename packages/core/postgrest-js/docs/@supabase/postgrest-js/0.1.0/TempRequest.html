@@ -1,5 +1,3 @@
-
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -8,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <title>
-      BaseApi.js - Documentation
+      TempRequest - Documentation
   </title>
 
   <link href="https://www.braintreepayments.com/images/favicon-ccda0b14.png" rel="icon" type="image/png">
@@ -88,213 +86,573 @@
   <div id="main">
     
       <h1 class="page-title">
-        BaseApi.js
+        TempRequest
       </h1>
     
 
     
-      
 
 <section>
+  <header>
+    
+      <h2>
+        
+        TempRequest
+        
+      </h2>
+
+      
+        <div class="class-description">
+          <p>Allows the user to stack the filter functions before they
+call any of</p>
+<p>select() - &quot;get&quot;</p>
+<p>insert() - &quot;post&quot;</p>
+<p>update() - &quot;patch&quot;</p>
+<p>delete() - &quot;delete&quot;</p>
+<p>Once any of these are called the filters are passed down to the BaseRequest</p>
+        </div>
+      
+    
+  </header>
+
   <article>
-    <pre class="prettyprint source linenums"><code>import BaseRequest from './BaseRequest'
+    <div class="container-overview">
+      
+        
 
 
-/**
- * Allows the user to stack the filter functions before they 
- * call any of 
- * 
- * select() - "get"
- * 
- * insert() - "post"
- * 
- * update() - "patch"
- * 
- * delete() - "delete"
- * 
- * Once any of these are called the filters are passed down to the BaseRequest
- *
- * @class
- * @param {string} path The path representing the database table.
- */
+  
+    <h2>Constructor</h2>
+  
 
-class TempRequest {
-  constructor(path) {
-    this.path = path
-    this.queryFilters = []
-  }
+  <span class='name-container'>
+    <a class="link-icon" href="#TempRequest">
+      <svg height="20" width="20" style="fill: black;">
+        <use xlink:href="#linkIcon"></use>
+      </svg>
+    </a>
+    <h4 class="name" id="TempRequest">
+      <span class="type-signature"></span>new TempRequest<span class="signature">(path)</span><span class="type-signature"></span>
+    </h4>
+  </span>
 
-  request(method) {
-    return new BaseRequest(method, this.path)
-  }
-
-  addFilters(request, options) {
-    if (Object.keys(options).length != 0) {
-      Object.keys(options).forEach(option => {
-        let setting = options[option]
-        request.set(option, setting)
-      })
-    }
-
-    // loop through this.queryFilters
-    this.queryFilters.forEach(queryFilter => {
-      switch (queryFilter.filter) {
-        case 'filter':
-          request.filter(queryFilter.columnName, queryFilter.operator, queryFilter.criteria)
-          break
-
-        case 'match':
-          request.match(queryFilter.query)
-          break
-
-        case 'order':
-          request.order(queryFilter.property, queryFilter.ascending, queryFilter.nullsFirst)
-          break
-
-        case 'range':
-          request.range(queryFilter.from, queryFilter.to)
-          break
-
-        case 'single':
-          request.single()
-          break
-
-        default:
-          break
-      }
-    })
-  }
-
-  filter(columnName, operator, criteria) {
-    this.queryFilters.push({
-      filter: 'filter',
-      columnName,
-      operator,
-      criteria,
-    })
-
-    return this
-  }
-
-  match(query) {
-    this.queryFilters.push({
-      filter: 'match',
-      query,
-    })
-
-    return this
-  }
-
-  order(property, ascending = false, nullsFirst = false) {
-    this.queryFilters.push({
-      filter: 'order',
-      property,
-      ascending,
-      nullsFirst,
-    })
-
-    return this
-  }
-
-  range(from, to) {
-    this.queryFilters.push({
-      filter: 'range',
-      from,
-      to,
-    })
-
-    return this
-  }
-
-  single() {
-    this.queryFilters.push({ filter: 'single' })
-
-    return this
-  }
-
-  /**
-   * Start a "GET" request
-   */
-  select(columnQuery = '*', options = {}) {
-    let method = 'get'
-    let request = this.request(method)
-
-    request.select(columnQuery)
-    this.addFilters(request, options)
-
-    return request
-  }
-
-  /**
-   * Start a "POST" request
-   */
-  insert(data, options = {}) {
-    let method = 'post'
-    let request = this.request(method)
-
-    if (!Array.isArray(data)) {
-      return {
-        body: null,
-        status: 400,
-        statusCode: 400,
-        statusText: 'Data type should be an array.',
-      }
-    }
-
-    data.forEach(datum => {
-      request.send(datum)
-    })
-
-    this.addFilters(request, options)
-
-    return request
-  }
+  
 
 
-  /**
-   * Start a "PATCH" request
-   */
-  update(data, options = {}) {
-    let method = 'patch'
-    let request = this.request(method)
-
-    request.send(data)
-    this.addFilters(request, options)
-
-    return request
-  }
 
 
-  /**
-   * Start a "DELETE" request
-   */
-  delete(options = {}) {
-    let method = 'delete'
-    let request = this.request(method)
 
-    this.addFilters(request, options)
 
-    return request
-  }
-}
 
-// pre-empts if any of the filters are used before select
-const advancedFilters = ['eq', 'gt', 'lt', 'gte', 'lte', 'like', 'ilike', 'is', 'in', 'not']
 
-advancedFilters.forEach(
-  operator =>
-    (BaseApi.prototype[operator] = function filterValue(columnName, criteria) {
-      this.filter(columnName, operator, criteria)
-      return this
-    })
-)
 
-export default BaseApi
-</code></pre>
+  <h5>Parameters:</h5>
+  
+
+<table class="params">
+  <thead>
+    <tr>
+      
+        <th>Name</th>
+      
+
+      <th>Type</th>
+
+      
+
+      
+
+      <th class="last">Description</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    
+      <tr>
+        
+          <td class="name"><code>path</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>The path representing the database table.</p>
+          
+        </td>
+      </tr>
+
+    
+  </tbody>
+</table>
+
+
+
+
+
+<dl class="details">
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source">
+      <ul class="dummy">
+        <li>
+          <a href="BaseApi.js.html">BaseApi.js</a>, <a href="BaseApi.js.html#line23">line 23</a>
+        </li>
+      </ul>
+    </dd>
+  
+
+  
+
+  
+
+  
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      
+    </div>
+
+    
+
+    
+
+    
+
+     
+
+    
+
+    
+
+    
+      <h3 class="subsection-title">Methods</h3>
+
+      
+        
+
+
+  
+
+  <span class='name-container'>
+    <a class="link-icon" href="#delete">
+      <svg height="20" width="20" style="fill: black;">
+        <use xlink:href="#linkIcon"></use>
+      </svg>
+    </a>
+    <h4 class="name" id="delete">
+      <span class="type-signature"></span>delete<span class="signature">()</span><span class="type-signature"></span>
+    </h4>
+  </span>
+
+  
+
+
+
+  <div class="description">
+    <p>Start a &quot;DELETE&quot; request</p>
+  </div>
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source">
+      <ul class="dummy">
+        <li>
+          <a href="BaseApi.js.html">BaseApi.js</a>, <a href="BaseApi.js.html#line172">line 172</a>
+        </li>
+      </ul>
+    </dd>
+  
+
+  
+
+  
+
+  
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      
+        
+
+
+  
+
+  <span class='name-container'>
+    <a class="link-icon" href="#insert">
+      <svg height="20" width="20" style="fill: black;">
+        <use xlink:href="#linkIcon"></use>
+      </svg>
+    </a>
+    <h4 class="name" id="insert">
+      <span class="type-signature"></span>insert<span class="signature">()</span><span class="type-signature"></span>
+    </h4>
+  </span>
+
+  
+
+
+
+  <div class="description">
+    <p>Start a &quot;POST&quot; request</p>
+  </div>
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source">
+      <ul class="dummy">
+        <li>
+          <a href="BaseApi.js.html">BaseApi.js</a>, <a href="BaseApi.js.html#line132">line 132</a>
+        </li>
+      </ul>
+    </dd>
+  
+
+  
+
+  
+
+  
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      
+        
+
+
+  
+
+  <span class='name-container'>
+    <a class="link-icon" href="#select">
+      <svg height="20" width="20" style="fill: black;">
+        <use xlink:href="#linkIcon"></use>
+      </svg>
+    </a>
+    <h4 class="name" id="select">
+      <span class="type-signature"></span>select<span class="signature">()</span><span class="type-signature"></span>
+    </h4>
+  </span>
+
+  
+
+
+
+  <div class="description">
+    <p>Start a &quot;GET&quot; request</p>
+  </div>
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source">
+      <ul class="dummy">
+        <li>
+          <a href="BaseApi.js.html">BaseApi.js</a>, <a href="BaseApi.js.html#line119">line 119</a>
+        </li>
+      </ul>
+    </dd>
+  
+
+  
+
+  
+
+  
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      
+        
+
+
+  
+
+  <span class='name-container'>
+    <a class="link-icon" href="#update">
+      <svg height="20" width="20" style="fill: black;">
+        <use xlink:href="#linkIcon"></use>
+      </svg>
+    </a>
+    <h4 class="name" id="update">
+      <span class="type-signature"></span>update<span class="signature">()</span><span class="type-signature"></span>
+    </h4>
+  </span>
+
+  
+
+
+
+  <div class="description">
+    <p>Start a &quot;PATCH&quot; request</p>
+  </div>
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source">
+      <ul class="dummy">
+        <li>
+          <a href="BaseApi.js.html">BaseApi.js</a>, <a href="BaseApi.js.html#line158">line 158</a>
+        </li>
+      </ul>
+    </dd>
+  
+
+  
+
+  
+
+  
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      
+    
+
+    
+
+    
   </article>
 </section>
 
-    
+
 
 
   </div>

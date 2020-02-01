@@ -1,17 +1,30 @@
-import BaseRequest from './BaseRequest'
+import Request from './Request'
 
-class BaseApi {
-  constructor(path) {
-    this.path = path
+/**
+ * Allows the user to stack the filter functions before they call any of 
+ * 
+ * select() - "get"
+ * 
+ * insert() - "post"
+ * 
+ * update() - "patch"
+ * 
+ * delete() - "delete"
+ * 
+ * Once any of these are called the filters are passed down to the Request
+ *
+ * @class
+ * @param {string} url The full URL
+ */
+
+class Builder {
+  constructor(url) {
+    this.url = url
     this.queryFilters = []
   }
 
-  /**
-   * REST FUNCTIONALITIES
-   */
-
   request(method) {
-    return new BaseRequest(method, this.path)
+    return new Request(method, this.url)
   }
 
   addFilters(request, options) {
@@ -98,6 +111,9 @@ class BaseApi {
     return this
   }
 
+  /**
+   * Start a "GET" request
+   */
   select(columnQuery = '*', options = {}) {
     let method = 'get'
     let request = this.request(method)
@@ -108,6 +124,9 @@ class BaseApi {
     return request
   }
 
+  /**
+   * Start a "POST" request
+   */
   insert(data, options = {}) {
     let method = 'post'
     let request = this.request(method)
@@ -130,6 +149,10 @@ class BaseApi {
     return request
   }
 
+
+  /**
+   * Start a "PATCH" request
+   */
   update(data, options = {}) {
     let method = 'patch'
     let request = this.request(method)
@@ -140,6 +163,10 @@ class BaseApi {
     return request
   }
 
+
+  /**
+   * Start a "DELETE" request
+   */
   delete(options = {}) {
     let method = 'delete'
     let request = this.request(method)
@@ -155,10 +182,10 @@ const advancedFilters = ['eq', 'gt', 'lt', 'gte', 'lte', 'like', 'ilike', 'is', 
 
 advancedFilters.forEach(
   operator =>
-    (BaseApi.prototype[operator] = function filterValue(columnName, criteria) {
+    (Builder.prototype[operator] = function filterValue(columnName, criteria) {
       this.filter(columnName, operator, criteria)
       return this
     })
 )
 
-export default BaseApi
+export default Builder

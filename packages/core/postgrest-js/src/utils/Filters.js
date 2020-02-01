@@ -1,14 +1,24 @@
+/** @module Filters **/
 /**
- * Finds all rows whose value on the stated columnName exactly matches the specified filterValue. 
+ * All exports are prefixed with an underscore to avoid collisions with reserved keywords (eg: "in")
+ */
+
+
+
+/**
+ * Finds all rows whose value on the stated columnName exactly matches the specified filterValue.
  * @param {string} columnName Name of the database column
  * @param { string | integer | boolean } filterValue Value to match
+ * @name eq
+ * @function
+ * @returns {string}
  * 
  * @example
- * Eq('name', 'New Zealand')
+ * _eq('name', 'New Zealand')
  * //=>
  * 'name=eq.New Zealand'
  */
-export function Eq(columnName, filterValue) {
+export function _eq(columnName, filterValue) {
   return `${columnName}=eq.${filterValue}`
 }
 
@@ -16,13 +26,16 @@ export function Eq(columnName, filterValue) {
  * Finds all rows whose value on the stated columnName is greater than the specified filterValue. 
  * @param {string} columnName Name of the database column
  * @param { string | integer | boolean } filterValue Value to match
+ * @name gt
+ * @function
+ * @returns {string}
  * 
  * @example
- * Gt('id', 20)
+ * _gt('id', 20)
  * //=>
  * 'id=gt.20'
  */
-export function Gt(columnName, filterValue) {
+export function _gt(columnName, filterValue) {
   return `${columnName}=gt.${filterValue}`
 }
 
@@ -30,13 +43,16 @@ export function Gt(columnName, filterValue) {
  * Finds all rows whose value on the stated columnName is less than the specified filterValue. 
  * @param {string} columnName Name of the database column
  * @param { string | integer | boolean } filterValue Value to match
+ * @name lt
+ * @function
+ * @returns {string}
  * 
  * @example
- * Lt('id', 20)
+ * _lt('id', 20)
  * //=>
  * 'id=lt.20'
  */
-export function Lt(columnName, filterValue) {
+export function _lt(columnName, filterValue) {
   return `${columnName}=lt.${filterValue}`
 }
 
@@ -44,13 +60,16 @@ export function Lt(columnName, filterValue) {
  * Finds all rows whose value on the stated columnName is greater than or equal to the specified filterValue. 
  * @param {string} columnName Name of the database column
  * @param { string | integer | boolean } filterValue Value to match
+ * @name gte
+ * @function
+ * @returns {string}
  * 
  * @example
- * Gte('id', 20)
+ * _gte('id', 20)
  * //=>
  * 'id=gte.20'
  */
-export function Gte(columnName, filterValue) {
+export function _gte(columnName, filterValue) {
   return `${columnName}=gte.${filterValue}`
 }
 
@@ -58,13 +77,16 @@ export function Gte(columnName, filterValue) {
  * Finds all rows whose value on the stated columnName is less than or equal to the specified filterValue. 
  * @param {string} columnName Name of the database column
  * @param { string | integer | boolean } filterValue Value to match
+ * @name lte
+ * @function
+ * @returns {string}
  * 
  * @example
- * Lte('id', 20)
+ * _lte('id', 20)
  * //=>
  * 'id=lte.20'
  */
-export function Lte(columnName, filterValue) {
+export function _lte(columnName, filterValue) {
   return `${columnName}=lte.${filterValue}`
 }
 
@@ -72,20 +94,22 @@ export function Lte(columnName, filterValue) {
  * Finds all rows whose value in the stated columnName matches the supplied pattern (case sensitive). 
  * @param {string} columnName Name of the database column
  * @param { string } stringPattern String pattern to compare to
+ * @name like
+ * @function
+ * @returns {string}
  * 
  * @example
- * Like('name', '%United%')
+ * _like('name', '%United%')
  * //=>
  * 'name=like.*United*'
  * 
  * @example
- * Like('name', '%United States%')
+ * _like('name', '%United States%')
  * //=>
  * 'name=like.*United States*'
  */
-export function Like(columnName, stringPattern) {
+export function _like(columnName, stringPattern) {
   let stringPatternEnriched = stringPattern.replace(/%/g, '*')
-
   return `${columnName}=like.${stringPatternEnriched}`
 }
 
@@ -93,20 +117,22 @@ export function Like(columnName, stringPattern) {
  * Finds all rows whose value in the stated columnName matches the supplied pattern (case insensitive). 
  * @param {string} columnName Name of the database column
  * @param { string } stringPattern String pattern to compare to
+ * @name ilike
+ * @function
+ * @returns {string}
  * 
  * @example
- * Ilike('name', '%United%')
+ * _ilike('name', '%United%')
  * //=>
  * 'name=ilike.*United*'
  * 
  * @example
- * Ilike('name', '%United states%')
+ * _ilike('name', '%United states%')
  * //=>
  * 'name=ilike.*United states*'
  */
-export function Ilike(columnName, stringPattern) {
+export function _ilike(columnName, stringPattern) {
   let stringPatternEnriched = stringPattern.replace(/%/g, '*')
-
   return `${columnName}=ilike.${stringPatternEnriched}`
 }
 
@@ -114,27 +140,34 @@ export function Ilike(columnName, stringPattern) {
  * A check for exact equality (null, true, false), finds all rows whose value on the state columnName exactly match the specified filterValue. 
  * @param {string} columnName Name of the database column
  * @param { string | integer | boolean } filterValue Value to match
+ * @name is
+ * @function
+ * @returns {string}
  * 
  * @example
- * Is('name', null)
+ * _is('name', null)
  * //=>
  * 'name=is.null'
  */
-export function Is(columnName, filterValue) {
+export function _is(columnName, filterValue) {
   return `${columnName}=is.${filterValue}`
 }
+
 
 /**
  * Finds all rows whose value on the stated columnName is found on the specified filterArray.
  * @param {string} columnName Name of the database column
  * @param { string | integer | boolean } filterValue Value to match
+ * @name in
+ * @function
+ * @returns {string}
  * 
  * @example
- * In('name', ['China', 'France'])
+ * _in('name', ['China', 'France'])
  * //=>
  * 'name=in.China,France'
  */
-export function In(columnName, filterArray) {
+export function _in (columnName, filterArray) {
   return `${columnName}=in.${filterArray.join(',')}`
 }
 
@@ -142,12 +175,15 @@ export function In(columnName, filterArray) {
  * Finds all rows whose value on the stated columnName is found on the specified filterArray.
  * @param {string} columnName Name of the database column
  * @param { string | integer | boolean } filterValue Value to match
+ * @name not
+ * @function
+ * @returns {string}
  * 
  * @example
- * Not('name', 'China')
+ * _not('name', 'China')
  * //=>
  * 'name=not.China'
  */
-export function Not(columnName, filterValue) {
+export function _not(columnName, filterValue) {
   return `${columnName}=not.${filterValue}`
 }

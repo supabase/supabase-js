@@ -8,7 +8,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <title>
-      utils/Filters.js - Documentation
+      utils/Helpers.js - Documentation
   </title>
 
   <link href="https://www.braintreepayments.com/images/favicon-ccda0b14.png" rel="icon" type="image/png">
@@ -88,7 +88,7 @@
   <div id="main">
     
       <h1 class="page-title">
-        utils/Filters.js
+        utils/Helpers.js
       </h1>
     
 
@@ -97,194 +97,23 @@
 
 <section>
   <article>
-    <pre class="prettyprint source linenums"><code>/** @module Filters **/
-/**
- * All exports are prefixed with an underscore to avoid collisions with reserved keywords (eg: "in")
- */
-
-
-
-/**
- * Finds all rows whose value on the stated columnName exactly matches the specified filterValue.
- * @param {string} columnName Name of the database column
- * @param { string | integer | boolean } filterValue Value to match
- * @name eq
- * @function
+    <pre class="prettyprint source linenums"><code>/**
+ * @param {object} obj 
+ * @private
  * @returns {string}
- * 
+ *
  * @example
- * _eq('name', 'New Zealand')
+ * objectToQueryString({ 
+ *  param1: 'hello', 
+ *  param2: 'world 
+ * })
  * //=>
- * 'name=eq.New Zealand'
+ * 'param1=hello&amp;param2=world'
  */
-export function _eq(columnName, filterValue) {
-  return `${columnName}=eq.${filterValue}`
-}
-
-/**
- * Finds all rows whose value on the stated columnName is greater than the specified filterValue. 
- * @param {string} columnName Name of the database column
- * @param { string | integer | boolean } filterValue Value to match
- * @name gt
- * @function
- * @returns {string}
- * 
- * @example
- * _gt('id', 20)
- * //=>
- * 'id=gt.20'
- */
-export function _gt(columnName, filterValue) {
-  return `${columnName}=gt.${filterValue}`
-}
-
-/**
- * Finds all rows whose value on the stated columnName is less than the specified filterValue. 
- * @param {string} columnName Name of the database column
- * @param { string | integer | boolean } filterValue Value to match
- * @name lt
- * @function
- * @returns {string}
- * 
- * @example
- * _lt('id', 20)
- * //=>
- * 'id=lt.20'
- */
-export function _lt(columnName, filterValue) {
-  return `${columnName}=lt.${filterValue}`
-}
-
-/**
- * Finds all rows whose value on the stated columnName is greater than or equal to the specified filterValue. 
- * @param {string} columnName Name of the database column
- * @param { string | integer | boolean } filterValue Value to match
- * @name gte
- * @function
- * @returns {string}
- * 
- * @example
- * _gte('id', 20)
- * //=>
- * 'id=gte.20'
- */
-export function _gte(columnName, filterValue) {
-  return `${columnName}=gte.${filterValue}`
-}
-
-/**
- * Finds all rows whose value on the stated columnName is less than or equal to the specified filterValue. 
- * @param {string} columnName Name of the database column
- * @param { string | integer | boolean } filterValue Value to match
- * @name lte
- * @function
- * @returns {string}
- * 
- * @example
- * _lte('id', 20)
- * //=>
- * 'id=lte.20'
- */
-export function _lte(columnName, filterValue) {
-  return `${columnName}=lte.${filterValue}`
-}
-
-/**
- * Finds all rows whose value in the stated columnName matches the supplied pattern (case sensitive). 
- * @param {string} columnName Name of the database column
- * @param { string } stringPattern String pattern to compare to
- * @name like
- * @function
- * @returns {string}
- * 
- * @example
- * _like('name', '%United%')
- * //=>
- * 'name=like.*United*'
- * 
- * @example
- * _like('name', '%United States%')
- * //=>
- * 'name=like.*United States*'
- */
-export function _like(columnName, stringPattern) {
-  let stringPatternEnriched = stringPattern.replace(/%/g, '*')
-  return `${columnName}=like.${stringPatternEnriched}`
-}
-
-/**
- * Finds all rows whose value in the stated columnName matches the supplied pattern (case insensitive). 
- * @param {string} columnName Name of the database column
- * @param { string } stringPattern String pattern to compare to
- * @name ilike
- * @function
- * @returns {string}
- * 
- * @example
- * _ilike('name', '%United%')
- * //=>
- * 'name=ilike.*United*'
- * 
- * @example
- * _ilike('name', '%United states%')
- * //=>
- * 'name=ilike.*United states*'
- */
-export function _ilike(columnName, stringPattern) {
-  let stringPatternEnriched = stringPattern.replace(/%/g, '*')
-  return `${columnName}=ilike.${stringPatternEnriched}`
-}
-
-/**
- * A check for exact equality (null, true, false), finds all rows whose value on the state columnName exactly match the specified filterValue. 
- * @param {string} columnName Name of the database column
- * @param { string | integer | boolean } filterValue Value to match
- * @name is
- * @function
- * @returns {string}
- * 
- * @example
- * _is('name', null)
- * //=>
- * 'name=is.null'
- */
-export function _is(columnName, filterValue) {
-  return `${columnName}=is.${filterValue}`
-}
-
-
-/**
- * Finds all rows whose value on the stated columnName is found on the specified filterArray.
- * @param {string} columnName Name of the database column
- * @param { string | integer | boolean } filterValue Value to match
- * @name in
- * @function
- * @returns {string}
- * 
- * @example
- * _in('name', ['China', 'France'])
- * //=>
- * 'name=in.China,France'
- */
-export function _in (columnName, filterArray) {
-  return `${columnName}=in.${filterArray.join(',')}`
-}
-
-/**
- * Finds all rows whose value on the stated columnName is found on the specified filterArray.
- * @param {string} columnName Name of the database column
- * @param { string | integer | boolean } filterValue Value to match
- * @name not
- * @function
- * @returns {string}
- * 
- * @example
- * _not('name', 'China')
- * //=>
- * 'name=not.China'
- */
-export function _not(columnName, filterValue) {
-  return `${columnName}=not.${filterValue}`
+export function objectToQueryString(obj) {
+  return Object.keys(obj)
+    .map(param => `${param}=${this.obj[param]}`)
+    .join('&amp;')
 }
 </code></pre>
   </article>
