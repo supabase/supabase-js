@@ -2,22 +2,22 @@ import assert from 'assert'
 import Request from '../lib/Request'
 
 describe('Request', () => {
-  it.skip('will only ever accept json', () => {
-    const { req } = new Request('GET', '/')
-    assert.equal(req._headers.accept, 'application/json')
+  it('will only ever accept json', () => {
+    const req = new Request('GET', '/')
+    assert.equal(req._header.accept, 'application/json')
   })
 
-  it.skip('will authorize in auth() using a token', () => {
-    const { req } = new Request('GET', '/').auth('token')
-    assert.equal(req._headers.authorization, 'Bearer token')
+  it('will authorize in auth() using a token', () => {
+    const req = new Request('GET', '/').auth('token')
+    assert.equal(req._header.authorization, 'Bearer token')
   })
 
-  it.skip('will authorize in auth() using a basic auth object', () => {
+  it('will authorize in auth() using a basic auth object', () => {
     const user = 'user'
     const pass = 'pass'
-    const authHeader = new Buffer(`${user}:${pass}`).toString('base64')
-    const { req } = new Request('GET', '/').auth({ user, pass })
-    assert.equal(req._headers.authorization, `Basic ${authHeader}`)
+    const authHeader = new Buffer.from(`${user}:${pass}`).toString('base64')
+    const req = new Request('GET', '/').auth({ user, pass })
+    assert.equal(req._header.authorization, `Basic ${authHeader}`)
   })
 
   it('will translate match() key/values to filter', () => {
@@ -32,9 +32,12 @@ describe('Request', () => {
     assert.deepEqual(match, { key1: 'value1', key2: 'value2' })
   })
 
-  it.skip('will return a promise from end()', () => {
+  it('will return a promise from end()', () => {
     const request = new Request('GET', '/')
-    assert(request.end() instanceof Promise)
+      .end()
+      .then(x => {})
+      .catch(e => {})
+    assert(request instanceof Promise)
   })
 
   it('can be resolved', done => {
@@ -46,8 +49,7 @@ describe('Request', () => {
     try {
       await new Request('GET', '/')
       throw new Error('Another error should be thrown')
-    }
-    catch (error) {
+    } catch (error) {
       if (error.code !== 'ECONNREFUSED') {
         throw error
       }
