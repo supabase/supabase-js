@@ -28,11 +28,7 @@ npm install --save @supabase/postgrest-js
 
 ```js
 import { PostgrestClient } from ' @supabase/postgrest-js'
-
-// Point to your own PostgREST server (or use ours, but go easy..)
-const worldUrl = 'https://world.supabase.co/rest/v1'
-const queryParams = { apikey: 'public-key-bOYapLADERfE' }
-let client = new PostgrestClient(worldUrl, { queryParams })
+let client = new PostgrestClient('https://your-postgrest.com')
 ```
 
 ### GET
