@@ -1,5 +1,5 @@
 import assert from 'assert'
-import Request from '../lib/Request'
+import Request from '../../lib/Request'
 
 describe('Request', () => {
   it('will only ever accept json', () => {
