@@ -83,56 +83,67 @@ let { body: countries } = await client
 let { body: countries } = await client
     .from('countries')
     .match({ 'continent': 'Asia' })
+    .select('*')
 
 // Equal
 let { body: countries } = await client
     .from('countries')
     .eq('name', 'New Zealand')
+    .select('*')
 
 // Greater than
 let { body: countries } = await client
     .from('countries')
     .gt('id', 20)
+    .select('*')
 
 // Less than
 let { body: countries } = await client
     .from('countries')
     .lt('id', 20)
+    .select('*')
 
 // Greater than or equal
 let { body: countries } = await client
     .from('countries')
     .gte('id', 20)
+    .select('*')
 
 // Less than or equal
 let { body: countries } = await client
     .from('countries')
     .lte('id', 20)
+    .select('*')
 
 // String search - case sensitive
 let { body: countries } = await client
     .from('countries')
     .like('name', '%Zeal%')
+    .select('*')
 
 // String search - case insensitive
 let { body: countries } = await client
     .from('countries')
     .ilike('name', '%Zeal%')
+    .select('*')
 
 // Exact equality (null, true, false)
 let { body: countries } = await client
     .from('countries')
     .is('name', null)
+    .select('*')
 
 // In list
 let { body: countries } = await client
     .from('countries')
     .in('name', ['China', 'France'])
+    .select('*')
 
 // Not equal
 let { body: countries } = await client
     .from('countries')
     .not('name', 'China')
+    .select('*')
 
 ```
 
