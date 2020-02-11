@@ -122,20 +122,23 @@ class Request extends SuperAgent {
    */
 
   range(from, to) {
+    let lowerBound = from || 0
+    let upperBound = to == 0 ? 0 : to || ''
+    
     this.set('Range-Unit', 'items')
-    this.set('Range', `${from || 0}-${to || ''}`)
+    this.set('Range', `${lowerBound}-${upperBound}`)
     return this
   }
 
   /**
-   * Sets the header which signifies to PostgREST the response must be a single
-   * object or 404.
+   * Return the first row of the table.
    *
    * @returns {Request} The API request object.
    */
 
   single() {
-    return this.set('Prefer', 'plurality=singular')
+    // return this.set('Prefer', 'plurality=singular')
+    return this.range(0,0)
   }
 
   /**

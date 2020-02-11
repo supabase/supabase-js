@@ -130,17 +130,9 @@ class Builder {
   insert(data, options = {}) {
     let method = 'post'
     let request = this.request(method)
+    let dataList = !Array.isArray(data) ? [data] : data
 
-    if (!Array.isArray(data)) {
-      return {
-        body: null,
-        status: 400,
-        statusCode: 400,
-        statusText: 'Data type should be an array.',
-      }
-    }
-
-    data.forEach(datum => {
+    dataList.forEach(datum => {
       request.send(datum)
     })
 
