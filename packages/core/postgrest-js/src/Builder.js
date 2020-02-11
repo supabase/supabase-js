@@ -115,7 +115,7 @@ class Builder {
    * Start a "GET" request
    */
   select(columnQuery = '*', options = {}) {
-    let method = 'get'
+    let method = 'GET'
     let request = this.request(method)
 
     request.select(columnQuery)
@@ -128,7 +128,7 @@ class Builder {
    * Start a "POST" request
    */
   insert(data, options = {}) {
-    let method = 'post'
+    let method = 'POST'
     let request = this.request(method)
     let dataList = !Array.isArray(data) ? [data] : data
 
@@ -146,7 +146,7 @@ class Builder {
    * Start a "PATCH" request
    */
   update(data, options = {}) {
-    let method = 'patch'
+    let method = 'PATCH'
     let request = this.request(method)
 
     request.send(data)
@@ -160,7 +160,7 @@ class Builder {
    * Start a "DELETE" request
    */
   delete(options = {}) {
-    let method = 'delete'
+    let method = 'DELETE'
     let request = this.request(method)
 
     this.addFilters(request, options)
