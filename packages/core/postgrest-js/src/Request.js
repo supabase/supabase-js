@@ -131,14 +131,17 @@ class Request extends SuperAgent {
   }
 
   /**
-   * Return the first row of the table.
-   *
+   * Sets the header which signifies to PostgREST the response must be a single
+   * object or 406 Not Acceptable.
+   * 
    * @returns {Request} The API request object.
    */
 
   single() {
-    // return this.set('Prefer', 'plurality=singular')
-    return this.range(0,0)
+    this.set('Accept', 'application/vnd.pgrst.object+json')
+    this.set('Prefer','return=representation')
+
+    return this
   }
 
   /**
