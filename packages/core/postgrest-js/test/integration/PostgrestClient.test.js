@@ -33,13 +33,21 @@ describe('PostgrestClient', () => {
     assert.equal(201, res.status)
   })
 
+  it('should insert data and return the object', async () => {
+    let client = new PostgrestClient(rootUrl)
+    let res = await client
+      .from('messages')
+      .insert([{ message: 'Test message', channel_id: 1, user_id: 1 }])
+    assert.equal('Test message', res.body[0].message)
+  })
+
   it('should return be able to update messages', async () => {
     let client = new PostgrestClient(rootUrl)
     let res = await client
       .from('messages')
       .eq('message', 'Test message')
-      .update({ message: 'Test message', channel_id: 1, user_id: 1 })
-    assert.equal(204, res.status)
+      .update({ message: 'Test message 2', channel_id: 1, user_id: 1 })
+    assert.equal('Test message 2', res.body[0].message)
   })
 
   it('should return be able to delete messages', async () => {

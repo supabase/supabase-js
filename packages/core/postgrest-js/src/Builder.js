@@ -1,16 +1,16 @@
 import Request from './Request'
 
 /**
- * Allows the user to stack the filter functions before they call any of 
- * 
+ * Allows the user to stack the filter functions before they call any of
+ *
  * select() - "get"
- * 
+ *
  * insert() - "post"
- * 
+ *
  * update() - "patch"
- * 
+ *
  * delete() - "delete"
- * 
+ *
  * Once any of these are called the filters are passed down to the Request
  *
  * @class
@@ -130,6 +130,8 @@ class Builder {
   insert(data, options = {}) {
     let method = 'POST'
     let request = this.request(method)
+    request.set('Prefer', 'return=representation')
+  
     let dataList = !Array.isArray(data) ? [data] : data
 
     dataList.forEach(datum => {
@@ -141,20 +143,19 @@ class Builder {
     return request
   }
 
-
   /**
    * Start a "PATCH" request
    */
   update(data, options = {}) {
     let method = 'PATCH'
     let request = this.request(method)
+    request.set('Prefer', 'return=representation')
 
     request.send(data)
     this.addFilters(request, options)
 
     return request
   }
-
 
   /**
    * Start a "DELETE" request
