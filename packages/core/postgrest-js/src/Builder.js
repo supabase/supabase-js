@@ -130,13 +130,9 @@ class Builder {
   insert(data, options = {}) {
     let method = 'POST'
     let request = this.request(method)
+    
     request.set('Prefer', 'return=representation')
-  
-    let dataList = !Array.isArray(data) ? [data] : data
-
-    dataList.forEach(datum => {
-      request.send(datum)
-    })
+    request.send(data)
 
     this.addFilters(request, options)
 
