@@ -6,7 +6,7 @@
   "scripts": {
     "build": "cross-env BABEL_ENV=production babel src --out-dir lib",
     "clean": "rimraf lib",
-    "cover": "nyc --check-coverage npm run test:unit",
+    "cover": "nyc --check-coverage npm run test",
     "deploy": "npm version patch && npm publish --access=public",
     "docs": "node_modules/.bin/jsdoc --configure .jsdoc.json --verbose",
     "prepublish": "npm run clean && npm run build",
