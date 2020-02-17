@@ -14,8 +14,7 @@
     "test:integration": "mocha -r @babel/register -r babel-polyfill  test/integration/**/*.js",
     "test": "mocha -r @babel/register -r babel-polyfill  test/unit/**/*.js",
     "test:prod": "cross-env BABEL_ENV=production npm run test",
-    "test:watch": "npm test -- --watch",
-    "test": "npm run cover"
+    "test:watch": "npm test -- --watch"
   },
   "files": [
     "lib",
