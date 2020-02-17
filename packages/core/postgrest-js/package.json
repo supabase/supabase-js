@@ -1,13 +1,13 @@
 {
   "name": "@supabase/postgrest-js",
-  "version": "0.6.1",
+  "version": "0.7.0",
   "description": "PostgREST JS client",
   "main": "./lib/index.js",
   "scripts": {
     "build": "cross-env BABEL_ENV=production babel src --out-dir lib",
     "clean": "rimraf lib",
     "cover": "nyc --check-coverage npm run test",
-    "deploy": "npm version patch && npm publish --access=public",
+    "deploy": "npm version minor && npm publish --access=public",
     "docs": "node_modules/.bin/jsdoc --configure .jsdoc.json --verbose",
     "prepublish": "npm run clean && npm run build",
     "pretty": "prettier --write \"./**/*.{js,json,yml,md,vue,css,scss}\"",
