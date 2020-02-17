@@ -1,7 +1,7 @@
 /**
  * A request building object which contains convenience methods for
  * communicating with a PostgREST server.
- * 
+ *
  * This files draws heavily from https://github.com/calebmer/postgrest-client
  * License: https://github.com/calebmer/postgrest-client/blob/master/LICENSE
  *
@@ -12,7 +12,6 @@
 
 import { Request as SuperAgent } from 'superagent'
 import * as Filters from './utils/Filters'
-
 
 const contentRangeStructure = /^(\d+)-(\d+)\/(\d+)$/
 
@@ -124,7 +123,7 @@ class Request extends SuperAgent {
   range(from, to) {
     let lowerBound = from || 0
     let upperBound = to == 0 ? 0 : to || ''
-    
+
     this.set('Range-Unit', 'items')
     this.set('Range', `${lowerBound}-${upperBound}`)
     return this
@@ -133,13 +132,13 @@ class Request extends SuperAgent {
   /**
    * Sets the header which signifies to PostgREST the response must be a single
    * object or 406 Not Acceptable.
-   * 
+   *
    * @returns {Request} The API request object.
    */
 
   single() {
     this.set('Accept', 'application/vnd.pgrst.object+json')
-    this.set('Prefer','return=representation')
+    this.set('Prefer', 'return=representation')
 
     return this
   }
@@ -152,7 +151,17 @@ class Request extends SuperAgent {
    */
 
   end() {
-    return new Promise((resolve, reject) =>
+    return new Promise((resolve, reject) => {
+      // catch when .delete() is invoked without any filters
+      if (this.method == 'DELETE' && this._query.length == 0) {
+        return resolve({
+          body: null,
+          status: 400,
+          statusCode: 400,
+          statusText: '.delete() cannot be invoked without any filters.',
+        })
+      }
+
       super.end((error, response) => {
         if (error) {
           return reject(error)
@@ -169,7 +178,7 @@ class Request extends SuperAgent {
 
         return resolve(returnBody)
       })
-    )
+    })
   }
 
   /**

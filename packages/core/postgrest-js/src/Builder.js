@@ -145,9 +145,20 @@ class Builder {
   update(data, options = {}) {
     let method = 'PATCH'
     let request = this.request(method)
-    request.set('Prefer', 'return=representation')
 
+    if(Array.isArray(data)) {
+      return {
+        body:null,
+        status: 400,
+        statusCode: 400,
+        statusText: 'Data type should be an object.'
+
+      }
+    }
+
+    request.set('Prefer', 'return=representation')
     request.send(data)
+    
     this.addFilters(request, options)
 
     return request
