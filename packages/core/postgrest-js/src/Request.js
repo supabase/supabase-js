@@ -153,12 +153,14 @@ class Request extends SuperAgent {
   end() {
     return new Promise((resolve, reject) => {
       // catch when .delete() is invoked without any filters
-      if (this.method == 'DELETE' && this._query.length == 0) {
+      if (['DELETE', 'PATCH'].includes(this.method) && this._query.length == 0) {
+        let methodString = this.method === 'DELETE' ? '.delete()' : '.update()'
+
         return resolve({
           body: null,
           status: 400,
           statusCode: 400,
-          statusText: '.delete() cannot be invoked without any filters.',
+          statusText: `${methodString} cannot be invoked without any filters.`,
         })
       }
 
