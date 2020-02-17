@@ -182,7 +182,7 @@ export function _in (columnName, filterArray) {
  * @example
  * _not('name', 'China')
  * //=>
- * 'name=not.China'
+ * 'name=neq.China'
  */
 export function _not(columnName, filterValue) {
   return `${columnName}=neq.${filterValue}`
