@@ -205,3 +205,7 @@ This repo is liscenced under MIT.
 ## Credits
 
 - https://github.com/calebmer/postgrest-client - originally forked and adapted from @calebmer's library
+
+## Status
+
+![Tests](https://github.com/supabase/postgrest-js/workflows/Node.js%20CI/badge.svg)
