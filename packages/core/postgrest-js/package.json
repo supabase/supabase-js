@@ -20,10 +20,7 @@
     "lib",
     "src"
   ],
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/supabase/postgrest-js.git"
-  },
+  "repository": "https://github.com/supabase/postgrest-js",
   "keywords": [
     "boilerplate",
     "npm",
