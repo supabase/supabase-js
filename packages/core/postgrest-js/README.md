@@ -205,7 +205,7 @@ To see details examples of usage, see the Supabase docs:
 gren release --override
 ```
 
-This will create the changelog and the release.
+This will create the changelog and the [release](https://github.com/supabase/postgrest-js/releases).
 
 ## License
 
