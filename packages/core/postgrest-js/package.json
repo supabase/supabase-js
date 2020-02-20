@@ -22,11 +22,8 @@
   ],
   "repository": "https://github.com/supabase/postgrest-js",
   "keywords": [
-    "boilerplate",
-    "npm",
-    "module",
-    "node",
-    "javascript"
+    "postgrest",
+    "supabase"
   ],
   "author": "Supabase",
   "license": "Apache-2.0",
