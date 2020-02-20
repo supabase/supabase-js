@@ -165,10 +165,10 @@ export function _is(columnName, filterValue) {
  * @example
  * _in('name', ['China', 'France'])
  * //=>
- * 'name=in.China,France'
+ * 'name=in.(China,France)'
  */
 export function _in (columnName, filterArray) {
-  return `${columnName}=in.${filterArray.join(',')}`
+  return `${columnName}=in.(${filterArray.join(',')})`
 }
 
 /**
