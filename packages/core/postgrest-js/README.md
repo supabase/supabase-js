@@ -14,6 +14,7 @@ Isomorphic JavaScript client for [PostgREST](https://postgrest.org). The goal of
 - [Contributing](#contributing)
 - [License](#license)
 - [Credits](#credits)
+- [Status](#status)
 
 
 ## Usage
@@ -197,6 +198,14 @@ To see details examples of usage, see the Supabase docs:
 - Commit changes to your own branch
 - Push your work back up to your fork
 - Submit a Pull request so that we can review your changes and merge
+
+**Release Notes**
+
+```
+gren release --override
+```
+
+This will create the changelog and the release.
 
 ## License
 
