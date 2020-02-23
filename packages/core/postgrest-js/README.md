@@ -218,3 +218,7 @@ This repo is liscenced under MIT.
 ## Status
 
 ![Tests](https://github.com/supabase/postgrest-js/workflows/Node.js%20CI/badge.svg)
+
+Ready for production! Watch and star this repo to keep updated on releases.
+
+![Watch this repo](https://gitcdn.xyz/repo/supabase/monorepo/master/web/static/watch-repo.gif "Watch this repo")
