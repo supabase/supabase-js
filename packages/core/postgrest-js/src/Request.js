@@ -74,9 +74,11 @@ class Request extends SuperAgent {
    */
 
   match(query) {
-    const newQuery = {}
-    Object.keys(query).forEach(key => (newQuery[key] = `eq.${query[key]}`))
-    return this.query(newQuery)
+    Object.keys(query).forEach(key => {
+      this.query(`${key}=eq.${query[key]}`)
+    })
+
+    return this
   }
 
   /**

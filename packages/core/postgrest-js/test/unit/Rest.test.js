@@ -21,14 +21,14 @@ describe('Request', () => {
   })
 
   it('will translate match() key/values to filter', () => {
-    const { qs } = new Request('GET', '/').match({ key1: 'value1', key2: 'value2' })
-    assert.deepEqual(qs, { key1: 'eq.value1', key2: 'eq.value2' })
+    const { _query } = new Request('GET', '/').match({ key1: 'value1', key2: 'value2' })
+    assert.deepEqual(_query, [ 'key1=eq.value1', 'key2=eq.value2' ])
   })
 
   it('won‘t assign to the passed match() filter', () => {
     const match = { key1: 'value1', key2: 'value2' }
-    const { qs } = new Request('GET', '/').match(match)
-    assert.deepEqual(qs, { key1: 'eq.value1', key2: 'eq.value2' })
+    const { _query } = new Request('GET', '/').match(match)
+    assert.deepEqual(_query, [ 'key1=eq.value1', 'key2=eq.value2' ])
     assert.deepEqual(match, { key1: 'value1', key2: 'value2' })
   })
 
