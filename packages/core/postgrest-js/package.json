@@ -4,7 +4,7 @@
   "description": "PostgREST JS client",
   "main": "./lib/index.js",
   "scripts": {
-    "build": "cross-env BABEL_ENV=production babel src --out-dir lib",
+    "build": "BABEL_ENV=production babel src --out-dir lib",
     "clean": "rimraf lib",
     "cover": "nyc --check-coverage npm run test",
     "deploy": "npm version minor && npm publish --access=public",
@@ -13,7 +13,7 @@
     "pretty": "prettier --write \"./**/*.{js,json,yml,md,vue,css,scss}\"",
     "test:integration": "mocha -r @babel/register -r babel-polyfill  test/integration/**/*.js",
     "test": "mocha -r @babel/register -r babel-polyfill  test/unit/**/*.js",
-    "test:prod": "cross-env BABEL_ENV=production npm run test",
+    "test:prod": "BABEL_ENV=production npm run test",
     "test:watch": "npm test -- --watch"
   },
   "files": [
@@ -42,7 +42,6 @@
     "babel-polyfill": "^6.26.0",
     "babel-preset-minify": "^0.5.1",
     "chai": "^4.2.0",
-    "cross-env": "^5.2.1",
     "jsdoc": "^3.6.3",
     "mocha": "^6.2.2",
     "nyc": "^15.0.0",
