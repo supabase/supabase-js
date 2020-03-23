@@ -15,13 +15,22 @@ describe('PostgrestClient', () => {
     )
   })
 
+  it('With optional api key', () => {
+    assert.equal(
+      new PostgrestClient(rootUrl, { headers: { apikey: 'some-key' } }).headers.apikey,
+      'some-key'
+    )
+  })
+
   it('from(some_table)', () =>
-    assert.equal(new PostgrestClient(rootUrl).from('some_table').url, `${rootUrl}/some_table`))
+    assert.equal(
+      new PostgrestClient(rootUrl).from('some_table').url,
+      `${rootUrl}/some_table`
+    ))
 
   it('rpc(stored_procedure)', () =>
     assert.equal(
       new PostgrestClient(rootUrl).rpc('stored_procedure').url,
       `${rootUrl}/rpc/stored_procedure`
     ))
-
 })

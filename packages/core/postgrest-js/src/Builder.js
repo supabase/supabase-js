@@ -18,13 +18,14 @@ import Request from './Request'
  */
 
 class Builder {
-  constructor(url) {
+  constructor(url, headers = {}) {
     this.url = url
     this.queryFilters = []
+    this.headers = headers
   }
 
   request(method) {
-    return new Request(method, this.url)
+    return new Request(method, this.url, this.headers)
   }
 
   addFilters(request, options) {
@@ -130,7 +131,7 @@ class Builder {
   insert(data, options = {}) {
     let method = 'POST'
     let request = this.request(method)
-    
+
     request.set('Prefer', 'return=representation')
     request.send(data)
 
@@ -158,7 +159,7 @@ class Builder {
 
     request.set('Prefer', 'return=representation')
     request.send(data)
-    
+
     this.addFilters(request, options)
 
     return request
