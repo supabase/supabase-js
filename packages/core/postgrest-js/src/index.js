@@ -15,20 +15,22 @@ class PostgrestClient {
   constructor(restUrl, options = {}) {
     this.restUrl = restUrl
     this.queryString = null
+    this.headers = {}
 
+    if (options.headers) this.headers = options.headers
     if (options.queryParams) this.queryString = Helpers.objectToQueryString(options.queryParams)
   }
 
   from(tableName) {
     let url = `${this.restUrl}/${tableName}`
     if (this.queryString) url += `?${this.queryString}`
-    return new Builder(url)
+    return new Builder(url, this.headers)
   }
 
   rpc(functionName, functionParameters = null) {
     let url = `${this.restUrl}/rpc/${functionName}`
     if (this.queryString) url += `?${this.queryString}`
-    let request = new Request('post', url)
+    let request = new Request('post', url, this.headers)
     if (functionParameters != null) request.send(functionParameters)
     return request
   }

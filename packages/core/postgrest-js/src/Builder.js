@@ -18,13 +18,14 @@ import Request from './Request'
  */
 
 class Builder {
-  constructor(url) {
+  constructor(url, headers = {}) {
     this.url = url
     this.queryFilters = []
+    this.headers = headers
   }
 
   request(method) {
-    return new Request(method, this.url)
+    return new Request(method, this.url, this.headers)
   }
 
   addFilters(request, options) {

@@ -16,9 +16,15 @@ import * as Filters from './utils/Filters'
 const contentRangeStructure = /^(\d+)-(\d+)\/(\d+)$/
 
 class Request extends SuperAgent {
-  constructor(method, url) {
+  constructor(method, url, headers = {}) {
     super(method, url)
     this.set('Accept', 'application/json')
+
+    if (headers != {}) {
+      for (var k in headers) {
+        this.set(k, headers[k])
+      }
+    }
 
     // Fix for superagent disconnect on client & server.
     if (!this.get) {
