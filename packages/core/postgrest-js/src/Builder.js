@@ -127,11 +127,14 @@ class Builder {
   /**
    * Start a "POST" request
    */
-  insert(data, options = {}) {
+  insert(data, options = { upsert: false }) {
     let method = 'POST'
     let request = this.request(method)
-    
-    request.set('Prefer', 'return=representation')
+    let header = options.upsert
+      ? 'return=representation,resolution=merge-duplicates'
+      : 'return=representation'
+
+    request.set('Prefer', header)
     request.send(data)
 
     this.addFilters(request, options)
@@ -146,19 +149,18 @@ class Builder {
     let method = 'PATCH'
     let request = this.request(method)
 
-    if(Array.isArray(data)) {
+    if (Array.isArray(data)) {
       return {
-        body:null,
+        body: null,
         status: 400,
         statusCode: 400,
-        statusText: 'Data type should be an object.'
-
+        statusText: 'Data type should be an object.',
       }
     }
 
     request.set('Prefer', 'return=representation')
     request.send(data)
-    
+
     this.addFilters(request, options)
 
     return request

@@ -1,10 +1,10 @@
 INSERT INTO
-    public.users (username)
+    public.users (username, status)
 VALUES
-    ('supabot'),
-    ('kiwicopple'),
-    ('awailas'),
-    ('dragarcia');
+    ('supabot', 'ONLINE'),
+    ('kiwicopple', 'OFFLINE'),
+    ('awailas', 'ONLINE'),
+    ('dragarcia', 'ONLINE');
 
 INSERT INTO
     public.channels (slug)
@@ -13,7 +13,7 @@ VALUES
     ('random');
 
 INSERT INTO
-    public.messages (message, channel_id, user_id)
+    public.messages (message, channel_id, username)
 VALUES
-    ('Hello World 👋', 1, 1),
-    ('Perfection is attained, not when there is nothing more to add, but when there is nothing left to take away.', 2, 1);
+    ('Hello World 👋', 1, 'supabot'),
+    ('Perfection is attained, not when there is nothing more to add, but when there is nothing left to take away.', 2, 'supabot');
