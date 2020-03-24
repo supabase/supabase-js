@@ -22,25 +22,30 @@ describe('Request', () => {
 
   it('will translate match() key/values to filter', () => {
     const { _query } = new Request('GET', '/').match({ key1: 'value1', key2: 'value2' })
-    assert.deepEqual(_query, [ 'key1=eq.value1', 'key2=eq.value2' ])
+    assert.deepEqual(_query, ['key1=eq.value1', 'key2=eq.value2'])
   })
 
   it('won‘t assign to the passed match() filter', () => {
     const match = { key1: 'value1', key2: 'value2' }
     const { _query } = new Request('GET', '/').match(match)
-    assert.deepEqual(_query, [ 'key1=eq.value1', 'key2=eq.value2' ])
+    assert.deepEqual(_query, ['key1=eq.value1', 'key2=eq.value2'])
     assert.deepEqual(match, { key1: 'value1', key2: 'value2' })
+  })
+
+  it('will translate not() into  modified filter', () => {
+    const { _query } = new Request('GET', '/').not('key1', 'in', ['value1', 'value2'])
+    assert.deepEqual(_query, ['key1=not.in.(value1,value2)'])
   })
 
   it('will return a promise from end()', () => {
     const request = new Request('GET', '/')
       .end()
-      .then(x => {})
-      .catch(e => {})
+      .then((x) => {})
+      .catch((e) => {})
     assert(request instanceof Promise)
   })
 
-  it('can be resolved', done => {
+  it('can be resolved', (done) => {
     const request = new Request('GET', '/')
     Promise.resolve(request).catch(() => done())
   })

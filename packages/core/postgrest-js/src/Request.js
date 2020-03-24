@@ -72,6 +72,22 @@ class Request extends SuperAgent {
   }
 
   /**
+   * Provides the inverse of the filter stated.
+   * @param {string} columnName The name of the column.
+   * @param {string} filter The type of filter
+   * @param { object | array | string | integer | boolean | null } criteria The value of the column to be filtered.
+   * @name filter
+   * @function
+   * @memberOf module:Filters
+   * @returns {string}
+   */
+  not(columnName, operator, criteria) {
+    let newQuery = Filters[`_${operator.toLowerCase()}`](columnName, criteria)
+    let enrichedQuery = `${newQuery.split('=')[0]}=not.${newQuery.split('=')[1]}`
+    return this.query(enrichedQuery)
+  }
+
+  /**
    * Takes a query object and translates it to a PostgREST filter query string.
    * All values are prefixed with `eq.`.
    *
@@ -80,7 +96,7 @@ class Request extends SuperAgent {
    */
 
   match(query) {
-    Object.keys(query).forEach(key => {
+    Object.keys(query).forEach((key) => {
       this.query(`${key}=eq.${query[key]}`)
     })
 
@@ -216,9 +232,9 @@ class Request extends SuperAgent {
 }
 
 // Attached all the filters
-const filters = ['eq', 'gt', 'lt', 'gte', 'lte', 'like', 'ilike', 'is', 'in', 'not']
+const filters = ['eq', 'neq', 'gt', 'lt', 'gte', 'lte', 'like', 'ilike', 'is', 'in']
 filters.forEach(
-  filter =>
+  (filter) =>
     (Request.prototype[filter] = function filterValue(columnName, criteria) {
       return this.filter(columnName, filter, criteria)
     })
