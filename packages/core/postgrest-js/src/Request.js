@@ -67,6 +67,29 @@ class Request extends SuperAgent {
    * @returns {string}
    */
   filter(columnName, operator, criteria) {
+    if (
+      ['in', 'cs', 'cd', 'ova', 'ovr', 'sl', 'sr', 'nxr', 'nxl', 'adj'].includes(operator) &&
+      !Array.isArray(criteria)
+    ) {
+      return {
+        body: null,
+        status: 400,
+        statusCode: 400,
+        statusText: `.${operator}() cannot be invoked with criteria that is not an Array.`,
+      }
+    }
+
+    // for ranges, length of array should always be equal to 2
+    if (['ovr', 'sl', 'sr', 'nxr', 'nxl', 'adj'].includes(operator) && criteria.length != 2) {
+
+      return {
+        body: null,
+        status: 400,
+        statusCode: 400,
+        statusText: `.${operator}() can only be invoked with a criteria that is an Array of length 2.`,
+      }
+    }
+
     let newQuery = Filters[`_${operator.toLowerCase()}`](columnName, criteria)
     return this.query(newQuery)
   }
@@ -80,7 +103,7 @@ class Request extends SuperAgent {
    */
 
   match(query) {
-    Object.keys(query).forEach(key => {
+    Object.keys(query).forEach((key) => {
       this.query(`${key}=eq.${query[key]}`)
     })
 
@@ -216,9 +239,28 @@ class Request extends SuperAgent {
 }
 
 // Attached all the filters
-const filters = ['eq', 'gt', 'lt', 'gte', 'lte', 'like', 'ilike', 'is', 'in', 'not']
+const filters = [
+  'eq',
+  'gt',
+  'lt',
+  'gte',
+  'lte',
+  'like',
+  'ilike',
+  'is',
+  'in',
+  'not',
+  'cs',
+  'cd',
+  'ov',
+  'sl',
+  'sr',
+  'nxr',
+  'nxl',
+  'adj',
+]
 filters.forEach(
-  filter =>
+  (filter) =>
     (Request.prototype[filter] = function filterValue(columnName, criteria) {
       return this.filter(columnName, filter, criteria)
     })

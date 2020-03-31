@@ -187,3 +187,168 @@ export function _in (columnName, filterArray) {
 export function _not(columnName, filterValue) {
   return `${columnName}=neq.${filterValue}`
 }
+
+/**
+ * Finds all rows whose json || array || range value on the stated columnName contains the values specified in the filterObject.
+ * @param {string} columnName Name of the database column
+ * @param { array | object } filterObject Value to compare to
+ * @name cs
+ * @function
+ * @returns {string}
+ *
+ * @example
+ * _cs('countries', ['China', 'France'])
+ * //=>
+ * 'countries=cs.{China,France}'
+ * 
+ * @example
+ * _cd('food_supplies', {fruits:1000, meat:800})
+ * //=>
+ * 'food_supplies=cd.{"fruits":1000,"meat":800}'
+ */
+export function _cs(columnName, filterObject) {
+  if(Array.isArray(filterObject)) return `${columnName}=cs.{${filterObject.join(',')}}`
+  return `${columnName}=cs.${JSON.stringify(filterObject)}`
+}
+
+/**
+ * Finds all rows whose json || array || range value on the stated columnName is contained by the specified filterObject.
+ * @param {string} columnName Name of the database column
+ * @param { array | object } filterObject Value to compare to
+ * @name cd
+ * @function
+ * @returns {string}
+ *
+ * @example
+ * _cd('countries', ['China', 'France'])
+ * //=>
+ * 'countries=cd.{China,France}'
+ * 
+ * @example
+ * _cd('food_supplies', {fruits:1000, meat:800})
+ * //=>
+ * 'food_supplies=cd.{"fruits":1000,"meat":800}'
+ */
+export function _cd(columnName, filterObject) {
+  if(Array.isArray(filterObject)) return `${columnName}=cd.{${filterObject.join(',')}}`
+  return `${columnName}=cd.${JSON.stringify(filterObject)}`
+}
+
+/**
+ * Finds all rows whose array value on the stated columnName overlaps on the specified filterArray.
+ * @param {string} columnName Name of the database column
+ * @param {array} filterValue Value to compare to
+ * @name ova
+ * @function
+ * @returns {string}
+ *
+ * @example
+ * _ova('allies', ['China', 'France'])
+ * //=>
+ * 'allies=ov.{China,France}'
+ */
+export function _ova(columnName, filterArray) {
+  return `${columnName}=ov.{${filterArray.join(',')}}`
+}
+
+/**
+ * Finds all rows whose range value on the stated columnName overlaps on the specified filterRange.
+ * @param {string} columnName Name of the database column
+ * @param {array} filterRange Value to to compare to
+ * @name ovr
+ * @function
+ * @returns {string}
+ *
+ * @example
+ * _ovr('population_range', [100, 500])
+ * //=>
+ * 'population_range=ov.(100,500)'
+ */
+export function _ovr(columnName, filterRange) {
+  return `${columnName}=ov.(${filterRange.join(',')})`
+}
+
+/**
+ * Finds all rows whose range value on the stated columnName is strictly on the left of the specified filterRange.
+ * @param {string} columnName Name of the database column
+ * @param {array} filterRange Value to compare to
+ * @name sl
+ * @function
+ * @returns {string}
+ *
+ * @example
+ * _sl('population_range', [100, 500])
+ * //=>
+ * 'population_range=sl.(100,500)'
+ */
+export function _sl(columnName, filterRange) {
+  return `${columnName}=sl.(${filterRange.join(',')})`
+}
+
+/**
+ * Finds all rows whose range value on the stated columnName is strictly on the right of the specified filterRange.
+ * @param {string} columnName Name of the database column
+ * @param {array} filterRange Value to compare to
+ * @name sr
+ * @function
+ * @returns {string}
+ *
+ * @example
+ * _sr('population_range', [100,500])
+ * //=>
+ * 'population_range=sr.(100,500)'
+ */
+export function _sr(columnName, filterRange) {
+  return `${columnName}=sr.(${filterRange.join(',')})`
+}
+
+/**
+ * Finds all rows whose range value on the stated columnName does not extend to the left of the specified filterRange.
+ * @param {string} columnName Name of the database column
+ * @param {array} filterRange Value to compare to
+ * @name nxl
+ * @function
+ * @returns {string}
+ *
+ * @example
+ * _nxl('population_range', [100, 500])
+ * //=>
+ * 'population_range=nxl.(100,500)'
+ */
+export function _nxl(columnName, filterRange) {
+  return `${columnName}=nxl.(${filterRange.join(',')})`
+}
+
+/**
+ * Finds all rows whose range value on the stated columnName does not extend to the right of the specified filterRange.
+ * @param {string} columnName Name of the database column
+ * @param {array} filterRange Value to compare to
+ * @name nxr
+ * @function
+ * @returns {string}
+ *
+ * @example
+ * _nxr('population_range', [100, 500])
+ * //=>
+ * 'population_range=nxr.(100,500)'
+ */
+export function _nxr(columnName, filterRange) {
+  return `${columnName}=nxr.(${filterRange.join(',')})`
+}
+
+/**
+ * Finds all rows whose range value on the stated columnName is adjacent to the specified filterRange.
+ * @param {string} columnName Name of the database column
+ * @param {array} filterRange Value to compare to
+ * @name adj
+ * @function
+ * @returns {string}
+ *
+ * @example
+ * _adj('population_range', [100, 500])
+ * //=>
+ * 'population_range=adj.(100,500)'
+ */
+export function _adj(columnName, filterRange) {
+  return `${columnName}=adj.(${filterRange.join(',')})`
+}

@@ -1,10 +1,10 @@
 INSERT INTO
-    public.users (username, status)
+    public.users (username, status, age_range)
 VALUES
-    ('supabot', 'ONLINE'),
-    ('kiwicopple', 'OFFLINE'),
-    ('awailas', 'ONLINE'),
-    ('dragarcia', 'ONLINE');
+    ('supabot', 'ONLINE', '[1,2)'::int4range),
+    ('kiwicopple', 'OFFLINE', '[25,35)'::int4range),
+    ('awailas', 'ONLINE', '[25,35)'::int4range),
+    ('dragarcia', 'ONLINE', '[20,30)'::int4range);
 
 INSERT INTO
     public.channels (slug)

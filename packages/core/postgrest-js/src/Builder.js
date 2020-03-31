@@ -30,14 +30,14 @@ class Builder {
 
   addFilters(request, options) {
     if (Object.keys(options).length != 0) {
-      Object.keys(options).forEach(option => {
+      Object.keys(options).forEach((option) => {
         let setting = options[option]
         request.set(option, setting)
       })
     }
 
     // loop through this.queryFilters
-    this.queryFilters.forEach(queryFilter => {
+    this.queryFilters.forEach((queryFilter) => {
       switch (queryFilter.filter) {
         case 'filter':
           request.filter(queryFilter.columnName, queryFilter.operator, queryFilter.criteria)
@@ -181,10 +181,29 @@ class Builder {
 }
 
 // pre-empts if any of the filters are used before select
-const advancedFilters = ['eq', 'gt', 'lt', 'gte', 'lte', 'like', 'ilike', 'is', 'in', 'not']
+const advancedFilters = [
+  'eq',
+  'gt',
+  'lt',
+  'gte',
+  'lte',
+  'like',
+  'ilike',
+  'is',
+  'in',
+  'not',
+  'cs',
+  'cd',
+  'ov',
+  'sl',
+  'sr',
+  'nxr',
+  'nxl',
+  'adj',
+]
 
 advancedFilters.forEach(
-  operator =>
+  (operator) =>
     (Builder.prototype[operator] = function filterValue(columnName, criteria) {
       this.filter(columnName, operator, criteria)
       return this
