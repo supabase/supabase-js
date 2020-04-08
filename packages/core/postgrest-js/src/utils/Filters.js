@@ -180,11 +180,11 @@ export function _in (columnName, filterArray) {
  * @returns {string}
  * 
  * @example
- * _not('name', 'China')
+ * _neq('name', 'China')
  * //=>
  * 'name=neq.China'
  */
-export function _not(columnName, filterValue) {
+export function _neq(columnName, filterValue) {
   return `${columnName}=neq.${filterValue}`
 }
 

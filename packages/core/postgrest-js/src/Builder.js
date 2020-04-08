@@ -43,6 +43,10 @@ class Builder {
           request.filter(queryFilter.columnName, queryFilter.operator, queryFilter.criteria)
           break
 
+        case 'not':
+          request.not(queryFilter.columnName, queryFilter.operator, queryFilter.criteria)
+          break
+
         case 'match':
           request.match(queryFilter.query)
           break
@@ -68,6 +72,17 @@ class Builder {
   filter(columnName, operator, criteria) {
     this.queryFilters.push({
       filter: 'filter',
+      columnName,
+      operator,
+      criteria,
+    })
+
+    return this
+  }
+
+  not(columnName, operator, criteria) {
+    this.queryFilters.push({
+      filter: 'not',
       columnName,
       operator,
       criteria,
@@ -183,6 +198,7 @@ class Builder {
 // pre-empts if any of the filters are used before select
 const advancedFilters = [
   'eq',
+  'neq',
   'gt',
   'lt',
   'gte',
@@ -191,7 +207,6 @@ const advancedFilters = [
   'ilike',
   'is',
   'in',
-  'not',
   'cs',
   'cd',
   'ov',

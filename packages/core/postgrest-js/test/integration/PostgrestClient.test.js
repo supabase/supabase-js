@@ -130,12 +130,12 @@ describe('PostgrestClient', () => {
 
     let readRes = await client
       .from('messages')
-      .not('username', 'supabot')
+      .neq('username', 'supabot')
       .select('*')
 
     let res = await client
       .from('messages')
-      .not('username', 'supabot')
+      .not('username', 'eq', 'supabot')
       .update({ message: 'Updated test message 2' })
 
     assert.equal(readRes.body.length, res.body.length)
@@ -156,7 +156,7 @@ describe('PostgrestClient', () => {
     let client = new PostgrestClient(rootUrl)
     let res = await client
       .from('messages')
-      .not('username', 'supabot')
+      .neq('username', 'supabot')
       .delete()
 
     await client
