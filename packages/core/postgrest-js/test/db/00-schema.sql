@@ -9,6 +9,7 @@ CREATE TABLE public.users (
   inserted_at timestamp without time zone DEFAULT timezone('utc'::text, now()) NOT NULL,
   updated_at timestamp without time zone DEFAULT timezone('utc'::text, now()) NOT NULL,
   data jsonb DEFAULT null,
+  age_range int4range DEFAULT null,
   status user_status DEFAULT 'ONLINE'::public.user_status
 );
 ALTER TABLE public.users REPLICA IDENTITY FULL; -- Send "previous data" to supabase 

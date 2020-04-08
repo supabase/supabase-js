@@ -196,7 +196,26 @@ class Builder {
 }
 
 // pre-empts if any of the filters are used before select
-const advancedFilters = ['eq', 'neq', 'gt', 'lt', 'gte', 'lte', 'like', 'ilike', 'is', 'in']
+const advancedFilters = [
+  'eq',
+  'neq',
+  'gt',
+  'lt',
+  'gte',
+  'lte',
+  'like',
+  'ilike',
+  'is',
+  'in',
+  'cs',
+  'cd',
+  'ov',
+  'sl',
+  'sr',
+  'nxr',
+  'nxl',
+  'adj',
+]
 
 advancedFilters.forEach(
   (operator) =>
