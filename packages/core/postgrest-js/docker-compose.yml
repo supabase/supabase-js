@@ -8,14 +8,14 @@ services:
       - "3000:3000"
     environment:
       PGRST_DB_URI: postgres://postgres:postgres@db:5432/postgres
-      PGRST_DB_SCHEMA: public
+      PGRST_DB_SCHEMA: public, personal
       PGRST_DB_ANON_ROLE: postgres
     depends_on:
       - db
   db:
     image: postgres:12
     ports:
-      - "5432:5432"
+      - "6543:5432"
     volumes:
       - ./test/db:/docker-entrypoint-initdb.d/
     environment:

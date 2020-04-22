@@ -18,13 +18,18 @@ import Request from './Request'
  */
 
 class Builder {
-  constructor(url, headers = {}) {
+  constructor(url, headers = {}, schema) {
     this.url = url
     this.queryFilters = []
     this.headers = headers
+    this.schema = schema
   }
 
   request(method) {
+    if(this.schema){
+      if(method == 'GET') this.headers['Accept-Profile'] = this.schema
+      else this.headers['Content-Profile'] = this.schema
+    }
     return new Request(method, this.url, this.headers)
   }
 

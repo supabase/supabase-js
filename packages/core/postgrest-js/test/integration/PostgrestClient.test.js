@@ -166,4 +166,29 @@ describe('PostgrestClient', () => {
 
     assert.equal(204, res.status)
   })
+
+  it('should be able to execute stored procedures', async () => {
+    let client = new PostgrestClient(rootUrl)
+    let {body} = await client
+      .rpc('get_status', {name_param: 'leroyjenkins'})
+
+    assert.equal(body, null)
+  })
+
+  it('should be able to chain filters', () =>{
+    let client = new PostgrestClient(rootUrl)
+    let rest =  client
+      .from('messages')
+      .eq('username', 'supabot')
+      .neq('message', 'hello world')
+      .gte('channel_id', 1)
+      .select('*')
+      
+    let queries = rest._query
+
+    assert.equal(queries.length, 3)
+    assert.equal(queries[0], 'username=eq.supabot')
+    assert.equal(queries[1], 'message=neq.hello world')
+    assert.equal(queries[2], 'channel_id=gte.1')
+  })
 })
