@@ -38,15 +38,15 @@ let client = new PostgrestClient('https://your-postgrest.com')
 The URL from where your postgREST queries.
 
 `OPTIONS: object?`
-```
+```js
 /**
-* @ param {object?} headers
+* @param {object?} headers
 * List of headers as keys and their corresponding values
 *
-* @ param {object?} query_params
+* @param {object?} query_params
 * List of query parameters as keys and their corresponding values
 *
-* @ param {string} schema
+* @param {string} schema
 * If you are using postgREST version v7.0.0 and above,  
 * you can use this to indicate your selected schema.
 * This is provided that your schema is included in db-schema
