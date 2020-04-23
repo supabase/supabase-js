@@ -32,7 +32,30 @@ import { PostgrestClient } from ' @supabase/postgrest-js'
 let client = new PostgrestClient('https://your-postgrest.com')
 ```
 
+#### PostgrestClient(postgrestURL, OPTIONS)
+`postgrestURL: string`
+
+The URL from where your postgREST queries.
+
+`OPTIONS: object?`
+```
+/**
+* @ param {object?} headers
+* List of headers as keys and their corresponding values
+*
+* @ param {object?} query_params
+* List of query parameters as keys and their corresponding values
+*
+* @ param {string} schema
+* If you are using postgREST version v7.0.0 and above,  
+* you can use this to indicate your selected schema.
+* This is provided that your schema is included in db-schema
+*/
+```
+To know more about multi schema and swithching between schema, more information can be found [here](http://postgrest.org/en/v7.0.0/configuration.html#db-schema).
+
 ### GET
+These filters also support our `PATCH` and `DELETE` actions as well. More information on our filters can be found [here](https://supabase.io/docs/library/get#filter_).
 
 ```js
 
@@ -67,6 +90,18 @@ let { body: countries } = await client
     `)
     .filter('name', 'eq', 'New Zealand')
     .filter('cities.name', 'eq', 'Auckland')
+
+// Not (the reverse of .filter())
+let { body: countries } = await client
+    .from('countries')
+    .select(`
+        name,
+        cities (
+            name
+        )
+    `)
+    .not('name', 'eq', 'New Zealand')
+    .not('cities.name', 'eq', 'Auckland')
 
 // Ordering
 let { body: countries } = await client
@@ -143,7 +178,61 @@ let { body: countries } = await client
 // Not equal
 let { body: countries } = await client
     .from('countries')
-    .not('name', 'China')
+    .neq('name', 'China')
+    .select('*')
+
+// Contains
+let { body: countries } = await client
+    .from('countries')
+    .cs('main_exports', ['oil'])
+    .select('*')
+
+// Contained in
+let { body: countries } = await client
+    .from('countries')
+    .cd('main_exports', ['cars', 'food', 'machine'])
+    .select('*')
+
+// Overlaps (for arrays)
+let { body: countries } = await client
+    .from('countries')
+    .ova('main_exports', ['computers', 'minerals'])
+    .select('*')
+
+// Overlaps (for ranges)
+let { body: countries } = await client
+    .from('countries')
+    .ovr('population_range_millions', [150, 250])
+    .select('*')
+
+// Strictly left
+let { body: countries } = await client
+    .from('countries')
+    .sl('population_range_millions', [150, 250])
+    .select('*')
+
+// Strictly right
+let { body: countries } = await client
+    .from('countries')
+    .sr('population_range_millions', [150, 250])
+    .select('*')
+
+// Does not extend to the left
+let { body: countries } = await client
+    .from('countries')
+    .nxl('population_range_millions', [150, 250])
+    .select('*')
+
+// Does not extend to the right
+let { body: countries } = await client
+    .from('countries')
+    .nxr('population_range_millions', [150, 250])
+    .select('*')
+
+// Adjacent
+let { body: countries } = await client
+    .from('countries')
+    .adj('population_range_millions', [70, 185])
     .select('*')
 
 ```
