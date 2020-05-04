@@ -12,6 +12,7 @@
 
 import { Request as SuperAgent } from 'superagent'
 import * as Filters from './utils/Filters'
+import * as Helpers from './utils/Helpers'
 
 const contentRangeStructure = /^(\d+)-(\d+)\/(\d+)$/
 
@@ -81,7 +82,6 @@ class Request extends SuperAgent {
 
     // for ranges, length of array should always be equal to 2
     if (['ovr', 'sl', 'sr', 'nxr', 'nxl', 'adj'].includes(operator) && criteria.length != 2) {
-
       return {
         body: null,
         status: 400,
@@ -145,16 +145,48 @@ class Request extends SuperAgent {
   /**
    * Tells PostgREST in what order the result should be returned.
    *
-   * @param {string} property The property name to order by.
+   * @param {string} columnName The columnName name to order by.
    * @param {bool} ascending True for descending results, false by default.
    * @param {bool} nullsFirst True for nulls first, false by default.
    * @returns {Request} The API request object.
    */
 
-  order(property, ascending = false, nullsFirst = false) {
+  order(columnName, ascending = false, nullsFirst = false) {
+    let { cleanedColumnName, foreignTableName } = Helpers.cleanColumnName(columnName)
+
     this.query(
-      `order=${property}.${ascending ? 'asc' : 'desc'}.${nullsFirst ? 'nullsfirst' : 'nullslast'}`
+      `${foreignTableName != null ? `${foreignTableName}.` : ''}order=${cleanedColumnName}.${
+        ascending ? 'asc' : 'desc'
+      }.${nullsFirst ? 'nullsfirst' : 'nullslast'}`
     )
+    return this
+  }
+
+  limit(criteria, columnName = null) {
+    if (typeof criteria != 'number') {
+      return {
+        body: null,
+        status: 400,
+        statusCode: 400,
+        statusText: `.limit() cannot be invoked with criteria that is not a number.`,
+      }
+    }
+
+    this.query(`${columnName != null ? `${columnName}.` : ''}limit=${criteria}`)
+    return this
+  }
+
+  offset(criteria, columnName = null) {
+    if (typeof criteria != 'number') {
+      return {
+        body: null,
+        status: 400,
+        statusCode: 400,
+        statusText: `.offset() cannot be invoked with criteria that is not a number.`,
+      }
+    }
+
+    this.query(`${columnName != null ? `${columnName}.` : ''}offset=${criteria}`)
     return this
   }
 

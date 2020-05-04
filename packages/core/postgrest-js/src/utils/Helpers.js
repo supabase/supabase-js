@@ -23,3 +23,14 @@ export function cleanFilterArray(filterArray) {
 
   return cleanedFilterArray
 }
+
+export function cleanColumnName(columnName) {
+  let cleanedColumnName = columnName
+  let foreignTableName = null
+  if (columnName.includes('.')) {
+    cleanedColumnName = columnName.split('.')[1]
+    foreignTableName = columnName.split('.')[0]
+  }
+
+  return { cleanedColumnName, foreignTableName }
+}

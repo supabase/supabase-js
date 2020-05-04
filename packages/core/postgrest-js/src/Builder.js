@@ -26,8 +26,8 @@ class Builder {
   }
 
   request(method) {
-    if(this.schema){
-      if(method == 'GET') this.headers['Accept-Profile'] = this.schema
+    if (this.schema) {
+      if (method == 'GET') this.headers['Accept-Profile'] = this.schema
       else this.headers['Content-Profile'] = this.schema
     }
     return new Request(method, this.url, this.headers)
@@ -57,7 +57,15 @@ class Builder {
           break
 
         case 'order':
-          request.order(queryFilter.property, queryFilter.ascending, queryFilter.nullsFirst)
+          request.order(queryFilter.columnName, queryFilter.ascending, queryFilter.nullsFirst)
+          break
+
+        case 'limit':
+          request.limit(queryFilter.columnName, queryFilter.criteria)
+          break
+
+        case 'offset':
+          request.offset(queryFilter.columnName, queryFilter.criteria)
           break
 
         case 'range':
@@ -105,15 +113,31 @@ class Builder {
     return this
   }
 
-  order(property, ascending = false, nullsFirst = false) {
+  order(columnName, ascending = false, nullsFirst = false) {
     this.queryFilters.push({
       filter: 'order',
-      property,
+      columnName,
       ascending,
       nullsFirst,
     })
 
     return this
+  }
+
+  limit(columnName, criteria) {
+    this.queryFilters.push({
+      filter: 'limit',
+      columnName,
+      criteria
+    })
+  }
+
+  offset(columnName, criteria) {
+    this.queryFilters.push({
+      filter: 'offset',
+      columnName,
+      criteria
+    })
   }
 
   range(from, to) {
