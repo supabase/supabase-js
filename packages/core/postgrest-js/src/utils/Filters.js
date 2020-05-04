@@ -1,9 +1,9 @@
+import * as Helpers from './Helpers'
+
 /** @module Filters **/
 /**
  * All exports are prefixed with an underscore to avoid collisions with reserved keywords (eg: "in")
  */
-
-
 
 /**
  * Finds all rows whose value on the stated columnName exactly matches the specified filterValue.
@@ -153,7 +153,6 @@ export function _is(columnName, filterValue) {
   return `${columnName}=is.${filterValue}`
 }
 
-
 /**
  * Finds all rows whose value on the stated columnName is found on the specified filterArray.
  * @param {string} columnName Name of the database column
@@ -166,9 +165,21 @@ export function _is(columnName, filterValue) {
  * _in('name', ['China', 'France'])
  * //=>
  * 'name=in.(China,France)'
+ * 
+ * @example
+ * _in('capitals', ['Beijing,China', 'Paris,France'])
+ * //=>
+ * 'capitals=in.("Beijing,China","Paris,France")'
+ * 
+ * @example
+ * _in('food_supplies', ['carrot (big)', 'carrot (small)'])
+ * //=>
+ * 'food_supplies=in.("carrot (big)","carrot (small)")'
  */
-export function _in (columnName, filterArray) {
-  return `${columnName}=in.(${filterArray.join(',')})`
+export function _in(columnName, filterArray) {
+  let cleanedFilterArray = Helpers.cleanFilterArray(filterArray)
+
+  return `${columnName}=in.(${cleanedFilterArray.join(',')})`
 }
 
 /**
@@ -202,12 +213,21 @@ export function _neq(columnName, filterValue) {
  * 'countries=cs.{China,France}'
  * 
  * @example
- * _cd('food_supplies', {fruits:1000, meat:800})
+ * _cs('capitals', ['Beijing,China', 'Paris,France'])
  * //=>
- * 'food_supplies=cd.{"fruits":1000,"meat":800}'
+ * 'capitals=cs.{"Beijing,China","Paris,France"}'
+ * 
+ * @example
+ * _cs('food_supplies', {fruits:1000, meat:800})
+ * //=>
+ * 'food_supplies=cs.{"fruits":1000,"meat":800}'
  */
 export function _cs(columnName, filterObject) {
-  if(Array.isArray(filterObject)) return `${columnName}=cs.{${filterObject.join(',')}}`
+  if (Array.isArray(filterObject)) {
+    let cleanedFilterArray = Helpers.cleanFilterArray(filterObject)
+
+    return `${columnName}=cs.{${cleanedFilterArray.join(',')}}`
+  }
   return `${columnName}=cs.${JSON.stringify(filterObject)}`
 }
 
@@ -225,12 +245,21 @@ export function _cs(columnName, filterObject) {
  * 'countries=cd.{China,France}'
  * 
  * @example
+ * _cd('capitals', ['Beijing,China', 'Paris,France'])
+ * //=>
+ * 'capitals=cd.{"Beijing,China","Paris,France"}'
+ * 
+ * @example
  * _cd('food_supplies', {fruits:1000, meat:800})
  * //=>
  * 'food_supplies=cd.{"fruits":1000,"meat":800}'
  */
 export function _cd(columnName, filterObject) {
-  if(Array.isArray(filterObject)) return `${columnName}=cd.{${filterObject.join(',')}}`
+  if (Array.isArray(filterObject)) {
+    let cleanedFilterArray = Helpers.cleanFilterArray(filterObject)
+
+    return `${columnName}=cd.{${cleanedFilterArray.join(',')}}`
+  }
   return `${columnName}=cd.${JSON.stringify(filterObject)}`
 }
 
@@ -241,14 +270,22 @@ export function _cd(columnName, filterObject) {
  * @name ova
  * @function
  * @returns {string}
- *
+ * 
  * @example
  * _ova('allies', ['China', 'France'])
  * //=>
  * 'allies=ov.{China,France}'
+ * 
+ * @example
+ * _ova('capitals', ['Beijing,China', 'Paris,France'])
+ * //=>
+ * 'capitals=ov.{"Beijing,China","Paris,France"}'
+ * 
  */
 export function _ova(columnName, filterArray) {
-  return `${columnName}=ov.{${filterArray.join(',')}}`
+  let cleanedFilterArray = Helpers.cleanFilterArray(filterArray)
+
+  return `${columnName}=ov.{${cleanedFilterArray.join(',')}}`
 }
 
 /**
