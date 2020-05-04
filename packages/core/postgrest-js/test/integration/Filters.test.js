@@ -44,6 +44,21 @@ describe('Filters', () => {
   arrayFilterList.forEach((filter) => arrayFilterCheck(filter))
   rangeFilterList.forEach((filter) => rangeFilterCheck(filter))
   dataTypeList.forEach((filter) => dataTypeCheck(filter))
+
+  it('should throw an error for limit() when criteria is not of type number', async () => {
+    let client = new PostgrestClient(rootUrl)
+    let res = await client.from('users').select('*').limit('test')
+
+    assert.equal(`.limit() cannot be invoked with criteria that is not a number.`, res.statusText)
+  })
+
+  it('should throw an error for offset() when criteria is not of type number', async () => {
+    let client = new PostgrestClient(rootUrl)
+    let res = await client.from('users').select('*').offset('test')
+
+    assert.equal(`.offset() cannot be invoked with criteria that is not a number.`, res.statusText)
+  })
+
   const expectedQueryArray = [
     'name=eq.New Zealand',
     'id=gt.20',

@@ -37,6 +37,36 @@ describe('Request', () => {
     assert.deepEqual(_query, ['key1=not.in.(value1,value2)'])
   })
 
+  it('will translate order() into a query', () => {
+    const { _query } = new Request('GET', '/').order('columnName')
+    assert.deepEqual(_query, ['order=columnName.desc.nullslast'])
+  })
+
+  it('will translate order() of an embedded table into a query', () => {
+    const { _query } = new Request('GET', '/').order('foreignTable.columnName')
+    assert.deepEqual(_query, ['foreignTable.order=columnName.desc.nullslast'])
+  })
+
+  it('will translate limit() into a query', () => {
+    const { _query } = new Request('GET', '/').limit(1)
+    assert.deepEqual(_query, ['limit=1'])
+  })
+
+  it('will translate limit() of an embedded table into a query', () => {
+    const { _query } = new Request('GET', '/').limit(1, 'foreignTable')
+    assert.deepEqual(_query, ['foreignTable.limit=1'])
+  })
+
+  it('will translate offset() into a query', () => {
+    const { _query } = new Request('GET', '/').offset(1)
+    assert.deepEqual(_query, ['offset=1'])
+  })
+
+  it('will translate offset() of an embedded table into a query', () => {
+    const { _query } = new Request('GET', '/').offset(1, 'foreignTable')
+    assert.deepEqual(_query, ['foreignTable.offset=1'])
+  })
+
   it('will return a promise from end()', () => {
     const request = new Request('GET', '/')
       .end()
