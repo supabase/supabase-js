@@ -108,7 +108,52 @@ let { body: countries } = await client
     .from('countries')
     .select('name')
     .order('name')
+
+// Ordering for foreign tables
+let { body: countries } = await client
+    .from('countries')
+    .select(`
+        name,
+        cities (
+            name
+        )
+    `)
+    .order('cities.name')
     
+// Limiting
+let { body: countries } = await client
+    .from('countries')
+    .select('*')
+    .limit(1)
+
+// Limiting for foreign tables
+let { body: countries } = await client
+    .from('countries')
+    .select(`
+        name,
+        cities (
+            name
+        )
+    `)
+    .limit(1, 'cities')
+
+// Setting offsets
+let { body: countries } = await client
+    .from('countries')
+    .select('*')
+    .offset(1)
+
+// Setting offsets for foreign tables
+let { body: countries } = await client
+    .from('countries')
+    .select(`
+        name,
+        cities (
+            name
+        )
+    `)
+    .offset(1, 'cities')
+
 // Pagination
 let { body: countries } = await client
     .from('countries')
