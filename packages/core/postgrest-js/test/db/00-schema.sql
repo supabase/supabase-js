@@ -13,7 +13,8 @@ CREATE TABLE public.users (
   updated_at timestamp without time zone DEFAULT timezone('utc'::text, now()) NOT NULL,
   data jsonb DEFAULT null,
   age_range int4range DEFAULT null,
-  status user_status DEFAULT 'ONLINE'::public.user_status
+  status user_status DEFAULT 'ONLINE'::public.user_status,
+  catchphrase tsvector DEFAULT null
 );
 ALTER TABLE public.users REPLICA IDENTITY FULL; -- Send "previous data" to supabase 
 COMMENT ON COLUMN public.users.data IS 'For unstructured data and prototyping.';

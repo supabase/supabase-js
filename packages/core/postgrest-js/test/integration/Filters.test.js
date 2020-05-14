@@ -6,6 +6,7 @@ const rootUrl = 'http://localhost:3000'
 var arrayFilterList = ['in', 'cs', 'cd', 'ova', 'ovr', 'sl', 'sr', 'nxr', 'nxl', 'adj']
 var dataTypeList = ['cs', 'cd', 'ova', 'ovr', 'sl', 'sr', 'nxr', 'nxl', 'adj']
 var rangeFilterList = ['ovr', 'sl', 'sr', 'nxr', 'nxl', 'adj']
+var fullTextSearchList = ['fts', 'plfts', 'phfts', 'wfts']
 
 var arrayFilterCheck = (filter) => {
   it(`should not accept non-array data type for ${filter}`, async () => {
@@ -40,10 +41,23 @@ var rangeFilterCheck = (filter) => {
   })
 }
 
+var fullTextSearchCheck = (filter) => {
+  it(`should not accept anything else that is not an Object and does not have they key queryText for ${filter}`, async () => {
+    let client = new PostgrestClient(rootUrl)
+    let res = await client.from('users').select('*').filter('username', filter, [1, 2, 3])
+
+    assert.equal(
+      `.${filter}() can only be invoked with a criteria that is an Object with key queryText.`,
+      res.statusText
+    )
+  })
+}
+
 describe('Filters', () => {
   arrayFilterList.forEach((filter) => arrayFilterCheck(filter))
   rangeFilterList.forEach((filter) => rangeFilterCheck(filter))
   dataTypeList.forEach((filter) => dataTypeCheck(filter))
+  fullTextSearchList.forEach((filter) => fullTextSearchCheck(filter))
 
   it('should throw an error for limit() when criteria is not of type number', async () => {
     let client = new PostgrestClient(rootUrl)
@@ -70,6 +84,10 @@ describe('Filters', () => {
     'name=is.null',
     'name=in.(China,France)',
     'name=neq.China',
+    'phrase=fts(english).The Fat Cats',
+    'phrase=plfts.The Fat Cats',
+    'phrase=phfts(english).The Fat Cats',
+    'phrase=wfts.The Fat Cats',
     'countries=cs.{China,France}',
     'countries=cd.{China,France}',
     'allies=ov.{China,France}',
@@ -95,6 +113,10 @@ describe('Filters', () => {
       .is('name', null)
       .in('name', ['China', 'France'])
       .neq('name', 'China')
+      .fts('phrase', { queryText: 'The Fat Cats', config: 'english' })
+      .plfts('phrase', { queryText: 'The Fat Cats' })
+      .phfts('phrase', { queryText: 'The Fat Cats', config: 'english' })
+      .wfts('phrase', { queryText: 'The Fat Cats' })
       .cs('countries', ['China', 'France'])
       .cd('countries', ['China', 'France'])
       .ova('allies', ['China', 'France'])
@@ -124,6 +146,10 @@ describe('Filters', () => {
       .is('name', null)
       .in('name', ['China', 'France'])
       .neq('name', 'China')
+      .fts('phrase', { queryText: 'The Fat Cats', config: 'english' })
+      .plfts('phrase', { queryText: 'The Fat Cats' })
+      .phfts('phrase', { queryText: 'The Fat Cats', config: 'english' })
+      .wfts('phrase', { queryText: 'The Fat Cats' })
       .cs('countries', ['China', 'France'])
       .cd('countries', ['China', 'France'])
       .ova('allies', ['China', 'France'])
