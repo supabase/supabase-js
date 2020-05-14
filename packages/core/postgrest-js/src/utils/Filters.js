@@ -200,6 +200,98 @@ export function _neq(columnName, filterValue) {
 }
 
 /**
+ * Finds all rows whose tsvector value on the stated columnName matches to_tsquery(queryText).
+ * @param {string} columnName Name of the database column
+ * @param { object } filterObject query text and optionally config to base the match on
+ * @name fts
+ * @function
+ * @returns {string}
+ * 
+ * @example
+ * _fts('phrase', {queryText: 'The Fat Cats'})
+ * //=>
+ * 'phrase=fts.The Fat Cats'
+ * 
+ * @example
+ * _fts('phrase', {queryText: 'The Fat Cats', config: 'english'})
+ * //=>
+ * 'phrase=fts(english).The Fat Cats'
+ */
+export function _fts(columnName, filterObject) {
+  if(typeof filterObject.config == 'undefined') return `${columnName}=fts.${filterObject.queryText}`
+  return `${columnName}=fts(${filterObject.config}).${filterObject.queryText}`
+}
+
+/**
+ * Finds all rows whose tsvector value on the stated columnName matches plainto_tsquery(queryText).
+ * @param {string} columnName Name of the database column
+ * @param { object } filterObject query text and optionally config to base the match on
+ * @name plfts
+ * @function
+ * @returns {string}
+ * 
+ * @example
+ * _plfts('phrase', {queryText: 'The Fat Cats'})
+ * //=>
+ * 'phrase=plfts.The Fat Cats'
+ * 
+ * @example
+ * _plfts('phrase', {queryText: 'The Fat Cats', config: 'english'})
+ * //=>
+ * 'phrase=plfts(english).The Fat Cats'
+ */
+export function _plfts(columnName, filterObject) {
+  if(typeof filterObject.config == 'undefined') return `${columnName}=plfts.${filterObject.queryText}`
+  return `${columnName}=plfts(${filterObject.config}).${filterObject.queryText}`
+}
+
+/**
+ * Finds all rows whose tsvector value on the stated columnName matches phraseto_tsquery(queryText).
+ * @param {string} columnName Name of the database column
+ * @param { object } filterObject query text and optionally config to base the match on
+ * @name phfts
+ * @function
+ * @returns {string}
+ * 
+ * @example
+ * _phfts('phrase', {queryText: 'The Fat Cats'})
+ * //=>
+ * 'phrase=phfts.The Fat Cats'
+ * 
+ * @example
+ * _phfts('phrase', {queryText: 'The Fat Cats', config: 'english'})
+ * //=>
+ * 'phrase=phfts(english).The Fat Cats'
+ */
+export function _phfts(columnName, filterObject) {
+  if(typeof filterObject.config == 'undefined') return `${columnName}=phfts.${filterObject.queryText}`
+  return `${columnName}=phfts(${filterObject.config}).${filterObject.queryText}`
+}
+
+/**
+ * Finds all rows whose tsvector value on the stated columnName matches websearch_to_tsquery(queryText).
+ * @param {string} columnName Name of the database column
+ * @param { object } filterObject query text and optionally config to base the match on
+ * @name wfts
+ * @function
+ * @returns {string}
+ * 
+ * @example
+ * _wfts('phrase', {queryText: 'The Fat Cats'})
+ * //=>
+ * 'phrase=wfts.The Fat Cats'
+ * 
+ * @example
+ * _wfts('phrase', {queryText: 'The Fat Cats', config: 'english'})
+ * //=>
+ * 'phrase=wfts(english).The Fat Cats'
+ */
+export function _wfts(columnName, filterObject) {
+  if(typeof filterObject.config == 'undefined') return `${columnName}=wfts.${filterObject.queryText}`
+  return `${columnName}=wfts(${filterObject.config}).${filterObject.queryText}`
+}
+
+/**
  * Finds all rows whose json || array || range value on the stated columnName contains the values specified in the filterObject.
  * @param {string} columnName Name of the database column
  * @param { array | object } filterObject Value to compare to

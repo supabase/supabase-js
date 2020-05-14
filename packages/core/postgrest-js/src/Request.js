@@ -90,6 +90,18 @@ class Request extends SuperAgent {
       }
     }
 
+    if (
+      ['fts', 'plfts', 'phfts', 'wfts'].includes(operator) &&
+      typeof criteria.queryText == 'undefined'
+    ) {
+      return {
+        body: null,
+        status: 400,
+        statusCode: 400,
+        statusText: `.${operator}() can only be invoked with a criteria that is an Object with key queryText.`,
+      }
+    }
+
     let newQuery = Filters[`_${operator.toLowerCase()}`](columnName, criteria)
     return this.query(newQuery)
   }
@@ -298,6 +310,10 @@ const filters = [
   'ilike',
   'is',
   'in',
+  'fts',
+  'plfts',
+  'phfts',
+  'wfts',
   'cs',
   'cd',
   'ova',
