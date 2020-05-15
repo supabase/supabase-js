@@ -61,11 +61,11 @@ class Builder {
           break
 
         case 'limit':
-          request.limit(queryFilter.columnName, queryFilter.criteria)
+          request.limit(queryFilter.criteria, queryFilter.columnName)
           break
 
         case 'offset':
-          request.offset(queryFilter.columnName, queryFilter.criteria)
+          request.offset(queryFilter.criteria, queryFilter.columnName)
           break
 
         case 'range':
@@ -124,20 +124,24 @@ class Builder {
     return this
   }
 
-  limit(columnName, criteria) {
+  limit(criteria, columnName = null) {
     this.queryFilters.push({
       filter: 'limit',
+      criteria,
       columnName,
-      criteria
     })
+
+    return this
   }
 
-  offset(columnName, criteria) {
+  offset(criteria, columnName = null) {
     this.queryFilters.push({
       filter: 'offset',
       columnName,
-      criteria
+      criteria,
     })
+
+    return this
   }
 
   range(from, to) {
