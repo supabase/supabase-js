@@ -33,14 +33,7 @@ class Builder {
     return new Request(method, this.url, this.headers)
   }
 
-  addFilters(request, options) {
-    if (Object.keys(options).length != 0) {
-      Object.keys(options).forEach((option) => {
-        let setting = options[option]
-        request.set(option, setting)
-      })
-    }
-
+  addFilters(request) {
     // loop through this.queryFilters
     this.queryFilters.forEach((queryFilter) => {
       switch (queryFilter.filter) {
@@ -163,12 +156,12 @@ class Builder {
   /**
    * Start a "GET" request
    */
-  select(columnQuery = '*', options = {}) {
+  select(columnQuery = '*') {
     let method = 'GET'
     let request = this.request(method)
 
     request.select(columnQuery)
-    this.addFilters(request, options)
+    this.addFilters(request)
 
     return request
   }
@@ -186,7 +179,7 @@ class Builder {
     request.set('Prefer', header)
     request.send(data)
 
-    this.addFilters(request, options)
+    this.addFilters(request)
 
     return request
   }
@@ -194,7 +187,7 @@ class Builder {
   /**
    * Start a "PATCH" request
    */
-  update(data, options = {}) {
+  update(data) {
     let method = 'PATCH'
     let request = this.request(method)
 
@@ -210,7 +203,7 @@ class Builder {
     request.set('Prefer', 'return=representation')
     request.send(data)
 
-    this.addFilters(request, options)
+    this.addFilters(request)
 
     return request
   }
@@ -218,11 +211,11 @@ class Builder {
   /**
    * Start a "DELETE" request
    */
-  delete(options = {}) {
+  delete() {
     let method = 'DELETE'
     let request = this.request(method)
 
-    this.addFilters(request, options)
+    this.addFilters(request)
 
     return request
   }
