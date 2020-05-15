@@ -73,6 +73,120 @@ describe('Filters', () => {
     assert.equal(`.offset() cannot be invoked with criteria that is not a number.`, res.statusText)
   })
 
+  it('should throw an error for range() when first parameter is not of type number', async () => {
+    let client = new PostgrestClient(rootUrl)
+    let res = await client.from('users').select('*').range('test')
+
+    assert.equal(`.range() cannot be invoked with parameters that are not numbers.`, res.statusText)
+  })
+
+  it('should throw an error for range() when second parameter is not of type number and not null', async () => {
+    let client = new PostgrestClient(rootUrl)
+    let res = await client.from('users').select('*').range(0, 'test')
+
+    assert.equal(`.range() cannot be invoked with parameters that are not numbers.`, res.statusText)
+  })
+
+  it('should be able to support order() if invoked beforehand', async () => {
+    let client = new PostgrestClient(rootUrl)
+    let { body } = await client.from('users').order('username').select('*')
+
+    assert.equal(body[0].username, 'supabot')
+    assert.equal(body[3].username, 'awailas')
+  })
+
+  it('should be able to support order() if invoked afterwards', async () => {
+    let client = new PostgrestClient(rootUrl)
+    let { body } = await client.from('users').select('*').order('username')
+
+    assert.equal(body[0].username, 'supabot')
+    assert.equal(body[3].username, 'awailas')
+  })
+
+  it('should be able to support order() with all parameters stated if invoked beforehand', async () => {
+    let client = new PostgrestClient(rootUrl)
+    let { body } = await client.from('users').order('username', true, false).select('*')
+
+    assert.equal(body[0].username, 'awailas')
+    assert.equal(body[3].username, 'supabot')
+  })
+
+  it('should be able to support order() with all parameters stated if invoked afterwards', async () => {
+    let client = new PostgrestClient(rootUrl)
+    let { body } = await client.from('users').select('*').order('username', true, false)
+
+    assert.equal(body[0].username, 'awailas')
+    assert.equal(body[3].username, 'supabot')
+  })
+
+  it('should be able to support limit() if invoked beforehand', async () => {
+    let client = new PostgrestClient(rootUrl)
+    let { body } = await client.from('users').limit(1).select('*')
+
+    assert.equal(body.length, 1)
+    assert.equal(body[0].username, 'supabot')
+  })
+
+  it('should be able to support limit() if invoked afterwards', async () => {
+    let client = new PostgrestClient(rootUrl)
+    let { body } = await client.from('users').select('*').limit(1)
+
+    assert.equal(body.length, 1)
+    assert.equal(body[0].username, 'supabot')
+  })
+
+  it('should be able to support offset() if invoked beforehand', async () => {
+    let client = new PostgrestClient(rootUrl)
+    let { body } = await client.from('users').offset(1).select('*')
+
+    assert.equal(body.length, 3)
+    assert.equal(body[0].username, 'kiwicopple')
+  })
+
+  it('should be able to support offset() if invoked afterwards', async () => {
+    let client = new PostgrestClient(rootUrl)
+    let { body } = await client.from('users').select('*').offset(1)
+
+    assert.equal(body.length, 3)
+    assert.equal(body[0].username, 'kiwicopple')
+  })
+
+  it('should be able to support range() if invoked beforehand', async () => {
+    let client = new PostgrestClient(rootUrl)
+    let { body } = await client.from('users').range(0, 2).select('*')
+
+    assert.equal(body.length, 3)
+    assert.equal(body[0].username, 'supabot')
+    assert.equal(body[2].username, 'awailas')
+  })
+
+  it('should be able to support range() if invoked afterwards', async () => {
+    let client = new PostgrestClient(rootUrl)
+    let { body } = await client.from('users').select('*').range(0, 2)
+
+    assert.equal(body.length, 3)
+    assert.equal(body[0].username, 'supabot')
+    assert.equal(body[2].username, 'awailas')
+  })
+
+  it('should be able to support order() with only first parameter stated if invoked beforehand', async () => {
+    let client = new PostgrestClient(rootUrl)
+    let { body } = await client.from('users').range(1).select('*')
+
+    assert.equal(body.length, 3)
+    assert.equal(body[0].username, 'kiwicopple')
+    assert.equal(body[2].username, 'dragarcia')
+  })
+
+  it('should be able to support order() with only first parameter stated if invoked afterwards', async () => {
+    let client = new PostgrestClient(rootUrl)
+    let { body } = await client.from('users').select('*').range(1)
+
+    assert.equal(body.length, 3)
+    assert.equal(body[0].username, 'kiwicopple')
+    assert.equal(body[2].username, 'dragarcia')
+  })
+
   const expectedQueryArray = [
     'name=eq.New Zealand',
     'id=gt.20',
