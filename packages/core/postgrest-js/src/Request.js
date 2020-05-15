@@ -211,9 +211,18 @@ class Request extends SuperAgent {
    * @returns {Request} The API request object.
    */
 
-  range(from, to) {
-    let lowerBound = from || 0
-    let upperBound = to == 0 ? 0 : to || ''
+  range(from, to = null) {
+    if (typeof from != 'number' || (typeof to != 'number' && to != null)) {
+      return {
+        body: null,
+        status: 400,
+        statusCode: 400,
+        statusText: `.range() cannot be invoked with parameters that are not numbers.`,
+      }
+    }
+
+    let lowerBound = from
+    let upperBound = to == null ? '' : to
 
     this.set('Range-Unit', 'items')
     this.set('Range', `${lowerBound}-${upperBound}`)

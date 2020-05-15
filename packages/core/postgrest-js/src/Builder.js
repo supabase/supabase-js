@@ -144,7 +144,7 @@ class Builder {
     return this
   }
 
-  range(from, to) {
+  range(from, to = null) {
     this.queryFilters.push({
       filter: 'range',
       from,
