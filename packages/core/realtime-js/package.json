@@ -31,6 +31,6 @@
     "jsdom-global": "2.1.0",
     "mocha": "^7.0.0",
     "mock-socket": "^6.0.1",
-    "sinon": "^4.1.3"
+    "sinon": "^9.0.2"
   }
 }
