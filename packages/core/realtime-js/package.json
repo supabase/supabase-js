@@ -30,7 +30,7 @@
     "jsdom": "9.8.3",
     "jsdom-global": "2.1.0",
     "mocha": "^7.0.0",
-    "mock-socket": "^6.0.1",
+    "mock-socket": "^9.0.3",
     "sinon": "^9.0.2"
   }
 }
