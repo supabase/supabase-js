@@ -34,11 +34,7 @@ class PostgrestClient {
     let headers = this.headers
     if (this.queryString) url += `?${this.queryString}`
     if (this.schema) {
-      // although POST requests should be 'Content-Profile',
-      // this is only somehow working when the header set is 'Accept-Profile'
-      // will revisit this when postgREST updates their documentation for multischema rpc
       headers['Content-Profile'] = this.schema
-      headers['Accept-Profile'] = this.schema
     }
     let request = new Request('post', url, headers)
     if (functionParameters != null) request.send(functionParameters)
