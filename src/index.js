@@ -43,7 +43,6 @@ class SupabaseClient {
   /**
    * Realtime Functionalities
    */
-
   on(eventType, callbackFunction) {
     let identifier = uuid()
 
