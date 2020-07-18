@@ -1,12 +1,13 @@
 const superagent = require('superagent')
 
 class Auth {
-  constructor(authUrl, supabaseKey, options = {}) {
+  constructor(authUrl, supabaseKey, options = { autoRefreshToken: true }) {
     this.authUrl = authUrl
     this.accessToken = null
     this.refreshToken = null
     this.supabaseKey = supabaseKey
     this.currentUser = null
+    this.autoRefreshToken = options.autoRefreshToken
 
     this.signup = async (email, password) => {
       const { body } = await superagent
@@ -18,13 +19,32 @@ class Auth {
     }
 
     this.login = async (email, password) => {
+    
       const response = await superagent
-        .post(`${authUrl}/token?grant_type=password&username=${email}&password=${password}`)
+        .post(`${authUrl}/token?grant_type=password`, { email, password })
+        .set('accept', 'json')
         .set('apikey', this.supabaseKey)
 
       if (response.status === 200) {
         this.accessToken = response.body['access_token']
         this.refreshToken = response.body['refresh_token']
+        if (this.autoRefreshToken && tokenExirySeconds)
+          setTimeout(this.refreshToken, tokenExirySeconds - 60)
+      }
+      return response
+    }
+
+    this.refreshToken = async () => {
+      const response = await superagent
+        .post(`${authUrl}/token?grant_type=refresh_token`, { refresh_token: this.refreshToken })
+        .set('apikey', this.supabaseKey)
+
+      if (response.status === 200) {
+        this.accessToken = response.body['access_token']
+        this.refreshToken = response.body['refresh_token']
+        let tokenExirySeconds = response.body['expires_in']
+        if (this.autoRefreshToken && tokenExirySeconds)
+          setTimeout(this.refreshToken, tokenExirySeconds - 60)
       }
       return response
     }
@@ -38,6 +58,14 @@ class Auth {
       this.currentUser = null
       this.accessToken = null
     }
+
+    // this.setRefreshTokenExpiry = (refreshTokenExpirySeconds) => {
+    //   let bufferSeconds = 60
+    //   let t = new Date() // current time
+    //   this.refreshTokenExpiry = t.setSeconds(
+    //     t.getSeconds() + (refreshTokenExpirySeconds - bufferSeconds)
+    //   )
+    // }
 
     this.user = async () => {
       if (this.currentUser) return this.currentUser

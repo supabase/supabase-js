@@ -4,7 +4,7 @@ import { Auth } from './Auth'
 import { PostgrestClient } from '@supabase/postgrest-js'
 
 class SupabaseClient {
-  constructor(supabaseUrl, supabaseKey, options = {}) {
+  constructor(supabaseUrl, supabaseKey, options = { autoRefreshToken: true }) {
     this.supabaseUrl = null
     this.supabaseKey = null
     this.restUrl = null
@@ -20,7 +20,7 @@ class SupabaseClient {
 
     this.authenticate(supabaseUrl, supabaseKey)
 
-    this.auth = new Auth(this.authUrl, supabaseKey)
+    this.auth = new Auth(this.authUrl, supabaseKey, { autoRefreshToken: options.autoRefreshToken })
   }
 
   /**

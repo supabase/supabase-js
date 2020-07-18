@@ -7,8 +7,8 @@ import { createClient } from '../../src'
 
 describe('test signing up and logging in as a new user', () => {
   const supabase = createClient(
-    'https://UxtUdvoEHGzXftFJhwwT.supabase.net',
-    'XbBJdEH2WdymQ0Hq9Huk1JqCCmggPX'
+    'https://HPPNcyqrPOIDwqzQHjRl.supabase.net',
+    'JBkDpEMQw9a9yIeVuFhTt5JEhGjQEY'
   )
   const randomEmail = `a${Math.random()}@google.com`
 
