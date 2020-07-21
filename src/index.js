@@ -1,13 +1,15 @@
 import { uuid } from './utils/Helpers'
 import Realtime from './Realtime'
+import { Auth } from './Auth'
 import { PostgrestClient } from '@supabase/postgrest-js'
 
 class SupabaseClient {
-  constructor(supabaseUrl, supabaseKey, options = {}) {
+  constructor(supabaseUrl, supabaseKey, options = { autoRefreshToken: true }) {
     this.supabaseUrl = null
     this.supabaseKey = null
     this.restUrl = null
     this.realtimeUrl = null
+    this.authUrl = null
     this.schema = 'public'
     this.subscriptions = {}
 
@@ -17,6 +19,8 @@ class SupabaseClient {
     if (options.schema) this.schema = options.schema
 
     this.authenticate(supabaseUrl, supabaseKey)
+
+    this.auth = new Auth(this.authUrl, supabaseKey, { autoRefreshToken: options.autoRefreshToken })
   }
 
   /**
@@ -28,6 +32,7 @@ class SupabaseClient {
     this.supabaseKey = supabaseKey
     this.restUrl = `${supabaseUrl}/rest/v1`
     this.realtimeUrl = `${supabaseUrl}/realtime/v1`.replace('http', 'ws')
+    this.authUrl = `${supabaseUrl}/auth/v1`
   }
 
   clear() {
@@ -84,8 +89,12 @@ class SupabaseClient {
   }
 
   initClient() {
+    let headers = { apikey: this.supabaseKey }
+
+    if (this.auth.accessToken) headers['Authorization'] = `Bearer ${this.auth.accessToken}`
+
     let rest = new PostgrestClient(this.restUrl, {
-      headers: { apikey: this.supabaseKey },
+      headers,
       schema: this.schema,
     })
     let api = rest.from(this.tableName)
