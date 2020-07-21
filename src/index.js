@@ -89,7 +89,7 @@ class SupabaseClient {
   }
 
   initClient() {
-    const headers = { apikey: this.supabaseKey }
+    let headers = { apikey: this.supabaseKey }
 
     if (this.auth.accessToken) headers['Authorization'] = `Bearer ${this.auth.accessToken}`
 
