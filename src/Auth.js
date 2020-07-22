@@ -3,7 +3,7 @@ const superagent = require('superagent')
 class Auth {
   constructor(authUrl, supabaseKey, options = { autoRefreshToken: true }) {
     this.authUrl = authUrl
-    this.accessToken = null
+    this.accessToken = supabaseKey
     this.refreshToken = null
     this.supabaseKey = supabaseKey
     this.currentUser = null
@@ -28,8 +28,8 @@ class Auth {
       if (response.status === 200) {
         this.accessToken = response.body['access_token']
         this.refreshToken = response.body['refresh_token']
-        if (this.autoRefreshToken && tokenExirySeconds)
-          setTimeout(this.refreshToken, tokenExirySeconds - 60)
+        if (this.autoRefreshToken && tokenExpirySeconds)
+          setTimeout(this.refreshToken, tokenExpirySeconds - 60)
       }
       return response
     }
@@ -42,9 +42,9 @@ class Auth {
       if (response.status === 200) {
         this.accessToken = response.body['access_token']
         this.refreshToken = response.body['refresh_token']
-        let tokenExirySeconds = response.body['expires_in']
-        if (this.autoRefreshToken && tokenExirySeconds)
-          setTimeout(this.refreshToken, tokenExirySeconds - 60)
+        let tokenExpirySeconds = response.body['expires_in']
+        if (this.autoRefreshToken && tokenExpirySeconds)
+          setTimeout(this.refreshToken, tokenExpirySeconds - 60)
       }
       return response
     }
@@ -58,14 +58,6 @@ class Auth {
       this.currentUser = null
       this.accessToken = null
     }
-
-    // this.setRefreshTokenExpiry = (refreshTokenExpirySeconds) => {
-    //   let bufferSeconds = 60
-    //   let t = new Date() // current time
-    //   this.refreshTokenExpiry = t.setSeconds(
-    //     t.getSeconds() + (refreshTokenExpirySeconds - bufferSeconds)
-    //   )
-    // }
 
     this.user = async () => {
       if (this.currentUser) return this.currentUser
