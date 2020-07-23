@@ -1,3 +1,14 @@
 {
-  "presets": [["@babel/preset-env"], ["minify", { "removeUndefined": false }]]
+  "presets": [
+    [
+      "@babel/preset-env",
+      {
+        "targets": {
+          "esmodules": true
+        }
+      }
+    ],
+    ["minify", { "removeUndefined": false }]
+  ],
+  "plugins": ["@babel/plugin-transform-runtime"]
 }

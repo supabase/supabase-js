@@ -1,6 +1,6 @@
 {
   "name": "@supabase/supabase-js",
-  "version": "0.34.1",
+  "version": "0.34.4",
   "description": "Supabase Realtime API",
   "main": "./lib/index.js",
   "scripts": {
@@ -38,6 +38,7 @@
   "devDependencies": {
     "@babel/cli": "^7.8.3",
     "@babel/core": "^7.8.3",
+    "@babel/plugin-transform-runtime": "^7.10.5",
     "@babel/preset-env": "^7.8.3",
     "@babel/register": "^7.8.3",
     "babel-plugin-add-module-exports": "^1.0.0",
