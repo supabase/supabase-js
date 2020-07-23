@@ -4,7 +4,7 @@ services:
   supabase:
     image: supabase/supabase-dev:0.1.9
     ports:
-      - "8000:8000"
+      - "1234:8000"
     environment:
       DB_HOST: db
       DB_NAME: postgres
@@ -16,8 +16,8 @@ services:
       - db
   db:
     image: postgres:12
-    ports:
-      - "6543:5432"
+    # ports:
+    #   - "6543:5432"
     volumes:
       - ./test/db:/docker-entrypoint-initdb.d/
     command:
