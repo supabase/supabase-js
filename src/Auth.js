@@ -10,12 +10,12 @@ class Auth {
     this.autoRefreshToken = options.autoRefreshToken
 
     this.signup = async (email, password) => {
-      const { body } = await superagent
+      const response = await superagent
         .post(`${authUrl}/signup`, { email, password })
         .set('accept', 'json')
         .set('apikey', this.supabaseKey)
 
-      return body
+      return response
     }
 
     this.login = async (email, password) => {
