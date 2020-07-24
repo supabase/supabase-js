@@ -1,4 +1,4 @@
-const superagent = require('superagent')
+import superagent from 'superagent'
 
 class Auth {
   constructor(authUrl, supabaseKey, options = { autoRefreshToken: true }) {

@@ -1,8 +1,12 @@
+require('dotenv').config()
 import { assert } from 'chai'
 import { createClient } from '../../src'
 
+const SUPABASE_URL = process.env.SUPABASE_URL || 'http://localhost:1234'
+const SUPABASE_KEY = process.env.SUPABASE_KEY || 'examplekey'
+
 describe('test various subscriptions', function() {
-  const supabase = createClient('http://localhost:8000', 'examplekey')
+  const supabase = createClient(SUPABASE_URL, SUPABASE_KEY)
 
   afterEach(function() {
     const subscriptions = supabase.getSubscriptions()
