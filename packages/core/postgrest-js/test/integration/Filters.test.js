@@ -211,6 +211,7 @@ describe('Filters', () => {
     'population_range=nxl.(100,500)',
     'population_range=nxr.(100,500)',
     'population_range=adj.(100,500)',
+    'or=(id.gt.20,and(name.eq.New Zealand,name.eq.France))',
   ]
 
   it('should be able to take in filters before an actual request is made', async () => {
@@ -240,11 +241,13 @@ describe('Filters', () => {
       .nxl('population_range', [100, 500])
       .nxr('population_range', [100, 500])
       .adj('population_range', [100, 500])
+      .or('id.gt.20,and(name.eq.New Zealand,name.eq.France)')
       .select('*')
 
     assert.deepEqual(response._query, expectedQueryArray)
   })
 
+  // FIXME: This is still before a request is made.
   it('should be able to take in filters after an actual request is made', async () => {
     const client = new PostgrestClient(rootUrl)
     const response = client
@@ -273,6 +276,7 @@ describe('Filters', () => {
       .nxl('population_range', [100, 500])
       .nxr('population_range', [100, 500])
       .adj('population_range', [100, 500])
+      .or('id.gt.20,and(name.eq.New Zealand,name.eq.France)')
 
     assert.deepEqual(response._query, expectedQueryArray)
   })

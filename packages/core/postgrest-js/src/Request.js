@@ -332,6 +332,7 @@ const filters = [
   'nxr',
   'nxl',
   'adj',
+  'or',
 ]
 filters.forEach(
   (filter) =>
