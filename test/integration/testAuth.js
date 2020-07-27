@@ -9,7 +9,7 @@ const SUPABASE_URL = process.env.SUPABASE_URL || 'http://localhost:1234'
 const SUPABASE_KEY = process.env.SUPABASE_KEY || 'examplekey'
 
 describe('test signing up and logging in as a new user', () => {
-  const supabase = createClient(SUPABASE_URL, SUPABASE_KEY)
+  const supabase = createClient(SUPABASE_URL, SUPABASE_KEY, { autoRefreshToken: false })
   const randomEmail = `a${Math.random()}@google.com`
 
   it('should register a new user', async () => {

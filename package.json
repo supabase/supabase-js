@@ -7,7 +7,7 @@
     "clean": "rimraf lib",
     "test": "mocha -r @babel/register -r babel-polyfill  test/unit/**/*.js",
     "test:integration": "mocha -r @babel/register -r babel-polyfill  test/integration/**/*.js",
-    "test:auth": "mocha  --timeout 15000 -r @babel/register -r babel-polyfill test/integration/testAuth.js",
+    "test:auth": "mocha  --timeout 10000 -r @babel/register -r babel-polyfill test/integration/testAuth.js",
     "test:integration:full": "docker-compose up -d && sleep 10 && mocha -r @babel/register -r babel-polyfill  test/integration/**/*.js ; docker-compose down --remove-orphans",
     "test:prod": "cross-env BABEL_ENV=production npm run test",
     "test:watch": "npm test -- --watch",

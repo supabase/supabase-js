@@ -1,13 +1,17 @@
 import superagent from 'superagent'
 
+const isBrowser = () => typeof window !== 'undefined'
+const storageKey = 'supabase.auth.token'
+
 class Auth {
-  constructor(authUrl, supabaseKey, options = { autoRefreshToken: true }) {
+  constructor(authUrl, supabaseKey, options = { autoRefreshToken: true, persistSession: true }) {
     this.authUrl = authUrl
     this.accessToken = supabaseKey
     this.refreshToken = null
     this.supabaseKey = supabaseKey
     this.currentUser = null
-    this.autoRefreshToken = options.autoRefreshToken
+    this.autoRefreshToken = options.autoRefreshToken === undefined ? true : options.autoRefreshToken
+    this.persistSession = options.persistSession === undefined ? true : options.persistSession
 
     this.signup = async (email, password) => {
       const response = await superagent
@@ -19,8 +23,7 @@ class Auth {
     }
 
     this.login = async (email, password) => {
-    
-      const response = await superagent
+      let response = await superagent
         .post(`${authUrl}/token?grant_type=password`, { email, password })
         .set('accept', 'json')
         .set('apikey', this.supabaseKey)
@@ -28,15 +31,21 @@ class Auth {
       if (response.status === 200) {
         this.accessToken = response.body['access_token']
         this.refreshToken = response.body['refresh_token']
+        let tokenExpirySeconds = response.body['expires_in']
         if (this.autoRefreshToken && tokenExpirySeconds)
-          setTimeout(this.refreshToken, tokenExpirySeconds - 60)
+          setTimeout(this.callRefreshToken, (tokenExpirySeconds - 60) * 1000)
+        if (this.persistSession) {
+          const timeNow = Math.round(Date.now() / 1000)
+          this.saveSession(this.accessToken, this.refreshToken, timeNow + tokenExpirySeconds)
+        }
       }
       return response
     }
 
-    this.refreshToken = async () => {
-      const response = await superagent
+    this.callRefreshToken = async () => {
+      let response = await superagent
         .post(`${authUrl}/token?grant_type=refresh_token`, { refresh_token: this.refreshToken })
+        .set('accept', 'json')
         .set('apikey', this.supabaseKey)
 
       if (response.status === 200) {
@@ -44,7 +53,11 @@ class Auth {
         this.refreshToken = response.body['refresh_token']
         let tokenExpirySeconds = response.body['expires_in']
         if (this.autoRefreshToken && tokenExpirySeconds)
-          setTimeout(this.refreshToken, tokenExpirySeconds - 60)
+          setTimeout(this.callRefreshToken, (tokenExpirySeconds - 60) * 1000)
+        if (this.persistSession) {
+          const timeNow = Math.round(Date.now() / 1000)
+          this.saveSession(this.accessToken, this.refreshToken, timeNow + tokenExpirySeconds)
+        }
       }
       return response
     }
@@ -57,12 +70,13 @@ class Auth {
 
       this.currentUser = null
       this.accessToken = null
+      this.removeSavedSession()
     }
 
     this.user = async () => {
       if (this.currentUser) return this.currentUser
 
-      const response = await superagent
+      let response = await superagent
         .get(`${authUrl}/user`)
         .set('Authorization', `Bearer ${this.accessToken}`)
         .set('apikey', this.supabaseKey)
@@ -74,6 +88,44 @@ class Auth {
       }
       return this.currentUser
     }
+
+    this.saveSession = (accessToken, refreshToken, expiresAt) => {
+      const data = { accessToken, refreshToken, expiresAt }
+      isBrowser() && localStorage.setItem(storageKey, JSON.stringify(data))
+    }
+
+    this.removeSavedSession = () => {
+      isBrowser() && localStorage.removeItem(storageKey)
+    }
+
+    this.recoverSession = () => {
+      const json = isBrowser() && localStorage.getItem(storageKey)
+      if (json) {
+        try {
+          const data = JSON.parse(json)
+          const { accessToken, refreshToken, currentUser, expiresAt } = data
+
+          const timeNow = Math.round(Date.now() / 1000)
+          if (expiresAt < timeNow) {
+            console.log('saved session has expired')
+            this.removeSavedSession()
+          } else {
+            this.accessToken = accessToken
+            this.refreshToken = refreshToken
+            this.currentUser = currentUser
+            // schedule a refresh 60 seconds before token due to expire
+            setTimeout(this.callRefreshToken, (expiresAt - timeNow - 60) * 1000)
+          }
+        } catch (err) {
+          console.error(err)
+          return null
+        }
+      }
+
+      return null
+    }
+
+    this.recoverSession()
   }
 }
 
