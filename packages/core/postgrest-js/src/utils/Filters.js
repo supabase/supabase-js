@@ -481,3 +481,19 @@ export function _nxr(columnName, filterRange) {
 export function _adj(columnName, filterRange) {
   return `${columnName}=adj.(${filterRange.join(',')})`
 }
+
+/**
+ * Finds all rows that satisfy at least one of the specified `filters`.
+ * @param {string} filters Filters to satisfy
+ * @name or
+ * @function
+ * @returns {string}
+ *
+ * @example
+ * _or('id.gt.20,and(name.eq.New Zealand,name.eq.France)')
+ * //=>
+ * 'or=(id.gt.20,and(name.eq.New Zealand,name.eq.France))'
+ */
+export function _or(filters) {
+  return `or=(${filters})`
+}

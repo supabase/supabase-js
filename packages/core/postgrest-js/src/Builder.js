@@ -45,6 +45,10 @@ class Builder {
           request.not(queryFilter.columnName, queryFilter.operator, queryFilter.criteria)
           break
 
+        case 'or':
+          request.or(queryFilter.filters)
+          break
+
         case 'match':
           request.match(queryFilter.query)
           break
@@ -92,6 +96,15 @@ class Builder {
       columnName,
       operator,
       criteria,
+    })
+
+    return this
+  }
+
+  or(filters) {
+    this.queryFilters.push({
+      filter: 'or',
+      filters,
     })
 
     return this
