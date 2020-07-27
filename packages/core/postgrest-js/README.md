@@ -25,14 +25,6 @@ Visit our [wiki](https://github.com/supabase/postgrest-js/wiki) to get started!
 - Push your work back up to your fork
 - Submit a Pull request so that we can review your changes and merge
 
-**Release Notes**
-
-```
-gren release --override
-```
-
-This will create the changelog and the [release](https://github.com/supabase/postgrest-js/releases).
-
 ## License
 
 This repo is liscenced under MIT.
