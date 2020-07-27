@@ -1,6 +1,6 @@
 {
   "name": "@supabase/supabase-js",
-  "version": "0.34.5",
+  "version": "0.35.0",
   "description": "Supabase Realtime API",
   "main": "./lib/index.js",
   "scripts": {
@@ -22,7 +22,7 @@
     "lib",
     "src"
   ],
-  "repository": "https://github.com/supabase/supabase",
+  "repository": "https://github.com/supabase/supabase-js",
   "keywords": [
     "supabase",
     "realtime",
@@ -32,7 +32,7 @@
   "author": "Supabase",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/supabase/supabase/issues"
+    "url": "https://github.com/supabase/supabase-js/issues"
   },
   "homepage": "https://supabase.io",
   "devDependencies": {
