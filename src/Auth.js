@@ -36,7 +36,12 @@ class Auth {
           setTimeout(this.callRefreshToken, (tokenExpirySeconds - 60) * 1000)
         if (this.persistSession) {
           const timeNow = Math.round(Date.now() / 1000)
-          this.saveSession(this.accessToken, this.refreshToken, timeNow + tokenExpirySeconds)
+          this.saveSession(
+            this.accessToken,
+            this.refreshToken,
+            timeNow + tokenExpirySeconds,
+            this.currentUser
+          )
         }
       }
       return response
@@ -56,7 +61,12 @@ class Auth {
           setTimeout(this.callRefreshToken, (tokenExpirySeconds - 60) * 1000)
         if (this.persistSession) {
           const timeNow = Math.round(Date.now() / 1000)
-          this.saveSession(this.accessToken, this.refreshToken, timeNow + tokenExpirySeconds)
+          this.saveSession(
+            this.accessToken,
+            this.refreshToken,
+            timeNow + tokenExpirySeconds,
+            this.currentUser
+          )
         }
       }
       return response
@@ -89,8 +99,8 @@ class Auth {
       return this.currentUser
     }
 
-    this.saveSession = (accessToken, refreshToken, expiresAt) => {
-      const data = { accessToken, refreshToken, expiresAt }
+    this.saveSession = (accessToken, refreshToken, expiresAt, currentUser) => {
+      const data = { accessToken, refreshToken, expiresAt, currentUser }
       isBrowser() && localStorage.setItem(storageKey, JSON.stringify(data))
     }
 
