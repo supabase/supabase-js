@@ -19,7 +19,25 @@ class Auth {
         .post(`${authUrl}/signup`, { email, password })
         .set('accept', 'json')
         .set('apikey', this.supabaseKey)
-      return this.login(email, password)
+
+      if (response.status === 200 && response['body']['user']['confirmed_at']) {
+        this.accessToken = response.body['access_token']
+        this.refreshToken = response.body['refresh_token']
+        this.currentUser = response.body['user']
+        let tokenExpirySeconds = response.body['expires_in']
+        if (this.autoRefreshToken && tokenExpirySeconds)
+          setTimeout(this.callRefreshToken, (tokenExpirySeconds - 60) * 1000)
+        if (this.persistSession) {
+          const timeNow = Math.round(Date.now() / 1000)
+          this.saveSession(
+            this.accessToken,
+            this.refreshToken,
+            timeNow + tokenExpirySeconds,
+            this.currentUser
+          )
+        }
+      }
+      return response
     }
 
     this.login = async (email, password) => {
@@ -32,6 +50,7 @@ class Auth {
       if (response.status === 200) {
         this.accessToken = response.body['access_token']
         this.refreshToken = response.body['refresh_token']
+        this.currentUser = response.body['user']
         let tokenExpirySeconds = response.body['expires_in']
         if (this.autoRefreshToken && tokenExpirySeconds)
           setTimeout(this.callRefreshToken, (tokenExpirySeconds - 60) * 1000)
