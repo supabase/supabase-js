@@ -19,10 +19,11 @@ class Auth {
         .post(`${authUrl}/signup`, { email, password })
         .set('accept', 'json')
         .set('apikey', this.supabaseKey)
-      return response
+      return this.login(email, password)
     }
 
     this.login = async (email, password) => {
+      this.removeSavedSession() // clean out the old session before attempting
       let response = await superagent
         .post(`${authUrl}/token?grant_type=password`, { email, password })
         .set('accept', 'json')
@@ -104,7 +105,7 @@ class Auth {
 
     this.removeSavedSession = () => {
       this.currentUser = null
-      this.accessToken = null
+      this.accessToken = this.supabaseKey
       isBrowser() && localStorage.removeItem(storageKey)
     }
 
