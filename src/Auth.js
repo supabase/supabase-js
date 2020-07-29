@@ -14,12 +14,11 @@ class Auth {
     this.persistSession = options.persistSession === undefined ? true : options.persistSession
 
     this.signup = async (email, password) => {
+      this.removeSavedSession() // clean out the old session before attempting
       const response = await superagent
         .post(`${authUrl}/signup`, { email, password })
         .set('accept', 'json')
         .set('apikey', this.supabaseKey)
-      
-      this.removeSavedSession() // clean out the old session before returning
       return response
     }
 
