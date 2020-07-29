@@ -124,8 +124,17 @@ class Auth {
 
     this.removeSavedSession = () => {
       this.currentUser = null
+      this.refreshToken = null
       this.accessToken = this.supabaseKey
       isBrowser() && localStorage.removeItem(storageKey)
+    }
+
+    this.authHeader = () => {
+      let json = isBrowser() && localStorage.getItem(storageKey)
+      let persisted = json ? JSON.parse(json) : null
+      if (persisted?.accessToken) return `Bearer ${persisted.accessToken}`
+      else if (this.accessToken) return `Bearer ${this.accessToken}`
+      else return null
     }
 
     this.recoverSession = () => {

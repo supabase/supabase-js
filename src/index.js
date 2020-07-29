@@ -91,7 +91,7 @@ class SupabaseClient {
   initClient() {
     let headers = { apikey: this.supabaseKey }
 
-    if (this.auth.accessToken) headers['Authorization'] = `Bearer ${this.auth.accessToken}`
+    if (this.auth.authHeader()) headers['Authorization'] = this.auth.authHeader()
 
     let rest = new PostgrestClient(this.restUrl, {
       headers,
