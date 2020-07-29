@@ -18,7 +18,8 @@ class Auth {
         .post(`${authUrl}/signup`, { email, password })
         .set('accept', 'json')
         .set('apikey', this.supabaseKey)
-
+      
+      this.removeSavedSession() // clean out the old session before returning
       return response
     }
 
@@ -78,8 +79,6 @@ class Auth {
         .set('Authorization', `Bearer ${this.accessToken}`)
         .set('apikey', this.supabaseKey)
 
-      this.currentUser = null
-      this.accessToken = null
       this.removeSavedSession()
     }
 
@@ -105,6 +104,8 @@ class Auth {
     }
 
     this.removeSavedSession = () => {
+      this.currentUser = null
+      this.accessToken = null
       isBrowser() && localStorage.removeItem(storageKey)
     }
 
