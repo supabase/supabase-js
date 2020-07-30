@@ -3,6 +3,8 @@ import Realtime from './Realtime'
 import { Auth } from './Auth'
 import { PostgrestClient } from '@supabase/postgrest-js'
 
+const DEPRICATED_KEY_LENGTH = 45
+
 class SupabaseClient {
   constructor(supabaseUrl, supabaseKey, options = { autoRefreshToken: true }) {
     this.supabaseUrl = null
@@ -91,7 +93,8 @@ class SupabaseClient {
   initClient() {
     let headers = { apikey: this.supabaseKey }
 
-    if (this.auth.authHeader()) headers['Authorization'] = this.auth.authHeader()
+    if (this.supabaseKey.length > DEPRICATED_KEY_LENGTH && this.auth.authHeader())
+      headers['Authorization'] = this.auth.authHeader()
 
     let rest = new PostgrestClient(this.restUrl, {
       headers,

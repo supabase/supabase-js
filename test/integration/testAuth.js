@@ -15,7 +15,7 @@ describe('test signing up and logging in as a new user', () => {
   it('should register a new user', async () => {
     try {
       const response = await supabase.auth.signup(randomEmail, '11password')
-      assert(response.body.email === randomEmail, 'user could not sign up')
+      assert(response.body.user.email === randomEmail, 'user could not sign up')
     } catch (error) {
       assert(!error, 'sign up returns an error')
     }
