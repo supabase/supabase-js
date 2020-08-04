@@ -495,5 +495,6 @@ export function _adj(columnName, filterRange) {
  * 'or=(id.gt.20,and(name.eq.New Zealand,name.eq.France))'
  */
 export function _or(filters) {
-  return `or=(${filters})`
+  let filtersEnriched = filters.replace(/%/g, '*')
+  return `or=(${filtersEnriched})`
 }
