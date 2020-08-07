@@ -16,7 +16,6 @@ class SupabaseClient {
     this.subscriptions = {}
 
     this.tableName = null
-    this.queryFilters = []
 
     if (options.schema) this.schema = options.schema
 
@@ -44,6 +43,8 @@ class SupabaseClient {
 
   from(tableName) {
     this.tableName = tableName
+    this.initPostgrest()
+
     return this
   }
 
@@ -90,147 +91,70 @@ class SupabaseClient {
     return rest.rpc(functionName, functionParameters)
   }
 
-  initClient() {
+  /**
+   * HACK(soedirgo): We want SupabaseClient to act like PostgrestClient (sort
+   * of). At the same time, we want to be able to use `on()` after a `from()`.
+   * Unfortunately, the cleanest way to do this that I can think of is to have
+   * `this`'s prototype inherit postgrest-js's `Builder`.
+   *
+   * Say we have `const supabase = createClient(<supabase url>, <supabase
+   * key>)`. The inheritance hierarchy starts out like so:
+   *
+   *             SupabaseClient { authenticate: [Function]
+   *                              from: [Function],
+   *                              on: [Function],
+   *                              ... }
+   *
+   *                              ▲
+   *                              │
+   *
+   *                         supabase {}
+   *
+   * To allow using postgrest-js features without reimplementing the methods
+   * (or, select, order, etc.), we let `this`'s prototype (a SupabaseClient
+   * instance) inherit the `Builder` object we created through
+   * `initPostgrest()`:
+   *
+   *             { url: <supabase url>/rest/v1/<some table>,
+   *               queryFilters: [],
+   *               ...,
+   *               select: [Function],
+   *               eq: [Function],
+   *               ... }
+   *
+   *                              ▲
+   *                              │
+   *
+   *             SupabaseClient { authenticate: [Function]
+   *                              from: [Function],
+   *                              on: [Function],
+   *                              ... }
+   *
+   *                              ▲
+   *                              │
+   *
+   *                         supabase {}
+   *
+   * Caveat: we end up having to do this song and dance even though we only want
+   * to use Realtime (`on()`), and we create a new PostgrestClient on every
+   * `from()` which is unnecessary. initPostgrest also modifies state by
+   * renewing its prototype's prototype.
+   */
+  initPostgrest() {
     let headers = { apikey: this.supabaseKey }
-
-    if (this.supabaseKey.length > DEPRICATED_KEY_LENGTH && this.auth.authHeader())
+    if (this.supabaseKey.length > DEPRICATED_KEY_LENGTH && this.auth.authHeader()) {
       headers['Authorization'] = this.auth.authHeader()
+    }
 
     let rest = new PostgrestClient(this.restUrl, {
       headers,
       schema: this.schema,
     })
-    let api = rest.from(this.tableName)
+    let builder = rest.from(this.tableName)
 
-    // go through queryFilters
-    this.queryFilters.forEach((queryFilter) => {
-      switch (queryFilter.filter) {
-        case 'filter':
-          api.filter(queryFilter.columnName, queryFilter.operator, queryFilter.criteria)
-          break
-
-        case 'match':
-          api.match(queryFilter.query)
-          break
-
-        case 'order':
-          api.order(queryFilter.property, queryFilter.ascending, queryFilter.nullsFirst)
-          break
-
-        case 'range':
-          api.range(queryFilter.from, queryFilter.to)
-          break
-
-        case 'single':
-          api.single()
-          break
-
-        default:
-          break
-      }
-    })
-
-    this.clear()
-    return api
-  }
-
-  select(columnQuery = '*', options = {}) {
-    let api = this.initClient()
-    return api.select(columnQuery, options)
-  }
-
-  insert(data, options = {}) {
-    let api = this.initClient()
-    return api.insert(data, options)
-  }
-
-  update(data, options = {}) {
-    let api = this.initClient()
-    return api.update(data, options)
-  }
-
-  delete(options = {}) {
-    let api = this.initClient()
-    return api.delete(options)
-  }
-
-  filter(columnName, operator, criteria) {
-    this.queryFilters.push({
-      filter: 'filter',
-      columnName,
-      operator,
-      criteria,
-    })
-
-    return this
-  }
-
-  match(query) {
-    this.queryFilters.push({
-      filter: 'match',
-      query,
-    })
-
-    return this
-  }
-
-  order(property, ascending = false, nullsFirst = false) {
-    this.queryFilters.push({
-      filter: 'order',
-      property,
-      ascending,
-      nullsFirst,
-    })
-
-    return this
-  }
-
-  range(from, to) {
-    this.queryFilters.push({
-      filter: 'range',
-      from,
-      to,
-    })
-
-    return this
-  }
-
-  single() {
-    this.queryFilters.push({ filter: 'single' })
-
-    return this
+    Object.setPrototypeOf(Object.getPrototypeOf(this), builder)
   }
 }
-
-// pre-empts if any of the filters are used before select
-const advancedFilters = [
-  'eq',
-  'neq',
-  'gt',
-  'lt',
-  'gte',
-  'lte',
-  'like',
-  'ilike',
-  'is',
-  'in',
-  'cs',
-  'cd',
-  'ova',
-  'ovr',
-  'sl',
-  'sr',
-  'nxr',
-  'nxl',
-  'adj',
-]
-
-advancedFilters.forEach(
-  (operator) =>
-    (SupabaseClient.prototype[operator] = function filterValue(columnName, criteria) {
-      return this.filter(columnName, operator, criteria)
-    })
-)
 
 const createClient = (supabaseUrl, supabaseKey, options = {}) => {
   return new SupabaseClient(supabaseUrl, supabaseKey, options)
