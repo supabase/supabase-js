@@ -96,8 +96,30 @@ declare module '@supabase/supabase-js' {
     | 'nxl'
     | 'adj'
 
-  interface PostgrestClient {}
-  interface SupabaseClient {
+  interface PostgrestResponse<T> {
+    body: T
+    status: number
+    statusCode: number
+    statusText: string
+  }
+
+  interface PostgrestClient<T> extends Promise<PostgrestResponse<T>> {
+    /** A comma separated list of columns. For example select('id, name') */
+    select(columnQuery: string = '*'): PostgrestClient<T[]>
+    /** Result must be single object, otherwise returns `406 Not Acceptable` */
+    single(): PostgrestClient<T[0]> // TODO make chaining order independent
+    /**
+     * Limit the amount of records to be returned.
+     */
+    limit(
+      /** Specifies number of items to be returned at most. */
+      criteria: number,
+      /** Name of chosen foreignTable to apply the limit on. Used if foreign tables are present. */
+      foreignTableName?: string | null
+    ): PostgrestResponse<T>
+  }
+
+  interface SupabaseClient<T> extends PostgrestClient<T> {
     /**
      * Supabase Auth allows you to create and manage user sessions for access to data that is secured by access policies.
      */
@@ -105,55 +127,55 @@ declare module '@supabase/supabase-js' {
     /**
      * Name of the database table that will be read from.
      */
-    from(tableName: string): SupabaseClient
+    from<T>(tableName: string): SupabaseClient<T>
     /**
      * This allows you to apply various filters on your query. Filters can also be chained together.
      * Example: `.filter('name', 'eq', 'Paris')`
      */
     filter(
       /** Name of the database column. */
-      columnName: string,
+      columnName: keyof T,
       /** Name of filter operator to be utilised. */
       operator: FilterOperator,
       /** Value to compare to. Exact data type of criteria depends on the operator used. */
-      criteria: any
-    ): SupabaseClient
+      criteria: T[keyof T]
+    ): SupabaseClient<T>
     /**
      * Reverse of .filter(). Returns rows that do not meet the criteria specified using the columnName and operator provided.
      * Example: `.not('name', 'eq', 'Paris')`
      */
     not(
       /** Name of the database column. */
-      columnName: string,
+      columnName: keyof T,
       /** Name of filter operator to be utilised. */
       operator: FilterOperator,
       /** Value to compare to. Exact data type of criteria depends on the operator used. */
-      criteria: any
-    ): SupabaseClient
+      criteria: T[keyof T]
+    ): SupabaseClient<T>
     /**
      * Finds rows that exactly match the specified filterObject. Equivalent of multiple `filter('columnName', 'eq', criteria)`.
      */
     match(
       /** Example: `.match({name: 'Beijing', country_id: 156})` */
-      filterObject: { [columnName: string]: any }
-    ): SupabaseClient
+      filterObject: { [columnName: keyof T]: T[keyof T] }
+    ): SupabaseClient<T>
     /**
      * Orders your data before fetching.
      */
     order(
       /** Name of chosen column to base the order on. */
-      columnName: string,
+      columnName: keyof T,
       /** Specifies whether the order will be ascending or descending. Default is false */
       sortAscending?: boolean = false,
       /** Specifies whether null values will be displayed first. Default is false */
       nullsFirst?: boolean = false
-    ): SupabaseClient
+    ): SupabaseClient<T>
     /**
      * Finds all rows whose value on the stated columnName exactly matches the specified filterValue. Equivalent of filter(columnName, 'eq', criteria).
      *
      * Example: `.eq('name', 'San Francisco')`
      */
-    eq(columnName: string, filterValue: string | integer | boolean): SupabaseClient
+    eq(columnName: keyof T, filterValue: T[keyof T]): SupabaseClient<T>
   }
 
   const createClient: (
@@ -176,5 +198,5 @@ declare module '@supabase/supabase-js' {
        */
       schema: string
     }
-  ) => SupabaseClient
+  ) => SupabaseClient<T>
 }
