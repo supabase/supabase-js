@@ -13,7 +13,7 @@
     "test:watch": "npm test -- --watch",
     "test:examples": "node examples/",
     "cover": "nyc --check-coverage && npm test",
-    "build": "BABEL_ENV=production babel src --out-dir lib",
+    "build": "BABEL_ENV=production babel src --out-dir lib --copy-files",
     "prepublish": "npm run clean && npm run build",
     "deploy:minor": "npm version minor && npm publish --access=public",
     "deploy:patch": "npm version patch && npm publish --access=public"
