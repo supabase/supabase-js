@@ -140,7 +140,7 @@ declare module '@supabase/supabase-js' {
      */
     match(
       /** Example: `.match({name: 'Beijing', country_id: 156})` */
-      filterObject: { [columnName: keyof T]: T[keyof T] }
+      filterObject: { [columnName: string]: T[keyof T] }
     ): PostgrestClient<T>
     /**
      * Finds all rows whose value on the stated columnName exactly matches the specified filterValue. Equivalent of filter(columnName, 'eq', criteria).
@@ -178,9 +178,9 @@ declare module '@supabase/supabase-js' {
       /** Name of chosen column to base the order on. */
       columnName: keyof T,
       /** Specifies whether the order will be ascending or descending. Default is false */
-      sortAscending?: boolean = false,
+      sortAscending?: boolean,
       /** Specifies whether null values will be displayed first. Default is false */
-      nullsFirst?: boolean = false
+      nullsFirst?: boolean
     ): PostgrestClient<T>
     /**
      * Paginates your request.
@@ -215,8 +215,12 @@ declare module '@supabase/supabase-js' {
      * Read data.
      */
     select(
-      /** A comma separated list of columns. For example `.select('id, name')` */
-      columnQuery: string = '*'
+      /**
+       * A comma separated list of columns. For example `.select('id, name')`.
+       *
+       * Omitting `columnQuery` is equal to `.select('*').
+       */
+      columnQuery?: string
     ): PostgrestClient<T>
     /**
      * Insert or upsert data.
@@ -229,7 +233,7 @@ declare module '@supabase/supabase-js' {
       /**
        * For upsert, if set to true, primary key columns would need to be included in the data parameter in order for an update to properly happen. Also, primary keys used must be natural, not surrogate.
        */
-      options?: { upsert: bollean = false }
+      options?: { upsert?: boolean }
     ): PostgrestClient<T>
     /**
      * Update data.
@@ -257,7 +261,7 @@ declare module '@supabase/supabase-js' {
     ): SupabaseRealtimeClient
   }
 
-  interface SupabaseClient<T> {
+  interface SupabaseClient {
     /**
      * Supabase Auth allows you to create and manage user sessions for access to data that is secured by access policies.
      */
@@ -291,7 +295,7 @@ declare module '@supabase/supabase-js' {
      */
     supabaseKey: string,
     options?: {
-      autoRefreshToken?: boolean = true
+      autoRefreshToken?: boolean
       /**
        * You can switch in between schemas.
        * The schema however would need to be on the list of exposed schemas.
@@ -301,5 +305,5 @@ declare module '@supabase/supabase-js' {
        */
       schema: string
     }
-  ) => SupabaseClient<T>
+  ) => SupabaseClient
 }
