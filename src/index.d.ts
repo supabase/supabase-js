@@ -75,7 +75,7 @@ declare module '@supabase/supabase-js' {
     NotExtendRight = 'nxr',
     Adjacent = 'adj',
   }
-  const FilterOperatorString:
+  type FilterOperatorString =
     | 'eq'
     | 'neq'
     | 'gt'
@@ -97,37 +97,15 @@ declare module '@supabase/supabase-js' {
     | 'adj'
 
   interface PostgrestResponse<T> {
-    body: T
+    body: T[] | null
     status: number
     statusCode: number
     statusText: string
   }
 
-  interface PostgrestClient<T> extends Promise<PostgrestResponse<T>> {
-    /** A comma separated list of columns. For example select('id, name') */
-    select(columnQuery: string = '*'): PostgrestClient<T[]>
-    /** Result must be single object, otherwise returns `406 Not Acceptable` */
-    single(): PostgrestClient<T[0]> // TODO make chaining order independent
-    /**
-     * Limit the amount of records to be returned.
-     */
-    limit(
-      /** Specifies number of items to be returned at most. */
-      criteria: number,
-      /** Name of chosen foreignTable to apply the limit on. Used if foreign tables are present. */
-      foreignTableName?: string | null
-    ): PostgrestResponse<T>
-  }
+  interface PostgrestClient<T> extends Promise<PostgrestResponse<T>> {}
 
-  interface SupabaseClient<T> extends PostgrestClient<T> {
-    /**
-     * Supabase Auth allows you to create and manage user sessions for access to data that is secured by access policies.
-     */
-    auth: Auth
-    /**
-     * Name of the database table that will be read from.
-     */
-    from<T>(tableName: string): SupabaseClient<T>
+  interface PostgrestFilterClient<T> extends PostgrestClient<T> {
     /**
      * This allows you to apply various filters on your query. Filters can also be chained together.
      * Example: `.filter('name', 'eq', 'Paris')`
@@ -136,10 +114,10 @@ declare module '@supabase/supabase-js' {
       /** Name of the database column. */
       columnName: keyof T,
       /** Name of filter operator to be utilised. */
-      operator: FilterOperator,
+      operator: FilterOperator | FilterOperatorString,
       /** Value to compare to. Exact data type of criteria depends on the operator used. */
       criteria: T[keyof T]
-    ): SupabaseClient<T>
+    ): PostgrestFilterClient<T>
     /**
      * Reverse of .filter(). Returns rows that do not meet the criteria specified using the columnName and operator provided.
      * Example: `.not('name', 'eq', 'Paris')`
@@ -151,14 +129,42 @@ declare module '@supabase/supabase-js' {
       operator: FilterOperator,
       /** Value to compare to. Exact data type of criteria depends on the operator used. */
       criteria: T[keyof T]
-    ): SupabaseClient<T>
+    ): PostgrestFilterClient<T>
     /**
      * Finds rows that exactly match the specified filterObject. Equivalent of multiple `filter('columnName', 'eq', criteria)`.
      */
     match(
       /** Example: `.match({name: 'Beijing', country_id: 156})` */
       filterObject: { [columnName: keyof T]: T[keyof T] }
-    ): SupabaseClient<T>
+    ): PostgrestFilterClient<T>
+    /**
+     * Finds all rows whose value on the stated columnName exactly matches the specified filterValue. Equivalent of filter(columnName, 'eq', criteria).
+     *
+     * Example: `.eq('name', 'San Francisco')`
+     */
+    eq(columnName: keyof T, filterValue: T[keyof T]): PostgrestFilterClient<T>
+  }
+
+  interface PostgrestReadClient<T> extends PostgrestFilterClient<T> {
+    /** Result must be single object, otherwise returns `406 Not Acceptable` */
+    single(): PostgrestReadClient<T>
+    /**
+     * Limit the amount of records to be returned.
+     */
+    limit(
+      /** Specifies number of items to be returned at most. */
+      criteria: number,
+      /** Name of chosen foreignTable to apply the limit on. Used if foreign tables are present. */
+      foreignTableName?: string | null
+    ): PostgrestReadClient<T>
+    /**
+     * Skip a number of rows before returning rows.
+     */
+    offset(
+      /** Index or position of the start of the specified range. */
+      skipCount: number,
+      foreignTableName?: string | null
+    ): PostgrestReadClient<T>
     /**
      * Orders your data before fetching.
      */
@@ -169,13 +175,66 @@ declare module '@supabase/supabase-js' {
       sortAscending?: boolean = false,
       /** Specifies whether null values will be displayed first. Default is false */
       nullsFirst?: boolean = false
-    ): SupabaseClient<T>
+    ): PostgrestReadClient<T>
     /**
-     * Finds all rows whose value on the stated columnName exactly matches the specified filterValue. Equivalent of filter(columnName, 'eq', criteria).
-     *
-     * Example: `.eq('name', 'San Francisco')`
+     * Paginates your request.
      */
-    eq(columnName: keyof T, filterValue: T[keyof T]): SupabaseClient<T>
+    range(
+      /** Index or position of the start of the specified range. */
+      fromIndex: number,
+      /** Index or position of the end of the specified range. If not stated, all remaining rows after the starting index will be returned. */
+      toIndex?: number
+    ): PostgrestReadClient<T>
+  }
+
+  interface SupabaseQueryClient<T> {
+    /**
+     * Read data.
+     */
+    select(
+      /** A comma separated list of columns. For example `.select('id, name')` */
+      columnQuery: string = '*'
+    ): PostgrestReadClient<T>
+    /**
+     * Insert or upsert data.
+     */
+    insert(
+      /**
+       * A single object or an array of rows of type object which contain information to be saved into the selected table.
+       */
+      data: T | T[],
+      /**
+       * For upsert, if set to true, primary key columns would need to be included in the data parameter in order for an update to properly happen. Also, primary keys used must be natural, not surrogate.
+       */
+      options?: { upsert: bollean = false }
+    ): PostgrestClient<T>
+    /**
+     * Update data.
+     *
+     * It is to note that it is required to apply filters when using `.update()`. Not using filters would result in an error.
+     *
+     * Example: `supabase.from('cities').update({ name: 'Middle Earth' }).match({ name: 'Auckland' })`
+     */
+    update(data: T): PostgrestFilterClient<T>
+    /**
+     * Delete data.
+     *
+     * It is to note that it is required to apply filters when using `.delete()`. Not using filters would result in an error.
+     *
+     * Example: `supabase.from('cities').delete().match({ name: 'Bielefeld' })`
+     */
+    delete(): PostgrestFilterClient<T>
+  }
+
+  interface SupabaseClient<T> {
+    /**
+     * Supabase Auth allows you to create and manage user sessions for access to data that is secured by access policies.
+     */
+    auth: Auth
+    /**
+     * Name of the database table to perform an operation on.
+     */
+    from<T>(tableName: string): SupabaseQueryClient<T>
   }
 
   const createClient: (
