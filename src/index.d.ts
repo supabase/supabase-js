@@ -103,9 +103,14 @@ declare module '@supabase/supabase-js' {
     statusText: string
   }
 
-  interface PostgrestClient<T> extends Promise<PostgrestResponse<T>> {}
+  interface PostgrestSingleResponse<T> {
+    body: T | null
+    status: number
+    statusCode: number
+    statusText: string
+  }
 
-  interface PostgrestFilterClient<T> extends PostgrestClient<T> {
+  interface PostgrestClient<T> extends Promise<PostgrestResponse<T>> {
     /**
      * This allows you to apply various filters on your query. Filters can also be chained together.
      * Example: `.filter('name', 'eq', 'Paris')`
@@ -117,7 +122,7 @@ declare module '@supabase/supabase-js' {
       operator: FilterOperator | FilterOperatorString,
       /** Value to compare to. Exact data type of criteria depends on the operator used. */
       criteria: T[keyof T]
-    ): PostgrestFilterClient<T>
+    ): PostgrestClient<T>
     /**
      * Reverse of .filter(). Returns rows that do not meet the criteria specified using the columnName and operator provided.
      * Example: `.not('name', 'eq', 'Paris')`
@@ -129,25 +134,26 @@ declare module '@supabase/supabase-js' {
       operator: FilterOperator,
       /** Value to compare to. Exact data type of criteria depends on the operator used. */
       criteria: T[keyof T]
-    ): PostgrestFilterClient<T>
+    ): PostgrestClient<T>
     /**
      * Finds rows that exactly match the specified filterObject. Equivalent of multiple `filter('columnName', 'eq', criteria)`.
      */
     match(
       /** Example: `.match({name: 'Beijing', country_id: 156})` */
       filterObject: { [columnName: keyof T]: T[keyof T] }
-    ): PostgrestFilterClient<T>
+    ): PostgrestClient<T>
     /**
      * Finds all rows whose value on the stated columnName exactly matches the specified filterValue. Equivalent of filter(columnName, 'eq', criteria).
      *
      * Example: `.eq('name', 'San Francisco')`
      */
-    eq(columnName: keyof T, filterValue: T[keyof T]): PostgrestFilterClient<T>
-  }
-
-  interface PostgrestReadClient<T> extends PostgrestFilterClient<T> {
-    /** Result must be single object, otherwise returns `406 Not Acceptable` */
-    single(): PostgrestReadClient<T>
+    eq(columnName: keyof T, filterValue: T[keyof T]): PostgrestClient<T>
+    /**
+     * Return a single object as response body. Result must be single object, otherwise returns `406 Not Acceptable`.
+     *
+     * Note: this must be called at the end of your query chain!
+     */
+    single(): Promise<PostgrestSingleResponse<T>>
     /**
      * Limit the amount of records to be returned.
      */
@@ -156,7 +162,7 @@ declare module '@supabase/supabase-js' {
       criteria: number,
       /** Name of chosen foreignTable to apply the limit on. Used if foreign tables are present. */
       foreignTableName?: string | null
-    ): PostgrestReadClient<T>
+    ): PostgrestClient<T>
     /**
      * Skip a number of rows before returning rows.
      */
@@ -164,7 +170,7 @@ declare module '@supabase/supabase-js' {
       /** Index or position of the start of the specified range. */
       skipCount: number,
       foreignTableName?: string | null
-    ): PostgrestReadClient<T>
+    ): PostgrestClient<T>
     /**
      * Orders your data before fetching.
      */
@@ -175,7 +181,7 @@ declare module '@supabase/supabase-js' {
       sortAscending?: boolean = false,
       /** Specifies whether null values will be displayed first. Default is false */
       nullsFirst?: boolean = false
-    ): PostgrestReadClient<T>
+    ): PostgrestClient<T>
     /**
      * Paginates your request.
      */
@@ -184,7 +190,24 @@ declare module '@supabase/supabase-js' {
       fromIndex: number,
       /** Index or position of the end of the specified range. If not stated, all remaining rows after the starting index will be returned. */
       toIndex?: number
-    ): PostgrestReadClient<T>
+    ): PostgrestClient<T>
+  }
+
+  interface SupabaseRealtimeClient {
+    subscribe(): SupabaseRealtimeClient
+    unsubscribe(): SupabaseRealtimeClient
+    schema: string
+    tableName: string
+    uuid: string
+  }
+
+  interface SupabaseRealtimePayload<T> {
+    commit_timestamp: string
+    eventType: 'INSERT' | 'UPDATE' | 'DELETE'
+    new: T
+    old: T
+    schema: string
+    table: string
   }
 
   interface SupabaseQueryClient<T> {
@@ -194,7 +217,7 @@ declare module '@supabase/supabase-js' {
     select(
       /** A comma separated list of columns. For example `.select('id, name')` */
       columnQuery: string = '*'
-    ): PostgrestReadClient<T>
+    ): PostgrestClient<T>
     /**
      * Insert or upsert data.
      */
@@ -215,7 +238,7 @@ declare module '@supabase/supabase-js' {
      *
      * Example: `supabase.from('cities').update({ name: 'Middle Earth' }).match({ name: 'Auckland' })`
      */
-    update(data: T): PostgrestFilterClient<T>
+    update(data: T): PostgrestClient<T>
     /**
      * Delete data.
      *
@@ -223,7 +246,15 @@ declare module '@supabase/supabase-js' {
      *
      * Example: `supabase.from('cities').delete().match({ name: 'Bielefeld' })`
      */
-    delete(): PostgrestFilterClient<T>
+    delete(): PostgrestClient<T>
+    /**
+     * Subscribe to realtime changes in your databse.
+     */
+    on(
+      /** The database event which you would like to receive updates for, or you can use the special wildcard `*` to listen to all changes. */
+      eventType: 'INSERT' | 'UPDATE' | 'DELETE' | '*',
+      callbackFunction: (payload: SupabaseRealtimePayload<T>) => void
+    ): SupabaseRealtimeClient
   }
 
   interface SupabaseClient<T> {
@@ -243,7 +274,11 @@ declare module '@supabase/supabase-js' {
       functionName: string,
       /** Parameters to be passed to the stored function. */
       functionParameters?: object | object[]
-    ): PostgrestFilterClient<T>
+    ): PostgrestClient<T>
+    /** Remove a subscription. */
+    removeSubscription(reference: SupabaseRealtimeClient): void
+    /** List of all subscriptions. */
+    getSubscriptions(): SupabaseRealtimeClient[]
   }
 
   const createClient: (
