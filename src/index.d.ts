@@ -235,6 +235,15 @@ declare module '@supabase/supabase-js' {
      * Name of the database table to perform an operation on.
      */
     from<T>(tableName: string): SupabaseQueryClient<T>
+    /**
+     * Stored procedures.
+     */
+    rpc<T>(
+      /** Name of stored function in the database. */
+      functionName: string,
+      /** Parameters to be passed to the stored function. */
+      functionParameters?: object | object[]
+    ): PostgrestFilterClient<T>
   }
 
   const createClient: (
