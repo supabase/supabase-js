@@ -1,4 +1,65 @@
 declare module '@supabase/supabase-js' {
+  enum FilterOperator {
+    /** Finds all rows whose value on the stated columnName exactly matches the specified filterValue. */
+    Equal = 'eq',
+    /** Finds all rows whose value on the stated columnName does not match the specified filterValue. */
+    NotEqual = 'neq',
+    /** Finds all rows whose value on the stated columnName is greater than the specified filterValue. */
+    GreaterThan = 'gt',
+    /** Finds all rows whose value on the stated columnName is less than the specified filterValue. */
+    LessThan = 'lt',
+    /** Finds all rows whose value on the stated columnName is greater than or equal to the specified filterValue. */
+    GreaterThanOrEqual = 'gte',
+    /** Finds all rows whose value on the stated columnName is less than or equal to the specified filterValue. */
+    LessThanOrEqual = 'lte',
+    /** Finds all rows whose value in the stated columnName matches the supplied pattern. */
+    Like = 'like',
+    /** A case-sensitive version of `Like`. */
+    ILike = 'ilike',
+    /** A check for exact equality (null, true, false) */
+    Is = 'is',
+    /** Finds all rows whose value on the stated columnName is found on the specified filterArray. */
+    In = 'in',
+    /** Finds all rows whose json, array, or range value on the stated columnName contains the items specified in the filterObject. */
+    Contains = 'cs',
+    /** Finds all rows whose json, array, or range value on the stated columnName is contained by the specific filterObject. */
+    Contained = 'cd',
+    /** Finds all rows whose array value on the stated columnName overlaps with the specified filterArray. */
+    OverlapsArray = 'ova',
+    /** Finds all rows whose range value on the stated columnName overlaps with the specified filterRange. */
+    OverlapsRange = 'ovr',
+    /** Finds all rows whose range value on the stated columnName is strictly on the left hand side of the specified filterRange. */
+    StrictlyLeft = 'sl',
+    /** Finds all rows whose range value on the stated columnName is strictly on the right hand side of the specified filterRange. */
+    StrictlyRight = 'sr',
+    /** Finds all rows whose range value on the stated columnName does not extend to the left of the specified filterRange. */
+    NotExtendLeft = 'nxl',
+    /** Finds all rows whose range value on the stated columnName does not extend to the right of the specified filterRange. */
+    NotExtendRight = 'nxr',
+    /** Finds all rows whose range value on the stated columnName is adjacent to the specified filterRange. */
+    Adjacent = 'adj',
+  }
+  type FilterOperatorString =
+    | 'eq'
+    | 'neq'
+    | 'gt'
+    | 'lt'
+    | 'gte'
+    | 'lte'
+    | 'like'
+    | 'ilike'
+    | 'is'
+    | 'in'
+    | 'cs'
+    | 'cd'
+    | 'ova'
+    | 'ovr'
+    | 'sl'
+    | 'sr'
+    | 'nxr'
+    | 'nxl'
+    | 'adj'
+
   interface User {
     app_metadata: {
       provider: 'email'
@@ -49,53 +110,6 @@ declare module '@supabase/supabase-js' {
     logout: () => Promise<void>
   }
 
-  enum FilterOperator {
-    Equal = 'eq',
-    NotEqual = 'neq',
-    GreaterThan = 'gt',
-    LessThan = 'lt',
-    GreaterThanOrEqual = 'gte',
-    LessThanOrEqual = 'lte',
-    /** Finds all rows whose value in the stated columnName matches the supplied pattern. */
-    Like = 'like',
-    /** A case-sensitive version of `Like`. */
-    ILike = 'ilike',
-    /** A check for exact equality (null, true, false) */
-    Is = 'is',
-    /** ('name', 'in', ['Rio de Janeiro', 'San Francisco']) */
-    In = 'in',
-    /** Finds all rows whose json, array, or range value on the stated columnName contains the items specified in the filterObject */
-    Contains = 'cs',
-    Contained = 'cd',
-    OverlapsArray = 'ova',
-    OverlapsRange = 'ovr',
-    StrictlyLeft = 'sl',
-    StrictlyRight = 'sr',
-    NotExtendLeft = 'nxl',
-    NotExtendRight = 'nxr',
-    Adjacent = 'adj',
-  }
-  type FilterOperatorString =
-    | 'eq'
-    | 'neq'
-    | 'gt'
-    | 'lt'
-    | 'gte'
-    | 'lte'
-    | 'like'
-    | 'ilike'
-    | 'is'
-    | 'in'
-    | 'cs'
-    | 'cd'
-    | 'ova'
-    | 'ovr'
-    | 'sl'
-    | 'sr'
-    | 'nxr'
-    | 'nxl'
-    | 'adj'
-
   interface PostgrestResponse<T> {
     body: T[] | null
     status: number
@@ -111,43 +125,6 @@ declare module '@supabase/supabase-js' {
   }
 
   interface PostgrestClient<T> extends Promise<PostgrestResponse<T>> {
-    /**
-     * This allows you to apply various filters on your query. Filters can also be chained together.
-     * Example: `.filter('name', 'eq', 'Paris')`
-     */
-    filter(
-      /** Name of the database column. */
-      columnName: keyof T,
-      /** Name of filter operator to be utilised. */
-      operator: FilterOperator | FilterOperatorString,
-      /** Value to compare to. Exact data type of criteria depends on the operator used. */
-      criteria: T[keyof T]
-    ): PostgrestClient<T>
-    /**
-     * Reverse of .filter(). Returns rows that do not meet the criteria specified using the columnName and operator provided.
-     * Example: `.not('name', 'eq', 'Paris')`
-     */
-    not(
-      /** Name of the database column. */
-      columnName: keyof T,
-      /** Name of filter operator to be utilised. */
-      operator: FilterOperator,
-      /** Value to compare to. Exact data type of criteria depends on the operator used. */
-      criteria: T[keyof T]
-    ): PostgrestClient<T>
-    /**
-     * Finds rows that exactly match the specified filterObject. Equivalent of multiple `filter('columnName', 'eq', criteria)`.
-     */
-    match(
-      /** Example: `.match({name: 'Beijing', country_id: 156})` */
-      filterObject: { [columnName: string]: T[keyof T] }
-    ): PostgrestClient<T>
-    /**
-     * Finds all rows whose value on the stated columnName exactly matches the specified filterValue. Equivalent of filter(columnName, 'eq', criteria).
-     *
-     * Example: `.eq('name', 'San Francisco')`
-     */
-    eq(columnName: keyof T, filterValue: T[keyof T]): PostgrestClient<T>
     /**
      * Return a single object as response body. Result must be single object, otherwise returns `406 Not Acceptable`.
      *
@@ -191,6 +168,157 @@ declare module '@supabase/supabase-js' {
       /** Index or position of the end of the specified range. If not stated, all remaining rows after the starting index will be returned. */
       toIndex?: number
     ): PostgrestClient<T>
+    /**
+     * This allows you to apply various filters on your query. Filters can also be chained together.
+     * Example: `.filter('name', 'eq', 'Paris')`
+     */
+    filter(
+      /** Name of the database column. */
+      columnName: keyof T,
+      /** Name of filter operator to be utilised. */
+      operator: FilterOperator | FilterOperatorString,
+      /** Value to compare to. Exact data type of criteria depends on the operator used. */
+      criteria: any
+    ): PostgrestClient<T>
+    /**
+     * Reverse of .filter(). Returns rows that do not meet the criteria specified using the columnName and operator provided.
+     * Example: `.not('name', 'eq', 'Paris')`
+     */
+    not(
+      /** Name of the database column. */
+      columnName: keyof T,
+      /** Name of filter operator to be utilised. */
+      operator: FilterOperator,
+      /** Value to compare to. Exact data type of criteria depends on the operator used. */
+      criteria: T[keyof T]
+    ): PostgrestClient<T>
+    /**
+     * To write append an OR filter, which should be made up of several other filters.
+     *
+     * Example: `.or('id.gt.20,and(name.eq.New Zealand,name.eq.France)')`
+     */
+    or(criteria: string): PostgrestClient<T>
+    /**
+     * Finds rows that exactly match the specified filterObject. Equivalent of multiple `filter('columnName', 'eq', criteria)`.
+     */
+    match(
+      /** Example: `.match({name: 'Beijing', country_id: 156})` */
+      filterObject: { [columnName: string]: T[keyof T] }
+    ): PostgrestClient<T>
+    /**
+     * Finds all rows whose value on the stated columnName exactly matches the specified filterValue. Equivalent of `filter(columnName, 'eq', criteria)`.
+     *
+     * Example: `.eq('name', 'San Francisco')`
+     */
+    eq(columnName: keyof T, filterValue: T[keyof T]): PostgrestClient<T>
+    /**
+     * Finds all rows whose value on the stated columnName does not match the specified filterValue. Equivalent of `filter(columnName, 'neq', criteria)`.
+     *
+     * Example: `.neq('name', 'San Francisco')`
+     */
+    neq(columnName: keyof T, filterValue: T[keyof T]): PostgrestClient<T>
+    /**
+     * Finds all rows whose value on the stated columnName is greater than the specified filterValue. Eqiuvalent of `filter(columnName, 'gt', criteria)`.
+     *
+     * Example: `.gt('level', 9000)`
+     */
+    gt(columnName: keyof T, filterValue: T[keyof T]): PostgrestClient<T>
+    /**
+     * Finds all rows whose value on the stated columnName is less than the specified filterValue. Eqiuvalent of `filter(columnName, 'lt', criteria)`.
+     *
+     * Example: `.lt('level', 9000)`
+     */
+    lt(columnName: keyof T, filterValue: T[keyof T]): PostgrestClient<T>
+    /**
+     * Finds all rows whose value on the stated columnName is greater than or equal to the specified filterValue. Eqiuvalent of `filter(columnName, 'gte', criteria)`.
+     *
+     * Example: `.gte('level', 9000)`
+     */
+    gte(columnName: keyof T, filterValue: T[keyof T]): PostgrestClient<T>
+    /**
+     * Finds all rows whose value on the stated columnName is less than or equal to the specified filterValue. Eqiuvalent of `filter(columnName, 'lte', criteria)`.
+     *
+     * Example: `.lte('level', 9000)`
+     */
+    lte(columnName: keyof T, filterValue: T[keyof T]): PostgrestClient<T>
+    /**
+     * Finds all rows whose value in the stated columnName matches the supplied pattern. Equivalent of `filter(columnName, 'like', stringPattern)`.
+     *
+     * Example: `.like('name', '%la%')`
+     */
+    like(columnName: keyof T, stringPattern: string): PostgrestClient<T>
+    /**
+     * A case-sensitive version of like(). Equivalent of `filter(columnName, 'ilike', stringPattern)`.
+     *
+     * Example: `.ilike('name', '%LA%')`
+     */
+    ilike(columnName: keyof T, stringPattern: string): PostgrestClient<T>
+    /**
+     * A check for exact equality (null, true, false), finds all rows whose value on the state columnName exactly match the specified filterValue. Equivalent of `filter(columnName, 'is', filterValue)`.
+     *
+     * Example: `.is('name', null)`
+     */
+    is(columnName: keyof T, filterValue: null | boolean): PostgrestClient<T>
+    /**
+     * Finds all rows whose value on the stated columnName is found on the specified filterArray. Equivalent of `filter(columnName, 'in', criteria)`.
+     *
+     * Example: `.in('name', ['Rio de Janeiro', 'San Francisco'])`
+     */
+    in(columnName: keyof T, filterArray: Array<T[keyof T]>): PostgrestClient<T>
+    /**
+     * Finds all rows whose json, array, or range value on the stated columnName contains the items specified in the filterObject. Equivalent of `filter(columName, 'cs', criteria)`.
+     *
+     * Example: `.cs('main_exports', ['oil'])`
+     */
+    cs(columnName: keyof T, filterObject: object | Array<T[keyof T]>): PostgrestClient<T>
+    /**
+     * Finds all rows whose json, array, or range value on the stated columnName is contained by the specific filterObject. Equivalent of `filter(columName, 'cd', criteria)`.
+     *
+     * Example: `.cd('main_exports', ['cars', 'food', 'machine'])`
+     */
+    cd(columnName: keyof T, filterObject: object | Array<T[keyof T]>): PostgrestClient<T>
+    /**
+     * Finds all rows whose array value on the stated columnName overlaps with the specified filterArray. Equivalent of `filter(columnName, 'ova', criteria)`.
+     *
+     * Example: `.ova('main_exports', ['computers', 'minerals'])`
+     */
+    ova(columnName: keyof T, filterArray: Array<T[keyof T]>): PostgrestClient<T>
+    /**
+     * Finds all rows whose range value on the stated columnName overlaps with the specified filterRange. Equivalent of `filter(columnName, 'ovr', criteria)`.
+     *
+     * Example: `.ovr('population_range_millions', [150, 250])`
+     */
+    ovr(columnName: keyof T, filterRange: Array<T[keyof T]>): PostgrestClient<T>
+    /**
+     * Finds all rows whose range value on the stated columnName is strictly on the left hand side of the specified filterRange. Equivalent of `filter(columnName, 'sl', criteria)`.
+     *
+     * Example: `.sl('population_range_millions', [150, 250])`
+     */
+    sl(columnName: keyof T, filterRange: Array<T[keyof T]>): PostgrestClient<T>
+    /**
+     * Finds all rows whose range value on the stated columnName is strictly on the right hand side of the specified filterRange. Equivalent of `filter(columnName, 'sl', criteria)`.
+     *
+     * Example: `.sr('population_range_millions', [150, 250])`
+     */
+    sr(columnName: keyof T, filterRange: Array<T[keyof T]>): PostgrestClient<T>
+    /**
+     * Finds all rows whose range value on the stated columnName does not extend to the left of the specified filterRange. Equivalent of `filter(columnName, 'nxl', criteria)`.
+     *
+     * Example: `.nxl('population_range_millions', [150, 250])`
+     */
+    nxl(columnName: keyof T, filterRange: Array<T[keyof T]>): PostgrestClient<T>
+    /**
+     * Finds all rows whose range value on the stated columnName does not extend to the right of the specified filterRange. Equivalent of `filter(columnName, 'nxl', criteria)`.
+     *
+     * Example: `.nxr('population_range_millions', [150, 250])`
+     */
+    nxr(columnName: keyof T, filterRange: Array<T[keyof T]>): PostgrestClient<T>
+    /**
+     * Finds all rows whose range value on the stated columnName is adjacent to the specified filterRange. Equivalent of `filter(columnName, 'adj', criteria)`.
+     *
+     * Example: `.adj('population_range_millions', [70, 185])`
+     */
+    adj(columnName: keyof T, filterRange: Array<T[keyof T]>): PostgrestClient<T>
   }
 
   interface SupabaseRealtimeClient {
