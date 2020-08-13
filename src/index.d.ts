@@ -60,9 +60,9 @@ declare module '@supabase/supabase-js' {
     | 'nxl'
     | 'adj'
 
-  interface User {
+  interface SupabaseAuthUser {
     app_metadata: {
-      provider: 'email'
+      provider?: string
       [key: string]: any
     }
     user_metadata: {
@@ -78,10 +78,10 @@ declare module '@supabase/supabase-js' {
     updated_at: string
   }
 
-  interface AuthResponse {
+  interface SupabaseAuthResponse {
     status: number
     body: {
-      user: User
+      user: SupabaseAuthUser
       access_token: string
       refresh_token: string
       expires_in: number
@@ -94,16 +94,16 @@ declare module '@supabase/supabase-js' {
      * Allow your users to sign up and create a new account.
      * After they have signed up, all interactions using the Supabase JS client will be performed as "that user".
      */
-    signup: (email: string, password: string) => Promise<AuthResponse>
+    signup: (email: string, password: string) => Promise<SupabaseAuthResponse>
     /**
      * If an account is created, users can login to your app.
      * After they have logged in, all interactions using the Supabase JS client will be performed as "that user".
      */
-    login: (email: string, password: string) => Promise<AuthResponse>
+    login: (email: string, password: string) => Promise<SupabaseAuthResponse>
     /**
      * Get the JSON data for the logged in user.
      */
-    user: () => Promise<User>
+    user: () => Promise<SupabaseAuthUser>
     /**
      * After calling log out, all interactions using the Supabase JS client will be "anonymous".
      */
@@ -181,7 +181,7 @@ declare module '@supabase/supabase-js' {
       criteria: any
     ): PostgrestClient<T>
     /**
-     * Reverse of .filter(). Returns rows that do not meet the criteria specified using the columnName and operator provided.
+     * Reverse of `.filter()`. Returns rows that do not meet the criteria specified using the columnName and operator provided.
      * Example: `.not('name', 'eq', 'Paris')`
      */
     not(
@@ -248,7 +248,7 @@ declare module '@supabase/supabase-js' {
      */
     like(columnName: keyof T, stringPattern: string): PostgrestClient<T>
     /**
-     * A case-sensitive version of like(). Equivalent of `filter(columnName, 'ilike', stringPattern)`.
+     * A case-sensitive version of `like()`. Equivalent of `filter(columnName, 'ilike', stringPattern)`.
      *
      * Example: `.ilike('name', '%LA%')`
      */
@@ -322,7 +322,13 @@ declare module '@supabase/supabase-js' {
   }
 
   interface SupabaseRealtimeClient {
+    /**
+     * Subscribes to a specific table for changes in realtime.
+     *
+     * Note: If you want to receive the "previous" data for updates and deletes, you will need to set `REPLICA IDENTITY` to `FULL`, like this: `ALTER TABLE your_table REPLICA IDENTITY FULL;`.
+     */
     subscribe(): SupabaseRealtimeClient
+    /** Unsubscribes from a specific subscription. */
     unsubscribe(): SupabaseRealtimeClient
     schema: string
     tableName: string
@@ -332,7 +338,9 @@ declare module '@supabase/supabase-js' {
   interface SupabaseRealtimePayload<T> {
     commit_timestamp: string
     eventType: 'INSERT' | 'UPDATE' | 'DELETE'
+    /** The new record. Present for 'INSERT' and 'UPDATE' events. */
     new: T
+    /** The previous record. Present for 'UPDATE' and 'DELETE' events. */
     old: T
     schema: string
     table: string
@@ -346,7 +354,7 @@ declare module '@supabase/supabase-js' {
       /**
        * A comma separated list of columns. For example `.select('id, name')`.
        *
-       * Omitting `columnQuery` is equal to `.select('*').
+       * Omitting `columnQuery` is equal to `.select('*')`.
        */
       columnQuery?: string
     ): PostgrestClient<T>
