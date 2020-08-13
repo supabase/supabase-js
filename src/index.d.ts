@@ -14,7 +14,7 @@ declare module '@supabase/supabase-js' {
     LessThanOrEqual = 'lte',
     /** Finds all rows whose value in the stated columnName matches the supplied pattern. */
     Like = 'like',
-    /** A case-sensitive version of `Like`. */
+    /** A case-insensitive version of `like`. */
     ILike = 'ilike',
     /** A check for exact equality (null, true, false) */
     Is = 'is',
@@ -244,13 +244,13 @@ declare module '@supabase/supabase-js' {
     /**
      * Finds all rows whose value in the stated columnName matches the supplied pattern. Equivalent of `filter(columnName, 'like', stringPattern)`.
      *
-     * Example: `.like('name', '%la%')`
+     * Example: `.like('name', '%LA%')`
      */
     like(columnName: keyof T, stringPattern: string): PostgrestClient<T>
     /**
-     * A case-sensitive version of `like()`. Equivalent of `filter(columnName, 'ilike', stringPattern)`.
+     * A case-insensitive version of `like()`. Equivalent of `filter(columnName, 'ilike', stringPattern)`.
      *
-     * Example: `.ilike('name', '%LA%')`
+     * Example: `.ilike('name', '%la%')`
      */
     ilike(columnName: keyof T, stringPattern: string): PostgrestClient<T>
     /**
