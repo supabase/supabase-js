@@ -16,6 +16,7 @@ yarn.lock
 src
 test
 examples
+umd-temp
 CHANGELOG.md
 .travis.yml
 .editorconfig
