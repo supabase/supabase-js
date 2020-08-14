@@ -37,7 +37,7 @@ jspm_packages
 # Lib
 lib
 umd
-umd-temp
+umd_temp
 
 others
 .DS_Store
