@@ -12,6 +12,7 @@
 - `npm run lint` - Run ESlint with airbnb-config
 - `npm run cover` - Get coverage report for your code.
 - `npm run build` - Babel will transpile ES6 => ES5 and minify the code.
+- `npm run build:umd` - Babel will transpile ES6 => UMD, minify the code and webpack to supabase.js
 - `npm run prepublish` - Hook for npm. Do all the checks before publishing your module.
 
 
