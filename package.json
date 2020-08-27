@@ -1,6 +1,6 @@
 {
   "name": "@supabase/supabase-js",
-  "version": "0.35.11",
+  "version": "0.36.0",
   "description": "Supabase Realtime API",
   "main": "./lib/index.js",
   "scripts": {
