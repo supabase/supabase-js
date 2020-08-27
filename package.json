@@ -21,7 +21,8 @@
   },
   "files": [
     "lib",
-    "src"
+    "src",
+    "umd"
   ],
   "repository": "https://github.com/supabase/supabase-js",
   "keywords": [
