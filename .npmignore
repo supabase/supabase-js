@@ -1,5 +1,6 @@
 *.log
 npm-debug.log*
+!umd 
 
 # Coverage directory used by tools like istanbul
 coverage
