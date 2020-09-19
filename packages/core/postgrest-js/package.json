@@ -1,55 +1,44 @@
 {
   "name": "@supabase/postgrest-js",
-  "version": "0.17.0",
-  "description": "PostgREST JS client",
-  "main": "./lib/index.js",
-  "scripts": {
-    "build": "BABEL_ENV=production babel src --out-dir lib",
-    "clean": "rimraf lib",
-    "cover": "nyc --check-coverage npm run test",
-    "deploy:minor": "npm version minor && npm publish --access=public",
-    "deploy:patch": "npm version patch && npm publish --access=public",
-    "docs": "node_modules/.bin/jsdoc --configure .jsdoc.json --verbose",
-    "prepublish": "npm run clean && npm run build",
-    "pretty": "prettier --write \"./**/*.{js,json,yml,md,vue,css,scss}\"",
-    "test:integration": "mocha -r @babel/register -r babel-polyfill  test/integration/**/*.js",
-    "test": "mocha -r @babel/register -r babel-polyfill  test/unit/**/*.js",
-    "test:prod": "BABEL_ENV=production npm run test",
-    "test:watch": "npm test -- --watch"
-  },
-  "files": [
-    "lib",
-    "src"
-  ],
-  "repository": "https://github.com/supabase/postgrest-js",
+  "version": "0.0.0",
+  "description": "Isomorphic PostgREST client",
   "keywords": [
     "postgrest",
     "supabase"
   ],
+  "homepage": "https://github.com/supabase/postgrest-js",
+  "bugs": "https://github.com/supabase/postgrest-js/issues",
+  "license": "MIT",
   "author": "Supabase",
-  "license": "Apache-2.0",
-  "bugs": {
-    "url": "https://github.com/supabase/postgrest-js/issues"
-  },
-  "homepage": "https://supabase.io",
-  "devDependencies": {
-    "@babel/cli": "^7.8.3",
-    "@babel/core": "^7.8.3",
-    "@babel/preset-env": "^7.8.3",
-    "@babel/register": "^7.8.3",
-    "@supabase/doctest-js": "0.1.0",
-    "@supabase/jsdoc-template": "^0.2.0",
-    "babel-plugin-add-module-exports": "^1.0.0",
-    "babel-polyfill": "^6.26.0",
-    "babel-preset-minify": "^0.5.1",
-    "chai": "^4.2.0",
-    "jsdoc": "^3.6.3",
-    "mocha": "^8.0.1",
-    "nyc": "^15.0.0",
-    "prettier": "^2.0.1",
-    "rimraf": "^3.0.2"
+  "files": [
+    "dist"
+  ],
+  "main": "dist/main/index.js",
+  "module": "dist/module/index.js",
+  "repository": "supabase/postgrest-js",
+  "scripts": {
+    "clean": "rimraf dist docs",
+    "format": "prettier --write \"{src,test}/**/*.ts\"",
+    "build": "run-s clean format build:*",
+    "build:main": "tsc -p tsconfig.json",
+    "build:module": "tsc -p tsconfig.module.json",
+    "test": "run-s test:db && jest -i",
+    "test:db": "cd test/db && docker-compose down && docker-compose up -d && sleep 5",
+    "docs": "typedoc --mode file --target ES6 --theme minimal",
+    "docs:json": "typedoc --json docs/spec.json --mode modules --includeDeclarations --excludeExternals"
   },
   "dependencies": {
-    "superagent": "^5.2.1"
+    "isomorphic-unfetch": "^3.0.0"
+  },
+  "devDependencies": {
+    "@types/jest": "^26.0.13",
+    "@types/node-fetch": "^2.5.7",
+    "jest": "^26.4.1",
+    "npm-run-all": "^4.1.5",
+    "prettier": "^2.0.5",
+    "rimraf": "^3.0.2",
+    "ts-jest": "^26.3.0",
+    "typedoc": "^0.19.1",
+    "typescript": "^4.0.2"
   }
 }

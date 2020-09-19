@@ -1,0 +1,969 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`adj 1`] = `
+Object {
+  "body": Array [
+    Object {
+      "age_range": "[1,2)",
+      "catchphrase": "'cat' 'fat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "supabot",
+    },
+    Object {
+      "age_range": "[25,35)",
+      "catchphrase": "'bat' 'cat'",
+      "data": null,
+      "status": "OFFLINE",
+      "username": "kiwicopple",
+    },
+    Object {
+      "age_range": "[25,35)",
+      "catchphrase": "'bat' 'rat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "awailas",
+    },
+  ],
+  "data": Array [
+    Object {
+      "age_range": "[1,2)",
+      "catchphrase": "'cat' 'fat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "supabot",
+    },
+    Object {
+      "age_range": "[25,35)",
+      "catchphrase": "'bat' 'cat'",
+      "data": null,
+      "status": "OFFLINE",
+      "username": "kiwicopple",
+    },
+    Object {
+      "age_range": "[25,35)",
+      "catchphrase": "'bat' 'rat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "awailas",
+    },
+  ],
+  "error": null,
+  "status": 200,
+  "statusText": "OK",
+}
+`;
+
+exports[`cd 1`] = `
+Object {
+  "body": Array [
+    Object {
+      "age_range": "[1,2)",
+      "catchphrase": "'cat' 'fat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "supabot",
+    },
+  ],
+  "data": Array [
+    Object {
+      "age_range": "[1,2)",
+      "catchphrase": "'cat' 'fat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "supabot",
+    },
+  ],
+  "error": null,
+  "status": 200,
+  "statusText": "OK",
+}
+`;
+
+exports[`cs 1`] = `
+Object {
+  "body": Array [
+    Object {
+      "age_range": "[1,2)",
+      "catchphrase": "'cat' 'fat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "supabot",
+    },
+  ],
+  "data": Array [
+    Object {
+      "age_range": "[1,2)",
+      "catchphrase": "'cat' 'fat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "supabot",
+    },
+  ],
+  "error": null,
+  "status": 200,
+  "statusText": "OK",
+}
+`;
+
+exports[`eq 1`] = `
+Object {
+  "body": Array [
+    Object {
+      "age_range": "[1,2)",
+      "catchphrase": "'cat' 'fat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "supabot",
+    },
+  ],
+  "data": Array [
+    Object {
+      "age_range": "[1,2)",
+      "catchphrase": "'cat' 'fat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "supabot",
+    },
+  ],
+  "error": null,
+  "status": 200,
+  "statusText": "OK",
+}
+`;
+
+exports[`filter 1`] = `
+Object {
+  "body": Array [
+    Object {
+      "age_range": "[1,2)",
+      "catchphrase": "'cat' 'fat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "supabot",
+    },
+  ],
+  "data": Array [
+    Object {
+      "age_range": "[1,2)",
+      "catchphrase": "'cat' 'fat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "supabot",
+    },
+  ],
+  "error": null,
+  "status": 200,
+  "statusText": "OK",
+}
+`;
+
+exports[`fts 1`] = `
+Object {
+  "body": Array [
+    Object {
+      "age_range": "[1,2)",
+      "catchphrase": "'cat' 'fat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "supabot",
+    },
+  ],
+  "data": Array [
+    Object {
+      "age_range": "[1,2)",
+      "catchphrase": "'cat' 'fat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "supabot",
+    },
+  ],
+  "error": null,
+  "status": 200,
+  "statusText": "OK",
+}
+`;
+
+exports[`gt 1`] = `
+Object {
+  "body": Array [
+    Object {
+      "channel_id": 2,
+      "data": null,
+      "id": 2,
+      "message": "Perfection is attained, not when there is nothing more to add, but when there is nothing left to take away.",
+      "username": "supabot",
+    },
+  ],
+  "data": Array [
+    Object {
+      "channel_id": 2,
+      "data": null,
+      "id": 2,
+      "message": "Perfection is attained, not when there is nothing more to add, but when there is nothing left to take away.",
+      "username": "supabot",
+    },
+  ],
+  "error": null,
+  "status": 200,
+  "statusText": "OK",
+}
+`;
+
+exports[`gte 1`] = `
+Object {
+  "body": Array [
+    Object {
+      "channel_id": 1,
+      "data": null,
+      "id": 1,
+      "message": "Hello World 👋",
+      "username": "supabot",
+    },
+    Object {
+      "channel_id": 2,
+      "data": null,
+      "id": 2,
+      "message": "Perfection is attained, not when there is nothing more to add, but when there is nothing left to take away.",
+      "username": "supabot",
+    },
+  ],
+  "data": Array [
+    Object {
+      "channel_id": 1,
+      "data": null,
+      "id": 1,
+      "message": "Hello World 👋",
+      "username": "supabot",
+    },
+    Object {
+      "channel_id": 2,
+      "data": null,
+      "id": 2,
+      "message": "Perfection is attained, not when there is nothing more to add, but when there is nothing left to take away.",
+      "username": "supabot",
+    },
+  ],
+  "error": null,
+  "status": 200,
+  "statusText": "OK",
+}
+`;
+
+exports[`ilike 1`] = `
+Object {
+  "body": Array [
+    Object {
+      "age_range": "[1,2)",
+      "catchphrase": "'cat' 'fat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "supabot",
+    },
+  ],
+  "data": Array [
+    Object {
+      "age_range": "[1,2)",
+      "catchphrase": "'cat' 'fat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "supabot",
+    },
+  ],
+  "error": null,
+  "status": 200,
+  "statusText": "OK",
+}
+`;
+
+exports[`in 1`] = `
+Object {
+  "body": Array [
+    Object {
+      "age_range": "[1,2)",
+      "catchphrase": "'cat' 'fat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "supabot",
+    },
+    Object {
+      "age_range": "[25,35)",
+      "catchphrase": "'bat' 'cat'",
+      "data": null,
+      "status": "OFFLINE",
+      "username": "kiwicopple",
+    },
+    Object {
+      "age_range": "[25,35)",
+      "catchphrase": "'bat' 'rat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "awailas",
+    },
+    Object {
+      "age_range": "[20,30)",
+      "catchphrase": "'fat' 'rat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "dragarcia",
+    },
+  ],
+  "data": Array [
+    Object {
+      "age_range": "[1,2)",
+      "catchphrase": "'cat' 'fat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "supabot",
+    },
+    Object {
+      "age_range": "[25,35)",
+      "catchphrase": "'bat' 'cat'",
+      "data": null,
+      "status": "OFFLINE",
+      "username": "kiwicopple",
+    },
+    Object {
+      "age_range": "[25,35)",
+      "catchphrase": "'bat' 'rat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "awailas",
+    },
+    Object {
+      "age_range": "[20,30)",
+      "catchphrase": "'fat' 'rat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "dragarcia",
+    },
+  ],
+  "error": null,
+  "status": 200,
+  "statusText": "OK",
+}
+`;
+
+exports[`is 1`] = `
+Object {
+  "body": Array [
+    Object {
+      "age_range": "[1,2)",
+      "catchphrase": "'cat' 'fat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "supabot",
+    },
+    Object {
+      "age_range": "[25,35)",
+      "catchphrase": "'bat' 'cat'",
+      "data": null,
+      "status": "OFFLINE",
+      "username": "kiwicopple",
+    },
+    Object {
+      "age_range": "[25,35)",
+      "catchphrase": "'bat' 'rat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "awailas",
+    },
+    Object {
+      "age_range": "[20,30)",
+      "catchphrase": "'fat' 'rat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "dragarcia",
+    },
+  ],
+  "data": Array [
+    Object {
+      "age_range": "[1,2)",
+      "catchphrase": "'cat' 'fat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "supabot",
+    },
+    Object {
+      "age_range": "[25,35)",
+      "catchphrase": "'bat' 'cat'",
+      "data": null,
+      "status": "OFFLINE",
+      "username": "kiwicopple",
+    },
+    Object {
+      "age_range": "[25,35)",
+      "catchphrase": "'bat' 'rat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "awailas",
+    },
+    Object {
+      "age_range": "[20,30)",
+      "catchphrase": "'fat' 'rat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "dragarcia",
+    },
+  ],
+  "error": null,
+  "status": 200,
+  "statusText": "OK",
+}
+`;
+
+exports[`like 1`] = `
+Object {
+  "body": Array [
+    Object {
+      "age_range": "[1,2)",
+      "catchphrase": "'cat' 'fat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "supabot",
+    },
+  ],
+  "data": Array [
+    Object {
+      "age_range": "[1,2)",
+      "catchphrase": "'cat' 'fat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "supabot",
+    },
+  ],
+  "error": null,
+  "status": 200,
+  "statusText": "OK",
+}
+`;
+
+exports[`lt 1`] = `
+Object {
+  "body": Array [
+    Object {
+      "channel_id": 1,
+      "data": null,
+      "id": 1,
+      "message": "Hello World 👋",
+      "username": "supabot",
+    },
+  ],
+  "data": Array [
+    Object {
+      "channel_id": 1,
+      "data": null,
+      "id": 1,
+      "message": "Hello World 👋",
+      "username": "supabot",
+    },
+  ],
+  "error": null,
+  "status": 200,
+  "statusText": "OK",
+}
+`;
+
+exports[`lte 1`] = `
+Object {
+  "body": Array [
+    Object {
+      "channel_id": 1,
+      "data": null,
+      "id": 1,
+      "message": "Hello World 👋",
+      "username": "supabot",
+    },
+    Object {
+      "channel_id": 2,
+      "data": null,
+      "id": 2,
+      "message": "Perfection is attained, not when there is nothing more to add, but when there is nothing left to take away.",
+      "username": "supabot",
+    },
+  ],
+  "data": Array [
+    Object {
+      "channel_id": 1,
+      "data": null,
+      "id": 1,
+      "message": "Hello World 👋",
+      "username": "supabot",
+    },
+    Object {
+      "channel_id": 2,
+      "data": null,
+      "id": 2,
+      "message": "Perfection is attained, not when there is nothing more to add, but when there is nothing left to take away.",
+      "username": "supabot",
+    },
+  ],
+  "error": null,
+  "status": 200,
+  "statusText": "OK",
+}
+`;
+
+exports[`match 1`] = `
+Object {
+  "body": Array [
+    Object {
+      "age_range": "[1,2)",
+      "catchphrase": "'cat' 'fat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "supabot",
+    },
+  ],
+  "data": Array [
+    Object {
+      "age_range": "[1,2)",
+      "catchphrase": "'cat' 'fat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "supabot",
+    },
+  ],
+  "error": null,
+  "status": 200,
+  "statusText": "OK",
+}
+`;
+
+exports[`multiple filters 1`] = `
+Object {
+  "body": Array [
+    Object {
+      "age_range": "[1,2)",
+      "catchphrase": "'cat' 'fat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "supabot",
+    },
+  ],
+  "data": Array [
+    Object {
+      "age_range": "[1,2)",
+      "catchphrase": "'cat' 'fat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "supabot",
+    },
+  ],
+  "error": null,
+  "status": 200,
+  "statusText": "OK",
+}
+`;
+
+exports[`neq 1`] = `
+Object {
+  "body": Array [
+    Object {
+      "age_range": "[25,35)",
+      "catchphrase": "'bat' 'cat'",
+      "data": null,
+      "status": "OFFLINE",
+      "username": "kiwicopple",
+    },
+    Object {
+      "age_range": "[25,35)",
+      "catchphrase": "'bat' 'rat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "awailas",
+    },
+    Object {
+      "age_range": "[20,30)",
+      "catchphrase": "'fat' 'rat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "dragarcia",
+    },
+  ],
+  "data": Array [
+    Object {
+      "age_range": "[25,35)",
+      "catchphrase": "'bat' 'cat'",
+      "data": null,
+      "status": "OFFLINE",
+      "username": "kiwicopple",
+    },
+    Object {
+      "age_range": "[25,35)",
+      "catchphrase": "'bat' 'rat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "awailas",
+    },
+    Object {
+      "age_range": "[20,30)",
+      "catchphrase": "'fat' 'rat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "dragarcia",
+    },
+  ],
+  "error": null,
+  "status": 200,
+  "statusText": "OK",
+}
+`;
+
+exports[`not 1`] = `
+Object {
+  "body": Array [
+    Object {
+      "age_range": "[1,2)",
+      "catchphrase": "'cat' 'fat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "supabot",
+    },
+    Object {
+      "age_range": "[25,35)",
+      "catchphrase": "'bat' 'rat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "awailas",
+    },
+    Object {
+      "age_range": "[20,30)",
+      "catchphrase": "'fat' 'rat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "dragarcia",
+    },
+  ],
+  "data": Array [
+    Object {
+      "age_range": "[1,2)",
+      "catchphrase": "'cat' 'fat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "supabot",
+    },
+    Object {
+      "age_range": "[25,35)",
+      "catchphrase": "'bat' 'rat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "awailas",
+    },
+    Object {
+      "age_range": "[20,30)",
+      "catchphrase": "'fat' 'rat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "dragarcia",
+    },
+  ],
+  "error": null,
+  "status": 200,
+  "statusText": "OK",
+}
+`;
+
+exports[`nxl 1`] = `
+Object {
+  "body": Array [
+    Object {
+      "age_range": "[25,35)",
+      "catchphrase": "'bat' 'cat'",
+      "data": null,
+      "status": "OFFLINE",
+      "username": "kiwicopple",
+    },
+    Object {
+      "age_range": "[25,35)",
+      "catchphrase": "'bat' 'rat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "awailas",
+    },
+    Object {
+      "age_range": "[20,30)",
+      "catchphrase": "'fat' 'rat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "dragarcia",
+    },
+  ],
+  "data": Array [
+    Object {
+      "age_range": "[25,35)",
+      "catchphrase": "'bat' 'cat'",
+      "data": null,
+      "status": "OFFLINE",
+      "username": "kiwicopple",
+    },
+    Object {
+      "age_range": "[25,35)",
+      "catchphrase": "'bat' 'rat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "awailas",
+    },
+    Object {
+      "age_range": "[20,30)",
+      "catchphrase": "'fat' 'rat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "dragarcia",
+    },
+  ],
+  "error": null,
+  "status": 200,
+  "statusText": "OK",
+}
+`;
+
+exports[`nxr 1`] = `
+Object {
+  "body": Array [
+    Object {
+      "age_range": "[1,2)",
+      "catchphrase": "'cat' 'fat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "supabot",
+    },
+  ],
+  "data": Array [
+    Object {
+      "age_range": "[1,2)",
+      "catchphrase": "'cat' 'fat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "supabot",
+    },
+  ],
+  "error": null,
+  "status": 200,
+  "statusText": "OK",
+}
+`;
+
+exports[`or 1`] = `
+Object {
+  "body": Array [
+    Object {
+      "age_range": "[1,2)",
+      "catchphrase": "'cat' 'fat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "supabot",
+    },
+    Object {
+      "age_range": "[25,35)",
+      "catchphrase": "'bat' 'cat'",
+      "data": null,
+      "status": "OFFLINE",
+      "username": "kiwicopple",
+    },
+  ],
+  "data": Array [
+    Object {
+      "age_range": "[1,2)",
+      "catchphrase": "'cat' 'fat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "supabot",
+    },
+    Object {
+      "age_range": "[25,35)",
+      "catchphrase": "'bat' 'cat'",
+      "data": null,
+      "status": "OFFLINE",
+      "username": "kiwicopple",
+    },
+  ],
+  "error": null,
+  "status": 200,
+  "statusText": "OK",
+}
+`;
+
+exports[`ov 1`] = `
+Object {
+  "body": Array [
+    Object {
+      "age_range": "[20,30)",
+      "catchphrase": "'fat' 'rat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "dragarcia",
+    },
+  ],
+  "data": Array [
+    Object {
+      "age_range": "[20,30)",
+      "catchphrase": "'fat' 'rat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "dragarcia",
+    },
+  ],
+  "error": null,
+  "status": 200,
+  "statusText": "OK",
+}
+`;
+
+exports[`phfts 1`] = `
+Object {
+  "body": Array [
+    Object {
+      "age_range": "[1,2)",
+      "catchphrase": "'cat' 'fat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "supabot",
+    },
+    Object {
+      "age_range": "[25,35)",
+      "catchphrase": "'bat' 'cat'",
+      "data": null,
+      "status": "OFFLINE",
+      "username": "kiwicopple",
+    },
+  ],
+  "data": Array [
+    Object {
+      "age_range": "[1,2)",
+      "catchphrase": "'cat' 'fat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "supabot",
+    },
+    Object {
+      "age_range": "[25,35)",
+      "catchphrase": "'bat' 'cat'",
+      "data": null,
+      "status": "OFFLINE",
+      "username": "kiwicopple",
+    },
+  ],
+  "error": null,
+  "status": 200,
+  "statusText": "OK",
+}
+`;
+
+exports[`plfts 1`] = `
+Object {
+  "body": Array [
+    Object {
+      "age_range": "[1,2)",
+      "catchphrase": "'cat' 'fat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "supabot",
+    },
+  ],
+  "data": Array [
+    Object {
+      "age_range": "[1,2)",
+      "catchphrase": "'cat' 'fat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "supabot",
+    },
+  ],
+  "error": null,
+  "status": 200,
+  "statusText": "OK",
+}
+`;
+
+exports[`sl 1`] = `
+Object {
+  "body": Array [
+    Object {
+      "age_range": "[1,2)",
+      "catchphrase": "'cat' 'fat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "supabot",
+    },
+  ],
+  "data": Array [
+    Object {
+      "age_range": "[1,2)",
+      "catchphrase": "'cat' 'fat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "supabot",
+    },
+  ],
+  "error": null,
+  "status": 200,
+  "statusText": "OK",
+}
+`;
+
+exports[`sr 1`] = `
+Object {
+  "body": Array [
+    Object {
+      "age_range": "[25,35)",
+      "catchphrase": "'bat' 'cat'",
+      "data": null,
+      "status": "OFFLINE",
+      "username": "kiwicopple",
+    },
+    Object {
+      "age_range": "[25,35)",
+      "catchphrase": "'bat' 'rat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "awailas",
+    },
+  ],
+  "data": Array [
+    Object {
+      "age_range": "[25,35)",
+      "catchphrase": "'bat' 'cat'",
+      "data": null,
+      "status": "OFFLINE",
+      "username": "kiwicopple",
+    },
+    Object {
+      "age_range": "[25,35)",
+      "catchphrase": "'bat' 'rat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "awailas",
+    },
+  ],
+  "error": null,
+  "status": 200,
+  "statusText": "OK",
+}
+`;
+
+exports[`wfts 1`] = `
+Object {
+  "body": Array [
+    Object {
+      "age_range": "[1,2)",
+      "catchphrase": "'cat' 'fat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "supabot",
+    },
+  ],
+  "data": Array [
+    Object {
+      "age_range": "[1,2)",
+      "catchphrase": "'cat' 'fat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "supabot",
+    },
+  ],
+  "error": null,
+  "status": 200,
+  "statusText": "OK",
+}
+`;

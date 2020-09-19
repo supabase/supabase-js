@@ -1,0 +1,171 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`limit 1`] = `
+Object {
+  "body": Array [
+    Object {
+      "age_range": "[1,2)",
+      "catchphrase": "'cat' 'fat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "supabot",
+    },
+  ],
+  "data": Array [
+    Object {
+      "age_range": "[1,2)",
+      "catchphrase": "'cat' 'fat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "supabot",
+    },
+  ],
+  "error": null,
+  "status": 200,
+  "statusText": "OK",
+}
+`;
+
+exports[`order 1`] = `
+Object {
+  "body": Array [
+    Object {
+      "age_range": "[1,2)",
+      "catchphrase": "'cat' 'fat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "supabot",
+    },
+    Object {
+      "age_range": "[25,35)",
+      "catchphrase": "'bat' 'cat'",
+      "data": null,
+      "status": "OFFLINE",
+      "username": "kiwicopple",
+    },
+    Object {
+      "age_range": "[20,30)",
+      "catchphrase": "'fat' 'rat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "dragarcia",
+    },
+    Object {
+      "age_range": "[25,35)",
+      "catchphrase": "'bat' 'rat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "awailas",
+    },
+  ],
+  "data": Array [
+    Object {
+      "age_range": "[1,2)",
+      "catchphrase": "'cat' 'fat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "supabot",
+    },
+    Object {
+      "age_range": "[25,35)",
+      "catchphrase": "'bat' 'cat'",
+      "data": null,
+      "status": "OFFLINE",
+      "username": "kiwicopple",
+    },
+    Object {
+      "age_range": "[20,30)",
+      "catchphrase": "'fat' 'rat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "dragarcia",
+    },
+    Object {
+      "age_range": "[25,35)",
+      "catchphrase": "'bat' 'rat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "awailas",
+    },
+  ],
+  "error": null,
+  "status": 200,
+  "statusText": "OK",
+}
+`;
+
+exports[`range 1`] = `
+Object {
+  "body": Array [
+    Object {
+      "age_range": "[25,35)",
+      "catchphrase": "'bat' 'cat'",
+      "data": null,
+      "status": "OFFLINE",
+      "username": "kiwicopple",
+    },
+    Object {
+      "age_range": "[25,35)",
+      "catchphrase": "'bat' 'rat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "awailas",
+    },
+    Object {
+      "age_range": "[20,30)",
+      "catchphrase": "'fat' 'rat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "dragarcia",
+    },
+  ],
+  "data": Array [
+    Object {
+      "age_range": "[25,35)",
+      "catchphrase": "'bat' 'cat'",
+      "data": null,
+      "status": "OFFLINE",
+      "username": "kiwicopple",
+    },
+    Object {
+      "age_range": "[25,35)",
+      "catchphrase": "'bat' 'rat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "awailas",
+    },
+    Object {
+      "age_range": "[20,30)",
+      "catchphrase": "'fat' 'rat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "dragarcia",
+    },
+  ],
+  "error": null,
+  "status": 200,
+  "statusText": "OK",
+}
+`;
+
+exports[`single 1`] = `
+Object {
+  "body": Object {
+    "age_range": "[1,2)",
+    "catchphrase": "'cat' 'fat'",
+    "data": null,
+    "status": "ONLINE",
+    "username": "supabot",
+  },
+  "data": Object {
+    "age_range": "[1,2)",
+    "catchphrase": "'cat' 'fat'",
+    "data": null,
+    "status": "ONLINE",
+    "username": "supabot",
+  },
+  "error": null,
+  "status": 200,
+  "statusText": "OK",
+}
+`;
