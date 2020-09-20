@@ -1,0 +1,5 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Init 1`] = `"http://localhost:3000"`;
+
+exports[`Init 2`] = `"http://localhost:3000"`;
