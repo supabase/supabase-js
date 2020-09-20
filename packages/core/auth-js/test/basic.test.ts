@@ -13,11 +13,11 @@ test('Init', async () => {
 describe('Developers can subscribe and unsubscribe', () => {
   const subscription = gotrue.onAuthStateChange(() => console.log('called'))
   test('Subscribe a listener', async () => {
-    expect(gotrue.stateChangeEmmitters.size).toMatchSnapshot()
+    expect(gotrue.stateChangeEmitters.size).toMatchSnapshot()
   })
   test('Unsubscribe a listener', async () => {
     subscription.unsubscribe()
-    expect(gotrue.stateChangeEmmitters.size).toMatchSnapshot()
+    expect(gotrue.stateChangeEmitters.size).toMatchSnapshot()
   })
 })
 
