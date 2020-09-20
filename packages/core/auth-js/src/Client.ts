@@ -4,7 +4,7 @@ import { uuid } from './lib/helpers'
 export default class Client {
   url: string
   headers: ClientConfig['headers'] = {}
-  stateChangeEmmitters: Map<string, Subscription> = new Map()
+  stateChangeEmitters: Map<string, Subscription> = new Map()
 
   /**
    * Creates a GoTrue instance for admin interactions.
@@ -50,9 +50,9 @@ export default class Client {
     const subscription: Subscription = {
       id,
       callback,
-      unsubscribe: () => self.stateChangeEmmitters.delete(id),
+      unsubscribe: () => self.stateChangeEmitters.delete(id),
     }
-    this.stateChangeEmmitters.set(id, subscription)
+    this.stateChangeEmitters.set(id, subscription)
     return subscription
   }
 }
