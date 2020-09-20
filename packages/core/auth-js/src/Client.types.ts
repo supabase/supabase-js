@@ -7,5 +7,6 @@ export interface ClientConfig {
 export interface Subscription {
   id: string
   callback: Function 
+  /** Removes the callback function */ 
   unsubscribe: Function
 }
