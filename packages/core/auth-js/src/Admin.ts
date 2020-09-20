@@ -1,7 +1,8 @@
+import { AdminConfig } from './Admin.types'
+
 export default class Admin {
   url: string
-  headers: { [key: string]: string }
-  schema?: string
+  headers: AdminConfig['headers'] = {}
 
   /**
    * Creates a GoTrue instance for admin interactions.
@@ -9,11 +10,10 @@ export default class Admin {
    * @param url  URL of the GoTrue instance.
    * @param headers  Custom headers.
    */
-  constructor(
-    url: string,
-    { headers = {} }: { headers?: { [key: string]: string }; schema?: string } = {}
-  ) {
+  constructor(url: string, options?: AdminConfig) {
     this.url = url
-    this.headers = headers
+    if (options?.headers) {
+      this.headers = { ...this.headers, ...options.headers }
+    }
   }
 }

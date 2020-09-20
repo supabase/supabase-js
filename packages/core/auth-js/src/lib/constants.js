@@ -1,0 +1,1 @@
+export const GOTRUE_URL = 'http://localhost:8081'
