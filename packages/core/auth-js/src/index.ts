@@ -1,4 +1,6 @@
-import Admin from './Admin'
+require('dotenv').config()
+
+import Api from './Api'
 import Client from './Client'
 
-export { Admin, Client }
+export { Api, Client }

@@ -1,0 +1,108 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Get user 1`] = `
+Object {
+  "app_metadata": Object {
+    "provider": "email",
+  },
+  "aud": Any<String>,
+  "confirmed_at": "2020-09-22T11:11:48.811209Z",
+  "created_at": "2020-09-22T11:11:48.807848Z",
+  "email": "fake@email.com",
+  "id": Any<String>,
+  "role": "",
+  "updated_at": Any<String>,
+  "user_metadata": Object {},
+}
+`;
+
+exports[`Get user after logging out 1`] = `
+Object {
+  "data": null,
+  "error": "Error: Not logged in.",
+}
+`;
+
+exports[`Get user after updating 1`] = `
+Object {
+  "app_metadata": Object {
+    "provider": "email",
+  },
+  "aud": Any<String>,
+  "confirmed_at": "2020-09-22T11:11:48.811209Z",
+  "created_at": "2020-09-22T11:11:48.807848Z",
+  "email": "fake@email.com",
+  "id": Any<String>,
+  "role": "",
+  "updated_at": Any<String>,
+  "user_metadata": Object {
+    "hello": "world",
+  },
+}
+`;
+
+exports[`Update user 1`] = `
+Object {
+  "app_metadata": Object {
+    "provider": "email",
+  },
+  "aud": Any<String>,
+  "confirmed_at": "2020-09-22T11:11:48.811209Z",
+  "created_at": "2020-09-22T11:11:48.807848Z",
+  "email": "fake@email.com",
+  "id": Any<String>,
+  "role": "",
+  "updated_at": Any<String>,
+  "user_metadata": Object {
+    "hello": "world",
+  },
+}
+`;
+
+exports[`signIn() 1`] = `
+Object {
+  "access_token": Any<String>,
+  "expires_in": Any<Number>,
+  "refresh_token": "2XeSL-nTVOZCsG6PKfKhVg",
+  "token_type": "bearer",
+  "user": Object {
+    "app_metadata": Object {
+      "provider": "email",
+    },
+    "aud": Any<String>,
+    "confirmed_at": "2020-09-22T11:11:48.811209Z",
+    "created_at": "2020-09-22T11:11:48.807848Z",
+    "email": "fake@email.com",
+    "id": Any<String>,
+    "last_sign_in_at": "2020-09-22T11:11:48.9022814Z",
+    "role": "",
+    "updated_at": Any<String>,
+    "user_metadata": Object {},
+  },
+}
+`;
+
+exports[`signOut 1`] = `true`;
+
+exports[`signUp() 1`] = `
+Object {
+  "access_token": Any<String>,
+  "expires_in": Any<Number>,
+  "refresh_token": "GSiVzIcREbjs9mGn6knGeA",
+  "token_type": "bearer",
+  "user": Object {
+    "app_metadata": Object {
+      "provider": "email",
+    },
+    "aud": Any<String>,
+    "confirmed_at": "2020-09-22T11:11:48.8112086Z",
+    "created_at": "2020-09-22T11:11:48.807848Z",
+    "email": "fake@email.com",
+    "id": Any<String>,
+    "last_sign_in_at": "2020-09-22T11:11:48.8142114Z",
+    "role": "",
+    "updated_at": Any<String>,
+    "user_metadata": null,
+  },
+}
+`;
