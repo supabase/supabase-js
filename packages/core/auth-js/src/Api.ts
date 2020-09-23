@@ -12,47 +12,87 @@ export default class Api {
     this.headers = headers
   }
 
-  signUpWithEmail(email: string, password: string) {
-    return post(`${this.url}/signup`, { email, password }, { headers: this.headers })
+  /**
+   * Creates a new user using their email address.
+   */
+  async signUpWithEmail(email: string, password: string) {
+    try {
+      let data: any = await post(
+        `${this.url}/signup`,
+        { email, password },
+        { headers: this.headers }
+      )
+      return { data, error: null }
+    } catch (error) {
+      return { data: null, error: error.toString() }
+    }
   }
 
-  signInWithEmail(email: string, password: string) {
-    return post(
-      `${this.url}/token?grant_type=password`,
-      { email, password },
-      { headers: this.headers }
-    )
+  async signInWithEmail(email: string, password: string) {
+    try {
+      let data: any = await post(
+        `${this.url}/token?grant_type=password`,
+        { email, password },
+        { headers: this.headers }
+      )
+      return { data, error: null }
+    } catch (error) {
+      return { data: null, error: error.toString() }
+    }
   }
 
-  resetPasswordForEmail(email: string) {
-    return post(`${this.url}/forgotPassword`, { email }, { headers: this.headers })
+  async resetPasswordForEmail(email: string) {
+    try {
+      let data: any = await post(`${this.url}/forgotPassword`, { email }, { headers: this.headers })
+      return { data, error: null }
+    } catch (error) {
+      return { data: null, error: error.toString() }
+    }
   }
 
   async signOut(jwt: string) {
-    let headers = { ...this.headers }
-    headers['Authorization'] = `Bearer ${jwt}`
-    console.log('headers', headers)
-    let data = await post(`${this.url}/logout`, {}, { headers, noResolveJson: true })
-    return data
+    try {
+      let headers = { ...this.headers }
+      headers['Authorization'] = `Bearer ${jwt}`
+      console.log('headers', headers)
+      let data = await post(`${this.url}/logout`, {}, { headers, noResolveJson: true })
+      return { data, error: null }
+    } catch (error) {
+      return { data: null, error: error.toString() }
+    }
   }
 
-  getUser(jwt: string) {
-    let headers = { ...this.headers }
-    headers['Authorization'] = `Bearer ${jwt}`
-    return get(`${this.url}/user`, { headers })
+  async getUser(jwt: string) {
+    try {
+      let headers = { ...this.headers }
+      headers['Authorization'] = `Bearer ${jwt}`
+      let data: any = await get(`${this.url}/user`, { headers })
+    } catch (error) {
+      return { data: null, error: error.toString() }
+    }
   }
 
-  updateUser(jwt: string, attributes: UserAttributes) {
-    let headers = { ...this.headers }
-    headers['Authorization'] = `Bearer ${jwt}`
-    return put(`${this.url}/user`, attributes, { headers })
+  async updateUser(jwt: string, attributes: UserAttributes) {
+    try {
+      let headers = { ...this.headers }
+      headers['Authorization'] = `Bearer ${jwt}`
+      let data: any = await put(`${this.url}/user`, attributes, { headers })
+      return { data, error: null }
+    } catch (error) {
+      return { data: null, error: error.toString() }
+    }
   }
 
-  refreshAccessToken(refreshToken: string) {
-    return post(
-      `${this.url}/token?grant_type=refresh_token`,
-      { refresh_token: refreshToken },
-      { headers: this.headers }
-    )
+  async refreshAccessToken(refreshToken: string) {
+    try {
+      let data: any = await post(
+        `${this.url}/token?grant_type=refresh_token`,
+        { refresh_token: refreshToken },
+        { headers: this.headers }
+      )
+      return { data, error: null }
+    } catch (error) {
+      return { data: null, error: error.toString() }
+    }
   }
 }
