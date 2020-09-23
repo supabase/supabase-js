@@ -110,6 +110,9 @@ export default class Client {
     }
   }
 
+  /**
+   * Signs out the current user, if there is a logged in user.
+   */
   async signOut() {
     try {
       if (this.currentSession) {

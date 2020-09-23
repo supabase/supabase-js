@@ -30,6 +30,11 @@ export default class Api {
     }
   }
 
+  /**
+   * Logs in an existing using their email address.
+   * @param email The email address of the user.
+   * @param password The password of the user.
+   */
   async signInWithEmail(email: string, password: string) {
     try {
       let data: any = await post(
@@ -43,6 +48,10 @@ export default class Api {
     }
   }
 
+  /**
+   * Sends a reset request to an email address.
+   * @param email The email address of the user.
+   */
   async resetPasswordForEmail(email: string) {
     try {
       let data: any = await post(`${this.url}/forgotPassword`, { email }, { headers: this.headers })
@@ -52,6 +61,10 @@ export default class Api {
     }
   }
 
+  /**
+   * Removes a logged-in session.
+   * @param jwt A valid, logged-in JWT
+   */
   async signOut(jwt: string) {
     try {
       let headers = { ...this.headers }
@@ -63,6 +76,10 @@ export default class Api {
     }
   }
 
+  /**
+   * Gets the user details.
+   * @param jwt A valid, logged-in JWT
+   */
   async getUser(jwt: string) {
     try {
       let headers = { ...this.headers }
@@ -74,6 +91,11 @@ export default class Api {
     }
   }
 
+  /**
+   * Updates the user data.
+   * @param jwt A valid, logged-in JWT
+   * @param attributes The data you want to update.
+   */
   async updateUser(jwt: string, attributes: UserAttributes) {
     try {
       let headers = { ...this.headers }
@@ -85,6 +107,10 @@ export default class Api {
     }
   }
 
+  /**
+   * Generates a new JWT.
+   * @param refreshToken A valid refresh token that was returned on login.
+   */
   async refreshAccessToken(refreshToken: string) {
     try {
       let data: any = await post(
