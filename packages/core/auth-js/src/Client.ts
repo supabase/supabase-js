@@ -25,11 +25,19 @@ export default class Client {
     this._recoverSession()
   }
 
-  async signUp({ email, password }: { email: string; password: string }) {
+  /**
+   * Creates a new user.
+   * @param credentials the user login details
+   * @param credentials.email the user's email
+   */
+  async signUp(credentials: { email: string; password: string }) {
     try {
       this._removeSession()
 
-      let { data, error }: any = await this.api.signUpWithEmail(email, password)
+      let { data, error }: any = await this.api.signUpWithEmail(
+        credentials.email,
+        credentials.password
+      )
       if (error) throw new Error(error)
 
       if (data?.user?.confirmed_at) this._saveSession(data)
@@ -78,7 +86,7 @@ export default class Client {
         attributes
       )
       if (error) throw new Error(error)
-      
+
       this.currentUser = data
       return { data: this.currentUser, error: null }
     } catch (error) {
