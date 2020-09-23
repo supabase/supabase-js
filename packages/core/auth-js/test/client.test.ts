@@ -43,6 +43,7 @@ test('signIn()', async () => {
   expect(error).toBeNull()
   expect(data).toMatchSnapshot({
     access_token: expect.any(String),
+    refresh_token: expect.any(String),
     expires_in: expect.any(Number),
     user: {
       id: expect.any(String),
@@ -64,6 +65,8 @@ test('Get user', async () => {
   expect(data).toMatchSnapshot({
     id: expect.any(String),
     aud: expect.any(String),
+    confirmed_at: expect.any(String),
+    created_at: expect.any(String),
     updated_at: expect.any(String),
     app_metadata: {
       provider: 'email',

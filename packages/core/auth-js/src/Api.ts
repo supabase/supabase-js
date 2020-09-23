@@ -14,6 +14,8 @@ export default class Api {
 
   /**
    * Creates a new user using their email address.
+   * @param email The email address of the user.
+   * @param password The password of the user.
    */
   async signUpWithEmail(email: string, password: string) {
     try {

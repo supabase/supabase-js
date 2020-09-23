@@ -6,8 +6,8 @@ Object {
     "provider": "email",
   },
   "aud": Any<String>,
-  "confirmed_at": "2020-09-23T09:15:33.835313Z",
-  "created_at": "2020-09-23T09:15:33.832168Z",
+  "confirmed_at": Any<String>,
+  "created_at": Any<String>,
   "email": "fake@email.com",
   "id": Any<String>,
   "role": "",
@@ -63,7 +63,7 @@ exports[`signIn() 1`] = `
 Object {
   "access_token": Any<String>,
   "expires_in": Any<Number>,
-  "refresh_token": "NpTgyqRDvcTy1OQ6yXdeDA",
+  "refresh_token": Any<String>,
   "token_type": "bearer",
   "user": Object {
     "app_metadata": Object {
