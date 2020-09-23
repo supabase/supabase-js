@@ -27,8 +27,9 @@ export default class Client {
 
   /**
    * Creates a new user.
-   * @param credentials the user login details
-   * @param credentials.email the user's email
+   * @param credentials The user login details.
+   * @param credentials.email The user's email address.
+   * @param credentials.password The user's password.
    */
   async signUp(credentials: { email: string; password: string }) {
     try {
@@ -48,11 +49,20 @@ export default class Client {
     }
   }
 
-  async signIn({ email, password }: { email: string; password: string }) {
+  /**
+   * Creates a new user.
+   * @param credentials The user login details.
+   * @param credentials.email The user's email address.
+   * @param credentials.password The user's password.
+   */
+  async signIn(credentials: { email: string; password: string }) {
     try {
       this._removeSession()
 
-      let { data, error }: any = await this.api.signInWithEmail(email, password)
+      let { data, error }: any = await this.api.signInWithEmail(
+        credentials.email,
+        credentials.password
+      )
       if (error) throw new Error(error)
 
       if (data?.user?.confirmed_at) this._saveSession(data)
@@ -63,6 +73,9 @@ export default class Client {
     }
   }
 
+  /**
+   * Returns the user data, if there is a logged in user.
+   */
   async user() {
     try {
       if (!this.currentSession?.access_token) throw new Error('Not logged in.')
@@ -77,6 +90,9 @@ export default class Client {
     }
   }
 
+  /**
+   * Updates user data, if there is a logged in user.
+   */
   async update(attributes: UserAttributes) {
     try {
       if (!this.currentSession?.access_token) throw new Error('Not logged in.')

@@ -18,8 +18,15 @@ export interface User {
   updated_at?: string
 }
 export interface UserAttributes {
+  // The user's email address
   email?: string
+
+  // The user's password
   password?: string
+
+  // An email change token
   email_change_token?: string
+
+  // A custom data object. Can be any JSON
   data?: object
 }
