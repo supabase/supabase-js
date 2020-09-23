@@ -29,13 +29,14 @@ export default class Client {
     try {
       this._removeSession()
 
-      let data: any = await this.api.signUpWithEmail(email, password)
+      let { data, error }: any = await this.api.signUpWithEmail(email, password)
+      if (error) throw new Error(error)
 
       if (data?.user?.confirmed_at) this._saveSession(data)
 
       return { data, error: null }
     } catch (error) {
-      return { data: null, error: error.toString() }
+      return { data: null, error: error.message }
     }
   }
 
@@ -43,35 +44,45 @@ export default class Client {
     try {
       this._removeSession()
 
-      let data: any = await this.api.signInWithEmail(email, password)
+      let { data, error }: any = await this.api.signInWithEmail(email, password)
+      if (error) throw new Error(error)
 
       if (data?.user?.confirmed_at) this._saveSession(data)
 
       return { data, error: null }
     } catch (error) {
-      return { data: null, error: error.toString() }
+      return { data: null, error: error.message }
     }
   }
 
   async user() {
     try {
       if (!this.currentSession?.access_token) throw new Error('Not logged in.')
-      let data: any = await this.api.getUser(this.currentSession.access_token)
+
+      let { data, error }: any = await this.api.getUser(this.currentSession.access_token)
+      if (error) throw new Error(error)
+
       this.currentUser = data
       return { data: this.currentUser, error: null }
     } catch (error) {
-      return { data: null, error: error.toString() }
+      return { data: null, error: error.message }
     }
   }
 
   async update(attributes: UserAttributes) {
     try {
       if (!this.currentSession?.access_token) throw new Error('Not logged in.')
-      let data: any = await this.api.updateUser(this.currentSession.access_token, attributes)
+
+      let { data, error }: any = await this.api.updateUser(
+        this.currentSession.access_token,
+        attributes
+      )
+      if (error) throw new Error(error)
+      
       this.currentUser = data
       return { data: this.currentUser, error: null }
     } catch (error) {
-      return { data: null, error: error.toString() }
+      return { data: null, error: error.message }
     }
   }
 
@@ -83,7 +94,7 @@ export default class Client {
       this._removeSession()
       return true
     } catch (error) {
-      return { data: null, error: error.toString() }
+      return { data: null, error: error.message }
     }
   }
 
@@ -160,7 +171,7 @@ export default class Client {
         return { data, error: null }
       }
     } catch (error) {
-      return { data: null, error: error.toString() }
+      return { data: null, error: error.message }
     }
   }
 }

@@ -24,7 +24,7 @@ export default class Api {
       )
       return { data, error: null }
     } catch (error) {
-      return { data: null, error: error.toString() }
+      return { data: null, error: error.message }
     }
   }
 
@@ -37,7 +37,7 @@ export default class Api {
       )
       return { data, error: null }
     } catch (error) {
-      return { data: null, error: error.toString() }
+      return { data: null, error: error.message }
     }
   }
 
@@ -46,7 +46,7 @@ export default class Api {
       let data: any = await post(`${this.url}/forgotPassword`, { email }, { headers: this.headers })
       return { data, error: null }
     } catch (error) {
-      return { data: null, error: error.toString() }
+      return { data: null, error: error.message }
     }
   }
 
@@ -54,11 +54,10 @@ export default class Api {
     try {
       let headers = { ...this.headers }
       headers['Authorization'] = `Bearer ${jwt}`
-      console.log('headers', headers)
       let data = await post(`${this.url}/logout`, {}, { headers, noResolveJson: true })
       return { data, error: null }
     } catch (error) {
-      return { data: null, error: error.toString() }
+      return { data: null, error: error.message }
     }
   }
 
@@ -67,8 +66,9 @@ export default class Api {
       let headers = { ...this.headers }
       headers['Authorization'] = `Bearer ${jwt}`
       let data: any = await get(`${this.url}/user`, { headers })
+      return { data, error: null }
     } catch (error) {
-      return { data: null, error: error.toString() }
+      return { data: null, error: error.message }
     }
   }
 
@@ -79,7 +79,7 @@ export default class Api {
       let data: any = await put(`${this.url}/user`, attributes, { headers })
       return { data, error: null }
     } catch (error) {
-      return { data: null, error: error.toString() }
+      return { data: null, error: error.message }
     }
   }
 
@@ -92,7 +92,7 @@ export default class Api {
       )
       return { data, error: null }
     } catch (error) {
-      return { data: null, error: error.toString() }
+      return { data: null, error: error.message }
     }
   }
 }

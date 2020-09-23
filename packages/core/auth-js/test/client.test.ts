@@ -19,9 +19,13 @@ test('signUp()', async () => {
   expect(error).toBeNull()
   expect(data).toMatchSnapshot({
     access_token: expect.any(String),
+    refresh_token: expect.any(String),
     expires_in: expect.any(Number),
     user: {
       id: expect.any(String),
+      confirmed_at: expect.any(String),
+      last_sign_in_at: expect.any(String),
+      created_at: expect.any(String),
       aud: expect.any(String),
       updated_at: expect.any(String),
       app_metadata: {
@@ -43,6 +47,9 @@ test('signIn()', async () => {
     user: {
       id: expect.any(String),
       aud: expect.any(String),
+      confirmed_at: expect.any(String),
+      last_sign_in_at: expect.any(String),
+      created_at: expect.any(String),
       updated_at: expect.any(String),
       app_metadata: {
         provider: 'email',
@@ -71,6 +78,8 @@ test('Update user', async () => {
     id: expect.any(String),
     aud: expect.any(String),
     updated_at: expect.any(String),
+    confirmed_at: expect.any(String),
+    created_at: expect.any(String),
     user_metadata: {
       hello: 'world',
     },
@@ -84,6 +93,8 @@ test('Get user after updating', async () => {
     id: expect.any(String),
     aud: expect.any(String),
     updated_at: expect.any(String),
+    confirmed_at: expect.any(String),
+    created_at: expect.any(String),
     user_metadata: {
       hello: 'world',
     },
