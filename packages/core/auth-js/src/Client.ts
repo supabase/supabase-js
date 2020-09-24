@@ -1,7 +1,6 @@
 import Api from './Api'
-import { isBrowser } from './lib/helpers'
-import { STORAGE_KEY } from './lib/constants'
-import { GOTRUE_URL, DEFAULT_HEADERS } from './lib/constants'
+import { isBrowser, getParameterByName } from './lib/helpers'
+import { GOTRUE_URL, DEFAULT_HEADERS, STORAGE_KEY } from './lib/constants'
 import { Session, User, UserAttributes, Provider } from './lib/types'
 
 const DEFAULT_OPTIONS = {
@@ -132,11 +131,13 @@ export default class Client {
     try {
       if (!isBrowser()) throw new Error('No browser detected.')
 
-      const urlParams: any = new URLSearchParams(window.location.search)
-      const access_token: string = urlParams.access_token
-      const expires_in: number = urlParams.expires_in
-      const refresh_token: string = urlParams.refresh_token
-      const token_type: string = urlParams.token_type
+      const error_description = getParameterByName('error_description')
+      if (error_description) throw new Error(error_description)
+
+      const access_token = getParameterByName('access_token')
+      const expires_in = getParameterByName('expires_in')
+      const refresh_token = getParameterByName('refresh_token')
+      const token_type = getParameterByName('token_type')
       if (!access_token) throw new Error('No access_token detected.')
       if (!expires_in) throw new Error('No expires_in detected.')
       if (!refresh_token) throw new Error('No refresh_token detected.')
@@ -147,7 +148,7 @@ export default class Client {
 
       const session: Session = {
         access_token,
-        expires_in,
+        expires_in: parseInt(expires_in),
         refresh_token,
         token_type,
         user,
@@ -156,6 +157,7 @@ export default class Client {
 
       return { data: session, error: null }
     } catch (error) {
+      console.log('error', error)
       return { data: null, error: error.message }
     }
   }

@@ -10,11 +10,11 @@ services:
       GOTRUE_JWT_EXP: 3600
       GOTRUE_DB_DRIVER: postgres
       DB_NAMESPACE: auth
-      API_EXTERNAL_URL: localhost
+      API_EXTERNAL_URL: http://localhost
       GOTRUE_API_HOST: 0.0.0.0
       PORT: 9999
       GOTRUE_DISABLE_SIGNUP: "false"
-      GOTRUE_SITE_URL: localhost
+      GOTRUE_SITE_URL: http://localhost
       GOTRUE_MAILER_AUTOCONFIRM: "true"
       GOTRUE_LOG_LEVEL: DEBUG
       GOTRUE_OPERATOR_TOKEN: super-secret-operator-token

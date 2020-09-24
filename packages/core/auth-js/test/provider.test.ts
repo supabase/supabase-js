@@ -9,10 +9,9 @@ const auth = new Client({
   persistSession: true,
 })
 
-
 test('signIn() with Provider', async () => {
   let { error, data } = await auth.signIn({
-    provider: Provider.GOOGLE
+    provider: Provider.GOOGLE,
   })
   expect(error).toBeNull()
   expect(data).toMatchSnapshot()

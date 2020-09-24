@@ -25,7 +25,6 @@ export interface User {
   updated_at?: string
 }
 
-
 export interface UserAttributes {
   /**
    * The user's email.
