@@ -19,6 +19,10 @@ services:
       GOTRUE_LOG_LEVEL: DEBUG
       GOTRUE_OPERATOR_TOKEN: super-secret-operator-token
       DATABASE_URL: "postgres://postgres:postgres@db:5432/postgres?sslmode=disable"
+      GOTRUE_EXTERNAL_GOOGLE_ENABLED: "true"
+      GOTRUE_EXTERNAL_GOOGLE_CLIENT_ID: XXX
+      GOTRUE_EXTERNAL_GOOGLE_SECRET: YYY
+      GOTRUE_EXTERNAL_GOOGLE_REDIRECT_URI: http://localhost:9999/callback
     depends_on:
       - db
   db:

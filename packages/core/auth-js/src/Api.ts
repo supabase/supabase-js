@@ -1,5 +1,5 @@
 import { get, post, put } from './lib/fetch'
-import { Session, UserAttributes } from './lib/types'
+import { Provider, UserAttributes } from './lib/types'
 
 export default class Api {
   url: string
@@ -63,7 +63,7 @@ export default class Api {
 
   /**
    * Removes a logged-in session.
-   * @param jwt A valid, logged-in JWT
+   * @param jwt A valid, logged-in JWT.
    */
   async signOut(jwt: string) {
     try {
@@ -77,8 +77,16 @@ export default class Api {
   }
 
   /**
+   * Generates the relevant login URL for a third-party provider.
+   * @param provider One of the providers supported by GoTrue.
+   */
+  getUrlForProvider(provider: Provider) {
+    return `${this.url}/authorize?provider=${provider}`
+  }
+
+  /**
    * Gets the user details.
-   * @param jwt A valid, logged-in JWT
+   * @param jwt A valid, logged-in JWT.
    */
   async getUser(jwt: string) {
     try {
@@ -93,7 +101,7 @@ export default class Api {
 
   /**
    * Updates the user data.
-   * @param jwt A valid, logged-in JWT
+   * @param jwt A valid, logged-in JWT.
    * @param attributes The data you want to update.
    */
   async updateUser(jwt: string, attributes: UserAttributes) {

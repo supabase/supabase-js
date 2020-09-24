@@ -2,8 +2,15 @@ import Api from './Api'
 import { isBrowser } from './lib/helpers'
 import { STORAGE_KEY } from './lib/constants'
 import { GOTRUE_URL, DEFAULT_HEADERS } from './lib/constants'
-import { Session, User, UserAttributes } from './lib/types'
+import { Session, User, UserAttributes, Provider } from './lib/types'
 
+const DEFAULT_OPTIONS = {
+  url: GOTRUE_URL,
+  autoRefreshToken: true,
+  persistSession: true,
+  detectSessionInUrl: true,
+  headers: DEFAULT_HEADERS,
+}
 export default class Client {
   api: Api
   currentUser: User | null
@@ -11,18 +18,29 @@ export default class Client {
   autoRefreshToken: boolean
   persistSession: boolean
 
-  constructor({
-    url = GOTRUE_URL,
-    autoRefreshToken = true,
-    persistSession = true,
-    headers = DEFAULT_HEADERS,
-  }: any) {
+  /**
+   * Create a new client for use in the browser.
+   * @param options.url The URL of the GoTrue server.
+   * @param options.headers Any additional headers to send to the GoTrue server.
+   * @param options.detectSessionInUrl Set to "true" if you want to automatically detects OAuth grants in the URL and signs in the user.
+   * @param options.autoRefreshToken Set to "true" if you want to automatically refresh the token before expiring.
+   * @param options.persistSession Set to "true" if you want to automatically save the user session into local storage.
+   */
+  constructor(options: {
+    url?: string
+    headers?: { [key: string]: string }
+    detectSessionInUrl?: boolean
+    autoRefreshToken?: boolean
+    persistSession?: boolean
+  }) {
+    const settings = { ...DEFAULT_OPTIONS, ...options }
     this.currentUser = null
     this.currentSession = null
-    this.autoRefreshToken = autoRefreshToken
-    this.persistSession = persistSession
-    this.api = new Api({ url, headers })
+    this.autoRefreshToken = settings.autoRefreshToken
+    this.persistSession = settings.persistSession
+    this.api = new Api({ url: settings.url, headers: settings.headers })
     this._recoverSession()
+    if (settings.detectSessionInUrl) this.getSessionFromUrl({ storeSession: true })
   }
 
   /**
@@ -50,24 +68,20 @@ export default class Client {
   }
 
   /**
-   * Creates a new user.
+   * Log in an existing user, or login via a third-party provider.
    * @param credentials The user login details.
    * @param credentials.email The user's email address.
    * @param credentials.password The user's password.
+   * @param credentials.provider One of the providers supported by GoTrue.
    */
-  async signIn(credentials: { email: string; password: string }) {
+  async signIn(credentials: { email?: string; password?: string; provider?: Provider }) {
     try {
       this._removeSession()
+      let { email, password, provider } = credentials
 
-      let { data, error }: any = await this.api.signInWithEmail(
-        credentials.email,
-        credentials.password
-      )
-      if (error) throw new Error(error)
-
-      if (data?.user?.confirmed_at) this._saveSession(data)
-
-      return { data, error: null }
+      if (email && password) return await this._handeEmailSignIn(email, password)
+      if (provider) return this._handeProviderSignIn(provider)
+      else throw new Error(`You must provide either an email or a third-party provider.`)
     } catch (error) {
       return { data: null, error: error.message }
     }
@@ -111,6 +125,42 @@ export default class Client {
   }
 
   /**
+   * Gets the session data from a URL string
+   * @param options.storeSession Optionally store the session in the browser
+   */
+  async getSessionFromUrl(options?: { storeSession?: boolean }) {
+    try {
+      if (!isBrowser()) throw new Error('No browser detected.')
+
+      const urlParams: any = new URLSearchParams(window.location.search)
+      const access_token: string = urlParams.access_token
+      const expires_in: number = urlParams.expires_in
+      const refresh_token: string = urlParams.refresh_token
+      const token_type: string = urlParams.token_type
+      if (!access_token) throw new Error('No access_token detected.')
+      if (!expires_in) throw new Error('No expires_in detected.')
+      if (!refresh_token) throw new Error('No refresh_token detected.')
+      if (!token_type) throw new Error('No token_type detected.')
+
+      let { data: user, error }: any = await this.api.getUser(access_token)
+      if (error) throw new Error(error)
+
+      const session: Session = {
+        access_token,
+        expires_in,
+        refresh_token,
+        token_type,
+        user,
+      }
+      if (options?.storeSession) this._saveSession(session)
+
+      return { data: session, error: null }
+    } catch (error) {
+      return { data: null, error: error.message }
+    }
+  }
+
+  /**
    * Signs out the current user, if there is a logged in user.
    */
   async signOut() {
@@ -125,7 +175,32 @@ export default class Client {
     }
   }
 
-  _saveSession(session: Session) {
+  private async _handeEmailSignIn(email: string, password: string) {
+    let { data, error }: any = await this.api.signInWithEmail(email, password)
+    if (error) throw new Error(error)
+
+    if (data?.user?.confirmed_at) this._saveSession(data)
+    return { data, error: null }
+  }
+
+  private _handeProviderSignIn(provider: Provider) {
+    let url: string = this.api.getUrlForProvider(provider)
+
+    try {
+      // try to open on the browser
+      if (isBrowser()) {
+        window.location.href = url
+      }
+
+      return { data: url, error: null }
+    } catch (error) {
+      // fallback to returning the URL
+      if (!!url) return { data: url, error: null }
+      else return { data: null, error: error.message }
+    }
+  }
+
+  private _saveSession(session: Session) {
     this.currentSession = session
     this.currentUser = session['user']
     let tokenExpirySeconds = session['expires_in']
@@ -139,20 +214,20 @@ export default class Client {
     }
   }
 
-  _persistSession(currentSession: Session, currentUser: User, secondsToExpiry: number) {
+  private _persistSession(currentSession: Session, currentUser: User, secondsToExpiry: number) {
     const timeNow = Math.round(Date.now() / 1000)
     const expiresAt = timeNow + secondsToExpiry
     const data = { currentSession, currentUser, expiresAt }
     isBrowser() && localStorage.setItem(STORAGE_KEY, JSON.stringify(data))
   }
 
-  _removeSession() {
+  private _removeSession() {
     this.currentSession = null
     this.currentUser = null
     isBrowser() && localStorage.removeItem(STORAGE_KEY)
   }
 
-  _recoverSession() {
+  private _recoverSession() {
     const json = isBrowser() && localStorage.getItem(STORAGE_KEY)
     if (json) {
       try {
@@ -177,7 +252,7 @@ export default class Client {
     return null
   }
 
-  async _callRefreshToken() {
+  private async _callRefreshToken() {
     try {
       if (this.currentSession?.refresh_token) {
         let data: any = await this.api.refreshAccessToken(this.currentSession?.refresh_token)

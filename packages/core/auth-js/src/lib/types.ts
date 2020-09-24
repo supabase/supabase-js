@@ -1,3 +1,10 @@
+export enum Provider {
+  BITBUCKET = 'bitbucket',
+  GITHUB = 'github',
+  GITLAB = 'gitlab',
+  GOOGLE = 'google',
+}
+
 export interface Session {
   access_token: string
   expires_in: number
