@@ -24,9 +24,11 @@ export default class Api {
         { email, password },
         { headers: this.headers }
       )
+      console.log('signUpWithEmail data', data)
       return { data, error: null }
     } catch (error) {
-      return { data: null, error: error.message }
+      console.log('signUpWithEmail error', error)
+      return { data: null, error }
     }
   }
 
@@ -42,9 +44,10 @@ export default class Api {
         { email, password },
         { headers: this.headers }
       )
+      console.log('signInWithEmaildata', data)
       return { data, error: null }
     } catch (error) {
-      return { data: null, error: error.message }
+      return { data: null, error }
     }
   }
 
@@ -57,7 +60,7 @@ export default class Api {
       let data: any = await post(`${this.url}/forgotPassword`, { email }, { headers: this.headers })
       return { data, error: null }
     } catch (error) {
-      return { data: null, error: error.message }
+      return { data: null, error }
     }
   }
 
@@ -72,7 +75,7 @@ export default class Api {
       let data = await post(`${this.url}/logout`, {}, { headers, noResolveJson: true })
       return { data, error: null }
     } catch (error) {
-      return { data: null, error: error.message }
+      return { data: null, error }
     }
   }
 
@@ -95,7 +98,7 @@ export default class Api {
       let data: any = await get(`${this.url}/user`, { headers })
       return { data, error: null }
     } catch (error) {
-      return { data: null, error: error.message }
+      return { data: null, error }
     }
   }
 
@@ -111,7 +114,7 @@ export default class Api {
       let data: any = await put(`${this.url}/user`, attributes, { headers })
       return { data, error: null }
     } catch (error) {
-      return { data: null, error: error.message }
+      return { data: null, error }
     }
   }
 
@@ -128,7 +131,7 @@ export default class Api {
       )
       return { data, error: null }
     } catch (error) {
-      return { data: null, error: error.message }
+      return { data: null, error }
     }
   }
 }

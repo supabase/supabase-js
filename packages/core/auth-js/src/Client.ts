@@ -1,7 +1,7 @@
 import Api from './Api'
-import { isBrowser, getParameterByName } from './lib/helpers'
+import { isBrowser, getParameterByName, uuid } from './lib/helpers'
 import { GOTRUE_URL, DEFAULT_HEADERS, STORAGE_KEY } from './lib/constants'
-import { Session, User, UserAttributes, Provider } from './lib/types'
+import { Session, User, UserAttributes, Provider, Subscription, AuthChangeEvent } from './lib/types'
 
 const DEFAULT_OPTIONS = {
   url: GOTRUE_URL,
@@ -16,6 +16,7 @@ export default class Client {
   currentSession?: Session | null
   autoRefreshToken: boolean
   persistSession: boolean
+  stateChangeEmmitters: Map<string, Subscription> = new Map()
 
   /**
    * Create a new client for use in the browser.
@@ -39,7 +40,15 @@ export default class Client {
     this.persistSession = settings.persistSession
     this.api = new Api({ url: settings.url, headers: settings.headers })
     this._recoverSession()
-    if (settings.detectSessionInUrl) this.getSessionFromUrl({ storeSession: true })
+
+    // Handle the OAuth redirect
+    try {
+      if (settings.detectSessionInUrl && isBrowser() && !!getParameterByName('access_token')) {
+        this.getSessionFromUrl({ storeSession: true })
+      }
+    } catch (error) {
+      console.log('Error getting session from URL.')
+    }
   }
 
   /**
@@ -58,11 +67,14 @@ export default class Client {
       )
       if (error) throw new Error(error)
 
-      if (data?.user?.confirmed_at) this._saveSession(data)
+      if (data?.user?.confirmed_at) {
+        this._saveSession(data)
+        this._notifyAllSubscribers(AuthChangeEvent.SIGNED_IN)
+      }
 
       return { data, error: null }
     } catch (error) {
-      return { data: null, error: error.message }
+      return { data: null, error }
     }
   }
 
@@ -78,11 +90,11 @@ export default class Client {
       this._removeSession()
       let { email, password, provider } = credentials
 
-      if (email && password) return await this._handeEmailSignIn(email, password)
+      if (email && password) return this._handeEmailSignIn(email, password)
       if (provider) return this._handeProviderSignIn(provider)
       else throw new Error(`You must provide either an email or a third-party provider.`)
     } catch (error) {
-      return { data: null, error: error.message }
+      return { data: null, error }
     }
   }
 
@@ -99,7 +111,7 @@ export default class Client {
       this.currentUser = data
       return { data: this.currentUser, error: null }
     } catch (error) {
-      return { data: null, error: error.message }
+      return { data: null, error }
     }
   }
 
@@ -117,9 +129,11 @@ export default class Client {
       if (error) throw new Error(error)
 
       this.currentUser = data
+      this._notifyAllSubscribers(AuthChangeEvent.USER_UPDATED)
+
       return { data: this.currentUser, error: null }
     } catch (error) {
-      return { data: null, error: error.message }
+      return { data: null, error }
     }
   }
 
@@ -153,12 +167,14 @@ export default class Client {
         token_type,
         user,
       }
-      if (options?.storeSession) this._saveSession(session)
+      if (options?.storeSession) {
+        this._saveSession(session)
+        this._notifyAllSubscribers(AuthChangeEvent.SIGNED_IN)
+      }
 
       return { data: session, error: null }
     } catch (error) {
-      console.log('error', error)
-      return { data: null, error: error.message }
+      return { data: null, error }
     }
   }
 
@@ -171,18 +187,48 @@ export default class Client {
         await this.api.signOut(this.currentSession.access_token)
       }
       this._removeSession()
+      this._notifyAllSubscribers(AuthChangeEvent.SIGNED_OUT)
       return true
     } catch (error) {
-      return { data: null, error: error.message }
+      return { data: null, error }
+    }
+  }
+
+  /**
+   * Receive a notification every time an auth event happens.
+   * @returns {Subscription} A subscription object which can be used to unsubcribe itself.
+   */
+  onAuthStateChange(callback: Function) {
+    try {
+      const id: string = uuid()
+      let self = this
+      const subscription: Subscription = {
+        id,
+        callback,
+        unsubscribe: () => self.stateChangeEmmitters.delete(id),
+      }
+      this.stateChangeEmmitters.set(id, subscription)
+      return { data: this.stateChangeEmmitters.get(id), error: null }
+    } catch (error) {
+      return { data: null, error }
     }
   }
 
   private async _handeEmailSignIn(email: string, password: string) {
-    let { data, error }: any = await this.api.signInWithEmail(email, password)
-    if (error) throw new Error(error)
+    try {
+      let { data, error }: any = await this.api.signInWithEmail(email, password)
+      if (!!error) return { data: null, error }
 
-    if (data?.user?.confirmed_at) this._saveSession(data)
-    return { data, error: null }
+      if (data?.user?.confirmed_at) {
+        this._saveSession(data)
+        this._notifyAllSubscribers(AuthChangeEvent.SIGNED_IN)
+      }
+
+      return { data, error: null }
+    } catch (error) {
+      console.log('error_handeEmailSignIn', error)
+      return { data: null, error }
+    }
   }
 
   private _handeProviderSignIn(provider: Provider) {
@@ -198,13 +244,12 @@ export default class Client {
     } catch (error) {
       // fallback to returning the URL
       if (!!url) return { data: url, error: null }
-      else return { data: null, error: error.message }
+      else return { data: null, error }
     }
   }
 
   private _saveSession(session: Session) {
     this.currentSession = session
-    this.currentUser = session['user']
     let tokenExpirySeconds = session['expires_in']
 
     if (this.autoRefreshToken && tokenExpirySeconds) {
@@ -212,14 +257,14 @@ export default class Client {
     }
 
     if (this.persistSession) {
-      this._persistSession(this.currentSession, this.currentUser, tokenExpirySeconds)
+      this._persistSession(this.currentSession, tokenExpirySeconds)
     }
   }
 
-  private _persistSession(currentSession: Session, currentUser: User, secondsToExpiry: number) {
+  private _persistSession(currentSession: Session, secondsToExpiry: number) {
     const timeNow = Math.round(Date.now() / 1000)
     const expiresAt = timeNow + secondsToExpiry
-    const data = { currentSession, currentUser, expiresAt }
+    const data = { currentSession, expiresAt }
     isBrowser() && localStorage.setItem(STORAGE_KEY, JSON.stringify(data))
   }
 
@@ -269,13 +314,17 @@ export default class Client {
           }
 
           if (this.persistSession && this.currentUser) {
-            this._persistSession(this.currentSession, this.currentUser, tokenExpirySeconds)
+            this._persistSession(this.currentSession, tokenExpirySeconds)
           }
         }
         return { data, error: null }
       }
     } catch (error) {
-      return { data: null, error: error.message }
+      return { data: null, error }
     }
+  }
+
+  private _notifyAllSubscribers(event: AuthChangeEvent) {
+    this.stateChangeEmmitters.forEach((x) => x.callback(event, this.currentSession))
   }
 }

@@ -5,6 +5,12 @@ export enum Provider {
   GOOGLE = 'google',
 }
 
+export enum AuthChangeEvent {
+  SIGNED_IN = 'SIGNED_IN',
+  SIGNED_OUT = 'SIGNED_OUT',
+  USER_UPDATED = 'USER_UPDATED',
+}
+
 export interface Session {
   access_token: string
   expires_in: number
@@ -30,12 +36,10 @@ export interface UserAttributes {
    * The user's email.
    */
   email?: string
-
   /**
    * The user's password.
    */
   password?: string
-
   /**
    * An email change token.
    */
@@ -45,4 +49,19 @@ export interface UserAttributes {
    * A custom data object. Can be any JSON.
    */
   data?: object
+}
+
+export interface Subscription {
+  /**
+   * The subscriber UUID. This will be set by the client.
+   */
+  id: string
+  /**
+   * The function to call every time there is an event. eg: (eventName) => {}
+   */
+  callback: Function
+  /**
+   * Call this to remove the listener.
+   */
+  unsubscribe: Function
 }

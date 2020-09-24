@@ -1,5 +1,4 @@
 import { Client } from '../src/index'
-import { Provider } from '../src/lib/types'
 
 const GOTRUE_URL = 'http://localhost:9999'
 

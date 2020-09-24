@@ -7,15 +7,29 @@ export interface FetchOptions {
   noResolveJson?: boolean
 }
 
+const handleError = (error: any, reject: any) => {
+  if (typeof error.json === 'function') {
+    error.json().then((msg: any) => {
+      return reject(new Error(msg.error_description))
+    })
+  } else {
+    return reject(error)
+  }
+}
+
 export async function get(url: string, options?: FetchOptions) {
   return new Promise((resolve, reject) => {
     fetch(url, {
       method: 'GET',
       headers: options?.headers || {},
     })
-      .then((r) => r.json())
+      .then((result) => {
+        if (!result.ok) throw result
+        else if (options?.noResolveJson) return resolve
+        else return result.json()
+      })
       .then((data) => resolve(data))
-      .catch((error) => reject(error))
+      .catch((error) => handleError(error, reject))
   })
 }
 export async function post(url: string, body: object, options?: FetchOptions) {
@@ -25,9 +39,13 @@ export async function post(url: string, body: object, options?: FetchOptions) {
       headers: options?.headers || {},
       body: JSON.stringify(body),
     })
-      .then((r) => (!options?.noResolveJson ? r.json() : null))
+      .then((result) => {
+        if (!result.ok) throw result
+        else if (options?.noResolveJson) return resolve
+        else return result.json()
+      })
       .then((data) => resolve(data))
-      .catch((error) => reject(error))
+      .catch((error) => handleError(error, reject))
   })
 }
 export async function put(url: string, body: object, options?: FetchOptions) {
@@ -37,8 +55,12 @@ export async function put(url: string, body: object, options?: FetchOptions) {
       headers: options?.headers || {},
       body: JSON.stringify(body),
     })
-      .then((r) => (!options?.noResolveJson ? r.json() : {}))
+      .then((result) => {
+        if (!result.ok) throw result
+        else if (options?.noResolveJson) return resolve
+        else return result.json()
+      })
       .then((data) => resolve(data))
-      .catch((error) => reject(error))
+      .catch((error) => handleError(error, reject))
   })
 }
