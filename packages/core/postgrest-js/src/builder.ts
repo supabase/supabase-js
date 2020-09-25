@@ -1,5 +1,4 @@
 import fetch from 'isomorphic-unfetch'
-import { URL } from 'url'
 
 // https://postgrest.org/en/stable/api.html?highlight=options#errors-and-http-status-codes
 interface PostgrestError {
