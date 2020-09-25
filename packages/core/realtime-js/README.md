@@ -9,7 +9,7 @@ This is for usage with Supabase Realtime server.
 Basic usage:
 
 ```js
-import { Socket } = '@supabase/realtime-js'
+import { Socket } from '@supabase/realtime-js'
 
 var socket = new Socket(process.env.REALTIME_URL)
 socket.connect()
