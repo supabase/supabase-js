@@ -15,7 +15,7 @@ Visit our [wiki](https://github.com/supabase/postgrest-js/wiki) to get started!
 
 ### supabase/supabase-js
 - [Repository](https://github.com/supabase/supabase-js)
-- [Documentation](https://supabase.io/docs/about)
+- [Documentation](https://supabase.io/docs)
 
 ## Contributing
 
