@@ -7,7 +7,7 @@
   "scripts": {
     "deploy:minor": "npm version minor && npm publish --access=public",
     "deploy:patch": "npm version patch && npm publish --access=public",
-    "mocha": "node -r esm node_modules/.bin/mocha ./test/**/*.js -r jsdom-global/register",
+    "mocha": "node -r esm node_modules/.bin/mocha --exit ./test/**/*.js -r jsdom-global/register",
     "lint": "eslint ./src",
     "test": "npm run lint && npm run mocha"
   },
