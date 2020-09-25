@@ -216,8 +216,7 @@ describe("connectionState", () => {
     assert.equal(socket.connectionState(), "closed")
   })
 
-  // TODO: fix for W3CWebSocket
-  /*
+  // TODO: fix for W3CWebSocket 
   it.skip("returns closed if readyState unrecognized", () => {
     socket.connect()
 
@@ -259,8 +258,7 @@ describe("connectionState", () => {
     socket.conn.readyState = 3
     assert.equal(socket.connectionState(), "closed")
     assert.ok(!socket.isConnected(), "is not connected")
-  })
-  */
+  }) 
 })
 
 describe("channel", () => {
@@ -328,7 +326,6 @@ describe("push", () => {
   })
 
   // TODO: fix for W3CWebSocket
-  /*
   it.skip("sends data to connection when connected", () => {
     socket.connect()
     socket.conn.readyState = 1 // open
@@ -357,8 +354,7 @@ describe("push", () => {
     const [callback] = socket.sendBuffer
     callback()
     assert.ok(spy.calledWith(json))
-  })
-  */
+  }) 
 })
 
 describe("makeRef", () => {
@@ -396,8 +392,7 @@ describe("sendHeartbeat", () => {
     socket.connect()
   })
 
-  // TODO: fix for W3CWebSocket
-  /*
+  // TODO: fix for W3CWebSocket 
   it.skip("closes socket when heartbeat is not ack'd within heartbeat window", () => {
     let closed = false
     socket.conn.readyState = 1 // open
@@ -430,7 +425,6 @@ describe("sendHeartbeat", () => {
     socket.sendHeartbeat()
     assert.ok(spy.neverCalledWith(data))
   })
-  */
 })
 
 describe("flushSendBuffer", () => {
@@ -448,7 +442,6 @@ describe("flushSendBuffer", () => {
   })
 
   // TODO: fix for W3CWebSocket
-  /*
   it.skip("calls callbacks in buffer when connected", () => {
     socket.conn.readyState = 1 // open
     const spy1 = sinon.spy()
@@ -473,7 +466,6 @@ describe("flushSendBuffer", () => {
 
     assert.deepEqual(socket.sendBuffer.length, 0)
   })
-  */
 })
 
 describe("onConnOpen", () => {
@@ -498,7 +490,7 @@ describe("onConnOpen", () => {
   })
 
   // TODO: fix for W3CWebSocket
-  /*
+  
   it.skip("flushes the send buffer", () => {
     socket.conn.readyState = 1 // open
     const spy = sinon.spy()
@@ -508,7 +500,6 @@ describe("onConnOpen", () => {
 
     assert.ok(spy.calledOnce)
   })
-  */
 
   it("resets reconnectTimer", () => {
     const spy = sinon.spy(socket.reconnectTimer, "reset")
