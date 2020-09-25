@@ -115,7 +115,6 @@ describe('join', () => {
     })
 
     // TODO: fix
-    /*
     it.skip('succeeds before timeout', () => {
       const spy = sinon.spy(socket, 'push')
       const timeout = joinPush.timeout
@@ -135,7 +134,6 @@ describe('join', () => {
       clock.tick(timeout)
       assert.equal(spy.callCount, 1)
     })
-    */
   })
 })
 
@@ -858,7 +856,6 @@ describe('leave', () => {
   // TODO - the following tests are skipped until Channel.leave
   // behavior can be fixed; currently, 'ok' is triggered immediately
   // within Channel.leave so timeout callbacks are never reached
-  /*
   it.skip('sets state to leaving initially', () => {
     assert.notEqual(channel.state, 'leaving')
 
@@ -886,5 +883,4 @@ describe('leave', () => {
 
     assert.equal(channel.state, 'closed')
   })
-  */
 })
