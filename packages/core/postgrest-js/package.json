@@ -28,7 +28,7 @@
     "docs:json": "typedoc --json docs/spec.json --mode modules --includeDeclarations --excludeExternals"
   },
   "dependencies": {
-    "isomorphic-unfetch": "^3.0.0"
+    "cross-fetch": "^3.0.6"
   },
   "devDependencies": {
     "@types/jest": "^26.0.13",
