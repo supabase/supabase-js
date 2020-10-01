@@ -14,8 +14,8 @@ function App() {
     auth.onAuthStateChange((event, session) => setSession(session))
   }, [])
 
-  async function handleGoogleLogin() {
-    let { error } = await auth.signIn({ provider: 'google' })
+  async function handleOAuthLogin(provider) {
+    let { error } = await auth.signIn({ provider })
     if (error) console.log('error', error.message)
   }
   async function handleEmailSignIn() {
@@ -59,7 +59,7 @@ function App() {
               <span className="block w-full rounded-md shadow-sm">
                 <button
                   onClick={() => handleSignOut()}
-                  type="submit"
+                  type="button"
                   className="w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-gray-600 hover:bg-gray-500 focus:outline-none focus:border-gray-700 focus:shadow-outline-gray active:bg-gray-700 transition duration-150 ease-in-out"
                 >
                   Sign out
@@ -117,8 +117,9 @@ function App() {
             <div className="text-sm leading-5">
             {/* eslint-disable-next-line */}
               <a
-                href="#"
+
                 onClick={forgotPassword}
+                href="/"
                 className="font-medium text-indigo-600 hover:text-indigo-500 focus:outline-none focus:underline transition ease-in-out duration-150"
               >
                 Forgot your password?
@@ -130,7 +131,7 @@ function App() {
             <span className="block w-full rounded-md shadow-sm">
               <button
                 onClick={() => handleEmailSignIn()}
-                type="submit"
+                type="button"
                 className="w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-500 focus:outline-none focus:border-indigo-700 focus:shadow-outline-indigo active:bg-indigo-700 transition duration-150 ease-in-out"
               >
                 Sign In
@@ -139,7 +140,7 @@ function App() {
             <span className="block w-full rounded-md shadow-sm">
               <button
                 onClick={() => handleEmailSignUp()}
-                type="submit"
+                type="button"
                 className="w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-500 focus:outline-none focus:border-indigo-700 focus:shadow-outline-indigo active:bg-indigo-700 transition duration-150 ease-in-out"
               >
                 Sign Up
@@ -161,8 +162,19 @@ function App() {
               <div className="mt-6">
                 <span className="block w-full rounded-md shadow-sm">
                   <button
-                    onClick={() => handleGoogleLogin()}
-                    type="submit"
+                    onClick={() => handleOAuthLogin('github')}
+                    type="button"
+                    className="w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-500 focus:outline-none focus:border-indigo-700 focus:shadow-outline-indigo active:bg-indigo-700 transition duration-150 ease-in-out"
+                  >
+                    GitHub
+                  </button>
+                </span>
+              </div>
+              <div className="mt-6">
+                <span className="block w-full rounded-md shadow-sm">
+                  <button
+                    onClick={() => handleOAuthLogin('google')}
+                    type="button"
                     className="w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-500 focus:outline-none focus:border-indigo-700 focus:shadow-outline-indigo active:bg-indigo-700 transition duration-150 ease-in-out"
                   >
                     Google

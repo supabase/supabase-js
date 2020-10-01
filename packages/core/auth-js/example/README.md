@@ -1,3 +1,47 @@
+# Supabase `gotrue-js` example
+
+## Setup
+
+### With a Supabase project
+
+You can run the example with one of your projects on [app.supabase.io](https://app.supabase.io/)
+
+In the [App.js](src/App.js#L5) replace the auth client (`const auth = new Client()`) with the code below:
+
+```js
+// Find these credentials under settings > API.
+const supabaseURL = 'https://your-project-id.supabase.co'
+const supabaseAnon = 'your-anon-key'
+
+const auth = new Client({
+  url: `${supabaseURL}/auth/v1`,
+  headers: {
+    accept: 'json',
+    apikey: supabaseAnon,
+  },
+})
+```
+
+### Docker
+
+You can find a docker compose file for spinning up a [Gotrue server](https://github.com/supabase/gotrue) in the [infra folder](../infra).
+
+## Run
+
+### Install root dependencies and build `gotrue-js`
+
+```bash
+cd -; npm install; npm run build; cd example
+```
+
+### Install the dependencies and run the example
+
+```bash
+npm install; npm run start
+```
+
+<hr />
+
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
 
 ## Available Scripts
