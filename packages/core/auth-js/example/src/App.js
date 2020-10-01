@@ -30,7 +30,19 @@ function App() {
     let { error } = await auth.signOut()
     if (error) console.log('error', error.message)
   }
-
+  async function forgotPassword() {
+    var email = prompt("Please enter your email:");
+    if (email === null || email === "") {
+      window.alert('You must enter your email.')
+    } else {
+      let { data, error } =  auth.api.resetPasswordForEmail(email);
+      if (error) {
+        console.log('error', error.message);
+      } else {
+        alert(data)
+      }
+    }
+  }
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
@@ -103,8 +115,10 @@ function App() {
             </div>
 
             <div className="text-sm leading-5">
+            {/* eslint-disable-next-line */}
               <a
                 href="#"
+                onClick={forgotPassword}
                 className="font-medium text-indigo-600 hover:text-indigo-500 focus:outline-none focus:underline transition ease-in-out duration-150"
               >
                 Forgot your password?
