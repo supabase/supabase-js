@@ -1,6 +1,9 @@
 import fetch from 'cross-fetch'
 
-// https://postgrest.org/en/stable/api.html?highlight=options#errors-and-http-status-codes
+/**
+ * Error format
+ * {@link https://postgrest.org/en/stable/api.html?highlight=options#errors-and-http-status-codes}
+ */
 interface PostgrestError {
   message: string
   details: string
@@ -8,7 +11,10 @@ interface PostgrestError {
   code: string
 }
 
-// Response format: https://github.com/supabase/supabase-js/issues/32
+/** 
+ * Response format
+ * {@link https://github.com/supabase/supabase-js/issues/32}
+ */
 interface PostgrestResponse<T> {
   error: PostgrestError | null
   data: T | T[] | null
@@ -21,7 +27,6 @@ interface PostgrestResponse<T> {
 /**
  * Base builder
  */
-
 export abstract class PostgrestBuilder<T> implements PromiseLike<any> {
   method!: 'GET' | 'HEAD' | 'POST' | 'PATCH' | 'DELETE'
   url!: URL
@@ -90,7 +95,7 @@ export class PostgrestQueryBuilder<T> extends PostgrestBuilder<T> {
   /**
    * Performs horizontal filtering with SELECT.
    *
-   * @param columns  The columns to retrieve, separated by commas.
+   * @param {string} columns The columns to retrieve, separated by commas.
    */
   select(columns = '*'): PostgrestFilterBuilder<T> {
     this.method = 'GET'
@@ -115,8 +120,8 @@ export class PostgrestQueryBuilder<T> extends PostgrestBuilder<T> {
   /**
    * Performs an INSERT into the table.
    *
-   * @param values  The values to insert.
-   * @param upsert  If `true`, performs an UPSERT.
+   * @param {Partial<T>|Partial<T>[]} values The values to insert.
+   * @param {boolean} object.upsert If `true`, performs an UPSERT.
    */
   insert(values: Partial<T> | Partial<T>[], { upsert = false } = {}): PostgrestBuilder<T> {
     this.method = 'POST'
@@ -130,7 +135,7 @@ export class PostgrestQueryBuilder<T> extends PostgrestBuilder<T> {
   /**
    * Performs an UPDATE on the table.
    *
-   * @param values  The values to update.
+   * @param {Partial<T>} values The values to update.
    */
   update(values: Partial<T>): PostgrestFilterBuilder<T> {
     this.method = 'PATCH'
@@ -164,10 +169,10 @@ class PostgrestTransformBuilder<T> extends PostgrestBuilder<T> {
   /**
    * Orders the result with the specified `column`.
    *
-   * @param column  The column to order on.
-   * @param ascending  If `true`, the result will be in ascending order.
-   * @param nullsFirst  If `true`, `null`s appear first.
-   * @param foreignTable  The foreign table to use (if `column` is a foreign column).
+   * @param {T} column The column to order on.
+   * @param {boolean?} ascending If `true`, the result will be in ascending order.
+   * @param {boolean?} nullsFirst  If `true`, `null`s appear first.
+   * @param {string?} foreignTable The foreign table to use (if `column` is a foreign column).
    */
   order(
     column: keyof T,
@@ -188,8 +193,8 @@ class PostgrestTransformBuilder<T> extends PostgrestBuilder<T> {
   /**
    * Limits the result with the specified `count`.
    *
-   * @param count  The maximum no. of rows to limit to.
-   * @param foreignTable  The foreign table to use (for foreign columns).
+   * @param {number} count The maximum no. of rows to limit to.
+   * @param {string?} object.foreignTable The foreign table to use (for foreign columns).
    */
   limit(
     count: number,
@@ -203,9 +208,9 @@ class PostgrestTransformBuilder<T> extends PostgrestBuilder<T> {
   /**
    * Limits the result to rows within the specified range, inclusive.
    *
-   * @param from  The starting index from which to limit the result, inclusive.
-   * @param to  The last index to which to limit the result, inclusive.
-   * @param foreignTable  The foreign table to use (for foreign columns).
+   * @param {number} from The starting index from which to limit the result, inclusive.
+   * @param {number} to The last index to which to limit the result, inclusive.
+   * @param {string?} foreignTable The foreign table to use (for foreign columns).
    */
   range(
     from: number,
@@ -264,9 +269,9 @@ class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
   /**
    * Finds all rows which doesn't satisfy the filter.
    *
-   * @param column  The column to filter on.
-   * @param operator  The operator to filter with.
-   * @param value  The value to filter with.
+   * @param {T} column The column to filter on.
+   * @param {FilterOperator} operator The operator to filter with.
+   * @param {any} value The value to filter with.
    */
   not(column: keyof T, operator: FilterOperator, value: any): this {
     this.url.searchParams.append(`${column}`, `not.${operator}.${value}`)
@@ -276,7 +281,7 @@ class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
   /**
    * Finds all rows satisfying at least one of the filters.
    *
-   * @param filters  The filters to use, separated by commas.
+   * @param {string} filters The filters to use, separated by commas.
    */
   or(filters: string): this {
     this.url.searchParams.append('or', `(${filters})`)
@@ -287,8 +292,8 @@ class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
    * Finds all rows whose value on the stated `column` exactly matches the
    * specified `value`.
    *
-   * @param column  The column to filter on.
-   * @param value  The value to filter with.
+   * @param {T} column The column to filter on.
+   * @param {T[]} value The value to filter with.
    */
   eq(column: keyof T, value: T[keyof T]): this {
     this.url.searchParams.append(`${column}`, `eq.${value}`)
@@ -299,8 +304,8 @@ class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
    * Finds all rows whose value on the stated `column` doesn't match the
    * specified `value`.
    *
-   * @param column  The column to filter on.
-   * @param value  The value to filter with.
+   * @param {T} column The column to filter on.
+   * @param {T[]} value The value to filter with.
    */
   neq(column: keyof T, value: T[keyof T]): this {
     this.url.searchParams.append(`${column}`, `neq.${value}`)
@@ -311,8 +316,8 @@ class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
    * Finds all rows whose value on the stated `column` is greater than the
    * specified `value`.
    *
-   * @param column  The column to filter on.
-   * @param value  The value to filter with.
+   * @param {T} column The column to filter on.
+   * @param {T[]} value The value to filter with.
    */
   gt(column: keyof T, value: T[keyof T]): this {
     this.url.searchParams.append(`${column}`, `gt.${value}`)
@@ -323,8 +328,8 @@ class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
    * Finds all rows whose value on the stated `column` is greater than or
    * equal to the specified `value`.
    *
-   * @param column  The column to filter on.
-   * @param value  The value to filter with.
+   * @param {T} column The column to filter on.
+   * @param {T[]} value The value to filter with.
    */
   gte(column: keyof T, value: T[keyof T]): this {
     this.url.searchParams.append(`${column}`, `gte.${value}`)
@@ -335,8 +340,8 @@ class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
    * Finds all rows whose value on the stated `column` is less than the
    * specified `value`.
    *
-   * @param column  The column to filter on.
-   * @param value  The value to filter with.
+   * @param {T} column The column to filter on.
+   * @param {T[]} value The value to filter with.
    */
   lt(column: keyof T, value: T[keyof T]): this {
     this.url.searchParams.append(`${column}`, `lt.${value}`)
@@ -347,8 +352,8 @@ class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
    * Finds all rows whose value on the stated `column` is less than or equal
    * to the specified `value`.
    *
-   * @param column  The column to filter on.
-   * @param value  The value to filter with.
+   * @param {T} column The column to filter on.
+   * @param {T[]} value The value to filter with.
    */
   lte(column: keyof T, value: T[keyof T]): this {
     this.url.searchParams.append(`${column}`, `lte.${value}`)
@@ -359,8 +364,8 @@ class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
    * Finds all rows whose value in the stated `column` matches the supplied
    * `pattern` (case sensitive).
    *
-   * @param column  The column to filter on.
-   * @param pattern  The pattern to filter with.
+   * @param {T} column The column to filter on.
+   * @param {string} pattern The pattern to filter with.
    */
   like(column: keyof T, pattern: string): this {
     this.url.searchParams.append(`${column}`, `like.${pattern}`)
@@ -371,8 +376,8 @@ class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
    * Finds all rows whose value in the stated `column` matches the supplied
    * `pattern` (case insensitive).
    *
-   * @param column  The column to filter on.
-   * @param pattern  The pattern to filter with.
+   * @param {T} column The column to filter on.
+   * @param {string} pattern  The pattern to filter with.
    */
   ilike(column: keyof T, pattern: string): this {
     this.url.searchParams.append(`${column}`, `ilike.${pattern}`)
@@ -383,8 +388,8 @@ class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
    * A check for exact equality (null, true, false), finds all rows whose
    * value on the stated `column` exactly match the specified `value`.
    *
-   * @param column  The column to filter on.
-   * @param value  The value to filter with.
+   * @param {T} column The column to filter on.
+   * @param {boolean|null} value The value to filter with.
    */
   is(column: keyof T, value: boolean | null): this {
     this.url.searchParams.append(`${column}`, `is.${value}`)
@@ -395,8 +400,8 @@ class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
    * Finds all rows whose value on the stated `column` is found on the
    * specified `values`.
    *
-   * @param column  The column to filter on.
-   * @param values  The values to filter with.
+   * @param {T} column The column to filter on.
+   * @param {T[]} values The values to filter with.
    */
   in(column: keyof T, values: T[keyof T][]): this {
     this.url.searchParams.append(`${column}`, `in.(${cleanFilterArray(values)})`)
@@ -407,8 +412,8 @@ class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
    * Finds all rows whose json, array, or range value on the stated `column`
    * contains the values specified in `value`.
    *
-   * @param column  The column to filter on.
-   * @param value  The value to filter with.
+   * @param {T} column The column to filter on.
+   * @param {string|T[]|object} value The value to filter with.
    */
   cs(column: keyof T, value: string | T[keyof T][] | object): this {
     if (typeof value === 'string') {
@@ -429,8 +434,8 @@ class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
    * Finds all rows whose json, array, or range value on the stated `column` is
    * contained by the specified `value`.
    *
-   * @param column  The column to filter on.
-   * @param value  The value to filter with.
+   * @param {T} column The column to filter on.
+   * @param {string|T[]|object} value The value to filter with.
    */
   cd(column: keyof T, value: string | T[keyof T][] | object): this {
     if (typeof value === 'string') {
@@ -450,8 +455,8 @@ class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
    * Finds all rows whose range value on the stated `column` is strictly to the
    * left of the specified `range`.
    *
-   * @param column  The column to filter on.
-   * @param range  The range to filter with.
+   * @param {T} column The column to filter on.
+   * @param {string} range The range to filter with.
    */
   sl(column: keyof T, range: string): this {
     this.url.searchParams.append(`${column}`, `sl.${range}`)
@@ -462,8 +467,8 @@ class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
    * Finds all rows whose range value on the stated `column` is strictly to
    * the right of the specified `range`.
    *
-   * @param column  The column to filter on.
-   * @param range  The range to filter with.
+   * @param {T} column The column to filter on.
+   * @param {string} range The range to filter with.
    */
   sr(column: keyof T, range: string): this {
     this.url.searchParams.append(`${column}`, `sr.${range}`)
@@ -474,8 +479,8 @@ class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
    * Finds all rows whose range value on the stated `column` does not extend
    * to the left of the specified `range`.
    *
-   * @param column  The column to filter on.
-   * @param range  The range to filter with.
+   * @param {T} column The column to filter on.
+   * @param {string} range The range to filter with.
    */
   nxl(column: keyof T, range: string): this {
     this.url.searchParams.append(`${column}`, `nxl.${range}`)
@@ -486,8 +491,8 @@ class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
    * Finds all rows whose range value on the stated `column` does not extend
    * to the right of the specified `range`.
    *
-   * @param column  The column to filter on.
-   * @param range  The range to filter with.
+   * @param {T} column The column to filter on.
+   * @param {string} range The range to filter with.
    */
   nxr(column: keyof T, range: string): this {
     this.url.searchParams.append(`${column}`, `nxr.${range}`)
@@ -498,8 +503,8 @@ class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
    * Finds all rows whose range value on the stated `column` is adjacent to
    * the specified `range`.
    *
-   * @param column  The column to filter on.
-   * @param range  The range to filter with.
+   * @param {T} column The column to filter on.
+   * @param {string} range The range to filter with.
    */
   adj(column: keyof T, range: string): this {
     this.url.searchParams.append(`${column}`, `adj.${range}`)
@@ -510,8 +515,8 @@ class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
    * Finds all rows whose array or range value on the stated `column` is
    * contained by the specified `value`.
    *
-   * @param column  The column to filter on.
-   * @param value  The value to filter with.
+   * @param {T} column The column to filter on.
+   * @param {string|T[]} value The value to filter with.
    */
   ov(column: keyof T, value: string | T[keyof T][]): this {
     if (typeof value === 'string') {
@@ -528,9 +533,9 @@ class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
    * Finds all rows whose tsvector value on the stated `column` matches
    * to_tsquery(`query`).
    *
-   * @param column  The column to filter on.
-   * @param query  The Postgres tsquery string to filter with.
-   * @param config  The text search configuration to use.
+   * @param {T} column The column to filter on.
+   * @param {string} query The Postgres tsquery string to filter with.
+   * @param {string?} config The text search configuration to use.
    */
   fts(column: keyof T, query: string, { config }: { config?: string } = {}): this {
     const configPart = typeof config === 'undefined' ? '' : `(${config})`
@@ -542,8 +547,8 @@ class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
    * Finds all rows whose tsvector value on the stated `column` matches
    * plainto_tsquery(`query`).
    *
-   * @param column  The column to filter on.
-   * @param query  The Postgres tsquery string to filter with.
+   * @param {*} column  The column to filter on.
+   * @param {} query  The Postgres tsquery string to filter with.
    * @param config  The text search configuration to use.
    */
   plfts(column: keyof T, query: string, { config }: { config?: string } = {}): this {
