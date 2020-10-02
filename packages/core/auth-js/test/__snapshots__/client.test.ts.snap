@@ -19,7 +19,7 @@ Object {
 exports[`Get user after logging out 1`] = `
 Object {
   "data": null,
-  "error": "Not logged in.",
+  "error": [Error: Not logged in.],
 }
 `;
 
