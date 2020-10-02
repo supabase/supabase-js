@@ -1,6 +1,10 @@
 import fetch from 'cross-fetch'
 
-// https://postgrest.org/en/stable/api.html?highlight=options#errors-and-http-status-codes
+/**
+ * Error format
+ * 
+ * {@link https://postgrest.org/en/stable/api.html?highlight=options#errors-and-http-status-codes}
+ */
 interface PostgrestError {
   message: string
   details: string
@@ -8,7 +12,11 @@ interface PostgrestError {
   code: string
 }
 
-// Response format: https://github.com/supabase/supabase-js/issues/32
+/** 
+ * Response format
+ * 
+ * {@link https://github.com/supabase/supabase-js/issues/32}
+ */
 interface PostgrestResponse<T> {
   error: PostgrestError | null
   data: T | T[] | null
