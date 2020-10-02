@@ -6,8 +6,9 @@ const auth = new Client()
 
 function App() {
   let [session, setSession] = useState(null)
-  let [email, setEmail] = useState('')
+  let [email, setEmail] = useState(localStorage.getItem('email') ?? '')
   let [password, setPassword] = useState('')
+  let [rememberMe, setRememberMe] = useState(false)
 
   useEffect(() => {
     setSession(auth.currentSession)
@@ -19,6 +20,11 @@ function App() {
     if (error) console.log('error', error.message)
   }
   async function handleEmailSignIn() {
+    if (rememberMe) {
+      localStorage.setItem('email', email);
+    } else {
+      localStorage.removeItem('email');
+    }
     let { error } = await auth.signIn({ email, password })
     if (error) console.log('error', error.message)
   }
@@ -107,6 +113,7 @@ function App() {
               <input
                 id="remember_me"
                 type="checkbox"
+                onChange={() => setRememberMe(! rememberMe)}
                 className="form-checkbox h-4 w-4 text-indigo-600 transition duration-150 ease-in-out"
               />
               <label htmlFor="remember_me" className="ml-2 block text-sm leading-5 text-gray-900">
