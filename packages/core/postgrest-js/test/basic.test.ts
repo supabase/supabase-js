@@ -29,6 +29,13 @@ test('switch schema', async () => {
   expect(res).toMatchSnapshot()
 })
 
+test('on_conflict insert', async () => {
+  const res = await postgrest
+    .from('users')
+    .insert({ username: 'dragarcia' }, { upsert: true, onConflict: 'username' })
+  expect(res).toMatchSnapshot()
+})
+
 describe('basic insert, update, delete', () => {
   test('basic insert', async () => {
     let res = await postgrest
