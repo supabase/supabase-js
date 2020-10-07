@@ -91,7 +91,7 @@ export class PostgrestQueryBuilder<T> extends PostgrestBuilder<T> {
   ) {
     super({} as PostgrestBuilder<T>)
     this.url = new URL(url)
-    this.headers = headers
+    this.headers = { ...headers }
     this.schema = schema
   }
 
