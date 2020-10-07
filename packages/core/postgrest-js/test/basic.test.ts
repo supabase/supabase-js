@@ -120,3 +120,9 @@ test('custom type', async () => {
   // Autocomplete should show properties of user after '.'
   user.username
 })
+
+test("don't mutate PostgrestClient.headers", async () => {
+  await postgrest.from('users').select().limit(1).single()
+  const { error } = await postgrest.from('users').select()
+  expect(error).toMatchSnapshot()
+})

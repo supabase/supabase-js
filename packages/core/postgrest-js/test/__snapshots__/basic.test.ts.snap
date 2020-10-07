@@ -580,6 +580,8 @@ Object {
 }
 `;
 
+exports[`don't mutate PostgrestClient.headers 1`] = `null`;
+
 exports[`missing table 1`] = `
 Object {
   "body": null,
