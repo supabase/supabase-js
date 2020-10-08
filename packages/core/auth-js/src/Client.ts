@@ -7,6 +7,7 @@ const DEFAULT_OPTIONS = {
   url: GOTRUE_URL,
   autoRefreshToken: true,
   persistSession: true,
+  localStorage: global.localStorage,
   detectSessionInUrl: true,
   headers: DEFAULT_HEADERS,
 }
@@ -16,6 +17,7 @@ export default class Client {
   currentSession?: Session | null
   autoRefreshToken: boolean
   persistSession: boolean
+  localStorage: Storage
   stateChangeEmmitters: Map<string, Subscription> = new Map()
 
   /**
@@ -25,6 +27,7 @@ export default class Client {
    * @param options.detectSessionInUrl Set to "true" if you want to automatically detects OAuth grants in the URL and signs in the user.
    * @param options.autoRefreshToken Set to "true" if you want to automatically refresh the token before expiring.
    * @param options.persistSession Set to "true" if you want to automatically save the user session into local storage.
+   * @param options.localStorage
    */
   constructor(options: {
     url?: string
@@ -32,12 +35,14 @@ export default class Client {
     detectSessionInUrl?: boolean
     autoRefreshToken?: boolean
     persistSession?: boolean
+    localStorage?: Storage
   }) {
     const settings = { ...DEFAULT_OPTIONS, ...options }
     this.currentUser = null
     this.currentSession = null
     this.autoRefreshToken = settings.autoRefreshToken
     this.persistSession = settings.persistSession
+    this.localStorage = settings.localStorage
     this.api = new Api({ url: settings.url, headers: settings.headers })
     this._recoverSession()
 
@@ -218,7 +223,6 @@ export default class Client {
     try {
       let { data, error }: any = await this.api.signInWithEmail(email, password)
       if (!!error) return { data: null, error }
-
       if (data?.user?.confirmed_at) {
         this._saveSession(data)
         this._notifyAllSubscribers(AuthChangeEvent.SIGNED_IN)
@@ -265,17 +269,17 @@ export default class Client {
     const timeNow = Math.round(Date.now() / 1000)
     const expiresAt = timeNow + secondsToExpiry
     const data = { currentSession, expiresAt }
-    isBrowser() && localStorage.setItem(STORAGE_KEY, JSON.stringify(data))
+    isBrowser() && this.localStorage.setItem(STORAGE_KEY, JSON.stringify(data))
   }
 
   private _removeSession() {
     this.currentSession = null
     this.currentUser = null
-    isBrowser() && localStorage.removeItem(STORAGE_KEY)
+    isBrowser() && this.localStorage.removeItem(STORAGE_KEY)
   }
 
   private _recoverSession() {
-    const json = isBrowser() && localStorage.getItem(STORAGE_KEY)
+    const json = isBrowser() && this.localStorage.getItem(STORAGE_KEY)
     if (json) {
       try {
         const data = JSON.parse(json)
