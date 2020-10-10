@@ -1,4 +1,4 @@
-import { get, post, put, posh } from './lib/fetch'
+import { get, post, put } from './lib/fetch'
 import { Provider, UserAttributes } from './lib/types'
 
 export default class Api {
