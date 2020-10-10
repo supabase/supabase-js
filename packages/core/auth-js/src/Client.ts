@@ -274,14 +274,12 @@ export default class Client {
   private async _removeSession() {
     this.currentSession = null
     this.currentUser = null
-    isBrowser() && await this.localStorage.removeItemAsync(STORAGE_KEY)
+    isBrowser() && await this.localStorage.removeItem(STORAGE_KEY)
   }
 
   private async _recoverSession() {
-    
-    console.log('recover session')
 
-    const json = isBrowser() && this.localStorage.getItemAsync(STORAGE_KEY)
+    const json = isBrowser() && await this.localStorage.getItem(STORAGE_KEY)
     
     if (json) {
       try {
