@@ -1,4 +1,4 @@
-import { get, post, put } from './lib/fetch'
+import { get, post, put, posh } from './lib/fetch'
 import { Provider, UserAttributes } from './lib/types'
 
 export default class Api {
@@ -39,12 +39,14 @@ export default class Api {
    */
   async signInWithEmail(email: string, password: string) {
     try {
+      console.log('signInWithEmail API call');
       let data: any = await post(
         `${this.url}/token?grant_type=password`,
-        { email, password },
+        { email, password},
         { headers: this.headers }
       )
-      console.log('signInWithEmaildata', data)
+      
+      // console.log('signInWithEmaildata', data)
       return { data, error: null }
     } catch (error) {
       return { data: null, error }

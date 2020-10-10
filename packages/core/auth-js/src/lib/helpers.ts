@@ -17,3 +17,17 @@ export function getParameterByName(name: string, url?: string) {
   if (!results[2]) return ''
   return decodeURIComponent(results[2].replace(/\+/g, ' '))
 }
+
+export class LocalStorage extends Storage{
+  localStorage!: Storage
+  constructor(localStorage: Storage){
+    super();
+    this.localStorage = localStorage;
+  }
+  async getItemAsync(key: string) {
+    return await this.localStorage.getItem(key);
+  }
+  async removeItemAsync(key: string) {
+    return await this.localStorage.removeItem(key);
+  }
+}

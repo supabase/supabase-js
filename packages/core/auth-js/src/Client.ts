@@ -1,5 +1,5 @@
 import Api from './Api'
-import { isBrowser, getParameterByName, uuid } from './lib/helpers'
+import { isBrowser, getParameterByName, uuid, LocalStorage } from './lib/helpers'
 import { GOTRUE_URL, DEFAULT_HEADERS, STORAGE_KEY } from './lib/constants'
 import { Session, User, UserAttributes, Provider, Subscription, AuthChangeEvent } from './lib/types'
 
@@ -42,7 +42,7 @@ export default class Client {
     this.currentSession = null
     this.autoRefreshToken = settings.autoRefreshToken
     this.persistSession = settings.persistSession
-    this.localStorage = settings.localStorage
+    this.localStorage = new LocalStorage(settings.localStorage);
     this.api = new Api({ url: settings.url, headers: settings.headers })
     this._recoverSession()
 
@@ -94,7 +94,6 @@ export default class Client {
     try {
       this._removeSession()
       let { email, password, provider } = credentials
-
       if (email && password) return this._handeEmailSignIn(email, password)
       if (provider) return this._handeProviderSignIn(provider)
       else throw new Error(`You must provide either an email or a third-party provider.`)
@@ -272,14 +271,18 @@ export default class Client {
     isBrowser() && this.localStorage.setItem(STORAGE_KEY, JSON.stringify(data))
   }
 
-  private _removeSession() {
+  private async _removeSession() {
     this.currentSession = null
     this.currentUser = null
-    isBrowser() && this.localStorage.removeItem(STORAGE_KEY)
+    isBrowser() && await this.localStorage.removeItemAsync(STORAGE_KEY)
   }
 
-  private _recoverSession() {
-    const json = isBrowser() && this.localStorage.getItem(STORAGE_KEY)
+  private async _recoverSession() {
+    
+    console.log('recover session')
+
+    const json = isBrowser() && this.localStorage.getItemAsync(STORAGE_KEY)
+    
     if (json) {
       try {
         const data = JSON.parse(json)
