@@ -31,13 +31,13 @@ export class LocalStorage implements Storage {
   key(index: number): string | null {
     return this.localStorage.key(index);
   }
-  setItem(key: string, value: any) {
+  setItem(key: string, value: any): void {
     return this.localStorage.setItem(key, value);
   }
-  getItem(key: string) {
+  getItem(key: string): string | null {
     return this.localStorage.getItem(key);
   }
-  removeItem(key: string) {
+  removeItem(key: string): void {
     return this.localStorage.removeItem(key);
   }
 }
