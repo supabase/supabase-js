@@ -42,7 +42,7 @@ export default class Client {
     this.currentSession = null
     this.autoRefreshToken = settings.autoRefreshToken
     this.persistSession = settings.persistSession
-    this.localStorage = new LocalStorage(settings.localStorage);
+    this.localStorage = new LocalStorage(settings.localStorage)
     this.api = new Api({ url: settings.url, headers: settings.headers })
     this._recoverSession()
 
@@ -222,6 +222,7 @@ export default class Client {
     try {
       let { data, error }: any = await this.api.signInWithEmail(email, password)
       if (!!error) return { data: null, error }
+
       if (data?.user?.confirmed_at) {
         this._saveSession(data)
         this._notifyAllSubscribers(AuthChangeEvent.SIGNED_IN)
@@ -274,13 +275,11 @@ export default class Client {
   private async _removeSession() {
     this.currentSession = null
     this.currentUser = null
-    isBrowser() && await this.localStorage.removeItem(STORAGE_KEY)
+    isBrowser() && (await this.localStorage.removeItem(STORAGE_KEY))
   }
 
   private async _recoverSession() {
-
-    const json = isBrowser() && await this.localStorage.getItem(STORAGE_KEY)
-    
+    const json = isBrowser() && (await this.localStorage.getItem(STORAGE_KEY))
     if (json) {
       try {
         const data = JSON.parse(json)

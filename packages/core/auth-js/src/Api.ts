@@ -39,14 +39,13 @@ export default class Api {
    */
   async signInWithEmail(email: string, password: string) {
     try {
-      console.log('signInWithEmail API call');
       let data: any = await post(
         `${this.url}/token?grant_type=password`,
-        { email, password},
+        { email, password },
         { headers: this.headers }
       )
-      
-      // console.log('signInWithEmaildata', data)
+
+      console.log('signInWithEmaildata', data)
       return { data, error: null }
     } catch (error) {
       return { data: null, error }

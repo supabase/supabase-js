@@ -19,25 +19,25 @@ export function getParameterByName(name: string, url?: string) {
 }
 
 export class LocalStorage implements Storage {
-  localStorage: Storage
+  localStorage: Storage;
   [name: string]: any
   length!: number
   constructor(localStorage: Storage) {
-    this.localStorage = localStorage || global.localStorage;
+    this.localStorage = localStorage || global.localStorage
   }
   clear(): void {
-    return this.localStorage.clear();
+    return this.localStorage.clear()
   }
   key(index: number): string | null {
-    return this.localStorage.key(index);
+    return this.localStorage.key(index)
   }
   setItem(key: string, value: any): void {
-    return this.localStorage.setItem(key, value);
+    return this.localStorage.setItem(key, value)
   }
   getItem(key: string): string | null {
-    return this.localStorage.getItem(key);
+    return this.localStorage.getItem(key)
   }
   removeItem(key: string): void {
-    return this.localStorage.removeItem(key);
+    return this.localStorage.removeItem(key)
   }
 }
