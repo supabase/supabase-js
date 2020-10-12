@@ -2,7 +2,7 @@ import fetch from 'cross-fetch'
 
 /**
  * Error format
- * 
+ *
  * {@link https://postgrest.org/en/stable/api.html?highlight=options#errors-and-http-status-codes}
  */
 interface PostgrestError {
@@ -12,9 +12,9 @@ interface PostgrestError {
   code: string
 }
 
-/** 
+/**
  * Response format
- * 
+ *
  * {@link https://github.com/supabase/supabase-js/issues/32}
  */
 interface PostgrestResponse<T> {
@@ -130,14 +130,14 @@ export class PostgrestQueryBuilder<T> extends PostgrestBuilder<T> {
   insert(
     values: Partial<T> | Partial<T>[],
     { upsert = false, onConflict }: { upsert?: boolean; onConflict?: string } = {}
-  ): PostgrestBuilder<T> {
+  ): PostgrestFilterBuilder<T> {
     this.method = 'POST'
     this.headers['Prefer'] = upsert
       ? 'return=representation,resolution=merge-duplicates'
       : 'return=representation'
     if (upsert && onConflict !== undefined) this.url.searchParams.set('on_conflict', onConflict)
     this.body = values
-    return this
+    return new PostgrestFilterBuilder(this)
   }
 
   /**

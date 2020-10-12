@@ -21,3 +21,10 @@ test('single', async () => {
   const res = await postgrest.from('users').select().limit(1).single()
   expect(res).toMatchSnapshot()
 })
+
+test('single on insert', async () => {
+  const res = await postgrest.from('users').insert({ username: 'foo' }).single()
+  expect(res).toMatchSnapshot()
+
+  await postgrest.from('users').delete().eq('username', 'foo')
+})
