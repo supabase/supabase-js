@@ -82,6 +82,8 @@ Object {
 }
 `;
 
+exports[`signIn() with the wrong password 1`] = `"Invalid Password"`;
+
 exports[`signOut 1`] = `true`;
 
 exports[`signUp() 1`] = `

@@ -113,3 +113,12 @@ test('Get user after logging out', async () => {
   let res = await auth.user()
   expect(res).toMatchSnapshot()
 })
+
+test('signIn() with the wrong password', async () => {
+  let { error, data } = await auth.signIn({
+    email,
+    password: password + '2',
+  })
+  expect(error.message).toMatchSnapshot()
+  expect(data).toBeNull()
+})

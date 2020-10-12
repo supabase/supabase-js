@@ -12,7 +12,8 @@ function App() {
 
   useEffect(() => {
     setSession(auth.currentSession)
-    auth.onAuthStateChange((event, session) => setSession(session))
+    auth.onAuthStateChange((_event, session) => setSession(session))
+    console.log('auth.currentUser', auth.currentUser)
   }, [])
 
   async function handleOAuthLogin(provider) {
