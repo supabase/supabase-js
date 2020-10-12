@@ -169,3 +169,25 @@ Object {
   "statusText": "OK",
 }
 `;
+
+exports[`single on insert 1`] = `
+Object {
+  "body": Object {
+    "age_range": null,
+    "catchphrase": null,
+    "data": null,
+    "status": "ONLINE",
+    "username": "foo",
+  },
+  "data": Object {
+    "age_range": null,
+    "catchphrase": null,
+    "data": null,
+    "status": "ONLINE",
+    "username": "foo",
+  },
+  "error": null,
+  "status": 201,
+  "statusText": "Created",
+}
+`;
