@@ -287,7 +287,7 @@ export default class Client {
           this._removeSession()
         } else {
           this.currentSession = currentSession
-          this.currentUser = currentUser
+          this.currentUser = currentSession.user
           // schedule a refresh 60 seconds before token due to expire
           setTimeout(this._callRefreshToken, (expiresAt - timeNow - 60) * 1000)
         }
