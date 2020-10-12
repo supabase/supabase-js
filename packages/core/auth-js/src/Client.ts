@@ -250,6 +250,7 @@ export default class Client {
 
   private _saveSession(session: Session) {
     this.currentSession = session
+    this.currentUser = session.user
     let tokenExpirySeconds = session['expires_in']
 
     if (this.autoRefreshToken && tokenExpirySeconds) {
@@ -287,7 +288,7 @@ export default class Client {
           this._removeSession()
         } else {
           this.currentSession = currentSession
-          this.currentUser = currentSession.user
+          this.currentUser = currentUser
           // schedule a refresh 60 seconds before token due to expire
           setTimeout(this._callRefreshToken, (expiresAt - timeNow - 60) * 1000)
         }
