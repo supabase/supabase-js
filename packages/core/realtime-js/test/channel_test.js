@@ -4,7 +4,7 @@ import jsdom from 'jsdom'
 import sinon from 'sinon'
 import { WebSocket, Server as WebSocketServer } from 'mock-socket'
 
-import { Channel, Socket } from '../src'
+import { Channel, Socket } from '../dist/main'
 
 let channel, socket
 
@@ -48,7 +48,7 @@ describe('join', () => {
   })
 
   it('sets state to joining', () => {
-    channel.join()
+    channel.subscribe()
 
     assert.equal(channel.state, 'joining')
   })
@@ -56,22 +56,22 @@ describe('join', () => {
   it('sets joinedOnce to true', () => {
     assert.ok(!channel.joinedOnce)
 
-    channel.join()
+    channel.subscribe()
 
     assert.ok(channel.joinedOnce)
   })
 
   it('throws if attempting to join multiple times', () => {
-    channel.join()
+    channel.subscribe()
 
-    assert.throws(() => channel.join(), /tried to join multiple times/)
+    assert.throws(() => channel.subscribe(), /tried to subscribe multiple times/)
   })
 
   it('triggers socket push with channel params', () => {
     sinon.stub(socket, 'makeRef').callsFake(() => defaultRef)
     const spy = sinon.spy(socket, 'push')
 
-    channel.join()
+    channel.subscribe()
 
     assert.ok(spy.calledOnce)
     assert.ok(
@@ -90,7 +90,7 @@ describe('join', () => {
 
     assert.equal(joinPush.timeout, defaultTimeout)
 
-    channel.join(newTimeout)
+    channel.subscribe(newTimeout)
 
     assert.equal(joinPush.timeout, newTimeout)
   })
@@ -122,7 +122,7 @@ describe('join', () => {
       socket.connect()
       helpers.receiveSocketOpen()
 
-      channel.join()
+      channel.subscribe()
       assert.equal(spy.callCount, 1)
 
       clock.tick(timeout / 2)
@@ -156,7 +156,7 @@ describe('joinPush', () => {
     },
 
     getBindings(event) {
-      return channel.bindings.filter(bind => bind.event === event)
+      return channel.bindings.filter((bind) => bind.event === event)
     },
   }
 
@@ -168,7 +168,7 @@ describe('joinPush', () => {
     channel = socket.channel('topic', { one: 'two' })
     joinPush = channel.joinPush
 
-    channel.join()
+    channel.subscribe()
   })
 
   afterEach(() => {
@@ -341,7 +341,10 @@ describe('joinPush', () => {
 
       helpers.receiveTimeout()
 
-      assert.deepEqual(joinPush.receivedResp, { status: 'timeout', response: {} })
+      assert.deepEqual(joinPush.receivedResp, {
+        status: 'timeout',
+        response: {},
+      })
     })
   })
 
@@ -443,7 +446,7 @@ describe('onError', () => {
 
     joinPush = channel.joinPush
 
-    channel.join()
+    channel.subscribe()
   })
 
   afterEach(() => {
@@ -536,7 +539,7 @@ describe('onClose', () => {
 
     joinPush = channel.joinPush
 
-    channel.join()
+    channel.subscribe()
   })
 
   afterEach(() => {
@@ -725,14 +728,14 @@ describe('push', () => {
   })
 
   it('sends push event when successfully joined', () => {
-    channel.join().trigger('ok', {})
+    channel.subscribe().trigger('ok', {})
     channel.push('event', { foo: 'bar' })
 
     assert.ok(socketSpy.calledWith(pushParams))
   })
 
   it('enqueues push event to be sent once join has succeeded', () => {
-    joinPush = channel.join()
+    joinPush = channel.subscribe()
     channel.push('event', { foo: 'bar' })
 
     assert.ok(!socketSpy.calledWith(pushParams))
@@ -744,7 +747,7 @@ describe('push', () => {
   })
 
   it('does not push if channel join times out', () => {
-    joinPush = channel.join()
+    joinPush = channel.subscribe()
     channel.push('event', { foo: 'bar' })
 
     assert.ok(!socketSpy.calledWith(pushParams))
@@ -757,7 +760,7 @@ describe('push', () => {
 
   it('uses channel timeout by default', () => {
     const timeoutSpy = sinon.spy()
-    channel.join().trigger('ok', {})
+    channel.subscribe().trigger('ok', {})
 
     channel.push('event', { foo: 'bar' }).receive('timeout', timeoutSpy)
 
@@ -770,9 +773,11 @@ describe('push', () => {
 
   it('accepts timeout arg', () => {
     const timeoutSpy = sinon.spy()
-    channel.join().trigger('ok', {})
+    channel.subscribe().trigger('ok', {})
 
-    channel.push('event', { foo: 'bar' }, channel.timeout * 2).receive('timeout', timeoutSpy)
+    channel
+      .push('event', { foo: 'bar' }, channel.timeout * 2)
+      .receive('timeout', timeoutSpy)
 
     clock.tick(channel.timeout)
     assert.ok(!timeoutSpy.called)
@@ -782,7 +787,7 @@ describe('push', () => {
   })
 
   it("does not time out after receiving 'ok'", () => {
-    channel.join().trigger('ok', {})
+    channel.subscribe().trigger('ok', {})
     const timeoutSpy = sinon.spy()
     const push = channel.push('event', { foo: 'bar' })
     push.receive('timeout', timeoutSpy)
@@ -797,7 +802,10 @@ describe('push', () => {
   })
 
   it('throws if channel has not been joined', () => {
-    assert.throws(() => channel.push('event', {}), /tried to push.*before joining/)
+    assert.throws(
+      () => channel.push('event', {}),
+      /tried to push.*before joining/
+    )
   })
 })
 
@@ -813,7 +821,7 @@ describe('leave', () => {
     socketSpy = sinon.stub(socket, 'push')
 
     channel = socket.channel('topic', { one: 'two' })
-    channel.join().trigger('ok', {})
+    channel.subscribe().trigger('ok', {})
   })
 
   afterEach(() => {
@@ -823,7 +831,7 @@ describe('leave', () => {
   it('unsubscribes from server events', () => {
     sinon.stub(socket, 'makeRef').callsFake(() => defaultRef)
 
-    channel.leave()
+    channel.unsubscribe()
 
     assert.ok(
       socketSpy.calledWith({
@@ -839,7 +847,7 @@ describe('leave', () => {
     const anotherChannel = socket.channel('another', { three: 'four' })
     assert.equal(socket.channels.length, 2)
 
-    channel.leave().trigger('ok', {})
+    channel.unsubscribe().trigger('ok', {})
 
     assert.equal(socket.channels.length, 1)
     assert.deepEqual(socket.channels[0], anotherChannel)
@@ -848,7 +856,7 @@ describe('leave', () => {
   it("sets state to closed on 'ok' event", () => {
     assert.notEqual(channel.state, 'closed')
 
-    channel.leave().trigger('ok', {})
+    channel.unsubscribe().trigger('ok', {})
 
     assert.equal(channel.state, 'closed')
   })
@@ -859,13 +867,13 @@ describe('leave', () => {
   it.skip('sets state to leaving initially', () => {
     assert.notEqual(channel.state, 'leaving')
 
-    channel.leave()
+    channel.unsubscribe()
 
     assert.equal(channel.state, 'leaving')
   })
 
   it.skip("closes channel on 'timeout'", () => {
-    channel.leave()
+    channel.unsubscribe()
 
     clock.tick(channel.timeout)
 
@@ -873,7 +881,7 @@ describe('leave', () => {
   })
 
   it.skip('accepts timeout arg', () => {
-    channel.leave(channel.timeout * 2)
+    channel.unsubscribe(channel.timeout * 2)
 
     clock.tick(channel.timeout)
 
