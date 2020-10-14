@@ -33,13 +33,13 @@
     "docs:json": "typedoc --json docs/spec.json --mode modules --includeDeclarations --excludeExternals"
   },
   "dependencies": {
+    "@types/websocket": "^1.0.1",
     "query-string": "^6.12.1",
     "websocket": "^1.0.31"
   },
   "devDependencies": {
     "@babel/runtime": "^7.9.2",
     "@supabase/doctest-js": "^0.1.0",
-    "@types/websocket": "^1.0.1",
     "babel-preset-env": "^1.7.0",
     "babel-register": "^6.26.0",
     "eslint": "^7.0.0",
