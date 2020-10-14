@@ -16,6 +16,8 @@ yarn.lock
 src
 test
 examples
+example
+example-next-js
 umd_temp
 CHANGELOG.md
 .travis.yml
