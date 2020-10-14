@@ -17,3 +17,27 @@ export function getParameterByName(name: string, url?: string) {
   if (!results[2]) return ''
   return decodeURIComponent(results[2].replace(/\+/g, ' '))
 }
+
+export class LocalStorage implements Storage {
+  localStorage: Storage;
+  [name: string]: any
+  length!: number
+  constructor(localStorage: Storage) {
+    this.localStorage = localStorage || global.localStorage
+  }
+  clear(): void {
+    return this.localStorage.clear()
+  }
+  key(index: number): string | null {
+    return this.localStorage.key(index)
+  }
+  setItem(key: string, value: any): void {
+    return this.localStorage.setItem(key, value)
+  }
+  getItem(key: string): string | null {
+    return this.localStorage.getItem(key)
+  }
+  removeItem(key: string): void {
+    return this.localStorage.removeItem(key)
+  }
+}

@@ -1,5 +1,5 @@
 import Api from './Api'
-import { isBrowser, getParameterByName, uuid } from './lib/helpers'
+import { isBrowser, getParameterByName, uuid, LocalStorage } from './lib/helpers'
 import { GOTRUE_URL, DEFAULT_HEADERS, STORAGE_KEY } from './lib/constants'
 import { Session, User, UserAttributes, Provider, Subscription, AuthChangeEvent } from './lib/types'
 
@@ -7,6 +7,7 @@ const DEFAULT_OPTIONS = {
   url: GOTRUE_URL,
   autoRefreshToken: true,
   persistSession: true,
+  localStorage: global.localStorage,
   detectSessionInUrl: true,
   headers: DEFAULT_HEADERS,
 }
@@ -16,6 +17,7 @@ export default class Client {
   currentSession?: Session | null
   autoRefreshToken: boolean
   persistSession: boolean
+  localStorage: Storage
   stateChangeEmmitters: Map<string, Subscription> = new Map()
 
   /**
@@ -25,6 +27,7 @@ export default class Client {
    * @param options.detectSessionInUrl Set to "true" if you want to automatically detects OAuth grants in the URL and signs in the user.
    * @param options.autoRefreshToken Set to "true" if you want to automatically refresh the token before expiring.
    * @param options.persistSession Set to "true" if you want to automatically save the user session into local storage.
+   * @param options.localStorage
    */
   constructor(options: {
     url?: string
@@ -32,12 +35,14 @@ export default class Client {
     detectSessionInUrl?: boolean
     autoRefreshToken?: boolean
     persistSession?: boolean
+    localStorage?: Storage
   }) {
     const settings = { ...DEFAULT_OPTIONS, ...options }
     this.currentUser = null
     this.currentSession = null
     this.autoRefreshToken = settings.autoRefreshToken
     this.persistSession = settings.persistSession
+    this.localStorage = new LocalStorage(settings.localStorage)
     this.api = new Api({ url: settings.url, headers: settings.headers })
     this._recoverSession()
 
@@ -89,7 +94,6 @@ export default class Client {
     try {
       this._removeSession()
       let { email, password, provider } = credentials
-
       if (email && password) return this._handeEmailSignIn(email, password)
       if (provider) return this._handeProviderSignIn(provider)
       else throw new Error(`You must provide either an email or a third-party provider.`)
@@ -266,17 +270,17 @@ export default class Client {
     const timeNow = Math.round(Date.now() / 1000)
     const expiresAt = timeNow + secondsToExpiry
     const data = { currentSession, expiresAt }
-    isBrowser() && localStorage.setItem(STORAGE_KEY, JSON.stringify(data))
+    isBrowser() && this.localStorage.setItem(STORAGE_KEY, JSON.stringify(data))
   }
 
-  private _removeSession() {
+  private async _removeSession() {
     this.currentSession = null
     this.currentUser = null
-    isBrowser() && localStorage.removeItem(STORAGE_KEY)
+    isBrowser() && (await this.localStorage.removeItem(STORAGE_KEY))
   }
 
-  private _recoverSession() {
-    const json = isBrowser() && localStorage.getItem(STORAGE_KEY)
+  private async _recoverSession() {
+    const json = isBrowser() && (await this.localStorage.getItem(STORAGE_KEY))
     if (json) {
       try {
         const data = JSON.parse(json)
