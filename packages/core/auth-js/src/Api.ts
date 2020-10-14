@@ -24,7 +24,6 @@ export default class Api {
         { email, password },
         { headers: this.headers }
       )
-      console.log('signUpWithEmail data', data)
       return { data, error: null }
     } catch (error) {
       console.log('signUpWithEmail error', error)
@@ -44,8 +43,6 @@ export default class Api {
         { email, password },
         { headers: this.headers }
       )
-
-      console.log('signInWithEmaildata', data)
       return { data, error: null }
     } catch (error) {
       return { data: null, error }

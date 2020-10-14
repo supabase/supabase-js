@@ -254,6 +254,7 @@ export default class Client {
 
   private _saveSession(session: Session) {
     this.currentSession = session
+    this.currentUser = session.user
     let tokenExpirySeconds = session['expires_in']
 
     if (this.autoRefreshToken && tokenExpirySeconds) {
@@ -283,15 +284,18 @@ export default class Client {
     if (json) {
       try {
         const data = JSON.parse(json)
-        const { currentSession, currentUser, expiresAt } = data
+        const { currentSession, expiresAt } = data
 
         const timeNow = Math.round(Date.now() / 1000)
         if (expiresAt < timeNow) {
           console.log('Saved session has expired.')
           this._removeSession()
+        } else if (!currentSession || !currentSession.user) {
+          console.log('Current session is missing data.')
+          this._removeSession()
         } else {
           this.currentSession = currentSession
-          this.currentUser = currentUser
+          this.currentUser = currentSession.user
           // schedule a refresh 60 seconds before token due to expire
           setTimeout(this._callRefreshToken, (expiresAt - timeNow - 60) * 1000)
         }

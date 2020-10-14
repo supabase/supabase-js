@@ -1,4 +1,4 @@
-import fetch from 'cross-fetch';
+import fetch from 'cross-fetch'
 
 export interface FetchOptions {
   headers?: {
