@@ -13,12 +13,11 @@ function App() {
   useEffect(() => {
     setSession(auth.currentSession)
     auth.onAuthStateChange((_event, session) => setSession(session))
-    console.log('auth.currentUser', auth.currentUser)
   }, [])
 
   async function handleOAuthLogin(provider) {
     let { error } = await auth.signIn({ provider })
-    if (error) console.log('error', error.message)
+    if (error) console.log('Error: ', error.message)
   }
   async function handleEmailSignIn() {
     if (rememberMe) {
@@ -27,15 +26,15 @@ function App() {
       localStorage.removeItem('email');
     }
     let { error } = await auth.signIn({ email, password })
-    if (error) console.log('error', error.message)
+    if (error) console.log('Error: ', error.message)
   }
   async function handleEmailSignUp() {
     let { error } = await auth.signUp({ email, password })
-    if (error) console.log('error', error.message)
+    if (error) console.log('Error: ', error.message)
   }
   async function handleSignOut() {
     let { error } = await auth.signOut()
-    if (error) console.log('error', error.message)
+    if (error) console.log('Error: ', error.message)
   }
   async function forgotPassword() {
     var email = prompt("Please enter your email:");
@@ -44,7 +43,7 @@ function App() {
     } else {
       let { data, error } =  auth.api.resetPasswordForEmail(email);
       if (error) {
-        console.log('error', error.message);
+        console.log('Error: ', error.message)
       } else {
         alert(data)
       }
