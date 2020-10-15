@@ -80,6 +80,13 @@ rowChanges.subscribe()
 
 You can unsubscribe from a topic using `channel.unsubscribe()`.
 
+**Disconnect the socket**
+
+Call `disconnect()` on the socket:
+
+```js
+let { error, data } = await socket.disconnect() 
+```
 
 **Duplicate Join Subscriptions**
 
