@@ -23,7 +23,7 @@ export class RealtimeWrapper {
    * @param event The event
    * @param callback A callback function that is called whenever the event occurs.
    */
-  on(event: 'INSERT' | 'UPDATE' | 'DELETE', callback: Function) {
+  on(event: 'INSERT' | 'UPDATE' | 'DELETE' | '*', callback: Function) {
     this.subscription.on(event, (payload: any) => {
       let enrichedPayload: EnrichedPayload = {
         schema: payload.schema,

@@ -32,8 +32,7 @@
   "dependencies": {
     "@supabase/gotrue-js": "^1.5.9",
     "@supabase/postgrest-js": "^0.20.0",
-    "@supabase/realtime-js": "file:/Users/copple/Projects/Supabase/realtime-js",
-    "websocket": "^1.0.32"
+    "@supabase/realtime-js": "^1.0.5"
   },
   "devDependencies": {
     "@types/jest": "^26.0.13",

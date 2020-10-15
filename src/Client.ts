@@ -54,7 +54,7 @@ export default class Client {
   }
 
   rpc(tableName: string, params: object): any {
-    return this._initPostgRESTClient().rpc(tableName, params)
+    return this._initPostgRESTClient().rpc(tableName, params).
   }
 
   /**
@@ -73,9 +73,9 @@ export default class Client {
     const builder = {
       rest,
       subscription,
-      select: (columns: string | undefined) => {
-        return rest.from(tableName).select(columns)
-      },
+      // select: (columns: string | undefined) => {
+      //   return rest.from(tableName).select(columns)
+      // },
       insert: (values: any, options?: any) => {
         return rest.from(tableName).insert(values, options)
       },
@@ -85,7 +85,7 @@ export default class Client {
       delete: () => {
         return rest.from(tableName).delete()
       },
-      on: (event: string, callback: Function) => {
+      on: (event: 'INSERT' | 'UPDATE' | 'DELETE' | '*', callback: Function) => {
         if (!this.realtime.isConnected()) {
           this.realtime.connect()
         }
@@ -130,7 +130,7 @@ export default class Client {
       detectSessionInUrl: settings.detectSessionInUrl,
     })
   }
-  
+
   private _initRealtimeClient() {
     return new RealtimeSocket(this.realtimeUrl, {
       params: { apikey: this.supabaseKey },
