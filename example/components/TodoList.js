@@ -10,14 +10,13 @@ export default function Todos({ user }) {
   const [errorText, setError] = useState('')
 
   useEffect(() => {
-    fetchTodos()
-
+    fetchTodos() 
     subscription1 = supabase
       .from('todos')
       .on('UPDATE', (v) => console.log('UPDATE todos', v))
       .on('INSERT', (v) => console.log('INSERT todos', v))
       .subscribe((change) => console.log('todos changed', change))
-
+      
     subscription2 = supabase
       .from('*')
       .on('UPDATE', (v) => console.log('UPDATE schema', v))

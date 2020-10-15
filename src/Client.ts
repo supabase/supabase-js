@@ -13,6 +13,11 @@ const DEFAULT_OPTIONS = {
   headers: DEFAULT_HEADERS,
 }
 
+/**
+ * Supabase Client.
+ *
+ * An isomorphic Javascript client for interacting with Postgres.
+ */
 export default class Client {
   schema: string
   restUrl: string
@@ -53,8 +58,14 @@ export default class Client {
     this.realtime.onError((e: Error) => console.log('Socket error', e))
   }
 
-  rpc(tableName: string, params: object): any {
-    return this._initPostgRESTClient().rpc(tableName, params)
+  /**
+   * Perform a stored procedure call.
+   *
+   * @param fn — The function name to call.
+   * @param params — The parameters to pass to the function call.
+   */
+  rpc(fn: string, params: object): any {
+    return this._initPostgRESTClient().rpc(fn, params)
   }
 
   /**
@@ -73,9 +84,10 @@ export default class Client {
     const builder = {
       rest,
       subscription,
-      select: (columns: string | undefined) => {
-        return rest.from(tableName).select(columns)
-      },
+      select: rest.from(tableName).select.bind(rest),
+      // select: (columns: string | undefined) => {
+      //   return rest.from(tableName).select(columns)
+      // },
       insert: (values: any, options?: any) => {
         return rest.from(tableName).insert(values, options)
       },
