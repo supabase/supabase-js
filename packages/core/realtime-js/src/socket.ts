@@ -127,8 +127,14 @@ export default class Socket {
     return `${url}${prefix}${querystring.stringify(params)}`
   }
 
+  /**
+   * Disconnects the socket.
+   *
+   * @param code A numeric status code to send on disconnect.
+   * @param reason A custom reason for the disconnect.
+   */
   disconnect(code?: number, reason?: string) {
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve, _reject) => {
       try {
         if (this.conn) {
           this.conn.onclose = function () {} // noop
