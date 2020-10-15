@@ -126,7 +126,7 @@ export default class Socket {
     return `${url}${prefix}${querystring.stringify(params)}`
   }
 
-  disconnect(callback: Function, code?: number, reason?: string) {
+  disconnect(callback?: Function, code?: number, reason?: string) {
     if (this.conn) {
       this.conn.onclose = function () {} // noop
       if (code) {
