@@ -36,7 +36,7 @@ export default function Todos({ user }) {
   }
   const addTodo = async (taskText) => {
     try {
-      subscription1.unsubscribe()
+      subscription2.unsubscribe()
       
       let task = taskText.trim()
       if (task.length) {

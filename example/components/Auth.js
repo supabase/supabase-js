@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { supabase } from '../lib/api'
 
-export default function Auth({ onLoggedIn }) {
+export default function Auth({ }) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
 
@@ -12,9 +12,9 @@ export default function Auth({ onLoggedIn }) {
         type === 'LOGIN'
           ? await supabase.auth.signIn({email, password})
           : await supabase.auth.signUp({email, password})
-      if (error) console.log('error', error.message)
+      if (error) console.log('Error returned:', error.message)
     } catch (error) {
-      console.log('error', error.message)
+      console.log('Error thrown:', error.message)
       alert(error.error_description || error)
     }
   }

@@ -2,7 +2,8 @@ import { DEFAULT_HEADERS } from './lib/constants'
 import { SupabaseClientOptions } from './lib/types'
 import { Client as GoTrueClient } from '@supabase/gotrue-js'
 import { PostgrestClient } from '@supabase/postgrest-js'
-import { Socket as RealtimeSocket } from '@supabase/realtime-js'
+import { Socket as RealtimeSocket, Channel } from '@supabase/realtime-js'
+import { RealtimeWrapper } from './lib/RealtimeWrapper'
 
 const DEFAULT_OPTIONS = {
   schema: 'public',
@@ -49,31 +50,33 @@ export default class Client {
 
     this.realtime.onOpen(() => console.log('OPEN'))
     this.realtime.onClose(() => console.log('CLOSED'))
-    this.realtime.onError((e: Error) => console.log('Socket error', e.message))
+    this.realtime.onError((e: Error) => console.log('Socket error', e))
   }
 
-  rpc(tableName: string): any {
-    return this._initPostgRESTClient().rpc(tableName)
+  rpc(tableName: string, params: object): any {
+    return this._initPostgRESTClient().rpc(tableName, params)
   }
 
+  /**
+   * Perform a table operation.
+   * 
+   * @param table The table name to operate on.
+   */
   from(tableName: string): any {
     // At this point, we don't know whether the user is going to
     // make a call to Realtime or to PostgREST, so we need to do
     // an intermdiary step where we return both.
     // We have to make sure "this" is bound correctly on each part.
-    let realtimeTopic =
-      tableName == '*'
-        ? `realtime:${this.schema}`
-        : `realtime:${this.schema}:${tableName}`
     let rest = this._initPostgRESTClient()
-    let subscription = this.realtime.channel(realtimeTopic)
+    let subscription = new RealtimeWrapper(this.realtime, this.schema, tableName)
+
     const builder = {
       rest,
       subscription,
-      select: (columns: string) => {
+      select: (columns: string | undefined) => {
         return rest.from(tableName).select(columns)
       },
-      insert: (values: any, options: any) => {
+      insert: (values: any, options?: any) => {
         return rest.from(tableName).insert(values, options)
       },
       update: (values: any) => {
@@ -86,31 +89,33 @@ export default class Client {
         if (!this.realtime.isConnected()) {
           this.realtime.connect()
         }
-        subscription.on(event, callback)
-        // Phoenix doesn't allow multiple subscriptions to the same topic (table)
-        // so we return the channel so that we can chain on() events.
-        return builder
-      },
-      subscribe(callback: Function = () => {}) {
-        subscription.onError((e: Error) => callback('SUBSCRIPTION_ERROR', e))
-        subscription.onClose(() => callback('CLOSED'))
-        subscription
-          .subscribe()
-          .receive('ok', () => callback('SUBSCRIBED'))
-          .receive('error', (e: Error) => callback('SUBSCRIPTION_ERROR', e))
-          .receive('timeout', () => callback('RETRYING_AFTER_TIMEOUT'))
-        return builder
-      },
-      unsubscribe() {
-        if (!subscription.isClosed()) {
-          subscription.unsubscribe()
-          return { error: null }
-        } else {
-          return { error: new Error('Subscription already closed.') }
-        }
+        return subscription.on(event, callback)
       },
     }
     return builder
+  }
+
+  /**
+   * Removes an active subscription and returns the number of open connections.
+   * 
+   * @param subscription The subscription you want to remove.
+   */
+  removeSubscription(subscription: Channel) {
+    return new Promise(async (resolve) => {
+      try {
+        if (!subscription.isClosed()) {
+          await this._closeChannel(subscription)
+        }
+        let openSubscriptions = this.realtime.channels.length
+        if (!openSubscriptions) {
+          let { error } = await this.realtime.disconnect()
+          if (error) return resolve({ error })
+        }
+        return resolve({ error: null, data: { openSubscriptions } })
+      } catch (error) {
+        return resolve({ error })
+      }
+    })
   }
 
   private _initGoTrueClient(settings: SupabaseClientOptions) {
@@ -125,11 +130,13 @@ export default class Client {
       detectSessionInUrl: settings.detectSessionInUrl,
     })
   }
+  
   private _initRealtimeClient() {
     return new RealtimeSocket(this.realtimeUrl, {
       params: { apikey: this.supabaseKey },
     })
   }
+
   private _initPostgRESTClient() {
     return new PostgrestClient(this.restUrl, {
       headers: this._getAuthHeaders(),
@@ -143,5 +150,19 @@ export default class Client {
     headers['apikey'] = this.supabaseKey
     headers['Authorization'] = `Bearer ${authBearer}`
     return headers
+  }
+
+  private _closeChannel(subscription: Channel) {
+    return new Promise((resolve, reject) => {
+      subscription
+        .unsubscribe()
+        .receive('ok', () => {
+          this.realtime.remove(subscription)
+          return resolve(true)
+        })
+        .receive('error', (e: Error) => {
+          return reject(e)
+        })
+    })
   }
 }

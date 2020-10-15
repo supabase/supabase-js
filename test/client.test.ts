@@ -18,3 +18,9 @@ test('from().select()', async () => {
   const builder = supabase.from('table').select('*')
   expect(builder).toMatchSnapshot()
 })
+
+// Socket should close when there are no open connections
+// https://github.com/supabase/supabase-js/issues/44
+
+// Should throw an error when the URL and KEY isn't provided
+// https://github.com/supabase/supabase-js/issues/49
