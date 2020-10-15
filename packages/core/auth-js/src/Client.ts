@@ -70,7 +70,7 @@ export default class Client {
         credentials.email,
         credentials.password
       )
-      if (error) throw new Error(error)
+      if (error) throw error
 
       if (data?.user?.confirmed_at) {
         this._saveSession(data)
@@ -110,7 +110,7 @@ export default class Client {
       if (!this.currentSession?.access_token) throw new Error('Not logged in.')
 
       let { data, error }: any = await this.api.getUser(this.currentSession.access_token)
-      if (error) throw new Error(error)
+      if (error) throw error
 
       this.currentUser = data
       return { data: this.currentUser, error: null }
@@ -130,7 +130,7 @@ export default class Client {
         this.currentSession.access_token,
         attributes
       )
-      if (error) throw new Error(error)
+      if (error) throw error
 
       this.currentUser = data
       this._notifyAllSubscribers(AuthChangeEvent.USER_UPDATED)
@@ -162,7 +162,7 @@ export default class Client {
       if (!token_type) throw new Error('No token_type detected.')
 
       let { data: user, error }: any = await this.api.getUser(access_token)
-      if (error) throw new Error(error)
+      if (error) throw error
 
       const session: Session = {
         access_token,
