@@ -112,19 +112,22 @@ export default class Socket {
     }, this.reconnectAfterMs)
   }
 
-  endPointURL() {
-    return this.appendParams(
-      this.endPoint,
-      Object.assign({}, this.params, { vsn: VSN })
-    )
-  }
-
-  appendParams(url: string, params: { [key: string]: string }) {
-    if (Object.keys(params).length === 0) {
-      return url
+  /**
+   * Connects the socket.
+   */
+  connect() {
+    if (this.conn) {
+      return
     }
-    let prefix = url.match(/\?/) ? '&' : '?'
-    return `${url}${prefix}${querystring.stringify(params)}`
+
+    this.conn = new this.transport(this.endPointURL(), [], null, this.headers)
+    if (this.conn) {
+      // this.conn.timeout = this.longpollerTimeout // TYPE ERROR
+      this.conn.onopen = () => this._onConnOpen()
+      this.conn.onerror = (error) => this._onConnError(error)
+      this.conn.onmessage = (event) => this.onConnMessage(event)
+      this.conn.onclose = (event) => this._onConnClose(event)
+    }
   }
 
   /**
@@ -155,80 +158,60 @@ export default class Socket {
     })
   }
 
-  connect() {
-    if (this.conn) {
-      return
-    }
-
-    this.conn = new this.transport(this.endPointURL(), [], null, this.headers)
-    if (this.conn) {
-      // this.conn.timeout = this.longpollerTimeout // TYPE ERROR
-      this.conn.onopen = () => this.onConnOpen()
-      this.conn.onerror = (error) => this.onConnError(error)
-      this.conn.onmessage = (event) => this.onConnMessage(event)
-      this.conn.onclose = (event) => this.onConnClose(event)
-    }
-  }
-
   /**
-   * Logs the message. Override `this.logger` for specialized logging. noops by default.
+   * Logs the message. Override `this.logger` for specialized logging.
    */
   log(kind: string, msg: string, data?: any) {
     this.logger(kind, msg, data)
   }
 
   /**
-   * Registers callbacks for connection state change events.
+   * Registers a callback for connection state change event.
+   * @param callback A function to be called when the event occurs.
    *
    * @example
-   *    socket.onError(function(error){ alert("An error occurred") })
+   *    socket.onOpen(() => console.log("Socket opened."))
    */
   onOpen(callback: Function) {
     this.stateChangeCallbacks.open.push(callback)
   }
+
+  /**
+   * Registers a callbacks for connection state change events.
+   * @param callback A function to be called when the event occurs.
+   *
+   * @example
+   *    socket.onOpen(() => console.log("Socket closed."))
+   */
   onClose(callback: Function) {
     this.stateChangeCallbacks.close.push(callback)
   }
+
+  /**
+   * Registers a callback for connection state change events.
+   * @param callback A function to be called when the event occurs.
+   *
+   * @example
+   *    socket.onOpen((error) => console.log("An error occurred"))
+   */
   onError(callback: Function) {
     this.stateChangeCallbacks.error.push(callback)
   }
+
+  /**
+   * Calls a function any time a message is received.
+   * @param callback A function to be called when the event occurs.
+   *
+   * @example
+   *    socket.onMessage((message) => console.log(message))
+   */
   onMessage(callback: Function) {
     this.stateChangeCallbacks.message.push(callback)
   }
 
-  onConnOpen() {
-    this.log('transport', `connected to ${this.endPointURL()}`)
-    this.flushSendBuffer()
-    this.reconnectTimer.reset()
-    // if (!this.conn?.skipHeartbeat) { // Skip heartbeat doesn't exist on w3Socket
-    clearInterval(this.heartbeatTimer)
-    this.heartbeatTimer = <any>(
-      setInterval(() => this.sendHeartbeat(), this.heartbeatIntervalMs)
-    )
-    // }
-    this.stateChangeCallbacks.open.forEach((callback) => callback())!
-  }
-
-  onConnClose(event: any) {
-    this.log('transport', 'close', event)
-    this.triggerChanError()
-    clearInterval(this.heartbeatTimer)
-    this.reconnectTimer.scheduleTimeout()
-    this.stateChangeCallbacks.close.forEach((callback) => callback(event))
-  }
-
-  onConnError(error: Error) {
-    this.log('transport', error.message)
-    this.triggerChanError()
-    this.stateChangeCallbacks.error.forEach((callback) => callback(error))
-  }
-
-  triggerChanError() {
-    this.channels.forEach((channel: Channel) =>
-      channel.trigger(CHANNEL_EVENTS.error)
-    )
-  }
-
+  /**
+   * Returns the current state of the socket.
+   */
   connectionState() {
     switch (this.conn && this.conn.readyState) {
       case SOCKET_STATES.connecting:
@@ -242,10 +225,18 @@ export default class Socket {
     }
   }
 
+  /**
+   * Retuns `true` is the connection is open.
+   */
   isConnected() {
     return this.connectionState() === 'open'
   }
 
+  /**
+   * Removes a subscription from the socket.
+   *
+   * @param channel An open subscription.
+   */
   remove(channel: Channel) {
     this.channels = this.channels.filter(
       (c: Channel) => c.joinRef() !== channel.joinRef()
@@ -273,49 +264,6 @@ export default class Socket {
     }
   }
 
-  /**
-   * Return the next message ref, accounting for overflows
-   */
-  makeRef() {
-    let newRef = this.ref + 1
-    if (newRef === this.ref) {
-      this.ref = 0
-    } else {
-      this.ref = newRef
-    }
-
-    return this.ref.toString()
-  }
-
-  sendHeartbeat() {
-    if (!this.isConnected()) {
-      return
-    }
-    if (this.pendingHeartbeatRef) {
-      this.pendingHeartbeatRef = null
-      this.log(
-        'transport',
-        'heartbeat timeout. Attempting to re-establish connection'
-      )
-      this.conn?.close(WS_CLOSE_NORMAL, 'hearbeat timeout')
-      return
-    }
-    this.pendingHeartbeatRef = this.makeRef()
-    this.push({
-      topic: 'phoenix',
-      event: 'heartbeat',
-      payload: {},
-      ref: this.pendingHeartbeatRef,
-    })
-  }
-
-  flushSendBuffer() {
-    if (this.isConnected() && this.sendBuffer.length > 0) {
-      this.sendBuffer.forEach((callback) => callback())
-      this.sendBuffer = []
-    }
-  }
-
   onConnMessage(rawMessage: any) {
     this.decode(rawMessage.data, (msg: Message) => {
       let { topic, event, payload, ref } = msg
@@ -334,6 +282,100 @@ export default class Socket {
         .filter((channel: Channel) => channel.isMember(topic))
         .forEach((channel: Channel) => channel.trigger(event, payload, ref))
       this.stateChangeCallbacks.message.forEach((callback) => callback(msg))
+    })
+  }
+
+  /**
+   * Returns the URL of the websocket.
+   */
+  endPointURL() {
+    return this._appendParams(
+      this.endPoint,
+      Object.assign({}, this.params, { vsn: VSN })
+    )
+  }
+
+  /**
+   * Return the next message ref, accounting for overflows
+   */
+  makeRef() {
+    let newRef = this.ref + 1
+    if (newRef === this.ref) {
+      this.ref = 0
+    } else {
+      this.ref = newRef
+    }
+
+    return this.ref.toString()
+  }
+
+  private _onConnOpen() {
+    this.log('transport', `connected to ${this.endPointURL()}`)
+    this._flushSendBuffer()
+    this.reconnectTimer.reset()
+    // if (!this.conn?.skipHeartbeat) { // Skip heartbeat doesn't exist on w3Socket
+    clearInterval(this.heartbeatTimer)
+    this.heartbeatTimer = <any>(
+      setInterval(() => this._sendHeartbeat(), this.heartbeatIntervalMs)
+    )
+    // }
+    this.stateChangeCallbacks.open.forEach((callback) => callback())!
+  }
+
+  private _onConnClose(event: any) {
+    this.log('transport', 'close', event)
+    this._triggerChanError()
+    clearInterval(this.heartbeatTimer)
+    this.reconnectTimer.scheduleTimeout()
+    this.stateChangeCallbacks.close.forEach((callback) => callback(event))
+  }
+
+  private _onConnError(error: Error) {
+    this.log('transport', error.message)
+    this._triggerChanError()
+    this.stateChangeCallbacks.error.forEach((callback) => callback(error))
+  }
+
+  private _triggerChanError() {
+    this.channels.forEach((channel: Channel) =>
+      channel.trigger(CHANNEL_EVENTS.error)
+    )
+  }
+
+  private _appendParams(url: string, params: { [key: string]: string }) {
+    if (Object.keys(params).length === 0) {
+      return url
+    }
+    let prefix = url.match(/\?/) ? '&' : '?'
+    return `${url}${prefix}${querystring.stringify(params)}`
+  }
+
+  private _flushSendBuffer() {
+    if (this.isConnected() && this.sendBuffer.length > 0) {
+      this.sendBuffer.forEach((callback) => callback())
+      this.sendBuffer = []
+    }
+  }
+
+  private _sendHeartbeat() {
+    if (!this.isConnected()) {
+      return
+    }
+    if (this.pendingHeartbeatRef) {
+      this.pendingHeartbeatRef = null
+      this.log(
+        'transport',
+        'heartbeat timeout. Attempting to re-establish connection'
+      )
+      this.conn?.close(WS_CLOSE_NORMAL, 'hearbeat timeout')
+      return
+    }
+    this.pendingHeartbeatRef = this.makeRef()
+    this.push({
+      topic: 'phoenix',
+      event: 'heartbeat',
+      payload: {},
+      ref: this.pendingHeartbeatRef,
     })
   }
 }

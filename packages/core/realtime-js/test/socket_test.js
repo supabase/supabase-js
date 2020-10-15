@@ -496,7 +496,7 @@ describe('flushSendBuffer', () => {
   })
 })
 
-describe('onConnOpen', () => {
+describe('_onConnOpen', () => {
   let mockServer
 
   before(() => {
@@ -524,7 +524,7 @@ describe('onConnOpen', () => {
     const spy = sinon.spy()
     socket.sendBuffer.push(spy)
 
-    socket.onConnOpen()
+    socket._onConnOpen()
 
     assert.ok(spy.calledOnce)
   })
@@ -532,7 +532,7 @@ describe('onConnOpen', () => {
   it('resets reconnectTimer', () => {
     const spy = sinon.spy(socket.reconnectTimer, 'reset')
 
-    socket.onConnOpen()
+    socket._onConnOpen()
 
     assert.ok(spy.calledOnce)
   })
@@ -542,13 +542,13 @@ describe('onConnOpen', () => {
 
     socket.onOpen(spy)
 
-    socket.onConnOpen()
+    socket._onConnOpen()
 
     assert.ok(spy.calledOnce)
   })
 })
 
-describe('onConnClose', () => {
+describe('_onConnClose', () => {
   let mockServer
 
   before(() => {
@@ -572,7 +572,7 @@ describe('onConnClose', () => {
   it('schedules reconnectTimer timeout', () => {
     const spy = sinon.spy(socket.reconnectTimer, 'scheduleTimeout')
 
-    socket.onConnClose()
+    socket._onConnClose()
 
     assert.ok(spy.calledOnce)
   })
@@ -582,7 +582,7 @@ describe('onConnClose', () => {
 
     socket.onClose(spy)
 
-    socket.onConnClose('event')
+    socket._onConnClose('event')
 
     assert.ok(spy.calledWith('event'))
   })
@@ -591,13 +591,13 @@ describe('onConnClose', () => {
     const channel = socket.channel('topic')
     const spy = sinon.spy(channel, 'trigger')
 
-    socket.onConnClose()
+    socket._onConnClose()
 
     assert.ok(spy.calledWith('phx_error'))
   })
 })
 
-describe('onConnError', () => {
+describe('_onConnError', () => {
   let mockServer
 
   before(() => {
@@ -623,7 +623,7 @@ describe('onConnError', () => {
 
     socket.onError(spy)
 
-    socket.onConnError('error')
+    socket._onConnError('error')
 
     assert.ok(spy.calledWith('error'))
   })
@@ -632,7 +632,7 @@ describe('onConnError', () => {
     const channel = socket.channel('topic')
     const spy = sinon.spy(channel, 'trigger')
 
-    socket.onConnError('error')
+    socket._onConnError('error')
 
     assert.ok(spy.calledWith('phx_error'))
   })
