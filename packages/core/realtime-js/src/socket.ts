@@ -133,7 +133,10 @@ export default class Socket {
    * @param code A numeric status code to send on disconnect.
    * @param reason A custom reason for the disconnect.
    */
-  disconnect(code?: number, reason?: string) {
+  disconnect(
+    code?: number,
+    reason?: string
+  ): Promise<{ error: Error | null; data: boolean }> {
     return new Promise((resolve, _reject) => {
       try {
         if (this.conn) {
@@ -147,7 +150,7 @@ export default class Socket {
         }
         resolve({ error: null, data: true })
       } catch (error) {
-        resolve({ error })
+        resolve({ error, data: false })
       }
     })
   }
