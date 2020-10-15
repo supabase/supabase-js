@@ -106,8 +106,9 @@ export default class Socket {
       : (payload: string, callback: Function) => {
           return callback(JSON.parse(payload))
         }
-    this.reconnectTimer = new Timer(() => {
-      this.disconnect(() => this.connect())
+    this.reconnectTimer = new Timer(async () => {
+      await this.disconnect()
+      this.connect()
     }, this.reconnectAfterMs)
   }
 
@@ -126,17 +127,23 @@ export default class Socket {
     return `${url}${prefix}${querystring.stringify(params)}`
   }
 
-  disconnect(callback?: Function, code?: number, reason?: string) {
-    if (this.conn) {
-      this.conn.onclose = function () {} // noop
-      if (code) {
-        this.conn.close(code, reason || '')
-      } else {
-        this.conn.close()
+  disconnect(code?: number, reason?: string) {
+    return new Promise((resolve, reject) => {
+      try {
+        if (this.conn) {
+          this.conn.onclose = function () {} // noop
+          if (code) {
+            this.conn.close(code, reason || '')
+          } else {
+            this.conn.close()
+          }
+          this.conn = null
+        }
+        resolve({ error: null, data: true })
+      } catch (error) {
+        reject({ error })
       }
-      this.conn = null
-    }
-    callback && callback()
+    })
   }
 
   connect() {

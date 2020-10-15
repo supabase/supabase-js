@@ -202,19 +202,20 @@ describe('disconnect', () => {
     assert.equal(socket.conn, null)
   })
 
-  it('calls callback', () => {
+  it('calls callback', async () => {
     let count = 0
     socket.connect()
-    socket.disconnect(() => count++)
-
+    await socket.disconnect()
+    count++
+    
     assert.equal(count, 1)
   })
 
-  it('calls connection close callback', () => {
+  it('calls connection close callback', async () => {
     socket.connect()
     const spy = sinon.spy(socket.conn, 'close')
 
-    socket.disconnect(null, 'code', 'reason')
+    await socket.disconnect('code', 'reason')
 
     assert(spy.calledWith('code', 'reason'))
   })
