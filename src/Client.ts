@@ -54,12 +54,12 @@ export default class Client {
   }
 
   rpc(tableName: string, params: object): any {
-    return this._initPostgRESTClient().rpc(tableName, params).
+    return this._initPostgRESTClient().rpc(tableName, params)
   }
 
   /**
    * Perform a table operation.
-   * 
+   *
    * @param table The table name to operate on.
    */
   from(tableName: string): any {
@@ -73,9 +73,9 @@ export default class Client {
     const builder = {
       rest,
       subscription,
-      // select: (columns: string | undefined) => {
-      //   return rest.from(tableName).select(columns)
-      // },
+      select: (columns: string | undefined) => {
+        return rest.from(tableName).select(columns)
+      },
       insert: (values: any, options?: any) => {
         return rest.from(tableName).insert(values, options)
       },
@@ -97,7 +97,7 @@ export default class Client {
 
   /**
    * Removes an active subscription and returns the number of open connections.
-   * 
+   *
    * @param subscription The subscription you want to remove.
    */
   removeSubscription(subscription: Channel) {
