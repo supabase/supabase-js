@@ -10,7 +10,8 @@ export interface FetchOptions {
 const handleError = (error: any, reject: any) => {
   if (typeof error.json === 'function') {
     error.json().then((msg: any) => {
-      let errorMessage = msg.message || msg.error_description || msg.error || JSON.stringify(msg)
+      let errorMessage =
+        msg.msg || msg.message || msg.error_description || msg.error || JSON.stringify(msg)
       return reject(new Error(errorMessage))
     })
   } else {
