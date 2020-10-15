@@ -26,7 +26,6 @@ export default class Api {
       )
       return { data, error: null }
     } catch (error) {
-      console.log('signUpWithEmail error', error)
       return { data: null, error }
     }
   }
