@@ -141,7 +141,7 @@ export default class Socket {
         }
         resolve({ error: null, data: true })
       } catch (error) {
-        reject({ error })
+        resolve({ error })
       }
     })
   }
