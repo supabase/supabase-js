@@ -130,6 +130,13 @@ export default class Client {
     })
   }
 
+  /**
+   * Returns an array of all your subscriptions.
+   */
+  getSubscriptions() {
+    return this.realtime.channels
+  }
+
   private _initGoTrueClient(settings: SupabaseClientOptions) {
     return new GoTrueClient({
       url: this.authUrl,
