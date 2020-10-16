@@ -18,7 +18,7 @@ const DEFAULT_OPTIONS = {
  *
  * An isomorphic Javascript client for interacting with Postgres.
  */
-export default class Client {
+export default class SupabaseClient {
   schema: string
   restUrl: string
   realtimeUrl: string

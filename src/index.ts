@@ -1,4 +1,4 @@
-import Client from './Client'
+import SupabaseClient from './SupabaseClient'
 import { SupabaseClientOptions } from './lib/types'
 
 
@@ -10,7 +10,7 @@ const createClient = (
   supabaseKey: string,
   options?: SupabaseClientOptions
 ) => {
-  return new Client(supabaseUrl, supabaseKey, options)
+  return new SupabaseClient(supabaseUrl, supabaseKey, options)
 }
 
 export { createClient }
