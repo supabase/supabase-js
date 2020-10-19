@@ -1,18 +1,11 @@
-import { Channel, Socket, Transformers } from '@supabase/realtime-js'
+import { RealtimeSubscription, RealtimeClient, Transformers } from '@supabase/realtime-js'
+import { SupabaseRealtimePayload } from './types'
 
-type EnrichedPayload = {
-  schema: string
-  table: string
-  commit_timestamp: string
-  eventType: string
-  new?: object
-  old?: object
-}
 
-export class RealtimeWrapper {
-  subscription: Channel
+export class SupabaseRealtimeClient {
+  subscription: RealtimeSubscription
 
-  constructor(socket: Socket, schema: string, tableName: string) {
+  constructor(socket: RealtimeClient, schema: string, tableName: string) {
     let topic = tableName == '*' ? `realtime:${schema}` : `realtime:${schema}:${tableName}`
     this.subscription = socket.channel(topic)
   }
@@ -25,11 +18,13 @@ export class RealtimeWrapper {
    */
   on(event: 'INSERT' | 'UPDATE' | 'DELETE' | '*', callback: Function) {
     this.subscription.on(event, (payload: any) => {
-      let enrichedPayload: EnrichedPayload = {
+      let enrichedPayload: SupabaseRealtimePayload<any> = {
         schema: payload.schema,
         table: payload.table,
         commit_timestamp: payload.commit_timestamp,
         eventType: payload.type,
+        new: {},
+        old: {},
       }
 
       switch (payload.type) {

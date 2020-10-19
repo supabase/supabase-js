@@ -1,9 +1,9 @@
 import { DEFAULT_HEADERS } from './lib/constants'
-import { SupabaseClientOptions } from './lib/types'
+import { SupabaseClientOptions, SupabaseQueryClient } from './lib/types'
 import { Client as GoTrueClient } from '@supabase/gotrue-js'
 import { PostgrestClient } from '@supabase/postgrest-js'
-import { Socket as RealtimeSocket, Channel } from '@supabase/realtime-js'
-import { RealtimeWrapper } from './lib/RealtimeWrapper'
+import { RealtimeClient, RealtimeSubscription } from '@supabase/realtime-js'
+import { SupabaseRealtimeClient } from './lib/SupabaseRealtimeClient'
 
 const DEFAULT_OPTIONS = {
   schema: 'public',
@@ -24,7 +24,7 @@ export default class SupabaseClient {
   realtimeUrl: string
   authUrl: string
   auth: GoTrueClient
-  realtime: RealtimeSocket
+  realtime: RealtimeClient
 
   /**
    * Create a new client for use in the browser.
@@ -59,45 +59,38 @@ export default class SupabaseClient {
   }
 
   /**
-   * Perform a stored procedure call.
-   *
-   * @param fn — The function name to call.
-   * @param params — The parameters to pass to the function call.
-   */
-  rpc(fn: string, params: object): any {
-    return this._initPostgRESTClient().rpc(fn, params)
-  }
-
-  /**
    * Perform a table operation.
    *
    * @param table The table name to operate on.
    */
-  from(tableName: string): any {
+  from<T = any>(tableName: string) {
+
     // At this point, we don't know whether the user is going to
     // make a call to Realtime or to PostgREST, so we need to do
     // an intermdiary step where we return both.
     // We have to make sure "this" is bound correctly on each part.
-    let rest = this._initPostgRESTClient()
-    let subscription = new RealtimeWrapper(this.realtime, this.schema, tableName)
+    // let rest = this._initPostgRESTClient()
 
-    const builder = {
+    // let rest = new SupaabseQueryBuilder(this.restUrl || '', {})
+    let rest = this._initPostgRESTClient()
+    let subscription = new SupabaseRealtimeClient(this.realtime, this.schema, tableName)
+
+    const builder: SupabaseQueryClient<T> = {
       rest,
       subscription,
-      select: rest.from(tableName).select.bind(rest),
-      // select: (columns: string | undefined) => {
-      //   return rest.from(tableName).select(columns)
-      // },
-      insert: (values: any, options?: any) => {
+      select: (columns) => {
+        return rest.from(tableName).select(columns)
+      },
+      insert: (values, options?) => {
         return rest.from(tableName).insert(values, options)
       },
-      update: (values: any) => {
+      update: (values) => {
         return rest.from(tableName).update(values)
       },
       delete: () => {
         return rest.from(tableName).delete()
       },
-      on: (event: 'INSERT' | 'UPDATE' | 'DELETE' | '*', callback: Function) => {
+      on: (event, callback) => {
         if (!this.realtime.isConnected()) {
           this.realtime.connect()
         }
@@ -108,11 +101,22 @@ export default class SupabaseClient {
   }
 
   /**
+   * Perform a stored procedure call.
+   *
+   * @param fn  The function name to call.
+   * @param params  The parameters to pass to the function call.
+   */
+  rpc(fn: string, params?: object) {
+    let rest = this._initPostgRESTClient()
+    return rest.rpc(fn, params)
+  }
+
+  /**
    * Removes an active subscription and returns the number of open connections.
    *
    * @param subscription The subscription you want to remove.
    */
-  removeSubscription(subscription: Channel) {
+  removeSubscription(subscription: RealtimeSubscription) {
     return new Promise(async (resolve) => {
       try {
         if (!subscription.isClosed()) {
@@ -151,7 +155,7 @@ export default class SupabaseClient {
   }
 
   private _initRealtimeClient() {
-    return new RealtimeSocket(this.realtimeUrl, {
+    return new RealtimeClient(this.realtimeUrl, {
       params: { apikey: this.supabaseKey },
     })
   }
@@ -171,7 +175,7 @@ export default class SupabaseClient {
     return headers
   }
 
-  private _closeChannel(subscription: Channel) {
+  private _closeChannel(subscription: RealtimeSubscription) {
     return new Promise((resolve, reject) => {
       subscription
         .unsubscribe()

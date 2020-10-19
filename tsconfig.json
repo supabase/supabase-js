@@ -15,6 +15,7 @@
     "moduleResolution": "Node",
 
     "forceConsistentCasingInFileNames": true,
-    "stripInternal": true
+    "stripInternal": true,
+    "allowSyntheticDefaultImports":true
   }
 }

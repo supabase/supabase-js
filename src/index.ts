@@ -1,7 +1,6 @@
 import SupabaseClient from './SupabaseClient'
 import { SupabaseClientOptions } from './lib/types'
 
-
 /**
  * Creates a new Supabase Client.
  */
