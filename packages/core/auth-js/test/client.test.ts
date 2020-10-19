@@ -1,8 +1,8 @@
-import { Client } from '../src/index'
+Aimport { GoTrueClient } from '../src/index'
 
 const GOTRUE_URL = 'http://localhost:9999'
 
-const auth = new Client({
+const auth = new GoTrueClient({
   url: GOTRUE_URL,
   autoRefreshToken: false,
   persistSession: true,

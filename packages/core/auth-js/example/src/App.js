@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react'
-import { Client } from '@supabase/gotrue-js'
+import { GoTrueClient } from '@supabase/gotrue-js'
 import './tailwind.output.css'
 
-const auth = new Client()
+const auth = new GoTrueClient()
 
 function App() {
   let [session, setSession] = useState(null)

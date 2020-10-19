@@ -1,4 +1,4 @@
-import Api from './Api'
-import Client from './Client'
+import GoTrueApi from './GoTrueApi'
+import GoTrueClient from './GoTrueClient'
 
-export { Api, Client }
+export { GoTrueApi, GoTrueClient }

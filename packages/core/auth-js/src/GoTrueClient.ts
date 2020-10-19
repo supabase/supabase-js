@@ -1,4 +1,4 @@
-import Api from './Api'
+import GoTrueApi from './GoTrueApi'
 import { isBrowser, getParameterByName, uuid, LocalStorage } from './lib/helpers'
 import { GOTRUE_URL, DEFAULT_HEADERS, STORAGE_KEY } from './lib/constants'
 import { Session, User, UserAttributes, Provider, Subscription, AuthChangeEvent } from './lib/types'
@@ -11,8 +11,8 @@ const DEFAULT_OPTIONS = {
   detectSessionInUrl: true,
   headers: DEFAULT_HEADERS,
 }
-export default class Client {
-  api: Api
+export default class GoTrueClient {
+  api: GoTrueApi
   currentUser: User | null
   currentSession?: Session | null
   autoRefreshToken: boolean
@@ -43,7 +43,7 @@ export default class Client {
     this.autoRefreshToken = settings.autoRefreshToken
     this.persistSession = settings.persistSession
     this.localStorage = new LocalStorage(settings.localStorage)
-    this.api = new Api({ url: settings.url, headers: settings.headers })
+    this.api = new GoTrueApi({ url: settings.url, headers: settings.headers })
     this._recoverSession()
 
     // Handle the OAuth redirect
