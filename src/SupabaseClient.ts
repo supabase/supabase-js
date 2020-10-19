@@ -1,6 +1,6 @@
 import { DEFAULT_HEADERS } from './lib/constants'
 import { SupabaseClientOptions, SupabaseQueryClient } from './lib/types'
-import { Client as GoTrueClient } from '@supabase/gotrue-js'
+import { GoTrueClient } from '@supabase/gotrue-js'
 import { PostgrestClient } from '@supabase/postgrest-js'
 import { RealtimeClient, RealtimeSubscription } from '@supabase/realtime-js'
 import { SupabaseRealtimeClient } from './lib/SupabaseRealtimeClient'
