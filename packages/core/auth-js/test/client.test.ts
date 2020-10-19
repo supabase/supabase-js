@@ -1,4 +1,4 @@
-Aimport { GoTrueClient } from '../src/index'
+import { GoTrueClient } from '../src/index'
 
 const GOTRUE_URL = 'http://localhost:9999'
 
