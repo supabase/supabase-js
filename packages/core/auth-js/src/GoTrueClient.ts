@@ -107,7 +107,7 @@ export default class GoTrueClient {
       let { email, password, provider } = credentials
       if (email && password) {
         const { data, error } = await this._handeEmailSignIn(email, password)
-        return { user: data, error }
+        return { user: data as User, error }
       }
       if (provider) {
         const { data, error } = await this._handeProviderSignIn(provider)
