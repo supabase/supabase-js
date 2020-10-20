@@ -1,5 +1,5 @@
 import { DEFAULT_TIMEOUT } from '../lib/constants'
-import Channel from '../channel'
+import RealtimeSubscription from '../RealtimeSubscription'
 
 export default class Push {
   sent: boolean = false
@@ -24,7 +24,7 @@ export default class Push {
    * @param timeout The push timeout in milliseconds
    */
   constructor(
-    public channel: Channel,
+    public channel: RealtimeSubscription,
     public event: string,
     public payload: any = {},
     public timeout: number = DEFAULT_TIMEOUT

@@ -8,7 +8,7 @@ import {
 } from './lib/constants'
 import querystring from 'query-string'
 import Timer from './lib/timer'
-import Channel from './channel'
+import RealtimeSubscription from './RealtimeSubscription'
 import { w3cwebsocket as WebSocket } from 'websocket'
 
 type Options = {
@@ -32,8 +32,8 @@ type Message = {
 
 const noop = () => {}
 
-export default class Socket {
-  channels: Channel[] = []
+export default class RealtimeClient {
+  channels: RealtimeSubscription[] = []
   endPoint: string = ''
   headers?: { [key: string]: string } = {}
   params?: { [key: string]: string } = {}
@@ -237,14 +237,14 @@ export default class Socket {
    *
    * @param channel An open subscription.
    */
-  remove(channel: Channel) {
+  remove(channel: RealtimeSubscription) {
     this.channels = this.channels.filter(
-      (c: Channel) => c.joinRef() !== channel.joinRef()
+      (c: RealtimeSubscription) => c.joinRef() !== channel.joinRef()
     )
   }
 
   channel(topic: string, chanParams = {}) {
-    let chan = new Channel(topic, chanParams, this)
+    let chan = new RealtimeSubscription(topic, chanParams, this)
     this.channels.push(chan)
     return chan
   }
@@ -279,8 +279,10 @@ export default class Socket {
         payload
       )
       this.channels
-        .filter((channel: Channel) => channel.isMember(topic))
-        .forEach((channel: Channel) => channel.trigger(event, payload, ref))
+        .filter((channel: RealtimeSubscription) => channel.isMember(topic))
+        .forEach((channel: RealtimeSubscription) =>
+          channel.trigger(event, payload, ref)
+        )
       this.stateChangeCallbacks.message.forEach((callback) => callback(msg))
     })
   }
@@ -337,7 +339,7 @@ export default class Socket {
   }
 
   private _triggerChanError() {
-    this.channels.forEach((channel: Channel) =>
+    this.channels.forEach((channel: RealtimeSubscription) =>
       channel.trigger(CHANNEL_EVENTS.error)
     )
   }

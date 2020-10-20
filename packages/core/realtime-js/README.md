@@ -12,18 +12,18 @@ This is for usage with Supabase [Realtime](https://github.com/supabase/realtime)
 You can set up one connection to be used across the whole app.
 
 ```js
-import { Socket } from '@supabase/realtime-js'
+import { RealtimeClient } from '@supabase/realtime-js'
 
-var socket = new Socket(process.env.REALTIME_URL)
-socket.connect()
+var client = new RealtimeClient(process.env.REALTIME_URL)
+client.connect()
 ```
 
 **Socket Hooks**
 
 ```js
-socket.onOpen(() => console.log('Socket opened.'))
-socket.onClose(() => console.log('Socket closed.'))
-socket.onError((e) => console.log('Socket error', e.message))
+client.onOpen(() => console.log('Socket opened.'))
+client.onClose(() => console.log('Socket closed.'))
+client.onError((e) => console.log('Socket error', e.message))
 ```
 
 ### Subscribing to events
@@ -44,7 +44,7 @@ To join a channel, you must provide the `topic`, where a topic is either:
 
 ```js
 // Listen to events on the entire database.
-var databaseChanges = socket.channel('realtime')
+var databaseChanges = client.channel('realtime')
 databaseChanges.on('*', (e) => console.log(e))
 databaseChanges.on('INSERT', (e) => console.log(e))
 databaseChanges.on('UPDATE', (e) => console.log(e))
@@ -52,7 +52,7 @@ databaseChanges.on('DELETE', (e) => console.log(e))
 databaseChanges.subscribe()
 
 // Listen to events on a schema, using the format `realtime:{SCHEMA}`
-var publicSchema = socket.channel('realtime:public')
+var publicSchema = client.channel('realtime:public')
 publicSchema.on('*', (e) => console.log(e))
 publicSchema.on('INSERT', (e) => console.log(e))
 publicSchema.on('UPDATE', (e) => console.log(e))
@@ -60,7 +60,7 @@ publicSchema.on('DELETE', (e) => console.log(e))
 publicSchema.subscribe()
 
 // Listen to events on a table, using the format `realtime:{SCHEMA}:{TABLE}`
-var usersTable = socket.channel('realtime:public:users')
+var usersTable = client.channel('realtime:public:users')
 usersTable.on('*', (e) => console.log(e))
 usersTable.on('INSERT', (e) => console.log(e))
 usersTable.on('UPDATE', (e) => console.log(e))
@@ -68,7 +68,7 @@ usersTable.on('DELETE', (e) => console.log(e))
 usersTable.subscribe()
 
 // Listen to events on a row, using the format `realtime:{SCHEMA}:{TABLE}:{COL}.eq.{VAL}`
-var rowChanges = socket.channel('realtime:public:users:id.eq.1')
+var rowChanges = client.channel('realtime:public:users:id.eq.1')
 rowChanges.on('*', (e) => console.log(e))
 rowChanges.on('INSERT', (e) => console.log(e))
 rowChanges.on('UPDATE', (e) => console.log(e))
@@ -85,7 +85,7 @@ You can unsubscribe from a topic using `channel.unsubscribe()`.
 Call `disconnect()` on the socket:
 
 ```js
-let { error, data } = await socket.disconnect() 
+let { error, data } = await client.disconnect() 
 ```
 
 **Duplicate Join Subscriptions**

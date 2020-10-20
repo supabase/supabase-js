@@ -4,7 +4,7 @@ import jsdom from 'jsdom'
 import sinon from 'sinon'
 import { WebSocket, Server as WebSocketServer } from 'mock-socket'
 
-import { Channel, Socket } from '../dist/main'
+import { RealtimeSubscription, RealtimeClient } from '../dist/main'
 
 let channel, socket
 
@@ -17,7 +17,7 @@ describe('constructor', () => {
   })
 
   it('sets defaults', () => {
-    channel = new Channel('topic', { one: 'two' }, socket)
+    channel = new RealtimeSubscription('topic', { one: 'two' }, socket)
 
     assert.equal(channel.state, 'closed')
     assert.equal(channel.topic, 'topic')
@@ -30,7 +30,7 @@ describe('constructor', () => {
   })
 
   it('sets up joinPush object', () => {
-    channel = new Channel('topic', { one: 'two' }, socket)
+    channel = new RealtimeSubscription('topic', { one: 'two' }, socket)
     const joinPush = channel.joinPush
 
     assert.deepEqual(joinPush.channel, channel)
@@ -42,7 +42,7 @@ describe('constructor', () => {
 
 describe('join', () => {
   beforeEach(() => {
-    socket = new Socket('wss://example.com/socket', { timeout: defaultTimeout })
+    socket = new RealtimeClient('wss://example.com/socket', { timeout: defaultTimeout })
 
     channel = socket.channel('topic', { one: 'two' })
   })
@@ -163,7 +163,7 @@ describe('joinPush', () => {
   beforeEach(() => {
     clock = sinon.useFakeTimers()
 
-    socket = new Socket('/socket', { timeout: defaultTimeout })
+    socket = new RealtimeClient('/socket', { timeout: defaultTimeout })
 
     channel = socket.channel('topic', { one: 'two' })
     joinPush = channel.joinPush
@@ -438,7 +438,7 @@ describe('onError', () => {
   beforeEach(() => {
     clock = sinon.useFakeTimers()
 
-    socket = new Socket('/socket', { timeout: defaultTimeout })
+    socket = new RealtimeClient('/socket', { timeout: defaultTimeout })
     sinon.stub(socket, 'isConnected').callsFake(() => true)
     sinon.stub(socket, 'push').callsFake(() => true)
 
@@ -531,7 +531,7 @@ describe('onClose', () => {
   beforeEach(() => {
     clock = sinon.useFakeTimers()
 
-    socket = new Socket('/socket', { timeout: defaultTimeout })
+    socket = new RealtimeClient('/socket', { timeout: defaultTimeout })
     sinon.stub(socket, 'isConnected').callsFake(() => true)
     sinon.stub(socket, 'push').callsFake(() => true)
 
@@ -589,7 +589,7 @@ describe('onClose', () => {
 
 describe('onMessage', () => {
   beforeEach(() => {
-    socket = new Socket('/socket')
+    socket = new RealtimeClient('/socket')
 
     channel = socket.channel('topic', { one: 'two' })
   })
@@ -604,7 +604,7 @@ describe('onMessage', () => {
 
 describe('canPush', () => {
   beforeEach(() => {
-    socket = new Socket('/socket')
+    socket = new RealtimeClient('/socket')
 
     channel = socket.channel('topic', { one: 'two' })
   })
@@ -638,7 +638,7 @@ describe('canPush', () => {
 
 describe('on', () => {
   beforeEach(() => {
-    socket = new Socket('/socket')
+    socket = new RealtimeClient('/socket')
     sinon.stub(socket, 'makeRef').callsFake(() => defaultRef)
 
     channel = socket.channel('topic', { one: 'two' })
@@ -675,7 +675,7 @@ describe('on', () => {
 
 describe('off', () => {
   beforeEach(() => {
-    socket = new Socket('/socket')
+    socket = new RealtimeClient('/socket')
     sinon.stub(socket, 'makeRef').callsFake(() => defaultRef)
 
     channel = socket.channel('topic', { one: 'two' })
@@ -715,7 +715,7 @@ describe('push', () => {
   beforeEach(() => {
     clock = sinon.useFakeTimers()
 
-    socket = new Socket('/socket', { timeout: defaultTimeout })
+    socket = new RealtimeClient('/socket', { timeout: defaultTimeout })
     sinon.stub(socket, 'makeRef').callsFake(() => defaultRef)
     sinon.stub(socket, 'isConnected').callsFake(() => true)
     socketSpy = sinon.stub(socket, 'push')
@@ -816,7 +816,7 @@ describe('leave', () => {
   beforeEach(() => {
     clock = sinon.useFakeTimers()
 
-    socket = new Socket('/socket', { timeout: defaultTimeout })
+    socket = new RealtimeClient('/socket', { timeout: defaultTimeout })
     sinon.stub(socket, 'isConnected').callsFake(() => true)
     socketSpy = sinon.stub(socket, 'push')
 

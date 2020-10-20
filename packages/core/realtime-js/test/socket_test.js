@@ -2,7 +2,7 @@ import assert from 'assert'
 import { Server as WebSocketServer, WebSocket } from 'mock-socket'
 import sinon from 'sinon'
 import { w3cwebsocket as W3CWebSocket } from 'websocket'
-import { Socket } from '../dist/main'
+import { RealtimeClient } from '../dist/main'
 
 let socket
 
@@ -16,7 +16,7 @@ describe('constructor', () => {
   })
 
   it('sets defaults', () => {
-    socket = new Socket('wss://example.com/socket')
+    socket = new RealtimeClient('wss://example.com/socket')
 
     assert.equal(socket.channels.length, 0)
     assert.equal(socket.sendBuffer.length, 0)
@@ -41,7 +41,7 @@ describe('constructor', () => {
     const customLogger = function logger() {}
     const customReconnect = function reconnect() {}
 
-    socket = new Socket('wss://example.com/socket', {
+    socket = new RealtimeClient('wss://example.com/socket', {
       timeout: 40000,
       longpollerTimeout: 50000,
       heartbeatIntervalMs: 60000,
@@ -75,7 +75,7 @@ describe('constructor', () => {
     })
 
     it('defaults to Websocket transport if available', () => {
-      socket = new Socket('wss://example.com/socket')
+      socket = new RealtimeClient('wss://example.com/socket')
       assert.equal(socket.transport, W3CWebSocket)
     })
   })
@@ -83,7 +83,7 @@ describe('constructor', () => {
 
 describe('endpointURL', () => {
   it('returns endpoint for given full url', () => {
-    socket = new Socket('wss://example.org/chat')
+    socket = new RealtimeClient('wss://example.org/chat')
     assert.equal(
       socket.endPointURL(),
       'wss://example.org/chat/websocket?vsn=1.0.0'
@@ -91,7 +91,7 @@ describe('endpointURL', () => {
   })
 
   it('returns endpoint with parameters', () => {
-    socket = new Socket('ws://example.org/chat', { params: { foo: 'bar' } })
+    socket = new RealtimeClient('ws://example.org/chat', { params: { foo: 'bar' } })
     assert.equal(
       socket.endPointURL(),
       'ws://example.org/chat/websocket?foo=bar&vsn=1.0.0'
@@ -99,7 +99,7 @@ describe('endpointURL', () => {
   })
 
   it('returns endpoint with apikey', () => {
-    socket = new Socket('ws://example.org/chat', {
+    socket = new RealtimeClient('ws://example.org/chat', {
       params: { apikey: '123456789' },
     })
     assert.equal(
@@ -124,7 +124,7 @@ describe('connect with WebSocket', () => {
   })
 
   beforeEach(() => {
-    socket = new Socket('wss://example.com/socket')
+    socket = new RealtimeClient('wss://example.com/socket')
   })
 
   it('establishes websocket connection with endpoint', () => {
@@ -192,7 +192,7 @@ describe('disconnect', () => {
   })
 
   beforeEach(() => {
-    socket = new Socket('wss://example.com/socket')
+    socket = new RealtimeClient('wss://example.com/socket')
   })
 
   it('removes existing connection', () => {
@@ -229,7 +229,7 @@ describe('disconnect', () => {
 
 describe('connectionState', () => {
   beforeEach(() => {
-    socket = new Socket('wss://example.com/socket')
+    socket = new RealtimeClient('wss://example.com/socket')
   })
 
   it('defaults to closed', () => {
@@ -285,7 +285,7 @@ describe('channel', () => {
   let channel
 
   beforeEach(() => {
-    socket = new Socket('wss://example.com/socket')
+    socket = new RealtimeClient('wss://example.com/socket')
   })
 
   it('returns channel with given topic and params', () => {
@@ -310,7 +310,7 @@ describe('channel', () => {
 
 describe('remove', () => {
   beforeEach(() => {
-    socket = new Socket('wss://example.com/socket')
+    socket = new RealtimeClient('wss://example.com/socket')
   })
 
   it('removes given channel from channels', () => {
@@ -348,7 +348,7 @@ describe('push', () => {
   })
 
   beforeEach(() => {
-    socket = new Socket('wss://example.com/socket')
+    socket = new RealtimeClient('wss://example.com/socket')
   })
 
   // TODO: fix for W3CWebSocket
@@ -385,7 +385,7 @@ describe('push', () => {
 
 describe('makeRef', () => {
   beforeEach(() => {
-    socket = new Socket('wss://example.com/socket')
+    socket = new RealtimeClient('wss://example.com/socket')
   })
 
   it('returns next message ref', () => {
@@ -414,7 +414,7 @@ describe('sendHeartbeat', () => {
   })
 
   beforeEach(() => {
-    socket = new Socket('wss://example.com/socket')
+    socket = new RealtimeClient('wss://example.com/socket')
     socket.connect()
   })
 
@@ -465,7 +465,7 @@ describe('flushSendBuffer', () => {
   })
 
   beforeEach(() => {
-    socket = new Socket('wss://example.com/socket')
+    socket = new RealtimeClient('wss://example.com/socket')
     socket.connect()
   })
 
@@ -511,7 +511,7 @@ describe('_onConnOpen', () => {
   })
 
   beforeEach(() => {
-    socket = new Socket('wss://example.com/socket', {
+    socket = new RealtimeClient('wss://example.com/socket', {
       reconnectAfterMs: () => 100000,
     })
     socket.connect()
@@ -563,7 +563,7 @@ describe('_onConnClose', () => {
   })
 
   beforeEach(() => {
-    socket = new Socket('wss://example.com/socket', {
+    socket = new RealtimeClient('wss://example.com/socket', {
       reconnectAfterMs: () => 100000,
     })
     socket.connect()
@@ -612,7 +612,7 @@ describe('_onConnError', () => {
   })
 
   beforeEach(() => {
-    socket = new Socket('wss://example.com/socket', {
+    socket = new RealtimeClient('wss://example.com/socket', {
       reconnectAfterMs: () => 100000,
     })
     socket.connect()
@@ -653,7 +653,7 @@ describe('onConnMessage', () => {
   })
 
   beforeEach(() => {
-    socket = new Socket('wss://example.com/socket', {
+    socket = new RealtimeClient('wss://example.com/socket', {
       reconnectAfterMs: () => 100000,
     })
     socket.connect()
@@ -700,7 +700,7 @@ describe('onConnMessage', () => {
 
 describe('custom encoder and decoder', () => {
   it('encodes to JSON by default', () => {
-    socket = new Socket('wss://example.com/socket')
+    socket = new RealtimeClient('wss://example.com/socket')
     let payload = { foo: 'bar' }
 
     socket.encode(payload, (encoded) => {
@@ -710,7 +710,7 @@ describe('custom encoder and decoder', () => {
 
   it('allows custom encoding when using WebSocket transport', () => {
     let encoder = (payload, callback) => callback('encode works')
-    socket = new Socket('wss://example.com/socket', {
+    socket = new RealtimeClient('wss://example.com/socket', {
       transport: WebSocket,
       encode: encoder,
     })
@@ -721,7 +721,7 @@ describe('custom encoder and decoder', () => {
   })
 
   it('decodes JSON by default', () => {
-    socket = new Socket('wss://example.com/socket')
+    socket = new RealtimeClient('wss://example.com/socket')
     let payload = JSON.stringify({ foo: 'bar' })
 
     socket.decode(payload, (decoded) => {
@@ -731,7 +731,7 @@ describe('custom encoder and decoder', () => {
 
   it('allows custom decoding when using WebSocket transport', () => {
     let decoder = (payload, callback) => callback('decode works')
-    socket = new Socket('wss://example.com/socket', {
+    socket = new RealtimeClient('wss://example.com/socket', {
       transport: WebSocket,
       decode: decoder,
     })

@@ -1,9 +1,9 @@
 import { CHANNEL_EVENTS, CHANNEL_STATES } from './lib/constants'
 import Push from './lib/push'
-import Socket from './socket'
+import RealtimeClient from './RealtimeClient'
 import Timer from './lib/timer'
 
-export default class Channel {
+export default class RealtimeSubscription {
   bindings: any[] = []
   timeout: number
   state = CHANNEL_STATES.closed
@@ -15,7 +15,7 @@ export default class Channel {
   constructor(
     public topic: string,
     public params: any = {},
-    public socket: Socket
+    public socket: RealtimeClient
   ) {
     this.timeout = this.socket.timeout
     this.joinPush = new Push(

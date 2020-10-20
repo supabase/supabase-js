@@ -1,5 +1,5 @@
-import * as Transformers from './transformers'
+import * as Transformers from './lib/transformers'
+import RealtimeClient from './RealtimeClient'
+import RealtimeSubscription from './RealtimeSubscription'
 
-export { Transformers }
-export { default as Channel } from './channel'
-export { default as Socket } from './socket'
+export { RealtimeClient, RealtimeSubscription, Transformers }
