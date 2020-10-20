@@ -24,7 +24,7 @@ export type SupabaseClientOptions = {
   detectSessionInUrl?: boolean
 }
 
-export type SupabaseQueryClient<T> = {
+export type SupabaseQueryBuilder<T> = {
   rest: PostgrestClient
   subscription: SupabaseRealtimeClient
   /**

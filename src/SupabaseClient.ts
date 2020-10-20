@@ -1,5 +1,5 @@
 import { DEFAULT_HEADERS } from './lib/constants'
-import { SupabaseClientOptions, SupabaseQueryClient } from './lib/types'
+import { SupabaseClientOptions, SupabaseQueryBuilder } from './lib/types'
 import { GoTrueClient } from '@supabase/gotrue-js'
 import { PostgrestClient } from '@supabase/postgrest-js'
 import { RealtimeClient, RealtimeSubscription } from '@supabase/realtime-js'
@@ -75,20 +75,20 @@ export default class SupabaseClient {
     let rest = this._initPostgRESTClient()
     let subscription = new SupabaseRealtimeClient(this.realtime, this.schema, tableName)
 
-    const builder: SupabaseQueryClient<T> = {
+    const builder: SupabaseQueryBuilder<T> = {
       rest,
       subscription,
       select: (columns) => {
         return rest.from(tableName).select(columns)
       },
       insert: (values, options?) => {
-        return rest.from(tableName).insert(values, options)
+        return rest.from<T>(tableName).insert(values, options)
       },
       update: (values) => {
-        return rest.from(tableName).update(values)
+        return rest.from<T>(tableName).update(values)
       },
       delete: () => {
-        return rest.from(tableName).delete()
+        return rest.from<T>(tableName).delete()
       },
       on: (event, callback) => {
         if (!this.realtime.isConnected()) {
