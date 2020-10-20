@@ -64,7 +64,6 @@ export default class SupabaseClient {
    * @param table The table name to operate on.
    */
   from<T = any>(tableName: string) {
-
     // At this point, we don't know whether the user is going to
     // make a call to Realtime or to PostgREST, so we need to do
     // an intermdiary step where we return both.

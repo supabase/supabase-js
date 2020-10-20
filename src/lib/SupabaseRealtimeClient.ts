@@ -1,7 +1,6 @@
 import { RealtimeSubscription, RealtimeClient, Transformers } from '@supabase/realtime-js'
 import { SupabaseRealtimePayload } from './types'
 
-
 export class SupabaseRealtimeClient {
   subscription: RealtimeSubscription
 
