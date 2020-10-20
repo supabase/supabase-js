@@ -9,8 +9,6 @@ export default function IndexPage() {
   useEffect(() => {
     setSession(supabase.auth.currentSession)
     supabase.auth.onAuthStateChange((_event, session) => setSession(session))
-    // console.log('supabase.auth.currentUser', supabase.auth.currentUser)
-    // console.log('supabase.auth.currentSession', supabase.auth.currentSession)
   }, [])
 
   return (

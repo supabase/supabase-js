@@ -53,9 +53,10 @@ export default class SupabaseClient {
     this.auth = this._initGoTrueClient(settings)
     this.realtime = this._initRealtimeClient()
 
-    this.realtime.onOpen(() => console.log('OPEN'))
-    this.realtime.onClose(() => console.log('CLOSED'))
-    this.realtime.onError((e: Error) => console.log('Socket error', e))
+    // In the future we might allow the user to pass in a logger to receive these events.
+    // this.realtime.onOpen(() => console.log('OPEN'))
+    // this.realtime.onClose(() => console.log('CLOSED'))
+    // this.realtime.onError((e: Error) => console.log('Socket error', e))
   }
 
   /**

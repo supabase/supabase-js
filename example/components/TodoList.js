@@ -13,14 +13,14 @@ export default function Todos({ user }) {
     fetchTodos() 
     subscription1 = supabase
       .from('todos')
-      .on('UPDATE', (v) => console.log('UPDATE todos', v))
-      .on('INSERT', (v) => console.log('INSERT todos', v))
+      .on('UPDATE', (v) => console.log('UPDATE on todos', v))
+      .on('INSERT', (v) => console.log('INSERT on todos', v))
       .subscribe((change) => console.log('todos changed', change))
       
     subscription2 = supabase
       .from('*')
-      .on('UPDATE', (v) => console.log('UPDATE schema', v))
-      .on('INSERT', (v) => console.log('INSERT schema', v))
+      .on('UPDATE', (v) => console.log('UPDATE on schema', v))
+      .on('INSERT', (v) => console.log('INSERT on schema', v))
       .subscribe((change) => console.log('schema changed', change))
   }, [])
 
@@ -35,7 +35,7 @@ export default function Todos({ user }) {
   }
   const addTodo = async (taskText) => {
     try {
-      subscription2.unsubscribe()
+      supabase.removeSubscription(subscription2)
       
       let task = taskText.trim()
       if (task.length) {
@@ -45,12 +45,12 @@ export default function Todos({ user }) {
           .single()
 
         if (error) throw error
-
+        setNewTaskText('')
         setTodos([...todos, data])
       }
     } catch (error) {
       console.log('error', error)
-      // setError(JSON.parse(error.message).message)
+      setError(error.message)
     }
   }
 
@@ -125,20 +125,9 @@ const Todo = ({ todo, onDelete }) => {
       <div className="flex items-center px-4 py-4 sm:px-6">
         <div className="min-w-0 flex-1 flex items-center">
           <div className="text-sm leading-5 font-medium truncate text-white">
+            {isCompleted ? <span>👍 &nbsp;&nbsp;&nbsp;</span> : null}
             {todo.task}
           </div>
-        </div>
-        <div>
-          <input
-            className="cursor-pointer"
-            onChange={(e) => toggle()}
-            onClick={(e) => {
-              e.preventDefault()
-              e.stopPropagation()
-            }}
-            type="checkbox"
-            checked={isCompleted ? true : ''}
-          />
         </div>
         <button
           onClick={(e) => {
@@ -148,11 +137,7 @@ const Todo = ({ todo, onDelete }) => {
           }}
           className="w-4 h-4 ml-2 border-2 border-gray-700 hover:border-gray-500 rounded"
         >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 20 20"
-            fill="gray"
-          >
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="gray">
             <path
               fillRule="evenodd"
               d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
