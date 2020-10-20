@@ -20,8 +20,13 @@ export interface Session {
 }
 export interface User {
   id: string
-  app_metadata: any
-  user_metadata: any
+  app_metadata: {
+    provider?: string
+    [key: string]: any
+  }
+  user_metadata: {
+    [key: string]: any
+  }
   aud: string
   email?: string
   created_at: string
@@ -59,9 +64,9 @@ export interface Subscription {
   /**
    * The function to call every time there is an event. eg: (eventName) => {}
    */
-  callback: Function
+  callback: (event: AuthChangeEvent, session: Session | null) => void
   /**
    * Call this to remove the listener.
    */
-  unsubscribe: Function
+  unsubscribe: () => void
 }

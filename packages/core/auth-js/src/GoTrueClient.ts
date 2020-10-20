@@ -13,8 +13,11 @@ const DEFAULT_OPTIONS = {
 }
 export default class GoTrueClient {
   api: GoTrueApi
+  /**
+   * The currently logged in user or null.
+   */
   currentUser: User | null
-  currentSession?: Session | null
+  currentSession: Session | null
   autoRefreshToken: boolean
   persistSession: boolean
   localStorage: Storage
@@ -62,14 +65,14 @@ export default class GoTrueClient {
    * @param credentials.email The user's email address.
    * @param credentials.password The user's password.
    */
-  async signUp(credentials: { email: string; password: string }) {
+  async signUp(credentials: {
+    email: string
+    password: string
+  }): Promise<{ user: User | null; error: any }> {
     try {
       this._removeSession()
 
-      let { data, error }: any = await this.api.signUpWithEmail(
-        credentials.email,
-        credentials.password
-      )
+      let { data, error } = await this.api.signUpWithEmail(credentials.email, credentials.password)
       if (error) throw error
 
       if (data?.user?.confirmed_at) {
@@ -77,9 +80,9 @@ export default class GoTrueClient {
         this._notifyAllSubscribers(AuthChangeEvent.SIGNED_IN)
       }
 
-      return { data, error: null }
+      return { user: data as User, error: null }
     } catch (error) {
-      return { data: null, error }
+      return { user: null, error }
     }
   }
 
@@ -90,54 +93,64 @@ export default class GoTrueClient {
    * @param credentials.password The user's password.
    * @param credentials.provider One of the providers supported by GoTrue.
    */
-  async signIn(credentials: { email?: string; password?: string; provider?: Provider }) {
+  async signIn(credentials: {
+    email?: string
+    password?: string
+    provider?: Provider
+  }): Promise<{
+    user: User | null
+    provider?: { name: Provider; url: string | null }
+    error: any
+  }> {
     try {
       this._removeSession()
       let { email, password, provider } = credentials
-      if (email && password) return this._handeEmailSignIn(email, password)
-      if (provider) return this._handeProviderSignIn(provider)
-      else throw new Error(`You must provide either an email or a third-party provider.`)
+      if (email && password) {
+        const { data, error } = await this._handeEmailSignIn(email, password)
+        return { user: data, error }
+      }
+      if (provider) {
+        const { data, error } = await this._handeProviderSignIn(provider)
+        return { provider: { name: provider, url: data }, user: null, error }
+      } else throw new Error(`You must provide either an email or a third-party provider.`)
     } catch (error) {
-      return { data: null, error }
+      return { user: null, error }
     }
   }
 
   /**
    * Returns the user data, if there is a logged in user.
    */
-  async user() {
+  async user(): Promise<{ user: User | null; error: any }> {
     try {
       if (!this.currentSession?.access_token) throw new Error('Not logged in.')
 
-      let { data, error }: any = await this.api.getUser(this.currentSession.access_token)
+      let { data, error } = await this.api.getUser(this.currentSession.access_token)
       if (error) throw error
 
       this.currentUser = data
-      return { data: this.currentUser, error: null }
+      return { user: this.currentUser, error: null }
     } catch (error) {
-      return { data: null, error }
+      return { user: null, error }
     }
   }
 
   /**
    * Updates user data, if there is a logged in user.
    */
-  async update(attributes: UserAttributes) {
+  async update(attributes: UserAttributes): Promise<{ user: User | null; error: any }> {
     try {
       if (!this.currentSession?.access_token) throw new Error('Not logged in.')
 
-      let { data, error }: any = await this.api.updateUser(
-        this.currentSession.access_token,
-        attributes
-      )
+      let { data, error } = await this.api.updateUser(this.currentSession.access_token, attributes)
       if (error) throw error
 
       this.currentUser = data
       this._notifyAllSubscribers(AuthChangeEvent.USER_UPDATED)
 
-      return { data: this.currentUser, error: null }
+      return { user: this.currentUser, error: null }
     } catch (error) {
-      return { data: null, error }
+      return { user: null, error }
     }
   }
 
@@ -161,7 +174,7 @@ export default class GoTrueClient {
       if (!refresh_token) throw new Error('No refresh_token detected.')
       if (!token_type) throw new Error('No token_type detected.')
 
-      let { data: user, error }: any = await this.api.getUser(access_token)
+      let { data: user, error } = await this.api.getUser(access_token)
       if (error) throw error
 
       const session: Session = {
@@ -185,16 +198,16 @@ export default class GoTrueClient {
   /**
    * Signs out the current user, if there is a logged in user.
    */
-  async signOut() {
+  async signOut(): Promise<{ error: any }> {
     try {
       if (this.currentSession) {
         await this.api.signOut(this.currentSession.access_token)
       }
       this._removeSession()
       this._notifyAllSubscribers(AuthChangeEvent.SIGNED_OUT)
-      return true
+      return { error: null }
     } catch (error) {
-      return { data: null, error }
+      return { error }
     }
   }
 
@@ -202,14 +215,16 @@ export default class GoTrueClient {
    * Receive a notification every time an auth event happens.
    * @returns {Subscription} A subscription object which can be used to unsubcribe itself.
    */
-  onAuthStateChange(callback: Function) {
+  onAuthStateChange(callback: (event: AuthChangeEvent, session: Session | null) => void) {
     try {
       const id: string = uuid()
       let self = this
       const subscription: Subscription = {
         id,
         callback,
-        unsubscribe: () => self.stateChangeEmmitters.delete(id),
+        unsubscribe: () => {
+          self.stateChangeEmmitters.delete(id)
+        },
       }
       this.stateChangeEmmitters.set(id, subscription)
       return { data: this.stateChangeEmmitters.get(id), error: null }
@@ -220,7 +235,7 @@ export default class GoTrueClient {
 
   private async _handeEmailSignIn(email: string, password: string) {
     try {
-      let { data, error }: any = await this.api.signInWithEmail(email, password)
+      let { data, error } = await this.api.signInWithEmail(email, password)
       if (!!error) return { data: null, error }
 
       if (data?.user?.confirmed_at) {
