@@ -126,15 +126,43 @@ export default class GoTrueClient {
   /**
    * Returns the user data, if there is a logged in user.
    */
-  async user(): Promise<{ data: User | null; user: User | null; error: any }> {
+  user(): { data: User | null; user: User | null; error: any } {
     try {
       if (!this.currentSession?.access_token) throw new Error('Not logged in.')
+
+      return { data: this.currentUser, user: this.currentUser, error: null }
+    } catch (error) {
+      return { data: null, user: null, error }
+    }
+  }
+
+  /**
+   * Returns the session data, if there is an active session.
+   */
+  session(): { data: Session | null; error: any } {
+    try {
+      if (!this.currentSession?.access_token) throw new Error('Not logged in.')
+
+      return { data: this.currentSession, error: null }
+    } catch (error) {
+      return { data: null, error }
+    }
+  }
+
+  /**
+   * Force refreshes the session including the user data in case it was updated in a different session.
+   */
+  async refreshSession(): Promise<{ data: Session | null; user: User | null; error: any }> {
+    try {
+      if (!this.currentSession?.access_token) throw new Error('Not logged in.')
+
+      await this._callRefreshToken()
 
       let { data, error } = await this.api.getUser(this.currentSession.access_token)
       if (error) throw error
 
       this.currentUser = data
-      return { data, user: this.currentUser, error: null }
+      return { data: this.currentSession, user: this.currentUser, error: null }
     } catch (error) {
       return { data: null, user: null, error }
     }
