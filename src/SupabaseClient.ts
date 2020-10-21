@@ -19,15 +19,15 @@ const DEFAULT_OPTIONS = {
  * An isomorphic Javascript client for interacting with Postgres.
  */
 export default class SupabaseClient {
-  schema: string
-  restUrl: string
-  realtimeUrl: string
-  authUrl: string
   /**
    * Supabase Auth allows you to create and manage user sessions for access to data that is secured by access policies.
    */
   auth: SupabaseAuthClient
-  realtime: RealtimeClient
+  protected schema: string
+  protected restUrl: string
+  protected realtimeUrl: string
+  protected authUrl: string
+  protected realtime: RealtimeClient
 
   /**
    * Create a new client for use in the browser.
@@ -40,8 +40,8 @@ export default class SupabaseClient {
    * @param options.headers Any additional headers to send with each network request.
    */
   constructor(
-    public supabaseUrl: string,
-    public supabaseKey: string,
+    protected supabaseUrl: string,
+    protected supabaseKey: string,
     options?: SupabaseClientOptions
   ) {
     if (!supabaseUrl) throw new Error('supabaseUrl is required.')
@@ -69,7 +69,7 @@ export default class SupabaseClient {
    */
   from<T = any>(table: string): SupabaseQueryBuilder<T> {
     const url = `${this.restUrl}/${table}`
-    return new SupabaseQueryBuilder(url, {
+    return new SupabaseQueryBuilder<T>(url, {
       headers: this._getAuthHeaders(),
       schema: this.schema,
       realtime: this.realtime,
@@ -146,7 +146,7 @@ export default class SupabaseClient {
 
   private _getAuthHeaders(): { [key: string]: string } {
     let headers: { [key: string]: string } = {}
-    let authBearer = this.auth.currentSession?.access_token || this.supabaseKey
+    let authBearer = this.auth.session().data?.access_token ?? this.supabaseKey
     headers['apikey'] = this.supabaseKey
     headers['Authorization'] = `Bearer ${authBearer}`
     return headers

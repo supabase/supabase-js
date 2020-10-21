@@ -29,9 +29,10 @@ export class SupabaseQueryBuilder<T> extends PostgrestQueryBuilder<T> {
 
   /**
    * Subscribe to realtime changes in your databse.
+   * @param event The database event which you would like to receive updates for, or you can use the special wildcard `*` to listen to all changes.
+   * @param callback A callback that will handle the payload that is sent whenever your database changes.
    */
   on(
-    /** The database event which you would like to receive updates for, or you can use the special wildcard `*` to listen to all changes. */
     event: 'INSERT' | 'UPDATE' | 'DELETE' | '*',
     callback: (payload: SupabaseRealtimePayload<T>) => void
   ): SupabaseRealtimeClient {
