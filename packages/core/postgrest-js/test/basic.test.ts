@@ -15,12 +15,12 @@ test('stored procedure', async () => {
 
 test('custom headers', async () => {
   const postgrest = new PostgrestClient(REST_URL, { headers: { apikey: 'foo' } })
-  expect(postgrest.from('users').select().headers['apikey']).toEqual('foo')
+  expect((postgrest.from('users').select() as any).headers['apikey']).toEqual('foo')
 })
 
 test('auth', async () => {
   const postgrest = new PostgrestClient(REST_URL).auth('foo')
-  expect(postgrest.from('users').select().headers['Authorization']).toEqual('Bearer foo')
+  expect((postgrest.from('users').select() as any).headers['Authorization']).toEqual('Bearer foo')
 })
 
 test('switch schema', async () => {
