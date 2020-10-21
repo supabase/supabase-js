@@ -1,9 +1,9 @@
 import { DEFAULT_HEADERS } from './lib/constants'
-import { SupabaseClientOptions, SupabaseQueryBuilder } from './lib/types'
-import { GoTrueClient } from '@supabase/gotrue-js'
+import { SupabaseClientOptions } from './lib/types'
+import { SupabaseAuthClient } from './lib/SupabaseAuthClient'
+import { SupabaseQueryBuilder } from './lib/SupabaseQueryBuilder'
 import { PostgrestClient } from '@supabase/postgrest-js'
 import { RealtimeClient, RealtimeSubscription } from '@supabase/realtime-js'
-import { SupabaseRealtimeClient } from './lib/SupabaseRealtimeClient'
 
 const DEFAULT_OPTIONS = {
   schema: 'public',
@@ -19,12 +19,15 @@ const DEFAULT_OPTIONS = {
  * An isomorphic Javascript client for interacting with Postgres.
  */
 export default class SupabaseClient {
-  schema: string
-  restUrl: string
-  realtimeUrl: string
-  authUrl: string
-  auth: GoTrueClient
-  realtime: RealtimeClient
+  /**
+   * Supabase Auth allows you to create and manage user sessions for access to data that is secured by access policies.
+   */
+  auth: SupabaseAuthClient
+  protected schema: string
+  protected restUrl: string
+  protected realtimeUrl: string
+  protected authUrl: string
+  protected realtime: RealtimeClient
 
   /**
    * Create a new client for use in the browser.
@@ -37,8 +40,8 @@ export default class SupabaseClient {
    * @param options.headers Any additional headers to send with each network request.
    */
   constructor(
-    public supabaseUrl: string,
-    public supabaseKey: string,
+    protected supabaseUrl: string,
+    protected supabaseKey: string,
     options?: SupabaseClientOptions
   ) {
     if (!supabaseUrl) throw new Error('supabaseUrl is required.')
@@ -50,7 +53,7 @@ export default class SupabaseClient {
     this.authUrl = `${supabaseUrl}/auth/v1`
     this.schema = settings.schema
 
-    this.auth = this._initGoTrueClient(settings)
+    this.auth = this._initSupabaseAuthClient(settings)
     this.realtime = this._initRealtimeClient()
 
     // In the future we might allow the user to pass in a logger to receive these events.
@@ -64,40 +67,14 @@ export default class SupabaseClient {
    *
    * @param table The table name to operate on.
    */
-  from<T = any>(tableName: string) {
-    // At this point, we don't know whether the user is going to
-    // make a call to Realtime or to PostgREST, so we need to do
-    // an intermdiary step where we return both.
-    // We have to make sure "this" is bound correctly on each part.
-    // let rest = this._initPostgRESTClient()
-
-    // let rest = new SupaabseQueryBuilder(this.restUrl || '', {})
-    let rest = this._initPostgRESTClient()
-    let subscription = new SupabaseRealtimeClient(this.realtime, this.schema, tableName)
-
-    const builder: SupabaseQueryBuilder<T> = {
-      rest,
-      subscription,
-      select: (columns) => {
-        return rest.from(tableName).select(columns)
-      },
-      insert: (values, options?) => {
-        return rest.from<T>(tableName).insert(values, options)
-      },
-      update: (values) => {
-        return rest.from<T>(tableName).update(values)
-      },
-      delete: () => {
-        return rest.from<T>(tableName).delete()
-      },
-      on: (event, callback) => {
-        if (!this.realtime.isConnected()) {
-          this.realtime.connect()
-        }
-        return subscription.on(event, callback)
-      },
-    }
-    return builder
+  from<T = any>(table: string): SupabaseQueryBuilder<T> {
+    const url = `${this.restUrl}/${table}`
+    return new SupabaseQueryBuilder<T>(url, {
+      headers: this._getAuthHeaders(),
+      schema: this.schema,
+      realtime: this.realtime,
+      table,
+    })
   }
 
   /**
@@ -106,9 +83,9 @@ export default class SupabaseClient {
    * @param fn  The function name to call.
    * @param params  The parameters to pass to the function call.
    */
-  rpc(fn: string, params?: object) {
+  rpc<T = any>(fn: string, params?: object) {
     let rest = this._initPostgRESTClient()
-    return rest.rpc(fn, params)
+    return rest.rpc<T>(fn, params)
   }
 
   /**
@@ -137,12 +114,12 @@ export default class SupabaseClient {
   /**
    * Returns an array of all your subscriptions.
    */
-  getSubscriptions() {
+  getSubscriptions(): RealtimeSubscription[] {
     return this.realtime.channels
   }
 
-  private _initGoTrueClient(settings: SupabaseClientOptions) {
-    return new GoTrueClient({
+  private _initSupabaseAuthClient(settings: SupabaseClientOptions) {
+    return new SupabaseAuthClient({
       url: this.authUrl,
       headers: {
         Authorization: `Bearer ${this.supabaseKey}`,
@@ -169,7 +146,7 @@ export default class SupabaseClient {
 
   private _getAuthHeaders(): { [key: string]: string } {
     let headers: { [key: string]: string } = {}
-    let authBearer = this.auth.currentSession?.access_token || this.supabaseKey
+    let authBearer = this.auth.session().data?.access_token ?? this.supabaseKey
     headers['apikey'] = this.supabaseKey
     headers['Authorization'] = `Bearer ${authBearer}`
     return headers
