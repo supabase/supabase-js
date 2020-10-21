@@ -66,6 +66,7 @@ test('Get user', async () => {
     id: expect.any(String),
     aud: expect.any(String),
     confirmed_at: expect.any(String),
+    last_sign_in_at: expect.any(String),
     created_at: expect.any(String),
     updated_at: expect.any(String),
     app_metadata: {

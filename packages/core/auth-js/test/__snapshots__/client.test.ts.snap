@@ -10,6 +10,7 @@ Object {
   "created_at": Any<String>,
   "email": "fake@email.com",
   "id": Any<String>,
+  "last_sign_in_at": Any<String>,
   "role": "",
   "updated_at": Any<String>,
   "user_metadata": Object {},
@@ -20,6 +21,7 @@ exports[`Get user after logging out 1`] = `
 Object {
   "data": null,
   "error": [Error: Not logged in.],
+  "user": null,
 }
 `;
 
@@ -84,7 +86,11 @@ Object {
 
 exports[`signIn() with the wrong password 1`] = `"Invalid Password"`;
 
-exports[`signOut 1`] = `true`;
+exports[`signOut 1`] = `
+Object {
+  "error": null,
+}
+`;
 
 exports[`signUp() 1`] = `
 Object {

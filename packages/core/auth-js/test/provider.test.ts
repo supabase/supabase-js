@@ -1,5 +1,4 @@
 import { GoTrueClient } from '../src/index'
-import { Provider } from '../src/lib/types'
 
 const GOTRUE_URL = 'http://localhost:9999'
 
@@ -10,9 +9,10 @@ const auth = new GoTrueClient({
 })
 
 test('signIn() with Provider', async () => {
-  let { error, data } = await auth.signIn({
-    provider: Provider.GOOGLE,
+  let { error, url, provider } = await auth.signIn({
+    provider: 'google',
   })
   expect(error).toBeNull()
-  expect(data).toMatchSnapshot()
+  expect(url).toMatchSnapshot()
+  expect(provider).toMatchSnapshot()
 })

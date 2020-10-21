@@ -1,3 +1,5 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
 exports[`signIn() with Provider 1`] = `"http://localhost:9999/authorize?provider=google"`;
+
+exports[`signIn() with Provider 2`] = `"google"`;

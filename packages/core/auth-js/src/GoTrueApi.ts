@@ -1,5 +1,5 @@
 import { get, post, put } from './lib/fetch'
-import { Provider, UserAttributes } from './lib/types'
+import { Session, User, Provider, UserAttributes } from './lib/types'
 
 export default class GoTrueApi {
   url: string
@@ -42,7 +42,7 @@ export default class GoTrueApi {
         { email, password },
         { headers: this.headers }
       )
-      return { data, error: null }
+      return { data: data as Session, error: null }
     } catch (error) {
       return { data: null, error }
     }
