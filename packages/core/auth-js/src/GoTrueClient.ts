@@ -285,12 +285,6 @@ export default class GoTrueClient {
 
   private _handeProviderSignIn(provider: Provider) {
     let url: string = this.api.getUrlForProvider(provider)
-    console.log('url', url)
-    console.log('url', url)
-    console.log('url', url)
-    console.log('url', url)
-    console.log('url', url)
-    console.log('url', url)
 
     try {
       // try to open on the browser
