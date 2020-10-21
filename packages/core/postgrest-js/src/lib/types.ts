@@ -51,8 +51,8 @@ export abstract class PostgrestBuilder<T> implements PromiseLike<PostgrestRespon
       | ((value: PostgrestResponse<T>) => TResult1 | PromiseLike<TResult1>)
       | undefined
       | null,
-    onrejected?: (value: any) => any
-  ): Promise<any> {
+    onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null
+  ): PromiseLike<TResult1 | TResult2> {
     // https://postgrest.org/en/stable/api.html#switching-schemas
     if (typeof this.schema === 'undefined') {
       // skip
