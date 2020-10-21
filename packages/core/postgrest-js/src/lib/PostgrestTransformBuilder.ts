@@ -1,4 +1,4 @@
-import { PostgrestBuilder } from './types'
+import { PostgrestBuilder, PostgrestSingleResponse } from './types'
 
 /**
  * Post-filters (transforms)
@@ -68,8 +68,8 @@ export default class PostgrestTransformBuilder<T> extends PostgrestBuilder<T> {
    * Retrieves only one row from the result. Result must be one row (e.g. using
    * `limit`), otherwise this will result in an error.
    */
-  single(): PostgrestTransformBuilder<T> {
+  single(): PromiseLike<PostgrestSingleResponse<T>> {
     this.headers['Accept'] = 'application/vnd.pgrst.object+json'
-    return this
+    return this as PromiseLike<PostgrestSingleResponse<T>>
   }
 }

@@ -19,25 +19,40 @@ interface PostgrestError {
  */
 interface PostgrestResponse<T> {
   error: PostgrestError | null
-  data: T | T[] | null
+  data: T[] | null
   status: number
   statusText: string
   // For backward compatibility: body === data
-  body: T | T[] | null
+  body: T[] | null
 }
 
-export abstract class PostgrestBuilder<T> implements PromiseLike<any> {
-  method!: 'GET' | 'HEAD' | 'POST' | 'PATCH' | 'DELETE'
-  url!: URL
-  headers!: { [key: string]: string }
-  schema?: string
-  body?: Partial<T> | Partial<T>[]
+export interface PostgrestSingleResponse<T> {
+  error: PostgrestError | null
+  data: T | null
+  status: number
+  statusText: string
+  // For backward compatibility: body === data
+  body: T | null
+}
+
+export abstract class PostgrestBuilder<T> implements PromiseLike<PostgrestResponse<T>> {
+  protected method!: 'GET' | 'HEAD' | 'POST' | 'PATCH' | 'DELETE'
+  protected url!: URL
+  protected headers!: { [key: string]: string }
+  protected schema?: string
+  protected body?: Partial<T> | Partial<T>[]
 
   constructor(builder: PostgrestBuilder<T>) {
     Object.assign(this, builder)
   }
 
-  then(onfulfilled?: (value: any) => any, onrejected?: (value: any) => any): Promise<any> {
+  then<TResult1 = PostgrestResponse<T>, TResult2 = never>(
+    onfulfilled?:
+      | ((value: PostgrestResponse<T>) => TResult1 | PromiseLike<TResult1>)
+      | undefined
+      | null,
+    onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null
+  ): PromiseLike<TResult1 | TResult2> {
     // https://postgrest.org/en/stable/api.html#switching-schemas
     if (typeof this.schema === 'undefined') {
       // skip
@@ -64,13 +79,14 @@ export abstract class PostgrestBuilder<T> implements PromiseLike<any> {
           error = await res.json()
           data = null
         }
-        return {
+        const postgrestResponse: PostgrestResponse<T> = {
           error,
           data,
           status: res.status,
           statusText: res.statusText,
           body: data,
-        } as PostgrestResponse<T>
+        }
+        return postgrestResponse
       })
       .then(onfulfilled, onrejected)
   }
