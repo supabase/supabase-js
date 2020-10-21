@@ -12,16 +12,19 @@ const DEFAULT_OPTIONS = {
   headers: DEFAULT_HEADERS,
 }
 export default class GoTrueClient {
-  api: GoTrueApi
   /**
    * The currently logged in user or null.
    */
-  currentUser: User | null
-  currentSession: Session | null
-  autoRefreshToken: boolean
-  persistSession: boolean
-  localStorage: Storage
-  stateChangeEmmitters: Map<string, Subscription> = new Map()
+  protected currentUser: User | null
+  /**
+   * The session object for the currently logged in user or null.
+   */
+  protected currentSession: Session | null
+  protected api: GoTrueApi
+  protected autoRefreshToken: boolean
+  protected persistSession: boolean
+  protected localStorage: Storage
+  protected stateChangeEmmitters: Map<string, Subscription> = new Map()
 
   /**
    * Create a new client for use in the browser.
@@ -68,7 +71,7 @@ export default class GoTrueClient {
   async signUp(credentials: {
     email: string
     password: string
-  }): Promise<{ user: User | null; error: any }> {
+  }): Promise<{ data: Session | null; user: User | null; error: any }> {
     try {
       this._removeSession()
 
@@ -80,9 +83,9 @@ export default class GoTrueClient {
         this._notifyAllSubscribers(AuthChangeEvent.SIGNED_IN)
       }
 
-      return { user: data as User, error: null }
+      return { data, user: data.user, error: null }
     } catch (error) {
-      return { user: null, error }
+      return { data: null, user: null, error }
     }
   }
 
@@ -98,8 +101,10 @@ export default class GoTrueClient {
     password?: string
     provider?: Provider
   }): Promise<{
+    data: Session | null
     user: User | null
-    provider?: { name: Provider; url: string | null }
+    provider?: Provider
+    url?: string | null
     error: any
   }> {
     try {
@@ -107,21 +112,21 @@ export default class GoTrueClient {
       let { email, password, provider } = credentials
       if (email && password) {
         const { data, error } = await this._handeEmailSignIn(email, password)
-        return { user: data as User, error }
+        return { data, user: data.user as User, error }
       }
       if (provider) {
-        const { data, error } = await this._handeProviderSignIn(provider)
-        return { provider: { name: provider, url: data }, user: null, error }
+        const { data, error } = this._handeProviderSignIn(provider)
+        return { provider, url: data, data: null, user: null, error }
       } else throw new Error(`You must provide either an email or a third-party provider.`)
     } catch (error) {
-      return { user: null, error }
+      return { data: null, user: null, error }
     }
   }
 
   /**
    * Returns the user data, if there is a logged in user.
    */
-  async user(): Promise<{ user: User | null; error: any }> {
+  async user(): Promise<{ data: User | null; user: User | null; error: any }> {
     try {
       if (!this.currentSession?.access_token) throw new Error('Not logged in.')
 
@@ -129,16 +134,18 @@ export default class GoTrueClient {
       if (error) throw error
 
       this.currentUser = data
-      return { user: this.currentUser, error: null }
+      return { data, user: this.currentUser, error: null }
     } catch (error) {
-      return { user: null, error }
+      return { data: null, user: null, error }
     }
   }
 
   /**
    * Updates user data, if there is a logged in user.
    */
-  async update(attributes: UserAttributes): Promise<{ user: User | null; error: any }> {
+  async update(
+    attributes: UserAttributes
+  ): Promise<{ data: User | null; user: User | null; error: any }> {
     try {
       if (!this.currentSession?.access_token) throw new Error('Not logged in.')
 
@@ -148,9 +155,9 @@ export default class GoTrueClient {
       this.currentUser = data
       this._notifyAllSubscribers(AuthChangeEvent.USER_UPDATED)
 
-      return { user: this.currentUser, error: null }
+      return { data, user: this.currentUser, error: null }
     } catch (error) {
-      return { user: null, error }
+      return { data: null, user: null, error }
     }
   }
 
@@ -158,7 +165,9 @@ export default class GoTrueClient {
    * Gets the session data from a URL string
    * @param options.storeSession Optionally store the session in the browser
    */
-  async getSessionFromUrl(options?: { storeSession?: boolean }) {
+  async getSessionFromUrl(options?: {
+    storeSession?: boolean
+  }): Promise<{ data: Session | null; error: any }> {
     try {
       if (!isBrowser()) throw new Error('No browser detected.')
 
@@ -215,7 +224,9 @@ export default class GoTrueClient {
    * Receive a notification every time an auth event happens.
    * @returns {Subscription} A subscription object which can be used to unsubcribe itself.
    */
-  onAuthStateChange(callback: (event: AuthChangeEvent, session: Session | null) => void) {
+  onAuthStateChange(
+    callback: (event: AuthChangeEvent, session: Session | null) => void
+  ): { data: Subscription | null; error: any } {
     try {
       const id: string = uuid()
       let self = this
@@ -227,7 +238,7 @@ export default class GoTrueClient {
         },
       }
       this.stateChangeEmmitters.set(id, subscription)
-      return { data: this.stateChangeEmmitters.get(id), error: null }
+      return { data: subscription, error: null }
     } catch (error) {
       return { data: null, error }
     }
