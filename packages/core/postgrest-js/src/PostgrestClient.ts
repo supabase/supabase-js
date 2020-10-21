@@ -39,7 +39,7 @@ export default class PostgrestClient {
    */
   from<T = any>(table: string): PostgrestQueryBuilder<T> {
     const url = `${this.url}/${table}`
-    return new PostgrestQueryBuilder(url, { headers: this.headers, schema: this.schema })
+    return new PostgrestQueryBuilder<T>(url, { headers: this.headers, schema: this.schema })
   }
 
   /**
