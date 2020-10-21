@@ -10,13 +10,13 @@ export default function Todos({ user }) {
   const [errorText, setError] = useState('')
 
   useEffect(() => {
-    fetchTodos() 
+    fetchTodos()
     subscription1 = supabase
       .from('todos')
       .on('UPDATE', (v) => console.log('UPDATE on todos', v))
       .on('INSERT', (v) => console.log('INSERT on todos', v))
       .subscribe((change) => console.log('todos changed', change))
-      
+
     subscription2 = supabase
       .from('*')
       .on('UPDATE', (v) => console.log('UPDATE on schema', v))
@@ -36,7 +36,7 @@ export default function Todos({ user }) {
   const addTodo = async (taskText) => {
     try {
       supabase.removeSubscription(subscription2)
-      
+
       let task = taskText.trim()
       if (task.length) {
         let { error, data } = await supabase
@@ -85,11 +85,7 @@ export default function Todos({ user }) {
       <div className="bg-white shadow-lg overflow-hidden rounded-md bg-gray-800">
         <ul>
           {todos.map((todo) => (
-            <Todo
-              key={todo.id}
-              todo={todo}
-              onDelete={() => deleteTodo(todo.id)}
-            />
+            <Todo key={todo.id} todo={todo} onDelete={() => deleteTodo(todo.id)} />
           ))}
         </ul>
       </div>

@@ -15,7 +15,7 @@ export default function IndexPage() {
     <div className="w-full h-full bg-gray-900">
       {!session ? (
         <div className="w-full h-full flex justify-center items-center p-4">
-          <Auth onLoggedIn={(session) => setSession(session)} />
+          <Auth />
         </div>
       ) : (
         <div
