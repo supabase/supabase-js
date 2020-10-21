@@ -110,14 +110,9 @@ export default class GoTrueClient {
     try {
       this._removeSession()
       let { email, password, provider } = credentials
-      if (email && password) {
-        const { data, error } = await this._handeEmailSignIn(email, password)
-        return { data, user: data.user as User, error }
-      }
-      if (provider) {
-        const { data, error } = this._handeProviderSignIn(provider)
-        return { provider, url: data, data: null, user: null, error }
-      } else throw new Error(`You must provide either an email or a third-party provider.`)
+      if (email && password) return this._handeEmailSignIn(email, password)
+      if (provider) return this._handeProviderSignIn(provider)
+      else throw new Error(`You must provide either an email or a third-party provider.`)
     } catch (error) {
       return { data: null, user: null, error }
     }
@@ -275,34 +270,38 @@ export default class GoTrueClient {
   private async _handeEmailSignIn(email: string, password: string) {
     try {
       let { data, error } = await this.api.signInWithEmail(email, password)
-      if (!!error) return { data: null, error }
+      if (error || !data) return { data: null, user: null, error }
 
       if (data?.user?.confirmed_at) {
         this._saveSession(data)
         this._notifyAllSubscribers('SIGNED_IN')
       }
-
-      return { data, error: null }
+      
+      return { data, user: data.user, error: null }
     } catch (error) {
-      console.log('error_handeEmailSignIn', error)
-      return { data: null, error }
+      return { data: null, user: null, error }
     }
   }
 
   private _handeProviderSignIn(provider: Provider) {
     let url: string = this.api.getUrlForProvider(provider)
+    console.log('url', url)
+    console.log('url', url)
+    console.log('url', url)
+    console.log('url', url)
+    console.log('url', url)
+    console.log('url', url)
 
     try {
       // try to open on the browser
       if (isBrowser()) {
         window.location.href = url
       }
-
-      return { data: url, error: null }
+      return { provider, url, data: null, user: null, error: null }
     } catch (error) {
       // fallback to returning the URL
-      if (!!url) return { data: url, error: null }
-      else return { data: null, error }
+      if (!!url) return { provider, url, data: null, user: null, error: null }
+      else return { data: null, user: null, error }
     }
   }
 
