@@ -1,15 +1,6 @@
-export enum Provider {
-  BITBUCKET = 'bitbucket',
-  GITHUB = 'github',
-  GITLAB = 'gitlab',
-  GOOGLE = 'google',
-}
+export type Provider = 'bitbucket' | 'github' | 'gitlab' | 'google'
 
-export enum AuthChangeEvent {
-  SIGNED_IN = 'SIGNED_IN',
-  SIGNED_OUT = 'SIGNED_OUT',
-  USER_UPDATED = 'USER_UPDATED',
-}
+export type AuthChangeEvent = 'SIGNED_IN' | 'SIGNED_OUT' | 'USER_UPDATED'
 
 export interface Session {
   access_token: string

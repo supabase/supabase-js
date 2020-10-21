@@ -80,7 +80,7 @@ export default class GoTrueClient {
 
       if (data?.user?.confirmed_at) {
         this._saveSession(data)
-        this._notifyAllSubscribers(AuthChangeEvent.SIGNED_IN)
+        this._notifyAllSubscribers('SIGNED_IN')
       }
 
       return { data, user: data.user, error: null }
@@ -153,7 +153,7 @@ export default class GoTrueClient {
       if (error) throw error
 
       this.currentUser = data
-      this._notifyAllSubscribers(AuthChangeEvent.USER_UPDATED)
+      this._notifyAllSubscribers('USER_UPDATED')
 
       return { data, user: this.currentUser, error: null }
     } catch (error) {
@@ -195,7 +195,7 @@ export default class GoTrueClient {
       }
       if (options?.storeSession) {
         this._saveSession(session)
-        this._notifyAllSubscribers(AuthChangeEvent.SIGNED_IN)
+        this._notifyAllSubscribers('SIGNED_IN')
       }
 
       return { data: session, error: null }
@@ -213,7 +213,7 @@ export default class GoTrueClient {
         await this.api.signOut(this.currentSession.access_token)
       }
       this._removeSession()
-      this._notifyAllSubscribers(AuthChangeEvent.SIGNED_OUT)
+      this._notifyAllSubscribers('SIGNED_OUT')
       return { error: null }
     } catch (error) {
       return { error }
@@ -251,7 +251,7 @@ export default class GoTrueClient {
 
       if (data?.user?.confirmed_at) {
         this._saveSession(data)
-        this._notifyAllSubscribers(AuthChangeEvent.SIGNED_IN)
+        this._notifyAllSubscribers('SIGNED_IN')
       }
 
       return { data, error: null }
