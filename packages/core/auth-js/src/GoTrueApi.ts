@@ -1,13 +1,21 @@
 import { get, post, put } from './lib/fetch'
-import { Session, User, Provider, UserAttributes } from './lib/types'
+import { Session, Provider, UserAttributes } from './lib/types'
 
 export default class GoTrueApi {
-  url: string
-  headers: {
+  protected url: string
+  protected headers: {
     [key: string]: string
   }
 
-  constructor({ url = '', headers = {} }: any) {
+  constructor({
+    url = '',
+    headers = {},
+  }: {
+    url: string
+    headers: {
+      [key: string]: string
+    }
+  }) {
     this.url = url
     this.headers = headers
   }
@@ -17,13 +25,12 @@ export default class GoTrueApi {
    * @param email The email address of the user.
    * @param password The password of the user.
    */
-  async signUpWithEmail(email: string, password: string) {
+  async signUpWithEmail(
+    email: string,
+    password: string
+  ): Promise<{ data: Session | null; error: Error | null }> {
     try {
-      let data: any = await post(
-        `${this.url}/signup`,
-        { email, password },
-        { headers: this.headers }
-      )
+      const data = await post(`${this.url}/signup`, { email, password }, { headers: this.headers })
       return { data, error: null }
     } catch (error) {
       return { data: null, error }
@@ -35,14 +42,17 @@ export default class GoTrueApi {
    * @param email The email address of the user.
    * @param password The password of the user.
    */
-  async signInWithEmail(email: string, password: string) {
+  async signInWithEmail(
+    email: string,
+    password: string
+  ): Promise<{ data: Session | null; error: Error | null }> {
     try {
-      let data: any = await post(
+      const data = await post(
         `${this.url}/token?grant_type=password`,
         { email, password },
         { headers: this.headers }
       )
-      return { data: data as Session, error: null }
+      return { data, error: null }
     } catch (error) {
       return { data: null, error }
     }
@@ -52,9 +62,9 @@ export default class GoTrueApi {
    * Sends a reset request to an email address.
    * @param email The email address of the user.
    */
-  async resetPasswordForEmail(email: string) {
+  async resetPasswordForEmail(email: string): Promise<{ data: {} | null; error: Error | null }> {
     try {
-      let data: any = await post(`${this.url}/forgotPassword`, { email }, { headers: this.headers })
+      const data = await post(`${this.url}/recover`, { email }, { headers: this.headers })
       return { data, error: null }
     } catch (error) {
       return { data: null, error }
@@ -65,14 +75,14 @@ export default class GoTrueApi {
    * Removes a logged-in session.
    * @param jwt A valid, logged-in JWT.
    */
-  async signOut(jwt: string) {
+  async signOut(jwt: string): Promise<{ error: Error | null }> {
     try {
       let headers = { ...this.headers }
       headers['Authorization'] = `Bearer ${jwt}`
-      let data = await post(`${this.url}/logout`, {}, { headers, noResolveJson: true })
-      return { data, error: null }
+      await post(`${this.url}/logout`, {}, { headers, noResolveJson: true })
+      return { error: null }
     } catch (error) {
-      return { data: null, error }
+      return { error }
     }
   }
 

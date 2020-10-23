@@ -19,7 +19,7 @@ const handleError = (error: any, reject: any) => {
   }
 }
 
-export async function get(url: string, options?: FetchOptions) {
+export async function get(url: string, options?: FetchOptions): Promise<any> {
   return new Promise((resolve, reject) => {
     fetch(url, {
       method: 'GET',
@@ -34,7 +34,7 @@ export async function get(url: string, options?: FetchOptions) {
       .catch((error) => handleError(error, reject))
   })
 }
-export async function post(url: string, body: object, options?: FetchOptions) {
+export async function post(url: string, body: object, options?: FetchOptions): Promise<any> {
   return new Promise((resolve, reject) => {
     fetch(url, {
       method: 'POST',
@@ -50,7 +50,7 @@ export async function post(url: string, body: object, options?: FetchOptions) {
       .catch((error) => handleError(error, reject))
   })
 }
-export async function put(url: string, body: object, options?: FetchOptions) {
+export async function put(url: string, body: object, options?: FetchOptions): Promise<any> {
   return new Promise((resolve, reject) => {
     fetch(url, {
       method: 'PUT',
