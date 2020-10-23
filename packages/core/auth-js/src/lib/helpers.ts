@@ -11,7 +11,7 @@ export const isBrowser = () => typeof window !== 'undefined'
 export function getParameterByName(name: string, url?: string) {
   if (!url) url = window.location.href
   name = name.replace(/[\[\]]/g, '\\$&')
-  var regex = new RegExp('[?&]' + name + '(=([^&#]*)|&|#|$)'),
+  var regex = new RegExp('[?&#]' + name + '(=([^&#]*)|&|#|$)'),
     results = regex.exec(url)
   if (!results) return null
   if (!results[2]) return ''
