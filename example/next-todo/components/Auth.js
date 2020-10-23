@@ -23,6 +23,21 @@ export default function Auth({}) {
     if (error) console.log('Error: ', error.message)
   }
 
+  async function forgotPassword(e) {
+    e.preventDefault()
+    var email = prompt('Please enter your email:')
+    if (email === null || email === '') {
+      window.alert('You must enter your email.')
+    } else {
+      let { error } = await supabase.auth.api.resetPasswordForEmail(email)
+      if (error) {
+        console.log('Error: ', error.message)
+      } else {
+        alert('Password recovery email has been sent.')
+      }
+    }
+  }
+
   return (
     <div className="w-full sm:w-1/2 xl:w-1/3">
       <div className="border-teal p-8 border-t-12 bg-white mb-6 rounded-lg shadow-lg bg-white">
@@ -69,7 +84,19 @@ export default function Auth({}) {
             Login
           </a>
         </div>
-        <div className="mt-6">
+
+        <div className="mt-2 text-sm leading-5">
+          {/* eslint-disable-next-line */}
+          <a
+            onClick={forgotPassword}
+            href="/"
+            className="font-medium text-indigo-600 hover:text-indigo-500 focus:outline-none focus:underline transition ease-in-out duration-150"
+          >
+            Forgot your password?
+          </a>
+        </div>
+
+        <div className="mt-4">
           <div className="relative">
             <div className="absolute inset-0 flex items-center">
               <div className="w-full border-t border-gray-300"></div>
