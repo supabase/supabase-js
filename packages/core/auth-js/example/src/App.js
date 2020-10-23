@@ -21,9 +21,9 @@ function App() {
   }
   async function handleEmailSignIn() {
     if (rememberMe) {
-      localStorage.setItem('email', email);
+      localStorage.setItem('email', email)
     } else {
-      localStorage.removeItem('email');
+      localStorage.removeItem('email')
     }
     let { error } = await auth.signIn({ email, password })
     if (error) console.log('Error: ', error.message)
@@ -37,15 +37,15 @@ function App() {
     if (error) console.log('Error: ', error.message)
   }
   async function forgotPassword() {
-    var email = prompt("Please enter your email:");
-    if (email === null || email === "") {
+    var email = prompt('Please enter your email:')
+    if (email === null || email === '') {
       window.alert('You must enter your email.')
     } else {
-      let { data, error } =  auth.api.resetPasswordForEmail(email);
+      let { error } = await auth.api.resetPasswordForEmail(email)
       if (error) {
         console.log('Error: ', error.message)
       } else {
-        alert(data)
+        alert('Password recovery email has been sent.')
       }
     }
   }
@@ -113,7 +113,7 @@ function App() {
               <input
                 id="remember_me"
                 type="checkbox"
-                onChange={() => setRememberMe(! rememberMe)}
+                onChange={() => setRememberMe(!rememberMe)}
                 className="form-checkbox h-4 w-4 text-indigo-600 transition duration-150 ease-in-out"
               />
               <label htmlFor="remember_me" className="ml-2 block text-sm leading-5 text-gray-900">
@@ -122,9 +122,8 @@ function App() {
             </div>
 
             <div className="text-sm leading-5">
-            {/* eslint-disable-next-line */}
+              {/* eslint-disable-next-line */}
               <a
-
                 onClick={forgotPassword}
                 href="/"
                 className="font-medium text-indigo-600 hover:text-indigo-500 focus:outline-none focus:underline transition ease-in-out duration-150"
