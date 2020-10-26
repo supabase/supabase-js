@@ -13,7 +13,7 @@ In the [App.js](src/App.js#L5) replace the auth client (`const auth = new Client
 const supabaseURL = 'https://your-project-id.supabase.co'
 const supabaseAnon = 'your-anon-key'
 
-const auth = new Client({
+const auth = new GoTrueClient({
   url: `${supabaseURL}/auth/v1`,
   headers: {
     accept: 'json',

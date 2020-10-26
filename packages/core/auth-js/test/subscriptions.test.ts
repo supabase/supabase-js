@@ -7,7 +7,6 @@ describe('Developers can subscribe and unsubscribe', () => {
   const { data: subscription } = gotrue.onAuthStateChange(() => console.log('called'))
 
   test('Subscribe a listener', async () => {
-    
     // @ts-ignore
     expect(gotrue.stateChangeEmmitters.size).toMatchSnapshot()
   })

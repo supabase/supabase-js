@@ -120,6 +120,6 @@ test('signIn() with the wrong password', async () => {
     email,
     password: password + '2',
   })
-  expect(error.message).toMatchSnapshot()
+  expect(error!.message).toMatchSnapshot()
   expect(data).toBeNull()
 })

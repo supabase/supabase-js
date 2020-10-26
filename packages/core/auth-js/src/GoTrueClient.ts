@@ -13,6 +13,11 @@ const DEFAULT_OPTIONS = {
 }
 export default class GoTrueClient {
   /**
+   * Namespace for the GoTrue API methods.
+   * These can be used for example to get a user from a JWT in a server environment or reset a user's password.
+   */
+  api: GoTrueApi
+  /**
    * The currently logged in user or null.
    */
   protected currentUser: User | null
@@ -20,7 +25,6 @@ export default class GoTrueClient {
    * The session object for the currently logged in user or null.
    */
   protected currentSession: Session | null
-  protected api: GoTrueApi
   protected autoRefreshToken: boolean
   protected persistSession: boolean
   protected localStorage: Storage
@@ -71,7 +75,7 @@ export default class GoTrueClient {
   async signUp(credentials: {
     email: string
     password: string
-  }): Promise<{ data: Session | null; user: User | null; error: any }> {
+  }): Promise<{ data: Session | null; user: User | null; error: Error | null }> {
     try {
       this._removeSession()
 
@@ -83,7 +87,7 @@ export default class GoTrueClient {
         this._notifyAllSubscribers('SIGNED_IN')
       }
 
-      return { data, user: data.user, error: null }
+      return { data, user: data?.user ?? null, error: null }
     } catch (error) {
       return { data: null, user: null, error }
     }
@@ -105,7 +109,7 @@ export default class GoTrueClient {
     user: User | null
     provider?: Provider
     url?: string | null
-    error: any
+    error: Error | null
   }> {
     try {
       this._removeSession()
@@ -121,7 +125,7 @@ export default class GoTrueClient {
   /**
    * Returns the user data, if there is a logged in user.
    */
-  user(): { data: User | null; user: User | null; error: any } {
+  user(): { data: User | null; user: User | null; error: Error | null } {
     try {
       if (!this.currentSession?.access_token) throw new Error('Not logged in.')
 
@@ -134,7 +138,7 @@ export default class GoTrueClient {
   /**
    * Returns the session data, if there is an active session.
    */
-  session(): { data: Session | null; error: any } {
+  session(): { data: Session | null; error: Error | null } {
     try {
       if (!this.currentSession?.access_token) throw new Error('Not logged in.')
 
@@ -147,7 +151,11 @@ export default class GoTrueClient {
   /**
    * Force refreshes the session including the user data in case it was updated in a different session.
    */
-  async refreshSession(): Promise<{ data: Session | null; user: User | null; error: any }> {
+  async refreshSession(): Promise<{
+    data: Session | null
+    user: User | null
+    error: Error | null
+  }> {
     try {
       if (!this.currentSession?.access_token) throw new Error('Not logged in.')
 
@@ -168,7 +176,7 @@ export default class GoTrueClient {
    */
   async update(
     attributes: UserAttributes
-  ): Promise<{ data: User | null; user: User | null; error: any }> {
+  ): Promise<{ data: User | null; user: User | null; error: Error | null }> {
     try {
       if (!this.currentSession?.access_token) throw new Error('Not logged in.')
 
@@ -190,7 +198,7 @@ export default class GoTrueClient {
    */
   async getSessionFromUrl(options?: {
     storeSession?: boolean
-  }): Promise<{ data: Session | null; error: any }> {
+  }): Promise<{ data: Session | null; error: Error | null }> {
     try {
       if (!isBrowser()) throw new Error('No browser detected.')
 
@@ -220,6 +228,8 @@ export default class GoTrueClient {
         this._saveSession(session)
         this._notifyAllSubscribers('SIGNED_IN')
       }
+      // Remove tokens from URL
+      window.location.hash = ''
 
       return { data: session, error: null }
     } catch (error) {
@@ -230,17 +240,14 @@ export default class GoTrueClient {
   /**
    * Signs out the current user, if there is a logged in user.
    */
-  async signOut(): Promise<{ error: any }> {
-    try {
-      if (this.currentSession) {
-        await this.api.signOut(this.currentSession.access_token)
-      }
-      this._removeSession()
-      this._notifyAllSubscribers('SIGNED_OUT')
-      return { error: null }
-    } catch (error) {
-      return { error }
+  async signOut(): Promise<{ error: Error | null }> {
+    if (this.currentSession) {
+      const { error } = await this.api.signOut(this.currentSession.access_token)
+      if (error) return { error }
     }
+    this._removeSession()
+    this._notifyAllSubscribers('SIGNED_OUT')
+    return { error: null }
   }
 
   /**
@@ -249,7 +256,7 @@ export default class GoTrueClient {
    */
   onAuthStateChange(
     callback: (event: AuthChangeEvent, session: Session | null) => void
-  ): { data: Subscription | null; error: any } {
+  ): { data: Subscription | null; error: Error | null } {
     try {
       const id: string = uuid()
       let self = this
@@ -276,7 +283,7 @@ export default class GoTrueClient {
         this._saveSession(data)
         this._notifyAllSubscribers('SIGNED_IN')
       }
-      
+
       return { data, user: data.user, error: null }
     } catch (error) {
       return { data: null, user: null, error }
