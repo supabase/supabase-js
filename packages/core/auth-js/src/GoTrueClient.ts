@@ -224,8 +224,10 @@ export default class GoTrueClient {
         token_type,
         user,
       }
-      if (options?.storeSession) this._saveSession(session)
-      this._notifyAllSubscribers('SIGNED_IN')
+      if (options?.storeSession) {
+        this._saveSession(session)
+        this._notifyAllSubscribers('SIGNED_IN')
+      }
       // Remove tokens from URL
       window.location.hash = ''
 
