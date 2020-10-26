@@ -2,6 +2,10 @@
 
 Releases are handled by Semantic release. This document is for forcing and documenting any non-code changes.
 
+### v1.6.1
+
+In this release we strip out the session data from the URL once it is detected.
+
 ### v1.6.0
 
 In this release we added `client.user()`, `client.session()`, and `client.refreshSession()`.
