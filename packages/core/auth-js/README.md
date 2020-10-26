@@ -11,7 +11,7 @@ npm install --save @supabase/gotrue-js
 
 ## Docs
 
-- Using `gotrue-js`: https://supabase.io/docs/
+- Using `gotrue-js`: https://supabase.io/docs/library/user-management
 - TypeDoc: https://supabase.github.io/gotrue-js/
 
 
