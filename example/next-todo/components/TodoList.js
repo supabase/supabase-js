@@ -25,13 +25,12 @@ export default function Todos({ user }) {
   }, [])
 
   const fetchTodos = async () => {
-    try {
-      let { error, data } = await supabase.from('todos').select().order('id')
-      if (error) throw error
-      setTodos(data)
-    } catch (error) {
-      console.log('error', error)
+    let { error, data } = await supabase.from('todos').select().order('id')
+    if (error) {
+      console.log(error.message)
+      return
     }
+    setTodos(data)
   }
   const addTodo = async (taskText) => {
     try {
