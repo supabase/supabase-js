@@ -113,7 +113,11 @@ export default class GoTrueClient {
   }> {
     try {
       this._removeSession()
-      let { email, password, provider } = credentials
+      const { email, password, provider } = credentials
+      if (email && !password) {
+        const { error } = await this.api.sendMagicLinkEmail(email)
+        return { data: null, user: null, error }
+      }
       if (email && password) return this._handeEmailSignIn(email, password)
       if (provider) return this._handeProviderSignIn(provider)
       else throw new Error(`You must provide either an email or a third-party provider.`)

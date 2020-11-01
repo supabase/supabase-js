@@ -59,6 +59,19 @@ export default class GoTrueApi {
   }
 
   /**
+   * Sends a magic login link to an email address.
+   * @param email The email address of the user.
+   */
+  async sendMagicLinkEmail(email: string): Promise<{ data: {} | null; error: Error | null }> {
+    try {
+      const data = await post(`${this.url}/magiclink`, { email }, { headers: this.headers })
+      return { data, error: null }
+    } catch (error) {
+      return { data: null, error }
+    }
+  }
+
+  /**
    * Sends a reset request to an email address.
    * @param email The email address of the user.
    */
