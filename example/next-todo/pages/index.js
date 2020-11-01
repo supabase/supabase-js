@@ -7,7 +7,7 @@ export default function IndexPage() {
   let [session, setSession] = useState(null)
 
   useEffect(() => {
-    setSession(supabase.auth.currentSession)
+    setSession(supabase.auth.session())
     supabase.auth.onAuthStateChange((_event, session) => setSession(session))
   }, [])
 
@@ -22,7 +22,7 @@ export default function IndexPage() {
           className="w-full h-full flex flex-col justify-center items-center p-4"
           style={{ minWidth: 250, maxWidth: 600, margin: 'auto' }}
         >
-          <TodoList user={supabase.auth.currentUser} />
+          <TodoList user={supabase.auth.user()} />
           <button
             className="btn-black w-full mt-12"
             onClick={async () => {
