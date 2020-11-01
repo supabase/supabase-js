@@ -11,7 +11,7 @@ function App() {
   let [rememberMe, setRememberMe] = useState(false)
 
   useEffect(() => {
-    setSession(auth.currentSession)
+    setSession(auth.session())
     auth.onAuthStateChange((_event, session) => setSession(session))
   }, [])
 

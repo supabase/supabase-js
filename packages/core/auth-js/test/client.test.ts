@@ -60,9 +60,8 @@ test('signIn()', async () => {
 })
 
 test('Get user', async () => {
-  let { error, data } = await auth.user()
-  expect(error).toBeNull()
-  expect(data).toMatchSnapshot({
+  let user = auth.user()
+  expect(user).toMatchSnapshot({
     id: expect.any(String),
     aud: expect.any(String),
     confirmed_at: expect.any(String),
@@ -91,9 +90,8 @@ test('Update user', async () => {
 })
 
 test('Get user after updating', async () => {
-  let { error, data } = await auth.user()
-  expect(error).toBeNull()
-  expect(data).toMatchSnapshot({
+  let user = auth.user()
+  expect(user).toMatchSnapshot({
     id: expect.any(String),
     aud: expect.any(String),
     updated_at: expect.any(String),
@@ -111,8 +109,8 @@ test('signOut', async () => {
 })
 
 test('Get user after logging out', async () => {
-  let res = await auth.user()
-  expect(res).toMatchSnapshot()
+  let user = auth.user()
+  expect(user).toBeNull()
 })
 
 test('signIn() with the wrong password', async () => {

@@ -129,27 +129,15 @@ export default class GoTrueClient {
   /**
    * Returns the user data, if there is a logged in user.
    */
-  user(): { data: User | null; user: User | null; error: Error | null } {
-    try {
-      if (!this.currentSession?.access_token) throw new Error('Not logged in.')
-
-      return { data: this.currentUser, user: this.currentUser, error: null }
-    } catch (error) {
-      return { data: null, user: null, error }
-    }
+  user(): User | null {
+    return this.currentUser
   }
 
   /**
    * Returns the session data, if there is an active session.
    */
-  session(): { data: Session | null; error: Error | null } {
-    try {
-      if (!this.currentSession?.access_token) throw new Error('Not logged in.')
-
-      return { data: this.currentSession, error: null }
-    } catch (error) {
-      return { data: null, error }
-    }
+  session(): Session | null {
+    return this.currentSession
   }
 
   /**

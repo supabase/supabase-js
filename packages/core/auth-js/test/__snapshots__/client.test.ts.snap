@@ -17,14 +17,6 @@ Object {
 }
 `;
 
-exports[`Get user after logging out 1`] = `
-Object {
-  "data": null,
-  "error": [Error: Not logged in.],
-  "user": null,
-}
-`;
-
 exports[`Get user after updating 1`] = `
 Object {
   "app_metadata": Object {
