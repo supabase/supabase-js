@@ -7,10 +7,11 @@ export default function Auth({}) {
 
   const handleLogin = async (type, email, password) => {
     try {
-      const { error, data } =
+      const { error, user } =
         type === 'LOGIN'
           ? await supabase.auth.signIn({ email, password })
           : await supabase.auth.signUp({ email, password })
+      if (!error && !user) alert('Check your email for the login link!')
       if (error) console.log('Error returned:', error.message)
     } catch (error) {
       console.log('Error thrown:', error.message)
@@ -81,7 +82,7 @@ export default function Auth({}) {
             href={'/channels'}
             className="btn-black-outline"
           >
-            Login
+            {password.length ? 'Sign in' : 'Send magic link'}
           </a>
         </div>
 
