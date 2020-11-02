@@ -5,18 +5,9 @@ const KEY = 'some.fake.key'
 
 const supabase = createClient(URL, KEY)
 
-test('supabase Client', async () => {
-  expect(supabase).toMatchSnapshot()
-})
-
-test('from()', async () => {
-  const builder = supabase.from('table')
-  expect(builder).toMatchSnapshot()
-})
-
-test('from().select()', async () => {
-  const builder = supabase.from('table').select('*')
-  expect(builder).toMatchSnapshot()
+test('Build to succeed', async () => {
+  // Basic test to ensure TS build is working.
+  expect(true).toEqual(true)
 })
 
 // Socket should close when there are no open connections
