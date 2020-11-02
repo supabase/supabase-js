@@ -2,7 +2,7 @@
 
 An isomorphic Javascript client for Supabase.
 
-- Documentation: http://localhost:3005/docs/client/supabase-client
+- Documentation: https://supabase.io/docs/client/supabase-client
 
 ## Usage
 
