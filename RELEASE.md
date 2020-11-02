@@ -2,7 +2,7 @@
 
 Releases are handled by Semantic release. This document is for forcing and documenting any non-code changes.
 
-## 1.0.0 - Improved DX
+## 1.0.1 - Improved DX
 
 - Upgraded the `supabase.auth` to [gotrue-js](https://github.com/supabase/gotrue-js) - supports Oath logins & more
 - We always return errors, not throwing errors.
