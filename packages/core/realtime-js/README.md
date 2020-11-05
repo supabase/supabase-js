@@ -44,7 +44,7 @@ To join a channel, you must provide the `topic`, where a topic is either:
 
 ```js
 // Listen to events on the entire database.
-var databaseChanges = client.channel('realtime')
+var databaseChanges = client.channel('realtime:*')
 databaseChanges.on('*', (e) => console.log(e))
 databaseChanges.on('INSERT', (e) => console.log(e))
 databaseChanges.on('UPDATE', (e) => console.log(e))
