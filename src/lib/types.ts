@@ -19,6 +19,10 @@ export type SupabaseClientOptions = {
    * Detect a session from the URL. Used for OAuth login callbacks.
    */
   detectSessionInUrl?: boolean
+  /**
+   * A storage provider. Used to store the logged in session.
+   */
+  localStorage?: Storage
 }
 
 export type SupabaseRealtimePayload<T> = {
