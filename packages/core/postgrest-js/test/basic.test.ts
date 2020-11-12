@@ -126,3 +126,8 @@ test("don't mutate PostgrestClient.headers", async () => {
   const { error } = await postgrest.from('users').select()
   expect(error).toMatchSnapshot()
 })
+
+test("allow ordering on JSON column", async () => {
+  const { data } = await postgrest.from('users').select().order('data->something')
+  expect(data).toMatchSnapshot()
+})
