@@ -1,5 +1,38 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
+exports[`allow ordering on JSON column 1`] = `
+Array [
+  Object {
+    "age_range": "[1,2)",
+    "catchphrase": "'cat' 'fat'",
+    "data": null,
+    "status": "ONLINE",
+    "username": "supabot",
+  },
+  Object {
+    "age_range": "[25,35)",
+    "catchphrase": "'bat' 'cat'",
+    "data": null,
+    "status": "OFFLINE",
+    "username": "kiwicopple",
+  },
+  Object {
+    "age_range": "[25,35)",
+    "catchphrase": "'bat' 'rat'",
+    "data": null,
+    "status": "ONLINE",
+    "username": "awailas",
+  },
+  Object {
+    "age_range": "[20,30)",
+    "catchphrase": "'fat' 'rat'",
+    "data": null,
+    "status": "ONLINE",
+    "username": "dragarcia",
+  },
+]
+`;
+
 exports[`basic insert, update, delete basic delete 1`] = `
 Object {
   "body": Array [

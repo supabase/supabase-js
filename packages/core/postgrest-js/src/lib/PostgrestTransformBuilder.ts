@@ -24,7 +24,7 @@ export default class PostgrestTransformBuilder<T> extends PostgrestBuilder<T> {
     const key = typeof foreignTable === 'undefined' ? 'order' : `"${foreignTable}".order`
     this.url.searchParams.set(
       key,
-      `"${column}".${ascending ? 'asc' : 'desc'}.${nullsFirst ? 'nullsfirst' : 'nullslast'}`
+      `${column}.${ascending ? 'asc' : 'desc'}.${nullsFirst ? 'nullsfirst' : 'nullslast'}`
     )
     return this
   }
