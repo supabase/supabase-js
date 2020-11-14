@@ -23,7 +23,7 @@ export class LocalStorage implements Storage {
   [name: string]: any
   length!: number
   constructor(localStorage: Storage) {
-    this.localStorage = localStorage || global.localStorage
+    this.localStorage = localStorage || globalThis.localStorage
   }
   clear(): void {
     return this.localStorage.clear()

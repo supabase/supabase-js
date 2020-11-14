@@ -7,7 +7,7 @@ const DEFAULT_OPTIONS = {
   url: GOTRUE_URL,
   autoRefreshToken: true,
   persistSession: true,
-  localStorage: global.localStorage,
+  localStorage: globalThis.localStorage,
   detectSessionInUrl: true,
   headers: DEFAULT_HEADERS,
 }
