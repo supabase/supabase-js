@@ -27,6 +27,7 @@ Object {
   "created_at": Any<String>,
   "email": "fake@email.com",
   "id": Any<String>,
+  "last_sign_in_at": Any<String>,
   "role": "",
   "updated_at": Any<String>,
   "user_metadata": Object {
@@ -45,6 +46,7 @@ Object {
   "created_at": Any<String>,
   "email": "fake@email.com",
   "id": Any<String>,
+  "last_sign_in_at": Any<String>,
   "role": "",
   "updated_at": Any<String>,
   "user_metadata": Object {
