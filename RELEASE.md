@@ -2,6 +2,10 @@
 
 Releases are handled by Semantic release. This document is for forcing and documenting any non-code changes.
 
+## 1.0.4
+
+- Upgrades postgrest-js dependency to fix ordering for JSON columns. (https://github.com/supabase/postgrest-js/pull/132)
+
 ## 1.0.2
 
 - Fixes link in readme for NPM.
