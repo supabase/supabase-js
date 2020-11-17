@@ -1,8 +1,8 @@
 export type SupabaseClientOptions = {
   /**
-   * The Postgres schema which your tables belong to. Must be on the list of exposed schemas in Supabase.
+   * The Postgres schema which your tables belong to. Must be on the list of exposed schemas in Supabase. Defaults to 'public'.
    */
-  schema: string
+  schema?: string
   /**
    * Optional headers for initializing the client.
    */
@@ -19,6 +19,10 @@ export type SupabaseClientOptions = {
    * Detect a session from the URL. Used for OAuth login callbacks.
    */
   detectSessionInUrl?: boolean
+  /**
+   * A storage provider. Used to store the logged in session.
+   */
+  localStorage?: Storage
 }
 
 export type SupabaseRealtimePayload<T> = {

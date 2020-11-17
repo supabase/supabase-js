@@ -10,6 +10,7 @@ const DEFAULT_OPTIONS = {
   autoRefreshToken: true,
   persistSession: true,
   detectSessionInUrl: true,
+  localStorage: globalThis.localStorage,
   headers: DEFAULT_HEADERS,
 }
 
@@ -128,6 +129,7 @@ export default class SupabaseClient {
       autoRefreshToken: settings.autoRefreshToken,
       persistSession: settings.persistSession,
       detectSessionInUrl: settings.detectSessionInUrl,
+      localStorage: settings.localStorage,
     })
   }
 
