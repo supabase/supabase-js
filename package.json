@@ -16,6 +16,7 @@
   ],
   "main": "dist/main/index.js",
   "module": "dist/module/index.js",
+  "types": "dist/main/index.d.ts",
   "repository": "supabase/supabase-js",
   "scripts": {
     "clean": "rimraf dist docs",
@@ -24,6 +25,7 @@
     "build:main": "tsc -p tsconfig.json",
     "build:module": "tsc -p tsconfig.module.json",
     "build:umd": "webpack",
+    "types-generate": "dts-gen -m '@supabase/supabase-js' -s",
     "test": "jest --runInBand",
     "test:db": "cd infra/db && docker-compose down && docker-compose up -d && sleep 5",
     "test:clean": "cd infra/db && docker-compose down",
