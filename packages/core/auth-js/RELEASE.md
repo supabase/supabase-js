@@ -2,6 +2,10 @@
 
 Releases are handled by Semantic release. This document is for forcing and documenting any non-code changes.
 
+### v1.7.2
+
+Adds the types, provided by @duncanhealy: https://github.com/supabase/gotrue-js/pull/24
+
 ### v1.7.0
 
 In this release we added `client.api.sendMagicLinkEmail()` and updated `client.signIn()` to support magic link login by only providing email credentials without a password.
