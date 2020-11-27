@@ -2,6 +2,10 @@
 
 Releases are handled by Semantic release. This document is for forcing and documenting any non-code changes.
 
+## 1.0.6
+
+- Bumps gotrue-js so that it works with React Native: https://github.com/supabase/gotrue-js/pull/26
+
 ## 1.0.5
 
 - Adds local storage options for Auth.
