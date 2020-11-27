@@ -38,7 +38,7 @@ export async function post(url: string, body: object, options?: FetchOptions): P
   return new Promise((resolve, reject) => {
     fetch(url, {
       method: 'POST',
-      headers: options?.headers || {},
+      headers: { 'Content-Type': 'text/plain;charset=UTF-8', ...options?.headers },
       body: JSON.stringify(body),
     })
       .then((result) => {
@@ -54,7 +54,7 @@ export async function put(url: string, body: object, options?: FetchOptions): Pr
   return new Promise((resolve, reject) => {
     fetch(url, {
       method: 'PUT',
-      headers: options?.headers || {},
+      headers: { 'Content-Type': 'text/plain;charset=UTF-8', ...options?.headers },
       body: JSON.stringify(body),
     })
       .then((result) => {
