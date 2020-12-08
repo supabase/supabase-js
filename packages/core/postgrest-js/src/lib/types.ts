@@ -17,23 +17,30 @@ interface PostgrestError {
  *
  * {@link https://github.com/supabase/supabase-js/issues/32}
  */
-interface PostgrestResponse<T> {
-  error: PostgrestError | null
-  data: T[] | null
+interface PostgrestResponseBase<T> {
   status: number
   statusText: string
-  // For backward compatibility: body === data
-  body: T[] | null
 }
 
-export interface PostgrestSingleResponse<T> {
-  error: PostgrestError | null
-  data: T | null
-  status: number
-  statusText: string
-  // For backward compatibility: body === data
-  body: T | null
+interface PostgrestResponseSuccess<T> extends PostgrestResponseBase {
+  error: null
+  data: T[]
+  body: T[]
 }
+interface PostgrestResponseFailure extends PostgrestResponseBase {
+  error: PostgrestError
+  data: null
+  // For backward compatibility: body === data
+  body: null
+}
+export type PostgrestResponse<T> = PostgrestResponseSuccess<T> | PostgrestResponseFailure
+
+interface PostgrestSingleResponseSuccess<T> extends PostgrestResponseBase {
+  data: T
+  // For backward compatibility: body === data
+  body: T
+}
+export type PostgrestSingleResponse<T> = PostgrestSingleResponseSuccess<T> | PostgrestResponseFailure
 
 export abstract class PostgrestBuilder<T> implements PromiseLike<PostgrestResponse<T>> {
   protected method!: 'GET' | 'HEAD' | 'POST' | 'PATCH' | 'DELETE'
