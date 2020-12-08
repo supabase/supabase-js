@@ -17,7 +17,7 @@ interface PostgrestError {
  *
  * {@link https://github.com/supabase/supabase-js/issues/32}
  */
-interface PostgrestResponseBase<T> {
+interface PostgrestResponseBase {
   status: number
   statusText: string
 }
