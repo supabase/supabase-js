@@ -33,7 +33,7 @@
     "docs:json": "typedoc --json docs/spec.json --mode modules --includeDeclarations --excludeExternals"
   },
   "dependencies": {
-    "@supabase/gotrue-js": "^1.7.3",
+    "@supabase/gotrue-js": "^1.9.0",
     "@supabase/postgrest-js": "^0.21.2",
     "@supabase/realtime-js": "^1.0.6"
   },
