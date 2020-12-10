@@ -1,5 +1,7 @@
 import SupabaseClient from './SupabaseClient'
-import { SupabaseClientOptions } from './lib/types'
+import { SupabaseClientOptions, SupabaseRealtimePayload } from './lib/types'
+export * from '@supabase/gotrue-js'
+export * from '@supabase/realtime-js'
 
 /**
  * Creates a new Supabase Client.
@@ -12,4 +14,4 @@ const createClient = (
   return new SupabaseClient(supabaseUrl, supabaseKey, options)
 }
 
-export { createClient }
+export { createClient, SupabaseClient, SupabaseClientOptions, SupabaseRealtimePayload }
