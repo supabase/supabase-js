@@ -40,7 +40,9 @@ interface PostgrestSingleResponseSuccess<T> extends PostgrestResponseBase {
   // For backward compatibility: body === data
   body: T
 }
-export type PostgrestSingleResponse<T> = PostgrestSingleResponseSuccess<T> | PostgrestResponseFailure
+export type PostgrestSingleResponse<T> =
+  | PostgrestSingleResponseSuccess<T>
+  | PostgrestResponseFailure
 
 export abstract class PostgrestBuilder<T> implements PromiseLike<PostgrestResponse<T>> {
   protected method!: 'GET' | 'HEAD' | 'POST' | 'PATCH' | 'DELETE'
@@ -81,7 +83,8 @@ export abstract class PostgrestBuilder<T> implements PromiseLike<PostgrestRespon
         let error, data
         if (res.ok) {
           error = null
-          data = await res.json()
+          const isReturnMinimal = this.headers['Prefer']?.split(',').includes('return=minimal')
+          data = isReturnMinimal ? null : await res.json()
         } else {
           error = await res.json()
           data = null

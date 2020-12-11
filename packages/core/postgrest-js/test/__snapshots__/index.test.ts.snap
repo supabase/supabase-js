@@ -1,0 +1,2189 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Prefer: return=minimal 1`] = `null`;
+
+exports[`adj 1`] = `
+Object {
+  "body": Array [
+    Object {
+      "age_range": "[1,2)",
+      "catchphrase": "'cat' 'fat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "supabot",
+    },
+    Object {
+      "age_range": "[25,35)",
+      "catchphrase": "'bat' 'cat'",
+      "data": null,
+      "status": "OFFLINE",
+      "username": "kiwicopple",
+    },
+    Object {
+      "age_range": "[25,35)",
+      "catchphrase": "'bat' 'rat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "awailas",
+    },
+  ],
+  "data": Array [
+    Object {
+      "age_range": "[1,2)",
+      "catchphrase": "'cat' 'fat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "supabot",
+    },
+    Object {
+      "age_range": "[25,35)",
+      "catchphrase": "'bat' 'cat'",
+      "data": null,
+      "status": "OFFLINE",
+      "username": "kiwicopple",
+    },
+    Object {
+      "age_range": "[25,35)",
+      "catchphrase": "'bat' 'rat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "awailas",
+    },
+  ],
+  "error": null,
+  "status": 200,
+  "statusText": "OK",
+}
+`;
+
+exports[`allow ordering on JSON column 1`] = `
+Array [
+  Object {
+    "age_range": "[1,2)",
+    "catchphrase": "'cat' 'fat'",
+    "data": null,
+    "status": "ONLINE",
+    "username": "supabot",
+  },
+  Object {
+    "age_range": "[25,35)",
+    "catchphrase": "'bat' 'cat'",
+    "data": null,
+    "status": "OFFLINE",
+    "username": "kiwicopple",
+  },
+  Object {
+    "age_range": "[25,35)",
+    "catchphrase": "'bat' 'rat'",
+    "data": null,
+    "status": "ONLINE",
+    "username": "awailas",
+  },
+  Object {
+    "age_range": "[20,30)",
+    "catchphrase": "'fat' 'rat'",
+    "data": null,
+    "status": "ONLINE",
+    "username": "dragarcia",
+  },
+]
+`;
+
+exports[`basic insert, update, delete basic delete 1`] = `
+Object {
+  "body": Array [
+    Object {
+      "channel_id": 2,
+      "data": null,
+      "id": 3,
+      "message": "foo",
+      "username": "supabot",
+    },
+    Object {
+      "channel_id": 2,
+      "data": null,
+      "id": 4,
+      "message": "foo",
+      "username": "supabot",
+    },
+    Object {
+      "channel_id": 2,
+      "data": null,
+      "id": 5,
+      "message": "foo",
+      "username": "supabot",
+    },
+  ],
+  "data": Array [
+    Object {
+      "channel_id": 2,
+      "data": null,
+      "id": 3,
+      "message": "foo",
+      "username": "supabot",
+    },
+    Object {
+      "channel_id": 2,
+      "data": null,
+      "id": 4,
+      "message": "foo",
+      "username": "supabot",
+    },
+    Object {
+      "channel_id": 2,
+      "data": null,
+      "id": 5,
+      "message": "foo",
+      "username": "supabot",
+    },
+  ],
+  "error": null,
+  "status": 200,
+  "statusText": "OK",
+}
+`;
+
+exports[`basic insert, update, delete basic delete 2`] = `
+Object {
+  "body": Array [
+    Object {
+      "channel_id": 1,
+      "data": null,
+      "id": 1,
+      "message": "Hello World 👋",
+      "username": "supabot",
+    },
+    Object {
+      "channel_id": 2,
+      "data": null,
+      "id": 2,
+      "message": "Perfection is attained, not when there is nothing more to add, but when there is nothing left to take away.",
+      "username": "supabot",
+    },
+  ],
+  "data": Array [
+    Object {
+      "channel_id": 1,
+      "data": null,
+      "id": 1,
+      "message": "Hello World 👋",
+      "username": "supabot",
+    },
+    Object {
+      "channel_id": 2,
+      "data": null,
+      "id": 2,
+      "message": "Perfection is attained, not when there is nothing more to add, but when there is nothing left to take away.",
+      "username": "supabot",
+    },
+  ],
+  "error": null,
+  "status": 200,
+  "statusText": "OK",
+}
+`;
+
+exports[`basic insert, update, delete basic insert 1`] = `
+Object {
+  "body": Array [
+    Object {
+      "channel_id": 1,
+      "data": null,
+      "id": 3,
+      "message": "foo",
+      "username": "supabot",
+    },
+  ],
+  "data": Array [
+    Object {
+      "channel_id": 1,
+      "data": null,
+      "id": 3,
+      "message": "foo",
+      "username": "supabot",
+    },
+  ],
+  "error": null,
+  "status": 201,
+  "statusText": "Created",
+}
+`;
+
+exports[`basic insert, update, delete basic insert 2`] = `
+Object {
+  "body": Array [
+    Object {
+      "channel_id": 1,
+      "data": null,
+      "id": 1,
+      "message": "Hello World 👋",
+      "username": "supabot",
+    },
+    Object {
+      "channel_id": 2,
+      "data": null,
+      "id": 2,
+      "message": "Perfection is attained, not when there is nothing more to add, but when there is nothing left to take away.",
+      "username": "supabot",
+    },
+    Object {
+      "channel_id": 1,
+      "data": null,
+      "id": 3,
+      "message": "foo",
+      "username": "supabot",
+    },
+  ],
+  "data": Array [
+    Object {
+      "channel_id": 1,
+      "data": null,
+      "id": 1,
+      "message": "Hello World 👋",
+      "username": "supabot",
+    },
+    Object {
+      "channel_id": 2,
+      "data": null,
+      "id": 2,
+      "message": "Perfection is attained, not when there is nothing more to add, but when there is nothing left to take away.",
+      "username": "supabot",
+    },
+    Object {
+      "channel_id": 1,
+      "data": null,
+      "id": 3,
+      "message": "foo",
+      "username": "supabot",
+    },
+  ],
+  "error": null,
+  "status": 200,
+  "statusText": "OK",
+}
+`;
+
+exports[`basic insert, update, delete basic update 1`] = `
+Object {
+  "body": Array [
+    Object {
+      "channel_id": 2,
+      "data": null,
+      "id": 3,
+      "message": "foo",
+      "username": "supabot",
+    },
+    Object {
+      "channel_id": 2,
+      "data": null,
+      "id": 4,
+      "message": "foo",
+      "username": "supabot",
+    },
+    Object {
+      "channel_id": 2,
+      "data": null,
+      "id": 5,
+      "message": "foo",
+      "username": "supabot",
+    },
+  ],
+  "data": Array [
+    Object {
+      "channel_id": 2,
+      "data": null,
+      "id": 3,
+      "message": "foo",
+      "username": "supabot",
+    },
+    Object {
+      "channel_id": 2,
+      "data": null,
+      "id": 4,
+      "message": "foo",
+      "username": "supabot",
+    },
+    Object {
+      "channel_id": 2,
+      "data": null,
+      "id": 5,
+      "message": "foo",
+      "username": "supabot",
+    },
+  ],
+  "error": null,
+  "status": 200,
+  "statusText": "OK",
+}
+`;
+
+exports[`basic insert, update, delete basic update 2`] = `
+Object {
+  "body": Array [
+    Object {
+      "channel_id": 1,
+      "data": null,
+      "id": 1,
+      "message": "Hello World 👋",
+      "username": "supabot",
+    },
+    Object {
+      "channel_id": 2,
+      "data": null,
+      "id": 2,
+      "message": "Perfection is attained, not when there is nothing more to add, but when there is nothing left to take away.",
+      "username": "supabot",
+    },
+    Object {
+      "channel_id": 2,
+      "data": null,
+      "id": 3,
+      "message": "foo",
+      "username": "supabot",
+    },
+    Object {
+      "channel_id": 2,
+      "data": null,
+      "id": 4,
+      "message": "foo",
+      "username": "supabot",
+    },
+    Object {
+      "channel_id": 2,
+      "data": null,
+      "id": 5,
+      "message": "foo",
+      "username": "supabot",
+    },
+  ],
+  "data": Array [
+    Object {
+      "channel_id": 1,
+      "data": null,
+      "id": 1,
+      "message": "Hello World 👋",
+      "username": "supabot",
+    },
+    Object {
+      "channel_id": 2,
+      "data": null,
+      "id": 2,
+      "message": "Perfection is attained, not when there is nothing more to add, but when there is nothing left to take away.",
+      "username": "supabot",
+    },
+    Object {
+      "channel_id": 2,
+      "data": null,
+      "id": 3,
+      "message": "foo",
+      "username": "supabot",
+    },
+    Object {
+      "channel_id": 2,
+      "data": null,
+      "id": 4,
+      "message": "foo",
+      "username": "supabot",
+    },
+    Object {
+      "channel_id": 2,
+      "data": null,
+      "id": 5,
+      "message": "foo",
+      "username": "supabot",
+    },
+  ],
+  "error": null,
+  "status": 200,
+  "statusText": "OK",
+}
+`;
+
+exports[`basic insert, update, delete bulk insert 1`] = `
+Object {
+  "body": Array [
+    Object {
+      "channel_id": 1,
+      "data": null,
+      "id": 4,
+      "message": "foo",
+      "username": "supabot",
+    },
+    Object {
+      "channel_id": 1,
+      "data": null,
+      "id": 5,
+      "message": "foo",
+      "username": "supabot",
+    },
+  ],
+  "data": Array [
+    Object {
+      "channel_id": 1,
+      "data": null,
+      "id": 4,
+      "message": "foo",
+      "username": "supabot",
+    },
+    Object {
+      "channel_id": 1,
+      "data": null,
+      "id": 5,
+      "message": "foo",
+      "username": "supabot",
+    },
+  ],
+  "error": null,
+  "status": 201,
+  "statusText": "Created",
+}
+`;
+
+exports[`basic insert, update, delete bulk insert 2`] = `
+Object {
+  "body": Array [
+    Object {
+      "channel_id": 1,
+      "data": null,
+      "id": 1,
+      "message": "Hello World 👋",
+      "username": "supabot",
+    },
+    Object {
+      "channel_id": 2,
+      "data": null,
+      "id": 2,
+      "message": "Perfection is attained, not when there is nothing more to add, but when there is nothing left to take away.",
+      "username": "supabot",
+    },
+    Object {
+      "channel_id": 2,
+      "data": null,
+      "id": 3,
+      "message": "foo",
+      "username": "supabot",
+    },
+    Object {
+      "channel_id": 1,
+      "data": null,
+      "id": 4,
+      "message": "foo",
+      "username": "supabot",
+    },
+    Object {
+      "channel_id": 1,
+      "data": null,
+      "id": 5,
+      "message": "foo",
+      "username": "supabot",
+    },
+  ],
+  "data": Array [
+    Object {
+      "channel_id": 1,
+      "data": null,
+      "id": 1,
+      "message": "Hello World 👋",
+      "username": "supabot",
+    },
+    Object {
+      "channel_id": 2,
+      "data": null,
+      "id": 2,
+      "message": "Perfection is attained, not when there is nothing more to add, but when there is nothing left to take away.",
+      "username": "supabot",
+    },
+    Object {
+      "channel_id": 2,
+      "data": null,
+      "id": 3,
+      "message": "foo",
+      "username": "supabot",
+    },
+    Object {
+      "channel_id": 1,
+      "data": null,
+      "id": 4,
+      "message": "foo",
+      "username": "supabot",
+    },
+    Object {
+      "channel_id": 1,
+      "data": null,
+      "id": 5,
+      "message": "foo",
+      "username": "supabot",
+    },
+  ],
+  "error": null,
+  "status": 200,
+  "statusText": "OK",
+}
+`;
+
+exports[`basic insert, update, delete upsert 1`] = `
+Object {
+  "body": Array [
+    Object {
+      "channel_id": 2,
+      "data": null,
+      "id": 3,
+      "message": "foo",
+      "username": "supabot",
+    },
+  ],
+  "data": Array [
+    Object {
+      "channel_id": 2,
+      "data": null,
+      "id": 3,
+      "message": "foo",
+      "username": "supabot",
+    },
+  ],
+  "error": null,
+  "status": 201,
+  "statusText": "Created",
+}
+`;
+
+exports[`basic insert, update, delete upsert 2`] = `
+Object {
+  "body": Array [
+    Object {
+      "channel_id": 1,
+      "data": null,
+      "id": 1,
+      "message": "Hello World 👋",
+      "username": "supabot",
+    },
+    Object {
+      "channel_id": 2,
+      "data": null,
+      "id": 2,
+      "message": "Perfection is attained, not when there is nothing more to add, but when there is nothing left to take away.",
+      "username": "supabot",
+    },
+    Object {
+      "channel_id": 2,
+      "data": null,
+      "id": 3,
+      "message": "foo",
+      "username": "supabot",
+    },
+  ],
+  "data": Array [
+    Object {
+      "channel_id": 1,
+      "data": null,
+      "id": 1,
+      "message": "Hello World 👋",
+      "username": "supabot",
+    },
+    Object {
+      "channel_id": 2,
+      "data": null,
+      "id": 2,
+      "message": "Perfection is attained, not when there is nothing more to add, but when there is nothing left to take away.",
+      "username": "supabot",
+    },
+    Object {
+      "channel_id": 2,
+      "data": null,
+      "id": 3,
+      "message": "foo",
+      "username": "supabot",
+    },
+  ],
+  "error": null,
+  "status": 200,
+  "statusText": "OK",
+}
+`;
+
+exports[`basic select table 1`] = `
+Object {
+  "body": Array [
+    Object {
+      "age_range": "[1,2)",
+      "catchphrase": "'cat' 'fat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "supabot",
+    },
+    Object {
+      "age_range": "[25,35)",
+      "catchphrase": "'bat' 'cat'",
+      "data": null,
+      "status": "OFFLINE",
+      "username": "kiwicopple",
+    },
+    Object {
+      "age_range": "[25,35)",
+      "catchphrase": "'bat' 'rat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "awailas",
+    },
+    Object {
+      "age_range": "[20,30)",
+      "catchphrase": "'fat' 'rat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "dragarcia",
+    },
+  ],
+  "data": Array [
+    Object {
+      "age_range": "[1,2)",
+      "catchphrase": "'cat' 'fat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "supabot",
+    },
+    Object {
+      "age_range": "[25,35)",
+      "catchphrase": "'bat' 'cat'",
+      "data": null,
+      "status": "OFFLINE",
+      "username": "kiwicopple",
+    },
+    Object {
+      "age_range": "[25,35)",
+      "catchphrase": "'bat' 'rat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "awailas",
+    },
+    Object {
+      "age_range": "[20,30)",
+      "catchphrase": "'fat' 'rat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "dragarcia",
+    },
+  ],
+  "error": null,
+  "status": 200,
+  "statusText": "OK",
+}
+`;
+
+exports[`cd 1`] = `
+Object {
+  "body": Array [
+    Object {
+      "age_range": "[1,2)",
+      "catchphrase": "'cat' 'fat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "supabot",
+    },
+  ],
+  "data": Array [
+    Object {
+      "age_range": "[1,2)",
+      "catchphrase": "'cat' 'fat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "supabot",
+    },
+  ],
+  "error": null,
+  "status": 200,
+  "statusText": "OK",
+}
+`;
+
+exports[`cs 1`] = `
+Object {
+  "body": Array [
+    Object {
+      "age_range": "[1,2)",
+      "catchphrase": "'cat' 'fat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "supabot",
+    },
+  ],
+  "data": Array [
+    Object {
+      "age_range": "[1,2)",
+      "catchphrase": "'cat' 'fat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "supabot",
+    },
+  ],
+  "error": null,
+  "status": 200,
+  "statusText": "OK",
+}
+`;
+
+exports[`don't mutate PostgrestClient.headers 1`] = `null`;
+
+exports[`embedded filters embedded eq 1`] = `
+Object {
+  "body": Array [
+    Object {
+      "messages": Array [
+        Object {
+          "channel_id": 1,
+          "data": null,
+          "id": 1,
+          "message": "Hello World 👋",
+          "username": "supabot",
+        },
+      ],
+    },
+    Object {
+      "messages": Array [],
+    },
+    Object {
+      "messages": Array [],
+    },
+    Object {
+      "messages": Array [],
+    },
+  ],
+  "data": Array [
+    Object {
+      "messages": Array [
+        Object {
+          "channel_id": 1,
+          "data": null,
+          "id": 1,
+          "message": "Hello World 👋",
+          "username": "supabot",
+        },
+      ],
+    },
+    Object {
+      "messages": Array [],
+    },
+    Object {
+      "messages": Array [],
+    },
+    Object {
+      "messages": Array [],
+    },
+  ],
+  "error": null,
+  "status": 200,
+  "statusText": "OK",
+}
+`;
+
+exports[`embedded select 1`] = `
+Object {
+  "body": Array [
+    Object {
+      "messages": Array [
+        Object {
+          "channel_id": 1,
+          "data": null,
+          "id": 1,
+          "message": "Hello World 👋",
+          "username": "supabot",
+        },
+        Object {
+          "channel_id": 2,
+          "data": null,
+          "id": 2,
+          "message": "Perfection is attained, not when there is nothing more to add, but when there is nothing left to take away.",
+          "username": "supabot",
+        },
+      ],
+    },
+    Object {
+      "messages": Array [],
+    },
+    Object {
+      "messages": Array [],
+    },
+    Object {
+      "messages": Array [],
+    },
+  ],
+  "data": Array [
+    Object {
+      "messages": Array [
+        Object {
+          "channel_id": 1,
+          "data": null,
+          "id": 1,
+          "message": "Hello World 👋",
+          "username": "supabot",
+        },
+        Object {
+          "channel_id": 2,
+          "data": null,
+          "id": 2,
+          "message": "Perfection is attained, not when there is nothing more to add, but when there is nothing left to take away.",
+          "username": "supabot",
+        },
+      ],
+    },
+    Object {
+      "messages": Array [],
+    },
+    Object {
+      "messages": Array [],
+    },
+    Object {
+      "messages": Array [],
+    },
+  ],
+  "error": null,
+  "status": 200,
+  "statusText": "OK",
+}
+`;
+
+exports[`embedded transforms embedded limit 1`] = `
+Object {
+  "body": Array [
+    Object {
+      "messages": Array [
+        Object {
+          "channel_id": 1,
+          "data": null,
+          "id": 1,
+          "message": "Hello World 👋",
+          "username": "supabot",
+        },
+      ],
+    },
+    Object {
+      "messages": Array [],
+    },
+    Object {
+      "messages": Array [],
+    },
+    Object {
+      "messages": Array [],
+    },
+  ],
+  "data": Array [
+    Object {
+      "messages": Array [
+        Object {
+          "channel_id": 1,
+          "data": null,
+          "id": 1,
+          "message": "Hello World 👋",
+          "username": "supabot",
+        },
+      ],
+    },
+    Object {
+      "messages": Array [],
+    },
+    Object {
+      "messages": Array [],
+    },
+    Object {
+      "messages": Array [],
+    },
+  ],
+  "error": null,
+  "status": 200,
+  "statusText": "OK",
+}
+`;
+
+exports[`embedded transforms embedded order 1`] = `
+Object {
+  "body": Array [
+    Object {
+      "messages": Array [
+        Object {
+          "channel_id": 2,
+          "data": null,
+          "id": 2,
+          "message": "Perfection is attained, not when there is nothing more to add, but when there is nothing left to take away.",
+          "username": "supabot",
+        },
+        Object {
+          "channel_id": 1,
+          "data": null,
+          "id": 1,
+          "message": "Hello World 👋",
+          "username": "supabot",
+        },
+      ],
+    },
+    Object {
+      "messages": Array [],
+    },
+    Object {
+      "messages": Array [],
+    },
+    Object {
+      "messages": Array [],
+    },
+  ],
+  "data": Array [
+    Object {
+      "messages": Array [
+        Object {
+          "channel_id": 2,
+          "data": null,
+          "id": 2,
+          "message": "Perfection is attained, not when there is nothing more to add, but when there is nothing left to take away.",
+          "username": "supabot",
+        },
+        Object {
+          "channel_id": 1,
+          "data": null,
+          "id": 1,
+          "message": "Hello World 👋",
+          "username": "supabot",
+        },
+      ],
+    },
+    Object {
+      "messages": Array [],
+    },
+    Object {
+      "messages": Array [],
+    },
+    Object {
+      "messages": Array [],
+    },
+  ],
+  "error": null,
+  "status": 200,
+  "statusText": "OK",
+}
+`;
+
+exports[`embedded transforms embedded range 1`] = `
+Object {
+  "body": Array [
+    Object {
+      "messages": Array [
+        Object {
+          "channel_id": 2,
+          "data": null,
+          "id": 2,
+          "message": "Perfection is attained, not when there is nothing more to add, but when there is nothing left to take away.",
+          "username": "supabot",
+        },
+      ],
+    },
+    Object {
+      "messages": Array [],
+    },
+    Object {
+      "messages": Array [],
+    },
+    Object {
+      "messages": Array [],
+    },
+  ],
+  "data": Array [
+    Object {
+      "messages": Array [
+        Object {
+          "channel_id": 2,
+          "data": null,
+          "id": 2,
+          "message": "Perfection is attained, not when there is nothing more to add, but when there is nothing left to take away.",
+          "username": "supabot",
+        },
+      ],
+    },
+    Object {
+      "messages": Array [],
+    },
+    Object {
+      "messages": Array [],
+    },
+    Object {
+      "messages": Array [],
+    },
+  ],
+  "error": null,
+  "status": 200,
+  "statusText": "OK",
+}
+`;
+
+exports[`eq 1`] = `
+Object {
+  "body": Array [
+    Object {
+      "age_range": "[1,2)",
+      "catchphrase": "'cat' 'fat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "supabot",
+    },
+  ],
+  "data": Array [
+    Object {
+      "age_range": "[1,2)",
+      "catchphrase": "'cat' 'fat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "supabot",
+    },
+  ],
+  "error": null,
+  "status": 200,
+  "statusText": "OK",
+}
+`;
+
+exports[`filter 1`] = `
+Object {
+  "body": Array [
+    Object {
+      "age_range": "[1,2)",
+      "catchphrase": "'cat' 'fat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "supabot",
+    },
+  ],
+  "data": Array [
+    Object {
+      "age_range": "[1,2)",
+      "catchphrase": "'cat' 'fat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "supabot",
+    },
+  ],
+  "error": null,
+  "status": 200,
+  "statusText": "OK",
+}
+`;
+
+exports[`fts 1`] = `
+Object {
+  "body": Array [
+    Object {
+      "age_range": "[1,2)",
+      "catchphrase": "'cat' 'fat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "supabot",
+    },
+  ],
+  "data": Array [
+    Object {
+      "age_range": "[1,2)",
+      "catchphrase": "'cat' 'fat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "supabot",
+    },
+  ],
+  "error": null,
+  "status": 200,
+  "statusText": "OK",
+}
+`;
+
+exports[`gt 1`] = `
+Object {
+  "body": Array [
+    Object {
+      "channel_id": 2,
+      "data": null,
+      "id": 2,
+      "message": "Perfection is attained, not when there is nothing more to add, but when there is nothing left to take away.",
+      "username": "supabot",
+    },
+  ],
+  "data": Array [
+    Object {
+      "channel_id": 2,
+      "data": null,
+      "id": 2,
+      "message": "Perfection is attained, not when there is nothing more to add, but when there is nothing left to take away.",
+      "username": "supabot",
+    },
+  ],
+  "error": null,
+  "status": 200,
+  "statusText": "OK",
+}
+`;
+
+exports[`gte 1`] = `
+Object {
+  "body": Array [
+    Object {
+      "channel_id": 1,
+      "data": null,
+      "id": 1,
+      "message": "Hello World 👋",
+      "username": "supabot",
+    },
+    Object {
+      "channel_id": 2,
+      "data": null,
+      "id": 2,
+      "message": "Perfection is attained, not when there is nothing more to add, but when there is nothing left to take away.",
+      "username": "supabot",
+    },
+  ],
+  "data": Array [
+    Object {
+      "channel_id": 1,
+      "data": null,
+      "id": 1,
+      "message": "Hello World 👋",
+      "username": "supabot",
+    },
+    Object {
+      "channel_id": 2,
+      "data": null,
+      "id": 2,
+      "message": "Perfection is attained, not when there is nothing more to add, but when there is nothing left to take away.",
+      "username": "supabot",
+    },
+  ],
+  "error": null,
+  "status": 200,
+  "statusText": "OK",
+}
+`;
+
+exports[`ilike 1`] = `
+Object {
+  "body": Array [
+    Object {
+      "age_range": "[1,2)",
+      "catchphrase": "'cat' 'fat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "supabot",
+    },
+  ],
+  "data": Array [
+    Object {
+      "age_range": "[1,2)",
+      "catchphrase": "'cat' 'fat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "supabot",
+    },
+  ],
+  "error": null,
+  "status": 200,
+  "statusText": "OK",
+}
+`;
+
+exports[`in 1`] = `
+Object {
+  "body": Array [
+    Object {
+      "age_range": "[1,2)",
+      "catchphrase": "'cat' 'fat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "supabot",
+    },
+    Object {
+      "age_range": "[25,35)",
+      "catchphrase": "'bat' 'cat'",
+      "data": null,
+      "status": "OFFLINE",
+      "username": "kiwicopple",
+    },
+    Object {
+      "age_range": "[25,35)",
+      "catchphrase": "'bat' 'rat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "awailas",
+    },
+    Object {
+      "age_range": "[20,30)",
+      "catchphrase": "'fat' 'rat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "dragarcia",
+    },
+  ],
+  "data": Array [
+    Object {
+      "age_range": "[1,2)",
+      "catchphrase": "'cat' 'fat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "supabot",
+    },
+    Object {
+      "age_range": "[25,35)",
+      "catchphrase": "'bat' 'cat'",
+      "data": null,
+      "status": "OFFLINE",
+      "username": "kiwicopple",
+    },
+    Object {
+      "age_range": "[25,35)",
+      "catchphrase": "'bat' 'rat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "awailas",
+    },
+    Object {
+      "age_range": "[20,30)",
+      "catchphrase": "'fat' 'rat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "dragarcia",
+    },
+  ],
+  "error": null,
+  "status": 200,
+  "statusText": "OK",
+}
+`;
+
+exports[`is 1`] = `
+Object {
+  "body": Array [
+    Object {
+      "age_range": "[1,2)",
+      "catchphrase": "'cat' 'fat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "supabot",
+    },
+    Object {
+      "age_range": "[25,35)",
+      "catchphrase": "'bat' 'cat'",
+      "data": null,
+      "status": "OFFLINE",
+      "username": "kiwicopple",
+    },
+    Object {
+      "age_range": "[25,35)",
+      "catchphrase": "'bat' 'rat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "awailas",
+    },
+    Object {
+      "age_range": "[20,30)",
+      "catchphrase": "'fat' 'rat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "dragarcia",
+    },
+  ],
+  "data": Array [
+    Object {
+      "age_range": "[1,2)",
+      "catchphrase": "'cat' 'fat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "supabot",
+    },
+    Object {
+      "age_range": "[25,35)",
+      "catchphrase": "'bat' 'cat'",
+      "data": null,
+      "status": "OFFLINE",
+      "username": "kiwicopple",
+    },
+    Object {
+      "age_range": "[25,35)",
+      "catchphrase": "'bat' 'rat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "awailas",
+    },
+    Object {
+      "age_range": "[20,30)",
+      "catchphrase": "'fat' 'rat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "dragarcia",
+    },
+  ],
+  "error": null,
+  "status": 200,
+  "statusText": "OK",
+}
+`;
+
+exports[`like 1`] = `
+Object {
+  "body": Array [
+    Object {
+      "age_range": "[1,2)",
+      "catchphrase": "'cat' 'fat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "supabot",
+    },
+  ],
+  "data": Array [
+    Object {
+      "age_range": "[1,2)",
+      "catchphrase": "'cat' 'fat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "supabot",
+    },
+  ],
+  "error": null,
+  "status": 200,
+  "statusText": "OK",
+}
+`;
+
+exports[`limit 1`] = `
+Object {
+  "body": Array [
+    Object {
+      "age_range": "[1,2)",
+      "catchphrase": "'cat' 'fat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "supabot",
+    },
+  ],
+  "data": Array [
+    Object {
+      "age_range": "[1,2)",
+      "catchphrase": "'cat' 'fat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "supabot",
+    },
+  ],
+  "error": null,
+  "status": 200,
+  "statusText": "OK",
+}
+`;
+
+exports[`lt 1`] = `
+Object {
+  "body": Array [
+    Object {
+      "channel_id": 1,
+      "data": null,
+      "id": 1,
+      "message": "Hello World 👋",
+      "username": "supabot",
+    },
+  ],
+  "data": Array [
+    Object {
+      "channel_id": 1,
+      "data": null,
+      "id": 1,
+      "message": "Hello World 👋",
+      "username": "supabot",
+    },
+  ],
+  "error": null,
+  "status": 200,
+  "statusText": "OK",
+}
+`;
+
+exports[`lte 1`] = `
+Object {
+  "body": Array [
+    Object {
+      "channel_id": 1,
+      "data": null,
+      "id": 1,
+      "message": "Hello World 👋",
+      "username": "supabot",
+    },
+    Object {
+      "channel_id": 2,
+      "data": null,
+      "id": 2,
+      "message": "Perfection is attained, not when there is nothing more to add, but when there is nothing left to take away.",
+      "username": "supabot",
+    },
+  ],
+  "data": Array [
+    Object {
+      "channel_id": 1,
+      "data": null,
+      "id": 1,
+      "message": "Hello World 👋",
+      "username": "supabot",
+    },
+    Object {
+      "channel_id": 2,
+      "data": null,
+      "id": 2,
+      "message": "Perfection is attained, not when there is nothing more to add, but when there is nothing left to take away.",
+      "username": "supabot",
+    },
+  ],
+  "error": null,
+  "status": 200,
+  "statusText": "OK",
+}
+`;
+
+exports[`match 1`] = `
+Object {
+  "body": Array [
+    Object {
+      "age_range": "[1,2)",
+      "catchphrase": "'cat' 'fat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "supabot",
+    },
+  ],
+  "data": Array [
+    Object {
+      "age_range": "[1,2)",
+      "catchphrase": "'cat' 'fat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "supabot",
+    },
+  ],
+  "error": null,
+  "status": 200,
+  "statusText": "OK",
+}
+`;
+
+exports[`missing table 1`] = `
+Object {
+  "body": null,
+  "data": null,
+  "error": Object {
+    "code": "42P01",
+    "details": null,
+    "hint": null,
+    "message": "relation \\"public.missing_table\\" does not exist",
+  },
+  "status": 404,
+  "statusText": "Not Found",
+}
+`;
+
+exports[`multiple filters 1`] = `
+Object {
+  "body": Array [
+    Object {
+      "age_range": "[1,2)",
+      "catchphrase": "'cat' 'fat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "supabot",
+    },
+  ],
+  "data": Array [
+    Object {
+      "age_range": "[1,2)",
+      "catchphrase": "'cat' 'fat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "supabot",
+    },
+  ],
+  "error": null,
+  "status": 200,
+  "statusText": "OK",
+}
+`;
+
+exports[`neq 1`] = `
+Object {
+  "body": Array [
+    Object {
+      "age_range": "[25,35)",
+      "catchphrase": "'bat' 'cat'",
+      "data": null,
+      "status": "OFFLINE",
+      "username": "kiwicopple",
+    },
+    Object {
+      "age_range": "[25,35)",
+      "catchphrase": "'bat' 'rat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "awailas",
+    },
+    Object {
+      "age_range": "[20,30)",
+      "catchphrase": "'fat' 'rat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "dragarcia",
+    },
+  ],
+  "data": Array [
+    Object {
+      "age_range": "[25,35)",
+      "catchphrase": "'bat' 'cat'",
+      "data": null,
+      "status": "OFFLINE",
+      "username": "kiwicopple",
+    },
+    Object {
+      "age_range": "[25,35)",
+      "catchphrase": "'bat' 'rat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "awailas",
+    },
+    Object {
+      "age_range": "[20,30)",
+      "catchphrase": "'fat' 'rat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "dragarcia",
+    },
+  ],
+  "error": null,
+  "status": 200,
+  "statusText": "OK",
+}
+`;
+
+exports[`not 1`] = `
+Object {
+  "body": Array [
+    Object {
+      "age_range": "[1,2)",
+      "catchphrase": "'cat' 'fat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "supabot",
+    },
+    Object {
+      "age_range": "[25,35)",
+      "catchphrase": "'bat' 'rat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "awailas",
+    },
+    Object {
+      "age_range": "[20,30)",
+      "catchphrase": "'fat' 'rat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "dragarcia",
+    },
+  ],
+  "data": Array [
+    Object {
+      "age_range": "[1,2)",
+      "catchphrase": "'cat' 'fat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "supabot",
+    },
+    Object {
+      "age_range": "[25,35)",
+      "catchphrase": "'bat' 'rat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "awailas",
+    },
+    Object {
+      "age_range": "[20,30)",
+      "catchphrase": "'fat' 'rat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "dragarcia",
+    },
+  ],
+  "error": null,
+  "status": 200,
+  "statusText": "OK",
+}
+`;
+
+exports[`nxl 1`] = `
+Object {
+  "body": Array [
+    Object {
+      "age_range": "[25,35)",
+      "catchphrase": "'bat' 'cat'",
+      "data": null,
+      "status": "OFFLINE",
+      "username": "kiwicopple",
+    },
+    Object {
+      "age_range": "[25,35)",
+      "catchphrase": "'bat' 'rat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "awailas",
+    },
+    Object {
+      "age_range": "[20,30)",
+      "catchphrase": "'fat' 'rat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "dragarcia",
+    },
+  ],
+  "data": Array [
+    Object {
+      "age_range": "[25,35)",
+      "catchphrase": "'bat' 'cat'",
+      "data": null,
+      "status": "OFFLINE",
+      "username": "kiwicopple",
+    },
+    Object {
+      "age_range": "[25,35)",
+      "catchphrase": "'bat' 'rat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "awailas",
+    },
+    Object {
+      "age_range": "[20,30)",
+      "catchphrase": "'fat' 'rat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "dragarcia",
+    },
+  ],
+  "error": null,
+  "status": 200,
+  "statusText": "OK",
+}
+`;
+
+exports[`nxr 1`] = `
+Object {
+  "body": Array [
+    Object {
+      "age_range": "[1,2)",
+      "catchphrase": "'cat' 'fat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "supabot",
+    },
+  ],
+  "data": Array [
+    Object {
+      "age_range": "[1,2)",
+      "catchphrase": "'cat' 'fat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "supabot",
+    },
+  ],
+  "error": null,
+  "status": 200,
+  "statusText": "OK",
+}
+`;
+
+exports[`on_conflict insert 1`] = `
+Object {
+  "body": Array [
+    Object {
+      "age_range": "[20,30)",
+      "catchphrase": "'fat' 'rat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "dragarcia",
+    },
+  ],
+  "data": Array [
+    Object {
+      "age_range": "[20,30)",
+      "catchphrase": "'fat' 'rat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "dragarcia",
+    },
+  ],
+  "error": null,
+  "status": 201,
+  "statusText": "Created",
+}
+`;
+
+exports[`or 1`] = `
+Object {
+  "body": Array [
+    Object {
+      "age_range": "[1,2)",
+      "catchphrase": "'cat' 'fat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "supabot",
+    },
+    Object {
+      "age_range": "[25,35)",
+      "catchphrase": "'bat' 'cat'",
+      "data": null,
+      "status": "OFFLINE",
+      "username": "kiwicopple",
+    },
+  ],
+  "data": Array [
+    Object {
+      "age_range": "[1,2)",
+      "catchphrase": "'cat' 'fat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "supabot",
+    },
+    Object {
+      "age_range": "[25,35)",
+      "catchphrase": "'bat' 'cat'",
+      "data": null,
+      "status": "OFFLINE",
+      "username": "kiwicopple",
+    },
+  ],
+  "error": null,
+  "status": 200,
+  "statusText": "OK",
+}
+`;
+
+exports[`order 1`] = `
+Object {
+  "body": Array [
+    Object {
+      "age_range": "[1,2)",
+      "catchphrase": "'cat' 'fat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "supabot",
+    },
+    Object {
+      "age_range": "[25,35)",
+      "catchphrase": "'bat' 'cat'",
+      "data": null,
+      "status": "OFFLINE",
+      "username": "kiwicopple",
+    },
+    Object {
+      "age_range": "[20,30)",
+      "catchphrase": "'fat' 'rat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "dragarcia",
+    },
+    Object {
+      "age_range": "[25,35)",
+      "catchphrase": "'bat' 'rat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "awailas",
+    },
+  ],
+  "data": Array [
+    Object {
+      "age_range": "[1,2)",
+      "catchphrase": "'cat' 'fat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "supabot",
+    },
+    Object {
+      "age_range": "[25,35)",
+      "catchphrase": "'bat' 'cat'",
+      "data": null,
+      "status": "OFFLINE",
+      "username": "kiwicopple",
+    },
+    Object {
+      "age_range": "[20,30)",
+      "catchphrase": "'fat' 'rat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "dragarcia",
+    },
+    Object {
+      "age_range": "[25,35)",
+      "catchphrase": "'bat' 'rat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "awailas",
+    },
+  ],
+  "error": null,
+  "status": 200,
+  "statusText": "OK",
+}
+`;
+
+exports[`ov 1`] = `
+Object {
+  "body": Array [
+    Object {
+      "age_range": "[20,30)",
+      "catchphrase": "'fat' 'rat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "dragarcia",
+    },
+  ],
+  "data": Array [
+    Object {
+      "age_range": "[20,30)",
+      "catchphrase": "'fat' 'rat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "dragarcia",
+    },
+  ],
+  "error": null,
+  "status": 200,
+  "statusText": "OK",
+}
+`;
+
+exports[`phfts 1`] = `
+Object {
+  "body": Array [
+    Object {
+      "age_range": "[1,2)",
+      "catchphrase": "'cat' 'fat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "supabot",
+    },
+    Object {
+      "age_range": "[25,35)",
+      "catchphrase": "'bat' 'cat'",
+      "data": null,
+      "status": "OFFLINE",
+      "username": "kiwicopple",
+    },
+  ],
+  "data": Array [
+    Object {
+      "age_range": "[1,2)",
+      "catchphrase": "'cat' 'fat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "supabot",
+    },
+    Object {
+      "age_range": "[25,35)",
+      "catchphrase": "'bat' 'cat'",
+      "data": null,
+      "status": "OFFLINE",
+      "username": "kiwicopple",
+    },
+  ],
+  "error": null,
+  "status": 200,
+  "statusText": "OK",
+}
+`;
+
+exports[`plfts 1`] = `
+Object {
+  "body": Array [
+    Object {
+      "age_range": "[1,2)",
+      "catchphrase": "'cat' 'fat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "supabot",
+    },
+  ],
+  "data": Array [
+    Object {
+      "age_range": "[1,2)",
+      "catchphrase": "'cat' 'fat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "supabot",
+    },
+  ],
+  "error": null,
+  "status": 200,
+  "statusText": "OK",
+}
+`;
+
+exports[`range 1`] = `
+Object {
+  "body": Array [
+    Object {
+      "age_range": "[25,35)",
+      "catchphrase": "'bat' 'cat'",
+      "data": null,
+      "status": "OFFLINE",
+      "username": "kiwicopple",
+    },
+    Object {
+      "age_range": "[25,35)",
+      "catchphrase": "'bat' 'rat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "awailas",
+    },
+    Object {
+      "age_range": "[20,30)",
+      "catchphrase": "'fat' 'rat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "dragarcia",
+    },
+  ],
+  "data": Array [
+    Object {
+      "age_range": "[25,35)",
+      "catchphrase": "'bat' 'cat'",
+      "data": null,
+      "status": "OFFLINE",
+      "username": "kiwicopple",
+    },
+    Object {
+      "age_range": "[25,35)",
+      "catchphrase": "'bat' 'rat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "awailas",
+    },
+    Object {
+      "age_range": "[20,30)",
+      "catchphrase": "'fat' 'rat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "dragarcia",
+    },
+  ],
+  "error": null,
+  "status": 200,
+  "statusText": "OK",
+}
+`;
+
+exports[`single 1`] = `
+Object {
+  "body": Object {
+    "age_range": "[1,2)",
+    "catchphrase": "'cat' 'fat'",
+    "data": null,
+    "status": "ONLINE",
+    "username": "supabot",
+  },
+  "data": Object {
+    "age_range": "[1,2)",
+    "catchphrase": "'cat' 'fat'",
+    "data": null,
+    "status": "ONLINE",
+    "username": "supabot",
+  },
+  "error": null,
+  "status": 200,
+  "statusText": "OK",
+}
+`;
+
+exports[`single on insert 1`] = `
+Object {
+  "body": Object {
+    "age_range": null,
+    "catchphrase": null,
+    "data": null,
+    "status": "ONLINE",
+    "username": "foo",
+  },
+  "data": Object {
+    "age_range": null,
+    "catchphrase": null,
+    "data": null,
+    "status": "ONLINE",
+    "username": "foo",
+  },
+  "error": null,
+  "status": 201,
+  "statusText": "Created",
+}
+`;
+
+exports[`sl 1`] = `
+Object {
+  "body": Array [
+    Object {
+      "age_range": "[1,2)",
+      "catchphrase": "'cat' 'fat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "supabot",
+    },
+  ],
+  "data": Array [
+    Object {
+      "age_range": "[1,2)",
+      "catchphrase": "'cat' 'fat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "supabot",
+    },
+  ],
+  "error": null,
+  "status": 200,
+  "statusText": "OK",
+}
+`;
+
+exports[`sr 1`] = `
+Object {
+  "body": Array [
+    Object {
+      "age_range": "[25,35)",
+      "catchphrase": "'bat' 'cat'",
+      "data": null,
+      "status": "OFFLINE",
+      "username": "kiwicopple",
+    },
+    Object {
+      "age_range": "[25,35)",
+      "catchphrase": "'bat' 'rat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "awailas",
+    },
+  ],
+  "data": Array [
+    Object {
+      "age_range": "[25,35)",
+      "catchphrase": "'bat' 'cat'",
+      "data": null,
+      "status": "OFFLINE",
+      "username": "kiwicopple",
+    },
+    Object {
+      "age_range": "[25,35)",
+      "catchphrase": "'bat' 'rat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "awailas",
+    },
+  ],
+  "error": null,
+  "status": 200,
+  "statusText": "OK",
+}
+`;
+
+exports[`stored procedure 1`] = `
+Object {
+  "body": "ONLINE",
+  "data": "ONLINE",
+  "error": null,
+  "status": 200,
+  "statusText": "OK",
+}
+`;
+
+exports[`switch schema 1`] = `
+Object {
+  "body": Array [
+    Object {
+      "age_range": "[1,2)",
+      "data": null,
+      "status": "ONLINE",
+      "username": "supabot",
+    },
+    Object {
+      "age_range": "[25,35)",
+      "data": null,
+      "status": "OFFLINE",
+      "username": "kiwicopple",
+    },
+    Object {
+      "age_range": "[25,35)",
+      "data": null,
+      "status": "ONLINE",
+      "username": "awailas",
+    },
+    Object {
+      "age_range": "[20,30)",
+      "data": null,
+      "status": "ONLINE",
+      "username": "dragarcia",
+    },
+    Object {
+      "age_range": "[20,40)",
+      "data": null,
+      "status": "ONLINE",
+      "username": "leroyjenkins",
+    },
+  ],
+  "data": Array [
+    Object {
+      "age_range": "[1,2)",
+      "data": null,
+      "status": "ONLINE",
+      "username": "supabot",
+    },
+    Object {
+      "age_range": "[25,35)",
+      "data": null,
+      "status": "OFFLINE",
+      "username": "kiwicopple",
+    },
+    Object {
+      "age_range": "[25,35)",
+      "data": null,
+      "status": "ONLINE",
+      "username": "awailas",
+    },
+    Object {
+      "age_range": "[20,30)",
+      "data": null,
+      "status": "ONLINE",
+      "username": "dragarcia",
+    },
+    Object {
+      "age_range": "[20,40)",
+      "data": null,
+      "status": "ONLINE",
+      "username": "leroyjenkins",
+    },
+  ],
+  "error": null,
+  "status": 200,
+  "statusText": "OK",
+}
+`;
+
+exports[`wfts 1`] = `
+Object {
+  "body": Array [
+    Object {
+      "age_range": "[1,2)",
+      "catchphrase": "'cat' 'fat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "supabot",
+    },
+  ],
+  "data": Array [
+    Object {
+      "age_range": "[1,2)",
+      "catchphrase": "'cat' 'fat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "supabot",
+    },
+  ],
+  "error": null,
+  "status": 200,
+  "statusText": "OK",
+}
+`;

@@ -127,7 +127,16 @@ test("don't mutate PostgrestClient.headers", async () => {
   expect(error).toMatchSnapshot()
 })
 
-test("allow ordering on JSON column", async () => {
+test('allow ordering on JSON column', async () => {
   const { data } = await postgrest.from('users').select().order('data->something')
   expect(data).toMatchSnapshot()
+})
+
+test('Prefer: return=minimal', async () => {
+  const { data } = await postgrest
+    .from('users')
+    .insert({ username: 'bar' }, { returning: 'minimal' })
+  expect(data).toMatchSnapshot()
+
+  await postgrest.from('users').delete().eq('username', 'bar')
 })
