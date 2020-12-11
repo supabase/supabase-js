@@ -326,6 +326,7 @@ export default class GoTrueClient {
   }
 
   private async _recoverSession() {
+    // Note: this method is async to accomodate for AsyncStorage e.g. in React native.
     const json = isBrowser() && (await this.localStorage.getItem(STORAGE_KEY))
     if (json) {
       try {
@@ -342,6 +343,7 @@ export default class GoTrueClient {
         } else {
           this.currentSession = currentSession
           this.currentUser = currentSession.user
+          this._notifyAllSubscribers('SIGNED_IN')
           // schedule a refresh 60 seconds before token due to expire
           setTimeout(this._callRefreshToken, (expiresAt - timeNow - 60) * 1000)
         }
