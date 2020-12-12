@@ -335,8 +335,17 @@ export default class GoTrueClient {
 
         const timeNow = Math.round(Date.now() / 1000)
         if (expiresAt < timeNow) {
-          console.log('Saved session has expired.')
-          this._removeSession()
+          if (this.autoRefreshToken && currentSession.refresh_token) {
+            const { error } = await this._callRefreshToken(currentSession.refresh_token)
+            if (error) {
+              console.log(error.message)
+              await this._removeSession()
+            } else {
+              this._notifyAllSubscribers('SIGNED_IN')
+            }
+          } else {
+            this._removeSession()
+          }
         } else if (!currentSession || !currentSession.user) {
           console.log('Current session is missing data.')
           this._removeSession()
@@ -355,15 +364,15 @@ export default class GoTrueClient {
     return null
   }
 
-  private async _callRefreshToken() {
+  private async _callRefreshToken(refresh_token = this.currentSession?.refresh_token) {
     try {
-      if (this.currentSession?.refresh_token) {
-        let data: any = await this.api.refreshAccessToken(this.currentSession?.refresh_token)
+      if (refresh_token) {
+        const { data, error } = await this.api.refreshAccessToken(refresh_token)
 
         if (data?.access_token) {
-          this.currentSession.access_token = data.body['access_token']
-          this.currentSession.refresh_token = data.body['refresh_token']
-          let tokenExpirySeconds = data.body['expires_in']
+          this.currentSession = data as Session
+          this.currentUser = this.currentSession.user
+          const tokenExpirySeconds = data.expires_in
 
           if (this.autoRefreshToken && tokenExpirySeconds) {
             setTimeout(this._callRefreshToken, (tokenExpirySeconds - 60) * 1000)
@@ -372,8 +381,12 @@ export default class GoTrueClient {
           if (this.persistSession && this.currentUser) {
             this._persistSession(this.currentSession, tokenExpirySeconds)
           }
+        } else {
+          throw error
         }
         return { data, error: null }
+      } else {
+        throw new Error('No current session.')
       }
     } catch (error) {
       return { data: null, error }
