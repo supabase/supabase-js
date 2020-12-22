@@ -10,8 +10,9 @@ export default class PostgrestClient {
    * Creates a PostgREST client.
    *
    * @param url  URL of the PostgREST endpoint.
-   * @param headers  Custom headers.
-   * @param schema  Postgres schema to switch to.
+   * @param options  Additional initialization options.
+   * @param options.headers  Custom headers.
+   * @param options.schema  Postgres schema to switch to.
    */
   constructor(
     url: string,
