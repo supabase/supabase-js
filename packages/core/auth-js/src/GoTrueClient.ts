@@ -28,7 +28,7 @@ export default class GoTrueClient {
   protected autoRefreshToken: boolean
   protected persistSession: boolean
   protected localStorage: Storage
-  protected stateChangeEmmitters: Map<string, Subscription> = new Map()
+  protected stateChangeEmitters: Map<string, Subscription> = new Map()
 
   /**
    * Create a new client for use in the browser.
@@ -118,8 +118,8 @@ export default class GoTrueClient {
         const { error } = await this.api.sendMagicLinkEmail(email)
         return { data: null, user: null, error }
       }
-      if (email && password) return this._handeEmailSignIn(email, password)
-      if (provider) return this._handeProviderSignIn(provider)
+      if (email && password) return this._handleEmailSignIn(email, password)
+      if (provider) return this._handleProviderSignIn(provider)
       else throw new Error(`You must provide either an email or a third-party provider.`)
     } catch (error) {
       return { data: null, user: null, error }
@@ -244,7 +244,7 @@ export default class GoTrueClient {
 
   /**
    * Receive a notification every time an auth event happens.
-   * @returns {Subscription} A subscription object which can be used to unsubcribe itself.
+   * @returns {Subscription} A subscription object which can be used to unsubscribe itself.
    */
   onAuthStateChange(
     callback: (event: AuthChangeEvent, session: Session | null) => void
@@ -256,17 +256,17 @@ export default class GoTrueClient {
         id,
         callback,
         unsubscribe: () => {
-          self.stateChangeEmmitters.delete(id)
+          self.stateChangeEmitters.delete(id)
         },
       }
-      this.stateChangeEmmitters.set(id, subscription)
+      this.stateChangeEmitters.set(id, subscription)
       return { data: subscription, error: null }
     } catch (error) {
       return { data: null, error }
     }
   }
 
-  private async _handeEmailSignIn(email: string, password: string) {
+  private async _handleEmailSignIn(email: string, password: string) {
     try {
       let { data, error } = await this.api.signInWithEmail(email, password)
       if (error || !data) return { data: null, user: null, error }
@@ -282,7 +282,7 @@ export default class GoTrueClient {
     }
   }
 
-  private _handeProviderSignIn(provider: Provider) {
+  private _handleProviderSignIn(provider: Provider) {
     let url: string = this.api.getUrlForProvider(provider)
 
     try {
@@ -326,7 +326,7 @@ export default class GoTrueClient {
   }
 
   private async _recoverSession() {
-    // Note: this method is async to accomodate for AsyncStorage e.g. in React native.
+    // Note: this method is async to accommodate for AsyncStorage e.g. in React native.
     const json = isBrowser() && (await this.localStorage.getItem(STORAGE_KEY))
     if (json) {
       try {
@@ -394,6 +394,6 @@ export default class GoTrueClient {
   }
 
   private _notifyAllSubscribers(event: AuthChangeEvent) {
-    this.stateChangeEmmitters.forEach((x) => x.callback(event, this.currentSession))
+    this.stateChangeEmitters.forEach((x) => x.callback(event, this.currentSession))
   }
 }

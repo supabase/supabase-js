@@ -38,7 +38,7 @@ export default class GoTrueApi {
   }
 
   /**
-   * Logs in an existing using their email address.
+   * Logs in an existing user using their email address.
    * @param email The email address of the user.
    * @param password The password of the user.
    */
