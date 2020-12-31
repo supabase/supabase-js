@@ -28,3 +28,15 @@ test('single on insert', async () => {
 
   await postgrest.from('users').delete().eq('username', 'foo')
 })
+
+test('select on insert', async () => {
+  const res = await postgrest.from('users').insert({ username: 'foo' }).select('status')
+  expect(res).toMatchSnapshot()
+
+  await postgrest.from('users').delete().eq('username', 'foo')
+})
+
+test('select on stored procedure', async () => {
+  const res = await postgrest.rpc('get_username_and_status', { name_param: 'supabot' }).select('status')
+  expect(res).toMatchSnapshot()
+})

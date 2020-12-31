@@ -1970,6 +1970,42 @@ Object {
 }
 `;
 
+exports[`select on insert 1`] = `
+Object {
+  "body": Array [
+    Object {
+      "status": "ONLINE",
+    },
+  ],
+  "data": Array [
+    Object {
+      "status": "ONLINE",
+    },
+  ],
+  "error": null,
+  "status": 201,
+  "statusText": "Created",
+}
+`;
+
+exports[`select on stored procedure 1`] = `
+Object {
+  "body": Array [
+    Object {
+      "status": "ONLINE",
+    },
+  ],
+  "data": Array [
+    Object {
+      "status": "ONLINE",
+    },
+  ],
+  "error": null,
+  "status": 200,
+  "statusText": "OK",
+}
+`;
+
 exports[`single 1`] = `
 Object {
   "body": Object {

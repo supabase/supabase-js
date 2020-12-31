@@ -1,9 +1,6 @@
 import { PostgrestBuilder } from './types'
 import PostgrestFilterBuilder from './PostgrestFilterBuilder'
-
-/**
- * CRUD
- */
+import PostgrestTransformBuilder from './PostgrestTransformBuilder'
 
 export default class PostgrestQueryBuilder<T> extends PostgrestBuilder<T> {
   constructor(
@@ -17,7 +14,7 @@ export default class PostgrestQueryBuilder<T> extends PostgrestBuilder<T> {
   }
 
   /**
-   * Performs horizontal filtering with SELECT.
+   * Performs vertical filtering with SELECT.
    *
    * @param columns  The columns to retrieve, separated by commas.
    */
@@ -103,9 +100,9 @@ export default class PostgrestQueryBuilder<T> extends PostgrestBuilder<T> {
   }
 
   /** @internal */
-  rpc(params?: object): PostgrestBuilder<T> {
+  rpc(params?: object): PostgrestTransformBuilder<T> {
     this.method = 'POST'
     this.body = params
-    return this
+    return new PostgrestTransformBuilder(this)
   }
 }

@@ -6,6 +6,30 @@ import { PostgrestBuilder, PostgrestSingleResponse } from './types'
 
 export default class PostgrestTransformBuilder<T> extends PostgrestBuilder<T> {
   /**
+   * Performs vertical filtering with SELECT.
+   *
+   * @param columns  The columns to retrieve, separated by commas.
+   */
+  select(columns = '*'): this {
+    // Remove whitespaces except when quoted
+    let quoted = false
+    const cleanedColumns = columns
+      .split('')
+      .map((c) => {
+        if (/\s/.test(c) && !quoted) {
+          return ''
+        }
+        if (c === '"') {
+          quoted = !quoted
+        }
+        return c
+      })
+      .join('')
+    this.url.searchParams.set('select', cleanedColumns)
+    return this
+  }
+
+  /**
    * Orders the result with the specified `column`.
    *
    * @param column  The column to order on.
@@ -20,7 +44,7 @@ export default class PostgrestTransformBuilder<T> extends PostgrestBuilder<T> {
       nullsFirst = false,
       foreignTable,
     }: { ascending?: boolean; nullsFirst?: boolean; foreignTable?: string } = {}
-  ): PostgrestTransformBuilder<T> {
+  ): this {
     const key = typeof foreignTable === 'undefined' ? 'order' : `"${foreignTable}".order`
     this.url.searchParams.set(
       key,
@@ -38,7 +62,7 @@ export default class PostgrestTransformBuilder<T> extends PostgrestBuilder<T> {
   limit(
     count: number,
     { foreignTable }: { foreignTable?: string } = {}
-  ): PostgrestTransformBuilder<T> {
+  ): this {
     const key = typeof foreignTable === 'undefined' ? 'limit' : `"${foreignTable}".limit`
     this.url.searchParams.set(key, `${count}`)
     return this
@@ -55,7 +79,7 @@ export default class PostgrestTransformBuilder<T> extends PostgrestBuilder<T> {
     from: number,
     to: number,
     { foreignTable }: { foreignTable?: string } = {}
-  ): PostgrestTransformBuilder<T> {
+  ): this {
     const keyOffset = typeof foreignTable === 'undefined' ? 'offset' : `"${foreignTable}".offset`
     const keyLimit = typeof foreignTable === 'undefined' ? 'limit' : `"${foreignTable}".limit`
     this.url.searchParams.set(keyOffset, `${from}`)
