@@ -2,6 +2,11 @@
 
 Releases are handled by Semantic release. This document is for forcing and documenting any non-code changes.
 
+## 1.1.3
+
+- bump @supabase/postgrest-js from 0.21.2 to 0.22.0
+- Fix: Added 'AuthUser' to the exports
+
 ## 1.0.6
 
 - Bumps gotrue-js so that it works with React Native: https://github.com/supabase/gotrue-js/pull/26
