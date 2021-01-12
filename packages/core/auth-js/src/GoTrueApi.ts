@@ -1,23 +1,29 @@
 import { get, post, put } from './lib/fetch'
-import { Session, Provider, UserAttributes } from './lib/types'
+import { Session, Provider, UserAttributes, CookieOptions, User } from './lib/types'
+import { COOKIE_OPTIONS } from './lib/constants'
+import { setCookie, deleteCookie } from './lib/cookies'
 
 export default class GoTrueApi {
   protected url: string
   protected headers: {
     [key: string]: string
   }
+  protected cookieOptions: CookieOptions
 
   constructor({
     url = '',
     headers = {},
+    cookieOptions,
   }: {
     url: string
     headers: {
       [key: string]: string
     }
+    cookieOptions?: CookieOptions
   }) {
     this.url = url
     this.headers = headers
+    this.cookieOptions = { ...COOKIE_OPTIONS, ...cookieOptions }
   }
 
   /**
@@ -124,14 +130,16 @@ export default class GoTrueApi {
    * Gets the user details.
    * @param jwt A valid, logged-in JWT.
    */
-  async getUser(jwt: string) {
+  async getUser(
+    jwt: string
+  ): Promise<{ user: User | null; data: User | null; error: Error | null }> {
     try {
       let headers = { ...this.headers }
       headers['Authorization'] = `Bearer ${jwt}`
       let data: any = await get(`${this.url}/user`, { headers })
-      return { data, error: null }
+      return { user: data, data, error: null }
     } catch (error) {
-      return { data: null, error }
+      return { user: null, data: null, error }
     }
   }
 
@@ -140,14 +148,17 @@ export default class GoTrueApi {
    * @param jwt A valid, logged-in JWT.
    * @param attributes The data you want to update.
    */
-  async updateUser(jwt: string, attributes: UserAttributes) {
+  async updateUser(
+    jwt: string,
+    attributes: UserAttributes
+  ): Promise<{ user: User | null; data: User | null; error: Error | null }> {
     try {
       let headers = { ...this.headers }
       headers['Authorization'] = `Bearer ${jwt}`
       let data: any = await put(`${this.url}/user`, attributes, { headers })
-      return { data, error: null }
+      return { user: data, data, error: null }
     } catch (error) {
-      return { data: null, error }
+      return { user: null, data: null, error }
     }
   }
 
@@ -155,7 +166,9 @@ export default class GoTrueApi {
    * Generates a new JWT.
    * @param refreshToken A valid refresh token that was returned on login.
    */
-  async refreshAccessToken(refreshToken: string) {
+  async refreshAccessToken(
+    refreshToken: string
+  ): Promise<{ data: Session | null; error: Error | null }> {
     try {
       let data: any = await post(
         `${this.url}/token?grant_type=refresh_token`,
@@ -165,6 +178,55 @@ export default class GoTrueApi {
       return { data, error: null }
     } catch (error) {
       return { data: null, error }
+    }
+  }
+
+  /**
+   * Set/delete the auth cookie based on the AuthChangeEvent.
+   * Works for Next.js & Express (requires cookie-parser middleware).
+   */
+  setAuthCookie(req: any, res: any) {
+    if (req.method === 'POST') {
+      const { event, session } = req.body
+      if (!event) throw new Error('Auth event missing!')
+      if (event === 'SIGNED_IN') {
+        if (!session) throw new Error('Auth session missing!')
+        setCookie(req, res, {
+          name: this.cookieOptions.name!,
+          value: session.access_token,
+          domain: this.cookieOptions.domain,
+          maxAge: this.cookieOptions.lifetime!,
+          path: this.cookieOptions.path,
+          sameSite: this.cookieOptions.sameSite,
+        })
+      }
+      if (event === 'SIGNED_OUT') deleteCookie(req, res, this.cookieOptions.name!)
+      res.status(200).json({})
+    } else {
+      res.setHeader('Allow', 'POST')
+      res.status(405).end('Method Not Allowed')
+    }
+  }
+
+  /**
+   * Get user by reading the cookie from the request.
+   * Works for Next.js & Express (requires cookie-parser middleware).
+   */
+  async getUserByCookie(
+    req: any
+  ): Promise<{ user: User | null; data: User | null; error: Error | null }> {
+    try {
+      if (!req.cookies)
+        throw new Error(
+          'Not able to parse cookies! When using Express make sure the cookie-parser middleware is in use!'
+        )
+      if (!req.cookies[this.cookieOptions.name!]) throw new Error('No cookie found!')
+      const token = req.cookies[this.cookieOptions.name!]
+      const { user, error } = await this.getUser(token)
+      if (error) throw error
+      return { user, data: user, error: null }
+    } catch (error) {
+      return { user: null, data: null, error }
     }
   }
 }

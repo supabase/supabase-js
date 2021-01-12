@@ -1,7 +1,15 @@
 import GoTrueApi from './GoTrueApi'
 import { isBrowser, getParameterByName, uuid, LocalStorage } from './lib/helpers'
 import { GOTRUE_URL, DEFAULT_HEADERS, STORAGE_KEY } from './lib/constants'
-import { Session, User, UserAttributes, Provider, Subscription, AuthChangeEvent } from './lib/types'
+import {
+  Session,
+  User,
+  UserAttributes,
+  Provider,
+  Subscription,
+  AuthChangeEvent,
+  CookieOptions,
+} from './lib/types'
 
 const DEFAULT_OPTIONS = {
   url: GOTRUE_URL,
@@ -46,6 +54,7 @@ export default class GoTrueClient {
     autoRefreshToken?: boolean
     persistSession?: boolean
     localStorage?: Storage
+    cookieOptions?: CookieOptions
   }) {
     const settings = { ...DEFAULT_OPTIONS, ...options }
     this.currentUser = null
@@ -53,7 +62,11 @@ export default class GoTrueClient {
     this.autoRefreshToken = settings.autoRefreshToken
     this.persistSession = settings.persistSession
     this.localStorage = new LocalStorage(settings.localStorage)
-    this.api = new GoTrueApi({ url: settings.url, headers: settings.headers })
+    this.api = new GoTrueApi({
+      url: settings.url,
+      headers: settings.headers,
+      cookieOptions: settings.cookieOptions,
+    })
     this._recoverSession()
 
     // Handle the OAuth redirect
@@ -206,7 +219,7 @@ export default class GoTrueClient {
       if (!refresh_token) throw new Error('No refresh_token detected.')
       if (!token_type) throw new Error('No token_type detected.')
 
-      let { data: user, error } = await this.api.getUser(access_token)
+      const { user, error } = await this.api.getUser(access_token)
       if (error) throw error
 
       const session: Session = {
@@ -214,7 +227,7 @@ export default class GoTrueClient {
         expires_in: parseInt(expires_in),
         refresh_token,
         token_type,
-        user,
+        user: user!,
       }
       if (options?.storeSession) {
         this._saveSession(session)
@@ -340,8 +353,6 @@ export default class GoTrueClient {
             if (error) {
               console.log(error.message)
               await this._removeSession()
-            } else {
-              this._notifyAllSubscribers('SIGNED_IN')
             }
           } else {
             this._removeSession()
@@ -372,6 +383,7 @@ export default class GoTrueClient {
         if (data?.access_token) {
           this.currentSession = data as Session
           this.currentUser = this.currentSession.user
+          this._notifyAllSubscribers('SIGNED_IN')
           const tokenExpirySeconds = data.expires_in
 
           if (this.autoRefreshToken && tokenExpirySeconds) {

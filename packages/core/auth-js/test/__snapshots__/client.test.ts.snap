@@ -78,7 +78,7 @@ Object {
 }
 `;
 
-exports[`signIn() with the wrong password 1`] = `"Invalid Password"`;
+exports[`signIn() with the wrong password 1`] = `"No user found with that email, or password invalid."`;
 
 exports[`signOut 1`] = `
 Object {
