@@ -1,7 +1,7 @@
 import { PostgrestQueryBuilder } from '@supabase/postgrest-js'
 import { SupabaseRealtimeClient } from './SupabaseRealtimeClient'
 import { RealtimeClient } from '@supabase/realtime-js'
-import { SupabaseRealtimePayload } from './types'
+import { SupabaseEventTypes, SupabaseRealtimePayload } from './types'
 
 export class SupabaseQueryBuilder<T> extends PostgrestQueryBuilder<T> {
   private _subscription: SupabaseRealtimeClient
@@ -33,7 +33,7 @@ export class SupabaseQueryBuilder<T> extends PostgrestQueryBuilder<T> {
    * @param callback A callback that will handle the payload that is sent whenever your database changes.
    */
   on(
-    event: 'INSERT' | 'UPDATE' | 'DELETE' | '*',
+    event: SupabaseEventTypes,
     callback: (payload: SupabaseRealtimePayload<T>) => void
   ): SupabaseRealtimeClient {
     if (!this._realtime.isConnected()) {
