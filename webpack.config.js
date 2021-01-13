@@ -27,10 +27,7 @@ module.exports = {
   },
   plugins: [
     new webpack.DefinePlugin({
-      'process.env.GOTRUE_URL': undefined,
-      'process.env.AUDIENCE': undefined,
-      'process.env.EXPIRY_MARGIN': undefined,
-      'process.env.STORAGE_KEY': undefined,
+      process: 'process/browser',
     }),
   ],
 }
