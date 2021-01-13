@@ -1,6 +1,6 @@
 export type Provider = 'bitbucket' | 'github' | 'gitlab' | 'google'
 
-export type AuthChangeEvent = 'SIGNED_IN' | 'SIGNED_OUT' | 'USER_UPDATED'
+export type AuthChangeEvent = 'SIGNED_IN' | 'SIGNED_OUT' | 'USER_UPDATED' | 'PASSWORD_RECOVERY'
 
 export interface Session {
   access_token: string

@@ -232,6 +232,9 @@ export default class GoTrueClient {
       if (options?.storeSession) {
         this._saveSession(session)
         this._notifyAllSubscribers('SIGNED_IN')
+        if (getParameterByName('type') === 'recovery') {
+          this._notifyAllSubscribers('PASSWORD_RECOVERY')
+        }
       }
       // Remove tokens from URL
       window.location.hash = ''
