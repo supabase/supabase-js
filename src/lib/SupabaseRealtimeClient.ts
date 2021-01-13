@@ -5,8 +5,32 @@ export class SupabaseRealtimeClient {
   subscription: RealtimeSubscription
 
   constructor(socket: RealtimeClient, schema: string, tableName: string) {
-    let topic = tableName == '*' ? `realtime:${schema}` : `realtime:${schema}:${tableName}`
+    const topic = tableName === '*' ? `realtime:${schema}` : `realtime:${schema}:${tableName}`
     this.subscription = socket.channel(topic)
+  }
+
+  private getPayloadRecords(payload: any) {
+    const records = {
+      new: {},
+      old: {},
+    }
+
+    switch (payload.type) {
+      case 'INSERT':
+        records.new = Transformers.convertChangeData(payload.columns, payload.record)
+        break
+
+      case 'UPDATE':
+        records.new = Transformers.convertChangeData(payload.columns, payload.record)
+        records.old = Transformers.convertChangeData(payload.columns, payload.old_record)
+        break
+
+      case 'DELETE':
+        records.old = Transformers.convertChangeData(payload.columns, payload.old_record)
+        break
+    }
+
+    return records
   }
 
   /**
@@ -26,23 +50,7 @@ export class SupabaseRealtimeClient {
         old: {},
       }
 
-      switch (payload.type) {
-        case 'INSERT':
-          enrichedPayload.new = Transformers.convertChangeData(payload.columns, payload.record)
-          break
-
-        case 'UPDATE':
-          enrichedPayload.new = Transformers.convertChangeData(payload.columns, payload.record)
-          enrichedPayload.old = Transformers.convertChangeData(payload.columns, payload.old_record)
-          break
-
-        case 'DELETE':
-          enrichedPayload.old = Transformers.convertChangeData(payload.columns, payload.old_record)
-          break
-
-        default:
-          break
-      }
+      enrichedPayload = { ...enrichedPayload, ...this.getPayloadRecords(payload) }
 
       callback(enrichedPayload)
     })
