@@ -2,6 +2,11 @@
 
 Releases are handled by Semantic release. This document is for forcing and documenting any non-code changes.
 
+## 1.1.4
+
+- bump @supabase/gotrue-js from 1.9.3.2 to [1.10.1](https://github.com/supabase/gotrue-js/releases/tag/v1.10.1)
+  - Includes Next.js/Express helpers and Password reset helpers
+
 ## 1.1.3
 
 - bump @supabase/postgrest-js from 0.21.2 to 0.22.0
