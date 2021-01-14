@@ -15,19 +15,12 @@ export class SupabaseRealtimeClient {
       old: {},
     }
 
-    switch (payload.type) {
-      case 'INSERT':
-        records.new = Transformers.convertChangeData(payload.columns, payload.record)
-        break
+    if (payload.type === 'INSERT' || payload.type === 'UPDATE') {
+      records.new = Transformers.convertChangeData(payload.columns, payload.record)
+    }
 
-      case 'UPDATE':
-        records.new = Transformers.convertChangeData(payload.columns, payload.record)
-        records.old = Transformers.convertChangeData(payload.columns, payload.old_record)
-        break
-
-      case 'DELETE':
-        records.old = Transformers.convertChangeData(payload.columns, payload.old_record)
-        break
+    if (payload.type === 'UPDATE' || payload.type === 'DELETE') {
+      records.old = Transformers.convertChangeData(payload.columns, payload.old_record)
     }
 
     return records
