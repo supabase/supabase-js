@@ -17,6 +17,7 @@
   "main": "dist/main/index.js",
   "module": "dist/module/index.js",
   "types": "dist/main/index.d.ts",
+  "sideEffects": false,
   "repository": "supabase/supabase-js",
   "scripts": {
     "clean": "rimraf dist docs",
