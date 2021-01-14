@@ -10,6 +10,9 @@ import {
   AuthChangeEvent,
   CookieOptions,
 } from './lib/types'
+import { polyfillGlobalThis } from './lib/polyfills'
+
+polyfillGlobalThis() // Make "globalThis" available
 
 const DEFAULT_OPTIONS = {
   url: GOTRUE_URL,
