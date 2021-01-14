@@ -119,17 +119,22 @@ export default class SupabaseClient {
     return this.realtime.channels
   }
 
-  private _initSupabaseAuthClient(settings: SupabaseClientOptions) {
+  private _initSupabaseAuthClient({
+    autoRefreshToken,
+    persistSession,
+    detectSessionInUrl,
+    localStorage,
+  }: SupabaseClientOptions) {
     return new SupabaseAuthClient({
       url: this.authUrl,
       headers: {
         Authorization: `Bearer ${this.supabaseKey}`,
         apikey: `${this.supabaseKey}`,
       },
-      autoRefreshToken: settings.autoRefreshToken,
-      persistSession: settings.persistSession,
-      detectSessionInUrl: settings.detectSessionInUrl,
-      localStorage: settings.localStorage,
+      autoRefreshToken,
+      persistSession,
+      detectSessionInUrl,
+      localStorage,
     })
   }
 
