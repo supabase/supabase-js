@@ -85,7 +85,7 @@ export default class SupabaseClient {
    * @param params  The parameters to pass to the function call.
    */
   rpc<T = any>(fn: string, params?: object) {
-    let rest = this._initPostgRESTClient()
+    const rest = this._initPostgRESTClient()
     return rest.rpc<T>(fn, params)
   }
 
@@ -97,12 +97,11 @@ export default class SupabaseClient {
   removeSubscription(subscription: RealtimeSubscription) {
     return new Promise(async (resolve) => {
       try {
-        if (!subscription.isClosed()) {
-          await this._closeChannel(subscription)
-        }
-        let openSubscriptions = this.realtime.channels.length
+        await this._closeSubscription(subscription)
+
+        const openSubscriptions = this.getSubscriptions().length
         if (!openSubscriptions) {
-          let { error } = await this.realtime.disconnect()
+          const { error } = await this.realtime.disconnect()
           if (error) return resolve({ error })
         }
         return resolve({ error: null, data: { openSubscriptions } })
@@ -110,6 +109,12 @@ export default class SupabaseClient {
         return resolve({ error })
       }
     })
+  }
+
+  private async _closeSubscription(subscription: RealtimeSubscription) {
+    if (!subscription.isClosed()) {
+      await this._closeChannel(subscription)
+    }
   }
 
   /**
@@ -152,8 +157,8 @@ export default class SupabaseClient {
   }
 
   private _getAuthHeaders(): { [key: string]: string } {
-    let headers: { [key: string]: string } = {}
-    let authBearer = this.auth.session()?.access_token ?? this.supabaseKey
+    const headers: { [key: string]: string } = {}
+    const authBearer = this.auth.session()?.access_token ?? this.supabaseKey
     headers['apikey'] = this.supabaseKey
     headers['Authorization'] = `Bearer ${authBearer}`
     return headers
@@ -167,9 +172,7 @@ export default class SupabaseClient {
           this.realtime.remove(subscription)
           return resolve(true)
         })
-        .receive('error', (e: Error) => {
-          return reject(e)
-        })
+        .receive('error', (e: Error) => reject(e))
     })
   }
 }
