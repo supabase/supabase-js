@@ -37,6 +37,8 @@ test('select on insert', async () => {
 })
 
 test('select on stored procedure', async () => {
-  const res = await postgrest.rpc('get_username_and_status', { name_param: 'supabot' }).select('status')
+  const res = await postgrest
+    .rpc('get_username_and_status', { name_param: 'supabot' })
+    .select('status')
   expect(res).toMatchSnapshot()
 })

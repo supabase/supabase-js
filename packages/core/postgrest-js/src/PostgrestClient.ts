@@ -1,6 +1,5 @@
 import PostgrestQueryBuilder from './lib/PostgrestQueryBuilder'
 import PostgrestTransformBuilder from './lib/PostgrestTransformBuilder'
-import { PostgrestBuilder } from './lib/types'
 
 export default class PostgrestClient {
   url: string

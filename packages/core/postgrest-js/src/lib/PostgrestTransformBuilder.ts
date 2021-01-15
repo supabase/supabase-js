@@ -59,10 +59,7 @@ export default class PostgrestTransformBuilder<T> extends PostgrestBuilder<T> {
    * @param count  The maximum no. of rows to limit to.
    * @param foreignTable  The foreign table to use (for foreign columns).
    */
-  limit(
-    count: number,
-    { foreignTable }: { foreignTable?: string } = {}
-  ): this {
+  limit(count: number, { foreignTable }: { foreignTable?: string } = {}): this {
     const key = typeof foreignTable === 'undefined' ? 'limit' : `"${foreignTable}".limit`
     this.url.searchParams.set(key, `${count}`)
     return this
@@ -75,11 +72,7 @@ export default class PostgrestTransformBuilder<T> extends PostgrestBuilder<T> {
    * @param to  The last index to which to limit the result, inclusive.
    * @param foreignTable  The foreign table to use (for foreign columns).
    */
-  range(
-    from: number,
-    to: number,
-    { foreignTable }: { foreignTable?: string } = {}
-  ): this {
+  range(from: number, to: number, { foreignTable }: { foreignTable?: string } = {}): this {
     const keyOffset = typeof foreignTable === 'undefined' ? 'offset' : `"${foreignTable}".offset`
     const keyLimit = typeof foreignTable === 'undefined' ? 'limit' : `"${foreignTable}".limit`
     this.url.searchParams.set(keyOffset, `${from}`)

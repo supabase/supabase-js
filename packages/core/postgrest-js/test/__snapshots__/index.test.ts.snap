@@ -27,6 +27,7 @@ Object {
       "username": "awailas",
     },
   ],
+  "count": null,
   "data": Array [
     Object {
       "age_range": "[1,2)",
@@ -114,6 +115,7 @@ Object {
       "username": "supabot",
     },
   ],
+  "count": null,
   "data": Array [
     Object {
       "channel_id": 2,
@@ -161,6 +163,7 @@ Object {
       "username": "supabot",
     },
   ],
+  "count": null,
   "data": Array [
     Object {
       "channel_id": 1,
@@ -194,6 +197,7 @@ Object {
       "username": "supabot",
     },
   ],
+  "count": null,
   "data": Array [
     Object {
       "channel_id": 1,
@@ -234,6 +238,7 @@ Object {
       "username": "supabot",
     },
   ],
+  "count": null,
   "data": Array [
     Object {
       "channel_id": 1,
@@ -288,6 +293,7 @@ Object {
       "username": "supabot",
     },
   ],
+  "count": null,
   "data": Array [
     Object {
       "channel_id": 2,
@@ -356,6 +362,7 @@ Object {
       "username": "supabot",
     },
   ],
+  "count": null,
   "data": Array [
     Object {
       "channel_id": 1,
@@ -417,6 +424,7 @@ Object {
       "username": "supabot",
     },
   ],
+  "count": null,
   "data": Array [
     Object {
       "channel_id": 1,
@@ -478,6 +486,7 @@ Object {
       "username": "supabot",
     },
   ],
+  "count": null,
   "data": Array [
     Object {
       "channel_id": 1,
@@ -532,6 +541,7 @@ Object {
       "username": "supabot",
     },
   ],
+  "count": null,
   "data": Array [
     Object {
       "channel_id": 2,
@@ -572,6 +582,7 @@ Object {
       "username": "supabot",
     },
   ],
+  "count": null,
   "data": Array [
     Object {
       "channel_id": 1,
@@ -633,6 +644,7 @@ Object {
       "username": "dragarcia",
     },
   ],
+  "count": null,
   "data": Array [
     Object {
       "age_range": "[1,2)",
@@ -680,6 +692,7 @@ Object {
       "username": "supabot",
     },
   ],
+  "count": null,
   "data": Array [
     Object {
       "age_range": "[1,2)",
@@ -706,6 +719,7 @@ Object {
       "username": "supabot",
     },
   ],
+  "count": null,
   "data": Array [
     Object {
       "age_range": "[1,2)",
@@ -747,6 +761,7 @@ Object {
       "messages": Array [],
     },
   ],
+  "count": null,
   "data": Array [
     Object {
       "messages": Array [
@@ -806,6 +821,7 @@ Object {
       "messages": Array [],
     },
   ],
+  "count": null,
   "data": Array [
     Object {
       "messages": Array [
@@ -865,6 +881,7 @@ Object {
       "messages": Array [],
     },
   ],
+  "count": null,
   "data": Array [
     Object {
       "messages": Array [
@@ -924,6 +941,7 @@ Object {
       "messages": Array [],
     },
   ],
+  "count": null,
   "data": Array [
     Object {
       "messages": Array [
@@ -983,6 +1001,7 @@ Object {
       "messages": Array [],
     },
   ],
+  "count": null,
   "data": Array [
     Object {
       "messages": Array [
@@ -1022,6 +1041,7 @@ Object {
       "username": "supabot",
     },
   ],
+  "count": null,
   "data": Array [
     Object {
       "age_range": "[1,2)",
@@ -1048,6 +1068,7 @@ Object {
       "username": "supabot",
     },
   ],
+  "count": null,
   "data": Array [
     Object {
       "age_range": "[1,2)",
@@ -1074,6 +1095,7 @@ Object {
       "username": "supabot",
     },
   ],
+  "count": null,
   "data": Array [
     Object {
       "age_range": "[1,2)",
@@ -1100,6 +1122,7 @@ Object {
       "username": "supabot",
     },
   ],
+  "count": null,
   "data": Array [
     Object {
       "channel_id": 2,
@@ -1133,6 +1156,7 @@ Object {
       "username": "supabot",
     },
   ],
+  "count": null,
   "data": Array [
     Object {
       "channel_id": 1,
@@ -1166,6 +1190,7 @@ Object {
       "username": "supabot",
     },
   ],
+  "count": null,
   "data": Array [
     Object {
       "age_range": "[1,2)",
@@ -1213,6 +1238,7 @@ Object {
       "username": "dragarcia",
     },
   ],
+  "count": null,
   "data": Array [
     Object {
       "age_range": "[1,2)",
@@ -1241,6 +1267,598 @@ Object {
       "data": null,
       "status": "ONLINE",
       "username": "dragarcia",
+    },
+  ],
+  "error": null,
+  "status": 200,
+  "statusText": "OK",
+}
+`;
+
+exports[`insert, update, delete with count: 'exact' basic delete count: 'exact' 1`] = `
+Object {
+  "body": Array [
+    Object {
+      "channel_id": 2,
+      "data": null,
+      "id": 6,
+      "message": "foo",
+      "username": "supabot",
+    },
+    Object {
+      "channel_id": 2,
+      "data": null,
+      "id": 3,
+      "message": "foo",
+      "username": "supabot",
+    },
+    Object {
+      "channel_id": 2,
+      "data": null,
+      "id": 7,
+      "message": "foo",
+      "username": "supabot",
+    },
+    Object {
+      "channel_id": 2,
+      "data": null,
+      "id": 8,
+      "message": "foo",
+      "username": "supabot",
+    },
+  ],
+  "count": 4,
+  "data": Array [
+    Object {
+      "channel_id": 2,
+      "data": null,
+      "id": 6,
+      "message": "foo",
+      "username": "supabot",
+    },
+    Object {
+      "channel_id": 2,
+      "data": null,
+      "id": 3,
+      "message": "foo",
+      "username": "supabot",
+    },
+    Object {
+      "channel_id": 2,
+      "data": null,
+      "id": 7,
+      "message": "foo",
+      "username": "supabot",
+    },
+    Object {
+      "channel_id": 2,
+      "data": null,
+      "id": 8,
+      "message": "foo",
+      "username": "supabot",
+    },
+  ],
+  "error": null,
+  "status": 200,
+  "statusText": "OK",
+}
+`;
+
+exports[`insert, update, delete with count: 'exact' basic delete count: 'exact' 2`] = `
+Object {
+  "body": Array [
+    Object {
+      "channel_id": 1,
+      "data": null,
+      "id": 1,
+      "message": "Hello World 👋",
+      "username": "supabot",
+    },
+    Object {
+      "channel_id": 2,
+      "data": null,
+      "id": 2,
+      "message": "Perfection is attained, not when there is nothing more to add, but when there is nothing left to take away.",
+      "username": "supabot",
+    },
+  ],
+  "count": null,
+  "data": Array [
+    Object {
+      "channel_id": 1,
+      "data": null,
+      "id": 1,
+      "message": "Hello World 👋",
+      "username": "supabot",
+    },
+    Object {
+      "channel_id": 2,
+      "data": null,
+      "id": 2,
+      "message": "Perfection is attained, not when there is nothing more to add, but when there is nothing left to take away.",
+      "username": "supabot",
+    },
+  ],
+  "error": null,
+  "status": 200,
+  "statusText": "OK",
+}
+`;
+
+exports[`insert, update, delete with count: 'exact' bulk insert with count: 'exact' 1`] = `
+Object {
+  "body": Array [
+    Object {
+      "channel_id": 1,
+      "data": null,
+      "id": 7,
+      "message": "foo",
+      "username": "supabot",
+    },
+    Object {
+      "channel_id": 1,
+      "data": null,
+      "id": 8,
+      "message": "foo",
+      "username": "supabot",
+    },
+  ],
+  "count": 2,
+  "data": Array [
+    Object {
+      "channel_id": 1,
+      "data": null,
+      "id": 7,
+      "message": "foo",
+      "username": "supabot",
+    },
+    Object {
+      "channel_id": 1,
+      "data": null,
+      "id": 8,
+      "message": "foo",
+      "username": "supabot",
+    },
+  ],
+  "error": null,
+  "status": 201,
+  "statusText": "Created",
+}
+`;
+
+exports[`insert, update, delete with count: 'exact' bulk insert with count: 'exact' 2`] = `
+Object {
+  "body": Array [
+    Object {
+      "channel_id": 1,
+      "data": null,
+      "id": 1,
+      "message": "Hello World 👋",
+      "username": "supabot",
+    },
+    Object {
+      "channel_id": 2,
+      "data": null,
+      "id": 2,
+      "message": "Perfection is attained, not when there is nothing more to add, but when there is nothing left to take away.",
+      "username": "supabot",
+    },
+    Object {
+      "channel_id": 1,
+      "data": null,
+      "id": 6,
+      "message": "foo",
+      "username": "supabot",
+    },
+    Object {
+      "channel_id": 2,
+      "data": null,
+      "id": 3,
+      "message": "foo",
+      "username": "supabot",
+    },
+    Object {
+      "channel_id": 1,
+      "data": null,
+      "id": 7,
+      "message": "foo",
+      "username": "supabot",
+    },
+    Object {
+      "channel_id": 1,
+      "data": null,
+      "id": 8,
+      "message": "foo",
+      "username": "supabot",
+    },
+  ],
+  "count": null,
+  "data": Array [
+    Object {
+      "channel_id": 1,
+      "data": null,
+      "id": 1,
+      "message": "Hello World 👋",
+      "username": "supabot",
+    },
+    Object {
+      "channel_id": 2,
+      "data": null,
+      "id": 2,
+      "message": "Perfection is attained, not when there is nothing more to add, but when there is nothing left to take away.",
+      "username": "supabot",
+    },
+    Object {
+      "channel_id": 1,
+      "data": null,
+      "id": 6,
+      "message": "foo",
+      "username": "supabot",
+    },
+    Object {
+      "channel_id": 2,
+      "data": null,
+      "id": 3,
+      "message": "foo",
+      "username": "supabot",
+    },
+    Object {
+      "channel_id": 1,
+      "data": null,
+      "id": 7,
+      "message": "foo",
+      "username": "supabot",
+    },
+    Object {
+      "channel_id": 1,
+      "data": null,
+      "id": 8,
+      "message": "foo",
+      "username": "supabot",
+    },
+  ],
+  "error": null,
+  "status": 200,
+  "statusText": "OK",
+}
+`;
+
+exports[`insert, update, delete with count: 'exact' insert with count: 'exact' 1`] = `
+Object {
+  "body": Array [
+    Object {
+      "channel_id": 1,
+      "data": null,
+      "id": 6,
+      "message": "foo",
+      "username": "supabot",
+    },
+  ],
+  "count": 1,
+  "data": Array [
+    Object {
+      "channel_id": 1,
+      "data": null,
+      "id": 6,
+      "message": "foo",
+      "username": "supabot",
+    },
+  ],
+  "error": null,
+  "status": 201,
+  "statusText": "Created",
+}
+`;
+
+exports[`insert, update, delete with count: 'exact' insert with count: 'exact' 2`] = `
+Object {
+  "body": Array [
+    Object {
+      "channel_id": 1,
+      "data": null,
+      "id": 1,
+      "message": "Hello World 👋",
+      "username": "supabot",
+    },
+    Object {
+      "channel_id": 2,
+      "data": null,
+      "id": 2,
+      "message": "Perfection is attained, not when there is nothing more to add, but when there is nothing left to take away.",
+      "username": "supabot",
+    },
+    Object {
+      "channel_id": 1,
+      "data": null,
+      "id": 6,
+      "message": "foo",
+      "username": "supabot",
+    },
+  ],
+  "count": null,
+  "data": Array [
+    Object {
+      "channel_id": 1,
+      "data": null,
+      "id": 1,
+      "message": "Hello World 👋",
+      "username": "supabot",
+    },
+    Object {
+      "channel_id": 2,
+      "data": null,
+      "id": 2,
+      "message": "Perfection is attained, not when there is nothing more to add, but when there is nothing left to take away.",
+      "username": "supabot",
+    },
+    Object {
+      "channel_id": 1,
+      "data": null,
+      "id": 6,
+      "message": "foo",
+      "username": "supabot",
+    },
+  ],
+  "error": null,
+  "status": 200,
+  "statusText": "OK",
+}
+`;
+
+exports[`insert, update, delete with count: 'exact' update with count: 'exact' 1`] = `
+Object {
+  "body": Array [
+    Object {
+      "channel_id": 2,
+      "data": null,
+      "id": 6,
+      "message": "foo",
+      "username": "supabot",
+    },
+    Object {
+      "channel_id": 2,
+      "data": null,
+      "id": 3,
+      "message": "foo",
+      "username": "supabot",
+    },
+    Object {
+      "channel_id": 2,
+      "data": null,
+      "id": 7,
+      "message": "foo",
+      "username": "supabot",
+    },
+    Object {
+      "channel_id": 2,
+      "data": null,
+      "id": 8,
+      "message": "foo",
+      "username": "supabot",
+    },
+  ],
+  "count": 4,
+  "data": Array [
+    Object {
+      "channel_id": 2,
+      "data": null,
+      "id": 6,
+      "message": "foo",
+      "username": "supabot",
+    },
+    Object {
+      "channel_id": 2,
+      "data": null,
+      "id": 3,
+      "message": "foo",
+      "username": "supabot",
+    },
+    Object {
+      "channel_id": 2,
+      "data": null,
+      "id": 7,
+      "message": "foo",
+      "username": "supabot",
+    },
+    Object {
+      "channel_id": 2,
+      "data": null,
+      "id": 8,
+      "message": "foo",
+      "username": "supabot",
+    },
+  ],
+  "error": null,
+  "status": 200,
+  "statusText": "OK",
+}
+`;
+
+exports[`insert, update, delete with count: 'exact' update with count: 'exact' 2`] = `
+Object {
+  "body": Array [
+    Object {
+      "channel_id": 1,
+      "data": null,
+      "id": 1,
+      "message": "Hello World 👋",
+      "username": "supabot",
+    },
+    Object {
+      "channel_id": 2,
+      "data": null,
+      "id": 2,
+      "message": "Perfection is attained, not when there is nothing more to add, but when there is nothing left to take away.",
+      "username": "supabot",
+    },
+    Object {
+      "channel_id": 2,
+      "data": null,
+      "id": 6,
+      "message": "foo",
+      "username": "supabot",
+    },
+    Object {
+      "channel_id": 2,
+      "data": null,
+      "id": 3,
+      "message": "foo",
+      "username": "supabot",
+    },
+    Object {
+      "channel_id": 2,
+      "data": null,
+      "id": 7,
+      "message": "foo",
+      "username": "supabot",
+    },
+    Object {
+      "channel_id": 2,
+      "data": null,
+      "id": 8,
+      "message": "foo",
+      "username": "supabot",
+    },
+  ],
+  "count": null,
+  "data": Array [
+    Object {
+      "channel_id": 1,
+      "data": null,
+      "id": 1,
+      "message": "Hello World 👋",
+      "username": "supabot",
+    },
+    Object {
+      "channel_id": 2,
+      "data": null,
+      "id": 2,
+      "message": "Perfection is attained, not when there is nothing more to add, but when there is nothing left to take away.",
+      "username": "supabot",
+    },
+    Object {
+      "channel_id": 2,
+      "data": null,
+      "id": 6,
+      "message": "foo",
+      "username": "supabot",
+    },
+    Object {
+      "channel_id": 2,
+      "data": null,
+      "id": 3,
+      "message": "foo",
+      "username": "supabot",
+    },
+    Object {
+      "channel_id": 2,
+      "data": null,
+      "id": 7,
+      "message": "foo",
+      "username": "supabot",
+    },
+    Object {
+      "channel_id": 2,
+      "data": null,
+      "id": 8,
+      "message": "foo",
+      "username": "supabot",
+    },
+  ],
+  "error": null,
+  "status": 200,
+  "statusText": "OK",
+}
+`;
+
+exports[`insert, update, delete with count: 'exact' upsert with count: 'exact' 1`] = `
+Object {
+  "body": Array [
+    Object {
+      "channel_id": 2,
+      "data": null,
+      "id": 3,
+      "message": "foo",
+      "username": "supabot",
+    },
+  ],
+  "count": 1,
+  "data": Array [
+    Object {
+      "channel_id": 2,
+      "data": null,
+      "id": 3,
+      "message": "foo",
+      "username": "supabot",
+    },
+  ],
+  "error": null,
+  "status": 201,
+  "statusText": "Created",
+}
+`;
+
+exports[`insert, update, delete with count: 'exact' upsert with count: 'exact' 2`] = `
+Object {
+  "body": Array [
+    Object {
+      "channel_id": 1,
+      "data": null,
+      "id": 1,
+      "message": "Hello World 👋",
+      "username": "supabot",
+    },
+    Object {
+      "channel_id": 2,
+      "data": null,
+      "id": 2,
+      "message": "Perfection is attained, not when there is nothing more to add, but when there is nothing left to take away.",
+      "username": "supabot",
+    },
+    Object {
+      "channel_id": 1,
+      "data": null,
+      "id": 6,
+      "message": "foo",
+      "username": "supabot",
+    },
+    Object {
+      "channel_id": 2,
+      "data": null,
+      "id": 3,
+      "message": "foo",
+      "username": "supabot",
+    },
+  ],
+  "count": null,
+  "data": Array [
+    Object {
+      "channel_id": 1,
+      "data": null,
+      "id": 1,
+      "message": "Hello World 👋",
+      "username": "supabot",
+    },
+    Object {
+      "channel_id": 2,
+      "data": null,
+      "id": 2,
+      "message": "Perfection is attained, not when there is nothing more to add, but when there is nothing left to take away.",
+      "username": "supabot",
+    },
+    Object {
+      "channel_id": 1,
+      "data": null,
+      "id": 6,
+      "message": "foo",
+      "username": "supabot",
+    },
+    Object {
+      "channel_id": 2,
+      "data": null,
+      "id": 3,
+      "message": "foo",
+      "username": "supabot",
     },
   ],
   "error": null,
@@ -1281,6 +1899,7 @@ Object {
       "username": "dragarcia",
     },
   ],
+  "count": null,
   "data": Array [
     Object {
       "age_range": "[1,2)",
@@ -1328,6 +1947,7 @@ Object {
       "username": "supabot",
     },
   ],
+  "count": null,
   "data": Array [
     Object {
       "age_range": "[1,2)",
@@ -1354,6 +1974,7 @@ Object {
       "username": "supabot",
     },
   ],
+  "count": null,
   "data": Array [
     Object {
       "age_range": "[1,2)",
@@ -1380,6 +2001,7 @@ Object {
       "username": "supabot",
     },
   ],
+  "count": null,
   "data": Array [
     Object {
       "channel_id": 1,
@@ -1413,6 +2035,7 @@ Object {
       "username": "supabot",
     },
   ],
+  "count": null,
   "data": Array [
     Object {
       "channel_id": 1,
@@ -1446,6 +2069,7 @@ Object {
       "username": "supabot",
     },
   ],
+  "count": null,
   "data": Array [
     Object {
       "age_range": "[1,2)",
@@ -1464,6 +2088,7 @@ Object {
 exports[`missing table 1`] = `
 Object {
   "body": null,
+  "count": null,
   "data": null,
   "error": Object {
     "code": "42P01",
@@ -1487,6 +2112,7 @@ Object {
       "username": "supabot",
     },
   ],
+  "count": null,
   "data": Array [
     Object {
       "age_range": "[1,2)",
@@ -1527,6 +2153,7 @@ Object {
       "username": "dragarcia",
     },
   ],
+  "count": null,
   "data": Array [
     Object {
       "age_range": "[25,35)",
@@ -1581,6 +2208,7 @@ Object {
       "username": "dragarcia",
     },
   ],
+  "count": null,
   "data": Array [
     Object {
       "age_range": "[1,2)",
@@ -1635,6 +2263,7 @@ Object {
       "username": "dragarcia",
     },
   ],
+  "count": null,
   "data": Array [
     Object {
       "age_range": "[25,35)",
@@ -1675,6 +2304,7 @@ Object {
       "username": "supabot",
     },
   ],
+  "count": null,
   "data": Array [
     Object {
       "age_range": "[1,2)",
@@ -1701,6 +2331,7 @@ Object {
       "username": "dragarcia",
     },
   ],
+  "count": null,
   "data": Array [
     Object {
       "age_range": "[20,30)",
@@ -1734,6 +2365,7 @@ Object {
       "username": "kiwicopple",
     },
   ],
+  "count": null,
   "data": Array [
     Object {
       "age_range": "[1,2)",
@@ -1788,6 +2420,7 @@ Object {
       "username": "awailas",
     },
   ],
+  "count": null,
   "data": Array [
     Object {
       "age_range": "[1,2)",
@@ -1835,6 +2468,7 @@ Object {
       "username": "dragarcia",
     },
   ],
+  "count": null,
   "data": Array [
     Object {
       "age_range": "[20,30)",
@@ -1868,6 +2502,7 @@ Object {
       "username": "kiwicopple",
     },
   ],
+  "count": null,
   "data": Array [
     Object {
       "age_range": "[1,2)",
@@ -1901,6 +2536,7 @@ Object {
       "username": "supabot",
     },
   ],
+  "count": null,
   "data": Array [
     Object {
       "age_range": "[1,2)",
@@ -1941,6 +2577,7 @@ Object {
       "username": "dragarcia",
     },
   ],
+  "count": null,
   "data": Array [
     Object {
       "age_range": "[25,35)",
@@ -1977,6 +2614,7 @@ Object {
       "status": "ONLINE",
     },
   ],
+  "count": null,
   "data": Array [
     Object {
       "status": "ONLINE",
@@ -1995,6 +2633,7 @@ Object {
       "status": "ONLINE",
     },
   ],
+  "count": null,
   "data": Array [
     Object {
       "status": "ONLINE",
@@ -2003,6 +2642,119 @@ Object {
   "error": null,
   "status": 200,
   "statusText": "OK",
+}
+`;
+
+exports[`select with count:exact 1`] = `
+Object {
+  "body": Array [
+    Object {
+      "age_range": "[1,2)",
+      "catchphrase": "'cat' 'fat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "supabot",
+    },
+    Object {
+      "age_range": "[25,35)",
+      "catchphrase": "'bat' 'cat'",
+      "data": null,
+      "status": "OFFLINE",
+      "username": "kiwicopple",
+    },
+    Object {
+      "age_range": "[25,35)",
+      "catchphrase": "'bat' 'rat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "awailas",
+    },
+    Object {
+      "age_range": "[20,30)",
+      "catchphrase": "'fat' 'rat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "dragarcia",
+    },
+  ],
+  "count": 4,
+  "data": Array [
+    Object {
+      "age_range": "[1,2)",
+      "catchphrase": "'cat' 'fat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "supabot",
+    },
+    Object {
+      "age_range": "[25,35)",
+      "catchphrase": "'bat' 'cat'",
+      "data": null,
+      "status": "OFFLINE",
+      "username": "kiwicopple",
+    },
+    Object {
+      "age_range": "[25,35)",
+      "catchphrase": "'bat' 'rat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "awailas",
+    },
+    Object {
+      "age_range": "[20,30)",
+      "catchphrase": "'fat' 'rat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "dragarcia",
+    },
+  ],
+  "error": null,
+  "status": 200,
+  "statusText": "OK",
+}
+`;
+
+exports[`select with head:true 1`] = `
+Object {
+  "body": null,
+  "count": null,
+  "data": null,
+  "error": null,
+  "status": 200,
+  "statusText": "OK",
+}
+`;
+
+exports[`select with head:true, count:estimated 1`] = `
+Object {
+  "body": null,
+  "count": Any<Number>,
+  "data": null,
+  "error": null,
+  "status": 206,
+  "statusText": "Partial Content",
+}
+`;
+
+exports[`select with head:true, count:exact 1`] = `
+Object {
+  "body": null,
+  "count": 4,
+  "data": null,
+  "error": null,
+  "status": 200,
+  "statusText": "OK",
+}
+`;
+
+exports[`select with head:true, count:planned 1`] = `
+Object {
+  "body": null,
+  "count": Any<Number>,
+  "data": null,
+  "error": null,
+  "status": 206,
+  "statusText": "Partial Content",
 }
 `;
 
@@ -2015,6 +2767,7 @@ Object {
     "status": "ONLINE",
     "username": "supabot",
   },
+  "count": null,
   "data": Object {
     "age_range": "[1,2)",
     "catchphrase": "'cat' 'fat'",
@@ -2037,6 +2790,7 @@ Object {
     "status": "ONLINE",
     "username": "foo",
   },
+  "count": null,
   "data": Object {
     "age_range": null,
     "catchphrase": null,
@@ -2061,6 +2815,7 @@ Object {
       "username": "supabot",
     },
   ],
+  "count": null,
   "data": Array [
     Object {
       "age_range": "[1,2)",
@@ -2094,6 +2849,7 @@ Object {
       "username": "awailas",
     },
   ],
+  "count": null,
   "data": Array [
     Object {
       "age_range": "[25,35)",
@@ -2119,10 +2875,43 @@ Object {
 exports[`stored procedure 1`] = `
 Object {
   "body": "ONLINE",
+  "count": null,
   "data": "ONLINE",
   "error": null,
   "status": 200,
   "statusText": "OK",
+}
+`;
+
+exports[`stored procedure with count: 'exact' 1`] = `
+Object {
+  "body": null,
+  "count": null,
+  "data": null,
+  "error": Object {
+    "code": "42883",
+    "details": null,
+    "hint": "No function matches the given name and argument types. You might need to add explicit type casts.",
+    "message": "function public.get_status(count => text, name_param => text) does not exist",
+  },
+  "status": 404,
+  "statusText": "Not Found",
+}
+`;
+
+exports[`stored procedure with count: 'exact', head: true 1`] = `
+Object {
+  "body": null,
+  "count": null,
+  "data": null,
+  "error": Object {
+    "code": "42883",
+    "details": null,
+    "hint": "No function matches the given name and argument types. You might need to add explicit type casts.",
+    "message": "function public.get_status(count => text, head => text, name_param => text) does not exist",
+  },
+  "status": 404,
+  "statusText": "Not Found",
 }
 `;
 
@@ -2160,6 +2949,7 @@ Object {
       "username": "leroyjenkins",
     },
   ],
+  "count": null,
   "data": Array [
     Object {
       "age_range": "[1,2)",
@@ -2209,6 +2999,7 @@ Object {
       "username": "supabot",
     },
   ],
+  "count": null,
   "data": Array [
     Object {
       "age_range": "[1,2)",

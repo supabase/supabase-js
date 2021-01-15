@@ -26,12 +26,14 @@ interface PostgrestResponseSuccess<T> extends PostgrestResponseBase {
   error: null
   data: T[]
   body: T[]
+  count: number | null
 }
 interface PostgrestResponseFailure extends PostgrestResponseBase {
   error: PostgrestError
   data: null
   // For backward compatibility: body === data
   body: null
+  count: null
 }
 export type PostgrestResponse<T> = PostgrestResponseSuccess<T> | PostgrestResponseFailure
 
@@ -80,18 +82,36 @@ export abstract class PostgrestBuilder<T> implements PromiseLike<PostgrestRespon
       body: JSON.stringify(this.body),
     })
       .then(async (res) => {
-        let error, data
+        let error, data, count
         if (res.ok) {
           error = null
-          const isReturnMinimal = this.headers['Prefer']?.split(',').includes('return=minimal')
-          data = isReturnMinimal ? null : await res.json()
+          if (this.method !== 'HEAD') {
+            const isReturnMinimal = this.headers['Prefer']?.split(',').includes('return=minimal')
+            data = isReturnMinimal ? null : await res.json()
+          } else {
+            data = null
+          }
+
+          const countHeader = this.headers['Prefer']?.match(/count=(exact|planned|estimated)/)
+          if (countHeader) {
+            const contentRange = res.headers.get('content-range')?.split('/')
+            if (contentRange && contentRange.length > 1) {
+              count = parseInt(contentRange[1])
+            } else {
+              count = null
+            }
+          } else {
+            count = null
+          }
         } else {
           error = await res.json()
           data = null
+          count = null
         }
         const postgrestResponse: PostgrestResponse<T> = {
           error,
           data,
+          count,
           status: res.status,
           statusText: res.statusText,
           body: data,

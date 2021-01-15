@@ -17,8 +17,19 @@ export default class PostgrestQueryBuilder<T> extends PostgrestBuilder<T> {
    * Performs vertical filtering with SELECT.
    *
    * @param columns  The columns to retrieve, separated by commas.
+   * @param head  When set to true, select will void data.
+   * @param count  Count algorithm to use to count rows in a table.
    */
-  select(columns = '*'): PostgrestFilterBuilder<T> {
+  select(
+    columns = '*',
+    {
+      head = false,
+      count = null,
+    }: {
+      head?: boolean
+      count?: null | 'exact' | 'planned' | 'estimated'
+    } = {}
+  ): PostgrestFilterBuilder<T> {
     this.method = 'GET'
     // Remove whitespaces except when quoted
     let quoted = false
@@ -35,6 +46,12 @@ export default class PostgrestQueryBuilder<T> extends PostgrestBuilder<T> {
       })
       .join('')
     this.url.searchParams.set('select', cleanedColumns)
+    if (count) {
+      this.headers['Prefer'] = `count=${count}`
+    }
+    if (head) {
+      this.method = 'HEAD'
+    }
     return new PostgrestFilterBuilder(this)
   }
 
@@ -52,10 +69,12 @@ export default class PostgrestQueryBuilder<T> extends PostgrestBuilder<T> {
       upsert = false,
       onConflict,
       returning = 'representation',
+      count = null,
     }: {
       upsert?: boolean
       onConflict?: string
       returning?: 'minimal' | 'representation'
+      count?: null | 'exact' | 'planned' | 'estimated'
     } = {}
   ): PostgrestFilterBuilder<T> {
     this.method = 'POST'
@@ -67,6 +86,10 @@ export default class PostgrestQueryBuilder<T> extends PostgrestBuilder<T> {
 
     if (upsert && onConflict !== undefined) this.url.searchParams.set('on_conflict', onConflict)
     this.body = values
+    if (count) {
+      prefersHeaders.push(`count=${count}`)
+      this.headers['Prefer'] = prefersHeaders.join(',')
+    }
     return new PostgrestFilterBuilder(this)
   }
 
@@ -78,11 +101,23 @@ export default class PostgrestQueryBuilder<T> extends PostgrestBuilder<T> {
    */
   update(
     values: Partial<T>,
-    { returning = 'representation' }: { returning?: 'minimal' | 'representation' } = {}
+    {
+      returning = 'representation',
+      count = null,
+    }: {
+      returning?: 'minimal' | 'representation'
+      count?: null | 'exact' | 'planned' | 'estimated'
+    } = {}
   ): PostgrestFilterBuilder<T> {
     this.method = 'PATCH'
-    this.headers['Prefer'] = `return=${returning}`
+    let prefersHeaders = []
+    prefersHeaders.push(`return=${returning}`)
+    this.headers['Prefer'] = prefersHeaders.join(',')
     this.body = values
+    if (count) {
+      prefersHeaders.push(`count=${count}`)
+      this.headers['Prefer'] = prefersHeaders.join(',')
+    }
     return new PostgrestFilterBuilder(this)
   }
 
@@ -93,16 +128,41 @@ export default class PostgrestQueryBuilder<T> extends PostgrestBuilder<T> {
    */
   delete({
     returning = 'representation',
-  }: { returning?: 'minimal' | 'representation' } = {}): PostgrestFilterBuilder<T> {
+    count = null,
+  }: {
+    returning?: 'minimal' | 'representation'
+    count?: null | 'exact' | 'planned' | 'estimated'
+  } = {}): PostgrestFilterBuilder<T> {
     this.method = 'DELETE'
-    this.headers['Prefer'] = `return=${returning}`
+    let prefersHeaders = []
+    prefersHeaders.push(`return=${returning}`)
+    this.headers['Prefer'] = prefersHeaders.join(',')
+    if (count) {
+      prefersHeaders.push(`count=${count}`)
+      this.headers['Prefer'] = prefersHeaders.join(',')
+    }
     return new PostgrestFilterBuilder(this)
   }
 
   /** @internal */
-  rpc(params?: object): PostgrestTransformBuilder<T> {
+  rpc(
+    params?: object,
+    {
+      head = false,
+      count = null,
+    }: {
+      head?: boolean
+      count?: null | 'exact' | 'planned' | 'estimated'
+    } = {}
+  ): PostgrestTransformBuilder<T> {
     this.method = 'POST'
     this.body = params
+    if (count) {
+      this.headers['Prefer'] = `count=${count}`
+    }
+    if (head) {
+      this.method = 'HEAD'
+    }
     return new PostgrestTransformBuilder(this)
   }
 }
