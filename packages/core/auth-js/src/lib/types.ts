@@ -75,8 +75,8 @@ export interface CookieOptions {
 }
 
 export interface UserCredentials {
-  email: string
-  password: string
+  email?: string
+  password?: string
   // (Optional) The name of the provider.
   provider?: Provider
 }

@@ -93,7 +93,7 @@ export default class GoTrueClient {
     try {
       this._removeSession()
 
-      let { data, error } = await this.api.signUpWithEmail(email, password)
+      let { data, error } = await this.api.signUpWithEmail(email!, password!)
       if (error) throw error
 
       if (data?.user?.confirmed_at) {
