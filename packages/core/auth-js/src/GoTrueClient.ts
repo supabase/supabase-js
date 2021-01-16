@@ -9,6 +9,7 @@ import {
   Subscription,
   AuthChangeEvent,
   CookieOptions,
+  UserCredentials,
 } from './lib/types'
 
 const DEFAULT_OPTIONS = {
@@ -81,18 +82,18 @@ export default class GoTrueClient {
 
   /**
    * Creates a new user.
-   * @param credentials The user login details.
-   * @param credentials.email The user's email address.
-   * @param credentials.password The user's password.
+   * @type UserCredentials
+   * @param email The user's email address.
+   * @param password The user's password.
    */
-  async signUp(credentials: {
-    email: string
-    password: string
-  }): Promise<{ data: Session | null; user: User | null; error: Error | null }> {
+  async signUp({
+    email,
+    password
+  }: UserCredentials): Promise<{ data: Session | null; user: User | null; error: Error | null }> {
     try {
       this._removeSession()
 
-      let { data, error } = await this.api.signUpWithEmail(credentials.email, credentials.password)
+      let { data, error } = await this.api.signUpWithEmail(email, password)
       if (error) throw error
 
       if (data?.user?.confirmed_at) {
@@ -108,16 +109,12 @@ export default class GoTrueClient {
 
   /**
    * Log in an existing user, or login via a third-party provider.
-   * @param credentials The user login details.
-   * @param credentials.email The user's email address.
-   * @param credentials.password The user's password.
-   * @param credentials.provider One of the providers supported by GoTrue.
+   * @type UserCredentials
+   * @param email The user's email address.
+   * @param password The user's password.
+   * @param provider One of the providers supported by GoTrue.
    */
-  async signIn(credentials: {
-    email?: string
-    password?: string
-    provider?: Provider
-  }): Promise<{
+  async signIn({ email, password, provider }: UserCredentials): Promise<{
     data: Session | null
     user: User | null
     provider?: Provider
@@ -126,7 +123,7 @@ export default class GoTrueClient {
   }> {
     try {
       this._removeSession()
-      const { email, password, provider } = credentials
+
       if (email && !password) {
         const { error } = await this.api.sendMagicLinkEmail(email)
         return { data: null, user: null, error }
