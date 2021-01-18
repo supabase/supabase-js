@@ -38,6 +38,7 @@ interface PostgrestResponseFailure extends PostgrestResponseBase {
 export type PostgrestResponse<T> = PostgrestResponseSuccess<T> | PostgrestResponseFailure
 
 interface PostgrestSingleResponseSuccess<T> extends PostgrestResponseBase {
+  error: null
   data: T
   // For backward compatibility: body === data
   body: T
