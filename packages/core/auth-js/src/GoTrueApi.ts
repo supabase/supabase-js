@@ -104,14 +104,27 @@ export default class GoTrueApi {
   }
 
   /**
+   * Create a temporary object with all configured headers and
+   * adds the Authorization token to be used on request methods
+   * @param jwt A valid, logged-in JWT.
+   */
+  private _createRequestHeaders(jwt: string) {
+    const headers = { ...this.headers }
+    headers['Authorization'] = `Bearer ${jwt}`
+    return headers
+  }
+
+  /**
    * Removes a logged-in session.
    * @param jwt A valid, logged-in JWT.
    */
   async signOut(jwt: string): Promise<{ error: Error | null }> {
     try {
-      let headers = { ...this.headers }
-      headers['Authorization'] = `Bearer ${jwt}`
-      await post(`${this.url}/logout`, {}, { headers, noResolveJson: true })
+      await post(
+        `${this.url}/logout`,
+        {},
+        { headers: this._createRequestHeaders(jwt), noResolveJson: true }
+      )
       return { error: null }
     } catch (error) {
       return { error }
@@ -134,9 +147,7 @@ export default class GoTrueApi {
     jwt: string
   ): Promise<{ user: User | null; data: User | null; error: Error | null }> {
     try {
-      let headers = { ...this.headers }
-      headers['Authorization'] = `Bearer ${jwt}`
-      let data: any = await get(`${this.url}/user`, { headers })
+      const data: any = await get(`${this.url}/user`, { headers: this._createRequestHeaders(jwt) })
       return { user: data, data, error: null }
     } catch (error) {
       return { user: null, data: null, error }
@@ -153,9 +164,9 @@ export default class GoTrueApi {
     attributes: UserAttributes
   ): Promise<{ user: User | null; data: User | null; error: Error | null }> {
     try {
-      let headers = { ...this.headers }
-      headers['Authorization'] = `Bearer ${jwt}`
-      let data: any = await put(`${this.url}/user`, attributes, { headers })
+      const data: any = await put(`${this.url}/user`, attributes, {
+        headers: this._createRequestHeaders(jwt),
+      })
       return { user: data, data, error: null }
     } catch (error) {
       return { user: null, data: null, error }
@@ -170,7 +181,7 @@ export default class GoTrueApi {
     refreshToken: string
   ): Promise<{ data: Session | null; error: Error | null }> {
     try {
-      let data: any = await post(
+      const data: any = await post(
         `${this.url}/token?grant_type=refresh_token`,
         { refresh_token: refreshToken },
         { headers: this.headers }
@@ -186,26 +197,25 @@ export default class GoTrueApi {
    * Works for Next.js & Express (requires cookie-parser middleware).
    */
   setAuthCookie(req: any, res: any) {
-    if (req.method === 'POST') {
-      const { event, session } = req.body
-      if (!event) throw new Error('Auth event missing!')
-      if (event === 'SIGNED_IN') {
-        if (!session) throw new Error('Auth session missing!')
-        setCookie(req, res, {
-          name: this.cookieOptions.name!,
-          value: session.access_token,
-          domain: this.cookieOptions.domain,
-          maxAge: this.cookieOptions.lifetime!,
-          path: this.cookieOptions.path,
-          sameSite: this.cookieOptions.sameSite,
-        })
-      }
-      if (event === 'SIGNED_OUT') deleteCookie(req, res, this.cookieOptions.name!)
-      res.status(200).json({})
-    } else {
+    if (req.method !== 'POST') {
       res.setHeader('Allow', 'POST')
       res.status(405).end('Method Not Allowed')
     }
+    const { event, session } = req.body
+    if (!event) throw new Error('Auth event missing!')
+    if (event === 'SIGNED_IN') {
+      if (!session) throw new Error('Auth session missing!')
+      setCookie(req, res, {
+        name: this.cookieOptions.name!,
+        value: session.access_token,
+        domain: this.cookieOptions.domain,
+        maxAge: this.cookieOptions.lifetime!,
+        path: this.cookieOptions.path,
+        sameSite: this.cookieOptions.sameSite,
+      })
+    }
+    if (event === 'SIGNED_OUT') deleteCookie(req, res, this.cookieOptions.name!)
+    res.status(200).json({})
   }
 
   /**

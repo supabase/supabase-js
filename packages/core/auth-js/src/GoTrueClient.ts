@@ -95,7 +95,10 @@ export default class GoTrueClient {
     try {
       this._removeSession()
 
-      let { data, error } = await this.api.signUpWithEmail(credentials.email, credentials.password)
+      const { data, error } = await this.api.signUpWithEmail(
+        credentials.email,
+        credentials.password
+      )
       if (error) throw error
 
       if (data?.user?.confirmed_at) {
@@ -136,7 +139,7 @@ export default class GoTrueClient {
       }
       if (email && password) return this._handleEmailSignIn(email, password)
       if (provider) return this._handleProviderSignIn(provider)
-      else throw new Error(`You must provide either an email or a third-party provider.`)
+      throw new Error(`You must provide either an email or a third-party provider.`)
     } catch (error) {
       return { data: null, user: null, error }
     }
@@ -169,7 +172,7 @@ export default class GoTrueClient {
 
       await this._callRefreshToken()
 
-      let { data, error } = await this.api.getUser(this.currentSession.access_token)
+      const { data, error } = await this.api.getUser(this.currentSession.access_token)
       if (error) throw error
 
       this.currentUser = data
@@ -188,7 +191,10 @@ export default class GoTrueClient {
     try {
       if (!this.currentSession?.access_token) throw new Error('Not logged in.')
 
-      let { data, error } = await this.api.updateUser(this.currentSession.access_token, attributes)
+      const { data, error } = await this.api.updateUser(
+        this.currentSession.access_token,
+        attributes
+      )
       if (error) throw error
 
       this.currentUser = data
@@ -214,12 +220,12 @@ export default class GoTrueClient {
       if (error_description) throw new Error(error_description)
 
       const access_token = getParameterByName('access_token')
-      const expires_in = getParameterByName('expires_in')
-      const refresh_token = getParameterByName('refresh_token')
-      const token_type = getParameterByName('token_type')
       if (!access_token) throw new Error('No access_token detected.')
+      const expires_in = getParameterByName('expires_in')
       if (!expires_in) throw new Error('No expires_in detected.')
+      const refresh_token = getParameterByName('refresh_token')
       if (!refresh_token) throw new Error('No refresh_token detected.')
+      const token_type = getParameterByName('token_type')
       if (!token_type) throw new Error('No token_type detected.')
 
       const { user, error } = await this.api.getUser(access_token)
@@ -270,7 +276,7 @@ export default class GoTrueClient {
   ): { data: Subscription | null; error: Error | null } {
     try {
       const id: string = uuid()
-      let self = this
+      const self = this
       const subscription: Subscription = {
         id,
         callback,
@@ -287,7 +293,7 @@ export default class GoTrueClient {
 
   private async _handleEmailSignIn(email: string, password: string) {
     try {
-      let { data, error } = await this.api.signInWithEmail(email, password)
+      const { data, error } = await this.api.signInWithEmail(email, password)
       if (error || !data) return { data: null, user: null, error }
 
       if (data?.user?.confirmed_at) {
@@ -302,7 +308,7 @@ export default class GoTrueClient {
   }
 
   private _handleProviderSignIn(provider: Provider) {
-    let url: string = this.api.getUrlForProvider(provider)
+    const url: string = this.api.getUrlForProvider(provider)
 
     try {
       // try to open on the browser
@@ -313,14 +319,14 @@ export default class GoTrueClient {
     } catch (error) {
       // fallback to returning the URL
       if (!!url) return { provider, url, data: null, user: null, error: null }
-      else return { data: null, user: null, error }
+      return { data: null, user: null, error }
     }
   }
 
   private _saveSession(session: Session) {
     this.currentSession = session
     this.currentUser = session.user
-    let tokenExpirySeconds = session['expires_in']
+    const tokenExpirySeconds = session['expires_in']
 
     if (this.autoRefreshToken && tokenExpirySeconds) {
       setTimeout(this._callRefreshToken, (tokenExpirySeconds - 60) * 1000)
@@ -347,65 +353,64 @@ export default class GoTrueClient {
   private async _recoverSession() {
     // Note: this method is async to accommodate for AsyncStorage e.g. in React native.
     const json = isBrowser() && (await this.localStorage.getItem(STORAGE_KEY))
-    if (json) {
-      try {
-        const data = JSON.parse(json)
-        const { currentSession, expiresAt } = data
-
-        const timeNow = Math.round(Date.now() / 1000)
-        if (expiresAt < timeNow) {
-          if (this.autoRefreshToken && currentSession.refresh_token) {
-            const { error } = await this._callRefreshToken(currentSession.refresh_token)
-            if (error) {
-              console.log(error.message)
-              await this._removeSession()
-            }
-          } else {
-            this._removeSession()
-          }
-        } else if (!currentSession || !currentSession.user) {
-          console.log('Current session is missing data.')
-          this._removeSession()
-        } else {
-          this.currentSession = currentSession
-          this.currentUser = currentSession.user
-          this._notifyAllSubscribers('SIGNED_IN')
-          // schedule a refresh 60 seconds before token due to expire
-          setTimeout(this._callRefreshToken, (expiresAt - timeNow - 60) * 1000)
-        }
-      } catch (err) {
-        console.error(err)
-        return null
-      }
+    if (!json) {
+      return null
     }
-    return null
+    try {
+      const data = JSON.parse(json)
+      const { currentSession, expiresAt } = data
+
+      const timeNow = Math.round(Date.now() / 1000)
+      if (expiresAt < timeNow) {
+        if (this.autoRefreshToken && currentSession.refresh_token) {
+          const { error } = await this._callRefreshToken(currentSession.refresh_token)
+          if (error) {
+            console.log(error.message)
+            await this._removeSession()
+          }
+        } else {
+          this._removeSession()
+        }
+      } else if (!currentSession || !currentSession.user) {
+        console.log('Current session is missing data.')
+        this._removeSession()
+      } else {
+        this.currentSession = currentSession
+        this.currentUser = currentSession.user
+        this._notifyAllSubscribers('SIGNED_IN')
+        // schedule a refresh 60 seconds before token due to expire
+        setTimeout(this._callRefreshToken, (expiresAt - timeNow - 60) * 1000)
+      }
+    } catch (err) {
+      console.error(err)
+      return null
+    }
   }
 
   private async _callRefreshToken(refresh_token = this.currentSession?.refresh_token) {
     try {
-      if (refresh_token) {
-        const { data, error } = await this.api.refreshAccessToken(refresh_token)
-
-        if (data?.access_token) {
-          this.currentSession = data as Session
-          this.currentUser = this.currentSession.user
-          this._notifyAllSubscribers('SIGNED_IN')
-          const tokenExpirySeconds = data.expires_in
-
-          if (this.autoRefreshToken && tokenExpirySeconds) {
-            setTimeout(this._callRefreshToken, (tokenExpirySeconds - 60) * 1000)
-          }
-
-          if (this.persistSession && this.currentUser) {
-            this._persistSession(this.currentSession, tokenExpirySeconds)
-          }
-        } else {
-          throw error
-        }
-        return { data, error: null }
-      } else {
+      if (!refresh_token) {
         throw new Error('No current session.')
       }
+      const { data, error } = await this.api.refreshAccessToken(refresh_token)
+
+      if (data?.access_token) {
+        this.currentSession = data as Session
+        this.currentUser = this.currentSession.user
+        this._notifyAllSubscribers('SIGNED_IN')
+        const tokenExpirySeconds = data.expires_in
+
+        if (this.autoRefreshToken && tokenExpirySeconds) {
+          setTimeout(this._callRefreshToken, (tokenExpirySeconds - 60) * 1000)
+        }
+
+        if (this.persistSession && this.currentUser) {
+          this._persistSession(this.currentSession, tokenExpirySeconds)
+        }
+      } else {
+        throw error
+      }
+      return { data, error: null }
     } catch (error) {
       return { data: null, error }
     }
