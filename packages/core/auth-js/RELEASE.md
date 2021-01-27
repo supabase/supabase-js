@@ -2,6 +2,11 @@
 
 Releases are handled by Semantic release. This document is for forcing and documenting any non-code changes.
 
+### v1.10.1
+
+- Fix https://github.com/supabase/gotrue-js/issues/38
+- Fix https://github.com/supabase/gotrue-js/issues/41
+
 ### v1.7.3
 
 Fixes React Native error. From @tjg1: https://github.com/supabase/gotrue-js/pull/26
