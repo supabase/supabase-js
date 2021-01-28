@@ -18,6 +18,17 @@ var client = new RealtimeClient(process.env.REALTIME_URL)
 client.connect()
 ```
 
+You can pass in your JWT If you have enabled JWT authorization in Supabase [Realtime](https://github.com/supabase/realtime) server.
+
+```js
+import { RealtimeClient } from '@supabase/realtime-js'
+
+var client = new RealtimeClient(process.env.REALTIME_URL, { params: { token: 'token123' }})
+client.connect()
+```
+
+See [Realtime: Channels Authorization](https://github.com/supabase/realtime#channels-authorization) for more information.
+
 **Socket Hooks**
 
 ```js
