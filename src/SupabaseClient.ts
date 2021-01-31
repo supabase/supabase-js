@@ -1,5 +1,5 @@
 import { DEFAULT_HEADERS } from './lib/constants'
-import { SupabaseClientOptions } from './lib/types'
+import { SupabaseBaseSchema, SupabaseClientOptions } from './lib/types'
 import { SupabaseAuthClient } from './lib/SupabaseAuthClient'
 import { SupabaseQueryBuilder } from './lib/SupabaseQueryBuilder'
 import { PostgrestClient } from '@supabase/postgrest-js'
@@ -19,7 +19,7 @@ const DEFAULT_OPTIONS = {
  *
  * An isomorphic Javascript client for interacting with Postgres.
  */
-export default class SupabaseClient {
+export default class SupabaseClient<Schema extends SupabaseBaseSchema = SupabaseBaseSchema> {
   /**
    * Supabase Auth allows you to create and manage user sessions for access to data that is secured by access policies.
    */
@@ -68,13 +68,13 @@ export default class SupabaseClient {
    *
    * @param table The table name to operate on.
    */
-  from<T = any>(table: string): SupabaseQueryBuilder<T> {
+  from<TableName extends keyof Schema>(table: TableName): SupabaseQueryBuilder<Schema, TableName> {
     const url = `${this.restUrl}/${table}`
-    return new SupabaseQueryBuilder<T>(url, {
+    return new SupabaseQueryBuilder<Schema, TableName>(url, {
       headers: this._getAuthHeaders(),
       schema: this.schema,
       realtime: this.realtime,
-      table,
+      table: table as string,
     })
   }
 
