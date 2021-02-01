@@ -1,5 +1,3 @@
-export type SupabaseBaseSchema = Record<string, Record<string, unknown>>
-
 export type SupabaseClientOptions = {
   /**
    * The Postgres schema which your tables belong to. Must be on the list of exposed schemas in Supabase. Defaults to 'public'.

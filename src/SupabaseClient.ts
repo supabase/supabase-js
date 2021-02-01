@@ -1,8 +1,8 @@
 import { DEFAULT_HEADERS } from './lib/constants'
-import { SupabaseBaseSchema, SupabaseClientOptions } from './lib/types'
+import { SupabaseClientOptions } from './lib/types'
 import { SupabaseAuthClient } from './lib/SupabaseAuthClient'
 import { SupabaseQueryBuilder } from './lib/SupabaseQueryBuilder'
-import { PostgrestClient } from '@supabase/postgrest-js'
+import { PostgrestClient, SchemaBase, TableBase } from '@supabase/postgrest-js'
 import { RealtimeClient, RealtimeSubscription } from '@supabase/realtime-js'
 
 const DEFAULT_OPTIONS = {
@@ -19,7 +19,7 @@ const DEFAULT_OPTIONS = {
  *
  * An isomorphic Javascript client for interacting with Postgres.
  */
-export default class SupabaseClient<Schema extends SupabaseBaseSchema = SupabaseBaseSchema> {
+export default class SupabaseClient<S extends SchemaBase = SchemaBase> {
   /**
    * Supabase Auth allows you to create and manage user sessions for access to data that is secured by access policies.
    */
@@ -68,9 +68,9 @@ export default class SupabaseClient<Schema extends SupabaseBaseSchema = Supabase
    *
    * @param table The table name to operate on.
    */
-  from<TableName extends keyof Schema>(table: TableName): SupabaseQueryBuilder<Schema, TableName> {
+  from<K extends keyof S>(table: K): SupabaseQueryBuilder<S, K> {
     const url = `${this.restUrl}/${table}`
-    return new SupabaseQueryBuilder<Schema, TableName>(url, {
+    return new SupabaseQueryBuilder<S, K>(url, {
       headers: this._getAuthHeaders(),
       schema: this.schema,
       realtime: this.realtime,
@@ -84,7 +84,7 @@ export default class SupabaseClient<Schema extends SupabaseBaseSchema = Supabase
    * @param fn  The function name to call.
    * @param params  The parameters to pass to the function call.
    */
-  rpc<T = any>(fn: string, params?: object) {
+  rpc<T extends TableBase = TableBase>(fn: string, params?: object) {
     const rest = this._initPostgRESTClient()
     return rest.rpc<T>(fn, params)
   }

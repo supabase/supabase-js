@@ -1,12 +1,12 @@
-import { PostgrestQueryBuilder } from '@supabase/postgrest-js'
+import { PostgrestQueryBuilder, SchemaBase } from '@supabase/postgrest-js'
 import { SupabaseRealtimeClient } from './SupabaseRealtimeClient'
 import { RealtimeClient } from '@supabase/realtime-js'
-import { SupabaseBaseSchema, SupabaseEventTypes, SupabaseRealtimePayload } from './types'
+import { SupabaseEventTypes, SupabaseRealtimePayload } from './types'
 
 export class SupabaseQueryBuilder<
-  Schema extends SupabaseBaseSchema,
-  TableName extends keyof Schema
-> extends PostgrestQueryBuilder<Schema[TableName]> {
+  S extends SchemaBase,
+  K extends keyof S
+> extends PostgrestQueryBuilder<S[K]> {
   private _subscription: SupabaseRealtimeClient
   private _realtime: RealtimeClient
 
@@ -37,7 +37,7 @@ export class SupabaseQueryBuilder<
    */
   on(
     event: SupabaseEventTypes,
-    callback: (payload: SupabaseRealtimePayload<Schema[TableName]>) => void
+    callback: (payload: SupabaseRealtimePayload<S[K]>) => void
   ): SupabaseRealtimeClient {
     if (!this._realtime.isConnected()) {
       this._realtime.connect()
