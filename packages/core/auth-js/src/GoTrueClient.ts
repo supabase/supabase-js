@@ -91,7 +91,7 @@ export default class GoTrueClient {
    */
   async signUp({
     email,
-    password
+    password,
   }: UserCredentials): Promise<{ data: Session | null; user: User | null; error: Error | null }> {
     try {
       this._removeSession()
@@ -117,7 +117,11 @@ export default class GoTrueClient {
    * @param password The user's password.
    * @param provider One of the providers supported by GoTrue.
    */
-  async signIn({ email, password, provider }: UserCredentials): Promise<{
+  async signIn({
+    email,
+    password,
+    provider,
+  }: UserCredentials): Promise<{
     data: Session | null
     user: User | null
     provider?: Provider
