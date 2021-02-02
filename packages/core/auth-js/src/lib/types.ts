@@ -73,3 +73,10 @@ export interface CookieOptions {
   // (Optional) SameSite configuration for the session cookie. Defaults to 'lax', but can be changed to 'strict' or 'none'. Set it to false if you want to disable the SameSite setting.
   sameSite?: string
 }
+
+export interface UserCredentials {
+  email?: string
+  password?: string
+  // (Optional) The name of the provider.
+  provider?: Provider
+}
