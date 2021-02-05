@@ -144,7 +144,9 @@ export default class GoTrueClient {
   }
 
   /**
-   * Returns the user data, if there is a logged in user.
+   * Inside a browser context, `user()` will return the user data, if there is a logged in user.
+   *
+   * For server-side management, you can get a user through `auth.api.getUserByCookie()`
    */
   user(): User | null {
     return this.currentUser
@@ -255,7 +257,7 @@ export default class GoTrueClient {
   /**
    * Inside a browser context, `signOut()` will remove extract the logged in user from the browser session
    * and log them out - removing all items from localstorage and then trigger a "SIGNED_OUT" event.
-   * 
+   *
    * For server-side management, you can disable sessions by passing a JWT through to `auth.api.signOut(JWT: string)`
    */
   async signOut(): Promise<{ error: Error | null }> {
