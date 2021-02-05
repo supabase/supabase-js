@@ -253,7 +253,10 @@ export default class GoTrueClient {
   }
 
   /**
-   * Signs out the current user, if there is a logged in user.
+   * Inside a browser context, `signOut()` will remove extract the logged in user from the browser session
+   * and log them out - removing all items from localstorage and then trigger a "SIGNED_OUT" event.
+   * 
+   * For server-side management, you can disable sessions by passing a JWT through to `auth.api.signOut(JWT: string)`
    */
   async signOut(): Promise<{ error: Error | null }> {
     if (this.currentSession) {
