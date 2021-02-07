@@ -92,19 +92,35 @@ export default class GoTrueClient {
   async signUp({
     email,
     password,
-  }: UserCredentials): Promise<{ data: Session | null; user: User | null; error: Error | null }> {
+  }: UserCredentials): Promise<{ data: Session | User | null; user: User | null; error: Error | null }> {
     try {
       this._removeSession()
 
       const { data, error } = await this.api.signUpWithEmail(email!, password!)
-      if (error) throw error
 
-      if (data?.user?.confirmed_at) {
-        this._saveSession(data)
+      if (error) {
+        throw error
+      }
+
+      if (!data) {
+        throw 'An error occurred on sign up.'
+      }
+
+      let session: Session
+      let user: User | null = null
+
+      if ((data as Session).access_token) {
+        session = data as Session
+        user = session.user as User
+        this._saveSession(session)
         this._notifyAllSubscribers('SIGNED_IN')
       }
 
-      return { data, user: data?.user ?? null, error: null }
+      if ((data as User).id) {
+        user = data as User
+      }
+
+      return { data, user, error: null }
     } catch (error) {
       return { data: null, user: null, error }
     }
