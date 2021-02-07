@@ -78,6 +78,23 @@ Object {
 }
 `;
 
+exports[`signIn() 2`] = `
+Object {
+  "app_metadata": Object {
+    "provider": "email",
+  },
+  "aud": Any<String>,
+  "confirmed_at": Any<String>,
+  "created_at": Any<String>,
+  "email": "fake@email.com",
+  "id": Any<String>,
+  "last_sign_in_at": Any<String>,
+  "role": "",
+  "updated_at": Any<String>,
+  "user_metadata": Object {},
+}
+`;
+
 exports[`signIn() with the wrong password 1`] = `"No user found with that email, or password invalid."`;
 
 exports[`signOut 1`] = `
@@ -106,5 +123,22 @@ Object {
     "updated_at": Any<String>,
     "user_metadata": null,
   },
+}
+`;
+
+exports[`signUp() 2`] = `
+Object {
+  "app_metadata": Object {
+    "provider": "email",
+  },
+  "aud": Any<String>,
+  "confirmed_at": Any<String>,
+  "created_at": Any<String>,
+  "email": "fake@email.com",
+  "id": Any<String>,
+  "last_sign_in_at": Any<String>,
+  "role": "",
+  "updated_at": Any<String>,
+  "user_metadata": null,
 }
 `;

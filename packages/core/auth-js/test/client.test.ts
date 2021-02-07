@@ -12,7 +12,7 @@ const email = 'fake@email.com'
 const password = 'secret'
 
 test('signUp()', async () => {
-  let { error, data } = await auth.signUp({
+  let { error, data, user } = await auth.signUp({
     email,
     password,
   })
@@ -33,10 +33,21 @@ test('signUp()', async () => {
       },
     },
   })
+  expect(user).toMatchSnapshot({
+    id: expect.any(String),
+    confirmed_at: expect.any(String),
+    last_sign_in_at: expect.any(String),
+    created_at: expect.any(String),
+    aud: expect.any(String),
+    updated_at: expect.any(String),
+    app_metadata: {
+      provider: 'email',
+    },
+  })
 })
 
 test('signIn()', async () => {
-  let { error, data } = await auth.signIn({
+  let { error, data, user } = await auth.signIn({
     email,
     password,
   })
@@ -55,6 +66,17 @@ test('signIn()', async () => {
       app_metadata: {
         provider: 'email',
       },
+    },
+  })
+  expect(user).toMatchSnapshot({
+    id: expect.any(String),
+    aud: expect.any(String),
+    confirmed_at: expect.any(String),
+    last_sign_in_at: expect.any(String),
+    created_at: expect.any(String),
+    updated_at: expect.any(String),
+    app_metadata: {
+      provider: 'email',
     },
   })
 })
