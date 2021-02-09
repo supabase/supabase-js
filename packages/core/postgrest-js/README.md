@@ -2,15 +2,9 @@
 
 Isomorphic JavaScript client for [PostgREST](https://postgrest.org). The goal of this library is to make an "ORM-like" restful interface. 
 
-## Status
-
-![Tests](https://github.com/supabase/postgrest-js/workflows/Node.js%20CI/badge.svg)
-
-Ready for production! Watch and star this repo to keep updated on releases.
-
 ## Documentation
 
-Visit our [docs](https://supabase.io/docs/postgrest/client/postgrest-client) to get started!
+Full documentation can be found on our [website](https://supabase.io/docs/postgrest/client/postgrest-client).
 
 ### Quick start
 
