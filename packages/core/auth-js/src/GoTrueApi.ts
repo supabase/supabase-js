@@ -16,7 +16,7 @@ export default class GoTrueApi {
     cookieOptions,
   }: {
     url: string
-    headers: {
+    headers?: {
       [key: string]: string
     }
     cookieOptions?: CookieOptions
@@ -30,11 +30,14 @@ export default class GoTrueApi {
    * Creates a new user using their email address.
    * @param email The email address of the user.
    * @param password The password of the user.
+   *
+   * @returns A logged-in session if the server has "autoconfirm" ON
+   * @returns A user if the server has "autoconfirm" OFF
    */
   async signUpWithEmail(
     email: string,
     password: string
-  ): Promise<{ data: Session | null; error: Error | null }> {
+  ): Promise<{ data: Session | User | null; error: Error | null }> {
     try {
       const data = await post(`${this.url}/signup`, { email, password }, { headers: this.headers })
       return { data, error: null }

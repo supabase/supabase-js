@@ -9,15 +9,18 @@ export interface FetchOptions {
 
 export type RequestMethodType = 'GET' | 'POST' | 'PUT'
 
-const _getErrorMessage = (msg: any): string =>
-  msg.msg || msg.message || msg.error_description || msg.error || JSON.stringify(msg)
+const _getErrorMessage = (err: any): string =>
+  err.msg || err.message || err.error_description || err.error || JSON.stringify(err)
 
 const handleError = (error: any, reject: any) => {
   if (typeof error.json !== 'function') {
     return reject(error)
   }
-  error.json().then((msg: any) => {
-    return reject(new Error(_getErrorMessage(msg)))
+  error.json().then((err: any) => {
+    return reject({
+      message: _getErrorMessage(err),
+      status: error?.status || 500,
+    })
   })
 }
 

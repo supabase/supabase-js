@@ -1,6 +1,6 @@
 import { GoTrueClient } from '../src/index'
 
-const GOTRUE_URL = 'http://localhost:9999'
+const GOTRUE_URL = 'http://localhost:9998'
 
 const auth = new GoTrueClient({
   url: GOTRUE_URL,
@@ -8,16 +8,16 @@ const auth = new GoTrueClient({
   persistSession: true,
 })
 
-const email = 'fake@email.com'
+const email = 'autoconfirm@email.com'
 const password = 'secret'
 
 test('signUp()', async () => {
-  let { error, data } = await auth.signUp({
+  let { error, user, session } = await auth.signUp({
     email,
     password,
   })
   expect(error).toBeNull()
-  expect(data).toMatchSnapshot({
+  expect(session).toMatchSnapshot({
     access_token: expect.any(String),
     refresh_token: expect.any(String),
     expires_in: expect.any(Number),
@@ -33,15 +33,36 @@ test('signUp()', async () => {
       },
     },
   })
+  expect(user).toMatchSnapshot({
+    id: expect.any(String),
+    confirmed_at: expect.any(String),
+    last_sign_in_at: expect.any(String),
+    created_at: expect.any(String),
+    aud: expect.any(String),
+    updated_at: expect.any(String),
+    app_metadata: {
+      provider: 'email',
+    },
+  })
+})
+
+test('signUp() the same user twice should throw an error', async () => {
+  const { error, data, user } = await auth.signUp({
+    email,
+    password,
+  })
+  expect(error?.message).toBe('A user with this email address has already been registered')
+  expect(data).toBeNull()
+  expect(user).toBeNull()
 })
 
 test('signIn()', async () => {
-  let { error, data } = await auth.signIn({
+  let { error, session, user } = await auth.signIn({
     email,
     password,
   })
   expect(error).toBeNull()
-  expect(data).toMatchSnapshot({
+  expect(session).toMatchSnapshot({
     access_token: expect.any(String),
     refresh_token: expect.any(String),
     expires_in: expect.any(Number),
@@ -55,6 +76,17 @@ test('signIn()', async () => {
       app_metadata: {
         provider: 'email',
       },
+    },
+  })
+  expect(user).toMatchSnapshot({
+    id: expect.any(String),
+    aud: expect.any(String),
+    confirmed_at: expect.any(String),
+    last_sign_in_at: expect.any(String),
+    created_at: expect.any(String),
+    updated_at: expect.any(String),
+    app_metadata: {
+      provider: 'email',
     },
   })
 })
