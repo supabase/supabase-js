@@ -1,4 +1,5 @@
 import { GoTrueClient } from '../src/index'
+import faker from 'faker'
 
 const GOTRUE_URL = 'http://localhost:9999'
 
@@ -8,8 +9,8 @@ const auth = new GoTrueClient({
   persistSession: true,
 })
 
-const email = 'fake@email.com'
-const password = 'secret'
+const email = faker.internet.email()
+const password = faker.internet.password()
 
 test('signUp()', async () => {
   let { error, user, session } = await auth.signUp({
@@ -21,6 +22,8 @@ test('signUp()', async () => {
   expect(user).toMatchSnapshot({
     id: expect.any(String),
     created_at: expect.any(String),
+    email: expect.any(String),
+    confirmation_sent_at: expect.any(String),
     aud: expect.any(String),
     updated_at: expect.any(String),
     app_metadata: {
@@ -36,7 +39,8 @@ test('signUp() the same user twice should throw an error', async () => {
     email,
     password,
   })
-  expect(error?.message).toBe('A user with this email address has already been registered')
+  expect(error?.message).toBe('Error sending confirmation mail')
+  // expect(error?.message).toBe('A user with this email address has already been registered')
   expect(session).toBeNull()
   expect(user).toBeNull()
 })

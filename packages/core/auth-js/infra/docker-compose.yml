@@ -23,6 +23,12 @@ services:
       GOTRUE_EXTERNAL_GOOGLE_CLIENT_ID: 53566906701-bmhc1ndue7hild39575gkpimhs06b7ds.apps.googleusercontent.com
       GOTRUE_EXTERNAL_GOOGLE_SECRET: Sm3s8RE85rDcS36iMy8YjrpC
       GOTRUE_EXTERNAL_GOOGLE_REDIRECT_URI: http://localhost:9999/callback
+      GOTRUE_SMTP_HOST: mail
+      GOTRUE_SMTP_PORT: 2500
+      GOTRUE_SMTP_USER: GOTRUE_SMTP_USER
+      GOTRUE_SMTP_PASS: GOTRUE_SMTP_PASS
+      GOTRUE_SMTP_ADMIN_EMAIL: admin@email.com
+      GOTRUE_MAILER_SUBJECTS_CONFIRMATION: "Please confirm"
     depends_on:
       - db
   autoconfirm: # Signup enabled, autoconfirm on
@@ -43,10 +49,6 @@ services:
       GOTRUE_LOG_LEVEL: DEBUG
       GOTRUE_OPERATOR_TOKEN: super-secret-operator-token
       DATABASE_URL: "postgres://postgres:postgres@db:5432/postgres?sslmode=disable"
-      GOTRUE_EXTERNAL_GOOGLE_ENABLED: "true"
-      GOTRUE_EXTERNAL_GOOGLE_CLIENT_ID: 53566906701-bmhc1ndue7hild39575gkpimhs06b7ds.apps.googleusercontent.com
-      GOTRUE_EXTERNAL_GOOGLE_SECRET: Sm3s8RE85rDcS36iMy8YjrpC
-      GOTRUE_EXTERNAL_GOOGLE_REDIRECT_URI: http://localhost:9999/callback
     depends_on:
       - db
   disabled: # Signup disabled
@@ -67,12 +69,14 @@ services:
       GOTRUE_LOG_LEVEL: DEBUG
       GOTRUE_OPERATOR_TOKEN: super-secret-operator-token
       DATABASE_URL: "postgres://postgres:postgres@db:5432/postgres?sslmode=disable"
-      GOTRUE_EXTERNAL_GOOGLE_ENABLED: "true"
-      GOTRUE_EXTERNAL_GOOGLE_CLIENT_ID: 53566906701-bmhc1ndue7hild39575gkpimhs06b7ds.apps.googleusercontent.com
-      GOTRUE_EXTERNAL_GOOGLE_SECRET: Sm3s8RE85rDcS36iMy8YjrpC
-      GOTRUE_EXTERNAL_GOOGLE_REDIRECT_URI: http://localhost:9999/callback
     depends_on:
       - db
+  mail:
+    image: inbucket/inbucket
+    ports:
+      - '2500:2500' # SMTP
+      - '9000:9000' # web interface
+      - '1100:1100' # POP3
   db:
     image: supabase/postgres
     ports:
