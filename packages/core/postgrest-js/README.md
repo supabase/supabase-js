@@ -10,13 +10,13 @@ Full documentation can be found on our [website](https://supabase.io/docs/postgr
 
 Install
 
-```
+```bash
 npm install @supabase/postgrest-js
 ```
 
 Usage
 
-```
+```js
 import { PostgrestClient } from '@supabase/postgrest-js'
 
 const REST_URL = 'http://localhost:3000'
