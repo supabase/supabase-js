@@ -19,6 +19,7 @@ export interface User {
     [key: string]: any
   }
   aud: string
+  confirmation_sent_at?: string
   email?: string
   created_at: string
   confirmed_at?: string
