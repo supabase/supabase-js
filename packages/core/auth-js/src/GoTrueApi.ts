@@ -16,7 +16,7 @@ export default class GoTrueApi {
     cookieOptions,
   }: {
     url: string
-    headers: {
+    headers?: {
       [key: string]: string
     }
     cookieOptions?: CookieOptions
