@@ -1,6 +1,6 @@
 import { GoTrueClient } from '../src/index'
 
-const GOTRUE_URL = 'http://localhost:9999'
+const GOTRUE_URL = 'http://localhost:9998'
 
 const auth = new GoTrueClient({
   url: GOTRUE_URL,
@@ -8,16 +8,16 @@ const auth = new GoTrueClient({
   persistSession: true,
 })
 
-const email = 'fake@email.com'
+const email = 'autoconfirm@email.com'
 const password = 'secret'
 
 test('signUp()', async () => {
-  let { error, data, user } = await auth.signUp({
+  let { error, user, session } = await auth.signUp({
     email,
     password,
   })
   expect(error).toBeNull()
-  expect(data).toMatchSnapshot({
+  expect(session).toMatchSnapshot({
     access_token: expect.any(String),
     refresh_token: expect.any(String),
     expires_in: expect.any(Number),
@@ -57,12 +57,12 @@ test('signUp() the same user twice should throw an error', async () => {
 })
 
 test('signIn()', async () => {
-  let { error, data, user } = await auth.signIn({
+  let { error, session, user } = await auth.signIn({
     email,
     password,
   })
   expect(error).toBeNull()
-  expect(data).toMatchSnapshot({
+  expect(session).toMatchSnapshot({
     access_token: expect.any(String),
     refresh_token: expect.any(String),
     expires_in: expect.any(Number),

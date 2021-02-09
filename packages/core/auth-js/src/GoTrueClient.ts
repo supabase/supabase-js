@@ -92,7 +92,12 @@ export default class GoTrueClient {
   async signUp({
     email,
     password,
-  }: UserCredentials): Promise<{ data: Session | User | null; user: User | null; error: Error | null }> {
+  }: UserCredentials): Promise<{
+    user: User | null
+    session: Session | null
+    error: Error | null
+    data: Session | User | null // Deprecated
+  }> {
     try {
       this._removeSession()
 
@@ -106,7 +111,7 @@ export default class GoTrueClient {
         throw 'An error occurred on sign up.'
       }
 
-      let session: Session
+      let session: Session | null = null
       let user: User | null = null
 
       if ((data as Session).access_token) {
@@ -120,9 +125,9 @@ export default class GoTrueClient {
         user = data as User
       }
 
-      return { data, user, error: null }
+      return { data, user, session, error: null }
     } catch (error) {
-      return { data: null, user: null, error }
+      return { data: null, user: null, session: null, error }
     }
   }
 
@@ -138,24 +143,25 @@ export default class GoTrueClient {
     password,
     provider,
   }: UserCredentials): Promise<{
-    data: Session | null
+    session: Session | null
     user: User | null
     provider?: Provider
     url?: string | null
     error: Error | null
+    data: Session | null // Deprecated
   }> {
     try {
       this._removeSession()
 
       if (email && !password) {
         const { error } = await this.api.sendMagicLinkEmail(email)
-        return { data: null, user: null, error }
+        return { data: null, user: null, session: null, error }
       }
       if (email && password) return this._handleEmailSignIn(email, password)
       if (provider) return this._handleProviderSignIn(provider)
       throw new Error(`You must provide either an email or a third-party provider.`)
     } catch (error) {
-      return { data: null, user: null, error }
+      return { data: null, user: null, session: null, error }
     }
   }
 
@@ -313,16 +319,16 @@ export default class GoTrueClient {
   private async _handleEmailSignIn(email: string, password: string) {
     try {
       const { data, error } = await this.api.signInWithEmail(email, password)
-      if (error || !data) return { data: null, user: null, error }
+      if (error || !data) return { data: null, user: null, session: null, error }
 
       if (data?.user?.confirmed_at) {
         this._saveSession(data)
         this._notifyAllSubscribers('SIGNED_IN')
       }
 
-      return { data, user: data.user, error: null }
+      return { data, user: data.user, session: data, error: null }
     } catch (error) {
-      return { data: null, user: null, error }
+      return { data: null, user: null, session: null, error }
     }
   }
 
@@ -334,11 +340,11 @@ export default class GoTrueClient {
       if (isBrowser()) {
         window.location.href = url
       }
-      return { provider, url, data: null, user: null, error: null }
+      return { provider, url, data: null, session: null, user: null, error: null }
     } catch (error) {
       // fallback to returning the URL
-      if (!!url) return { provider, url, data: null, user: null, error: null }
-      return { data: null, user: null, error }
+      if (!!url) return { provider, url, data: null, session: null, user: null, error: null }
+      return { data: null, user: null, session: null, error }
     }
   }
 
