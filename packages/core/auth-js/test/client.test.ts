@@ -46,6 +46,16 @@ test('signUp()', async () => {
   })
 })
 
+test('signUp() the same user twice should throw an error', async () => {
+  const { error, data, user } = await auth.signUp({
+    email,
+    password,
+  })
+  expect(error?.message).toBe('A user with this email address has already been registered')
+  expect(data).toBeNull()
+  expect(user).toBeNull()
+})
+
 test('signIn()', async () => {
   let { error, data, user } = await auth.signIn({
     email,
