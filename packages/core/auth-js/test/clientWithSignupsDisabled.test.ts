@@ -1,4 +1,5 @@
 import { GoTrueClient } from '../src/index'
+import faker from 'faker'
 
 const GOTRUE_URL = 'http://localhost:9997'
 
@@ -8,8 +9,8 @@ const auth = new GoTrueClient({
   persistSession: true,
 })
 
-const email = 'disabled@email.com'
-const password = 'secret'
+const email = faker.internet.email()
+const password = faker.internet.password()
 
 test('signUp()', async () => {
   let { error, data, user } = await auth.signUp({

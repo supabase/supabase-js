@@ -32,6 +32,7 @@ test('signUp()', async () => {
   })
   expect(user?.confirmed_at).toBeUndefined()
   expect(user?.last_sign_in_at).toBeUndefined()
+  expect(user?.email).toBe(email)
 })
 
 test('signUp() the same user twice should throw an error', async () => {

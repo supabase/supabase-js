@@ -1,4 +1,5 @@
 import { GoTrueClient } from '../src/index'
+import faker from 'faker'
 
 const GOTRUE_URL = 'http://localhost:9998'
 
@@ -8,8 +9,8 @@ const auth = new GoTrueClient({
   persistSession: true,
 })
 
-const email = 'autoconfirm@email.com'
-const password = 'secret'
+const email = faker.internet.email()
+const password = faker.internet.password()
 
 test('signUp()', async () => {
   let { error, user, session } = await auth.signUp({
@@ -23,6 +24,7 @@ test('signUp()', async () => {
     expires_in: expect.any(Number),
     user: {
       id: expect.any(String),
+      email: expect.any(String),
       confirmed_at: expect.any(String),
       last_sign_in_at: expect.any(String),
       created_at: expect.any(String),
@@ -36,6 +38,7 @@ test('signUp()', async () => {
   expect(user).toMatchSnapshot({
     id: expect.any(String),
     confirmed_at: expect.any(String),
+    email: expect.any(String),
     last_sign_in_at: expect.any(String),
     created_at: expect.any(String),
     aud: expect.any(String),
@@ -44,6 +47,7 @@ test('signUp()', async () => {
       provider: 'email',
     },
   })
+  expect(user?.email).toBe(email)
 })
 
 test('signUp() the same user twice should throw an error', async () => {
@@ -68,6 +72,7 @@ test('signIn()', async () => {
     expires_in: expect.any(Number),
     user: {
       id: expect.any(String),
+      email: expect.any(String),
       aud: expect.any(String),
       confirmed_at: expect.any(String),
       last_sign_in_at: expect.any(String),
@@ -80,6 +85,7 @@ test('signIn()', async () => {
   })
   expect(user).toMatchSnapshot({
     id: expect.any(String),
+    email: expect.any(String),
     aud: expect.any(String),
     confirmed_at: expect.any(String),
     last_sign_in_at: expect.any(String),
@@ -89,12 +95,14 @@ test('signIn()', async () => {
       provider: 'email',
     },
   })
+  expect(user?.email).toBe(email)
 })
 
 test('Get user', async () => {
   let user = auth.user()
   expect(user).toMatchSnapshot({
     id: expect.any(String),
+    email: expect.any(String),
     aud: expect.any(String),
     confirmed_at: expect.any(String),
     last_sign_in_at: expect.any(String),
@@ -104,14 +112,16 @@ test('Get user', async () => {
       provider: 'email',
     },
   })
+  expect(user?.email).toBe(email)
 })
 
 test('Update user', async () => {
-  let { error, data } = await auth.update({ data: { hello: 'world' } })
+  let { error, user } = await auth.update({ data: { hello: 'world' } })
   expect(error).toBeNull()
-  expect(data).toMatchSnapshot({
+  expect(user).toMatchSnapshot({
     id: expect.any(String),
     aud: expect.any(String),
+    email: expect.any(String),
     updated_at: expect.any(String),
     last_sign_in_at: expect.any(String),
     confirmed_at: expect.any(String),
@@ -120,6 +130,7 @@ test('Update user', async () => {
       hello: 'world',
     },
   })
+  expect(user?.email).toBe(email)
 })
 
 test('Get user after updating', async () => {
@@ -127,6 +138,7 @@ test('Get user after updating', async () => {
   expect(user).toMatchSnapshot({
     id: expect.any(String),
     aud: expect.any(String),
+    email: expect.any(String),
     updated_at: expect.any(String),
     last_sign_in_at: expect.any(String),
     confirmed_at: expect.any(String),
@@ -135,6 +147,7 @@ test('Get user after updating', async () => {
       hello: 'world',
     },
   })
+  expect(user?.email).toBe(email)
 })
 
 test('signOut', async () => {
