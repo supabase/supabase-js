@@ -264,7 +264,7 @@ describe('joinPush', () => {
     })
 
     it("sends and empties channel's buffered pushEvents", () => {
-      const pushEvent = { send() {} }
+      const pushEvent = { send() { } }
       const spy = sinon.spy(pushEvent, 'send')
 
       channel.pushBuffer.push(pushEvent)
@@ -419,7 +419,7 @@ describe('joinPush', () => {
     })
 
     it("does not trigger channel's buffered pushEvents", () => {
-      const pushEvent = { send: () => {} }
+      const pushEvent = { send: () => { } }
       const spy = sinon.spy(pushEvent, 'send')
 
       channel.pushBuffer.push(pushEvent)
@@ -670,6 +670,21 @@ describe('on', () => {
     channel.trigger('event', {}, defaultRef)
 
     assert.ok(!ignoredSpy.called)
+  })
+
+  it('"*" bind all events', () => {
+    const spy = sinon.spy()
+
+    channel.trigger('INSERT', {}, defaultRef)
+    assert.ok(!spy.called)
+
+    channel.on('*', spy)
+    channel.trigger('*', { type: 'INSERT' }, defaultRef)
+    assert.ok(!spy.called)
+
+    channel.on('*', spy)
+    channel.trigger('INSERT', { type: 'INSERT' }, defaultRef)
+    assert.ok(spy.called)
   })
 })
 
