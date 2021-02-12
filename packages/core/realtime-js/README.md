@@ -23,7 +23,7 @@ You can pass in your JWT If you have enabled JWT authorization in Supabase [Real
 ```js
 import { RealtimeClient } from '@supabase/realtime-js'
 
-var client = new RealtimeClient(process.env.REALTIME_URL, { params: { token: 'token123' }})
+var client = new RealtimeClient(process.env.REALTIME_URL, { params: { apikey: 'token123' }})
 client.connect()
 ```
 
