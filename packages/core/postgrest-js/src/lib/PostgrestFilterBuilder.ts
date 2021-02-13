@@ -4,7 +4,7 @@ import PostgrestTransformBuilder from './PostgrestTransformBuilder'
  * Filters
  */
 
-const cleanFilterArray = <T>(filter: T[keyof T][]) => filter.map((s) => `"${s}"`).join(',')
+const cleanFilterArray = <T>(filter: T[keyof T][]) => filter.map((s) => `${s}`).join(',')
 
 type FilterOperator =
   | 'eq'
