@@ -45,7 +45,7 @@ export default class PostgrestTransformBuilder<T> extends PostgrestBuilder<T> {
       foreignTable,
     }: { ascending?: boolean; nullsFirst?: boolean; foreignTable?: string } = {}
   ): this {
-    const key = typeof foreignTable === 'undefined' ? 'order' : `"${foreignTable}".order`
+    const key = typeof foreignTable === 'undefined' ? 'order' : `${foreignTable}.order`
     this.url.searchParams.set(
       key,
       `${column}.${ascending ? 'asc' : 'desc'}.${nullsFirst ? 'nullsfirst' : 'nullslast'}`
@@ -60,7 +60,7 @@ export default class PostgrestTransformBuilder<T> extends PostgrestBuilder<T> {
    * @param foreignTable  The foreign table to use (for foreign columns).
    */
   limit(count: number, { foreignTable }: { foreignTable?: string } = {}): this {
-    const key = typeof foreignTable === 'undefined' ? 'limit' : `"${foreignTable}".limit`
+    const key = typeof foreignTable === 'undefined' ? 'limit' : `${foreignTable}.limit`
     this.url.searchParams.set(key, `${count}`)
     return this
   }
@@ -73,8 +73,8 @@ export default class PostgrestTransformBuilder<T> extends PostgrestBuilder<T> {
    * @param foreignTable  The foreign table to use (for foreign columns).
    */
   range(from: number, to: number, { foreignTable }: { foreignTable?: string } = {}): this {
-    const keyOffset = typeof foreignTable === 'undefined' ? 'offset' : `"${foreignTable}".offset`
-    const keyLimit = typeof foreignTable === 'undefined' ? 'limit' : `"${foreignTable}".limit`
+    const keyOffset = typeof foreignTable === 'undefined' ? 'offset' : `${foreignTable}.offset`
+    const keyLimit = typeof foreignTable === 'undefined' ? 'limit' : `${foreignTable}.limit`
     this.url.searchParams.set(keyOffset, `${from}`)
     // Range is inclusive, so add 1
     this.url.searchParams.set(keyLimit, `${to - from + 1}`)
