@@ -30,16 +30,24 @@ export default class GoTrueApi {
    * Creates a new user using their email address.
    * @param email The email address of the user.
    * @param password The password of the user.
+   * @param redirectTo A URL or mobile address to send the user to after they are confirmed.
    *
    * @returns A logged-in session if the server has "autoconfirm" ON
    * @returns A user if the server has "autoconfirm" OFF
    */
   async signUpWithEmail(
     email: string,
-    password: string
+    password: string,
+    options: {
+      redirectTo?: string
+    } = {}
   ): Promise<{ data: Session | User | null; error: Error | null }> {
     try {
-      const data = await post(`${this.url}/signup`, { email, password }, { headers: this.headers })
+      let headers = { ...this.headers }
+      if (options.redirectTo) {
+        headers['referer'] = options.redirectTo
+      }
+      const data = await post(`${this.url}/signup`, { email, password }, { headers })
       return { data, error: null }
     } catch (error) {
       return { data: null, error }
@@ -50,10 +58,14 @@ export default class GoTrueApi {
    * Logs in an existing user using their email address.
    * @param email The email address of the user.
    * @param password The password of the user.
+   * @param redirectTo A URL or mobile address to send the user to after they are confirmed.
    */
   async signInWithEmail(
     email: string,
-    password: string
+    password: string,
+    options: {
+      redirectTo?: string
+    } = {}
   ): Promise<{ data: Session | null; error: Error | null }> {
     try {
       const data = await post(
@@ -70,8 +82,14 @@ export default class GoTrueApi {
   /**
    * Sends a magic login link to an email address.
    * @param email The email address of the user.
+   * @param redirectTo A URL or mobile address to send the user to after they are confirmed.
    */
-  async sendMagicLinkEmail(email: string): Promise<{ data: {} | null; error: Error | null }> {
+  async sendMagicLinkEmail(
+    email: string,
+    options: {
+      redirectTo?: string
+    } = {}
+  ): Promise<{ data: {} | null; error: Error | null }> {
     try {
       const data = await post(`${this.url}/magiclink`, { email }, { headers: this.headers })
       return { data, error: null }
@@ -83,8 +101,14 @@ export default class GoTrueApi {
   /**
    * Sends an invite link to an email address.
    * @param email The email address of the user.
+   * @param redirectTo A URL or mobile address to send the user to after they are confirmed.
    */
-  async inviteUserByEmail(email: string): Promise<{ data: {} | null; error: Error | null }> {
+  async inviteUserByEmail(
+    email: string,
+    options: {
+      redirectTo?: string
+    } = {}
+  ): Promise<{ data: {} | null; error: Error | null }> {
     try {
       const data = await post(`${this.url}/invite`, { email }, { headers: this.headers })
       return { data, error: null }
@@ -96,8 +120,14 @@ export default class GoTrueApi {
   /**
    * Sends a reset request to an email address.
    * @param email The email address of the user.
+   * @param redirectTo A URL or mobile address to send the user to after they are confirmed.
    */
-  async resetPasswordForEmail(email: string): Promise<{ data: {} | null; error: Error | null }> {
+  async resetPasswordForEmail(
+    email: string,
+    options: {
+      redirectTo?: string
+    } = {}
+  ): Promise<{ data: {} | null; error: Error | null }> {
     try {
       const data = await post(`${this.url}/recover`, { email }, { headers: this.headers })
       return { data, error: null }
