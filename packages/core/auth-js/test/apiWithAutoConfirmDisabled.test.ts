@@ -10,7 +10,7 @@ const api = new GoTrueApi({
 const email = `api_ac_disabled_${faker.internet.email()}`
 const password = faker.internet.password()
 
-test('signUp()', async () => {
+test('signUpWithEmail()', async () => {
   let { error, data } = await api.signUpWithEmail(email, password, {
     redirectTo: 'https://localhost:9999/welcome',
   })
@@ -26,11 +26,4 @@ test('signUp()', async () => {
       provider: 'email',
     },
   })
-})
-
-test('signUp() the same user twice should throw an error', async () => {
-  let { error, data } = await api.signUpWithEmail(email, password)
-  expect(error?.message).toBe('Error sending confirmation mail')
-  // expect(error?.message).toBe('A user with this email address has already been registered')
-  expect(data).toBeNull()
 })
