@@ -9,7 +9,7 @@ const auth = new GoTrueClient({
   persistSession: true,
 })
 
-const email = faker.internet.email()
+const email = `client_ac_enabled_${faker.internet.email()}`
 const password = faker.internet.password()
 
 test('signUp()', async () => {

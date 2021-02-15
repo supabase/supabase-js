@@ -7,11 +7,11 @@ const api = new GoTrueApi({
   url: GOTRUE_URL,
 })
 
-const email = faker.internet.email()
+const email = `API_AC_DISABLED_${faker.internet.email()}`
 const password = faker.internet.password()
 
-test('signUp()', async () => {
-  let { error, data } = await api.signUpWithEmail(email, password)
+test('sendMagicLinkEmail()', async () => {
+  let { error, data } = await api.sendMagicLinkEmail(email)
   expect(error).toBeNull()
   expect(data).toMatchSnapshot({
     id: expect.any(String),
@@ -24,11 +24,4 @@ test('signUp()', async () => {
       provider: 'email',
     },
   })
-})
-
-test('signUp() the same user twice should throw an error', async () => {
-  let { error, data } = await api.signUpWithEmail(email, password)
-  expect(error?.message).toBe('Error sending confirmation mail')
-  // expect(error?.message).toBe('A user with this email address has already been registered')
-  expect(data).toBeNull()
 })

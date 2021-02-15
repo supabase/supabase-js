@@ -14,7 +14,7 @@ services:
       GOTRUE_API_HOST: 0.0.0.0
       PORT: 9999
       GOTRUE_DISABLE_SIGNUP: "false"
-      GOTRUE_SITE_URL: http://localhost
+      GOTRUE_SITE_URL: http://localhost:9999
       GOTRUE_MAILER_AUTOCONFIRM: "false"
       GOTRUE_LOG_LEVEL: DEBUG
       GOTRUE_OPERATOR_TOKEN: super-secret-operator-token
@@ -40,7 +40,7 @@ services:
       GOTRUE_JWT_EXP: 3600
       GOTRUE_DB_DRIVER: postgres
       DB_NAMESPACE: auth
-      API_EXTERNAL_URL: http://localhost
+      API_EXTERNAL_URL: http://localhost:9998
       GOTRUE_API_HOST: 0.0.0.0
       PORT: 9999
       GOTRUE_DISABLE_SIGNUP: "false"
@@ -60,7 +60,7 @@ services:
       GOTRUE_JWT_EXP: 3600
       GOTRUE_DB_DRIVER: postgres
       DB_NAMESPACE: auth
-      API_EXTERNAL_URL: http://localhost
+      API_EXTERNAL_URL: http://localhost:9997
       GOTRUE_API_HOST: 0.0.0.0
       PORT: 9999
       GOTRUE_DISABLE_SIGNUP: "true"
