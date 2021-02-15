@@ -10,9 +10,8 @@ const api = new GoTrueApi({
 const email = `API_AC_DISABLED_${faker.internet.email()}`
 const password = faker.internet.password()
 
-test('sendMagicLinkEmail()', async () => {
-  let { error, data } = await api.sendMagicLinkEmail(email)
-  expect(error).toBeNull()
+test('signUpWithEmail()', async () => {
+  let { error, data } = await api.signUpWithEmail(email, password)
   expect(data).toMatchSnapshot({
     id: expect.any(String),
     confirmation_sent_at: expect.any(String),
