@@ -364,10 +364,7 @@ export default class GoTrueClient {
     } = {}
   ) {
     const url: string = this.api.getUrlForProvider(provider, { redirectTo: options.redirectTo })
-    console.log('url', url)
-    console.log('url', url)
-    console.log('url', url)
-    console.log('url', url)
+
     try {
       // try to open on the browser
       if (isBrowser()) {
