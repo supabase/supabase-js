@@ -13,6 +13,7 @@ services:
       GOTRUE_API_HOST: 0.0.0.0
       PORT: 9999
       GOTRUE_DISABLE_SIGNUP: "false"
+      API_EXTERNAL_URL: http://localhost:9999
       GOTRUE_SITE_URL: http://localhost:9999
       GOTRUE_MAILER_AUTOCONFIRM: "false"
       GOTRUE_LOG_LEVEL: DEBUG
@@ -21,7 +22,7 @@ services:
       GOTRUE_EXTERNAL_GOOGLE_ENABLED: "true"
       GOTRUE_EXTERNAL_GOOGLE_CLIENT_ID: 53566906701-bmhc1ndue7hild39575gkpimhs06b7ds.apps.googleusercontent.com
       GOTRUE_EXTERNAL_GOOGLE_SECRET: Sm3s8RE85rDcS36iMy8YjrpC
-      GOTRUE_EXTERNAL_GOOGLE_REDIRECT_URI: http://localhost:3000/callback
+      GOTRUE_EXTERNAL_GOOGLE_REDIRECT_URI: http://localhost:9999/callback
       GOTRUE_SMTP_HOST: mail
       GOTRUE_SMTP_PORT: 2500
       GOTRUE_SMTP_USER: GOTRUE_SMTP_USER
@@ -42,7 +43,8 @@ services:
       GOTRUE_API_HOST: 0.0.0.0
       PORT: 9998
       GOTRUE_DISABLE_SIGNUP: "false"
-      GOTRUE_SITE_URL: http://localhost
+      API_EXTERNAL_URL: http://localhost:9998
+      GOTRUE_SITE_URL: http://localhost:9998
       GOTRUE_MAILER_AUTOCONFIRM: "true"
       GOTRUE_LOG_LEVEL: DEBUG
       GOTRUE_OPERATOR_TOKEN: super-secret-operator-token
@@ -61,7 +63,8 @@ services:
       GOTRUE_API_HOST: 0.0.0.0
       PORT: 9997
       GOTRUE_DISABLE_SIGNUP: "true"
-      GOTRUE_SITE_URL: http://localhost
+      API_EXTERNAL_URL: http://localhost:9997
+      GOTRUE_SITE_URL: http://localhost:9997
       GOTRUE_MAILER_AUTOCONFIRM: "false"
       GOTRUE_LOG_LEVEL: DEBUG
       GOTRUE_OPERATOR_TOKEN: super-secret-operator-token
