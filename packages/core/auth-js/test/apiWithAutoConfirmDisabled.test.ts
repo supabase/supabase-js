@@ -7,11 +7,14 @@ const api = new GoTrueApi({
   url: GOTRUE_URL,
 })
 
-const email = `API_AC_DISABLED_${faker.internet.email()}`
+const email = `api_ac_disabled_${faker.internet.email()}`
 const password = faker.internet.password()
 
 test('signUpWithEmail()', async () => {
-  let { error, data } = await api.signUpWithEmail(email, password)
+  let { error, data } = await api.signUpWithEmail(email, password, {
+    redirectTo: 'https://localhost:9999/welcome',
+  })
+  expect(error).toBeNull()
   expect(data).toMatchSnapshot({
     id: expect.any(String),
     confirmation_sent_at: expect.any(String),

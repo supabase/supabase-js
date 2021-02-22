@@ -16,3 +16,17 @@ test('signIn() with Provider', async () => {
   expect(url).toMatchSnapshot()
   expect(provider).toMatchSnapshot()
 })
+
+test('signIn() with Provider can append a redirectUrl ', async () => {
+  let { error, url, provider } = await auth.signIn(
+    {
+      provider: 'google',
+    },
+    {
+      redirectTo: 'https://localhost:9000/welcome',
+    }
+  )
+  expect(error).toBeNull()
+  expect(url).toMatchSnapshot()
+  expect(provider).toMatchSnapshot()
+})

@@ -10,10 +10,10 @@ services:
       GOTRUE_JWT_EXP: 3600
       GOTRUE_DB_DRIVER: postgres
       DB_NAMESPACE: auth
-      API_EXTERNAL_URL: http://localhost
       GOTRUE_API_HOST: 0.0.0.0
       PORT: 9999
       GOTRUE_DISABLE_SIGNUP: "false"
+      API_EXTERNAL_URL: http://localhost:9999
       GOTRUE_SITE_URL: http://localhost:9999
       GOTRUE_MAILER_AUTOCONFIRM: "false"
       GOTRUE_LOG_LEVEL: DEBUG
@@ -34,17 +34,17 @@ services:
   autoconfirm: # Signup enabled, autoconfirm on
     image: supabase/gotrue:latest
     ports:
-      - '9998:9999'
+      - '9998:9998'
     environment:
       GOTRUE_JWT_SECRET: "37c304f8-51aa-419a-a1af-06154e63707a"
       GOTRUE_JWT_EXP: 3600
       GOTRUE_DB_DRIVER: postgres
       DB_NAMESPACE: auth
-      API_EXTERNAL_URL: http://localhost:9998
       GOTRUE_API_HOST: 0.0.0.0
-      PORT: 9999
+      PORT: 9998
       GOTRUE_DISABLE_SIGNUP: "false"
-      GOTRUE_SITE_URL: http://localhost
+      API_EXTERNAL_URL: http://localhost:9998
+      GOTRUE_SITE_URL: http://localhost:9998
       GOTRUE_MAILER_AUTOCONFIRM: "true"
       GOTRUE_LOG_LEVEL: DEBUG
       GOTRUE_OPERATOR_TOKEN: super-secret-operator-token
@@ -54,17 +54,17 @@ services:
   disabled: # Signup disabled
     image: supabase/gotrue:latest
     ports:
-      - '9997:9999'
+      - '9997:9997'
     environment:
       GOTRUE_JWT_SECRET: "37c304f8-51aa-419a-a1af-06154e63707a"
       GOTRUE_JWT_EXP: 3600
       GOTRUE_DB_DRIVER: postgres
       DB_NAMESPACE: auth
-      API_EXTERNAL_URL: http://localhost:9997
       GOTRUE_API_HOST: 0.0.0.0
-      PORT: 9999
+      PORT: 9997
       GOTRUE_DISABLE_SIGNUP: "true"
-      GOTRUE_SITE_URL: http://localhost
+      API_EXTERNAL_URL: http://localhost:9997
+      GOTRUE_SITE_URL: http://localhost:9997
       GOTRUE_MAILER_AUTOCONFIRM: "false"
       GOTRUE_LOG_LEVEL: DEBUG
       GOTRUE_OPERATOR_TOKEN: super-secret-operator-token

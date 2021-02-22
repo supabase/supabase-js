@@ -88,11 +88,14 @@ export default class GoTrueClient {
    * @type UserCredentials
    * @param email The user's email address.
    * @param password The user's password.
+   * @param redirectTo A URL or mobile address to send the user to after they are confirmed.
    */
-  async signUp({
-    email,
-    password,
-  }: UserCredentials): Promise<{
+  async signUp(
+    { email, password }: UserCredentials,
+    options: {
+      redirectTo?: string
+    } = {}
+  ): Promise<{
     user: User | null
     session: Session | null
     error: Error | null
@@ -101,7 +104,9 @@ export default class GoTrueClient {
     try {
       this._removeSession()
 
-      const { data, error } = await this.api.signUpWithEmail(email!, password!)
+      const { data, error } = await this.api.signUpWithEmail(email!, password!, {
+        redirectTo: options.redirectTo,
+      })
 
       if (error) {
         throw error
@@ -137,12 +142,14 @@ export default class GoTrueClient {
    * @param email The user's email address.
    * @param password The user's password.
    * @param provider One of the providers supported by GoTrue.
+   * @param redirectTo A URL or mobile address to send the user to after they are confirmed.
    */
-  async signIn({
-    email,
-    password,
-    provider,
-  }: UserCredentials): Promise<{
+  async signIn(
+    { email, password, provider }: UserCredentials,
+    options: {
+      redirectTo?: string
+    } = {}
+  ): Promise<{
     session: Session | null
     user: User | null
     provider?: Provider
@@ -154,11 +161,21 @@ export default class GoTrueClient {
       this._removeSession()
 
       if (email && !password) {
-        const { error } = await this.api.sendMagicLinkEmail(email)
+        const { error } = await this.api.sendMagicLinkEmail(email, {
+          redirectTo: options.redirectTo,
+        })
         return { data: null, user: null, session: null, error }
       }
-      if (email && password) return this._handleEmailSignIn(email, password)
-      if (provider) return this._handleProviderSignIn(provider)
+      if (email && password) {
+        return this._handleEmailSignIn(email, password, {
+          redirectTo: options.redirectTo,
+        })
+      }
+      if (provider) {
+        return this._handleProviderSignIn(provider, {
+          redirectTo: options.redirectTo,
+        })
+      }
       throw new Error(`You must provide either an email or a third-party provider.`)
     } catch (error) {
       return { data: null, user: null, session: null, error }
@@ -316,9 +333,17 @@ export default class GoTrueClient {
     }
   }
 
-  private async _handleEmailSignIn(email: string, password: string) {
+  private async _handleEmailSignIn(
+    email: string,
+    password: string,
+    options: {
+      redirectTo?: string
+    } = {}
+  ) {
     try {
-      const { data, error } = await this.api.signInWithEmail(email, password)
+      const { data, error } = await this.api.signInWithEmail(email, password, {
+        redirectTo: options.redirectTo,
+      })
       if (error || !data) return { data: null, user: null, session: null, error }
 
       if (data?.user?.confirmed_at) {
@@ -332,8 +357,13 @@ export default class GoTrueClient {
     }
   }
 
-  private _handleProviderSignIn(provider: Provider) {
-    const url: string = this.api.getUrlForProvider(provider)
+  private _handleProviderSignIn(
+    provider: Provider,
+    options: {
+      redirectTo?: string
+    } = {}
+  ) {
+    const url: string = this.api.getUrlForProvider(provider, { redirectTo: options.redirectTo })
 
     try {
       // try to open on the browser
