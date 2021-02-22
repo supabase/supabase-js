@@ -167,9 +167,19 @@ export default class GoTrueApi {
   /**
    * Generates the relevant login URL for a third-party provider.
    * @param provider One of the providers supported by GoTrue.
+   * @param redirectTo A URL or mobile address to send the user to after they are confirmed.
    */
-  getUrlForProvider(provider: Provider) {
-    return `${this.url}/authorize?provider=${provider}`
+  getUrlForProvider(
+    provider: Provider,
+    options: {
+      redirectTo?: string
+    }
+  ) {
+    let urlParams: string[] = [`provider=${provider}`]
+    if (options?.redirectTo) {
+      urlParams.push(`redirect_to=${options.redirectTo}`)
+    }
+    return `${this.url}/authorize?${urlParams.join('&')}`
   }
 
   /**

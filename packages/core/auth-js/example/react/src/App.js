@@ -16,7 +16,7 @@ function App() {
   }, [])
 
   async function handleOAuthLogin(provider) {
-    let { error } = await auth.signIn({ provider })
+    let { error } = await auth.signIn({ provider }, { redirectTo: 'http://localhost:3000/welcome'})
     if (error) console.log('Error: ', error.message)
   }
   async function handleEmailSignIn() {

@@ -10,7 +10,6 @@ services:
       GOTRUE_JWT_EXP: 3600
       GOTRUE_DB_DRIVER: postgres
       DB_NAMESPACE: auth
-      API_EXTERNAL_URL: http://localhost
       GOTRUE_API_HOST: 0.0.0.0
       PORT: 9999
       GOTRUE_DISABLE_SIGNUP: "false"
@@ -22,7 +21,7 @@ services:
       GOTRUE_EXTERNAL_GOOGLE_ENABLED: "true"
       GOTRUE_EXTERNAL_GOOGLE_CLIENT_ID: 53566906701-bmhc1ndue7hild39575gkpimhs06b7ds.apps.googleusercontent.com
       GOTRUE_EXTERNAL_GOOGLE_SECRET: Sm3s8RE85rDcS36iMy8YjrpC
-      GOTRUE_EXTERNAL_GOOGLE_REDIRECT_URI: http://localhost:9999/callback
+      GOTRUE_EXTERNAL_GOOGLE_REDIRECT_URI: http://localhost:3000/callback
       GOTRUE_SMTP_HOST: mail
       GOTRUE_SMTP_PORT: 2500
       GOTRUE_SMTP_USER: GOTRUE_SMTP_USER
@@ -34,15 +33,14 @@ services:
   autoconfirm: # Signup enabled, autoconfirm on
     image: supabase/gotrue:latest
     ports:
-      - '9998:9999'
+      - '9998:9998'
     environment:
       GOTRUE_JWT_SECRET: "37c304f8-51aa-419a-a1af-06154e63707a"
       GOTRUE_JWT_EXP: 3600
       GOTRUE_DB_DRIVER: postgres
       DB_NAMESPACE: auth
-      API_EXTERNAL_URL: http://localhost:9998
       GOTRUE_API_HOST: 0.0.0.0
-      PORT: 9999
+      PORT: 9998
       GOTRUE_DISABLE_SIGNUP: "false"
       GOTRUE_SITE_URL: http://localhost
       GOTRUE_MAILER_AUTOCONFIRM: "true"
@@ -54,15 +52,14 @@ services:
   disabled: # Signup disabled
     image: supabase/gotrue:latest
     ports:
-      - '9997:9999'
+      - '9997:9997'
     environment:
       GOTRUE_JWT_SECRET: "37c304f8-51aa-419a-a1af-06154e63707a"
       GOTRUE_JWT_EXP: 3600
       GOTRUE_DB_DRIVER: postgres
       DB_NAMESPACE: auth
-      API_EXTERNAL_URL: http://localhost:9997
       GOTRUE_API_HOST: 0.0.0.0
-      PORT: 9999
+      PORT: 9997
       GOTRUE_DISABLE_SIGNUP: "true"
       GOTRUE_SITE_URL: http://localhost
       GOTRUE_MAILER_AUTOCONFIRM: "false"

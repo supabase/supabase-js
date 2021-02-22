@@ -3,3 +3,7 @@
 exports[`signIn() with Provider 1`] = `"http://localhost:9999/authorize?provider=google"`;
 
 exports[`signIn() with Provider 2`] = `"google"`;
+
+exports[`signIn() with Provider can append a redirectUrl  1`] = `"http://localhost:9999/authorize?provider=google&redirect_to=https://localhost:9000/welcome"`;
+
+exports[`signIn() with Provider can append a redirectUrl  2`] = `"google"`;
