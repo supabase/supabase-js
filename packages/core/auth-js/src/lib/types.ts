@@ -80,6 +80,4 @@ export interface UserCredentials {
   password?: string
   // (Optional) The name of the provider.
   provider?: Provider
-  /** A URL to redirect the user to after confirmation. */
-  redirectTo?: URL
 }
