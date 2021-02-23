@@ -68,10 +68,14 @@ export default class GoTrueApi {
     } = {}
   ): Promise<{ data: Session | null; error: Error | null }> {
     try {
+      let headers = { ...this.headers }
+      if (options.redirectTo) {
+        headers['referer'] = options.redirectTo
+      }
       const data = await post(
         `${this.url}/token?grant_type=password`,
         { email, password },
-        { headers: this.headers }
+        { headers }
       )
       return { data, error: null }
     } catch (error) {
@@ -91,7 +95,11 @@ export default class GoTrueApi {
     } = {}
   ): Promise<{ data: {} | null; error: Error | null }> {
     try {
-      const data = await post(`${this.url}/magiclink`, { email }, { headers: this.headers })
+      let headers = { ...this.headers }
+      if (options.redirectTo) {
+        headers['referer'] = options.redirectTo
+      }
+      const data = await post(`${this.url}/magiclink`, { email }, { headers })
       return { data, error: null }
     } catch (error) {
       return { data: null, error }
@@ -110,7 +118,11 @@ export default class GoTrueApi {
     } = {}
   ): Promise<{ data: {} | null; error: Error | null }> {
     try {
-      const data = await post(`${this.url}/invite`, { email }, { headers: this.headers })
+      let headers = { ...this.headers }
+      if (options.redirectTo) {
+        headers['referer'] = options.redirectTo
+      }
+      const data = await post(`${this.url}/invite`, { email }, { headers })
       return { data, error: null }
     } catch (error) {
       return { data: null, error }
@@ -129,7 +141,11 @@ export default class GoTrueApi {
     } = {}
   ): Promise<{ data: {} | null; error: Error | null }> {
     try {
-      const data = await post(`${this.url}/recover`, { email }, { headers: this.headers })
+      let headers = { ...this.headers }
+      if (options.redirectTo) {
+        headers['referer'] = options.redirectTo
+      }
+      const data = await post(`${this.url}/recover`, { email }, { headers })
       return { data, error: null }
     } catch (error) {
       return { data: null, error }
