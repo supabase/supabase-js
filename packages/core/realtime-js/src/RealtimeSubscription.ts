@@ -180,7 +180,14 @@ export default class RealtimeSubscription {
     }
 
     this.bindings
-      .filter((bind) => bind.event === event)
+      .filter((bind) => {
+        // bind all realtime events
+        if (bind.event === '*') {
+          return event === payload.type
+        } else {
+          return bind.event === event
+        }
+      })
       .map((bind) => bind.callback(handledPayload, ref))
   }
 
