@@ -2883,35 +2883,25 @@ Object {
 }
 `;
 
-exports[`stored procedure with count: 'exact' 1`] = `
+exports[`stored procedure returns void 1`] = `
 Object {
   "body": null,
   "count": null,
   "data": null,
-  "error": Object {
-    "code": "42883",
-    "details": null,
-    "hint": "No function matches the given name and argument types. You might need to add explicit type casts.",
-    "message": "function public.get_status(count => text, name_param => text) does not exist",
-  },
-  "status": 404,
-  "statusText": "Not Found",
+  "error": null,
+  "status": 200,
+  "statusText": "OK",
 }
 `;
 
-exports[`stored procedure with count: 'exact', head: true 1`] = `
+exports[`stored procedure with count: 'exact' 1`] = `
 Object {
-  "body": null,
-  "count": null,
-  "data": null,
-  "error": Object {
-    "code": "42883",
-    "details": null,
-    "hint": "No function matches the given name and argument types. You might need to add explicit type casts.",
-    "message": "function public.get_status(count => text, head => text, name_param => text) does not exist",
-  },
-  "status": 404,
-  "statusText": "Not Found",
+  "body": "ONLINE",
+  "count": 1,
+  "data": "ONLINE",
+  "error": null,
+  "status": 200,
+  "statusText": "OK",
 }
 `;
 

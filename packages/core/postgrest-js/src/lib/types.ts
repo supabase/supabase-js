@@ -83,32 +83,26 @@ export abstract class PostgrestBuilder<T> implements PromiseLike<PostgrestRespon
       body: JSON.stringify(this.body),
     })
       .then(async (res) => {
-        let error, data, count
+        let error = null
+        let data = null
+        let count = null
+
         if (res.ok) {
-          error = null
-          if (this.method !== 'HEAD') {
-            const isReturnMinimal = this.headers['Prefer']?.split(',').includes('return=minimal')
-            data = isReturnMinimal ? null : await res.json()
-          } else {
-            data = null
+          const isReturnMinimal = this.headers['Prefer']?.split(',').includes('return=minimal')
+          if (this.method !== 'HEAD' && !isReturnMinimal) {
+            const text = await res.text()
+            if (text && text !== '') data = JSON.parse(text)
           }
 
           const countHeader = this.headers['Prefer']?.match(/count=(exact|planned|estimated)/)
-          if (countHeader) {
-            const contentRange = res.headers.get('content-range')?.split('/')
-            if (contentRange && contentRange.length > 1) {
-              count = parseInt(contentRange[1])
-            } else {
-              count = null
-            }
-          } else {
-            count = null
+          const contentRange = res.headers.get('content-range')?.split('/')
+          if (countHeader && contentRange && contentRange.length > 1) {
+            count = parseInt(contentRange[1])
           }
         } else {
           error = await res.json()
-          data = null
-          count = null
         }
+
         const postgrestResponse: PostgrestResponse<T> = {
           error,
           data,

@@ -13,6 +13,11 @@ test('stored procedure', async () => {
   expect(res).toMatchSnapshot()
 })
 
+test('stored procedure returns void', async () => {
+  const res = await postgrest.rpc('void_func')
+  expect(res).toMatchSnapshot()
+})
+
 test('custom headers', async () => {
   const postgrest = new PostgrestClient(REST_URL, { headers: { apikey: 'foo' } })
   expect((postgrest.from('users').select() as any).headers['apikey']).toEqual('foo')
@@ -171,16 +176,7 @@ test('select with count:exact', async () => {
 })
 
 test("stored procedure with count: 'exact'", async () => {
-  const res = await postgrest.rpc('get_status', { name_param: 'supabot', count: 'exact' })
-  expect(res).toMatchSnapshot()
-})
-
-test("stored procedure with count: 'exact', head: true", async () => {
-  const res = await postgrest.rpc('get_status', {
-    name_param: 'supabot',
-    count: 'exact',
-    head: true,
-  })
+  const res = await postgrest.rpc('get_status', { name_param: 'supabot'}, {count: 'exact' })
   expect(res).toMatchSnapshot()
 })
 

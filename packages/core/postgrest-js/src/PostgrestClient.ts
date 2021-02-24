@@ -1,4 +1,5 @@
 import PostgrestQueryBuilder from './lib/PostgrestQueryBuilder'
+import PostgrestRpcBuilder from './lib/PostgrestRpcBuilder'
 import PostgrestTransformBuilder from './lib/PostgrestTransformBuilder'
 
 export default class PostgrestClient {
@@ -47,11 +48,21 @@ export default class PostgrestClient {
    *
    * @param fn  The function name to call.
    * @param params  The parameters to pass to the function call.
+   * @param count  Count algorithm to use to count rows in a table.
    */
-  rpc<T = any>(fn: string, params?: object): PostgrestTransformBuilder<T> {
+  rpc<T = any>(
+    fn: string,
+    params?: object,
+    {
+      count = null,
+    }: {
+      count?: null | 'exact' | 'planned' | 'estimated'
+    } = {}
+  ): PostgrestTransformBuilder<T> {
     const url = `${this.url}/rpc/${fn}`
-    return new PostgrestQueryBuilder<T>(url, { headers: this.headers, schema: this.schema }).rpc(
-      params
-    )
+    return new PostgrestRpcBuilder<T>(url, {
+      headers: this.headers,
+      schema: this.schema,
+    }).rpc(params, { count })
   }
 }
