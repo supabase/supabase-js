@@ -26,7 +26,7 @@ const postgrest = new PostgrestClient(REST_URL)
 - select(): https://supabase.io/docs/postgrest/client/select
 - insert(): https://supabase.io/docs/postgrest/client/insert
 - update(): https://supabase.io/docs/postgrest/client/update
-- delete(): https://supabase.io/docs/postgrest/client/update
+- delete(): https://supabase.io/docs/postgrest/client/delete
 
 ## License
 
