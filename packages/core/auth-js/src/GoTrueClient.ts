@@ -143,11 +143,13 @@ export default class GoTrueClient {
    * @param password The user's password.
    * @param provider One of the providers supported by GoTrue.
    * @param redirectTo A URL or mobile address to send the user to after they are confirmed.
+   * @param scopes A space separated list of scopes granted to the OAuth application
    */
   async signIn(
     { email, password, provider }: UserCredentials,
     options: {
       redirectTo?: string
+      scopes?: string
     } = {}
   ): Promise<{
     session: Session | null
@@ -174,6 +176,7 @@ export default class GoTrueClient {
       if (provider) {
         return this._handleProviderSignIn(provider, {
           redirectTo: options.redirectTo,
+          scopes: options.scopes,
         })
       }
       throw new Error(`You must provide either an email or a third-party provider.`)
@@ -361,9 +364,13 @@ export default class GoTrueClient {
     provider: Provider,
     options: {
       redirectTo?: string
+      scopes?: string
     } = {}
   ) {
-    const url: string = this.api.getUrlForProvider(provider, { redirectTo: options.redirectTo })
+    const url: string = this.api.getUrlForProvider(provider, {
+      redirectTo: options.redirectTo,
+      scopes: options.scopes,
+    })
 
     try {
       // try to open on the browser
