@@ -7,3 +7,11 @@ exports[`signIn() with Provider 2`] = `"google"`;
 exports[`signIn() with Provider can append a redirectUrl  1`] = `"http://localhost:9999/authorize?provider=google&redirect_to=https://localhost:9000/welcome"`;
 
 exports[`signIn() with Provider can append a redirectUrl  2`] = `"google"`;
+
+exports[`signIn() with Provider can append multiple options 1`] = `"http://localhost:9999/authorize?provider=github&redirect_to=https://localhost:9000/welcome&scopes=repo"`;
+
+exports[`signIn() with Provider can append multiple options 2`] = `"github"`;
+
+exports[`signIn() with Provider can append scopes 1`] = `"http://localhost:9999/authorize?provider=github&scopes=repo"`;
+
+exports[`signIn() with Provider can append scopes 2`] = `"github"`;
