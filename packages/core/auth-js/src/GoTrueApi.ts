@@ -184,7 +184,7 @@ export default class GoTrueApi {
    * Generates the relevant login URL for a third-party provider.
    * @param provider One of the providers supported by GoTrue.
    * @param redirectTo A URL or mobile address to send the user to after they are confirmed.
-   * @param scopes A space separated list of scopes granted to the OAuth application
+   * @param scopes A space-separated list of scopes granted to the OAuth application.
    */
   getUrlForProvider(
     provider: Provider,
