@@ -5,7 +5,7 @@ import fetch from 'cross-fetch'
  *
  * {@link https://postgrest.org/en/stable/api.html?highlight=options#errors-and-http-status-codes}
  */
-interface PostgrestError {
+type PostgrestError = {
   message: string
   details: string
   hint: string
