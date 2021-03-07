@@ -13,6 +13,20 @@ describe('embedded filters', () => {
     const res = await postgrest.from('users').select('messages(*)').eq('messages.channel_id', 1)
     expect(res).toMatchSnapshot()
   })
+  test('embedded or', async () => {
+    const res = await postgrest
+      .from('users')
+      .select('messages(*)')
+      .or('channel_id.eq.2,message.eq.Hello World 👋', { foreignTable: 'messages' })
+    expect(res).toMatchSnapshot()
+  })
+  test('embedded or with and', async () => {
+    const res = await postgrest
+      .from('users')
+      .select('messages(*)')
+      .or('channel_id.eq.2,and(message.eq.Hello World 👋,username.eq.supabot)', { foreignTable: 'messages' })
+    expect(res).toMatchSnapshot()
+  })
 })
 
 describe('embedded transforms', () => {

@@ -47,9 +47,11 @@ export default class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder
    * Finds all rows satisfying at least one of the filters.
    *
    * @param filters  The filters to use, separated by commas.
+   * @param foreignTable  The foreign table to use (if `column` is a foreign column).
    */
-  or(filters: string): this {
-    this.url.searchParams.append('or', `(${filters})`)
+  or(filters: string, { foreignTable }: { foreignTable?: string } = {}): this {
+    const key = typeof foreignTable === 'undefined' ? 'or' : `${foreignTable}.or`
+    this.url.searchParams.append(key, `(${filters})`)
     return this
   }
 
