@@ -46,9 +46,13 @@ export default class PostgrestTransformBuilder<T> extends PostgrestBuilder<T> {
     }: { ascending?: boolean; nullsFirst?: boolean; foreignTable?: string } = {}
   ): this {
     const key = typeof foreignTable === 'undefined' ? 'order' : `${foreignTable}.order`
+    const existingOrder = this.url.searchParams.get(key)
+
     this.url.searchParams.set(
       key,
-      `${column}.${ascending ? 'asc' : 'desc'}.${nullsFirst ? 'nullsfirst' : 'nullslast'}`
+      `${existingOrder ? `${existingOrder},` : ''}${column}.${ascending ? 'asc' : 'desc'}.${
+        nullsFirst ? 'nullsfirst' : 'nullslast'
+      }`
     )
     return this
   }

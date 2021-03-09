@@ -38,6 +38,15 @@ describe('embedded transforms', () => {
     expect(res).toMatchSnapshot()
   })
 
+test('embedded order on multiple columns', async () => {
+    const res = await postgrest
+      .from('users')
+      .select('messages(*)')
+      .order('channel_id', { foreignTable: 'messages', ascending: false })
+      .order('username', { foreignTable: 'messages', ascending: false })
+  expect(res).toMatchSnapshot()
+})
+
   test('embedded limit', async () => {
     const res = await postgrest
       .from('users')

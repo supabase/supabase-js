@@ -7,6 +7,15 @@ test('order', async () => {
   expect(res).toMatchSnapshot()
 })
 
+test('order on multiple columns', async () => {
+  const res = await postgrest
+    .from('messages')
+    .select()
+    .order('channel_id', { ascending: false })
+    .order('username', { ascending: false })
+  expect(res).toMatchSnapshot()
+})
+
 test('limit', async () => {
   const res = await postgrest.from('users').select().limit(1)
   expect(res).toMatchSnapshot()
