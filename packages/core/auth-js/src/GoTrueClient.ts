@@ -143,7 +143,7 @@ export default class GoTrueClient {
    * @param password The user's password.
    * @param provider One of the providers supported by GoTrue.
    * @param redirectTo A URL or mobile address to send the user to after they are confirmed.
-   * @param scopes A space separated list of scopes granted to the OAuth application
+   * @param scopes A space-separated list of scopes granted to the OAuth application.
    */
   async signIn(
     { email, password, provider }: UserCredentials,

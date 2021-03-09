@@ -30,3 +30,32 @@ test('signIn() with Provider can append a redirectUrl ', async () => {
   expect(url).toMatchSnapshot()
   expect(provider).toMatchSnapshot()
 })
+
+test('signIn() with Provider can append scopes', async () => {
+  let { error, url, provider } = await auth.signIn(
+    {
+      provider: 'github',
+    },
+    {
+      scopes: 'repo',
+    }
+  )
+  expect(error).toBeNull()
+  expect(url).toMatchSnapshot()
+  expect(provider).toMatchSnapshot()
+})
+
+test('signIn() with Provider can append multiple options', async () => {
+  let { error, url, provider } = await auth.signIn(
+    {
+      provider: 'github',
+    },
+    {
+      redirectTo: 'https://localhost:9000/welcome',
+      scopes: 'repo',
+    }
+  )
+  expect(error).toBeNull()
+  expect(url).toMatchSnapshot()
+  expect(provider).toMatchSnapshot()
+})
