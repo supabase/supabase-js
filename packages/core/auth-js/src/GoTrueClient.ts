@@ -261,6 +261,7 @@ export default class GoTrueClient {
       const error_description = getParameterByName('error_description')
       if (error_description) throw new Error(error_description)
 
+      const provider_token = getParameterByName('provider_token')
       const access_token = getParameterByName('access_token')
       if (!access_token) throw new Error('No access_token detected.')
       const expires_in = getParameterByName('expires_in')
@@ -274,6 +275,7 @@ export default class GoTrueClient {
       if (error) throw error
 
       const session: Session = {
+        provider_token,
         access_token,
         expires_in: parseInt(expires_in),
         refresh_token,
