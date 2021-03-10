@@ -6,7 +6,6 @@ import {
   DEFAULT_TIMEOUT,
   WS_CLOSE_NORMAL,
 } from './lib/constants'
-// import querystring from 'query-string'
 import Timer from './lib/timer'
 import RealtimeSubscription from './RealtimeSubscription'
 import { w3cwebsocket as WebSocket } from 'websocket'
