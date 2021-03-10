@@ -2,10 +2,13 @@
 
 Releases are handled by Semantic release. This document is for forcing and documenting any non-code changes.
 
+### v1.12.0
+
+- Feature: https://github.com/supabase/gotrue-js/pull/66 OAuth providers can now be supplied scopes.
+
 ### v1.11.0
 
 - Feature: https://github.com/supabase/gotrue-js/issues/62 Give the ability for developers to redirect their users to a specified URL after they are logged in.
-
 
 ### v1.10.1
 
