@@ -34,7 +34,6 @@
   },
   "dependencies": {
     "@types/websocket": "^1.0.1",
-    "query-string": "^6.12.1",
     "websocket": "^1.0.31"
   },
   "devDependencies": {
