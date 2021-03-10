@@ -184,16 +184,21 @@ export default class GoTrueApi {
    * Generates the relevant login URL for a third-party provider.
    * @param provider One of the providers supported by GoTrue.
    * @param redirectTo A URL or mobile address to send the user to after they are confirmed.
+   * @param scopes A space-separated list of scopes granted to the OAuth application.
    */
   getUrlForProvider(
     provider: Provider,
     options: {
       redirectTo?: string
+      scopes?: string
     }
   ) {
     let urlParams: string[] = [`provider=${provider}`]
     if (options?.redirectTo) {
       urlParams.push(`redirect_to=${options.redirectTo}`)
+    }
+    if (options?.scopes) {
+      urlParams.push(`scopes=${options.scopes}`)
     }
     return `${this.url}/authorize?${urlParams.join('&')}`
   }

@@ -3,6 +3,7 @@ export type Provider = 'azure' | 'bitbucket' | 'facebook' | 'github' | 'gitlab' 
 export type AuthChangeEvent = 'SIGNED_IN' | 'SIGNED_OUT' | 'USER_UPDATED' | 'PASSWORD_RECOVERY'
 
 export interface Session {
+  provider_token?: string | null
   access_token: string
   expires_in: number
   refresh_token: string
