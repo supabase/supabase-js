@@ -3,135 +3,659 @@ import { PostgrestClient } from '../src/index'
 const postgrest = new PostgrestClient('http://localhost:3000')
 
 test('not', async () => {
-  const res = await postgrest.from('users').select().not('status', 'eq', 'OFFLINE')
-  expect(res).toMatchSnapshot()
+  const res = await postgrest.from('users').select('status').not('status', 'eq', 'OFFLINE')
+  expect(res).toMatchInlineSnapshot(`
+    Object {
+      "body": Array [
+        Object {
+          "status": "ONLINE",
+        },
+        Object {
+          "status": "ONLINE",
+        },
+        Object {
+          "status": "ONLINE",
+        },
+      ],
+      "count": null,
+      "data": Array [
+        Object {
+          "status": "ONLINE",
+        },
+        Object {
+          "status": "ONLINE",
+        },
+        Object {
+          "status": "ONLINE",
+        },
+      ],
+      "error": null,
+      "status": 200,
+      "statusText": "OK",
+    }
+  `)
 })
 
 test('or', async () => {
-  const res = await postgrest.from('users').select().or('status.eq.OFFLINE,username.eq.supabot')
-  expect(res).toMatchSnapshot()
+  const res = await postgrest
+    .from('users')
+    .select('status, username')
+    .or('status.eq.OFFLINE,username.eq.supabot')
+  expect(res).toMatchInlineSnapshot(`
+    Object {
+      "body": Array [
+        Object {
+          "status": "ONLINE",
+          "username": "supabot",
+        },
+        Object {
+          "status": "OFFLINE",
+          "username": "kiwicopple",
+        },
+      ],
+      "count": null,
+      "data": Array [
+        Object {
+          "status": "ONLINE",
+          "username": "supabot",
+        },
+        Object {
+          "status": "OFFLINE",
+          "username": "kiwicopple",
+        },
+      ],
+      "error": null,
+      "status": 200,
+      "statusText": "OK",
+    }
+  `)
 })
 
 test('eq', async () => {
-  const res = await postgrest.from('users').select().eq('username', 'supabot')
-  expect(res).toMatchSnapshot()
+  const res = await postgrest.from('users').select('username').eq('username', 'supabot')
+  expect(res).toMatchInlineSnapshot(`
+    Object {
+      "body": Array [
+        Object {
+          "username": "supabot",
+        },
+      ],
+      "count": null,
+      "data": Array [
+        Object {
+          "username": "supabot",
+        },
+      ],
+      "error": null,
+      "status": 200,
+      "statusText": "OK",
+    }
+  `)
 })
 
 test('neq', async () => {
-  const res = await postgrest.from('users').select().neq('username', 'supabot')
-  expect(res).toMatchSnapshot()
+  const res = await postgrest.from('users').select('username').neq('username', 'supabot')
+  expect(res).toMatchInlineSnapshot(`
+    Object {
+      "body": Array [
+        Object {
+          "username": "kiwicopple",
+        },
+        Object {
+          "username": "awailas",
+        },
+        Object {
+          "username": "dragarcia",
+        },
+      ],
+      "count": null,
+      "data": Array [
+        Object {
+          "username": "kiwicopple",
+        },
+        Object {
+          "username": "awailas",
+        },
+        Object {
+          "username": "dragarcia",
+        },
+      ],
+      "error": null,
+      "status": 200,
+      "statusText": "OK",
+    }
+  `)
 })
 
 test('gt', async () => {
-  const res = await postgrest.from('messages').select().gt('id', 1)
-  expect(res).toMatchSnapshot()
+  const res = await postgrest.from('messages').select('').gt('id', 1)
+  expect(res).toMatchInlineSnapshot(`
+    Object {
+      "body": null,
+      "count": null,
+      "data": null,
+      "error": Object {
+        "details": "unexpected end of input expecting field name (* or [a..z0..9_]) or \\"*\\"",
+        "message": "\\"failed to parse select parameter ()\\" (line 1, column 1)",
+      },
+      "status": 400,
+      "statusText": "Bad Request",
+    }
+  `)
 })
 
 test('gte', async () => {
-  const res = await postgrest.from('messages').select().gte('id', 1)
-  expect(res).toMatchSnapshot()
+  const res = await postgrest.from('messages').select('id').gte('id', 1)
+  expect(res).toMatchInlineSnapshot(`
+    Object {
+      "body": Array [
+        Object {
+          "id": 1,
+        },
+        Object {
+          "id": 2,
+        },
+      ],
+      "count": null,
+      "data": Array [
+        Object {
+          "id": 1,
+        },
+        Object {
+          "id": 2,
+        },
+      ],
+      "error": null,
+      "status": 200,
+      "statusText": "OK",
+    }
+  `)
 })
 
 test('lt', async () => {
-  const res = await postgrest.from('messages').select().lt('id', 2)
-  expect(res).toMatchSnapshot()
+  const res = await postgrest.from('messages').select('id').lt('id', 2)
+  expect(res).toMatchInlineSnapshot(`
+    Object {
+      "body": Array [
+        Object {
+          "id": 1,
+        },
+      ],
+      "count": null,
+      "data": Array [
+        Object {
+          "id": 1,
+        },
+      ],
+      "error": null,
+      "status": 200,
+      "statusText": "OK",
+    }
+  `)
 })
 
 test('lte', async () => {
-  const res = await postgrest.from('messages').select().lte('id', 2)
-  expect(res).toMatchSnapshot()
+  const res = await postgrest.from('messages').select('id').lte('id', 2)
+  expect(res).toMatchInlineSnapshot(`
+    Object {
+      "body": Array [
+        Object {
+          "id": 1,
+        },
+        Object {
+          "id": 2,
+        },
+      ],
+      "count": null,
+      "data": Array [
+        Object {
+          "id": 1,
+        },
+        Object {
+          "id": 2,
+        },
+      ],
+      "error": null,
+      "status": 200,
+      "statusText": "OK",
+    }
+  `)
 })
 
 test('like', async () => {
-  const res = await postgrest.from('users').select().like('username', '%supa%')
-  expect(res).toMatchSnapshot()
+  const res = await postgrest.from('users').select('username').like('username', '%supa%')
+  expect(res).toMatchInlineSnapshot(`
+    Object {
+      "body": Array [
+        Object {
+          "username": "supabot",
+        },
+      ],
+      "count": null,
+      "data": Array [
+        Object {
+          "username": "supabot",
+        },
+      ],
+      "error": null,
+      "status": 200,
+      "statusText": "OK",
+    }
+  `)
 })
 
 test('ilike', async () => {
-  const res = await postgrest.from('users').select().ilike('username', '%SUPA%')
-  expect(res).toMatchSnapshot()
+  const res = await postgrest.from('users').select('username').ilike('username', '%SUPA%')
+  expect(res).toMatchInlineSnapshot(`
+    Object {
+      "body": Array [
+        Object {
+          "username": "supabot",
+        },
+      ],
+      "count": null,
+      "data": Array [
+        Object {
+          "username": "supabot",
+        },
+      ],
+      "error": null,
+      "status": 200,
+      "statusText": "OK",
+    }
+  `)
 })
 
 test('is', async () => {
-  const res = await postgrest.from('users').select().is('data', null)
-  expect(res).toMatchSnapshot()
+  const res = await postgrest.from('users').select('data').is('data', null)
+  expect(res).toMatchInlineSnapshot(`
+    Object {
+      "body": Array [
+        Object {
+          "data": null,
+        },
+        Object {
+          "data": null,
+        },
+        Object {
+          "data": null,
+        },
+        Object {
+          "data": null,
+        },
+      ],
+      "count": null,
+      "data": Array [
+        Object {
+          "data": null,
+        },
+        Object {
+          "data": null,
+        },
+        Object {
+          "data": null,
+        },
+        Object {
+          "data": null,
+        },
+      ],
+      "error": null,
+      "status": 200,
+      "statusText": "OK",
+    }
+  `)
 })
 
 test('in', async () => {
-  const res = await postgrest.from('users').select().in('status', ['ONLINE', 'OFFLINE'])
-  expect(res).toMatchSnapshot()
+  const res = await postgrest.from('users').select('status').in('status', ['ONLINE', 'OFFLINE'])
+  expect(res).toMatchInlineSnapshot(`
+    Object {
+      "body": Array [
+        Object {
+          "status": "ONLINE",
+        },
+        Object {
+          "status": "OFFLINE",
+        },
+        Object {
+          "status": "ONLINE",
+        },
+        Object {
+          "status": "ONLINE",
+        },
+      ],
+      "count": null,
+      "data": Array [
+        Object {
+          "status": "ONLINE",
+        },
+        Object {
+          "status": "OFFLINE",
+        },
+        Object {
+          "status": "ONLINE",
+        },
+        Object {
+          "status": "ONLINE",
+        },
+      ],
+      "error": null,
+      "status": 200,
+      "statusText": "OK",
+    }
+  `)
 })
 
 test('contains', async () => {
-  const res = await postgrest.from('users').select().contains('age_range', '[1,2)')
-  expect(res).toMatchSnapshot()
+  const res = await postgrest.from('users').select('age_range').contains('age_range', '[1,2)')
+  expect(res).toMatchInlineSnapshot(`
+    Object {
+      "body": Array [
+        Object {
+          "age_range": "[1,2)",
+        },
+      ],
+      "count": null,
+      "data": Array [
+        Object {
+          "age_range": "[1,2)",
+        },
+      ],
+      "error": null,
+      "status": 200,
+      "statusText": "OK",
+    }
+  `)
 })
 
 test('containedBy', async () => {
-  const res = await postgrest.from('users').select().containedBy('age_range', '[1,2)')
-  expect(res).toMatchSnapshot()
+  const res = await postgrest.from('users').select('age_range').containedBy('age_range', '[1,2)')
+  expect(res).toMatchInlineSnapshot(`
+    Object {
+      "body": Array [
+        Object {
+          "age_range": "[1,2)",
+        },
+      ],
+      "count": null,
+      "data": Array [
+        Object {
+          "age_range": "[1,2)",
+        },
+      ],
+      "error": null,
+      "status": 200,
+      "statusText": "OK",
+    }
+  `)
 })
 
 test('rangeLt', async () => {
-  const res = await postgrest.from('users').select().rangeLt('age_range', '[2,25)')
-  expect(res).toMatchSnapshot()
+  const res = await postgrest.from('users').select('age_range').rangeLt('age_range', '[2,25)')
+  expect(res).toMatchInlineSnapshot(`
+    Object {
+      "body": Array [
+        Object {
+          "age_range": "[1,2)",
+        },
+      ],
+      "count": null,
+      "data": Array [
+        Object {
+          "age_range": "[1,2)",
+        },
+      ],
+      "error": null,
+      "status": 200,
+      "statusText": "OK",
+    }
+  `)
 })
 
 test('rangeGt', async () => {
-  const res = await postgrest.from('users').select().rangeGt('age_range', '[2,25)')
-  expect(res).toMatchSnapshot()
+  const res = await postgrest.from('users').select('age_range').rangeGt('age_range', '[2,25)')
+  expect(res).toMatchInlineSnapshot(`
+    Object {
+      "body": Array [
+        Object {
+          "age_range": "[25,35)",
+        },
+        Object {
+          "age_range": "[25,35)",
+        },
+      ],
+      "count": null,
+      "data": Array [
+        Object {
+          "age_range": "[25,35)",
+        },
+        Object {
+          "age_range": "[25,35)",
+        },
+      ],
+      "error": null,
+      "status": 200,
+      "statusText": "OK",
+    }
+  `)
 })
 
 test('rangeGte', async () => {
-  const res = await postgrest.from('users').select().rangeGte('age_range', '[2,25)')
-  expect(res).toMatchSnapshot()
+  const res = await postgrest.from('users').select('age_range').rangeGte('age_range', '[2,25)')
+  expect(res).toMatchInlineSnapshot(`
+    Object {
+      "body": Array [
+        Object {
+          "age_range": "[25,35)",
+        },
+        Object {
+          "age_range": "[25,35)",
+        },
+        Object {
+          "age_range": "[20,30)",
+        },
+      ],
+      "count": null,
+      "data": Array [
+        Object {
+          "age_range": "[25,35)",
+        },
+        Object {
+          "age_range": "[25,35)",
+        },
+        Object {
+          "age_range": "[20,30)",
+        },
+      ],
+      "error": null,
+      "status": 200,
+      "statusText": "OK",
+    }
+  `)
 })
 
 test('rangeLte', async () => {
-  const res = await postgrest.from('users').select().rangeLte('age_range', '[2,25)')
-  expect(res).toMatchSnapshot()
+  const res = await postgrest.from('users').select('age_range').rangeLte('age_range', '[2,25)')
+  expect(res).toMatchInlineSnapshot(`
+    Object {
+      "body": Array [
+        Object {
+          "age_range": "[1,2)",
+        },
+      ],
+      "count": null,
+      "data": Array [
+        Object {
+          "age_range": "[1,2)",
+        },
+      ],
+      "error": null,
+      "status": 200,
+      "statusText": "OK",
+    }
+  `)
 })
 
 test('adjacent', async () => {
-  const res = await postgrest.from('users').select().adjacent('age_range', '[2,25)')
-  expect(res).toMatchSnapshot()
+  const res = await postgrest.from('users').select('age_range').adjacent('age_range', '[2,25)')
+  expect(res).toMatchInlineSnapshot(`
+    Object {
+      "body": Array [
+        Object {
+          "age_range": "[1,2)",
+        },
+        Object {
+          "age_range": "[25,35)",
+        },
+        Object {
+          "age_range": "[25,35)",
+        },
+      ],
+      "count": null,
+      "data": Array [
+        Object {
+          "age_range": "[1,2)",
+        },
+        Object {
+          "age_range": "[25,35)",
+        },
+        Object {
+          "age_range": "[25,35)",
+        },
+      ],
+      "error": null,
+      "status": 200,
+      "statusText": "OK",
+    }
+  `)
 })
 
 test('overlaps', async () => {
-  const res = await postgrest.from('users').select().overlaps('age_range', '[2,25)')
-  expect(res).toMatchSnapshot()
+  const res = await postgrest.from('users').select('age_range').overlaps('age_range', '[2,25)')
+  expect(res).toMatchInlineSnapshot(`
+    Object {
+      "body": Array [
+        Object {
+          "age_range": "[20,30)",
+        },
+      ],
+      "count": null,
+      "data": Array [
+        Object {
+          "age_range": "[20,30)",
+        },
+      ],
+      "error": null,
+      "status": 200,
+      "statusText": "OK",
+    }
+  `)
 })
 
 test('textSearch', async () => {
   const res = await postgrest
     .from('users')
-    .select()
+    .select('catchphrase')
     .textSearch('catchphrase', `'fat' & 'cat'`, { config: 'english' })
-  expect(res).toMatchSnapshot()
+  expect(res).toMatchInlineSnapshot(`
+    Object {
+      "body": Array [
+        Object {
+          "catchphrase": "'cat' 'fat'",
+        },
+      ],
+      "count": null,
+      "data": Array [
+        Object {
+          "catchphrase": "'cat' 'fat'",
+        },
+      ],
+      "error": null,
+      "status": 200,
+      "statusText": "OK",
+    }
+  `)
 })
 
 test('textSearch with plainto_tsquery', async () => {
   const res = await postgrest
     .from('users')
-    .select()
+    .select('catchphrase')
     .textSearch('catchphrase', `'fat' & 'cat'`, { config: 'english', type: 'plain' })
-  expect(res).toMatchSnapshot()
+  expect(res).toMatchInlineSnapshot(`
+    Object {
+      "body": Array [
+        Object {
+          "catchphrase": "'cat' 'fat'",
+        },
+      ],
+      "count": null,
+      "data": Array [
+        Object {
+          "catchphrase": "'cat' 'fat'",
+        },
+      ],
+      "error": null,
+      "status": 200,
+      "statusText": "OK",
+    }
+  `)
 })
 
 test('textSearch with phraseto_tsquery', async () => {
   const res = await postgrest
     .from('users')
-    .select()
+    .select('catchphrase')
     .textSearch('catchphrase', 'cat', { config: 'english', type: 'phrase' })
-  expect(res).toMatchSnapshot()
+  expect(res).toMatchInlineSnapshot(`
+    Object {
+      "body": Array [
+        Object {
+          "catchphrase": "'cat' 'fat'",
+        },
+        Object {
+          "catchphrase": "'bat' 'cat'",
+        },
+      ],
+      "count": null,
+      "data": Array [
+        Object {
+          "catchphrase": "'cat' 'fat'",
+        },
+        Object {
+          "catchphrase": "'bat' 'cat'",
+        },
+      ],
+      "error": null,
+      "status": 200,
+      "statusText": "OK",
+    }
+  `)
 })
 
 test('textSearch with websearch_to_tsquery', async () => {
   const res = await postgrest
     .from('users')
-    .select()
+    .select('catchphrase')
     .textSearch('catchphrase', `'fat' & 'cat'`, { config: 'english', type: 'websearch' })
-  expect(res).toMatchSnapshot()
+  expect(res).toMatchInlineSnapshot(`
+    Object {
+      "body": Array [
+        Object {
+          "catchphrase": "'cat' 'fat'",
+        },
+      ],
+      "count": null,
+      "data": Array [
+        Object {
+          "catchphrase": "'cat' 'fat'",
+        },
+      ],
+      "error": null,
+      "status": 200,
+      "statusText": "OK",
+    }
+  `)
 })
 
 test('multiple filters', async () => {
@@ -143,18 +667,79 @@ test('multiple filters', async () => {
     .overlaps('age_range', '[1,2)')
     .eq('status', 'ONLINE')
     .textSearch('catchphrase', 'cat')
-  expect(res).toMatchSnapshot()
+  expect(res).toMatchInlineSnapshot(`
+    Object {
+      "body": Array [
+        Object {
+          "age_range": "[1,2)",
+          "catchphrase": "'cat' 'fat'",
+          "data": null,
+          "status": "ONLINE",
+          "username": "supabot",
+        },
+      ],
+      "count": null,
+      "data": Array [
+        Object {
+          "age_range": "[1,2)",
+          "catchphrase": "'cat' 'fat'",
+          "data": null,
+          "status": "ONLINE",
+          "username": "supabot",
+        },
+      ],
+      "error": null,
+      "status": 200,
+      "statusText": "OK",
+    }
+  `)
 })
 
 test('filter', async () => {
-  const res = await postgrest.from('users').select().filter('username', 'eq', 'supabot')
-  expect(res).toMatchSnapshot()
+  const res = await postgrest.from('users').select('username').filter('username', 'eq', 'supabot')
+  expect(res).toMatchInlineSnapshot(`
+    Object {
+      "body": Array [
+        Object {
+          "username": "supabot",
+        },
+      ],
+      "count": null,
+      "data": Array [
+        Object {
+          "username": "supabot",
+        },
+      ],
+      "error": null,
+      "status": 200,
+      "statusText": "OK",
+    }
+  `)
 })
 
 test('match', async () => {
   const res = await postgrest
     .from('users')
-    .select()
+    .select('username, status')
     .match({ username: 'supabot', status: 'ONLINE' })
-  expect(res).toMatchSnapshot()
+  expect(res).toMatchInlineSnapshot(`
+    Object {
+      "body": Array [
+        Object {
+          "status": "ONLINE",
+          "username": "supabot",
+        },
+      ],
+      "count": null,
+      "data": Array [
+        Object {
+          "status": "ONLINE",
+          "username": "supabot",
+        },
+      ],
+      "error": null,
+      "status": 200,
+      "statusText": "OK",
+    }
+  `)
 })
