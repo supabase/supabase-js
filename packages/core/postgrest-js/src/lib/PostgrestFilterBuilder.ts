@@ -9,7 +9,7 @@ const cleanFilterArray = <T>(filter: T[keyof T][]) =>
     .map((s) => {
       // handle postgrest reserved characters
       // https://postgrest.org/en/v7.0.0/api.html#reserved-characters
-      if (typeof s === 'string' && new RegExp('[,.():]').test(s)) return `"${s}"`
+      if (typeof s === 'string' && new RegExp('[,()]').test(s)) return `"${s}"`
       else return `${s}`
     })
     .join(',')
