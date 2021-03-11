@@ -78,8 +78,7 @@ export default class PostgrestQueryBuilder<T> extends PostgrestBuilder<T> {
   ): PostgrestFilterBuilder<T> {
     this.method = 'POST'
 
-    let prefersHeaders = []
-    prefersHeaders.push(`return=${returning}`)
+    const prefersHeaders = [`return=${returning}`]
     if (upsert) prefersHeaders.push('resolution=merge-duplicates')
 
     if (upsert && onConflict !== undefined) this.url.searchParams.set('on_conflict', onConflict)
@@ -98,6 +97,7 @@ export default class PostgrestQueryBuilder<T> extends PostgrestBuilder<T> {
    *
    * @param values  The values to update.
    * @param returning  By default the updated record is returned. Set this to 'minimal' if you don't need this value.
+   * @param count  Count algorithm to use to count rows in a table.
    */
   update(
     values: Partial<T>,
@@ -110,8 +110,7 @@ export default class PostgrestQueryBuilder<T> extends PostgrestBuilder<T> {
     } = {}
   ): PostgrestFilterBuilder<T> {
     this.method = 'PATCH'
-    let prefersHeaders = []
-    prefersHeaders.push(`return=${returning}`)
+    const prefersHeaders = [`return=${returning}`]
     this.body = values
     if (count) {
       prefersHeaders.push(`count=${count}`)
@@ -124,6 +123,7 @@ export default class PostgrestQueryBuilder<T> extends PostgrestBuilder<T> {
    * Performs a DELETE on the table.
    *
    * @param returning  If `true`, return the deleted row(s) in the response.
+   * @param count  Count algorithm to use to count rows in a table.
    */
   delete({
     returning = 'representation',
@@ -133,8 +133,7 @@ export default class PostgrestQueryBuilder<T> extends PostgrestBuilder<T> {
     count?: null | 'exact' | 'planned' | 'estimated'
   } = {}): PostgrestFilterBuilder<T> {
     this.method = 'DELETE'
-    let prefersHeaders = []
-    prefersHeaders.push(`return=${returning}`)
+    const prefersHeaders = [`return=${returning}`]
     if (count) {
       prefersHeaders.push(`count=${count}`)
     }
