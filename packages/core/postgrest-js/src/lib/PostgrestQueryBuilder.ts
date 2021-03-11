@@ -87,9 +87,9 @@ export default class PostgrestQueryBuilder<T> extends PostgrestBuilder<T> {
     if (count) {
       prefersHeaders.push(`count=${count}`)
     }
-    
+
     this.headers['Prefer'] = prefersHeaders.join(',')
-      
+
     return new PostgrestFilterBuilder(this)
   }
 
