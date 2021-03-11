@@ -4,16 +4,6 @@ import PostgrestTransformBuilder from './PostgrestTransformBuilder'
  * Filters
  */
 
-const cleanFilterArray = <T>(filter: T[keyof T][]) =>
-  filter
-    .map((s) => {
-      // handle postgrest reserved characters
-      // https://postgrest.org/en/v7.0.0/api.html#reserved-characters
-      if (typeof s === 'string' && new RegExp('[,()]').test(s)) return `"${s}"`
-      else return `${s}`
-    })
-    .join(',')
-
 type FilterOperator =
   | 'eq'
   | 'neq'
@@ -179,7 +169,15 @@ export default class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder
    * @param values  The values to filter with.
    */
   in(column: keyof T, values: T[keyof T][]): this {
-    this.url.searchParams.append(`${column}`, `in.(${cleanFilterArray(values)})`)
+    const cleanedValues = values
+      .map((s) => {
+        // handle postgrest reserved characters
+        // https://postgrest.org/en/v7.0.0/api.html#reserved-characters
+        if (typeof s === 'string' && new RegExp('[,()]').test(s)) return `"${s}"`
+        else return `${s}`
+      })
+      .join(',')
+    this.url.searchParams.append(`${column}`, `in.(${cleanedValues})`)
     return this
   }
 
@@ -197,7 +195,7 @@ export default class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder
       this.url.searchParams.append(`${column}`, `cs.${value}`)
     } else if (Array.isArray(value)) {
       // array
-      this.url.searchParams.append(`${column}`, `cs.{${cleanFilterArray(value)}}`)
+      this.url.searchParams.append(`${column}`, `cs.{${value.join(',')}}`)
     } else {
       // json
       this.url.searchParams.append(`${column}`, `cs.${JSON.stringify(value)}`)
@@ -218,7 +216,7 @@ export default class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder
       this.url.searchParams.append(`${column}`, `cd.${value}`)
     } else if (Array.isArray(value)) {
       // array
-      this.url.searchParams.append(`${column}`, `cd.{${cleanFilterArray(value)}}`)
+      this.url.searchParams.append(`${column}`, `cd.{${value.join(',')}}`)
     } else {
       // json
       this.url.searchParams.append(`${column}`, `cd.${JSON.stringify(value)}`)
@@ -299,7 +297,7 @@ export default class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder
       this.url.searchParams.append(`${column}`, `ov.${value}`)
     } else {
       // array
-      this.url.searchParams.append(`${column}`, `ov.{${cleanFilterArray(value)}}`)
+      this.url.searchParams.append(`${column}`, `ov.{${value.join(',')}}`)
     }
     return this
   }
