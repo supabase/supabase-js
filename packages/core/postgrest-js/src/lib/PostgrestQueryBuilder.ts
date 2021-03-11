@@ -58,10 +58,28 @@ export default class PostgrestQueryBuilder<T> extends PostgrestBuilder<T> {
    * Performs an INSERT into the table.
    *
    * @param values  The values to insert.
-   * @param upsert  If `true`, performs an UPSERT.
-   * @param onConflict  By specifying the `on_conflict` query parameter, you can make UPSERT work on a column(s) that has a UNIQUE constraint.
    * @param returning  By default the new record is returned. Set this to 'minimal' if you don't need this value.
+   * @param count  Count algorithm to use to count rows in a table.
    */
+  insert(
+    values: Partial<T> | Partial<T>[],
+    options?: {
+      returning?: 'minimal' | 'representation'
+      count?: null | 'exact' | 'planned' | 'estimated'
+    }
+  ): PostgrestFilterBuilder<T>
+  /**
+   * @deprecated Use `upsert()` instead.
+   */
+  insert(
+    values: Partial<T> | Partial<T>[],
+    options?: {
+      upsert?: boolean
+      onConflict?: string
+      returning?: 'minimal' | 'representation'
+      count?: null | 'exact' | 'planned' | 'estimated'
+    }
+  ): PostgrestFilterBuilder<T>
   insert(
     values: Partial<T> | Partial<T>[],
     {
@@ -82,6 +100,41 @@ export default class PostgrestQueryBuilder<T> extends PostgrestBuilder<T> {
     if (upsert) prefersHeaders.push('resolution=merge-duplicates')
 
     if (upsert && onConflict !== undefined) this.url.searchParams.set('on_conflict', onConflict)
+    this.body = values
+    if (count) {
+      prefersHeaders.push(`count=${count}`)
+    }
+
+    this.headers['Prefer'] = prefersHeaders.join(',')
+
+    return new PostgrestFilterBuilder(this)
+  }
+
+  /**
+   * Performs an UPSERT into the table.
+   *
+   * @param values  The values to insert.
+   * @param onConflict  By specifying the `on_conflict` query parameter, you can make UPSERT work on a column(s) that has a UNIQUE constraint.
+   * @param returning  By default the new record is returned. Set this to 'minimal' if you don't need this value.
+   * @param count  Count algorithm to use to count rows in a table.
+   */
+  upsert(
+    values: Partial<T> | Partial<T>[],
+    {
+      onConflict,
+      returning = 'representation',
+      count = null,
+    }: {
+      onConflict?: string
+      returning?: 'minimal' | 'representation'
+      count?: null | 'exact' | 'planned' | 'estimated'
+    } = {}
+  ): PostgrestFilterBuilder<T> {
+    this.method = 'POST'
+
+    const prefersHeaders = ['resolution=merge-duplicates', `return=${returning}`]
+
+    if (onConflict !== undefined) this.url.searchParams.set('on_conflict', onConflict)
     this.body = values
     if (count) {
       prefersHeaders.push(`count=${count}`)
