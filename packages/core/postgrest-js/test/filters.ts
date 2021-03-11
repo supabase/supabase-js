@@ -62,75 +62,75 @@ test('in', async () => {
   expect(res).toMatchSnapshot()
 })
 
-test('cs', async () => {
-  const res = await postgrest.from('users').select().cs('age_range', '[1,2)')
+test('contains', async () => {
+  const res = await postgrest.from('users').select().contains('age_range', '[1,2)')
   expect(res).toMatchSnapshot()
 })
 
-test('cd', async () => {
-  const res = await postgrest.from('users').select().cd('age_range', '[1,2)')
+test('containedBy', async () => {
+  const res = await postgrest.from('users').select().containedBy('age_range', '[1,2)')
   expect(res).toMatchSnapshot()
 })
 
-test('sl', async () => {
-  const res = await postgrest.from('users').select().sl('age_range', '[2,25)')
+test('rangeLt', async () => {
+  const res = await postgrest.from('users').select().rangeLt('age_range', '[2,25)')
   expect(res).toMatchSnapshot()
 })
 
-test('sr', async () => {
-  const res = await postgrest.from('users').select().sr('age_range', '[2,25)')
+test('rangeGt', async () => {
+  const res = await postgrest.from('users').select().rangeGt('age_range', '[2,25)')
   expect(res).toMatchSnapshot()
 })
 
-test('nxl', async () => {
-  const res = await postgrest.from('users').select().nxl('age_range', '[2,25)')
+test('rangeGte', async () => {
+  const res = await postgrest.from('users').select().rangeGte('age_range', '[2,25)')
   expect(res).toMatchSnapshot()
 })
 
-test('nxr', async () => {
-  const res = await postgrest.from('users').select().nxr('age_range', '[2,25)')
+test('rangeLte', async () => {
+  const res = await postgrest.from('users').select().rangeLte('age_range', '[2,25)')
   expect(res).toMatchSnapshot()
 })
 
-test('adj', async () => {
-  const res = await postgrest.from('users').select().adj('age_range', '[2,25)')
+test('adjacent', async () => {
+  const res = await postgrest.from('users').select().adjacent('age_range', '[2,25)')
   expect(res).toMatchSnapshot()
 })
 
-test('ov', async () => {
-  const res = await postgrest.from('users').select().ov('age_range', '[2,25)')
+test('overlaps', async () => {
+  const res = await postgrest.from('users').select().overlaps('age_range', '[2,25)')
   expect(res).toMatchSnapshot()
 })
 
-test('fts', async () => {
+test('textSearch', async () => {
   const res = await postgrest
     .from('users')
     .select()
-    .fts('catchphrase', `'fat' & 'cat'`, { config: 'english' })
+    .textSearch('catchphrase', `'fat' & 'cat'`, { config: 'english' })
   expect(res).toMatchSnapshot()
 })
 
-test('plfts', async () => {
+test('textSearch with plainto_tsquery', async () => {
   const res = await postgrest
     .from('users')
     .select()
-    .plfts('catchphrase', `'fat' & 'cat'`, { config: 'english' })
+    .textSearch('catchphrase', `'fat' & 'cat'`, { config: 'english', type: 'plain' })
   expect(res).toMatchSnapshot()
 })
 
-test('phfts', async () => {
+test('textSearch with phraseto_tsquery', async () => {
   const res = await postgrest
     .from('users')
     .select()
-    .phfts('catchphrase', 'cat', { config: 'english' })
+    .textSearch('catchphrase', 'cat', { config: 'english', type: 'phrase' })
   expect(res).toMatchSnapshot()
 })
 
-test('wfts', async () => {
+test('textSearch with websearch_to_tsquery', async () => {
   const res = await postgrest
     .from('users')
     .select()
-    .wfts('catchphrase', `'fat' & 'cat'`, { config: 'english' })
+    .textSearch('catchphrase', `'fat' & 'cat'`, { config: 'english', type: 'websearch' })
   expect(res).toMatchSnapshot()
 })
 
@@ -140,9 +140,9 @@ test('multiple filters', async () => {
     .select()
     .eq('username', 'supabot')
     .is('data', null)
-    .ov('age_range', '[1,2)')
+    .overlaps('age_range', '[1,2)')
     .eq('status', 'ONLINE')
-    .fts('catchphrase', 'cat')
+    .textSearch('catchphrase', 'cat')
   expect(res).toMatchSnapshot()
 })
 
