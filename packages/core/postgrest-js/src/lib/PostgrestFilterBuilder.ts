@@ -182,7 +182,7 @@ export default class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder
    * @param column  The column to filter on.
    * @param value  The value to filter with.
    */
-  cs(column: keyof T, value: string | T[keyof T][] | object): this {
+  contains(column: keyof T, value: string | T[keyof T][] | object): this {
     if (typeof value === 'string') {
       // range types can be inclusive '[', ']' or exclusive '(', ')' so just
       // keep it simple and accept a string
@@ -197,6 +197,9 @@ export default class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder
     return this
   }
 
+  /** @deprecated Use `contains()` instead. */
+  cs = this.contains
+
   /**
    * Finds all rows whose json, array, or range value on the stated `column` is
    * contained by the specified `value`.
@@ -204,7 +207,7 @@ export default class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder
    * @param column  The column to filter on.
    * @param value  The value to filter with.
    */
-  cd(column: keyof T, value: string | T[keyof T][] | object): this {
+  containedBy(column: keyof T, value: string | T[keyof T][] | object): this {
     if (typeof value === 'string') {
       // range
       this.url.searchParams.append(`${column}`, `cd.${value}`)
@@ -218,6 +221,9 @@ export default class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder
     return this
   }
 
+  /** @deprecated Use `containedBy()` instead. */
+  cd = this.containedBy
+
   /**
    * Finds all rows whose range value on the stated `column` is strictly to the
    * left of the specified `range`.
@@ -225,10 +231,13 @@ export default class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder
    * @param column  The column to filter on.
    * @param range  The range to filter with.
    */
-  sl(column: keyof T, range: string): this {
+  rangeLt(column: keyof T, range: string): this {
     this.url.searchParams.append(`${column}`, `sl.${range}`)
     return this
   }
+
+  /** @deprecated Use `rangeLt()` instead. */
+  sl = this.rangeLt
 
   /**
    * Finds all rows whose range value on the stated `column` is strictly to
@@ -237,10 +246,13 @@ export default class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder
    * @param column  The column to filter on.
    * @param range  The range to filter with.
    */
-  sr(column: keyof T, range: string): this {
+  rangeGt(column: keyof T, range: string): this {
     this.url.searchParams.append(`${column}`, `sr.${range}`)
     return this
   }
+
+  /** @deprecated Use `rangeGt()` instead. */
+  sr = this.rangeGt
 
   /**
    * Finds all rows whose range value on the stated `column` does not extend
@@ -249,10 +261,13 @@ export default class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder
    * @param column  The column to filter on.
    * @param range  The range to filter with.
    */
-  nxl(column: keyof T, range: string): this {
+  rangeGte(column: keyof T, range: string): this {
     this.url.searchParams.append(`${column}`, `nxl.${range}`)
     return this
   }
+
+  /** @deprecated Use `rangeGte()` instead. */
+  nxl = this.rangeGte
 
   /**
    * Finds all rows whose range value on the stated `column` does not extend
@@ -261,10 +276,13 @@ export default class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder
    * @param column  The column to filter on.
    * @param range  The range to filter with.
    */
-  nxr(column: keyof T, range: string): this {
+  rangeLte(column: keyof T, range: string): this {
     this.url.searchParams.append(`${column}`, `nxr.${range}`)
     return this
   }
+
+  /** @deprecated Use `rangeLte()` instead. */
+  nxr = this.rangeLte
 
   /**
    * Finds all rows whose range value on the stated `column` is adjacent to
@@ -273,19 +291,22 @@ export default class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder
    * @param column  The column to filter on.
    * @param range  The range to filter with.
    */
-  adj(column: keyof T, range: string): this {
+  adjacent(column: keyof T, range: string): this {
     this.url.searchParams.append(`${column}`, `adj.${range}`)
     return this
   }
 
+  /** @deprecated Use `adjacent()` instead. */
+  adj = this.adjacent
+
   /**
-   * Finds all rows whose array or range value on the stated `column` is
-   * contained by the specified `value`.
+   * Finds all rows whose array or range value on the stated `column` overlaps
+   * (has a value in common) with the specified `value`.
    *
    * @param column  The column to filter on.
    * @param value  The value to filter with.
    */
-  ov(column: keyof T, value: string | T[keyof T][]): this {
+  overlaps(column: keyof T, value: string | T[keyof T][]): this {
     if (typeof value === 'string') {
       // range
       this.url.searchParams.append(`${column}`, `ov.${value}`)
@@ -296,6 +317,39 @@ export default class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder
     return this
   }
 
+  /** @deprecated Use `overlaps()` instead. */
+  ov = this.overlaps
+
+  /**
+   * Finds all rows whose text or tsvector value on the stated `column` matches
+   * the tsquery in `query`.
+   *
+   * @param column  The column to filter on.
+   * @param query  The Postgres tsquery string to filter with.
+   * @param config  The text search configuration to use.
+   * @param type  The type of tsquery conversion to use on `query`.
+   */
+  textSearch(
+    column: keyof T,
+    query: string,
+    {
+      config,
+      type = null,
+    }: { config?: string; type?: 'plain' | 'phrase' | 'websearch' | null } = {}
+  ): this {
+    let typePart = ''
+    if (type === 'plain') {
+      typePart = 'pl'
+    } else if (type === 'phrase') {
+      typePart = 'ph'
+    } else if (type === 'websearch') {
+      typePart = 'w'
+    }
+    const configPart = config === undefined ? '' : `(${config})`
+    this.url.searchParams.append(`${column}`, `${typePart}fts${configPart}.${query}`)
+    return this
+  }
+
   /**
    * Finds all rows whose tsvector value on the stated `column` matches
    * to_tsquery(`query`).
@@ -303,6 +357,8 @@ export default class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder
    * @param column  The column to filter on.
    * @param query  The Postgres tsquery string to filter with.
    * @param config  The text search configuration to use.
+   *
+   * @deprecated Use `textSearch()` instead.
    */
   fts(column: keyof T, query: string, { config }: { config?: string } = {}): this {
     const configPart = typeof config === 'undefined' ? '' : `(${config})`
@@ -317,6 +373,8 @@ export default class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder
    * @param column  The column to filter on.
    * @param query  The Postgres tsquery string to filter with.
    * @param config  The text search configuration to use.
+   *
+   * @deprecated Use `textSearch()` with `type: 'plain'` instead.
    */
   plfts(column: keyof T, query: string, { config }: { config?: string } = {}): this {
     const configPart = typeof config === 'undefined' ? '' : `(${config})`
@@ -331,6 +389,8 @@ export default class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder
    * @param column  The column to filter on.
    * @param query  The Postgres tsquery string to filter with.
    * @param config  The text search configuration to use.
+   *
+   * @deprecated Use `textSearch()` with `type: 'phrase'` instead.
    */
   phfts(column: keyof T, query: string, { config }: { config?: string } = {}): this {
     const configPart = typeof config === 'undefined' ? '' : `(${config})`
@@ -345,6 +405,8 @@ export default class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder
    * @param column  The column to filter on.
    * @param query  The Postgres tsquery string to filter with.
    * @param config  The text search configuration to use.
+   *
+   * @deprecated Use `textSearch()` with `type: 'websearch'` instead.
    */
   wfts(column: keyof T, query: string, { config }: { config?: string } = {}): this {
     const configPart = typeof config === 'undefined' ? '' : `(${config})`
