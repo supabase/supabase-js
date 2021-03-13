@@ -496,8 +496,8 @@ test('rangeLte', async () => {
   `)
 })
 
-test('adjacent', async () => {
-  const res = await postgrest.from('users').select('age_range').adjacent('age_range', '[2,25)')
+test('rangeAdjacent', async () => {
+  const res = await postgrest.from('users').select('age_range').rangeAdjacent('age_range', '[2,25)')
   expect(res).toMatchInlineSnapshot(`
     Object {
       "body": Array [

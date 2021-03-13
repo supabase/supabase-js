@@ -291,13 +291,13 @@ export default class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder
    * @param column  The column to filter on.
    * @param range  The range to filter with.
    */
-  adjacent(column: keyof T, range: string): this {
+  rangeAdjacent(column: keyof T, range: string): this {
     this.url.searchParams.append(`${column}`, `adj.${range}`)
     return this
   }
 
-  /** @deprecated Use `adjacent()` instead. */
-  adj = this.adjacent
+  /** @deprecated Use `rangeAdjacent()` instead. */
+  adj = this.rangeAdjacent
 
   /**
    * Finds all rows whose array or range value on the stated `column` overlaps
