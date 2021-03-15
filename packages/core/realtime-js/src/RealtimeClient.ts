@@ -6,7 +6,6 @@ import {
   DEFAULT_TIMEOUT,
   WS_CLOSE_NORMAL,
 } from './lib/constants'
-import querystring from 'query-string'
 import Timer from './lib/timer'
 import RealtimeSubscription from './RealtimeSubscription'
 import { w3cwebsocket as WebSocket } from 'websocket'
@@ -348,8 +347,10 @@ export default class RealtimeClient {
     if (Object.keys(params).length === 0) {
       return url
     }
-    let prefix = url.match(/\?/) ? '&' : '?'
-    return `${url}${prefix}${querystring.stringify(params)}`
+    const prefix = url.match(/\?/) ? '&' : '?'
+    const query = new URLSearchParams(params)
+
+    return `${url}${prefix}${query}`
   }
 
   private _flushSendBuffer() {
