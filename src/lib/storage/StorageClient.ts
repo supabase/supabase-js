@@ -1,5 +1,15 @@
 import { get, post, remove } from './fetch'
-import { Bucket } from './types'
+import { Bucket, SearchOptions } from './types'
+
+const DEFAULT_SEARCH_OPTIONS = {
+  prefix: '',
+  limit: 0,
+  offset: 0,
+  sortBy: {
+    column: 'name',
+    order: 'asc',
+  },
+}
 
 export class StorageClient {
   url: string
@@ -68,6 +78,19 @@ export class StorageClient {
   async deleteBucket(id: string): Promise<{ data: Bucket | null; error: Error | null }> {
     try {
       const data = await remove(`${this.url}/bucket/${id}`, { headers: this.headers })
+      return { data, error: null }
+    } catch (error) {
+      return { data: null, error }
+    }
+  }
+
+  async search(
+    folderName: string,
+    options?: SearchOptions
+  ): Promise<{ data: File[] | null; error: Error | null }> {
+    try {
+      const body = { ...DEFAULT_SEARCH_OPTIONS, ...options }
+      const data = await post(`${this.url}/search/${folderName}`, body, { headers: this.headers })
       return { data, error: null }
     } catch (error) {
       return { data: null, error }
