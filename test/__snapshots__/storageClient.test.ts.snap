@@ -1,0 +1,63 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Get all buckets 1`] = `
+Array [
+  Object {
+    "created_at": "2021-02-17T04:43:32.770206+00:00",
+    "id": "7078bc23-9dd6-460d-8b93-082254fee63a",
+    "name": "bucket2",
+    "owner": "4d56e902-f0a0-4662-8448-a4d9e643c142",
+    "updated_at": "2021-02-17T04:43:32.770206+00:00",
+  },
+  Object {
+    "created_at": "2021-02-17T04:43:32.770206+00:00",
+    "id": "a916b415-3639-4885-a3d7-256593098ba5",
+    "name": "bucket3",
+    "owner": "4d56e902-f0a0-4662-8448-a4d9e643c142",
+    "updated_at": "2021-02-17T04:43:32.770206+00:00",
+  },
+  Object {
+    "created_at": "2021-02-25T09:23:01.58385+00:00",
+    "id": "e29843e6-047e-4b1f-9906-20cc06f4aad4",
+    "name": "bucket4",
+    "owner": "317eadce-631a-4429-a0bb-f19a7a517b4a",
+    "updated_at": "2021-02-25T09:23:01.58385+00:00",
+  },
+  Object {
+    "created_at": "2021-02-27T03:04:25.6386+00:00",
+    "id": "7206ba57-513a-4181-971a-feca9ef45862",
+    "name": "bucket5",
+    "owner": "317eadce-631a-4429-a0bb-f19a7a517b4a",
+    "updated_at": "2021-02-27T03:04:25.6386+00:00",
+  },
+]
+`;
+
+exports[`Get bucket by id 1`] = `
+Object {
+  "created_at": "2021-02-17T04:43:32.770206+00:00",
+  "id": "7078bc23-9dd6-460d-8b93-082254fee63a",
+  "name": "bucket2",
+  "owner": "4d56e902-f0a0-4662-8448-a4d9e643c142",
+  "updated_at": "2021-02-17T04:43:32.770206+00:00",
+}
+`;
+
+exports[`Get bucket with wrong id 1`] = `
+Object {
+  "message": "invalid input syntax for type uuid: \\"not-exist-id\\"",
+  "status": 400,
+}
+`;
+
+exports[`delete bucket 1`] = `
+Object {
+  "message": "Deleted",
+}
+`;
+
+exports[`empty bucket 1`] = `
+Object {
+  "message": "Emptied",
+}
+`;
