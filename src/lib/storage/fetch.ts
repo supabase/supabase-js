@@ -33,7 +33,7 @@ const _getRequestParams = (method: RequestMethodType, options?: FetchOptions, bo
 
   params.headers = { 'Content-Type': 'application/json', ...options?.headers }
   params.body = JSON.stringify(body)
-  console.log('params', params)
+
   return params
 }
 

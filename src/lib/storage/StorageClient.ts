@@ -49,6 +49,19 @@ export class StorageClient {
   }
 
   /**
+   * Empty a bucket
+   * @param id the bucket id to empty
+   */
+  async emptyBucket(id: string): Promise<{ data: Bucket | null; error: Error | null }> {
+    try {
+      const data = await post(`${this.url}/bucket/${id}/empty`, {}, { headers: this.headers })
+      return { data, error: null }
+    } catch (error) {
+      return { data: null, error }
+    }
+  }
+
+  /**
    * Delete a bucket
    * @param id the bucket id to delete
    */
