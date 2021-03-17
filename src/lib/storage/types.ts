@@ -6,7 +6,7 @@ export interface Bucket {
   updated_at: string
 }
 
-export interface File {
+export interface FileObject {
   name: string
   bucket_id: string
   owner: string
