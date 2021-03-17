@@ -67,6 +67,6 @@ export async function put(url: string, body: object, options?: FetchOptions): Pr
   return _handleRequest('PUT', url, options, body)
 }
 
-export async function remove(url: string, body: object, options?: FetchOptions): Promise<any> {
-  return _handleRequest('DELETE', url, options, body)
+export async function remove(url: string, options?: FetchOptions): Promise<any> {
+  return _handleRequest('DELETE', url, options)
 }

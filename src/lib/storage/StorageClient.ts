@@ -54,7 +54,7 @@ export class StorageClient {
    */
   async deleteBucket(id: string): Promise<{ data: Bucket | null; error: Error | null }> {
     try {
-      const data = await remove(`${this.url}/bucket`, { id }, { headers: this.headers })
+      const data = await remove(`${this.url}/bucket/${id}`, { headers: this.headers })
       return { data, error: null }
     } catch (error) {
       return { data: null, error }
