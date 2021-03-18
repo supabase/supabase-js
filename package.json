@@ -38,7 +38,8 @@
     "@supabase/gotrue-js": "^1.12.0",
     "@supabase/postgrest-js": "^0.26.1",
     "@supabase/realtime-js": "^1.0.6",
-    "cross-fetch": "^3.1.0"
+    "cross-fetch": "^3.1.0",
+    "gotrue-js": "^0.9.29"
   },
   "devDependencies": {
     "@types/jest": "^26.0.13",
