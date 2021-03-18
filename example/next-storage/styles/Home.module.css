@@ -26,28 +26,3 @@
 .bold {
   font-weight: bold;
 }
-
-.noImage {
-  width: 100%;
-  height: 268px;
-  background-color: rgb(230, 230, 230);
-  border: 2px dotted rgb(200, 200, 200);
-  border-radius: 5px;
-}
-
-.noImage:after {
-  content: 'No avatar photo';
-  display: block;
-  font-size: 16px;
-  font-style: normal;
-  font-family: FontAwesome;
-  color: rgb(100, 100, 100);
-
-  position: absolute;
-  top: 50%;
-  left: 0;
-  width: 100%;
-  -webkit-transform: translateY(-50%);
-  transform: translateY(-50%);
-  text-align: center;
-}

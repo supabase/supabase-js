@@ -13,8 +13,6 @@ export default function Auth({}) {
         type === 'LOGIN'
           ? await supabase.auth.signIn({ email, password })
           : await supabase.auth.signUp({ email, password })
-      console.log(error)
-      console.log(user)
       if ((!error && !user) || (user && !user.confirmed_at))
         alert('Check your email for the login link!')
       if (error) alert(error.message)

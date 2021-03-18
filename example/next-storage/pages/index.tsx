@@ -3,15 +3,22 @@ import { supabase } from '../lib/api'
 import { Session } from '@supabase/gotrue-js'
 import Auth from '../components/Auth'
 import UploadButton from '../components/UploadButton'
+import Avatar from '../components/Avatar'
 import styles from '../styles/Home.module.css'
 import buttonStyles from '../styles/Button.module.css'
 
 export default function Home() {
-  let [session, setSession] = useState<Session | null>(null)
+  const [session, setSession] = useState<Session | null>(null)
+  const [avatar, setAvatar] = useState<string | null>(null)
 
   useEffect(() => {
-    setSession(supabase.auth.session())
-    supabase.auth.onAuthStateChange((_event, session) => setSession(session))
+    const temp = supabase.auth.session()
+    setSession(temp)
+    setAvatar(temp?.user.user_metadata.avatar)
+    supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session)
+      setAvatar(session?.user.user_metadata.avatar)
+    })
   }, [])
 
   async function signOut() {
@@ -26,10 +33,18 @@ export default function Home() {
     }
 
     const file = event.target.files[0]
-    console.log('upload file', file)
-    const filePath = `avatars/${file.name}`
-    const res = await supabase.storage.api.uploadFile(filePath, file)
-    console.log('upload file', res)
+    const fileExt = file.name.split('.').pop()
+    const fileName = `${session?.user.id}.${fileExt}`
+    const filePath = `avatars/${fileName}`
+    const uploadRes = await supabase.storage.api.uploadFile(filePath, file)
+    if (uploadRes.error) alert(uploadRes.error.message)
+
+    await supabase.auth.update({
+      data: {
+        avatar: fileName,
+      },
+    })
+    setAvatar(fileName)
   }
 
   return (
@@ -40,7 +55,7 @@ export default function Home() {
         <div style={{ minWidth: 250, maxWidth: 600, margin: 'auto' }}>
           <div className={styles.card}>
             <div className={styles.avatarContainer}>
-              <div className={styles.noImage} />
+              <Avatar avatar={avatar} />
             </div>
             <UploadButton onUpload={uploadAvatar} />
             <span className={styles.text}>You're signed in</span>
