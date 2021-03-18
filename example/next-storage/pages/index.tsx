@@ -53,11 +53,11 @@ export default function Home() {
 
       await supabase.from('profiles').update({ avatar_url: fileName })
 
-      // await supabase.auth.update({
-      //   data: {
-      //     avatar: fileName,
-      //   },
-      // })
+      await supabase.auth.update({
+        data: {
+          avatar: fileName,
+        },
+      })
       setAvatar(null)
       setAvatar(fileName)
     } catch (error) {
