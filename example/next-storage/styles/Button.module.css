@@ -1,0 +1,33 @@
+.primaryButton {
+  cursor: pointer;
+  width: 100%;
+  text-align: center;
+  margin-bottom: 16px;
+  font-size: 1rem;
+  line-height: 1.5rem;
+  padding: 0.5rem 1rem;
+  border-radius: 0.25rem;
+  border: 1px solid transparent;
+  text-shadow: 0 0 4px rgb(38 111 78);
+  --tw-text-opacity: 1;
+  color: rgba(255, 255, 255, var(--tw-text-opacity));
+  --tw-bg-opacity: 1;
+  background-color: rgba(36, 180, 126, var(--tw-bg-opacity));
+}
+
+.primaryButton:hover {
+  opacity: 0.8;
+}
+
+.linkButton {
+  margin-bottom: 8px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  --tw-text-opacity: 1;
+  color: rgba(62, 207, 142, var(--tw-text-opacity));
+}
+
+.linkButton:hover {
+  opacity: 0.8;
+}
