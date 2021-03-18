@@ -140,7 +140,7 @@ export class StorageApi {
       formData.append('', file, file.name)
 
       const res = await fetch(`${this.url}/object/${path}`, {
-        method: 'POST',
+        method: 'PUT',
         body: formData,
         headers: { ...this.headers },
       })
