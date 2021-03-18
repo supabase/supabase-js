@@ -36,7 +36,7 @@ export default function Home() {
     const fileExt = file.name.split('.').pop()
     const fileName = `${session?.user.id}.${fileExt}`
     const filePath = `avatars/${fileName}`
-    const uploadRes = await supabase.storage.api.uploadFile(filePath, file)
+    const uploadRes = await supabase.storage.uploadFile(filePath, file)
     if (uploadRes.error) alert(uploadRes.error.message)
 
     await supabase.auth.update({

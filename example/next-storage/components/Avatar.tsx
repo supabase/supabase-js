@@ -12,7 +12,7 @@ export default function Avatar(props: UploadButtonProps) {
 
   useEffect(() => {
     async function downloadImage(path: string) {
-      const res = await supabase.storage.api.downloadFile(path)
+      const res = await supabase.storage.downloadFile(path)
       const url = URL.createObjectURL(res.data)
       setAvatarUrl(url)
     }
