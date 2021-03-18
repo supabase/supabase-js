@@ -1,5 +1,5 @@
 import { ChangeEventHandler } from 'react'
-import styles from '../styles/UploadButton.module.css'
+import styles from './UploadButton.module.css'
 
 export type UploadButtonProps = {
   onUpload: ChangeEventHandler<HTMLInputElement>
@@ -9,7 +9,7 @@ export default function UploadButton(props: UploadButtonProps) {
   return (
     <div className={styles.container}>
       <label className={styles.label} htmlFor="single">
-        Upload your avatar
+        Upload avatar
       </label>
       <input
         className={styles.input}

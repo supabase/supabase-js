@@ -8,21 +8,16 @@
 }
 
 .card {
-  box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2);
+  border: var(--custom-border);
   width: 300px;
   padding: 16px;
+  border-radius: 5px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
 }
 
 .avatarContainer {
   width: 100%;
   position: relative;
-  margin-bottom: 16px;
-}
-
-.text {
-  font-size: 0.875rem;
-  line-height: 1.25rem;
-}
-.bold {
-  font-weight: bold;
 }

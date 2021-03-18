@@ -12,6 +12,7 @@ export default function Avatar(props: UploadButtonProps) {
 
   useEffect(() => {
     if (avatar) {
+      console.log('avatar', avatar)
       downloadImage(`avatars/${avatar}`)
     }
   }, [avatar])

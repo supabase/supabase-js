@@ -6,18 +6,21 @@ import UploadButton from '../components/UploadButton'
 import Avatar from '../components/Avatar'
 import styles from '../styles/Home.module.css'
 import buttonStyles from '../styles/Button.module.css'
+import { AuthUser } from '../../../dist/main'
 
 export default function Home() {
   const [session, setSession] = useState<Session | null>(null)
   const [avatar, setAvatar] = useState<string | null>(null)
 
   useEffect(() => {
-    const temp = supabase.auth.session()
-    setSession(temp)
-    setAvatar(temp?.user.user_metadata.avatar)
+    setSession(supabase.auth.session())
     supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session)
-      setAvatar(session?.user.user_metadata.avatar)
+      if (session?.user) {
+        fetchProfile(session?.user)
+      } else {
+        setSession(null)
+        setAvatar(null)
+      }
     })
   }, [])
 
@@ -27,28 +30,56 @@ export default function Home() {
   }
 
   async function uploadAvatar(event: ChangeEvent<HTMLInputElement>) {
-    if (!event.target.files || event.target.files.length == 0) {
-      alert('You must select an image to upload')
-      return
+    try {
+      if (!event.target.files || event.target.files.length == 0) {
+        alert('You must select an image to upload')
+        return
+      }
+
+      const file = event.target.files[0]
+      console.log('file', file)
+      const fileExt = file.name.split('.').pop()
+      const fileName = `${session?.user.id}${Math.random()}.${fileExt}`
+      console.log('fileName', fileName)
+      const filePath = `avatars/${fileName}`
+
+      let { data, error } = avatar
+        ? await supabase.storage.uploadFile(filePath, file) // change this to update
+        : await supabase.storage.uploadFile(filePath, file)
+
+      if (error) {
+        throw error
+      }
+
+      await supabase.from('profiles').update({ avatar_url: fileName })
+
+      // await supabase.auth.update({
+      //   data: {
+      //     avatar: fileName,
+      //   },
+      // })
+      setAvatar(null)
+      setAvatar(fileName)
+    } catch (error) {
+      alert(error.message)
     }
+  }
 
-    const file = event.target.files[0]
-    const fileExt = file.name.split('.').pop()
-    const fileName = `${session?.user.id}.${fileExt}`
-    const filePath = `avatars/${fileName}`
+  async function fetchProfile(user: AuthUser) {
+    try {
+      const { data: profile, error } = await supabase
+        .from('profiles')
+        .select()
+        .eq(user.id, user.id)
+        .single()
 
-    let uploadRes
-    if (avatar) uploadRes = await supabase.storage.updateFile(filePath, file)
-    else uploadRes = await supabase.storage.uploadFile(filePath, file)
-    if (uploadRes.error) alert(uploadRes.error.message)
-
-    await supabase.auth.update({
-      data: {
-        avatar: fileName,
-      },
-    })
-    setAvatar(null)
-    setAvatar(fileName)
+      if (error) {
+        throw error
+      }
+      setAvatar(profile.avatar_url)
+    } catch (error) {
+      console.log('error', error.message)
+    }
   }
 
   return (
@@ -56,18 +87,46 @@ export default function Home() {
       {!session ? (
         <Auth />
       ) : (
-        <div style={{ minWidth: 250, maxWidth: 600, margin: 'auto' }}>
+        <div
+          style={{
+            minWidth: 250,
+            maxWidth: 600,
+            margin: 'auto',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 20,
+          }}
+        >
           <div className={styles.card}>
             <div className={styles.avatarContainer}>
               <Avatar avatar={avatar} />
             </div>
             <UploadButton onUpload={uploadAvatar} />
-            <span className={styles.text}>You're signed in</span>
-            <p className={`${styles.text} ${styles.bold}`}>{`Email: ${session.user.email}`}</p>
+          </div>
 
-            <a className={buttonStyles.linkButton} onClick={signOut}>
-              ➔ Sign Out
-            </a>
+          <div>
+            <label htmlFor="email">Email</label>
+            <input id="email" type="text" value={session.user.email} disabled />
+          </div>
+          <div>
+            <label htmlFor="username">Username</label>
+            <input id="username" type="text" />
+          </div>
+          <div>
+            <label htmlFor="dob">Date of birth</label>
+            <input id="dob" type="date" />
+          </div>
+
+          <div>
+            <button className="button block primary" onClick={signOut}>
+              Update profile
+            </button>
+          </div>
+
+          <div>
+            <button className="button block" onClick={signOut}>
+              Sign Out
+            </button>
           </div>
         </div>
       )}
