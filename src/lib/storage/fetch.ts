@@ -47,7 +47,7 @@ async function _handleRequest(
     fetch(url, _getRequestParams(method, options, body))
       .then((result) => {
         if (!result.ok) throw result
-        if (options?.noResolveJson) return resolve
+        if (options?.noResolveJson) return resolve(result)
         return result.json()
       })
       .then((data) => resolve(data))

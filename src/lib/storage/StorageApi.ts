@@ -207,12 +207,11 @@ export class StorageApi {
    */
   async downloadFile(path: string): Promise<{ data: Blob | null; error: Error | null }> {
     try {
-      const headers = {
-        ...this.headers,
-        'Content-Type': 'application/json',
-        Accept: 'application/json',
-      }
-      const data = await get(`${this.url}/object/${path}`, { headers })
+      const res = await get(`${this.url}/object/${path}`, {
+        headers: this.headers,
+        noResolveJson: true,
+      })
+      const data = await res.blob()
       return { data, error: null }
     } catch (error) {
       return { data: null, error }
