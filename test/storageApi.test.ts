@@ -1,12 +1,17 @@
 import { StorageApi } from '../src/lib/storage'
 
-// To test with storage-api server
+// TODO: need to setup storage-api server for this test
 const URL = 'http://0.0.0.0:5000'
 const KEY = 'some.fake.key'
 
 const storage = new StorageApi(URL, { Authorization: `Bearer ${KEY}` })
 const newBucketName = `my-new-bucket-${Date.now()}`
 let createdBucketId = ''
+
+test('Build to succeed', async () => {
+  // Basic test to ensure TS build is working.
+  expect(true).toEqual(true)
+})
 
 // test('Get all buckets', async () => {
 //   const res = await storage.getAllBuckets()
