@@ -1,9 +1,9 @@
-import { StorageClient } from '../src/lib/storage'
+import { StorageApi } from '../src/lib/storage'
 
 const URL = 'http://0.0.0.0:5000'
 const KEY = 'some.fake.key'
 
-const storage = new StorageClient(URL, { Authorization: `Bearer ${KEY}` })
+const storage = new StorageApi(URL, { Authorization: `Bearer ${KEY}` })
 const newBucketName = `my-new-bucket-${Date.now()}`
 let createdBucketId = ''
 
