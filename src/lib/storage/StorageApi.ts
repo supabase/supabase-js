@@ -97,15 +97,27 @@ export class StorageApi {
   async uploadFile(
     path: string,
     file: File
-  ): Promise<{ data: { Key: string } | null; error: Error | null }> {
+  ): Promise<{ data: { message: string } | null; error: Error | null }> {
     try {
       if (!isBrowser()) throw new Error('No browser detected.')
 
-      const body = new FormData()
-      body.append('cacheControl', '3600')
-      body.append('', file, file.name)
-      const data = await post(`${this.url}/object/${path}`, body, { headers: this.headers })
-      return { data, error: null }
+      const formData = new FormData()
+      formData.append('cacheControl', '3600')
+      formData.append('', file, file.name)
+
+      const res = await fetch(`${this.url}/object/${path}`, {
+        method: 'POST',
+        body: formData,
+        headers: { ...this.headers },
+      })
+
+      if (res.ok) {
+        const data = await res.json()
+        return { data, error: null }
+      } else {
+        const error = await res.json()
+        return { data: null, error }
+      }
     } catch (error) {
       return { data: null, error }
     }
@@ -123,11 +135,23 @@ export class StorageApi {
     try {
       if (!isBrowser()) throw new Error('No browser detected.')
 
-      const body = new FormData()
-      body.append('cacheControl', '3600')
-      body.append('', file, file.name)
-      const data = await put(`${this.url}/object/${path}`, body, { headers: this.headers })
-      return { data, error: null }
+      const formData = new FormData()
+      formData.append('cacheControl', '3600')
+      formData.append('', file, file.name)
+
+      const res = await fetch(`${this.url}/object/${path}`, {
+        method: 'POST',
+        body: formData,
+        headers: { ...this.headers },
+      })
+
+      if (res.ok) {
+        const data = await res.json()
+        return { data, error: null }
+      } else {
+        const error = await res.json()
+        return { data: null, error }
+      }
     } catch (error) {
       return { data: null, error }
     }

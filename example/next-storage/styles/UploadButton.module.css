@@ -1,0 +1,27 @@
+.container {
+  width: 100%;
+  text-align: center;
+  margin-bottom: 16px;
+  border-radius: 0.25rem;
+  border: 1px solid transparent;
+  --tw-bg-opacity: 1;
+  background-color: rgba(36, 180, 126, var(--tw-bg-opacity));
+}
+
+.label {
+  display: block;
+  width: 100%;
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+  text-align: center;
+  font-size: 1rem;
+  line-height: 1.5rem;
+  text-shadow: 0 0 4px rgb(38 111 78);
+  --tw-text-opacity: 1;
+  color: rgba(255, 255, 255, var(--tw-text-opacity));
+}
+
+.input {
+  visibility: hidden;
+  position: absolute;
+}

@@ -9,15 +9,12 @@
 
 .card {
   box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2);
-  max-width: 300px;
-  margin: auto;
-  text-align: center;
+  width: 300px;
+  padding: 16px;
 }
 
 .avatarContainer {
   width: 100%;
-  min-width: 200px;
-  height: 200px;
   position: relative;
   margin-bottom: 16px;
 }
@@ -31,19 +28,8 @@
 }
 
 .noImage {
-  /* Same as first example */
-  min-height: 50px;
-}
-
-.noImage:before {
-  content: ' ';
-  display: block;
-
-  position: absolute;
-  top: -10px;
-  left: 0;
-  height: calc(100% + 10px);
   width: 100%;
+  height: 268px;
   background-color: rgb(230, 230, 230);
   border: 2px dotted rgb(200, 200, 200);
   border-radius: 5px;
@@ -58,8 +44,10 @@
   color: rgb(100, 100, 100);
 
   position: absolute;
-  top: 5px;
+  top: 50%;
   left: 0;
   width: 100%;
+  -webkit-transform: translateY(-50%);
+  transform: translateY(-50%);
   text-align: center;
 }

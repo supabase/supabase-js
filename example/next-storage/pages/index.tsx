@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, ChangeEvent } from 'react'
 import { supabase } from '../lib/api'
 import { Session } from '@supabase/gotrue-js'
 import Auth from '../components/Auth'
+import UploadButton from '../components/UploadButton'
 import styles from '../styles/Home.module.css'
 import buttonStyles from '../styles/Button.module.css'
 
@@ -18,7 +19,18 @@ export default function Home() {
     if (error) console.log('Error logging out:', error.message)
   }
 
-  function uploadAvatar() {}
+  async function uploadAvatar(event: ChangeEvent<HTMLInputElement>) {
+    if (!event.target.files || event.target.files.length == 0) {
+      alert('You must select an image to upload')
+      return
+    }
+
+    const file = event.target.files[0]
+    console.log('upload file', file)
+    const filePath = `avatars/${file.name}`
+    const res = await supabase.storage.api.uploadFile(filePath, file)
+    console.log('upload file', res)
+  }
 
   return (
     <div className={styles.container}>
@@ -26,13 +38,11 @@ export default function Home() {
         <Auth />
       ) : (
         <div style={{ minWidth: 250, maxWidth: 600, margin: 'auto' }}>
-          <div className="card">
+          <div className={styles.card}>
             <div className={styles.avatarContainer}>
-              <img src="img.jpg" alt="John" className={styles.noImage} />
+              <div className={styles.noImage} />
             </div>
-            <button className={buttonStyles.primaryButton} onClick={uploadAvatar}>
-              Upload your avatar
-            </button>
+            <UploadButton onUpload={uploadAvatar} />
             <span className={styles.text}>You're signed in</span>
             <p className={`${styles.text} ${styles.bold}`}>{`Email: ${session.user.email}`}</p>
 
