@@ -11,16 +11,23 @@ export default function Avatar(props: UploadButtonProps) {
   const { avatar } = props
 
   useEffect(() => {
-    async function downloadImage(path: string) {
-      const res = await supabase.storage.downloadFile(path)
-      const url = URL.createObjectURL(res.data)
-      setAvatarUrl(url)
-    }
-
     if (avatar) {
       downloadImage(`avatars/${avatar}`)
     }
   }, [avatar])
+
+  async function downloadImage(path: string) {
+    try {
+      const { data, error } = await supabase.storage.downloadFile(path)
+      if (error) {
+        throw error
+      }
+      const url = URL.createObjectURL(data)
+      setAvatarUrl(url)
+    } catch (error) {
+      console.log('error', error.message)
+    }
+  }
 
   return avatarUrl ? (
     <img src={avatarUrl} className={styles.image} />
