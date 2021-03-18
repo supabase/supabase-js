@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { supabase } from '../lib/api'
 import styles from '../styles/Auth.module.css'
-import buttonStyles from '../styles/Button.module.css'
 
 export default function Auth({}) {
   const [email, setEmail] = useState('')
@@ -41,20 +40,18 @@ export default function Auth({}) {
     <div className={styles.container}>
       <div className={styles.containerInner}>
         <div className={styles.inputContainer}>
-          <label className={styles.label}>Email</label>
+          <label>Email</label>
           <input
             type="email"
-            className={styles.input}
             placeholder="Your email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
           />
         </div>
         <div className={styles.inputContainer}>
-          <label className={styles.label}>Password</label>
+          <label>Password</label>
           <input
             type="password"
-            className={styles.input}
             placeholder="Your password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
@@ -67,7 +64,7 @@ export default function Auth({}) {
               e.preventDefault()
               handleLogin('SIGNUP', email, password)
             }}
-            className={buttonStyles.primaryButton}
+            className={'button'}
           >
             Sign up
           </button>
@@ -76,12 +73,12 @@ export default function Auth({}) {
               e.preventDefault()
               handleLogin('LOGIN', email, password)
             }}
-            className={buttonStyles.primaryButton}
+            className={'button'}
           >
             {password.length ? 'Sign in' : 'Send magic link'}
           </button>
 
-          <a onClick={forgotPassword} className={buttonStyles.linkButton}>
+          <a onClick={forgotPassword} className={'button'}>
             Forgot your password?
           </a>
         </div>
