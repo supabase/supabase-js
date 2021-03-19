@@ -6,6 +6,7 @@ import UploadButton from '../components/UploadButton'
 import Avatar from '../components/Avatar'
 import styles from '../styles/Home.module.css'
 import { AuthUser } from '../../../dist/main'
+import { DEFAULT_AVATARS_BUCKET } from '../lib/constants'
 
 export default function Home() {
   const [session, setSession] = useState<Session | null>(null)
@@ -40,7 +41,7 @@ export default function Home() {
       const fileExt = file.name.split('.').pop()
       const fileName = `${session?.user.id}${Math.random()}.${fileExt}`
       console.log('fileName', fileName)
-      const filePath = `avatars/${fileName}`
+      const filePath = `${DEFAULT_AVATARS_BUCKET}/${fileName}`
 
       let { data, error } = avatar
         ? await supabase.storage.uploadFile(filePath, file) // change this to update
