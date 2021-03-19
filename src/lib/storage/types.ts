@@ -24,7 +24,6 @@ export interface SortBy {
 }
 
 export interface SearchOptions {
-  prefix?: string
   limit?: number
   offset?: number
   sortBy?: SortBy
