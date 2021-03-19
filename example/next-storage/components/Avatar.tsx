@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/api'
+import { DEFAULT_AVATARS_BUCKET } from '../lib/constants'
 import styles from '../styles/Avatar.module.css'
 
 export type UploadButtonProps = {
@@ -13,7 +14,7 @@ export default function Avatar(props: UploadButtonProps) {
   useEffect(() => {
     if (avatar) {
       console.log('avatar', avatar)
-      downloadImage(`avatars/${avatar}`)
+      downloadImage(`${DEFAULT_AVATARS_BUCKET}/${avatar}`)
     }
   }, [avatar])
 

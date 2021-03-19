@@ -3,7 +3,6 @@ import { isBrowser } from './helpers'
 import { Bucket, FileObject, SearchOptions } from './types'
 
 const DEFAULT_SEARCH_OPTIONS = {
-  prefix: '',
   limit: 0,
   offset: 0,
   sortBy: {
@@ -254,13 +253,20 @@ export class StorageApi {
     }
   }
 
+  /**
+   * Use to fetch folder contents
+   * @param bucketName
+   * @param path the relative folder path excluded the bucket name
+   * @param options
+   */
   async search(
-    folderName: string,
+    bucketName: string,
+    path?: string,
     options?: SearchOptions
   ): Promise<{ data: FileObject[] | null; error: Error | null }> {
     try {
-      const body = { ...DEFAULT_SEARCH_OPTIONS, ...options }
-      const data = await post(`${this.url}/search/${folderName}`, body, { headers: this.headers })
+      const body = { ...DEFAULT_SEARCH_OPTIONS, ...options, prefix: path || '' }
+      const data = await post(`${this.url}/search/${bucketName}`, body, { headers: this.headers })
       return { data, error: null }
     } catch (error) {
       return { data: null, error }
