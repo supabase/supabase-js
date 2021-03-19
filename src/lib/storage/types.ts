@@ -28,3 +28,8 @@ export interface SearchOptions {
   offset?: number
   sortBy?: SortBy
 }
+
+// TODO: need to check with inian.
+export interface Metadata {
+  name: string
+}
