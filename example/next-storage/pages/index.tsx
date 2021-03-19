@@ -11,15 +11,22 @@ import { DEFAULT_AVATARS_BUCKET } from '../lib/constants'
 export default function Home() {
   const [session, setSession] = useState<Session | null>(null)
   const [avatar, setAvatar] = useState<string | null>(null)
+  const [username, setUsername] = useState<string | null>(null)
+  const [dob, setDob] = useState<string | null>(null)
 
   useEffect(() => {
     setSession(supabase.auth.session())
+    setProfile()
+
     supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session)
+      console.log('session?.user', session?.user)
       if (session?.user) {
-        fetchProfile(session?.user)
+        setProfile()
       } else {
-        setSession(null)
         setAvatar(null)
+        setUsername(null)
+        setDob(null)
       }
     })
   }, [])
@@ -37,10 +44,8 @@ export default function Home() {
       }
 
       const file = event.target.files[0]
-      console.log('file', file)
       const fileExt = file.name.split('.').pop()
       const fileName = `${session?.user.id}${Math.random()}.${fileExt}`
-      console.log('fileName', fileName)
       const filePath = `${DEFAULT_AVATARS_BUCKET}/${fileName}`
 
       let { data, error } = avatar
@@ -55,9 +60,10 @@ export default function Home() {
 
       await supabase.auth.update({
         data: {
-          avatar: fileName,
+          avatar_url: fileName,
         },
       })
+
       setAvatar(null)
       setAvatar(fileName)
     } catch (error) {
@@ -65,18 +71,27 @@ export default function Home() {
     }
   }
 
-  async function fetchProfile(user: AuthUser) {
+  async function setProfile() {
     try {
-      const { data: profile, error } = await supabase
-        .from('profiles')
-        .select()
-        .eq('id', user.id)
-        .single()
-
-      if (error) {
-        throw error
+      const user = supabase.auth.user()
+      if (user) {
+        setAvatar(user.user_metadata.avatar_url)
+        setUsername(user.user_metadata.username)
+        setDob(user.user_metadata.dob)
       }
-      setAvatar(profile.avatar_url)
+    } catch (error) {
+      console.log('error', error.message)
+    }
+  }
+
+  async function updateProfile() {
+    try {
+      await supabase.auth.update({
+        data: {
+          username,
+          dob,
+        },
+      })
     } catch (error) {
       console.log('error', error.message)
     }
@@ -110,15 +125,25 @@ export default function Home() {
           </div>
           <div>
             <label htmlFor="username">Username</label>
-            <input id="username" type="text" />
+            <input
+              id="username"
+              type="text"
+              value={username || ''}
+              onChange={(e) => setUsername(e.target.value)}
+            />
           </div>
           <div>
             <label htmlFor="dob">Date of birth</label>
-            <input id="dob" type="date" />
+            <input
+              id="dob"
+              type="date"
+              value={dob || ''}
+              onChange={(e) => setDob(e.target.value)}
+            />
           </div>
 
           <div>
-            <button className="button block primary" onClick={signOut}>
+            <button className="button block primary" onClick={updateProfile}>
               Update profile
             </button>
           </div>
