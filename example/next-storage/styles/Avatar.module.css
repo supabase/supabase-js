@@ -13,11 +13,10 @@
 }
 
 .noImage:after {
+  font-family: var(--custom-font-family);
   content: 'No avatar photo';
   display: block;
   font-size: 16px;
-  font-style: normal;
-  font-family: FontAwesome;
   color: rgb(100, 100, 100);
 
   position: absolute;
