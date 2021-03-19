@@ -5,7 +5,6 @@ import Auth from '../components/Auth'
 import UploadButton from '../components/UploadButton'
 import Avatar from '../components/Avatar'
 import styles from '../styles/Home.module.css'
-import buttonStyles from '../styles/Button.module.css'
 import { AuthUser } from '../../../dist/main'
 
 export default function Home() {
