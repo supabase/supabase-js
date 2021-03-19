@@ -29,7 +29,7 @@ export interface SearchOptions {
   sortBy?: SortBy
 }
 
-// TODO: need to check with inian.
+// TODO: need to check for metadata props. The api swagger doesnt have.
 export interface Metadata {
   name: string
 }
