@@ -5,7 +5,6 @@ import Auth from '../components/Auth'
 import UploadButton from '../components/UploadButton'
 import Avatar from '../components/Avatar'
 import styles from '../styles/Home.module.css'
-import buttonStyles from '../styles/Button.module.css'
 import { AuthUser } from '../../../dist/main'
 
 export default function Home() {
@@ -51,7 +50,7 @@ export default function Home() {
         throw error
       }
 
-      await supabase.from('profiles').update({ avatar_url: fileName })
+      // await supabase.from('profiles').update({ avatar_url: fileName })
 
       await supabase.auth.update({
         data: {
@@ -70,7 +69,7 @@ export default function Home() {
       const { data: profile, error } = await supabase
         .from('profiles')
         .select()
-        .eq(user.id, user.id)
+        .eq('id', user.id)
         .single()
 
       if (error) {
