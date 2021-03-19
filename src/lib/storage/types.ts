@@ -28,3 +28,8 @@ export interface SearchOptions {
   offset?: number
   sortBy?: SortBy
 }
+
+// TODO: need to check for metadata props. The api swagger doesnt have.
+export interface Metadata {
+  name: string
+}

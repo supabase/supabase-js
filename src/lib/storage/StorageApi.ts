@@ -1,6 +1,6 @@
 import { get, post, put, remove } from './fetch'
 import { isBrowser } from './helpers'
-import { Bucket, FileObject, SearchOptions } from './types'
+import { Bucket, FileObject, Metadata, SearchOptions } from './types'
 
 const DEFAULT_SEARCH_OPTIONS = {
   limit: 0,
@@ -21,7 +21,7 @@ export class StorageApi {
   }
 
   /**
-   * Gets all buckets
+   * Gets all buckets details
    */
   async getAllBuckets(): Promise<{ data: Bucket[] | null; error: Error | null }> {
     try {
@@ -247,6 +247,38 @@ export class StorageApi {
         { prefixes: paths },
         { headers: this.headers }
       )
+      return { data, error: null }
+    } catch (error) {
+      return { data: null, error }
+    }
+  }
+
+  /**
+   * TODO: need more test. get 404 error with staging
+   * Get file metadata
+   * @param id the file id to retrieve metadata
+   */
+  async getMetadata(id: string): Promise<{ data: Metadata | null; error: Error | null }> {
+    try {
+      const data = await get(`${this.url}/metadata/${id}`, { headers: this.headers })
+      return { data, error: null }
+    } catch (error) {
+      return { data: null, error }
+    }
+  }
+
+  /**
+   * TODO: need test.
+   * Update file metadata
+   * @param id the file id to update metadata
+   * @param meta the new file metadata
+   */
+  async updateMetadata(
+    id: string,
+    meta: Metadata
+  ): Promise<{ data: Metadata | null; error: Error | null }> {
+    try {
+      const data = await post(`${this.url}/metadata/${id}`, { ...meta }, { headers: this.headers })
       return { data, error: null }
     } catch (error) {
       return { data: null, error }
