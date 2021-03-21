@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 import { GoTrueClient } from '@supabase/gotrue-js'
 import './tailwind.output.css'
 
@@ -14,10 +14,8 @@ function App() {
   let [password, setPassword] = useState('')
   let [rememberMe, setRememberMe] = useState(false)
 
-  useEffect(() => {
-
-    auth.onAuthStateChange((_event, session) => setSession(session))
-  }, [])
+  // Keep the session up to date
+  auth.onAuthStateChange((_event, session) => setSession(session))
 
   async function handleOAuthLogin(provider) {
     let { error } = await auth.signIn({ provider }, { redirectTo: 'http://localhost:3000/welcome'})
