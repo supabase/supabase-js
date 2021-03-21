@@ -430,7 +430,7 @@ export default class GoTrueClient {
       const { currentSession, expiresAt } = data
       const timeNow = Math.round(Date.now() / 1000)
 
-      if (expiresAt < timeNow && currentSession?.user) {
+      if (expiresAt > timeNow && currentSession?.user) {
         this.currentSession = currentSession
         this.currentUser = currentSession.user
       }
