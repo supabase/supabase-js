@@ -240,7 +240,7 @@ export default class GoTrueClient {
       if (error) throw error
 
       this.currentUser = data
-      const session = {...this.currentSession, user: data!}
+      const session = { ...this.currentSession, user: data! }
       this.currentSession = session
       this._saveSession(session)
       this._notifyAllSubscribers('USER_UPDATED')
