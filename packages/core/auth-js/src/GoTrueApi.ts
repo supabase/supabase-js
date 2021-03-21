@@ -250,7 +250,13 @@ export default class GoTrueApi {
         { refresh_token: refreshToken },
         { headers: this.headers }
       )
-      return { data, error: null }
+      const timeNow = Math.round(Date.now() / 1000)
+      const expires_at = timeNow + data.expires_in
+      const session = { 
+        ...data, 
+        expires_at
+      } 
+      return { data: session, error: null }
     } catch (error) {
       return { data: null, error }
     }
