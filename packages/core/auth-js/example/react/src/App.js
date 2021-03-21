@@ -2,16 +2,20 @@ import React, { useState, useEffect } from 'react'
 import { GoTrueClient } from '@supabase/gotrue-js'
 import './tailwind.output.css'
 
-const auth = new GoTrueClient()
+const GOTRUE_URL_AUTOCONFIRM = 'http://localhost:9998'
+
+const auth = new GoTrueClient({
+  url: GOTRUE_URL_AUTOCONFIRM,
+})
 
 function App() {
-  let [session, setSession] = useState(null)
+  let [session, setSession] = useState(auth.session())
   let [email, setEmail] = useState(localStorage.getItem('email') ?? '')
   let [password, setPassword] = useState('')
   let [rememberMe, setRememberMe] = useState(false)
 
   useEffect(() => {
-    setSession(auth.session())
+
     auth.onAuthStateChange((_event, session) => setSession(session))
   }, [])
 
