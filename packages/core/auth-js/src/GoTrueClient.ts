@@ -274,6 +274,9 @@ export default class GoTrueClient {
       const token_type = getParameterByName('token_type')
       if (!token_type) throw new Error('No token_type detected.')
 
+      const timeNow = Math.round(Date.now() / 1000)
+      const expires_at = timeNow + parseInt(expires_in)
+
       const { user, error } = await this.api.getUser(access_token)
       if (error) throw error
 
@@ -281,6 +284,7 @@ export default class GoTrueClient {
         provider_token,
         access_token,
         expires_in: parseInt(expires_in),
+        expires_at,
         refresh_token,
         token_type,
         user: user!,
