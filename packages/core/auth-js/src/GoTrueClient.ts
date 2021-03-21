@@ -397,21 +397,14 @@ export default class GoTrueClient {
   private _saveSession(session: Session) {
     this.currentSession = session
     this.currentUser = session.user
-    const tokenExpirySeconds = session['expires_in']
-
-    if (this.autoRefreshToken && tokenExpirySeconds) {
-      setTimeout(this._callRefreshToken, (tokenExpirySeconds - 60) * 1000)
-    }
 
     if (this.persistSession) {
-      this._persistSession(this.currentSession, tokenExpirySeconds)
+      this._persistSession(this.currentSession)
     }
   }
 
-  private _persistSession(currentSession: Session, secondsToExpiry: number) {
-    const timeNow = Math.round(Date.now() / 1000)
-    const expiresAt = timeNow + secondsToExpiry
-    const data = { currentSession, expiresAt }
+  private _persistSession(currentSession: Session) {
+    const data = { currentSession, expiresAt: currentSession.expires_at }
     isBrowser() && this.localStorage.setItem(STORAGE_KEY, JSON.stringify(data))
   }
 
@@ -476,7 +469,7 @@ export default class GoTrueClient {
         }
 
         if (this.persistSession && this.currentUser) {
-          this._persistSession(this.currentSession, tokenExpirySeconds)
+          this._persistSession(this.currentSession)
         }
       } else {
         throw error
