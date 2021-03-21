@@ -72,6 +72,7 @@ export default class GoTrueClient {
       cookieOptions: settings.cookieOptions,
     })
     this._recoverSession()
+    this._recoverAndRefresh()
 
     // Handle the OAuth redirect
     try {
@@ -414,7 +415,34 @@ export default class GoTrueClient {
     isBrowser() && (await this.localStorage.removeItem(STORAGE_KEY))
   }
 
-  private async _recoverSession() {
+  /**
+   * Attempts to get the session from LocalStorage
+   * Note: this should never be async (even for React Native), as we need it to return immediately in the constructor.
+   */
+  private _recoverSession() {
+    try {
+      const json = isBrowser() && this.localStorage?.getItem(STORAGE_KEY)
+      if (!json) {
+        return null
+      }
+
+      const data = JSON.parse(json)
+      const { currentSession, expiresAt } = data
+      const timeNow = Math.round(Date.now() / 1000)
+
+      if (expiresAt < timeNow && currentSession?.user) {
+        this.currentSession = currentSession
+        this.currentUser = currentSession.user
+      }
+    } catch (error) {
+      console.log('error', error)
+    }
+  }
+
+  /**
+   * Recovers the session from LocalStorage and refreshes
+   */
+  private async _recoverAndRefresh() {
     // Note: this method is async to accommodate for AsyncStorage e.g. in React native.
     const json = isBrowser() && (await this.localStorage.getItem(STORAGE_KEY))
     if (!json) {
