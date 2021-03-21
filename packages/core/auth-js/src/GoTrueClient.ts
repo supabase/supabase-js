@@ -312,12 +312,12 @@ export default class GoTrueClient {
    * For server-side management, you can disable sessions by passing a JWT through to `auth.api.signOut(JWT: string)`
    */
   async signOut(): Promise<{ error: Error | null }> {
+    this._removeSession()
+    this._notifyAllSubscribers('SIGNED_OUT')
     if (this.currentSession) {
       const { error } = await this.api.signOut(this.currentSession.access_token)
       if (error) return { error }
     }
-    this._removeSession()
-    this._notifyAllSubscribers('SIGNED_OUT')
     return { error: null }
   }
 
