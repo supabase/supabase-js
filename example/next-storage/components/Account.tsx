@@ -6,7 +6,8 @@ import styles from '../styles/Home.module.css'
 import { AuthSession } from '../../../dist/main'
 import { DEFAULT_AVATARS_BUCKET } from '../lib/constants'
 
-type Profile = {
+export type Profile = {
+  id: string
   avatar_url: string
   username: string
   dob: string
