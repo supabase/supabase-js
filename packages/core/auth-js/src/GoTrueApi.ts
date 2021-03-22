@@ -49,11 +49,8 @@ export default class GoTrueApi {
         headers['referer'] = options.redirectTo
       }
       const data = await post(`${this.url}/signup`, { email, password }, { headers })
-
-      const session = {
-        ...data,
-        expires_at: expiresAt(data.expires_in),
-      }
+      let session = { ...data }
+      if (session.expires_in) session.expires_at = expiresAt(data.expires_in)
       return { data: session, error: null }
     } catch (error) {
       return { data: null, error }
@@ -83,10 +80,8 @@ export default class GoTrueApi {
         { email, password },
         { headers }
       )
-      const session = {
-        ...data,
-        expires_at: expiresAt(data.expires_in),
-      }
+      let session = { ...data }
+      if (session.expires_in) session.expires_at = expiresAt(data.expires_in)
       return { data: session, error: null }
     } catch (error) {
       return { data: null, error }
@@ -260,10 +255,8 @@ export default class GoTrueApi {
         { refresh_token: refreshToken },
         { headers: this.headers }
       )
-      const session = {
-        ...data,
-        expires_at: expiresAt(data.expires_in),
-      }
+      let session = { ...data }
+      if (session.expires_in) session.expires_at = expiresAt(data.expires_in)
       return { data: session, error: null }
     } catch (error) {
       return { data: null, error }

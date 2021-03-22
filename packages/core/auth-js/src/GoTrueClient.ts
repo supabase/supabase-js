@@ -399,7 +399,7 @@ export default class GoTrueClient {
     this.currentSession = session
     this.currentUser = session.user
 
-    if (this.persistSession) {
+    if (this.persistSession && session.expires_at) {
       this._persistSession(this.currentSession)
     }
   }
