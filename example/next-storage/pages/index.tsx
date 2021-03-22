@@ -7,6 +7,12 @@ import styles from '../styles/Home.module.css'
 import { AuthUser, AuthSession } from '../../../dist/main'
 import { DEFAULT_AVATARS_BUCKET } from '../lib/constants'
 
+type Profile = {
+  avatar_url: string
+  username: string
+  dob: string
+}
+
 export default function Home() {
   const [session, setSession] = useState<AuthSession | null>(null)
   const [avatar, setAvatar] = useState<string | null>(null)
@@ -15,18 +21,21 @@ export default function Home() {
 
   useEffect(() => {
     setSession(supabase.auth.session())
-    setProfile()
+
     supabase.auth.onAuthStateChange((_event: string, session: AuthSession | null) => {
       setSession(session)
-      if (session?.user) {
-        setProfile()
-      } else {
-        setAvatar(null)
-        setUsername(null)
-        setDob(null)
-      }
     })
   }, [])
+
+  useEffect(() => {
+    if (session) {
+      getProfile()
+    } else {
+      setAvatar(null)
+      setUsername(null)
+      setDob(null)
+    }
+  }, [session])
 
   async function signOut() {
     const { error } = await supabase.auth.signOut()
@@ -35,9 +44,14 @@ export default function Home() {
 
   async function uploadAvatar(event: ChangeEvent<HTMLInputElement>) {
     try {
+      if (!session) {
+        throw new Error('uploadAvatar() Not logged in.')
+      }
+
+      const user = supabase.auth.user()
+
       if (!event.target.files || event.target.files.length == 0) {
-        alert('You must select an image to upload')
-        return
+        throw 'You must select an image to upload.'
       }
 
       const file = event.target.files[0]
@@ -45,21 +59,20 @@ export default function Home() {
       const fileName = `${session?.user.id}${Math.random()}.${fileExt}`
       const filePath = `${DEFAULT_AVATARS_BUCKET}/${fileName}`
 
-      let { data, error } = avatar
-        ? await supabase.storage.uploadFile(filePath, file) // change this to update
-        : await supabase.storage.uploadFile(filePath, file)
+      let { error: uploadError } = await supabase.storage.uploadFile(filePath, file)
 
-      if (error) {
-        throw error
+      if (uploadError) {
+        throw uploadError
       }
 
-      // await supabase.from('profiles').update({ avatar_url: fileName })
-
-      await supabase.auth.update({
-        data: {
-          avatar_url: fileName,
-        },
+      let { error: updateError } = await supabase.from('profiles').upsert({
+        id: user.id,
+        avatar_url: fileName,
       })
+
+      if (updateError) {
+        throw updateError
+      }
 
       setAvatar(null)
       setAvatar(fileName)
@@ -68,14 +81,31 @@ export default function Home() {
     }
   }
 
-  async function setProfile() {
+  function setProfile(profile: Profile) {
+    setAvatar(profile.avatar_url)
+    setUsername(profile.username)
+    setDob(profile.dob)
+  }
+
+  async function getProfile() {
     try {
-      const user = supabase.auth.user()
-      if (user) {
-        setAvatar(user.user_metadata.avatar_url)
-        setUsername(user.user_metadata.username)
-        setDob(user.user_metadata.dob)
+      if (!session) {
+        throw new Error('getProfile() Not logged in.')
       }
+
+      const user = supabase.auth.user()
+
+      let { data, error } = await supabase
+        .from('profiles')
+        .select(`username, dob, avatar_url`)
+        .eq('id', user.id)
+        .single()
+
+      if (error) {
+        throw error
+      }
+
+      setProfile(data)
     } catch (error) {
       console.log('error', error.message)
     }
@@ -83,12 +113,23 @@ export default function Home() {
 
   async function updateProfile() {
     try {
-      await supabase.auth.update({
-        data: {
-          username,
-          dob,
-        },
+      if (!session) {
+        throw new Error('Not logged in.')
+      }
+
+      const user = supabase.auth.user()
+
+      let { data: profile, error } = await supabase.from('profiles').upsert({
+        id: user.id,
+        username,
+        dob,
       })
+
+      if (error) {
+        throw error
+      }
+
+      setProfile(profile)
     } catch (error) {
       console.log('error', error.message)
     }
@@ -140,13 +181,13 @@ export default function Home() {
           </div>
 
           <div>
-            <button className="button block primary" onClick={updateProfile}>
+            <button className="button block primary" onClick={() => updateProfile()}>
               Update profile
             </button>
           </div>
 
           <div>
-            <button className="button block" onClick={signOut}>
+            <button className="button block" onClick={() => signOut()}>
               Sign Out
             </button>
           </div>
