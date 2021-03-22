@@ -22,6 +22,7 @@ test('signUp()', async () => {
     access_token: expect.any(String),
     refresh_token: expect.any(String),
     expires_in: expect.any(Number),
+    expires_at: expect.any(Number),
     user: {
       id: expect.any(String),
       email: expect.any(String),
@@ -70,6 +71,7 @@ test('signIn()', async () => {
     access_token: expect.any(String),
     refresh_token: expect.any(String),
     expires_in: expect.any(Number),
+    expires_at: expect.any(Number),
     user: {
       id: expect.any(String),
       email: expect.any(String),

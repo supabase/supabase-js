@@ -72,6 +72,7 @@ export default class GoTrueClient {
       cookieOptions: settings.cookieOptions,
     })
     this._recoverSession()
+    this._recoverAndRefresh()
 
     // Handle the OAuth redirect
     try {
@@ -240,7 +241,7 @@ export default class GoTrueClient {
       if (error) throw error
 
       this.currentUser = data
-      const session = {...this.currentSession, user: data!}
+      const session = { ...this.currentSession, user: data! }
       this.currentSession = session
       this._saveSession(session)
       this._notifyAllSubscribers('USER_UPDATED')
@@ -274,6 +275,9 @@ export default class GoTrueClient {
       const token_type = getParameterByName('token_type')
       if (!token_type) throw new Error('No token_type detected.')
 
+      const timeNow = Math.round(Date.now() / 1000)
+      const expires_at = timeNow + parseInt(expires_in)
+
       const { user, error } = await this.api.getUser(access_token)
       if (error) throw error
 
@@ -281,6 +285,7 @@ export default class GoTrueClient {
         provider_token,
         access_token,
         expires_in: parseInt(expires_in),
+        expires_at,
         refresh_token,
         token_type,
         user: user!,
@@ -308,12 +313,12 @@ export default class GoTrueClient {
    * For server-side management, you can disable sessions by passing a JWT through to `auth.api.signOut(JWT: string)`
    */
   async signOut(): Promise<{ error: Error | null }> {
+    this._removeSession()
+    this._notifyAllSubscribers('SIGNED_OUT')
     if (this.currentSession) {
       const { error } = await this.api.signOut(this.currentSession.access_token)
       if (error) return { error }
     }
-    this._removeSession()
-    this._notifyAllSubscribers('SIGNED_OUT')
     return { error: null }
   }
 
@@ -393,21 +398,14 @@ export default class GoTrueClient {
   private _saveSession(session: Session) {
     this.currentSession = session
     this.currentUser = session.user
-    const tokenExpirySeconds = session['expires_in']
 
-    if (this.autoRefreshToken && tokenExpirySeconds) {
-      setTimeout(this._callRefreshToken, (tokenExpirySeconds - 60) * 1000)
-    }
-
-    if (this.persistSession) {
-      this._persistSession(this.currentSession, tokenExpirySeconds)
+    if (this.persistSession && session.expires_at) {
+      this._persistSession(this.currentSession)
     }
   }
 
-  private _persistSession(currentSession: Session, secondsToExpiry: number) {
-    const timeNow = Math.round(Date.now() / 1000)
-    const expiresAt = timeNow + secondsToExpiry
-    const data = { currentSession, expiresAt }
+  private _persistSession(currentSession: Session) {
+    const data = { currentSession, expiresAt: currentSession.expires_at }
     isBrowser() && this.localStorage.setItem(STORAGE_KEY, JSON.stringify(data))
   }
 
@@ -417,7 +415,34 @@ export default class GoTrueClient {
     isBrowser() && (await this.localStorage.removeItem(STORAGE_KEY))
   }
 
-  private async _recoverSession() {
+  /**
+   * Attempts to get the session from LocalStorage
+   * Note: this should never be async (even for React Native), as we need it to return immediately in the constructor.
+   */
+  private _recoverSession() {
+    try {
+      const json = isBrowser() && this.localStorage?.getItem(STORAGE_KEY)
+      if (!json) {
+        return null
+      }
+
+      const data = JSON.parse(json)
+      const { currentSession, expiresAt } = data
+      const timeNow = Math.round(Date.now() / 1000)
+
+      if (expiresAt > timeNow && currentSession?.user) {
+        this.currentSession = currentSession
+        this.currentUser = currentSession.user
+      }
+    } catch (error) {
+      console.log('error', error)
+    }
+  }
+
+  /**
+   * Recovers the session from LocalStorage and refreshes
+   */
+  private async _recoverAndRefresh() {
     // Note: this method is async to accommodate for AsyncStorage e.g. in React native.
     const json = isBrowser() && (await this.localStorage.getItem(STORAGE_KEY))
     if (!json) {
@@ -472,7 +497,7 @@ export default class GoTrueClient {
         }
 
         if (this.persistSession && this.currentUser) {
-          this._persistSession(this.currentSession, tokenExpirySeconds)
+          this._persistSession(this.currentSession)
         }
       } else {
         throw error

@@ -58,6 +58,7 @@ Object {
 exports[`signIn() 1`] = `
 Object {
   "access_token": Any<String>,
+  "expires_at": Any<Number>,
   "expires_in": Any<Number>,
   "refresh_token": Any<String>,
   "token_type": "bearer",
@@ -106,6 +107,7 @@ Object {
 exports[`signUp() 1`] = `
 Object {
   "access_token": Any<String>,
+  "expires_at": Any<Number>,
   "expires_in": Any<Number>,
   "refresh_token": Any<String>,
   "token_type": "bearer",

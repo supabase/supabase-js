@@ -2,6 +2,7 @@ import { get, post, put } from './lib/fetch'
 import { Session, Provider, UserAttributes, CookieOptions, User } from './lib/types'
 import { COOKIE_OPTIONS } from './lib/constants'
 import { setCookie, deleteCookie } from './lib/cookies'
+import { expiresAt } from './lib/helpers'
 
 export default class GoTrueApi {
   protected url: string
@@ -48,7 +49,9 @@ export default class GoTrueApi {
         headers['referer'] = options.redirectTo
       }
       const data = await post(`${this.url}/signup`, { email, password }, { headers })
-      return { data, error: null }
+      let session = { ...data }
+      if (session.expires_in) session.expires_at = expiresAt(data.expires_in)
+      return { data: session, error: null }
     } catch (error) {
       return { data: null, error }
     }
@@ -77,7 +80,9 @@ export default class GoTrueApi {
         { email, password },
         { headers }
       )
-      return { data, error: null }
+      let session = { ...data }
+      if (session.expires_in) session.expires_at = expiresAt(data.expires_in)
+      return { data: session, error: null }
     } catch (error) {
       return { data: null, error }
     }
@@ -250,7 +255,9 @@ export default class GoTrueApi {
         { refresh_token: refreshToken },
         { headers: this.headers }
       )
-      return { data, error: null }
+      let session = { ...data }
+      if (session.expires_in) session.expires_at = expiresAt(data.expires_in)
+      return { data: session, error: null }
     } catch (error) {
       return { data: null, error }
     }
