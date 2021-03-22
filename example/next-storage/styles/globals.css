@@ -16,6 +16,7 @@ body {
 }
 
 * {
+  font-family: var(--custom-font-family);
   box-sizing: border-box;
 }
 
@@ -28,7 +29,6 @@ label {
 }
 
 input {
-  font-family: var(--custom-font-family);
   width: 100%;
   border-radius: 5px;
   border: var(--custom-border);

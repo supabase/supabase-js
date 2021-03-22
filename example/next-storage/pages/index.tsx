@@ -1,15 +1,14 @@
 import { useState, useEffect, ChangeEvent } from 'react'
 import { supabase } from '../lib/api'
-import { Session } from '@supabase/gotrue-js'
 import Auth from '../components/Auth'
 import UploadButton from '../components/UploadButton'
 import Avatar from '../components/Avatar'
 import styles from '../styles/Home.module.css'
-import { AuthUser } from '../../../dist/main'
+import { AuthUser, AuthSession } from '../../../dist/main'
 import { DEFAULT_AVATARS_BUCKET } from '../lib/constants'
 
 export default function Home() {
-  const [session, setSession] = useState<Session | null>(null)
+  const [session, setSession] = useState<AuthSession | null>(null)
   const [avatar, setAvatar] = useState<string | null>(null)
   const [username, setUsername] = useState<string | null>(null)
   const [dob, setDob] = useState<string | null>(null)
@@ -17,10 +16,8 @@ export default function Home() {
   useEffect(() => {
     setSession(supabase.auth.session())
     setProfile()
-
-    supabase.auth.onAuthStateChange((_event, session) => {
+    supabase.auth.onAuthStateChange((_event: string, session: AuthSession | null) => {
       setSession(session)
-      console.log('session?.user', session?.user)
       if (session?.user) {
         setProfile()
       } else {
