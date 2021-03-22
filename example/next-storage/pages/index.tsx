@@ -4,7 +4,7 @@ import Auth from '../components/Auth'
 import UploadButton from '../components/UploadButton'
 import Avatar from '../components/Avatar'
 import styles from '../styles/Home.module.css'
-import { AuthUser, AuthSession } from '../../../dist/main'
+import { AuthSession } from '../../../dist/main'
 import { DEFAULT_AVATARS_BUCKET } from '../lib/constants'
 
 type Profile = {
@@ -119,17 +119,19 @@ export default function Home() {
 
       const user = supabase.auth.user()
 
-      let { data: profile, error } = await supabase.from('profiles').upsert({
+      const updates = {
         id: user.id,
         username,
         dob,
+      }
+
+      let { error } = await supabase.from('profiles').upsert(updates, {
+        returning: 'minimal', // Don't return the value after inserting
       })
 
       if (error) {
         throw error
       }
-
-      setProfile(profile)
     } catch (error) {
       console.log('error', error.message)
     }
