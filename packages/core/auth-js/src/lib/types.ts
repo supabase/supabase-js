@@ -5,7 +5,13 @@ export type AuthChangeEvent = 'SIGNED_IN' | 'SIGNED_OUT' | 'USER_UPDATED' | 'PAS
 export interface Session {
   provider_token?: string | null
   access_token: string
+  /**
+   * The number of seconds until the token expires (since it was issued).
+   */
   expires_in: number
+  /**
+   * A timestamp of when the token will expire.
+   */
   expires_at: number
   refresh_token: string
   token_type: string
