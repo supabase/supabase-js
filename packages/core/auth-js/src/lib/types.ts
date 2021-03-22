@@ -6,13 +6,13 @@ export interface Session {
   provider_token?: string | null
   access_token: string
   /**
-   * The number of seconds until the token expires (since it was issued).
+   * The number of seconds until the token expires (since it was issued). Returned when a login is confirmed.
    */
-  expires_in: number
+  expires_in?: number
   /**
-   * A timestamp of when the token will expire.
+   * A timestamp of when the token will expire. Returned when a login is confirmed.
    */
-  expires_at: number
+  expires_at?: number
   refresh_token: string
   token_type: string
   user: User
