@@ -37,7 +37,7 @@ test('switch schema', async () => {
 test('on_conflict insert', async () => {
   const res = await postgrest
     .from('users')
-    .insert({ username: 'dragarcia' }, { upsert: true, onConflict: 'username' })
+    .upsert({ username: 'dragarcia' }, { onConflict: 'username' })
   expect(res).toMatchSnapshot()
 })
 
@@ -55,7 +55,7 @@ describe('basic insert, update, delete', () => {
   test('upsert', async () => {
     let res = await postgrest
       .from('messages')
-      .insert({ id: 3, message: 'foo', username: 'supabot', channel_id: 2 }, { upsert: true })
+      .upsert({ id: 3, message: 'foo', username: 'supabot', channel_id: 2 })
     expect(res).toMatchSnapshot()
 
     res = await postgrest.from('messages').select()
@@ -176,7 +176,7 @@ test('select with count:exact', async () => {
 })
 
 test("stored procedure with count: 'exact'", async () => {
-  const res = await postgrest.rpc('get_status', { name_param: 'supabot'}, {count: 'exact' })
+  const res = await postgrest.rpc('get_status', { name_param: 'supabot' }, { count: 'exact' })
   expect(res).toMatchSnapshot()
 })
 
@@ -194,10 +194,7 @@ describe("insert, update, delete with count: 'exact'", () => {
   test("upsert with count: 'exact'", async () => {
     let res = await postgrest
       .from('messages')
-      .insert(
-        { id: 3, message: 'foo', username: 'supabot', channel_id: 2 },
-        { upsert: true, count: 'exact' }
-      )
+      .upsert({ id: 3, message: 'foo', username: 'supabot', channel_id: 2 }, { count: 'exact' })
     expect(res).toMatchSnapshot()
 
     res = await postgrest.from('messages').select()
