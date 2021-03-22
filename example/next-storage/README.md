@@ -8,10 +8,14 @@
 
 ```sql
 create table public.profiles (
-  id uuid references auth.users not null primary key,
+  id uuid references auth.users not null,
   username text unique,
   avatar_url text,
-  dob date
+  dob date,
+
+  primary key (id),
+  unique(username),
+  constraint username_length check (char_length(username) >= 3)
 );
 alter table profiles enable row level security;
 create policy "Public profiles are viewable by everyone." on profiles for select using (true);

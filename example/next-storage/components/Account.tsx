@@ -105,7 +105,7 @@ export default function Account({ session }: { session: AuthSession }) {
         throw error
       }
     } catch (error) {
-      console.log('error', error.message)
+      alert(error.message)
     }
   }
 
