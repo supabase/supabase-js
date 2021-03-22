@@ -254,36 +254,34 @@ export class StorageApi {
   }
 
   /**
-   * TODO: need more test. get 404 error with staging
    * Get file metadata
    * @param id the file id to retrieve metadata
    */
-  async getMetadata(id: string): Promise<{ data: Metadata | null; error: Error | null }> {
-    try {
-      const data = await get(`${this.url}/metadata/${id}`, { headers: this.headers })
-      return { data, error: null }
-    } catch (error) {
-      return { data: null, error }
-    }
-  }
+  // async getMetadata(id: string): Promise<{ data: Metadata | null; error: Error | null }> {
+  //   try {
+  //     const data = await get(`${this.url}/metadata/${id}`, { headers: this.headers })
+  //     return { data, error: null }
+  //   } catch (error) {
+  //     return { data: null, error }
+  //   }
+  // }
 
   /**
-   * TODO: need test.
    * Update file metadata
    * @param id the file id to update metadata
    * @param meta the new file metadata
    */
-  async updateMetadata(
-    id: string,
-    meta: Metadata
-  ): Promise<{ data: Metadata | null; error: Error | null }> {
-    try {
-      const data = await post(`${this.url}/metadata/${id}`, { ...meta }, { headers: this.headers })
-      return { data, error: null }
-    } catch (error) {
-      return { data: null, error }
-    }
-  }
+  // async updateMetadata(
+  //   id: string,
+  //   meta: Metadata
+  // ): Promise<{ data: Metadata | null; error: Error | null }> {
+  //   try {
+  //     const data = await post(`${this.url}/metadata/${id}`, { ...meta }, { headers: this.headers })
+  //     return { data, error: null }
+  //   } catch (error) {
+  //     return { data: null, error }
+  //   }
+  // }
 
   /**
    * Use to fetch folder contents
