@@ -13,7 +13,7 @@ create table public.profiles (
   full_name text,
   avatar_url text
 );
-alter table users enable row level security;
-create policy "Public profiles are viewable by everyone." on users for select using (true);
-create policy "Individuals update own user data." on users for update using (auth.uid() = id);
+alter table profiles enable row level security;
+create policy "Public profiles are viewable by everyone." on profiles for select using (true);
+create policy "Individuals update own user data." on profiles for update using (auth.uid() = id);
 ```
