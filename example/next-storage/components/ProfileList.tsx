@@ -4,26 +4,27 @@ import { Subscription, SupabaseRealtimePayload } from '@supabase/supabase-js'
 import { supabase } from '../lib/api'
 import { useState, useEffect } from 'react'
 
+var realtimeProfiles: Subscription | null = null
+
 export default function ProfileList() {
   const [profiles, setProfiles] = useState<Profile[]>([])
 
   useEffect(() => {
     getPublicProfiles()
 
-    const realtimeProfiles = supabase
+    realtimeProfiles = supabase
       .from('profiles')
-      .on('*', (payload: SupabaseRealtimePayload<Profile>) => profileUpdated(payload.new))
+      .on('*', (payload: SupabaseRealtimePayload<Profile>) => profileUpdated(profiles, payload.new))
       .subscribe()
 
     return () => {
-      supabase.removeSubscription(realtimeProfiles)
+      if (realtimeProfiles) supabase.removeSubscription(realtimeProfiles)
     }
   }, [])
 
-  function profileUpdated(profile: Profile) {
-    const otherProfiles = profiles?.filter((x) => x.id != profile.id)
-    console.log('otherProfiles', otherProfiles)
-    setProfiles([profile, ...otherProfiles])
+  function profileUpdated(profileList: Profile[], updated: Profile) {
+    const otherProfiles = profileList.filter((x) => x.id != updated.id)
+    setProfiles([updated, ...otherProfiles])
   }
 
   async function getPublicProfiles() {
