@@ -14,12 +14,7 @@ export default function ProfileList() {
 
     realtimeProfiles = supabase
       .from('profiles')
-      .on('*', (payload: SupabaseRealtimePayload<Profile>) => {
-        console.log('profiles', profiles)
-        const otherProfiles = profiles?.filter((x) => x.id != payload.new.id)
-        console.log('otherProfiles', otherProfiles)
-        setProfiles([payload.new, ...otherProfiles])
-      })
+      .on('*', (payload: SupabaseRealtimePayload<Profile>) => profileUpdated(payload.new))
       .subscribe()
 
     return () => {
@@ -27,6 +22,11 @@ export default function ProfileList() {
       realtimeProfiles = null
     }
   }, [])
+
+  function profileUpdated(profile: Profile) {
+    const otherProfiles = profiles?.filter((x) => x.id != profile.id)
+    setProfiles([profile, ...otherProfiles])
+  }
 
   async function getPublicProfiles() {
     try {
