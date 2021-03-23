@@ -7,6 +7,7 @@ import { DEFAULT_AVATARS_BUCKET, Profile } from '../lib/constants'
 
 export default function Account({ session }: { session: AuthSession }) {
   const [loading, setLoading] = useState<boolean>(true)
+  const [uploading, setUploading] = useState<boolean>(false)
   const [avatar, setAvatar] = useState<string | null>(null)
   const [username, setUsername] = useState<string | null>(null)
   const [website, setWebsite] = useState<string | null>(null)
@@ -22,12 +23,13 @@ export default function Account({ session }: { session: AuthSession }) {
 
   async function uploadAvatar(event: ChangeEvent<HTMLInputElement>) {
     try {
-      const user = supabase.auth.user()
+      setUploading(true)
 
       if (!event.target.files || event.target.files.length == 0) {
         throw 'You must select an image to upload.'
       }
 
+      const user = supabase.auth.user()
       const file = event.target.files[0]
       const fileExt = file.name.split('.').pop()
       const fileName = `${session?.user.id}${Math.random()}.${fileExt}`
@@ -52,6 +54,8 @@ export default function Account({ session }: { session: AuthSession }) {
       setAvatar(filePath)
     } catch (error) {
       alert(error.message)
+    } finally {
+      setUploading(false)
     }
   }
 
@@ -125,7 +129,7 @@ export default function Account({ session }: { session: AuthSession }) {
         <div>
           <Avatar url={avatar} size={270} />
         </div>
-        <UploadButton onUpload={uploadAvatar} />
+        <UploadButton onUpload={uploadAvatar} loading={uploading} />
       </div>
 
       <div>

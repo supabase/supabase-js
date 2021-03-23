@@ -31,6 +31,4 @@ begin;
 commit;
 
 alter publication supabase_realtime add table profiles;
-
-
 ```

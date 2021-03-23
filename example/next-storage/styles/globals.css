@@ -49,6 +49,10 @@ input[disabled] {
 
 /* Utils */
 
+.w-half {
+  width: 50%;
+}
+
 .block {
   display: block;
   width: 100%;
@@ -62,10 +66,10 @@ input[disabled] {
   display: flex;
 }
 .flex.column {
-  flex: column;
+  flex-direction: column;
 }
 .flex.row {
-  flex: row;
+  flex-direction: row;
 }
 .flex.flex-1 {
   flex: 1 1 0;
@@ -73,7 +77,9 @@ input[disabled] {
 
 /* Button */
 
-button {
+button,
+.button {
+  color: var(--custom-color);
   border: var(--custom-border);
   background-color: var(--custom-bg-color);
   display: inline-block;
@@ -86,14 +92,17 @@ button {
   text-transform: uppercase;
 }
 
-button.primary {
+button.primary,
+.button.primary {
   background-color: var(--custom-color-brand);
+  border: 1px solid var(--custom-color-brand);
 }
 
 /* Widgets */
 
 .card {
   width: 100%;
+  display: block;
   border: var(--custom-border);
   border-radius: var(--custom-border-radius);
   padding: var(--custom-spacing);

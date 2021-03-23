@@ -1,22 +1,26 @@
 import { ChangeEventHandler } from 'react'
-import styles from './UploadButton.module.css'
 
 export type UploadButtonProps = {
   onUpload: ChangeEventHandler<HTMLInputElement>
+  loading: boolean
 }
 
 export default function UploadButton(props: UploadButtonProps) {
   return (
-    <div className={styles.container}>
-      <label className={styles.label} htmlFor="single">
-        Upload avatar
+    <div>
+      <label className="button primary block" htmlFor="single">
+        {props.loading ? 'Uploading ...' : 'Upload'}
       </label>
       <input
-        className={styles.input}
+        style={{
+          visibility: 'hidden',
+          position: 'absolute',
+        }}
         type="file"
         id="single"
         accept="image/*"
         onChange={props.onUpload}
+        disabled={props.loading}
       />
     </div>
   )
