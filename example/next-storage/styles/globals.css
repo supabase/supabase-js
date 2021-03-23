@@ -8,6 +8,8 @@ body {
   --custom-color-brand: #24b47e;
   --custom-color-secondary: #666;
   --custom-border: 1px solid #666;
+  --custom-border-radius: 5px;
+  --custom-spacing: 5px;
 
   padding: 0;
   margin: 0;
@@ -16,9 +18,12 @@ body {
 }
 
 * {
+  color: var(--custom-color);
   font-family: var(--custom-font-family);
   box-sizing: border-box;
 }
+
+/* Forms */
 
 label {
   display: block;
@@ -42,13 +47,14 @@ input[disabled] {
   color: var(--custom-color-secondary);
 }
 
+/* Button */
+
 button {
   border: var(--custom-border);
   background-color: var(--custom-bg-color);
-  color: #fff;
   display: inline-block;
   text-align: center;
-  border-radius: 5px;
+  border-radius: var(--custom-border-radius);
   padding: 0.5rem 1rem;
   cursor: pointer;
   text-align: center;
@@ -56,11 +62,47 @@ button {
   text-transform: uppercase;
 }
 
-.button.block {
+button.block {
   width: 100%;
 }
 
 button.primary {
-  background-color: #24b47e;
-  color: #fff;
+  background-color: var(--custom-color-brand);
+}
+
+/* Widgets */
+
+.card {
+  border: var(--custom-border);
+  border-radius: var(--custom-border-radius);
+  padding: var(--custom-spacing);
+}
+
+.avatar {
+  border-radius: var(--custom-border-radius);
+  overflow: hidden;
+  max-width: 100%;
+}
+.avatar.image {
+  object-fit: cover;
+}
+.avatar.noImage {
+  background-color: rgb(230, 230, 230);
+  border: 2px dotted rgb(200, 200, 200);
+  border-radius: 5px;
+}
+.avatar.noImage:after {
+  font-family: var(--custom-font-family);
+  content: 'No avatar photo';
+  display: block;
+  font-size: 16px;
+  color: rgb(100, 100, 100);
+
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 100%;
+  -webkit-transform: translateY(-50%);
+  transform: translateY(-50%);
+  text-align: center;
 }

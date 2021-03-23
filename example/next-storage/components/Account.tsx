@@ -1,22 +1,16 @@
 import { useState, useEffect, ChangeEvent } from 'react'
 import { supabase } from '../lib/api'
 import UploadButton from '../components/UploadButton'
-import Avatar from '../components/Avatar'
+import Avatar from './Avatar'
 import styles from '../styles/Home.module.css'
 import { AuthSession } from '../../../dist/main'
-import { DEFAULT_AVATARS_BUCKET } from '../lib/constants'
-
-export type Profile = {
-  id: string
-  avatar_url: string
-  username: string
-  dob: string
-}
+import { DEFAULT_AVATARS_BUCKET, Profile } from '../lib/constants'
 
 export default function Account({ session }: { session: AuthSession }) {
+  const [loading, setLoading] = useState<boolean>(true)
   const [avatar, setAvatar] = useState<string | null>(null)
   const [username, setUsername] = useState<string | null>(null)
-  const [dob, setDob] = useState<string | null>(null)
+  const [website, setWebsite] = useState<string | null>(null)
 
   useEffect(() => {
     getProfile()
@@ -48,7 +42,7 @@ export default function Account({ session }: { session: AuthSession }) {
 
       let { error: updateError } = await supabase.from('profiles').upsert({
         id: user.id,
-        avatar_url: fileName,
+        avatar_url: filePath,
       })
 
       if (updateError) {
@@ -56,7 +50,7 @@ export default function Account({ session }: { session: AuthSession }) {
       }
 
       setAvatar(null)
-      setAvatar(fileName)
+      setAvatar(filePath)
     } catch (error) {
       alert(error.message)
     }
@@ -65,16 +59,17 @@ export default function Account({ session }: { session: AuthSession }) {
   function setProfile(profile: Profile) {
     setAvatar(profile.avatar_url)
     setUsername(profile.username)
-    setDob(profile.dob)
+    setWebsite(profile.website)
   }
 
   async function getProfile() {
     try {
+      setLoading(true)
       const user = supabase.auth.user()
 
       let { data, error } = await supabase
         .from('profiles')
-        .select(`username, dob, avatar_url`)
+        .select(`username, website, avatar_url`)
         .eq('id', user.id)
         .single()
 
@@ -85,17 +80,21 @@ export default function Account({ session }: { session: AuthSession }) {
       setProfile(data)
     } catch (error) {
       console.log('error', error.message)
+    } finally {
+      setLoading(false)
     }
   }
 
   async function updateProfile() {
     try {
+      setLoading(true)
       const user = supabase.auth.user()
 
       const updates = {
         id: user.id,
         username,
-        dob,
+        website,
+        updated_at: new Date(),
       }
 
       let { error } = await supabase.from('profiles').upsert(updates, {
@@ -107,6 +106,8 @@ export default function Account({ session }: { session: AuthSession }) {
       }
     } catch (error) {
       alert(error.message)
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -123,7 +124,7 @@ export default function Account({ session }: { session: AuthSession }) {
     >
       <div className={styles.card}>
         <div className={styles.avatarContainer}>
-          <Avatar avatar={avatar} />
+          <Avatar url={avatar} size={270} />
         </div>
         <UploadButton onUpload={uploadAvatar} />
       </div>
@@ -142,13 +143,18 @@ export default function Account({ session }: { session: AuthSession }) {
         />
       </div>
       <div>
-        <label htmlFor="dob">Date of birth</label>
-        <input id="dob" type="date" value={dob || ''} onChange={(e) => setDob(e.target.value)} />
+        <label htmlFor="website">Website</label>
+        <input
+          id="website"
+          type="website"
+          value={website || ''}
+          onChange={(e) => setWebsite(e.target.value)}
+        />
       </div>
 
       <div>
-        <button className="button block primary" onClick={() => updateProfile()}>
-          Update profile
+        <button className="button block primary" onClick={() => updateProfile()} disabled={loading}>
+          {loading ? 'Loading ...' : 'Update'}
         </button>
       </div>
 

@@ -1,36 +1,45 @@
-import { useState, useEffect, ChangeEvent } from 'react'
+import { useState, useEffect } from 'react'
 import { supabase } from '../lib/api'
 import Auth from '../components/Auth'
-import Account, { Profile } from '../components/Account'
+import Account from '../components/Account'
+import ProfileCard from '../components/ProfileCard'
 import styles from '../styles/Home.module.css'
-import { AuthSession } from '../../../dist/main'
+import { AuthSession, Subscription, SupabaseRealtimePayload } from '../../../dist/main'
+import { Profile } from '../lib/constants'
+
+var realtimeProfiles: Subscription | null
 
 export default function Home() {
   const [session, setSession] = useState<AuthSession | null>(null)
-  const [profiles, setProfiles] = useState<Profile[] | null>(null)
+  const [profiles, setProfiles] = useState<Profile[]>([])
 
   useEffect(() => {
     setSession(supabase.auth.session())
     getPublicProfiles()
 
-    // TODO: listen to changes in profile table
-    // const mySubscription = supabase
-    //   .from('profiles')
-    //   .on('*', (payload) => {
-    //     console.log('Change received!', payload)
-    //   })
-    //   .subscribe()
-
     supabase.auth.onAuthStateChange((_event: string, session: AuthSession | null) => {
       setSession(session)
     })
+
+    realtimeProfiles = supabase
+      .from('profiles')
+      .on('*', (payload: SupabaseRealtimePayload<Profile>) => {
+        setProfiles([payload.new, ...profiles?.filter((x) => x.id != payload.new.id)])
+      })
+      .subscribe()
+
+    return () => {
+      supabase.removeSubscription(realtimeProfiles)
+      realtimeProfiles = null
+    }
   }, [])
 
   async function getPublicProfiles() {
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('id, username, avatar_url, dob')
+        .select('id, username, avatar_url, website, updated_at')
+        .order('updated_at', { ascending: false })
       if (error) {
         throw error
       }
@@ -52,10 +61,7 @@ export default function Home() {
           </div>
           <div>
             {profiles?.map((profile) => (
-              <div key={profile.id}>
-                <p>{profile.id}</p>
-                <p>{profile.username}</p>
-              </div>
+              <ProfileCard profile={profile} key={profile.id} />
             ))}
           </div>
         </div>

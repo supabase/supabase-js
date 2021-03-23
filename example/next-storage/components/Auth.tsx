@@ -1,87 +1,53 @@
 import { useState } from 'react'
 import { supabase } from '../lib/api'
-import styles from '../styles/Auth.module.css'
+// import styles from '../styles/Auth.module.css'
 
 export default function Auth({}) {
+  const [loading, setLoading] = useState(false)
   const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
 
-  const handleLogin = async (type: 'LOGIN' | 'SIGNUP', email: string, password: string) => {
+  const handleLogin = async (email: string) => {
     try {
-      const { error, user } =
-        type === 'LOGIN'
-          ? await supabase.auth.signIn({ email, password })
-          : await supabase.auth.signUp({ email, password })
-      if ((!error && !user) || (user && !user.confirmed_at))
-        alert('Check your email for the login link!')
-      if (error) alert(error.message)
+      setLoading(true)
+      const { error, user } = await supabase.auth.signIn({ email })
+
+      if (error) {
+        throw error
+      }
+
+      console.log('user', user)
+      alert('Check your email for the login link!')
     } catch (error) {
       console.log('Error thrown:', error.message)
-      alert(error.error_description || error)
-    }
-  }
-
-  async function forgotPassword(e: React.MouseEvent<HTMLElement>) {
-    e.preventDefault()
-    var email = prompt('Please enter your email:')
-    if (email === null || email === '') {
-      window.alert('You must enter your email.')
-    } else {
-      let { error } = await supabase.auth.api.resetPasswordForEmail(email)
-      if (error) {
-        console.log('Error: ', error.message)
-      } else {
-        alert('Password recovery email has been sent.')
-      }
+      alert(error.error_description || error.message)
+    } finally {
+      setLoading(false)
     }
   }
 
   return (
-    <div className={styles.container}>
-      <div className={styles.containerInner}>
-        <div className={styles.inputContainer}>
-          <label>Email</label>
-          <input
-            type="email"
-            placeholder="Your email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-          />
-        </div>
-        <div className={styles.inputContainer}>
-          <label>Password</label>
-          <input
-            type="password"
-            placeholder="Your password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-          />
-        </div>
+    <div style={{ display: 'flex', gap: 20, flexDirection: 'column' }}>
+      <div>
+        <label>Email</label>
+        <input
+          type="email"
+          placeholder="Your email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+        />
+      </div>
 
-        <div className={styles.buttonContainer}>
-          <button
-            onClick={(e) => {
-              e.preventDefault()
-              handleLogin('SIGNUP', email, password)
-            }}
-            className={'button'}
-          >
-            Sign up
-          </button>
-          <button
-            onClick={(e) => {
-              e.preventDefault()
-              handleLogin('LOGIN', email, password)
-            }}
-            className={'button'}
-          >
-            {password.length ? 'Sign in' : 'Send magic link'}
-          </button>
-
-          <a onClick={forgotPassword} className={'button'}>
-            Forgot your password?
-          </a>
-        </div>
+      <div>
+        <button
+          onClick={(e) => {
+            e.preventDefault()
+            handleLogin(email)
+          }}
+          className={'button block'}
+          disabled={loading}
+        >
+          {loading ? 'Loading ..' : 'Send magic link'}
+        </button>
       </div>
     </div>
   )

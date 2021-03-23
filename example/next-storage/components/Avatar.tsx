@@ -1,22 +1,15 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/api'
-import { DEFAULT_AVATARS_BUCKET } from '../lib/constants'
-import styles from '../styles/Avatar.module.css'
 
-export type UploadButtonProps = {
-  avatar?: string | null
-}
-
-export default function Avatar(props: UploadButtonProps) {
+export default function Avatar({ url, size }: { url: string | null; size: number }) {
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
-  const { avatar } = props
 
   useEffect(() => {
-    if (avatar) {
-      console.log('avatar', avatar)
-      downloadImage(`${DEFAULT_AVATARS_BUCKET}/${avatar}`)
+    if (url) {
+      console.log('url', url)
+      downloadImage(url)
     }
-  }, [avatar])
+  }, [url])
 
   async function downloadImage(path: string) {
     try {
@@ -32,8 +25,8 @@ export default function Avatar(props: UploadButtonProps) {
   }
 
   return avatarUrl ? (
-    <img src={avatarUrl} className={styles.image} />
+    <img src={avatarUrl} className="avatar image" style={{ height: size, width: size }} />
   ) : (
-    <div className={styles.noImage} />
+    <div className="avatar no-image" style={{ height: size, width: size }} />
   )
 }
