@@ -3,7 +3,6 @@ import { supabase } from '../lib/api'
 import Auth from '../components/Auth'
 import Account from '../components/Account'
 import ProfileCard from '../components/ProfileCard'
-import styles from '../styles/Home.module.css'
 import { AuthSession, Subscription, SupabaseRealtimePayload } from '../../../dist/main'
 import { Profile } from '../lib/constants'
 
@@ -51,17 +50,27 @@ export default function Home() {
   }
 
   return (
-    <div className={styles.container}>
+    <div
+      style={{
+        minHeight: '100vh',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'center',
+        alignItems: 'center',
+      }}
+    >
       {!session ? (
         <Auth />
       ) : (
-        <div style={{ display: 'flex', gap: 20 }}>
-          <div>
+        <div style={{ display: 'flex', gap: 20, width: '50%' }}>
+          <div className="flex flex-1">
             <Account key={session.user.id} session={session} />
           </div>
-          <div>
+          <div className="flex flex-1">
             {profiles?.map((profile) => (
-              <ProfileCard profile={profile} key={profile.id} />
+              <div key={profile.id}>
+                <ProfileCard profile={profile} />
+              </div>
             ))}
           </div>
         </div>

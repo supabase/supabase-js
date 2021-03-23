@@ -47,6 +47,30 @@ input[disabled] {
   color: var(--custom-color-secondary);
 }
 
+/* Utils */
+
+.block {
+  display: block;
+  width: 100%;
+}
+.inline-block {
+  display: inline-block;
+  width: 100%;
+}
+
+.flex {
+  display: flex;
+}
+.flex.column {
+  flex: column;
+}
+.flex.row {
+  flex: row;
+}
+.flex.flex-1 {
+  flex: 1 1 0;
+}
+
 /* Button */
 
 button {
@@ -62,10 +86,6 @@ button {
   text-transform: uppercase;
 }
 
-button.block {
-  width: 100%;
-}
-
 button.primary {
   background-color: var(--custom-color-brand);
 }
@@ -73,6 +93,7 @@ button.primary {
 /* Widgets */
 
 .card {
+  width: 100%;
   border: var(--custom-border);
   border-radius: var(--custom-border-radius);
   padding: var(--custom-spacing);

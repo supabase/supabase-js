@@ -2,7 +2,6 @@ import { useState, useEffect, ChangeEvent } from 'react'
 import { supabase } from '../lib/api'
 import UploadButton from '../components/UploadButton'
 import Avatar from './Avatar'
-import styles from '../styles/Home.module.css'
 import { AuthSession } from '../../../dist/main'
 import { DEFAULT_AVATARS_BUCKET, Profile } from '../lib/constants'
 
@@ -122,8 +121,8 @@ export default function Account({ session }: { session: AuthSession }) {
         gap: 20,
       }}
     >
-      <div className={styles.card}>
-        <div className={styles.avatarContainer}>
+      <div className="card">
+        <div>
           <Avatar url={avatar} size={270} />
         </div>
         <UploadButton onUpload={uploadAvatar} />
