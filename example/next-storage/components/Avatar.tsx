@@ -5,10 +5,7 @@ export default function Avatar({ url, size }: { url: string | null; size: number
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
 
   useEffect(() => {
-    if (url) {
-      console.log('url', url)
-      downloadImage(url)
-    }
+    if (url) downloadImage(url)
   }, [url])
 
   async function downloadImage(path: string) {
@@ -20,7 +17,7 @@ export default function Avatar({ url, size }: { url: string | null; size: number
       const url = URL.createObjectURL(data)
       setAvatarUrl(url)
     } catch (error) {
-      console.log('error', error.message)
+      console.log('Error downloading image: ', error.message)
     }
   }
 
