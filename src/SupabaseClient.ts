@@ -2,6 +2,7 @@ import { DEFAULT_HEADERS } from './lib/constants'
 import { SupabaseClientOptions } from './lib/types'
 import { SupabaseAuthClient } from './lib/SupabaseAuthClient'
 import { SupabaseQueryBuilder } from './lib/SupabaseQueryBuilder'
+import { SupabaseStorageClient } from './lib/SupabaseStorageClient'
 import { PostgrestClient } from '@supabase/postgrest-js'
 import { RealtimeClient, RealtimeSubscription } from '@supabase/realtime-js'
 
@@ -24,10 +25,15 @@ export default class SupabaseClient {
    * Supabase Auth allows you to create and manage user sessions for access to data that is secured by access policies.
    */
   auth: SupabaseAuthClient
+  /**
+   * Supabase Storage allows you to manage user-generated content, such as photos or videos.
+   */
+  storage: SupabaseStorageClient
   protected schema: string
   protected restUrl: string
   protected realtimeUrl: string
   protected authUrl: string
+  protected storageUrl: string
   protected realtime: RealtimeClient
 
   /**
@@ -52,10 +58,12 @@ export default class SupabaseClient {
     this.restUrl = `${supabaseUrl}/rest/v1`
     this.realtimeUrl = `${supabaseUrl}/realtime/v1`.replace('http', 'ws')
     this.authUrl = `${supabaseUrl}/auth/v1`
+    this.storageUrl = `${supabaseUrl}/storage/v1`
     this.schema = settings.schema
 
     this.auth = this._initSupabaseAuthClient(settings)
     this.realtime = this._initRealtimeClient()
+    this.storage = this._initStorageClient()
 
     // In the future we might allow the user to pass in a logger to receive these events.
     // this.realtime.onOpen(() => console.log('OPEN'))
@@ -154,6 +162,10 @@ export default class SupabaseClient {
       headers: this._getAuthHeaders(),
       schema: this.schema,
     })
+  }
+
+  private _initStorageClient() {
+    return new SupabaseStorageClient(this.storageUrl, this._getAuthHeaders())
   }
 
   private _getAuthHeaders(): { [key: string]: string } {
