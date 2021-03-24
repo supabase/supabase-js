@@ -2,6 +2,10 @@
 
 - Create a file `.env.local`
 - Add a `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_KEY`
+- Visit the project Supabase dashboard, Storage section
+  - Create a bucket named `avatars`
+  - Create a policy to make objects readable by everyone
+  - Create a policy to make objects writable by everyone
 - Run `npm run dev`
 
 ## Database schema
