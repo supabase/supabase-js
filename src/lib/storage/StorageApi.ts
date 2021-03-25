@@ -23,7 +23,7 @@ export class StorageApi {
   /**
    * Retrieves the details of all Storage buckets within an existing product.
    */
-  async getAllBuckets(): Promise<{ data: Bucket[] | null; error: Error | null }> {
+  async listBuckets(): Promise<{ data: Bucket[] | null; error: Error | null }> {
     try {
       const data = await get(`${this.url}/bucket`, { headers: this.headers })
       return { data, error: null }
@@ -301,7 +301,7 @@ export class StorageApi {
    * @param path The folder path.
    * @param options Search options.
    */
-  async search(
+  async listFiles(
     bucketName: string,
     path?: string,
     options?: SearchOptions
