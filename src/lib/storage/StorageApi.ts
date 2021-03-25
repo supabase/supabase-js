@@ -299,7 +299,7 @@ export class StorageApi {
    * Lists all the files within a bucket.
    * @param bucketId The bucket which contains the files.
    * @param path The folder path.
-   * @param options Search options.
+   * @param options Search options, including `limit`, `offset`, and `sortBy`.
    */
   async listFiles(
     bucketId: string,

@@ -22,10 +22,14 @@ export interface SortBy {
   column?: string
   order?: string
 }
-
 export interface SearchOptions {
+  /** The number of files you want to be returned. */
   limit?: number
+
+  /** The starting position. */
   offset?: number
+
+  /** The column to sort by. Can be any column inside a FileObject. */
   sortBy?: SortBy
 }
 
