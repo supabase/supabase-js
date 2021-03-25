@@ -177,7 +177,7 @@ export class StorageApi {
   ): Promise<{ data: { message: string } | null; error: Error | null }> {
     try {
       const data = await post(
-        `${this.url}/object/rename`,
+        `${this.url}/object/move`,
         { bucketId, sourceKey: fromPath, destinationKey: toPath },
         { headers: this.headers }
       )
@@ -308,7 +308,7 @@ export class StorageApi {
   ): Promise<{ data: FileObject[] | null; error: Error | null }> {
     try {
       const body = { ...DEFAULT_SEARCH_OPTIONS, ...options, prefix: path || '' }
-      const data = await post(`${this.url}/search/${bucketId}`, body, { headers: this.headers })
+      const data = await post(`${this.url}/object/list/${bucketId}`, body, { headers: this.headers })
       return { data, error: null }
     } catch (error) {
       return { data: null, error }
