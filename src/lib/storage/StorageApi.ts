@@ -166,19 +166,19 @@ export class StorageApi {
   /**
    * Renames an existing file.
    *
-   * @param bucketName The bucket which contains the file.
+   * @param bucketId The bucket which contains the file.
    * @param fromPath The original file path, including the current file name. For example `folder/image.png`.
    * @param toPath The new file path, including the new file name. For example `folder/image-copy.png`.
    */
   async renameFile(
-    bucketName: string,
+    bucketId: string,
     fromPath: string,
     toPath: string
   ): Promise<{ data: { message: string } | null; error: Error | null }> {
     try {
       const data = await post(
         `${this.url}/object/rename`,
-        { bucketName, sourceKey: fromPath, destinationKey: toPath },
+        { bucketId, sourceKey: fromPath, destinationKey: toPath },
         { headers: this.headers }
       )
       return { data, error: null }
@@ -246,16 +246,16 @@ export class StorageApi {
   /**
    * Deletes multiple files within the same bucket
    *
-   * @param bucketName The bucket which contains the files.
+   * @param bucketId The bucket which contains the files.
    * @param paths An array of files to be deletes, including the path and file name. For example [`folder/image.png`].
    */
   async deleteFiles(
-    bucketName: string,
+    bucketId: string,
     paths: string[]
   ): Promise<{ data: FileObject[] | null; error: Error | null }> {
     try {
       const data = await remove(
-        `${this.url}/object/${bucketName}`,
+        `${this.url}/object/${bucketId}`,
         { prefixes: paths },
         { headers: this.headers }
       )
@@ -297,18 +297,18 @@ export class StorageApi {
 
   /**
    * Lists all the files within a bucket.
-   * @param bucketName The bucket which contains the files.
+   * @param bucketId The bucket which contains the files.
    * @param path The folder path.
    * @param options Search options.
    */
   async listFiles(
-    bucketName: string,
+    bucketId: string,
     path?: string,
     options?: SearchOptions
   ): Promise<{ data: FileObject[] | null; error: Error | null }> {
     try {
       const body = { ...DEFAULT_SEARCH_OPTIONS, ...options, prefix: path || '' }
-      const data = await post(`${this.url}/search/${bucketName}`, body, { headers: this.headers })
+      const data = await post(`${this.url}/search/${bucketId}`, body, { headers: this.headers })
       return { data, error: null }
     } catch (error) {
       return { data: null, error }
