@@ -164,13 +164,13 @@ export class StorageApi {
   }
 
   /**
-   * Renames an existing file.
+   * Moves an existing file, optionally renaming it at the same time.
    *
    * @param bucketId The bucket which contains the file.
    * @param fromPath The original file path, including the current file name. For example `folder/image.png`.
    * @param toPath The new file path, including the new file name. For example `folder/image-copy.png`.
    */
-  async renameFile(
+  async moveFile(
     bucketId: string,
     fromPath: string,
     toPath: string
