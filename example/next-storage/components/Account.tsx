@@ -5,7 +5,13 @@ import Avatar from './Avatar'
 import { AuthSession } from '../../../dist/main'
 import { DEFAULT_AVATARS_BUCKET, Profile } from '../lib/constants'
 
-export default function Account({ session }: { session: AuthSession }) {
+export default function Account({
+  session,
+  onSaveComplete,
+}: {
+  session: AuthSession
+  onSaveComplete: Function
+}) {
   const [loading, setLoading] = useState<boolean>(true)
   const [uploading, setUploading] = useState<boolean>(false)
   const [avatar, setAvatar] = useState<string | null>(null)
@@ -111,33 +117,18 @@ export default function Account({ session }: { session: AuthSession }) {
       alert(error.message)
     } finally {
       setLoading(false)
+      onSaveComplete()
     }
   }
 
   return (
-    <div
-      style={{
-        minWidth: 250,
-        maxWidth: 600,
-        margin: 'auto',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 20,
-      }}
-    >
-      <div className="card">
-        <div>
-          <Avatar url={avatar} size={270} />
-        </div>
-        <UploadButton onUpload={uploadAvatar} loading={uploading} />
-      </div>
-
+    <div className="account">
       <div>
         <label htmlFor="email">Email</label>
         <input id="email" type="text" value={session.user.email} disabled />
       </div>
       <div>
-        <label htmlFor="username">Username</label>
+        <label htmlFor="username">Name</label>
         <input
           id="username"
           type="text"
@@ -154,10 +145,23 @@ export default function Account({ session }: { session: AuthSession }) {
           onChange={(e) => setWebsite(e.target.value)}
         />
       </div>
+      <div>
+        <label htmlFor="avatar">Avatar image</label>
+        <div className="avatarField">
+          <div className="avatarContainer">
+            {avatar ? (
+              <Avatar url={avatar} size={40} />
+            ) : (
+              <div className="avatarPlaceholder">?</div>
+            )}
+          </div>
+          <UploadButton onUpload={uploadAvatar} loading={uploading} />
+        </div>
+      </div>
 
       <div>
         <button className="button block primary" onClick={() => updateProfile()} disabled={loading}>
-          {loading ? 'Loading ...' : 'Update'}
+          {loading ? 'Loading ...' : 'Save and preview'}
         </button>
       </div>
 

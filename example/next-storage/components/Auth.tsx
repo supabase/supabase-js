@@ -10,11 +10,7 @@ export default function Auth({}) {
     try {
       setLoading(true)
       const { error, user } = await supabase.auth.signIn({ email })
-
-      if (error) {
-        throw error
-      }
-
+      if (error) throw error
       console.log('user', user)
       alert('Check your email for the login link!')
     } catch (error) {
@@ -26,18 +22,23 @@ export default function Auth({}) {
   }
 
   return (
-    <div style={{ display: 'flex', gap: 20, flexDirection: 'column' }}>
-      <div>
-        <label>Email</label>
+    <div className="authContainer">
+      <div className="authTitle">
+        <h1 className="header">Experience our open-source storage system</h1>
+        <p className="description">
+          Through a simple profile management example. Create your user profile and upload an avatar
+          image - Fast, simple, secure.
+        </p>
+      </div>
+      <div className="authWidget" style={{ display: 'flex', gap: 20, flexDirection: 'column' }}>
+        <p className="description">Sign in via magic link with your email below</p>
         <input
+          className="inputField"
           type="email"
           placeholder="Your email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
         />
-      </div>
-
-      <div>
         <button
           onClick={(e) => {
             e.preventDefault()
@@ -46,8 +47,12 @@ export default function Auth({}) {
           className={'button block'}
           disabled={loading}
         >
-          {loading ? 'Loading ..' : 'Send magic link'}
+          {loading ? <img className="loader" src="loader.svg" /> : <span>Send magic link</span>}
         </button>
+      </div>
+      <div className="footer">
+        Powered by
+        <img src="logo.png" />
       </div>
     </div>
   )
