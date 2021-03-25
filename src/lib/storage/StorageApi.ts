@@ -21,7 +21,7 @@ export class StorageApi {
   }
 
   /**
-   * Gets all buckets details
+   * Retrieves the details of all Storage buckets within an existing product.
    */
   async getAllBuckets(): Promise<{ data: Bucket[] | null; error: Error | null }> {
     try {
@@ -33,8 +33,9 @@ export class StorageApi {
   }
 
   /**
-   * Get details of a bucket
-   * @param id the bucket id to retrieve
+   * Retrieves the details of an existing Storage bucket.
+   *
+   * @param id The unique identifier of the bucket you would like to retrieve.
    */
   async getBucket(id: string): Promise<{ data: Bucket | null; error: Error | null }> {
     try {
@@ -46,8 +47,9 @@ export class StorageApi {
   }
 
   /**
-   * Create a bucket
-   * @param name the new bucket name
+   * Retrieves the details of an existing Storage bucket.
+   *
+   * @param name A name of the bucket you are creating.
    */
   async createBucket(name: string): Promise<{ data: Bucket | null; error: Error | null }> {
     try {
@@ -59,8 +61,9 @@ export class StorageApi {
   }
 
   /**
-   * Empty a bucket
-   * @param id the bucket id to empty
+   * Removes all objects inside a single bucket.
+   *
+   * @param id The unique identifier of the bucket you would like to empty.
    */
   async emptyBucket(
     id: string
@@ -74,8 +77,10 @@ export class StorageApi {
   }
 
   /**
-   * Delete a bucket
-   * @param id the bucket id to be deleted
+   * Deletes an existing bucket. A bucket can't be deleted with existing objects inside it.
+   * You must first `empty()` the bucket.
+   *
+   * @param id The unique identifier of the bucket you would like to delete.
    */
   async deleteBucket(
     id: string
@@ -89,9 +94,10 @@ export class StorageApi {
   }
 
   /**
-   * Upload a file
-   * @param path the relative file path
-   * @param file the File content
+   * Uploads a file to an existing bucket.
+   *
+   * @param path The relative file path including the bucket ID. Should be of the format `bucket/folder/subfolder`. The bucket already exist before attempting to upload.
+   * @param file The File object to be stored in the bucket.
    */
   async uploadFile(
     path: string,
@@ -123,9 +129,10 @@ export class StorageApi {
   }
 
   /**
-   * Update a file
-   * @param path the relative file path
-   * @param file the File content
+   * Replaces an existing file at the specified path with a new one.
+   *
+   * @param path The relative file path including the bucket ID. Should be of the format `bucket/folder/subfolder`. The bucket already exist before attempting to upload.
+   * @param file The file object to be stored in the bucket.
    */
   async updateFile(
     path: string,
@@ -157,10 +164,11 @@ export class StorageApi {
   }
 
   /**
-   * Rename a file
-   * @param bucketName
-   * @param fromPath original relative file path
-   * @param toPath the new relative file path
+   * Renames an existing file.
+   *
+   * @param bucketName The bucket which contains the file.
+   * @param fromPath The original file path, including the current file name. For example `folder/image.png`.
+   * @param toPath The new file path, including the new file name. For example `folder/image-copy.png`.
    */
   async renameFile(
     bucketName: string,
@@ -180,9 +188,10 @@ export class StorageApi {
   }
 
   /**
-   * Create signed url to download file
-   * @param path the relative file path to be downloaded
-   * @param expiresIn seconds until the signed URL expires
+   * Create signed url to download file.
+   *
+   * @param path The file path to be downloaded, including the current file name. For example `folder/image.png`.
+   * @param expiresIn The number of seconds until the signed URL expires. For example, `60` for a URL which is valid for one minute.
    */
   async createSignedUrl(
     path: string,
@@ -201,8 +210,9 @@ export class StorageApi {
   }
 
   /**
-   * Download a file
-   * @param path the relative file path to be downloaded
+   * Downloads a file.
+   *
+   * @param path The file path to be downloaded, including the path and file name. For example `folder/image.png`.
    */
   async downloadFile(path: string): Promise<{ data: Blob | null; error: Error | null }> {
     try {
@@ -218,8 +228,9 @@ export class StorageApi {
   }
 
   /**
-   * Delete a file
-   * @param path the relative file path to be deleted
+   * Deletes a file.
+   *
+   * @param path The file path to be deleted, including the path and file name. For example `folder/image.png`.
    */
   async deleteFile(
     path: string
@@ -233,9 +244,10 @@ export class StorageApi {
   }
 
   /**
-   * Delete multiple files on the same bucket
-   * @param bucketName
-   * @param paths the relative file paths to be deleted excluded the bucket name
+   * Deletes multiple files within the same bucket
+   *
+   * @param bucketName The bucket which contains the files.
+   * @param paths An array of files to be deletes, including the path and file name. For example [`folder/image.png`].
    */
   async deleteFiles(
     bucketName: string,
@@ -284,10 +296,10 @@ export class StorageApi {
   // }
 
   /**
-   * Use to fetch folder contents
-   * @param bucketName
-   * @param path the relative folder path excluded the bucket name
-   * @param options
+   * Lists all the files within a bucket.
+   * @param bucketName The bucket which contains the files.
+   * @param path The folder path.
+   * @param options Search options.
    */
   async search(
     bucketName: string,
