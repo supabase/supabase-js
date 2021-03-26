@@ -10,7 +10,8 @@ export default function ProfileList() {
   const [profiles, setProfiles] = useState<Profile[]>([])
 
   useEffect(() => {
-    getPublicProfiles()
+    // getPublicProfiles()
+    getUserProfile()
 
     realtimeProfiles = supabase
       .from('profiles')
@@ -27,6 +28,23 @@ export default function ProfileList() {
     setProfiles([updated, ...otherProfiles])
   }
 
+  async function getUserProfile() {
+    const user = supabase.auth.user()
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, username, avatar_url, website, updated_at')
+        .eq('id', user.id)
+        .order('updated_at', { ascending: false })
+      if (error) {
+        throw error
+      }
+      setProfiles(data)
+    } catch (error) {
+      console.log('error', error.message)
+    }
+  }
+
   async function getPublicProfiles() {
     try {
       const { data, error } = await supabase
@@ -36,7 +54,6 @@ export default function ProfileList() {
       if (error) {
         throw error
       }
-      console.log('data', data)
       setProfiles(data)
     } catch (error) {
       console.log('error', error.message)

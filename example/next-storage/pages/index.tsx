@@ -16,6 +16,10 @@ export default function Home() {
     })
   }, [])
 
+  const onSaveComplete = () => {
+    console.log('complete')
+  }
+
   return (
     <div
       style={{
@@ -29,12 +33,20 @@ export default function Home() {
       {!session ? (
         <Auth />
       ) : (
-        <div className="flex w-half" style={{ gap: 10 }}>
-          <div className="flex column w-half">
-            <Account key={session.user.id} session={session} />
-          </div>
-          <div className="flex column w-half" style={{ gap: 20 }}>
-            <ProfileList />
+        <div style={{ width: '50%' }}>
+          <p className="mainHeader">
+            Let's set up a simple profile
+            <span style={{ display: 'block', opacity: '50%', marginTop: '5px' }}>
+              And watch it update on the right
+            </span>
+          </p>
+          <div className="flex" style={{ gap: 10, width: '100%', justifyContent: 'space-between' }}>
+            <div className="flex column" style={{ width: '45%' }}>
+              <Account key={session.user.id} session={session} onSaveComplete={onSaveComplete} />
+            </div>
+            <div className="flex column" style={{ gap: 20, width: '45%' }}>
+              <ProfileList />
+            </div>
           </div>
         </div>
       )}
