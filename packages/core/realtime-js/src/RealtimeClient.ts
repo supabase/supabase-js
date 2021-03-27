@@ -269,6 +269,8 @@ export default class RealtimeClient {
       let { topic, event, payload, ref } = msg
       if (ref && ref === this.pendingHeartbeatRef) {
         this.pendingHeartbeatRef = null
+      } else if (event === payload?.type) {
+        this._resetHeartbeat()
       }
 
       this.log(
@@ -315,12 +317,7 @@ export default class RealtimeClient {
     this.log('transport', `connected to ${this.endPointURL()}`)
     this._flushSendBuffer()
     this.reconnectTimer.reset()
-    // if (!this.conn?.skipHeartbeat) { // Skip heartbeat doesn't exist on w3Socket
-    clearInterval(this.heartbeatTimer)
-    this.heartbeatTimer = <any>(
-      setInterval(() => this._sendHeartbeat(), this.heartbeatIntervalMs)
-    )
-    // }
+    this._resetHeartbeat()
     this.stateChangeCallbacks.open.forEach((callback) => callback())!
   }
 
@@ -359,6 +356,14 @@ export default class RealtimeClient {
       this.sendBuffer.forEach((callback) => callback())
       this.sendBuffer = []
     }
+  }
+
+  private _resetHeartbeat() {
+    this.pendingHeartbeatRef = null
+    clearInterval(this.heartbeatTimer)
+    this.heartbeatTimer = <any>(
+      setInterval(() => this._sendHeartbeat(), this.heartbeatIntervalMs)
+    )
   }
 
   private _sendHeartbeat() {
