@@ -42,7 +42,7 @@ export default function Account({ session }: { session: AuthSession }) {
       }
 
       let { error: updateError } = await supabase.from('profiles').upsert({
-        id: user.id,
+        id: user!.id,
         avatar_url: filePath,
       })
 
@@ -73,7 +73,7 @@ export default function Account({ session }: { session: AuthSession }) {
       let { data, error } = await supabase
         .from('profiles')
         .select(`username, website, avatar_url`)
-        .eq('id', user.id)
+        .eq('id', user!.id)
         .single()
 
       if (error) {
@@ -94,7 +94,7 @@ export default function Account({ session }: { session: AuthSession }) {
       const user = supabase.auth.user()
 
       const updates = {
-        id: user.id,
+        id: user!.id,
         username,
         website,
         updated_at: new Date(),

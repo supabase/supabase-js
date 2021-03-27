@@ -31,4 +31,10 @@ begin;
 commit;
 
 alter publication supabase_realtime add table profiles;
+
+-- Set up Storage!
+insert into storage.buckets (id, name) values ('avatars', 'avatars');
+create policy "Avatar images are publicly accessible." on storage.objects for select using (true);
+create policy "Inserted avatar file name starts with the user's id." on storage.objects for insert with check (auth.uid()::text = substring(name, 1, 36));
+create policy "Updated avatar file name starts with the user's id." on storage.objects for update with check (auth.uid()::text = substring(name, 1, 36));
 ```
