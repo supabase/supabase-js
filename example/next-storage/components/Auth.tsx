@@ -24,10 +24,10 @@ export default function Auth({}) {
   return (
     <div className="authContainer">
       <div className="authTitle">
-        <h1 className="header">Experience our open-source storage system</h1>
+        <h1 className="header">Experience our open source storage system</h1>
         <p className="description">
-          Through a simple profile management example. Create your user profile and upload an avatar
-          image - Fast, simple, secure.
+          Through a simple profile management example. Create a user profile and upload an avatar
+          image. Fast, simple, secure.
         </p>
       </div>
       <div className="authWidget" style={{ display: 'flex', gap: 20, flexDirection: 'column' }}>

@@ -109,6 +109,7 @@ export class StorageApi {
       const formData = new FormData()
       formData.append('cacheControl', '3600')
       formData.append('', file, file.name)
+      formData.append('', file, file.name)
 
       const res = await fetch(`${this.url}/object/${path}`, {
         method: 'POST',
@@ -308,7 +309,9 @@ export class StorageApi {
   ): Promise<{ data: FileObject[] | null; error: Error | null }> {
     try {
       const body = { ...DEFAULT_SEARCH_OPTIONS, ...options, prefix: path || '' }
-      const data = await post(`${this.url}/object/list/${bucketId}`, body, { headers: this.headers })
+      const data = await post(`${this.url}/object/list/${bucketId}`, body, {
+        headers: this.headers,
+      })
       return { data, error: null }
     } catch (error) {
       return { data: null, error }
