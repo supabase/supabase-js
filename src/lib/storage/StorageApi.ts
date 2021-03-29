@@ -107,8 +107,6 @@ export class StorageApi {
       if (!isBrowser()) throw new Error('No browser detected.')
 
       const formData = new FormData()
-      formData.append('cacheControl', '3600')
-      formData.append('', file, file.name)
       formData.append('', file, file.name)
 
       const res = await fetch(`${this.url}/object/${path}`, {
@@ -143,7 +141,6 @@ export class StorageApi {
       if (!isBrowser()) throw new Error('No browser detected.')
 
       const formData = new FormData()
-      formData.append('cacheControl', '3600')
       formData.append('', file, file.name)
 
       const res = await fetch(`${this.url}/object/${path}`, {
