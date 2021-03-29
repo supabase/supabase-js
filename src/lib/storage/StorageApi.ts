@@ -199,11 +199,13 @@ export class StorageApi {
     expiresIn: number
   ): Promise<{ data: { signedURL: string } | null; error: Error | null }> {
     try {
-      const data = await post(
+      let data = await post(
         `${this.url}/object/sign/${path}`,
         { expiresIn },
         { headers: this.headers }
       )
+      const signedURL = `${this.url}${data.signedURL}`
+      data = { ...data, signedURL }
       return { data, error: null }
     } catch (error) {
       return { data: null, error }
