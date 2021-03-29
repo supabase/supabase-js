@@ -53,11 +53,11 @@ export class StorageApi {
   /**
    * Retrieves the details of an existing Storage bucket.
    *
-   * @param name A name of the bucket you are creating.
+   * @param id A unique identifier for the bucket you are creating.
    */
-  async createBucket(name: string): Promise<{ data: Bucket | null; error: Error | null }> {
+  async createBucket(id: string): Promise<{ data: Bucket | null; error: Error | null }> {
     try {
-      const data = await post(`${this.url}/bucket`, { name }, { headers: this.headers })
+      const data = await post(`${this.url}/bucket`, { id, name: id }, { headers: this.headers })
       return { data, error: null }
     } catch (error) {
       return { data: null, error }
