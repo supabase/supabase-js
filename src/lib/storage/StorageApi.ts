@@ -200,7 +200,7 @@ export class StorageApi {
   }
 
   /**
-   * Create signed url to download file.
+   * Create signed url to download file without requiring permissions. This URL can be valid for a set number of seconds.
    *
    * @param path The file path to be downloaded, including the current file name. For example `folder/image.png`.
    * @param expiresIn The number of seconds until the signed URL expires. For example, `60` for a URL which is valid for one minute.
