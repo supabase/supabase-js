@@ -25,10 +25,7 @@ export default class SupabaseClient {
    * Supabase Auth allows you to create and manage user sessions for access to data that is secured by access policies.
    */
   auth: SupabaseAuthClient
-  /**
-   * Supabase Storage allows you to manage user-generated content, such as photos or videos.
-   */
-  storage: SupabaseStorageClient
+
   protected schema: string
   protected restUrl: string
   protected realtimeUrl: string
@@ -63,12 +60,18 @@ export default class SupabaseClient {
 
     this.auth = this._initSupabaseAuthClient(settings)
     this.realtime = this._initRealtimeClient()
-    this.storage = this._initStorageClient()
 
     // In the future we might allow the user to pass in a logger to receive these events.
     // this.realtime.onOpen(() => console.log('OPEN'))
     // this.realtime.onClose(() => console.log('CLOSED'))
     // this.realtime.onError((e: Error) => console.log('Socket error', e))
+  }
+
+  /**
+   * Supabase Storage allows you to manage user-generated content, such as photos or videos.
+   */
+  get storage() {
+    return this._initStorageClient()
   }
 
   /**
