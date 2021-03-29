@@ -1,6 +1,6 @@
 import { get, post, put, remove } from './fetch'
 import { isBrowser } from './helpers'
-import { Bucket, FileObject, Metadata, SearchOptions } from './types'
+import { Bucket, FileObject, FileOptions, Metadata, SearchOptions } from './types'
 
 const DEFAULT_SEARCH_OPTIONS = {
   limit: 0,
@@ -9,6 +9,10 @@ const DEFAULT_SEARCH_OPTIONS = {
     column: 'name',
     order: 'asc',
   },
+}
+
+const DEFAULT_FILE_OPTIONS: FileOptions = {
+  cacheControl: '3600',
 }
 
 export class StorageApi {
@@ -98,16 +102,21 @@ export class StorageApi {
    *
    * @param path The relative file path including the bucket ID. Should be of the format `bucket/folder/subfolder`. The bucket already exist before attempting to upload.
    * @param file The File object to be stored in the bucket.
+   * @param fileOptions HTTP headers. For example `cacheControl`
    */
   async uploadFile(
     path: string,
-    file: File
+    file: File,
+    fileOptions?: FileOptions
   ): Promise<{ data: { message: string } | null; error: Error | null }> {
     try {
       if (!isBrowser()) throw new Error('No browser detected.')
 
       const formData = new FormData()
       formData.append('', file, file.name)
+
+      const options = { ...DEFAULT_FILE_OPTIONS, ...fileOptions }
+      formData.append('cacheControl', options.cacheControl)
 
       const res = await fetch(`${this.url}/object/${path}`, {
         method: 'POST',
@@ -132,16 +141,21 @@ export class StorageApi {
    *
    * @param path The relative file path including the bucket ID. Should be of the format `bucket/folder/subfolder`. The bucket already exist before attempting to upload.
    * @param file The file object to be stored in the bucket.
+   * @param fileOptions HTTP headers. For example `cacheControl`
    */
   async updateFile(
     path: string,
-    file: File
+    file: File,
+    fileOptions?: FileOptions
   ): Promise<{ data: { Key: string } | null; error: Error | null }> {
     try {
       if (!isBrowser()) throw new Error('No browser detected.')
 
       const formData = new FormData()
       formData.append('', file, file.name)
+
+      const options = { ...DEFAULT_FILE_OPTIONS, ...fileOptions }
+      formData.append('cacheControl', options.cacheControl)
 
       const res = await fetch(`${this.url}/object/${path}`, {
         method: 'PUT',

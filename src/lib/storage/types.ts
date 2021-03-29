@@ -22,6 +22,11 @@ export interface SortBy {
   column?: string
   order?: string
 }
+
+export interface FileOptions {
+  cacheControl: string
+}
+
 export interface SearchOptions {
   /** The number of files you want to be returned. */
   limit?: number
