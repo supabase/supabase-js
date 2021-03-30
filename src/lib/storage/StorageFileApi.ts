@@ -1,6 +1,6 @@
-import { get, post, put, remove } from './fetch'
+import { get, post, remove } from './fetch'
 import { isBrowser } from './helpers'
-import { Bucket, FileObject, FileOptions, Metadata, SearchOptions } from './types'
+import { FileObject, FileOptions, Metadata, SearchOptions } from './types'
 
 const DEFAULT_SEARCH_OPTIONS = {
   limit: 0,
@@ -15,7 +15,7 @@ const DEFAULT_FILE_OPTIONS: FileOptions = {
   cacheControl: '3600',
 }
 
-export class StorageApi {
+export class StorageFileApi {
   protected url: string
   protected headers: { [key: string]: string }
   protected bucketId?: string
@@ -24,79 +24,6 @@ export class StorageApi {
     this.url = url
     this.headers = headers
     this.bucketId = bucketId
-  }
-
-  /**
-   * Retrieves the details of all Storage buckets within an existing product.
-   */
-  async listBuckets(): Promise<{ data: Bucket[] | null; error: Error | null }> {
-    try {
-      const data = await get(`${this.url}/bucket`, { headers: this.headers })
-      return { data, error: null }
-    } catch (error) {
-      return { data: null, error }
-    }
-  }
-
-  /**
-   * Retrieves the details of an existing Storage bucket.
-   *
-   * @param id The unique identifier of the bucket you would like to retrieve.
-   */
-  async getBucket(id: string): Promise<{ data: Bucket | null; error: Error | null }> {
-    try {
-      const data = await get(`${this.url}/bucket/${id}`, { headers: this.headers })
-      return { data, error: null }
-    } catch (error) {
-      return { data: null, error }
-    }
-  }
-
-  /**
-   * Retrieves the details of an existing Storage bucket.
-   *
-   * @param id A unique identifier for the bucket you are creating.
-   */
-  async createBucket(id: string): Promise<{ data: Bucket | null; error: Error | null }> {
-    try {
-      const data = await post(`${this.url}/bucket`, { id, name: id }, { headers: this.headers })
-      return { data, error: null }
-    } catch (error) {
-      return { data: null, error }
-    }
-  }
-
-  /**
-   * Removes all objects inside a single bucket.
-   *
-   * @param id The unique identifier of the bucket you would like to empty.
-   */
-  async emptyBucket(
-    id: string
-  ): Promise<{ data: { message: string } | null; error: Error | null }> {
-    try {
-      const data = await post(`${this.url}/bucket/${id}/empty`, {}, { headers: this.headers })
-      return { data, error: null }
-    } catch (error) {
-      return { data: null, error }
-    }
-  }
-
-  /**
-   * Deletes an existing bucket. A bucket can't be deleted with existing objects inside it.
-   * You must first `empty()` the bucket.
-   *
-   * @param id The unique identifier of the bucket you would like to delete.
-   */
-  async deleteBucket(
-    id: string
-  ): Promise<{ data: { message: string } | null; error: Error | null }> {
-    try {
-      const data = await remove(`${this.url}/bucket/${id}`, {}, { headers: this.headers })
-      return { data, error: null }
-    } catch (error) {
-      return { data: null, error }
-    }
   }
 
   /**
