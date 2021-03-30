@@ -1,6 +1,6 @@
-import { get, post, put, remove } from './fetch'
+import { get, post, remove } from './fetch'
 import { isBrowser } from './helpers'
-import { Bucket, FileObject, FileOptions, Metadata, SearchOptions } from './types'
+import { FileObject, FileOptions, Metadata, SearchOptions } from './types'
 
 const DEFAULT_SEARCH_OPTIONS = {
   limit: 0,
@@ -15,86 +15,15 @@ const DEFAULT_FILE_OPTIONS: FileOptions = {
   cacheControl: '3600',
 }
 
-export class StorageApi {
-  url: string
-  headers: { [key: string]: string }
+export class StorageFileApi {
+  protected url: string
+  protected headers: { [key: string]: string }
+  protected bucketId?: string
 
-  constructor(url: string, headers: { [key: string]: string } = {}) {
+  constructor(url: string, headers: { [key: string]: string } = {}, bucketId?: string) {
     this.url = url
     this.headers = headers
-  }
-
-  /**
-   * Retrieves the details of all Storage buckets within an existing product.
-   */
-  async listBuckets(): Promise<{ data: Bucket[] | null; error: Error | null }> {
-    try {
-      const data = await get(`${this.url}/bucket`, { headers: this.headers })
-      return { data, error: null }
-    } catch (error) {
-      return { data: null, error }
-    }
-  }
-
-  /**
-   * Retrieves the details of an existing Storage bucket.
-   *
-   * @param id The unique identifier of the bucket you would like to retrieve.
-   */
-  async getBucket(id: string): Promise<{ data: Bucket | null; error: Error | null }> {
-    try {
-      const data = await get(`${this.url}/bucket/${id}`, { headers: this.headers })
-      return { data, error: null }
-    } catch (error) {
-      return { data: null, error }
-    }
-  }
-
-  /**
-   * Retrieves the details of an existing Storage bucket.
-   *
-   * @param id A unique identifier for the bucket you are creating.
-   */
-  async createBucket(id: string): Promise<{ data: Bucket | null; error: Error | null }> {
-    try {
-      const data = await post(`${this.url}/bucket`, { id, name: id }, { headers: this.headers })
-      return { data, error: null }
-    } catch (error) {
-      return { data: null, error }
-    }
-  }
-
-  /**
-   * Removes all objects inside a single bucket.
-   *
-   * @param id The unique identifier of the bucket you would like to empty.
-   */
-  async emptyBucket(
-    id: string
-  ): Promise<{ data: { message: string } | null; error: Error | null }> {
-    try {
-      const data = await post(`${this.url}/bucket/${id}/empty`, {}, { headers: this.headers })
-      return { data, error: null }
-    } catch (error) {
-      return { data: null, error }
-    }
-  }
-
-  /**
-   * Deletes an existing bucket. A bucket can't be deleted with existing objects inside it.
-   * You must first `empty()` the bucket.
-   *
-   * @param id The unique identifier of the bucket you would like to delete.
-   */
-  async deleteBucket(
-    id: string
-  ): Promise<{ data: { message: string } | null; error: Error | null }> {
-    try {
-      const data = await remove(`${this.url}/bucket/${id}`, {}, { headers: this.headers })
-      return { data, error: null }
-    } catch (error) {
-      return { data: null, error }
-    }
+    this.bucketId = bucketId
   }
 
   /**
@@ -104,7 +33,7 @@ export class StorageApi {
    * @param file The File object to be stored in the bucket.
    * @param fileOptions HTTP headers. For example `cacheControl`
    */
-  async uploadFile(
+  async upload(
     path: string,
     file: File,
     fileOptions?: FileOptions
@@ -118,7 +47,8 @@ export class StorageApi {
       const options = { ...DEFAULT_FILE_OPTIONS, ...fileOptions }
       formData.append('cacheControl', options.cacheControl)
 
-      const res = await fetch(`${this.url}/object/${path}`, {
+      const _path = this._getFinalPath(path)
+      const res = await fetch(`${this.url}/object/${_path}`, {
         method: 'POST',
         body: formData,
         headers: { ...this.headers },
@@ -143,7 +73,7 @@ export class StorageApi {
    * @param file The file object to be stored in the bucket.
    * @param fileOptions HTTP headers. For example `cacheControl`
    */
-  async updateFile(
+  async update(
     path: string,
     file: File,
     fileOptions?: FileOptions
@@ -157,7 +87,8 @@ export class StorageApi {
       const options = { ...DEFAULT_FILE_OPTIONS, ...fileOptions }
       formData.append('cacheControl', options.cacheControl)
 
-      const res = await fetch(`${this.url}/object/${path}`, {
+      const _path = this._getFinalPath(path)
+      const res = await fetch(`${this.url}/object/${_path}`, {
         method: 'PUT',
         body: formData,
         headers: { ...this.headers },
@@ -178,19 +109,17 @@ export class StorageApi {
   /**
    * Moves an existing file, optionally renaming it at the same time.
    *
-   * @param bucketId The bucket which contains the file.
    * @param fromPath The original file path, including the current file name. For example `folder/image.png`.
    * @param toPath The new file path, including the new file name. For example `folder/image-copy.png`.
    */
-  async moveFile(
-    bucketId: string,
+  async move(
     fromPath: string,
     toPath: string
   ): Promise<{ data: { message: string } | null; error: Error | null }> {
     try {
       const data = await post(
         `${this.url}/object/move`,
-        { bucketId, sourceKey: fromPath, destinationKey: toPath },
+        { bucketId: this.bucketId, sourceKey: fromPath, destinationKey: toPath },
         { headers: this.headers }
       )
       return { data, error: null }
@@ -210,8 +139,9 @@ export class StorageApi {
     expiresIn: number
   ): Promise<{ data: { signedUrl: string } | null; error: Error | null }> {
     try {
+      const _path = this._getFinalPath(path)
       let data = await post(
-        `${this.url}/object/sign/${path}`,
+        `${this.url}/object/sign/${_path}`,
         { expiresIn },
         { headers: this.headers }
       )
@@ -228,9 +158,10 @@ export class StorageApi {
    *
    * @param path The file path to be downloaded, including the path and file name. For example `folder/image.png`.
    */
-  async downloadFile(path: string): Promise<{ data: Blob | null; error: Error | null }> {
+  async download(path: string): Promise<{ data: Blob | null; error: Error | null }> {
     try {
-      const res = await get(`${this.url}/object/${path}`, {
+      const _path = this._getFinalPath(path)
+      const res = await get(`${this.url}/object/${_path}`, {
         headers: this.headers,
         noResolveJson: true,
       })
@@ -242,34 +173,14 @@ export class StorageApi {
   }
 
   /**
-   * Deletes a file.
+   * Deletes files within the same bucket
    *
-   * @param path The file path to be deleted, including the path and file name. For example `folder/image.png`.
-   */
-  async deleteFile(
-    path: string
-  ): Promise<{ data: { message: string } | null; error: Error | null }> {
-    try {
-      const data = await remove(`${this.url}/object/${path}`, {}, { headers: this.headers })
-      return { data, error: null }
-    } catch (error) {
-      return { data: null, error }
-    }
-  }
-
-  /**
-   * Deletes multiple files within the same bucket
-   *
-   * @param bucketId The bucket which contains the files.
    * @param paths An array of files to be deletes, including the path and file name. For example [`folder/image.png`].
    */
-  async deleteFiles(
-    bucketId: string,
-    paths: string[]
-  ): Promise<{ data: FileObject[] | null; error: Error | null }> {
+  async remove(paths: string[]): Promise<{ data: FileObject[] | null; error: Error | null }> {
     try {
       const data = await remove(
-        `${this.url}/object/${bucketId}`,
+        `${this.url}/object/${this.bucketId}`,
         { prefixes: paths },
         { headers: this.headers }
       )
@@ -311,23 +222,25 @@ export class StorageApi {
 
   /**
    * Lists all the files within a bucket.
-   * @param bucketId The bucket which contains the files.
    * @param path The folder path.
    * @param options Search options, including `limit`, `offset`, and `sortBy`.
    */
-  async listFiles(
-    bucketId: string,
+  async list(
     path?: string,
     options?: SearchOptions
   ): Promise<{ data: FileObject[] | null; error: Error | null }> {
     try {
       const body = { ...DEFAULT_SEARCH_OPTIONS, ...options, prefix: path || '' }
-      const data = await post(`${this.url}/object/list/${bucketId}`, body, {
+      const data = await post(`${this.url}/object/list/${this.bucketId}`, body, {
         headers: this.headers,
       })
       return { data, error: null }
     } catch (error) {
       return { data: null, error }
     }
+  }
+
+  _getFinalPath(path: string) {
+    return `${this.bucketId}/${path}`
   }
 }
