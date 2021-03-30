@@ -39,9 +39,11 @@ export default function Account({
       const file = event.target.files[0]
       const fileExt = file.name.split('.').pop()
       const fileName = `${session?.user.id}${Math.random()}.${fileExt}`
-      const filePath = `${DEFAULT_AVATARS_BUCKET}/${fileName}`
+      const filePath = `${fileName}`
 
-      let { error: uploadError } = await supabase.storage.uploadFile(filePath, file)
+      let { error: uploadError } = await supabase.storage
+        .from(DEFAULT_AVATARS_BUCKET)
+        .uploadFile(filePath, file)
 
       if (uploadError) {
         throw uploadError
