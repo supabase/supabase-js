@@ -1,10 +1,10 @@
-import { StorageApi } from '../src/lib/storage'
+import { StorageBucketApi } from '../src/lib/storage'
 
 // TODO: need to setup storage-api server for this test
 const URL = 'http://0.0.0.0:5000'
 const KEY = 'some.fake.key'
 
-const storage = new StorageApi(URL, { Authorization: `Bearer ${KEY}` })
+const storage = new StorageBucketApi(URL, { Authorization: `Bearer ${KEY}` })
 const newBucketName = `my-new-bucket-${Date.now()}`
 let createdBucketId = ''
 
