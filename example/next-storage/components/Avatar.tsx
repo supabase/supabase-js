@@ -11,7 +11,7 @@ export default function Avatar({ url, size }: { url: string | null; size: number
 
   async function downloadImage(path: string) {
     try {
-      const { data, error } = await supabase.storage.from(DEFAULT_AVATARS_BUCKET).downloadFile(path)
+      const { data, error } = await supabase.storage.from(DEFAULT_AVATARS_BUCKET).download(path)
       if (error) {
         throw error
       }

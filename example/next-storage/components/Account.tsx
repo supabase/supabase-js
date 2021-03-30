@@ -43,7 +43,7 @@ export default function Account({
 
       let { error: uploadError } = await supabase.storage
         .from(DEFAULT_AVATARS_BUCKET)
-        .uploadFile(filePath, file)
+        .upload(filePath, file)
 
       if (uploadError) {
         throw uploadError

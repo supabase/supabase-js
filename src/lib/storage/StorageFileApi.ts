@@ -33,7 +33,7 @@ export class StorageFileApi {
    * @param file The File object to be stored in the bucket.
    * @param fileOptions HTTP headers. For example `cacheControl`
    */
-  async uploadFile(
+  async upload(
     path: string,
     file: File,
     fileOptions?: FileOptions
@@ -73,7 +73,7 @@ export class StorageFileApi {
    * @param file The file object to be stored in the bucket.
    * @param fileOptions HTTP headers. For example `cacheControl`
    */
-  async updateFile(
+  async update(
     path: string,
     file: File,
     fileOptions?: FileOptions
@@ -112,7 +112,7 @@ export class StorageFileApi {
    * @param fromPath The original file path, including the current file name. For example `folder/image.png`.
    * @param toPath The new file path, including the new file name. For example `folder/image-copy.png`.
    */
-  async moveFile(
+  async move(
     fromPath: string,
     toPath: string
   ): Promise<{ data: { message: string } | null; error: Error | null }> {
@@ -158,7 +158,7 @@ export class StorageFileApi {
    *
    * @param path The file path to be downloaded, including the path and file name. For example `folder/image.png`.
    */
-  async downloadFile(path: string): Promise<{ data: Blob | null; error: Error | null }> {
+  async download(path: string): Promise<{ data: Blob | null; error: Error | null }> {
     try {
       const _path = this._getFinalPath(path)
       const res = await get(`${this.url}/object/${_path}`, {
@@ -173,28 +173,11 @@ export class StorageFileApi {
   }
 
   /**
-   * Deletes a file.
-   *
-   * @param path The file path to be deleted, including the path and file name. For example `folder/image.png`.
-   */
-  async deleteFile(
-    path: string
-  ): Promise<{ data: { message: string } | null; error: Error | null }> {
-    try {
-      const _path = this._getFinalPath(path)
-      const data = await remove(`${this.url}/object/${_path}`, {}, { headers: this.headers })
-      return { data, error: null }
-    } catch (error) {
-      return { data: null, error }
-    }
-  }
-
-  /**
-   * Deletes multiple files within the same bucket
+   * Deletes files within the same bucket
    *
    * @param paths An array of files to be deletes, including the path and file name. For example [`folder/image.png`].
    */
-  async deleteFiles(paths: string[]): Promise<{ data: FileObject[] | null; error: Error | null }> {
+  async remove(paths: string[]): Promise<{ data: FileObject[] | null; error: Error | null }> {
     try {
       const data = await remove(
         `${this.url}/object/${this.bucketId}`,
@@ -242,7 +225,7 @@ export class StorageFileApi {
    * @param path The folder path.
    * @param options Search options, including `limit`, `offset`, and `sortBy`.
    */
-  async listFiles(
+  async list(
     path?: string,
     options?: SearchOptions
   ): Promise<{ data: FileObject[] | null; error: Error | null }> {
