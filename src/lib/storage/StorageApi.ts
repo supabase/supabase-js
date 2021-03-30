@@ -16,12 +16,14 @@ const DEFAULT_FILE_OPTIONS: FileOptions = {
 }
 
 export class StorageApi {
-  url: string
-  headers: { [key: string]: string }
+  protected url: string
+  protected headers: { [key: string]: string }
+  protected bucketId?: string
 
-  constructor(url: string, headers: { [key: string]: string } = {}) {
+  constructor(url: string, headers: { [key: string]: string } = {}, bucketId?: string) {
     this.url = url
     this.headers = headers
+    this.bucketId = bucketId
   }
 
   /**
@@ -118,7 +120,8 @@ export class StorageApi {
       const options = { ...DEFAULT_FILE_OPTIONS, ...fileOptions }
       formData.append('cacheControl', options.cacheControl)
 
-      const res = await fetch(`${this.url}/object/${path}`, {
+      const _path = this._getFinalPath(path)
+      const res = await fetch(`${this.url}/object/${_path}`, {
         method: 'POST',
         body: formData,
         headers: { ...this.headers },
@@ -157,7 +160,8 @@ export class StorageApi {
       const options = { ...DEFAULT_FILE_OPTIONS, ...fileOptions }
       formData.append('cacheControl', options.cacheControl)
 
-      const res = await fetch(`${this.url}/object/${path}`, {
+      const _path = this._getFinalPath(path)
+      const res = await fetch(`${this.url}/object/${_path}`, {
         method: 'PUT',
         body: formData,
         headers: { ...this.headers },
@@ -178,19 +182,17 @@ export class StorageApi {
   /**
    * Moves an existing file, optionally renaming it at the same time.
    *
-   * @param bucketId The bucket which contains the file.
    * @param fromPath The original file path, including the current file name. For example `folder/image.png`.
    * @param toPath The new file path, including the new file name. For example `folder/image-copy.png`.
    */
   async moveFile(
-    bucketId: string,
     fromPath: string,
     toPath: string
   ): Promise<{ data: { message: string } | null; error: Error | null }> {
     try {
       const data = await post(
         `${this.url}/object/move`,
-        { bucketId, sourceKey: fromPath, destinationKey: toPath },
+        { bucketId: this.bucketId, sourceKey: fromPath, destinationKey: toPath },
         { headers: this.headers }
       )
       return { data, error: null }
@@ -210,8 +212,9 @@ export class StorageApi {
     expiresIn: number
   ): Promise<{ data: { signedUrl: string } | null; error: Error | null }> {
     try {
+      const _path = this._getFinalPath(path)
       let data = await post(
-        `${this.url}/object/sign/${path}`,
+        `${this.url}/object/sign/${_path}`,
         { expiresIn },
         { headers: this.headers }
       )
@@ -230,7 +233,8 @@ export class StorageApi {
    */
   async downloadFile(path: string): Promise<{ data: Blob | null; error: Error | null }> {
     try {
-      const res = await get(`${this.url}/object/${path}`, {
+      const _path = this._getFinalPath(path)
+      const res = await get(`${this.url}/object/${_path}`, {
         headers: this.headers,
         noResolveJson: true,
       })
@@ -329,5 +333,9 @@ export class StorageApi {
     } catch (error) {
       return { data: null, error }
     }
+  }
+
+  _getFinalPath(path: string) {
+    return `${this.bucketId}\\${path}`
   }
 }
