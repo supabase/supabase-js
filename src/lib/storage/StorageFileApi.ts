@@ -241,6 +241,6 @@ export class StorageFileApi {
   }
 
   _getFinalPath(path: string) {
-    return `${this.bucketId}\\${path}`
+    return `${this.bucketId}/${path}`
   }
 }
