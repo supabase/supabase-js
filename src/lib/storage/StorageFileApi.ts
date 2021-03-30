@@ -181,7 +181,8 @@ export class StorageFileApi {
     path: string
   ): Promise<{ data: { message: string } | null; error: Error | null }> {
     try {
-      const data = await remove(`${this.url}/object/${path}`, {}, { headers: this.headers })
+      const _path = this._getFinalPath(path)
+      const data = await remove(`${this.url}/object/${_path}`, {}, { headers: this.headers })
       return { data, error: null }
     } catch (error) {
       return { data: null, error }
@@ -191,16 +192,12 @@ export class StorageFileApi {
   /**
    * Deletes multiple files within the same bucket
    *
-   * @param bucketId The bucket which contains the files.
    * @param paths An array of files to be deletes, including the path and file name. For example [`folder/image.png`].
    */
-  async deleteFiles(
-    bucketId: string,
-    paths: string[]
-  ): Promise<{ data: FileObject[] | null; error: Error | null }> {
+  async deleteFiles(paths: string[]): Promise<{ data: FileObject[] | null; error: Error | null }> {
     try {
       const data = await remove(
-        `${this.url}/object/${bucketId}`,
+        `${this.url}/object/${this.bucketId}`,
         { prefixes: paths },
         { headers: this.headers }
       )
@@ -242,18 +239,16 @@ export class StorageFileApi {
 
   /**
    * Lists all the files within a bucket.
-   * @param bucketId The bucket which contains the files.
    * @param path The folder path.
    * @param options Search options, including `limit`, `offset`, and `sortBy`.
    */
   async listFiles(
-    bucketId: string,
     path?: string,
     options?: SearchOptions
   ): Promise<{ data: FileObject[] | null; error: Error | null }> {
     try {
       const body = { ...DEFAULT_SEARCH_OPTIONS, ...options, prefix: path || '' }
-      const data = await post(`${this.url}/object/list/${bucketId}`, body, {
+      const data = await post(`${this.url}/object/list/${this.bucketId}`, body, {
         headers: this.headers,
       })
       return { data, error: null }
