@@ -37,7 +37,7 @@ export class StorageBucketApi {
   }
 
   /**
-   * Retrieves the details of an existing Storage bucket.
+   * Creates a new Storage bucket
    *
    * @param id A unique identifier for the bucket you are creating.
    */
