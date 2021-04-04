@@ -471,7 +471,7 @@ export default class GoTrueClient {
         this.currentUser = currentSession.user
         this._notifyAllSubscribers('SIGNED_IN')
         // schedule a refresh 60 seconds before token due to expire
-        setTimeout(this._callRefreshToken, (expiresAt - timeNow - 60) * 1000)
+        setTimeout(() => this._callRefreshToken(), (expiresAt - timeNow - 60) * 1000)
       }
     } catch (err) {
       console.error(err)
@@ -493,7 +493,7 @@ export default class GoTrueClient {
         const tokenExpirySeconds = data.expires_in
 
         if (this.autoRefreshToken && tokenExpirySeconds) {
-          setTimeout(this._callRefreshToken, (tokenExpirySeconds - 60) * 1000)
+          setTimeout(() => this._callRefreshToken(), (tokenExpirySeconds - 60) * 1000)
         }
 
         if (this.persistSession && this.currentUser) {
