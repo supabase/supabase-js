@@ -41,7 +41,7 @@ export default class RealtimeClient {
   transport: any = WebSocket
   heartbeatIntervalMs: number = 30000
   longpollerTimeout: number = 20000
-  heartbeatTimer: number | undefined = undefined
+  heartbeatTimer: ReturnType<typeof setInterval> | undefined = undefined
   pendingHeartbeatRef: string | null = null
   ref: number = 0
   reconnectTimer: Timer
@@ -324,7 +324,7 @@ export default class RealtimeClient {
   private _onConnClose(event: any) {
     this.log('transport', 'close', event)
     this._triggerChanError()
-    clearInterval(this.heartbeatTimer)
+    this.heartbeatTimer && clearInterval(this.heartbeatTimer)
     this.reconnectTimer.scheduleTimeout()
     this.stateChangeCallbacks.close.forEach((callback) => callback(event))
   }
@@ -360,9 +360,10 @@ export default class RealtimeClient {
 
   private _resetHeartbeat() {
     this.pendingHeartbeatRef = null
-    clearInterval(this.heartbeatTimer)
-    this.heartbeatTimer = <any>(
-      setInterval(() => this._sendHeartbeat(), this.heartbeatIntervalMs)
+    this.heartbeatTimer && clearInterval(this.heartbeatTimer)
+    this.heartbeatTimer = setInterval(
+      () => this._sendHeartbeat(),
+      this.heartbeatIntervalMs
     )
   }
 
