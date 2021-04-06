@@ -145,8 +145,7 @@ export class StorageFileApi {
         { expiresIn },
         { headers: this.headers }
       )
-      const signedUrl = `${this.url}${data.signedUrl}`
-      data = { ...data, signedUrl }
+      data = { signedURL: `${this.url}${data.signedURL}` }
       return { data, error: null }
     } catch (error) {
       return { data: null, error }
