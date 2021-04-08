@@ -420,9 +420,9 @@ export default class GoTrueClient {
 
   /**
    * Recovers the session from LocalStorage and refreshes
+   * Note: this method is async to accommodate for AsyncStorage e.g. in React native.
    */
   private async _recoverAndRefresh() {
-    // Note: this method is async to accommodate for AsyncStorage e.g. in React native.
     try {
       const json = isBrowser() && (await this.localStorage.getItem(STORAGE_KEY))
       if (!json) {
