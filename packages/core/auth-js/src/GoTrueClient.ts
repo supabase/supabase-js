@@ -506,6 +506,7 @@ export default class GoTrueClient {
   private async _removeSession() {
     this.currentSession = null
     this.currentUser = null
+    if (this.refreshTokenTimer) clearTimeout(this.refreshTokenTimer)
     isBrowser() && (await this.localStorage.removeItem(STORAGE_KEY))
   }
 
