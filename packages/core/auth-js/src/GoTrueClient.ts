@@ -41,6 +41,7 @@ export default class GoTrueClient {
   protected persistSession: boolean
   protected localStorage: Storage
   protected stateChangeEmitters: Map<string, Subscription> = new Map()
+  protected refreshTokenTimer?: ReturnType<typeof setTimeout>
 
   /**
    * Create a new client for use in the browser.
@@ -470,8 +471,10 @@ export default class GoTrueClient {
         this.currentSession = currentSession
         this.currentUser = currentSession.user
         this._notifyAllSubscribers('SIGNED_IN')
+        // console.log('_recoverAndRefresh setTimeout: ', expiresAt, timeNow)
+        // setTimeout(() => this._callRefreshToken(), (expiresAt - timeNow - 60) * 1000)
         // schedule a refresh 60 seconds before token due to expire
-        setTimeout(() => this._callRefreshToken(), (expiresAt - timeNow - 60) * 1000)
+        this._startRefreshTokenTimer((expiresAt - timeNow - 60) * 1000)
       }
     } catch (err) {
       console.error(err)
@@ -493,7 +496,9 @@ export default class GoTrueClient {
         const tokenExpirySeconds = data.expires_in
 
         if (this.autoRefreshToken && tokenExpirySeconds) {
-          setTimeout(() => this._callRefreshToken(), (tokenExpirySeconds - 60) * 1000)
+          // console.log('_callRefreshToken setTimeout:', tokenExpirySeconds)
+          // setTimeout(() => this._callRefreshToken(), (tokenExpirySeconds - 60) * 1000)
+          this._startRefreshTokenTimer((tokenExpirySeconds - 60) * 1000)
         }
 
         if (this.persistSession && this.currentUser) {
@@ -510,5 +515,14 @@ export default class GoTrueClient {
 
   private _notifyAllSubscribers(event: AuthChangeEvent) {
     this.stateChangeEmitters.forEach((x) => x.callback(event, this.currentSession))
+  }
+
+  /**
+   * Clear and re-create refresh token timer
+   * @param value time intervals in milliseconds
+   */
+  private _startRefreshTokenTimer(value: number) {
+    if (this.refreshTokenTimer) clearTimeout(this.refreshTokenTimer)
+    this.refreshTokenTimer = setTimeout(() => this._callRefreshToken(), value)
   }
 }
