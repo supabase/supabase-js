@@ -37,10 +37,12 @@ export default class GoTrueClient {
    * The session object for the currently logged in user or null.
    */
   protected currentSession: Session | null
+
   protected autoRefreshToken: boolean
   protected persistSession: boolean
   protected localStorage: Storage
   protected stateChangeEmitters: Map<string, Subscription> = new Map()
+  protected refreshTokenTimer?: ReturnType<typeof setTimeout>
 
   /**
    * Create a new client for use in the browser.
@@ -213,12 +215,10 @@ export default class GoTrueClient {
     try {
       if (!this.currentSession?.access_token) throw new Error('Not logged in.')
 
-      await this._callRefreshToken()
-
-      const { data, error } = await this.api.getUser(this.currentSession.access_token)
+      // currentSession and currentUser will be updated to latest on _callRefreshToken
+      const { error } = await this._callRefreshToken()
       if (error) throw error
 
-      this.currentUser = data
       return { data: this.currentSession, user: this.currentUser, error: null }
     } catch (error) {
       return { data: null, user: null, error }
@@ -234,19 +234,18 @@ export default class GoTrueClient {
     try {
       if (!this.currentSession?.access_token) throw new Error('Not logged in.')
 
-      const { data, error } = await this.api.updateUser(
+      const { user, error } = await this.api.updateUser(
         this.currentSession.access_token,
         attributes
       )
       if (error) throw error
+      if (!user) throw Error('Invalid user data.')
 
-      this.currentUser = data
-      const session = { ...this.currentSession, user: data! }
-      this.currentSession = session
+      const session = { ...this.currentSession, user }
       this._saveSession(session)
       this._notifyAllSubscribers('USER_UPDATED')
 
-      return { data, user: this.currentUser, error: null }
+      return { data: user, user, error: null }
     } catch (error) {
       return { data: null, user: null, error }
     }
@@ -395,26 +394,6 @@ export default class GoTrueClient {
     }
   }
 
-  private _saveSession(session: Session) {
-    this.currentSession = session
-    this.currentUser = session.user
-
-    if (this.persistSession && session.expires_at) {
-      this._persistSession(this.currentSession)
-    }
-  }
-
-  private _persistSession(currentSession: Session) {
-    const data = { currentSession, expiresAt: currentSession.expires_at }
-    isBrowser() && this.localStorage.setItem(STORAGE_KEY, JSON.stringify(data))
-  }
-
-  private async _removeSession() {
-    this.currentSession = null
-    this.currentUser = null
-    isBrowser() && (await this.localStorage.removeItem(STORAGE_KEY))
-  }
-
   /**
    * Attempts to get the session from LocalStorage
    * Note: this should never be async (even for React Native), as we need it to return immediately in the constructor.
@@ -430,9 +409,9 @@ export default class GoTrueClient {
       const { currentSession, expiresAt } = data
       const timeNow = Math.round(Date.now() / 1000)
 
-      if (expiresAt > timeNow && currentSession?.user) {
-        this.currentSession = currentSession
-        this.currentUser = currentSession.user
+      if (expiresAt >= timeNow && currentSession?.user) {
+        this._saveSession(currentSession)
+        this._notifyAllSubscribers('SIGNED_IN')
       }
     } catch (error) {
       console.log('error', error)
@@ -441,18 +420,19 @@ export default class GoTrueClient {
 
   /**
    * Recovers the session from LocalStorage and refreshes
+   * Note: this method is async to accommodate for AsyncStorage e.g. in React native.
    */
   private async _recoverAndRefresh() {
-    // Note: this method is async to accommodate for AsyncStorage e.g. in React native.
-    const json = isBrowser() && (await this.localStorage.getItem(STORAGE_KEY))
-    if (!json) {
-      return null
-    }
     try {
+      const json = isBrowser() && (await this.localStorage.getItem(STORAGE_KEY))
+      if (!json) {
+        return null
+      }
+
       const data = JSON.parse(json)
       const { currentSession, expiresAt } = data
-
       const timeNow = Math.round(Date.now() / 1000)
+
       if (expiresAt < timeNow) {
         if (this.autoRefreshToken && currentSession.refresh_token) {
           const { error } = await this._callRefreshToken(currentSession.refresh_token)
@@ -467,11 +447,9 @@ export default class GoTrueClient {
         console.log('Current session is missing data.')
         this._removeSession()
       } else {
-        this.currentSession = currentSession
-        this.currentUser = currentSession.user
-        this._notifyAllSubscribers('SIGNED_IN')
-        // schedule a refresh 60 seconds before token due to expire
-        setTimeout(() => this._callRefreshToken(), (expiresAt - timeNow - 60) * 1000)
+        // should be handle on _recoverSession method already
+        // this._saveSession(currentSession)
+        // this._notifyAllSubscribers('SIGNED_IN')
       }
     } catch (err) {
       console.error(err)
@@ -485,23 +463,12 @@ export default class GoTrueClient {
         throw new Error('No current session.')
       }
       const { data, error } = await this.api.refreshAccessToken(refresh_token)
+      if (error) throw error
+      if (!data) throw Error('Invalid session data.')
 
-      if (data?.access_token) {
-        this.currentSession = data as Session
-        this.currentUser = this.currentSession.user
-        this._notifyAllSubscribers('SIGNED_IN')
-        const tokenExpirySeconds = data.expires_in
+      this._saveSession(data)
+      this._notifyAllSubscribers('SIGNED_IN')
 
-        if (this.autoRefreshToken && tokenExpirySeconds) {
-          setTimeout(() => this._callRefreshToken(), (tokenExpirySeconds - 60) * 1000)
-        }
-
-        if (this.persistSession && this.currentUser) {
-          this._persistSession(this.currentSession)
-        }
-      } else {
-        throw error
-      }
       return { data, error: null }
     } catch (error) {
       return { data: null, error }
@@ -510,5 +477,47 @@ export default class GoTrueClient {
 
   private _notifyAllSubscribers(event: AuthChangeEvent) {
     this.stateChangeEmitters.forEach((x) => x.callback(event, this.currentSession))
+  }
+
+  /**
+   * set currentSession and currentUser
+   * process to _startAutoRefreshToken if possible
+   */
+  private _saveSession(session: Session) {
+    this.currentSession = session
+    this.currentUser = session.user
+
+    const expiresAt = session.expires_at
+    const timeNow = Math.round(Date.now() / 1000)
+    if (expiresAt) this._startAutoRefreshToken((expiresAt - timeNow - 60) * 1000)
+
+    // Do we need any extra check before persist session
+    // access_token or user ?
+    if (this.persistSession && session.expires_at) {
+      this._persistSession(this.currentSession)
+    }
+  }
+
+  private _persistSession(currentSession: Session) {
+    const data = { currentSession, expiresAt: currentSession.expires_at }
+    isBrowser() && this.localStorage.setItem(STORAGE_KEY, JSON.stringify(data))
+  }
+
+  private async _removeSession() {
+    this.currentSession = null
+    this.currentUser = null
+    if (this.refreshTokenTimer) clearTimeout(this.refreshTokenTimer)
+    isBrowser() && (await this.localStorage.removeItem(STORAGE_KEY))
+  }
+
+  /**
+   * Clear and re-create refresh token timer
+   * @param value time intervals in milliseconds
+   */
+  private _startAutoRefreshToken(value: number) {
+    if (this.refreshTokenTimer) clearTimeout(this.refreshTokenTimer)
+    if (!value || !this.autoRefreshToken) return
+
+    this.refreshTokenTimer = setTimeout(() => this._callRefreshToken(), value)
   }
 }
