@@ -409,8 +409,9 @@ export default class GoTrueClient {
       const { currentSession, expiresAt } = data
       const timeNow = Math.round(Date.now() / 1000)
 
-      if (expiresAt > timeNow && currentSession?.user) {
+      if (expiresAt >= timeNow && currentSession?.user) {
         this._saveSession(currentSession)
+        this._notifyAllSubscribers('SIGNED_IN')
       }
     } catch (error) {
       console.log('error', error)
@@ -422,15 +423,16 @@ export default class GoTrueClient {
    */
   private async _recoverAndRefresh() {
     // Note: this method is async to accommodate for AsyncStorage e.g. in React native.
-    const json = isBrowser() && (await this.localStorage.getItem(STORAGE_KEY))
-    if (!json) {
-      return null
-    }
     try {
+      const json = isBrowser() && (await this.localStorage.getItem(STORAGE_KEY))
+      if (!json) {
+        return null
+      }
+
       const data = JSON.parse(json)
       const { currentSession, expiresAt } = data
-
       const timeNow = Math.round(Date.now() / 1000)
+
       if (expiresAt < timeNow) {
         if (this.autoRefreshToken && currentSession.refresh_token) {
           const { error } = await this._callRefreshToken(currentSession.refresh_token)
@@ -445,8 +447,9 @@ export default class GoTrueClient {
         console.log('Current session is missing data.')
         this._removeSession()
       } else {
-        this._saveSession(currentSession)
-        this._notifyAllSubscribers('SIGNED_IN')
+        // should be handle on _recoverSession method already
+        // this._saveSession(currentSession)
+        // this._notifyAllSubscribers('SIGNED_IN')
       }
     } catch (err) {
       console.error(err)
@@ -511,11 +514,10 @@ export default class GoTrueClient {
    * @param value time intervals in milliseconds
    */
   private _startAutoRefreshToken(value: number) {
-    if (!value) return
-    if (!this.autoRefreshToken) return
+    if (this.refreshTokenTimer) clearTimeout(this.refreshTokenTimer)
+    if (!value || !this.autoRefreshToken) return
 
     console.log('_startAutoRefreshToken: ', value)
-    if (this.refreshTokenTimer) clearTimeout(this.refreshTokenTimer)
     this.refreshTokenTimer = setTimeout(() => this._callRefreshToken(), value)
   }
 }
