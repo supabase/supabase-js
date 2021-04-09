@@ -226,13 +226,17 @@ export class StorageFileApi {
    */
   async list(
     path?: string,
-    options?: SearchOptions
+    options?: SearchOptions,
+    signal?: AbortSignal
   ): Promise<{ data: FileObject[] | null; error: Error | null }> {
     try {
       const body = { ...DEFAULT_SEARCH_OPTIONS, ...options, prefix: path || '' }
-      const data = await post(`${this.url}/object/list/${this.bucketId}`, body, {
-        headers: this.headers,
-      })
+      const data = await post(
+        `${this.url}/object/list/${this.bucketId}`,
+        body,
+        { headers: this.headers },
+        signal
+      )
       return { data, error: null }
     } catch (error) {
       return { data: null, error }
