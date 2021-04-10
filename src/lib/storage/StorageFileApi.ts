@@ -1,4 +1,4 @@
-import { get, post, remove } from './fetch'
+import { FetchParameters, get, post, remove } from './fetch'
 import { isBrowser } from './helpers'
 import { FileObject, FileOptions, SearchOptions } from './types'
 
@@ -227,7 +227,7 @@ export class StorageFileApi {
   async list(
     path?: string,
     options?: SearchOptions,
-    signal?: AbortSignal
+    parameters?: FetchParameters
   ): Promise<{ data: FileObject[] | null; error: Error | null }> {
     try {
       const body = { ...DEFAULT_SEARCH_OPTIONS, ...options, prefix: path || '' }
@@ -235,7 +235,7 @@ export class StorageFileApi {
         `${this.url}/object/list/${this.bucketId}`,
         body,
         { headers: this.headers },
-        signal
+        parameters
       )
       return { data, error: null }
     } catch (error) {
