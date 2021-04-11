@@ -223,6 +223,7 @@ export class StorageFileApi {
    * Lists all the files within a bucket.
    * @param path The folder path.
    * @param options Search options, including `limit`, `offset`, and `sortBy`.
+   * @param parameters Fetch parameters, currently only supports `signal`, which is an AbortController's signal
    */
   async list(
     path?: string,
