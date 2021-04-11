@@ -1,25 +1,25 @@
 # docker-compose.yml
 version: '3'
 services:
-  gotrue: # Signup enabled, autoconfirm off 
+  gotrue: # Signup enabled, autoconfirm off
     image: supabase/gotrue:latest
     ports:
       - '9999:9999'
     environment:
-      GOTRUE_JWT_SECRET: "37c304f8-51aa-419a-a1af-06154e63707a"
+      GOTRUE_JWT_SECRET: '37c304f8-51aa-419a-a1af-06154e63707a'
       GOTRUE_JWT_EXP: 3600
       GOTRUE_DB_DRIVER: postgres
       DB_NAMESPACE: auth
       GOTRUE_API_HOST: 0.0.0.0
       PORT: 9999
-      GOTRUE_DISABLE_SIGNUP: "false"
+      GOTRUE_DISABLE_SIGNUP: 'false'
       API_EXTERNAL_URL: http://localhost:9999
       GOTRUE_SITE_URL: http://localhost:9999
-      GOTRUE_MAILER_AUTOCONFIRM: "false"
+      GOTRUE_MAILER_AUTOCONFIRM: 'false'
       GOTRUE_LOG_LEVEL: DEBUG
       GOTRUE_OPERATOR_TOKEN: super-secret-operator-token
-      DATABASE_URL: "postgres://postgres:postgres@db:5432/postgres?sslmode=disable"
-      GOTRUE_EXTERNAL_GOOGLE_ENABLED: "true"
+      DATABASE_URL: 'postgres://postgres:postgres@db:5432/postgres?sslmode=disable'
+      GOTRUE_EXTERNAL_GOOGLE_ENABLED: 'true'
       GOTRUE_EXTERNAL_GOOGLE_CLIENT_ID: 53566906701-bmhc1ndue7hild39575gkpimhs06b7ds.apps.googleusercontent.com
       GOTRUE_EXTERNAL_GOOGLE_SECRET: Sm3s8RE85rDcS36iMy8YjrpC
       GOTRUE_EXTERNAL_GOOGLE_REDIRECT_URI: http://localhost:9999/callback
@@ -28,7 +28,7 @@ services:
       GOTRUE_SMTP_USER: GOTRUE_SMTP_USER
       GOTRUE_SMTP_PASS: GOTRUE_SMTP_PASS
       GOTRUE_SMTP_ADMIN_EMAIL: admin@email.com
-      GOTRUE_MAILER_SUBJECTS_CONFIRMATION: "Please confirm"
+      GOTRUE_MAILER_SUBJECTS_CONFIRMATION: 'Please confirm'
     depends_on:
       - db
   autoconfirm: # Signup enabled, autoconfirm on
@@ -36,19 +36,19 @@ services:
     ports:
       - '9998:9998'
     environment:
-      GOTRUE_JWT_SECRET: "37c304f8-51aa-419a-a1af-06154e63707a"
+      GOTRUE_JWT_SECRET: '37c304f8-51aa-419a-a1af-06154e63707a'
       GOTRUE_JWT_EXP: 3600
       GOTRUE_DB_DRIVER: postgres
       DB_NAMESPACE: auth
       GOTRUE_API_HOST: 0.0.0.0
       PORT: 9998
-      GOTRUE_DISABLE_SIGNUP: "false"
+      GOTRUE_DISABLE_SIGNUP: 'false'
       API_EXTERNAL_URL: http://localhost:9998
       GOTRUE_SITE_URL: http://localhost:9998
-      GOTRUE_MAILER_AUTOCONFIRM: "true"
+      GOTRUE_MAILER_AUTOCONFIRM: 'true'
       GOTRUE_LOG_LEVEL: DEBUG
       GOTRUE_OPERATOR_TOKEN: super-secret-operator-token
-      DATABASE_URL: "postgres://postgres:postgres@db:5432/postgres?sslmode=disable"
+      DATABASE_URL: 'postgres://postgres:postgres@db:5432/postgres?sslmode=disable'
     depends_on:
       - db
   disabled: # Signup disabled
@@ -56,23 +56,23 @@ services:
     ports:
       - '9997:9997'
     environment:
-      GOTRUE_JWT_SECRET: "37c304f8-51aa-419a-a1af-06154e63707a"
+      GOTRUE_JWT_SECRET: '37c304f8-51aa-419a-a1af-06154e63707a'
       GOTRUE_JWT_EXP: 3600
       GOTRUE_DB_DRIVER: postgres
       DB_NAMESPACE: auth
       GOTRUE_API_HOST: 0.0.0.0
       PORT: 9997
-      GOTRUE_DISABLE_SIGNUP: "true"
+      GOTRUE_DISABLE_SIGNUP: 'true'
       API_EXTERNAL_URL: http://localhost:9997
       GOTRUE_SITE_URL: http://localhost:9997
-      GOTRUE_MAILER_AUTOCONFIRM: "false"
+      GOTRUE_MAILER_AUTOCONFIRM: 'false'
       GOTRUE_LOG_LEVEL: DEBUG
       GOTRUE_OPERATOR_TOKEN: super-secret-operator-token
-      DATABASE_URL: "postgres://postgres:postgres@db:5432/postgres?sslmode=disable"
+      DATABASE_URL: 'postgres://postgres:postgres@db:5432/postgres?sslmode=disable'
     depends_on:
       - db
   mail:
-    image: inbucket/inbucket
+    image: phamhieu/inbucket:latest
     ports:
       - '2500:2500' # SMTP
       - '9000:9000' # web interface
