@@ -42,7 +42,6 @@ const _getRequestParams = (
 
   params.headers = { 'Content-Type': 'application/json', ...options?.headers }
   params.body = JSON.stringify(body)
-
   return { ...params, ...parameters }
 }
 
