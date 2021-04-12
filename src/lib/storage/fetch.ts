@@ -7,6 +7,10 @@ export interface FetchOptions {
   noResolveJson?: boolean
 }
 
+export interface FetchParameters {
+  signal?: AbortSignal
+}
+
 export type RequestMethodType = 'GET' | 'POST' | 'PUT' | 'DELETE'
 
 const _getErrorMessage = (err: any): string =>
@@ -24,7 +28,12 @@ const handleError = (error: any, reject: any) => {
   })
 }
 
-const _getRequestParams = (method: RequestMethodType, options?: FetchOptions, body?: object) => {
+const _getRequestParams = (
+  method: RequestMethodType,
+  options?: FetchOptions,
+  parameters?: FetchParameters,
+  body?: object
+) => {
   const params: { [k: string]: any } = { method, headers: options?.headers || {} }
 
   if (method === 'GET') {
@@ -34,17 +43,18 @@ const _getRequestParams = (method: RequestMethodType, options?: FetchOptions, bo
   params.headers = { 'Content-Type': 'application/json', ...options?.headers }
   params.body = JSON.stringify(body)
 
-  return params
+  return { ...params, ...parameters }
 }
 
 async function _handleRequest(
   method: RequestMethodType,
   url: string,
   options?: FetchOptions,
+  parameters?: FetchParameters,
   body?: object
 ): Promise<any> {
   return new Promise((resolve, reject) => {
-    fetch(url, _getRequestParams(method, options, body))
+    fetch(url, _getRequestParams(method, options, parameters, body))
       .then((result) => {
         if (!result.ok) throw result
         if (options?.noResolveJson) return resolve(result)
@@ -55,18 +65,37 @@ async function _handleRequest(
   })
 }
 
-export async function get(url: string, options?: FetchOptions): Promise<any> {
-  return _handleRequest('GET', url, options)
+export async function get(
+  url: string,
+  options?: FetchOptions,
+  parameters?: FetchParameters
+): Promise<any> {
+  return _handleRequest('GET', url, options, parameters)
 }
 
-export async function post(url: string, body: object, options?: FetchOptions): Promise<any> {
-  return _handleRequest('POST', url, options, body)
+export async function post(
+  url: string,
+  body: object,
+  options?: FetchOptions,
+  parameters?: FetchParameters
+): Promise<any> {
+  return _handleRequest('POST', url, options, parameters, body)
 }
 
-export async function put(url: string, body: object, options?: FetchOptions): Promise<any> {
-  return _handleRequest('PUT', url, options, body)
+export async function put(
+  url: string,
+  body: object,
+  options?: FetchOptions,
+  parameters?: FetchParameters
+): Promise<any> {
+  return _handleRequest('PUT', url, options, parameters, body)
 }
 
-export async function remove(url: string, body: object, options?: FetchOptions): Promise<any> {
-  return _handleRequest('DELETE', url, options, body)
+export async function remove(
+  url: string,
+  body: object,
+  options?: FetchOptions,
+  parameters?: FetchParameters
+): Promise<any> {
+  return _handleRequest('DELETE', url, options, parameters, body)
 }

@@ -1,4 +1,4 @@
-import { get, post, remove } from './fetch'
+import { FetchParameters, get, post, remove } from './fetch'
 import { isBrowser } from './helpers'
 import { FileObject, FileOptions, SearchOptions } from './types'
 
@@ -223,16 +223,21 @@ export class StorageFileApi {
    * Lists all the files within a bucket.
    * @param path The folder path.
    * @param options Search options, including `limit`, `offset`, and `sortBy`.
+   * @param parameters Fetch parameters, currently only supports `signal`, which is an AbortController's signal
    */
   async list(
     path?: string,
-    options?: SearchOptions
+    options?: SearchOptions,
+    parameters?: FetchParameters
   ): Promise<{ data: FileObject[] | null; error: Error | null }> {
     try {
       const body = { ...DEFAULT_SEARCH_OPTIONS, ...options, prefix: path || '' }
-      const data = await post(`${this.url}/object/list/${this.bucketId}`, body, {
-        headers: this.headers,
-      })
+      const data = await post(
+        `${this.url}/object/list/${this.bucketId}`,
+        body,
+        { headers: this.headers },
+        parameters
+      )
       return { data, error: null }
     } catch (error) {
       return { data: null, error }
