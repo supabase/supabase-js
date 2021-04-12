@@ -2,6 +2,10 @@
 
 Releases are handled by Semantic release. This document is for forcing and documenting any non-code changes.
 
+### v1.12.7
+
+- Fix https://github.com/supabase/gotrue-js/issues/73
+
 ### v1.12.0
 
 - Feature: https://github.com/supabase/gotrue-js/pull/66 OAuth providers can now be supplied scopes.
