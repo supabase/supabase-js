@@ -11,7 +11,8 @@
   "license": "MIT",
   "author": "Supabase",
   "files": [
-    "dist"
+    "dist",
+    "src"
   ],
   "main": "dist/main/index.js",
   "module": "dist/module/index.js",
