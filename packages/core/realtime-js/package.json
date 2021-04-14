@@ -14,7 +14,8 @@
   "homepage": "https://github.com/supabase/realtime-js",
   "bugs": "https://github.com/supabase/realtime-js/issues",
   "files": [
-    "dist"
+    "dist",
+    "src"
   ],
   "main": "dist/main/index.js",
   "module": "dist/module/index.js",
