@@ -35,7 +35,7 @@
   },
   "dependencies": {
     "@types/websocket": "^1.0.1",
-    "websocket": "^1.0.31"
+    "websocket": "^1.0.34"
   },
   "devDependencies": {
     "@babel/runtime": "^7.9.2",
