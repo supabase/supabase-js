@@ -37,7 +37,7 @@ export class StorageFileApi {
     path: string,
     file: File,
     fileOptions?: FileOptions
-  ): Promise<{ data: { message: string } | null; error: Error | null }> {
+  ): Promise<{ data: { Key: string } | null; error: Error | null }> {
     try {
       if (!isBrowser()) throw new Error('No browser detected.')
 
