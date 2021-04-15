@@ -137,7 +137,11 @@ export class StorageFileApi {
   async createSignedUrl(
     path: string,
     expiresIn: number
-  ): Promise<{ data: { signedUrl: string } | null; error: Error | null }> {
+  ): Promise<{
+    data: { signedURL: string } | null
+    error: Error | null
+    signedURL: string | null
+  }> {
     try {
       const _path = this._getFinalPath(path)
       let data = await post(
@@ -145,10 +149,11 @@ export class StorageFileApi {
         { expiresIn },
         { headers: this.headers }
       )
-      data = { signedURL: `${this.url}${data.signedURL}` }
-      return { data, error: null }
+      const signedURL = `${this.url}${data.signedURL}`
+      data = { signedURL }
+      return { data, error: null, signedURL }
     } catch (error) {
-      return { data: null, error }
+      return { data: null, error, signedURL: null }
     }
   }
 
