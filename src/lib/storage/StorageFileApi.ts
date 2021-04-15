@@ -55,8 +55,9 @@ export class StorageFileApi {
       })
 
       if (res.ok) {
-        const data = await res.json()
-        return { data, error: null }
+        // const data = await res.json()
+        // temporary fix till backend is updated to the latest storage-api version
+        return { data: { Key: _path }, error: null }
       } else {
         const error = await res.json()
         return { data: null, error }
@@ -95,8 +96,9 @@ export class StorageFileApi {
       })
 
       if (res.ok) {
-        const data = await res.json()
-        return { data, error: null }
+        // const data = await res.json()
+        // temporary fix till backend is updated to the latest storage-api version
+        return { data: { Key: _path }, error: null }
       } else {
         const error = await res.json()
         return { data: null, error }
