@@ -2,7 +2,7 @@ import { FetchParameters, get, post, remove } from './fetch'
 import { isBrowser } from './helpers'
 import { FileObject, FileOptions, SearchOptions } from './types'
 
-const DEFAULT_SEARCH_OPTIONS = {
+const DEFAULT_SEARCH_OPTIONS: SearchOptions = {
   limit: 100,
   offset: 0,
   sortBy: {
@@ -41,18 +41,8 @@ export class StorageFileApi {
     try {
       if (!isBrowser()) throw new Error('No browser detected.')
 
-      const formData = new FormData()
-      formData.append('', file, file.name)
-
-      const options = { ...DEFAULT_FILE_OPTIONS, ...fileOptions }
-      formData.append('cacheControl', options.cacheControl)
-
       const _path = this._getFinalPath(path)
-      const res = await fetch(`${this.url}/object/${_path}`, {
-        method: 'POST',
-        body: formData,
-        headers: { ...this.headers },
-      })
+      const res = await this._genericFetch('POST', _path, file, fileOptions)
 
       if (res.ok) {
         // const data = await res.json()
@@ -82,18 +72,8 @@ export class StorageFileApi {
     try {
       if (!isBrowser()) throw new Error('No browser detected.')
 
-      const formData = new FormData()
-      formData.append('', file, file.name)
-
-      const options = { ...DEFAULT_FILE_OPTIONS, ...fileOptions }
-      formData.append('cacheControl', options.cacheControl)
-
       const _path = this._getFinalPath(path)
-      const res = await fetch(`${this.url}/object/${_path}`, {
-        method: 'PUT',
-        body: formData,
-        headers: { ...this.headers },
-      })
+      const res = await this._genericFetch('PUT', _path, file, fileOptions)
 
       if (res.ok) {
         // const data = await res.json()
@@ -253,5 +233,28 @@ export class StorageFileApi {
 
   _getFinalPath(path: string) {
     return `${this.bucketId}/${path}`
+  }
+
+  _createGenericFormData(file: File, fileOptions?: FileOptions): FormData {
+    const options = { ...DEFAULT_FILE_OPTIONS, ...fileOptions }
+
+    const formData = new FormData()
+    formData.append('', file, file.name)
+    formData.append('cacheControl', options.cacheControl)
+
+    return formData
+  }
+
+  async _genericFetch(
+    method: string = 'POST',
+    path: string,
+    file: File,
+    fileOptions?: FileOptions
+  ): Promise<Response> {
+    return await fetch(`${this.url}/object/${path}`, {
+      method,
+      body: this._createGenericFormData(file, fileOptions),
+      headers: { ...this.headers },
+    })
   }
 }
