@@ -183,7 +183,7 @@ export default class RealtimeSubscription {
       .filter((bind) => {
         // bind all realtime events
         if (bind.event === '*') {
-          return event === payload.type
+          return event === payload?.type
         } else {
           return bind.event === event
         }
