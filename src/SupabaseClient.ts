@@ -1,4 +1,3 @@
-import { DEFAULT_HEADERS } from './lib/constants'
 import { SupabaseClientOptions } from './lib/types'
 import { SupabaseAuthClient } from './lib/SupabaseAuthClient'
 import { SupabaseQueryBuilder } from './lib/SupabaseQueryBuilder'
@@ -12,7 +11,7 @@ const DEFAULT_OPTIONS = {
   persistSession: true,
   detectSessionInUrl: true,
   localStorage: globalThis.localStorage,
-  headers: DEFAULT_HEADERS,
+  headers: {},
 }
 
 /**

@@ -18,7 +18,7 @@ export interface FileObject {
   buckets: Bucket
 }
 
-export interface SortBy {
+interface SortBy {
   column?: string
   order?: string
 }
