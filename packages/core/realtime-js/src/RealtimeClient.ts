@@ -41,7 +41,7 @@ export default class RealtimeClient {
   transport: any = WebSocket
   heartbeatIntervalMs: number = 30000
   longpollerTimeout: number = 20000
-  heartbeatTimer: number | undefined = undefined
+  heartbeatTimer: ReturnType<typeof setInterval> | undefined = undefined
   pendingHeartbeatRef: string | null = null
   ref: number = 0
   reconnectTimer: Timer
@@ -269,6 +269,8 @@ export default class RealtimeClient {
       let { topic, event, payload, ref } = msg
       if (ref && ref === this.pendingHeartbeatRef) {
         this.pendingHeartbeatRef = null
+      } else if (event === payload?.type) {
+        this._resetHeartbeat()
       }
 
       this.log(
@@ -315,19 +317,14 @@ export default class RealtimeClient {
     this.log('transport', `connected to ${this.endPointURL()}`)
     this._flushSendBuffer()
     this.reconnectTimer.reset()
-    // if (!this.conn?.skipHeartbeat) { // Skip heartbeat doesn't exist on w3Socket
-    clearInterval(this.heartbeatTimer)
-    this.heartbeatTimer = <any>(
-      setInterval(() => this._sendHeartbeat(), this.heartbeatIntervalMs)
-    )
-    // }
+    this._resetHeartbeat()
     this.stateChangeCallbacks.open.forEach((callback) => callback())!
   }
 
   private _onConnClose(event: any) {
     this.log('transport', 'close', event)
     this._triggerChanError()
-    clearInterval(this.heartbeatTimer)
+    this.heartbeatTimer && clearInterval(this.heartbeatTimer)
     this.reconnectTimer.scheduleTimeout()
     this.stateChangeCallbacks.close.forEach((callback) => callback(event))
   }
@@ -359,6 +356,15 @@ export default class RealtimeClient {
       this.sendBuffer.forEach((callback) => callback())
       this.sendBuffer = []
     }
+  }
+
+  private _resetHeartbeat() {
+    this.pendingHeartbeatRef = null
+    this.heartbeatTimer && clearInterval(this.heartbeatTimer)
+    this.heartbeatTimer = setInterval(
+      () => this._sendHeartbeat(),
+      this.heartbeatIntervalMs
+    )
   }
 
   private _sendHeartbeat() {

@@ -659,9 +659,9 @@ describe('onConnMessage', () => {
     socket.connect()
   })
 
-  it('parses raw message and triggers channel event', () => {
+  it('parses raw message, resets heartbeat, and triggers channel event', () => {
     const message =
-      '{"topic":"topic","event":"event","payload":"payload","ref":"ref"}'
+      '{"topic":"topic","event":"INSERT","payload":{"type":"INSERT"},"ref":"ref"}'
     const data = { data: message }
 
     const targetChannel = socket.channel('topic')
@@ -670,11 +670,21 @@ describe('onConnMessage', () => {
     const targetSpy = sinon.spy(targetChannel, 'trigger')
     const otherSpy = sinon.spy(otherChannel, 'trigger')
 
+    const prevIntervalId = setInterval(() => {}, 0)[Symbol.toPrimitive]()
+
+    socket.pendingHeartbeatRef = '3'
+    socket.heartbeatTimer = prevIntervalId
+
     socket.onConnMessage(data)
 
-    assert.ok(targetSpy.calledWith('event', 'payload', 'ref'))
-    assert.equal(targetSpy.callCount, 1)
-    assert.equal(otherSpy.callCount, 0)
+    const newIntervalId = socket.heartbeatTimer[Symbol.toPrimitive]()
+
+    assert.ok(targetSpy.calledWith('INSERT', {type: 'INSERT'}, 'ref'))
+    assert.strictEqual(targetSpy.callCount, 1)
+    assert.strictEqual(otherSpy.callCount, 0)
+    assert.strictEqual(socket.pendingHeartbeatRef, null)
+    assert.strictEqual(typeof newIntervalId, 'number')
+    assert.notStrictEqual(newIntervalId, prevIntervalId)
   })
 
   it('triggers onMessage callback', () => {
