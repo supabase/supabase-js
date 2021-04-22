@@ -729,6 +729,24 @@ describe('custom encoder and decoder', () => {
     })
   })
 
+  it('decodes ArrayBuffer by default', () => {
+    socket = new RealtimeClient('wss://example.com/socket')
+    const buffer = new Uint8Array([2, 20, 6, 114, 101, 97, 108, 116, 105,
+      109, 101, 58, 112, 117, 98, 108, 105, 99, 58, 116, 101, 115, 116, 73,
+      78, 83, 69, 82, 84, 123, 34, 102, 111, 111, 34, 58, 34, 98, 97, 114, 34, 125]).buffer
+
+    socket.decode(buffer, decoded => {
+      assert.deepStrictEqual(
+        decoded, {
+          ref: null,
+          topic: "realtime:public:test",
+          event: "INSERT",
+          payload: { foo: 'bar' }
+        }
+      )
+    })
+  })
+
   it('allows custom decoding when using WebSocket transport', () => {
     let decoder = (payload, callback) => callback('decode works')
     socket = new RealtimeClient('wss://example.com/socket', {

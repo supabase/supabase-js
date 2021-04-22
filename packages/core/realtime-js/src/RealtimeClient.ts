@@ -9,6 +9,7 @@ import {
 import Timer from './lib/timer'
 import RealtimeSubscription from './RealtimeSubscription'
 import { w3cwebsocket as WebSocket } from 'websocket'
+import Serializer from './lib/serializer'
 
 type Options = {
   transport?: WebSocket
@@ -50,6 +51,7 @@ export default class RealtimeClient {
   reconnectAfterMs: Function
   conn: WebSocket | null = null
   sendBuffer: Function[] = []
+  serializer: Serializer = new Serializer()
   stateChangeCallbacks: {
     open: Function[]
     close: Function[]
@@ -73,7 +75,7 @@ export default class RealtimeClient {
    * @param options.heartbeatIntervalMs The millisec interval to send a heartbeat message.
    * @param options.logger The optional function for specialized logging, ie: logger: (kind, msg, data) => { console.log(`${kind}: ${msg}`, data) }
    * @param options.encode The function to encode outgoing messages. Defaults to JSON: (payload, callback) => callback(JSON.stringify(payload))
-   * @param options.decode The function to decode incoming messages. Defaults to JSON: (payload, callback) => callback(JSON.parse(payload))
+   * @param options.decode The function to decode incoming messages. Defaults to Serializer's decode.
    * @param options.longpollerTimeout The maximum timeout of a long poll AJAX request. Defaults to 20s (double the server long poll timer).
    * @param options.reconnectAfterMs he optional function that returns the millsec reconnect interval. Defaults to stepped backoff off.
    */
@@ -102,9 +104,7 @@ export default class RealtimeClient {
         }
     this.decode = options?.decode
       ? options.decode
-      : (payload: string, callback: Function) => {
-          return callback(JSON.parse(payload))
-        }
+      : this.serializer.decode.bind(this.serializer)
     this.reconnectTimer = new Timer(async () => {
       await this.disconnect()
       this.connect()
@@ -122,6 +122,7 @@ export default class RealtimeClient {
     this.conn = new this.transport(this.endPointURL(), [], null, this.headers)
     if (this.conn) {
       // this.conn.timeout = this.longpollerTimeout // TYPE ERROR
+      this.conn.binaryType = 'arraybuffer'
       this.conn.onopen = () => this._onConnOpen()
       this.conn.onerror = (error) => this._onConnError(error)
       this.conn.onmessage = (event) => this.onConnMessage(event)
