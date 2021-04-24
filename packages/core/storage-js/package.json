@@ -33,7 +33,9 @@
     "test:watch": "jest --watch --verbose false --silent false",
     "test:clean": "cd infra/db && docker-compose down",
     "docs": "typedoc --mode file --target ES6 --theme minimal",
-    "docs:json": "typedoc --json docs/spec.json --mode modules --includeDeclarations --excludeExternals"
+    "docs:json": "typedoc --json docs/spec.json --mode modules --includeDeclarations --excludeExternals",
+    "stop:db": "docker-compose --project-dir . -f infra/docker-compose.yml down",
+    "restart:db": "docker-compose --project-dir . -f infra/docker-compose.yml down && docker-compose --project-dir . -f infra/docker-compose.yml up -d && sleep 1"
   },
   "dependencies": {
     "cross-fetch": "^3.1.0"

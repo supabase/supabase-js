@@ -1,0 +1,27 @@
+# docker-compose.yml
+
+version: '3'
+services:
+  rest:
+    image: postgrest/postgrest:nightly-2021-03-05-19-03-d3a8b5f
+    ports:
+      - '3000:3000'
+    environment:
+      PGRST_DB_URI: postgres://postgres:postgres@db:5432/postgres
+      PGRST_DB_SCHEMA: public,storage
+      PGRST_DB_EXTRA_SEARCH_PATH: public,storage,extensions
+      PGRST_DB_ANON_ROLE: postgres
+      PGRST_JWT_SECRET: ${PGRST_JWT_SECRET:?err}
+    depends_on:
+      - db
+  db:
+    image: postgres:12
+    ports:
+      - '5432:5432'
+    volumes:
+      - ./db:/docker-entrypoint-initdb.d/
+    environment:
+      POSTGRES_DB: postgres
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_PORT: 5432
