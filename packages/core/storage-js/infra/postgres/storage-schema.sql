@@ -1,4 +1,4 @@
-CREATE SCHEMA IF NOT EXISTS storage AUTHORIZATION supabase_admin;
+CREATE SCHEMA IF NOT EXISTS storage AUTHORIZATION postgres;
 
 grant usage on schema storage to postgres, anon, authenticated, service_role;
 alter default privileges in schema storage grant all on tables to postgres, anon, authenticated, service_role;
@@ -70,12 +70,10 @@ _filename text;
 BEGIN
 	select string_to_array(name, '/') into _parts;
 	select _parts[array_length(_parts,1)] into _filename;
-	-- @todo return the last part instead of 2
 	return split_part(_filename, '.', 2);
 END
 $function$;
 
--- @todo can this query be optimised further?
 CREATE OR REPLACE FUNCTION storage.search(prefix text, bucketname text, limits int DEFAULT 100, levels int DEFAULT 1, offsets int DEFAULT 0)
  RETURNS TABLE (
     name text,
@@ -108,9 +106,6 @@ BEGIN
 END
 $function$;
 
--- Supabase super admin
-CREATE USER supabase_storage_admin NOINHERIT CREATEROLE LOGIN NOREPLICATION;
-GRANT ALL PRIVILEGES ON SCHEMA storage TO supabase_storage_admin;
-GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA storage TO supabase_storage_admin;
-GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA storage TO supabase_storage_admin;
-ALTER USER supabase_storage_admin SET search_path = "storage";
+GRANT ALL PRIVILEGES ON SCHEMA storage TO postgres;
+GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA storage TO postgres;
+GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA storage TO postgres;
