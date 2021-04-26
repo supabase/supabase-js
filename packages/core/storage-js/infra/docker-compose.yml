@@ -5,7 +5,7 @@ services:
   kong:
     container_name: supabase-kong
     build:
-      context: ./infra/kong
+      context: ./kong
     environment:
       KONG_DECLARATIVE_CONFIG: /var/lib/kong/kong.yml
       KONG_PLUGINS: request-transformer,cors,key-auth,http-log
@@ -47,7 +47,7 @@ services:
       FILE_SIZE_LIMIT: 52428800
   db:
     build:
-      context: ./infra/postgres
+      context: ./postgres
     ports:
       - 5432:5432
     command:

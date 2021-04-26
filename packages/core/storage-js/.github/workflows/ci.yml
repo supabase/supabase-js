@@ -1,0 +1,31 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: Test / OS ${{ matrix.os }} / Node ${{ matrix.node }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        node: ['12']
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set up Node
+        uses: actions/setup-node@v1
+        with:
+          node-version: ${{ matrix.node }}
+
+      - name: Run tests
+        run: |
+          npm ci
+          npm t

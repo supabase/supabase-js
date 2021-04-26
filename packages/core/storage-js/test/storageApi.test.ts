@@ -30,13 +30,13 @@ test('Get bucket with wrong id', async () => {
   expect(res.error).toMatchSnapshot()
 })
 
-test('create new bucket', async () => {
-  const res = await storage.createBucket(newBucketName)
-  console.log(res.error)
-  console.log(res.data)
-  createdBucketId = res.data!.id
-  expect(res.data!.name).toEqual(newBucketName)
-})
+// test('create new bucket', async () => {
+//   const res = await storage.createBucket(newBucketName)
+//   console.log(res.error)
+//   console.log(res.data)
+//   createdBucketId = res.data!.id
+//   expect(res.data!.name).toEqual(newBucketName)
+// })
 
 // test('empty bucket', async () => {
 //   const res = await storage.emptyBucket(createdBucketId)
