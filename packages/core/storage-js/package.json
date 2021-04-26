@@ -30,12 +30,10 @@
     "types-generate": "dts-gen -m '@supabase/storage-js' -s",
     "test": "run-s test:clean test:infra test:suite test:clean",
     "test:suite": "jest --runInBand",
-    "test:infra": "cd infra/db && docker-compose down && docker-compose up -d && sleep 3",
-    "test:clean": "cd infra/db && docker-compose down --remove-orphans",
+    "test:infra": "cd infra && docker-compose down && docker-compose up -d && sleep 3",
+    "test:clean": "cd infra && docker-compose down --remove-orphans",
     "docs": "typedoc --mode file --target ES6 --theme minimal",
-    "docs:json": "typedoc --json docs/spec.json --mode modules --includeDeclarations --excludeExternals",
-    "stop:db": "cd infra && docker-compose down --remove-orphans",
-    "restart:db": "cd infra && docker-compose down && docker-compose up -d && sleep 3"
+    "docs:json": "typedoc --json docs/spec.json --mode modules --includeDeclarations --excludeExternals"
   },
   "dependencies": {
     "cross-fetch": "^3.1.0"
