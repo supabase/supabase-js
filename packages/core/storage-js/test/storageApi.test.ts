@@ -3,7 +3,7 @@ import { StorageBucketApi } from '../src/lib'
 // TODO: need to setup storage-api server for this test
 const URL = 'http://localhost:8000/storage/v1'
 const KEY =
-  'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJzdXBhYmFzZSIsImlhdCI6MTYwMzk2ODgzNCwiZXhwIjoyNTUwNjUzNjM0LCJhdWQiOiIiLCJzdWIiOiIiLCJSb2xlIjoicG9zdGdyZXMifQ.magCcozTMKNrl76Tj2dsM7XTl_YH0v0ilajzAvIlw3U'
+  'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJzdXBhYmFzZSIsImlhdCI6MTYwMzk2ODgzNCwiZXhwIjoyNTUwNjUzNjM0LCJhdWQiOiIiLCJzdWIiOiIzMTdlYWRjZS02MzFhLTQ0MjktYTBiYi1mMTlhN2E1MTdiNGEiLCJSb2xlIjoicG9zdGdyZXMifQ.pZobPtp6gDcX0UbzMmG3FHSlg4m4Q-22tKtGWalOrNo'
 
 const storage = new StorageBucketApi(URL, { Authorization: `Bearer ${KEY}` })
 const newBucketName = `my-new-bucket-${Date.now()}`
@@ -30,13 +30,13 @@ test('Get bucket with wrong id', async () => {
   expect(res.error).toMatchSnapshot()
 })
 
-// test('create new bucket', async () => {
-//   const res = await storage.createBucket(newBucketName)
-//   console.log(res.error)
-//   console.log(res.data)
-//   createdBucketId = res.data!.id
-//   expect(res.data!.name).toEqual(newBucketName)
-// })
+test('create new bucket', async () => {
+  const res = await storage.createBucket(newBucketName)
+  console.log(res.error)
+  console.log(res.data)
+  createdBucketId = res.data!.id
+  expect(res.data!.name).toEqual(newBucketName)
+})
 
 // test('empty bucket', async () => {
 //   const res = await storage.emptyBucket(createdBucketId)
