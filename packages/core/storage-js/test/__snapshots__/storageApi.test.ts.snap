@@ -49,3 +49,15 @@ Object {
   "status": 400,
 }
 `;
+
+exports[`delete bucket 1`] = `
+Object {
+  "message": "Successfully deleted",
+}
+`;
+
+exports[`empty bucket 1`] = `
+Object {
+  "message": "Successfully emptied",
+}
+`;
