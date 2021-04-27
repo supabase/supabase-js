@@ -59,5 +59,10 @@
     }
   },
   "jsdelivr": "dist/umd/supabase.js",
-  "unpkg": "dist/umd/supabase.js"
+  "unpkg": "dist/umd/supabase.js",
+  "release": {
+    "branches": [
+      "main"
+    ]
+  }
 }
