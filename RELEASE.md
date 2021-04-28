@@ -2,6 +2,10 @@
 
 Releases are handled by Semantic release. This document is for forcing and documenting any non-code changes.
 
+## 1.11.8
+
+- Implement @supabase/storage-js
+
 ## 1.4.0
 
 - Ability to redirect a user to a specified location after confirmation
