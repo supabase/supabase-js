@@ -2,7 +2,7 @@ import { DEFAULT_HEADERS } from './lib/constants'
 import { SupabaseClientOptions } from './lib/types'
 import { SupabaseAuthClient } from './lib/SupabaseAuthClient'
 import { SupabaseQueryBuilder } from './lib/SupabaseQueryBuilder'
-import { SupabaseStorageClient } from './lib/SupabaseStorageClient'
+import { SupabaseStorageClient } from '@supabase/storage-js'
 import { PostgrestClient } from '@supabase/postgrest-js'
 import { RealtimeClient, RealtimeSubscription } from '@supabase/realtime-js'
 
