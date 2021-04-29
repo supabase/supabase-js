@@ -7,7 +7,6 @@ const KEY =
 
 const storage = new StorageBucketApi(URL, { Authorization: `Bearer ${KEY}` })
 const newBucketName = `my-new-bucket-${Date.now()}`
-let createdBucketId = ''
 
 test('Build to succeed', async () => {
   // Basic test to ensure TS build is working.
@@ -32,18 +31,17 @@ test('Get bucket with wrong id', async () => {
 
 test('create new bucket', async () => {
   const res = await storage.createBucket(newBucketName)
-  createdBucketId = res.data!.name
-  expect(res.data!.name).toEqual(newBucketName)
+  expect(res.data).toEqual(newBucketName)
 })
 
 test('empty bucket', async () => {
-  const res = await storage.emptyBucket(createdBucketId)
+  const res = await storage.emptyBucket(newBucketName)
   expect(res.error).toBeNull()
   expect(res.data).toMatchSnapshot()
 })
 
 test('delete bucket', async () => {
-  const res = await storage.deleteBucket(createdBucketId)
+  const res = await storage.deleteBucket(newBucketName)
   expect(res.error).toBeNull()
   expect(res.data).toMatchSnapshot()
 })

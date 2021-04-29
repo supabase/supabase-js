@@ -40,11 +40,12 @@ export class StorageBucketApi {
    * Creates a new Storage bucket
    *
    * @param id A unique identifier for the bucket you are creating.
+   * @returns newly created bucket id
    */
-  async createBucket(id: string): Promise<{ data: Bucket | null; error: Error | null }> {
+  async createBucket(id: string): Promise<{ data: string | null; error: Error | null }> {
     try {
       const data = await post(`${this.url}/bucket`, { id, name: id }, { headers: this.headers })
-      return { data, error: null }
+      return { data: data.name, error: null }
     } catch (error) {
       return { data: null, error }
     }
