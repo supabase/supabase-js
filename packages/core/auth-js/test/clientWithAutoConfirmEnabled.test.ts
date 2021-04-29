@@ -18,7 +18,7 @@ test('signUp()', async () => {
     password,
   })
   expect(error).toBeNull()
-  const setSessionReturnData = await auth.setSession(session.refresh_token)
+  const setSessionReturnData = await auth.setSession(session!.refresh_token)
   expect(setSessionReturnData.error).toBeNull()
 
   expect(setSessionReturnData.session).toMatchSnapshot({
