@@ -250,7 +250,10 @@ export default class GoTrueClient {
       return { data: null, user: null, error }
     }
   }
-
+  /**
+   * Sets the session data from refresh_token
+   * @param refresh_token a jwt token
+   */
   async setSession(
     refresh_token: string
   ): Promise<{ session: Session | null; error: Error | null }> {
