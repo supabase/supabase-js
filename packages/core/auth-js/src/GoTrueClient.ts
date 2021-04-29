@@ -251,6 +251,31 @@ export default class GoTrueClient {
     }
   }
 
+  async setSession(
+    refresh_token: string
+  ): Promise<{ session: Session | null; error: Error | null }> {
+    try {
+      if (!refresh_token) {
+        throw new Error('No current session.')
+      }
+      const { data, error } = await this.api.refreshAccessToken(refresh_token)
+      if (error) {
+        return { session: null, error: error }
+      }
+      if (!data) {
+        return {
+          session: null,
+          error: { name: 'Invalid refresh_token', message: 'JWT token provided is Invalid' },
+        }
+      }
+
+      this._saveSession(data)
+      return { session: data, error: null }
+    } catch (error) {
+      return { error, session: null }
+    }
+  }
+
   /**
    * Gets the session data from a URL string
    * @param options.storeSession Optionally store the session in the browser
