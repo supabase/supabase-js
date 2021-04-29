@@ -9,7 +9,14 @@ const auth = new GoTrueClient({
   persistSession: true,
 })
 
+let authWithSession = new GoTrueClient({
+  url: GOTRUE_URL,
+  autoRefreshToken: false,
+  persistSession: false,
+})
+
 const email = `client_ac_enabled_${faker.internet.email()}`
+const setSessionEmail = `client_ac_session_${faker.internet.email()}`
 const password = faker.internet.password()
 
 test('signUp()', async () => {
@@ -18,10 +25,9 @@ test('signUp()', async () => {
     password,
   })
   expect(error).toBeNull()
-  const setSessionReturnData = await auth.setSession(session!.refresh_token)
-  expect(setSessionReturnData.error).toBeNull()
+  expect(error).toBeNull()
 
-  expect(setSessionReturnData.session).toMatchSnapshot({
+  expect(session).toMatchSnapshot({
     access_token: expect.any(String),
     refresh_token: expect.any(String),
     expires_in: expect.any(Number),
@@ -52,6 +58,30 @@ test('signUp()', async () => {
     },
   })
   expect(user?.email).toBe(email)
+})
+
+test('setSession should return no error', async () => {
+  const { error, session } = await authWithSession.signUp({
+    email: setSessionEmail,
+    password,
+  })
+  expect(error).toBeNull()
+  expect(session).not.toBeNull()
+  await authWithSession.setSession(session?.refresh_token!)
+  const { user } = await authWithSession.update({ data: { hello: 'world' } })
+  expect(user?.user_metadata).toStrictEqual({ hello: 'world' })
+})
+
+test('setUser should update user in session', async () => {
+  const authSession = new GoTrueClient({
+    url: GOTRUE_URL,
+    autoRefreshToken: false,
+    persistSession: false,
+  })
+  const session = authWithSession.session()
+  const { user, error } = await authSession.setUser(session!.access_token)
+  expect(error).toBeNull()
+  expect(user?.user_metadata).toStrictEqual({ hello: 'world' })
 })
 
 test('signUp() the same user twice should throw an error', async () => {
