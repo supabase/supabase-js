@@ -11,12 +11,14 @@ const auth = new GoTrueClient({
 
 const email = `client_ac_enabled_${faker.internet.email()}`
 const password = faker.internet.password()
+var access_token: string | null = null
 
 test('signUp()', async () => {
   let { error, user, session } = await auth.signUp({
     email,
     password,
   })
+  access_token = session?.access_token || null
   expect(error).toBeNull()
   expect(session).toMatchSnapshot({
     access_token: expect.any(String),
@@ -60,6 +62,23 @@ test('signUp() the same user twice should throw an error', async () => {
   expect(data).toBeNull()
   expect(user).toBeNull()
 })
+
+
+test('setUser() set the Auth headers on a new client', async () => {
+  expect(access_token).toBeTruthy()
+
+  const newClient = new GoTrueClient({
+    url: GOTRUE_URL,
+    autoRefreshToken: false,
+    persistSession: false,
+  })
+
+  newClient.setUser(access_token!)
+
+  const authBearer = newClient.session()?.access_token
+  expect(authBearer).toEqual(access_token)
+})
+
 
 test('signIn()', async () => {
   let { error, session, user } = await auth.signIn({

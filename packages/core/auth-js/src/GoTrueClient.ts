@@ -252,6 +252,21 @@ export default class GoTrueClient {
   }
 
   /**
+   * Sets the current user.
+   * @param access_token a jwt access token
+   */
+  setUser(access_token: string): Session {
+    this.currentSession = {
+      ...this.currentSession,
+      access_token,
+      token_type: 'bearer',
+      user: null,
+    }
+
+    return this.currentSession
+  }
+
+  /**
    * Gets the session data from a URL string
    * @param options.storeSession Optionally store the session in the browser
    */
