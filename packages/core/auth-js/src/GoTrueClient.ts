@@ -252,7 +252,7 @@ export default class GoTrueClient {
   }
 
   /**
-   * Sets the current user.
+   * Overrides the JWT on the current client which will then be used in all subsequent requests.
    * @param access_token a jwt access token
    */
   setUser(access_token: string): Session {
