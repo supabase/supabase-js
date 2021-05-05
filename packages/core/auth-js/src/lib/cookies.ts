@@ -116,7 +116,7 @@ function isSecureEnvironment(req: any) {
 
   const host =
     (req.headers.host.indexOf(':') > -1 && req.headers.host.split(':')[0]) || req.headers.host
-  if (['localhost', '127.0.0.1'].indexOf(host) > -1) {
+  if (['localhost', '127.0.0.1'].indexOf(host) > -1 || host.endsWith('.local')) {
     return false
   }
 
