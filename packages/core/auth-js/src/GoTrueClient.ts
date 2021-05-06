@@ -252,10 +252,10 @@ export default class GoTrueClient {
   }
 
   /**
-   * Overrides the JWT on the current client which will then be used in all subsequent requests.
+   * Overrides the JWT on the current client. The JWT will then be sent in all subsequent network requests.
    * @param access_token a jwt access token
    */
-  setUser(access_token: string): Session {
+  setAuth(access_token: string): Session {
     this.currentSession = {
       ...this.currentSession,
       access_token,
