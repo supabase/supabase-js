@@ -64,7 +64,7 @@ test('signUp() the same user twice should throw an error', async () => {
 })
 
 
-test('setUser() set the Auth headers on a new client', async () => {
+test('setAuth() should set the Auth headers on a new client', async () => {
   expect(access_token).toBeTruthy()
 
   const newClient = new GoTrueClient({
@@ -73,7 +73,7 @@ test('setUser() set the Auth headers on a new client', async () => {
     persistSession: false,
   })
 
-  newClient.setUser(access_token!)
+  newClient.setAuth(access_token!)
 
   const authBearer = newClient.session()?.access_token
   expect(authBearer).toEqual(access_token)
