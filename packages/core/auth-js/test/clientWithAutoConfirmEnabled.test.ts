@@ -18,12 +18,14 @@ let authWithSession = new GoTrueClient({
 const email = `client_ac_enabled_${faker.internet.email()}`
 const setSessionEmail = `client_ac_session_${faker.internet.email()}`
 const password = faker.internet.password()
+var access_token: string | null = null
 
 test('signUp()', async () => {
   let { error, user, session } = await auth.signUp({
     email,
     password,
   })
+  access_token = session?.access_token || null
   expect(error).toBeNull()
   expect(error).toBeNull()
 
@@ -81,6 +83,23 @@ test('signUp() the same user twice should throw an error', async () => {
   expect(data).toBeNull()
   expect(user).toBeNull()
 })
+
+
+test('setAuth() should set the Auth headers on a new client', async () => {
+  expect(access_token).toBeTruthy()
+
+  const newClient = new GoTrueClient({
+    url: GOTRUE_URL,
+    autoRefreshToken: false,
+    persistSession: false,
+  })
+
+  newClient.setAuth(access_token!)
+
+  const authBearer = newClient.session()?.access_token
+  expect(authBearer).toEqual(access_token)
+})
+
 
 test('signIn()', async () => {
   let { error, session, user } = await auth.signIn({

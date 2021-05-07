@@ -279,6 +279,20 @@ export default class GoTrueClient {
       return { error, session: null }
     }
   }
+  /**
+   * Overrides the JWT on the current client. The JWT will then be sent in all subsequent network requests.
+   * @param access_token a jwt access token
+   */
+  setAuth(access_token: string): Session {
+    this.currentSession = {
+      ...this.currentSession,
+      access_token,
+      token_type: 'bearer',
+      user: null,
+    }
+
+    return this.currentSession
+  }
 
   /**
    * Gets the session data from a URL string
@@ -431,7 +445,7 @@ export default class GoTrueClient {
   private _recoverSession() {
     try {
       const json = isBrowser() && this.localStorage?.getItem(STORAGE_KEY)
-      if (!json) {
+      if (!json || typeof json !== 'string') {
         return null
       }
 
@@ -477,9 +491,10 @@ export default class GoTrueClient {
         console.log('Current session is missing data.')
         this._removeSession()
       } else {
-        // should be handle on _recoverSession method already
-        // this._saveSession(currentSession)
-        // this._notifyAllSubscribers('SIGNED_IN')
+        // should be handled on _recoverSession method already
+        // But we still need the code here to accommodate for AsyncStorage e.g. in React native
+        this._saveSession(currentSession)
+        this._notifyAllSubscribers('SIGNED_IN')
       }
     } catch (err) {
       console.error(err)

@@ -15,7 +15,7 @@ export interface Session {
   expires_at?: number
   refresh_token?: string
   token_type: string
-  user: User
+  user: User | null
 }
 export interface User {
   id: string
