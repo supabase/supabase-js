@@ -104,8 +104,6 @@ test('signIn()', async () => {
       app_metadata: {
         provider: 'email',
       },
-      expect(user?.email).toBe(email)
-    })
     },
   })
   expect(user).toMatchSnapshot({
