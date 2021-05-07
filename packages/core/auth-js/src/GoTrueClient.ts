@@ -252,8 +252,8 @@ export default class GoTrueClient {
   }
 
   /**
-   * Sets the session data from refresh_token
-   * @param refresh_token a jwt token
+   * Sets the session data from refresh_token and returns current Session and Error
+   * @param refresh_token a JWT token
    */
   async setSession(
     refresh_token: string
