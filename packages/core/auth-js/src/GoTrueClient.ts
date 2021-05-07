@@ -252,26 +252,6 @@ export default class GoTrueClient {
   }
 
   /**
-   * Sets user data on session.
-   * @param access_token a jwt access token
-   */
-  async setUser(access_token: string): Promise<{ user: User | null; error: Error | null }> {
-    try {
-      const { user, error } = await this.api.getUser(access_token)
-      if (error) return { user: null, error }
-
-      if (!user) throw Error('Invalid user data.')
-
-      const session = { ...this.currentSession, access_token, token_type: 'bearer', user }
-      this._saveSession(session)
-
-      return { user, error: null }
-    } catch (error) {
-      return { user: null, error }
-    }
-  }
-
-  /**
    * Sets the session data from refresh_token
    * @param refresh_token a jwt token
    */
