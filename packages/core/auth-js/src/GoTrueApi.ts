@@ -1,4 +1,4 @@
-import { get, post, put } from './lib/fetch'
+import { get, post, put, destroy } from './lib/fetch'
 import { Session, Provider, UserAttributes, CookieOptions, User } from './lib/types'
 import { COOKIE_OPTIONS } from './lib/constants'
 import { setCookie, deleteCookie } from './lib/cookies'
@@ -236,6 +236,29 @@ export default class GoTrueApi {
       const data: any = await put(`${this.url}/user`, attributes, {
         headers: this._createRequestHeaders(jwt),
       })
+      return { user: data, data, error: null }
+    } catch (error) {
+      return { user: null, data: null, error }
+    }
+  }
+
+  /**
+   * Delete an user.
+   * @param userUID The user uid you want to remove.
+   * @param jwt A valid, logged-in JWT.
+   */
+  async deleteUser(
+    userUID: string,
+    jwt: string
+  ): Promise<{ user: User | null; data: User | null; error: Error | null }> {
+    try {
+      const data: any = await destroy(
+        `${this.url}/admin/users/${userUID}`,
+        {},
+        {
+          headers: this._createRequestHeaders(jwt),
+        }
+      )
       return { user: data, data, error: null }
     } catch (error) {
       return { user: null, data: null, error }

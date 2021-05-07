@@ -63,7 +63,6 @@ test('signUp() the same user twice should throw an error', async () => {
   expect(user).toBeNull()
 })
 
-
 test('setAuth() should set the Auth headers on a new client', async () => {
   expect(access_token).toBeTruthy()
 
@@ -78,7 +77,6 @@ test('setAuth() should set the Auth headers on a new client', async () => {
   const authBearer = newClient.session()?.access_token
   expect(authBearer).toEqual(access_token)
 })
-
 
 test('signIn()', async () => {
   let { error, session, user } = await auth.signIn({

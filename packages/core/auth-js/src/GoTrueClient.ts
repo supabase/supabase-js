@@ -252,6 +252,31 @@ export default class GoTrueClient {
   }
 
   /**
+   * Delete an user.
+   */
+  async deleteUser({
+    userUID,
+  }: {
+    userUID: string
+  }): Promise<{ data: User | null; user: User | null; error: Error | null }> {
+    try {
+      if (!this.currentSession?.access_token) throw new Error('Not logged in.')
+
+      const { error, user } = await this.api.deleteUser(userUID, this.currentSession.access_token)
+      if (error) throw error
+      if (!user) throw Error('Invalid user data.')
+
+      const session = { ...this.currentSession, user }
+      this._saveSession(session)
+      this._notifyAllSubscribers('USER_DELETED')
+
+      return { data: user, user, error: null }
+    } catch (error) {
+      return { data: null, user: null, error }
+    }
+  }
+
+  /**
    * Overrides the JWT on the current client. The JWT will then be sent in all subsequent network requests.
    * @param access_token a jwt access token
    */

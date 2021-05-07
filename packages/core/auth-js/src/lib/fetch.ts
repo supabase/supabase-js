@@ -7,7 +7,7 @@ export interface FetchOptions {
   noResolveJson?: boolean
 }
 
-export type RequestMethodType = 'GET' | 'POST' | 'PUT'
+export type RequestMethodType = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
 
 const _getErrorMessage = (err: any): string =>
   err.msg || err.message || err.error_description || err.error || JSON.stringify(err)
@@ -65,4 +65,8 @@ export async function post(url: string, body: object, options?: FetchOptions): P
 
 export async function put(url: string, body: object, options?: FetchOptions): Promise<any> {
   return _handleRequest('PUT', url, options, body)
+}
+
+export async function destroy(url: string, body: object, options?: FetchOptions): Promise<any> {
+  return _handleRequest('DELETE', url, options, body)
 }
