@@ -234,3 +234,8 @@ describe("insert, update, delete with count: 'exact'", () => {
     expect(res).toMatchSnapshot()
   })
 })
+
+test('insert includes columns param', async () => {
+  const client = postgrest.from('users').insert([{ foo: 1 }, { bar: 2 }])
+  expect((client as any).url.searchParams.get('columns')).toMatchInlineSnapshot(`"foo,bar"`)
+})
