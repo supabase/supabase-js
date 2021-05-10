@@ -252,6 +252,34 @@ export default class GoTrueClient {
   }
 
   /**
+   * Sets the session data from refresh_token and returns current Session and Error
+   * @param refresh_token a JWT token
+   */
+  async setSession(
+    refresh_token: string
+  ): Promise<{ session: Session | null; error: Error | null }> {
+    try {
+      if (!refresh_token) {
+        throw new Error('No current session.')
+      }
+      const { data, error } = await this.api.refreshAccessToken(refresh_token)
+      if (error) {
+        return { session: null, error: error }
+      }
+      if (!data) {
+        return {
+          session: null,
+          error: { name: 'Invalid refresh_token', message: 'JWT token provided is Invalid' },
+        }
+      }
+
+      this._saveSession(data)
+      return { session: data, error: null }
+    } catch (error) {
+      return { error, session: null }
+    }
+  }
+  /**
    * Overrides the JWT on the current client. The JWT will then be sent in all subsequent network requests.
    * @param access_token a jwt access token
    */
