@@ -1,4 +1,4 @@
-import { get, post, put, destroy } from './lib/fetch'
+import { get, post, put, remove } from './lib/fetch'
 import { Session, Provider, UserAttributes, CookieOptions, User } from './lib/types'
 import { COOKIE_OPTIONS } from './lib/constants'
 import { setCookie, deleteCookie } from './lib/cookies'
@@ -252,7 +252,7 @@ export default class GoTrueApi {
     jwt: string
   ): Promise<{ user: User | null; data: User | null; error: Error | null }> {
     try {
-      const data: any = await destroy(
+      const data: any = await remove(
         `${this.url}/admin/users/${userUID}`,
         {},
         {
