@@ -244,16 +244,16 @@ export default class GoTrueApi {
 
   /**
    * Delete an user.
-   * @param userUID The user uid you want to remove.
+   * @param uid The user uid you want to remove.
    * @param jwt A valid, logged-in JWT.
    */
   async deleteUser(
-    userUID: string,
+    uid: string,
     jwt: string
   ): Promise<{ user: User | null; data: User | null; error: Error | null }> {
     try {
       const data: any = await remove(
-        `${this.url}/admin/users/${userUID}`,
+        `${this.url}/admin/users/${uid}`,
         {},
         {
           headers: this._createRequestHeaders(jwt),
