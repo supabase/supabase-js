@@ -245,7 +245,7 @@ export default class GoTrueApi {
   /**
    * Delete an user.
    * @param uid The user uid you want to remove.
-   * @param jwt A valid, logged-in JWT.
+   * @param jwt A valid JWT. Must be a full-access API key (e.g. service_role key).
    */
   async deleteUser(
     uid: string,
