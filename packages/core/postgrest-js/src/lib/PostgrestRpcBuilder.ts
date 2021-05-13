@@ -1,5 +1,5 @@
 import { PostgrestBuilder } from './types'
-import PostgrestTransformBuilder from './PostgrestTransformBuilder'
+import PostgrestFilterBuilder from './PostgrestFilterBuilder'
 
 export default class PostgrestRpcBuilder<T> extends PostgrestBuilder<T> {
   constructor(
@@ -22,7 +22,7 @@ export default class PostgrestRpcBuilder<T> extends PostgrestBuilder<T> {
     }: {
       count?: null | 'exact' | 'planned' | 'estimated'
     } = {}
-  ): PostgrestTransformBuilder<T> {
+  ): PostgrestFilterBuilder<T> {
     this.method = 'POST'
     this.body = params
 
@@ -31,6 +31,6 @@ export default class PostgrestRpcBuilder<T> extends PostgrestBuilder<T> {
       else this.headers['Prefer'] = `count=${count}`
     }
 
-    return new PostgrestTransformBuilder(this)
+    return new PostgrestFilterBuilder(this)
   }
 }

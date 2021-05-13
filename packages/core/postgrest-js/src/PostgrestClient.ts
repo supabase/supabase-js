@@ -1,6 +1,6 @@
 import PostgrestQueryBuilder from './lib/PostgrestQueryBuilder'
 import PostgrestRpcBuilder from './lib/PostgrestRpcBuilder'
-import PostgrestTransformBuilder from './lib/PostgrestTransformBuilder'
+import PostgrestFilterBuilder from './lib/PostgrestFilterBuilder'
 
 export default class PostgrestClient {
   url: string
@@ -58,7 +58,7 @@ export default class PostgrestClient {
     }: {
       count?: null | 'exact' | 'planned' | 'estimated'
     } = {}
-  ): PostgrestTransformBuilder<T> {
+  ): PostgrestFilterBuilder<T> {
     const url = `${this.url}/rpc/${fn}`
     return new PostgrestRpcBuilder<T>(url, {
       headers: this.headers,
