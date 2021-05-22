@@ -274,6 +274,7 @@ export default class GoTrueClient {
       }
 
       this._saveSession(data)
+      this._notifyAllSubscribers('SIGNED_IN')
       return { session: data, error: null }
     } catch (error) {
       return { error, session: null }
