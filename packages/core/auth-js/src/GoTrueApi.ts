@@ -121,7 +121,7 @@ export default class GoTrueApi {
     options: {
       redirectTo?: string
     } = {}
-  ): Promise<{ data: {} | null; error: Error | null }> {
+  ): Promise<{ data: User | null; error: Error | null }> {
     try {
       let headers = { ...this.headers }
       if (options.redirectTo) {
