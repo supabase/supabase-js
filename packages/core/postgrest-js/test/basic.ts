@@ -239,3 +239,8 @@ test('insert includes columns param', async () => {
   const client = postgrest.from('users').insert([{ foo: 1 }, { bar: 2 }])
   expect((client as any).url.searchParams.get('columns')).toMatchInlineSnapshot(`"foo,bar"`)
 })
+
+test('insert w/ empty body has no columns param', async () => {
+  const client = postgrest.from('users').insert([{}, {}])
+  expect((client as any).url.searchParams.has('columns')).toBeFalsy()
+})

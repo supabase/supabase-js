@@ -109,8 +109,10 @@ export default class PostgrestQueryBuilder<T> extends PostgrestBuilder<T> {
 
     if (Array.isArray(values)) {
       const columns = values.reduce((acc, x) => acc.concat(Object.keys(x)), [] as string[])
-      const uniqueColumns = [...new Set(columns)]
-      this.url.searchParams.set('columns', uniqueColumns.join(','))
+      if (columns.length > 0) {
+        const uniqueColumns = [...new Set(columns)]
+        this.url.searchParams.set('columns', uniqueColumns.join(','))
+      }
     }
 
     return new PostgrestFilterBuilder(this)
