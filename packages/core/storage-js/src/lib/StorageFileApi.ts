@@ -29,7 +29,7 @@ export class StorageFileApi {
   /**
    * Uploads a file to an existing bucket.
    *
-   * @param path The relative file path including the bucket ID. Should be of the format `bucket/folder/subfolder/filename.png`. The bucket must already exist before attempting to upload.
+   * @param path The relative file path. Should be of the format `folder/subfolder/filename.png`. The bucket must already exist before attempting to upload.
    * @param file The File object to be stored in the bucket.
    * @param fileOptions HTTP headers. For example `cacheControl`
    */
@@ -70,7 +70,7 @@ export class StorageFileApi {
   /**
    * Replaces an existing file at the specified path with a new one.
    *
-   * @param path The relative file path including the bucket ID. Should be of the format `bucket/folder/subfolder`. The bucket already exist before attempting to upload.
+   * @param path The relative file path. Should be of the format `folder/subfolder`. The bucket already exist before attempting to upload.
    * @param file The file object to be stored in the bucket.
    * @param fileOptions HTTP headers. For example `cacheControl`
    */
