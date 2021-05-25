@@ -32,7 +32,7 @@ export class SupabaseRealtimeClient {
    * @param event The event
    * @param callback A callback function that is called whenever the event occurs.
    */
-  on(event: SupabaseEventTypes, callback: Function) {
+  on(event: SupabaseEventTypes, callback: (payload: SupabaseRealtimePayload<any>) => void) {
     this.subscription.on(event, (payload: any) => {
       let enrichedPayload: SupabaseRealtimePayload<any> = {
         schema: payload.schema,
