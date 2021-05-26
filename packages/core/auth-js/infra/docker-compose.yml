@@ -6,6 +6,7 @@ services:
     ports:
       - '9999:9999'
     environment:
+      GOTRUE_MAILER_URLPATHS_CONFIRMATION: '/verify'
       GOTRUE_JWT_SECRET: '37c304f8-51aa-419a-a1af-06154e63707a'
       GOTRUE_JWT_EXP: 3600
       GOTRUE_DB_DRIVER: postgres
@@ -15,6 +16,7 @@ services:
       GOTRUE_DISABLE_SIGNUP: 'false'
       API_EXTERNAL_URL: http://localhost:9999
       GOTRUE_SITE_URL: http://localhost:9999
+      GOTRUE_URI_ALLOW_LIST: https://supabase.io/docs
       GOTRUE_MAILER_AUTOCONFIRM: 'false'
       GOTRUE_LOG_LEVEL: DEBUG
       GOTRUE_OPERATOR_TOKEN: super-secret-operator-token

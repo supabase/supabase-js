@@ -45,10 +45,11 @@ export default class GoTrueApi {
   ): Promise<{ data: Session | User | null; error: Error | null }> {
     try {
       let headers = { ...this.headers }
+      let queryString = ''
       if (options.redirectTo) {
-        headers['referer'] = options.redirectTo
+        queryString = '?redirect_to=' + options.redirectTo
       }
-      const data = await post(`${this.url}/signup`, { email, password }, { headers })
+      const data = await post(`${this.url}/signup${queryString}`, { email, password }, { headers })
       let session = { ...data }
       if (session.expires_in) session.expires_at = expiresAt(data.expires_in)
       return { data: session, error: null }
@@ -72,11 +73,12 @@ export default class GoTrueApi {
   ): Promise<{ data: Session | null; error: Error | null }> {
     try {
       let headers = { ...this.headers }
+      let queryString = '?grant_type=password'
       if (options.redirectTo) {
-        headers['referer'] = options.redirectTo
+        queryString += '&redirect_to=' + options.redirectTo
       }
       const data = await post(
-        `${this.url}/token?grant_type=password`,
+        `${this.url}/token${queryString}`,
         { email, password },
         { headers }
       )
@@ -101,10 +103,11 @@ export default class GoTrueApi {
   ): Promise<{ data: {} | null; error: Error | null }> {
     try {
       let headers = { ...this.headers }
+      let queryString = ''
       if (options.redirectTo) {
-        headers['referer'] = options.redirectTo
+        queryString += '?redirect_to=' + options.redirectTo
       }
-      const data = await post(`${this.url}/magiclink`, { email }, { headers })
+      const data = await post(`${this.url}/magiclink${queryString}`, { email }, { headers })
       return { data, error: null }
     } catch (error) {
       return { data: null, error }
@@ -124,10 +127,11 @@ export default class GoTrueApi {
   ): Promise<{ data: User | null; error: Error | null }> {
     try {
       let headers = { ...this.headers }
+      let queryString = ''
       if (options.redirectTo) {
-        headers['referer'] = options.redirectTo
+        queryString += '?redirect_to=' + options.redirectTo
       }
-      const data = await post(`${this.url}/invite`, { email }, { headers })
+      const data = await post(`${this.url}/invite${queryString}`, { email }, { headers })
       return { data, error: null }
     } catch (error) {
       return { data: null, error }
@@ -147,10 +151,11 @@ export default class GoTrueApi {
   ): Promise<{ data: {} | null; error: Error | null }> {
     try {
       let headers = { ...this.headers }
+      let queryString = ''
       if (options.redirectTo) {
-        headers['referer'] = options.redirectTo
+        queryString += '?redirect_to=' + options.redirectTo
       }
-      const data = await post(`${this.url}/recover`, { email }, { headers })
+      const data = await post(`${this.url}/recover${queryString}`, { email }, { headers })
       return { data, error: null }
     } catch (error) {
       return { data: null, error }
