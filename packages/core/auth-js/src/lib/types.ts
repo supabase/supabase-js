@@ -91,6 +91,7 @@ export interface CookieOptions {
 export interface UserCredentials {
   email?: string
   password?: string
+  refreshToken?: string
   // (Optional) The name of the provider.
   provider?: Provider
 }

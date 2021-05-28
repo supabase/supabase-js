@@ -17,6 +17,7 @@ let authWithSession = new GoTrueClient({
 
 const email = `client_ac_enabled_${faker.internet.email()}`
 const setSessionEmail = `client_ac_session_${faker.internet.email()}`
+const refreshTokenEmail = `client_refresh_token_signin_${faker.internet.email()}`
 const password = faker.internet.password()
 var access_token: string | null = null
 
@@ -136,6 +137,50 @@ test('signIn()', async () => {
     },
   })
   expect(user?.email).toBe(email)
+})
+test('signIn() with refreshToken', async () => {
+  const { error: initialError, session: initialSession } = await authWithSession.signUp({
+    email: refreshTokenEmail,
+    password,
+  })
+  expect(initialError).toBeNull()
+  expect(initialSession).not.toBeNull()
+
+  const refreshToken = initialSession?.refresh_token
+  const { error, user, session } = await authWithSession.signIn({ refreshToken })
+
+  expect(error).toBeNull()
+  expect(session).toMatchSnapshot({
+    access_token: expect.any(String),
+    refresh_token: expect.any(String),
+    expires_in: expect.any(Number),
+    expires_at: expect.any(Number),
+    user: {
+      id: expect.any(String),
+      email: expect.any(String),
+      aud: expect.any(String),
+      confirmed_at: expect.any(String),
+      last_sign_in_at: expect.any(String),
+      created_at: expect.any(String),
+      updated_at: expect.any(String),
+      app_metadata: {
+        provider: 'email',
+      },
+    },
+  })
+  expect(user).toMatchSnapshot({
+    id: expect.any(String),
+    email: expect.any(String),
+    aud: expect.any(String),
+    confirmed_at: expect.any(String),
+    last_sign_in_at: expect.any(String),
+    created_at: expect.any(String),
+    updated_at: expect.any(String),
+    app_metadata: {
+      provider: 'email',
+    },
+  })
+  expect(user?.email).toBe(refreshTokenEmail)
 })
 
 test('Get user', async () => {
