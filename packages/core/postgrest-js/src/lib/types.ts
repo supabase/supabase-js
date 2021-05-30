@@ -91,7 +91,7 @@ export abstract class PostgrestBuilder<T> implements PromiseLike<PostgrestRespon
           const isReturnMinimal = this.headers['Prefer']?.split(',').includes('return=minimal')
           if (this.method !== 'HEAD' && !isReturnMinimal) {
             const text = await res.text()
-            if (text && text !== '') data = JSON.parse(text)
+            if (text && text !== '' &&  this.headers['Accept'] !== 'text/csv') data = JSON.parse(text)
           }
 
           const countHeader = this.headers['Prefer']?.match(/count=(exact|planned|estimated)/)
