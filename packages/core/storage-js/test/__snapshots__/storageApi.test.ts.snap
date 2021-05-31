@@ -50,6 +50,16 @@ Object {
 }
 `;
 
+exports[`create new public bucket 1`] = `
+Object {
+  "created_at": "2021-05-31T23:05:11.103209+00:00",
+  "id": "my-new-public-bucket-1622502310904",
+  "name": "my-new-public-bucket-1622502310904",
+  "owner": "317eadce-631a-4429-a0bb-f19a7a517b4a",
+  "updated_at": "2021-05-31T23:05:11.103209+00:00",
+}
+`;
+
 exports[`delete bucket 1`] = `
 Object {
   "message": "Successfully deleted",
