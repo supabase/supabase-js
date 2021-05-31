@@ -77,11 +77,7 @@ export default class GoTrueApi {
       if (options.redirectTo) {
         queryString += '&redirect_to=' + options.redirectTo
       }
-      const data = await post(
-        `${this.url}/token${queryString}`,
-        { email, password },
-        { headers }
-      )
+      const data = await post(`${this.url}/token${queryString}`, { email, password }, { headers })
       let session = { ...data }
       if (session.expires_in) session.expires_at = expiresAt(data.expires_in)
       return { data: session, error: null }

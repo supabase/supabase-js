@@ -96,6 +96,47 @@ Object {
 }
 `;
 
+exports[`signIn() with refreshToken 1`] = `
+Object {
+  "access_token": Any<String>,
+  "expires_at": Any<Number>,
+  "expires_in": Any<Number>,
+  "refresh_token": Any<String>,
+  "token_type": "bearer",
+  "user": Object {
+    "app_metadata": Object {
+      "provider": "email",
+    },
+    "aud": Any<String>,
+    "confirmed_at": Any<String>,
+    "created_at": Any<String>,
+    "email": Any<String>,
+    "id": Any<String>,
+    "last_sign_in_at": Any<String>,
+    "role": "",
+    "updated_at": Any<String>,
+    "user_metadata": Object {},
+  },
+}
+`;
+
+exports[`signIn() with refreshToken 2`] = `
+Object {
+  "app_metadata": Object {
+    "provider": "email",
+  },
+  "aud": Any<String>,
+  "confirmed_at": Any<String>,
+  "created_at": Any<String>,
+  "email": Any<String>,
+  "id": Any<String>,
+  "last_sign_in_at": Any<String>,
+  "role": "",
+  "updated_at": Any<String>,
+  "user_metadata": Object {},
+}
+`;
+
 exports[`signOut 1`] = `
 Object {
   "error": null,

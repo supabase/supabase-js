@@ -144,12 +144,13 @@ export default class GoTrueClient {
    * @type UserCredentials
    * @param email The user's email address.
    * @param password The user's password.
+   * @param refreshToken A valid refresh token that was returned on login.
    * @param provider One of the providers supported by GoTrue.
    * @param redirectTo A URL or mobile address to send the user to after they are confirmed.
    * @param scopes A space-separated list of scopes granted to the OAuth application.
    */
   async signIn(
-    { email, password, provider }: UserCredentials,
+    { email, password, refreshToken, provider }: UserCredentials,
     options: {
       redirectTo?: string
       scopes?: string
@@ -175,6 +176,18 @@ export default class GoTrueClient {
         return this._handleEmailSignIn(email, password, {
           redirectTo: options.redirectTo,
         })
+      }
+      if (refreshToken) {
+        // currentSession and currentUser will be updated to latest on _callRefreshToken using the passed refreshToken
+        const { error } = await this._callRefreshToken(refreshToken)
+        if (error) throw error
+
+        return {
+          data: this.currentSession,
+          user: this.currentUser,
+          session: this.currentSession,
+          error: null,
+        }
       }
       if (provider) {
         return this._handleProviderSignIn(provider, {
@@ -280,7 +293,7 @@ export default class GoTrueClient {
       return { error, session: null }
     }
   }
-  
+
   /**
    * Overrides the JWT on the current client. The JWT will then be sent in all subsequent network requests.
    * @param access_token a jwt access token
