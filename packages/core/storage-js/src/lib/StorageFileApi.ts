@@ -179,17 +179,17 @@ export class StorageFileApi {
   }
 
   /**
-   * Downloads a file.
+   * Returns a publicly accessible URL
    *
    * @param path The file path to be downloaded, including the path and file name. For example `folder/image.png`.
    */
-  async getPublicUrl(
+  getPublicUrl(
     path: string
-  ): Promise<{
+  ): {
     data: { publicURL: string } | null
     error: Error | null
     publicURL: string | null
-  }> {
+  } {
     try {
       const _path = this._getFinalPath(path)
       let publicURL = `/object/public/${_path}`
