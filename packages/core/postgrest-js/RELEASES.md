@@ -2,6 +2,11 @@
 
 Releases are handled by Semantic release. This document is for forcing and documenting any non-code changes.
 
+### 0.29.0
+
+- `csv()`: https://github.com/supabase/postgrest-js/pull/187
+
+
 ### v0.21.1
 
 - Make PostgrestResponse data always an array
