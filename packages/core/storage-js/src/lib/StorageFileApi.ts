@@ -179,7 +179,7 @@ export class StorageFileApi {
   }
 
   /**
-   * Returns a publicly accessible URL
+   * Retrieve URLs for assets in public buckets
    *
    * @param path The file path to be downloaded, including the path and file name. For example `folder/image.png`.
    */
