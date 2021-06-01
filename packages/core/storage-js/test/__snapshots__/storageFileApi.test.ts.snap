@@ -2,8 +2,8 @@
 
 exports[`get public URL 1`] = `
 Object {
-  "publicURL": "/object/public/my-new-bucket-1622499505045/profiles/myUniqueUserId/profile.png",
+  "publicURL": "/object/public/my-new-public-bucket/profiles/myUniqueUserId/profile.png",
 }
 `;
 
-exports[`get public URL 2`] = `"http://localhost:8000/storage/v1/object/public/my-new-bucket-1622499505045/profiles/myUniqueUserId/profile.png"`;
+exports[`get public URL 2`] = `"http://localhost:8000/storage/v1/object/public/my-new-public-bucket/profiles/myUniqueUserId/profile.png"`;
