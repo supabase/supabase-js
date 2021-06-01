@@ -12,7 +12,7 @@ CREATE TABLE "storage"."buckets" (
     "owner" uuid,
     "created_at" timestamptz DEFAULT now(),
     "updated_at" timestamptz DEFAULT now(),
-    "public" boolean default false,
+    "public" boolean DEFAULT false,
     CONSTRAINT "buckets_owner_fkey" FOREIGN KEY ("owner") REFERENCES "auth"."users"("id"),
     PRIMARY KEY ("id")
 );
