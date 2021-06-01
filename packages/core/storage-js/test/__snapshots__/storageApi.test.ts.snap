@@ -7,6 +7,7 @@ Array [
     "id": "bucket2",
     "name": "bucket2",
     "owner": "4d56e902-f0a0-4662-8448-a4d9e643c142",
+    "public": false,
     "updated_at": "2021-02-17T04:43:32.770206+00:00",
   },
   Object {
@@ -14,6 +15,7 @@ Array [
     "id": "bucket3",
     "name": "bucket3",
     "owner": "4d56e902-f0a0-4662-8448-a4d9e643c142",
+    "public": false,
     "updated_at": "2021-02-17T04:43:32.770206+00:00",
   },
   Object {
@@ -21,6 +23,7 @@ Array [
     "id": "bucket4",
     "name": "bucket4",
     "owner": "317eadce-631a-4429-a0bb-f19a7a517b4a",
+    "public": false,
     "updated_at": "2021-02-25T09:23:01.58385+00:00",
   },
   Object {
@@ -28,6 +31,7 @@ Array [
     "id": "bucket5",
     "name": "bucket5",
     "owner": "317eadce-631a-4429-a0bb-f19a7a517b4a",
+    "public": false,
     "updated_at": "2021-02-27T03:04:25.6386+00:00",
   },
 ]
@@ -39,6 +43,7 @@ Object {
   "id": "bucket2",
   "name": "bucket2",
   "owner": "4d56e902-f0a0-4662-8448-a4d9e643c142",
+    "public": false,
   "updated_at": "2021-02-17T04:43:32.770206+00:00",
 }
 `;
@@ -47,16 +52,6 @@ exports[`Get bucket with wrong id 1`] = `
 Object {
   "message": "The resource was not found",
   "status": 400,
-}
-`;
-
-exports[`create new public bucket 1`] = `
-Object {
-  "created_at": "2021-05-31T23:05:11.103209+00:00",
-  "id": "my-new-public-bucket-1622502310904",
-  "name": "my-new-public-bucket-1622502310904",
-  "owner": "317eadce-631a-4429-a0bb-f19a7a517b4a",
-  "updated_at": "2021-05-31T23:05:11.103209+00:00",
 }
 `;
 

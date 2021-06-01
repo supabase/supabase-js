@@ -7,7 +7,6 @@ const KEY =
 
 const storage = new StorageBucketApi(URL, { Authorization: `Bearer ${KEY}` })
 const newBucketName = `my-new-bucket-${Date.now()}`
-const newPublicBucketName = `my-new-public-bucket-${Date.now()}`
 
 test('Build to succeed', async () => {
   // Basic test to ensure TS build is working.
@@ -36,9 +35,10 @@ test('create new bucket', async () => {
 })
 
 test('create new public bucket', async () => {
+  const newPublicBucketName = 'my-new-public-bucket'
   await storage.createBucket(newPublicBucketName, { public: true })
   const res = await storage.getBucket(newPublicBucketName)
-  expect(res.data).toMatchSnapshot()
+  expect(res.data.public).toBe(true)
 })
 
 test('empty bucket', async () => {
