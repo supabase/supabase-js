@@ -43,7 +43,7 @@ Object {
   "id": "bucket2",
   "name": "bucket2",
   "owner": "4d56e902-f0a0-4662-8448-a4d9e643c142",
-    "public": false,
+  "public": false,
   "updated_at": "2021-02-17T04:43:32.770206+00:00",
 }
 `;

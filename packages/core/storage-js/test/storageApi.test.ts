@@ -38,7 +38,7 @@ test('create new public bucket', async () => {
   const newPublicBucketName = 'my-new-public-bucket'
   await storage.createBucket(newPublicBucketName, { public: true })
   const res = await storage.getBucket(newPublicBucketName)
-  expect(res.data.public).toBe(true)
+  expect(res.data!.public).toBe(true)
 })
 
 test('empty bucket', async () => {
