@@ -1,4 +1,4 @@
-import { get, post, remove } from './fetch'
+import { get, post, put, remove } from './fetch'
 import { Bucket } from './types'
 
 export class StorageBucketApi {
@@ -42,10 +42,38 @@ export class StorageBucketApi {
    * @param id A unique identifier for the bucket you are creating.
    * @returns newly created bucket id
    */
-  async createBucket(id: string): Promise<{ data: string | null; error: Error | null }> {
+  async createBucket(
+    id: string,
+    options: { public: boolean } = { public: false }
+  ): Promise<{ data: string | null; error: Error | null }> {
     try {
-      const data = await post(`${this.url}/bucket`, { id, name: id }, { headers: this.headers })
+      const data = await post(
+        `${this.url}/bucket`,
+        { id, name: id, public: options.public },
+        { headers: this.headers }
+      )
       return { data: data.name, error: null }
+    } catch (error) {
+      return { data: null, error }
+    }
+  }
+
+  /**
+   * Updates a new Storage bucket
+   *
+   * @param id A unique identifier for the bucket you are creating.
+   */
+  async updateBucket(
+    id: string,
+    options: { public: boolean }
+  ): Promise<{ data: { message: string } | null; error: Error | null }> {
+    try {
+      const data = await put(
+        `${this.url}/bucket/${id}`,
+        { id, name: id, public: options.public },
+        { headers: this.headers }
+      )
+      return { data, error: null }
     } catch (error) {
       return { data: null, error }
     }
