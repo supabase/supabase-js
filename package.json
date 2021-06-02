@@ -39,7 +39,7 @@
     "@supabase/gotrue-js": "^1.16.1",
     "@supabase/postgrest-js": "^0.29.0",
     "@supabase/realtime-js": "^1.0.9",
-    "@supabase/storage-js": "^1.0.4"
+    "@supabase/storage-js": "^1.2.0"
   },
   "devDependencies": {
     "@types/jest": "^26.0.13",
