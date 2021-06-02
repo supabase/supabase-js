@@ -179,6 +179,29 @@ export class StorageFileApi {
   }
 
   /**
+   * Retrieve URLs for assets in public buckets
+   *
+   * @param path The file path to be downloaded, including the path and file name. For example `folder/image.png`.
+   */
+  getPublicUrl(
+    path: string
+  ): {
+    data: { publicURL: string } | null
+    error: Error | null
+    publicURL: string | null
+  } {
+    try {
+      const _path = this._getFinalPath(path)
+      let publicURL = `/object/public/${_path}`
+      const data = { publicURL }
+      publicURL = `${this.url}${publicURL}`
+      return { data, error: null, publicURL }
+    } catch (error) {
+      return { data: null, error, publicURL: null }
+    }
+  }
+
+  /**
    * Deletes files within the same bucket
    *
    * @param paths An array of files to be deletes, including the path and file name. For example [`folder/image.png`].
