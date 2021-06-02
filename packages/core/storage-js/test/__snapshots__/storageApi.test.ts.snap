@@ -66,3 +66,9 @@ Object {
   "message": "Successfully emptied",
 }
 `;
+
+exports[`update bucket 1`] = `
+Object {
+  "message": "Successfully updated",
+}
+`;
