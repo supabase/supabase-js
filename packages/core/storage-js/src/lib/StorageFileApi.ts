@@ -192,9 +192,8 @@ export class StorageFileApi {
   } {
     try {
       const _path = this._getFinalPath(path)
-      let publicURL = `/object/public/${_path}`
+      const publicURL = `${this.url}/object/public/${_path}`
       const data = { publicURL }
-      publicURL = `${this.url}${publicURL}`
       return { data, error: null, publicURL }
     } catch (error) {
       return { data: null, error, publicURL: null }
