@@ -2,7 +2,7 @@
 
 exports[`get public URL 1`] = `
 Object {
-  "publicURL": "/object/public/my-new-public-bucket/profiles/myUniqueUserId/profile.png",
+  "publicURL": "http://localhost:8000/storage/v1/object/public/my-new-public-bucket/profiles/myUniqueUserId/profile.png",
 }
 `;
 
