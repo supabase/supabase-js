@@ -19,7 +19,7 @@ const supabase = createClient('https://xyzcompany.supabase.co', 'public-anon-key
 
 ### UMD
 
-You can now use plain `<script>`s to import supabase-js from CDNs, like 
+You can now use plain `<script>`s to import supabase-js from CDNs, like
 
 `<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>`
 or
@@ -29,9 +29,9 @@ Then you can use it from a global `supabase` variable:
 
 ```html
 <script>
-  const { createClient } = supabase
-  supabase = createClient('https://xyzcompany.supabase.co', 'public-anon-key')
-...
+    const { createClient } = supabase
+    supabase = createClient('https://xyzcompany.supabase.co', 'public-anon-key')
+  ...
 </script>
 ```
 
