@@ -1741,6 +1741,17 @@ Object {
 }
 `;
 
+exports[`maybeSingle 1`] = `
+Object {
+  "body": null,
+  "count": null,
+  "data": null,
+  "error": null,
+  "status": 200,
+  "statusText": "OK",
+}
+`;
+
 exports[`missing table 1`] = `
 Object {
   "body": null,

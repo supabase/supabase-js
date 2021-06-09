@@ -46,6 +46,7 @@ interface PostgrestSingleResponseSuccess<T> extends PostgrestResponseBase {
 export type PostgrestSingleResponse<T> =
   | PostgrestSingleResponseSuccess<T>
   | PostgrestResponseFailure
+export type PostgrestMaybeSingleResponse<T> = PostgrestSingleResponse<T | null>
 
 export abstract class PostgrestBuilder<T> implements PromiseLike<PostgrestResponse<T>> {
   protected method!: 'GET' | 'HEAD' | 'POST' | 'PATCH' | 'DELETE'

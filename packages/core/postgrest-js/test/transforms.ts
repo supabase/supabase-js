@@ -38,6 +38,11 @@ test('single on insert', async () => {
   await postgrest.from('users').delete().eq('username', 'foo')
 })
 
+test('maybeSingle', async () => {
+  const res = await postgrest.from('users').select().eq('username', 'goldstein').maybeSingle()
+  expect(res).toMatchSnapshot()
+})
+
 test('select on insert', async () => {
   const res = await postgrest.from('users').insert({ username: 'foo' }).select('status')
   expect(res).toMatchSnapshot()
