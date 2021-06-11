@@ -626,6 +626,8 @@ Object {
 }
 `;
 
+exports[`connection errors should work the same with throwOnError 1`] = `[FetchError: request to http://this.url.does.not.exist/user?select=* failed, reason: getaddrinfo ENOTFOUND this.url.does.not.exist]`;
+
 exports[`don't mutate PostgrestClient.headers 1`] = `null`;
 
 exports[`embedded filters embedded eq 1`] = `
@@ -2260,5 +2262,14 @@ Object {
   "error": null,
   "status": 200,
   "statusText": "OK",
+}
+`;
+
+exports[`throwOnError throws errors instead of returning them 1`] = `
+Object {
+  "code": "42P01",
+  "details": null,
+  "hint": null,
+  "message": "relation \\"public.missing_table\\" does not exist",
 }
 `;

@@ -54,9 +54,21 @@ export abstract class PostgrestBuilder<T> implements PromiseLike<PostgrestRespon
   protected headers!: { [key: string]: string }
   protected schema?: string
   protected body?: Partial<T> | Partial<T>[]
+  protected shouldThrowOnError?: boolean
 
   constructor(builder: PostgrestBuilder<T>) {
     Object.assign(this, builder)
+  }
+
+  /**
+   * If there's an error with the query, throwOnError will reject the promise by
+   * throwing the error instead of returning it as part of a successful response.
+   *
+   * {@link https://github.com/supabase/supabase-js/issues/92}
+   */
+  throwOnError(): PostgrestBuilder<T> {
+    this.shouldThrowOnError = true
+    return this
   }
 
   then<TResult1 = PostgrestResponse<T>, TResult2 = never>(
@@ -92,7 +104,8 @@ export abstract class PostgrestBuilder<T> implements PromiseLike<PostgrestRespon
           const isReturnMinimal = this.headers['Prefer']?.split(',').includes('return=minimal')
           if (this.method !== 'HEAD' && !isReturnMinimal) {
             const text = await res.text()
-            if (text && text !== '' &&  this.headers['Accept'] !== 'text/csv') data = JSON.parse(text)
+            if (text && text !== '' && this.headers['Accept'] !== 'text/csv')
+              data = JSON.parse(text)
           }
 
           const countHeader = this.headers['Prefer']?.match(/count=(exact|planned|estimated)/)
@@ -102,6 +115,10 @@ export abstract class PostgrestBuilder<T> implements PromiseLike<PostgrestRespon
           }
         } else {
           error = await res.json()
+
+          if (error && this.shouldThrowOnError) {
+            throw error
+          }
         }
 
         const postgrestResponse: PostgrestResponse<T> = {
@@ -112,6 +129,7 @@ export abstract class PostgrestBuilder<T> implements PromiseLike<PostgrestRespon
           statusText: res.statusText,
           body: data,
         }
+
         return postgrestResponse
       })
       .then(onfulfilled, onrejected)

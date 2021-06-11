@@ -95,6 +95,19 @@ test('missing table', async () => {
   expect(res).toMatchSnapshot()
 })
 
+test('throwOnError throws errors instead of returning them', async () => {
+  let isErrorCaught = false
+
+  try {
+    await postgrest.from('missing_table').select().throwOnError()
+  } catch (error) {
+    expect(error).toMatchSnapshot()
+    isErrorCaught = true
+  }
+
+  expect(isErrorCaught).toBe(true)
+})
+
 test('connection error', async () => {
   const postgrest = new PostgrestClient('http://this.url.does.not.exist')
   let isErrorCaught = false
@@ -102,6 +115,20 @@ test('connection error', async () => {
     .from('user')
     .select()
     .then(undefined, () => {
+      isErrorCaught = true
+    })
+  expect(isErrorCaught).toBe(true)
+})
+
+test('connection errors should work the same with throwOnError', async () => {
+  const postgrest = new PostgrestClient('http://this.url.does.not.exist')
+  let isErrorCaught = false
+  await postgrest
+    .from('user')
+    .select()
+    .throwOnError()
+    .then(undefined, (error) => {
+      expect(error).toMatchSnapshot()
       isErrorCaught = true
     })
   expect(isErrorCaught).toBe(true)
