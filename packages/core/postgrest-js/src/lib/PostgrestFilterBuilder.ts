@@ -438,7 +438,7 @@ export default class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder
    * @param query  The object to filter with, with column names as keys mapped
    *               to their filter values.
    */
-  match(query: { [key: string]: string }) {
+  match(query: Record<string, unknown>): this {
     Object.keys(query).forEach((key) => {
       this.url.searchParams.append(`${key}`, `eq.${query[key]}`)
     })
