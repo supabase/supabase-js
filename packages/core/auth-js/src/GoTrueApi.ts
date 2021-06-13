@@ -47,7 +47,7 @@ export default class GoTrueApi {
       let headers = { ...this.headers }
       let queryString = ''
       if (options.redirectTo) {
-        queryString = '?redirect_to=' + options.redirectTo
+        queryString = '?redirect_to=' + encodeURIComponent(options.redirectTo)
       }
       const data = await post(`${this.url}/signup${queryString}`, { email, password }, { headers })
       let session = { ...data }
@@ -75,7 +75,7 @@ export default class GoTrueApi {
       let headers = { ...this.headers }
       let queryString = '?grant_type=password'
       if (options.redirectTo) {
-        queryString += '&redirect_to=' + options.redirectTo
+        queryString += '&redirect_to=' + encodeURIComponent(options.redirectTo)
       }
       const data = await post(`${this.url}/token${queryString}`, { email, password }, { headers })
       let session = { ...data }
@@ -101,7 +101,7 @@ export default class GoTrueApi {
       let headers = { ...this.headers }
       let queryString = ''
       if (options.redirectTo) {
-        queryString += '?redirect_to=' + options.redirectTo
+        queryString += '?redirect_to=' + encodeURIComponent(options.redirectTo)
       }
       const data = await post(`${this.url}/magiclink${queryString}`, { email }, { headers })
       return { data, error: null }
@@ -125,7 +125,7 @@ export default class GoTrueApi {
       let headers = { ...this.headers }
       let queryString = ''
       if (options.redirectTo) {
-        queryString += '?redirect_to=' + options.redirectTo
+        queryString += '?redirect_to=' + encodeURIComponent(options.redirectTo)
       }
       const data = await post(`${this.url}/invite${queryString}`, { email }, { headers })
       return { data, error: null }
@@ -149,7 +149,7 @@ export default class GoTrueApi {
       let headers = { ...this.headers }
       let queryString = ''
       if (options.redirectTo) {
-        queryString += '?redirect_to=' + options.redirectTo
+        queryString += '?redirect_to=' + encodeURIComponent(options.redirectTo)
       }
       const data = await post(`${this.url}/recover${queryString}`, { email }, { headers })
       return { data, error: null }
@@ -199,12 +199,12 @@ export default class GoTrueApi {
       scopes?: string
     }
   ) {
-    let urlParams: string[] = [`provider=${provider}`]
+    let urlParams: string[] = [`provider=${encodeURIComponent(provider)}`]
     if (options?.redirectTo) {
-      urlParams.push(`redirect_to=${options.redirectTo}`)
+      urlParams.push(`redirect_to=${encodeURIComponent(options.redirectTo)}`)
     }
     if (options?.scopes) {
-      urlParams.push(`scopes=${options.scopes}`)
+      urlParams.push(`scopes=${encodeURIComponent(options.scopes)}`)
     }
     return `${this.url}/authorize?${urlParams.join('&')}`
   }
