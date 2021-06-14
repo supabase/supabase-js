@@ -548,8 +548,12 @@ export default class GoTrueClient {
     this.currentUser = session.user
 
     const expiresAt = session.expires_at
-    const timeNow = Math.round(Date.now() / 1000)
-    if (expiresAt) this._startAutoRefreshToken((expiresAt - timeNow - 60) * 1000)
+    if (expiresAt) {
+      const timeNow = Math.round(Date.now() / 1000)
+      const expiresIn = expiresAt - timeNow
+      const refreshDurationBeforeExpires = expiresIn > 60 ? 60 : 0.5
+      this._startAutoRefreshToken((expiresIn - refreshDurationBeforeExpires) * 1000)
+    }
 
     // Do we need any extra check before persist session
     // access_token or user ?
@@ -576,7 +580,7 @@ export default class GoTrueClient {
    */
   private _startAutoRefreshToken(value: number) {
     if (this.refreshTokenTimer) clearTimeout(this.refreshTokenTimer)
-    if (!value || !this.autoRefreshToken) return
+    if (value <= 0 || !this.autoRefreshToken) return
 
     this.refreshTokenTimer = setTimeout(() => this._callRefreshToken(), value)
   }
