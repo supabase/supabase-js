@@ -127,8 +127,7 @@ test('connection errors should work the same with throwOnError', async () => {
     .from('user')
     .select()
     .throwOnError()
-    .then(undefined, (error) => {
-      expect(error).toMatchSnapshot()
+    .then(undefined, () => {
       isErrorCaught = true
     })
   expect(isErrorCaught).toBe(true)

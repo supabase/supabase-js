@@ -626,8 +626,6 @@ Object {
 }
 `;
 
-exports[`connection errors should work the same with throwOnError 1`] = `[FetchError: request to http://foo.invalid/user?select=* failed, reason: getaddrinfo ENOTFOUND foo.invalid]`;
-
 exports[`don't mutate PostgrestClient.headers 1`] = `null`;
 
 exports[`embedded filters embedded eq 1`] = `
