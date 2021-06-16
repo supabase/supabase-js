@@ -56,3 +56,25 @@ test('select on stored procedure', async () => {
     .select('status')
   expect(res).toMatchSnapshot()
 })
+
+test('csv', async () => {
+  const res = await postgrest.from('users').select().csv()
+  expect(res).toMatchInlineSnapshot(`
+    Object {
+      "body": "username,data,age_range,status,catchphrase
+    supabot,,\\"[1,2)\\",ONLINE,\\"'cat' 'fat'\\"
+    kiwicopple,,\\"[25,35)\\",OFFLINE,\\"'bat' 'cat'\\"
+    awailas,,\\"[25,35)\\",ONLINE,\\"'bat' 'rat'\\"
+    dragarcia,,\\"[20,30)\\",ONLINE,\\"'fat' 'rat'\\"",
+      "count": null,
+      "data": "username,data,age_range,status,catchphrase
+    supabot,,\\"[1,2)\\",ONLINE,\\"'cat' 'fat'\\"
+    kiwicopple,,\\"[25,35)\\",OFFLINE,\\"'bat' 'cat'\\"
+    awailas,,\\"[25,35)\\",ONLINE,\\"'bat' 'rat'\\"
+    dragarcia,,\\"[20,30)\\",ONLINE,\\"'fat' 'rat'\\"",
+      "error": null,
+      "status": 200,
+      "statusText": "OK",
+    }
+  `)
+})
