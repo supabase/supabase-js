@@ -583,5 +583,6 @@ export default class GoTrueClient {
     if (value <= 0 || !this.autoRefreshToken) return
 
     this.refreshTokenTimer = setTimeout(() => this._callRefreshToken(), value)
+    if (typeof this.refreshTokenTimer.unref === 'function') this.refreshTokenTimer.unref()
   }
 }
