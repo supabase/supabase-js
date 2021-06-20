@@ -109,7 +109,7 @@ test('throwOnError throws errors instead of returning them', async () => {
 })
 
 test('connection error', async () => {
-  const postgrest = new PostgrestClient('http://this.url.does.not.exist')
+  const postgrest = new PostgrestClient('http://foo.invalid')
   let isErrorCaught = false
   await postgrest
     .from('user')
@@ -121,14 +121,13 @@ test('connection error', async () => {
 })
 
 test('connection errors should work the same with throwOnError', async () => {
-  const postgrest = new PostgrestClient('http://this.url.does.not.exist')
+  const postgrest = new PostgrestClient('http://foo.invalid')
   let isErrorCaught = false
   await postgrest
     .from('user')
     .select()
     .throwOnError()
-    .then(undefined, (error) => {
-      expect(error).toMatchSnapshot()
+    .then(undefined, () => {
       isErrorCaught = true
     })
   expect(isErrorCaught).toBe(true)

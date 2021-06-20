@@ -626,8 +626,6 @@ Object {
 }
 `;
 
-exports[`connection errors should work the same with throwOnError 1`] = `[FetchError: request to http://this.url.does.not.exist/user?select=* failed, reason: getaddrinfo ENOTFOUND this.url.does.not.exist]`;
-
 exports[`don't mutate PostgrestClient.headers 1`] = `null`;
 
 exports[`embedded filters embedded eq 1`] = `

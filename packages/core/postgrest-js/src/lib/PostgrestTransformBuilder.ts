@@ -123,8 +123,8 @@ export default class PostgrestTransformBuilder<T> extends PostgrestBuilder<T> {
   /**
    * Set the response type to CSV.
    */
-  csv(): this {
+  csv(): PromiseLike<PostgrestSingleResponse<string>> {
     this.headers['Accept'] = 'text/csv'
-    return this
+    return this as PromiseLike<PostgrestSingleResponse<string>>
   }
 }
