@@ -1122,6 +1122,17 @@ Object {
 }
 `;
 
+exports[`ignoreDuplicates upsert 1`] = `
+Object {
+  "body": Array [],
+  "count": null,
+  "data": Array [],
+  "error": null,
+  "status": 201,
+  "statusText": "Created",
+}
+`;
+
 exports[`insert, update, delete with count: 'exact' basic delete count: 'exact' 1`] = `
 Object {
   "body": Array [

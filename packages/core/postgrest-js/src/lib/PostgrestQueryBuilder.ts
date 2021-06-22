@@ -125,6 +125,7 @@ export default class PostgrestQueryBuilder<T> extends PostgrestBuilder<T> {
    * @param onConflict  By specifying the `on_conflict` query parameter, you can make UPSERT work on a column(s) that has a UNIQUE constraint.
    * @param returning  By default the new record is returned. Set this to 'minimal' if you don't need this value.
    * @param count  Count algorithm to use to count rows in a table.
+   * @param ignoreDuplicates  Specifies if duplicate rows should be ignored and not inserted.
    */
   upsert(
     values: Partial<T> | Partial<T>[],
@@ -132,15 +133,20 @@ export default class PostgrestQueryBuilder<T> extends PostgrestBuilder<T> {
       onConflict,
       returning = 'representation',
       count = null,
+      ignoreDuplicates = false,
     }: {
       onConflict?: string
       returning?: 'minimal' | 'representation'
       count?: null | 'exact' | 'planned' | 'estimated'
+      ignoreDuplicates?: boolean
     } = {}
   ): PostgrestFilterBuilder<T> {
     this.method = 'POST'
 
-    const prefersHeaders = ['resolution=merge-duplicates', `return=${returning}`]
+    const prefersHeaders = [
+      `resolution=${ignoreDuplicates ? 'ignore' : 'merge'}-duplicates`,
+      `return=${returning}`,
+    ]
 
     if (onConflict !== undefined) this.url.searchParams.set('on_conflict', onConflict)
     this.body = values

@@ -41,6 +41,13 @@ test('on_conflict insert', async () => {
   expect(res).toMatchSnapshot()
 })
 
+test('ignoreDuplicates upsert', async () => {
+  const res = await postgrest
+    .from('users')
+    .upsert({ username: 'dragarcia' }, { onConflict: 'username', ignoreDuplicates: true })
+  expect(res).toMatchSnapshot()
+})
+
 describe('basic insert, update, delete', () => {
   test('basic insert', async () => {
     let res = await postgrest
