@@ -13,6 +13,7 @@ const DEFAULT_SEARCH_OPTIONS = {
 
 const DEFAULT_FILE_OPTIONS: FileOptions = {
   cacheControl: '3600',
+  upsert: false,
 }
 
 export class StorageFileApi {
@@ -51,7 +52,10 @@ export class StorageFileApi {
       const res = await fetch(`${this.url}/object/${_path}`, {
         method: 'POST',
         body: formData,
-        headers: { ...this.headers },
+        headers: {
+          ...this.headers,
+          'x-upsert': String(fileOptions?.upsert),
+        },
       })
 
       if (res.ok) {
