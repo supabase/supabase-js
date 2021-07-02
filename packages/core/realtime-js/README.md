@@ -48,7 +48,7 @@ To join a channel, you must provide the `topic`, where a topic is either:
 - `realtime` - entire database
 - `realtime:{schema}` - where `{schema}` is the Postgres Schema
 - `realtime:{schema}:{table}` - where `{table}` is the Postgres table name
-- `realtime:{schema}:{table}:{col}.eq.{val}` - where `{col}` is the column name, and `{val}` is the value which you want to match
+- `realtime:{schema}:{table}:{col}=eq.{val}` - where `{col}` is the column name, and `{val}` is the value which you want to match
  
 
 **Examples**
@@ -78,8 +78,8 @@ usersTable.on('UPDATE', (e) => console.log(e))
 usersTable.on('DELETE', (e) => console.log(e))
 usersTable.subscribe()
 
-// Listen to events on a row, using the format `realtime:{SCHEMA}:{TABLE}:{COL}.eq.{VAL}`
-var rowChanges = client.channel('realtime:public:users:id.eq.1')
+// Listen to events on a row, using the format `realtime:{SCHEMA}:{TABLE}:{COL}=eq.{VAL}`
+var rowChanges = client.channel('realtime:public:users:id=eq.1')
 rowChanges.on('*', (e) => console.log(e))
 rowChanges.on('INSERT', (e) => console.log(e))
 rowChanges.on('UPDATE', (e) => console.log(e))
