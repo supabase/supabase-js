@@ -666,6 +666,7 @@ describe('on', () => {
     assert.ok(!ignoredSpy.called)
 
     channel.on('event', spy)
+    channel.on('otherEvent', ignoredSpy)
 
     channel.trigger('event', {}, defaultRef)
 
