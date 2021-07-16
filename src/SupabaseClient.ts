@@ -5,6 +5,7 @@ import { SupabaseQueryBuilder } from './lib/SupabaseQueryBuilder'
 import { SupabaseStorageClient } from '@supabase/storage-js'
 import { PostgrestClient } from '@supabase/postgrest-js'
 import { RealtimeClient, RealtimeSubscription } from '@supabase/realtime-js'
+import { Options as RealtimeClientOptions } from '@supabase/realtime-js/RealtimeClient'
 
 const DEFAULT_OPTIONS = {
   schema: 'public',
@@ -59,7 +60,7 @@ export default class SupabaseClient {
     this.schema = settings.schema
 
     this.auth = this._initSupabaseAuthClient(settings)
-    this.realtime = this._initRealtimeClient()
+    this.realtime = this._initRealtimeClient(settings.realtimeOptions)
 
     // In the future we might allow the user to pass in a logger to receive these events.
     // this.realtime.onOpen(() => console.log('OPEN'))
@@ -154,9 +155,10 @@ export default class SupabaseClient {
     })
   }
 
-  private _initRealtimeClient() {
+  private _initRealtimeClient(options?: RealtimeClientOptions) {
     return new RealtimeClient(this.realtimeUrl, {
-      params: { apikey: this.supabaseKey },
+      ...options,
+      params: { apikey: this.supabaseKey, ...options?.params },
     })
   }
 
