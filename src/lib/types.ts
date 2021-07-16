@@ -29,7 +29,7 @@ export type SupabaseClientOptions = {
   /**
    * Options passed to the realtime-js instance
    */
-  realtimeOptions?: RealtimeClientOptions
+  realtime?: RealtimeClientOptions
 }
 
 export type SupabaseRealtimePayload<T> = {
