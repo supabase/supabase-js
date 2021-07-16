@@ -1,6 +1,7 @@
 import { FetchParameters, get, post, remove } from './fetch'
 import { isBrowser } from './helpers'
 import { FileObject, FileOptions, SearchOptions } from './types'
+import fetch from 'cross-fetch'
 
 const DEFAULT_SEARCH_OPTIONS = {
   limit: 100,
@@ -13,6 +14,7 @@ const DEFAULT_SEARCH_OPTIONS = {
 
 const DEFAULT_FILE_OPTIONS: FileOptions = {
   cacheControl: '3600',
+  contentType: 'text/plain;charset=UTF-8',
   upsert: false,
 }
 
@@ -28,34 +30,56 @@ export class StorageFileApi {
   }
 
   /**
-   * Uploads a file to an existing bucket.
+   * Uploads a file to an existing bucket or replaces an existing file at the specified path with a new one.
    *
+   * @param method HTTP method.
    * @param path The relative file path. Should be of the format `folder/subfolder/filename.png`. The bucket must already exist before attempting to upload.
-   * @param file The File object to be stored in the bucket.
-   * @param fileOptions HTTP headers. For example `cacheControl`
+   * @param fileBody The body of the file to be stored in the bucket.
+   * @param fileOptions HTTP headers.
+   * `cacheControl`: string, the `Cache-Control: max-age=<seconds>` seconds value.
+   * `contentType`: string, the `Content-Type` header value. Should be specified if using a `fileBody` that is neither `Blob` nor `File` nor `FormData`, otherwise will default to `text/plain;charset=UTF-8`.
+   * `upsert`: boolean, whether to perform an upsert.
    */
-  async upload(
+  private async uploadOrUpdate(
+    method: 'POST' | 'PUT',
     path: string,
-    file: File,
+    fileBody:
+      | ArrayBuffer
+      | ArrayBufferView
+      | Blob
+      | File
+      | FormData
+      | ReadableStream<Uint8Array>
+      | URLSearchParams
+      | string,
     fileOptions?: FileOptions
   ): Promise<{ data: { Key: string } | null; error: Error | null }> {
     try {
-      if (!isBrowser()) throw new Error('No browser detected.')
-
-      const formData = new FormData()
-
+      let body
       const options = { ...DEFAULT_FILE_OPTIONS, ...fileOptions }
-      formData.append('cacheControl', options.cacheControl)
-      formData.append('', file, file.name)
+      const headers: Record<string, string> = {
+        ...this.headers,
+        ...(method === 'POST' && { 'x-upsert': String(options.upsert as boolean) }),
+      }
+
+      if (typeof Blob !== 'undefined' && fileBody instanceof Blob) {
+        body = new FormData()
+        body.append('cacheControl', options.cacheControl as string)
+        body.append('', fileBody)
+      } else if (typeof FormData !== 'undefined' && fileBody instanceof FormData) {
+        body = fileBody
+        body.append('cacheControl', options.cacheControl as string)
+      } else {
+        body = fileBody
+        headers['cache-control'] = `max-age=${options.cacheControl}`
+        headers['content-type'] = options.contentType as string
+      }
 
       const _path = this._getFinalPath(path)
       const res = await fetch(`${this.url}/object/${_path}`, {
-        method: 'POST',
-        body: formData,
-        headers: {
-          ...this.headers,
-          'x-upsert': String(fileOptions?.upsert),
-        },
+        method,
+        body,
+        headers,
       })
 
       if (res.ok) {
@@ -72,44 +96,55 @@ export class StorageFileApi {
   }
 
   /**
+   * Uploads a file to an existing bucket.
+   *
+   * @param path The relative file path. Should be of the format `folder/subfolder/filename.png`. The bucket must already exist before attempting to upload.
+   * @param fileBody The body of the file to be stored in the bucket.
+   * @param fileOptions HTTP headers.
+   * `cacheControl`: string, the `Cache-Control: max-age=<seconds>` seconds value.
+   * `contentType`: string, the `Content-Type` header value. Should be specified if using a `fileBody` that is neither `Blob` nor `File` nor `FormData`, otherwise will default to `text/plain;charset=UTF-8`.
+   * `upsert`: boolean, whether to perform an upsert.
+   */
+  async upload(
+    path: string,
+    fileBody:
+      | ArrayBuffer
+      | ArrayBufferView
+      | Blob
+      | File
+      | FormData
+      | ReadableStream<Uint8Array>
+      | URLSearchParams
+      | string,
+    fileOptions?: FileOptions
+  ): Promise<{ data: { Key: string } | null; error: Error | null }> {
+    return this.uploadOrUpdate('POST', path, fileBody, fileOptions)
+  }
+
+  /**
    * Replaces an existing file at the specified path with a new one.
    *
-   * @param path The relative file path. Should be of the format `folder/subfolder`. The bucket already exist before attempting to upload.
-   * @param file The file object to be stored in the bucket.
-   * @param fileOptions HTTP headers. For example `cacheControl`
+   * @param path The relative file path. Should be of the format `folder/subfolder/filename.png`. The bucket must already exist before attempting to upload.
+   * @param fileBody The body of the file to be stored in the bucket.
+   * @param fileOptions HTTP headers.
+   * `cacheControl`: string, the `Cache-Control: max-age=<seconds>` seconds value.
+   * `contentType`: string, the `Content-Type` header value. Should be specified if using a `fileBody` that is neither `Blob` nor `File` nor `FormData`, otherwise will default to `text/plain;charset=UTF-8`.
+   * `upsert`: boolean, whether to perform an upsert.
    */
   async update(
     path: string,
-    file: File,
+    fileBody:
+      | ArrayBuffer
+      | ArrayBufferView
+      | Blob
+      | File
+      | FormData
+      | ReadableStream<Uint8Array>
+      | URLSearchParams
+      | string,
     fileOptions?: FileOptions
   ): Promise<{ data: { Key: string } | null; error: Error | null }> {
-    try {
-      if (!isBrowser()) throw new Error('No browser detected.')
-
-      const formData = new FormData()
-
-      const options = { ...DEFAULT_FILE_OPTIONS, ...fileOptions }
-      formData.append('cacheControl', options.cacheControl)
-      formData.append('', file, file.name)
-
-      const _path = this._getFinalPath(path)
-      const res = await fetch(`${this.url}/object/${_path}`, {
-        method: 'PUT',
-        body: formData,
-        headers: { ...this.headers },
-      })
-
-      if (res.ok) {
-        // const data = await res.json()
-        // temporary fix till backend is updated to the latest storage-api version
-        return { data: { Key: _path }, error: null }
-      } else {
-        const error = await res.json()
-        return { data: null, error }
-      }
-    } catch (error) {
-      return { data: null, error }
-    }
+    return this.uploadOrUpdate('PUT', path, fileBody, fileOptions)
   }
 
   /**
