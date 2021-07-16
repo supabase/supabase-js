@@ -11,7 +11,7 @@ import RealtimeSubscription from './RealtimeSubscription'
 import { w3cwebsocket as WebSocket } from 'websocket'
 import Serializer from './lib/serializer'
 
-type Options = {
+export type Options = {
   transport?: WebSocket
   timeout?: number
   heartbeatIntervalMs?: number
