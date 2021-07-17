@@ -4,8 +4,7 @@ import { SupabaseAuthClient } from './lib/SupabaseAuthClient'
 import { SupabaseQueryBuilder } from './lib/SupabaseQueryBuilder'
 import { SupabaseStorageClient } from '@supabase/storage-js'
 import { PostgrestClient } from '@supabase/postgrest-js'
-import { RealtimeClient, RealtimeSubscription } from '@supabase/realtime-js'
-import { Options as RealtimeClientOptions } from '@supabase/realtime-js/RealtimeClient'
+import { RealtimeClient, RealtimeSubscription, RealtimeClientOptions } from '@supabase/realtime-js'
 
 const DEFAULT_OPTIONS = {
   schema: 'public',

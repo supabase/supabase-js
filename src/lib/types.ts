@@ -1,4 +1,4 @@
-import { Options as RealtimeClientOptions } from '@supabase/realtime-js/RealtimeClient'
+import { RealtimeClientOptions } from '@supabase/realtime-js'
 
 export type SupabaseClientOptions = {
   /**
