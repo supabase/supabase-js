@@ -4,7 +4,7 @@ import { SupabaseAuthClient } from './lib/SupabaseAuthClient'
 import { SupabaseQueryBuilder } from './lib/SupabaseQueryBuilder'
 import { SupabaseStorageClient } from '@supabase/storage-js'
 import { PostgrestClient } from '@supabase/postgrest-js'
-import { RealtimeClient, RealtimeSubscription } from '@supabase/realtime-js'
+import { RealtimeClient, RealtimeSubscription, RealtimeClientOptions } from '@supabase/realtime-js'
 
 const DEFAULT_OPTIONS = {
   schema: 'public',
@@ -42,6 +42,7 @@ export default class SupabaseClient {
    * @param options.persistSession Set to "true" if you want to automatically save the user session into local storage.
    * @param options.detectSessionInUrl Set to "true" if you want to automatically detects OAuth grants in the URL and signs in the user.
    * @param options.headers Any additional headers to send with each network request.
+   * @param options.realtime Options passed along to realtime-js constructor.
    */
   constructor(
     protected supabaseUrl: string,
@@ -59,7 +60,7 @@ export default class SupabaseClient {
     this.schema = settings.schema
 
     this.auth = this._initSupabaseAuthClient(settings)
-    this.realtime = this._initRealtimeClient()
+    this.realtime = this._initRealtimeClient(settings.realtime)
 
     // In the future we might allow the user to pass in a logger to receive these events.
     // this.realtime.onOpen(() => console.log('OPEN'))
@@ -154,9 +155,10 @@ export default class SupabaseClient {
     })
   }
 
-  private _initRealtimeClient() {
+  private _initRealtimeClient(options?: RealtimeClientOptions) {
     return new RealtimeClient(this.realtimeUrl, {
-      params: { apikey: this.supabaseKey },
+      ...options,
+      params: { ...options?.params, apikey: this.supabaseKey },
     })
   }
 

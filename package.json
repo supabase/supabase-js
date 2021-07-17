@@ -38,7 +38,7 @@
   "dependencies": {
     "@supabase/gotrue-js": "^1.16.6",
     "@supabase/postgrest-js": "^0.33.0",
-    "@supabase/realtime-js": "^1.0.11",
+    "@supabase/realtime-js": "^1.1.1",
     "@supabase/storage-js": "^1.2.2"
   },
   "devDependencies": {
