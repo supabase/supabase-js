@@ -47,8 +47,10 @@ export class StorageFileApi {
       | ArrayBuffer
       | ArrayBufferView
       | Blob
+      | Buffer
       | File
       | FormData
+      | NodeJS.ReadableStream
       | ReadableStream<Uint8Array>
       | URLSearchParams
       | string,
@@ -78,7 +80,7 @@ export class StorageFileApi {
       const _path = this._getFinalPath(path)
       const res = await fetch(`${this.url}/object/${_path}`, {
         method,
-        body,
+        body: body as BodyInit,
         headers,
       })
 
@@ -111,8 +113,10 @@ export class StorageFileApi {
       | ArrayBuffer
       | ArrayBufferView
       | Blob
+      | Buffer
       | File
       | FormData
+      | NodeJS.ReadableStream
       | ReadableStream<Uint8Array>
       | URLSearchParams
       | string,
@@ -137,8 +141,10 @@ export class StorageFileApi {
       | ArrayBuffer
       | ArrayBufferView
       | Blob
+      | Buffer
       | File
       | FormData
+      | NodeJS.ReadableStream
       | ReadableStream<Uint8Array>
       | URLSearchParams
       | string,
