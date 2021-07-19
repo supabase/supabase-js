@@ -25,7 +25,8 @@ export interface SortBy {
 }
 
 export interface FileOptions {
-  cacheControl: string
+  cacheControl?: string
+  contentType?: string
   upsert?: boolean
 }
 
