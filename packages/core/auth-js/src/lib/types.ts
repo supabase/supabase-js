@@ -1,4 +1,4 @@
-export type Provider = 'azure' | 'bitbucket' | 'facebook' | 'github' | 'gitlab' | 'google' | 'twitter' | 'apple' | 'discord'
+export type Provider = 'azure' | 'bitbucket' | 'facebook' | 'github' | 'gitlab' | 'google' | 'twitter' | 'apple' | 'discord' | 'twitch'
 
 export type AuthChangeEvent =
   | 'SIGNED_IN'
