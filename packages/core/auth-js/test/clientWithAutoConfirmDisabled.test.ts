@@ -19,18 +19,19 @@ test('signUp()', async () => {
   })
   expect(error).toBeNull()
   expect(session).toBeNull()
-  expect(user).toMatchSnapshot({
+  expect(user).toMatchObject({
     id: expect.any(String),
     created_at: expect.any(String),
     email: expect.any(String),
     confirmation_sent_at: expect.any(String),
+    phone: '',
     aud: expect.any(String),
     updated_at: expect.any(String),
     app_metadata: {
       provider: 'email',
     },
   })
-  expect(user?.confirmed_at).toBeUndefined()
+  expect(user?.email_confirmed_at).toBeUndefined()
   expect(user?.last_sign_in_at).toBeUndefined()
   expect(user?.email).toBe(email)
 })
