@@ -9,7 +9,7 @@ const auth = new GoTrueClient({
   persistSession: true,
 })
 
-const email = faker.internet.email()
+const email = faker.internet.email().toLowerCase()
 const password = faker.internet.password()
 
 test('signUp()', async () => {
@@ -40,7 +40,7 @@ test('signUp() the same user twice should throw an error', async () => {
     email,
     password,
   })
-  expect(error?.message).toBe('Error sending confirmation mail')
+  expect(error?.message).toBe('For security purposes, you can only request this after 59 seconds.')
   // expect(error?.message).toBe('A user with this email address has already been registered')
   expect(session).toBeNull()
   expect(user).toBeNull()

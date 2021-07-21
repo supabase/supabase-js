@@ -7,7 +7,7 @@ const api = new GoTrueApi({
   url: GOTRUE_URL,
 })
 
-const email = `api_ac_disabled_${faker.internet.email()}`
+const email = `api_ac_disabled_${faker.internet.email().toLowerCase().toLowerCase()}`
 const password = faker.internet.password()
 
 test('signUpWithEmail()', async () => {

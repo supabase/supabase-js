@@ -15,9 +15,9 @@ let authWithSession = new GoTrueClient({
   persistSession: false,
 })
 
-const email = `client_ac_enabled_${faker.internet.email()}`
-const setSessionEmail = `client_ac_session_${faker.internet.email()}`
-const refreshTokenEmail = `client_refresh_token_signin_${faker.internet.email()}`
+const email = `client_ac_enabled_${faker.internet.email().toLowerCase()}`
+const setSessionEmail = `client_ac_session_${faker.internet.email().toLowerCase()}`
+const refreshTokenEmail = `client_refresh_token_signin_${faker.internet.email().toLowerCase()}`
 const password = faker.internet.password()
 var access_token: string | null = null
 
