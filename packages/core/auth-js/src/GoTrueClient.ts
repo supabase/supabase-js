@@ -417,7 +417,7 @@ export default class GoTrueClient {
       })
       if (error || !data) return { data: null, user: null, session: null, error }
 
-      if (data?.user?.confirmed_at) {
+      if (data?.user?.email_confirmed_at) {
         this._saveSession(data)
         this._notifyAllSubscribers('SIGNED_IN')
       }
