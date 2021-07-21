@@ -334,4 +334,39 @@ export default class GoTrueApi {
       return { user: null, data: null, error }
     }
   }
+
+  /**
+   * Generates links to be sent via email or other.
+   * @param type The link type ("signup" or "magiclink" or "recovery" or "invite").
+   * @param email the user's email.
+   * @param password user password for signup only.
+   * @param data optional user metadata for signup only.
+   * @param redirectTo The link type ("signup" or "magiclink" or "recovery" or "invite").
+   */
+  async generateLink(
+    type: string,
+    email: string,
+    options: {
+      password?: string
+      data?: any
+      redirectTo?: string
+    } = {}
+  ): Promise<{ data: Session | User | null; error: Error | null }> {
+    try {
+      const data: any = await post(
+        `${this.url}/admin/generate_link`,
+        {
+          type,
+          email,
+          password: options.password,
+          data: options.data,
+          redirect_to: options.redirectTo,
+        },
+        { headers: this.headers }
+      )
+      return { data, error: null }
+    } catch (error) {
+      return { data: null, error }
+    }
+  }
 }
