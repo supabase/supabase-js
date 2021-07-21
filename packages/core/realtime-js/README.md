@@ -18,6 +18,8 @@ var client = new RealtimeClient(process.env.REALTIME_URL)
 client.connect()
 ```
 
+REALTIME_URL is `'ws://localhost:4000/socket'` when developing locally and `'wss://<project_ref>.supabase.co/realtime/v1'` when connecting to your Supabase project.
+
 You can pass in your JWT If you have enabled JWT authorization in Supabase [Realtime](https://github.com/supabase/realtime) server.
 
 ```js
