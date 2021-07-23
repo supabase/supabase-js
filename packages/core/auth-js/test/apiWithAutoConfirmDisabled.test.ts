@@ -18,7 +18,6 @@ test('signUpWithEmail()', async () => {
     redirectTo: 'https://localhost:9999/welcome',
   })
   expect(error).toBeNull()
-  console.log(data)
   expect(data).toMatchObject({
     aud: expect.any(String),
     confirmation_sent_at: expect.any(String),
