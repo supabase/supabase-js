@@ -1,4 +1,14 @@
-export type Provider = 'azure' | 'bitbucket' | 'facebook' | 'github' | 'gitlab' | 'google' | 'twitter' | 'apple' | 'discord' | 'twitch'
+export type Provider =
+  | 'azure'
+  | 'bitbucket'
+  | 'facebook'
+  | 'github'
+  | 'gitlab'
+  | 'google'
+  | 'twitter'
+  | 'apple'
+  | 'discord'
+  | 'twitch'
 
 export type AuthChangeEvent =
   | 'SIGNED_IN'
@@ -38,6 +48,7 @@ export interface User {
   email?: string
   phone?: string
   created_at: string
+  confirmed_at?: string
   email_confirmed_at?: string
   phone_confirmed_at?: string
   last_sign_in_at?: string
@@ -94,8 +105,14 @@ export interface CookieOptions {
 
 export interface UserCredentials {
   email?: string
+  phone?: string
   password?: string
   refreshToken?: string
   // (Optional) The name of the provider.
   provider?: Provider
+}
+
+export interface VerifyOTPParams {
+  phone: string
+  token: string
 }
