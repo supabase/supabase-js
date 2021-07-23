@@ -10,8 +10,10 @@ const auth = new GoTrueClient({
 })
 
 const email = faker.internet.email().toLowerCase()
-const phone = faker.phone.phoneNumber()
 const password = faker.internet.password()
+
+const testTwilio = false
+const phone = faker.phone.phoneNumber() // set test number here
 
 test('signUp() with email and password', async () => {
   let { error, user, session } = await auth.signUp({
@@ -35,31 +37,6 @@ test('signUp() with email and password', async () => {
   expect(user?.email_confirmed_at).toBeUndefined()
   expect(user?.last_sign_in_at).toBeUndefined()
   expect(user?.email).toBe(email)
-})
-
-test('signUp() with phone and password', async () => {
-  let { error, user, session } = await auth.signUp({
-    phone,
-    password,
-  })
-  expect(error).toBeNull()
-  expect(session).toBeNull()
-  expect(user).toMatchObject({
-    id: expect.any(String),
-    created_at: expect.any(String),
-    email: '',
-    confirmation_sent_at: expect.any(String),
-    phone: phone,
-    aud: expect.any(String),
-    updated_at: expect.any(String),
-    app_metadata: {
-      provider: 'phone',
-    },
-  })
-  expect(user?.phone_confirmed_at).toBeUndefined()
-  expect(user?.email_confirmed_at).toBeUndefined()
-  expect(user?.last_sign_in_at).toBeUndefined()
-  expect(user?.phone).toBe(phone)
 })
 
 test('signUp() the same user twice should throw an error', async () => {
@@ -91,16 +68,43 @@ test('signIn() with the wrong password', async () => {
   expect(user).toBeNull()
 })
 
-test('verifyMobileOTP() errors on bad token', async () => {
-  const token: string = '123456'
+if (testTwilio) {
+  test('signUp() with phone and password', async () => {
+    let { error, user, session } = await auth.signUp({
+      phone,
+      password,
+    })
+    expect(error).toBeNull()
+    expect(session).toBeNull()
+    expect(user).toMatchObject({
+      id: expect.any(String),
+      created_at: expect.any(String),
+      email: '',
+      confirmation_sent_at: expect.any(String),
+      phone: phone,
+      aud: expect.any(String),
+      updated_at: expect.any(String),
+      app_metadata: {
+        provider: 'phone',
+      },
+    })
+    expect(user?.phone_confirmed_at).toBeUndefined()
+    expect(user?.email_confirmed_at).toBeUndefined()
+    expect(user?.last_sign_in_at).toBeUndefined()
+    expect(user?.phone).toBe(phone)
+  })
 
-  let { error, user, session } = await auth.verifyOTP(
-    { phone, token },
-    {
-      redirectTo: 'http://localhost:9999/welcome',
-    }
-  )
-  expect(error?.message).toContain('Otp has expired or is invalid')
-  expect(session).toBeNull()
-  expect(user).toBeNull()
-})
+  test('verifyMobileOTP() errors on bad token', async () => {
+    const token: string = '123456'
+
+    let { error, user, session } = await auth.verifyOTP(
+      { phone, token },
+      {
+        redirectTo: 'http://localhost:9999/welcome',
+      }
+    )
+    expect(error?.message).toContain('Otp has expired or is invalid')
+    expect(session).toBeNull()
+    expect(user).toBeNull()
+  })
+}
