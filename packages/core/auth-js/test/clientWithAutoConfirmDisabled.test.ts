@@ -10,7 +10,7 @@ const auth = new GoTrueClient({
 })
 
 const email = faker.internet.email().toLowerCase()
-const phone = '6587522029'
+const phone = faker.phone.phoneNumber()
 const password = faker.internet.password()
 
 test('signUp() with email and password', async () => {
