@@ -108,14 +108,13 @@ export default class GoTrueClient {
   }> {
     try {
       this._removeSession()
-
-      if (phone && password) {
-        var { data, error } = await this.api.signUpWithPhone(phone!, password!)
-      } else {
-        var { data, error } = await this.api.signUpWithEmail(email!, password!, {
-          redirectTo: options.redirectTo,
-        })
-      }
+      
+      const { data, error } =
+        phone && password
+          ? await this.api.signUpWithPhone(phone!, password!)
+          : await this.api.signUpWithEmail(email!, password!, {
+              redirectTo: options.redirectTo,
+            })
 
       if (error) {
         throw error
