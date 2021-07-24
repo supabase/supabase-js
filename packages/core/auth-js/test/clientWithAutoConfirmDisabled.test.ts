@@ -98,10 +98,7 @@ if (testTwilio) {
     const token: string = '123456'
 
     let { error, user, session } = await auth.verifyOTP(
-      { phone, token },
-      {
-        redirectTo: 'http://localhost:9999/welcome',
-      }
+      { phone, token }
     )
     expect(error?.message).toContain('Otp has expired or is invalid')
     expect(session).toBeNull()
