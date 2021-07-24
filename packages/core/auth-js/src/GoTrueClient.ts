@@ -10,6 +10,7 @@ import {
   AuthChangeEvent,
   CookieOptions,
   UserCredentials,
+  VerifyOTPParams,
 } from './lib/types'
 import { polyfillGlobalThis } from './lib/polyfills'
 
@@ -91,10 +92,11 @@ export default class GoTrueClient {
    * @type UserCredentials
    * @param email The user's email address.
    * @param password The user's password.
+   * @param phone The user's phone number.
    * @param redirectTo A URL or mobile address to send the user to after they are confirmed.
    */
   async signUp(
-    { email, password }: UserCredentials,
+    { email, password, phone }: UserCredentials,
     options: {
       redirectTo?: string
     } = {}
@@ -106,10 +108,13 @@ export default class GoTrueClient {
   }> {
     try {
       this._removeSession()
-
-      const { data, error } = await this.api.signUpWithEmail(email!, password!, {
-        redirectTo: options.redirectTo,
-      })
+      
+      const { data, error } =
+        phone && password
+          ? await this.api.signUpWithPhone(phone!, password!)
+          : await this.api.signUpWithEmail(email!, password!, {
+              redirectTo: options.redirectTo,
+            })
 
       if (error) {
         throw error
@@ -150,7 +155,7 @@ export default class GoTrueClient {
    * @param scopes A space-separated list of scopes granted to the OAuth application.
    */
   async signIn(
-    { email, password, refreshToken, provider }: UserCredentials,
+    { email, phone, password, refreshToken, provider }: UserCredentials,
     options: {
       redirectTo?: string
       scopes?: string
@@ -177,6 +182,13 @@ export default class GoTrueClient {
           redirectTo: options.redirectTo,
         })
       }
+      if (phone && !password) {
+        const { error } = await this.api.sendMobileOTP(phone)
+        return { data: null, user: null, session: null, error }
+      }
+      if (phone && password) {
+        return this._handlePhoneSignIn(phone, password)
+      }
       if (refreshToken) {
         // currentSession and currentUser will be updated to latest on _callRefreshToken using the passed refreshToken
         const { error } = await this._callRefreshToken(refreshToken)
@@ -195,7 +207,57 @@ export default class GoTrueClient {
           scopes: options.scopes,
         })
       }
-      throw new Error(`You must provide either an email or a third-party provider.`)
+      throw new Error(`You must provide either an email, phone number or a third-party provider.`)
+    } catch (error) {
+      return { data: null, user: null, session: null, error }
+    }
+  }
+
+  /**
+   * Log in a user given a User supplied OTP received via mobile.
+   * @param phone The user's phone number.
+   * @param token The user's password.
+   * @param redirectTo A URL or mobile address to send the user to after they are confirmed.
+   */
+  async verifyOTP(
+    { phone, token }: VerifyOTPParams,
+    options: {
+      redirectTo?: string
+    } = {}
+  ): Promise<{
+    user: User | null
+    session: Session | null
+    error: Error | null
+    data: Session | User | null // Deprecated
+  }> {
+    try {
+      this._removeSession()
+
+      const { data, error } = await this.api.verifyMobileOTP(phone, token, options)
+
+      if (error) {
+        throw error
+      }
+
+      if (!data) {
+        throw 'An error occurred on token verification.'
+      }
+
+      let session: Session | null = null
+      let user: User | null = null
+
+      if ((data as Session).access_token) {
+        session = data as Session
+        user = session.user as User
+        this._saveSession(session)
+        this._notifyAllSubscribers('SIGNED_IN')
+      }
+
+      if ((data as User).id) {
+        user = data as User
+      }
+
+      return { data, user, session, error: null }
     } catch (error) {
       return { data: null, user: null, session: null, error }
     }
@@ -417,7 +479,23 @@ export default class GoTrueClient {
       })
       if (error || !data) return { data: null, user: null, session: null, error }
 
-      if (data?.user?.confirmed_at) {
+      if (data?.user?.confirmed_at || data?.user?.email_confirmed_at) {
+        this._saveSession(data)
+        this._notifyAllSubscribers('SIGNED_IN')
+      }
+
+      return { data, user: data.user, session: data, error: null }
+    } catch (error) {
+      return { data: null, user: null, session: null, error }
+    }
+  }
+
+  private async _handlePhoneSignIn(phone: string, password: string) {
+    try {
+      const { data, error } = await this.api.signInWithPhone(phone, password)
+      if (error || !data) return { data: null, user: null, session: null, error }
+
+      if (data?.user?.phone_confirmed_at) {
         this._saveSession(data)
         this._notifyAllSubscribers('SIGNED_IN')
       }

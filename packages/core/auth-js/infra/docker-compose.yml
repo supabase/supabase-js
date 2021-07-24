@@ -31,8 +31,15 @@ services:
       GOTRUE_SMTP_PASS: GOTRUE_SMTP_PASS
       GOTRUE_SMTP_ADMIN_EMAIL: admin@email.com
       GOTRUE_MAILER_SUBJECTS_CONFIRMATION: 'Please confirm'
+      GOTRUE_EXTERNAL_PHONE_ENABLED: 'true'
+      GOTRUE_SMS_PROVIDER: "twilio"
+      GOTRUE_SMS_TWILIO_ACCOUNT_SID: "${GOTRUE_SMS_TWILIO_ACCOUNT_SID}"
+      GOTRUE_SMS_TWILIO_AUTH_TOKEN: "${GOTRUE_SMS_TWILIO_AUTH_TOKEN}"
+      GOTRUE_SMS_TWILIO_MESSAGE_SERVICE_SID: "${GOTRUE_SMS_TWILIO_MESSAGE_SERVICE_SID}"
+      GOTRUE_SMS_AUTOCONFIRM: 'false'
     depends_on:
       - db
+    restart: on-failure
   autoconfirm: # Signup enabled, autoconfirm on
     image: supabase/gotrue:latest
     ports:
@@ -48,11 +55,15 @@ services:
       API_EXTERNAL_URL: http://localhost:9998
       GOTRUE_SITE_URL: http://localhost:9998
       GOTRUE_MAILER_AUTOCONFIRM: 'true'
+      GOTRUE_SMS_AUTOCONFIRM: 'true'
       GOTRUE_LOG_LEVEL: DEBUG
       GOTRUE_OPERATOR_TOKEN: super-secret-operator-token
       DATABASE_URL: 'postgres://postgres:postgres@db:5432/postgres?sslmode=disable'
+      GOTRUE_EXTERNAL_PHONE_ENABLED: 'true'
+      GOTRUE_SMS_AUTOCONFIRM: 'true'
     depends_on:
       - db
+    restart: on-failure
   disabled: # Signup disabled
     image: supabase/gotrue:latest
     ports:
@@ -65,14 +76,18 @@ services:
       GOTRUE_API_HOST: 0.0.0.0
       PORT: 9997
       GOTRUE_DISABLE_SIGNUP: 'true'
+      GOTRUE_ENABLE_SIGNUP: 'false'
       API_EXTERNAL_URL: http://localhost:9997
       GOTRUE_SITE_URL: http://localhost:9997
       GOTRUE_MAILER_AUTOCONFIRM: 'false'
       GOTRUE_LOG_LEVEL: DEBUG
       GOTRUE_OPERATOR_TOKEN: super-secret-operator-token
       DATABASE_URL: 'postgres://postgres:postgres@db:5432/postgres?sslmode=disable'
+      GOTRUE_EXTERNAL_PHONE_ENABLED: 'false'
+      GOTRUE_EXTERNAL_EMAIL_ENABLED: 'false'
     depends_on:
       - db
+    restart: on-failure
   mail:
     image: phamhieu/inbucket:latest
     ports:

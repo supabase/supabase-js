@@ -8,13 +8,13 @@ describe('Developers can subscribe and unsubscribe', () => {
 
   test('Subscribe a listener', async () => {
     // @ts-ignore
-    expect(gotrue.stateChangeEmitters.size).toMatchSnapshot()
+    expect(gotrue.stateChangeEmitters.size).toBeTruthy()
   })
 
   test('Unsubscribe a listener', async () => {
     subscription?.unsubscribe()
 
     // @ts-ignore
-    expect(gotrue.stateChangeEmitters.size).toMatchSnapshot()
+    expect(gotrue.stateChangeEmitters.size).toBeFalsy()
   })
 })

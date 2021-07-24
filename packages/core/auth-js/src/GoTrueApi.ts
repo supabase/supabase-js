@@ -87,6 +87,47 @@ export default class GoTrueApi {
   }
 
   /**
+   * Signs up a new user using their phone number and a password.
+   * @param phone The email address of the user.
+   * @param password The password of the user.
+   */
+  async signUpWithPhone(
+    phone: string,
+    password: string
+  ): Promise<{ data: Session | User | null; error: Error | null }> {
+    try {
+      let headers = { ...this.headers }
+      const data = await post(`${this.url}/signup`, { phone, password }, { headers })
+      let session = { ...data }
+      if (session.expires_in) session.expires_at = expiresAt(data.expires_in)
+      return { data: session, error: null }
+    } catch (error) {
+      return { data: null, error }
+    }
+  }
+
+  /**
+   * Logs in an existing user using their phone number and password.
+   * @param phone The email address of the user.
+   * @param password The password of the user.
+   */
+  async signInWithPhone(
+    phone: string,
+    password: string
+  ): Promise<{ data: Session | null; error: Error | null }> {
+    try {
+      let headers = { ...this.headers }
+      let queryString = '?grant_type=password'
+      const data = await post(`${this.url}/token${queryString}`, { phone, password }, { headers })
+      let session = { ...data }
+      if (session.expires_in) session.expires_at = expiresAt(data.expires_in)
+      return { data: session, error: null }
+    } catch (error) {
+      return { data: null, error }
+    }
+  }
+
+  /**
    * Sends a magic login link to an email address.
    * @param email The email address of the user.
    * @param redirectTo A URL or mobile address to send the user to after they are confirmed.
@@ -104,6 +145,46 @@ export default class GoTrueApi {
         queryString += '?redirect_to=' + encodeURIComponent(options.redirectTo)
       }
       const data = await post(`${this.url}/magiclink${queryString}`, { email }, { headers })
+      return { data, error: null }
+    } catch (error) {
+      return { data: null, error }
+    }
+  }
+
+  /**
+   * Sends a mobile OTP via SMS. Will register the account if it doesn't already exist
+   * @param phone The user's phone number WITH international prefix
+   */
+  async sendMobileOTP(phone: string): Promise<{ data: {} | null; error: Error | null }> {
+    try {
+      let headers = { ...this.headers }
+      const data = await post(`${this.url}/otp`, { phone }, { headers })
+      return { data, error: null }
+    } catch (error) {
+      return { data: null, error }
+    }
+  }
+
+  /**
+   * Send User supplied Mobile OTP to be verified
+   * @param phone The user's phone number WITH international prefix
+   * @param token token that user was sent to their mobile phone
+   * @param redirectTo A URL or mobile address to send the user to after they are confirmed.
+   */
+  async verifyMobileOTP(
+    phone: string,
+    token: string,
+    options: {
+      redirectTo?: string
+    } = {}
+  ): Promise<{ data: Session | User | null; error: Error | null }> {
+    try {
+      let headers = { ...this.headers }
+      const data = await post(
+        `${this.url}/verify`,
+        { phone, token, type: 'sms', redirect_to: options.redirectTo },
+        { headers }
+      )
       return { data, error: null }
     } catch (error) {
       return { data: null, error }
@@ -332,6 +413,41 @@ export default class GoTrueApi {
       return { user, data: user, error: null }
     } catch (error) {
       return { user: null, data: null, error }
+    }
+  }
+
+  /**
+   * Generates links to be sent via email or other.
+   * @param type The link type ("signup" or "magiclink" or "recovery" or "invite").
+   * @param email The user's email.
+   * @param password User password. For signup only.
+   * @param data Optional user metadata. For signup only.
+   * @param redirectTo The link type ("signup" or "magiclink" or "recovery" or "invite").
+   */
+  async generateLink(
+    type: 'signup' | 'magiclink' | 'recovery' | 'invite',
+    email: string,
+    options: {
+      password?: string
+      data?: any
+      redirectTo?: string
+    } = {}
+  ): Promise<{ data: Session | User | null; error: Error | null }> {
+    try {
+      const data: any = await post(
+        `${this.url}/admin/generate_link`,
+        {
+          type,
+          email,
+          password: options.password,
+          data: options.data,
+          redirect_to: options.redirectTo,
+        },
+        { headers: this.headers }
+      )
+      return { data, error: null }
+    } catch (error) {
+      return { data: null, error }
     }
   }
 }
