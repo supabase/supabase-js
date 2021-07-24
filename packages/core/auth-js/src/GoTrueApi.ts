@@ -419,13 +419,13 @@ export default class GoTrueApi {
   /**
    * Generates links to be sent via email or other.
    * @param type The link type ("signup" or "magiclink" or "recovery" or "invite").
-   * @param email the user's email.
-   * @param password user password for signup only.
-   * @param data optional user metadata for signup only.
+   * @param email The user's email.
+   * @param password User password. For signup only.
+   * @param data Optional user metadata. For signup only.
    * @param redirectTo The link type ("signup" or "magiclink" or "recovery" or "invite").
    */
   async generateLink(
-    type: string,
+    type: 'signup' | 'magicLink' | 'recovery' | 'invite',
     email: string,
     options: {
       password?: string
