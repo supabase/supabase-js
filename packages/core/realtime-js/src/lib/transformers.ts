@@ -102,7 +102,7 @@ export const convertColumn = (
  * @param {String} type A postgres column type
  * @param {String} stringValue The cell value
  *
- * @example convertCell('bool', 'true')
+ * @example convertCell('bool', 't')
  * //=> true
  * @example convertCell('int8', '10')
  * //=> 10
