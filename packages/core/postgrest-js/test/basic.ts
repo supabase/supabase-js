@@ -277,3 +277,17 @@ test('insert w/ empty body has no columns param', async () => {
   const client = postgrest.from('users').insert([{}, {}])
   expect((client as any).url.searchParams.has('columns')).toBeFalsy()
 })
+
+test('select with no match', async () => {
+  const res = await postgrest.from('users').select().eq('username', 'missing')
+  expect(res).toMatchInlineSnapshot(`
+    Object {
+      "body": Array [],
+      "count": null,
+      "data": Array [],
+      "error": null,
+      "status": 200,
+      "statusText": "OK",
+    }
+  `)
+})

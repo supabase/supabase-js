@@ -128,18 +128,23 @@ test('neq', async () => {
 })
 
 test('gt', async () => {
-  const res = await postgrest.from('messages').select('').gt('id', 1)
+  const res = await postgrest.from('messages').select('id').gt('id', 1)
   expect(res).toMatchInlineSnapshot(`
     Object {
-      "body": null,
+      "body": Array [
+        Object {
+          "id": 2,
+        },
+      ],
       "count": null,
-      "data": null,
-      "error": Object {
-        "details": "unexpected end of input expecting field name (* or [a..z0..9_]) or \\"*\\"",
-        "message": "\\"failed to parse select parameter ()\\" (line 1, column 1)",
-      },
-      "status": 400,
-      "statusText": "Bad Request",
+      "data": Array [
+        Object {
+          "id": 2,
+        },
+      ],
+      "error": null,
+      "status": 200,
+      "statusText": "OK",
     }
   `)
 })
