@@ -11,6 +11,10 @@ describe('constructor', () => {
     window.XMLHttpRequest = sinon.useFakeXMLHttpRequest()
   })
 
+  afterEach(async () => {
+    await socket.disconnect()
+  })
+
   after(() => {
     window.XMLHttpRequest = null
   })
@@ -73,6 +77,10 @@ describe('constructor', () => {
         done()
       })
     })
+  
+    afterEach(async () => {
+    await socket.disconnect()
+    })
 
     it('defaults to Websocket transport if available', () => {
       socket = new RealtimeClient('wss://example.com/socket')
@@ -82,6 +90,10 @@ describe('constructor', () => {
 })
 
 describe('endpointURL', () => {
+  afterEach(async () => {
+    await socket.disconnect()
+  })
+
   it('returns endpoint for given full url', () => {
     socket = new RealtimeClient('wss://example.org/chat')
     assert.equal(
@@ -125,6 +137,10 @@ describe('connect with WebSocket', () => {
 
   beforeEach(() => {
     socket = new RealtimeClient('wss://example.com/socket')
+  })
+
+  afterEach(async () => {
+    await socket.disconnect()
   })
 
   it('establishes websocket connection with endpoint', () => {
@@ -195,6 +211,10 @@ describe('disconnect', () => {
     socket = new RealtimeClient('wss://example.com/socket')
   })
 
+  afterEach(async () => {
+    await socket.disconnect()
+  })
+
   it('removes existing connection', () => {
     socket.connect()
     socket.disconnect()
@@ -230,6 +250,10 @@ describe('disconnect', () => {
 describe('connectionState', () => {
   beforeEach(() => {
     socket = new RealtimeClient('wss://example.com/socket')
+  })
+
+  afterEach(async () => {
+    await socket.disconnect()
   })
 
   it('defaults to closed', () => {
@@ -288,6 +312,10 @@ describe('channel', () => {
     socket = new RealtimeClient('wss://example.com/socket')
   })
 
+  afterEach(async () => {
+    await socket.disconnect()
+  })
+
   it('returns channel with given topic and params', () => {
     channel = socket.channel('topic', { one: 'two' })
 
@@ -311,6 +339,10 @@ describe('channel', () => {
 describe('remove', () => {
   beforeEach(() => {
     socket = new RealtimeClient('wss://example.com/socket')
+  })
+
+  afterEach(async () => {
+    await socket.disconnect()
   })
 
   it('removes given channel from channels', () => {
@@ -351,6 +383,10 @@ describe('push', () => {
     socket = new RealtimeClient('wss://example.com/socket')
   })
 
+  afterEach(async () => {
+    await socket.disconnect()
+  })
+
   // TODO: fix for W3CWebSocket
   it.skip('sends data to connection when connected', () => {
     socket.connect()
@@ -388,6 +424,10 @@ describe('makeRef', () => {
     socket = new RealtimeClient('wss://example.com/socket')
   })
 
+  afterEach(async () => {
+    await socket.disconnect()
+  })
+
   it('returns next message ref', () => {
     assert.strictEqual(socket.ref, 0)
     assert.strictEqual(socket.makeRef(), '1')
@@ -416,6 +456,10 @@ describe('sendHeartbeat', () => {
   beforeEach(() => {
     socket = new RealtimeClient('wss://example.com/socket')
     socket.connect()
+  })
+
+  afterEach(async () => {
+    await socket.disconnect()
   })
 
   // TODO: fix for W3CWebSocket
@@ -469,6 +513,10 @@ describe('flushSendBuffer', () => {
     socket.connect()
   })
 
+  afterEach(async () => {
+    await socket.disconnect()
+  })
+
   // TODO: fix for W3CWebSocket
   it.skip('calls callbacks in buffer when connected', () => {
     socket.conn.readyState = 1 // open
@@ -515,6 +563,10 @@ describe('_onConnOpen', () => {
       reconnectAfterMs: () => 100000,
     })
     socket.connect()
+  })
+
+  afterEach(async () => {
+    await socket.disconnect()
   })
 
   // TODO: fix for W3CWebSocket
@@ -569,6 +621,10 @@ describe('_onConnClose', () => {
     socket.connect()
   })
 
+  afterEach(async () => {
+    await socket.disconnect()
+  })
+
   it('schedules reconnectTimer timeout', () => {
     const spy = sinon.spy(socket.reconnectTimer, 'scheduleTimeout')
 
@@ -618,6 +674,10 @@ describe('_onConnError', () => {
     socket.connect()
   })
 
+  afterEach(async () => {
+    await socket.disconnect()
+  })
+
   it('triggers onClose callback', () => {
     const spy = sinon.spy()
 
@@ -657,6 +717,10 @@ describe('onConnMessage', () => {
       reconnectAfterMs: () => 100000,
     })
     socket.connect()
+  })
+
+  afterEach(async () => {
+    await socket.disconnect()
   })
 
   it('parses raw message, resets heartbeat, and triggers channel event', () => {
@@ -709,6 +773,10 @@ describe('onConnMessage', () => {
 })
 
 describe('custom encoder and decoder', () => {
+  afterEach(async () => {
+    await socket.disconnect()
+  })
+
   it('encodes to JSON by default', () => {
     socket = new RealtimeClient('wss://example.com/socket')
     let payload = { foo: 'bar' }

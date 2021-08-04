@@ -86,6 +86,11 @@ export default class Push {
     if (this.refEvent) this.channel.trigger(this.refEvent, { status, response })
   }
 
+  destroy() {
+    this._cancelRefEvent()
+    this._cancelTimeout()
+  }
+
   private _cancelRefEvent() {
     if (!this.refEvent) {
       return

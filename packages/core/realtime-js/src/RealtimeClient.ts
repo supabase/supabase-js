@@ -150,6 +150,9 @@ export default class RealtimeClient {
             this.conn.close()
           }
           this.conn = null
+          // remove open handles
+          this.heartbeatTimer && clearInterval(this.heartbeatTimer)
+          this.reconnectTimer.reset()
         }
         resolve({ error: null, data: true })
       } catch (error) {

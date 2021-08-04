@@ -128,6 +128,9 @@ export default class RealtimeSubscription {
       this.socket.log('channel', `leave ${this.topic}`)
       this.trigger(CHANNEL_EVENTS.close, 'leave', this.joinRef())
     }
+    // Destroy joinPush to avoid connection timeouts during unscription phase
+    this.joinPush.destroy()
+
     let leavePush = new Push(this, CHANNEL_EVENTS.leave, {}, timeout)
     leavePush.receive('ok', () => onClose()).receive('timeout', () => onClose())
     leavePush.send()
