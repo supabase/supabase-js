@@ -7,12 +7,11 @@ import AsyncStorage from '@react-native-community/async-storage'
 import Button from './components/Button'
 import TextField from './components/TextField'
 
-const auth = new GoTrueClient({ localStorage: AsyncStorage as any })
+const auth = new GoTrueClient({ localStorage: AsyncStorage })
 
 export default function App() {
   const [email, setEmail] = React.useState('')
   const [password, setPassword] = React.useState('')
-
 
   return (
     <View style={styles.container}>
