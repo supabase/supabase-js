@@ -77,9 +77,9 @@ export const convertChangeData = (
  * @param {Array} skipTypes An array of types that should not be converted
  * @return {object} Useless information
  *
- * @example convertColumn('age', [{name: 'first_name', type: 'text'}, {name: 'age', type: 'int4'}], ['Paul', '33'], [])
+ * @example convertColumn('age', [{name: 'first_name', type: 'text'}, {name: 'age', type: 'int4'}], {first_name: 'Paul', age: '33'}, [])
  * //=> 33
- * @example convertColumn('age', [{name: 'first_name', type: 'text'}, {name: 'age', type: 'int4'}], ['Paul', '33'], ['int4'])
+ * @example convertColumn('age', [{name: 'first_name', type: 'text'}, {name: 'age', type: 'int4'}], {first_name: 'Paul', age: '33'}, ['int4'])
  * //=> "33"
  */
 export const convertColumn = (
@@ -102,7 +102,7 @@ export const convertColumn = (
  * @param {String} type A postgres column type
  * @param {String} stringValue The cell value
  *
- * @example convertCell('bool', 'true')
+ * @example convertCell('bool', 't')
  * //=> true
  * @example convertCell('int8', '10')
  * //=> 10
