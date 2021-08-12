@@ -88,7 +88,7 @@ export default class GoTrueApi {
 
   /**
    * Signs up a new user using their phone number and a password.
-   * @param phone The email address of the user.
+   * @param phone The phone number of the user.
    * @param password The password of the user.
    */
   async signUpWithPhone(
@@ -108,7 +108,7 @@ export default class GoTrueApi {
 
   /**
    * Logs in an existing user using their phone number and password.
-   * @param phone The email address of the user.
+   * @param phone The phone number of the user.
    * @param password The password of the user.
    */
   async signInWithPhone(
