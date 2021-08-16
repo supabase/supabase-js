@@ -110,7 +110,7 @@ export default class PostgrestQueryBuilder<T> extends PostgrestBuilder<T> {
     if (Array.isArray(values)) {
       const columns = values.reduce((acc, x) => acc.concat(Object.keys(x)), [] as string[])
       if (columns.length > 0) {
-        const uniqueColumns = [...new Set(columns)]
+        const uniqueColumns = [...new Set(columns)].map((column) => `"${column}"`)
         this.url.searchParams.set('columns', uniqueColumns.join(','))
       }
     }
