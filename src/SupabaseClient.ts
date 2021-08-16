@@ -95,10 +95,16 @@ export default class SupabaseClient {
    *
    * @param fn  The function name to call.
    * @param params  The parameters to pass to the function call.
+   * @param count  Count algorithm to use to count rows in a table.
+   *
    */
-  rpc<T = any>(fn: string, params?: object) {
+  rpc<T = any>(
+    fn: string,
+    params?: object,
+    { count = null }: { count?: null | 'exact' | 'planned' | 'estimated' } = {}
+  ) {
     const rest = this._initPostgRESTClient()
-    return rest.rpc<T>(fn, params)
+    return rest.rpc<T>(fn, params, { count })
   }
 
   /**
