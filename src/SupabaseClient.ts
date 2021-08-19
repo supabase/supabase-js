@@ -91,7 +91,7 @@ export default class SupabaseClient {
   }
 
   /**
-   * Perform a stored procedure call.
+   * Perform a function call.
    *
    * @param fn  The function name to call.
    * @param params  The parameters to pass to the function call.
