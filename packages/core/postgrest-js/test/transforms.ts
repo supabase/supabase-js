@@ -50,7 +50,7 @@ test('select on insert', async () => {
   await postgrest.from('users').delete().eq('username', 'foo')
 })
 
-test('select on stored procedure', async () => {
+test('select on rpc', async () => {
   const res = await postgrest
     .rpc('get_username_and_status', { name_param: 'supabot' })
     .select('status')

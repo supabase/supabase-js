@@ -13,7 +13,7 @@ export default class PostgrestRpcBuilder<T> extends PostgrestBuilder<T> {
   }
 
   /**
-   * Perform a stored procedure call.
+   * Perform a function call.
    */
   rpc(
     params?: object,

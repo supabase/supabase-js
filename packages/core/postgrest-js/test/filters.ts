@@ -749,7 +749,7 @@ test('match', async () => {
   `)
 })
 
-test('filter on stored procedure', async () => {
+test('filter on rpc', async () => {
   const res = await postgrest
     .rpc('get_username_and_status', { name_param: 'supabot' })
     .neq('status', 'ONLINE')

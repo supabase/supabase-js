@@ -1971,6 +1971,39 @@ Object {
 }
 `;
 
+exports[`rpc 1`] = `
+Object {
+  "body": "ONLINE",
+  "count": null,
+  "data": "ONLINE",
+  "error": null,
+  "status": 200,
+  "statusText": "OK",
+}
+`;
+
+exports[`rpc returns void 1`] = `
+Object {
+  "body": null,
+  "count": null,
+  "data": null,
+  "error": null,
+  "status": 200,
+  "statusText": "OK",
+}
+`;
+
+exports[`rpc with count: 'exact' 1`] = `
+Object {
+  "body": "ONLINE",
+  "count": 1,
+  "data": "ONLINE",
+  "error": null,
+  "status": 200,
+  "statusText": "OK",
+}
+`;
+
 exports[`select on insert 1`] = `
 Object {
   "body": Array [
@@ -1990,7 +2023,7 @@ Object {
 }
 `;
 
-exports[`select on stored procedure 1`] = `
+exports[`select on rpc 1`] = `
 Object {
   "body": Array [
     Object {
@@ -2165,39 +2198,6 @@ Object {
   "error": null,
   "status": 201,
   "statusText": "Created",
-}
-`;
-
-exports[`stored procedure 1`] = `
-Object {
-  "body": "ONLINE",
-  "count": null,
-  "data": "ONLINE",
-  "error": null,
-  "status": 200,
-  "statusText": "OK",
-}
-`;
-
-exports[`stored procedure returns void 1`] = `
-Object {
-  "body": null,
-  "count": null,
-  "data": null,
-  "error": null,
-  "status": 200,
-  "statusText": "OK",
-}
-`;
-
-exports[`stored procedure with count: 'exact' 1`] = `
-Object {
-  "body": "ONLINE",
-  "count": 1,
-  "data": "ONLINE",
-  "error": null,
-  "status": 200,
-  "statusText": "OK",
 }
 `;
 

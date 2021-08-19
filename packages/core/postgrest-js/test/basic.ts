@@ -8,12 +8,12 @@ test('basic select table', async () => {
   expect(res).toMatchSnapshot()
 })
 
-test('stored procedure', async () => {
+test('rpc', async () => {
   const res = await postgrest.rpc('get_status', { name_param: 'supabot' })
   expect(res).toMatchSnapshot()
 })
 
-test('stored procedure returns void', async () => {
+test('rpc returns void', async () => {
   const res = await postgrest.rpc('void_func')
   expect(res).toMatchSnapshot()
 })
@@ -208,7 +208,7 @@ test('select with count:exact', async () => {
   expect(res).toMatchSnapshot()
 })
 
-test("stored procedure with count: 'exact'", async () => {
+test("rpc with count: 'exact'", async () => {
   const res = await postgrest.rpc('get_status', { name_param: 'supabot' }, { count: 'exact' })
   expect(res).toMatchSnapshot()
 })
