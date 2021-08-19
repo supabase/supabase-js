@@ -108,7 +108,7 @@ export default class GoTrueClient {
   }> {
     try {
       this._removeSession()
-      
+
       const { data, error } =
         phone && password
           ? await this.api.signUpWithPhone(phone!, password!)

@@ -24,8 +24,8 @@ test('signUpWithEmail()', async () => {
     created_at: expect.any(String),
     email: expect.any(String),
     id: expect.any(String),
-    phone: "",
-    role: "",
+    phone: '',
+    role: '',
     updated_at: expect.any(String),
     app_metadata: {
       provider: 'email',
