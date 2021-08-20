@@ -1,0 +1,21 @@
+{
+  "plugins": [
+    [
+      "semantic-release-plugin-update-version-in-files",
+      {
+        "files": [
+          "src/lib/version.ts",
+          "dist/main/lib/version.js",
+          "dist/main/lib/version.d.ts",
+          "dist/module/lib/version.js",
+          "dist/module/lib/version.d.ts"
+        ],
+        "placeholder": "0.0.0"
+      }
+    ],
+    "@semantic-release/commit-analyzer",
+    "@semantic-release/release-notes-generator",
+    "@semantic-release/github",
+    "@semantic-release/npm"
+  ]
+}
