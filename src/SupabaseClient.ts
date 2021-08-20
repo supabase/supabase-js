@@ -147,7 +147,7 @@ export default class SupabaseClient {
     persistSession,
     detectSessionInUrl,
     localStorage,
-    headers
+    headers,
   }: SupabaseClientOptions) {
     const authHeaders = {
       Authorization: `Bearer ${this.supabaseKey}`,
