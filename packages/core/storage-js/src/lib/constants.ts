@@ -1,0 +1,2 @@
+const { version } = require('./version')
+export const DEFAULT_HEADERS = { 'X-Client-Info': `storage-js/${version}` }

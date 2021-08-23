@@ -1,5 +1,6 @@
 import { get, post, put, remove } from './fetch'
 import { Bucket } from './types'
+import { DEFAULT_HEADERS } from './constants'
 
 export class StorageBucketApi {
   protected url: string
@@ -7,7 +8,7 @@ export class StorageBucketApi {
 
   constructor(url: string, headers: { [key: string]: string } = {}) {
     this.url = url
-    this.headers = headers
+    this.headers = { ...DEFAULT_HEADERS, ...headers }
   }
 
   /**
