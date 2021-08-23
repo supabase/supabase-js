@@ -104,7 +104,7 @@ export default class PostgrestTransformBuilder<T> extends PostgrestBuilder<T> {
     const _this = new PostgrestTransformBuilder(this)
     _this.then = ((onfulfilled: any, onrejected: any) =>
       this.then((res: any): any => {
-        if (res.error?.details.includes('Results contain 0 rows')) {
+        if (res.error?.details?.includes('Results contain 0 rows')) {
           return onfulfilled({
             error: null,
             data: null,
