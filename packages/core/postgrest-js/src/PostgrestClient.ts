@@ -1,6 +1,7 @@
 import PostgrestQueryBuilder from './lib/PostgrestQueryBuilder'
 import PostgrestRpcBuilder from './lib/PostgrestRpcBuilder'
 import PostgrestFilterBuilder from './lib/PostgrestFilterBuilder'
+import { DEFAULT_HEADERS } from './lib/constants'
 
 export default class PostgrestClient {
   url: string
@@ -19,7 +20,7 @@ export default class PostgrestClient {
     { headers = {}, schema }: { headers?: { [key: string]: string }; schema?: string } = {}
   ) {
     this.url = url
-    this.headers = headers
+    this.headers = { ...DEFAULT_HEADERS, ...headers }
     this.schema = schema
   }
 
