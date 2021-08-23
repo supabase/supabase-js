@@ -1,3 +1,7 @@
+import { version } from './version'
+
+export const DEFAULT_HEADERS = { 'X-Client-Info': `realtime-js/${version}` }
+
 export const VSN: string = '1.0.0'
 
 export const DEFAULT_TIMEOUT = 10000

@@ -5,6 +5,7 @@ import {
   SOCKET_STATES,
   DEFAULT_TIMEOUT,
   WS_CLOSE_NORMAL,
+  DEFAULT_HEADERS,
 } from './lib/constants'
 import Timer from './lib/timer'
 import RealtimeSubscription from './RealtimeSubscription'
@@ -35,7 +36,7 @@ const noop = () => {}
 export default class RealtimeClient {
   channels: RealtimeSubscription[] = []
   endPoint: string = ''
-  headers?: { [key: string]: string } = {}
+  headers?: { [key: string]: string } = DEFAULT_HEADERS
   params?: { [key: string]: string } = {}
   timeout: number = DEFAULT_TIMEOUT
   transport: any = WebSocket
@@ -83,7 +84,7 @@ export default class RealtimeClient {
     this.endPoint = `${endPoint}/${TRANSPORTS.websocket}`
 
     if (options?.params) this.params = options.params
-    if (options?.headers) this.headers = options.headers
+    if (options?.headers) this.headers = { ...this.headers, ...options.headers }
     if (options?.timeout) this.timeout = options.timeout
     if (options?.logger) this.logger = options.logger
     if (options?.transport) this.transport = options.transport
