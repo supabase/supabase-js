@@ -1,6 +1,6 @@
 {
   "name": "@supabase/storage-js",
-  "version": "1.0.0",
+  "version": "0.0.0",
   "description": "Isomorphic storage client for Supabase.",
   "keywords": [
     "javascript",
@@ -23,7 +23,7 @@
   "scripts": {
     "clean": "rimraf dist docs",
     "format": "prettier --write \"{src,test}/**/*.ts\"",
-    "build": "run-s clean format build:*",
+    "build": "genversion src/lib/version.ts --es6 && run-s clean format build:*",
     "build:main": "tsc -p tsconfig.json",
     "build:module": "tsc -p tsconfig.module.json",
     "build:umd": "webpack",
@@ -40,12 +40,14 @@
   },
   "devDependencies": {
     "@types/jest": "^26.0.13",
+    "genversion": "^3.0.1",
     "husky": "^4.3.0",
     "jest": "^26.4.1",
     "npm-run-all": "^4.1.5",
     "prettier": "^2.1.2",
     "pretty-quick": "^3.1.0",
     "rimraf": "^3.0.2",
+    "semantic-release-plugin-update-version-in-files": "^1.1.0",
     "ts-jest": "^26.3.0",
     "ts-loader": "^8.0.11",
     "typedoc": "^0.19.1",
