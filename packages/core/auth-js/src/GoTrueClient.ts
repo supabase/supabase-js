@@ -29,8 +29,8 @@ type MaybePromisify<T> = T | Promise<T>
 
 type PromisifyMethods<T> = {
   [K in keyof T]: T[K] extends AnyFunction
-    ? (...args: Parameters<T[K]>) => MaybePromisify<ReturnType<T[K]>>
-    : T[K]
+  ? (...args: Parameters<T[K]>) => MaybePromisify<ReturnType<T[K]>>
+  : T[K]
 }
 
 type SupportedStorage = PromisifyMethods<Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>>
@@ -113,6 +113,7 @@ export default class GoTrueClient {
     options: {
       redirectTo?: string
       data?: object
+      hcaptchaToken?: string
     } = {}
   ): Promise<{
     user: User | null
@@ -126,12 +127,14 @@ export default class GoTrueClient {
       const { data, error } =
         phone && password
           ? await this.api.signUpWithPhone(phone!, password!, {
-              data: options.data,
-            })
+            data: options.data,
+            hcaptchaToken: options.hcaptchaToken,
+          })
           : await this.api.signUpWithEmail(email!, password!, {
-              redirectTo: options.redirectTo,
-              data: options.data,
-            })
+            redirectTo: options.redirectTo,
+            data: options.data,
+            hcaptchaToken: options.hcaptchaToken,
+          })
 
       if (error) {
         throw error
@@ -176,6 +179,7 @@ export default class GoTrueClient {
     options: {
       redirectTo?: string
       scopes?: string
+      hcaptchaToken?: string
     } = {}
   ): Promise<{
     session: Session | null
@@ -191,6 +195,7 @@ export default class GoTrueClient {
       if (email && !password) {
         const { error } = await this.api.sendMagicLinkEmail(email, {
           redirectTo: options.redirectTo,
+          hcaptchaToken: options.hcaptchaToken,
         })
         return { data: null, user: null, session: null, error }
       }
@@ -200,7 +205,9 @@ export default class GoTrueClient {
         })
       }
       if (phone && !password) {
-        const { error } = await this.api.sendMobileOTP(phone)
+        const { error } = await this.api.sendMobileOTP(phone, {
+          hcaptchaToken: options.hcaptchaToken,
+        })
         return { data: null, user: null, session: null, error }
       }
       if (phone && password) {
@@ -457,9 +464,10 @@ export default class GoTrueClient {
    * Receive a notification every time an auth event happens.
    * @returns {Subscription} A subscription object which can be used to unsubscribe itself.
    */
-  onAuthStateChange(
-    callback: (event: AuthChangeEvent, session: Session | null) => void
-  ): { data: Subscription | null; error: ApiError | null } {
+  onAuthStateChange(callback: (event: AuthChangeEvent, session: Session | null) => void): {
+    data: Subscription | null
+    error: ApiError | null
+  } {
     try {
       const id: string = uuid()
       const self = this
