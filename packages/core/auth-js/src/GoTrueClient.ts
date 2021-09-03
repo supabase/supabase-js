@@ -1,5 +1,5 @@
 import GoTrueApi from './GoTrueApi'
-import { isBrowser, getParameterByName, uuid, LocalStorage } from './lib/helpers'
+import { isBrowser, getParameterByName, uuid } from './lib/helpers'
 import { GOTRUE_URL, DEFAULT_HEADERS, STORAGE_KEY } from './lib/constants'
 import {
   Session,
@@ -20,10 +20,21 @@ const DEFAULT_OPTIONS = {
   url: GOTRUE_URL,
   autoRefreshToken: true,
   persistSession: true,
-  localStorage: globalThis.localStorage,
   detectSessionInUrl: true,
   headers: DEFAULT_HEADERS,
 }
+
+type AnyFunction = (...args: any[]) => any
+type MaybePromisify<T> = T | Promise<T>
+
+type PromisifyMethods<T> = {
+  [K in keyof T]: T[K] extends AnyFunction
+    ? (...args: Parameters<T[K]>) => MaybePromisify<ReturnType<T[K]>>
+    : T[K]
+}
+
+type SupportedStorage = PromisifyMethods<Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>>
+
 export default class GoTrueClient {
   /**
    * Namespace for the GoTrue API methods.
@@ -41,7 +52,7 @@ export default class GoTrueClient {
 
   protected autoRefreshToken: boolean
   protected persistSession: boolean
-  protected localStorage: Storage
+  protected localStorage: SupportedStorage
   protected stateChangeEmitters: Map<string, Subscription> = new Map()
   protected refreshTokenTimer?: ReturnType<typeof setTimeout>
 
@@ -60,7 +71,7 @@ export default class GoTrueClient {
     detectSessionInUrl?: boolean
     autoRefreshToken?: boolean
     persistSession?: boolean
-    localStorage?: Storage
+    localStorage?: SupportedStorage
     cookieOptions?: CookieOptions
   }) {
     const settings = { ...DEFAULT_OPTIONS, ...options }
@@ -68,7 +79,7 @@ export default class GoTrueClient {
     this.currentSession = null
     this.autoRefreshToken = settings.autoRefreshToken
     this.persistSession = settings.persistSession
-    this.localStorage = new LocalStorage(settings.localStorage)
+    this.localStorage = settings.localStorage || globalThis.localStorage
     this.api = new GoTrueApi({
       url: settings.url,
       headers: settings.headers,
