@@ -31,8 +31,7 @@
     "docs:json": "typedoc --json docs/spec.json --mode modules --includeDeclarations --excludeExternals"
   },
   "dependencies": {
-    "cross-fetch": "^3.0.6",
-    "save-dev": "*"
+    "cross-fetch": "^3.0.6"
   },
   "devDependencies": {
     "@types/faker": "^5.1.6",
