@@ -1,4 +1,9 @@
+import { GoTrueClient } from '@supabase/gotrue-js'
 import { RealtimeClientOptions } from '@supabase/realtime-js'
+
+type GoTrueClientOptions = ConstructorParameters<typeof GoTrueClient>[0]
+
+export interface SupabaseAuthClientOptions extends GoTrueClientOptions {}
 
 export type SupabaseClientOptions = {
   /**
@@ -24,7 +29,7 @@ export type SupabaseClientOptions = {
   /**
    * A storage provider. Used to store the logged in session.
    */
-  localStorage?: Storage
+  localStorage?: SupabaseAuthClientOptions['localStorage']
 
   /**
    * Options passed to the realtime-js instance

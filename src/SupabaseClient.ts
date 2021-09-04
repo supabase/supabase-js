@@ -11,7 +11,6 @@ const DEFAULT_OPTIONS = {
   autoRefreshToken: true,
   persistSession: true,
   detectSessionInUrl: true,
-  localStorage: globalThis.localStorage,
   headers: DEFAULT_HEADERS,
 }
 
