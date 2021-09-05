@@ -23,7 +23,7 @@ export class SupabaseQueryBuilder<T> extends PostgrestQueryBuilder<T> {
   ) {
     super(url, { headers, schema })
 
-    this._subscription = new SupabaseRealtimeClient(realtime, schema, table)
+    this._subscription = new SupabaseRealtimeClient(realtime, headers, schema, table)
     this._realtime = realtime
   }
 
