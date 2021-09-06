@@ -34,12 +34,6 @@ const postgrest = new PostgrestClient(REST_URL)
 
 This repo is licensed under MIT License.
 
-## Credits
-
-- https://github.com/calebmer/postgrest-client - originally forked and adapted from @calebmer's library
-
-
-
 ## Sponsors
 
 We are building the features of Firebase using enterprise-grade, open source products. We support existing communities wherever possible, and if the products don’t exist we build them and open source them ourselves. Thanks to these sponsors who are making the OSS ecosystem better for everyone.
