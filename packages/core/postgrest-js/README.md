@@ -1,10 +1,12 @@
-# Postgrest JS
+# postgrest-js
+
+[![Build](https://github.com/supabase/postgrest-js/workflows/CI/badge.svg)](https://github.com/supabase/postgrest-js/actions?query=branch%3Amaster)
+[![Package](https://img.shields.io/npm/v/@supabase/postgrest-js)](https://www.npmjs.com/package/@supabase/postgrest-js)
+[![License: MIT](https://img.shields.io/npm/l/@supabase/postgrest-js)](#license)
 
 Isomorphic JavaScript client for [PostgREST](https://postgrest.org). The goal of this library is to make an "ORM-like" restful interface. 
 
-## Documentation
-
-Full documentation can be found on our [website](https://supabase.io/docs/postgrest/client/postgrest-client).
+Full documentation can be found [here](https://supabase.github.io/postgrest-js/).
 
 ### Quick start
 
@@ -30,7 +32,7 @@ const postgrest = new PostgrestClient(REST_URL)
 
 ## License
 
-This repo is liscenced under MIT.
+This repo is licensed under MIT License.
 
 ## Credits
 
