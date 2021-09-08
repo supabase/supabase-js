@@ -32,6 +32,7 @@ export default class GoTrueApi {
    * @param email The email address of the user.
    * @param password The password of the user.
    * @param redirectTo A URL or mobile address to send the user to after they are confirmed.
+   * @param data Optional user metadata.
    *
    * @returns A logged-in session if the server has "autoconfirm" ON
    * @returns A user if the server has "autoconfirm" OFF
@@ -41,6 +42,7 @@ export default class GoTrueApi {
     password: string,
     options: {
       redirectTo?: string
+      data?: object
     } = {}
   ): Promise<{ data: Session | User | null; error: Error | null }> {
     try {
@@ -49,7 +51,11 @@ export default class GoTrueApi {
       if (options.redirectTo) {
         queryString = '?redirect_to=' + encodeURIComponent(options.redirectTo)
       }
-      const data = await post(`${this.url}/signup${queryString}`, { email, password }, { headers })
+      const data = await post(
+        `${this.url}/signup${queryString}`,
+        { email, password, data: options.data },
+        { headers }
+      )
       let session = { ...data }
       if (session.expires_in) session.expires_at = expiresAt(data.expires_in)
       return { data: session, error: null }
@@ -90,14 +96,22 @@ export default class GoTrueApi {
    * Signs up a new user using their phone number and a password.
    * @param phone The phone number of the user.
    * @param password The password of the user.
+   * @param data Optional user metadata.
    */
   async signUpWithPhone(
     phone: string,
-    password: string
+    password: string,
+    options: {
+      data?: object
+    } = {}
   ): Promise<{ data: Session | User | null; error: Error | null }> {
     try {
       let headers = { ...this.headers }
-      const data = await post(`${this.url}/signup`, { phone, password }, { headers })
+      const data = await post(
+        `${this.url}/signup`,
+        { phone, password, data: options.data },
+        { headers }
+      )
       let session = { ...data }
       if (session.expires_in) session.expires_at = expiresAt(data.expires_in)
       return { data: session, error: null }
@@ -195,11 +209,13 @@ export default class GoTrueApi {
    * Sends an invite link to an email address.
    * @param email The email address of the user.
    * @param redirectTo A URL or mobile address to send the user to after they are confirmed.
+   * @param data Optional user metadata
    */
   async inviteUserByEmail(
     email: string,
     options: {
       redirectTo?: string
+      data?: object
     } = {}
   ): Promise<{ data: User | null; error: Error | null }> {
     try {
@@ -208,7 +224,11 @@ export default class GoTrueApi {
       if (options.redirectTo) {
         queryString += '?redirect_to=' + encodeURIComponent(options.redirectTo)
       }
-      const data = await post(`${this.url}/invite${queryString}`, { email }, { headers })
+      const data = await post(
+        `${this.url}/invite${queryString}`,
+        { email, data: options.data },
+        { headers }
+      )
       return { data, error: null }
     } catch (error) {
       return { data: null, error }
@@ -429,7 +449,7 @@ export default class GoTrueApi {
     email: string,
     options: {
       password?: string
-      data?: any
+      data?: object
       redirectTo?: string
     } = {}
   ): Promise<{ data: Session | User | null; error: Error | null }> {

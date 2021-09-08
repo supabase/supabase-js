@@ -105,11 +105,13 @@ export default class GoTrueClient {
    * @param password The user's password.
    * @param phone The user's phone number.
    * @param redirectTo A URL or mobile address to send the user to after they are confirmed.
+   * @param data Optional user metadata.
    */
   async signUp(
     { email, password, phone }: UserCredentials,
     options: {
       redirectTo?: string
+      data?: object
     } = {}
   ): Promise<{
     user: User | null
@@ -122,9 +124,12 @@ export default class GoTrueClient {
 
       const { data, error } =
         phone && password
-          ? await this.api.signUpWithPhone(phone!, password!)
+          ? await this.api.signUpWithPhone(phone!, password!, {
+              data: options.data,
+            })
           : await this.api.signUpWithEmail(email!, password!, {
               redirectTo: options.redirectTo,
+              data: options.data,
             })
 
       if (error) {

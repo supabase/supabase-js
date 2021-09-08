@@ -16,6 +16,7 @@ const password = faker.internet.password()
 test('signUpWithEmail()', async () => {
   let { error, data } = await api.signUpWithEmail(email, password, {
     redirectTo: 'https://localhost:9999/welcome',
+    data: { status: 'alpha' },
   })
   expect(error).toBeNull()
   expect(data).toMatchObject({
@@ -29,6 +30,9 @@ test('signUpWithEmail()', async () => {
     updated_at: expect.any(String),
     app_metadata: {
       provider: 'email',
+    },
+    user_metadata: {
+      status: 'alpha',
     },
   })
 })
@@ -54,6 +58,9 @@ test('signUpWithGenerateConfirmationLink()', async () => {
     updated_at: expect.any(String),
     app_metadata: {
       provider: 'email',
+    },
+    user_metadata: {
+      status: 'alpha',
     },
   })
 })
