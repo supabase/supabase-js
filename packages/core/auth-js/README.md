@@ -25,9 +25,9 @@ const GOTRUE_URL = 'http://localhost:9999'
 const auth = new GoTrueClient({ url: GOTRUE_URL })
 ```
 
-- `signUp()`: https://supabase.io/docs/gotrue/client/signup
-- `signIn()`: https://supabase.io/docs/gotrue/client/signin
-- `signOut()`: https://supabase.io/docs/gotrue/client/signout
+- `signUp()`: https://supabase.io/docs/reference/javascript/auth-signup
+- `signIn()`: https://supabase.io/docs/reference/javascript/auth-signin
+- `signOut()`: https://supabase.io/docs/reference/javascript/auth-signout
 
 ## Sponsors
 
