@@ -89,12 +89,12 @@ export default class GoTrueClient {
     this._recoverAndRefresh()
 
     // Handle the OAuth redirect
-    try {
-      if (settings.detectSessionInUrl && isBrowser() && !!getParameterByName('access_token')) {
-        this.getSessionFromUrl({ storeSession: true })
-      }
-    } catch (error) {
-      console.log('Error getting session from URL.')
+    if (settings.detectSessionInUrl && isBrowser() && !!getParameterByName('access_token')) {
+      this.getSessionFromUrl({ storeSession: true }).then(({ error }) => {
+        if (error) {
+          console.error('Error getting session from URL.', error)
+        }
+      })
     }
   }
 
