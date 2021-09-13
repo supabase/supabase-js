@@ -345,7 +345,10 @@ export default class GoTrueApi {
   }
 
   /**
-   * Delete an user.
+   * Delete a user. Requires a `service_role` key.
+   *
+   * This function should only be called on a server. Never expose your `service_role` key in the browser.
+   *
    * @param uid The user uid you want to remove.
    * @param jwt A valid JWT. Must be a full-access API key (e.g. service_role key).
    */
