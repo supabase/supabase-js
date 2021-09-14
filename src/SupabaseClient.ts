@@ -52,8 +52,10 @@ export default class SupabaseClient {
     if (!supabaseUrl) throw new Error('supabaseUrl is required.')
     if (!supabaseKey) throw new Error('supabaseKey is required.')
 
+    supabaseUrl = stripTrailingSlash(supabaseUrl)
+
     const settings = { ...DEFAULT_OPTIONS, ...options }
-    this.restUrl = `${stripTrailingSlash(supabaseUrl)}/rest/v1`
+    this.restUrl = `${supabaseUrl}/rest/v1`
     this.realtimeUrl = `${supabaseUrl}/realtime/v1`.replace('http', 'ws')
     this.authUrl = `${supabaseUrl}/auth/v1`
     this.storageUrl = `${supabaseUrl}/storage/v1`
