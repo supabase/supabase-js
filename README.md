@@ -1,14 +1,18 @@
 # `supabase-js`
 
-An isomorphic Javascript client for Supabase.
+An isomorphic JavaScript client for Supabase.
 
-- Documentation: https://supabase.io/docs/client/supabase-client
+**Documentation:** https://supabase.io/docs/client/supabase-client
 
 ## Usage
+
+First of all, you need to install the library:
 
 ```sh
 npm install @supabase/supabase-js
 ```
+
+Then you're able to import the library and establish the connection with the database:
 
 ```js
 import { createClient } from '@supabase/supabase-js'
@@ -19,19 +23,26 @@ const supabase = createClient('https://xyzcompany.supabase.co', 'public-anon-key
 
 ### UMD
 
-You can now use plain `<script>`s to import supabase-js from CDNs, like
+You can now use plain `<script>`s to import supabase-js from CDNs, like:
 
-`<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>`
-or
-`<script src="https://unpkg.com/@supabase/supabase-js"></script>`.
+```html
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+```
+or even:
+
+```html
+<script src="https://unpkg.com/@supabase/supabase-js"></script>
+```
 
 Then you can use it from a global `supabase` variable:
 
 ```html
 <script>
-    const { createClient } = supabase
-    supabase = createClient('https://xyzcompany.supabase.co', 'public-anon-key')
-  ...
+  const { createClient } = supabase
+  const _supabase = createClient('https://xyzcompany.supabase.co', 'public-anon-key')
+
+  console.log('Supabase Instance: ', _supabase);
+  // ...
 </script>
 ```
 
