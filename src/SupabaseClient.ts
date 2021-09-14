@@ -1,4 +1,5 @@
 import { DEFAULT_HEADERS } from './lib/constants'
+import { stripTrailingSlash } from './lib/helpers'
 import { SupabaseClientOptions } from './lib/types'
 import { SupabaseAuthClient } from './lib/SupabaseAuthClient'
 import { SupabaseQueryBuilder } from './lib/SupabaseQueryBuilder'
@@ -52,7 +53,7 @@ export default class SupabaseClient {
     if (!supabaseKey) throw new Error('supabaseKey is required.')
 
     const settings = { ...DEFAULT_OPTIONS, ...options }
-    this.restUrl = `${supabaseUrl}/rest/v1`
+    this.restUrl = `${stripTrailingSlash(supabaseUrl)}/rest/v1`
     this.realtimeUrl = `${supabaseUrl}/realtime/v1`.replace('http', 'ws')
     this.authUrl = `${supabaseUrl}/auth/v1`
     this.storageUrl = `${supabaseUrl}/storage/v1`
