@@ -1,5 +1,5 @@
 import { DEFAULT_HEADERS } from './lib/constants'
-import { SupabaseClientOptions } from './lib/types'
+import { GenericObject, SupabaseClientOptions } from './lib/types'
 import { SupabaseAuthClient } from './lib/SupabaseAuthClient'
 import { SupabaseQueryBuilder } from './lib/SupabaseQueryBuilder'
 import { SupabaseStorageClient } from '@supabase/storage-js'
@@ -116,7 +116,7 @@ export default class SupabaseClient {
       try {
         await this._closeSubscription(subscription)
 
-        const openSubscriptions = this.getSubscriptions().length
+        const openSubscriptions = this._getSubscriptions().length
         if (!openSubscriptions) {
           const { error } = await this.realtime.disconnect()
           if (error) return resolve({ error })
@@ -137,7 +137,7 @@ export default class SupabaseClient {
   /**
    * Returns an array of all your subscriptions.
    */
-  getSubscriptions(): RealtimeSubscription[] {
+  _getSubscriptions(): RealtimeSubscription[] {
     return this.realtime.channels
   }
 
@@ -176,8 +176,8 @@ export default class SupabaseClient {
     })
   }
 
-  private _getAuthHeaders(): { [key: string]: string } {
-    const headers: { [key: string]: string } = DEFAULT_HEADERS
+  private _getAuthHeaders(): GenericObject {
+    const headers: GenericObject = DEFAULT_HEADERS
     const authBearer = this.auth.session()?.access_token ?? this.supabaseKey
     headers['apikey'] = this.supabaseKey
     headers['Authorization'] = `Bearer ${authBearer}`

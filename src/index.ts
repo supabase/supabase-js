@@ -17,7 +17,7 @@ const createClient = (
   supabaseUrl: string,
   supabaseKey: string,
   options?: SupabaseClientOptions
-) => {
+): SupabaseClient => {
   return new SupabaseClient(supabaseUrl, supabaseKey, options)
 }
 

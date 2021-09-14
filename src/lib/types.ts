@@ -1,6 +1,8 @@
 import { GoTrueClient } from '@supabase/gotrue-js'
 import { RealtimeClientOptions } from '@supabase/realtime-js'
 
+export type GenericObject = { [key: string]: string }
+
 type GoTrueClientOptions = ConstructorParameters<typeof GoTrueClient>[0]
 
 export interface SupabaseAuthClientOptions extends GoTrueClientOptions {}
@@ -13,7 +15,7 @@ export type SupabaseClientOptions = {
   /**
    * Optional headers for initializing the client.
    */
-  headers?: { [key: string]: string }
+  headers?: GenericObject
   /**
    * Automatically refreshes the token for logged in users.
    */
