@@ -16,10 +16,13 @@ const testTwilio = false
 const phone = faker.phone.phoneNumber() // set test number here
 
 test('signUp() with email and password', async () => {
-  let { error, user, session } = await auth.signUp({
-    email,
-    password,
-  })
+  let { error, user, session } = await auth.signUp(
+    {
+      email,
+      password,
+    },
+    { data: { status: 'alpha' } }
+  )
   expect(error).toBeNull()
   expect(session).toBeNull()
   expect(user).toMatchObject({
@@ -32,6 +35,9 @@ test('signUp() with email and password', async () => {
     updated_at: expect.any(String),
     app_metadata: {
       provider: 'email',
+    },
+    user_metadata: {
+      status: 'alpha',
     },
   })
   expect(user?.email_confirmed_at).toBeUndefined()
@@ -70,10 +76,15 @@ test('signIn() with the wrong password', async () => {
 
 if (testTwilio) {
   test('signUp() with phone and password', async () => {
-    let { error, user, session } = await auth.signUp({
-      phone,
-      password,
-    })
+    let { error, user, session } = await auth.signUp(
+      {
+        phone,
+        password,
+      },
+      {
+        data: { status: 'alpha' },
+      }
+    )
     expect(error).toBeNull()
     expect(session).toBeNull()
     expect(user).toMatchObject({
@@ -86,6 +97,9 @@ if (testTwilio) {
       updated_at: expect.any(String),
       app_metadata: {
         provider: 'phone',
+      },
+      user_metadata: {
+        status: 'alpha',
       },
     })
     expect(user?.phone_confirmed_at).toBeUndefined()

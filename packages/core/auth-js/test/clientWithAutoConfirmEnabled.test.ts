@@ -22,10 +22,13 @@ const password = faker.internet.password()
 var access_token: string | null = null
 
 test('signUp()', async () => {
-  let { error, user, session } = await auth.signUp({
-    email,
-    password,
-  })
+  let { error, user, session } = await auth.signUp(
+    {
+      email,
+      password,
+    },
+    { data: { status: 'alpha' } }
+  )
   access_token = session?.access_token || null
   expect(error).toBeNull()
   expect(error).toBeNull()
@@ -46,6 +49,9 @@ test('signUp()', async () => {
       updated_at: expect.any(String),
       app_metadata: {
         provider: 'email',
+      },
+      user_metadata: {
+        status: 'alpha',
       },
     },
   })
