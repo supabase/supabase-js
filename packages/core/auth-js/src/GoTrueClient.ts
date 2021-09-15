@@ -1,4 +1,4 @@
-import GoTrueApi from './GoTrueApi'
+import GoTrueApi, { ApiError } from './GoTrueApi'
 import { isBrowser, getParameterByName, uuid } from './lib/helpers'
 import { GOTRUE_URL, DEFAULT_HEADERS, STORAGE_KEY } from './lib/constants'
 import {
@@ -117,7 +117,7 @@ export default class GoTrueClient {
   ): Promise<{
     user: User | null
     session: Session | null
-    error: Error | null
+    error: ApiError | null
     data: Session | User | null // Deprecated
   }> {
     try {
@@ -182,7 +182,7 @@ export default class GoTrueClient {
     user: User | null
     provider?: Provider
     url?: string | null
-    error: Error | null
+    error: ApiError | null
     data: Session | null // Deprecated
   }> {
     try {
@@ -244,7 +244,7 @@ export default class GoTrueClient {
   ): Promise<{
     user: User | null
     session: Session | null
-    error: Error | null
+    error: ApiError | null
     data: Session | User | null // Deprecated
   }> {
     try {
@@ -302,7 +302,7 @@ export default class GoTrueClient {
   async refreshSession(): Promise<{
     data: Session | null
     user: User | null
-    error: Error | null
+    error: ApiError | null
   }> {
     try {
       if (!this.currentSession?.access_token) throw new Error('Not logged in.')
@@ -322,7 +322,7 @@ export default class GoTrueClient {
    */
   async update(
     attributes: UserAttributes
-  ): Promise<{ data: User | null; user: User | null; error: Error | null }> {
+  ): Promise<{ data: User | null; user: User | null; error: ApiError | null }> {
     try {
       if (!this.currentSession?.access_token) throw new Error('Not logged in.')
 
@@ -349,7 +349,7 @@ export default class GoTrueClient {
    */
   async setSession(
     refresh_token: string
-  ): Promise<{ session: Session | null; error: Error | null }> {
+  ): Promise<{ session: Session | null; error: ApiError | null }> {
     try {
       if (!refresh_token) {
         throw new Error('No current session.')
@@ -358,14 +358,8 @@ export default class GoTrueClient {
       if (error) {
         return { session: null, error: error }
       }
-      if (!data) {
-        return {
-          session: null,
-          error: { name: 'Invalid refresh_token', message: 'JWT token provided is Invalid' },
-        }
-      }
 
-      this._saveSession(data)
+      this._saveSession(data!)
       this._notifyAllSubscribers('SIGNED_IN')
       return { session: data, error: null }
     } catch (error) {
@@ -394,7 +388,7 @@ export default class GoTrueClient {
    */
   async getSessionFromUrl(options?: {
     storeSession?: boolean
-  }): Promise<{ data: Session | null; error: Error | null }> {
+  }): Promise<{ data: Session | null; error: ApiError | null }> {
     try {
       if (!isBrowser()) throw new Error('No browser detected.')
 
@@ -448,7 +442,7 @@ export default class GoTrueClient {
    *
    * For server-side management, you can disable sessions by passing a JWT through to `auth.api.signOut(JWT: string)`
    */
-  async signOut(): Promise<{ error: Error | null }> {
+  async signOut(): Promise<{ error: ApiError | null }> {
     const accessToken = this.currentSession?.access_token
     this._removeSession()
     this._notifyAllSubscribers('SIGNED_OUT')
@@ -465,7 +459,7 @@ export default class GoTrueClient {
    */
   onAuthStateChange(
     callback: (event: AuthChangeEvent, session: Session | null) => void
-  ): { data: Subscription | null; error: Error | null } {
+  ): { data: Subscription | null; error: ApiError | null } {
     try {
       const id: string = uuid()
       const self = this
