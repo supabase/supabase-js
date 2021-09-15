@@ -64,6 +64,7 @@ export default class GoTrueClient {
    * @param options.autoRefreshToken Set to "true" if you want to automatically refresh the token before expiring.
    * @param options.persistSession Set to "true" if you want to automatically save the user session into local storage.
    * @param options.localStorage
+   * @param options.cookieOptions
    */
   constructor(options: {
     url?: string
