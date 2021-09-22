@@ -16,10 +16,10 @@
     "@semantic-release/commit-analyzer",
     "@semantic-release/release-notes-generator",
     ["@semantic-release/github", {
-      successComment: false,
-      releasedLabels: false,
-      failTitle: false,
-      addReleases: false,
+      "successComment": false,
+      "releasedLabels": false,
+      "failTitle": false,
+      "addReleases": false,
     }],
     "@semantic-release/npm"
   ]
