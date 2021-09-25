@@ -2004,6 +2004,17 @@ Object {
 }
 `;
 
+exports[`rpc with head:true, count:exact 1`] = `
+Object {
+  "body": null,
+  "count": 1,
+  "data": null,
+  "error": null,
+  "status": 200,
+  "statusText": "OK",
+}
+`;
+
 exports[`select on insert 1`] = `
 Object {
   "body": Array [

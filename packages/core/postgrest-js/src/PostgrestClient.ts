@@ -49,14 +49,17 @@ export default class PostgrestClient {
    *
    * @param fn  The function name to call.
    * @param params  The parameters to pass to the function call.
+   * @param head  When set to true, no data will be returned.
    * @param count  Count algorithm to use to count rows in a table.
    */
   rpc<T = any>(
     fn: string,
     params?: object,
     {
+      head = false,
       count = null,
     }: {
+      head?: boolean
       count?: null | 'exact' | 'planned' | 'estimated'
     } = {}
   ): PostgrestFilterBuilder<T> {
@@ -64,6 +67,6 @@ export default class PostgrestClient {
     return new PostgrestRpcBuilder<T>(url, {
       headers: this.headers,
       schema: this.schema,
-    }).rpc(params, { count })
+    }).rpc(params, { head, count })
   }
 }

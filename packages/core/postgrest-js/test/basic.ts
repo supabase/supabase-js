@@ -213,6 +213,15 @@ test("rpc with count: 'exact'", async () => {
   expect(res).toMatchSnapshot()
 })
 
+test('rpc with head:true, count:exact', async () => {
+  const res = await postgrest.rpc(
+    'get_status',
+    { name_param: 'supabot' },
+    { head: true, count: 'exact' }
+  )
+  expect(res).toMatchSnapshot()
+})
+
 describe("insert, update, delete with count: 'exact'", () => {
   test("insert with count: 'exact'", async () => {
     let res = await postgrest
