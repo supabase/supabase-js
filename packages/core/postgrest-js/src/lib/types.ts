@@ -54,7 +54,7 @@ export abstract class PostgrestBuilder<T> implements PromiseLike<PostgrestRespon
   protected headers!: { [key: string]: string }
   protected schema?: string
   protected body?: Partial<T> | Partial<T>[]
-  protected shouldThrowOnError?: boolean
+  protected shouldThrowOnError = false
 
   constructor(builder: PostgrestBuilder<T>) {
     Object.assign(this, builder)
@@ -90,53 +90,68 @@ export abstract class PostgrestBuilder<T> implements PromiseLike<PostgrestRespon
       this.headers['Content-Type'] = 'application/json'
     }
 
-    return fetch(this.url.toString(), {
+    let res = fetch(this.url.toString(), {
       method: this.method,
       headers: this.headers,
       body: JSON.stringify(this.body),
+    }).then(async (res) => {
+      let error = null
+      let data = null
+      let count = null
+
+      if (res.ok) {
+        const isReturnMinimal = this.headers['Prefer']?.split(',').includes('return=minimal')
+        if (this.method !== 'HEAD' && !isReturnMinimal) {
+          const text = await res.text()
+          if (!text) {
+            // discard `text`
+          } else if (this.headers['Accept'] === 'text/csv') {
+            data = text
+          } else {
+            data = JSON.parse(text)
+          }
+        }
+
+        const countHeader = this.headers['Prefer']?.match(/count=(exact|planned|estimated)/)
+        const contentRange = res.headers.get('content-range')?.split('/')
+        if (countHeader && contentRange && contentRange.length > 1) {
+          count = parseInt(contentRange[1])
+        }
+      } else {
+        error = await res.json()
+
+        if (error && this.shouldThrowOnError) {
+          throw error
+        }
+      }
+
+      const postgrestResponse = {
+        error,
+        data,
+        count,
+        status: res.status,
+        statusText: res.statusText,
+        body: data,
+      }
+
+      return postgrestResponse
     })
-      .then(async (res) => {
-        let error = null
-        let data = null
-        let count = null
+    if (!this.shouldThrowOnError) {
+      res = res.catch((fetchError) => ({
+        error: {
+          message: `FetchError: ${fetchError.message}`,
+          details: '',
+          hint: '',
+          code: fetchError.code || '',
+        },
+        data: null,
+        body: null,
+        count: null,
+        status: 400,
+        statusText: 'Bad Request',
+      }))
+    }
 
-        if (res.ok) {
-          const isReturnMinimal = this.headers['Prefer']?.split(',').includes('return=minimal')
-          if (this.method !== 'HEAD' && !isReturnMinimal) {
-            const text = await res.text()
-            if (!text) {
-              // discard `text`
-            } else if (this.headers['Accept'] === 'text/csv') {
-              data = text
-            } else {
-              data = JSON.parse(text)
-            }
-          }
-
-          const countHeader = this.headers['Prefer']?.match(/count=(exact|planned|estimated)/)
-          const contentRange = res.headers.get('content-range')?.split('/')
-          if (countHeader && contentRange && contentRange.length > 1) {
-            count = parseInt(contentRange[1])
-          }
-        } else {
-          error = await res.json()
-
-          if (error && this.shouldThrowOnError) {
-            throw error
-          }
-        }
-
-        const postgrestResponse: PostgrestResponse<T> = {
-          error,
-          data,
-          count,
-          status: res.status,
-          statusText: res.statusText,
-          body: data,
-        }
-
-        return postgrestResponse
-      })
-      .then(onfulfilled, onrejected)
+    return res.then(onfulfilled, onrejected)
   }
 }

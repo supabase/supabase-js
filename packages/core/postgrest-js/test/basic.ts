@@ -115,7 +115,7 @@ test('throwOnError throws errors instead of returning them', async () => {
   expect(isErrorCaught).toBe(true)
 })
 
-test('connection error', async () => {
+test('connection error w/o throwing', async () => {
   const postgrest = new PostgrestClient('http://foo.invalid')
   let isErrorCaught = false
   await postgrest
@@ -124,10 +124,10 @@ test('connection error', async () => {
     .then(undefined, () => {
       isErrorCaught = true
     })
-  expect(isErrorCaught).toBe(true)
+  expect(isErrorCaught).toBe(false)
 })
 
-test('connection errors should work the same with throwOnError', async () => {
+test('connection error w/ throwOnError', async () => {
   const postgrest = new PostgrestClient('http://foo.invalid')
   let isErrorCaught = false
   await postgrest
