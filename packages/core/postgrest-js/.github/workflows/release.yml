@@ -8,27 +8,23 @@ on:
 
 jobs:
   release:
-    name: Release / Node ${{ matrix.node }}
-    strategy:
-      matrix:
-        node: ['12']
-
-    runs-on: ubuntu-latest
-
+    name: Release
+    runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v2
 
       - name: Set up Node
-        uses: actions/setup-node@v1
+        uses: actions/setup-node@v2
         with:
-          node-version: ${{ matrix.node }}
+          node-version: '14'
 
       - run: |
-          npm ci
+          npm clean-install
           npm run build
 
-      - name: Create a release
-        run: npx semantic-release
+      - uses: cycjimmy/semantic-release-action@v2
+        with:
+          semantic_version: 17
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
