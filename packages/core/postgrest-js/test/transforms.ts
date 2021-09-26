@@ -1,5 +1,7 @@
 import { PostgrestClient } from '../src/index'
 
+import { AbortController } from 'node-abort-controller'
+
 const postgrest = new PostgrestClient('http://localhost:3000')
 
 test('order', async () => {
@@ -75,6 +77,27 @@ test('csv', async () => {
       "error": null,
       "status": 200,
       "statusText": "OK",
+    }
+  `)
+})
+
+test('abort signal', async () => {
+  const ac = new AbortController()
+  ac.abort()
+  const res = await postgrest.from('users').select().abortSignal(ac.signal)
+  expect(res).toMatchInlineSnapshot(`
+    Object {
+      "body": null,
+      "count": null,
+      "data": null,
+      "error": Object {
+        "code": "",
+        "details": "",
+        "hint": "",
+        "message": "FetchError: The user aborted a request.",
+      },
+      "status": 400,
+      "statusText": "Bad Request",
     }
   `)
 })

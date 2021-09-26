@@ -55,6 +55,7 @@ export abstract class PostgrestBuilder<T> implements PromiseLike<PostgrestRespon
   protected schema?: string
   protected body?: Partial<T> | Partial<T>[]
   protected shouldThrowOnError = false
+  protected signal?: AbortSignal
 
   constructor(builder: PostgrestBuilder<T>) {
     Object.assign(this, builder)
@@ -94,6 +95,7 @@ export abstract class PostgrestBuilder<T> implements PromiseLike<PostgrestRespon
       method: this.method,
       headers: this.headers,
       body: JSON.stringify(this.body),
+      signal: this.signal,
     }).then(async (res) => {
       let error = null
       let data = null

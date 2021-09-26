@@ -86,6 +86,14 @@ export default class PostgrestTransformBuilder<T> extends PostgrestBuilder<T> {
   }
 
   /**
+   * Sets the AbortSignal for the fetch request.
+   */
+  abortSignal(signal: AbortSignal): this {
+    this.signal = signal
+    return this
+  }
+
+  /**
    * Retrieves only one row from the result. Result must be one row (e.g. using
    * `limit`), otherwise this will result in an error.
    */
