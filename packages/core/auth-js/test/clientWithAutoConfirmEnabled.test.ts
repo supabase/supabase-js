@@ -88,7 +88,7 @@ test('signUp() the same user twice should throw an error', async () => {
     email,
     password,
   })
-  expect(error?.message).toBe('A user with this email address has already been registered')
+  expect(error?.message).toBe('Thanks for registering, now check your email to complete the process.')
   expect(data).toBeNull()
   expect(user).toBeNull()
 })
