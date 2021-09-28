@@ -8,6 +8,6 @@ export function uuid() {
   })
 }
 
-export function stripTrailingSlash(url: string) {
-  return url.replace(/\/$/, "");
+export function stripTrailingSlash(url: string): string {
+  return url.replace(/\/$/, '')
 }
