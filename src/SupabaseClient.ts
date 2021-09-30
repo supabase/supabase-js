@@ -97,16 +97,20 @@ export default class SupabaseClient {
    *
    * @param fn  The function name to call.
    * @param params  The parameters to pass to the function call.
+   * @param head   When set to true, no data will be returned.
    * @param count  Count algorithm to use to count rows in a table.
    *
    */
   rpc<T = any>(
     fn: string,
     params?: object,
-    { count = null }: { count?: null | 'exact' | 'planned' | 'estimated' } = {}
+    {
+      head = false,
+      count = null,
+    }: { head?: boolean; count?: null | 'exact' | 'planned' | 'estimated' } = {}
   ) {
     const rest = this._initPostgRESTClient()
-    return rest.rpc<T>(fn, params, { count })
+    return rest.rpc<T>(fn, params, { head, count })
   }
 
   /**
