@@ -48,4 +48,12 @@ export type SupabaseRealtimePayload<T> = {
   old: T
 }
 
+export type JwtBase = {
+  exp: number
+}
+
+export type Jwt = JwtBase & {
+  [key: string]: any
+}
+
 export type SupabaseEventTypes = 'INSERT' | 'UPDATE' | 'DELETE' | '*'

@@ -1,5 +1,5 @@
 import { DEFAULT_HEADERS } from './lib/constants'
-import { stripTrailingSlash } from './lib/helpers'
+import { decodeJwt, stripTrailingSlash, validateJwtExpiry } from './lib/helpers'
 import { SupabaseClientOptions } from './lib/types'
 import { SupabaseAuthClient } from './lib/SupabaseAuthClient'
 import { SupabaseQueryBuilder } from './lib/SupabaseQueryBuilder'
@@ -188,6 +188,19 @@ export default class SupabaseClient {
     const authBearer = this.auth.session()?.access_token ?? this.supabaseKey
     headers['apikey'] = this.supabaseKey
     headers['Authorization'] = `Bearer ${authBearer}`
+
+    if (!validateJwtExpiry(this.supabaseKey)) {
+      throw new Error('API key has expired')
+    }
+    if (!validateJwtExpiry(authBearer)) {
+      throw new Error('Session access token has expired')
+    }
+
+    const bearerJwt = authBearer ? decodeJwt(authBearer) : null
+    if (bearerJwt && new Date(bearerJwt.exp * 1000) < new Date()) {
+      throw new Error('Bearer token has expired')
+    }
+
     return headers
   }
 
