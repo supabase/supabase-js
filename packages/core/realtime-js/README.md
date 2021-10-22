@@ -29,7 +29,7 @@ var client = new RealtimeClient(process.env.REALTIME_URL, { params: { apikey: 't
 client.connect()
 ```
 
-See [Realtime: Channels Authorization](https://github.com/supabase/realtime#channels-authorization) for more information.
+See [Realtime: Websocket Connection Authorization](https://github.com/supabase/realtime#websocket-connection-authorization) for more information.
 
 **Socket Hooks**
 
