@@ -31,15 +31,18 @@ export enum PostgresTypes {
   tstzrange = 'tstzrange',
 }
 
-type Column = {
-  flags: string[] // any special flags for the column. eg: ["key"]
+type Columns = {
   name: string // the column name. eg: "user_id"
   type: string // the column type. eg: "uuid"
-  type_modifier: number // the type modifier. eg: 4294967295
-}
+  flags?: string[] // any special flags for the column. eg: ["key"]
+  type_modifier?: number // the type modifier. eg: 4294967295
+}[]
 
-type Records = {
-  [key: string]: string
+type BaseValue = null | string | number | boolean
+type RecordValue = BaseValue | BaseValue[]
+
+type Record = {
+  [key: string]: RecordValue
 }
 
 /**
@@ -47,7 +50,7 @@ type Records = {
  * to its mapped type.
  *
  * @param {{name: String, type: String}[]} columns
- * @param {Object} records
+ * @param {Object} record
  * @param {Object} options The map of various options that can be applied to the mapper
  * @param {Array} options.skipTypes The array of types that should not be converted
  *
@@ -55,17 +58,16 @@ type Records = {
  * //=>{ first_name: 'Paul', age: 33 }
  */
 export const convertChangeData = (
-  columns: Column[],
-  records: Records,
+  columns: Columns,
+  record: Record,
   options: { skipTypes?: string[] } = {}
-) => {
-  let result: { [key: string]: any } = {}
-  let skipTypes =
-    typeof options.skipTypes !== 'undefined' ? options.skipTypes : []
-  Object.entries(records).map(([key, value]) => {
-    result[key] = convertColumn(key, columns, records, skipTypes)
-  })
-  return result
+): Record => {
+  const skipTypes = options.skipTypes ?? []
+
+  return Object.keys(record).reduce((acc, rec_key) => {
+    acc[rec_key] = convertColumn(rec_key, columns, record, skipTypes)
+    return acc
+  }, {} as Record)
 }
 
 /**
@@ -73,7 +75,7 @@ export const convertChangeData = (
  *
  * @param {String} columnName The column that you want to convert
  * @param {{name: String, type: String}[]} columns All of the columns
- * @param {Object} records The map of string values
+ * @param {Object} record The map of string values
  * @param {Array} skipTypes An array of types that should not be converted
  * @return {object} Useless information
  *
@@ -84,16 +86,19 @@ export const convertChangeData = (
  */
 export const convertColumn = (
   columnName: string,
-  columns: Column[],
-  records: Records,
+  columns: Columns,
+  record: Record,
   skipTypes: string[]
-): any => {
-  let column = columns.find((x) => x.name == columnName)
-  if (!column || skipTypes.includes(column.type)) {
-    return noop(records[columnName])
-  } else {
-    return convertCell(column.type, records[columnName])
+): RecordValue => {
+  const column = columns.find((x) => x.name === columnName)
+  const colType = column?.type
+  const value = record[columnName]
+
+  if (colType && !skipTypes.includes(colType)) {
+    return convertCell(colType, value)
   }
+
+  return noop(value)
 }
 
 /**
@@ -109,131 +114,111 @@ export const convertColumn = (
  * @example convertCell('_int4', '{1,2,3,4}')
  * //=> [1,2,3,4]
  */
-export const convertCell = (type: string, stringValue: string) => {
-  try {
-    if (stringValue === null) return null
+export const convertCell = (type: string, value: RecordValue): RecordValue => {
+  // if data type is an array
+  if (type.charAt(0) === '_') {
+    const dataType = type.slice(1, type.length)
+    return toArray(value, dataType)
+  }
 
-    // if data type is an array
-    if (type.charAt(0) === '_') {
-      let arrayValue = type.slice(1, type.length)
-      return toArray(stringValue, arrayValue)
-    }
-
-    // If not null, convert to correct type.
-    switch (type) {
-      case PostgresTypes.abstime:
-        return noop(stringValue) // To allow users to cast it based on Timezone
-      case PostgresTypes.bool:
-        return toBoolean(stringValue)
-      case PostgresTypes.date:
-        return noop(stringValue) // To allow users to cast it based on Timezone
-      case PostgresTypes.daterange:
-        return toDateRange(stringValue)
-      case PostgresTypes.float4:
-        return toFloat(stringValue)
-      case PostgresTypes.float8:
-        return toFloat(stringValue)
-      case PostgresTypes.int2:
-        return toInt(stringValue)
-      case PostgresTypes.int4:
-        return toInt(stringValue)
-      case PostgresTypes.int4range:
-        return toIntRange(stringValue)
-      case PostgresTypes.int8:
-        return toInt(stringValue)
-      case PostgresTypes.int8range:
-        return toIntRange(stringValue)
-      case PostgresTypes.json:
-        return toJson(stringValue)
-      case PostgresTypes.jsonb:
-        return toJson(stringValue)
-      case PostgresTypes.money:
-        return toFloat(stringValue)
-      case PostgresTypes.numeric:
-        return toFloat(stringValue)
-      case PostgresTypes.oid:
-        return toInt(stringValue)
-      case PostgresTypes.reltime:
-        return noop(stringValue) // To allow users to cast it based on Timezone
-      case PostgresTypes.time:
-        return noop(stringValue) // To allow users to cast it based on Timezone
-      case PostgresTypes.timestamp:
-        return toTimestampString(stringValue) // Format to be consistent with PostgREST
-      case PostgresTypes.timestamptz:
-        return noop(stringValue) // To allow users to cast it based on Timezone
-      case PostgresTypes.timetz:
-        return noop(stringValue) // To allow users to cast it based on Timezone
-      case PostgresTypes.tsrange:
-        return toDateRange(stringValue)
-      case PostgresTypes.tstzrange:
-        return toDateRange(stringValue)
-      default:
-        // All the rest will be returned as strings
-        return noop(stringValue)
-    }
-  } catch (error) {
-    console.log(
-      `Could not convert cell of type ${type} and value ${stringValue}`
-    )
-    console.log(`This is the error: ${error}`)
-    return stringValue
+  // If not null, convert to correct type.
+  switch (type) {
+    case PostgresTypes.bool:
+      return toBoolean(value)
+    case PostgresTypes.float4:
+    case PostgresTypes.float8:
+    case PostgresTypes.int2:
+    case PostgresTypes.int4:
+    case PostgresTypes.int8:
+    case PostgresTypes.numeric:
+    case PostgresTypes.oid:
+      return toNumber(value)
+    case PostgresTypes.json:
+    case PostgresTypes.jsonb:
+      return toJson(value)
+    case PostgresTypes.timestamp:
+      return toTimestampString(value) // Format to be consistent with PostgREST
+    case PostgresTypes.abstime: // To allow users to cast it based on Timezone
+    case PostgresTypes.date: // To allow users to cast it based on Timezone
+    case PostgresTypes.daterange:
+    case PostgresTypes.int4range:
+    case PostgresTypes.int8range:
+    case PostgresTypes.money:
+    case PostgresTypes.reltime: // To allow users to cast it based on Timezone
+    case PostgresTypes.time: // To allow users to cast it based on Timezone
+    case PostgresTypes.timestamptz: // To allow users to cast it based on Timezone
+    case PostgresTypes.timetz: // To allow users to cast it based on Timezone
+    case PostgresTypes.tsrange:
+    case PostgresTypes.tstzrange:
+      return noop(value)
+    default:
+      // Return the value for remaining types
+      return noop(value)
   }
 }
 
-const noop = (stringValue: string): string => {
-  return stringValue
+const noop = (value: RecordValue): RecordValue => {
+  return value
 }
-export const toBoolean = (stringValue: string) => {
-  switch (stringValue) {
+export const toBoolean = (value: RecordValue): RecordValue => {
+  switch (value) {
     case 't':
       return true
     case 'f':
       return false
     default:
-      return null
+      return value
   }
 }
-export const toDate = (stringValue: string) => {
-  return new Date(stringValue)
+export const toNumber = (value: RecordValue): RecordValue => {
+  if (typeof value === 'string') {
+    const parsedValue = parseFloat(value)
+    if (!Number.isNaN(parsedValue)) {
+      return parsedValue
+    }
+  }
+  return value
 }
-export const toDateRange = (stringValue: string) => {
-  let arr = JSON.parse(stringValue)
-  return [new Date(arr[0]), new Date(arr[1])]
-}
-export const toFloat = (stringValue: string) => {
-  return parseFloat(stringValue)
-}
-export const toInt = (stringValue: string) => {
-  return parseInt(stringValue)
-}
-export const toIntRange = (stringValue: string) => {
-  let arr = JSON.parse(stringValue)
-  return [parseInt(arr[0]), parseInt(arr[1])]
-}
-export const toJson = (stringValue: string) => {
-  return JSON.parse(stringValue)
+export const toJson = (value: RecordValue): RecordValue => {
+  if (typeof value === 'string') {
+    try {
+      return JSON.parse(value)
+    } catch (error) {
+      console.log(`JSON parse error: ${error}`)
+      return value
+    }
+  }
+  return value
 }
 
 /**
  * Converts a Postgres Array into a native JS array
  *
- * @example toArray('{1,2,3,4}', 'int4')
- * //=> [1,2,3,4]
  * @example toArray('{}', 'int4')
  * //=> []
+ * @example toArray('{"[2021-01-01,2021-12-31)","(2021-01-01,2021-12-32]"}', 'daterange')
+ * //=> ['[2021-01-01,2021-12-31)', '(2021-01-01,2021-12-32]']
+ * @example toArray([1,2,3,4], 'int4')
+ * //=> [1,2,3,4]
  */
-export const toArray = (stringValue: string, type: string) => {
-  // this takes off the '{' & '}'
-  let stringEnriched = stringValue.slice(1, stringValue.length - 1)
+export const toArray = (value: RecordValue, type: string): RecordValue => {
+  if (typeof value !== 'string') {
+    return value
+  }
 
-  // converts the string into an array
-  // if string is empty (meaning the array was empty), an empty array will be immediately returned
-  let stringArray = stringEnriched.length > 0 ? stringEnriched.split(',') : []
-  let array: any[] = stringArray.map((string) => {
-    return convertCell(type, string)
-  })
+  // trim Postgres array curly brackets
+  const lastIdx = value.length - 1
+  const closeBrace = value[lastIdx]
+  const openBrace = value[0]
 
-  return array
+  if (openBrace === '{' && closeBrace === '}') {
+    const valTrim = value.slice(1, lastIdx)
+    const arr = JSON.parse('[' + valTrim + ']')
+
+    return arr.map((val: BaseValue) => convertCell(type, val))
+  }
+
+  return value
 }
 
 /**
@@ -243,6 +228,10 @@ export const toArray = (stringValue: string, type: string) => {
  * @example toTimestampString('2019-09-10 00:00:00')
  * //=> '2019-09-10T00:00:00'
  */
-export const toTimestampString = (stringValue: string) => {
-  return stringValue.replace(' ', 'T')
+export const toTimestampString = (value: RecordValue): RecordValue => {
+  if (typeof value === 'string') {
+    return value.replace(' ', 'T')
+  }
+
+  return value
 }
