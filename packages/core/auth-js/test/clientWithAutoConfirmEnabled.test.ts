@@ -82,14 +82,29 @@ test('setSession should return no error', async () => {
   expect(user?.user_metadata).toStrictEqual({ hello: 'world' })
 })
 
-test('signUp() the same user twice should throw an error', async () => {
-  const { error, data, user } = await auth.signUp({
-    email,
-    password,
+test('signUp() the same user twice should not share email already registered message', async () => {
+  // let's sign up twice with a specific user so we can run this test individually
+  // and not rely on prior tests to have signed up the same user email
+  const emailSignupTwice = `client_ac_enabled_${faker.internet.email().toLowerCase()}`
+  const passwordSignupTwice = faker.internet.password()
+
+  await auth.signUp({
+    email: emailSignupTwice,
+    password: passwordSignupTwice,
   })
-  expect(error?.message).toBe('A user with this email address has already been registered')
+
+  const { error, data, user } = await auth.signUp({
+    email: emailSignupTwice,
+    password: passwordSignupTwice,
+  })
+
   expect(data).toBeNull()
   expect(user).toBeNull()
+
+  // the error message thanks the user, asks them to check their email for confirmation
+  // but doesn't confirm that the email exists
+  // that is -- the message is the same for new and existing users
+  expect(error?.message).toMatch(/^Thanks for registering/)
 })
 
 test('setAuth() should set the Auth headers on a new client', async () => {
