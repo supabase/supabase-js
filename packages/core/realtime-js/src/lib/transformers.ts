@@ -23,6 +23,7 @@ export enum PostgresTypes {
   numeric = 'numeric',
   oid = 'oid',
   reltime = 'reltime',
+  text = 'text',
   time = 'time',
   timestamp = 'timestamp',
   timestamptz = 'timestamptz',
@@ -145,6 +146,7 @@ export const convertCell = (type: string, value: RecordValue): RecordValue => {
     case PostgresTypes.int8range:
     case PostgresTypes.money:
     case PostgresTypes.reltime: // To allow users to cast it based on Timezone
+    case PostgresTypes.text:
     case PostgresTypes.time: // To allow users to cast it based on Timezone
     case PostgresTypes.timestamptz: // To allow users to cast it based on Timezone
     case PostgresTypes.timetz: // To allow users to cast it based on Timezone
@@ -206,14 +208,22 @@ export const toArray = (value: RecordValue, type: string): RecordValue => {
     return value
   }
 
-  // trim Postgres array curly brackets
   const lastIdx = value.length - 1
   const closeBrace = value[lastIdx]
   const openBrace = value[0]
 
+  // Confirm value is a Postgres array by checking curly brackets
   if (openBrace === '{' && closeBrace === '}') {
+    let arr
     const valTrim = value.slice(1, lastIdx)
-    const arr = JSON.parse('[' + valTrim + ']')
+
+    // TODO: find a better solution to separate Postgres array data
+    try {
+      arr = JSON.parse('[' + valTrim + ']')
+    } catch (_) {
+      // WARNING: splitting on comma does not cover all edge cases
+      arr = valTrim ? valTrim.split(',') : []
+    }
 
     return arr.map((val: BaseValue) => convertCell(type, val))
   }
