@@ -94,8 +94,8 @@ describe('transformers', () => {
   })
 
   it('toArray', () => {
-    assert.deepEqual(toArray('{1,2,3,4}', 'int4'), [1, 2, 3, 4])
     assert.deepEqual(toArray('{}', 'int4'), [])
+    assert.deepEqual(toArray('{1,2,3,4}', 'int4'), [1, 2, 3, 4])
     assert.deepEqual(
       toArray(
         '{"[2021-01-01,2021-12-31)","(2021-01-01,2021-12-32]"}',
@@ -103,6 +103,7 @@ describe('transformers', () => {
       ),
       ['[2021-01-01,2021-12-31)', '(2021-01-01,2021-12-32]']
     )
+    assert.deepEqual(toArray('{a,b,c}', 'text'), ['a', 'b', 'c'])
     assert.deepEqual(
       toArray([99, 999, 9999, 99999], 'int8'),
       [99, 999, 9999, 99999]
