@@ -9,6 +9,8 @@ export type Provider =
   | 'apple'
   | 'discord'
   | 'twitch'
+  | 'spotify'
+  | 'slack'
 
 export type AuthChangeEvent =
   | 'SIGNED_IN'
