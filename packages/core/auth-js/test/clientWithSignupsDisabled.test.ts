@@ -29,9 +29,8 @@ test('signUp()', async () => {
   expect(user).toBeNull()
 })
 
-
-test('generateInviteLink()', async () => {
-    const invitedUser = faker.internet.email().toLowerCase()
+test('generateLink()', async () => {
+  const invitedUser = faker.internet.email().toLowerCase()
   const { error, data } = await authAdmin.generateLink('invite', invitedUser, {
     redirectTo: 'http://localhost:9999/welcome',
   })
@@ -64,4 +63,3 @@ test('createUser() should create a new user, even if signups are disabled', asyn
   const user = users?.find((u) => u.email === email) || null
   expect(user?.email).toEqual(email)
 })
-
