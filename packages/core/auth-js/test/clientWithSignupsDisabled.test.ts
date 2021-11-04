@@ -1,4 +1,4 @@
-import { GoTrueClient, GoTrueApi, Session } from '../src/index'
+import { GoTrueClient, GoTrueApi, User } from '../src/index'
 import faker from 'faker'
 
 const GOTRUE_URL = 'http://localhost:9997'
@@ -29,25 +29,84 @@ test('signUp()', async () => {
   expect(user).toBeNull()
 })
 
-test('generateLink()', async () => {
+test('generateLink() should be able to generate multiple links', async () => {
   const invitedUser = faker.internet.email().toLowerCase()
-  const { error, data } = await authAdmin.generateLink('invite', invitedUser, {
-    redirectTo: 'http://localhost:9999/welcome',
-  })
+  const { error, data: firstInvite } = await authAdmin.generateLink('invite', invitedUser)
   expect(error).toBeNull()
-  expect(data).toMatchObject({
-    action_link: expect.any(String),
-    id: expect.any(String),
-    confirmation_sent_at: expect.any(String),
-    email: expect.any(String),
-    phone: expect.any(String),
-    created_at: expect.any(String),
-    aud: expect.any(String),
-    updated_at: expect.any(String),
-    app_metadata: {
-      provider: 'email',
+  expect(firstInvite).toMatchInlineSnapshot(
+    {
+      id: expect.any(String),
+      confirmation_sent_at: expect.any(String),
+      email: expect.any(String),
+      phone: expect.any(String),
+      created_at: expect.any(String),
+      aud: expect.any(String),
+      updated_at: expect.any(String),
+      invited_at: expect.any(String),
+      app_metadata: {
+        provider: 'email',
+      },
     },
-  })
+    `
+    Object {
+      "action_link": "",
+      "app_metadata": Object {
+        "provider": "email",
+        "providers": Array [
+          "email",
+        ],
+      },
+      "aud": Any<String>,
+      "confirmation_sent_at": Any<String>,
+      "created_at": Any<String>,
+      "email": Any<String>,
+      "id": Any<String>,
+      "identities": Array [],
+      "invited_at": Any<String>,
+      "phone": Any<String>,
+      "role": "",
+      "updated_at": Any<String>,
+      "user_metadata": Object {},
+    }
+  `
+  )
+
+  const user = firstInvite as User
+
+  const { data: secondInvite } = await authAdmin.generateLink('invite', invitedUser)
+  expect(secondInvite).toMatchInlineSnapshot(
+    {
+      id: user.id,
+      confirmation_sent_at: expect.any(String),
+      email: expect.any(String),
+      phone: expect.any(String),
+      created_at: expect.any(String),
+      aud: expect.any(String),
+      updated_at: expect.any(String),
+      invited_at: expect.any(String),
+    },
+    `
+    Object {
+      "action_link": "",
+      "app_metadata": Object {
+        "provider": "email",
+        "providers": Array [
+          "email",
+        ],
+      },
+      "aud": Any<String>,
+      "confirmation_sent_at": Any<String>,
+      "created_at": Any<String>,
+      "email": Any<String>,
+      "identities": Array [],
+      "invited_at": Any<String>,
+      "phone": Any<String>,
+      "role": "",
+      "updated_at": Any<String>,
+      "user_metadata": Object {},
+    }
+  `
+  )
 })
 
 test('createUser() should create a new user, even if signups are disabled', async () => {

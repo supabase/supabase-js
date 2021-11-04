@@ -46,6 +46,7 @@ export interface User {
   aud: string
   confirmation_sent_at?: string
   recovery_sent_at?: string
+  invited_at?: string
   action_link?: string
   email?: string
   phone?: string
