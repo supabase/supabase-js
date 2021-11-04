@@ -41,12 +41,11 @@ export default class GoTrueApi {
    * @param jwt A valid JWT. Must be a full-access API key (e.g. service_role key).
    */
   async createUser(
-    attributes: UserAttributes,
-    jwt: string
+    attributes: UserAttributes
   ): Promise<{ data: null; error: ApiError } | { data: User; error: null }> {
     try {
       const data: any = await post(`${this.url}/admin/users`, attributes, {
-        headers: this._createRequestHeaders(jwt),
+        headers: this.headers,
       })
       return { data, error: null }
     } catch (e) {
@@ -62,12 +61,10 @@ export default class GoTrueApi {
    * @param attributes The data you want to create the user with.
    * @param jwt A valid JWT. Must be a full-access API key (e.g. service_role key).
    */
-  async listUsers(
-    jwt: string
-  ): Promise<{ data: null; error: ApiError } | { data: User[]; error: null }> {
+  async listUsers(): Promise<{ data: null; error: ApiError } | { data: User[]; error: null }> {
     try {
       const data: any = await get(`${this.url}/admin/users`, {
-        headers: this._createRequestHeaders(jwt),
+        headers: this.headers,
       })
       return { data, error: null }
     } catch (e) {

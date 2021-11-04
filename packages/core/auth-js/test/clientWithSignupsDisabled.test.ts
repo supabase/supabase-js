@@ -13,6 +13,9 @@ const adminSecret =
   'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJnb3RydWUiLCJpYXQiOjE2MzYwMTU5NzAsImV4cCI6MTk4MzE3MTE3MCwiYXVkIjoiYWRtaW4iLCJzdWIiOiIifQ.A8bAscL628GfD_7eluAS3xMo-5zMDG1p70OhdqdTbPM'
 const authAdmin = new GoTrueApi({
   url: GOTRUE_URL,
+  headers: {
+    Authorization: `Bearer ${adminSecret}`,
+  },
 })
 
 const email = faker.internet.email().toLowerCase()
@@ -29,16 +32,13 @@ test('signUp()', async () => {
 })
 
 test('createUser() should create a new user, even if signups are disabled', async () => {
-  const { error, data } = await authAdmin.createUser(
-    {
-      email,
-    },
-    adminSecret
-  )
+  const { error, data } = await authAdmin.createUser({
+    email,
+  })
   expect(error).toBeNull()
   expect(data).toBeNull()
 
-  const { error: listError, data: users } = await authAdmin.listUsers(adminSecret)
+  const { error: listError, data: users } = await authAdmin.listUsers()
   expect(listError).toBeNull()
   expect(users).toBeNull()
 })
