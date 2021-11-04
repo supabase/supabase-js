@@ -101,10 +101,7 @@ test('signUp() the same user twice should not share email already registered mes
   expect(data).toBeNull()
   expect(user).toBeNull()
 
-  // the error message thanks the user, asks them to check their email for confirmation
-  // but doesn't confirm that the email exists
-  // that is -- the message is the same for new and existing users
-  expect(error?.message).toMatch(/^Thanks for registering/)
+  expect(error?.message).toMatch(/^User already registered/)
 })
 
 test('setAuth() should set the Auth headers on a new client', async () => {
