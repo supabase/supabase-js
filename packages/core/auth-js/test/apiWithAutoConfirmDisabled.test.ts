@@ -14,7 +14,7 @@ const email = `api_ac_disabled_${faker.internet.email().toLowerCase()}`
 const password = faker.internet.password()
 
 test('signUpWithEmail()', async () => {
-  let { error, data } = await api.signUpWithEmail(email, password, {
+  const { error, data } = await api.signUpWithEmail(email, password, {
     redirectTo: 'https://localhost:9999/welcome',
     data: { status: 'alpha' },
   })
@@ -41,7 +41,7 @@ const email2 = `api_generate_link_signup_${faker.internet.email().toLowerCase()}
 const password2 = faker.internet.password()
 
 test('signUpWithGenerateConfirmationLink()', async () => {
-  let { error, data } = await api.generateLink('signup', email2, {
+  const { error, data } = await api.generateLink('signup', email2, {
     password: password2,
     data: { status: 'alpha' },
     redirectTo: 'http://localhost:9999/welcome',
@@ -68,7 +68,7 @@ test('signUpWithGenerateConfirmationLink()', async () => {
 const email3 = `api_generate_link_signup_${faker.internet.email().toLowerCase()}`
 
 test('generateMagicLink()', async () => {
-  let { error, data } = await api.generateLink('magiclink', email3, {
+  const { error, data } = await api.generateLink('magiclink', email3, {
     redirectTo: 'http://localhost:9999/welcome',
   })
   expect(error).toBeNull()
@@ -88,7 +88,7 @@ test('generateMagicLink()', async () => {
 })
 
 test('generateInviteLink()', async () => {
-  let { error, data } = await api.generateLink('invite', email3, {
+  const { error, data } = await api.generateLink('invite', email3, {
     redirectTo: 'http://localhost:9999/welcome',
   })
   expect(error).toBeNull()
@@ -108,7 +108,7 @@ test('generateInviteLink()', async () => {
 })
 
 test('generateRecoveryLink()', async () => {
-  let { error, data } = await api.generateLink('recovery', email, {
+  const { error, data } = await api.generateLink('recovery', email, {
     redirectTo: 'http://localhost:9999/welcome',
   })
   expect(error).toBeNull()

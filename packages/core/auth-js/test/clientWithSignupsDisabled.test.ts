@@ -13,7 +13,7 @@ const email = faker.internet.email().toLowerCase()
 const password = faker.internet.password()
 
 test('signUp()', async () => {
-  let { error, data, user } = await auth.signUp({
+  const { error, data, user } = await auth.signUp({
     email,
     password,
   })
