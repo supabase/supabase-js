@@ -9,13 +9,10 @@ const auth = new GoTrueClient({
   persistSession: true,
 })
 
-const ADMIN_JWT =
-  'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJnb3RydWUiLCJpYXQiOjE2MzYwMTU5NzAsImV4cCI6MTk4MzE3MTE3MCwiYXVkIjoiIiwic3ViIjoiIiwicm9sZSI6ImFkbWluIn0.ZPwFUVYpogSbluiy7hcDMxWk7ZnK4T3ApS-Cyv8niPs'
-
 const authAdmin = new GoTrueApi({
   url: GOTRUE_URL,
   headers: {
-    Authorization: `Bearer ${ADMIN_JWT}`,
+    Authorization: `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwicm9sZSI6InN1cGFiYXNlX2FkbWluIiwiaWF0IjoxNTE2MjM5MDIyfQ.0sOtTSTfPv5oPZxsjvBO249FI4S4p0ymHoIZ6H6z9Y8`,
   },
 })
 
@@ -32,12 +29,34 @@ test('signUp()', async () => {
   expect(user).toBeNull()
 })
 
+
+test('generateInviteLink()', async () => {
+    const invitedUser = faker.internet.email().toLowerCase()
+  const { error, data } = await authAdmin.generateLink('invite', invitedUser, {
+    redirectTo: 'http://localhost:9999/welcome',
+  })
+  expect(error).toBeNull()
+  expect(data).toMatchObject({
+    action_link: expect.any(String),
+    id: expect.any(String),
+    confirmation_sent_at: expect.any(String),
+    email: expect.any(String),
+    phone: expect.any(String),
+    created_at: expect.any(String),
+    aud: expect.any(String),
+    updated_at: expect.any(String),
+    app_metadata: {
+      provider: 'email',
+    },
+  })
+})
+
 test('createUser() should create a new user, even if signups are disabled', async () => {
   const { error, data } = await authAdmin.createUser({
     email,
   })
   expect(error).toBeNull()
-  expect(data?.email).toEqual(email)
+  expect(data).toMatchInlineSnapshot()
 
   const { error: listError, data: users } = await authAdmin.listUsers()
   expect(listError).toBeNull()
@@ -46,9 +65,3 @@ test('createUser() should create a new user, even if signups are disabled', asyn
   expect(user?.email).toEqual(email)
 })
 
-test('generateLink()', async () => {
-  const invitedUser = faker.internet.email().toLowerCase()
-  const { error, data } = await authAdmin.generateLink('invite', invitedUser)
-  expect(error).toBeNull()
-  expect((data as Session)?.access_token).toEqual(email)
-})
