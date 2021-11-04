@@ -33,6 +33,49 @@ export default class GoTrueApi {
   }
 
   /**
+   * Creates a new user.
+   *
+   * This function should only be called on a server. Never expose your `service_role` key in the browser.
+   *
+   * @param attributes The data you want to create the user with.
+   * @param jwt A valid JWT. Must be a full-access API key (e.g. service_role key).
+   */
+  async createUser(
+    attributes: UserAttributes,
+    jwt: string
+  ): Promise<{ data: null; error: ApiError } | { data: User; error: null }> {
+    try {
+      const data: any = await post(`${this.url}/admin/users`, attributes, {
+        headers: this._createRequestHeaders(jwt),
+      })
+      return { data, error: null }
+    } catch (e) {
+      return { data: null, error: e as ApiError }
+    }
+  }
+
+  /**
+   * Get a list of users.
+   *
+   * This function should only be called on a server. Never expose your `service_role` key in the browser.
+   *
+   * @param attributes The data you want to create the user with.
+   * @param jwt A valid JWT. Must be a full-access API key (e.g. service_role key).
+   */
+  async listUsers(
+    jwt: string
+  ): Promise<{ data: null; error: ApiError } | { data: User[]; error: null }> {
+    try {
+      const data: any = await get(`${this.url}/admin/users`, {
+        headers: this._createRequestHeaders(jwt),
+      })
+      return { data, error: null }
+    } catch (e) {
+      return { data: null, error: e as ApiError }
+    }
+  }
+
+  /**
    * Creates a new user using their email address.
    * @param email The email address of the user.
    * @param password The password of the user.
