@@ -9,12 +9,16 @@ const auth = new GoTrueClient({
   persistSession: true,
 })
 
-const adminSecret =
-  'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJnb3RydWUiLCJpYXQiOjE2MzYwMTU5NzAsImV4cCI6MTk4MzE3MTE3MCwiYXVkIjoiYWRtaW4iLCJzdWIiOiIifQ.A8bAscL628GfD_7eluAS3xMo-5zMDG1p70OhdqdTbPM'
+const ADMIN_JWT = [
+  'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9',
+  'eyJpc3MiOiJnb3RydWUiLCJpYXQiOjE2MzYwMTU5NzAsImV4cCI6MTk4MzE3MTE3MCwiYXVkIjoiYWRtaW4iLCJzdWIiOiIifQ',
+  'A8bAscL628GfD_7eluAS3xMo-5zMDG1p70OhdqdTbPM',
+].join('.')
+
 const authAdmin = new GoTrueApi({
   url: GOTRUE_URL,
   headers: {
-    Authorization: `Bearer ${adminSecret}`,
+    Authorization: `Bearer ${ADMIN_JWT}`,
   },
 })
 
@@ -36,9 +40,11 @@ test('createUser() should create a new user, even if signups are disabled', asyn
     email,
   })
   expect(error).toBeNull()
-  expect(data).toBeNull()
+  expect(data.email).toEqual(email)
 
   const { error: listError, data: users } = await authAdmin.listUsers()
   expect(listError).toBeNull()
-  expect(users).toBeNull()
+
+  const user = users.find((u) => u.email === email)
+  expect(user.email).toEqual(email)
 })
