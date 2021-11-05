@@ -31,11 +31,14 @@ test('signUp()', async () => {
 
 test('generateLink() should be able to generate multiple links', async () => {
   const invitedUser = faker.internet.email().toLowerCase()
-  const { error, data: firstInvite } = await authAdmin.generateLink('invite', invitedUser)
+  const { error, data: firstInvite } = await authAdmin.generateLink('invite', invitedUser, {
+    redirectTo: 'http://localhost:9997',
+  })
   expect(error).toBeNull()
   expect(firstInvite).toMatchInlineSnapshot(
     {
       id: expect.any(String),
+      action_link: expect.stringContaining('http://localhost:9997/?token='),
       confirmation_sent_at: expect.any(String),
       email: expect.any(String),
       phone: expect.any(String),
@@ -49,7 +52,7 @@ test('generateLink() should be able to generate multiple links', async () => {
     },
     `
     Object {
-      "action_link": "",
+      "action_link": StringContaining "http://localhost:9997/?token=",
       "app_metadata": Object {
         "provider": "email",
         "providers": Array [
@@ -74,9 +77,13 @@ test('generateLink() should be able to generate multiple links', async () => {
   const user = firstInvite as User
 
   const { data: secondInvite } = await authAdmin.generateLink('invite', invitedUser)
-  expect(secondInvite).toMatchInlineSnapshot(
+
+  const userAgain = secondInvite as User
+  expect(userAgain.id).toMatch(user.id)
+  expect(userAgain).toMatchInlineSnapshot(
     {
-      id: user.id,
+      id: expect.any(String),
+      action_link: expect.stringContaining('http://localhost:9997/?token='),
       confirmation_sent_at: expect.any(String),
       email: expect.any(String),
       phone: expect.any(String),
@@ -87,7 +94,7 @@ test('generateLink() should be able to generate multiple links', async () => {
     },
     `
     Object {
-      "action_link": "",
+      "action_link": StringContaining "http://localhost:9997/?token=",
       "app_metadata": Object {
         "provider": "email",
         "providers": Array [
@@ -98,6 +105,7 @@ test('generateLink() should be able to generate multiple links', async () => {
       "confirmation_sent_at": Any<String>,
       "created_at": Any<String>,
       "email": Any<String>,
+      "id": Any<String>,
       "identities": Array [],
       "invited_at": Any<String>,
       "phone": Any<String>,
@@ -109,16 +117,16 @@ test('generateLink() should be able to generate multiple links', async () => {
   )
 })
 
-test('createUser() should create a new user, even if signups are disabled', async () => {
-  const { error, data } = await authAdmin.createUser({
-    email,
-  })
-  expect(error).toBeNull()
-  expect(data).toMatchInlineSnapshot()
+// test('createUser() should create a new user, even if signups are disabled', async () => {
+//   const { error, data } = await authAdmin.createUser({
+//     email,
+//   })
+//   expect(error).toBeNull()
+//   expect(data).toMatchInlineSnapshot()
 
-  const { error: listError, data: users } = await authAdmin.listUsers()
-  expect(listError).toBeNull()
+//   const { error: listError, data: users } = await authAdmin.listUsers()
+//   expect(listError).toBeNull()
 
-  const user = users?.find((u) => u.email === email) || null
-  expect(user?.email).toEqual(email)
-})
+//   const user = users?.find((u) => u.email === email) || null
+//   expect(user?.email).toEqual(email)
+// })
