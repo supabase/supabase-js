@@ -117,16 +117,16 @@ test('generateLink() should be able to generate multiple links', async () => {
   )
 })
 
-// test('createUser() should create a new user, even if signups are disabled', async () => {
-//   const { error, data } = await authAdmin.createUser({
-//     email,
-//   })
-//   expect(error).toBeNull()
-//   expect(data).toMatchInlineSnapshot()
+test('createUser() should create a new user, even if signups are disabled', async () => {
+  const { error, data } = await authAdmin.createUser({
+    email,
+  })
+  expect(error).toBeNull()
+  expect(data).toMatchInlineSnapshot()
 
-//   const { error: listError, data: users } = await authAdmin.listUsers()
-//   expect(listError).toBeNull()
+  const { error: listError, data: users } = await authAdmin.listUsers()
+  expect(listError).toBeNull()
 
-//   const user = users?.find((u) => u.email === email) || null
-//   expect(user?.email).toEqual(email)
-// })
+  const user = users?.find((u) => u.email === email) || null
+  expect(user?.email).toEqual(email)
+})
