@@ -1,12 +1,16 @@
-import { PostgrestBuilder } from './types'
+import { Fetch, PostgrestBuilder } from './types'
 import PostgrestFilterBuilder from './PostgrestFilterBuilder'
 
 export default class PostgrestRpcBuilder<T> extends PostgrestBuilder<T> {
   constructor(
     url: string,
-    { headers = {}, schema }: { headers?: { [key: string]: string }; schema?: string } = {}
+    {
+      headers = {},
+      schema,
+      fetch,
+    }: { headers?: { [key: string]: string }; schema?: string; fetch?: Fetch } = {}
   ) {
-    super({} as PostgrestBuilder<T>)
+    super(({ fetch } as unknown) as PostgrestBuilder<T>)
     this.url = new URL(url)
     this.headers = { ...headers }
     this.schema = schema

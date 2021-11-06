@@ -4,7 +4,7 @@
 [![Package](https://img.shields.io/npm/v/@supabase/postgrest-js)](https://www.npmjs.com/package/@supabase/postgrest-js)
 [![License: MIT](https://img.shields.io/npm/l/@supabase/postgrest-js)](#license)
 
-Isomorphic JavaScript client for [PostgREST](https://postgrest.org). The goal of this library is to make an "ORM-like" restful interface. 
+Isomorphic JavaScript client for [PostgREST](https://postgrest.org). The goal of this library is to make an "ORM-like" restful interface.
 
 Full documentation can be found [here](https://supabase.github.io/postgrest-js/).
 
@@ -29,6 +29,17 @@ const postgrest = new PostgrestClient(REST_URL)
 - insert(): https://supabase.io/docs/reference/javascript/insert
 - update(): https://supabase.io/docs/reference/javascript/update
 - delete(): https://supabase.io/docs/reference/javascript/delete
+
+#### Custom `fetch` implementation
+
+`postgrest-js` uses the [`cross-fetch`](https://www.npmjs.com/package/cross-fetch) library to make HTTP requests, but an alternative `fetch` implementation can be provided as an option. This is most useful in environments where `cross-fetch` is not compatible, for instance Cloudflare Workers:
+
+```js
+import { PostgrestClient } from '@supabase/postgrest-js'
+
+const REST_URL = 'http://localhost:3000'
+const postgrest = new PostgrestClient(REST_URL, { fetch: fetch })
+```
 
 ## License
 

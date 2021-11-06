@@ -1,4 +1,6 @@
-import fetch from 'cross-fetch'
+import crossFetch from 'cross-fetch'
+
+export type Fetch = typeof fetch
 
 /**
  * Error format
@@ -56,9 +58,11 @@ export abstract class PostgrestBuilder<T> implements PromiseLike<PostgrestRespon
   protected body?: Partial<T> | Partial<T>[]
   protected shouldThrowOnError = false
   protected signal?: AbortSignal
+  protected fetch: Fetch
 
   constructor(builder: PostgrestBuilder<T>) {
     Object.assign(this, builder)
+    this.fetch = builder.fetch || crossFetch
   }
 
   /**
@@ -91,7 +95,7 @@ export abstract class PostgrestBuilder<T> implements PromiseLike<PostgrestRespon
       this.headers['Content-Type'] = 'application/json'
     }
 
-    let res = fetch(this.url.toString(), {
+    let res = this.fetch(this.url.toString(), {
       method: this.method,
       headers: this.headers,
       body: JSON.stringify(this.body),
