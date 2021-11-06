@@ -13,6 +13,7 @@ import {
   VerifyOTPParams,
 } from './lib/types'
 import { polyfillGlobalThis } from './lib/polyfills'
+import { Fetch } from './lib/fetch'
 
 polyfillGlobalThis() // Make "globalThis" available
 
@@ -65,6 +66,7 @@ export default class GoTrueClient {
    * @param options.persistSession Set to "true" if you want to automatically save the user session into local storage.
    * @param options.localStorage
    * @param options.cookieOptions
+   * @param options.fetch A custom fetch implementation.
    */
   constructor(options: {
     url?: string
@@ -74,6 +76,7 @@ export default class GoTrueClient {
     persistSession?: boolean
     localStorage?: SupportedStorage
     cookieOptions?: CookieOptions
+    fetch?: Fetch
   }) {
     const settings = { ...DEFAULT_OPTIONS, ...options }
     this.currentUser = null
@@ -85,6 +88,7 @@ export default class GoTrueClient {
       url: settings.url,
       headers: settings.headers,
       cookieOptions: settings.cookieOptions,
+      fetch: settings.fetch,
     })
     this._recoverSession()
     this._recoverAndRefresh()

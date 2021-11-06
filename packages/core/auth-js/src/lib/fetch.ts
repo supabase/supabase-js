@@ -1,4 +1,6 @@
-import fetch from 'cross-fetch'
+import crossFetch from 'cross-fetch'
+
+export type Fetch = typeof fetch
 
 export interface FetchOptions {
   headers?: {
@@ -38,13 +40,14 @@ const _getRequestParams = (method: RequestMethodType, options?: FetchOptions, bo
 }
 
 async function _handleRequest(
+  fetcher: Fetch = crossFetch,
   method: RequestMethodType,
   url: string,
   options?: FetchOptions,
   body?: object
 ): Promise<any> {
   return new Promise((resolve, reject) => {
-    fetch(url, _getRequestParams(method, options, body))
+    fetcher(url, _getRequestParams(method, options, body))
       .then((result) => {
         if (!result.ok) throw result
         if (options?.noResolveJson) return resolve
@@ -55,18 +58,37 @@ async function _handleRequest(
   })
 }
 
-export async function get(url: string, options?: FetchOptions): Promise<any> {
-  return _handleRequest('GET', url, options)
+export async function get(
+  fetcher: Fetch | undefined,
+  url: string,
+  options?: FetchOptions
+): Promise<any> {
+  return _handleRequest(fetcher, 'GET', url, options)
 }
 
-export async function post(url: string, body: object, options?: FetchOptions): Promise<any> {
-  return _handleRequest('POST', url, options, body)
+export async function post(
+  fetcher: Fetch | undefined,
+  url: string,
+  body: object,
+  options?: FetchOptions
+): Promise<any> {
+  return _handleRequest(fetcher, 'POST', url, options, body)
 }
 
-export async function put(url: string, body: object, options?: FetchOptions): Promise<any> {
-  return _handleRequest('PUT', url, options, body)
+export async function put(
+  fetcher: Fetch | undefined,
+  url: string,
+  body: object,
+  options?: FetchOptions
+): Promise<any> {
+  return _handleRequest(fetcher, 'PUT', url, options, body)
 }
 
-export async function remove(url: string, body: object, options?: FetchOptions): Promise<any> {
-  return _handleRequest('DELETE', url, options, body)
+export async function remove(
+  fetcher: Fetch | undefined,
+  url: string,
+  body: object,
+  options?: FetchOptions
+): Promise<any> {
+  return _handleRequest(fetcher, 'DELETE', url, options, body)
 }
