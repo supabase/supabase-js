@@ -9,7 +9,7 @@ const auth = new GoTrueClient({
 })
 
 test('signIn() with Provider', async () => {
-  let { error, url, provider } = await auth.signIn({
+  const { error, url, provider } = await auth.signIn({
     provider: 'google',
   })
   expect(error).toBeNull()
@@ -18,7 +18,7 @@ test('signIn() with Provider', async () => {
 })
 
 test('signIn() with Provider can append a redirectUrl ', async () => {
-  let { error, url, provider } = await auth.signIn(
+  const { error, url, provider } = await auth.signIn(
     {
       provider: 'google',
     },
@@ -32,7 +32,7 @@ test('signIn() with Provider can append a redirectUrl ', async () => {
 })
 
 test('signIn() with Provider can append scopes', async () => {
-  let { error, url, provider } = await auth.signIn(
+  const { error, url, provider } = await auth.signIn(
     {
       provider: 'github',
     },
@@ -46,7 +46,7 @@ test('signIn() with Provider can append scopes', async () => {
 })
 
 test('signIn() with Provider can append multiple options', async () => {
-  let { error, url, provider } = await auth.signIn(
+  const { error, url, provider } = await auth.signIn(
     {
       provider: 'github',
     },

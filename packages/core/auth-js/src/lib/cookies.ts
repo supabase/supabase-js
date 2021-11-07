@@ -25,6 +25,7 @@ function serialize(
 ) {
   const opt = options || {}
   const enc = encodeURIComponent
+  /* eslint-disable-next-line no-control-regex */
   const fieldContentRegExp = /^[\u0009\u0020-\u007e\u0080-\u00ff]+$/
 
   if (typeof enc !== 'function') {

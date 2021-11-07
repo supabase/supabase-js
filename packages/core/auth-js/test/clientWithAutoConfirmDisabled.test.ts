@@ -16,7 +16,7 @@ const testTwilio = false
 const phone = faker.phone.phoneNumber() // set test number here
 
 test('signUp() with email and password', async () => {
-  let { error, user, session } = await auth.signUp(
+  const { error, user, session } = await auth.signUp(
     {
       email,
       password,
@@ -56,7 +56,7 @@ test('signUp() the same user twice should throw an error', async () => {
 })
 
 test('signIn()', async () => {
-  let { error, session, user } = await auth.signIn({
+  const { error, session, user } = await auth.signIn({
     email,
     password,
   })
@@ -66,17 +66,17 @@ test('signIn()', async () => {
 })
 
 test('signIn() with the wrong password', async () => {
-  let { error, user } = await auth.signIn({
+  const { error, user } = await auth.signIn({
     email,
     password: password + '2',
   })
-  expect(error!.message).toBe('Email not confirmed')
+  expect(error?.message).toBe('Email not confirmed')
   expect(user).toBeNull()
 })
 
 if (testTwilio) {
   test('signUp() with phone and password', async () => {
-    let { error, user, session } = await auth.signUp(
+    const { error, user, session } = await auth.signUp(
       {
         phone,
         password,
@@ -109,9 +109,9 @@ if (testTwilio) {
   })
 
   test('verifyMobileOTP() errors on bad token', async () => {
-    const token: string = '123456'
+    const token = '123456'
 
-    let { error, user, session } = await auth.verifyOTP({ phone, token })
+    const { error, user, session } = await auth.verifyOTP({ phone, token })
     expect(error?.message).toContain('Otp has expired or is invalid')
     expect(session).toBeNull()
     expect(user).toBeNull()
