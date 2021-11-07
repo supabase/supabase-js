@@ -14,7 +14,7 @@ export function uuid() {
 export const isBrowser = () => typeof window !== 'undefined'
 
 export function getParameterByName(name: string, url?: string) {
-  if (!url) url = window.location && window.location.href || ""
+  if (!url) url = window?.location?.href || ""
   name = name.replace(/[\[\]]/g, '\\$&')
   var regex = new RegExp('[?&#]' + name + '(=([^&#]*)|&|#|$)'),
     results = regex.exec(url)
