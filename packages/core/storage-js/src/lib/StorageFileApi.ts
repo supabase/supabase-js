@@ -1,4 +1,4 @@
-import { FetchParameters, get, post, remove } from './fetch'
+import { Fetch, FetchParameters, get, post, remove } from './fetch'
 import { isBrowser } from './helpers'
 import { FileObject, FileOptions, SearchOptions } from './types'
 import fetch from 'cross-fetch'
@@ -22,11 +22,18 @@ export class StorageFileApi {
   protected url: string
   protected headers: { [key: string]: string }
   protected bucketId?: string
+  protected fetch?: Fetch
 
-  constructor(url: string, headers: { [key: string]: string } = {}, bucketId?: string) {
+  constructor(
+    url: string,
+    headers: { [key: string]: string } = {},
+    bucketId?: string,
+    fetch?: Fetch
+  ) {
     this.url = url
     this.headers = headers
     this.bucketId = bucketId
+    this.fetch = fetch
   }
 
   /**
@@ -165,6 +172,7 @@ export class StorageFileApi {
   ): Promise<{ data: { message: string } | null; error: Error | null }> {
     try {
       const data = await post(
+        this.fetch,
         `${this.url}/object/move`,
         { bucketId: this.bucketId, sourceKey: fromPath, destinationKey: toPath },
         { headers: this.headers }
@@ -192,6 +200,7 @@ export class StorageFileApi {
     try {
       const _path = this._getFinalPath(path)
       let data = await post(
+        this.fetch,
         `${this.url}/object/sign/${_path}`,
         { expiresIn },
         { headers: this.headers }
@@ -212,7 +221,7 @@ export class StorageFileApi {
   async download(path: string): Promise<{ data: Blob | null; error: Error | null }> {
     try {
       const _path = this._getFinalPath(path)
-      const res = await get(`${this.url}/object/${_path}`, {
+      const res = await get(this.fetch, `${this.url}/object/${_path}`, {
         headers: this.headers,
         noResolveJson: true,
       })
@@ -253,6 +262,7 @@ export class StorageFileApi {
   async remove(paths: string[]): Promise<{ data: FileObject[] | null; error: Error | null }> {
     try {
       const data = await remove(
+        this.fetch,
         `${this.url}/object/${this.bucketId}`,
         { prefixes: paths },
         { headers: this.headers }
@@ -307,6 +317,7 @@ export class StorageFileApi {
     try {
       const body = { ...DEFAULT_SEARCH_OPTIONS, ...options, prefix: path || '' }
       const data = await post(
+        this.fetch,
         `${this.url}/object/list/${this.bucketId}`,
         body,
         { headers: this.headers },

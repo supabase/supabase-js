@@ -1,4 +1,6 @@
-import fetch from 'cross-fetch'
+import crossFetch from 'cross-fetch'
+
+export type Fetch = typeof fetch
 
 export interface FetchOptions {
   headers?: {
@@ -46,6 +48,7 @@ const _getRequestParams = (
 }
 
 async function _handleRequest(
+  fetcher: Fetch = crossFetch,
   method: RequestMethodType,
   url: string,
   options?: FetchOptions,
@@ -53,7 +56,7 @@ async function _handleRequest(
   body?: object
 ): Promise<any> {
   return new Promise((resolve, reject) => {
-    fetch(url, _getRequestParams(method, options, parameters, body))
+    fetcher(url, _getRequestParams(method, options, parameters, body))
       .then((result) => {
         if (!result.ok) throw result
         if (options?.noResolveJson) return resolve(result)
@@ -65,36 +68,40 @@ async function _handleRequest(
 }
 
 export async function get(
+  fetcher: Fetch | undefined,
   url: string,
   options?: FetchOptions,
   parameters?: FetchParameters
 ): Promise<any> {
-  return _handleRequest('GET', url, options, parameters)
+  return _handleRequest(fetcher, 'GET', url, options, parameters)
 }
 
 export async function post(
+  fetcher: Fetch | undefined,
   url: string,
   body: object,
   options?: FetchOptions,
   parameters?: FetchParameters
 ): Promise<any> {
-  return _handleRequest('POST', url, options, parameters, body)
+  return _handleRequest(fetcher, 'POST', url, options, parameters, body)
 }
 
 export async function put(
+  fetcher: Fetch | undefined,
   url: string,
   body: object,
   options?: FetchOptions,
   parameters?: FetchParameters
 ): Promise<any> {
-  return _handleRequest('PUT', url, options, parameters, body)
+  return _handleRequest(fetcher, 'PUT', url, options, parameters, body)
 }
 
 export async function remove(
+  fetcher: Fetch | undefined,
   url: string,
   body: object,
   options?: FetchOptions,
   parameters?: FetchParameters
 ): Promise<any> {
-  return _handleRequest('DELETE', url, options, parameters, body)
+  return _handleRequest(fetcher, 'DELETE', url, options, parameters, body)
 }

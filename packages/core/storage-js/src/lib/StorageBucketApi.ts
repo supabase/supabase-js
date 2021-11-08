@@ -1,14 +1,16 @@
-import { get, post, put, remove } from './fetch'
+import { Fetch, get, post, put, remove } from './fetch'
 import { Bucket } from './types'
 import { DEFAULT_HEADERS } from './constants'
 
 export class StorageBucketApi {
   protected url: string
   protected headers: { [key: string]: string }
+  protected fetch?: Fetch
 
-  constructor(url: string, headers: { [key: string]: string } = {}) {
+  constructor(url: string, headers: { [key: string]: string } = {}, fetch?: Fetch) {
     this.url = url
     this.headers = { ...DEFAULT_HEADERS, ...headers }
+    this.fetch = fetch
   }
 
   /**
@@ -16,7 +18,7 @@ export class StorageBucketApi {
    */
   async listBuckets(): Promise<{ data: Bucket[] | null; error: Error | null }> {
     try {
-      const data = await get(`${this.url}/bucket`, { headers: this.headers })
+      const data = await get(this.fetch, `${this.url}/bucket`, { headers: this.headers })
       return { data, error: null }
     } catch (error) {
       return { data: null, error }
@@ -30,7 +32,7 @@ export class StorageBucketApi {
    */
   async getBucket(id: string): Promise<{ data: Bucket | null; error: Error | null }> {
     try {
-      const data = await get(`${this.url}/bucket/${id}`, { headers: this.headers })
+      const data = await get(this.fetch, `${this.url}/bucket/${id}`, { headers: this.headers })
       return { data, error: null }
     } catch (error) {
       return { data: null, error }
@@ -49,6 +51,7 @@ export class StorageBucketApi {
   ): Promise<{ data: string | null; error: Error | null }> {
     try {
       const data = await post(
+        this.fetch,
         `${this.url}/bucket`,
         { id, name: id, public: options.public },
         { headers: this.headers }
@@ -70,6 +73,7 @@ export class StorageBucketApi {
   ): Promise<{ data: { message: string } | null; error: Error | null }> {
     try {
       const data = await put(
+        this.fetch,
         `${this.url}/bucket/${id}`,
         { id, name: id, public: options.public },
         { headers: this.headers }
@@ -89,7 +93,12 @@ export class StorageBucketApi {
     id: string
   ): Promise<{ data: { message: string } | null; error: Error | null }> {
     try {
-      const data = await post(`${this.url}/bucket/${id}/empty`, {}, { headers: this.headers })
+      const data = await post(
+        this.fetch,
+        `${this.url}/bucket/${id}/empty`,
+        {},
+        { headers: this.headers }
+      )
       return { data, error: null }
     } catch (error) {
       return { data: null, error }
@@ -106,7 +115,12 @@ export class StorageBucketApi {
     id: string
   ): Promise<{ data: { message: string } | null; error: Error | null }> {
     try {
-      const data = await remove(`${this.url}/bucket/${id}`, {}, { headers: this.headers })
+      const data = await remove(
+        this.fetch,
+        `${this.url}/bucket/${id}`,
+        {},
+        { headers: this.headers }
+      )
       return { data, error: null }
     } catch (error) {
       return { data: null, error }
