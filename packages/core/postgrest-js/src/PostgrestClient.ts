@@ -2,11 +2,13 @@ import PostgrestQueryBuilder from './lib/PostgrestQueryBuilder'
 import PostgrestRpcBuilder from './lib/PostgrestRpcBuilder'
 import PostgrestFilterBuilder from './lib/PostgrestFilterBuilder'
 import { DEFAULT_HEADERS } from './lib/constants'
+import { Fetch } from './lib/types'
 
 export default class PostgrestClient {
   url: string
   headers: { [key: string]: string }
   schema?: string
+  fetch?: Fetch
 
   /**
    * Creates a PostgREST client.
@@ -17,11 +19,16 @@ export default class PostgrestClient {
    */
   constructor(
     url: string,
-    { headers = {}, schema }: { headers?: { [key: string]: string }; schema?: string } = {}
+    {
+      headers = {},
+      schema,
+      fetch,
+    }: { headers?: { [key: string]: string }; schema?: string; fetch?: Fetch } = {}
   ) {
     this.url = url
     this.headers = { ...DEFAULT_HEADERS, ...headers }
     this.schema = schema
+    this.fetch = fetch
   }
 
   /**
@@ -41,7 +48,11 @@ export default class PostgrestClient {
    */
   from<T = any>(table: string): PostgrestQueryBuilder<T> {
     const url = `${this.url}/${table}`
-    return new PostgrestQueryBuilder<T>(url, { headers: this.headers, schema: this.schema })
+    return new PostgrestQueryBuilder<T>(url, {
+      headers: this.headers,
+      schema: this.schema,
+      fetch: this.fetch,
+    })
   }
 
   /**
@@ -67,6 +78,7 @@ export default class PostgrestClient {
     return new PostgrestRpcBuilder<T>(url, {
       headers: this.headers,
       schema: this.schema,
+      fetch: this.fetch,
     }).rpc(params, { head, count })
   }
 }
