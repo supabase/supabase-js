@@ -35,6 +35,17 @@ Then you can use it from a global `supabase` variable:
 </script>
 ```
 
+### Custom `fetch` implementation
+
+`supabase-js` uses the [`cross-fetch`](https://www.npmjs.com/package/cross-fetch) library to make HTTP requests, but an alternative `fetch` implementation can be provided as an option. This is most useful in environments where `cross-fetch` is not compatible, for instance Cloudflare Workers:
+
+```js
+import { createClient } from '@supabase/supabase-js'
+
+// Provide a custom `fetch` implementation as an option
+const supabase = createClient('https://xyzcompany.supabase.co', 'public-anon-key', { fetch: fetch })
+```
+
 ## Sponsors
 
 We are building the features of Firebase using enterprise-grade, open source products. We support existing communities wherever possible, and if the products don’t exist we build them and open source them ourselves. Thanks to these sponsors who are making the OSS ecosystem better for everyone.
