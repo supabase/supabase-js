@@ -48,7 +48,7 @@ export default class GoTrueApi {
     attributes: UserAttributes
   ): Promise<{ data: null; error: ApiError } | { data: User; error: null }> {
     try {
-      const data: any = await post(`${this.url}/admin/users`, attributes, {
+      const data: any = await post(this.fetch, `${this.url}/admin/users`, attributes, {
         headers: this.headers,
       })
       return { data, error: null }
@@ -64,7 +64,7 @@ export default class GoTrueApi {
    */
   async listUsers(): Promise<{ data: null; error: ApiError } | { data: User[]; error: null }> {
     try {
-      const data: any = await get(`${this.url}/admin/users`, {
+      const data: any = await get(this.fetch, `${this.url}/admin/users`, {
         headers: this.headers,
       })
       return { data: data.users, error: null }
