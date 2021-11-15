@@ -20,12 +20,12 @@ const email = faker.internet.email().toLowerCase()
 const password = faker.internet.password()
 
 test('signUp()', async () => {
-  const { error, data, user } = await auth.signUp({
+  const { error, session, user } = await auth.signUp({
     email,
     password,
   })
   expect(error?.message).toBe('Signups not allowed for this instance')
-  expect(data).toBeNull()
+  expect(session).toBeNull()
   expect(user).toBeNull()
 })
 

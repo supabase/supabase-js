@@ -93,12 +93,12 @@ test('signUp() the same user twice should not share email already registered mes
     password: passwordSignupTwice,
   })
 
-  const { error, data, user } = await auth.signUp({
+  const { error, session, user } = await auth.signUp({
     email: emailSignupTwice,
     password: passwordSignupTwice,
   })
 
-  expect(data).toBeNull()
+  expect(session).toBeNull()
   expect(user).toBeNull()
 
   expect(error?.message).toMatch(/^User already registered/)
@@ -270,10 +270,10 @@ test('Get user after logging out', async () => {
 })
 
 test('signIn() with the wrong password', async () => {
-  const { error, data } = await auth.signIn({
+  const { error, session } = await auth.signIn({
     email,
     password: password + '2',
   })
   expect(error?.message).not.toBeNull()
-  expect(data).toBeNull()
+  expect(session).toBeNull()
 })
