@@ -122,7 +122,6 @@ test('createUser() should create a new user, even if signups are disabled', asyn
     email,
   })
   expect(error).toBeNull()
-  expect(data).toMatchInlineSnapshot()
 
   const { error: listError, data: users } = await authAdmin.listUsers()
   expect(listError).toBeNull()

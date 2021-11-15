@@ -57,16 +57,13 @@ export default class GoTrueApi {
    * Get a list of users.
    *
    * This function should only be called on a server. Never expose your `service_role` key in the browser.
-   *
-   * @param attributes The data you want to create the user with.
-   * @param jwt A valid JWT. Must be a full-access API key (e.g. service_role key).
    */
   async listUsers(): Promise<{ data: null; error: ApiError } | { data: User[]; error: null }> {
     try {
       const data: any = await get(`${this.url}/admin/users`, {
         headers: this.headers,
       })
-      return { data, error: null }
+      return { data: data.users, error: null }
     } catch (e) {
       return { data: null, error: e as ApiError }
     }
