@@ -459,21 +459,27 @@ export default class GoTrueApi {
    * Get user by reading the cookie from the request.
    * Works for Next.js & Express (requires cookie-parser middleware).
    */
-  async getUserByCookie(
-    req: any
-  ): Promise<{ user: User | null; data: User | null; error: ApiError | null }> {
+  async getUserByCookie(req: any): Promise<{
+    token: string | null
+    user: User | null
+    data: User | null
+    error: ApiError | null
+  }> {
     try {
-      if (!req.cookies)
+      if (!req.cookies) {
         throw new Error(
           'Not able to parse cookies! When using Express make sure the cookie-parser middleware is in use!'
         )
-      if (!req.cookies[this.cookieOptions.name!]) throw new Error('No cookie found!')
+      }
+      if (!req.cookies[this.cookieOptions.name!]) {
+        throw new Error('No cookie found!')
+      }
       const token = req.cookies[this.cookieOptions.name!]
       const { user, error } = await this.getUser(token)
       if (error) throw error
-      return { user, data: user, error: null }
+      return { token, user, data: user, error: null }
     } catch (e) {
-      return { user: null, data: null, error: e as ApiError }
+      return { token: null, user: null, data: null, error: e as ApiError }
     }
   }
 
