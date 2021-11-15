@@ -1,7 +1,11 @@
-import GoTrueApi, { ApiError } from './GoTrueApi'
+import GoTrueApi from './GoTrueApi'
 import { isBrowser, getParameterByName, uuid } from './lib/helpers'
 import { GOTRUE_URL, DEFAULT_HEADERS, STORAGE_KEY } from './lib/constants'
-import {
+import { polyfillGlobalThis } from './lib/polyfills'
+import { Fetch } from './lib/fetch'
+
+import type {
+  ApiError,
   Session,
   User,
   UserAttributes,
@@ -12,8 +16,6 @@ import {
   UserCredentials,
   VerifyOTPParams,
 } from './lib/types'
-import { polyfillGlobalThis } from './lib/polyfills'
-import { Fetch } from './lib/fetch'
 
 polyfillGlobalThis() // Make "globalThis" available
 
