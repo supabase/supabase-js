@@ -1,4 +1,4 @@
-import { get, post, put, remove } from './lib/fetch'
+import { Fetch, get, post, put, remove } from './lib/fetch'
 import { Session, Provider, UserAttributes, CookieOptions, User } from './lib/types'
 import { COOKIE_OPTIONS } from './lib/constants'
 import { setCookie, deleteCookie } from './lib/cookies'
@@ -15,21 +15,25 @@ export default class GoTrueApi {
     [key: string]: string
   }
   protected cookieOptions: CookieOptions
+  protected fetch?: Fetch
 
   constructor({
     url = '',
     headers = {},
     cookieOptions,
+    fetch,
   }: {
     url: string
     headers?: {
       [key: string]: string
     }
     cookieOptions?: CookieOptions
+    fetch?: Fetch
   }) {
     this.url = url
     this.headers = headers
     this.cookieOptions = { ...COOKIE_OPTIONS, ...cookieOptions }
+    this.fetch = fetch
   }
 
   /**
@@ -94,6 +98,7 @@ export default class GoTrueApi {
         queryString = '?redirect_to=' + encodeURIComponent(options.redirectTo)
       }
       const data = await post(
+        this.fetch,
         `${this.url}/signup${queryString}`,
         { email, password, data: options.data },
         { headers }
@@ -125,7 +130,12 @@ export default class GoTrueApi {
       if (options.redirectTo) {
         queryString += '&redirect_to=' + encodeURIComponent(options.redirectTo)
       }
-      const data = await post(`${this.url}/token${queryString}`, { email, password }, { headers })
+      const data = await post(
+        this.fetch,
+        `${this.url}/token${queryString}`,
+        { email, password },
+        { headers }
+      )
       const session = { ...data }
       if (session.expires_in) session.expires_at = expiresAt(data.expires_in)
       return { data: session, error: null }
@@ -150,6 +160,7 @@ export default class GoTrueApi {
     try {
       const headers = { ...this.headers }
       const data = await post(
+        this.fetch,
         `${this.url}/signup`,
         { phone, password, data: options.data },
         { headers }
@@ -174,7 +185,12 @@ export default class GoTrueApi {
     try {
       const headers = { ...this.headers }
       const queryString = '?grant_type=password'
-      const data = await post(`${this.url}/token${queryString}`, { phone, password }, { headers })
+      const data = await post(
+        this.fetch,
+        `${this.url}/token${queryString}`,
+        { phone, password },
+        { headers }
+      )
       const session = { ...data }
       if (session.expires_in) session.expires_at = expiresAt(data.expires_in)
       return { data: session, error: null }
@@ -200,7 +216,12 @@ export default class GoTrueApi {
       if (options.redirectTo) {
         queryString += '?redirect_to=' + encodeURIComponent(options.redirectTo)
       }
-      const data = await post(`${this.url}/magiclink${queryString}`, { email }, { headers })
+      const data = await post(
+        this.fetch,
+        `${this.url}/magiclink${queryString}`,
+        { email },
+        { headers }
+      )
       return { data, error: null }
     } catch (e) {
       return { data: null, error: e as ApiError }
@@ -214,7 +235,7 @@ export default class GoTrueApi {
   async sendMobileOTP(phone: string): Promise<{ data: {} | null; error: ApiError | null }> {
     try {
       const headers = { ...this.headers }
-      const data = await post(`${this.url}/otp`, { phone }, { headers })
+      const data = await post(this.fetch, `${this.url}/otp`, { phone }, { headers })
       return { data, error: null }
     } catch (e) {
       return { data: null, error: e as ApiError }
@@ -237,6 +258,7 @@ export default class GoTrueApi {
     try {
       const headers = { ...this.headers }
       const data = await post(
+        this.fetch,
         `${this.url}/verify`,
         { phone, token, type: 'sms', redirect_to: options.redirectTo },
         { headers }
@@ -267,6 +289,7 @@ export default class GoTrueApi {
         queryString += '?redirect_to=' + encodeURIComponent(options.redirectTo)
       }
       const data = await post(
+        this.fetch,
         `${this.url}/invite${queryString}`,
         { email, data: options.data },
         { headers }
@@ -294,7 +317,12 @@ export default class GoTrueApi {
       if (options.redirectTo) {
         queryString += '?redirect_to=' + encodeURIComponent(options.redirectTo)
       }
-      const data = await post(`${this.url}/recover${queryString}`, { email }, { headers })
+      const data = await post(
+        this.fetch,
+        `${this.url}/recover${queryString}`,
+        { email },
+        { headers }
+      )
       return { data, error: null }
     } catch (e) {
       return { data: null, error: e as ApiError }
@@ -319,6 +347,7 @@ export default class GoTrueApi {
   async signOut(jwt: string): Promise<{ error: ApiError | null }> {
     try {
       await post(
+        this.fetch,
         `${this.url}/logout`,
         {},
         { headers: this._createRequestHeaders(jwt), noResolveJson: true }
@@ -360,7 +389,9 @@ export default class GoTrueApi {
     jwt: string
   ): Promise<{ user: User | null; data: User | null; error: ApiError | null }> {
     try {
-      const data: any = await get(`${this.url}/user`, { headers: this._createRequestHeaders(jwt) })
+      const data: any = await get(this.fetch, `${this.url}/user`, {
+        headers: this._createRequestHeaders(jwt),
+      })
       return { user: data, data, error: null }
     } catch (e) {
       return { user: null, data: null, error: e as ApiError }
@@ -377,7 +408,7 @@ export default class GoTrueApi {
     attributes: UserAttributes
   ): Promise<{ user: User | null; data: User | null; error: ApiError | null }> {
     try {
-      const data: any = await put(`${this.url}/user`, attributes, {
+      const data: any = await put(this.fetch, `${this.url}/user`, attributes, {
         headers: this._createRequestHeaders(jwt),
       })
       return { user: data, data, error: null }
@@ -400,6 +431,7 @@ export default class GoTrueApi {
   ): Promise<{ user: User | null; data: User | null; error: ApiError | null }> {
     try {
       const data: any = await remove(
+        this.fetch,
         `${this.url}/admin/users/${uid}`,
         {},
         {
@@ -421,6 +453,7 @@ export default class GoTrueApi {
   ): Promise<{ data: Session | null; error: ApiError | null }> {
     try {
       const data: any = await post(
+        this.fetch,
         `${this.url}/token?grant_type=refresh_token`,
         { refresh_token: refreshToken },
         { headers: this.headers }
@@ -463,21 +496,27 @@ export default class GoTrueApi {
    * Get user by reading the cookie from the request.
    * Works for Next.js & Express (requires cookie-parser middleware).
    */
-  async getUserByCookie(
-    req: any
-  ): Promise<{ user: User | null; data: User | null; error: ApiError | null }> {
+  async getUserByCookie(req: any): Promise<{
+    token: string | null
+    user: User | null
+    data: User | null
+    error: ApiError | null
+  }> {
     try {
-      if (!req.cookies)
+      if (!req.cookies) {
         throw new Error(
           'Not able to parse cookies! When using Express make sure the cookie-parser middleware is in use!'
         )
-      if (!req.cookies[this.cookieOptions.name!]) throw new Error('No cookie found!')
+      }
+      if (!req.cookies[this.cookieOptions.name!]) {
+        throw new Error('No cookie found!')
+      }
       const token = req.cookies[this.cookieOptions.name!]
       const { user, error } = await this.getUser(token)
       if (error) throw error
-      return { user, data: user, error: null }
+      return { token, user, data: user, error: null }
     } catch (e) {
-      return { user: null, data: null, error: e as ApiError }
+      return { token: null, user: null, data: null, error: e as ApiError }
     }
   }
 
@@ -500,6 +539,7 @@ export default class GoTrueApi {
   ): Promise<{ data: Session | User | null; error: ApiError | null }> {
     try {
       const data: any = await post(
+        this.fetch,
         `${this.url}/admin/generate_link`,
         {
           type,
