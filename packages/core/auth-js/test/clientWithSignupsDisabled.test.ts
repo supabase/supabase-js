@@ -118,7 +118,7 @@ test('generateLink() should be able to generate multiple links', async () => {
 })
 
 test('createUser() should create a new user, even if signups are disabled', async () => {
-  const { error, data } = await authAdmin.createUser({
+  const { error } = await authAdmin.createUser({
     email,
   })
   expect(error).toBeNull()
