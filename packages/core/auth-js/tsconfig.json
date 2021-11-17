@@ -16,5 +16,8 @@
 
     "forceConsistentCasingInFileNames": true,
     "stripInternal": true
+  },
+  "typedocOptions": {
+    "excludeExternals": true,
   }
 }

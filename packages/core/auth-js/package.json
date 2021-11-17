@@ -28,8 +28,8 @@
     "test:suite": "jest --runInBand",
     "test:infra": "cd infra && docker-compose down && docker-compose pull && docker-compose up -d && sleep 10",
     "test:clean": "cd infra && docker-compose down --remove-orphans",
-    "docs": "typedoc --mode file --target ES6 --theme minimal",
-    "docs:json": "typedoc --json docs/spec.json --mode modules --includeDeclarations --excludeExternals"
+    "docs": "typedoc src/index.ts",
+    "docs:json": "typedoc src/index.ts --json docs/spec.json"
   },
   "dependencies": {
     "cross-fetch": "^3.0.6"
