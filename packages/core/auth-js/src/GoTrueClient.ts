@@ -688,21 +688,25 @@ export default class GoTrueClient {
    */
   private _listenForMultiTabEvents() {
     if (!this.multiTab || !isBrowser() || !window?.addEventListener) {
-      console.debug('Auth multi-tab support is disabled.')
+      // console.debug('Auth multi-tab support is disabled.')
       return false
     }
 
-    window.addEventListener('storage', (e: StorageEvent) => {
-      if (e.key === STORAGE_KEY) {
-        const newSession = JSON.parse(String(e.newValue))
-        if (newSession?.currentSession?.access_token) {
-          this._recoverAndRefresh()
-          this._notifyAllSubscribers('SIGNED_IN')
-        } else {
-          this._removeSession()
-          this._notifyAllSubscribers('SIGNED_OUT')
+    try {
+      window?.addEventListener('storage', (e: StorageEvent) => {
+        if (e.key === STORAGE_KEY) {
+          const newSession = JSON.parse(String(e.newValue))
+          if (newSession?.currentSession?.access_token) {
+            this._recoverAndRefresh()
+            this._notifyAllSubscribers('SIGNED_IN')
+          } else {
+            this._removeSession()
+            this._notifyAllSubscribers('SIGNED_OUT')
+          }
         }
-      }
-    })
+      })
+    } catch (error) {
+      console.error('_listenForMultiTabEvents', error)
+    }
   }
 }
