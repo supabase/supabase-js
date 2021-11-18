@@ -39,6 +39,19 @@ export interface Session {
   token_type: string
   user: User | null
 }
+
+export interface UserIdentity {
+  id: string
+  user_id: string 
+  identity_data: {
+    [key: string]: any
+  }
+  provider: string
+  created_at: string
+  last_sign_in_at: string
+  updated_at?: string
+}
+
 export interface User {
   id: string
   app_metadata: {
@@ -62,6 +75,7 @@ export interface User {
   last_sign_in_at?: string
   role?: string
   updated_at?: string
+  identities?: UserIdentity[]
 }
 
 export interface UserAttributes {
