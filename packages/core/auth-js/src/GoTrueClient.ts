@@ -1,7 +1,11 @@
-import GoTrueApi, { ApiError } from './GoTrueApi'
+import GoTrueApi from './GoTrueApi'
 import { isBrowser, getParameterByName, uuid } from './lib/helpers'
 import { GOTRUE_URL, DEFAULT_HEADERS, STORAGE_KEY } from './lib/constants'
-import {
+import { polyfillGlobalThis } from './lib/polyfills'
+import { Fetch } from './lib/fetch'
+
+import type {
+  ApiError,
   Session,
   User,
   UserAttributes,
@@ -12,7 +16,6 @@ import {
   UserCredentials,
   VerifyOTPParams,
 } from './lib/types'
-import { polyfillGlobalThis } from './lib/polyfills'
 
 polyfillGlobalThis() // Make "globalThis" available
 
@@ -65,6 +68,7 @@ export default class GoTrueClient {
    * @param options.persistSession Set to "true" if you want to automatically save the user session into local storage.
    * @param options.localStorage
    * @param options.cookieOptions
+   * @param options.fetch A custom fetch implementation.
    */
   constructor(options: {
     url?: string
@@ -74,6 +78,7 @@ export default class GoTrueClient {
     persistSession?: boolean
     localStorage?: SupportedStorage
     cookieOptions?: CookieOptions
+    fetch?: Fetch
   }) {
     const settings = { ...DEFAULT_OPTIONS, ...options }
     this.currentUser = null
@@ -85,6 +90,7 @@ export default class GoTrueClient {
       url: settings.url,
       headers: settings.headers,
       cookieOptions: settings.cookieOptions,
+      fetch: settings.fetch,
     })
     this._recoverSession()
     this._recoverAndRefresh()
@@ -118,7 +124,6 @@ export default class GoTrueClient {
     user: User | null
     session: Session | null
     error: ApiError | null
-    data: Session | User | null // Deprecated
   }> {
     try {
       this._removeSession()
@@ -155,9 +160,9 @@ export default class GoTrueClient {
         user = data as User
       }
 
-      return { data, user, session, error: null }
-    } catch (error) {
-      return { data: null, user: null, session: null, error }
+      return { user, session, error: null }
+    } catch (e) {
+      return { user: null, session: null, error: e as ApiError }
     }
   }
 
@@ -183,7 +188,6 @@ export default class GoTrueClient {
     provider?: Provider
     url?: string | null
     error: ApiError | null
-    data: Session | null // Deprecated
   }> {
     try {
       this._removeSession()
@@ -192,7 +196,7 @@ export default class GoTrueClient {
         const { error } = await this.api.sendMagicLinkEmail(email, {
           redirectTo: options.redirectTo,
         })
-        return { data: null, user: null, session: null, error }
+        return { user: null, session: null, error }
       }
       if (email && password) {
         return this._handleEmailSignIn(email, password, {
@@ -201,7 +205,7 @@ export default class GoTrueClient {
       }
       if (phone && !password) {
         const { error } = await this.api.sendMobileOTP(phone)
-        return { data: null, user: null, session: null, error }
+        return { user: null, session: null, error }
       }
       if (phone && password) {
         return this._handlePhoneSignIn(phone, password)
@@ -212,7 +216,6 @@ export default class GoTrueClient {
         if (error) throw error
 
         return {
-          data: this.currentSession,
           user: this.currentUser,
           session: this.currentSession,
           error: null,
@@ -225,8 +228,8 @@ export default class GoTrueClient {
         })
       }
       throw new Error(`You must provide either an email, phone number or a third-party provider.`)
-    } catch (error) {
-      return { data: null, user: null, session: null, error }
+    } catch (e) {
+      return { user: null, session: null, error: e as ApiError }
     }
   }
 
@@ -245,7 +248,6 @@ export default class GoTrueClient {
     user: User | null
     session: Session | null
     error: ApiError | null
-    data: Session | User | null // Deprecated
   }> {
     try {
       this._removeSession()
@@ -274,9 +276,9 @@ export default class GoTrueClient {
         user = data as User
       }
 
-      return { data, user, session, error: null }
-    } catch (error) {
-      return { data: null, user: null, session: null, error }
+      return { user, session, error: null }
+    } catch (e) {
+      return { user: null, session: null, error: e as ApiError }
     }
   }
 
@@ -312,8 +314,8 @@ export default class GoTrueClient {
       if (error) throw error
 
       return { data: this.currentSession, user: this.currentUser, error: null }
-    } catch (error) {
-      return { data: null, user: null, error }
+    } catch (e) {
+      return { data: null, user: null, error: e as ApiError }
     }
   }
 
@@ -338,8 +340,8 @@ export default class GoTrueClient {
       this._notifyAllSubscribers('USER_UPDATED')
 
       return { data: user, user, error: null }
-    } catch (error) {
-      return { data: null, user: null, error }
+    } catch (e) {
+      return { data: null, user: null, error: e as ApiError }
     }
   }
 
@@ -362,8 +364,8 @@ export default class GoTrueClient {
       this._saveSession(data!)
       this._notifyAllSubscribers('SIGNED_IN')
       return { session: data, error: null }
-    } catch (error) {
-      return { error, session: null }
+    } catch (e) {
+      return { error: e as ApiError, session: null }
     }
   }
 
@@ -432,8 +434,8 @@ export default class GoTrueClient {
       window.location.hash = ''
 
       return { data: session, error: null }
-    } catch (error) {
-      return { data: null, error }
+    } catch (e) {
+      return { data: null, error: e as ApiError }
     }
   }
 
@@ -458,23 +460,23 @@ export default class GoTrueClient {
    * Receive a notification every time an auth event happens.
    * @returns {Subscription} A subscription object which can be used to unsubscribe itself.
    */
-  onAuthStateChange(
-    callback: (event: AuthChangeEvent, session: Session | null) => void
-  ): { data: Subscription | null; error: ApiError | null } {
+  onAuthStateChange(callback: (event: AuthChangeEvent, session: Session | null) => void): {
+    data: Subscription | null
+    error: ApiError | null
+  } {
     try {
       const id: string = uuid()
-      const self = this
       const subscription: Subscription = {
         id,
         callback,
         unsubscribe: () => {
-          self.stateChangeEmitters.delete(id)
+          this.stateChangeEmitters.delete(id)
         },
       }
       this.stateChangeEmitters.set(id, subscription)
       return { data: subscription, error: null }
-    } catch (error) {
-      return { data: null, error }
+    } catch (e) {
+      return { data: null, error: e as ApiError }
     }
   }
 
@@ -497,8 +499,8 @@ export default class GoTrueClient {
       }
 
       return { data, user: data.user, session: data, error: null }
-    } catch (error) {
-      return { data: null, user: null, session: null, error }
+    } catch (e) {
+      return { data: null, user: null, session: null, error: e as ApiError }
     }
   }
 
@@ -513,8 +515,8 @@ export default class GoTrueClient {
       }
 
       return { data, user: data.user, session: data, error: null }
-    } catch (error) {
-      return { data: null, user: null, session: null, error }
+    } catch (e) {
+      return { data: null, user: null, session: null, error: e as ApiError }
     }
   }
 
@@ -536,10 +538,10 @@ export default class GoTrueClient {
         window.location.href = url
       }
       return { provider, url, data: null, session: null, user: null, error: null }
-    } catch (error) {
+    } catch (e) {
       // fallback to returning the URL
-      if (!!url) return { provider, url, data: null, session: null, user: null, error: null }
-      return { data: null, user: null, session: null, error }
+      if (url) return { provider, url, data: null, session: null, user: null, error: null }
+      return { data: null, user: null, session: null, error: e as ApiError }
     }
   }
 
@@ -617,11 +619,12 @@ export default class GoTrueClient {
       if (!data) throw Error('Invalid session data.')
 
       this._saveSession(data)
+      this._notifyAllSubscribers('TOKEN_REFRESHED')
       this._notifyAllSubscribers('SIGNED_IN')
 
       return { data, error: null }
-    } catch (error) {
-      return { data: null, error }
+    } catch (e) {
+      return { data: null, error: e as ApiError }
     }
   }
 

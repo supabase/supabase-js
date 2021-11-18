@@ -9,7 +9,7 @@ const auth = new GoTrueClient({
   persistSession: true,
 })
 
-let authWithSession = new GoTrueClient({
+const authWithSession = new GoTrueClient({
   url: GOTRUE_URL,
   autoRefreshToken: false,
   persistSession: false,
@@ -19,10 +19,9 @@ const email = `client_ac_enabled_${faker.internet.email().toLowerCase()}`
 const setSessionEmail = `client_ac_session_${faker.internet.email().toLowerCase()}`
 const refreshTokenEmail = `client_refresh_token_signin_${faker.internet.email().toLowerCase()}`
 const password = faker.internet.password()
-var access_token: string | null = null
-
+let access_token: string | null = null
 test('signUp()', async () => {
-  let { error, user, session } = await auth.signUp(
+  const { error, user, session } = await auth.signUp(
     {
       email,
       password,
@@ -78,19 +77,31 @@ test('setSession should return no error', async () => {
   })
   expect(error).toBeNull()
   expect(session).not.toBeNull()
-  await authWithSession.setSession(session?.refresh_token!)
+  await authWithSession.setSession(session?.refresh_token as string)
   const { user } = await authWithSession.update({ data: { hello: 'world' } })
   expect(user?.user_metadata).toStrictEqual({ hello: 'world' })
 })
 
-test('signUp() the same user twice should throw an error', async () => {
-  const { error, data, user } = await auth.signUp({
-    email,
-    password,
+test('signUp() the same user twice should not share email already registered message', async () => {
+  // let's sign up twice with a specific user so we can run this test individually
+  // and not rely on prior tests to have signed up the same user email
+  const emailSignupTwice = `client_ac_enabled_${faker.internet.email().toLowerCase()}`
+  const passwordSignupTwice = faker.internet.password()
+
+  await auth.signUp({
+    email: emailSignupTwice,
+    password: passwordSignupTwice,
   })
-  expect(error?.message).toBe('Thanks for registering, now check your email to complete the process.')
-  expect(data).toBeNull()
+
+  const { error, session, user } = await auth.signUp({
+    email: emailSignupTwice,
+    password: passwordSignupTwice,
+  })
+
+  expect(session).toBeNull()
   expect(user).toBeNull()
+
+  expect(error?.message).toMatch(/^User already registered/)
 })
 
 test('setAuth() should set the Auth headers on a new client', async () => {
@@ -100,14 +111,14 @@ test('setAuth() should set the Auth headers on a new client', async () => {
     persistSession: false,
   })
 
-  newClient.setAuth(access_token!)
+  newClient.setAuth(access_token as string)
 
   const authBearer = newClient.session()?.access_token
   expect(authBearer).toEqual(access_token)
 })
 
 test('signIn()', async () => {
-  let { error, session, user } = await auth.signIn({
+  const { error, session, user } = await auth.signIn({
     email,
     password,
   })
@@ -194,7 +205,7 @@ test('signIn() with refreshToken', async () => {
 })
 
 test('Get user', async () => {
-  let user = auth.user()
+  const user = auth.user()
   expect(user).toMatchObject({
     id: expect.any(String),
     email: expect.any(String),
@@ -212,7 +223,7 @@ test('Get user', async () => {
 })
 
 test('Update user', async () => {
-  let { error, user } = await auth.update({ data: { hello: 'world' } })
+  const { error, user } = await auth.update({ data: { hello: 'world' } })
   expect(error).toBeNull()
   expect(user).toMatchObject({
     id: expect.any(String),
@@ -231,7 +242,7 @@ test('Update user', async () => {
 })
 
 test('Get user after updating', async () => {
-  let user = auth.user()
+  const user = auth.user()
   expect(user).toMatchObject({
     id: expect.any(String),
     aud: expect.any(String),
@@ -249,20 +260,20 @@ test('Get user after updating', async () => {
 })
 
 test('signOut', async () => {
-  let res = await auth.signOut()
+  const res = await auth.signOut()
   expect(res).toBeTruthy()
 })
 
 test('Get user after logging out', async () => {
-  let user = auth.user()
+  const user = auth.user()
   expect(user).toBeNull()
 })
 
 test('signIn() with the wrong password', async () => {
-  let { error, data } = await auth.signIn({
+  const { error, session } = await auth.signIn({
     email,
     password: password + '2',
   })
-  expect(error!.message).not.toBeNull()
-  expect(data).toBeNull()
+  expect(error?.message).not.toBeNull()
+  expect(session).toBeNull()
 })

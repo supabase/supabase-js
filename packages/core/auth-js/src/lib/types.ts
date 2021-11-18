@@ -9,13 +9,21 @@ export type Provider =
   | 'apple'
   | 'discord'
   | 'twitch'
-
-export type AuthChangeEvent =
+  | 'spotify'
+  | 'slack'
+  
+  export type AuthChangeEvent =
+  | 'PASSWORD_RECOVERY'
   | 'SIGNED_IN'
   | 'SIGNED_OUT'
+  | 'TOKEN_REFRESHED'
   | 'USER_UPDATED'
   | 'USER_DELETED'
-  | 'PASSWORD_RECOVERY'
+
+export interface ApiError {
+  message: string
+  status: number
+}
 
 export interface Session {
   provider_token?: string | null
@@ -32,6 +40,19 @@ export interface Session {
   token_type: string
   user: User | null
 }
+
+export interface UserIdentity {
+  id: string
+  user_id: string 
+  identity_data: {
+    [key: string]: any
+  }
+  provider: string
+  created_at: string
+  last_sign_in_at: string
+  updated_at?: string
+}
+
 export interface User {
   id: string
   app_metadata: {
@@ -44,6 +65,7 @@ export interface User {
   aud: string
   confirmation_sent_at?: string
   recovery_sent_at?: string
+  invited_at?: string
   action_link?: string
   email?: string
   phone?: string
@@ -54,6 +76,7 @@ export interface User {
   last_sign_in_at?: string
   role?: string
   updated_at?: string
+  identities?: UserIdentity[]
 }
 
 export interface UserAttributes {

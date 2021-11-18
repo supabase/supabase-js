@@ -1,35 +1,72 @@
-import { get, post, put, remove } from './lib/fetch'
+import { Fetch, get, post, put, remove } from './lib/fetch'
 import { Session, Provider, UserAttributes, CookieOptions, User } from './lib/types'
 import { COOKIE_OPTIONS } from './lib/constants'
 import { setCookie, deleteCookie } from './lib/cookies'
 import { expiresAt } from './lib/helpers'
 
-export interface ApiError {
-  message: string
-  status: number
-}
-
+import type { ApiError } from './lib/types'
 export default class GoTrueApi {
   protected url: string
   protected headers: {
     [key: string]: string
   }
   protected cookieOptions: CookieOptions
+  protected fetch?: Fetch
 
   constructor({
     url = '',
     headers = {},
     cookieOptions,
+    fetch,
   }: {
     url: string
     headers?: {
       [key: string]: string
     }
     cookieOptions?: CookieOptions
+    fetch?: Fetch
   }) {
     this.url = url
     this.headers = headers
     this.cookieOptions = { ...COOKIE_OPTIONS, ...cookieOptions }
+    this.fetch = fetch
+  }
+
+  /**
+   * Creates a new user.
+   *
+   * This function should only be called on a server. Never expose your `service_role` key in the browser.
+   *
+   * @param attributes The data you want to create the user with.
+   * @param jwt A valid JWT. Must be a full-access API key (e.g. service_role key).
+   */
+  async createUser(
+    attributes: UserAttributes
+  ): Promise<{ data: null; error: ApiError } | { data: User; error: null }> {
+    try {
+      const data: any = await post(this.fetch, `${this.url}/admin/users`, attributes, {
+        headers: this.headers,
+      })
+      return { data, error: null }
+    } catch (e) {
+      return { data: null, error: e as ApiError }
+    }
+  }
+
+  /**
+   * Get a list of users.
+   *
+   * This function should only be called on a server. Never expose your `service_role` key in the browser.
+   */
+  async listUsers(): Promise<{ data: null; error: ApiError } | { data: User[]; error: null }> {
+    try {
+      const data: any = await get(this.fetch, `${this.url}/admin/users`, {
+        headers: this.headers,
+      })
+      return { data: data.users, error: null }
+    } catch (e) {
+      return { data: null, error: e as ApiError }
+    }
   }
 
   /**
@@ -51,21 +88,22 @@ export default class GoTrueApi {
     } = {}
   ): Promise<{ data: Session | User | null; error: ApiError | null }> {
     try {
-      let headers = { ...this.headers }
+      const headers = { ...this.headers }
       let queryString = ''
       if (options.redirectTo) {
         queryString = '?redirect_to=' + encodeURIComponent(options.redirectTo)
       }
       const data = await post(
+        this.fetch,
         `${this.url}/signup${queryString}`,
         { email, password, data: options.data },
         { headers }
       )
-      let session = { ...data }
+      const session = { ...data }
       if (session.expires_in) session.expires_at = expiresAt(data.expires_in)
       return { data: session, error: null }
-    } catch (error) {
-      return { data: null, error }
+    } catch (e) {
+      return { data: null, error: e as ApiError }
     }
   }
 
@@ -83,17 +121,22 @@ export default class GoTrueApi {
     } = {}
   ): Promise<{ data: Session | null; error: ApiError | null }> {
     try {
-      let headers = { ...this.headers }
+      const headers = { ...this.headers }
       let queryString = '?grant_type=password'
       if (options.redirectTo) {
         queryString += '&redirect_to=' + encodeURIComponent(options.redirectTo)
       }
-      const data = await post(`${this.url}/token${queryString}`, { email, password }, { headers })
-      let session = { ...data }
+      const data = await post(
+        this.fetch,
+        `${this.url}/token${queryString}`,
+        { email, password },
+        { headers }
+      )
+      const session = { ...data }
       if (session.expires_in) session.expires_at = expiresAt(data.expires_in)
       return { data: session, error: null }
-    } catch (error) {
-      return { data: null, error }
+    } catch (e) {
+      return { data: null, error: e as ApiError }
     }
   }
 
@@ -111,17 +154,18 @@ export default class GoTrueApi {
     } = {}
   ): Promise<{ data: Session | User | null; error: ApiError | null }> {
     try {
-      let headers = { ...this.headers }
+      const headers = { ...this.headers }
       const data = await post(
+        this.fetch,
         `${this.url}/signup`,
         { phone, password, data: options.data },
         { headers }
       )
-      let session = { ...data }
+      const session = { ...data }
       if (session.expires_in) session.expires_at = expiresAt(data.expires_in)
       return { data: session, error: null }
-    } catch (error) {
-      return { data: null, error }
+    } catch (e) {
+      return { data: null, error: e as ApiError }
     }
   }
 
@@ -135,14 +179,19 @@ export default class GoTrueApi {
     password: string
   ): Promise<{ data: Session | null; error: ApiError | null }> {
     try {
-      let headers = { ...this.headers }
-      let queryString = '?grant_type=password'
-      const data = await post(`${this.url}/token${queryString}`, { phone, password }, { headers })
-      let session = { ...data }
+      const headers = { ...this.headers }
+      const queryString = '?grant_type=password'
+      const data = await post(
+        this.fetch,
+        `${this.url}/token${queryString}`,
+        { phone, password },
+        { headers }
+      )
+      const session = { ...data }
       if (session.expires_in) session.expires_at = expiresAt(data.expires_in)
       return { data: session, error: null }
-    } catch (error) {
-      return { data: null, error }
+    } catch (e) {
+      return { data: null, error: e as ApiError }
     }
   }
 
@@ -158,15 +207,20 @@ export default class GoTrueApi {
     } = {}
   ): Promise<{ data: {} | null; error: ApiError | null }> {
     try {
-      let headers = { ...this.headers }
+      const headers = { ...this.headers }
       let queryString = ''
       if (options.redirectTo) {
         queryString += '?redirect_to=' + encodeURIComponent(options.redirectTo)
       }
-      const data = await post(`${this.url}/magiclink${queryString}`, { email }, { headers })
+      const data = await post(
+        this.fetch,
+        `${this.url}/magiclink${queryString}`,
+        { email },
+        { headers }
+      )
       return { data, error: null }
-    } catch (error) {
-      return { data: null, error }
+    } catch (e) {
+      return { data: null, error: e as ApiError }
     }
   }
 
@@ -176,11 +230,11 @@ export default class GoTrueApi {
    */
   async sendMobileOTP(phone: string): Promise<{ data: {} | null; error: ApiError | null }> {
     try {
-      let headers = { ...this.headers }
-      const data = await post(`${this.url}/otp`, { phone }, { headers })
+      const headers = { ...this.headers }
+      const data = await post(this.fetch, `${this.url}/otp`, { phone }, { headers })
       return { data, error: null }
-    } catch (error) {
-      return { data: null, error }
+    } catch (e) {
+      return { data: null, error: e as ApiError }
     }
   }
 
@@ -198,15 +252,16 @@ export default class GoTrueApi {
     } = {}
   ): Promise<{ data: Session | User | null; error: ApiError | null }> {
     try {
-      let headers = { ...this.headers }
+      const headers = { ...this.headers }
       const data = await post(
+        this.fetch,
         `${this.url}/verify`,
         { phone, token, type: 'sms', redirect_to: options.redirectTo },
         { headers }
       )
       return { data, error: null }
-    } catch (error) {
-      return { data: null, error }
+    } catch (e) {
+      return { data: null, error: e as ApiError }
     }
   }
 
@@ -224,19 +279,20 @@ export default class GoTrueApi {
     } = {}
   ): Promise<{ data: User | null; error: ApiError | null }> {
     try {
-      let headers = { ...this.headers }
+      const headers = { ...this.headers }
       let queryString = ''
       if (options.redirectTo) {
         queryString += '?redirect_to=' + encodeURIComponent(options.redirectTo)
       }
       const data = await post(
+        this.fetch,
         `${this.url}/invite${queryString}`,
         { email, data: options.data },
         { headers }
       )
       return { data, error: null }
-    } catch (error) {
-      return { data: null, error }
+    } catch (e) {
+      return { data: null, error: e as ApiError }
     }
   }
 
@@ -252,15 +308,20 @@ export default class GoTrueApi {
     } = {}
   ): Promise<{ data: {} | null; error: ApiError | null }> {
     try {
-      let headers = { ...this.headers }
+      const headers = { ...this.headers }
       let queryString = ''
       if (options.redirectTo) {
         queryString += '?redirect_to=' + encodeURIComponent(options.redirectTo)
       }
-      const data = await post(`${this.url}/recover${queryString}`, { email }, { headers })
+      const data = await post(
+        this.fetch,
+        `${this.url}/recover${queryString}`,
+        { email },
+        { headers }
+      )
       return { data, error: null }
-    } catch (error) {
-      return { data: null, error }
+    } catch (e) {
+      return { data: null, error: e as ApiError }
     }
   }
 
@@ -282,13 +343,14 @@ export default class GoTrueApi {
   async signOut(jwt: string): Promise<{ error: ApiError | null }> {
     try {
       await post(
+        this.fetch,
         `${this.url}/logout`,
         {},
         { headers: this._createRequestHeaders(jwt), noResolveJson: true }
       )
       return { error: null }
-    } catch (error) {
-      return { error }
+    } catch (e) {
+      return { error: e as ApiError }
     }
   }
 
@@ -305,7 +367,7 @@ export default class GoTrueApi {
       scopes?: string
     }
   ) {
-    let urlParams: string[] = [`provider=${encodeURIComponent(provider)}`]
+    const urlParams: string[] = [`provider=${encodeURIComponent(provider)}`]
     if (options?.redirectTo) {
       urlParams.push(`redirect_to=${encodeURIComponent(options.redirectTo)}`)
     }
@@ -323,10 +385,12 @@ export default class GoTrueApi {
     jwt: string
   ): Promise<{ user: User | null; data: User | null; error: ApiError | null }> {
     try {
-      const data: any = await get(`${this.url}/user`, { headers: this._createRequestHeaders(jwt) })
+      const data: any = await get(this.fetch, `${this.url}/user`, {
+        headers: this._createRequestHeaders(jwt),
+      })
       return { user: data, data, error: null }
-    } catch (error) {
-      return { user: null, data: null, error }
+    } catch (e) {
+      return { user: null, data: null, error: e as ApiError }
     }
   }
 
@@ -340,12 +404,12 @@ export default class GoTrueApi {
     attributes: UserAttributes
   ): Promise<{ user: User | null; data: User | null; error: ApiError | null }> {
     try {
-      const data: any = await put(`${this.url}/user`, attributes, {
+      const data: any = await put(this.fetch, `${this.url}/user`, attributes, {
         headers: this._createRequestHeaders(jwt),
       })
       return { user: data, data, error: null }
-    } catch (error) {
-      return { user: null, data: null, error }
+    } catch (e) {
+      return { user: null, data: null, error: e as ApiError }
     }
   }
 
@@ -363,6 +427,7 @@ export default class GoTrueApi {
   ): Promise<{ user: User | null; data: User | null; error: ApiError | null }> {
     try {
       const data: any = await remove(
+        this.fetch,
         `${this.url}/admin/users/${uid}`,
         {},
         {
@@ -370,8 +435,8 @@ export default class GoTrueApi {
         }
       )
       return { user: data, data, error: null }
-    } catch (error) {
-      return { user: null, data: null, error }
+    } catch (e) {
+      return { user: null, data: null, error: e as ApiError }
     }
   }
 
@@ -384,15 +449,16 @@ export default class GoTrueApi {
   ): Promise<{ data: Session | null; error: ApiError | null }> {
     try {
       const data: any = await post(
+        this.fetch,
         `${this.url}/token?grant_type=refresh_token`,
         { refresh_token: refreshToken },
         { headers: this.headers }
       )
-      let session = { ...data }
+      const session = { ...data }
       if (session.expires_in) session.expires_at = expiresAt(data.expires_in)
       return { data: session, error: null }
-    } catch (error) {
-      return { data: null, error }
+    } catch (e) {
+      return { data: null, error: e as ApiError }
     }
   }
 
@@ -426,21 +492,27 @@ export default class GoTrueApi {
    * Get user by reading the cookie from the request.
    * Works for Next.js & Express (requires cookie-parser middleware).
    */
-  async getUserByCookie(
-    req: any
-  ): Promise<{ user: User | null; data: User | null; error: ApiError | null }> {
+  async getUserByCookie(req: any): Promise<{
+    token: string | null
+    user: User | null
+    data: User | null
+    error: ApiError | null
+  }> {
     try {
-      if (!req.cookies)
+      if (!req.cookies) {
         throw new Error(
           'Not able to parse cookies! When using Express make sure the cookie-parser middleware is in use!'
         )
-      if (!req.cookies[this.cookieOptions.name!]) throw new Error('No cookie found!')
+      }
+      if (!req.cookies[this.cookieOptions.name!]) {
+        throw new Error('No cookie found!')
+      }
       const token = req.cookies[this.cookieOptions.name!]
       const { user, error } = await this.getUser(token)
       if (error) throw error
-      return { user, data: user, error: null }
-    } catch (error) {
-      return { user: null, data: null, error }
+      return { token, user, data: user, error: null }
+    } catch (e) {
+      return { token: null, user: null, data: null, error: e as ApiError }
     }
   }
 
@@ -463,6 +535,7 @@ export default class GoTrueApi {
   ): Promise<{ data: Session | User | null; error: ApiError | null }> {
     try {
       const data: any = await post(
+        this.fetch,
         `${this.url}/admin/generate_link`,
         {
           type,
@@ -474,8 +547,8 @@ export default class GoTrueApi {
         { headers: this.headers }
       )
       return { data, error: null }
-    } catch (error) {
-      return { data: null, error }
+    } catch (e) {
+      return { data: null, error: e as ApiError }
     }
   }
 }
