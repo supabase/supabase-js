@@ -424,8 +424,9 @@ export default class GoTrueClient {
       }
       if (options?.storeSession) {
         this._saveSession(session)
+        const recoveryMode = getParameterByName('type')
         this._notifyAllSubscribers('SIGNED_IN')
-        if (getParameterByName('type') === 'recovery') {
+        if (recoveryMode === 'recovery') {
           this._notifyAllSubscribers('PASSWORD_RECOVERY')
         }
       }
