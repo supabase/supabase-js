@@ -5,6 +5,7 @@ import { SupabaseAuthClient } from './lib/SupabaseAuthClient'
 import { SupabaseQueryBuilder } from './lib/SupabaseQueryBuilder'
 import { SupabaseStorageClient } from '@supabase/storage-js'
 import { PostgrestClient } from '@supabase/postgrest-js'
+import { Subscription } from '@supabase/gotrue-js'
 import { RealtimeClient, RealtimeSubscription, RealtimeClientOptions } from '@supabase/realtime-js'
 
 const DEFAULT_OPTIONS = {
@@ -25,6 +26,7 @@ export default class SupabaseClient {
    * Supabase Auth allows you to create and manage user sessions for access to data that is secured by access policies.
    */
   auth: SupabaseAuthClient
+  authSubscription: Subscription | null
 
   protected schema: string
   protected restUrl: string
@@ -65,6 +67,7 @@ export default class SupabaseClient {
 
     this.auth = this._initSupabaseAuthClient(settings)
     this.realtime = this._initRealtimeClient(settings.realtime)
+    this.authSubscription = this._handleAuthEvents()
 
     this.fetch = settings.fetch
 
@@ -116,6 +119,15 @@ export default class SupabaseClient {
   ) {
     const rest = this._initPostgRESTClient()
     return rest.rpc<T>(fn, params, { head, count })
+  }
+
+  /**
+   * Remove all active subscriptions.
+   */
+  removeAllSubscriptions() {
+    this.realtime.channels.forEach((sub) => {
+      this.removeSubscription(sub)
+    })
   }
 
   /**
@@ -208,5 +220,15 @@ export default class SupabaseClient {
         })
         .receive('error', (e: Error) => reject(e))
     })
+  }
+
+  private _handleAuthEvents() {
+    let { data } = this.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_OUT' || event === 'USER_DELETED') {
+        this.removeAllSubscriptions()
+      }
+    })
+
+    return data
   }
 }
