@@ -618,6 +618,7 @@ export default class GoTrueClient {
       if (!data) throw Error('Invalid session data.')
 
       this._saveSession(data)
+      this._notifyAllSubscribers('TOKEN_REFRESHED')
       this._notifyAllSubscribers('SIGNED_IN')
 
       return { data, error: null }
