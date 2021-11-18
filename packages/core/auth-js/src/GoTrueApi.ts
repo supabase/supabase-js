@@ -4,11 +4,7 @@ import { COOKIE_OPTIONS } from './lib/constants'
 import { setCookie, deleteCookie } from './lib/cookies'
 import { expiresAt } from './lib/helpers'
 
-export interface ApiError {
-  message: string
-  status: number
-}
-
+import type { ApiError } from './lib/types'
 export default class GoTrueApi {
   protected url: string
   protected headers: {

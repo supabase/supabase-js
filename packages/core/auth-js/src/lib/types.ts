@@ -19,6 +19,11 @@ export type AuthChangeEvent =
   | 'USER_DELETED'
   | 'PASSWORD_RECOVERY'
 
+export interface ApiError {
+  message: string
+  status: number
+}
+
 export interface Session {
   provider_token?: string | null
   access_token: string
