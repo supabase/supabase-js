@@ -22,6 +22,7 @@
   "repository": "supabase/supabase-js",
   "scripts": {
     "clean": "rimraf dist docs",
+    "coverage": "echo \"run npm test\"",
     "format": "prettier --write \"{src,test}/**/*.ts\"",
     "build": "genversion src/lib/version.ts --es6 && run-s clean format build:*",
     "build:main": "tsc -p tsconfig.json",
