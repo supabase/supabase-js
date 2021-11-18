@@ -122,7 +122,6 @@ export default class GoTrueClient {
     user: User | null
     session: Session | null
     error: ApiError | null
-    data: Session | User | null // Deprecated
   }> {
     try {
       this._removeSession()
@@ -159,9 +158,9 @@ export default class GoTrueClient {
         user = data as User
       }
 
-      return { data, user, session, error: null }
+      return { user, session, error: null }
     } catch (e) {
-      return { data: null, user: null, session: null, error: e as ApiError }
+      return { user: null, session: null, error: e as ApiError }
     }
   }
 
@@ -187,7 +186,6 @@ export default class GoTrueClient {
     provider?: Provider
     url?: string | null
     error: ApiError | null
-    data: Session | null // Deprecated
   }> {
     try {
       this._removeSession()
@@ -196,7 +194,7 @@ export default class GoTrueClient {
         const { error } = await this.api.sendMagicLinkEmail(email, {
           redirectTo: options.redirectTo,
         })
-        return { data: null, user: null, session: null, error }
+        return { user: null, session: null, error }
       }
       if (email && password) {
         return this._handleEmailSignIn(email, password, {
@@ -205,7 +203,7 @@ export default class GoTrueClient {
       }
       if (phone && !password) {
         const { error } = await this.api.sendMobileOTP(phone)
-        return { data: null, user: null, session: null, error }
+        return { user: null, session: null, error }
       }
       if (phone && password) {
         return this._handlePhoneSignIn(phone, password)
@@ -216,7 +214,6 @@ export default class GoTrueClient {
         if (error) throw error
 
         return {
-          data: this.currentSession,
           user: this.currentUser,
           session: this.currentSession,
           error: null,
@@ -230,7 +227,7 @@ export default class GoTrueClient {
       }
       throw new Error(`You must provide either an email, phone number or a third-party provider.`)
     } catch (e) {
-      return { data: null, user: null, session: null, error: e as ApiError }
+      return { user: null, session: null, error: e as ApiError }
     }
   }
 
@@ -249,7 +246,6 @@ export default class GoTrueClient {
     user: User | null
     session: Session | null
     error: ApiError | null
-    data: Session | User | null // Deprecated
   }> {
     try {
       this._removeSession()
@@ -278,9 +274,9 @@ export default class GoTrueClient {
         user = data as User
       }
 
-      return { data, user, session, error: null }
+      return { user, session, error: null }
     } catch (e) {
-      return { data: null, user: null, session: null, error: e as ApiError }
+      return { user: null, session: null, error: e as ApiError }
     }
   }
 
