@@ -11,13 +11,14 @@ export type Provider =
   | 'twitch'
   | 'spotify'
   | 'slack'
-
-export type AuthChangeEvent =
+  
+  export type AuthChangeEvent =
+  | 'PASSWORD_RECOVERY'
   | 'SIGNED_IN'
   | 'SIGNED_OUT'
+  | 'TOKEN_REFRESHED'
   | 'USER_UPDATED'
   | 'USER_DELETED'
-  | 'PASSWORD_RECOVERY'
 
 export interface ApiError {
   message: string
