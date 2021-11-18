@@ -24,6 +24,7 @@ const DEFAULT_OPTIONS = {
   autoRefreshToken: true,
   persistSession: true,
   detectSessionInUrl: true,
+  multiTab: true,
   headers: DEFAULT_HEADERS,
 }
 
@@ -56,6 +57,7 @@ export default class GoTrueClient {
   protected autoRefreshToken: boolean
   protected persistSession: boolean
   protected localStorage: SupportedStorage
+  protected multiTab: boolean
   protected stateChangeEmitters: Map<string, Subscription> = new Map()
   protected refreshTokenTimer?: ReturnType<typeof setTimeout>
 
@@ -66,7 +68,8 @@ export default class GoTrueClient {
    * @param options.detectSessionInUrl Set to "true" if you want to automatically detects OAuth grants in the URL and signs in the user.
    * @param options.autoRefreshToken Set to "true" if you want to automatically refresh the token before expiring.
    * @param options.persistSession Set to "true" if you want to automatically save the user session into local storage.
-   * @param options.localStorage
+   * @param options.localStorage Provide your own local storage implementation to use instead of the browser's local storage.
+   * @param options.multiTab Set to "false" if you want to disable multi-tab/window events.
    * @param options.cookieOptions
    * @param options.fetch A custom fetch implementation.
    */
@@ -77,6 +80,7 @@ export default class GoTrueClient {
     autoRefreshToken?: boolean
     persistSession?: boolean
     localStorage?: SupportedStorage
+    multiTab?: boolean
     cookieOptions?: CookieOptions
     fetch?: Fetch
   }) {
@@ -85,6 +89,7 @@ export default class GoTrueClient {
     this.currentSession = null
     this.autoRefreshToken = settings.autoRefreshToken
     this.persistSession = settings.persistSession
+    this.multiTab = settings.multiTab
     this.localStorage = settings.localStorage || globalThis.localStorage
     this.api = new GoTrueApi({
       url: settings.url,
@@ -94,9 +99,10 @@ export default class GoTrueClient {
     })
     this._recoverSession()
     this._recoverAndRefresh()
+    this._listenForMultiTabEvents()
 
-    // Handle the OAuth redirect
     if (settings.detectSessionInUrl && isBrowser() && !!getParameterByName('access_token')) {
+      // Handle the OAuth redirect
       this.getSessionFromUrl({ storeSession: true }).then(({ error }) => {
         if (error) {
           console.error('Error getting session from URL.', error)
@@ -675,5 +681,28 @@ export default class GoTrueClient {
 
     this.refreshTokenTimer = setTimeout(() => this._callRefreshToken(), value)
     if (typeof this.refreshTokenTimer.unref === 'function') this.refreshTokenTimer.unref()
+  }
+
+  /**
+   * Listens for changes to LocalStorage and updates the current session.
+   */
+  private _listenForMultiTabEvents() {
+    if (!this.multiTab || !isBrowser() || !window?.addEventListener) {
+      console.debug('Auth multi-tab support is disabled.')
+      return false
+    }
+
+    window.addEventListener('storage', (e: StorageEvent) => {
+      if (e.key === STORAGE_KEY) {
+        const newSession = JSON.parse(String(e.newValue))
+        if (newSession?.currentSession?.access_token) {
+          this._recoverAndRefresh()
+          this._notifyAllSubscribers('SIGNED_IN')
+        } else {
+          this._removeSession()
+          this._notifyAllSubscribers('SIGNED_OUT')
+        }
+      }
+    })
   }
 }
