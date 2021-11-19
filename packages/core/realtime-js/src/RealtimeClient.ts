@@ -34,6 +34,7 @@ type Message = {
 const noop = () => {}
 
 export default class RealtimeClient {
+  accessToken: string | null = null
   channels: RealtimeSubscription[] = []
   endPoint: string = ''
   headers?: { [key: string]: string } = DEFAULT_HEADERS
@@ -317,6 +318,21 @@ export default class RealtimeClient {
     return this.ref.toString()
   }
 
+  /**
+   * Sets the JWT access token used for channel subscription authorization and Realtime RLS.
+   *
+   * @param token A JWT string.
+   */
+  setAuth(token: string | null) {
+    this.accessToken = token
+
+    this.channels.forEach((channel) =>
+      channel.push(CHANNEL_EVENTS.access_token, {
+        access_token: token,
+      })
+    )
+  }
+
   private _onConnOpen() {
     this.log('transport', `connected to ${this.endPointURL()}`)
     this._flushSendBuffer()
@@ -385,11 +401,6 @@ export default class RealtimeClient {
       return
     }
     this.pendingHeartbeatRef = this.makeRef()
-    this.push({
-      topic: 'phoenix',
-      event: 'heartbeat',
-      payload: {},
-      ref: this.pendingHeartbeatRef,
-    })
+    this.setAuth(this.accessToken)
   }
 }
