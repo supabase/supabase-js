@@ -25,6 +25,7 @@ export class SupabaseRealtimeClient {
     const records = {
       new: {},
       old: {},
+      errors: payload.errors ?? null
     }
 
     if (payload.type === 'INSERT' || payload.type === 'UPDATE') {
