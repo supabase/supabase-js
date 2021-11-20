@@ -1,13 +1,18 @@
-import { createClient } from '../src/index'
+import { createClient, SupabaseClient } from '../src/index'
 
 const URL = 'http://localhost:3000'
 const KEY = 'some.fake.key'
 
 const supabase = createClient(URL, KEY)
 
-test('Build to succeed', async () => {
-  // Basic test to ensure TS build is working.
-  expect(true).toEqual(true)
+test('it should create the client connection', async () => {
+  expect(supabase).toBeDefined()
+  expect(supabase).toBeInstanceOf(SupabaseClient)
+})
+
+test('it should throw an error if no valid params are provided', async () => {
+  expect(() => createClient('', KEY)).toThrowError('supabaseUrl is required.')
+  expect(() => createClient(URL, '')).toThrowError('supabaseKey is required.')
 })
 
 // Socket should close when there are no open connections
