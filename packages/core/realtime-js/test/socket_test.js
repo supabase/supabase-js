@@ -444,6 +444,33 @@ describe('makeRef', () => {
   })
 })
 
+describe('setAuth', () => {
+  beforeEach(() => {
+    socket = new RealtimeClient('wss://example.com/socket')
+  })
+
+  afterEach(async () => {
+    await socket.disconnect()
+  })
+
+  it('sets access token and pushes it to channels', () => {
+    const channel1 = socket.channel('test-topic1')
+    const channel2 = socket.channel('test-topic2')
+    const stub1 = sinon.stub(channel1, 'push')
+    const stub2 = sinon.stub(channel2, 'push')
+
+    socket.setAuth('token123')
+
+    assert.strictEqual(socket.accessToken, 'token123')
+    assert.ok(stub1.calledWith('access_token', {
+      access_token: 'token123',
+    }))
+    assert.ok(stub2.calledWith('access_token', {
+      access_token: 'token123',
+    }))
+  })
+})
+
 describe('sendHeartbeat', () => {
   before(() => {
     window.XMLHttpRequest = sinon.useFakeXMLHttpRequest()

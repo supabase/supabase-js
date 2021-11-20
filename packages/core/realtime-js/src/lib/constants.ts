@@ -29,6 +29,7 @@ export enum CHANNEL_EVENTS {
   join = 'phx_join',
   reply = 'phx_reply',
   leave = 'phx_leave',
+  access_token = 'access_token',
 }
 
 export enum TRANSPORTS {
