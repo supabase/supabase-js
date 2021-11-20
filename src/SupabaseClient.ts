@@ -227,6 +227,10 @@ export default class SupabaseClient {
       if (event === 'SIGNED_OUT' || event === 'USER_DELETED') {
         this.removeAllSubscriptions()
       }
+      // Handle all other auth events - token refresh, etc.
+      if (session?.access_token) {
+        this.realtime.setAuth(session.access_token)
+      }
     })
 
     return data
