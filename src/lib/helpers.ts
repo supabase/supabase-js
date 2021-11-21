@@ -16,11 +16,14 @@ export function stripTrailingSlash(url: string) {
 
 export function decodeJwt(jwt: string): Jwt {
   let base64Url = jwt.split('.')[1]
+  if (!base64Url) {
+    throw new Error('Invalid JWT - Malformed token.')
+  }
 
   let pad = base64Url.length % 4
   if (pad) {
     if (pad === 1) {
-      throw new Error('Invalid JWT - base64Url is an invalid length to determine padding')
+      throw new Error('Invalid JWT - Invalid length to determine padding.')
     }
 
     base64Url += new Array(5 - pad).join('=')
@@ -28,7 +31,11 @@ export function decodeJwt(jwt: string): Jwt {
 
   const base64 = base64Url.replace('-', '+').replace('_', '/')
 
-  return JSON.parse(atob(base64))
+  try {
+    return JSON.parse(atob(base64))
+  } catch {
+    throw new Error('Invalid JWT - JSON not valid.')
+  }
 }
 
 export function validateJwtExpiry(jwt: Jwt | string) {
