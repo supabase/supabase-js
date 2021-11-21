@@ -54,6 +54,10 @@ export default class SupabaseClient {
     if (!supabaseUrl) throw new Error('supabaseUrl is required.')
     if (!supabaseKey) throw new Error('supabaseKey is required.')
 
+    if (!validateJwtExpiry(supabaseKey)) {
+      throw new Error('supabaseKey must have a future expiry date.')
+    }
+
     supabaseUrl = stripTrailingSlash(supabaseUrl)
 
     const settings = { ...DEFAULT_OPTIONS, ...options }
