@@ -37,3 +37,11 @@ export function validateJwtExpiry(jwt: Jwt | string) {
   }
   return jwt.exp > Date.now() / 1000
 }
+
+export function atob(data: string) {
+  if (typeof window !== 'undefined') {
+    return window.atob(data)
+  }
+
+  return Buffer.from(data, 'base64').toString('utf8')
+}

@@ -43,6 +43,7 @@
   },
   "devDependencies": {
     "@types/jest": "^26.0.13",
+    "@types/node": "^16.11.9",
     "genversion": "^3.0.1",
     "husky": "^4.3.0",
     "jest": "^26.4.1",
