@@ -1,6 +1,6 @@
 import { DEFAULT_HEADERS } from './lib/constants'
 import { decodeJwt, stripTrailingSlash, validateJwtExpiry } from './lib/helpers'
-import { SupabaseClientOptions } from './lib/types'
+import { Fetch, SupabaseClientOptions } from './lib/types'
 import { SupabaseAuthClient } from './lib/SupabaseAuthClient'
 import { SupabaseQueryBuilder } from './lib/SupabaseQueryBuilder'
 import { SupabaseStorageClient } from '@supabase/storage-js'
@@ -32,6 +32,7 @@ export default class SupabaseClient {
   protected authUrl: string
   protected storageUrl: string
   protected realtime: RealtimeClient
+  protected fetch?: Fetch
 
   /**
    * Create a new client for use in the browser.
@@ -43,6 +44,7 @@ export default class SupabaseClient {
    * @param options.detectSessionInUrl Set to "true" if you want to automatically detects OAuth grants in the URL and signs in the user.
    * @param options.headers Any additional headers to send with each network request.
    * @param options.realtime Options passed along to realtime-js constructor.
+   * @param options.fetch A custom fetch implementation.
    */
   constructor(
     protected supabaseUrl: string,
@@ -64,6 +66,8 @@ export default class SupabaseClient {
     this.auth = this._initSupabaseAuthClient(settings)
     this.realtime = this._initRealtimeClient(settings.realtime)
 
+    this.fetch = settings.fetch
+
     // In the future we might allow the user to pass in a logger to receive these events.
     // this.realtime.onOpen(() => console.log('OPEN'))
     // this.realtime.onClose(() => console.log('CLOSED'))
@@ -74,7 +78,7 @@ export default class SupabaseClient {
    * Supabase Storage allows you to manage user-generated content, such as photos or videos.
    */
   get storage() {
-    return new SupabaseStorageClient(this.storageUrl, this._getAuthHeaders())
+    return new SupabaseStorageClient(this.storageUrl, this._getAuthHeaders(), this.fetch)
   }
 
   /**
@@ -89,6 +93,7 @@ export default class SupabaseClient {
       schema: this.schema,
       realtime: this.realtime,
       table,
+      fetch: this.fetch,
     })
   }
 
@@ -166,6 +171,7 @@ export default class SupabaseClient {
       persistSession,
       detectSessionInUrl,
       localStorage,
+      fetch: this.fetch,
     })
   }
 
@@ -180,6 +186,7 @@ export default class SupabaseClient {
     return new PostgrestClient(this.restUrl, {
       headers: this._getAuthHeaders(),
       schema: this.schema,
+      fetch: this.fetch,
     })
   }
 
