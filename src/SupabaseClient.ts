@@ -62,11 +62,10 @@ export default class SupabaseClient {
     this.authUrl = `${supabaseUrl}/auth/v1`
     this.storageUrl = `${supabaseUrl}/storage/v1`
     this.schema = settings.schema
+    this.fetch = settings.fetch
 
     this.auth = this._initSupabaseAuthClient(settings)
     this.realtime = this._initRealtimeClient(settings.realtime)
-
-    this.fetch = settings.fetch
 
     // In the future we might allow the user to pass in a logger to receive these events.
     // this.realtime.onOpen(() => console.log('OPEN'))
@@ -159,6 +158,7 @@ export default class SupabaseClient {
     detectSessionInUrl,
     localStorage,
     headers,
+    fetch,
   }: SupabaseClientOptions) {
     const authHeaders = {
       Authorization: `Bearer ${this.supabaseKey}`,
@@ -171,7 +171,7 @@ export default class SupabaseClient {
       persistSession,
       detectSessionInUrl,
       localStorage,
-      fetch: this.fetch,
+      fetch,
     })
   }
 
