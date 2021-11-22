@@ -326,10 +326,12 @@ export default class RealtimeClient {
   setAuth(token: string | null) {
     this.accessToken = token
 
-    this.channels.forEach((channel) =>
-      channel.push(CHANNEL_EVENTS.access_token, {
-        access_token: token,
-      })
+    this.channels.forEach(
+      (channel) =>
+        channel.joinedOnce &&
+        channel.push(CHANNEL_EVENTS.access_token, {
+          access_token: token,
+        })
     )
   }
 
