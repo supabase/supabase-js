@@ -1,11 +1,11 @@
-import { DEFAULT_HEADERS } from './lib/constants'
-import { stripTrailingSlash } from './lib/helpers'
+import { DEFAULT_HEADERS, STORAGE_KEY } from './lib/constants'
+import { stripTrailingSlash, isBrowser } from './lib/helpers'
 import { Fetch, SupabaseClientOptions } from './lib/types'
 import { SupabaseAuthClient } from './lib/SupabaseAuthClient'
 import { SupabaseQueryBuilder } from './lib/SupabaseQueryBuilder'
 import { SupabaseStorageClient } from '@supabase/storage-js'
 import { PostgrestClient } from '@supabase/postgrest-js'
-import { Subscription } from '@supabase/gotrue-js'
+import { AuthChangeEvent, Session, Subscription } from '@supabase/gotrue-js'
 import { RealtimeClient, RealtimeSubscription, RealtimeClientOptions } from '@supabase/realtime-js'
 
 const DEFAULT_OPTIONS = {
@@ -13,6 +13,7 @@ const DEFAULT_OPTIONS = {
   autoRefreshToken: true,
   persistSession: true,
   detectSessionInUrl: true,
+  multiTab: true,
   headers: DEFAULT_HEADERS,
 }
 
@@ -26,7 +27,6 @@ export default class SupabaseClient {
    * Supabase Auth allows you to create and manage user sessions for access to data that is secured by access policies.
    */
   auth: SupabaseAuthClient
-  authSubscription: Subscription | null
 
   protected schema: string
   protected restUrl: string
@@ -34,6 +34,7 @@ export default class SupabaseClient {
   protected authUrl: string
   protected storageUrl: string
   protected realtime: RealtimeClient
+  protected multiTab: boolean
   protected fetch?: Fetch
 
   /**
@@ -46,6 +47,7 @@ export default class SupabaseClient {
    * @param options.detectSessionInUrl Set to "true" if you want to automatically detects OAuth grants in the URL and signs in the user.
    * @param options.headers Any additional headers to send with each network request.
    * @param options.realtime Options passed along to realtime-js constructor.
+   * @param options.multiTab Set to "false" if you want to disable multi-tab/window events.
    * @param options.fetch A custom fetch implementation.
    */
   constructor(
@@ -64,12 +66,15 @@ export default class SupabaseClient {
     this.authUrl = `${supabaseUrl}/auth/v1`
     this.storageUrl = `${supabaseUrl}/storage/v1`
     this.schema = settings.schema
+    this.multiTab = settings.multiTab
 
     this.auth = this._initSupabaseAuthClient(settings)
     this.realtime = this._initRealtimeClient(settings.realtime)
-    this.authSubscription = this._handleAuthEvents()
 
     this.fetch = settings.fetch
+
+    this._listenForAuthEvents()
+    this._listenForMultiTabEvents()
 
     // In the future we might allow the user to pass in a logger to receive these events.
     // this.realtime.onOpen(() => console.log('OPEN'))
@@ -222,17 +227,51 @@ export default class SupabaseClient {
     })
   }
 
-  private _handleAuthEvents() {
-    let { data } = this.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_OUT' || event === 'USER_DELETED') {
-        this.removeAllSubscriptions()
-      }
-      // Handle all other auth events - token refresh, etc.
-      if (session?.access_token) {
-        this.realtime.setAuth(session.access_token)
-      }
-    })
+  private _listenForMultiTabEvents() {
+    if (!this.multiTab || !isBrowser() || !window?.addEventListener) {
+      return null
+    }
 
+    try {
+      return window?.addEventListener('storage', (e: StorageEvent) => {
+        if (e.key === STORAGE_KEY) {
+          const session = JSON.parse(String(e.newValue))
+          console.log('session', session)
+          const accessToken: string | undefined = session?.currentSession?.access_token ?? undefined
+          if (!accessToken) {
+            this._handleTokenChanged('SIGNED_OUT', accessToken, 'STORAGE')
+          }
+        }
+      })
+    } catch (error) {
+      console.error('_listenForMultiTabEvents', error)
+      return null
+    }
+  }
+
+  private _listenForAuthEvents() {
+    let { data } = this.auth.onAuthStateChange((event, session) => {
+      this._handleTokenChanged(event, session?.access_token, 'CLIENT')
+    })
     return data
+  }
+
+  private _handleTokenChanged(
+    event: AuthChangeEvent,
+    token: string | undefined,
+    source: 'CLIENT' | 'STORAGE'
+  ) {
+    if (token == this.auth.session()?.access_token) {
+      return null
+    }
+
+    if (event === 'SIGNED_OUT' || event === 'USER_DELETED') {
+      this.removeAllSubscriptions()
+      this.auth.signOut()
+    }
+
+    // @todo: Handle all other auth events - token refresh, etc.
+    // If the token is not undefined, and it's different from this current tab, we should refresh the
+    // auth client in this supabase instance
   }
 }
