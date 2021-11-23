@@ -135,7 +135,7 @@ Events are returned in the following format.
 
 ```ts
 type Response = {
-  // the change timestampe. eg: "2020-10-13T10:09:22Z".
+  // the change timestamp. eg: "2020-10-13T10:09:22Z".
   commit_timestamp: string 
 
   // the database schema. eg: "public".
@@ -155,6 +155,9 @@ type Response = {
 
   // the previous values. eg: { "id": "9", "age": "11" }. Only works if the table has `REPLICATION FULL`.
   old_record: object 
+
+  // any change errors.
+  errors: null | string[]
 }
 
 type column = {
