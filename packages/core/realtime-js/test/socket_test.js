@@ -454,10 +454,17 @@ describe('setAuth', () => {
   })
 
   it('sets access token and pushes it to channels', () => {
-    const channel1 = socket.channel('test-topic1')
-    const channel2 = socket.channel('test-topic2')
+    const channel1 = socket.channel('test-topic')
+    const channel2 = socket.channel('test-topic')
+    const channel3 = socket.channel('test-topic')
+
+    channel1.joinedOnce = true
+    channel2.joinedOnce = false
+    channel3.joinedOnce = true
+
     const stub1 = sinon.stub(channel1, 'push')
     const stub2 = sinon.stub(channel2, 'push')
+    const stub3 = sinon.stub(channel3, 'push')
 
     socket.setAuth('token123')
 
@@ -465,7 +472,10 @@ describe('setAuth', () => {
     assert.ok(stub1.calledWith('access_token', {
       access_token: 'token123',
     }))
-    assert.ok(stub2.calledWith('access_token', {
+    assert.ok(!stub2.calledWith('access_token', {
+      access_token: 'token123',
+    }))
+    assert.ok(stub3.calledWith('access_token', {
       access_token: 'token123',
     }))
   })
