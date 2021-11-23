@@ -235,11 +235,16 @@ export default class SupabaseClient {
     try {
       return window?.addEventListener('storage', (e: StorageEvent) => {
         if (e.key === STORAGE_KEY) {
-          const session = JSON.parse(String(e.newValue))
-          console.log('session', session)
-          const accessToken: string | undefined = session?.currentSession?.access_token ?? undefined
+          const newSession = JSON.parse(String(e.newValue))
+          const accessToken: string | undefined =
+            newSession?.currentSession?.access_token ?? undefined
+          const previousAccessToken = this.auth.session()?.access_token
           if (!accessToken) {
             this._handleTokenChanged('SIGNED_OUT', accessToken, 'STORAGE')
+          } else if (!previousAccessToken && accessToken) {
+            this._handleTokenChanged('SIGNED_IN', accessToken, 'STORAGE')
+          } else if (previousAccessToken !== accessToken) {
+            this._handleTokenChanged('TOKEN_REFRESHED', accessToken, 'STORAGE')
           }
         }
       })
@@ -262,16 +267,20 @@ export default class SupabaseClient {
     source: 'CLIENT' | 'STORAGE'
   ) {
     if (token == this.auth.session()?.access_token) {
+      // Token is unchanged
       return null
-    }
-
-    if (event === 'SIGNED_OUT' || event === 'USER_DELETED') {
+    } else if (event === 'SIGNED_OUT' || event === 'USER_DELETED') {
+      // Token is removed
       this.removeAllSubscriptions()
-      this.auth.signOut()
+      if (source == 'STORAGE') this.auth.signOut()
+    } else if (event === 'TOKEN_REFRESHED') {
+      // Token has changed
+      this.realtime.setAuth(token!)
+      this.auth.setAuth(token!)
+    } else if (source === 'STORAGE' && event === 'SIGNED_IN') {
+      // Ideally we should call this.auth.recoverSession() - need to make public
+      // to trigger a "SIGNED_IN" event on this client.
+      this.auth.setAuth(token!)
     }
-
-    // @todo: Handle all other auth events - token refresh, etc.
-    // If the token is not undefined, and it's different from this current tab, we should refresh the
-    // auth client in this supabase instance
   }
 }
