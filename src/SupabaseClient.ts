@@ -273,14 +273,12 @@ export default class SupabaseClient {
       // Token is removed
       this.removeAllSubscriptions()
       if (source == 'STORAGE') this.auth.signOut()
-    } else if (event === 'TOKEN_REFRESHED') {
+    } else if (event === 'TOKEN_REFRESHED' || event === 'SIGNED_IN') {
       // Token has changed
       this.realtime.setAuth(token!)
-      this.auth.setAuth(token!)
-    } else if (source === 'STORAGE' && event === 'SIGNED_IN') {
       // Ideally we should call this.auth.recoverSession() - need to make public
       // to trigger a "SIGNED_IN" event on this client.
-      this.auth.setAuth(token!)
+      if (source == 'STORAGE') this.auth.setAuth(token!)
     }
   }
 }
