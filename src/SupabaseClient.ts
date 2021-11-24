@@ -36,6 +36,7 @@ export default class SupabaseClient {
   protected realtime: RealtimeClient
   protected multiTab: boolean
   protected fetch?: Fetch
+  protected changedAccessToken: string | undefined
 
   /**
    * Create a new client for use in the browser.
@@ -266,19 +267,21 @@ export default class SupabaseClient {
     token: string | undefined,
     source: 'CLIENT' | 'STORAGE'
   ) {
-    if (token == this.auth.session()?.access_token) {
-      // Token is unchanged
-      return null
-    } else if (event === 'SIGNED_OUT' || event === 'USER_DELETED') {
-      // Token is removed
-      this.removeAllSubscriptions()
-      if (source == 'STORAGE') this.auth.signOut()
-    } else if (event === 'TOKEN_REFRESHED' || event === 'SIGNED_IN') {
+    if (
+      (event === 'TOKEN_REFRESHED' || event === 'SIGNED_IN') &&
+      this.changedAccessToken !== token
+    ) {
       // Token has changed
       this.realtime.setAuth(token!)
       // Ideally we should call this.auth.recoverSession() - need to make public
       // to trigger a "SIGNED_IN" event on this client.
       if (source == 'STORAGE') this.auth.setAuth(token!)
+
+      this.changedAccessToken = token
+    } else if (event === 'SIGNED_OUT' || event === 'USER_DELETED') {
+      // Token is removed
+      this.removeAllSubscriptions()
+      if (source == 'STORAGE') this.auth.signOut()
     }
   }
 }
