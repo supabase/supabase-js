@@ -329,7 +329,6 @@ export default class RealtimeClient {
     this.channels.forEach(
       (channel) =>
         channel.joinedOnce &&
-        channel.isJoined() &&
         channel.push(CHANNEL_EVENTS.access_token, {
           access_token: token,
         })
