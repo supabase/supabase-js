@@ -158,7 +158,7 @@ export default class RealtimeClient {
         }
         resolve({ error: null, data: true })
       } catch (error) {
-        resolve({ error, data: false })
+        resolve({ error: error as Error, data: false })
       }
     })
   }
@@ -325,14 +325,20 @@ export default class RealtimeClient {
    */
   setAuth(token: string | null) {
     this.accessToken = token
-
-    this.channels.forEach(
-      (channel) =>
-        channel.joinedOnce &&
-        channel.push(CHANNEL_EVENTS.access_token, {
-          access_token: token,
-        })
-    )
+    try {
+      this.channels.forEach(
+        (channel) =>
+          channel.joinedOnce &&
+          channel.isJoined() &&
+          channel.push(CHANNEL_EVENTS.access_token, {
+            access_token: token,
+          })
+      )
+    } catch (error) {
+      console.log('error', error)
+      console.log('error', error)
+      console.log('error', error)
+    }
   }
 
   private _onConnOpen() {

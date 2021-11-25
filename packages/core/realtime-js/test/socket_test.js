@@ -459,8 +459,11 @@ describe('setAuth', () => {
     const channel3 = socket.channel('test-topic')
 
     channel1.joinedOnce = true
+    channel1.state = 'joined'
     channel2.joinedOnce = false
+    channel2.state = 'closed'
     channel3.joinedOnce = true
+    channel3.state = 'joined'
 
     const stub1 = sinon.stub(channel1, 'push')
     const stub2 = sinon.stub(channel2, 'push')
