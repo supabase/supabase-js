@@ -33,6 +33,9 @@ export default class SupabaseClient {
   protected storageUrl: string
   protected realtime: RealtimeClient
   protected fetch?: Fetch
+  protected headers: {
+    [key: string]: string
+  }
 
   /**
    * Create a new client for use in the browser.
@@ -63,9 +66,10 @@ export default class SupabaseClient {
     this.storageUrl = `${supabaseUrl}/storage/v1`
     this.schema = settings.schema
     this.fetch = settings.fetch
+    this.headers = { ...DEFAULT_HEADERS, ...options?.headers }
 
     this.auth = this._initSupabaseAuthClient(settings)
-    this.realtime = this._initRealtimeClient(settings.realtime)
+    this.realtime = this._initRealtimeClient({ headers: this.headers, ...settings.realtime })
 
     // In the future we might allow the user to pass in a logger to receive these events.
     // this.realtime.onOpen(() => console.log('OPEN'))
@@ -191,7 +195,7 @@ export default class SupabaseClient {
   }
 
   private _getAuthHeaders(): { [key: string]: string } {
-    const headers: { [key: string]: string } = DEFAULT_HEADERS
+    const headers: { [key: string]: string } = this.headers
     const authBearer = this.auth.session()?.access_token ?? this.supabaseKey
     headers['apikey'] = this.supabaseKey
     headers['Authorization'] = `Bearer ${authBearer}`
