@@ -37,6 +37,9 @@ export default class SupabaseClient {
   protected multiTab: boolean
   protected fetch?: Fetch
   protected changedAccessToken: string | undefined
+  protected headers: {
+    [key: string]: string
+  }
 
   /**
    * Create a new client for use in the browser.
@@ -68,11 +71,11 @@ export default class SupabaseClient {
     this.storageUrl = `${supabaseUrl}/storage/v1`
     this.schema = settings.schema
     this.multiTab = settings.multiTab
+    this.fetch = settings.fetch
+    this.headers = { ...DEFAULT_HEADERS, ...options?.headers }
 
     this.auth = this._initSupabaseAuthClient(settings)
-    this.realtime = this._initRealtimeClient(settings.realtime)
-
-    this.fetch = settings.fetch
+    this.realtime = this._initRealtimeClient({ headers: this.headers, ...settings.realtime })
 
     this._listenForAuthEvents()
     this._listenForMultiTabEvents()
@@ -177,6 +180,7 @@ export default class SupabaseClient {
     detectSessionInUrl,
     localStorage,
     headers,
+    fetch,
   }: SupabaseClientOptions) {
     const authHeaders = {
       Authorization: `Bearer ${this.supabaseKey}`,
@@ -189,7 +193,7 @@ export default class SupabaseClient {
       persistSession,
       detectSessionInUrl,
       localStorage,
-      fetch: this.fetch,
+      fetch,
     })
   }
 
@@ -209,7 +213,7 @@ export default class SupabaseClient {
   }
 
   private _getAuthHeaders(): { [key: string]: string } {
-    const headers: { [key: string]: string } = DEFAULT_HEADERS
+    const headers: { [key: string]: string } = this.headers
     const authBearer = this.auth.session()?.access_token ?? this.supabaseKey
     headers['apikey'] = this.supabaseKey
     headers['Authorization'] = `Bearer ${authBearer}`
