@@ -257,7 +257,7 @@ export class StorageFileApi {
   /**
    * Deletes files within the same bucket
    *
-   * @param paths An array of files to be deletes, including the path and file name. For example [`folder/image.png`].
+   * @param paths An array of files to be deleted, including the path and file name. For example [`folder/image.png`].
    */
   async remove(paths: string[]): Promise<{ data: FileObject[] | null; error: Error | null }> {
     try {
