@@ -28,6 +28,7 @@ You can now use plain `<script>`s to import supabase-js from CDNs, like:
 ```html
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
 ```
+
 or even:
 
 ```html
@@ -41,7 +42,7 @@ Then you can use it from a global `supabase` variable:
   const { createClient } = supabase
   const _supabase = createClient('https://xyzcompany.supabase.co', 'public-anon-key')
 
-  console.log('Supabase Instance: ', _supabase);
+  console.log('Supabase Instance: ', _supabase)
   // ...
 </script>
 ```

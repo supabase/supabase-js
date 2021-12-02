@@ -1,10 +1,11 @@
-import { DEFAULT_HEADERS } from './lib/constants'
-import { stripTrailingSlash } from './lib/helpers'
+import { DEFAULT_HEADERS, STORAGE_KEY } from './lib/constants'
+import { stripTrailingSlash, isBrowser } from './lib/helpers'
 import { Fetch, SupabaseClientOptions } from './lib/types'
 import { SupabaseAuthClient } from './lib/SupabaseAuthClient'
 import { SupabaseQueryBuilder } from './lib/SupabaseQueryBuilder'
 import { SupabaseStorageClient } from '@supabase/storage-js'
 import { PostgrestClient } from '@supabase/postgrest-js'
+import { AuthChangeEvent, Session, Subscription } from '@supabase/gotrue-js'
 import { RealtimeClient, RealtimeSubscription, RealtimeClientOptions } from '@supabase/realtime-js'
 
 const DEFAULT_OPTIONS = {
@@ -12,6 +13,7 @@ const DEFAULT_OPTIONS = {
   autoRefreshToken: true,
   persistSession: true,
   detectSessionInUrl: true,
+  multiTab: true,
   headers: DEFAULT_HEADERS,
 }
 
@@ -32,7 +34,9 @@ export default class SupabaseClient {
   protected authUrl: string
   protected storageUrl: string
   protected realtime: RealtimeClient
+  protected multiTab: boolean
   protected fetch?: Fetch
+  protected changedAccessToken: string | undefined
   protected headers: {
     [key: string]: string
   }
@@ -47,6 +51,7 @@ export default class SupabaseClient {
    * @param options.detectSessionInUrl Set to "true" if you want to automatically detects OAuth grants in the URL and signs in the user.
    * @param options.headers Any additional headers to send with each network request.
    * @param options.realtime Options passed along to realtime-js constructor.
+   * @param options.multiTab Set to "false" if you want to disable multi-tab/window events.
    * @param options.fetch A custom fetch implementation.
    */
   constructor(
@@ -65,11 +70,15 @@ export default class SupabaseClient {
     this.authUrl = `${supabaseUrl}/auth/v1`
     this.storageUrl = `${supabaseUrl}/storage/v1`
     this.schema = settings.schema
+    this.multiTab = settings.multiTab
     this.fetch = settings.fetch
     this.headers = { ...DEFAULT_HEADERS, ...options?.headers }
 
     this.auth = this._initSupabaseAuthClient(settings)
     this.realtime = this._initRealtimeClient({ headers: this.headers, ...settings.realtime })
+
+    this._listenForAuthEvents()
+    this._listenForMultiTabEvents()
 
     // In the future we might allow the user to pass in a logger to receive these events.
     // this.realtime.onOpen(() => console.log('OPEN'))
@@ -119,6 +128,15 @@ export default class SupabaseClient {
   ) {
     const rest = this._initPostgRESTClient()
     return rest.rpc<T>(fn, params, { head, count })
+  }
+
+  /**
+   * Remove all active subscriptions.
+   */
+  removeAllSubscriptions() {
+    this.realtime.channels.forEach((sub) => {
+      this.removeSubscription(sub)
+    })
   }
 
   /**
@@ -212,5 +230,62 @@ export default class SupabaseClient {
         })
         .receive('error', (e: Error) => reject(e))
     })
+  }
+
+  private _listenForMultiTabEvents() {
+    if (!this.multiTab || !isBrowser() || !window?.addEventListener) {
+      return null
+    }
+
+    try {
+      return window?.addEventListener('storage', (e: StorageEvent) => {
+        if (e.key === STORAGE_KEY) {
+          const newSession = JSON.parse(String(e.newValue))
+          const accessToken: string | undefined =
+            newSession?.currentSession?.access_token ?? undefined
+          const previousAccessToken = this.auth.session()?.access_token
+          if (!accessToken) {
+            this._handleTokenChanged('SIGNED_OUT', accessToken, 'STORAGE')
+          } else if (!previousAccessToken && accessToken) {
+            this._handleTokenChanged('SIGNED_IN', accessToken, 'STORAGE')
+          } else if (previousAccessToken !== accessToken) {
+            this._handleTokenChanged('TOKEN_REFRESHED', accessToken, 'STORAGE')
+          }
+        }
+      })
+    } catch (error) {
+      console.error('_listenForMultiTabEvents', error)
+      return null
+    }
+  }
+
+  private _listenForAuthEvents() {
+    let { data } = this.auth.onAuthStateChange((event, session) => {
+      this._handleTokenChanged(event, session?.access_token, 'CLIENT')
+    })
+    return data
+  }
+
+  private _handleTokenChanged(
+    event: AuthChangeEvent,
+    token: string | undefined,
+    source: 'CLIENT' | 'STORAGE'
+  ) {
+    if (
+      (event === 'TOKEN_REFRESHED' || event === 'SIGNED_IN') &&
+      this.changedAccessToken !== token
+    ) {
+      // Token has changed
+      this.realtime.setAuth(token!)
+      // Ideally we should call this.auth.recoverSession() - need to make public
+      // to trigger a "SIGNED_IN" event on this client.
+      if (source == 'STORAGE') this.auth.setAuth(token!)
+
+      this.changedAccessToken = token
+    } else if (event === 'SIGNED_OUT' || event === 'USER_DELETED') {
+      // Token is removed
+      this.removeAllSubscriptions()
+      if (source == 'STORAGE') this.auth.signOut()
+    }
   }
 }
