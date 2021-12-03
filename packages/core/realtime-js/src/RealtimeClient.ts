@@ -409,6 +409,12 @@ export default class RealtimeClient {
       return
     }
     this.pendingHeartbeatRef = this.makeRef()
+    this.push({
+      topic: 'phoenix',
+      event: 'heartbeat',
+      payload: {},
+      ref: this.pendingHeartbeatRef,
+    })
     this.setAuth(this.accessToken)
   }
 }
