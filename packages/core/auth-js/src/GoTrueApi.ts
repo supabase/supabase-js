@@ -1,5 +1,12 @@
 import { Fetch, get, post, put, remove } from './lib/fetch'
-import { Session, Provider, UserAttributes, CookieOptions, User } from './lib/types'
+import {
+  Session,
+  Provider,
+  AdminUserAttributes,
+  UserAttributes,
+  CookieOptions,
+  User,
+} from './lib/types'
 import { COOKIE_OPTIONS } from './lib/constants'
 import { setCookie, deleteCookie } from './lib/cookies'
 import { expiresAt } from './lib/helpers'
@@ -33,40 +40,41 @@ export default class GoTrueApi {
   }
 
   /**
-   * Creates a new user.
-   *
-   * This function should only be called on a server. Never expose your `service_role` key in the browser.
-   *
-   * @param attributes The data you want to create the user with.
-   * @param jwt A valid JWT. Must be a full-access API key (e.g. service_role key).
+   * Create a temporary object with all configured headers and
+   * adds the Authorization token to be used on request methods
+   * @param jwt A valid, logged-in JWT.
    */
-  async createUser(
-    attributes: UserAttributes
-  ): Promise<{ data: null; error: ApiError } | { data: User; error: null }> {
-    try {
-      const data: any = await post(this.fetch, `${this.url}/admin/users`, attributes, {
-        headers: this.headers,
-      })
-      return { data, error: null }
-    } catch (e) {
-      return { data: null, error: e as ApiError }
-    }
+  private _createRequestHeaders(jwt: string) {
+    const headers = { ...this.headers }
+    headers['Authorization'] = `Bearer ${jwt}`
+    return headers
+  }
+
+  private cookieName() {
+    return this.cookieOptions.name ?? ''
   }
 
   /**
-   * Get a list of users.
-   *
-   * This function should only be called on a server. Never expose your `service_role` key in the browser.
+   * Generates the relevant login URL for a third-party provider.
+   * @param provider One of the providers supported by GoTrue.
+   * @param redirectTo A URL or mobile address to send the user to after they are confirmed.
+   * @param scopes A space-separated list of scopes granted to the OAuth application.
    */
-  async listUsers(): Promise<{ data: null; error: ApiError } | { data: User[]; error: null }> {
-    try {
-      const data: any = await get(this.fetch, `${this.url}/admin/users`, {
-        headers: this.headers,
-      })
-      return { data: data.users, error: null }
-    } catch (e) {
-      return { data: null, error: e as ApiError }
+  getUrlForProvider(
+    provider: Provider,
+    options: {
+      redirectTo?: string
+      scopes?: string
     }
+  ) {
+    const urlParams: string[] = [`provider=${encodeURIComponent(provider)}`]
+    if (options?.redirectTo) {
+      urlParams.push(`redirect_to=${encodeURIComponent(options.redirectTo)}`)
+    }
+    if (options?.scopes) {
+      urlParams.push(`scopes=${encodeURIComponent(options.scopes)}`)
+    }
+    return `${this.url}/authorize?${urlParams.join('&')}`
   }
 
   /**
@@ -239,6 +247,23 @@ export default class GoTrueApi {
   }
 
   /**
+   * Removes a logged-in session.
+   * @param jwt A valid, logged-in JWT.
+   */
+  async signOut(jwt: string): Promise<{ error: ApiError | null }> {
+    try {
+      await post(
+        this.fetch,
+        `${this.url}/logout`,
+        {},
+        { headers: this._createRequestHeaders(jwt), noResolveJson: true }
+      )
+      return { error: null }
+    } catch (e) {
+      return { error: e as ApiError }
+    }
+  }
+  /**
    * Send User supplied Mobile OTP to be verified
    * @param phone The user's phone number WITH international prefix
    * @param token token that user was sent to their mobile phone
@@ -326,121 +351,6 @@ export default class GoTrueApi {
   }
 
   /**
-   * Create a temporary object with all configured headers and
-   * adds the Authorization token to be used on request methods
-   * @param jwt A valid, logged-in JWT.
-   */
-  private _createRequestHeaders(jwt: string) {
-    const headers = { ...this.headers }
-    headers['Authorization'] = `Bearer ${jwt}`
-    return headers
-  }
-
-  /**
-   * Removes a logged-in session.
-   * @param jwt A valid, logged-in JWT.
-   */
-  async signOut(jwt: string): Promise<{ error: ApiError | null }> {
-    try {
-      await post(
-        this.fetch,
-        `${this.url}/logout`,
-        {},
-        { headers: this._createRequestHeaders(jwt), noResolveJson: true }
-      )
-      return { error: null }
-    } catch (e) {
-      return { error: e as ApiError }
-    }
-  }
-
-  /**
-   * Generates the relevant login URL for a third-party provider.
-   * @param provider One of the providers supported by GoTrue.
-   * @param redirectTo A URL or mobile address to send the user to after they are confirmed.
-   * @param scopes A space-separated list of scopes granted to the OAuth application.
-   */
-  getUrlForProvider(
-    provider: Provider,
-    options: {
-      redirectTo?: string
-      scopes?: string
-    }
-  ) {
-    const urlParams: string[] = [`provider=${encodeURIComponent(provider)}`]
-    if (options?.redirectTo) {
-      urlParams.push(`redirect_to=${encodeURIComponent(options.redirectTo)}`)
-    }
-    if (options?.scopes) {
-      urlParams.push(`scopes=${encodeURIComponent(options.scopes)}`)
-    }
-    return `${this.url}/authorize?${urlParams.join('&')}`
-  }
-
-  /**
-   * Gets the user details.
-   * @param jwt A valid, logged-in JWT.
-   */
-  async getUser(
-    jwt: string
-  ): Promise<{ user: User | null; data: User | null; error: ApiError | null }> {
-    try {
-      const data: any = await get(this.fetch, `${this.url}/user`, {
-        headers: this._createRequestHeaders(jwt),
-      })
-      return { user: data, data, error: null }
-    } catch (e) {
-      return { user: null, data: null, error: e as ApiError }
-    }
-  }
-
-  /**
-   * Updates the user data.
-   * @param jwt A valid, logged-in JWT.
-   * @param attributes The data you want to update.
-   */
-  async updateUser(
-    jwt: string,
-    attributes: UserAttributes
-  ): Promise<{ user: User | null; data: User | null; error: ApiError | null }> {
-    try {
-      const data: any = await put(this.fetch, `${this.url}/user`, attributes, {
-        headers: this._createRequestHeaders(jwt),
-      })
-      return { user: data, data, error: null }
-    } catch (e) {
-      return { user: null, data: null, error: e as ApiError }
-    }
-  }
-
-  /**
-   * Delete a user. Requires a `service_role` key.
-   *
-   * This function should only be called on a server. Never expose your `service_role` key in the browser.
-   *
-   * @param uid The user uid you want to remove.
-   * @param jwt A valid JWT. Must be a full-access API key (e.g. service_role key).
-   */
-  async deleteUser(
-    uid: string,
-    jwt: string
-  ): Promise<{ user: User | null; data: User | null; error: ApiError | null }> {
-    try {
-      const data: any = await remove(
-        this.fetch,
-        `${this.url}/admin/users/${uid}`,
-        {},
-        {
-          headers: this._createRequestHeaders(jwt),
-        }
-      )
-      return { user: data, data, error: null }
-    } catch (e) {
-      return { user: null, data: null, error: e as ApiError }
-    }
-  }
-
-  /**
    * Generates a new JWT.
    * @param refreshToken A valid refresh token that was returned on login.
    */
@@ -472,48 +382,21 @@ export default class GoTrueApi {
       res.status(405).end('Method Not Allowed')
     }
     const { event, session } = req.body
+
     if (!event) throw new Error('Auth event missing!')
     if (event === 'SIGNED_IN') {
       if (!session) throw new Error('Auth session missing!')
       setCookie(req, res, {
-        name: this.cookieOptions.name!,
+        name: this.cookieName(),
         value: session.access_token,
         domain: this.cookieOptions.domain,
-        maxAge: this.cookieOptions.lifetime!,
+        maxAge: this.cookieOptions.lifetime ?? 0,
         path: this.cookieOptions.path,
         sameSite: this.cookieOptions.sameSite,
       })
     }
-    if (event === 'SIGNED_OUT') deleteCookie(req, res, this.cookieOptions.name!)
+    if (event === 'SIGNED_OUT') deleteCookie(req, res, this.cookieName())
     res.status(200).json({})
-  }
-
-  /**
-   * Get user by reading the cookie from the request.
-   * Works for Next.js & Express (requires cookie-parser middleware).
-   */
-  async getUserByCookie(req: any): Promise<{
-    token: string | null
-    user: User | null
-    data: User | null
-    error: ApiError | null
-  }> {
-    try {
-      if (!req.cookies) {
-        throw new Error(
-          'Not able to parse cookies! When using Express make sure the cookie-parser middleware is in use!'
-        )
-      }
-      if (!req.cookies[this.cookieOptions.name!]) {
-        throw new Error('No cookie found!')
-      }
-      const token = req.cookies[this.cookieOptions.name!]
-      const { user, error } = await this.getUser(token)
-      if (error) throw error
-      return { token, user, data: user, error: null }
-    } catch (e) {
-      return { token: null, user: null, data: null, error: e as ApiError }
-    }
   }
 
   /**
@@ -549,6 +432,184 @@ export default class GoTrueApi {
       return { data, error: null }
     } catch (e) {
       return { data: null, error: e as ApiError }
+    }
+  }
+
+  // User Admin API
+
+  /**
+   * Creates a new user.
+   *
+   * This function should only be called on a server. Never expose your `service_role` key in the browser.
+   *
+   * @param attributes The data you want to create the user with.
+   * @param jwt A valid JWT. Must be a full-access API key (e.g. service_role key).
+   */
+  async createUser(
+    attributes: UserAttributes
+  ): Promise<{ data: null; error: ApiError } | { data: User; error: null }> {
+    try {
+      const data: any = await post(this.fetch, `${this.url}/admin/users`, attributes, {
+        headers: this.headers,
+      })
+      return { data, error: null }
+    } catch (e) {
+      return { data: null, error: e as ApiError }
+    }
+  }
+
+  /**
+   * Get a list of users.
+   *
+   * This function should only be called on a server. Never expose your `service_role` key in the browser.
+   */
+  async listUsers(): Promise<{ data: null; error: ApiError } | { data: User[]; error: null }> {
+    try {
+      const data: any = await get(this.fetch, `${this.url}/admin/users`, {
+        headers: this.headers,
+      })
+      return { data: data.users, error: null }
+    } catch (e) {
+      return { data: null, error: e as ApiError }
+    }
+  }
+
+  /**
+   * Get user by id
+   * @todo
+   *
+   * This function should only be called on a server. Never expose your `service_role` key in the browser.
+   */
+  async getUserById(
+    uid: string
+  ): Promise<{ data: null; error: ApiError } | { data: User; error: null }> {
+    try {
+      const data: any = await get(this.fetch, `${this.url}/admin/users/${uid}`, {
+        headers: this.headers,
+      })
+      data //?
+      return { data, error: null }
+    } catch (e) {
+      return { data: null, error: e as ApiError }
+    }
+  }
+
+  /**
+   * Get user by reading the cookie from the request.
+   * Works for Next.js & Express (requires cookie-parser middleware).
+   */
+  async getUserByCookie(req: any): Promise<{
+    token: string | null
+    user: User | null
+    data: User | null
+    error: ApiError | null
+  }> {
+    try {
+      if (!req.cookies) {
+        throw new Error(
+          'Not able to parse cookies! When using Express make sure the cookie-parser middleware is in use!'
+        )
+      }
+
+      const token = req.cookies[this.cookieName()]
+
+      if (!token) {
+        throw new Error('No cookie found!')
+      }
+
+      const { user, error } = await this.getUser(token)
+      if (error) throw error
+      return { token, user, data: user, error: null }
+    } catch (e) {
+      return { token: null, user: null, data: null, error: e as ApiError }
+    }
+  }
+
+  /**
+   * Updates the user data.
+   *
+   * @param attributes The data you want to update.
+   *
+   * This function should only be called on a server. Never expose your `service_role` key in the browser.
+   */
+  async updateUserById(
+    uid: string,
+    attributes: AdminUserAttributes
+  ): Promise<{ user: User | null; data: User | null; error: ApiError | null }> {
+    try {
+      this //
+      const data: any = await put(this.fetch, `${this.url}/admin/users/${uid}`, attributes, {
+        headers: this.headers,
+      })
+      return { user: data, data, error: null }
+    } catch (e) {
+      return { user: null, data: null, error: e as ApiError }
+    }
+  }
+
+  /**
+   * Delete a user. Requires a `service_role` key.
+   *
+   * This function should only be called on a server. Never expose your `service_role` key in the browser.
+   *
+   * @param uid The user uid you want to remove.
+   */
+  async deleteUser(
+    uid: string
+  ): Promise<{ user: User | null; data: User | null; error: ApiError | null }> {
+    try {
+      const data: any = await remove(
+        this.fetch,
+        `${this.url}/admin/users/${uid}`,
+        {},
+        {
+          headers: this.headers,
+        }
+      )
+      return { user: data, data, error: null }
+    } catch (e) {
+      return { user: null, data: null, error: e as ApiError }
+    }
+  }
+
+  /**
+   * Gets the current user details.
+   *
+   * This method is called by the GoTrueClient `update` where
+   * the jwt is set to this.currentSession.access_token
+   * and therefore, acts like getting the currently authenticated used
+   *
+   * @param jwt A valid, logged-in JWT. Typically, the access_token for the currentSession
+   */
+  async getUser(
+    jwt: string
+  ): Promise<{ user: User | null; data: User | null; error: ApiError | null }> {
+    try {
+      const data: any = await get(this.fetch, `${this.url}/user`, {
+        headers: this._createRequestHeaders(jwt),
+      })
+      return { user: data, data, error: null }
+    } catch (e) {
+      return { user: null, data: null, error: e as ApiError }
+    }
+  }
+
+  /**
+   * Updates the user data.
+   * @param jwt A valid, logged-in JWT.
+   * @param attributes The data you want to update.
+   */
+  async updateUser(
+    jwt: string,
+    attributes: UserAttributes
+  ): Promise<{ user: User | null; data: User | null; error: ApiError | null }> {
+    try {
+      const data: any = await put(this.fetch, `${this.url}/user`, attributes, {
+        headers: this._createRequestHeaders(jwt),
+      })
+      return { user: data, data, error: null }
+    } catch (e) {
+      return { user: null, data: null, error: e as ApiError }
     }
   }
 }

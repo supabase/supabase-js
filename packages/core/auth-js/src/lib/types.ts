@@ -11,8 +11,8 @@ export type Provider =
   | 'twitch'
   | 'spotify'
   | 'slack'
-  
-  export type AuthChangeEvent =
+
+export type AuthChangeEvent =
   | 'PASSWORD_RECOVERY'
   | 'SIGNED_IN'
   | 'SIGNED_OUT'
@@ -43,7 +43,7 @@ export interface Session {
 
 export interface UserIdentity {
   id: string
-  user_id: string 
+  user_id: string
   identity_data: {
     [key: string]: any
   }
@@ -92,11 +92,21 @@ export interface UserAttributes {
    * An email change token.
    */
   email_change_token?: string
-
   /**
-   * A custom data object. Can be any JSON.
+   * A custom data object for user_metadata that a user can modify. Can be any JSON.
    */
   data?: object
+}
+
+export interface AdminUserAttributes extends UserAttributes {
+  /**
+   * A custom data object for app_metadata that only a service role can modify.
+   *
+   * Is JSON that includes app-specific info, such as identity providers, roles, and other
+   * access control information.
+   */
+  user_metadata?: object
+  app_metadata?: object
 }
 
 export interface Subscription {
