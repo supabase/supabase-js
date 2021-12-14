@@ -17,12 +17,18 @@ export const mockAccessToken = () => {
 
 type Credentials = {
   email?: string | undefined
+  phone?: string | undefined
   password?: string | undefined
 }
 
-export const mockUserCredentials = (options?: Credentials): { email: string; password: string } => {
+export const mockUserCredentials = (
+  options?: Credentials
+): { email: string; phone: string; password: string } => {
+  const randNumbers = Date.now().toString()
+
   return {
     email: options?.email || faker.internet.email().toLowerCase(),
+    phone: options?.phone || `1${randNumbers.substring(randNumbers.length - 12, 11)}`,
     password: options?.password || faker.internet.password(),
   }
 }
