@@ -263,6 +263,7 @@ export default class GoTrueApi {
       return { error: e as ApiError }
     }
   }
+
   /**
    * Send User supplied Mobile OTP to be verified
    * @param phone The user's phone number WITH international prefix

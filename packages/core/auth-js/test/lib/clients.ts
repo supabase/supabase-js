@@ -65,9 +65,7 @@ export const authAdminApiAutoConfirmDisabledClient = new GoTrueApi({
 
 const SERVICE_ROLE_JWT = jwt.sign(
   {
-    sub: 's2rv1c2-r0l3-k3y',
-    // role: 'service_role',
-    role: 'supabase_admin',
+    role: 'service_role',
   },
   GOTRUE_JWT_SECRET
 )
