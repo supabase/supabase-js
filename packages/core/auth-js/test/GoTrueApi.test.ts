@@ -282,7 +282,7 @@ describe('GoTrueApi', () => {
 
   describe('User authentication', () => {
     describe('sendMagicLinkEmail()', () => {
-      test('sendMagicLinkEmail()', async () => {
+      test('sendMagicLinkEmail() with invalid email', async () => {
         const redirectTo = 'http://localhost:9999/welcome'
 
         const { error, data } = await serviceRoleApiClient.sendMagicLinkEmail(
@@ -297,7 +297,7 @@ describe('GoTrueApi', () => {
         expect(error?.message).toEqual('Unable to validate email address: invalid format')
       })
 
-      test('sendMagicLinkEmail()', async () => {
+      test('sendMagicLinkEmail() with valid email', async () => {
         const { email } = mockUserCredentials()
         const redirectTo = 'http://localhost:9999/welcome'
 
