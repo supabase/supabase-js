@@ -476,8 +476,9 @@ export default class GoTrueApi {
   }
 
   /**
-   * Get user by id
-   * @todo
+   * Get user by id.
+   *
+   * @param uid The user's unique identifier
    *
    * This function should only be called on a server. Never expose your `service_role` key in the browser.
    */
@@ -488,7 +489,6 @@ export default class GoTrueApi {
       const data: any = await get(this.fetch, `${this.url}/admin/users/${uid}`, {
         headers: this.headers,
       })
-      data //?
       return { data, error: null }
     } catch (e) {
       return { data: null, error: e as ApiError }
