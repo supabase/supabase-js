@@ -37,8 +37,25 @@ describe('GoTrueApi', () => {
       expect(emails).toContain(email)
     })
 
+    test('getUser() fetches a user by their access_token', async () => {
+      const { email, password } = mockUserCredentials()
+      const { error: initialError, session } = await authClientWithSession.signUp({
+        email,
+        password,
+      })
+
+      expect(initialError).toBeNull()
+      expect(session).not.toBeNull()
+
+      const { error, user } = await serviceRoleApiClient.getUser(session.access_token)
+
+      expect(error).toBeNull()
+      expect(user).not.toBeUndefined()
+      expect(user?.email).toEqual(email)
+    })
+
     test('getUserByCookie() fetches a user by its Cookie', async () => {
-      // may not be able to test via Jets without request.cookie
+      // may not be able to test via Jest without request.cookie
     })
 
     test('getUserById() should a registered user given its user identifier', async () => {
