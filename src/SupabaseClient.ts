@@ -131,12 +131,11 @@ export default class SupabaseClient {
   }
 
   /**
-   * Remove all active subscriptions.
+   * Remove all subscriptions.
    */
-  removeAllSubscriptions() {
-    this.realtime.channels.forEach((sub) => {
-      this.removeSubscription(sub)
-    })
+  async removeAllSubscriptions() {
+    const subscriptions = this.realtime.channels.slice()
+    return await Promise.allSettled(subscriptions.map((sub) => this.removeSubscription(sub)))
   }
 
   /**
@@ -149,12 +148,14 @@ export default class SupabaseClient {
       try {
         await this._closeSubscription(subscription)
 
-        const openSubscriptions = this.getSubscriptions().length
-        if (!openSubscriptions) {
+        const allSubscriptions = this.getSubscriptions()
+        const openSubscriptionsCount = allSubscriptions.filter((chan) => chan.isJoined()).length
+
+        if (!allSubscriptions.length) {
           const { error } = await this.realtime.disconnect()
           if (error) return resolve({ error })
         }
-        return resolve({ error: null, data: { openSubscriptions } })
+        return resolve({ error: null, data: { openSubscriptions: openSubscriptionsCount } })
       } catch (error) {
         return resolve({ error })
       }
@@ -165,6 +166,11 @@ export default class SupabaseClient {
     if (!subscription.isClosed()) {
       await this._closeChannel(subscription)
     }
+
+    return new Promise((resolve) => {
+      this.realtime.remove(subscription)
+      return resolve(true)
+    })
   }
 
   /**
@@ -225,7 +231,6 @@ export default class SupabaseClient {
       subscription
         .unsubscribe()
         .receive('ok', () => {
-          this.realtime.remove(subscription)
           return resolve(true)
         })
         .receive('error', (e: Error) => reject(e))
