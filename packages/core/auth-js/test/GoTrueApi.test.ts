@@ -47,7 +47,7 @@ describe('GoTrueApi', () => {
       expect(initialError).toBeNull()
       expect(session).not.toBeNull()
 
-      const { error, user } = await serviceRoleApiClient.getUser(session.access_token)
+      const { error, user } = await serviceRoleApiClient.getUser(session?.access_token)
 
       expect(error).toBeNull()
       expect(user).not.toBeUndefined()
