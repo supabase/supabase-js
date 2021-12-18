@@ -84,14 +84,17 @@ export interface UserAttributes {
    * The user's email.
    */
   email?: string
+
   /**
    * The user's password.
    */
   password?: string
+
   /**
    * An email change token.
    */
   email_change_token?: string
+
   /**
    * A custom data object for user_metadata that a user can modify. Can be any JSON.
    */
@@ -100,13 +103,41 @@ export interface UserAttributes {
 
 export interface AdminUserAttributes extends UserAttributes {
   /**
-   * A custom data object for app_metadata that only a service role can modify.
+   * A custom data object for user_metadata.
    *
-   * Is JSON that includes app-specific info, such as identity providers, roles, and other
-   * access control information.
+   * Can be any JSON.
+   *
+   * Only a service role can modify.
+   *
+   * Note: When using the GoTrueAdminApi and wanting to modify a user's user_metadata,
+   * this attribute is used instead of UserAttributes data.
+   *
    */
   user_metadata?: object
+
+  /**
+   * A custom data object for app_metadata that.
+   *
+   * Only a service role can modify.
+   *
+   * Can be any JSON that includes app-specific info, such as identity providers, roles, and other
+   * access control information.
+   */
   app_metadata?: object
+
+  /**
+   * Sets if a user has confirmed their email address.
+   *
+   * Only a service role can modify.
+   */
+  email_confirm?: boolean
+
+  /**
+   * Sets if a user has confirmed their phone number.
+   *
+   * Only a service role can modify.
+   */
+  phone_confirm?: boolean
 }
 
 export interface Subscription {

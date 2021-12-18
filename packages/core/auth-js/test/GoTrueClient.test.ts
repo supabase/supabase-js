@@ -2,6 +2,7 @@ import {
   authClient as auth,
   authClientWithSession as authWithSession,
   authSubscriptionClient,
+  clientApiAutoConfirmOffSignupsEnabledClient as phoneClient,
   clientApiAutoConfirmDisabledClient as signUpDisabledClient,
   clientApiAutoConfirmEnabledClient as signUpEnabledClient,
 } from './lib/clients'
@@ -122,46 +123,39 @@ describe('GoTrueClient', () => {
   })
 
   describe('Phone OTP Auth', () => {
+    test('signUp() when phone sign up missing provider account', async () => {
+      const { phone, password } = mockUserCredentials()
+
+      const { error, session, user } = await phoneClient.signUp({
+        phone,
+        password,
+      })
+
+      expect(error).not.toBeNull()
+      expect(session).toBeNull()
+      expect(user).toBeNull()
+
+      expect(error?.message).toEqual('Error sending confirmation sms: Missing Twilio account SID')
+    })
+
     test('signUp() with phone', async () => {
       const { phone, password } = mockUserCredentials()
 
-      const { error, session, user } = await auth.signUp({
+      const { error, session, user } = await phoneClient.signUp({
         phone,
         password,
       })
 
-      expect(error).toBeNull()
-      expect(session).not.toBeNull()
-      expect(user).not.toBeNull()
+      expect(error).not.toBeNull()
+      expect(error?.status).toEqual(400)
+      expect(session).toBeNull()
+      expect(user).toBeNull()
 
-      expect(user?.phone).toEqual(phone)
+      // expect(user?.phone).toEqual(phone)
     })
 
     test('verifyOTP()', async () => {
-      const { phone, password } = mockUserCredentials()
-
-      const { error: initialError, user: initialUser } = await auth.signUp({
-        phone,
-        password,
-      })
-
-      expect(initialError).toBeNull()
-      expect(initialUser).not.toBeNull()
-      expect(initialUser?.phone).toEqual(phone)
-
-      // const { error, user } =
-      await auth.verifyOTP({
-        phone,
-        token: password,
-      })
-
-      // Note: This test is failing with:
-      // @todo: Need to fix
-      // Received: [FetchError: request to http://localhost:9998/verify failed, reason: socket hang up]
-
-      // expect(error).toBeNull()
-      // expect(user).not.toBeNull()
-      // expect(user?.phone).toEqual(phone)
+      // unable to test
     })
   })
 

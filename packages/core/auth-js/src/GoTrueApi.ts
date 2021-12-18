@@ -444,18 +444,19 @@ export default class GoTrueApi {
    * This function should only be called on a server. Never expose your `service_role` key in the browser.
    *
    * @param attributes The data you want to create the user with.
-   * @param jwt A valid JWT. Must be a full-access API key (e.g. service_role key).
    */
   async createUser(
-    attributes: UserAttributes
-  ): Promise<{ data: null; error: ApiError } | { data: User; error: null }> {
+    attributes: AdminUserAttributes
+  ): Promise<
+    { user: null; data: null; error: ApiError } | { user: User; data: User; error: null }
+  > {
     try {
       const data: any = await post(this.fetch, `${this.url}/admin/users`, attributes, {
         headers: this.headers,
       })
-      return { data, error: null }
+      return { user: data, data, error: null }
     } catch (e) {
-      return { data: null, error: e as ApiError }
+      return { user: null, data: null, error: e as ApiError }
     }
   }
 

@@ -33,6 +33,18 @@ export const mockUserCredentials = (
   }
 }
 
+export const mockUserMetadata = () => {
+  return {
+    profile_image: faker.image.avatar(),
+  }
+}
+
+export const mockAppMetadata = () => {
+  return {
+    roles: ['editor', 'publisher'],
+  }
+}
+
 export const createNewUserWithEmail = async ({
   email,
   password,

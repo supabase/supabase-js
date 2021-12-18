@@ -1,11 +1,19 @@
 import {
-  GOTRUE_URL_AUTO_CONFIRM_DISABLED,
-  serviceRoleApiClient,
+  GOTRUE_URL_SIGNUP_ENABLED_AUTO_CONFIRM_ON,
   authClientWithSession,
+  clientApiAutoConfirmOffSignupsEnabledClient,
+  serviceRoleApiClient,
+  serviceRoleApiClientWithSms,
 } from './lib/clients'
-import { createNewUserWithEmail, mockUserCredentials } from './lib/utils'
 
-import type { User } from '../src/lib/types'
+import {
+  createNewUserWithEmail,
+  mockUserCredentials,
+  mockAppMetadata,
+  mockUserMetadata,
+} from './lib/utils'
+
+import type { Session, User } from '../src/lib/types'
 
 describe('GoTrueApi', () => {
   describe('User creation', () => {
@@ -15,6 +23,68 @@ describe('GoTrueApi', () => {
 
       expect(error).toBeNull()
       expect(user?.email).toEqual(email)
+    })
+
+    test('createUser() with user metadata', async () => {
+      const user_metadata = mockUserMetadata()
+      const { email, password } = mockUserCredentials()
+
+      const { error, data } = await serviceRoleApiClient.createUser({
+        email,
+        password,
+        user_metadata,
+      })
+
+      expect(error).toBeNull()
+      expect(data?.email).toEqual(email)
+      expect(data?.user_metadata).toEqual(user_metadata)
+      expect(data?.user_metadata).toHaveProperty('profile_image')
+      expect(data?.user_metadata?.profile_image).toMatch(/https.*avatars.*(jpg|png)/)
+    })
+
+    // Note: GoTrue does not yest support creating a user with app metadata
+    test.skip('createUser() with app metadata', async () => {
+      const app_metadata = mockAppMetadata()
+      const { email, password } = mockUserCredentials()
+
+      const { error, data } = await serviceRoleApiClient.createUser({
+        email,
+        password,
+        app_metadata,
+      })
+
+      expect(error).toBeNull()
+      expect(data?.email).toEqual(email)
+      expect(data?.app_metadata).toHaveProperty('provider')
+      expect(data?.app_metadata).toHaveProperty('providers')
+      expect(data?.app_metadata).toHaveProperty('roles')
+      expect(data?.app_metadata?.roles.length).toBeGreaterThanOrEqual(1)
+    })
+
+    // Note: GoTrue does not yest support creating a user with app metadata
+    test.skip('createUser() with user and app metadata', async () => {
+      const user_metadata = mockUserMetadata()
+      const app_metadata = mockAppMetadata()
+
+      const { email, password } = mockUserCredentials()
+
+      const { error, data } = await serviceRoleApiClient.createUser({
+        email,
+        password,
+        app_metadata,
+        user_metadata,
+      })
+
+      expect(error).toBeNull()
+      expect(data?.email).toEqual(email)
+
+      expect(data?.user_metadata).toHaveProperty('profile_image')
+      expect(data?.user_metadata?.profile_image).toMatch(/https.*avatars.*(jpg|png)/)
+
+      expect(data?.app_metadata).toHaveProperty('provider')
+      expect(data?.app_metadata).toHaveProperty('providers')
+      expect(data?.app_metadata).toHaveProperty('roles')
+      expect(data?.app_metadata?.roles.length).toBeGreaterThanOrEqual(1)
     })
   })
 
@@ -143,6 +213,34 @@ describe('GoTrueApi', () => {
       expect(updatedUser?.email).toEqual(email)
       expect(updatedUser?.app_metadata).toHaveProperty('roles')
     })
+
+    test('modify confirm email using updateUserById()', async () => {
+      const { email, password } = mockUserCredentials()
+      const { error: createError, user } = await clientApiAutoConfirmOffSignupsEnabledClient.signUp(
+        {
+          email,
+          password,
+        }
+      )
+
+      expect(createError).toBeNull()
+      expect(user).not.toBeUndefined()
+      expect(user).not.toHaveProperty('email_confirmed_at')
+      expect(user?.email_confirmed_at).toBeFalsy()
+
+      const uid = user?.id || ''
+
+      const attributes = { email_confirm: true }
+      const { error: updatedError, data: updatedUser } = await serviceRoleApiClient.updateUserById(
+        uid,
+        attributes
+      )
+
+      expect(updatedError).toBeNull()
+      expect(updatedUser).not.toBeUndefined()
+      expect(updatedUser).toHaveProperty('email_confirmed_at')
+      expect(updatedUser?.email_confirmed_at).toBeTruthy()
+    })
   })
 
   describe('User deletes', () => {
@@ -179,27 +277,16 @@ describe('GoTrueApi', () => {
       const { email, password } = mockUserCredentials()
 
       const { error, data } = await serviceRoleApiClient.signUpWithEmail(email, password, {
-        redirectTo: GOTRUE_URL_AUTO_CONFIRM_DISABLED,
+        redirectTo: GOTRUE_URL_SIGNUP_ENABLED_AUTO_CONFIRM_ON,
         data: { status: 'alpha' },
       })
 
+      const user = (data as Session).user as User
+
       expect(error).toBeNull()
-      expect(data).toMatchObject({
-        aud: expect.any(String),
-        confirmation_sent_at: expect.any(String),
-        created_at: expect.any(String),
-        email: expect.any(String),
-        id: expect.any(String),
-        phone: '',
-        role: '',
-        updated_at: expect.any(String),
-        app_metadata: {
-          provider: 'email',
-        },
-        user_metadata: {
-          status: 'alpha',
-        },
-      })
+      expect(user).not.toBeUndefined()
+      expect(user?.email).toEqual(email)
+      expect(user).toHaveProperty('email_confirmed_at')
     })
 
     test('generateLink() supports signUp with generate confirmation signup link ', async () => {
@@ -219,7 +306,7 @@ describe('GoTrueApi', () => {
       expect(error).toBeNull()
       expect(user).not.toBeNull()
       expect(user).toHaveProperty('action_link')
-      expect(user?.['action_link']).toMatch(/verify\?token/)
+      expect(user?.['action_link']).toMatch(/\?token/)
       expect(user?.['action_link']).toMatch(/type=signup/)
       expect(user?.['action_link']).toMatch(new RegExp(`redirect_to=${redirectTo}`))
       expect(user).toHaveProperty('user_metadata')
@@ -357,40 +444,28 @@ describe('GoTrueApi', () => {
   describe('Phone/One-Time-Password authentication', () => {
     describe('signUpWithPhone()', () => {
       test('signUpWithPhone() with an invalid phone number', async () => {
-        const { error, data } = await serviceRoleApiClient.signUpWithPhone(
-          '1-555-555-1212',
-          'et-phone-home',
+        const { phone, password } = mockUserCredentials()
+        const { error, data } = await serviceRoleApiClientWithSms.signUpWithPhone(
+          `${phone}-invalid`,
+          password,
           {
-            data: { mobile_provider: 'AT&T' },
+            data: { mobile_provider: 'Supaphone' },
           }
         )
+
+        data // ?
 
         expect(data).toBeNull()
         expect(error?.status).toEqual(422)
         expect(error?.message).toEqual('Invalid phone number format')
       })
-
-      test('signUpWithPhone() without SMS account details', async () => {
-        const { error, data } = await serviceRoleApiClient.signUpWithPhone(
-          '+15555551212',
-          'et-phone-home',
-          {
-            data: { mobile_provider: 'AT&T' },
-          }
-        )
-
-        expect(data).toBeNull()
-        expect(error?.status).toEqual(400)
-        expect(error?.message).toEqual('Error sending confirmation sms: Missing Twilio account SID')
-      })
     })
 
     describe('signInWithPhone()', () => {
       test('signInWithPhone() without an account', async () => {
-        const { error, data } = await serviceRoleApiClient.signInWithPhone(
-          '1-555-555-1212',
-          'et-phone-home'
-        )
+        const { phone, password } = mockUserCredentials()
+
+        const { error, data } = await serviceRoleApiClientWithSms.signInWithPhone(phone, password)
 
         expect(data).toBeNull()
         expect(error?.status).toEqual(400)
@@ -400,19 +475,22 @@ describe('GoTrueApi', () => {
 
     describe('sendMobileOTP()', () => {
       test('sendMobileOTP() with an invalid phone number', async () => {
-        const { error, data } = await serviceRoleApiClient.sendMobileOTP('1-555asdasda-555-1212')
+        const { phone } = mockUserCredentials()
+
+        const { error, data } = await serviceRoleApiClientWithSms.sendMobileOTP(`et-${phone}-home`)
+        expect(data).toBeNull()
+        expect(error?.status).toEqual(400)
+        expect(error?.message).toMatch(/^Invalid/)
+      })
+
+      test('sendMobileOTP() with an Invalid Phone Number', async () => {
+        const { phone } = mockUserCredentials()
+
+        const { error, data } = await serviceRoleApiClient.sendMobileOTP(`++bad-${phone}-number`)
 
         expect(data).toBeNull()
         expect(error?.status).toEqual(400)
         expect(error?.message).toMatch(/^Invalid format/)
-      })
-
-      test('sendMobileOTP() without SMS account details', async () => {
-        const { error, data } = await serviceRoleApiClient.sendMobileOTP('+15555551212')
-
-        expect(data).toBeNull()
-        expect(error?.status).toEqual(400)
-        expect(error?.message).toEqual('Error sending confirmation sms: Missing Twilio account SID')
       })
     })
   })
