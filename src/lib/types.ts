@@ -53,6 +53,7 @@ export type SupabaseRealtimePayload<T> = {
   new: T
   /** The previous record. Present for 'UPDATE' and 'DELETE' events. */
   old: T
+  errors: string[] | null
 }
 
 export type SupabaseEventTypes = 'INSERT' | 'UPDATE' | 'DELETE' | '*'
