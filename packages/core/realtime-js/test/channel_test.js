@@ -102,6 +102,25 @@ describe('join', () => {
     assert.equal(joinPush.timeout, newTimeout)
   })
 
+  describe('updateJoinPayload', () => {
+    beforeEach(() => {
+      socket = new RealtimeClient('/socket', { timeout: 1234 })
+    })
+  
+    afterEach(async () => {
+      await socket.disconnect()
+      channel.unsubscribe()
+    })
+
+    it('updates channel joinPush payload', () => {
+      const payloadStub = sinon.stub(channel.joinPush, 'updatePayload')
+
+      channel.updateJoinPayload({ user_token: 'token123' })
+
+      assert.ok(payloadStub.calledWith({ user_token: 'token123' }))
+    })
+  })
+
   describe('timeout behavior', () => {
     let clock, joinPush
 
