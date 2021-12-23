@@ -325,19 +325,17 @@ export default class RealtimeClient {
    */
   setAuth(token: string | null) {
     this.accessToken = token
+
     try {
-      this.channels.forEach(
-        (channel) =>
-          channel.joinedOnce &&
-          channel.isJoined() &&
-          channel.push(CHANNEL_EVENTS.access_token, {
-            access_token: token,
-          })
-      )
+      this.channels.forEach((channel) => {
+        token && channel.updateJoinPayload({ user_token: token })
+
+        if (channel.joinedOnce && channel.isJoined()) {
+          channel.push(CHANNEL_EVENTS.access_token, { access_token: token })
+        }
+      })
     } catch (error) {
-      console.log('error', error)
-      console.log('error', error)
-      console.log('error', error)
+      console.log('setAuth error', error)
     }
   }
 

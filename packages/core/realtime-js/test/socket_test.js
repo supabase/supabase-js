@@ -453,7 +453,7 @@ describe('setAuth', () => {
     await socket.disconnect()
   })
 
-  it('sets access token and pushes it to channels', () => {
+  it("sets access token, updates channels' join payload, and pushes token to channels", () => {
     const channel1 = socket.channel('test-topic')
     const channel2 = socket.channel('test-topic')
     const channel3 = socket.channel('test-topic')
@@ -465,22 +465,29 @@ describe('setAuth', () => {
     channel3.joinedOnce = true
     channel3.state = 'joined'
 
-    const stub1 = sinon.stub(channel1, 'push')
-    const stub2 = sinon.stub(channel2, 'push')
-    const stub3 = sinon.stub(channel3, 'push')
+    const pushStub1 = sinon.stub(channel1, 'push')
+    const pushStub2 = sinon.stub(channel2, 'push')
+    const pushStub3 = sinon.stub(channel3, 'push')
+
+    const payloadStub1 = sinon.stub(channel1, 'updateJoinPayload')
+    const payloadStub2 = sinon.stub(channel2, 'updateJoinPayload')
+    const payloadStub3 = sinon.stub(channel3, 'updateJoinPayload')
 
     socket.setAuth('token123')
 
     assert.strictEqual(socket.accessToken, 'token123')
-    assert.ok(stub1.calledWith('access_token', {
+    assert.ok(pushStub1.calledWith('access_token', {
       access_token: 'token123',
     }))
-    assert.ok(!stub2.calledWith('access_token', {
+    assert.ok(!pushStub2.calledWith('access_token', {
       access_token: 'token123',
     }))
-    assert.ok(stub3.calledWith('access_token', {
+    assert.ok(pushStub3.calledWith('access_token', {
       access_token: 'token123',
     }))
+    assert.ok(payloadStub1.calledWith({ user_token: 'token123' }))
+    assert.ok(payloadStub2.calledWith({ user_token: 'token123' }))
+    assert.ok(payloadStub3.calledWith({ user_token: 'token123' }))
   })
 })
 
