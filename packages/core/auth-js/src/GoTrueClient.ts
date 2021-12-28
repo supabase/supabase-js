@@ -186,6 +186,7 @@ export default class GoTrueClient {
     { email, phone, password, refreshToken, provider }: UserCredentials,
     options: {
       redirectTo?: string
+      noSignup?: boolean
       scopes?: string
     } = {}
   ): Promise<{
@@ -201,6 +202,7 @@ export default class GoTrueClient {
       if (email && !password) {
         const { error } = await this.api.sendMagicLinkEmail(email, {
           redirectTo: options.redirectTo,
+          noSignup: options.noSignup,
         })
         return { user: null, session: null, error }
       }
@@ -210,7 +212,9 @@ export default class GoTrueClient {
         })
       }
       if (phone && !password) {
-        const { error } = await this.api.sendMobileOTP(phone)
+        const { error } = await this.api.sendMobileOTP(phone, {
+          noSignup: options.noSignup,
+        })
         return { user: null, session: null, error }
       }
       if (phone && password) {

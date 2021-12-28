@@ -211,6 +211,7 @@ export default class GoTrueApi {
   async sendMagicLinkEmail(
     email: string,
     options: {
+      noSignup?: boolean,
       redirectTo?: string
     } = {}
   ): Promise<{ data: {} | null; error: ApiError | null }> {
@@ -220,10 +221,12 @@ export default class GoTrueApi {
       if (options.redirectTo) {
         queryString += '?redirect_to=' + encodeURIComponent(options.redirectTo)
       }
+
+      const noSignup = (options.noSignup) ? options.noSignup : false
       const data = await post(
         this.fetch,
         `${this.url}/otp${queryString}`,
-        { email },
+        { email, "no_signup": noSignup },
         { headers }
       )
       return { data, error: null }
@@ -236,10 +239,15 @@ export default class GoTrueApi {
    * Sends a mobile OTP via SMS. Will register the account if it doesn't already exist
    * @param phone The user's phone number WITH international prefix
    */
-  async sendMobileOTP(phone: string): Promise<{ data: {} | null; error: ApiError | null }> {
+  async sendMobileOTP(
+    phone: string, 
+    options: {
+      noSignup?: boolean,
+    } = {}): Promise<{ data: {} | null; error: ApiError | null }> {
     try {
+      const noSignup = (options.noSignup) ? options.noSignup : false
       const headers = { ...this.headers }
-      const data = await post(this.fetch, `${this.url}/otp`, { phone }, { headers })
+      const data = await post(this.fetch, `${this.url}/otp`, { phone, "no_signup": noSignup }, { headers })
       return { data, error: null }
     } catch (e) {
       return { data: null, error: e as ApiError }
