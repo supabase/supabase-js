@@ -222,7 +222,7 @@ export default class GoTrueApi {
       }
       const data = await post(
         this.fetch,
-        `${this.url}/magiclink${queryString}`,
+        `${this.url}/otp${queryString}`,
         { email },
         { headers }
       )
