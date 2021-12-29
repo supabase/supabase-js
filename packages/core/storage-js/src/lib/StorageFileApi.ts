@@ -84,7 +84,8 @@ export class StorageFileApi {
         headers['content-type'] = options.contentType as string
       }
 
-      const _path = this._getFinalPath(path)
+      const cleanPath = this._removeEmptyFolders(path)
+      const _path = this._getFinalPath(cleanPath)
       const res = await fetch(`${this.url}/object/${_path}`, {
         method,
         body: body as BodyInit,
@@ -237,9 +238,7 @@ export class StorageFileApi {
    *
    * @param path The file path to be downloaded, including the path and file name. For example `folder/image.png`.
    */
-  getPublicUrl(
-    path: string
-  ): {
+  getPublicUrl(path: string): {
     data: { publicURL: string } | null
     error: Error | null
     publicURL: string | null
@@ -331,5 +330,9 @@ export class StorageFileApi {
 
   _getFinalPath(path: string) {
     return `${this.bucketId}/${path}`
+  }
+
+  _removeEmptyFolders(path: string) {
+    return path.replace(/^\/|\/$/g, '\1').replace(/\/\//g, '/')
   }
 }
