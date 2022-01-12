@@ -124,7 +124,15 @@ export abstract class PostgrestBuilder<T> implements PromiseLike<PostgrestRespon
           count = parseInt(contentRange[1])
         }
       } else {
-        error = await res.json()
+        const body = await res.text()
+
+        try {
+          error = JSON.parse(body)
+        } catch {
+          error = {
+            message: body
+          }
+        }
 
         if (error && this.shouldThrowOnError) {
           throw error
