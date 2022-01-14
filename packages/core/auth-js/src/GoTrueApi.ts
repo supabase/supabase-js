@@ -204,6 +204,34 @@ export default class GoTrueApi {
   }
 
   /**
+   * Logs in an OpenID Connect user using their id_token.
+   * @param id_token The id_token of the user.
+   * @param nonce The nonce of the user.
+   * @param provider The provider of the user.
+   */
+  async signInWithIDToken(
+    id_token: string,
+    nonce: string,
+    provider: string
+  ): Promise<{ data: Session | null; error: ApiError | null }> {
+    try {
+      const headers = { ...this.headers }
+      const queryString = '?grant_type=id_token'
+      const data = await post(
+        this.fetch,
+        `${this.url}/token${queryString}`,
+        { id_token, nonce, provider },
+        { headers }
+      )
+      const session = { ...data }
+      if (session.expires_in) session.expires_at = expiresAt(data.expires_in)
+      return { data: session, error: null }
+    } catch (e) {
+      return { data: null, error: e as ApiError }
+    }
+  }
+
+  /**
    * Sends a magic login link to an email address.
    * @param email The email address of the user.
    * @param redirectTo A URL or mobile address to send the user to after they are confirmed.
