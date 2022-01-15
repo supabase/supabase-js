@@ -108,7 +108,9 @@ export default class PostgrestQueryBuilder<T> extends PostgrestBuilder<T> {
     if (count) {
       prefersHeaders.push(`count=${count}`)
     }
-
+    if (this.headers['Prefer']) {
+      prefersHeaders.unshift(this.headers['Prefer'])
+    }
     this.headers['Prefer'] = prefersHeaders.join(',')
 
     if (Array.isArray(values)) {
@@ -157,7 +159,9 @@ export default class PostgrestQueryBuilder<T> extends PostgrestBuilder<T> {
     if (count) {
       prefersHeaders.push(`count=${count}`)
     }
-
+    if (this.headers['Prefer']) {
+      prefersHeaders.unshift(this.headers['Prefer'])
+    }
     this.headers['Prefer'] = prefersHeaders.join(',')
 
     return new PostgrestFilterBuilder(this)
@@ -186,6 +190,9 @@ export default class PostgrestQueryBuilder<T> extends PostgrestBuilder<T> {
     if (count) {
       prefersHeaders.push(`count=${count}`)
     }
+    if (this.headers['Prefer']) {
+      prefersHeaders.unshift(this.headers['Prefer'])
+    }
     this.headers['Prefer'] = prefersHeaders.join(',')
     return new PostgrestFilterBuilder(this)
   }
@@ -207,6 +214,9 @@ export default class PostgrestQueryBuilder<T> extends PostgrestBuilder<T> {
     const prefersHeaders = [`return=${returning}`]
     if (count) {
       prefersHeaders.push(`count=${count}`)
+    }
+    if (this.headers['Prefer']) {
+      prefersHeaders.unshift(this.headers['Prefer'])
     }
     this.headers['Prefer'] = prefersHeaders.join(',')
     return new PostgrestFilterBuilder(this)

@@ -23,6 +23,33 @@ test('custom headers', async () => {
   expect((postgrest.from('users').select() as any).headers['apikey']).toEqual('foo')
 })
 
+describe('custom prefer headers with ', () => {
+  test('insert', async () => {
+    const postgrest = new PostgrestClient(REST_URL, { headers: { Prefer: 'tx=rollback' } })
+    const postgrestFilterBuilder = postgrest.from('users').insert({ username: 'dragarcia' }) as any
+    expect(postgrestFilterBuilder.headers['Prefer']).toContain('tx=rollback')
+    expect(postgrestFilterBuilder.headers['Prefer']).toContain('return=')
+  })
+  test('update', async () => {
+    const postgrest = new PostgrestClient(REST_URL, { headers: { Prefer: 'tx=rollback' } })
+    const postgrestFilterBuilder = postgrest.from('users').update({ username: 'dragarcia' }) as any
+    expect(postgrestFilterBuilder.headers['Prefer']).toContain('tx=rollback')
+    expect(postgrestFilterBuilder.headers['Prefer']).toContain('return=')
+  })
+  test('upsert', async () => {
+    const postgrest = new PostgrestClient(REST_URL, { headers: { Prefer: 'tx=rollback' } })
+    const postgrestFilterBuilder = postgrest.from('users').upsert({ username: 'dragarcia' }) as any
+    expect(postgrestFilterBuilder.headers['Prefer']).toContain('tx=rollback')
+    expect(postgrestFilterBuilder.headers['Prefer']).toContain('return=')
+  })
+  test('delete', async () => {
+    const postgrest = new PostgrestClient(REST_URL, { headers: { Prefer: 'tx=rollback' } })
+    const postgrestFilterBuilder = postgrest.from('users').delete() as any
+    expect(postgrestFilterBuilder.headers['Prefer']).toContain('tx=rollback')
+    expect(postgrestFilterBuilder.headers['Prefer']).toContain('return=')
+  })
+})
+
 test('auth', async () => {
   const postgrest = new PostgrestClient(REST_URL).auth('foo')
   expect((postgrest.from('users').select() as any).headers['Authorization']).toEqual('Bearer foo')
