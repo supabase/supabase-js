@@ -339,6 +339,16 @@ export default class RealtimeClient {
     }
   }
 
+  leaveOpenTopic(topic: string): void {
+    let dupChannel = this.channels.find(
+      (c) => c.topic === topic && (c.isJoined() || c.isJoining())
+    )
+    if (dupChannel) {
+      this.log('transport', `leaving duplicate topic "${topic}"`)
+      dupChannel.unsubscribe()
+    }
+  }
+
   private _onConnOpen() {
     this.log('transport', `connected to ${this.endPointURL()}`)
     this._flushSendBuffer()
