@@ -333,6 +333,6 @@ export class StorageFileApi {
   }
 
   _removeEmptyFolders(path: string) {
-    return path.replace(/^\/|\/$/g, '\1').replace(/\/\//g, '/')
+    return path.replace(/^\/|\/$/g, '').replace(/\/+/g, '/')
   }
 }
