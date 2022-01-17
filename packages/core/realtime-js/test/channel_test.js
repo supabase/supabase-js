@@ -492,6 +492,7 @@ describe('onError', () => {
   })
 
   it('tries to rejoin with backoff', () => {
+    const leaveTopicSpy = sinon.stub(socket, 'leaveOpenTopic')
     const spy = sinon.stub(joinPush, 'send')
 
     assert.equal(spy.callCount, 0)
@@ -509,6 +510,8 @@ describe('onError', () => {
 
     clock.tick(10000)
     assert.equal(spy.callCount, 4)
+
+    assert.equal(leaveTopicSpy.callCount, 4)
   })
 
   it('does not rejoin if channel leaving', () => {

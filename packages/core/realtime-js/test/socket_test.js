@@ -336,6 +336,31 @@ describe('channel', () => {
   })
 })
 
+describe('leaveOpenTopic', () => {
+  let channel1
+  let channel2
+
+  beforeEach(() => {
+    socket = new RealtimeClient('wss://example.com/socket')
+  })
+
+  afterEach(async () => {
+    channel1.unsubscribe()
+    channel2.unsubscribe()
+    await socket.disconnect()
+  })
+
+  it('enforces client to subscribe to unique topics', () => {
+    channel1 = socket.channel('topic', { one: 'two' })
+    channel2 = socket.channel('topic', { one: 'two' })
+    channel1.subscribe()
+    channel2.subscribe()
+
+    assert.equal(socket.channels.length, 1)
+    assert.equal(socket.channels[0].topic, 'topic')
+  })
+})
+
 describe('remove', () => {
   beforeEach(() => {
     socket = new RealtimeClient('wss://example.com/socket')

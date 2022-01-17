@@ -163,16 +163,13 @@ export default class RealtimeSubscription {
     return this.joinPush.ref
   }
 
-  sendJoin(timeout: number) {
-    this.state = CHANNEL_STATES.joining
-    this.joinPush.resend(timeout)
-  }
-
   rejoin(timeout = this.timeout) {
     if (this.isLeaving()) {
       return
     }
-    this.sendJoin(timeout)
+    this.socket.leaveOpenTopic(this.topic)
+    this.state = CHANNEL_STATES.joining
+    this.joinPush.resend(timeout)
   }
 
   trigger(event: string, payload?: any, ref?: string) {
