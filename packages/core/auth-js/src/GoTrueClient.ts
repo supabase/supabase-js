@@ -125,7 +125,7 @@ export default class GoTrueClient {
     options: {
       redirectTo?: string
       data?: object
-      hcaptchaToken?: string
+      captchaToken?: string
     } = {}
   ): Promise<{
     user: User | null
@@ -139,12 +139,12 @@ export default class GoTrueClient {
         phone && password
           ? await this.api.signUpWithPhone(phone!, password!, {
             data: options.data,
-            hcaptchaToken: options.hcaptchaToken,
+            captchaToken: options.captchaToken,
           })
           : await this.api.signUpWithEmail(email!, password!, {
             redirectTo: options.redirectTo,
             data: options.data,
-            hcaptchaToken: options.hcaptchaToken,
+            captchaToken: options.captchaToken,
           })
 
       if (error) {
@@ -190,7 +190,7 @@ export default class GoTrueClient {
     options: {
       redirectTo?: string
       scopes?: string
-      hcaptchaToken?: string
+      captchaToken?: string
     } = {}
   ): Promise<{
     session: Session | null
@@ -205,7 +205,7 @@ export default class GoTrueClient {
       if (email && !password) {
         const { error } = await this.api.sendMagicLinkEmail(email, {
           redirectTo: options.redirectTo,
-          hcaptchaToken: options.hcaptchaToken,
+          captchaToken: options.captchaToken,
         })
         return { user: null, session: null, error }
       }
@@ -216,7 +216,7 @@ export default class GoTrueClient {
       }
       if (phone && !password) {
         const { error } = await this.api.sendMobileOTP(phone, {
-          hcaptchaToken: options.hcaptchaToken,
+          captchaToken: options.captchaToken,
         })
         return { user: null, session: null, error }
       }

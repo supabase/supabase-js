@@ -93,7 +93,7 @@ export default class GoTrueApi {
     options: {
       redirectTo?: string
       data?: object
-      hcaptchaToken?: string
+      captchaToken?: string
     } = {}
   ): Promise<{ data: Session | User | null; error: ApiError | null }> {
     try {
@@ -109,7 +109,7 @@ export default class GoTrueApi {
           email,
           password,
           data: options.data,
-          gotrue_meta_security: { hcaptcha_token: options.hcaptchaToken },
+          gotrue_meta_security: { hcaptcha_token: options.captchaToken },
         },
         { headers }
       )
@@ -165,7 +165,7 @@ export default class GoTrueApi {
     password: string,
     options: {
       data?: object
-      hcaptchaToken?: string
+      captchaToken?: string
     } = {}
   ): Promise<{ data: Session | User | null; error: ApiError | null }> {
     try {
@@ -177,7 +177,7 @@ export default class GoTrueApi {
           phone,
           password,
           data: options.data,
-          gotrue_meta_security: { hcaptcha_token: options.hcaptchaToken },
+          gotrue_meta_security: { hcaptcha_token: options.captchaToken },
         },
         { headers }
       )
@@ -224,7 +224,7 @@ export default class GoTrueApi {
     email: string,
     options: {
       redirectTo?: string
-      hcaptchaToken?: string
+      captchaToken?: string
     } = {}
   ): Promise<{ data: {} | null; error: ApiError | null }> {
     try {
@@ -236,7 +236,7 @@ export default class GoTrueApi {
       const data = await post(
         this.fetch,
         `${this.url}/magiclink${queryString}`,
-        { email, gotrue_meta_security: { hcaptcha_token: options.hcaptchaToken } },
+        { email, gotrue_meta_security: { hcaptcha_token: options.captchaToken } },
         { headers }
       )
       return { data, error: null }
@@ -252,7 +252,7 @@ export default class GoTrueApi {
   async sendMobileOTP(
     phone: string,
     options: {
-      hcaptchaToken?: string
+      captchaToken?: string
     } = {}
   ): Promise<{ data: {} | null; error: ApiError | null }> {
     try {
@@ -260,7 +260,7 @@ export default class GoTrueApi {
       const data = await post(
         this.fetch,
         `${this.url}/otp`,
-        { phone, gotrue_meta_security: { hcaptcha_token: options.hcaptchaToken } },
+        { phone, gotrue_meta_security: { hcaptcha_token: options.captchaToken } },
         { headers }
       )
       return { data, error: null }
@@ -354,7 +354,7 @@ export default class GoTrueApi {
     email: string,
     options: {
       redirectTo?: string
-      hcaptchaToken?: string
+      captchaToken?: string
     } = {}
   ): Promise<{ data: {} | null; error: ApiError | null }> {
     try {
@@ -366,7 +366,7 @@ export default class GoTrueApi {
       const data = await post(
         this.fetch,
         `${this.url}/recover${queryString}`,
-        { email, gotrue_meta_security: { hcaptcha_token: options.hcaptchaToken } },
+        { email, gotrue_meta_security: { hcaptcha_token: options.captchaToken } },
         { headers }
       )
       return { data, error: null }
