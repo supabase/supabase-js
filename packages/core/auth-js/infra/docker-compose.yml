@@ -61,6 +61,11 @@ services:
       DATABASE_URL: 'postgres://postgres:postgres@db:5432/postgres?sslmode=disable'
       GOTRUE_EXTERNAL_PHONE_ENABLED: 'true'
       GOTRUE_SMS_AUTOCONFIRM: 'true'
+      GOTRUE_SMTP_HOST: mail
+      GOTRUE_SMTP_PORT: 2500
+      GOTRUE_SMTP_USER: GOTRUE_SMTP_USER
+      GOTRUE_SMTP_PASS: GOTRUE_SMTP_PASS
+      GOTRUE_SMTP_ADMIN_EMAIL: admin@email.com
     depends_on:
       - db
     restart: on-failure
@@ -76,7 +81,6 @@ services:
       GOTRUE_API_HOST: 0.0.0.0
       PORT: 9997
       GOTRUE_DISABLE_SIGNUP: 'true'
-      GOTRUE_ENABLE_SIGNUP: 'false'
       API_EXTERNAL_URL: http://localhost:9997
       GOTRUE_SITE_URL: http://localhost:9997
       GOTRUE_MAILER_AUTOCONFIRM: 'false'
@@ -85,6 +89,11 @@ services:
       DATABASE_URL: 'postgres://postgres:postgres@db:5432/postgres?sslmode=disable'
       GOTRUE_EXTERNAL_PHONE_ENABLED: 'false'
       GOTRUE_EXTERNAL_EMAIL_ENABLED: 'false'
+      GOTRUE_SMTP_HOST: mail
+      GOTRUE_SMTP_PORT: 2500
+      GOTRUE_SMTP_USER: GOTRUE_SMTP_USER
+      GOTRUE_SMTP_PASS: GOTRUE_SMTP_PASS
+      GOTRUE_SMTP_ADMIN_EMAIL: admin@email.com
     depends_on:
       - db
     restart: on-failure
