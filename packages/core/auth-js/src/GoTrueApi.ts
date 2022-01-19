@@ -93,6 +93,7 @@ export default class GoTrueApi {
     options: {
       redirectTo?: string
       data?: object
+      captchaToken?: string
     } = {}
   ): Promise<{ data: Session | User | null; error: ApiError | null }> {
     try {
@@ -104,7 +105,12 @@ export default class GoTrueApi {
       const data = await post(
         this.fetch,
         `${this.url}/signup${queryString}`,
-        { email, password, data: options.data },
+        {
+          email,
+          password,
+          data: options.data,
+          gotrue_meta_security: { hcaptcha_token: options.captchaToken },
+        },
         { headers }
       )
       const session = { ...data }
@@ -159,6 +165,7 @@ export default class GoTrueApi {
     password: string,
     options: {
       data?: object
+      captchaToken?: string
     } = {}
   ): Promise<{ data: Session | User | null; error: ApiError | null }> {
     try {
@@ -166,7 +173,12 @@ export default class GoTrueApi {
       const data = await post(
         this.fetch,
         `${this.url}/signup`,
-        { phone, password, data: options.data },
+        {
+          phone,
+          password,
+          data: options.data,
+          gotrue_meta_security: { hcaptcha_token: options.captchaToken },
+        },
         { headers }
       )
       const session = { ...data }
@@ -212,6 +224,7 @@ export default class GoTrueApi {
     email: string,
     options: {
       redirectTo?: string
+      captchaToken?: string
     } = {}
   ): Promise<{ data: {} | null; error: ApiError | null }> {
     try {
@@ -223,7 +236,7 @@ export default class GoTrueApi {
       const data = await post(
         this.fetch,
         `${this.url}/magiclink${queryString}`,
-        { email },
+        { email, gotrue_meta_security: { hcaptcha_token: options.captchaToken } },
         { headers }
       )
       return { data, error: null }
@@ -236,10 +249,20 @@ export default class GoTrueApi {
    * Sends a mobile OTP via SMS. Will register the account if it doesn't already exist
    * @param phone The user's phone number WITH international prefix
    */
-  async sendMobileOTP(phone: string): Promise<{ data: {} | null; error: ApiError | null }> {
+  async sendMobileOTP(
+    phone: string,
+    options: {
+      captchaToken?: string
+    } = {}
+  ): Promise<{ data: {} | null; error: ApiError | null }> {
     try {
-      const headers = { ...this.headers }
-      const data = await post(this.fetch, `${this.url}/otp`, { phone }, { headers })
+      let headers = { ...this.headers }
+      const data = await post(
+        this.fetch,
+        `${this.url}/otp`,
+        { phone, gotrue_meta_security: { hcaptcha_token: options.captchaToken } },
+        { headers }
+      )
       return { data, error: null }
     } catch (e) {
       return { data: null, error: e as ApiError }
@@ -331,6 +354,7 @@ export default class GoTrueApi {
     email: string,
     options: {
       redirectTo?: string
+      captchaToken?: string
     } = {}
   ): Promise<{ data: {} | null; error: ApiError | null }> {
     try {
@@ -342,7 +366,7 @@ export default class GoTrueApi {
       const data = await post(
         this.fetch,
         `${this.url}/recover${queryString}`,
-        { email },
+        { email, gotrue_meta_security: { hcaptcha_token: options.captchaToken } },
         { headers }
       )
       return { data, error: null }

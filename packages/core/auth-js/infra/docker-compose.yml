@@ -60,7 +60,6 @@ services:
       GOTRUE_OPERATOR_TOKEN: super-secret-operator-token
       DATABASE_URL: 'postgres://postgres:postgres@db:5432/postgres?sslmode=disable'
       GOTRUE_EXTERNAL_PHONE_ENABLED: 'true'
-      GOTRUE_SMS_AUTOCONFIRM: 'true'
       GOTRUE_SMTP_HOST: mail
       GOTRUE_SMTP_PORT: 2500
       GOTRUE_SMTP_USER: GOTRUE_SMTP_USER
