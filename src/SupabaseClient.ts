@@ -133,9 +133,30 @@ export default class SupabaseClient {
   /**
    * Remove all subscriptions.
    */
-  async removeAllSubscriptions() {
-    const subscriptions = this.realtime.channels.slice()
-    return await Promise.allSettled(subscriptions.map((sub) => this.removeSubscription(sub)))
+  async removeAllSubscriptions(): Promise<
+    (
+      | {
+          status: 'fulfilled'
+          value: {
+            error: null
+          }
+        }
+      | { status: 'rejected'; reason: { error: Error } }
+    )[]
+  > {
+    const subs: RealtimeSubscription[] = this.realtime.channels.slice()
+    const removeSubPromises = subs.map((sub: RealtimeSubscription) =>
+      this.removeSubscription(sub)
+        .then((): { status: 'fulfilled'; value: { error: null } } => ({
+          status: 'fulfilled',
+          value: { error: null },
+        }))
+        .catch((reason: { error: Error }): { status: 'rejected'; reason: { error: Error } } => ({
+          status: 'rejected',
+          reason,
+        }))
+    )
+    return Promise.all(removeSubPromises)
   }
 
   /**
@@ -143,33 +164,48 @@ export default class SupabaseClient {
    *
    * @param subscription The subscription you want to remove.
    */
-  removeSubscription(subscription: RealtimeSubscription) {
-    return new Promise(async (resolve) => {
-      try {
-        await this._closeSubscription(subscription)
-
-        const allSubscriptions = this.getSubscriptions()
-        const openSubscriptionsCount = allSubscriptions.filter((chan) => chan.isJoined()).length
-
-        if (!allSubscriptions.length) {
-          const { error } = await this.realtime.disconnect()
-          if (error) return resolve({ error })
-        }
-        return resolve({ error: null, data: { openSubscriptions: openSubscriptionsCount } })
-      } catch (error) {
-        return resolve({ error })
+  removeSubscription(subscription: RealtimeSubscription): Promise<
+    | {
+        data: { openSubscriptions: number }
+        error: null
       }
+    | { error: Error }
+  > {
+    return new Promise(async (resolve, reject) => {
+      const { error } = await this._closeSubscription(subscription)
+
+      if (error) {
+        return reject({ error })
+      }
+
+      const allSubscriptions = this.getSubscriptions()
+      const openSubscriptionsCount = allSubscriptions.filter((chan) => chan.isJoined()).length
+
+      if (allSubscriptions.length === 0) {
+        const { error } = await this.realtime.disconnect()
+
+        if (error) {
+          return reject({ error })
+        }
+      }
+
+      return resolve({
+        data: { openSubscriptions: openSubscriptionsCount },
+        error: null,
+      })
     })
   }
 
-  private async _closeSubscription(subscription: RealtimeSubscription) {
+  private async _closeSubscription(
+    subscription: RealtimeSubscription
+  ): Promise<{ error: null | Error }> {
     if (!subscription.isClosed()) {
-      await this._closeChannel(subscription)
+      return await this._closeChannel(subscription)
     }
 
     return new Promise((resolve) => {
       this.realtime.remove(subscription)
-      return resolve(true)
+      return resolve({ error: null })
     })
   }
 
@@ -226,14 +262,13 @@ export default class SupabaseClient {
     return headers
   }
 
-  private _closeChannel(subscription: RealtimeSubscription) {
+  private _closeChannel(subscription: RealtimeSubscription): Promise<{ error: null | Error }> {
     return new Promise((resolve, reject) => {
       subscription
         .unsubscribe()
-        .receive('ok', () => {
-          return resolve(true)
-        })
-        .receive('error', (e: Error) => reject(e))
+        .receive('ok', () => resolve({ error: null }))
+        .receive('error', (error: Error) => reject({ error }))
+        .receive('timeout', () => reject({ error: 'timed out' }))
     })
   }
 
