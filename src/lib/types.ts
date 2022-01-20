@@ -1,6 +1,8 @@
 import { GoTrueClient } from '@supabase/gotrue-js'
 import { RealtimeClientOptions } from '@supabase/realtime-js'
 
+export type Fetch = typeof fetch
+
 type GoTrueClientOptions = ConstructorParameters<typeof GoTrueClient>[0]
 
 export interface SupabaseAuthClientOptions extends GoTrueClientOptions {}
@@ -35,6 +37,11 @@ export type SupabaseClientOptions = {
    * Options passed to the realtime-js instance
    */
   realtime?: RealtimeClientOptions
+
+  /**
+   * A custom `fetch` implementation.
+   */
+  fetch?: Fetch
 }
 
 export type SupabaseRealtimePayload<T> = {
@@ -46,6 +53,7 @@ export type SupabaseRealtimePayload<T> = {
   new: T
   /** The previous record. Present for 'UPDATE' and 'DELETE' events. */
   old: T
+  errors: string[] | null
 }
 
 export type SupabaseEventTypes = 'INSERT' | 'UPDATE' | 'DELETE' | '*'

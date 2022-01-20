@@ -11,3 +11,5 @@ export function uuid() {
 export function stripTrailingSlash(url: string): string {
   return url.replace(/\/$/, '')
 }
+
+export const isBrowser = () => typeof window !== 'undefined'

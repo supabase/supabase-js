@@ -53,6 +53,7 @@ export class SupabaseRealtimeClient {
         eventType: payload.type,
         new: {},
         old: {},
+        errors: payload.errors,
       }
 
       enrichedPayload = { ...enrichedPayload, ...this.getPayloadRecords(payload) }

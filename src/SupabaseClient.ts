@@ -1,10 +1,11 @@
-import { DEFAULT_HEADERS } from './lib/constants'
-import { stripTrailingSlash } from './lib/helpers'
-import { SupabaseClientOptions } from './lib/types'
+import { DEFAULT_HEADERS, STORAGE_KEY } from './lib/constants'
+import { stripTrailingSlash, isBrowser } from './lib/helpers'
+import { Fetch, SupabaseClientOptions } from './lib/types'
 import { SupabaseAuthClient } from './lib/SupabaseAuthClient'
 import { SupabaseQueryBuilder } from './lib/SupabaseQueryBuilder'
 import { SupabaseStorageClient } from '@supabase/storage-js'
 import { PostgrestClient } from '@supabase/postgrest-js'
+import { AuthChangeEvent, Session, Subscription } from '@supabase/gotrue-js'
 import { RealtimeClient, RealtimeSubscription, RealtimeClientOptions } from '@supabase/realtime-js'
 
 const DEFAULT_OPTIONS = {
@@ -12,6 +13,7 @@ const DEFAULT_OPTIONS = {
   autoRefreshToken: true,
   persistSession: true,
   detectSessionInUrl: true,
+  multiTab: true,
   headers: DEFAULT_HEADERS,
 }
 
@@ -32,6 +34,12 @@ export default class SupabaseClient {
   protected authUrl: string
   protected storageUrl: string
   protected realtime: RealtimeClient
+  protected multiTab: boolean
+  protected fetch?: Fetch
+  protected changedAccessToken: string | undefined
+  protected headers: {
+    [key: string]: string
+  }
 
   /**
    * Create a new client for use in the browser.
@@ -43,6 +51,8 @@ export default class SupabaseClient {
    * @param options.detectSessionInUrl Set to "true" if you want to automatically detects OAuth grants in the URL and signs in the user.
    * @param options.headers Any additional headers to send with each network request.
    * @param options.realtime Options passed along to realtime-js constructor.
+   * @param options.multiTab Set to "false" if you want to disable multi-tab/window events.
+   * @param options.fetch A custom fetch implementation.
    */
   constructor(
     protected supabaseUrl: string,
@@ -60,9 +70,15 @@ export default class SupabaseClient {
     this.authUrl = `${_supabaseUrl}/auth/v1`
     this.storageUrl = `${_supabaseUrl}/storage/v1`
     this.schema = settings.schema
+    this.multiTab = settings.multiTab
+    this.fetch = settings.fetch
+    this.headers = { ...DEFAULT_HEADERS, ...options?.headers }
 
     this.auth = this._initSupabaseAuthClient(settings)
-    this.realtime = this._initRealtimeClient(settings.realtime)
+    this.realtime = this._initRealtimeClient({ headers: this.headers, ...settings.realtime })
+
+    this._listenForAuthEvents()
+    this._listenForMultiTabEvents()
 
     // In the future we might allow the user to pass in a logger to receive these events.
     // this.realtime.onOpen(() => console.log('OPEN'))
@@ -74,7 +90,7 @@ export default class SupabaseClient {
    * Supabase Storage allows you to manage user-generated content, such as photos or videos.
    */
   get storage() {
-    return new SupabaseStorageClient(this.storageUrl, this._getAuthHeaders())
+    return new SupabaseStorageClient(this.storageUrl, this._getAuthHeaders(), this.fetch)
   }
 
   /**
@@ -89,6 +105,7 @@ export default class SupabaseClient {
       schema: this.schema,
       realtime: this.realtime,
       table,
+      fetch: this.fetch,
     })
   }
 
@@ -97,16 +114,49 @@ export default class SupabaseClient {
    *
    * @param fn  The function name to call.
    * @param params  The parameters to pass to the function call.
+   * @param head   When set to true, no data will be returned.
    * @param count  Count algorithm to use to count rows in a table.
    *
    */
   rpc<T = any>(
     fn: string,
     params?: object,
-    { count = null }: { count?: null | 'exact' | 'planned' | 'estimated' } = {}
+    {
+      head = false,
+      count = null,
+    }: { head?: boolean; count?: null | 'exact' | 'planned' | 'estimated' } = {}
   ) {
     const rest = this._initPostgRESTClient()
-    return rest.rpc<T>(fn, params, { count })
+    return rest.rpc<T>(fn, params, { head, count })
+  }
+
+  /**
+   * Remove all subscriptions.
+   */
+  async removeAllSubscriptions(): Promise<
+    (
+      | {
+          status: 'fulfilled'
+          value: {
+            error: null
+          }
+        }
+      | { status: 'rejected'; reason: { error: Error } }
+    )[]
+  > {
+    const subs: RealtimeSubscription[] = this.realtime.channels.slice()
+    const removeSubPromises = subs.map((sub: RealtimeSubscription) =>
+      this.removeSubscription(sub)
+        .then((): { status: 'fulfilled'; value: { error: null } } => ({
+          status: 'fulfilled',
+          value: { error: null },
+        }))
+        .catch((reason: { error: Error }): { status: 'rejected'; reason: { error: Error } } => ({
+          status: 'rejected',
+          reason,
+        }))
+    )
+    return Promise.all(removeSubPromises)
   }
 
   /**
@@ -114,27 +164,49 @@ export default class SupabaseClient {
    *
    * @param subscription The subscription you want to remove.
    */
-  removeSubscription(subscription: RealtimeSubscription) {
-    return new Promise(async (resolve) => {
-      try {
-        await this._closeSubscription(subscription)
-
-        const openSubscriptions = this.getSubscriptions().length
-        if (!openSubscriptions) {
-          const { error } = await this.realtime.disconnect()
-          if (error) return resolve({ error })
-        }
-        return resolve({ error: null, data: { openSubscriptions } })
-      } catch (error) {
-        return resolve({ error })
+  removeSubscription(subscription: RealtimeSubscription): Promise<
+    | {
+        data: { openSubscriptions: number }
+        error: null
       }
+    | { error: Error }
+  > {
+    return new Promise(async (resolve, reject) => {
+      const { error } = await this._closeSubscription(subscription)
+
+      if (error) {
+        return reject({ error })
+      }
+
+      const allSubscriptions = this.getSubscriptions()
+      const openSubscriptionsCount = allSubscriptions.filter((chan) => chan.isJoined()).length
+
+      if (allSubscriptions.length === 0) {
+        const { error } = await this.realtime.disconnect()
+
+        if (error) {
+          return reject({ error })
+        }
+      }
+
+      return resolve({
+        data: { openSubscriptions: openSubscriptionsCount },
+        error: null,
+      })
     })
   }
 
-  private async _closeSubscription(subscription: RealtimeSubscription) {
+  private async _closeSubscription(
+    subscription: RealtimeSubscription
+  ): Promise<{ error: null | Error }> {
     if (!subscription.isClosed()) {
-      await this._closeChannel(subscription)
+      return await this._closeChannel(subscription)
     }
+
+    return new Promise((resolve) => {
+      this.realtime.remove(subscription)
+      return resolve({ error: null })
+    })
   }
 
   /**
@@ -150,6 +222,7 @@ export default class SupabaseClient {
     detectSessionInUrl,
     localStorage,
     headers,
+    fetch,
   }: SupabaseClientOptions) {
     const authHeaders = {
       Authorization: `Bearer ${this.supabaseKey}`,
@@ -162,6 +235,7 @@ export default class SupabaseClient {
       persistSession,
       detectSessionInUrl,
       localStorage,
+      fetch,
     })
   }
 
@@ -176,26 +250,82 @@ export default class SupabaseClient {
     return new PostgrestClient(this.restUrl, {
       headers: this._getAuthHeaders(),
       schema: this.schema,
+      fetch: this.fetch,
     })
   }
 
   private _getAuthHeaders(): { [key: string]: string } {
-    const headers: { [key: string]: string } = DEFAULT_HEADERS
+    const headers: { [key: string]: string } = this.headers
     const authBearer = this.auth.session()?.access_token ?? this.supabaseKey
     headers['apikey'] = this.supabaseKey
     headers['Authorization'] = `Bearer ${authBearer}`
     return headers
   }
 
-  private _closeChannel(subscription: RealtimeSubscription) {
+  private _closeChannel(subscription: RealtimeSubscription): Promise<{ error: null | Error }> {
     return new Promise((resolve, reject) => {
       subscription
         .unsubscribe()
-        .receive('ok', () => {
-          this.realtime.remove(subscription)
-          return resolve(true)
-        })
-        .receive('error', (e: Error) => reject(e))
+        .receive('ok', () => resolve({ error: null }))
+        .receive('error', (error: Error) => reject({ error }))
+        .receive('timeout', () => reject({ error: 'timed out' }))
     })
+  }
+
+  private _listenForMultiTabEvents() {
+    if (!this.multiTab || !isBrowser() || !window?.addEventListener) {
+      return null
+    }
+
+    try {
+      return window?.addEventListener('storage', (e: StorageEvent) => {
+        if (e.key === STORAGE_KEY) {
+          const newSession = JSON.parse(String(e.newValue))
+          const accessToken: string | undefined =
+            newSession?.currentSession?.access_token ?? undefined
+          const previousAccessToken = this.auth.session()?.access_token
+          if (!accessToken) {
+            this._handleTokenChanged('SIGNED_OUT', accessToken, 'STORAGE')
+          } else if (!previousAccessToken && accessToken) {
+            this._handleTokenChanged('SIGNED_IN', accessToken, 'STORAGE')
+          } else if (previousAccessToken !== accessToken) {
+            this._handleTokenChanged('TOKEN_REFRESHED', accessToken, 'STORAGE')
+          }
+        }
+      })
+    } catch (error) {
+      console.error('_listenForMultiTabEvents', error)
+      return null
+    }
+  }
+
+  private _listenForAuthEvents() {
+    let { data } = this.auth.onAuthStateChange((event, session) => {
+      this._handleTokenChanged(event, session?.access_token, 'CLIENT')
+    })
+    return data
+  }
+
+  private _handleTokenChanged(
+    event: AuthChangeEvent,
+    token: string | undefined,
+    source: 'CLIENT' | 'STORAGE'
+  ) {
+    if (
+      (event === 'TOKEN_REFRESHED' || event === 'SIGNED_IN') &&
+      this.changedAccessToken !== token
+    ) {
+      // Token has changed
+      this.realtime.setAuth(token!)
+      // Ideally we should call this.auth.recoverSession() - need to make public
+      // to trigger a "SIGNED_IN" event on this client.
+      if (source == 'STORAGE') this.auth.setAuth(token!)
+
+      this.changedAccessToken = token
+    } else if (event === 'SIGNED_OUT' || event === 'USER_DELETED') {
+      // Token is removed
+      this.removeAllSubscriptions()
+      if (source == 'STORAGE') this.auth.signOut()
+    }
   }
 }
