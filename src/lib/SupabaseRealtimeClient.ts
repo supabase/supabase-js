@@ -4,9 +4,21 @@ import { SupabaseEventTypes, SupabaseRealtimePayload } from './types'
 export class SupabaseRealtimeClient {
   subscription: RealtimeSubscription
 
-  constructor(socket: RealtimeClient, schema: string, tableName: string) {
+  constructor(
+    socket: RealtimeClient,
+    headers: { [key: string]: string },
+    schema: string,
+    tableName: string
+  ) {
+    const chanParams: { [key: string]: string } = {}
     const topic = tableName === '*' ? `realtime:${schema}` : `realtime:${schema}:${tableName}`
-    this.subscription = socket.channel(topic)
+    const userToken = headers['Authorization'].split(' ')[1]
+
+    if (userToken) {
+      chanParams['user_token'] = userToken
+    }
+
+    this.subscription = socket.channel(topic, chanParams)
   }
 
   private getPayloadRecords(payload: any) {
@@ -41,6 +53,7 @@ export class SupabaseRealtimeClient {
         eventType: payload.type,
         new: {},
         old: {},
+        errors: payload.errors,
       }
 
       enrichedPayload = { ...enrichedPayload, ...this.getPayloadRecords(payload) }
