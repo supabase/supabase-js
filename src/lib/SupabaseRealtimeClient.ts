@@ -1,16 +1,11 @@
 import { RealtimeSubscription, RealtimeClient, Transformers } from '@supabase/realtime-js'
-import { SupabaseEventTypes, SupabaseRealtimePayload } from './types'
+import { GenericObject, SupabaseEventTypes, SupabaseRealtimePayload } from './types'
 
 export class SupabaseRealtimeClient {
   subscription: RealtimeSubscription
 
-  constructor(
-    socket: RealtimeClient,
-    headers: { [key: string]: string },
-    schema: string,
-    tableName: string
-  ) {
-    const chanParams: { [key: string]: string } = {}
+  constructor(socket: RealtimeClient, headers: GenericObject, schema: string, tableName: string) {
+    const chanParams: GenericObject = {}
     const topic = tableName === '*' ? `realtime:${schema}` : `realtime:${schema}:${tableName}`
     const userToken = headers['Authorization'].split(' ')[1]
 

@@ -6,7 +6,7 @@ import { Fetch, GenericObject, SupabaseEventTypes, SupabaseRealtimePayload } fro
 export class SupabaseQueryBuilder<T> extends PostgrestQueryBuilder<T> {
   private _subscription: SupabaseRealtimeClient | null = null
   private _realtime: RealtimeClient
-  private _headers: { [key: string]: string }
+  private _headers: GenericObject
   private _schema: string
   private _table: string
 
