@@ -1,6 +1,6 @@
 import { PostgrestQueryBuilder } from '@supabase/postgrest-js'
-import { SupabaseRealtimeClient } from './SupabaseRealtimeClient'
 import { RealtimeClient } from '@supabase/realtime-js'
+import { SupabaseRealtimeClient } from './SupabaseRealtimeClient'
 import { Fetch, GenericObject, SupabaseEventTypes, SupabaseRealtimePayload } from './types'
 
 export class SupabaseQueryBuilder<T> extends PostgrestQueryBuilder<T> {

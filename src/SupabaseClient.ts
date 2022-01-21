@@ -37,9 +37,7 @@ export default class SupabaseClient {
   protected multiTab: boolean
   protected fetch?: Fetch
   protected changedAccessToken: string | undefined
-  protected headers: {
-    [key: string]: string
-  }
+  protected headers: GenericObject
 
   /**
    * Create a new client for use in the browser.
