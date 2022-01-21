@@ -256,7 +256,7 @@ export default class SupabaseClient {
   }
 
   private _getAuthHeaders(): GenericObject {
-    const headers: GenericObject = DEFAULT_HEADERS
+    const headers: GenericObject = this.headers
     const authBearer = this.auth.session()?.access_token ?? this.supabaseKey
     headers['apikey'] = this.supabaseKey
     headers['Authorization'] = `Bearer ${authBearer}`
