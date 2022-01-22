@@ -153,10 +153,10 @@
   dependencies:
     cross-fetch "^3.0.6"
 
-"@supabase/realtime-js@^1.3.3":
-  version "1.3.3"
-  resolved "https://registry.yarnpkg.com/@supabase/realtime-js/-/realtime-js-1.3.3.tgz#973c4cacf8062b4f1e435a0b250a2758e16e15f1"
-  integrity sha512-9D79jlo/56VQf/U7TWhu24epCoj0vWJ7ALkGcqci8Luk/iOcdCxY1NJ76BbS1UnpXEIvQxQGb1R5NSexriKcUA==
+"@supabase/realtime-js@^1.3.5":
+  version "1.3.5"
+  resolved "https://registry.yarnpkg.com/@supabase/realtime-js/-/realtime-js-1.3.5.tgz#6ade8a97ae4c600bbe8b7615fd987e2bd956c582"
+  integrity sha512-If+C0A6eT1BflFOOZNlnGw/91gNuj7f/M19/WutsPM0pjhx++8Dj0YH8z+tbgxX0nf/2UGVUMMgTBckzpk9R3g==
   dependencies:
     "@types/websocket" "^1.0.3"
     websocket "^1.0.34"
@@ -173,7 +173,7 @@
   dependencies:
     "@supabase/gotrue-js" "^1.21.7"
     "@supabase/postgrest-js" "^0.35.0"
-    "@supabase/realtime-js" "^1.3.3"
+    "@supabase/realtime-js" "^1.3.5"
     "@supabase/storage-js" "^1.5.0"
 
 "@types/node@*":
@@ -1252,9 +1252,9 @@ ms@2.0.0:
   integrity sha1-VgiurfwAvmwpAd9fmGF4jeDVl8g=
 
 nanoid@^3.1.23:
-  version "3.1.25"
-  resolved "https://registry.yarnpkg.com/nanoid/-/nanoid-3.1.25.tgz#09ca32747c0e543f0e1814b7d3793477f9c8e152"
-  integrity sha512-rdwtIXaXCLFAQbnfqDRnI6jaRHp9fTcYBjtFKE8eezcZ7LuLjhUaQGNeMXf1HmRoCH32CLz6XwX0TtxEOS/A3Q==
+  version "3.2.0"
+  resolved "https://registry.yarnpkg.com/nanoid/-/nanoid-3.2.0.tgz#62667522da6673971cca916a6d3eff3f415ff80c"
+  integrity sha512-fmsZYa9lpn69Ad5eDn7FMcnnSR+8R34W9qJEijxYhTbfOWzr22n1QxCMzXLK+ODyW2973V3Fux959iQoUxzUIA==
 
 native-url@0.3.4:
   version "0.3.4"
