@@ -180,3 +180,9 @@ export interface VerifyOTPParams {
   phone: string
   token: string
 }
+
+export interface OpenIDConnectCredentials {
+  id_token: string
+  nonce: string
+  provider: Provider
+}
