@@ -280,6 +280,16 @@ describe('GoTrueClient', () => {
     expect(user?.email).toBe(email)
   })
 
+  test('signInWithOpenIDConnect() with id_token', async () => {
+    const { error, session, user } = await auth.signInWithOpenIDConnect({
+      id_token: '',
+      nonce: 'random value',
+      provider: 'google'
+    })
+
+    expect(error).not.toBeNull()
+  }
+
   test('signOut', async () => {
     const { email, password } = mockUserCredentials()
 
