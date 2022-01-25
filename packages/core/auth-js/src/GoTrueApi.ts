@@ -8,7 +8,7 @@ import {
   User,
 } from './lib/types'
 import { COOKIE_OPTIONS } from './lib/constants'
-import { setCookie, deleteCookie } from './lib/cookies'
+import { setCookies, getCookieString } from './lib/cookies'
 import { expiresAt } from './lib/helpers'
 
 import type { ApiError } from './lib/types'
@@ -400,6 +400,8 @@ export default class GoTrueApi {
   /**
    * Set/delete the auth cookie based on the AuthChangeEvent.
    * Works for Next.js & Express (requires cookie-parser middleware).
+   * @param req The request object.
+   * @param res The response object.
    */
   setAuthCookie(req: any, res: any) {
     if (req.method !== 'POST') {
@@ -411,17 +413,99 @@ export default class GoTrueApi {
     if (!event) throw new Error('Auth event missing!')
     if (event === 'SIGNED_IN') {
       if (!session) throw new Error('Auth session missing!')
-      setCookie(req, res, {
-        name: this.cookieName(),
-        value: session.access_token,
-        domain: this.cookieOptions.domain,
-        maxAge: this.cookieOptions.lifetime ?? 0,
-        path: this.cookieOptions.path,
-        sameSite: this.cookieOptions.sameSite,
-      })
+      setCookies(
+        req,
+        res,
+        [
+          { key: 'access-token', value: session.access_token },
+          { key: 'refresh-token', value: session.refresh_token },
+        ].map((token) => ({
+          name: `${this.cookieName()}-${token.key}`,
+          value: token.value,
+          domain: this.cookieOptions.domain,
+          maxAge: this.cookieOptions.lifetime ?? 0,
+          path: this.cookieOptions.path,
+          sameSite: this.cookieOptions.sameSite,
+        }))
+      )
     }
-    if (event === 'SIGNED_OUT') deleteCookie(req, res, this.cookieName())
+    if (event === 'SIGNED_OUT') {
+      setCookies(
+        req,
+        res,
+        ['access-token', 'refresh-token'].map((key) => ({
+          name: `${this.cookieName()}-${key}`,
+          value: '',
+          maxAge: -1,
+        }))
+      )
+    }
     res.status(200).json({})
+  }
+
+  /**
+   * Deletes the Auth Cookies and redirects to the
+   * @param req The request object.
+   * @param res The response object.
+   * @param options Optionally specify a `redirectTo` URL in the options.
+   */
+  deleteAuthCookie(req: any, res: any, { redirectTo = '/' }: { redirectTo?: string }) {
+    setCookies(
+      req,
+      res,
+      ['access-token', 'refresh-token'].map((key) => ({
+        name: `${this.cookieName()}-${key}`,
+        value: '',
+        maxAge: -1,
+      }))
+    )
+    return res.redirect(307, redirectTo)
+  }
+
+  /**
+   * Helper method to generate the Auth Cookie string for you in case you can't use `setAuthCookie`.
+   * @param req The request object.
+   * @param res The response object.
+   * @returns The Cookie string that needs to be set as the value for the `Set-Cookie` header.
+   */
+  getAuthCookieString(req: any, res: any): string[] {
+    if (req.method !== 'POST') {
+      res.setHeader('Allow', 'POST')
+      res.status(405).end('Method Not Allowed')
+    }
+    const { event, session } = req.body
+
+    if (!event) throw new Error('Auth event missing!')
+    if (event === 'SIGNED_IN') {
+      if (!session) throw new Error('Auth session missing!')
+      return getCookieString(
+        req,
+        res,
+        [
+          { key: 'access-token', value: session.access_token },
+          { key: 'refresh-token', value: session.refresh_token },
+        ].map((token) => ({
+          name: `${this.cookieName()}-${token.key}`,
+          value: token.value,
+          domain: this.cookieOptions.domain,
+          maxAge: this.cookieOptions.lifetime ?? 0,
+          path: this.cookieOptions.path,
+          sameSite: this.cookieOptions.sameSite,
+        }))
+      )
+    }
+    if (event === 'SIGNED_OUT') {
+      return getCookieString(
+        req,
+        res,
+        ['access-token', 'refresh-token'].map((key) => ({
+          name: `${this.cookieName()}-${key}`,
+          value: '',
+          maxAge: -1,
+        }))
+      )
+    }
+    return res.getHeader('Set-Cookie')
   }
 
   /**
@@ -524,7 +608,10 @@ export default class GoTrueApi {
    * Get user by reading the cookie from the request.
    * Works for Next.js & Express (requires cookie-parser middleware).
    */
-  async getUserByCookie(req: any): Promise<{
+  async getUserByCookie(
+    req: any,
+    res?: any
+  ): Promise<{
     token: string | null
     user: User | null
     data: User | null
@@ -537,15 +624,41 @@ export default class GoTrueApi {
         )
       }
 
-      const token = req.cookies[this.cookieName()]
+      const access_token = req.cookies[`${this.cookieName()}-access-token`]
+      const refresh_token = req.cookies[`${this.cookieName()}-refresh-token`]
 
-      if (!token) {
+      if (!access_token) {
         throw new Error('No cookie found!')
       }
 
-      const { user, error } = await this.getUser(token)
-      if (error) throw error
-      return { token, user, data: user, error: null }
+      const { user, error: getUserError } = await this.getUser(access_token)
+      if (getUserError) {
+        if (!refresh_token) throw new Error('No refresh_token cookie found!')
+        if (!res)
+          throw new Error('You need to pass the res object to automatically refresh the session!')
+        const { data, error } = await this.refreshAccessToken(refresh_token)
+        if (error) {
+          throw error
+        } else if (data) {
+          setCookies(
+            req,
+            res,
+            [
+              { key: 'access-token', value: data.access_token },
+              { key: 'refresh-token', value: data.refresh_token! },
+            ].map((token) => ({
+              name: `${this.cookieName()}-${token.key}`,
+              value: token.value,
+              domain: this.cookieOptions.domain,
+              maxAge: this.cookieOptions.lifetime ?? 0,
+              path: this.cookieOptions.path,
+              sameSite: this.cookieOptions.sameSite,
+            }))
+          )
+          return { token: data.access_token, user: data.user, data: data.user, error: null }
+        }
+      }
+      return { token: access_token, user: user, data: user, error: null }
     } catch (e) {
       return { token: null, user: null, data: null, error: e as ApiError }
     }

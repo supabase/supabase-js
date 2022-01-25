@@ -37,6 +37,7 @@ services:
       GOTRUE_SMS_TWILIO_AUTH_TOKEN: "${GOTRUE_SMS_TWILIO_AUTH_TOKEN}"
       GOTRUE_SMS_TWILIO_MESSAGE_SERVICE_SID: "${GOTRUE_SMS_TWILIO_MESSAGE_SERVICE_SID}"
       GOTRUE_SMS_AUTOCONFIRM: 'false'
+      GOTRUE_COOKIE_KEY: "sb"
     depends_on:
       - db
     restart: on-failure
@@ -65,6 +66,7 @@ services:
       GOTRUE_SMTP_USER: GOTRUE_SMTP_USER
       GOTRUE_SMTP_PASS: GOTRUE_SMTP_PASS
       GOTRUE_SMTP_ADMIN_EMAIL: admin@email.com
+      GOTRUE_COOKIE_KEY: "sb"
     depends_on:
       - db
     restart: on-failure
@@ -93,6 +95,7 @@ services:
       GOTRUE_SMTP_USER: GOTRUE_SMTP_USER
       GOTRUE_SMTP_PASS: GOTRUE_SMTP_PASS
       GOTRUE_SMTP_ADMIN_EMAIL: admin@email.com
+      GOTRUE_COOKIE_KEY: "sb"
     depends_on:
       - db
     restart: on-failure
