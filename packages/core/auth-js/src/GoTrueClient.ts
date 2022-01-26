@@ -15,6 +15,7 @@ import type {
   CookieOptions,
   UserCredentials,
   VerifyOTPParams,
+  OpenIDConnectCredentials,
 } from './lib/types'
 
 polyfillGlobalThis() // Make "globalThis" available
@@ -260,12 +261,12 @@ export default class GoTrueClient {
       if (id_token && nonce && provider) {
         try {
           const { data, error } = await this.api.signInWithOpenIDConnect(id_token, nonce, client_id, issuer, provider)
-          if (error || !data) return { data: null, user: null, session: null, error }
+          if (error || !data) return { user: null, session: null, error }
           this._saveSession(data)
           this._notifyAllSubscribers('SIGNED_IN')
-          return { data, user: data.user, session: data, error: null }
+          return { user: data.user, session: data, error: null }
         } catch (e) {
-          return { data: null, user: null, session: null, error: e as ApiError }
+          return { user: null, session: null, error: e as ApiError }
         }
       }
       throw new Error(`You must provide a OpenID Connect provider with id_token and nonce.`)
