@@ -6,6 +6,7 @@ import {
   UserAttributes,
   CookieOptions,
   User,
+  OpenIDConnectCredentials
 } from './lib/types'
 import { COOKIE_OPTIONS } from './lib/constants'
 import { setCookie, deleteCookie } from './lib/cookies'
@@ -211,13 +212,7 @@ export default class GoTrueApi {
    * @param client_id The client_id of the user.
    * @param issuer The issuer of the user.
   */
-  async signInWithOpenIDConnect(
-    id_token: string,
-    nonce: string,
-    client_id: string,
-    issuer: string,
-    provider: string
-  ): Promise<{ data: Session | null; error: ApiError | null }> {
+  async signInWithOpenIDConnect({ id_token, nonce, client_id, issuer, provider }:OpenIDConnectCredentials): Promise<{ data: Session | null; error: ApiError | null }> {
     try {
       const headers = { ...this.headers }
       const queryString = '?grant_type=id_token'
