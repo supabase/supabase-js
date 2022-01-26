@@ -288,7 +288,7 @@ describe('GoTrueClient', () => {
     })
 
     expect(error).not.toBeNull()
-  }
+  })
 
   test('signOut', async () => {
     const { email, password } = mockUserCredentials()
