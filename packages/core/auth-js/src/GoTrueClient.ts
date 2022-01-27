@@ -237,7 +237,7 @@ export default class GoTrueClient {
       if (openIDConnect) {
         return this._handleOpenIDConnectSignIn(openIDConnect)
       }
-      throw new Error(`You must provide either an email, phone number or a third-party provider.`)
+      throw new Error(`You must provide either an email, phone number or a third-party provider or OpenID Connect.`)
     } catch (e) {
       return { user: null, session: null, error: e as ApiError }
     }
@@ -562,23 +562,18 @@ export default class GoTrueClient {
     user: User | null
     error: ApiError | null
   }> {
-    try {
-      this._removeSession()
-      if (IDToken && nonce && (clientID && issuer || provider) ) {
-        try {
-          const { data, error } = await this.api.signInWithOpenIDConnect({IDToken, nonce, clientID, issuer, provider})
-          if (error || !data) return { user: null, session: null, error }
-          this._saveSession(data)
-          this._notifyAllSubscribers('SIGNED_IN')
-          return { user: data.user, session: data, error: null }
-        } catch (e) {
-          return { user: null, session: null, error: e as ApiError }
-        }
+    if (IDToken && nonce && ( (clientID && issuer) || provider) ) {
+      try {
+        const { data, error } = await this.api.signInWithOpenIDConnect({IDToken, nonce, clientID, issuer, provider})
+        if (error || !data) return { user: null, session: null, error }
+        this._saveSession(data)
+        this._notifyAllSubscribers('SIGNED_IN')
+        return { user: data.user, session: data, error: null }
+      } catch (e) {
+        return { user: null, session: null, error: e as ApiError }
       }
-      throw new Error(`You must provide a OpenID Connect provider with id_token and nonce.`)
-    } catch (e) {
-      return { user: null, session: null, error: e as ApiError }
     }
+    throw new Error(`You must provide a OpenID Connect provider with IDToken and nonce.`)
   }
 
   /**
