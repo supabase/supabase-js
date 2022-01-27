@@ -283,8 +283,8 @@ describe('GoTrueClient', () => {
 
   test('signIn with OpenIDConnect', async () => {
     const openIDConnect:OpenIDConnectCredentials = {
-      IDToken: expect.any(String),
-      nonce: expect.any(String),
+      IDToken: 'abcde',
+      nonce: 'random value',
       provider: 'google'  
     }
     const { session, user, error } = await auth.signIn(openIDConnect)
