@@ -287,7 +287,7 @@ describe('GoTrueClient', () => {
       nonce: expect.any(String),
       provider: 'google'  
     }
-    const { session, user, error } = await authWithSession.signIn(openIDConnect)
+    const { session, user, error } = await auth.signIn(openIDConnect)
 
     expect(error).not.toBeNull()
     expect(session).toBeNull()
