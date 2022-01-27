@@ -281,7 +281,7 @@ describe('GoTrueClient', () => {
     expect(user?.email).toBe(email)
   })
 
-  test('signInWithOpenIDConnect() with id_token', async () => {
+  test('signIn with OpenIDConnect', async () => {
     const openIDConnect:OpenIDConnectCredentials = {
       IDToken: expect.any(String),
       nonce: expect.any(String),
