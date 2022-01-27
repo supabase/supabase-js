@@ -1,3 +1,4 @@
+import { OpenIDConnectCredentials } from '../src'
 import {
   authClient as auth,
   authClientWithSession as authWithSession,
@@ -281,13 +282,16 @@ describe('GoTrueClient', () => {
   })
 
   test('signInWithOpenIDConnect() with id_token', async () => {
-    const { error, session, user } = await auth.signInWithOpenIDConnect({
-      id_token: '',
-      nonce: 'random value',
-      provider: 'google'
-    })
+    const openIDConnect:OpenIDConnectCredentials = {
+      IDToken: expect.any(String),
+      nonce: expect.any(String),
+      provider: 'google'  
+    }
+    const { session, user, error } = await authWithSession.signIn(openIDConnect)
 
     expect(error).not.toBeNull()
+    expect(session).toBeNull()
+    expect(user).toBeNull()
   })
 
   test('signOut', async () => {
