@@ -219,7 +219,7 @@ export default class GoTrueApi {
       const data = await post(
         this.fetch,
         `${this.url}/token${queryString}`,
-        { IDToken, nonce, clientID, issuer, provider },
+        { id_token: IDToken, nonce, client_id: clientID, issuer, provider },
         { headers }
       )
       const session = { ...data }
