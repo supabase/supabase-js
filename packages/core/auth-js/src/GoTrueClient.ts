@@ -573,7 +573,7 @@ export default class GoTrueClient {
         return { user: null, session: null, error: e as ApiError }
       }
     }
-    throw new Error(`You must provide a OpenID Connect provider with IDToken and nonce.`)
+    throw new Error(`You must provide a OpenID Connect provider with idtoken and nonce.`)
   }
 
   /**
