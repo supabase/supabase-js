@@ -37,6 +37,7 @@ services:
       GOTRUE_SMS_TWILIO_AUTH_TOKEN: "${GOTRUE_SMS_TWILIO_AUTH_TOKEN}"
       GOTRUE_SMS_TWILIO_MESSAGE_SERVICE_SID: "${GOTRUE_SMS_TWILIO_MESSAGE_SERVICE_SID}"
       GOTRUE_SMS_AUTOCONFIRM: 'false'
+      GOTRUE_COOKIE_KEY: "sb"
     depends_on:
       - db
     restart: on-failure
@@ -60,12 +61,12 @@ services:
       GOTRUE_OPERATOR_TOKEN: super-secret-operator-token
       DATABASE_URL: 'postgres://postgres:postgres@db:5432/postgres?sslmode=disable'
       GOTRUE_EXTERNAL_PHONE_ENABLED: 'true'
-      GOTRUE_SMS_AUTOCONFIRM: 'true'
       GOTRUE_SMTP_HOST: mail
       GOTRUE_SMTP_PORT: 2500
       GOTRUE_SMTP_USER: GOTRUE_SMTP_USER
       GOTRUE_SMTP_PASS: GOTRUE_SMTP_PASS
       GOTRUE_SMTP_ADMIN_EMAIL: admin@email.com
+      GOTRUE_COOKIE_KEY: "sb"
     depends_on:
       - db
     restart: on-failure
@@ -94,6 +95,7 @@ services:
       GOTRUE_SMTP_USER: GOTRUE_SMTP_USER
       GOTRUE_SMTP_PASS: GOTRUE_SMTP_PASS
       GOTRUE_SMTP_ADMIN_EMAIL: admin@email.com
+      GOTRUE_COOKIE_KEY: "sb"
     depends_on:
       - db
     restart: on-failure
