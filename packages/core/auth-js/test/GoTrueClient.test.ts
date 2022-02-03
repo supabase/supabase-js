@@ -281,19 +281,43 @@ describe('GoTrueClient', () => {
     expect(user?.email).toBe(email)
   })
 
-  test('signIn with OpenIDConnect', async () => {
+  test('signIn with OpenIDConnect wrong id_token', async () => {
     const oidc: OpenIDConnectCredentials = {
-      IDToken: 'abcde',
+      id_token: 'abcde',
       nonce: 'random value',
-      provider: 'google'  
+      provider: 'google'
     }
-    const { session, user, error } = await auth.signIn({openIDConnect: openIDConnect})
+    const { session, user, error } = await auth.signIn({oidc: openIDConnect})
 
     expect(error).not.toBeNull()
     expect(session).toBeNull()
     expect(user).toBeNull()
   })
 
+  test('signIn with OpenIDConnect both client_id and provider are null', async () => {
+    const oidc: OpenIDConnectCredentials = {
+      id_token: 'abcde',
+      nonce: 'random value',
+    }
+    const { session, user, error } = await auth.signIn({oidc: openIDConnect})
+
+    expect(error).not.toBeNull()
+    expect(session).toBeNull()
+    expect(user).toBeNull()
+  })
+
+  test('signIn with OpenIDConnect both id_token and client_id is null', async () => {
+    const oidc: OpenIDConnectCredentials = {
+      nonce: 'random value',
+      provider: 'google'
+    }
+    const { session, user, error } = await auth.signIn({oidc: openIDConnect})
+
+    expect(error).not.toBeNull()
+    expect(session).toBeNull()
+    expect(user).toBeNull()
+  })
+  
   test('signOut', async () => {
     const { email, password } = mockUserCredentials()
 
