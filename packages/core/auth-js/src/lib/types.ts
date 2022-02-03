@@ -183,7 +183,7 @@ export interface VerifyOTPParams {
 }
 
 export interface OpenIDConnectCredentials {
-  IDToken: string
+  id_token: string
   nonce: string
   provider?: Provider
   clientID?: string
