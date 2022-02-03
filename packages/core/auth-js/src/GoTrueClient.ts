@@ -244,7 +244,7 @@ export default class GoTrueClient {
       if (openIDConnect) {
         return this._handleOpenIDConnectSignIn(openIDConnect)
       }
-      throw new Error(`You must provide either an email, phone number or a third-party provider or OpenID Connect.`)
+      throw new Error(`You must provide either an email, phone number, a third-party provider or OpenID Connect.`)
     } catch (e) {
       return { user: null, session: null, error: e as ApiError }
     }
