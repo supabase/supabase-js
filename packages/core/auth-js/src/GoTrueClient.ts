@@ -563,7 +563,7 @@ export default class GoTrueClient {
   }
 
   private async _handleOpenIDConnectSignIn(
-    { IDToken, nonce, clientID, issuer, provider }: OpenIDConnectCredentials
+    { id_token, nonce, client_id, issuer, provider }: OpenIDConnectCredentials
   ): Promise<{
     session: Session | null
     user: User | null
