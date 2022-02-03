@@ -287,7 +287,7 @@ describe('GoTrueClient', () => {
       nonce: 'random value',
       provider: 'google'
     }
-    const { session, user, error } = await auth.signIn({oidc: openIDConnect})
+    const { session, user, error } = await auth.signIn({oidc})
 
     expect(error).not.toBeNull()
     expect(session).toBeNull()
@@ -299,7 +299,7 @@ describe('GoTrueClient', () => {
       id_token: 'abcde',
       nonce: 'random value',
     }
-    const { session, user, error } = await auth.signIn({oidc: openIDConnect})
+    const { session, user, error } = await auth.signIn({oidc})
 
     expect(error).not.toBeNull()
     expect(session).toBeNull()
@@ -311,7 +311,7 @@ describe('GoTrueClient', () => {
       nonce: 'random value',
       provider: 'google'
     }
-    const { session, user, error } = await auth.signIn({oidc: openIDConnect})
+    const { session, user, error } = await auth.signIn({oidc})
 
     expect(error).not.toBeNull()
     expect(session).toBeNull()
