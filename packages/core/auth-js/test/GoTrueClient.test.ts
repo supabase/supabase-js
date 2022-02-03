@@ -282,7 +282,7 @@ describe('GoTrueClient', () => {
   })
 
   test('signIn with OpenIDConnect', async () => {
-    const openIDConnect:OpenIDConnectCredentials = {
+    const oidc: OpenIDConnectCredentials = {
       IDToken: 'abcde',
       nonce: 'random value',
       provider: 'google'  
