@@ -241,8 +241,8 @@ export default class GoTrueClient {
           scopes: options.scopes,
         })
       }
-      if (openIDConnect) {
-        return this._handleOpenIDConnectSignIn(openIDConnect)
+      if (oidc) {
+        return this._handleOpenIDConnectSignIn(oidc)
       }
       throw new Error(`You must provide either an email, phone number, a third-party provider or OpenID Connect.`)
     } catch (e) {
