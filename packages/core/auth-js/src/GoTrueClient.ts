@@ -571,7 +571,7 @@ export default class GoTrueClient {
   }> {
     if (IDToken && nonce && ( (clientID && issuer) || provider) ) {
       try {
-        const { data, error } = await this.api.signInWithOpenIDConnect({IDToken, nonce, clientID, issuer, provider})
+        const { data, error } = await this.api.signInWithOpenIDConnect({id_token, nonce, client_id, issuer, provider})
         if (error || !data) return { user: null, session: null, error }
         this._saveSession(data)
         this._notifyAllSubscribers('SIGNED_IN')
