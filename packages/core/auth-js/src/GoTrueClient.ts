@@ -187,7 +187,7 @@ export default class GoTrueClient {
    * @param scopes A space-separated list of scopes granted to the OAuth application.
    */
   async signIn(
-    { email, phone, password, refreshToken, provider, openIDConnect }: UserCredentials,
+    { email, phone, password, refreshToken, provider, oidc }: UserCredentials,
     options: {
       redirectTo?: string
       scopes?: string
