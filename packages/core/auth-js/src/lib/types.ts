@@ -186,6 +186,6 @@ export interface OpenIDConnectCredentials {
   id_token: string
   nonce: string
   provider?: Provider
-  clientID?: string
+  client_id?: string
   issuer?: string
 }
