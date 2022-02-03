@@ -164,37 +164,29 @@ export default class SupabaseClient {
    *
    * @param subscription The subscription you want to remove.
    */
-  removeSubscription(subscription: RealtimeSubscription): Promise<
+  async removeSubscription(subscription: RealtimeSubscription): Promise<
     | {
         data: { openSubscriptions: number }
         error: null
       }
     | { error: Error }
   > {
-    return new Promise(async (resolve, reject) => {
       const { error } = await this._closeSubscription(subscription)
-
       if (error) {
-        return reject({ error })
+        return { error }
       }
-
       const allSubscriptions = this.getSubscriptions()
-
       if (allSubscriptions.length === 0) {
         const { error } = await this.realtime.disconnect()
-
         if (error) {
-          return reject({ error })
+          return { error }
         }
       }
-
       const openSubscriptionsCount = allSubscriptions.filter((chan) => chan.isJoined()).length
-
-      return resolve({
+      return {
         data: { openSubscriptions: openSubscriptionsCount },
         error: null,
-      })
-    })
+      }
   }
 
   private async _closeSubscription(
@@ -203,11 +195,8 @@ export default class SupabaseClient {
     if (!subscription.isClosed()) {
       return await this._closeChannel(subscription)
     }
-
-    return new Promise((resolve) => {
-      this.realtime.remove(subscription)
-      return resolve({ error: null })
-    })
+    this.realtime.remove(subscription)
+    return { error: null }
   }
 
   /**
