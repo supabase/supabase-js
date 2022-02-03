@@ -224,14 +224,14 @@ export default class GoTrueApi {
    * @param clientID The clientID of the user.
    * @param issuer The issuer of the user.
   */
-  async signInWithOpenIDConnect({ IDToken, nonce, clientID, issuer, provider }:OpenIDConnectCredentials): Promise<{ data: Session | null; error: ApiError | null }> {
+  async signInWithOpenIDConnect({ id_token, nonce, client_id, issuer, provider }:OpenIDConnectCredentials): Promise<{ data: Session | null; error: ApiError | null }> {
     try {
       const headers = { ...this.headers }
       const queryString = '?grant_type=id_token'
       const data = await post(
         this.fetch,
         `${this.url}/token${queryString}`,
-        { id_token: IDToken, nonce, client_id: clientID, issuer, provider },
+        { id_token, nonce, client_id, issuer, provider },
         { headers }
       )
       const session = { ...data }
