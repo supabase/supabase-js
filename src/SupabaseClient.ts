@@ -182,7 +182,7 @@ export default class SupabaseClient {
     return { error }
   }
 
-  private async _unsubscribeSubscription(
+  private _unsubscribeSubscription(
     subscription: RealtimeSubscription
   ): Promise<Error | null> {
     const subPush = subscription.unsubscribe()
