@@ -295,15 +295,25 @@ describe('GoTrueClient', () => {
   })
 
   test('signIn with OpenIDConnect both client_id and provider are null', async () => {
-    const oidc: OpenIDConnectCredentials = {
-      id_token: 'abcde',
-      nonce: 'random value',
+    const t = async ()=>{
+      const oidc: OpenIDConnectCredentials = {
+        id_token: 'abcde',
+        nonce: 'random value',
+      }
+      await auth.signIn({oidc})
     }
-    const { session, user, error } = await auth.signIn({oidc})
+    await expect(t).rejects.toThrow(Error)
+  })
 
-    expect(error).not.toBeNull()
-    expect(session).toBeNull()
-    expect(user).toBeNull()
+  test('signIn with OpenIDConnect both id_token and client_id is null', async () => {
+    const t = async ()=>{
+      const oidc: any = {
+        nonce: 'random value',
+        provider: 'google'
+      }
+      await auth.signIn({oidc})
+    }
+    await expect(t).rejects.toThrow(Error)
   })
   
   test('signOut', async () => {
