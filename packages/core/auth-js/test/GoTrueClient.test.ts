@@ -311,11 +311,10 @@ describe('GoTrueClient', () => {
       nonce: 'random value',
       provider: 'google'
     }
-    const { session, user, error } = await auth.signIn({oidc})
-
-    expect(error).not.toBeNull()
-    expect(session).toBeNull()
-    expect(user).toBeNull()
+    const t = ()=>{
+      await auth.signIn({oidc})
+    }
+    expect(t).toThrow(TypeError);
   })
   
   test('signOut', async () => {
