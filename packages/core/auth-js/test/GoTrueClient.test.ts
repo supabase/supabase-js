@@ -305,17 +305,6 @@ describe('GoTrueClient', () => {
     expect(session).toBeNull()
     expect(user).toBeNull()
   })
-
-  test('signIn with OpenIDConnect both id_token and client_id is null', () => {
-    const t = async ()=>{
-      const oidc: OpenIDConnectCredentials = {
-        nonce: 'random value',
-        provider: 'google'
-      }
-      await auth.signIn({oidc})
-    }
-    expect(t).toThrow(TypeError);
-  })
   
   test('signOut', async () => {
     const { email, password } = mockUserCredentials()
