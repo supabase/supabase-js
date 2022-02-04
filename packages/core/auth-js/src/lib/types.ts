@@ -174,7 +174,7 @@ export interface UserCredentials {
   refreshToken?: string
   // (Optional) The name of the provider.
   provider?: Provider
-oidc?: OpenIDConnectCredentials
+  oidc?: OpenIDConnectCredentials
 }
 
 export interface VerifyOTPParams {
