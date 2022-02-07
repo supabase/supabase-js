@@ -15,6 +15,7 @@ import type {
   CookieOptions,
   UserCredentials,
   VerifyOTPParams,
+  OpenIDConnectCredentials,
 } from './lib/types'
 
 polyfillGlobalThis() // Make "globalThis" available
@@ -186,7 +187,7 @@ export default class GoTrueClient {
    * @param scopes A space-separated list of scopes granted to the OAuth application.
    */
   async signIn(
-    { email, phone, password, refreshToken, provider }: UserCredentials,
+    { email, phone, password, refreshToken, provider, oidc }: UserCredentials,
     options: {
       redirectTo?: string
       scopes?: string
@@ -240,7 +241,10 @@ export default class GoTrueClient {
           scopes: options.scopes,
         })
       }
-      throw new Error(`You must provide either an email, phone number or a third-party provider.`)
+      if (oidc) {
+        return this._handleOpenIDConnectSignIn(oidc)
+      }
+      throw new Error(`You must provide either an email, phone number, a third-party provider or OpenID Connect.`)
     } catch (e) {
       return { user: null, session: null, error: e as ApiError }
     }
@@ -556,6 +560,27 @@ export default class GoTrueClient {
       if (url) return { provider, url, data: null, session: null, user: null, error: null }
       return { data: null, user: null, session: null, error: e as ApiError }
     }
+  }
+
+  private async _handleOpenIDConnectSignIn(
+    { id_token, nonce, client_id, issuer, provider }: OpenIDConnectCredentials
+  ): Promise<{
+    session: Session | null
+    user: User | null
+    error: ApiError | null
+  }> {
+    if (id_token && nonce && ( (client_id && issuer) || provider) ) {
+      try {
+        const { data, error } = await this.api.signInWithOpenIDConnect({id_token, nonce, client_id, issuer, provider})
+        if (error || !data) return { user: null, session: null, error }
+        this._saveSession(data)
+        this._notifyAllSubscribers('SIGNED_IN')
+        return { user: data.user, session: data, error: null }
+      } catch (e) {
+        return { user: null, session: null, error: e as ApiError }
+      }
+    }
+    throw new Error(`You must provide a OpenID Connect provider with your id token and nonce.`)
   }
 
   /**
