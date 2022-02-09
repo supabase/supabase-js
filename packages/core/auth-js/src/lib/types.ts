@@ -1,16 +1,20 @@
 export type Provider =
+  | 'apple'
   | 'azure'
   | 'bitbucket'
+  | 'discord'
   | 'facebook'
   | 'github'
   | 'gitlab'
   | 'google'
-  | 'twitter'
-  | 'apple'
-  | 'discord'
-  | 'twitch'
-  | 'spotify'
+  | 'linkedin'
+  | 'notion'
   | 'slack'
+  | 'spotify'
+  | 'twitch'
+  | 'twitter'
+
+
 
 export type AuthChangeEvent =
   | 'PASSWORD_RECOVERY'
