@@ -7,6 +7,7 @@ export type Provider =
   | 'github'
   | 'gitlab'
   | 'google'
+  | 'linkedin'
   | 'notion'
   | 'slack'
   | 'spotify'
