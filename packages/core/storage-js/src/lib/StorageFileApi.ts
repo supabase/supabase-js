@@ -162,10 +162,10 @@ export class StorageFileApi {
   }
 
   /**
-   * Moves an existing file, optionally renaming it at the same time.
+   * Moves an existing file.
    *
    * @param fromPath The original file path, including the current file name. For example `folder/image.png`.
-   * @param toPath The new file path, including the new file name. For example `folder/image-copy.png`.
+   * @param toPath The new file path, including the new file name. For example `folder/image-new.png`.
    */
   async move(
     fromPath: string,
@@ -175,6 +175,29 @@ export class StorageFileApi {
       const data = await post(
         this.fetch,
         `${this.url}/object/move`,
+        { bucketId: this.bucketId, sourceKey: fromPath, destinationKey: toPath },
+        { headers: this.headers }
+      )
+      return { data, error: null }
+    } catch (error) {
+      return { data: null, error }
+    }
+  }
+
+  /**
+   * Copies an existing file.
+   *
+   * @param fromPath The original file path, including the current file name. For example `folder/image.png`.
+   * @param toPath The new file path, including the new file name. For example `folder/image-copy.png`.
+   */
+  async copy(
+    fromPath: string,
+    toPath: string
+  ): Promise<{ data: { message: string } | null; error: Error | null }> {
+    try {
+      const data = await post(
+        this.fetch,
+        `${this.url}/object/copy`,
         { bucketId: this.bucketId, sourceKey: fromPath, destinationKey: toPath },
         { headers: this.headers }
       )
@@ -238,7 +261,9 @@ export class StorageFileApi {
    *
    * @param path The file path to be downloaded, including the path and file name. For example `folder/image.png`.
    */
-  getPublicUrl(path: string): {
+  getPublicUrl(
+    path: string
+  ): {
     data: { publicURL: string } | null
     error: Error | null
     publicURL: string | null
