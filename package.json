@@ -43,6 +43,7 @@
     "@supabase/storage-js": "^1.5.1"
   },
   "devDependencies": {
+    "@semantic-release/git": "^10.0.1",
     "@types/jest": "^26.0.13",
     "genversion": "^3.0.1",
     "husky": "^4.3.0",
