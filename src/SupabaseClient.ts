@@ -1,4 +1,4 @@
-import { DEFAULT_HEADERS, STORAGE_KEY } from './lib/constants'
+import { CLIENT_VERSION, DEFAULT_HEADERS, STORAGE_KEY } from './lib/constants'
 import { stripTrailingSlash, isBrowser } from './lib/helpers'
 import { Fetch, GenericObject, SupabaseClientOptions } from './lib/types'
 import { SupabaseAuthClient } from './lib/SupabaseAuthClient'
@@ -226,7 +226,7 @@ export default class SupabaseClient {
   private _initRealtimeClient(options?: RealtimeClientOptions) {
     return new RealtimeClient(this.realtimeUrl, {
       ...options,
-      params: { ...options?.params, apikey: this.supabaseKey },
+      params: { ...options?.params, apikey: this.supabaseKey, client_vsn: CLIENT_VERSION },
     })
   }
 
