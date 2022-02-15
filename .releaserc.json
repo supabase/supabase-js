@@ -1,17 +1,5 @@
 {
   "plugins": [
-    "@semantic-release/commit-analyzer",
-    "@semantic-release/release-notes-generator",
-    "@semantic-release/npm",
-    [
-      "@semantic-release/github",
-      {
-        "successComment": false,
-        "releasedLabels": false,
-        "failTitle": false,
-        "addReleases": false
-      }
-    ],
     [
       "semantic-release-plugin-update-version-in-files",
       {
@@ -24,6 +12,18 @@
         ],
         "placeholder": "0.0.0"
       }
-    ]
+    ],
+    "@semantic-release/commit-analyzer",
+    "@semantic-release/release-notes-generator",
+    [
+      "@semantic-release/github",
+      {
+        "successComment": false,
+        "releasedLabels": false,
+        "failTitle": false,
+        "addReleases": false
+      }
+    ],
+    "@semantic-release/npm"
   ]
 }
