@@ -86,7 +86,8 @@ export class StorageFileApi {
 
       const cleanPath = this._removeEmptyFolders(path)
       const _path = this._getFinalPath(cleanPath)
-      const res = await fetch(`${this.url}/object/${_path}`, {
+      const fetcher = this.fetch ?? fetch
+      const res = await fetcher(`${this.url}/object/${_path}`, {
         method,
         body: body as BodyInit,
         headers,
