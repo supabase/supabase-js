@@ -335,7 +335,9 @@ export default class GoTrueApi {
         { phone, token, type: 'sms', redirect_to: options.redirectTo },
         { headers }
       )
-      return { data, error: null }
+      const session = { ...data }
+      if (session.expires_in) session.expires_at = expiresAt(data.expires_in)
+      return { data: session, error: null }
     } catch (e) {
       return { data: null, error: e as ApiError }
     }
