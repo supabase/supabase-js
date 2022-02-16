@@ -209,7 +209,7 @@ export class StorageFileApi {
   }
 
   /**
-   * Create signed url to download file without requiring permissions. This URL can be valid for a set number of seconds.
+   * Create signed URL to download file without requiring permissions. This URL can be valid for a set number of seconds.
    *
    * @param path The file path to be downloaded, including the current file name. For example `folder/image.png`.
    * @param expiresIn The number of seconds until the signed URL expires. For example, `60` for a URL which is valid for one minute.
@@ -235,6 +235,32 @@ export class StorageFileApi {
       return { data, error: null, signedURL }
     } catch (error) {
       return { data: null, error, signedURL: null }
+    }
+  }
+
+  /**
+   * Create signed URLs to download files without requiring permissions. These URLs can be valid for a set number of seconds.
+   *
+   * @param paths The file paths to be downloaded, including the current file names. For example [`folder/image.png`, 'folder2/image2.png'].
+   * @param expiresIn The number of seconds until the signed URLs expire. For example, `60` for URLs which are valid for one minute.
+   */
+  async createSignedUrls(
+    paths: string[],
+    expiresIn: number
+  ): Promise<{
+    data: { path: string; signedURL: string }[] | null
+    error: Error | null
+  }> {
+    try {
+      const data = await post(
+        this.fetch,
+        `${this.url}/object/sign/${this.bucketId}`,
+        { expiresIn, paths },
+        { headers: this.headers }
+      )
+      return { data, error: null }
+    } catch (error) {
+      return { data: null, error }
     }
   }
 
