@@ -241,7 +241,7 @@ export class StorageFileApi {
   /**
    * Create signed URLs to download files without requiring permissions. These URLs can be valid for a set number of seconds.
    *
-   * @param paths The file paths to be downloaded, including the current file names. For example [`folder/image.png`, 'folder2/image2.png'].
+   * @param paths The file paths to be downloaded, including the current file names. For example `['folder/image.png', 'folder2/image2.png']`.
    * @param expiresIn The number of seconds until the signed URLs expire. For example, `60` for URLs which are valid for one minute.
    */
   async createSignedUrls(
