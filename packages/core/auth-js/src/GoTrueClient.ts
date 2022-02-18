@@ -184,6 +184,7 @@ export default class GoTrueClient {
    * @param refreshToken A valid refresh token that was returned on login.
    * @param provider One of the providers supported by GoTrue.
    * @param redirectTo A URL or mobile address to send the user to after they are confirmed.
+   * @param shouldCreateUser A boolean flag to indicate whether to automatically create a user on magiclink / otp sign-ins if the user doesn't exist. Defaults to true.
    * @param scopes A space-separated list of scopes granted to the OAuth application.
    */
   async signIn(

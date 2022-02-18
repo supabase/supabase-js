@@ -245,6 +245,7 @@ export default class GoTrueApi {
   /**
    * Sends a magic login link to an email address.
    * @param email The email address of the user.
+   * @param shouldCreateUser A boolean flag to indicate whether to automatically create a user on magiclink / otp sign-ins if the user doesn't exist. Defaults to true.
    * @param redirectTo A URL or mobile address to send the user to after they are confirmed.
    */
   async sendMagicLinkEmail(
@@ -278,6 +279,7 @@ export default class GoTrueApi {
   /**
    * Sends a mobile OTP via SMS. Will register the account if it doesn't already exist
    * @param phone The user's phone number WITH international prefix
+   * @param shouldCreateUser A boolean flag to indicate whether to automatically create a user on magiclink / otp sign-ins if the user doesn't exist. Defaults to true.
    */
   async sendMobileOTP(
     phone: string, 
