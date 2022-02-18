@@ -11,7 +11,9 @@ const auth = new GoTrueClient({
 function App() {
   let [session, setSession] = useState(auth.session())
   let [email, setEmail] = useState(localStorage.getItem('email') ?? '')
+  let [phone, setPhone] = useState(localStorage.getItem('phone') ?? '')
   let [password, setPassword] = useState('')
+  let [otp, setOtp] = useState('')
   let [rememberMe, setRememberMe] = useState(false)
 
   // Keep the session up to date
@@ -20,6 +22,15 @@ function App() {
   async function handleOAuthLogin(provider) {
     let { error } = await auth.signIn({ provider }, { redirectTo: 'http://localhost:3000/welcome'})
     if (error) console.log('Error: ', error.message)
+  }
+  async function handleVerifyOtp() {
+    let data = await auth.verifyOTP({ phone: phone, token: otp })
+    console.log(data)
+  }
+
+  async function handleSendOtp() {
+    let data = await auth.signIn({ phone: phone })
+    console.log(data)
   }
   async function handleEmailSignIn() {
     if (rememberMe) {
@@ -111,6 +122,38 @@ function App() {
             </div>
           </div>
 
+          <div className="mt-6">
+            <label htmlFor="password" className="block text-sm font-medium leading-5 text-gray-700">
+              Send OTP
+            </label>
+            <div className="mt-1 rounded-md shadow-sm">
+              <input
+                id="phone"
+                type="phone"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                required
+                className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md placeholder-gray-400 focus:outline-none focus:shadow-outline-blue focus:border-blue-300 transition duration-150 ease-in-out sm:text-sm sm:leading-5"
+              />
+            </div>
+          </div>
+
+          <div className="mt-6">
+            <label htmlFor="password" className="block text-sm font-medium leading-5 text-gray-700">
+              Verify OTP
+            </label>
+            <div className="mt-1 rounded-md shadow-sm">
+              <input
+                id="otp"
+                type="otp"
+                value={otp}
+                onChange={(e) => setOtp(e.target.value)}
+                required
+                className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md placeholder-gray-400 focus:outline-none focus:shadow-outline-blue focus:border-blue-300 transition duration-150 ease-in-out sm:text-sm sm:leading-5"
+              />
+            </div>
+          </div>
+
           <div className="mt-6 flex items-center justify-between">
             <div className="flex items-center">
               <input
@@ -153,6 +196,24 @@ function App() {
                 className="w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-500 focus:outline-none focus:border-indigo-700 focus:shadow-outline-indigo active:bg-indigo-700 transition duration-150 ease-in-out"
               >
                 Sign Up
+              </button>
+            </span>
+            <span className="block w-full rounded-md shadow-sm">
+              <button
+                onClick={() => handleSendOtp()}
+                type="button"
+                className="w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-500 focus:outline-none focus:border-indigo-700 focus:shadow-outline-indigo active:bg-indigo-700 transition duration-150 ease-in-out"
+              >
+                Send Otp
+              </button>
+            </span>
+            <span className="block w-full rounded-md shadow-sm">
+              <button
+                onClick={() => handleVerifyOtp()}
+                type="button"
+                className="w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-500 focus:outline-none focus:border-indigo-700 focus:shadow-outline-indigo active:bg-indigo-700 transition duration-150 ease-in-out"
+              >
+                Verify Otp
               </button>
             </span>
           </div>
