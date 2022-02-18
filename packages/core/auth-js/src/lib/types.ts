@@ -1,16 +1,20 @@
 export type Provider =
+  | 'apple'
   | 'azure'
   | 'bitbucket'
+  | 'discord'
   | 'facebook'
   | 'github'
   | 'gitlab'
   | 'google'
-  | 'twitter'
-  | 'apple'
-  | 'discord'
-  | 'twitch'
-  | 'spotify'
+  | 'linkedin'
+  | 'notion'
   | 'slack'
+  | 'spotify'
+  | 'twitch'
+  | 'twitter'
+
+
 
 export type AuthChangeEvent =
   | 'PASSWORD_RECOVERY'
@@ -156,7 +160,7 @@ export interface Subscription {
 }
 
 export interface CookieOptions {
-  // (Optional) The name of the cookie. Defaults to `sb:token`.
+  // (Optional) The Cookie name prefix. Defaults to `sb` meaning the cookies will be `sb-access-token` and `sb-refresh-token`.
   name?: string
   // (Optional) The cookie lifetime (expiration) in seconds. Set to 8 hours by default.
   lifetime?: number
@@ -174,9 +178,18 @@ export interface UserCredentials {
   refreshToken?: string
   // (Optional) The name of the provider.
   provider?: Provider
+  oidc?: OpenIDConnectCredentials
 }
 
 export interface VerifyOTPParams {
   phone: string
   token: string
+}
+
+export interface OpenIDConnectCredentials {
+  id_token: string
+  nonce: string
+  provider?: Provider
+  client_id?: string
+  issuer?: string
 }

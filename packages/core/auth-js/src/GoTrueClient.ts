@@ -15,6 +15,7 @@ import type {
   CookieOptions,
   UserCredentials,
   VerifyOTPParams,
+  OpenIDConnectCredentials,
 } from './lib/types'
 
 polyfillGlobalThis() // Make "globalThis" available
@@ -33,8 +34,8 @@ type MaybePromisify<T> = T | Promise<T>
 
 type PromisifyMethods<T> = {
   [K in keyof T]: T[K] extends AnyFunction
-    ? (...args: Parameters<T[K]>) => MaybePromisify<ReturnType<T[K]>>
-    : T[K]
+  ? (...args: Parameters<T[K]>) => MaybePromisify<ReturnType<T[K]>>
+  : T[K]
 }
 
 type SupportedStorage = PromisifyMethods<Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>>
@@ -125,6 +126,7 @@ export default class GoTrueClient {
     options: {
       redirectTo?: string
       data?: object
+      captchaToken?: string
     } = {}
   ): Promise<{
     user: User | null
@@ -137,12 +139,14 @@ export default class GoTrueClient {
       const { data, error } =
         phone && password
           ? await this.api.signUpWithPhone(phone!, password!, {
-              data: options.data,
-            })
+            data: options.data,
+            captchaToken: options.captchaToken,
+          })
           : await this.api.signUpWithEmail(email!, password!, {
-              redirectTo: options.redirectTo,
-              data: options.data,
-            })
+            redirectTo: options.redirectTo,
+            data: options.data,
+            captchaToken: options.captchaToken,
+          })
 
       if (error) {
         throw error
@@ -183,11 +187,12 @@ export default class GoTrueClient {
    * @param scopes A space-separated list of scopes granted to the OAuth application.
    */
   async signIn(
-    { email, phone, password, refreshToken, provider }: UserCredentials,
+    { email, phone, password, refreshToken, provider, oidc }: UserCredentials,
     options: {
       redirectTo?: string
-      noSignup?: boolean
+      shouldCreateUser?: boolean
       scopes?: string
+      captchaToken?: string
     } = {}
   ): Promise<{
     session: Session | null
@@ -202,7 +207,8 @@ export default class GoTrueClient {
       if (email && !password) {
         const { error } = await this.api.sendMagicLinkEmail(email, {
           redirectTo: options.redirectTo,
-          noSignup: options.noSignup,
+          shouldCreateUser: options.shouldCreateUser,
+          captchaToken: options.captchaToken,
         })
         return { user: null, session: null, error }
       }
@@ -213,7 +219,8 @@ export default class GoTrueClient {
       }
       if (phone && !password) {
         const { error } = await this.api.sendMobileOTP(phone, {
-          noSignup: options.noSignup,
+          shouldCreateUser: options.shouldCreateUser,
+          captchaToken: options.captchaToken,
         })
         return { user: null, session: null, error }
       }
@@ -237,7 +244,10 @@ export default class GoTrueClient {
           scopes: options.scopes,
         })
       }
-      throw new Error(`You must provide either an email, phone number or a third-party provider.`)
+      if (oidc) {
+        return this._handleOpenIDConnectSignIn(oidc)
+      }
+      throw new Error(`You must provide either an email, phone number, a third-party provider or OpenID Connect.`)
     } catch (e) {
       return { user: null, session: null, error: e as ApiError }
     }
@@ -553,6 +563,27 @@ export default class GoTrueClient {
       if (url) return { provider, url, data: null, session: null, user: null, error: null }
       return { data: null, user: null, session: null, error: e as ApiError }
     }
+  }
+
+  private async _handleOpenIDConnectSignIn(
+    { id_token, nonce, client_id, issuer, provider }: OpenIDConnectCredentials
+  ): Promise<{
+    session: Session | null
+    user: User | null
+    error: ApiError | null
+  }> {
+    if (id_token && nonce && ( (client_id && issuer) || provider) ) {
+      try {
+        const { data, error } = await this.api.signInWithOpenIDConnect({id_token, nonce, client_id, issuer, provider})
+        if (error || !data) return { user: null, session: null, error }
+        this._saveSession(data)
+        this._notifyAllSubscribers('SIGNED_IN')
+        return { user: data.user, session: data, error: null }
+      } catch (e) {
+        return { user: null, session: null, error: e as ApiError }
+      }
+    }
+    throw new Error(`You must provide a OpenID Connect provider with your id token and nonce.`)
   }
 
   /**
