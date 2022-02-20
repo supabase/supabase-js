@@ -272,10 +272,12 @@ export default class RealtimeClient {
   onConnMessage(rawMessage: any) {
     this.decode(rawMessage.data, (msg: Message) => {
       let { topic, event, payload, ref } = msg
-      if (ref && ref === this.pendingHeartbeatRef) {
+
+      if (
+        (ref && ref === this.pendingHeartbeatRef) ||
+        event === payload?.type
+      ) {
         this.pendingHeartbeatRef = null
-      } else if (event === payload?.type) {
-        this._resetHeartbeat()
       }
 
       this.log(
@@ -353,7 +355,11 @@ export default class RealtimeClient {
     this.log('transport', `connected to ${this.endPointURL()}`)
     this._flushSendBuffer()
     this.reconnectTimer.reset()
-    this._resetHeartbeat()
+    this.heartbeatTimer && clearInterval(this.heartbeatTimer)
+    this.heartbeatTimer = setInterval(
+      () => this._sendHeartbeat(),
+      this.heartbeatIntervalMs
+    )
     this.stateChangeCallbacks.open.forEach((callback) => callback())!
   }
 
@@ -392,15 +398,6 @@ export default class RealtimeClient {
       this.sendBuffer.forEach((callback) => callback())
       this.sendBuffer = []
     }
-  }
-
-  private _resetHeartbeat() {
-    this.pendingHeartbeatRef = null
-    this.heartbeatTimer && clearInterval(this.heartbeatTimer)
-    this.heartbeatTimer = setInterval(
-      () => this._sendHeartbeat(),
-      this.heartbeatIntervalMs
-    )
   }
 
   private _sendHeartbeat() {
