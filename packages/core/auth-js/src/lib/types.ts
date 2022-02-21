@@ -14,8 +14,6 @@ export type Provider =
   | 'twitch'
   | 'twitter'
 
-
-
 export type AuthChangeEvent =
   | 'PASSWORD_RECOVERY'
   | 'SIGNED_IN'
