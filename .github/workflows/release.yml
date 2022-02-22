@@ -25,7 +25,6 @@ jobs:
 
       - run: |
           npm ci
-          npx semantic-release --plugins 'semantic-release-plugin-update-version-in-files'
           npm run build
 
       - name: Create a release
