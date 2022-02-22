@@ -248,7 +248,7 @@ export class StorageFileApi {
     paths: string[],
     expiresIn: number
   ): Promise<{
-    data: { path: string; signedURL: string }[] | null
+    data: { error: string | null; path: string | null; signedURL: string }[] | null
     error: Error | null
   }> {
     try {
@@ -258,7 +258,13 @@ export class StorageFileApi {
         { expiresIn, paths },
         { headers: this.headers }
       )
-      return { data, error: null }
+      return {
+        data: data.map((datum: { signedURL: string }) => ({
+          ...datum,
+          signedURL: datum.signedURL ? `${this.url}${datum.signedURL}` : null,
+        })),
+        error: null,
+      }
     } catch (error) {
       return { data: null, error }
     }
