@@ -245,11 +245,13 @@ export default class GoTrueApi {
   /**
    * Sends a magic login link to an email address.
    * @param email The email address of the user.
+   * @param shouldCreateUser A boolean flag to indicate whether to automatically create a user on magiclink / otp sign-ins if the user doesn't exist. Defaults to true.
    * @param redirectTo A URL or mobile address to send the user to after they are confirmed.
    */
   async sendMagicLinkEmail(
     email: string,
     options: {
+      shouldCreateUser?: boolean,
       redirectTo?: string
       captchaToken?: string
     } = {}
@@ -260,10 +262,12 @@ export default class GoTrueApi {
       if (options.redirectTo) {
         queryString += '?redirect_to=' + encodeURIComponent(options.redirectTo)
       }
+
+      const shouldCreateUser = (options.shouldCreateUser) ? options.shouldCreateUser : true
       const data = await post(
         this.fetch,
-        `${this.url}/magiclink${queryString}`,
-        { email, gotrue_meta_security: { hcaptcha_token: options.captchaToken } },
+        `${this.url}/otp${queryString}`,
+        { email, "create_user": shouldCreateUser, gotrue_meta_security: { hcaptcha_token: options.captchaToken } },
         { headers }
       )
       return { data, error: null }
@@ -275,19 +279,21 @@ export default class GoTrueApi {
   /**
    * Sends a mobile OTP via SMS. Will register the account if it doesn't already exist
    * @param phone The user's phone number WITH international prefix
+   * @param shouldCreateUser A boolean flag to indicate whether to automatically create a user on magiclink / otp sign-ins if the user doesn't exist. Defaults to true.
    */
   async sendMobileOTP(
-    phone: string,
+    phone: string, 
     options: {
+      shouldCreateUser?: boolean,
       captchaToken?: string
-    } = {}
-  ): Promise<{ data: {} | null; error: ApiError | null }> {
+    } = {}): Promise<{ data: {} | null; error: ApiError | null }> {
     try {
-      let headers = { ...this.headers }
+      const shouldCreateUser = (options.shouldCreateUser) ? options.shouldCreateUser : true
+      const headers = { ...this.headers }
       const data = await post(
-        this.fetch,
-        `${this.url}/otp`,
-        { phone, gotrue_meta_security: { hcaptcha_token: options.captchaToken } },
+        this.fetch, 
+        `${this.url}/otp`, 
+        { phone, "create_user": shouldCreateUser, gotrue_meta_security: { hcaptcha_token: options.captchaToken } },
         { headers }
       )
       return { data, error: null }
