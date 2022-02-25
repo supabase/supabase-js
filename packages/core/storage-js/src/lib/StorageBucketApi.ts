@@ -1,8 +1,7 @@
 import { DEFAULT_HEADERS } from './constants'
 import { Fetch, get, post, put, remove } from './fetch'
-import { getGlobalFetch } from './helpers'
+import { resolveFetch } from './helpers'
 import { Bucket } from './types'
-import crossFetch from 'cross-fetch'
 
 export class StorageBucketApi {
   protected url: string
@@ -12,11 +11,7 @@ export class StorageBucketApi {
   constructor(url: string, headers: { [key: string]: string } = {}, fetch?: Fetch) {
     this.url = url
     this.headers = { ...DEFAULT_HEADERS, ...headers }
-    if (fetch) {
-      this.fetch = fetch
-    } else {
-      this.fetch = getGlobalFetch() ?? ((crossFetch as unknown) as Fetch)
-    }
+    this.fetch = resolveFetch(fetch)
   }
 
   /**

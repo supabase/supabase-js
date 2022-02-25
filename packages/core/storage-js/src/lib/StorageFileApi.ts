@@ -1,7 +1,6 @@
 import { Fetch, FetchParameters, get, post, remove } from './fetch'
-import { getGlobalFetch } from './helpers'
+import { resolveFetch } from './helpers'
 import { FileObject, FileOptions, SearchOptions } from './types'
-import crossFetch from 'cross-fetch'
 
 const DEFAULT_SEARCH_OPTIONS = {
   limit: 100,
@@ -33,11 +32,7 @@ export class StorageFileApi {
     this.url = url
     this.headers = headers
     this.bucketId = bucketId
-    if (fetch) {
-      this.fetch = fetch
-    } else {
-      this.fetch = getGlobalFetch() ?? ((crossFetch as unknown) as Fetch)
-    }
+    this.fetch = resolveFetch(fetch)
   }
 
   /**
