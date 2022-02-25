@@ -3,12 +3,12 @@
 version: '3'
 services:
   rest:
-    image: postgrest/postgrest:v7.0.1
+    image: postgrest/postgrest:v9.0.0
     ports:
       - '3000:3000'
     environment:
       PGRST_DB_URI: postgres://postgres:postgres@db:5432/postgres
-      PGRST_DB_SCHEMA: public, personal
+      PGRST_DB_SCHEMAS: public,personal
       PGRST_DB_ANON_ROLE: postgres
     depends_on:
       - db
