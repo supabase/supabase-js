@@ -62,7 +62,13 @@ export abstract class PostgrestBuilder<T> implements PromiseLike<PostgrestRespon
 
   constructor(builder: PostgrestBuilder<T>) {
     Object.assign(this, builder)
-    this.fetch = builder.fetch || crossFetch
+    if (builder.fetch) {
+      this.fetch = builder.fetch
+    } else if (typeof fetch === 'undefined') {
+      this.fetch = crossFetch
+    } else {
+      this.fetch = fetch
+    }
   }
 
   /**
@@ -130,7 +136,7 @@ export abstract class PostgrestBuilder<T> implements PromiseLike<PostgrestRespon
           error = JSON.parse(body)
         } catch {
           error = {
-            message: body
+            message: body,
           }
         }
 
