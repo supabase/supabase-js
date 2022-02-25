@@ -1,5 +1,3 @@
-import crossFetch from 'cross-fetch'
-
 export type Fetch = typeof fetch
 
 export interface FetchOptions {
@@ -48,7 +46,7 @@ const _getRequestParams = (
 }
 
 async function _handleRequest(
-  fetcher: Fetch = crossFetch,
+  fetcher: Fetch,
   method: RequestMethodType,
   url: string,
   options?: FetchOptions,
@@ -68,7 +66,7 @@ async function _handleRequest(
 }
 
 export async function get(
-  fetcher: Fetch | undefined,
+  fetcher: Fetch,
   url: string,
   options?: FetchOptions,
   parameters?: FetchParameters
@@ -77,7 +75,7 @@ export async function get(
 }
 
 export async function post(
-  fetcher: Fetch | undefined,
+  fetcher: Fetch,
   url: string,
   body: object,
   options?: FetchOptions,
@@ -87,7 +85,7 @@ export async function post(
 }
 
 export async function put(
-  fetcher: Fetch | undefined,
+  fetcher: Fetch,
   url: string,
   body: object,
   options?: FetchOptions,
@@ -97,7 +95,7 @@ export async function put(
 }
 
 export async function remove(
-  fetcher: Fetch | undefined,
+  fetcher: Fetch,
   url: string,
   body: object,
   options?: FetchOptions,

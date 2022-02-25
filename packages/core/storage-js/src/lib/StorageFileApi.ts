@@ -1,7 +1,7 @@
 import { Fetch, FetchParameters, get, post, remove } from './fetch'
-import { isBrowser } from './helpers'
+import { getGlobalFetch } from './helpers'
 import { FileObject, FileOptions, SearchOptions } from './types'
-import fetch from 'cross-fetch'
+import crossFetch from 'cross-fetch'
 
 const DEFAULT_SEARCH_OPTIONS = {
   limit: 100,
@@ -22,7 +22,7 @@ export class StorageFileApi {
   protected url: string
   protected headers: { [key: string]: string }
   protected bucketId?: string
-  protected fetch?: Fetch
+  protected fetch: Fetch
 
   constructor(
     url: string,
@@ -33,7 +33,11 @@ export class StorageFileApi {
     this.url = url
     this.headers = headers
     this.bucketId = bucketId
-    this.fetch = fetch
+    if (fetch) {
+      this.fetch = fetch
+    } else {
+      this.fetch = getGlobalFetch() ?? ((crossFetch as unknown) as Fetch)
+    }
   }
 
   /**
@@ -86,8 +90,7 @@ export class StorageFileApi {
 
       const cleanPath = this._removeEmptyFolders(path)
       const _path = this._getFinalPath(cleanPath)
-      const fetcher = this.fetch ?? fetch
-      const res = await fetcher(`${this.url}/object/${_path}`, {
+      const res = await this.fetch(`${this.url}/object/${_path}`, {
         method,
         body: body as BodyInit,
         headers,
