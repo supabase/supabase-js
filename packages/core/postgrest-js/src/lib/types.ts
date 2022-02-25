@@ -62,13 +62,15 @@ export abstract class PostgrestBuilder<T> implements PromiseLike<PostgrestRespon
 
   constructor(builder: PostgrestBuilder<T>) {
     Object.assign(this, builder)
+    let _fetch: Fetch
     if (builder.fetch) {
-      this.fetch = builder.fetch
+      _fetch = builder.fetch
     } else if (typeof fetch === 'undefined') {
-      this.fetch = crossFetch
+      _fetch = crossFetch
     } else {
-      this.fetch = fetch
+      _fetch = fetch
     }
+    this.fetch = (...args) => _fetch(...args)
   }
 
   /**
