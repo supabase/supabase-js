@@ -10,7 +10,7 @@ import {
 } from './lib/types'
 import { COOKIE_OPTIONS } from './lib/constants'
 import { setCookies, getCookieString } from './lib/cookies'
-import { expiresAt } from './lib/helpers'
+import { expiresAt, resolveFetch } from './lib/helpers'
 
 import type { ApiError } from './lib/types'
 export default class GoTrueApi {
@@ -19,7 +19,7 @@ export default class GoTrueApi {
     [key: string]: string
   }
   protected cookieOptions: CookieOptions
-  protected fetch?: Fetch
+  protected fetch: Fetch
 
   constructor({
     url = '',
@@ -37,7 +37,7 @@ export default class GoTrueApi {
     this.url = url
     this.headers = headers
     this.cookieOptions = { ...COOKIE_OPTIONS, ...cookieOptions }
-    this.fetch = fetch
+    this.fetch = resolveFetch(fetch)
   }
 
   /**
