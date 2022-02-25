@@ -3,11 +3,13 @@ import crossFetch from 'cross-fetch'
 type Fetch = typeof fetch
 
 export const resolveFetch = (customFetch?: Fetch): Fetch => {
+  let _fetch: Fetch
   if (customFetch) {
-    return customFetch
+    _fetch = customFetch
   } else if (typeof fetch === 'undefined') {
-    return (crossFetch as unknown) as Fetch
+    _fetch = (crossFetch as unknown) as Fetch
   } else {
-    return fetch
+    _fetch = fetch
   }
+  return (...args) => _fetch(...args)
 }
