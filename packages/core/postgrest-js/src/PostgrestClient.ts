@@ -9,6 +9,7 @@ export default class PostgrestClient {
   headers: { [key: string]: string }
   schema?: string
   fetch?: Fetch
+  shouldThrowOnError?: boolean
 
   /**
    * Creates a PostgREST client.
@@ -23,12 +24,19 @@ export default class PostgrestClient {
       headers = {},
       schema,
       fetch,
-    }: { headers?: { [key: string]: string }; schema?: string; fetch?: Fetch } = {}
+      throwOnError,
+    }: {
+      headers?: { [key: string]: string }
+      schema?: string
+      fetch?: Fetch
+      throwOnError?: boolean
+    } = {}
   ) {
     this.url = url
     this.headers = { ...DEFAULT_HEADERS, ...headers }
     this.schema = schema
     this.fetch = fetch
+    this.shouldThrowOnError = throwOnError
   }
 
   /**
@@ -52,6 +60,7 @@ export default class PostgrestClient {
       headers: this.headers,
       schema: this.schema,
       fetch: this.fetch,
+      shouldThrowOnError: this.shouldThrowOnError,
     })
   }
 
@@ -79,6 +88,7 @@ export default class PostgrestClient {
       headers: this.headers,
       schema: this.schema,
       fetch: this.fetch,
+      shouldThrowOnError: this.shouldThrowOnError,
     }).rpc(params, { head, count })
   }
 }

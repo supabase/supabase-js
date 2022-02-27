@@ -56,7 +56,7 @@ export abstract class PostgrestBuilder<T> implements PromiseLike<PostgrestRespon
   protected headers!: { [key: string]: string }
   protected schema?: string
   protected body?: Partial<T> | Partial<T>[]
-  protected shouldThrowOnError = false
+  protected shouldThrowOnError: boolean
   protected signal?: AbortSignal
   protected fetch: Fetch
 
@@ -71,6 +71,7 @@ export abstract class PostgrestBuilder<T> implements PromiseLike<PostgrestRespon
       _fetch = fetch
     }
     this.fetch = (...args) => _fetch(...args)
+    this.shouldThrowOnError = builder.shouldThrowOnError || false
   }
 
   /**
@@ -79,8 +80,11 @@ export abstract class PostgrestBuilder<T> implements PromiseLike<PostgrestRespon
    *
    * {@link https://github.com/supabase/supabase-js/issues/92}
    */
-  throwOnError(): PostgrestBuilder<T> {
-    this.shouldThrowOnError = true
+  throwOnError(throwOnError?: boolean): PostgrestBuilder<T> {
+    if (throwOnError === null || throwOnError === undefined) {
+      throwOnError = true
+    }
+    this.shouldThrowOnError = throwOnError
     return this
   }
 

@@ -8,9 +8,15 @@ export default class PostgrestQueryBuilder<T> extends PostgrestBuilder<T> {
       headers = {},
       schema,
       fetch,
-    }: { headers?: { [key: string]: string }; schema?: string; fetch?: Fetch } = {}
+      shouldThrowOnError,
+    }: {
+      headers?: { [key: string]: string }
+      schema?: string
+      fetch?: Fetch
+      shouldThrowOnError?: boolean
+    } = {}
   ) {
-    super(({ fetch } as unknown) as PostgrestBuilder<T>)
+    super({ fetch, shouldThrowOnError } as unknown as PostgrestBuilder<T>)
     this.url = new URL(url)
     this.headers = { ...headers }
     this.schema = schema
