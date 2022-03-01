@@ -18,15 +18,17 @@ export class SupabaseQueryBuilder<T> extends PostgrestQueryBuilder<T> {
       realtime,
       table,
       fetch,
+      shouldThrowOnError,
     }: {
       headers?: GenericObject
       schema: string
       realtime: RealtimeClient
       table: string
       fetch?: Fetch
+      shouldThrowOnError?: boolean
     }
   ) {
-    super(url, { headers, schema, fetch })
+    super(url, { headers, schema, fetch, shouldThrowOnError })
 
     this._realtime = realtime
     this._headers = headers
