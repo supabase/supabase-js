@@ -5,7 +5,7 @@ import { SupabaseAuthClient } from './lib/SupabaseAuthClient'
 import { SupabaseQueryBuilder } from './lib/SupabaseQueryBuilder'
 import { SupabaseStorageClient } from '@supabase/storage-js'
 import { PostgrestClient } from '@supabase/postgrest-js'
-import { AuthChangeEvent, Session, Subscription } from '@supabase/gotrue-js'
+import { AuthChangeEvent } from '@supabase/gotrue-js'
 import { RealtimeClient, RealtimeSubscription, RealtimeClientOptions } from '@supabase/realtime-js'
 
 const DEFAULT_OPTIONS = {
@@ -37,6 +37,8 @@ export default class SupabaseClient {
   protected multiTab: boolean
   protected fetch?: Fetch
   protected changedAccessToken: string | undefined
+  protected shouldThrowOnError: boolean
+
   protected headers: {
     [key: string]: string
   }
@@ -73,6 +75,7 @@ export default class SupabaseClient {
     this.multiTab = settings.multiTab
     this.fetch = settings.fetch
     this.headers = { ...DEFAULT_HEADERS, ...options?.headers }
+    this.shouldThrowOnError = settings.shouldThrowOnError || false
 
     this.auth = this._initSupabaseAuthClient(settings)
     this.realtime = this._initRealtimeClient({ headers: this.headers, ...settings.realtime })
@@ -106,6 +109,7 @@ export default class SupabaseClient {
       realtime: this.realtime,
       table,
       fetch: this.fetch,
+      shouldThrowOnError: this.shouldThrowOnError,
     })
   }
 
@@ -235,6 +239,7 @@ export default class SupabaseClient {
       headers: this._getAuthHeaders(),
       schema: this.schema,
       fetch: this.fetch,
+      throwOnError: this.shouldThrowOnError,
     })
   }
 

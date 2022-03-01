@@ -3,7 +3,7 @@ import { RealtimeClientOptions } from '@supabase/realtime-js'
 
 type GoTrueClientOptions = ConstructorParameters<typeof GoTrueClient>[0]
 
-export interface SupabaseAuthClientOptions extends GoTrueClientOptions {}
+export interface SupabaseAuthClientOptions extends GoTrueClientOptions { }
 
 export type GenericObject = { [key: string]: string }
 
@@ -44,6 +44,11 @@ export type SupabaseClientOptions = {
    * A custom `fetch` implementation.
    */
   fetch?: Fetch
+
+  /**
+   * Throw errors, instead of returning them.
+   */
+  shouldThrowOnError?: boolean
 }
 
 export type SupabaseRealtimePayload<T> = {
