@@ -80,7 +80,7 @@ export abstract class PostgrestBuilder<T> implements PromiseLike<PostgrestRespon
    *
    * {@link https://github.com/supabase/supabase-js/issues/92}
    */
-  throwOnError(throwOnError?: boolean): PostgrestBuilder<T> {
+  throwOnError(throwOnError?: boolean): this {
     if (throwOnError === null || throwOnError === undefined) {
       throwOnError = true
     }

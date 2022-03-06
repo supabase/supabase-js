@@ -133,7 +133,7 @@ test('throwOnError throws errors instead of returning them', async () => {
   let isErrorCaught = false
 
   try {
-    await postgrest.from('missing_table').select().throwOnError()
+    await postgrest.from('missing_table').throwOnError().select()
   } catch (error) {
     expect(error).toMatchSnapshot()
     isErrorCaught = true
