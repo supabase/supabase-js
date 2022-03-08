@@ -269,7 +269,7 @@ export default class GoTrueApi {
         queryString += '?redirect_to=' + encodeURIComponent(options.redirectTo)
       }
 
-      const shouldCreateUser = options.shouldCreateUser ? options.shouldCreateUser : true
+      const shouldCreateUser = options.shouldCreateUser ?? true
       const data = await post(
         this.fetch,
         `${this.url}/otp${queryString}`,
@@ -299,7 +299,7 @@ export default class GoTrueApi {
     } = {}
   ): Promise<{ data: {} | null; error: ApiError | null }> {
     try {
-      const shouldCreateUser = options.shouldCreateUser ? options.shouldCreateUser : true
+      const shouldCreateUser = options.shouldCreateUser ?? true
       const headers = { ...this.headers }
       const data = await post(
         this.fetch,
