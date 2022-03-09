@@ -14,6 +14,7 @@ export type Provider =
   | 'spotify'
   | 'twitch'
   | 'twitter'
+  | 'workos'
 
 export type AuthChangeEvent =
   | 'PASSWORD_RECOVERY'
