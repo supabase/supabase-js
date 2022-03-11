@@ -89,6 +89,11 @@ export interface UserAttributes {
   email?: string
 
   /**
+   * The user's phone.
+   */
+  phone?: string
+
+  /**
    * The user's password.
    */
   password?: string
