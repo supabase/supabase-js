@@ -1,7 +1,7 @@
 import { StorageBucketApi, StorageFileApi } from './lib'
 import { Fetch } from './lib/fetch'
 
-export class SupabaseStorageClient extends StorageBucketApi {
+export class StorageClient extends StorageBucketApi {
   constructor(url: string, headers: { [key: string]: string } = {}, fetch?: Fetch) {
     super(url, headers, fetch)
   }
