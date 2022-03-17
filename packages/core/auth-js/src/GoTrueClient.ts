@@ -256,12 +256,14 @@ export default class GoTrueClient {
 
   /**
    * Log in a user given a User supplied OTP received via mobile.
+   * @param email The user's email address.
    * @param phone The user's phone number.
    * @param token The user's password.
+   * @param token The user's verification type.
    * @param redirectTo A URL or mobile address to send the user to after they are confirmed.
    */
   async verifyOTP(
-    { phone, token }: VerifyOTPParams,
+    { email, phone, token, type }: VerifyOTPParams,
     options: {
       redirectTo?: string
     } = {}
@@ -273,7 +275,7 @@ export default class GoTrueClient {
     try {
       this._removeSession()
 
-      const { data, error } = await this.api.verifyMobileOTP(phone, token, options)
+      const { data, error } = await this.api.verifyEmailOrMobileOTP({ email, phone, token, type }, options)
 
       if (error) {
         throw error

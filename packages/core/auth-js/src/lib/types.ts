@@ -182,9 +182,18 @@ export interface UserCredentials {
 }
 
 export interface VerifyOTPParams {
-  phone: string
+  email?: string
+  phone?: string
   token: string
+  type: OTPType
 }
+export type OTPType = 
+  | 'signup' 
+  | 'invite' 
+  | 'magiclink' 
+  | 'recover' 
+  | 'email_change' 
+  | 'sms'
 
 export interface OpenIDConnectCredentials {
   id_token: string
