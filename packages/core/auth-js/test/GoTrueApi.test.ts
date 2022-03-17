@@ -4,6 +4,7 @@ import {
   clientApiAutoConfirmOffSignupsEnabledClient,
   serviceRoleApiClient,
   serviceRoleApiClientWithSms,
+  authClient,
 } from './lib/clients'
 
 import {
@@ -11,6 +12,7 @@ import {
   mockUserCredentials,
   mockAppMetadata,
   mockUserMetadata,
+  mockVerificationOTP,
 } from './lib/utils'
 
 import type { Session, User } from '../src/lib/types'
@@ -491,6 +493,59 @@ describe('GoTrueApi', () => {
         expect(data).toBeNull()
         expect(error?.status).toEqual(400)
         expect(error?.message).toMatch(/^Invalid format/)
+      })
+    })
+  })
+
+  describe('Email/Phone OTP Verification', () => {
+    describe('verifyMobileOTP()', () => {
+      test('verifyMobileOTP() with non-existent phone number', async () => {
+        const { phone } = mockUserCredentials()
+        const otp = mockVerificationOTP()
+        const { error, data } = await serviceRoleApiClientWithSms.verifyMobileOTP(
+          `${phone}`,
+          otp,
+        )
+
+        expect(data).toBeNull()
+        expect(error?.status).toEqual(404)
+        expect(error?.message).toEqual('User not found')
+      })
+
+      test('verifyMobileOTP() with invalid phone number', async () => {
+        const { phone } = mockUserCredentials()
+        const otp = mockVerificationOTP()
+        const { error, data } = await serviceRoleApiClientWithSms.verifyMobileOTP(
+          `${phone}-invalid`,
+          otp,
+        )
+
+        expect(data).toBeNull()
+        expect(error?.status).toEqual(422)
+        expect(error?.message).toEqual('Invalid phone number format')
+      })
+    })
+
+    describe('verifyOTP()', () => {
+      test('verifyOTP() with invalid email', async () => {
+        const { email } = mockUserCredentials()
+        const otp = mockVerificationOTP()
+        const { data, error } = await serviceRoleApiClientWithSms.verifyEmailOrMobileOTP({ email: `${email}-@invalid`, token: otp, type: 'signup' })
+
+        expect(data).toBeNull()
+        expect(error?.status).toEqual(422)
+        expect(error?.message).toEqual('Invalid email format')
+        
+      })
+      test('verifyOTP() with invalid phone', async () => {
+        const { phone } = mockUserCredentials()
+        const otp = mockVerificationOTP()
+        const { data, error } = await serviceRoleApiClientWithSms.verifyEmailOrMobileOTP({ phone: `${phone}-invalid`, token: otp, type: 'sms' })
+
+        expect(data).toBeNull()
+        expect(error?.status).toEqual(422)
+        expect(error?.message).toEqual('Invalid phone number format')
+        
       })
     })
   })
