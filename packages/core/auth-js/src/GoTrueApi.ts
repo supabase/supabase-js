@@ -11,7 +11,7 @@ import {
 } from './lib/types'
 import { COOKIE_OPTIONS } from './lib/constants'
 import { setCookies, getCookieString } from './lib/cookies'
-import { expiresAt } from './lib/helpers'
+import { expiresAt, resolveFetch } from './lib/helpers'
 
 import type { ApiError } from './lib/types'
 export default class GoTrueApi {
@@ -20,7 +20,7 @@ export default class GoTrueApi {
     [key: string]: string
   }
   protected cookieOptions: CookieOptions
-  protected fetch?: Fetch
+  protected fetch: Fetch
 
   constructor({
     url = '',
@@ -38,7 +38,7 @@ export default class GoTrueApi {
     this.url = url
     this.headers = headers
     this.cookieOptions = { ...COOKIE_OPTIONS, ...cookieOptions }
-    this.fetch = fetch
+    this.fetch = resolveFetch(fetch)
   }
 
   /**
@@ -224,8 +224,14 @@ export default class GoTrueApi {
    * @param provider The provider of the user.
    * @param client_id The clientID of the user.
    * @param issuer The issuer of the user.
-  */
-  async signInWithOpenIDConnect({ id_token, nonce, client_id, issuer, provider }:OpenIDConnectCredentials): Promise<{ data: Session | null; error: ApiError | null }> {
+   */
+  async signInWithOpenIDConnect({
+    id_token,
+    nonce,
+    client_id,
+    issuer,
+    provider,
+  }: OpenIDConnectCredentials): Promise<{ data: Session | null; error: ApiError | null }> {
     try {
       const headers = { ...this.headers }
       const queryString = '?grant_type=id_token'
@@ -252,7 +258,7 @@ export default class GoTrueApi {
   async sendMagicLinkEmail(
     email: string,
     options: {
-      shouldCreateUser?: boolean,
+      shouldCreateUser?: boolean
       redirectTo?: string
       captchaToken?: string
     } = {}
@@ -264,11 +270,15 @@ export default class GoTrueApi {
         queryString += '?redirect_to=' + encodeURIComponent(options.redirectTo)
       }
 
-      const shouldCreateUser = (options.shouldCreateUser) ? options.shouldCreateUser : true
+      const shouldCreateUser = options.shouldCreateUser ? options.shouldCreateUser : true
       const data = await post(
         this.fetch,
         `${this.url}/otp${queryString}`,
-        { email, "create_user": shouldCreateUser, gotrue_meta_security: { hcaptcha_token: options.captchaToken } },
+        {
+          email,
+          create_user: shouldCreateUser,
+          gotrue_meta_security: { hcaptcha_token: options.captchaToken },
+        },
         { headers }
       )
       return { data, error: null }
@@ -283,18 +293,23 @@ export default class GoTrueApi {
    * @param shouldCreateUser A boolean flag to indicate whether to automatically create a user on magiclink / otp sign-ins if the user doesn't exist. Defaults to true.
    */
   async sendMobileOTP(
-    phone: string, 
+    phone: string,
     options: {
-      shouldCreateUser?: boolean,
+      shouldCreateUser?: boolean
       captchaToken?: string
-    } = {}): Promise<{ data: {} | null; error: ApiError | null }> {
+    } = {}
+  ): Promise<{ data: {} | null; error: ApiError | null }> {
     try {
-      const shouldCreateUser = (options.shouldCreateUser) ? options.shouldCreateUser : true
+      const shouldCreateUser = options.shouldCreateUser ? options.shouldCreateUser : true
       const headers = { ...this.headers }
       const data = await post(
-        this.fetch, 
-        `${this.url}/otp`, 
-        { phone, "create_user": shouldCreateUser, gotrue_meta_security: { hcaptcha_token: options.captchaToken } },
+        this.fetch,
+        `${this.url}/otp`,
+        {
+          phone,
+          create_user: shouldCreateUser,
+          gotrue_meta_security: { hcaptcha_token: options.captchaToken },
+        },
         { headers }
       )
       return { data, error: null }
@@ -342,7 +357,9 @@ export default class GoTrueApi {
         { phone, token, type: 'sms', redirect_to: options.redirectTo },
         { headers }
       )
-      return { data, error: null }
+      const session = { ...data }
+      if (session.expires_in) session.expires_at = expiresAt(data.expires_in)
+      return { data: session, error: null }
     } catch (e) {
       return { data: null, error: e as ApiError }
     }

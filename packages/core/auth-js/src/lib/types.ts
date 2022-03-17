@@ -7,14 +7,13 @@ export type Provider =
   | 'github'
   | 'gitlab'
   | 'google'
+  | 'keycloak'
   | 'linkedin'
   | 'notion'
   | 'slack'
   | 'spotify'
   | 'twitch'
   | 'twitter'
-
-
 
 export type AuthChangeEvent =
   | 'PASSWORD_RECOVERY'
@@ -88,6 +87,11 @@ export interface UserAttributes {
    * The user's email.
    */
   email?: string
+
+  /**
+   * The user's phone.
+   */
+  phone?: string
 
   /**
    * The user's password.

@@ -1,3 +1,5 @@
+import crossFetch from 'cross-fetch'
+
 export function expiresAt(expiresIn: number) {
   const timeNow = Math.round(Date.now() / 1000)
   return timeNow + expiresIn
@@ -22,4 +24,18 @@ export function getParameterByName(name: string, url?: string) {
   if (!results) return null
   if (!results[2]) return ''
   return decodeURIComponent(results[2].replace(/\+/g, ' '))
+}
+
+type Fetch = typeof fetch
+
+export const resolveFetch = (customFetch?: Fetch): Fetch => {
+  let _fetch: Fetch
+  if (customFetch) {
+    _fetch = customFetch
+  } else if (typeof fetch === 'undefined') {
+    _fetch = crossFetch as unknown as Fetch
+  } else {
+    _fetch = fetch
+  }
+  return (...args) => _fetch(...args)
 }
