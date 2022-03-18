@@ -277,7 +277,7 @@ export default class GoTrueClient {
     try {
       this._removeSession()
 
-      const { data, error } = await this.api.verifyEmailOrMobileOTP({ email, phone, token, type }, options)
+      const { data, error } = await this.api.verifyOTP({ email, phone, token, type }, options)
 
       if (error) {
         throw error

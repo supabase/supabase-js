@@ -530,7 +530,7 @@ describe('GoTrueApi', () => {
       test('verifyOTP() with invalid email', async () => {
         const { email } = mockUserCredentials()
         const otp = mockVerificationOTP()
-        const { data, error } = await serviceRoleApiClientWithSms.verifyEmailOrMobileOTP({ email: `${email}-@invalid`, token: otp, type: 'signup' })
+        const { data, error } = await serviceRoleApiClientWithSms.verifyOTP({ email: `${email}-@invalid`, token: otp, type: 'signup' })
 
         expect(data).toBeNull()
         expect(error?.status).toEqual(422)
@@ -540,7 +540,7 @@ describe('GoTrueApi', () => {
       test('verifyOTP() with invalid phone', async () => {
         const { phone } = mockUserCredentials()
         const otp = mockVerificationOTP()
-        const { data, error } = await serviceRoleApiClientWithSms.verifyEmailOrMobileOTP({ phone: `${phone}-invalid`, token: otp, type: 'sms' })
+        const { data, error } = await serviceRoleApiClientWithSms.verifyOTP({ phone: `${phone}-invalid`, token: otp, type: 'sms' })
 
         expect(data).toBeNull()
         expect(error?.status).toEqual(422)

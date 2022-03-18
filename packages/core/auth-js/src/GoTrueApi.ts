@@ -373,7 +373,7 @@ export default class GoTrueApi {
    * @param type verification type that the otp is generated for
    * @param redirectTo A URL or mobile address to send the user to after they are confirmed.
    */
-  async verifyEmailOrMobileOTP(
+  async verifyOTP(
     { email, phone, token, type }: VerifyOTPParams,
     options: {
       redirectTo?: string
