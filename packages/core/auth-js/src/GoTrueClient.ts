@@ -261,11 +261,11 @@ export default class GoTrueClient {
    * @param email The user's email address.
    * @param phone The user's phone number.
    * @param token The user's password.
-   * @param token The user's verification type.
+   * @param type The user's verification type.
    * @param redirectTo A URL or mobile address to send the user to after they are confirmed.
    */
   async verifyOTP(
-    { email, phone, token, type }: VerifyOTPParams,
+    { email, phone, token, type = 'sms' }: VerifyOTPParams,
     options: {
       redirectTo?: string
     } = {}

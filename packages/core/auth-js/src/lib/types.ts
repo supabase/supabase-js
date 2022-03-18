@@ -189,7 +189,7 @@ export interface VerifyOTPParams {
   email?: string
   phone?: string
   token: string
-  type: OTPType
+  type?: OTPType
 }
 export type OTPType = 
   | 'signup' 

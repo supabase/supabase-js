@@ -5,6 +5,7 @@ import {
   serviceRoleApiClient,
   serviceRoleApiClientWithSms,
   authClient,
+  clientApiAutoConfirmDisabledClient,
 } from './lib/clients'
 
 import {
@@ -498,39 +499,43 @@ describe('GoTrueApi', () => {
   })
 
   describe('Email/Phone OTP Verification', () => {
-    describe('verifyMobileOTP()', () => {
-      test('verifyMobileOTP() with non-existent phone number', async () => {
+    describe('GoTrueClient verifyOTP()', () => {
+      test('verifyOTP() with non-existent phone number', async () => {
         const { phone } = mockUserCredentials()
         const otp = mockVerificationOTP()
-        const { error, data } = await serviceRoleApiClientWithSms.verifyMobileOTP(
-          `${phone}`,
-          otp,
-        )
+        const { user, error } = await clientApiAutoConfirmDisabledClient.verifyOTP({
+          phone: `${phone}`,
+          token: otp,
+        })
 
-        expect(data).toBeNull()
+        expect(user).toBeNull()
         expect(error?.status).toEqual(404)
         expect(error?.message).toEqual('User not found')
       })
 
-      test('verifyMobileOTP() with invalid phone number', async () => {
+      test('verifyOTP() with invalid phone number', async () => {
         const { phone } = mockUserCredentials()
         const otp = mockVerificationOTP()
-        const { error, data } = await serviceRoleApiClientWithSms.verifyMobileOTP(
-          `${phone}-invalid`,
-          otp,
-        )
+        const { user, error } = await clientApiAutoConfirmDisabledClient.verifyOTP({
+          phone: `${phone}-invalid`,
+          token: otp,
+        })
 
-        expect(data).toBeNull()
+        expect(user).toBeNull()
         expect(error?.status).toEqual(422)
         expect(error?.message).toEqual('Invalid phone number format')
       })
     })
 
-    describe('verifyOTP()', () => {
+    describe('GoTrueApi verifyOTP()', () => {
       test('verifyOTP() with invalid email', async () => {
         const { email } = mockUserCredentials()
         const otp = mockVerificationOTP()
-        const { data, error } = await serviceRoleApiClientWithSms.verifyOTP({ email: `${email}-@invalid`, token: otp, type: 'signup' })
+        const { data, error } = await serviceRoleApiClientWithSms.verifyOTP({ 
+          email: `${email}-@invalid`, 
+          token: otp, 
+          type: 'signup' 
+        })
 
         expect(data).toBeNull()
         expect(error?.status).toEqual(422)
@@ -540,7 +545,11 @@ describe('GoTrueApi', () => {
       test('verifyOTP() with invalid phone', async () => {
         const { phone } = mockUserCredentials()
         const otp = mockVerificationOTP()
-        const { data, error } = await serviceRoleApiClientWithSms.verifyOTP({ phone: `${phone}-invalid`, token: otp, type: 'sms' })
+        const { data, error } = await serviceRoleApiClientWithSms.verifyOTP({ 
+          phone: `${phone}-invalid`, 
+          token: otp, 
+          type: 'sms' 
+        })
 
         expect(data).toBeNull()
         expect(error?.status).toEqual(422)

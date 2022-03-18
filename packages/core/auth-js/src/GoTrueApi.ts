@@ -337,7 +337,7 @@ export default class GoTrueApi {
   }
 
   /**
-   * Send User supplied Mobile OTP to be verified
+   * @deprecated Send User supplied Mobile OTP to be verified
    * @param phone The user's phone number WITH international prefix
    * @param token token that user was sent to their mobile phone
    * @param redirectTo A URL or mobile address to send the user to after they are confirmed.
@@ -381,7 +381,7 @@ export default class GoTrueApi {
   ): Promise<{ data: Session | User | null; error: ApiError | null }> {
     try {
       const headers = { ...this.headers }
-      const data = email 
+      const data = (email && type) 
         ? await post(
           this.fetch,
           `${this.url}/verify`,
@@ -391,7 +391,7 @@ export default class GoTrueApi {
         : await post(
           this.fetch,
           `${this.url}/verify`,
-          { phone, token, type: type, redirect_to: options.redirectTo },
+          { phone, token, type: 'sms', redirect_to: options.redirectTo },
           { headers }
         )
       const session = { ...data }
