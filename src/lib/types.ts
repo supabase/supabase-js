@@ -53,6 +53,16 @@ export type SupabaseClientOptions = {
    * Throw errors, instead of returning them.
    */
   shouldThrowOnError?: boolean
+
+  /**
+   * Overrides urls
+   */
+  overrideUrls?: {
+    restUrl?: string
+    realtimeUrl?: string
+    authUrl?: string
+    storageUrl?: string
+  }
 }
 
 export type SupabaseRealtimePayload<T> = {

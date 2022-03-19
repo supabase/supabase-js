@@ -67,10 +67,22 @@ export default class SupabaseClient {
     const _supabaseUrl = stripTrailingSlash(supabaseUrl)
     const settings = { ...DEFAULT_OPTIONS, ...options }
 
-    this.restUrl = `${_supabaseUrl}/rest/v1`
-    this.realtimeUrl = `${_supabaseUrl}/realtime/v1`.replace('http', 'ws')
-    this.authUrl = `${_supabaseUrl}/auth/v1`
-    this.storageUrl = `${_supabaseUrl}/storage/v1`
+    this.restUrl =
+      options?.overrideUrls?.restUrl != null
+        ? options.overrideUrls.restUrl
+        : `${_supabaseUrl}/rest/v1`
+    this.realtimeUrl =
+      options?.overrideUrls?.realtimeUrl != null
+        ? options.overrideUrls.realtimeUrl
+        : `${_supabaseUrl}/realtime/v1`.replace('http', 'ws')
+    this.authUrl =
+      options?.overrideUrls?.authUrl != null
+        ? options.overrideUrls.authUrl
+        : `${_supabaseUrl}/auth/v1`
+    this.storageUrl =
+      options?.overrideUrls?.storageUrl != null
+        ? options.overrideUrls.storageUrl
+        : `${_supabaseUrl}/storage/v1`
     this.schema = settings.schema
     this.multiTab = settings.multiTab
     this.fetch = settings.fetch
