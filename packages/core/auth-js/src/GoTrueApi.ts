@@ -7,7 +7,7 @@ import {
   CookieOptions,
   User,
   OpenIDConnectCredentials,
-  VerifyOTPParams
+  VerifyOTPParams,
 } from './lib/types'
 import { COOKIE_OPTIONS } from './lib/constants'
 import { setCookies, getCookieString } from './lib/cookies'
@@ -337,7 +337,7 @@ export default class GoTrueApi {
   }
 
   /**
-   * @deprecated Send User supplied Mobile OTP to be verified
+   * @deprecated Use `verifyOTP` instead!
    * @param phone The user's phone number WITH international prefix
    * @param token token that user was sent to their mobile phone
    * @param redirectTo A URL or mobile address to send the user to after they are confirmed.
@@ -374,26 +374,19 @@ export default class GoTrueApi {
    * @param redirectTo A URL or mobile address to send the user to after they are confirmed.
    */
   async verifyOTP(
-    { email, phone, token, type }: VerifyOTPParams,
+    { email, phone, token, type = 'sms' }: VerifyOTPParams,
     options: {
       redirectTo?: string
     } = {}
   ): Promise<{ data: Session | User | null; error: ApiError | null }> {
     try {
       const headers = { ...this.headers }
-      const data = (email && type) 
-        ? await post(
-          this.fetch,
-          `${this.url}/verify`,
-          { email, token, type: type, redirect_to: options.redirectTo },
-          { headers }
-        )
-        : await post(
-          this.fetch,
-          `${this.url}/verify`,
-          { phone, token, type: 'sms', redirect_to: options.redirectTo },
-          { headers }
-        )
+      const data = await post(
+        this.fetch,
+        `${this.url}/verify`,
+        { email, phone, token, type, redirect_to: options.redirectTo },
+        { headers }
+      )
       const session = { ...data }
       if (session.expires_in) session.expires_at = expiresAt(data.expires_in)
       return { data: session, error: null }

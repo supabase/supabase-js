@@ -4,7 +4,6 @@ import {
   clientApiAutoConfirmOffSignupsEnabledClient,
   serviceRoleApiClient,
   serviceRoleApiClientWithSms,
-  authClient,
   clientApiAutoConfirmDisabledClient,
 } from './lib/clients'
 
@@ -531,30 +530,28 @@ describe('GoTrueApi', () => {
       test('verifyOTP() with invalid email', async () => {
         const { email } = mockUserCredentials()
         const otp = mockVerificationOTP()
-        const { data, error } = await serviceRoleApiClientWithSms.verifyOTP({ 
-          email: `${email}-@invalid`, 
-          token: otp, 
-          type: 'signup' 
+        const { data, error } = await serviceRoleApiClientWithSms.verifyOTP({
+          email: `${email}-@invalid`,
+          token: otp,
+          type: 'signup',
         })
 
         expect(data).toBeNull()
         expect(error?.status).toEqual(422)
         expect(error?.message).toEqual('Invalid email format')
-        
       })
       test('verifyOTP() with invalid phone', async () => {
         const { phone } = mockUserCredentials()
         const otp = mockVerificationOTP()
-        const { data, error } = await serviceRoleApiClientWithSms.verifyOTP({ 
-          phone: `${phone}-invalid`, 
-          token: otp, 
-          type: 'sms' 
+        const { data, error } = await serviceRoleApiClientWithSms.verifyOTP({
+          phone: `${phone}-invalid`,
+          token: otp,
+          type: 'sms',
         })
 
         expect(data).toBeNull()
         expect(error?.status).toEqual(422)
         expect(error?.message).toEqual('Invalid phone number format')
-        
       })
     })
   })
