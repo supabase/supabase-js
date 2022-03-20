@@ -1,25 +1,21 @@
-import crossFetch from "cross-fetch";
-type Fetch = typeof crossFetch;
+import crossFetch from 'cross-fetch'
+type Fetch = typeof crossFetch
 
 export class FunctionsClient {
-  protected url: string;
-  protected headers: { [key: string]: string };
-  protected fetch: Fetch;
+  protected url: string
+  protected headers: { [key: string]: string }
+  protected fetch: Fetch
 
-  constructor(
-    url: string,
-    headers: { [key: string]: string },
-    customFetch?: Fetch
-  ) {
-    this.url = url;
-    this.headers = headers;
+  constructor(url: string, headers: { [key: string]: string }, customFetch?: Fetch) {
+    this.url = url
+    this.headers = headers
 
     if (customFetch) {
-      this.fetch = customFetch;
-    } else if (typeof fetch !== "undefined") {
-      this.fetch = fetch;
+      this.fetch = customFetch
+    } else if (typeof fetch !== 'undefined') {
+      this.fetch = fetch
     } else {
-      this.fetch = crossFetch;
+      this.fetch = crossFetch
     }
   }
 
@@ -29,27 +25,21 @@ export class FunctionsClient {
   async invoke(
     functionName: string,
     headers: { [key: string]: string } = {},
-    body?:
-      | Blob
-      | BufferSource
-      | FormData
-      | URLSearchParams
-      | ReadableStream<Uint8Array>
-      | string
+    body?: Blob | BufferSource | FormData | URLSearchParams | ReadableStream<Uint8Array> | string
   ): Promise<{ data: string | null; error: Error | null }> {
     try {
-      console.log(`calling ${functionName}`);
+      console.log(`calling ${functionName}`)
 
       const response = await this.fetch(`${this.url}/${functionName}`, {
-        method: "POST",
+        method: 'POST',
         headers: Object.assign({}, headers, this.headers),
         body,
-      });
+      })
 
-      const data = await response.text();
-      return { data, error: null };
+      const data = await response.text()
+      return { data, error: null }
     } catch (error: any) {
-      return { data: null, error };
+      return { data: null, error }
     }
   }
 }
