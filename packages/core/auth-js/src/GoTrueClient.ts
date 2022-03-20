@@ -265,7 +265,7 @@ export default class GoTrueClient {
    * @param redirectTo A URL or mobile address to send the user to after they are confirmed.
    */
   async verifyOTP(
-    { email, phone, token, type = 'sms' }: VerifyOTPParams,
+    params: VerifyOTPParams,
     options: {
       redirectTo?: string
     } = {}
@@ -277,7 +277,7 @@ export default class GoTrueClient {
     try {
       this._removeSession()
 
-      const { data, error } = await this.api.verifyOTP({ email, phone, token, type }, options)
+      const { data, error } = await this.api.verifyOTP(params, options)
 
       if (error) {
         throw error

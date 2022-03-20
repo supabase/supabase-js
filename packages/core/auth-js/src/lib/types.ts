@@ -185,19 +185,21 @@ export interface UserCredentials {
   oidc?: OpenIDConnectCredentials
 }
 
-export interface VerifyOTPParams {
-  email?: string
-  phone?: string
+export type VerifyOTPParams = VerifyMobileOTPParams | VerifyEmailOTPParams
+export interface VerifyMobileOTPParams {
+  email?: undefined
+  phone: string
   token: string
-  type?: OTPType
+  type?: MobileOTPType
 }
-export type OTPType = 
-  | 'signup' 
-  | 'invite' 
-  | 'magiclink' 
-  | 'recover' 
-  | 'email_change' 
-  | 'sms'
+export interface VerifyEmailOTPParams {
+  email: string
+  phone?: undefined
+  token: string
+  type: EmailOTPType
+}
+export type MobileOTPType = 'sms'
+export type EmailOTPType = 'signup' | 'invite' | 'magiclink' | 'recover' | 'email_change'
 
 export interface OpenIDConnectCredentials {
   id_token: string
