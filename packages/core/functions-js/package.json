@@ -16,9 +16,12 @@
     "type": "git",
     "url": "git+https://github.com/supabase/functions-js.git"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "keywords": [
+    "functions",
+    "supabase"
+  ],
+  "author": "Supabase",
+  "license": "MIT",
   "bugs": {
     "url": "https://github.com/supabase/functions-js/issues"
   },
