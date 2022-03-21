@@ -19,7 +19,13 @@ export class FunctionsClient {
     }
   }
 
-  // do we need a setAuth method?
+  /**
+   * Updates the authorization header
+   * @params token - the new jwt token sent in the authorisation header
+   */
+  setAuth(token: string) {
+    this.headers.Authorization = `Bearer ${token}`
+  }
 
   // can type body via filter RequestInit from https://microsoft.github.io/PowerBI-JavaScript/interfaces/_node_modules_typedoc_node_modules_typescript_lib_lib_dom_d_.requestinit.html
 
