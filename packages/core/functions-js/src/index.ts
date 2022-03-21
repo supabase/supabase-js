@@ -43,7 +43,7 @@ export class FunctionsClient {
     try {
       const response = await this.fetch(`${this.url}/${functionName}`, {
         method: 'POST',
-        headers: Object.assign({}, headers, this.headers),
+        headers: Object.assign({}, this.headers, headers),
         body,
       })
 
