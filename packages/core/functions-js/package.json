@@ -4,6 +4,8 @@
   "description": "JS Client library to interact with Supabase Functions.",
   "main": "dist/main/index.js",
   "module": "dist/module/index.js",
+  "types": "dist/main/index.d.ts",
+  "sideEffects": false,
   "scripts": {
     "format": "prettier --write \"{src,test}/**/*.ts\"",
     "build:main": "tsc -p tsconfig.json",
