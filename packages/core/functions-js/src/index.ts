@@ -27,20 +27,19 @@ export class FunctionsClient {
     this.headers.Authorization = `Bearer ${token}`
   }
 
-  // can type body via filter RequestInit from https://microsoft.github.io/PowerBI-JavaScript/interfaces/_node_modules_typedoc_node_modules_typescript_lib_lib_dom_d_.requestinit.html
-
   /**
    * Invokes a function
-   * @params functionName - the name of the function to invoke
-   * @params body - the body to be sent when invoking the function
-   * @params headers - the headers to be sent when invoking the function
+   * @param functionName - the name of the function to invoke
+   * @param invokeOptions - object with the following properties
+   * `headers`: object representing the headers to send with the request
+   * `body`: the body of the request
    */
   async invoke(
     functionName: string,
-    options: FunctionInvokeOptions
+    invokeOptions: FunctionInvokeOptions
   ): Promise<{ data: string | null; error: Error | null }> {
     try {
-      const { headers, body } = options
+      const { headers, body } = invokeOptions
       const response = await this.fetch(`${this.url}/${functionName}`, {
         method: 'POST',
         headers: Object.assign({}, this.headers, headers),
