@@ -1,5 +1,5 @@
 import crossFetch from 'cross-fetch'
-type Fetch = typeof crossFetch
+import { Fetch, FunctionInvokeOptions } from './types'
 
 export class FunctionsClient {
   protected url: string
@@ -37,10 +37,10 @@ export class FunctionsClient {
    */
   async invoke(
     functionName: string,
-    headers: { [key: string]: string } = {},
-    body?: Blob | BufferSource | FormData | URLSearchParams | ReadableStream<Uint8Array> | string
+    options: FunctionInvokeOptions
   ): Promise<{ data: string | null; error: Error | null }> {
     try {
+      const { headers, body } = options
       const response = await this.fetch(`${this.url}/${functionName}`, {
         method: 'POST',
         headers: Object.assign({}, this.headers, headers),
