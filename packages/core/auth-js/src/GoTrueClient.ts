@@ -3,6 +3,7 @@ import { isBrowser, getParameterByName, uuid } from './lib/helpers'
 import { GOTRUE_URL, DEFAULT_HEADERS, STORAGE_KEY } from './lib/constants'
 import { polyfillGlobalThis } from './lib/polyfills'
 import { Fetch } from './lib/fetch'
+import { Logger } from './lib/logger'
 
 import type {
   ApiError,
@@ -135,7 +136,8 @@ export default class GoTrueClient {
   }> {
     try {
       this._removeSession()
-
+      Logger.warn('redirectTo param will only redirect OAuth logins.')
+      
       const { data, error } =
         phone && password
           ? await this.api.signUpWithPhone(phone!, password!, {
@@ -183,7 +185,7 @@ export default class GoTrueClient {
    * @param password The user's password.
    * @param refreshToken A valid refresh token that was returned on login.
    * @param provider One of the providers supported by GoTrue.
-   * @param redirectTo A URL or mobile address to send the user to after they are confirmed.
+   * @param redirectTo A URL or mobile address to send the user to after they are confirmed (OAuth logins only).
    * @param shouldCreateUser A boolean flag to indicate whether to automatically create a user on magiclink / otp sign-ins if the user doesn't exist. Defaults to true.
    * @param scopes A space-separated list of scopes granted to the OAuth application.
    */
@@ -204,6 +206,10 @@ export default class GoTrueClient {
   }> {
     try {
       this._removeSession()
+
+      if (!provider && !options?.redirectTo) {
+        Logger.warn('redirectTo param will only redirect OAuth logins.')
+      }
 
       if (email && !password) {
         const { error } = await this.api.sendMagicLinkEmail(email, {
