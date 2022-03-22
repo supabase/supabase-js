@@ -7,6 +7,7 @@
   "types": "dist/main/index.d.ts",
   "sideEffects": false,
   "scripts": {
+    "clean": "rimraf dist docs",
     "format": "prettier --write \"{src,test}/**/*.ts\"",
     "build": "genversion src/version.ts --es6 && run-s clean format build:*",
     "build:main": "tsc -p tsconfig.json",
@@ -39,7 +40,9 @@
   },
   "devDependencies": {
     "genversion": "^3.0.2",
+    "npm-run-all": "^4.1.5",
     "prettier": "^2.6.0",
+    "rimraf": "^3.0.2",
     "semantic-release": "^19.0.2",
     "semantic-release-plugin-update-version-in-files": "^1.1.0",
     "typedoc": "^0.22.13",
