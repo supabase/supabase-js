@@ -1,5 +1,5 @@
 {
-  "name": "@supabase/storage-js",
+  "name": "@supabase/functions-js",
   "version": "0.0.0",
   "description": "JS Client library to interact with Supabase Functions",
   "main": "dist/main/index.js",
