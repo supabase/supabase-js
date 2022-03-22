@@ -6,7 +6,6 @@
   "module": "dist/module/index.js",
   "types": "dist/main/index.d.ts",
   "sideEffects": false,
-  "private": true,
   "scripts": {
     "clean": "rimraf dist docs",
     "format": "prettier --write \"{src,test}/**/*.ts\"",
@@ -26,6 +25,10 @@
     "supabase"
   ],
   "author": "Supabase",
+  "files": [
+    "dist",
+    "src"
+  ],
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/supabase/functions-js/issues"
