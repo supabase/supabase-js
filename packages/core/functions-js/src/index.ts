@@ -33,6 +33,7 @@ export class FunctionsClient {
    * @param invokeOptions - object with the following properties
    * `headers`: object representing the headers to send with the request
    * `body`: the body of the request
+   * `responseType`: how the response should be parsed
    */
   async invoke(
     functionName: string,
