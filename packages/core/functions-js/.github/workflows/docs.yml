@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - main
+    paths:
+      - 'src/**'
   workflow_dispatch:
 
 jobs:
@@ -12,7 +14,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest]
-        node: ['12']
+        node: ['14']
 
     runs-on: ${{ matrix.os }}
 
