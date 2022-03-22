@@ -1,5 +1,5 @@
 import crossFetch from 'cross-fetch'
-import { Fetch, FunctionInvokeOptions } from './types'
+import { Fetch, FunctionInvokeOptions, ResponseType } from './types'
 
 export class FunctionsClient {
   protected url: string
@@ -46,7 +46,17 @@ export class FunctionsClient {
         body,
       })
 
-      const data = await response.text()
+      let data
+      const { responseType } = invokeOptions
+      if (!responseType || responseType === 'json') {
+        data = await response.json()
+      } else if (responseType === 'arraybuffer') {
+        data = await response.arrayBuffer()
+      } else if (responseType === 'blob') {
+        data = await response.blob()
+      } else {
+        data = await response.text()
+      }
       return { data, error: null }
     } catch (error: any) {
       return { data: null, error }
