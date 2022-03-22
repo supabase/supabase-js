@@ -118,7 +118,7 @@ export default class GoTrueClient {
    * @param email The user's email address.
    * @param password The user's password.
    * @param phone The user's phone number.
-   * @param redirectTo A URL or mobile address to send the user to after they are confirmed.
+   * @param redirectTo A URL or mobile address to send the user to after they are confirmed (OAuth logins only).
    * @param data Optional user metadata.
    */
   async signUp(
