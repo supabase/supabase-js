@@ -33,8 +33,7 @@
     "docs:json": "typedoc src/index.ts --json docs/spec.json"
   },
   "dependencies": {
-    "cross-fetch": "^3.0.6",
-    "pino": "^7.9.1"
+    "cross-fetch": "^3.0.6"
   },
   "devDependencies": {
     "@types/faker": "^5.1.6",
