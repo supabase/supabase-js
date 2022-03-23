@@ -37,10 +37,10 @@ export class FunctionsClient {
    */
   async invoke(
     functionName: string,
-    invokeOptions: FunctionInvokeOptions
+    invokeOptions?: FunctionInvokeOptions
   ): Promise<{ data: string | null; error: Error | null }> {
     try {
-      const { headers, body } = invokeOptions
+      const { headers, body } = invokeOptions ?? {}
       const response = await this.fetch(`${this.url}/${functionName}`, {
         method: 'POST',
         headers: Object.assign({}, this.headers, headers),
@@ -48,7 +48,7 @@ export class FunctionsClient {
       })
 
       let data
-      const { responseType } = invokeOptions
+      const { responseType } = invokeOptions ?? {}
       if (!responseType || responseType === 'json') {
         data = await response.json()
       } else if (responseType === 'arraybuffer') {
