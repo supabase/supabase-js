@@ -4,6 +4,7 @@ import { Fetch, GenericObject, SupabaseClientOptions } from './lib/types'
 import { SupabaseAuthClient } from './lib/SupabaseAuthClient'
 import { SupabaseQueryBuilder } from './lib/SupabaseQueryBuilder'
 import { SupabaseStorageClient } from '@supabase/storage-js'
+import { FunctionsClient } from '@supabase/functions-js'
 import { PostgrestClient } from '@supabase/postgrest-js'
 import { AuthChangeEvent } from '@supabase/gotrue-js'
 import { RealtimeClient, RealtimeSubscription, RealtimeClientOptions } from '@supabase/realtime-js'
@@ -33,6 +34,7 @@ export default class SupabaseClient {
   protected realtimeUrl: string
   protected authUrl: string
   protected storageUrl: string
+  protected functionsUrl: string
   protected realtime: RealtimeClient
   protected multiTab: boolean
   protected fetch?: Fetch
@@ -71,6 +73,8 @@ export default class SupabaseClient {
     this.realtimeUrl = `${_supabaseUrl}/realtime/v1`.replace('http', 'ws')
     this.authUrl = `${_supabaseUrl}/auth/v1`
     this.storageUrl = `${_supabaseUrl}/storage/v1`
+    const urlParts = _supabaseUrl.split('.')
+    this.functionsUrl = `${urlParts[0]}.functions.${urlParts[1]}.${urlParts[2]}`
     this.schema = settings.schema
     this.multiTab = settings.multiTab
     this.fetch = settings.fetch
@@ -87,6 +91,13 @@ export default class SupabaseClient {
     // this.realtime.onOpen(() => console.log('OPEN'))
     // this.realtime.onClose(() => console.log('CLOSED'))
     // this.realtime.onError((e: Error) => console.log('Socket error', e))
+  }
+
+  /**
+   * Supabase Functions allows you to deploy and invoke edge functions.
+   */
+  get functions() {
+    return new FunctionsClient(this.functionsUrl, this._getAuthHeaders())
   }
 
   /**
@@ -296,6 +307,7 @@ export default class SupabaseClient {
     ) {
       // Token has changed
       this.realtime.setAuth(token!)
+      this.functions.setAuth(token!)
       // Ideally we should call this.auth.recoverSession() - need to make public
       // to trigger a "SIGNED_IN" event on this client.
       if (source == 'STORAGE') this.auth.setAuth(token!)
@@ -304,6 +316,7 @@ export default class SupabaseClient {
     } else if (event === 'SIGNED_OUT' || event === 'USER_DELETED') {
       // Token is removed
       this.realtime.setAuth(this.supabaseKey)
+      this.functions.setAuth(this.supabaseKey)
       if (source == 'STORAGE') this.auth.signOut()
     }
   }
