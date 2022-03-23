@@ -3,7 +3,7 @@ import { RealtimeClientOptions } from '@supabase/realtime-js'
 
 type GoTrueClientOptions = ConstructorParameters<typeof GoTrueClient>[0]
 
-export interface SupabaseAuthClientOptions extends GoTrueClientOptions { }
+export interface SupabaseAuthClientOptions extends GoTrueClientOptions {}
 
 export type GenericObject = { [key: string]: string }
 
