@@ -14,11 +14,18 @@ const fixtures = {
   leaves() {
     return { u2: { metas: [{ id: 2, phx_ref: '2' }] } }
   },
-  state() {
+  rawState() {
     return {
       u1: { metas: [{ id: 1, phx_ref: '1' }] },
       u2: { metas: [{ id: 2, phx_ref: '2' }] },
       u3: { metas: [{ id: 3, phx_ref: '3' }] },
+    }
+  },
+  transformedState() {
+    return {
+      u1: [{ id: 1, presence_id: '1' }],
+      u2: [{ id: 2, presence_id: '2' }],
+      u3: [{ id: 3, presence_id: '3' }],
     }
   },
 }
@@ -44,12 +51,12 @@ const channelStub = {
   },
 }
 
-const listByFirst = (_id, { metas: [first, ..._rest] }) => first
+const listByFirst = (_id, [first, ..._rest]) => first
 
 describe('syncState', function () {
   it('syncs empty state', function () {
     let state = {}
-    const newState = { u1: { metas: [{ id: 1, phx_ref: '1' }] } }
+    const newState = { u1: [{ id: 1, presence_id: '1' }] }
     const stateBefore = cloneDeep(state)
 
     RealtimePresence.syncState(state, newState)
@@ -62,8 +69,8 @@ describe('syncState', function () {
   })
 
   it("onJoins new presences and onLeave's left presences", function () {
-    let state = { u4: { metas: [{ id: 4, phx_ref: '4' }] } }
-    const newState = fixtures.state()
+    let state = { u4: [{ id: 4, presence_id: '4' }] }
+    const rawState = fixtures.rawState()
     const joined = {}
     const left = {}
     const onJoin = (key, current, newPres) => {
@@ -73,25 +80,25 @@ describe('syncState', function () {
       left[key] = { current, leftPres }
     }
 
-    state = RealtimePresence.syncState(state, newState, onJoin, onLeave)
+    state = RealtimePresence.syncState(state, rawState, onJoin, onLeave)
 
-    assert.deepEqual(state, newState)
+    assert.deepEqual(state, fixtures.transformedState())
     assert.deepEqual(joined, {
-      u1: { current: null, newPres: { metas: [{ id: 1, phx_ref: '1' }] } },
-      u2: { current: null, newPres: { metas: [{ id: 2, phx_ref: '2' }] } },
-      u3: { current: null, newPres: { metas: [{ id: 3, phx_ref: '3' }] } },
+      u1: { current: null, newPres: [{ id: 1, presence_id: '1' }] },
+      u2: { current: null, newPres: [{ id: 2, presence_id: '2' }] },
+      u3: { current: null, newPres: [{ id: 3, presence_id: '3' }] },
     })
     assert.deepEqual(left, {
       u4: {
-        current: { metas: [] },
-        leftPres: { metas: [{ id: 4, phx_ref: '4' }] },
+        current: [],
+        leftPres: [{ id: 4, presence_id: '4' }],
       },
     })
   })
 
-  it('onJoins only newly added metas', function () {
-    let state = { u3: { metas: [{ id: 3, phx_ref: '3' }] } }
-    const newState = {
+  it('onJoins only newly added presences', function () {
+    let state = { u3: [{ id: 3, presence_id: '3' }] }
+    const rawState = {
       u3: {
         metas: [
           { id: 3, phx_ref: '3' },
@@ -107,15 +114,25 @@ describe('syncState', function () {
     const onLeave = (key, current, leftPres) => {
       left.push([key, cloneDeep({ current, leftPres })])
     }
-    state = RealtimePresence.syncState(state, cloneDeep(newState), onJoin, onLeave)
+    state = RealtimePresence.syncState(
+      state,
+      cloneDeep(rawState),
+      onJoin,
+      onLeave
+    )
 
-    assert.deepEqual(state, newState)
+    assert.deepEqual(state, {
+      u3: [
+        { id: 3, presence_id: '3' },
+        { id: 3, presence_id: '3.new' },
+      ],
+    })
     assert.deepEqual(joined, [
       [
         'u3',
         {
-          current: { metas: [{ id: 3, phx_ref: '3' }] },
-          newPres: { metas: [{ id: 3, phx_ref: '3.new' }] },
+          current: [{ id: 3, presence_id: '3' }],
+          newPres: [{ id: 3, presence_id: '3.new' }],
         },
       ],
     ])
@@ -125,7 +142,7 @@ describe('syncState', function () {
 
 describe('syncDiff', function () {
   it('syncs empty state', function () {
-    const joins = { u1: { metas: [{ id: 1, phx_ref: '1' }] } }
+    const joins = { u1: [{ id: 1, phx_ref: '1' }] }
     const state = RealtimePresence.syncDiff(
       {},
       {
@@ -137,32 +154,28 @@ describe('syncDiff', function () {
     assert.deepEqual(state, joins)
   })
 
-  it('removes presence when meta is empty and adds additional meta', function () {
-    let state = fixtures.state()
+  it('removes presences when empty and adds additional presences', function () {
+    let state = fixtures.transformedState()
     state = RealtimePresence.syncDiff(state, {
       joins: fixtures.joins(),
       leaves: fixtures.leaves(),
     })
 
     assert.deepEqual(state, {
-      u1: {
-        metas: [
-          { id: 1, phx_ref: '1' },
-          { id: 1, phx_ref: '1.2' },
-        ],
-      },
-      u3: { metas: [{ id: 3, phx_ref: '3' }] },
+      u1: [
+        { id: 1, presence_id: '1' },
+        { id: 1, presence_id: '1.2' },
+      ],
+      u3: [{ id: 3, presence_id: '3' }],
     })
   })
 
-  it('removes meta while leaving key if other metas exist', function () {
+  it('removes presence while leaving key if other presences exist', function () {
     let state = {
-      u1: {
-        metas: [
-          { id: 1, phx_ref: '1' },
-          { id: 1, phx_ref: '1.2' },
-        ],
-      },
+      u1: [
+        { id: 1, presence_id: '1' },
+        { id: 1, presence_id: '1.2' },
+      ],
     }
     state = RealtimePresence.syncDiff(state, {
       joins: {},
@@ -170,38 +183,36 @@ describe('syncDiff', function () {
     })
 
     assert.deepEqual(state, {
-      u1: { metas: [{ id: 1, phx_ref: '1.2' }] },
+      u1: [{ id: 1, presence_id: '1.2' }],
     })
   })
 })
 
 describe('list', function () {
   it('lists full presence by default', function () {
-    const state = fixtures.state()
+    const state = fixtures.transformedState()
 
     assert.deepEqual(RealtimePresence.list(state), [
-      { metas: [{ id: 1, phx_ref: '1' }] },
-      { metas: [{ id: 2, phx_ref: '2' }] },
-      { metas: [{ id: 3, phx_ref: '3' }] },
+      [{ id: 1, presence_id: '1' }],
+      [{ id: 2, presence_id: '2' }],
+      [{ id: 3, presence_id: '3' }],
     ])
   })
 
   it('lists with custom function', function () {
     const state = {
-      u1: {
-        metas: [
-          { id: 1, phx_ref: '1.first' },
-          { id: 1, phx_ref: '1.second' },
-        ],
-      },
+      u1: [
+        { id: 1, presence_id: '1.first' },
+        { id: 1, presence_id: '1.second' },
+      ],
     }
 
-    const listBy = (_key, { metas: [first, ..._rest] }) => {
+    const listBy = (_key, [first, ..._rest]) => {
       return first
     }
 
     assert.deepEqual(RealtimePresence.list(state, listBy), [
-      { id: 1, phx_ref: '1.first' },
+      { id: 1, presence_id: '1.first' },
     ])
   })
 })
@@ -216,13 +227,13 @@ describe('instance', function () {
     channelStub.trigger('presence_state', newState)
 
     assert.deepEqual(presence.list(listByFirst), [
-      { id: 1, phx_ref: 1 },
-      { id: 2, phx_ref: 2 },
+      { id: 1, presence_id: '1' },
+      { id: 2, presence_id: '2' },
     ])
 
     channelStub.trigger('presence_diff', { joins: {}, leaves: { u1: user1 } })
 
-    assert.deepEqual(presence.list(listByFirst), [{ id: 2, phx_ref: 2 }])
+    assert.deepEqual(presence.list(listByFirst), [{ id: 2, presence_id: '2' }])
   })
 
   it('applies pending diff if state is not yet synced', function () {
@@ -254,39 +265,39 @@ describe('instance', function () {
     assert.deepEqual(onLeaves, [
       {
         id: 'u2',
-        current: { metas: [] },
-        leftPres: { metas: [{ id: 2, phx_ref: '2' }] },
+        current: [],
+        leftPres: [{ id: 2, presence_id: '2' }],
       },
     ])
-    assert.deepEqual(presence.list(listByFirst), [{ id: 1, phx_ref: '1' }])
+    assert.deepEqual(presence.list(listByFirst), [{ id: 1, presence_id: '1' }])
     assert.deepEqual(presence.pendingDiffs, [])
     assert.deepEqual(onJoins, [
       {
         id: 'u1',
         current: undefined,
-        newPres: { metas: [{ id: 1, phx_ref: '1' }] },
+        newPres: [{ id: 1, presence_id: '1' }],
       },
       {
         id: 'u2',
         current: undefined,
-        newPres: { metas: [{ id: 2, phx_ref: '2' }] },
+        newPres: [{ id: 2, presence_id: '2' }],
       },
     ])
 
     // disconnect and reconnect
     assert.equal(presence.inPendingSyncState(), false)
-    
+
     channelStub.simulateDisconnectAndReconnect()
-    
+
     assert.equal(presence.inPendingSyncState(), true)
 
     channelStub.trigger('presence_diff', { joins: {}, leaves: { u1: user1 } })
-    
-    assert.deepEqual(presence.list(listByFirst), [{ id: 1, phx_ref: '1' }])
+
+    assert.deepEqual(presence.list(listByFirst), [{ id: 1, presence_id: '1' }])
 
     channelStub.trigger('presence_state', { u1: user1, u3: user3 })
-    
-    assert.deepEqual(presence.list(listByFirst), [{ id: 3, phx_ref: '3' }])
+
+    assert.deepEqual(presence.list(listByFirst), [{ id: 3, presence_id: '3' }])
   })
 
   it('allows custom channel events', function () {
@@ -300,21 +311,21 @@ describe('instance', function () {
 
     channelStub.trigger('the_state', { user1 })
 
-    assert.deepEqual(presence.list(listByFirst), [{ id: 1, phx_ref: '1' }])
+    assert.deepEqual(presence.list(listByFirst), [{ id: 1, presence_id: '1' }])
 
     channelStub.trigger('the_diff', { joins: {}, leaves: { user1 } })
 
     assert.deepEqual(presence.list(listByFirst), [])
   })
 
-  it('updates existing meta for a presence update (leave + join)', function () {
+  it('updates existing presences for a presence update (leave + join)', function () {
     const presence = new RealtimePresence(channelStub)
     const onJoins = []
     const onLeaves = []
 
     // new connection
     const user1 = { metas: [{ id: 1, phx_ref: '1' }] }
-    const user2 = { metas: [{ id: 2, name: 'chris', phx_ref: '2' }] }
+    const user2 = { metas: [{ id: 2, name: 'bo', phx_ref: '2' }] }
     const newState = { u1: user1, u2: user2 }
 
     channelStub.trigger('presence_state', cloneDeep(newState))
@@ -327,19 +338,19 @@ describe('instance', function () {
     })
 
     assert.deepEqual(
-      presence.list((_id, { metas: metas }) => metas),
+      presence.list((_id, presences) => presences),
       [
         [
           {
             id: 1,
-            phx_ref: '1',
+            presence_id: '1',
           },
         ],
         [
           {
             id: 2,
-            name: 'chris',
-            phx_ref: '2',
+            name: 'bo',
+            presence_id: '2',
           },
         ],
       ]
@@ -348,53 +359,47 @@ describe('instance', function () {
     const leaves = { u2: user2 }
     const joins = {
       u2: {
-        metas: [{ id: 2, name: 'chris.2', phx_ref: '2.2', phx_ref_prev: '2' }],
+        metas: [{ id: 2, name: 'bo.2', phx_ref: '2.2', phx_ref_prev: '2' }],
       },
     }
 
     channelStub.trigger('presence_diff', { joins, leaves })
 
     assert.deepEqual(
-      presence.list((_id, { metas: metas }) => metas),
+      presence.list((_id, presences) => presences),
       [
         [
           {
             id: 1,
-            phx_ref: '1',
+            presence_id: '1',
           },
         ],
         [
           {
             id: 2,
-            name: 'chris.2',
-            phx_ref: '2.2',
-            phx_ref_prev: '2',
+            name: 'bo.2',
+            presence_id: '2.2',
           },
         ],
       ]
     )
     assert.deepEqual(onJoins, [
       {
-        current: {
-          metas: [
-            {
-              id: 2,
-              name: 'chris',
-              phx_ref: '2',
-            },
-          ],
-        },
+        current: [
+          {
+            id: 2,
+            name: 'bo',
+            presence_id: '2',
+          },
+        ],
         id: 'u2',
-        newPres: {
-          metas: [
-            {
-              id: 2,
-              name: 'chris.2',
-              phx_ref: '2.2',
-              phx_ref_prev: '2',
-            },
-          ],
-        },
+        newPres: [
+          {
+            id: 2,
+            name: 'bo.2',
+            presence_id: '2.2',
+          },
+        ],
       },
     ])
   })

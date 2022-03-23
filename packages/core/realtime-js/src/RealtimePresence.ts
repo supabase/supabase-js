@@ -11,26 +11,39 @@ import {
 } from 'phoenix'
 import RealtimeSubscription from './RealtimeSubscription'
 
-type PresenceMeta = {
-  phx_ref: string
-  phx_ref_prev?: string
+type Presence = {
+  presence_id: string
   [key: string]: any
 }
 
-type PresenceMetaMap = Record<'metas', PresenceMeta[]>
-
-type PresenceState = { [key: string]: PresenceMetaMap }
+type PresenceState = { [key: string]: Presence[] }
 
 type PresenceDiff = {
   joins: PresenceState
   leaves: PresenceState
 }
 
-type PresenceChooser<T> = (key: string, presence: any) => T
+type RawPresenceState = {
+  [key: string]: Record<
+    'metas',
+    {
+      phx_ref?: string
+      phx_ref_prev?: string
+      [key: string]: any
+    }[]
+  >
+}
+
+type RawPresenceDiff = {
+  joins: RawPresenceState
+  leaves: RawPresenceState
+}
+
+type PresenceChooser<T> = (key: string, presences: any) => T
 
 export default class RealtimePresence {
   state: PresenceState = {}
-  pendingDiffs: PresenceDiff[] = []
+  pendingDiffs: RawPresenceDiff[] = []
   joinRef: string | null = null
   caller: {
     onJoin: PresenceOnJoinCallback
@@ -46,7 +59,7 @@ export default class RealtimePresence {
    * Initializes the Presence
    * @param channel - The RealtimeSubscription
    * @param opts - The options,
-   *        for example `{events: {state: "state", diff: "diff"}}`
+   *        for example `{events: {state: 'state', diff: 'diff'}}`
    */
   constructor(public channel: RealtimeSubscription, opts?: PresenceOpts) {
     const events = opts?.events || {
@@ -54,7 +67,7 @@ export default class RealtimePresence {
       diff: 'presence_diff',
     }
 
-    this.channel.on(events.state, (newState: PresenceState) => {
+    this.channel.on(events.state, (newState: RawPresenceState) => {
       const { onJoin, onLeave, onSync } = this.caller
 
       this.joinRef = this.channel.joinRef()
@@ -80,7 +93,7 @@ export default class RealtimePresence {
       onSync()
     })
 
-    this.channel.on(events.diff, (diff: PresenceDiff) => {
+    this.channel.on(events.diff, (diff: RawPresenceDiff) => {
       const { onJoin, onLeave, onSync } = this.caller
 
       if (this.inPendingSyncState()) {
@@ -106,46 +119,45 @@ export default class RealtimePresence {
    */
   static syncState(
     currentState: PresenceState,
-    newState: PresenceState,
+    newState: RawPresenceState | PresenceState,
     onJoin: PresenceOnJoinCallback,
     onLeave: PresenceOnLeaveCallback
   ): PresenceState {
     const state = cloneDeep(currentState)
+    const transformedState = this.transformState(newState)
     const joins: PresenceState = {}
     const leaves: PresenceState = {}
 
-    this.map(state, (key, presence: PresenceMetaMap) => {
-      if (!newState[key]) {
-        leaves[key] = presence
+    this.map(state, (key: string, presences: Presence[]) => {
+      if (!transformedState[key]) {
+        leaves[key] = presences
       }
     })
 
-    this.map(newState, (key, newPresence: PresenceMetaMap) => {
-      const currentPresence: PresenceMetaMap = state[key]
+    this.map(transformedState, (key, newPresences: Presence[]) => {
+      const currentPresences: Presence[] = state[key]
 
-      if (currentPresence) {
-        const newRefs = newPresence.metas.map((m: PresenceMeta) => m.phx_ref)
-        const curRefs = currentPresence.metas.map(
-          (m: PresenceMeta) => m.phx_ref
+      if (currentPresences) {
+        const newPresenceIds = newPresences.map((m: Presence) => m.presence_id)
+        const curPresenceIds = currentPresences.map(
+          (m: Presence) => m.presence_id
         )
-        const joinedMetas: PresenceMeta[] = newPresence.metas.filter(
-          (m: PresenceMeta) => curRefs.indexOf(m.phx_ref) < 0
+        const joinedPresences: Presence[] = newPresences.filter(
+          (m: Presence) => curPresenceIds.indexOf(m.presence_id) < 0
         )
-        const leftMetas: PresenceMeta[] = currentPresence.metas.filter(
-          (m: PresenceMeta) => newRefs.indexOf(m.phx_ref) < 0
+        const leftPresences: Presence[] = currentPresences.filter(
+          (m: Presence) => newPresenceIds.indexOf(m.presence_id) < 0
         )
 
-        if (joinedMetas.length > 0) {
-          joins[key] = newPresence
-          joins[key].metas = joinedMetas
+        if (joinedPresences.length > 0) {
+          joins[key] = joinedPresences
         }
 
-        if (leftMetas.length > 0) {
-          leaves[key] = cloneDeep(currentPresence)
-          leaves[key].metas = leftMetas
+        if (leftPresences.length > 0) {
+          leaves[key] = leftPresences
         }
       } else {
-        joins[key] = newPresence
+        joins[key] = newPresences
       }
     })
 
@@ -161,11 +173,14 @@ export default class RealtimePresence {
    */
   static syncDiff(
     state: PresenceState,
-    diff: PresenceDiff,
+    diff: RawPresenceDiff | PresenceDiff,
     onJoin: PresenceOnJoinCallback,
     onLeave: PresenceOnLeaveCallback
   ): PresenceState {
-    const { joins, leaves } = cloneDeep(diff)
+    const { joins, leaves } = {
+      joins: this.transformState(diff.joins),
+      leaves: this.transformState(diff.leaves),
+    }
 
     if (!onJoin) {
       onJoin = () => {}
@@ -175,37 +190,39 @@ export default class RealtimePresence {
       onLeave = () => {}
     }
 
-    this.map(joins, (key, newPresence: PresenceMetaMap) => {
-      const currentPresence: PresenceMetaMap = state[key]
-      state[key] = cloneDeep(newPresence)
+    this.map(joins, (key, newPresences: Presence[]) => {
+      const currentPresences: Presence[] = state[key]
+      state[key] = cloneDeep(newPresences)
 
-      if (currentPresence) {
-        const joinedRefs = state[key].metas.map((m: PresenceMeta) => m.phx_ref)
-        const curMetas: PresenceMeta[] = currentPresence.metas.filter(
-          (m: PresenceMeta) => joinedRefs.indexOf(m.phx_ref) < 0
+      if (currentPresences) {
+        const joinedPresenceIds = state[key].map((m: Presence) => m.presence_id)
+        const curPresences: Presence[] = currentPresences.filter(
+          (m: Presence) => joinedPresenceIds.indexOf(m.presence_id) < 0
         )
 
-        state[key].metas.unshift(...curMetas)
+        state[key].unshift(...curPresences)
       }
 
-      onJoin(key, currentPresence, newPresence)
+      onJoin(key, currentPresences, newPresences)
     })
 
-    this.map(leaves, (key, leftPresence: PresenceMetaMap) => {
-      const currentPresence: PresenceMetaMap = state[key]
+    this.map(leaves, (key, leftPresences: Presence[]) => {
+      let currentPresences: Presence[] = state[key]
 
-      if (!currentPresence) return
+      if (!currentPresences) return
 
-      const refsToRemove = leftPresence.metas.map(
-        (m: PresenceMeta) => m.phx_ref
+      const presenceIdsToRemove = leftPresences.map(
+        (m: Presence) => m.presence_id
       )
-      currentPresence.metas = currentPresence.metas.filter(
-        (m: PresenceMeta) => refsToRemove.indexOf(m.phx_ref) < 0
+      currentPresences = currentPresences.filter(
+        (m: Presence) => presenceIdsToRemove.indexOf(m.presence_id) < 0
       )
 
-      onLeave(key, currentPresence, leftPresence)
+      state[key] = currentPresences
 
-      if (currentPresence.metas.length === 0) delete state[key]
+      onLeave(key, currentPresences, leftPresences)
+
+      if (currentPresences.length === 0) delete state[key]
     })
 
     return state
@@ -222,8 +239,8 @@ export default class RealtimePresence {
       chooser = (_key, pres) => pres
     }
 
-    return this.map(presences, (key, presence: PresenceMetaMap) =>
-      chooser!(key, presence)
+    return this.map(presences, (key, presences: Presence[]) =>
+      chooser!(key, presences)
     )
   }
 
@@ -232,6 +249,52 @@ export default class RealtimePresence {
     func: PresenceChooser<T>
   ): T[] {
     return Object.getOwnPropertyNames(obj).map((key) => func(key, obj[key]))
+  }
+
+  /**
+   * Remove 'metas' key
+   * Change 'phx_ref' to 'presence_id'
+   * Remove 'phx_ref' and 'phx_ref_prev'
+   *
+   * @example
+   * // returns {
+   *  abc123: [
+   *    { presence_id: '2', user_id: 1 },
+   *    { presence_id: '3', user_id: 2 }
+   *  ]
+   * }
+   * RealtimePresence.transformState({
+   *  abc123: {
+   *    metas: [
+   *      { phx_ref: '2', phx_ref_prev: '1' user_id: 1 },
+   *      { phx_ref: '3', user_id: 2 }
+   *    ]
+   *  }
+   * })
+   */
+  private static transformState(
+    state: RawPresenceState | PresenceState
+  ): PresenceState {
+    state = cloneDeep(state)
+
+    return Object.getOwnPropertyNames(state).reduce((newState, key) => {
+      const presences = state[key]
+
+      if ('metas' in presences) {
+        newState[key] = presences.metas.map((presence) => {
+          presence['presence_id'] = presence['phx_ref']
+
+          delete presence['phx_ref']
+          delete presence['phx_ref_prev']
+
+          return presence
+        }) as Presence[]
+      } else {
+        newState[key] = presences
+      }
+
+      return newState
+    }, {} as PresenceState)
   }
 
   onJoin(callback: PresenceOnJoinCallback): void {
