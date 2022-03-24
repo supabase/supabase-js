@@ -73,8 +73,15 @@ export default class SupabaseClient {
     this.realtimeUrl = `${_supabaseUrl}/realtime/v1`.replace('http', 'ws')
     this.authUrl = `${_supabaseUrl}/auth/v1`
     this.storageUrl = `${_supabaseUrl}/storage/v1`
-    const urlParts = _supabaseUrl.split('.')
-    this.functionsUrl = `${urlParts[0]}.functions.${urlParts[1]}.${urlParts[2]}`
+
+    const isPlatform = _supabaseUrl.match(/(supabase\.co)|(supabase\.in)/)
+    if (isPlatform) {
+      const urlParts = _supabaseUrl.split('.')
+      this.functionsUrl = `${urlParts[0]}.functions.${urlParts[1]}.${urlParts[2]}`
+    } else {
+      this.functionsUrl = `${_supabaseUrl}/functions/v1`
+    }
+
     this.schema = settings.schema
     this.multiTab = settings.multiTab
     this.fetch = settings.fetch
