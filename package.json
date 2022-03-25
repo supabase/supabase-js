@@ -1,7 +1,7 @@
 {
   "name": "@supabase/supabase-js",
   "version": "0.0.0-automated",
-  "description": "Isomorphic Javascript client for Supabase.",
+  "description": "Isomorphic Javascript client for Supabase",
   "keywords": [
     "javascript",
     "typescript",
