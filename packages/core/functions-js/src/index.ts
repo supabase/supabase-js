@@ -58,6 +58,12 @@ export class FunctionsClient {
       } else {
         data = await response.text()
       }
+
+      const isRelayError = response.headers.get('x-relay-error')
+      if (isRelayError && isRelayError === 'true') {
+        return { data: null, error: data }
+      }
+
       return { data, error: null }
     } catch (error: any) {
       return { data: null, error }
