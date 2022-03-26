@@ -1,5 +1,5 @@
-import crossFetch from 'cross-fetch'
-import { Fetch, FunctionInvokeOptions, ResponseType } from './types'
+import { resolveFetch } from './helper'
+import { Fetch, FunctionInvokeOptions } from './types'
 
 export class FunctionsClient {
   protected url: string
@@ -10,13 +10,7 @@ export class FunctionsClient {
     this.url = url
     this.headers = headers
 
-    if (customFetch) {
-      this.fetch = customFetch
-    } else if (typeof fetch !== 'undefined') {
-      this.fetch = fetch
-    } else {
-      this.fetch = crossFetch
-    }
+    this.fetch = resolveFetch(fetch)
   }
 
   /**
