@@ -10,7 +10,7 @@ export class FunctionsClient {
     this.url = url
     this.headers = headers
 
-    this.fetch = resolveFetch(fetch)
+    this.fetch = resolveFetch(customFetch)
   }
 
   /**
