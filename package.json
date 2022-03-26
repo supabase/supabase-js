@@ -33,8 +33,8 @@
     "test:db": "cd infra/db && docker-compose down && docker-compose up -d && sleep 5",
     "test:watch": "jest --watch --verbose false --silent false",
     "test:clean": "cd infra/db && docker-compose down",
-    "docs": "typedoc src/index.ts",
-    "docs:json": "typedoc src/index.ts --json docs/spec.json --excludeExternals"
+    "docs": "typedoc --entryPoints src/index.ts --out docs --includes src/**/*.ts",
+    "docs:json": "typedoc --entryPoints src/index.ts --out docs --includes src/**/*.ts --json docs/spec.json"
   },
   "dependencies": {
     "@supabase/functions-js": "^1.2.0",

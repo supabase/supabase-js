@@ -53,7 +53,7 @@ You can now use type="module" `<script>`s to import supabase-js from CDNs, like:
 
 ```html
 <script type="module">
-  import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm"
+  import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
   const supabase = createClient('https://xyzcompany.supabase.co', 'public-anon-key')
 
   console.log('Supabase Instance: ', supabase)
