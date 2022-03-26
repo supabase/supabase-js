@@ -41,6 +41,11 @@ export class FunctionsClient {
         body,
       })
 
+      const isRelayError = response.headers.get('x-relay-error')
+      if (isRelayError && isRelayError === 'true') {
+        return { data: null, error: new Error(await response.text()) }
+      }
+
       let data
       const { responseType } = invokeOptions ?? {}
       if (!responseType || responseType === 'json') {
@@ -51,11 +56,6 @@ export class FunctionsClient {
         data = await response.blob()
       } else {
         data = await response.text()
-      }
-
-      const isRelayError = response.headers.get('x-relay-error')
-      if (isRelayError && isRelayError === 'true') {
-        return { data: null, error: data }
       }
 
       return { data, error: null }
