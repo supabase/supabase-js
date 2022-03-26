@@ -1,12 +1,12 @@
 import { PostgrestQueryBuilder } from '@supabase/postgrest-js'
 import { SupabaseRealtimeClient } from './SupabaseRealtimeClient'
 import { RealtimeClient } from '@supabase/realtime-js'
-import { Fetch, SupabaseEventTypes, SupabaseRealtimePayload } from './types'
+import { Fetch, GenericObject, SupabaseEventTypes, SupabaseRealtimePayload } from './types'
 
 export class SupabaseQueryBuilder<T> extends PostgrestQueryBuilder<T> {
   private _subscription: SupabaseRealtimeClient | null = null
   private _realtime: RealtimeClient
-  private _headers: { [key: string]: string }
+  private _headers: GenericObject
   private _schema: string
   private _table: string
 
@@ -18,15 +18,17 @@ export class SupabaseQueryBuilder<T> extends PostgrestQueryBuilder<T> {
       realtime,
       table,
       fetch,
+      shouldThrowOnError,
     }: {
-      headers?: { [key: string]: string }
+      headers?: GenericObject
       schema: string
       realtime: RealtimeClient
       table: string
       fetch?: Fetch
+      shouldThrowOnError?: boolean
     }
   ) {
-    super(url, { headers, schema, fetch })
+    super(url, { headers, schema, fetch, shouldThrowOnError })
 
     this._realtime = realtime
     this._headers = headers

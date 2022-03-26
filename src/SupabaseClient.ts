@@ -1,11 +1,12 @@
 import { DEFAULT_HEADERS, STORAGE_KEY } from './lib/constants'
 import { stripTrailingSlash, isBrowser } from './lib/helpers'
-import { Fetch, SupabaseClientOptions } from './lib/types'
+import { Fetch, GenericObject, SupabaseClientOptions } from './lib/types'
 import { SupabaseAuthClient } from './lib/SupabaseAuthClient'
 import { SupabaseQueryBuilder } from './lib/SupabaseQueryBuilder'
 import { SupabaseStorageClient } from '@supabase/storage-js'
+import { FunctionsClient } from '@supabase/functions-js'
 import { PostgrestClient } from '@supabase/postgrest-js'
-import { AuthChangeEvent, Session, Subscription } from '@supabase/gotrue-js'
+import { AuthChangeEvent } from '@supabase/gotrue-js'
 import { RealtimeClient, RealtimeSubscription, RealtimeClientOptions } from '@supabase/realtime-js'
 
 const DEFAULT_OPTIONS = {
@@ -33,10 +34,13 @@ export default class SupabaseClient {
   protected realtimeUrl: string
   protected authUrl: string
   protected storageUrl: string
+  protected functionsUrl: string
   protected realtime: RealtimeClient
   protected multiTab: boolean
   protected fetch?: Fetch
   protected changedAccessToken: string | undefined
+  protected shouldThrowOnError: boolean
+
   protected headers: {
     [key: string]: string
   }
@@ -62,17 +66,27 @@ export default class SupabaseClient {
     if (!supabaseUrl) throw new Error('supabaseUrl is required.')
     if (!supabaseKey) throw new Error('supabaseKey is required.')
 
-    supabaseUrl = stripTrailingSlash(supabaseUrl)
-
+    const _supabaseUrl = stripTrailingSlash(supabaseUrl)
     const settings = { ...DEFAULT_OPTIONS, ...options }
-    this.restUrl = `${supabaseUrl}/rest/v1`
-    this.realtimeUrl = `${supabaseUrl}/realtime/v1`.replace('http', 'ws')
-    this.authUrl = `${supabaseUrl}/auth/v1`
-    this.storageUrl = `${supabaseUrl}/storage/v1`
+
+    this.restUrl = `${_supabaseUrl}/rest/v1`
+    this.realtimeUrl = `${_supabaseUrl}/realtime/v1`.replace('http', 'ws')
+    this.authUrl = `${_supabaseUrl}/auth/v1`
+    this.storageUrl = `${_supabaseUrl}/storage/v1`
+
+    const isPlatform = _supabaseUrl.match(/(supabase\.co)|(supabase\.in)/)
+    if (isPlatform) {
+      const urlParts = _supabaseUrl.split('.')
+      this.functionsUrl = `${urlParts[0]}.functions.${urlParts[1]}.${urlParts[2]}`
+    } else {
+      this.functionsUrl = `${_supabaseUrl}/functions/v1`
+    }
+
     this.schema = settings.schema
     this.multiTab = settings.multiTab
     this.fetch = settings.fetch
     this.headers = { ...DEFAULT_HEADERS, ...options?.headers }
+    this.shouldThrowOnError = settings.shouldThrowOnError || false
 
     this.auth = this._initSupabaseAuthClient(settings)
     this.realtime = this._initRealtimeClient({ headers: this.headers, ...settings.realtime })
@@ -84,6 +98,13 @@ export default class SupabaseClient {
     // this.realtime.onOpen(() => console.log('OPEN'))
     // this.realtime.onClose(() => console.log('CLOSED'))
     // this.realtime.onError((e: Error) => console.log('Socket error', e))
+  }
+
+  /**
+   * Supabase Functions allows you to deploy and invoke edge functions.
+   */
+  get functions() {
+    return new FunctionsClient(this.functionsUrl, this._getAuthHeaders())
   }
 
   /**
@@ -106,6 +127,7 @@ export default class SupabaseClient {
       realtime: this.realtime,
       table,
       fetch: this.fetch,
+      shouldThrowOnError: this.shouldThrowOnError,
     })
   }
 
@@ -131,45 +153,65 @@ export default class SupabaseClient {
   }
 
   /**
-   * Remove all subscriptions.
+   * Closes and removes all subscriptions and returns a list of removed
+   * subscriptions and their errors.
    */
-  async removeAllSubscriptions() {
-    const subscriptions = this.realtime.channels.slice()
-    return await Promise.allSettled(subscriptions.map((sub) => this.removeSubscription(sub)))
-  }
+  async removeAllSubscriptions(): Promise<
+    { data: { subscription: RealtimeSubscription }; error: Error | null }[]
+  > {
+    const allSubs: RealtimeSubscription[] = this.getSubscriptions().slice()
+    const allSubPromises = allSubs.map((sub) => this.removeSubscription(sub))
+    const allRemovedSubs = await Promise.all(allSubPromises)
 
-  /**
-   * Removes an active subscription and returns the number of open connections.
-   *
-   * @param subscription The subscription you want to remove.
-   */
-  removeSubscription(subscription: RealtimeSubscription) {
-    return new Promise(async (resolve) => {
-      try {
-        await this._closeSubscription(subscription)
-
-        const allSubscriptions = this.getSubscriptions()
-        const openSubscriptionsCount = allSubscriptions.filter((chan) => chan.isJoined()).length
-
-        if (!allSubscriptions.length) {
-          const { error } = await this.realtime.disconnect()
-          if (error) return resolve({ error })
-        }
-        return resolve({ error: null, data: { openSubscriptions: openSubscriptionsCount } })
-      } catch (error) {
-        return resolve({ error })
+    return allRemovedSubs.map(({ error }, i) => {
+      return {
+        data: { subscription: allSubs[i] },
+        error,
       }
     })
   }
 
-  private async _closeSubscription(subscription: RealtimeSubscription) {
+  /**
+   * Closes and removes a subscription and returns the number of open subscriptions.
+   *
+   * @param subscription The subscription you want to close and remove.
+   */
+  async removeSubscription(
+    subscription: RealtimeSubscription
+  ): Promise<{ data: { openSubscriptions: number }; error: Error | null }> {
+    const { error } = await this._closeSubscription(subscription)
+    const allSubs: RealtimeSubscription[] = this.getSubscriptions()
+    const openSubCount = allSubs.filter((chan) => chan.isJoined()).length
+
+    if (allSubs.length === 0) await this.realtime.disconnect()
+
+    return { data: { openSubscriptions: openSubCount }, error }
+  }
+
+  private async _closeSubscription(
+    subscription: RealtimeSubscription
+  ): Promise<{ error: Error | null }> {
+    let error = null
+
     if (!subscription.isClosed()) {
-      await this._closeChannel(subscription)
+      const { error: unsubError } = await this._unsubscribeSubscription(subscription)
+      error = unsubError
     }
 
+    this.realtime.remove(subscription)
+
+    return { error }
+  }
+
+  private _unsubscribeSubscription(
+    subscription: RealtimeSubscription
+  ): Promise<{ error: Error | null }> {
     return new Promise((resolve) => {
-      this.realtime.remove(subscription)
-      return resolve(true)
+      subscription
+        .unsubscribe()
+        .receive('ok', () => resolve({ error: null }))
+        .receive('error', (error: Error) => resolve({ error }))
+        .receive('timeout', () => resolve({ error: new Error('timed out') }))
     })
   }
 
@@ -215,26 +257,16 @@ export default class SupabaseClient {
       headers: this._getAuthHeaders(),
       schema: this.schema,
       fetch: this.fetch,
+      throwOnError: this.shouldThrowOnError,
     })
   }
 
-  private _getAuthHeaders(): { [key: string]: string } {
-    const headers: { [key: string]: string } = this.headers
+  private _getAuthHeaders(): GenericObject {
+    const headers: GenericObject = this.headers
     const authBearer = this.auth.session()?.access_token ?? this.supabaseKey
     headers['apikey'] = this.supabaseKey
-    headers['Authorization'] = `Bearer ${authBearer}`
+    headers['Authorization'] = headers['Authorization'] || `Bearer ${authBearer}`
     return headers
-  }
-
-  private _closeChannel(subscription: RealtimeSubscription) {
-    return new Promise((resolve, reject) => {
-      subscription
-        .unsubscribe()
-        .receive('ok', () => {
-          return resolve(true)
-        })
-        .receive('error', (e: Error) => reject(e))
-    })
   }
 
   private _listenForMultiTabEvents() {
@@ -282,6 +314,7 @@ export default class SupabaseClient {
     ) {
       // Token has changed
       this.realtime.setAuth(token!)
+      this.functions.setAuth(token!)
       // Ideally we should call this.auth.recoverSession() - need to make public
       // to trigger a "SIGNED_IN" event on this client.
       if (source == 'STORAGE') this.auth.setAuth(token!)
@@ -289,7 +322,8 @@ export default class SupabaseClient {
       this.changedAccessToken = token
     } else if (event === 'SIGNED_OUT' || event === 'USER_DELETED') {
       // Token is removed
-      this.removeAllSubscriptions()
+      this.realtime.setAuth(this.supabaseKey)
+      this.functions.setAuth(this.supabaseKey)
       if (source == 'STORAGE') this.auth.signOut()
     }
   }

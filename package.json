@@ -1,7 +1,7 @@
 {
   "name": "@supabase/supabase-js",
-  "version": "0.0.0",
-  "description": "Isomorphic Javascript client for Supabase.",
+  "version": "0.0.0-automated",
+  "description": "Isomorphic Javascript client for Supabase",
   "keywords": [
     "javascript",
     "typescript",
@@ -24,7 +24,7 @@
     "clean": "rimraf dist docs",
     "coverage": "jest --runInBand --coverage",
     "format": "prettier --write \"{src,test}/**/*.ts\"",
-    "build": "genversion src/lib/version.ts --es6 && run-s clean format build:*",
+    "build": "run-s clean format build:*",
     "build:main": "tsc -p tsconfig.json",
     "build:module": "tsc -p tsconfig.module.json",
     "build:umd": "webpack",
@@ -37,27 +37,27 @@
     "docs:json": "typedoc --entryPoints src/index.ts --out docs --includes src/**/*.ts --json docs/spec.json"
   },
   "dependencies": {
-    "@supabase/gotrue-js": "^1.21.7",
-    "@supabase/postgrest-js": "^0.35.0",
-    "@supabase/realtime-js": "^1.3.4",
-    "@supabase/storage-js": "^1.5.0"
+    "@supabase/functions-js": "^1.2.0",
+    "@supabase/gotrue-js": "^1.22.8",
+    "@supabase/postgrest-js": "^0.37.1",
+    "@supabase/realtime-js": "^1.4.0",
+    "@supabase/storage-js": "^1.6.4"
   },
   "devDependencies": {
     "@types/jest": "^26.0.13",
-    "genversion": "^3.0.1",
     "husky": "^4.3.0",
     "jest": "^26.4.1",
     "npm-run-all": "^4.1.5",
-    "prettier": "^2.1.2",
-    "pretty-quick": "^3.1.0",
+    "prettier": "^2.5.1",
+    "pretty-quick": "^3.1.3",
     "rimraf": "^3.0.2",
     "semantic-release-plugin-update-version-in-files": "^1.1.0",
     "ts-jest": "^26.3.0",
     "ts-loader": "^8.0.11",
     "typedoc": "^0.22.13",
-    "typescript": "^4.0.2",
-    "webpack": "^5.4.0",
-    "webpack-cli": "^4.2.0"
+    "typescript": "^4.5.5",
+    "webpack": "^5.69.1",
+    "webpack-cli": "^4.9.2"
   },
   "husky": {
     "hooks": {

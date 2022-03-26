@@ -1,11 +1,13 @@
 import { GoTrueClient } from '@supabase/gotrue-js'
 import { RealtimeClientOptions } from '@supabase/realtime-js'
 
-export type Fetch = typeof fetch
-
 type GoTrueClientOptions = ConstructorParameters<typeof GoTrueClient>[0]
 
 export interface SupabaseAuthClientOptions extends GoTrueClientOptions {}
+
+export type GenericObject = { [key: string]: string }
+
+export type Fetch = typeof fetch
 
 export type SupabaseClientOptions = {
   /**
@@ -15,11 +17,15 @@ export type SupabaseClientOptions = {
   /**
    * Optional headers for initializing the client.
    */
-  headers?: { [key: string]: string }
+  headers?: GenericObject
   /**
    * Automatically refreshes the token for logged in users.
    */
   autoRefreshToken?: boolean
+  /**
+   * Allows to enable/disable multi-tab/window events
+   */
+  multiTab?: boolean
   /**
    * Whether to persist a logged in session to storage.
    */
@@ -42,6 +48,11 @@ export type SupabaseClientOptions = {
    * A custom `fetch` implementation.
    */
   fetch?: Fetch
+
+  /**
+   * Throw errors, instead of returning them.
+   */
+  shouldThrowOnError?: boolean
 }
 
 export type SupabaseRealtimePayload<T> = {

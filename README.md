@@ -47,6 +47,20 @@ Then you can use it from a global `supabase` variable:
 </script>
 ```
 
+### ESM
+
+You can now use type="module" `<script>`s to import supabase-js from CDNs, like:
+
+```html
+<script type="module">
+  import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
+  const supabase = createClient('https://xyzcompany.supabase.co', 'public-anon-key')
+
+  console.log('Supabase Instance: ', supabase)
+  // ...
+</script>
+```
+
 ### Custom `fetch` implementation
 
 `supabase-js` uses the [`cross-fetch`](https://www.npmjs.com/package/cross-fetch) library to make HTTP requests, but an alternative `fetch` implementation can be provided as an option. This is most useful in environments where `cross-fetch` is not compatible, for instance Cloudflare Workers:
