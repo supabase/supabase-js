@@ -1,0 +1,21 @@
+async-only: true
+bail: false
+check-leaks: true
+color: true
+delay: false
+diff: true
+exit: false # could be expressed as "no-exit: true"
+extension:
+  - ts
+full-trace: false
+recursive: true
+require:
+  - 'ts-node/register'
+  - source-map-support/register
+retries: 0
+sort: false
+spec: test/spec/**/*.spec.ts
+timeout: 60000
+reporter: mocha-multi-reporters
+reporter-options: configFile=config.json
+globals: 'allure'

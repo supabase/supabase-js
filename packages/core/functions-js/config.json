@@ -1,0 +1,3 @@
+{
+  "reporterEnabled": "spec,mocha-allure2-reporter"
+}

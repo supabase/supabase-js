@@ -106,3 +106,7 @@ dist
 
 # Generated docs
 docs/
+
+# Test reports
+allure-results
+allure-report
