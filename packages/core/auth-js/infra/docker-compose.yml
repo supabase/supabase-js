@@ -106,7 +106,7 @@ services:
       - '9000:9000' # web interface
       - '1100:1100' # POP3
   db:
-    image: supabase/postgres
+    image: supabase/postgres:14.1.0
     ports:
       - '5432:5432'
     volumes:

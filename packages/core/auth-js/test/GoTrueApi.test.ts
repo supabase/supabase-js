@@ -476,23 +476,14 @@ describe('GoTrueApi', () => {
     })
 
     describe('sendMobileOTP()', () => {
-      test('sendMobileOTP() with an invalid phone number', async () => {
-        const { phone } = mockUserCredentials()
-
-        const { error, data } = await serviceRoleApiClientWithSms.sendMobileOTP(`et-${phone}-home`)
-        expect(data).toBeNull()
-        expect(error?.status).toEqual(400)
-        expect(error?.message).toMatch(/^Invalid/)
-      })
-
       test('sendMobileOTP() with an Invalid Phone Number', async () => {
         const { phone } = mockUserCredentials()
 
         const { error, data } = await serviceRoleApiClient.sendMobileOTP(`++bad-${phone}-number`)
 
         expect(data).toBeNull()
-        expect(error?.status).toEqual(400)
-        expect(error?.message).toMatch(/^Invalid format/)
+        expect(error?.status).toEqual(422)
+        expect(error?.message).toMatch(/^Invalid phone number format/)
       })
     })
   })
