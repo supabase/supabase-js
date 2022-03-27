@@ -6,9 +6,9 @@ export class FunctionsClient {
   protected headers: { [key: string]: string }
   protected fetch: Fetch
 
-  constructor(url: string, headers: { [key: string]: string }, customFetch?: Fetch) {
+  constructor(url: string, headers?: { [key: string]: string }, customFetch?: Fetch) {
     this.url = url
-    this.headers = headers
+    this.headers = headers ?? {}
 
     this.fetch = resolveFetch(customFetch)
   }
@@ -29,10 +29,10 @@ export class FunctionsClient {
    * `body`: the body of the request
    * `responseType`: how the response should be parsed. The default is `json`
    */
-  async invoke(
+  async invoke<T = string>(
     functionName: string,
     invokeOptions?: FunctionInvokeOptions
-  ): Promise<{ data: string | null; error: Error | null }> {
+  ): Promise<{ data: T | null; error: Error | null }> {
     try {
       const { headers, body } = invokeOptions ?? {}
       const response = await this.fetch(`${this.url}/${functionName}`, {
