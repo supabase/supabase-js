@@ -50,7 +50,7 @@ export class FunctionsClient {
       const { responseType } = invokeOptions ?? {}
       if (!responseType || responseType === 'json') {
         data = await response.json()
-      } else if (responseType === 'arraybuffer') {
+      } else if (responseType === 'arrayBuffer') {
         data = await response.arrayBuffer()
       } else if (responseType === 'blob') {
         data = await response.blob()

@@ -5,7 +5,7 @@ export type Fetch = typeof crossFetch
 export enum ResponseType {
   json,
   text,
-  arraybuffer,
+  arrayBuffer,
   blob,
 }
 
