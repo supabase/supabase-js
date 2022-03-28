@@ -1,13 +1,12 @@
-import 'mocha'
-import { assert } from 'chai'
+import 'jest'
 import { nanoid } from 'nanoid'
 import { sign } from 'jsonwebtoken'
-import { ContentType } from 'allure2-js-commons'
+import { ContentType } from 'allure-js-commons'
 
 import { FunctionsClient } from '../../src/index'
 
 import { Relay, runRelay } from '../relay/container'
-import { attach, log } from '../utils/allure'
+import { attach, log } from '../utils/jest-custom-reporter'
 import { MirrorResponse } from '../models/mirrorResponse'
 
 describe('params reached to function', () => {
@@ -15,15 +14,18 @@ describe('params reached to function', () => {
   const jwtSecret = nanoid(10)
   const apiKey = sign({ name: 'anon' }, jwtSecret)
 
-  before(async () => {
+  beforeAll(async () => {
     relay = await runRelay('mirror', jwtSecret)
   })
 
-  after(async () => {
+  afterAll(async () => {
     relay && relay.container && (await relay.container.stop())
   })
 
-  it('invoke mirror', async () => {
+  test('invoke mirror', async () => {
+    /**
+     * @feature core
+     */
     log('create FunctionsClient')
     const fclient = new FunctionsClient(`http://localhost:${relay.container.getMappedPort(8081)}`, {
       Authorization: `Bearer ${apiKey}`,
@@ -33,7 +35,7 @@ describe('params reached to function', () => {
     const { data, error } = await fclient.invoke<MirrorResponse>('mirror', { responseType: 'json' })
 
     log('assert no error')
-    assert.isNull(error)
+    expect(error).toBeNull()
 
     const expected = {
       url: 'http://localhost:8000/mirror',
@@ -46,10 +48,13 @@ describe('params reached to function', () => {
       `expected: ${JSON.stringify(expected)}\n actual: ${JSON.stringify(data)}`,
       ContentType.TEXT
     )
-    assert.deepEqual(data, expected)
+    expect(data).toEqual(expected)
   })
 
-  it('invoke mirror with client header', async () => {
+  test('invoke mirror with client header', async () => {
+    /**
+     * @feature headers
+     */
     log('create FunctionsClient')
     const fclient = new FunctionsClient(`http://localhost:${relay.container.getMappedPort(8081)}`, {
       Authorization: `Bearer ${apiKey}`,
@@ -60,7 +65,7 @@ describe('params reached to function', () => {
     const { data, error } = await fclient.invoke<MirrorResponse>('mirror', { responseType: 'json' })
 
     log('assert no error')
-    assert.isNull(error)
+    expect(error).toBeNull()
 
     const expected = {
       url: 'http://localhost:8000/mirror',
@@ -73,7 +78,7 @@ describe('params reached to function', () => {
       `expected: ${JSON.stringify(expected)}\n actual: ${JSON.stringify(data)}`,
       ContentType.TEXT
     )
-    assert.deepEqual(data, expected)
+    expect(data).toEqual(expected)
     attach(
       'check headers from function',
       `expected to include: ${['customheader', 'check me']}\n actual: ${JSON.stringify(
@@ -81,14 +86,17 @@ describe('params reached to function', () => {
       )}`,
       ContentType.TEXT
     )
-    assert.isTrue(
+    expect(
       (data?.headers as [Array<string>]).filter(
         ([k, v]) => k === 'customheader' && v === 'check me'
       ).length > 0
-    )
+    ).toBe(true)
   })
 
-  it('invoke mirror with invoke header', async () => {
+  test('invoke mirror with invoke header', async () => {
+    /**
+     * @feature headers
+     */
     log('create FunctionsClient')
     const fclient = new FunctionsClient(`http://localhost:${relay.container.getMappedPort(8081)}`)
 
@@ -103,7 +111,7 @@ describe('params reached to function', () => {
     })
 
     log('assert no error')
-    assert.isNull(error)
+    expect(error).toBeNull()
 
     const expected = {
       url: 'http://localhost:8000/mirror',
@@ -116,7 +124,7 @@ describe('params reached to function', () => {
       `expected: ${JSON.stringify(expected)}\n actual: ${JSON.stringify(data)}`,
       ContentType.TEXT
     )
-    assert.deepEqual(data, expected)
+    expect(data).toEqual(expected)
     attach(
       'check headers from function',
       `expected to include: ${['custom-header', customHeader]}\n actual: ${JSON.stringify(
@@ -124,14 +132,17 @@ describe('params reached to function', () => {
       )}`,
       ContentType.TEXT
     )
-    assert.isTrue(
+    expect(
       (data?.headers as [Array<string>]).filter(
         ([k, v]) => k === 'custom-header' && v === customHeader
       ).length > 0
-    )
+    ).toBe(true)
   })
 
-  it('invoke mirror with body formData', async () => {
+  test('invoke mirror with body formData', async () => {
+    /**
+     * @feature body
+     */
     log('create FunctionsClient')
     const fclient = new FunctionsClient(`http://localhost:${relay.container.getMappedPort(8081)}`)
     attach('setAuth', apiKey, ContentType.TEXT)
@@ -151,7 +162,7 @@ describe('params reached to function', () => {
     })
 
     log('assert no error')
-    assert.isNull(error)
+    expect(error).toBeNull()
 
     const body = []
     for (const e of form.entries()) {
@@ -168,10 +179,13 @@ describe('params reached to function', () => {
       `expected: ${JSON.stringify(expected)}\n actual: ${JSON.stringify(data)}`,
       ContentType.TEXT
     )
-    assert.deepEqual(data, expected)
+    expect(data).toEqual(expected)
   })
 
-  it('invoke mirror with body json', async () => {
+  test('invoke mirror with body json', async () => {
+    /**
+     * @feature body
+     */
     log('create FunctionsClient')
     const fclient = new FunctionsClient(`http://localhost:${relay.container.getMappedPort(8081)}`)
     attach('setAuth', apiKey, ContentType.TEXT)
@@ -194,7 +208,7 @@ describe('params reached to function', () => {
     })
 
     log('assert no error')
-    assert.isNull(error)
+    expect(error).toBeNull()
 
     const expected = {
       url: 'http://localhost:8000/mirror',
@@ -207,6 +221,6 @@ describe('params reached to function', () => {
       `expected: ${JSON.stringify(expected)}\n actual: ${JSON.stringify(data)}`,
       ContentType.TEXT
     )
-    assert.deepEqual(data, expected)
+    expect(data).toEqual(expected)
   })
 })

@@ -1,19 +1,21 @@
-import { Allure } from 'allure-js-commons'
-import { ContentType } from 'allure2-js-commons'
+import 'jest-circus-allure-environment'
+import { JestAllureInterface } from 'jest-circus-allure-environment'
+import { ContentType } from 'allure-js-commons'
 
+// eslint-disable-next-line @typescript-eslint/ban-types
 type TestDecorator = (
   target: object,
   property: string,
   descriptor: PropertyDescriptor
 ) => PropertyDescriptor
 
-function getAllure(): Allure {
+function getAllure(): JestAllureInterface {
   // @ts-ignore
-  const allure: Allure = global.allure
-  if (!allure) {
+  if (!global.allure) {
     throw new Error('Unable to find Allure implementation')
   }
-  return allure
+  // @ts-ignore
+  return global.allure
 }
 
 export function step<T>(nameFn: string | ((arg: T) => string)): TestDecorator {
@@ -40,6 +42,8 @@ export function step<T>(nameFn: string | ((arg: T) => string)): TestDecorator {
     return descriptor
   }
 }
+
+export const addStep = getAllure().step
 
 export function attachment<T>(name: string, type: ContentType) {
   return (
@@ -78,7 +82,7 @@ export function attach(name: string, content: string | Buffer, type: ContentType
 }
 
 export function log(name: string, description?: string): void {
-  // console.info(description ? `${name}: ${description}` : name);
+  console.info(description ? `${name}: ${description}` : name)
   getAllure().step(name, () => {
     if (description) {
       getAllure().step(description, () => {

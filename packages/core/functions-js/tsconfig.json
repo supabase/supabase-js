@@ -5,8 +5,6 @@
     "declaration": true,
     "declarationMap": true,
     "module": "CommonJS",
-    "emitDecoratorMetadata": true,
-    "experimentalDecorators": true,
     "outDir": "dist/main",
     "rootDir": "src",
     "sourceMap": true,
@@ -22,7 +20,6 @@
     "allowSyntheticDefaultImports": true
   },
   "typeRoots": [
-    "./node_modules/allure2-js-commons/dist/declarations/**/",
     "./src/types"
   ]
 }

@@ -1,13 +1,12 @@
-import 'mocha'
-import { assert } from 'chai'
+import 'jest'
 import { nanoid } from 'nanoid'
 import { sign } from 'jsonwebtoken'
-import { ContentType } from 'allure2-js-commons'
+import { ContentType } from 'allure-js-commons'
 
 import { FunctionsClient } from '../../src/index'
 
 import { Relay, runRelay } from '../relay/container'
-import { attach, log } from '../utils/allure'
+import { attach, log } from '../utils/jest-custom-reporter'
 import { getCustomFetch } from '../utils/fetch'
 
 describe('basic tests (hello function)', () => {
@@ -15,15 +14,18 @@ describe('basic tests (hello function)', () => {
   const jwtSecret = nanoid(10)
   const apiKey = sign({ name: 'anon' }, jwtSecret)
 
-  before(async () => {
+  beforeAll(async () => {
     relay = await runRelay('hello', jwtSecret)
   })
 
-  after(async () => {
+  afterAll(async () => {
     relay && relay.container && (await relay.container.stop())
   })
 
-  it('invoke hello with auth header', async () => {
+  test('invoke hello with auth header', async () => {
+    /**
+     * @feature auth
+     */
     log('create FunctionsClient')
     const fclient = new FunctionsClient(`http://localhost:${relay.container.getMappedPort(8081)}`, {
       Authorization: `Bearer ${apiKey}`,
@@ -33,12 +35,15 @@ describe('basic tests (hello function)', () => {
     const { data, error } = await fclient.invoke<string>('hello', { responseType: 'text' })
 
     log('assert no error')
-    assert.isNull(error)
+    expect(error).toBeNull()
     log(`assert ${data} is equal to 'Hello World'`)
-    assert.equal(data, 'Hello World')
+    expect(data).toEqual('Hello World')
   })
 
-  it('invoke hello with setAuth', async () => {
+  test('invoke hello with setAuth', async () => {
+    /**
+     * @feature auth
+     */
     log('create FunctionsClient')
     const fclient = new FunctionsClient(`http://localhost:${relay.container.getMappedPort(8081)}`)
     attach('setAuth', apiKey, ContentType.TEXT)
@@ -48,12 +53,15 @@ describe('basic tests (hello function)', () => {
     const { data, error } = await fclient.invoke<string>('hello', { responseType: 'text' })
 
     log('assert no error')
-    assert.isNull(error)
+    expect(error).toBeNull()
     log(`assert ${data} is equal to 'Hello World'`)
-    assert.equal(data, 'Hello World')
+    expect(data).toEqual('Hello World')
   })
 
-  it('invoke hello with setAuth wrong key', async () => {
+  test('invoke hello with setAuth wrong key', async () => {
+    /**
+     * @feature errors
+     */
     log('create FunctionsClient')
     const fclient = new FunctionsClient(`http://localhost:${relay.container.getMappedPort(8081)}`)
     const wrongKey = sign({ name: 'anon' }, 'wrong_jwt')
@@ -64,12 +72,15 @@ describe('basic tests (hello function)', () => {
     const { data, error } = await fclient.invoke<string>('hello', { responseType: 'text' })
 
     log('check error')
-    assert.isNotNull(error)
-    assert.equal(error?.message, 'Invalid JWT')
-    assert.isNull(data)
+    expect(error).not.toBeNull()
+    expect(error?.message).toEqual('Invalid JWT')
+    expect(data).toBeNull()
   })
 
-  it('invoke hello: auth override by setAuth wrong key', async () => {
+  test('invoke hello: auth override by setAuth wrong key', async () => {
+    /**
+     * @feature auth
+     */
     log('create FunctionsClient')
     const fclient = new FunctionsClient(`http://localhost:${relay.container.getMappedPort(8081)}`, {
       Authorization: `Bearer ${apiKey}`,
@@ -82,12 +93,15 @@ describe('basic tests (hello function)', () => {
     const { data, error } = await fclient.invoke<string>('hello', { responseType: 'text' })
 
     log('check error')
-    assert.isNotNull(error)
-    assert.equal(error?.message, 'Invalid JWT')
-    assert.isNull(data)
+    expect(error).not.toBeNull()
+    expect(error?.message).toEqual('Invalid JWT')
+    expect(data).toBeNull()
   })
 
-  it('invoke hello: auth override by setAuth right key', async () => {
+  test('invoke hello: auth override by setAuth right key', async () => {
+    /**
+     * @feature auth
+     */
     const wrongKey = sign({ name: 'anon' }, 'wrong_jwt')
 
     log('create FunctionsClient with wrong jwt')
@@ -102,12 +116,15 @@ describe('basic tests (hello function)', () => {
     const { data, error } = await fclient.invoke<string>('hello', { responseType: 'text' })
 
     log('assert no error')
-    assert.isNull(error)
+    expect(error).toBeNull()
     log(`assert ${data} is equal to 'Hello World'`)
-    assert.equal(data, 'Hello World')
+    expect(data).toEqual('Hello World')
   })
 
-  it('invoke hello with auth header in invoke', async () => {
+  test('invoke hello with auth header in invoke', async () => {
+    /**
+     * @feature auth
+     */
     log('create FunctionsClient')
     const fclient = new FunctionsClient(`http://localhost:${relay.container.getMappedPort(8081)}`)
 
@@ -120,12 +137,15 @@ describe('basic tests (hello function)', () => {
     })
 
     log('assert no error')
-    assert.isNull(error)
+    expect(error).toBeNull()
     log(`assert ${data} is equal to 'Hello World'`)
-    assert.equal(data, 'Hello World')
+    expect(data).toEqual('Hello World')
   })
 
-  it('invoke hello with auth header override in invoke', async () => {
+  test('invoke hello with auth header override in invoke', async () => {
+    /**
+     * @feature auth
+     */
     log('create FunctionsClient with wrong jwt')
     const fclient = new FunctionsClient(`http://localhost:${relay.container.getMappedPort(8081)}`)
 
@@ -142,12 +162,15 @@ describe('basic tests (hello function)', () => {
     })
 
     log('assert no error')
-    assert.isNull(error)
+    expect(error).toBeNull()
     log(`assert ${data} is equal to 'Hello World'`)
-    assert.equal(data, 'Hello World')
+    expect(data).toEqual('Hello World')
   })
 
-  it('invoke hello with wrong auth header overridden in invoke', async () => {
+  test('invoke hello with wrong auth header overridden in invoke', async () => {
+    /**
+     * @feature auth
+     */
     log('create FunctionsClient with wrong jwt')
     const fclient = new FunctionsClient(`http://localhost:${relay.container.getMappedPort(8081)}`, {
       Authorization: `Bearer ${apiKey}`,
@@ -163,12 +186,15 @@ describe('basic tests (hello function)', () => {
     })
 
     log('check error')
-    assert.isNotNull(error)
-    assert.equal(error?.message, 'Invalid JWT')
-    assert.isNull(data)
+    expect(error).not.toBeNull()
+    expect(error?.message).toEqual('Invalid JWT')
+    expect(data).toBeNull()
   })
 
   it.skip('invoke missing function', async () => {
+    /**
+     * @feature errors
+     */
     log('create FunctionsClient')
     const fclient = new FunctionsClient(`http://localhost:${relay.container.getMappedPort(8081)}`, {
       Authorization: `Bearer ${apiKey}`,
@@ -178,12 +204,15 @@ describe('basic tests (hello function)', () => {
     const { data, error } = await fclient.invoke<string>('missing', { responseType: 'text' })
 
     log('check error')
-    assert.isNotNull(error)
-    assert.equal(error?.message, 'Invalid JWT')
-    assert.isNull(data)
+    expect(error).not.toBeNull()
+    expect(error?.message).toEqual('Invalid JWT')
+    expect(data).toBeNull()
   })
 
-  it('invoke with custom fetch', async () => {
+  test('invoke with custom fetch', async () => {
+    /**
+     * @feature fetch
+     */
     log('create FunctionsClient')
     const fclient = new FunctionsClient(
       `http://localhost:${relay.container.getMappedPort(8081)}`,
@@ -200,12 +229,15 @@ describe('basic tests (hello function)', () => {
     const { data, error } = await fclient.invoke<string>('', { responseType: 'text' })
 
     log('assert no error')
-    assert.isNull(error)
+    expect(error).toBeNull()
     log(`assert ${data} is equal to 'Hello World'`)
-    assert.equal(data, 'Hello World')
+    expect(data).toEqual('Hello World')
   })
 
-  it('invoke with custom fetch wrong method', async () => {
+  test('invoke with custom fetch wrong method', async () => {
+    /**
+     * @feature fetch
+     */
     log('create FunctionsClient')
     const fclient = new FunctionsClient(
       `http://localhost:${relay.container.getMappedPort(8081)}`,
@@ -222,13 +254,16 @@ describe('basic tests (hello function)', () => {
     const { data, error } = await fclient.invoke<string>('', { responseType: 'text' })
 
     log('check error')
-    assert.isNotNull(error)
+    expect(error).not.toBeNull()
     log(`assert ${error?.message} is equal to 'Only POST and OPTIONS requests are supported'`)
-    assert.equal(error?.message, 'Only POST and OPTIONS requests are supported')
-    assert.isNull(data)
+    expect(error?.message).toEqual('Only POST and OPTIONS requests are supported')
+    expect(data).toBeNull()
   })
 
-  it('invoke hello with custom fetch override header', async () => {
+  test('invoke hello with custom fetch override header', async () => {
+    /**
+     * @feature fetch
+     */
     const wrongKey = sign({ name: 'anon' }, 'wrong_jwt')
     log('create FunctionsClient')
     const fclient = new FunctionsClient(
@@ -250,8 +285,8 @@ describe('basic tests (hello function)', () => {
     })
 
     log('assert no error')
-    assert.isNull(error)
+    expect(error).toBeNull()
     log(`assert ${data} is equal to 'Hello World'`)
-    assert.equal(data, 'Hello World')
+    expect(data).toEqual('Hello World')
   })
 })

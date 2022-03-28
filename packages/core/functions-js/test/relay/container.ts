@@ -4,9 +4,8 @@ import crossFetch from 'cross-fetch'
 import { sign } from 'jsonwebtoken'
 import { GenericContainer, Network, StartedTestContainer, Wait } from 'testcontainers'
 import { ExecResult } from 'testcontainers/dist/docker/types'
-import { ContentType } from 'allure2-js-commons'
-
-import { attach, log } from '../utils/allure'
+import { attach, log } from '../utils/jest-custom-reporter'
+import { ContentType } from 'allure-js-commons'
 
 /**
  * A Relay contains a running relay container that has a unique ID and two promises:
