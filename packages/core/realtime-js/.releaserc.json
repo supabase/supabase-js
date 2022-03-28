@@ -10,7 +10,7 @@
           "dist/module/lib/version.js",
           "dist/module/lib/version.d.ts"
         ],
-        "placeholder": "0.0.0"
+        "placeholder": "0.0.0-automated"
       }
     ],
     "@semantic-release/commit-analyzer",
