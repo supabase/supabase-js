@@ -314,7 +314,6 @@ export default class SupabaseClient {
     ) {
       // Token has changed
       this.realtime.setAuth(token!)
-      this.functions.setAuth(token!)
       // Ideally we should call this.auth.recoverSession() - need to make public
       // to trigger a "SIGNED_IN" event on this client.
       if (source == 'STORAGE') this.auth.setAuth(token!)
@@ -323,7 +322,6 @@ export default class SupabaseClient {
     } else if (event === 'SIGNED_OUT' || event === 'USER_DELETED') {
       // Token is removed
       this.realtime.setAuth(this.supabaseKey)
-      this.functions.setAuth(this.supabaseKey)
       if (source == 'STORAGE') this.auth.signOut()
     }
   }
