@@ -30,7 +30,7 @@ describe('basic tests (hello function)', () => {
     })
 
     log('invoke hello')
-    const { data, error } = await fclient.invoke('hello', { responseType: 'text' })
+    const { data, error } = await fclient.invoke<string>('hello', { responseType: 'text' })
 
     log('assert no error')
     assert.isNull(error)
@@ -45,7 +45,7 @@ describe('basic tests (hello function)', () => {
     fclient.setAuth(apiKey)
 
     log('invoke hello')
-    const { data, error } = await fclient.invoke('hello', { responseType: 'text' })
+    const { data, error } = await fclient.invoke<string>('hello', { responseType: 'text' })
 
     log('assert no error')
     assert.isNull(error)
@@ -61,13 +61,12 @@ describe('basic tests (hello function)', () => {
     fclient.setAuth(wrongKey)
 
     log('invoke hello')
-    const { data, error } = await fclient.invoke('hello', { responseType: 'text' })
+    const { data, error } = await fclient.invoke<string>('hello', { responseType: 'text' })
 
     log('check error')
     assert.isNotNull(error)
-    // todo check error
-    log(`assert ${data} is equal to 'Invalid JWT'`)
-    assert.equal(data, 'Invalid JWT')
+    assert.equal(error?.message, 'Invalid JWT')
+    assert.isNull(data)
   })
 
   it('invoke hello: auth override by setAuth wrong key', async () => {
@@ -80,13 +79,12 @@ describe('basic tests (hello function)', () => {
     fclient.setAuth(wrongKey)
 
     log('invoke hello')
-    const { data, error } = await fclient.invoke('hello', { responseType: 'text' })
+    const { data, error } = await fclient.invoke<string>('hello', { responseType: 'text' })
 
     log('check error')
     assert.isNotNull(error)
-    // todo check error
-    log(`assert ${data} is equal to 'Invalid JWT'`)
-    assert.equal(data, 'Invalid JWT')
+    assert.equal(error?.message, 'Invalid JWT')
+    assert.isNull(data)
   })
 
   it('invoke hello: auth override by setAuth right key', async () => {
@@ -101,7 +99,7 @@ describe('basic tests (hello function)', () => {
     fclient.setAuth(apiKey)
 
     log('invoke hello')
-    const { data, error } = await fclient.invoke('hello', { responseType: 'text' })
+    const { data, error } = await fclient.invoke<string>('hello', { responseType: 'text' })
 
     log('assert no error')
     assert.isNull(error)
@@ -114,7 +112,7 @@ describe('basic tests (hello function)', () => {
     const fclient = new FunctionsClient(`http://localhost:${relay.container.getMappedPort(8081)}`)
 
     log('invoke hello with Authorization header')
-    const { data, error } = await fclient.invoke('hello', {
+    const { data, error } = await fclient.invoke<string>('hello', {
       responseType: 'text',
       headers: {
         Authorization: `Bearer ${apiKey}`,
@@ -136,7 +134,7 @@ describe('basic tests (hello function)', () => {
     fclient.setAuth(wrongKey)
 
     log('invoke hello with Authorization header')
-    const { data, error } = await fclient.invoke('hello', {
+    const { data, error } = await fclient.invoke<string>('hello', {
       responseType: 'text',
       headers: {
         Authorization: `Bearer ${apiKey}`,
@@ -157,7 +155,7 @@ describe('basic tests (hello function)', () => {
 
     const wrongKey = sign({ name: 'anon' }, 'wrong_jwt')
     log('invoke hello with wrong Authorization header')
-    const { data, error } = await fclient.invoke('hello', {
+    const { data, error } = await fclient.invoke<string>('hello', {
       responseType: 'text',
       headers: {
         Authorization: `Bearer ${wrongKey}`,
@@ -166,23 +164,23 @@ describe('basic tests (hello function)', () => {
 
     log('check error')
     assert.isNotNull(error)
-    // todo check error
-    log(`assert ${data} is equal to 'Invalid JWT'`)
-    assert.equal(data, 'Invalid JWT')
+    assert.equal(error?.message, 'Invalid JWT')
+    assert.isNull(data)
   })
 
-  it('invoke missing function', async () => {
+  it.skip('invoke missing function', async () => {
     log('create FunctionsClient')
     const fclient = new FunctionsClient(`http://localhost:${relay.container.getMappedPort(8081)}`, {
       Authorization: `Bearer ${apiKey}`,
     })
 
     log('invoke hello')
-    const { data, error } = await fclient.invoke('missing', { responseType: 'text' })
+    const { data, error } = await fclient.invoke<string>('missing', { responseType: 'text' })
 
     log('check error')
     assert.isNotNull(error)
-    // todo check error and data
+    assert.equal(error?.message, 'Invalid JWT')
+    assert.isNull(data)
   })
 
   it('invoke with custom fetch', async () => {
@@ -199,7 +197,7 @@ describe('basic tests (hello function)', () => {
     )
 
     log('invoke hello')
-    const { data, error } = await fclient.invoke('', { responseType: 'text' })
+    const { data, error } = await fclient.invoke<string>('', { responseType: 'text' })
 
     log('assert no error')
     assert.isNull(error)
@@ -221,13 +219,13 @@ describe('basic tests (hello function)', () => {
     )
 
     log('invoke hello')
-    const { data, error } = await fclient.invoke('', { responseType: 'text' })
+    const { data, error } = await fclient.invoke<string>('', { responseType: 'text' })
 
     log('check error')
     assert.isNotNull(error)
-    // todo check error
-    log(`assert ${data} is equal to 'Only POST requests are supported'`)
-    assert.equal(data, 'Only POST requests are supported')
+    log(`assert ${error?.message} is equal to 'Only POST and OPTIONS requests are supported'`)
+    assert.equal(error?.message, 'Only POST and OPTIONS requests are supported')
+    assert.isNull(data)
   })
 
   it('invoke hello with custom fetch override header', async () => {
@@ -247,7 +245,7 @@ describe('basic tests (hello function)', () => {
     )
 
     log('invoke hello with Authorization header')
-    const { data, error } = await fclient.invoke('hello', {
+    const { data, error } = await fclient.invoke<string>('hello', {
       responseType: 'text',
     })
 
