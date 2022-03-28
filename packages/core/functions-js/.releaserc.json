@@ -1,4 +1,7 @@
 {
+  "branches": [
+    "main"
+  ],
   "plugins": [
     [
       "semantic-release-plugin-update-version-in-files",
