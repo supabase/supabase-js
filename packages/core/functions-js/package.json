@@ -4,7 +4,7 @@
   "description": "JS Client library to interact with Supabase Functions.",
   "main": "dist/main/index.js",
   "module": "dist/module/index.js",
-  "types": "dist/main/index.d.ts",
+  "types": "dist/module/index.d.ts",
   "sideEffects": false,
   "scripts": {
     "clean": "rimraf dist docs",
