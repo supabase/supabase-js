@@ -104,7 +104,10 @@ export default class SupabaseClient {
    * Supabase Functions allows you to deploy and invoke edge functions.
    */
   get functions() {
-    return new FunctionsClient(this.functionsUrl, this._getAuthHeaders(), this.fetch)
+    return new FunctionsClient(this.functionsUrl, {
+      headers: this._getAuthHeaders(),
+      customFetch: this.fetch,
+    })
   }
 
   /**

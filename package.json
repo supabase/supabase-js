@@ -17,7 +17,7 @@
   ],
   "main": "dist/main/index.js",
   "module": "dist/module/index.js",
-  "types": "dist/main/index.d.ts",
+  "types": "dist/module/index.d.ts",
   "sideEffects": false,
   "repository": "supabase/supabase-js",
   "scripts": {
@@ -37,11 +37,11 @@
     "docs:json": "typedoc --entryPoints src/index.ts --out docs --includes src/**/*.ts --json docs/spec.json"
   },
   "dependencies": {
-    "@supabase/functions-js": "^1.2.2",
-    "@supabase/gotrue-js": "^1.22.8",
-    "@supabase/postgrest-js": "^0.37.1",
-    "@supabase/realtime-js": "^1.4.0",
-    "@supabase/storage-js": "^1.6.4"
+    "@supabase/functions-js": "^1.3.2",
+    "@supabase/gotrue-js": "^1.22.10",
+    "@supabase/postgrest-js": "^0.37.2",
+    "@supabase/realtime-js": "^1.4.5",
+    "@supabase/storage-js": "^1.6.5"
   },
   "devDependencies": {
     "@types/jest": "^26.0.13",
