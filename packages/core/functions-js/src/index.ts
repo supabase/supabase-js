@@ -3,13 +3,21 @@ import { Fetch, FunctionInvokeOptions } from './types'
 
 export class FunctionsClient {
   protected url: string
-  protected headers: { [key: string]: string }
+  protected headers: Record<string, string>
   protected fetch: Fetch
 
-  constructor(url: string, headers?: { [key: string]: string }, customFetch?: Fetch) {
+  constructor(
+    url: string,
+    {
+      headers = {},
+      customFetch,
+    }: {
+      headers?: Record<string, string>
+      customFetch?: Fetch
+    }
+  ) {
     this.url = url
-    this.headers = headers ?? {}
-
+    this.headers = headers
     this.fetch = resolveFetch(customFetch)
   }
 
