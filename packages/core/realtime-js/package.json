@@ -1,5 +1,5 @@
 {
-  "name": "@supabase/realtime-js",
+  "name": "@soedirgo/realtime-js",
   "version": "0.0.0",
   "description": "Listen to realtime updates to your PostgreSQL database",
   "keywords": [
@@ -34,14 +34,14 @@
     "docs:json": "typedoc --json docs/spec.json --mode modules --includeDeclarations --excludeExternals"
   },
   "dependencies": {
-    "@types/lodash.clonedeep": "^4.5.6",
-    "@types/phoenix": "^1.5.4",
-    "@types/websocket": "^1.0.3",
     "lodash.clonedeep": "^4.5.0",
     "websocket": "^1.0.34"
   },
   "devDependencies": {
     "@babel/runtime": "^7.9.2",
+    "@types/lodash.clonedeep": "^4.5.6",
+    "@types/phoenix": "^1.5.4",
+    "@types/websocket": "^1.0.3",
     "babel-preset-env": "^1.7.0",
     "babel-register": "^6.26.0",
     "eslint": "^7.0.0",
