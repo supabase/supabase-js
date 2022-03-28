@@ -53,6 +53,11 @@ export type SupabaseClientOptions = {
    * Throw errors, instead of returning them.
    */
   shouldThrowOnError?: boolean
+
+  /**
+   * Options passed to the gotrue-js instance
+   */
+  cookieOptions?: SupabaseAuthClientOptions['cookieOptions']
 }
 
 export type SupabaseRealtimePayload<T> = {

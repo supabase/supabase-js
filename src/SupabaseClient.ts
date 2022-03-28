@@ -229,6 +229,8 @@ export default class SupabaseClient {
     localStorage,
     headers,
     fetch,
+    cookieOptions,
+    multiTab,
   }: SupabaseClientOptions) {
     const authHeaders = {
       Authorization: `Bearer ${this.supabaseKey}`,
@@ -242,6 +244,8 @@ export default class SupabaseClient {
       detectSessionInUrl,
       localStorage,
       fetch,
+      cookieOptions,
+      multiTab,
     })
   }
 
