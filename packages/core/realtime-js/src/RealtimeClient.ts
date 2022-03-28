@@ -1,3 +1,4 @@
+import { w3cwebsocket } from 'websocket'
 import {
   VSN,
   CHANNEL_EVENTS,
@@ -9,7 +10,6 @@ import {
 } from './lib/constants'
 import Timer from './lib/timer'
 import RealtimeSubscription from './RealtimeSubscription'
-import { w3cwebsocket as WebSocket } from 'websocket'
 import Serializer from './lib/serializer'
 
 export type Options = {
@@ -40,7 +40,7 @@ export default class RealtimeClient {
   headers?: { [key: string]: string } = DEFAULT_HEADERS
   params?: { [key: string]: string } = {}
   timeout: number = DEFAULT_TIMEOUT
-  transport: any = WebSocket
+  transport: any = w3cwebsocket
   heartbeatIntervalMs: number = 30000
   longpollerTimeout: number = 20000
   heartbeatTimer: ReturnType<typeof setInterval> | undefined = undefined
@@ -126,7 +126,7 @@ export default class RealtimeClient {
       // this.conn.timeout = this.longpollerTimeout // TYPE ERROR
       this.conn.binaryType = 'arraybuffer'
       this.conn.onopen = () => this._onConnOpen()
-      this.conn.onerror = (error) => this._onConnError(error)
+      this.conn.onerror = (error) => this._onConnError(error as ErrorEvent)
       this.conn.onmessage = (event) => this.onConnMessage(event)
       this.conn.onclose = (event) => this._onConnClose(event)
     }
@@ -371,7 +371,7 @@ export default class RealtimeClient {
     this.stateChangeCallbacks.close.forEach((callback) => callback(event))
   }
 
-  private _onConnError(error: Error) {
+  private _onConnError(error: ErrorEvent) {
     this.log('transport', error.message)
     this._triggerChanError()
     this.stateChangeCallbacks.error.forEach((callback) => callback(error))
