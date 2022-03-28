@@ -19,6 +19,7 @@
   ],
   "main": "dist/main/index.js",
   "module": "dist/module/index.js",
+  "types": "dist/module/index.d.ts",
   "repository": "https://github.com/supabase/realtime-js",
   "author": "Supabase",
   "license": "MIT",
