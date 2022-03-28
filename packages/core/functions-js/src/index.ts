@@ -37,7 +37,7 @@ export class FunctionsClient {
    * `body`: the body of the request
    * `responseType`: how the response should be parsed. The default is `json`
    */
-  async invoke<T = string>(
+  async invoke<T = any>(
     functionName: string,
     invokeOptions?: FunctionInvokeOptions
   ): Promise<{ data: T | null; error: Error | null }> {
