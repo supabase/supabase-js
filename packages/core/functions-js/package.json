@@ -1,6 +1,6 @@
 {
   "name": "@supabase/functions-js",
-  "version": "0.0.0",
+  "version": "0.0.0-automated",
   "description": "JS Client library to interact with Supabase Functions.",
   "main": "dist/main/index.js",
   "module": "dist/module/index.js",
@@ -9,7 +9,7 @@
   "scripts": {
     "clean": "rimraf dist docs",
     "format": "prettier --write \"{src,test}/**/*.ts\"",
-    "build": "genversion src/version.ts --es6 && run-s clean format build:*",
+    "build": "run-s clean format build:*",
     "build:main": "tsc -p tsconfig.json",
     "build:module": "tsc -p tsconfig.module.json",
     "docs": "typedoc src/index.ts",
@@ -37,13 +37,7 @@
   "dependencies": {
     "cross-fetch": "^3.1.5"
   },
-  "release": {
-    "branches": [
-      "main"
-    ]
-  },
   "devDependencies": {
-    "genversion": "^3.0.2",
     "npm-run-all": "^4.1.5",
     "prettier": "^2.6.0",
     "rimraf": "^3.0.2",
