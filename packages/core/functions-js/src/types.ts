@@ -1,6 +1,4 @@
-import crossFetch from 'cross-fetch'
-
-export type Fetch = typeof crossFetch
+export type Fetch = typeof fetch
 
 export enum ResponseType {
   json,
