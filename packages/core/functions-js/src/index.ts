@@ -40,7 +40,7 @@ export class FunctionsClient {
   async invoke<T = any>(
     functionName: string,
     invokeOptions?: FunctionInvokeOptions
-  ): Promise<{ data: T | null; error: Error | null }> {
+  ): Promise<{ data: T; error: null } | { data: null; error: Error }> {
     try {
       const { headers, body } = invokeOptions ?? {}
       const response = await this.fetch(`${this.url}/${functionName}`, {
