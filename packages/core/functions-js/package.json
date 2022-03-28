@@ -15,7 +15,7 @@
     "docs": "typedoc src/index.ts src/types.ts --excludePrivate --excludeProtected",
     "docs:json": "typedoc --json docs/spec.json --excludeExternals src/index.ts src/types.ts",
     "test": "mocha",
-    "allure:generate": "node_modules/allure-commandline/bin/allure generate",
+    "allure:generate": "rm -rf allure-report && node_modules/allure-commandline/bin/allure generate",
     "allure:serve": "node_modules/allure-commandline/bin/allure serve",
     "test:report": "npm run allure:generate && npm run allure:serve"
   },
