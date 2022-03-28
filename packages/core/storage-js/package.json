@@ -17,7 +17,7 @@
   ],
   "main": "dist/main/index.js",
   "module": "dist/module/index.js",
-  "types": "dist/main/index.d.ts",
+  "types": "dist/module/index.d.ts",
   "sideEffects": false,
   "repository": "supabase/storage-js",
   "scripts": {
