@@ -404,7 +404,7 @@ export default class GoTrueClient {
       ...this.currentSession,
       access_token,
       token_type: 'bearer',
-      user: null,
+      user: this.user()
     }
 
     return this.currentSession
