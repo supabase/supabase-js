@@ -11,6 +11,7 @@ import {
 import Timer from './lib/timer'
 import RealtimeSubscription from './RealtimeSubscription'
 import Serializer from './lib/serializer'
+import RealtimeChannel from './RealtimeChannel'
 
 export type Options = {
   transport?: WebSocket
@@ -248,8 +249,42 @@ export default class RealtimeClient {
     )
   }
 
-  channel(topic: string, chanParams = {}) {
-    let chan = new RealtimeSubscription(topic, chanParams, this)
+  channel(topic: string, chanParams = { isNewVersion: false }) {
+    chanParams =
+      'isNewVersion' in chanParams
+        ? Object.assign({}, chanParams)
+        : Object.assign({ isNewVersion: false }, chanParams)
+
+    let { isNewVersion, ...params } = chanParams
+
+    let chan = isNewVersion
+      ? new RealtimeChannel(topic, { ...params }, this)
+      : new RealtimeSubscription(topic, { ...params }, this)
+
+    if (chanParams.isNewVersion && chan instanceof RealtimeChannel) {
+      chan.presence.onJoin((key, currentPresences, newPresences) => {
+        chan.trigger('presence', {
+          event: 'JOIN',
+          key,
+          currentPresences,
+          newPresences,
+        })
+      })
+
+      chan.presence.onLeave((key, currentPresences, leftPresences) => {
+        chan.trigger('presence', {
+          event: 'LEAVE',
+          key,
+          currentPresences,
+          leftPresences,
+        })
+      })
+
+      chan.presence.onSync(() => {
+        chan.trigger('presence', { event: 'SYNC' })
+      })
+    }
+
     this.channels.push(chan)
     return chan
   }
