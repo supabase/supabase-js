@@ -34,7 +34,7 @@ const channelStub = {
   ref: 1,
   events: {},
 
-  on(event, callback) {
+  on(event, _eventFilter, callback) {
     this.events[event] = callback
   },
 

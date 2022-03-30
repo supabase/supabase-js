@@ -58,7 +58,7 @@ export default class RealtimeChannel {
       this.state = CHANNEL_STATES.errored
       this.rejoinTimer.scheduleTimeout()
     })
-    this.on(CHANNEL_EVENTS.reply, (payload: any, ref: string) => {
+    this.on(CHANNEL_EVENTS.reply, {}, (payload: any, ref: string) => {
       this.trigger(this.replyEventName(ref), payload)
     })
     this.presence = new RealtimePresence(this)
@@ -86,18 +86,14 @@ export default class RealtimeChannel {
   }
 
   onClose(callback: Function) {
-    this.on(CHANNEL_EVENTS.close, callback)
+    this.on(CHANNEL_EVENTS.close, {}, callback)
   }
 
   onError(callback: Function) {
-    this.on(CHANNEL_EVENTS.error, (reason: string) => callback(reason))
+    this.on(CHANNEL_EVENTS.error, {}, (reason: string) => callback(reason))
   }
 
-  on(
-    type: string,
-    callback: Function,
-    eventFilter?: { event: string; [key: string]: any }
-  ) {
+  on(type: string, eventFilter?: { [key: string]: any }, callback?: Function) {
     this.bindings.push({ type, eventFilter: eventFilter ?? {}, callback })
   }
 

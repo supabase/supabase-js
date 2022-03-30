@@ -9,7 +9,7 @@ import {
   PresenceOnJoinCallback,
   PresenceOnLeaveCallback,
 } from 'phoenix'
-import RealtimeSubscription from './RealtimeSubscription'
+import RealtimeChannel from './RealtimeChannel'
 
 type Presence = {
   presence_id: string
@@ -61,13 +61,13 @@ export default class RealtimePresence {
    * @param opts - The options,
    *        for example `{events: {state: 'state', diff: 'diff'}}`
    */
-  constructor(public channel: RealtimeSubscription, opts?: PresenceOpts) {
+  constructor(public channel: RealtimeChannel, opts?: PresenceOpts) {
     const events = opts?.events || {
       state: 'presence_state',
       diff: 'presence_diff',
     }
 
-    this.channel.on(events.state, (newState: RawPresenceState) => {
+    this.channel.on(events.state, {}, (newState: RawPresenceState) => {
       const { onJoin, onLeave, onSync } = this.caller
 
       this.joinRef = this.channel.joinRef()
@@ -93,7 +93,7 @@ export default class RealtimePresence {
       onSync()
     })
 
-    this.channel.on(events.diff, (diff: RawPresenceDiff) => {
+    this.channel.on(events.diff, {}, (diff: RawPresenceDiff) => {
       const { onJoin, onLeave, onSync } = this.caller
 
       if (this.inPendingSyncState()) {

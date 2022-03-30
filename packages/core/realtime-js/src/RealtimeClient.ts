@@ -9,8 +9,8 @@ import {
   DEFAULT_HEADERS,
 } from './lib/constants'
 import Timer from './lib/timer'
-import RealtimeSubscription from './RealtimeSubscription'
 import Serializer from './lib/serializer'
+import RealtimeSubscription from './RealtimeSubscription'
 import RealtimeChannel from './RealtimeChannel'
 
 export type Options = {
@@ -249,19 +249,17 @@ export default class RealtimeClient {
     )
   }
 
-  channel(topic: string, chanParams = { isNewVersion: false }) {
-    chanParams =
-      'isNewVersion' in chanParams
-        ? Object.assign({}, chanParams)
-        : Object.assign({ isNewVersion: false }, chanParams)
+  channel(
+    topic: string,
+    chanParams: { [key: string]: any } = { isNewVersion: false }
+  ) {
+    const { isNewVersion, ...params } = chanParams
 
-    let { isNewVersion, ...params } = chanParams
-
-    let chan = isNewVersion
+    const chan = isNewVersion
       ? new RealtimeChannel(topic, { ...params }, this)
       : new RealtimeSubscription(topic, { ...params }, this)
 
-    if (chanParams.isNewVersion && chan instanceof RealtimeChannel) {
+    if (chan instanceof RealtimeChannel) {
       chan.presence.onJoin((key, currentPresences, newPresences) => {
         chan.trigger('presence', {
           event: 'JOIN',
