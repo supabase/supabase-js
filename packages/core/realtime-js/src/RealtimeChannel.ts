@@ -1,3 +1,4 @@
+import isEqual from 'lodash.isequal'
 import { CHANNEL_EVENTS, CHANNEL_STATES } from './lib/constants'
 import Push from './lib/push'
 import RealtimeClient from './RealtimeClient'
@@ -94,11 +95,17 @@ export default class RealtimeChannel {
   }
 
   on(type: string, eventFilter?: { [key: string]: any }, callback?: Function) {
-    this.bindings.push({ type, eventFilter: eventFilter ?? {}, callback })
+    this.bindings.push({
+      type,
+      eventFilter: eventFilter ?? {},
+      callback: callback ?? (() => {}),
+    })
   }
 
-  off(event: string) {
-    this.bindings = this.bindings.filter((bind) => bind.event !== event)
+  off(type: string, eventFilter: { [key: string]: any }) {
+    this.bindings = this.bindings.filter((bind) => {
+      return !(bind.type === type && isEqual(bind.eventFilter, eventFilter))
+    })
   }
 
   canPush() {

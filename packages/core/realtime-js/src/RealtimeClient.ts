@@ -36,7 +36,7 @@ const noop = () => {}
 
 export default class RealtimeClient {
   accessToken: string | null = null
-  channels: RealtimeSubscription[] = []
+  channels: (RealtimeSubscription | RealtimeChannel)[] = []
   endPoint: string = ''
   headers?: { [key: string]: string } = DEFAULT_HEADERS
   params?: { [key: string]: string } = {}
@@ -243,9 +243,10 @@ export default class RealtimeClient {
    *
    * @param channel An open subscription.
    */
-  remove(channel: RealtimeSubscription) {
+  remove(channel: RealtimeSubscription | RealtimeChannel) {
     this.channels = this.channels.filter(
-      (c: RealtimeSubscription) => c.joinRef() !== channel.joinRef()
+      (c: RealtimeSubscription | RealtimeChannel) =>
+        c.joinRef() !== channel.joinRef()
     )
   }
 
@@ -321,8 +322,10 @@ export default class RealtimeClient {
         payload
       )
       this.channels
-        .filter((channel: RealtimeSubscription) => channel.isMember(topic))
-        .forEach((channel: RealtimeSubscription) =>
+        .filter((channel: RealtimeSubscription | RealtimeChannel) =>
+          channel.isMember(topic)
+        )
+        .forEach((channel: RealtimeSubscription | RealtimeChannel) =>
           channel.trigger(event, payload, ref)
         )
       this.stateChangeCallbacks.message.forEach((callback) => callback(msg))
@@ -411,7 +414,7 @@ export default class RealtimeClient {
   }
 
   private _triggerChanError() {
-    this.channels.forEach((channel: RealtimeSubscription) =>
+    this.channels.forEach((channel: RealtimeSubscription | RealtimeChannel) =>
       channel.trigger(CHANNEL_EVENTS.error)
     )
   }
