@@ -80,6 +80,29 @@ export default class RealtimeChannel {
     if (this.joinedOnce) {
       throw `tried to subscribe multiple times. 'subscribe' can only be called a single time per channel instance`
     } else {
+      const configs = this.bindings.reduce(
+        (acc, binding: { [key: string]: any }) => {
+          const { type } = binding
+          if (
+            ![
+              'phx_close',
+              'phx_error',
+              'phx_reply',
+              'presence_diff',
+              'presence_state',
+            ].includes(type)
+          ) {
+            acc[type] = binding
+          }
+          return acc
+        },
+        {}
+      )
+
+      if (Object.keys(configs).length) {
+        this.updateJoinPayload({ configs })
+      }
+
       this.joinedOnce = true
       this.rejoin(timeout)
       return this.joinPush
@@ -211,9 +234,9 @@ export default class RealtimeChannel {
   send(payload: { type: string; [key: string]: any }) {
     const push = this.push(payload.type as any, payload)
 
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
       push.receive('ok', () => resolve('ok'))
-      push.receive('timeout', () => resolve('timeout'))
+      push.receive('timeout', () => reject('timeout'))
     })
   }
 
