@@ -35,3 +35,10 @@ export enum CHANNEL_EVENTS {
 export enum TRANSPORTS {
   websocket = 'websocket',
 }
+
+export enum CONNECTION_STATE {
+  Connecting = 'connecting',
+  Open = 'open',
+  Closing = 'closing',
+  Closed = 'closed',
+}

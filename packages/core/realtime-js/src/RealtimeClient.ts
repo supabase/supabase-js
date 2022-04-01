@@ -7,6 +7,7 @@ import {
   DEFAULT_TIMEOUT,
   WS_CLOSE_NORMAL,
   DEFAULT_HEADERS,
+  CONNECTION_STATE,
 } from './lib/constants'
 import Timer from './lib/timer'
 import Serializer from './lib/serializer'
@@ -30,6 +31,12 @@ type Message = {
   event: string
   payload: any
   ref: string
+}
+
+type ChannelParams = {
+  isNewVersion?: boolean
+  selfBroadcast?: boolean
+  [key: string]: any
 }
 
 const noop = () => {}
@@ -68,7 +75,7 @@ export default class RealtimeClient {
   }
 
   /**
-   * Initializes the Socket
+   * Initializes the Socket.
    *
    * @param endPoint The string WebSocket endpoint, ie, "ws://example.com/socket", "wss://example.com", "/socket" (inherited host & protocol)
    * @param options.transport The Websocket Transport, for example WebSocket.
@@ -115,9 +122,9 @@ export default class RealtimeClient {
   }
 
   /**
-   * Connects the socket.
+   * Connects the socket, unless already connected.
    */
-  connect() {
+  connect(): void {
     if (this.conn) {
       return
     }
@@ -165,7 +172,9 @@ export default class RealtimeClient {
   }
 
   /**
-   * Logs the message. Override `this.logger` for specialized logging.
+   * Logs the message.
+   *
+   * For customized logging, `this.logger` can be overriden.
    */
   log(kind: string, msg: string, data?: any) {
     this.logger(kind, msg, data)
@@ -173,6 +182,7 @@ export default class RealtimeClient {
 
   /**
    * Registers a callback for connection state change event.
+   *
    * @param callback A function to be called when the event occurs.
    *
    * @example
@@ -183,7 +193,8 @@ export default class RealtimeClient {
   }
 
   /**
-   * Registers a callbacks for connection state change events.
+   * Registers a callback for connection state change events.
+   *
    * @param callback A function to be called when the event occurs.
    *
    * @example
@@ -195,6 +206,7 @@ export default class RealtimeClient {
 
   /**
    * Registers a callback for connection state change events.
+   *
    * @param callback A function to be called when the event occurs.
    *
    * @example
@@ -206,6 +218,7 @@ export default class RealtimeClient {
 
   /**
    * Calls a function any time a message is received.
+   *
    * @param callback A function to be called when the event occurs.
    *
    * @example
@@ -218,24 +231,24 @@ export default class RealtimeClient {
   /**
    * Returns the current state of the socket.
    */
-  connectionState() {
+  connectionState(): CONNECTION_STATE {
     switch (this.conn && this.conn.readyState) {
       case SOCKET_STATES.connecting:
-        return 'connecting'
+        return CONNECTION_STATE.Connecting
       case SOCKET_STATES.open:
-        return 'open'
+        return CONNECTION_STATE.Open
       case SOCKET_STATES.closing:
-        return 'closing'
+        return CONNECTION_STATE.Closing
       default:
-        return 'closed'
+        return CONNECTION_STATE.Closed
     }
   }
 
   /**
    * Retuns `true` is the connection is open.
    */
-  isConnected() {
-    return this.connectionState() === 'open'
+  isConnected(): boolean {
+    return this.connectionState() === CONNECTION_STATE.Open
   }
 
   /**
@@ -252,13 +265,16 @@ export default class RealtimeClient {
 
   channel(
     topic: string,
-    chanParams: { [key: string]: any } = { isNewVersion: false }
-  ) {
-    const { isNewVersion, ...params } = chanParams
+    chanParams: ChannelParams = { isNewVersion: false }
+  ): RealtimeChannel | RealtimeSubscription {
+    const { isNewVersion, selfBroadcast, ...params } = chanParams
+    if (selfBroadcast) {
+      params.self_broadcast = selfBroadcast
+    }
 
     const chan = isNewVersion
-      ? new RealtimeChannel(topic, { ...params }, this)
-      : new RealtimeSubscription(topic, { ...params }, this)
+      ? new RealtimeChannel(topic, params, this)
+      : new RealtimeSubscription(topic, params, this)
 
     if (chan instanceof RealtimeChannel) {
       chan.presence.onJoin((key, currentPresences, newPresences) => {
@@ -288,8 +304,13 @@ export default class RealtimeClient {
     return chan
   }
 
-  push(data: Message) {
-    let { topic, event, payload, ref } = data
+  /**
+   * Push out a message if the socket is connected.
+   *
+   * If the socket is not connected, the message gets enqueued within a local buffer, and sent out when a connection is next established.
+   */
+  push(data: Message): void {
+    const { topic, event, payload, ref } = data
     let callback = () => {
       this.encode(data, (result: any) => {
         this.conn?.send(result)
@@ -303,7 +324,7 @@ export default class RealtimeClient {
     }
   }
 
-  onConnMessage(rawMessage: any) {
+  onConnMessage(rawMessage: { data: any }) {
     this.decode(rawMessage.data, (msg: Message) => {
       let { topic, event, payload, ref } = msg
 
@@ -335,7 +356,7 @@ export default class RealtimeClient {
   /**
    * Returns the URL of the websocket.
    */
-  endPointURL() {
+  endPointURL(): string {
     return this._appendParams(
       this.endPoint,
       Object.assign({}, this.params, { vsn: VSN })
@@ -345,7 +366,7 @@ export default class RealtimeClient {
   /**
    * Return the next message ref, accounting for overflows
    */
-  makeRef() {
+  makeRef(): string {
     let newRef = this.ref + 1
     if (newRef === this.ref) {
       this.ref = 0
@@ -364,19 +385,18 @@ export default class RealtimeClient {
   setAuth(token: string | null) {
     this.accessToken = token
 
-    try {
-      this.channels.forEach((channel) => {
-        token && channel.updateJoinPayload({ user_token: token })
+    this.channels.forEach((channel) => {
+      token && channel.updateJoinPayload({ user_token: token })
 
-        if (channel.joinedOnce && channel.isJoined()) {
-          channel.push(CHANNEL_EVENTS.access_token, { access_token: token })
-        }
-      })
-    } catch (error) {
-      console.log('setAuth error', error)
-    }
+      if (channel.joinedOnce && channel.isJoined()) {
+        channel.push(CHANNEL_EVENTS.access_token, { access_token: token })
+      }
+    })
   }
 
+  /**
+   * Unsubscribe from channels with the specified topic.
+   */
   leaveOpenTopic(topic: string): void {
     let dupChannel = this.channels.find(
       (c) => c.topic === topic && (c.isJoined() || c.isJoining())
@@ -419,7 +439,10 @@ export default class RealtimeClient {
     )
   }
 
-  private _appendParams(url: string, params: { [key: string]: string }) {
+  private _appendParams(
+    url: string,
+    params: { [key: string]: string }
+  ): string {
     if (Object.keys(params).length === 0) {
       return url
     }

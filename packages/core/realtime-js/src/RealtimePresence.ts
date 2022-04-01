@@ -55,7 +55,8 @@ export default class RealtimePresence {
   }
 
   /**
-   * Initializes the Presence
+   * Initializes the Presence.
+   *
    * @param channel - The RealtimeSubscription
    * @param opts - The options,
    *        for example `{events: {state: 'state', diff: 'diff'}}`
@@ -111,9 +112,11 @@ export default class RealtimePresence {
   }
 
   /**
-   * Used to sync the list of presences on the server
-   * with the client's state. An optional `onJoin` and `onLeave` callback can
-   * be provided to react to changes in the client's local presences across
+   * Used to sync the list of presences on the server with the
+   * client's state.
+   *
+   * An optional `onJoin` and `onLeave` callback can be provided to
+   * react to changes in the client's local presences across
    * disconnects and reconnects with the server.
    */
   static syncState(
@@ -164,11 +167,12 @@ export default class RealtimePresence {
   }
 
   /**
+   * Used to sync a diff of presence join and leave events from the
+   * server, as they happen.
    *
-   * Used to sync a diff of presence join and leave
-   * events from the server, as they happen. Like `syncState`, `syncDiff`
-   * accepts optional `onJoin` and `onLeave` callbacks to react to a user
-   * joining or leaving from a device.
+   * Like `syncState`, `syncDiff` accepts optional `onJoin` and
+   * `onLeave` callbacks to react to a user joining or leaving from a
+   * device.
    */
   static syncDiff(
     state: PresenceState,

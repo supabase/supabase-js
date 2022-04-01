@@ -108,10 +108,16 @@ export default class RealtimeChannel {
     }
   }
 
+  /**
+   * Registers a callback that will be executed when the channel closes.
+   */
   onClose(callback: Function) {
     this.on(CHANNEL_EVENTS.close, {}, callback)
   }
 
+  /**
+   * Registers a callback that will be executed when the channel encounteres an error.
+   */
   onError(callback: Function) {
     this.on(CHANNEL_EVENTS.error, {}, (reason: string) => callback(reason))
   }
@@ -133,7 +139,10 @@ export default class RealtimeChannel {
     })
   }
 
-  canPush() {
+  /**
+   * Returns `true` if the socket is connected and the channel has been joined.
+   */
+  canPush(): boolean {
     return this.socket.isConnected() && this.isJoined()
   }
 
@@ -157,7 +166,7 @@ export default class RealtimeChannel {
   }
 
   /**
-   * Leaves the channel
+   * Leaves the channel.
    *
    * Unsubscribes from server events, and instructs channel to terminate on server.
    * Triggers onClose() hooks.
@@ -165,16 +174,16 @@ export default class RealtimeChannel {
    * To receive leave acknowledgements, use the a `receive` hook to bind to the server ack, ie:
    * channel.unsubscribe().receive("ok", () => alert("left!") )
    */
-  unsubscribe(timeout = this.timeout) {
+  unsubscribe(timeout = this.timeout): Push {
     this.state = CHANNEL_STATES.leaving
-    let onClose = () => {
+    const onClose = () => {
       this.socket.log('channel', `leave ${this.topic}`)
       this.trigger(CHANNEL_EVENTS.close, 'leave', this.joinRef())
     }
     // Destroy joinPush to avoid connection timeouts during unscription phase
     this.joinPush.destroy()
 
-    let leavePush = new Push(this, CHANNEL_EVENTS.leave, {}, timeout)
+    const leavePush = new Push(this, CHANNEL_EVENTS.leave, {}, timeout)
     leavePush.receive('ok', () => onClose()).receive('timeout', () => onClose())
     leavePush.send()
     if (!this.canPush()) {
@@ -194,15 +203,15 @@ export default class RealtimeChannel {
     return payload
   }
 
-  isMember(topic: string) {
+  isMember(topic: string): boolean {
     return this.topic === topic
   }
 
-  joinRef() {
+  joinRef(): string {
     return this.joinPush.ref
   }
 
-  rejoin(timeout = this.timeout) {
+  rejoin(timeout = this.timeout): void {
     if (this.isLeaving()) {
       return
     }
@@ -242,23 +251,23 @@ export default class RealtimeChannel {
     })
   }
 
-  replyEventName(ref: string) {
+  replyEventName(ref: string): string {
     return `chan_reply_${ref}`
   }
 
-  isClosed() {
+  isClosed(): boolean {
     return this.state === CHANNEL_STATES.closed
   }
-  isErrored() {
+  isErrored(): boolean {
     return this.state === CHANNEL_STATES.errored
   }
-  isJoined() {
+  isJoined(): boolean {
     return this.state === CHANNEL_STATES.joined
   }
-  isJoining() {
+  isJoining(): boolean {
     return this.state === CHANNEL_STATES.joining
   }
-  isLeaving() {
+  isLeaving(): boolean {
     return this.state === CHANNEL_STATES.leaving
   }
 
