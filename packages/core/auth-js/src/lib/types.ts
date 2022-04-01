@@ -199,7 +199,7 @@ export interface VerifyEmailOTPParams {
   token: string
   type: EmailOTPType
 }
-export type MobileOTPType = 'sms'
+export type MobileOTPType = 'sms' | 'phone_change'
 export type EmailOTPType = 'signup' | 'invite' | 'magiclink' | 'recovery' | 'email_change'
 
 export interface OpenIDConnectCredentials {
