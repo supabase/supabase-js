@@ -116,7 +116,7 @@ export default class RealtimeChannel {
     this.on(CHANNEL_EVENTS.error, {}, (reason: string) => callback(reason))
   }
 
-  on(type: string, eventFilter?: { [key: string]: any }, callback?: Function) {
+  on(type: string, eventFilter?: { [key: string]: string }, callback?: Function) {
     this.bindings.push({
       type,
       eventFilter: eventFilter ?? {},
