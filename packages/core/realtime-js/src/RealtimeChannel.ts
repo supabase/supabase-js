@@ -1,4 +1,3 @@
-import isEqual from 'lodash.isequal'
 import { CHANNEL_EVENTS, CHANNEL_STATES } from './lib/constants'
 import Push from './lib/push'
 import RealtimeClient from './RealtimeClient'
@@ -127,7 +126,10 @@ export default class RealtimeChannel {
 
   off(type: string, eventFilter: { [key: string]: any }) {
     this.bindings = this.bindings.filter((bind) => {
-      return !(bind.type === type && isEqual(bind.eventFilter, eventFilter))
+      return !(
+        bind.type === type &&
+        RealtimeChannel.isEqual(bind.eventFilter, eventFilter)
+      )
     })
   }
 
@@ -258,5 +260,22 @@ export default class RealtimeChannel {
   }
   isLeaving() {
     return this.state === CHANNEL_STATES.leaving
+  }
+
+  private static isEqual(
+    obj1: { [key: string]: string },
+    obj2: { [key: string]: string }
+  ) {
+    if (Object.keys(obj1).length !== Object.keys(obj2).length) {
+      return false
+    }
+
+    for (const k in obj1) {
+      if (obj1[k] !== obj2[k]) {
+        return false
+      }
+    }
+
+    return true
   }
 }

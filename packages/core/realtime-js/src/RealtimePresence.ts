@@ -3,7 +3,6 @@
   License: https://github.com/phoenixframework/phoenix/blob/d344ec0a732ab4ee204215b31de69cf4be72e3bf/LICENSE.md
 */
 
-import cloneDeep from 'lodash.clonedeep'
 import {
   PresenceOpts,
   PresenceOnJoinCallback,
@@ -123,7 +122,7 @@ export default class RealtimePresence {
     onJoin: PresenceOnJoinCallback,
     onLeave: PresenceOnLeaveCallback
   ): PresenceState {
-    const state = cloneDeep(currentState)
+    const state = this.cloneDeep(currentState)
     const transformedState = this.transformState(newState)
     const joins: PresenceState = {}
     const leaves: PresenceState = {}
@@ -192,7 +191,7 @@ export default class RealtimePresence {
 
     this.map(joins, (key, newPresences: Presence[]) => {
       const currentPresences: Presence[] = state[key]
-      state[key] = cloneDeep(newPresences)
+      state[key] = this.cloneDeep(newPresences)
 
       if (currentPresences) {
         const joinedPresenceIds = state[key].map((m: Presence) => m.presence_id)
@@ -275,7 +274,7 @@ export default class RealtimePresence {
   private static transformState(
     state: RawPresenceState | PresenceState
   ): PresenceState {
-    state = cloneDeep(state)
+    state = this.cloneDeep(state)
 
     return Object.getOwnPropertyNames(state).reduce((newState, key) => {
       const presences = state[key]
@@ -295,6 +294,10 @@ export default class RealtimePresence {
 
       return newState
     }, {} as PresenceState)
+  }
+
+  private static cloneDeep(obj: object) {
+    return JSON.parse(JSON.stringify(obj))
   }
 
   onJoin(callback: PresenceOnJoinCallback): void {
