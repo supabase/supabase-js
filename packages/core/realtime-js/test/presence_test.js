@@ -4,8 +4,15 @@
 */
 
 import assert from 'assert'
-import cloneDeep from 'lodash.clonedeep'
 import { RealtimePresence } from '../dist/main'
+
+const cloneDeep = (obj) => {
+  const cloned = JSON.parse(JSON.stringify(obj))
+  Object.entries(obj).map(([key, val]) => {
+    if(val === undefined){ cloned[key] = undefined }
+  })
+  return cloned
+}
 
 const fixtures = {
   joins() {
