@@ -222,7 +222,7 @@ export default class SupabaseClient {
    * Returns an array of all your subscriptions.
    */
   getSubscriptions(): RealtimeSubscription[] {
-    return this.realtime.channels
+    return this.realtime.channels as RealtimeSubscription[]
   }
 
   private _initSupabaseAuthClient({

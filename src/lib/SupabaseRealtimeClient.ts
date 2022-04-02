@@ -13,7 +13,7 @@ export class SupabaseRealtimeClient {
       chanParams['user_token'] = userToken
     }
 
-    this.subscription = socket.channel(topic, chanParams)
+    this.subscription = socket.channel(topic, chanParams) as RealtimeSubscription
   }
 
   private getPayloadRecords(payload: any) {
