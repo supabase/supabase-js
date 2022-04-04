@@ -2,12 +2,13 @@ import { serve } from 'https://deno.land/std/http/server.ts'
 
 serve(async (request: Request) => {
   let body
-  switch (request.headers.get('content-type')) {
-    case 'application/json': {
+  let contentType = 'application/json'
+  switch (request.headers.get('response-type')) {
+    case 'json': {
       body = await request.json()
       break
     }
-    case 'application/x-www-form-urlencoded': {
+    case 'form': {
       const formBody = await request.formData()
       body = []
       for (const e of formBody.entries()) {
@@ -15,8 +16,21 @@ serve(async (request: Request) => {
       }
       break
     }
+    case 'blob': {
+      const data = await request.blob()
+      body = await data.text()
+      contentType = 'application/octet-stream'
+      break
+    }
+    case 'arrayBuffer': {
+      const data = await request.arrayBuffer()
+      body = new TextDecoder().decode(data || new Uint8Array())
+      contentType = 'application/octet-stream'
+      break
+    }
     default: {
       body = await request.text()
+      contentType = 'text/plain'
       break
     }
   }
@@ -31,10 +45,16 @@ serve(async (request: Request) => {
     body: body ?? 'empty',
   }
 
-  return new Response(JSON.stringify(resp), {
+  let responseData
+  if (request.headers.get('response-type') === 'blob') {
+    responseData = new Blob([JSON.stringify(resp)], { type: 'application/json' })
+  } else {
+    responseData = JSON.stringify(resp)
+  }
+  return new Response(responseData, {
     status: 200,
     headers: {
-      'content-type': 'application/json',
+      'content-type': contentType,
     },
   })
 })

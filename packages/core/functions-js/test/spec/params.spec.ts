@@ -1,3 +1,6 @@
+import { Blob } from 'buffer'
+import querystring from 'querystring'
+
 import 'jest'
 import { nanoid } from 'nanoid'
 import { sign } from 'jsonwebtoken'
@@ -7,6 +10,7 @@ import { FunctionsClient } from '../../src/index'
 
 import { Relay, runRelay } from '../relay/container'
 import { attach, log } from '../utils/jest-custom-reporter'
+import { str2ab } from '../utils/binaries'
 import { MirrorResponse } from '../models/mirrorResponse'
 
 describe('params reached to function', () => {
@@ -158,6 +162,7 @@ describe('params reached to function', () => {
       body: form,
       headers: {
         'content-type': 'application/x-www-form-urlencoded',
+        'response-type': 'form',
       },
     })
 
@@ -204,6 +209,7 @@ describe('params reached to function', () => {
       body: JSON.stringify(body),
       headers: {
         'content-type': 'application/json',
+        'response-type': 'json',
       },
     })
 
@@ -215,6 +221,140 @@ describe('params reached to function', () => {
       method: 'POST',
       headers: data?.headers ?? [],
       body: body,
+    }
+    attach(
+      'check data from function',
+      `expected: ${JSON.stringify(expected)}\n actual: ${JSON.stringify(data)}`,
+      ContentType.TEXT
+    )
+    expect(data).toEqual(expected)
+  })
+
+  test('invoke mirror with body arrayBuffer', async () => {
+    /**
+     * @feature body
+     */
+    log('create FunctionsClient')
+    const fclient = new FunctionsClient(`http://localhost:${relay.container.getMappedPort(8081)}`)
+    attach('setAuth', apiKey, ContentType.TEXT)
+    fclient.setAuth(apiKey)
+
+    log('invoke mirror')
+    const body = {
+      one: nanoid(10),
+      two: nanoid(5),
+      three: nanoid(),
+      num: 11,
+      flag: false,
+    }
+    const arrayBuffer = str2ab(JSON.stringify(body))
+    const { data, error } = await fclient.invoke<ArrayBuffer>('mirror', {
+      responseType: 'arrayBuffer',
+      body: arrayBuffer,
+      headers: {
+        'content-type': 'application/octet-stream',
+        'response-type': 'arrayBuffer',
+      },
+    })
+    const dataJSON = JSON.parse(new TextDecoder().decode(data ?? Buffer.from('').buffer))
+    dataJSON.body = JSON.parse(dataJSON.body.replace(/\0/g, ''))
+
+    log('assert no error')
+    expect(error).toBeNull()
+
+    const expected = {
+      url: 'http://localhost:8000/mirror',
+      method: 'POST',
+      headers: dataJSON?.headers ?? [],
+      body: body,
+    }
+    attach(
+      'check data from function',
+      `expected: ${JSON.stringify(expected)}\n actual: ${JSON.stringify(dataJSON)}`,
+      ContentType.TEXT
+    )
+    expect(dataJSON).toEqual(expected)
+  })
+
+  test('invoke mirror with body blob', async () => {
+    /**
+     * @feature body
+     */
+    log('create FunctionsClient')
+    const fclient = new FunctionsClient(`http://localhost:${relay.container.getMappedPort(8081)}`)
+    attach('setAuth', apiKey, ContentType.TEXT)
+    fclient.setAuth(apiKey)
+
+    log('invoke mirror')
+    const body = {
+      one: nanoid(10),
+      two: nanoid(5),
+      three: nanoid(),
+      num: 11,
+      flag: false,
+    }
+    const bodyEncoded = str2ab(JSON.stringify(body))
+    const { data, error } = await fclient.invoke<Blob>('mirror', {
+      responseType: 'blob',
+      body: bodyEncoded,
+      headers: {
+        'content-type': 'application/octet-stream',
+        'response-type': 'blob',
+      },
+    })
+    const dataJSON = JSON.parse((await data?.text()) ?? '')
+    dataJSON.body = JSON.parse(dataJSON.body.replace(/\0/g, ''))
+
+    log('assert no error')
+    expect(error).toBeNull()
+
+    const expected = {
+      url: 'http://localhost:8000/mirror',
+      method: 'POST',
+      headers: dataJSON?.headers ?? [],
+      body: body,
+    }
+    attach(
+      'check data from function',
+      `expected: ${JSON.stringify(expected)}\n actual: ${JSON.stringify(dataJSON)}`,
+      ContentType.TEXT
+    )
+    expect(dataJSON).toEqual(expected)
+  })
+
+  test('invoke mirror with url params', async () => {
+    /**
+     * @feature body
+     */
+    log('create FunctionsClient')
+    const fclient = new FunctionsClient(`http://localhost:${relay.container.getMappedPort(8081)}`)
+    attach('setAuth', apiKey, ContentType.TEXT)
+    fclient.setAuth(apiKey)
+
+    log('invoke mirror')
+    const body = {
+      one: nanoid(10),
+      two: nanoid(5),
+      three: nanoid(),
+      num: '11',
+      flag: 'false',
+    }
+    const queryParams = new URLSearchParams(body)
+    const { data, error } = await fclient.invoke<MirrorResponse>(
+      `mirror?${queryParams.toString()}`,
+      {
+        responseType: 'json',
+      }
+    )
+
+    log('assert no error')
+    expect(error).toBeNull()
+
+    const expected = {
+      url: `http://localhost:8000/mirror?${queryParams.toString()}`,
+      method: 'POST',
+      headers: data?.headers ?? [],
+      body: '',
     }
     attach(
       'check data from function',
