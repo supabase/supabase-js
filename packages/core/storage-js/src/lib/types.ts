@@ -39,6 +39,9 @@ export interface SearchOptions {
 
   /** The column to sort by. Can be any column inside a FileObject. */
   sortBy?: SortBy
+
+  /** The search string to filter files by. */
+  search?: string
 }
 
 // TODO: need to check for metadata props. The api swagger doesnt have.
