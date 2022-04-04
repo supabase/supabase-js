@@ -79,6 +79,7 @@ export async function runRelay(
     'run',
     '--allow-all',
     '--watch',
+    '--unstable',
     `/home/deno/${slug}/index.ts`,
   ])
 
@@ -95,7 +96,7 @@ export async function runRelay(
           },
         }
       )
-      if (healthCheck.ok) {
+      if (healthCheck.ok || healthCheck.status === 101) {
         log(`function started to serve: ${slug + '-' + id}`)
         return { container: startedRelay, id, execCache, execRun }
       }

@@ -110,3 +110,6 @@ docs/
 # Test reports
 allure-results
 allure-report
+
+# IDE specific
+.vscode
