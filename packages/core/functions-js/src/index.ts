@@ -9,15 +9,15 @@ export class FunctionsClient {
   constructor(
     url: string,
     {
-      headers = {},
+      headers,
       customFetch,
     }: {
       headers?: Record<string, string>
       customFetch?: Fetch
-    }
+    } = {}
   ) {
     this.url = url
-    this.headers = headers
+    this.headers = headers ?? {}
     this.fetch = resolveFetch(customFetch)
   }
 
