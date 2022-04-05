@@ -19,7 +19,7 @@ npm run test
 Projects includes reporting with allure. Use the following command get more detailed test reports:
 
 ```sh
-test:report
+npm run test:report
 ```
 
 You may need to have Java8 installed to generate the report.
