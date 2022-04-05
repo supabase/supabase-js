@@ -1,16 +1,11 @@
-import { Blob } from 'buffer'
-import querystring from 'querystring'
-
 import 'jest'
 import { nanoid } from 'nanoid'
 import { sign } from 'jsonwebtoken'
-import { ContentType } from 'allure-js-commons'
 
 import { FunctionsClient } from '../../src/index'
 
 import { Relay, runRelay } from '../relay/container'
 import { attach, log } from '../utils/jest-custom-reporter'
-import { MirrorResponse } from '../models/mirrorResponse'
 
 describe('hijack connection', () => {
   let relay: Relay
@@ -32,7 +27,9 @@ describe('hijack connection', () => {
      */
     log('create FunctionsClient')
     const fclient = new FunctionsClient(`http://localhost:${relay.container.getMappedPort(8081)}`, {
-      Authorization: `Bearer ${apiKey}`,
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+      },
     })
 
     log('invoke func')

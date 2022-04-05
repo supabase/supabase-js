@@ -28,7 +28,9 @@ describe('basic tests (hello function)', () => {
      */
     log('create FunctionsClient')
     const fclient = new FunctionsClient(`http://localhost:${relay.container.getMappedPort(8081)}`, {
-      Authorization: `Bearer ${apiKey}`,
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+      },
     })
 
     log('invoke hello')
@@ -83,7 +85,9 @@ describe('basic tests (hello function)', () => {
      */
     log('create FunctionsClient')
     const fclient = new FunctionsClient(`http://localhost:${relay.container.getMappedPort(8081)}`, {
-      Authorization: `Bearer ${apiKey}`,
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+      },
     })
     const wrongKey = sign({ name: 'anon' }, 'wrong_jwt')
     attach('setAuth with wrong jwt', wrongKey, ContentType.TEXT)
@@ -106,7 +110,9 @@ describe('basic tests (hello function)', () => {
 
     log('create FunctionsClient with wrong jwt')
     const fclient = new FunctionsClient(`http://localhost:${relay.container.getMappedPort(8081)}`, {
-      Authorization: `Bearer ${wrongKey}`,
+      headers: {
+        Authorization: `Bearer ${wrongKey}`,
+      },
     })
 
     attach('setAuth with right jwt', apiKey, ContentType.TEXT)
@@ -173,7 +179,9 @@ describe('basic tests (hello function)', () => {
      */
     log('create FunctionsClient with wrong jwt')
     const fclient = new FunctionsClient(`http://localhost:${relay.container.getMappedPort(8081)}`, {
-      Authorization: `Bearer ${apiKey}`,
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+      },
     })
 
     const wrongKey = sign({ name: 'anon' }, 'wrong_jwt')
@@ -197,7 +205,9 @@ describe('basic tests (hello function)', () => {
      */
     log('create FunctionsClient')
     const fclient = new FunctionsClient(`http://localhost:${relay.container.getMappedPort(8081)}`, {
-      Authorization: `Bearer ${apiKey}`,
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+      },
     })
 
     log('invoke hello')
@@ -215,14 +225,15 @@ describe('basic tests (hello function)', () => {
      */
     log('create FunctionsClient')
     const fclient = new FunctionsClient(
-      `http://localhost:${relay.container.getMappedPort(8081)}`,
-      {},
-      getCustomFetch(`http://localhost:${relay.container.getMappedPort(8081)}/${'hello'}`, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-        },
-      })
+      `http://localhost:${relay.container.getMappedPort(8081)}`, {
+        customFetch: getCustomFetch(
+          `http://localhost:${relay.container.getMappedPort(8081)}/${'hello'}`, {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${apiKey}`,
+          },
+        })
+      }
     )
 
     log('invoke hello')
@@ -240,14 +251,15 @@ describe('basic tests (hello function)', () => {
      */
     log('create FunctionsClient')
     const fclient = new FunctionsClient(
-      `http://localhost:${relay.container.getMappedPort(8081)}`,
-      {},
-      getCustomFetch(`http://localhost:${relay.container.getMappedPort(8081)}/${'hello'}`, {
-        method: 'GET',
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-        },
-      })
+      `http://localhost:${relay.container.getMappedPort(8081)}`, {
+        customFetch: getCustomFetch(
+          `http://localhost:${relay.container.getMappedPort(8081)}/${'hello'}`, {
+          method: 'GET',
+          headers: {
+            Authorization: `Bearer ${apiKey}`,
+          },
+        })
+      }
     )
 
     log('invoke hello')
@@ -267,16 +279,17 @@ describe('basic tests (hello function)', () => {
     const wrongKey = sign({ name: 'anon' }, 'wrong_jwt')
     log('create FunctionsClient')
     const fclient = new FunctionsClient(
-      `http://localhost:${relay.container.getMappedPort(8081)}`,
-      {
-        Authorization: `Bearer ${wrongKey}`,
-      },
-      getCustomFetch(`http://localhost:${relay.container.getMappedPort(8081)}/${'hello'}`, {
-        method: 'Post',
+      `http://localhost:${relay.container.getMappedPort(8081)}`, {
         headers: {
-          Authorization: `Bearer ${apiKey}`,
+          Authorization: `Bearer ${wrongKey}`,
         },
-      })
+        customFetch: getCustomFetch(`http://localhost:${relay.container.getMappedPort(8081)}/${'hello'}`, {
+          method: 'Post',
+          headers: {
+            Authorization: `Bearer ${apiKey}`,
+          },
+        })
+      }
     )
 
     log('invoke hello with Authorization header')

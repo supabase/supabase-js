@@ -32,7 +32,9 @@ describe('params reached to function', () => {
      */
     log('create FunctionsClient')
     const fclient = new FunctionsClient(`http://localhost:${relay.container.getMappedPort(8081)}`, {
-      Authorization: `Bearer ${apiKey}`,
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+      },
     })
 
     log('invoke mirror')
@@ -61,8 +63,10 @@ describe('params reached to function', () => {
      */
     log('create FunctionsClient')
     const fclient = new FunctionsClient(`http://localhost:${relay.container.getMappedPort(8081)}`, {
-      Authorization: `Bearer ${apiKey}`,
-      CustomHeader: 'check me',
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        CustomHeader: 'check me',
+      },
     })
 
     log('invoke mirror')
