@@ -14,7 +14,7 @@ export class FunctionsClient {
     }: {
       headers?: Record<string, string>
       customFetch?: Fetch
-    }
+    } = {}
   ) {
     this.url = url
     this.headers = headers
