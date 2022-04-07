@@ -15,7 +15,7 @@ export class StorageBucketApi {
   }
 
   /**
-   * Retrieves the details of all Storage buckets within an existing product.
+   * Retrieves the details of all Storage buckets within an existing project.
    */
   async listBuckets(): Promise<{ data: Bucket[] | null; error: Error | null }> {
     try {
