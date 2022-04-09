@@ -469,7 +469,7 @@ export default class GoTrueClient {
    * Inside a browser context, `signOut()` will remove the logged in user from the browser session
    * and log them out - removing all items from localstorage and then trigger a "SIGNED_OUT" event.
    *
-   * For server-side management, you can disable sessions by passing a JWT through to `auth.api.signOut(JWT: string)`
+   * For server-side management, you can revoke all refresh tokens for a user by passing a user's JWT through to `auth.api.signOut(JWT: string)`. There is no way to revoke a user's session JWT before it automatically expires
    */
   async signOut(): Promise<{ error: ApiError | null }> {
     const accessToken = this.currentSession?.access_token
