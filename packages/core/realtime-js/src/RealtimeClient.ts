@@ -34,7 +34,6 @@ type Message = {
 }
 
 type ChannelParams = {
-  isNewVersion?: boolean
   selfBroadcast?: boolean
   [key: string]: any
 }
@@ -73,6 +72,7 @@ export default class RealtimeClient {
     error: [],
     message: [],
   }
+  versionDate: Date | undefined = undefined
 
   /**
    * Initializes the Socket.
@@ -130,6 +130,7 @@ export default class RealtimeClient {
     }
 
     this.conn = new this.transport(this.endPointURL(), [], null, this.headers)
+
     if (this.conn) {
       // this.conn.timeout = this.longpollerTimeout // TYPE ERROR
       this.conn.binaryType = 'arraybuffer'
@@ -137,6 +138,14 @@ export default class RealtimeClient {
       this.conn.onerror = (error) => this._onConnError(error as ErrorEvent)
       this.conn.onmessage = (event) => this.onConnMessage(event)
       this.conn.onclose = (event) => this._onConnClose(event)
+
+      const versionDate = new Date(
+        new URL(this.conn.url).searchParams.get('vsndate') ?? ''
+      )
+
+      if (versionDate instanceof Date) {
+        this.versionDate = versionDate
+      }
     }
   }
 
@@ -265,14 +274,14 @@ export default class RealtimeClient {
 
   channel(
     topic: string,
-    chanParams: ChannelParams = { isNewVersion: false }
+    chanParams: ChannelParams = {}
   ): RealtimeChannel | RealtimeSubscription {
-    const { isNewVersion, selfBroadcast, ...params } = chanParams
+    const { selfBroadcast, ...params } = chanParams
     if (selfBroadcast) {
       params.self_broadcast = selfBroadcast
     }
 
-    const chan = isNewVersion
+    const chan = this.versionDate
       ? new RealtimeChannel(topic, params, this)
       : new RealtimeSubscription(topic, params, this)
 

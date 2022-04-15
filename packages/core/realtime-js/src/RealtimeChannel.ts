@@ -122,19 +122,18 @@ export default class RealtimeChannel {
     this.on(CHANNEL_EVENTS.error, {}, (reason: string) => callback(reason))
   }
 
-  on(type: string, eventFilter?: { [key: string]: string }, callback?: Function) {
+  on(type: string, filter?: { [key: string]: string }, callback?: Function) {
     this.bindings.push({
       type,
-      eventFilter: eventFilter ?? {},
+      filter: filter ?? {},
       callback: callback ?? (() => {}),
     })
   }
 
-  off(type: string, eventFilter: { [key: string]: any }) {
+  off(type: string, filter: { [key: string]: any }) {
     this.bindings = this.bindings.filter((bind) => {
       return !(
-        bind.type === type &&
-        RealtimeChannel.isEqual(bind.eventFilter, eventFilter)
+        bind.type === type && RealtimeChannel.isEqual(bind.filter, filter)
       )
     })
   }
@@ -235,8 +234,8 @@ export default class RealtimeChannel {
       .filter((bind) => {
         return (
           bind?.type === type &&
-          (bind?.eventFilter?.event === '*' ||
-            bind?.eventFilter?.event === payload?.event)
+          (bind?.filter?.event === '*' ||
+            bind?.filter?.event === payload?.event)
         )
       })
       .map((bind) => bind.callback(handledPayload, ref))
