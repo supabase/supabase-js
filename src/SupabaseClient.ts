@@ -7,7 +7,12 @@ import { SupabaseStorageClient } from '@supabase/storage-js'
 import { FunctionsClient } from '@supabase/functions-js'
 import { PostgrestClient } from '@supabase/postgrest-js'
 import { AuthChangeEvent } from '@supabase/gotrue-js'
-import { RealtimeClient, RealtimeSubscription, RealtimeClientOptions } from '@supabase/realtime-js'
+import {
+  RealtimeClient,
+  RealtimeSubscription,
+  RealtimeClientOptions,
+  RealtimeChannel,
+} from '@supabase/realtime-js'
 
 const DEFAULT_OPTIONS = {
   schema: 'public',
@@ -156,6 +161,20 @@ export default class SupabaseClient {
   }
 
   /**
+   * Creates a channel with Broadcast and Presence.
+   * Activated when vsndate query param is present in the WebSocket URL.
+   */
+  channel(name: string, opts: { selfBroadcast: boolean; [key: string]: any }): RealtimeChannel {
+    const userToken = this.auth.session()?.access_token ?? this.supabaseKey
+
+    if (!this.realtime.isConnected()) {
+      this.realtime.connect()
+    }
+
+    return this.realtime.channel(name, { ...opts, user_token: userToken }) as RealtimeChannel
+  }
+
+  /**
    * Closes and removes all subscriptions and returns a list of removed
    * subscriptions and their errors.
    */
@@ -172,6 +191,23 @@ export default class SupabaseClient {
         error,
       }
     })
+  }
+
+  /**
+   * Closes and removes a channel and returns the number of open channels.
+   *
+   * @param channel The channel you want to close and remove.
+   */
+  async removeChannel(
+    channel: RealtimeChannel
+  ): Promise<{ data: { openChannels: number }; error: Error | null }> {
+    const { error } = await this._closeSubscription(channel)
+    const allChans: RealtimeSubscription[] = this.getSubscriptions()
+    const openChanCount = allChans.filter((chan) => chan.isJoined()).length
+
+    if (allChans.length === 0) await this.realtime.disconnect()
+
+    return { data: { openChannels: openChanCount }, error }
   }
 
   /**
@@ -192,7 +228,7 @@ export default class SupabaseClient {
   }
 
   private async _closeSubscription(
-    subscription: RealtimeSubscription
+    subscription: RealtimeSubscription | RealtimeChannel
   ): Promise<{ error: Error | null }> {
     let error = null
 
@@ -207,7 +243,7 @@ export default class SupabaseClient {
   }
 
   private _unsubscribeSubscription(
-    subscription: RealtimeSubscription
+    subscription: RealtimeSubscription | RealtimeChannel
   ): Promise<{ error: Error | null }> {
     return new Promise((resolve) => {
       subscription
