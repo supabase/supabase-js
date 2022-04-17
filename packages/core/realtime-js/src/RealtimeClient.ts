@@ -143,7 +143,7 @@ export default class RealtimeClient {
         new URL(this.conn.url).searchParams.get('vsndate') ?? ''
       )
 
-      if (versionDate instanceof Date) {
+      if (versionDate.toString() !== 'Invalid Date') {
         this.versionDate = versionDate
       }
     }
