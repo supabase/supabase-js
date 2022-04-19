@@ -407,6 +407,8 @@ export default class GoTrueClient {
       user: this.user()
     }
 
+    this._notifyAllSubscribers('TOKEN_REFRESHED')
+
     return this.currentSession
   }
 
