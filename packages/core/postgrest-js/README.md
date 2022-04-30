@@ -25,10 +25,10 @@ const REST_URL = 'http://localhost:3000'
 const postgrest = new PostgrestClient(REST_URL)
 ```
 
-- select(): https://supabase.io/docs/reference/javascript/select
-- insert(): https://supabase.io/docs/reference/javascript/insert
-- update(): https://supabase.io/docs/reference/javascript/update
-- delete(): https://supabase.io/docs/reference/javascript/delete
+- select(): https://supabase.com/docs/reference/javascript/select
+- insert(): https://supabase.com/docs/reference/javascript/insert
+- update(): https://supabase.com/docs/reference/javascript/update
+- delete(): https://supabase.com/docs/reference/javascript/delete
 
 #### Custom `fetch` implementation
 
