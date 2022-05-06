@@ -209,3 +209,14 @@ export interface OpenIDConnectCredentials {
   client_id?: string
   issuer?: string
 }
+
+type AnyFunction = (...args: any[]) => any
+type MaybePromisify<T> = T | Promise<T>
+
+type PromisifyMethods<T> = {
+  [K in keyof T]: T[K] extends AnyFunction
+    ? (...args: Parameters<T[K]>) => MaybePromisify<ReturnType<T[K]>>
+    : T[K]
+}
+
+export type SupportedStorage = PromisifyMethods<Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>>

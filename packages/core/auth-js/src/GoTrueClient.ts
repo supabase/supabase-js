@@ -1,6 +1,20 @@
 import GoTrueApi from './GoTrueApi'
-import { isBrowser, getParameterByName, uuid } from './lib/helpers'
-import { GOTRUE_URL, DEFAULT_HEADERS, STORAGE_KEY } from './lib/constants'
+import {
+  isBrowser,
+  getParameterByName,
+  uuid,
+  setItemAsync,
+  removeItemAsync,
+  getItemSynchronously,
+  getItemAsync,
+} from './lib/helpers'
+import {
+  GOTRUE_URL,
+  DEFAULT_HEADERS,
+  STORAGE_KEY,
+  EXPIRY_MARGIN,
+  NETWORK_FAILURE,
+} from './lib/constants'
 import { polyfillGlobalThis } from './lib/polyfills'
 import { Fetch } from './lib/fetch'
 
@@ -16,6 +30,7 @@ import type {
   UserCredentials,
   VerifyOTPParams,
   OpenIDConnectCredentials,
+  SupportedStorage,
 } from './lib/types'
 
 polyfillGlobalThis() // Make "globalThis" available
@@ -28,17 +43,6 @@ const DEFAULT_OPTIONS = {
   multiTab: true,
   headers: DEFAULT_HEADERS,
 }
-
-type AnyFunction = (...args: any[]) => any
-type MaybePromisify<T> = T | Promise<T>
-
-type PromisifyMethods<T> = {
-  [K in keyof T]: T[K] extends AnyFunction
-    ? (...args: Parameters<T[K]>) => MaybePromisify<ReturnType<T[K]>>
-    : T[K]
-}
-
-type SupportedStorage = PromisifyMethods<Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>>
 
 export default class GoTrueClient {
   /**
@@ -61,6 +65,7 @@ export default class GoTrueClient {
   protected multiTab: boolean
   protected stateChangeEmitters: Map<string, Subscription> = new Map()
   protected refreshTokenTimer?: ReturnType<typeof setTimeout>
+  protected networkRetries: number = 0
 
   /**
    * Create a new client for use in the browser.
@@ -101,6 +106,7 @@ export default class GoTrueClient {
     this._recoverSession()
     this._recoverAndRefresh()
     this._listenForMultiTabEvents()
+    this._handleVisibilityChange()
 
     if (settings.detectSessionInUrl && isBrowser() && !!getParameterByName('access_token')) {
       // Handle the OAuth redirect
@@ -184,7 +190,7 @@ export default class GoTrueClient {
    * @param password The user's password.
    * @param refreshToken A valid refresh token that was returned on login.
    * @param provider One of the providers supported by GoTrue.
-   * @param redirectTo A URL to send the user to after they are confirmed (OAuth logins only). 
+   * @param redirectTo A URL to send the user to after they are confirmed (OAuth logins only).
    * @param shouldCreateUser A boolean flag to indicate whether to automatically create a user on magiclink / otp sign-ins if the user doesn't exist. Defaults to true.
    * @param scopes A space-separated list of scopes granted to the OAuth application.
    */
@@ -404,7 +410,7 @@ export default class GoTrueClient {
       ...this.currentSession,
       access_token,
       token_type: 'bearer',
-      user: this.user()
+      user: this.user(),
     }
 
     this._notifyAllSubscribers('TOKEN_REFRESHED')
@@ -610,16 +616,12 @@ export default class GoTrueClient {
    */
   private _recoverSession() {
     try {
-      const json = isBrowser() && this.localStorage?.getItem(STORAGE_KEY)
-      if (!json || typeof json !== 'string') {
-        return null
-      }
-
-      const data = JSON.parse(json)
+      const data = getItemSynchronously(this.localStorage, STORAGE_KEY)
+      if (!data) return null
       const { currentSession, expiresAt } = data
       const timeNow = Math.round(Date.now() / 1000)
 
-      if (expiresAt >= timeNow && currentSession?.user) {
+      if (expiresAt >= timeNow + EXPIRY_MARGIN && currentSession?.user) {
         this._saveSession(currentSession)
         this._notifyAllSubscribers('SIGNED_IN')
       }
@@ -634,22 +636,31 @@ export default class GoTrueClient {
    */
   private async _recoverAndRefresh() {
     try {
-      const json = isBrowser() && (await this.localStorage.getItem(STORAGE_KEY))
-      if (!json) {
-        return null
-      }
-
-      const data = JSON.parse(json)
+      const data = await getItemAsync(this.localStorage, STORAGE_KEY)
+      if (!data) return null
       const { currentSession, expiresAt } = data
       const timeNow = Math.round(Date.now() / 1000)
 
-      if (expiresAt < timeNow) {
+      if (expiresAt < timeNow + EXPIRY_MARGIN) {
         if (this.autoRefreshToken && currentSession.refresh_token) {
+          this.networkRetries++
           const { error } = await this._callRefreshToken(currentSession.refresh_token)
           if (error) {
             console.log(error.message)
+            if (
+              error.message === NETWORK_FAILURE.ERROR_MESSAGE &&
+              this.networkRetries < NETWORK_FAILURE.MAX_RETRIES
+            ) {
+              if (this.refreshTokenTimer) clearTimeout(this.refreshTokenTimer)
+              this.refreshTokenTimer = setTimeout(
+                () => this._recoverAndRefresh(),
+                NETWORK_FAILURE.RETRY_INTERVAL ** this.networkRetries * 100 // exponential backoff
+              )
+              return
+            }
             await this._removeSession()
           }
+          this.networkRetries = 0
         } else {
           this._removeSession()
         }
@@ -703,7 +714,7 @@ export default class GoTrueClient {
     if (expiresAt) {
       const timeNow = Math.round(Date.now() / 1000)
       const expiresIn = expiresAt - timeNow
-      const refreshDurationBeforeExpires = expiresIn > 60 ? 60 : 0.5
+      const refreshDurationBeforeExpires = expiresIn > EXPIRY_MARGIN ? EXPIRY_MARGIN : 0.5
       this._startAutoRefreshToken((expiresIn - refreshDurationBeforeExpires) * 1000)
     }
 
@@ -716,14 +727,14 @@ export default class GoTrueClient {
 
   private _persistSession(currentSession: Session) {
     const data = { currentSession, expiresAt: currentSession.expires_at }
-    isBrowser() && this.localStorage.setItem(STORAGE_KEY, JSON.stringify(data))
+    setItemAsync(this.localStorage, STORAGE_KEY, data)
   }
 
   private async _removeSession() {
     this.currentSession = null
     this.currentUser = null
     if (this.refreshTokenTimer) clearTimeout(this.refreshTokenTimer)
-    isBrowser() && (await this.localStorage.removeItem(STORAGE_KEY))
+    removeItemAsync(this.localStorage, STORAGE_KEY)
   }
 
   /**
@@ -734,7 +745,16 @@ export default class GoTrueClient {
     if (this.refreshTokenTimer) clearTimeout(this.refreshTokenTimer)
     if (value <= 0 || !this.autoRefreshToken) return
 
-    this.refreshTokenTimer = setTimeout(() => this._callRefreshToken(), value)
+    this.refreshTokenTimer = setTimeout(async () => {
+      this.networkRetries++
+      const { error } = await this._callRefreshToken()
+      if (!error) this.networkRetries = 0
+      if (
+        error?.message === NETWORK_FAILURE.ERROR_MESSAGE &&
+        this.networkRetries < NETWORK_FAILURE.MAX_RETRIES
+      )
+        this._startAutoRefreshToken(NETWORK_FAILURE.RETRY_INTERVAL ** this.networkRetries * 100) // exponential backoff
+    }, value)
     if (typeof this.refreshTokenTimer.unref === 'function') this.refreshTokenTimer.unref()
   }
 
@@ -743,7 +763,6 @@ export default class GoTrueClient {
    */
   private _listenForMultiTabEvents() {
     if (!this.multiTab || !isBrowser() || !window?.addEventListener) {
-      // console.debug('Auth multi-tab support is disabled.')
       return false
     }
 
@@ -752,7 +771,7 @@ export default class GoTrueClient {
         if (e.key === STORAGE_KEY) {
           const newSession = JSON.parse(String(e.newValue))
           if (newSession?.currentSession?.access_token) {
-            this._recoverAndRefresh()
+            this._saveSession(newSession.currentSession)
             this._notifyAllSubscribers('SIGNED_IN')
           } else {
             this._removeSession()
@@ -762,6 +781,22 @@ export default class GoTrueClient {
       })
     } catch (error) {
       console.error('_listenForMultiTabEvents', error)
+    }
+  }
+
+  private _handleVisibilityChange() {
+    if (!this.multiTab || !isBrowser() || !window?.addEventListener) {
+      return false
+    }
+
+    try {
+      window?.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') {
+          this._recoverAndRefresh()
+        }
+      })
+    } catch (error) {
+      console.error('_handleVisibilityChange', error)
     }
   }
 }

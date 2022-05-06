@@ -1,4 +1,5 @@
 import crossFetch from 'cross-fetch'
+import { SupportedStorage } from './types'
 
 export function expiresAt(expiresIn: number) {
   const timeNow = Math.round(Date.now() / 1000)
@@ -38,4 +39,39 @@ export const resolveFetch = (customFetch?: Fetch): Fetch => {
     _fetch = fetch
   }
   return (...args) => _fetch(...args)
+}
+
+// LocalStorage helpers
+export const setItemAsync = async (
+  storage: SupportedStorage,
+  key: string,
+  data: any
+): Promise<void> => {
+  isBrowser() && (await storage?.setItem(key, JSON.stringify(data)))
+}
+
+export const getItemAsync = async (storage: SupportedStorage, key: string): Promise<any | null> => {
+  const value = isBrowser() && (await storage?.getItem(key))
+  if (!value) return null
+  try {
+    return JSON.parse(value)
+  } catch {
+    return value
+  }
+}
+
+export const getItemSynchronously = (storage: SupportedStorage, key: string): any | null => {
+  const value = isBrowser() && storage?.getItem(key)
+  if (!value || typeof value !== 'string') {
+    return null
+  }
+  try {
+    return JSON.parse(value)
+  } catch {
+    return value
+  }
+}
+
+export const removeItemAsync = async (storage: SupportedStorage, key: string): Promise<void> => {
+  isBrowser() && (await storage?.removeItem(key))
 }

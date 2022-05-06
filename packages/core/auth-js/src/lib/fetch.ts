@@ -1,3 +1,5 @@
+import { NETWORK_FAILURE } from './constants'
+
 export type Fetch = typeof fetch
 
 export interface FetchOptions {
@@ -13,6 +15,9 @@ const _getErrorMessage = (err: any): string =>
   err.msg || err.message || err.error_description || err.error || JSON.stringify(err)
 
 const handleError = (error: any, reject: any) => {
+  if (!error?.status) {
+    return reject({ message: NETWORK_FAILURE.ERROR_MESSAGE })
+  }
   if (typeof error.json !== 'function') {
     return reject(error)
   }
