@@ -74,10 +74,10 @@ export default class SupabaseClient {
     const _supabaseUrl = stripTrailingSlash(supabaseUrl)
     const settings = { ...DEFAULT_OPTIONS, ...options }
 
-    this.restUrl = `${_supabaseUrl}/rest/v1`
-    this.realtimeUrl = `${_supabaseUrl}/realtime/v1`.replace('http', 'ws')
-    this.authUrl = `${_supabaseUrl}/auth/v1`
-    this.storageUrl = `${_supabaseUrl}/storage/v1`
+    this.restUrl = options?.restUrl || `${_supabaseUrl}/rest/v1`
+    this.realtimeUrl = options?.realtimeUrl || `${_supabaseUrl}/realtime/v1`.replace('http', 'ws')
+    this.authUrl = options?.authUrl || `${_supabaseUrl}/auth/v1`
+    this.storageUrl = options?.storageUrl || `${_supabaseUrl}/storage/v1`
 
     const isPlatform = _supabaseUrl.match(/(supabase\.co)|(supabase\.in)/)
     if (isPlatform) {
