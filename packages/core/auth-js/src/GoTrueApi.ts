@@ -67,6 +67,7 @@ export default class GoTrueApi {
     options: {
       redirectTo?: string
       scopes?: string
+      queryParams?: string
     }
   ) {
     const urlParams: string[] = [`provider=${encodeURIComponent(provider)}`]
@@ -75,6 +76,9 @@ export default class GoTrueApi {
     }
     if (options?.scopes) {
       urlParams.push(`scopes=${encodeURIComponent(options.scopes)}`)
+    }
+    if(options?.queryParams) {
+      urlParams.push(options.queryParams)
     }
     return `${this.url}/authorize?${urlParams.join('&')}`
   }
