@@ -1,10 +1,10 @@
 # `gotrue-js`
 
-An isomorphic JavaScript client library for the [GoTrue](https://github.com/netlify/gotrue) API.
+An isomorphic JavaScript client library for the [GoTrue](https://github.com/supabase/gotrue) API.
 
 ## Docs
 
-- Using `gotrue-js`: https://supabase.io/docs/gotrue/client/initializing
+- Using `gotrue-js`: https://supabase.com/docs/reference/javascript/auth-signup
 - TypeDoc: https://supabase.github.io/gotrue-js/
 
 ## Quick start
