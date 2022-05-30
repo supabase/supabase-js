@@ -77,7 +77,6 @@ export default class GoTrueApi {
     if (options?.scopes) {
       urlParams.push(`scopes=${encodeURIComponent(options.scopes)}`)
     }
-
     if(options?.queryParams) {
       for(const [param, value] of Object.entries(urlParams)) {
         urlParams.push(`${encodeURIComponent(param)}=${encodeURIComponent(value)}`)

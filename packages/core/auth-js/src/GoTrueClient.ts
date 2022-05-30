@@ -559,7 +559,6 @@ export default class GoTrueClient {
       redirectTo: options.redirectTo,
       scopes: options.scopes,
       queryParams: options.queryParams
-
     })
 
     try {
