@@ -1,5 +1,6 @@
-import { Fetch, PostgrestBuilder } from './types'
+import PostgrestBuilder from './PostgrestBuilder'
 import PostgrestFilterBuilder from './PostgrestFilterBuilder'
+import { Fetch } from './types'
 
 export default class PostgrestQueryBuilder<T> extends PostgrestBuilder<T> {
   constructor(

@@ -1,4 +1,5 @@
-import { PostgrestBuilder, PostgrestMaybeSingleResponse, PostgrestResponse, PostgrestSingleResponse } from './types'
+import PostgrestBuilder from './PostgrestBuilder'
+import { PostgrestMaybeSingleResponse, PostgrestResponse, PostgrestSingleResponse } from './types'
 
 /**
  * Post-filters (transforms)
