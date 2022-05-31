@@ -37,29 +37,6 @@ Array [
 
 exports[`basic insert, update, delete basic delete 1`] = `
 Object {
-  "body": Array [
-    Object {
-      "channel_id": 2,
-      "data": null,
-      "id": 3,
-      "message": "foo",
-      "username": "supabot",
-    },
-    Object {
-      "channel_id": 2,
-      "data": null,
-      "id": 4,
-      "message": "foo",
-      "username": "supabot",
-    },
-    Object {
-      "channel_id": 2,
-      "data": null,
-      "id": 5,
-      "message": "foo",
-      "username": "supabot",
-    },
-  ],
   "count": null,
   "data": Array [
     Object {
@@ -92,22 +69,6 @@ Object {
 
 exports[`basic insert, update, delete basic delete 2`] = `
 Object {
-  "body": Array [
-    Object {
-      "channel_id": 1,
-      "data": null,
-      "id": 1,
-      "message": "Hello World 👋",
-      "username": "supabot",
-    },
-    Object {
-      "channel_id": 2,
-      "data": null,
-      "id": 2,
-      "message": "Perfection is attained, not when there is nothing more to add, but when there is nothing left to take away.",
-      "username": "supabot",
-    },
-  ],
   "count": null,
   "data": Array [
     Object {
@@ -133,15 +94,6 @@ Object {
 
 exports[`basic insert, update, delete basic insert 1`] = `
 Object {
-  "body": Array [
-    Object {
-      "channel_id": 1,
-      "data": null,
-      "id": 3,
-      "message": "foo",
-      "username": "supabot",
-    },
-  ],
   "count": null,
   "data": Array [
     Object {
@@ -160,29 +112,6 @@ Object {
 
 exports[`basic insert, update, delete basic insert 2`] = `
 Object {
-  "body": Array [
-    Object {
-      "channel_id": 1,
-      "data": null,
-      "id": 1,
-      "message": "Hello World 👋",
-      "username": "supabot",
-    },
-    Object {
-      "channel_id": 2,
-      "data": null,
-      "id": 2,
-      "message": "Perfection is attained, not when there is nothing more to add, but when there is nothing left to take away.",
-      "username": "supabot",
-    },
-    Object {
-      "channel_id": 1,
-      "data": null,
-      "id": 3,
-      "message": "foo",
-      "username": "supabot",
-    },
-  ],
   "count": null,
   "data": Array [
     Object {
@@ -215,29 +144,6 @@ Object {
 
 exports[`basic insert, update, delete basic update 1`] = `
 Object {
-  "body": Array [
-    Object {
-      "channel_id": 2,
-      "data": null,
-      "id": 3,
-      "message": "foo",
-      "username": "supabot",
-    },
-    Object {
-      "channel_id": 2,
-      "data": null,
-      "id": 4,
-      "message": "foo",
-      "username": "supabot",
-    },
-    Object {
-      "channel_id": 2,
-      "data": null,
-      "id": 5,
-      "message": "foo",
-      "username": "supabot",
-    },
-  ],
   "count": null,
   "data": Array [
     Object {
@@ -270,43 +176,6 @@ Object {
 
 exports[`basic insert, update, delete basic update 2`] = `
 Object {
-  "body": Array [
-    Object {
-      "channel_id": 1,
-      "data": null,
-      "id": 1,
-      "message": "Hello World 👋",
-      "username": "supabot",
-    },
-    Object {
-      "channel_id": 2,
-      "data": null,
-      "id": 2,
-      "message": "Perfection is attained, not when there is nothing more to add, but when there is nothing left to take away.",
-      "username": "supabot",
-    },
-    Object {
-      "channel_id": 2,
-      "data": null,
-      "id": 3,
-      "message": "foo",
-      "username": "supabot",
-    },
-    Object {
-      "channel_id": 2,
-      "data": null,
-      "id": 4,
-      "message": "foo",
-      "username": "supabot",
-    },
-    Object {
-      "channel_id": 2,
-      "data": null,
-      "id": 5,
-      "message": "foo",
-      "username": "supabot",
-    },
-  ],
   "count": null,
   "data": Array [
     Object {
@@ -353,22 +222,6 @@ Object {
 
 exports[`basic insert, update, delete bulk insert 1`] = `
 Object {
-  "body": Array [
-    Object {
-      "channel_id": 1,
-      "data": null,
-      "id": 4,
-      "message": "foo",
-      "username": "supabot",
-    },
-    Object {
-      "channel_id": 1,
-      "data": null,
-      "id": 5,
-      "message": "foo",
-      "username": "supabot",
-    },
-  ],
   "count": null,
   "data": Array [
     Object {
@@ -394,43 +247,6 @@ Object {
 
 exports[`basic insert, update, delete bulk insert 2`] = `
 Object {
-  "body": Array [
-    Object {
-      "channel_id": 1,
-      "data": null,
-      "id": 1,
-      "message": "Hello World 👋",
-      "username": "supabot",
-    },
-    Object {
-      "channel_id": 2,
-      "data": null,
-      "id": 2,
-      "message": "Perfection is attained, not when there is nothing more to add, but when there is nothing left to take away.",
-      "username": "supabot",
-    },
-    Object {
-      "channel_id": 2,
-      "data": null,
-      "id": 3,
-      "message": "foo",
-      "username": "supabot",
-    },
-    Object {
-      "channel_id": 1,
-      "data": null,
-      "id": 4,
-      "message": "foo",
-      "username": "supabot",
-    },
-    Object {
-      "channel_id": 1,
-      "data": null,
-      "id": 5,
-      "message": "foo",
-      "username": "supabot",
-    },
-  ],
   "count": null,
   "data": Array [
     Object {
@@ -477,15 +293,6 @@ Object {
 
 exports[`basic insert, update, delete upsert 1`] = `
 Object {
-  "body": Array [
-    Object {
-      "channel_id": 2,
-      "data": null,
-      "id": 3,
-      "message": "foo",
-      "username": "supabot",
-    },
-  ],
   "count": null,
   "data": Array [
     Object {
@@ -504,29 +311,6 @@ Object {
 
 exports[`basic insert, update, delete upsert 2`] = `
 Object {
-  "body": Array [
-    Object {
-      "channel_id": 1,
-      "data": null,
-      "id": 1,
-      "message": "Hello World 👋",
-      "username": "supabot",
-    },
-    Object {
-      "channel_id": 2,
-      "data": null,
-      "id": 2,
-      "message": "Perfection is attained, not when there is nothing more to add, but when there is nothing left to take away.",
-      "username": "supabot",
-    },
-    Object {
-      "channel_id": 2,
-      "data": null,
-      "id": 3,
-      "message": "foo",
-      "username": "supabot",
-    },
-  ],
   "count": null,
   "data": Array [
     Object {
@@ -559,36 +343,6 @@ Object {
 
 exports[`basic select table 1`] = `
 Object {
-  "body": Array [
-    Object {
-      "age_range": "[1,2)",
-      "catchphrase": "'cat' 'fat'",
-      "data": null,
-      "status": "ONLINE",
-      "username": "supabot",
-    },
-    Object {
-      "age_range": "[25,35)",
-      "catchphrase": "'bat' 'cat'",
-      "data": null,
-      "status": "OFFLINE",
-      "username": "kiwicopple",
-    },
-    Object {
-      "age_range": "[25,35)",
-      "catchphrase": "'bat' 'rat'",
-      "data": null,
-      "status": "ONLINE",
-      "username": "awailas",
-    },
-    Object {
-      "age_range": "[20,30)",
-      "catchphrase": "'fat' 'rat'",
-      "data": null,
-      "status": "ONLINE",
-      "username": "dragarcia",
-    },
-  ],
   "count": null,
   "data": Array [
     Object {
@@ -630,28 +384,6 @@ exports[`don't mutate PostgrestClient.headers 1`] = `null`;
 
 exports[`embedded filters embedded eq 1`] = `
 Object {
-  "body": Array [
-    Object {
-      "messages": Array [
-        Object {
-          "channel_id": 1,
-          "data": null,
-          "id": 1,
-          "message": "Hello World 👋",
-          "username": "supabot",
-        },
-      ],
-    },
-    Object {
-      "messages": Array [],
-    },
-    Object {
-      "messages": Array [],
-    },
-    Object {
-      "messages": Array [],
-    },
-  ],
   "count": null,
   "data": Array [
     Object {
@@ -683,35 +415,6 @@ Object {
 
 exports[`embedded filters embedded or 1`] = `
 Object {
-  "body": Array [
-    Object {
-      "messages": Array [
-        Object {
-          "channel_id": 1,
-          "data": null,
-          "id": 1,
-          "message": "Hello World 👋",
-          "username": "supabot",
-        },
-        Object {
-          "channel_id": 2,
-          "data": null,
-          "id": 2,
-          "message": "Perfection is attained, not when there is nothing more to add, but when there is nothing left to take away.",
-          "username": "supabot",
-        },
-      ],
-    },
-    Object {
-      "messages": Array [],
-    },
-    Object {
-      "messages": Array [],
-    },
-    Object {
-      "messages": Array [],
-    },
-  ],
   "count": null,
   "data": Array [
     Object {
@@ -750,35 +453,6 @@ Object {
 
 exports[`embedded filters embedded or with and 1`] = `
 Object {
-  "body": Array [
-    Object {
-      "messages": Array [
-        Object {
-          "channel_id": 1,
-          "data": null,
-          "id": 1,
-          "message": "Hello World 👋",
-          "username": "supabot",
-        },
-        Object {
-          "channel_id": 2,
-          "data": null,
-          "id": 2,
-          "message": "Perfection is attained, not when there is nothing more to add, but when there is nothing left to take away.",
-          "username": "supabot",
-        },
-      ],
-    },
-    Object {
-      "messages": Array [],
-    },
-    Object {
-      "messages": Array [],
-    },
-    Object {
-      "messages": Array [],
-    },
-  ],
   "count": null,
   "data": Array [
     Object {
@@ -817,35 +491,6 @@ Object {
 
 exports[`embedded select 1`] = `
 Object {
-  "body": Array [
-    Object {
-      "messages": Array [
-        Object {
-          "channel_id": 1,
-          "data": null,
-          "id": 1,
-          "message": "Hello World 👋",
-          "username": "supabot",
-        },
-        Object {
-          "channel_id": 2,
-          "data": null,
-          "id": 2,
-          "message": "Perfection is attained, not when there is nothing more to add, but when there is nothing left to take away.",
-          "username": "supabot",
-        },
-      ],
-    },
-    Object {
-      "messages": Array [],
-    },
-    Object {
-      "messages": Array [],
-    },
-    Object {
-      "messages": Array [],
-    },
-  ],
   "count": null,
   "data": Array [
     Object {
@@ -884,28 +529,6 @@ Object {
 
 exports[`embedded transforms embedded limit 1`] = `
 Object {
-  "body": Array [
-    Object {
-      "messages": Array [
-        Object {
-          "channel_id": 1,
-          "data": null,
-          "id": 1,
-          "message": "Hello World 👋",
-          "username": "supabot",
-        },
-      ],
-    },
-    Object {
-      "messages": Array [],
-    },
-    Object {
-      "messages": Array [],
-    },
-    Object {
-      "messages": Array [],
-    },
-  ],
   "count": null,
   "data": Array [
     Object {
@@ -937,35 +560,6 @@ Object {
 
 exports[`embedded transforms embedded order 1`] = `
 Object {
-  "body": Array [
-    Object {
-      "messages": Array [
-        Object {
-          "channel_id": 2,
-          "data": null,
-          "id": 2,
-          "message": "Perfection is attained, not when there is nothing more to add, but when there is nothing left to take away.",
-          "username": "supabot",
-        },
-        Object {
-          "channel_id": 1,
-          "data": null,
-          "id": 1,
-          "message": "Hello World 👋",
-          "username": "supabot",
-        },
-      ],
-    },
-    Object {
-      "messages": Array [],
-    },
-    Object {
-      "messages": Array [],
-    },
-    Object {
-      "messages": Array [],
-    },
-  ],
   "count": null,
   "data": Array [
     Object {
@@ -1004,35 +598,6 @@ Object {
 
 exports[`embedded transforms embedded order on multiple columns 1`] = `
 Object {
-  "body": Array [
-    Object {
-      "messages": Array [
-        Object {
-          "channel_id": 2,
-          "data": null,
-          "id": 2,
-          "message": "Perfection is attained, not when there is nothing more to add, but when there is nothing left to take away.",
-          "username": "supabot",
-        },
-        Object {
-          "channel_id": 1,
-          "data": null,
-          "id": 1,
-          "message": "Hello World 👋",
-          "username": "supabot",
-        },
-      ],
-    },
-    Object {
-      "messages": Array [],
-    },
-    Object {
-      "messages": Array [],
-    },
-    Object {
-      "messages": Array [],
-    },
-  ],
   "count": null,
   "data": Array [
     Object {
@@ -1071,28 +636,6 @@ Object {
 
 exports[`embedded transforms embedded range 1`] = `
 Object {
-  "body": Array [
-    Object {
-      "messages": Array [
-        Object {
-          "channel_id": 2,
-          "data": null,
-          "id": 2,
-          "message": "Perfection is attained, not when there is nothing more to add, but when there is nothing left to take away.",
-          "username": "supabot",
-        },
-      ],
-    },
-    Object {
-      "messages": Array [],
-    },
-    Object {
-      "messages": Array [],
-    },
-    Object {
-      "messages": Array [],
-    },
-  ],
   "count": null,
   "data": Array [
     Object {
@@ -1124,7 +667,6 @@ Object {
 
 exports[`ignoreDuplicates upsert 1`] = `
 Object {
-  "body": Array [],
   "count": null,
   "data": Array [],
   "error": null,
@@ -1135,36 +677,6 @@ Object {
 
 exports[`insert, update, delete with count: 'exact' basic delete count: 'exact' 1`] = `
 Object {
-  "body": Array [
-    Object {
-      "channel_id": 2,
-      "data": null,
-      "id": 6,
-      "message": "foo",
-      "username": "supabot",
-    },
-    Object {
-      "channel_id": 2,
-      "data": null,
-      "id": 3,
-      "message": "foo",
-      "username": "supabot",
-    },
-    Object {
-      "channel_id": 2,
-      "data": null,
-      "id": 7,
-      "message": "foo",
-      "username": "supabot",
-    },
-    Object {
-      "channel_id": 2,
-      "data": null,
-      "id": 8,
-      "message": "foo",
-      "username": "supabot",
-    },
-  ],
   "count": 4,
   "data": Array [
     Object {
@@ -1204,22 +716,6 @@ Object {
 
 exports[`insert, update, delete with count: 'exact' basic delete count: 'exact' 2`] = `
 Object {
-  "body": Array [
-    Object {
-      "channel_id": 1,
-      "data": null,
-      "id": 1,
-      "message": "Hello World 👋",
-      "username": "supabot",
-    },
-    Object {
-      "channel_id": 2,
-      "data": null,
-      "id": 2,
-      "message": "Perfection is attained, not when there is nothing more to add, but when there is nothing left to take away.",
-      "username": "supabot",
-    },
-  ],
   "count": null,
   "data": Array [
     Object {
@@ -1245,22 +741,6 @@ Object {
 
 exports[`insert, update, delete with count: 'exact' bulk insert with count: 'exact' 1`] = `
 Object {
-  "body": Array [
-    Object {
-      "channel_id": 1,
-      "data": null,
-      "id": 7,
-      "message": "foo",
-      "username": "supabot",
-    },
-    Object {
-      "channel_id": 1,
-      "data": null,
-      "id": 8,
-      "message": "foo",
-      "username": "supabot",
-    },
-  ],
   "count": 2,
   "data": Array [
     Object {
@@ -1286,50 +766,6 @@ Object {
 
 exports[`insert, update, delete with count: 'exact' bulk insert with count: 'exact' 2`] = `
 Object {
-  "body": Array [
-    Object {
-      "channel_id": 1,
-      "data": null,
-      "id": 1,
-      "message": "Hello World 👋",
-      "username": "supabot",
-    },
-    Object {
-      "channel_id": 2,
-      "data": null,
-      "id": 2,
-      "message": "Perfection is attained, not when there is nothing more to add, but when there is nothing left to take away.",
-      "username": "supabot",
-    },
-    Object {
-      "channel_id": 1,
-      "data": null,
-      "id": 6,
-      "message": "foo",
-      "username": "supabot",
-    },
-    Object {
-      "channel_id": 2,
-      "data": null,
-      "id": 3,
-      "message": "foo",
-      "username": "supabot",
-    },
-    Object {
-      "channel_id": 1,
-      "data": null,
-      "id": 7,
-      "message": "foo",
-      "username": "supabot",
-    },
-    Object {
-      "channel_id": 1,
-      "data": null,
-      "id": 8,
-      "message": "foo",
-      "username": "supabot",
-    },
-  ],
   "count": null,
   "data": Array [
     Object {
@@ -1383,15 +819,6 @@ Object {
 
 exports[`insert, update, delete with count: 'exact' insert with count: 'exact' 1`] = `
 Object {
-  "body": Array [
-    Object {
-      "channel_id": 1,
-      "data": null,
-      "id": 6,
-      "message": "foo",
-      "username": "supabot",
-    },
-  ],
   "count": 1,
   "data": Array [
     Object {
@@ -1410,29 +837,6 @@ Object {
 
 exports[`insert, update, delete with count: 'exact' insert with count: 'exact' 2`] = `
 Object {
-  "body": Array [
-    Object {
-      "channel_id": 1,
-      "data": null,
-      "id": 1,
-      "message": "Hello World 👋",
-      "username": "supabot",
-    },
-    Object {
-      "channel_id": 2,
-      "data": null,
-      "id": 2,
-      "message": "Perfection is attained, not when there is nothing more to add, but when there is nothing left to take away.",
-      "username": "supabot",
-    },
-    Object {
-      "channel_id": 1,
-      "data": null,
-      "id": 6,
-      "message": "foo",
-      "username": "supabot",
-    },
-  ],
   "count": null,
   "data": Array [
     Object {
@@ -1465,36 +869,6 @@ Object {
 
 exports[`insert, update, delete with count: 'exact' update with count: 'exact' 1`] = `
 Object {
-  "body": Array [
-    Object {
-      "channel_id": 2,
-      "data": null,
-      "id": 6,
-      "message": "foo",
-      "username": "supabot",
-    },
-    Object {
-      "channel_id": 2,
-      "data": null,
-      "id": 3,
-      "message": "foo",
-      "username": "supabot",
-    },
-    Object {
-      "channel_id": 2,
-      "data": null,
-      "id": 7,
-      "message": "foo",
-      "username": "supabot",
-    },
-    Object {
-      "channel_id": 2,
-      "data": null,
-      "id": 8,
-      "message": "foo",
-      "username": "supabot",
-    },
-  ],
   "count": 4,
   "data": Array [
     Object {
@@ -1534,50 +908,6 @@ Object {
 
 exports[`insert, update, delete with count: 'exact' update with count: 'exact' 2`] = `
 Object {
-  "body": Array [
-    Object {
-      "channel_id": 1,
-      "data": null,
-      "id": 1,
-      "message": "Hello World 👋",
-      "username": "supabot",
-    },
-    Object {
-      "channel_id": 2,
-      "data": null,
-      "id": 2,
-      "message": "Perfection is attained, not when there is nothing more to add, but when there is nothing left to take away.",
-      "username": "supabot",
-    },
-    Object {
-      "channel_id": 2,
-      "data": null,
-      "id": 6,
-      "message": "foo",
-      "username": "supabot",
-    },
-    Object {
-      "channel_id": 2,
-      "data": null,
-      "id": 3,
-      "message": "foo",
-      "username": "supabot",
-    },
-    Object {
-      "channel_id": 2,
-      "data": null,
-      "id": 7,
-      "message": "foo",
-      "username": "supabot",
-    },
-    Object {
-      "channel_id": 2,
-      "data": null,
-      "id": 8,
-      "message": "foo",
-      "username": "supabot",
-    },
-  ],
   "count": null,
   "data": Array [
     Object {
@@ -1631,15 +961,6 @@ Object {
 
 exports[`insert, update, delete with count: 'exact' upsert with count: 'exact' 1`] = `
 Object {
-  "body": Array [
-    Object {
-      "channel_id": 2,
-      "data": null,
-      "id": 3,
-      "message": "foo",
-      "username": "supabot",
-    },
-  ],
   "count": 1,
   "data": Array [
     Object {
@@ -1658,36 +979,6 @@ Object {
 
 exports[`insert, update, delete with count: 'exact' upsert with count: 'exact' 2`] = `
 Object {
-  "body": Array [
-    Object {
-      "channel_id": 1,
-      "data": null,
-      "id": 1,
-      "message": "Hello World 👋",
-      "username": "supabot",
-    },
-    Object {
-      "channel_id": 2,
-      "data": null,
-      "id": 2,
-      "message": "Perfection is attained, not when there is nothing more to add, but when there is nothing left to take away.",
-      "username": "supabot",
-    },
-    Object {
-      "channel_id": 1,
-      "data": null,
-      "id": 6,
-      "message": "foo",
-      "username": "supabot",
-    },
-    Object {
-      "channel_id": 2,
-      "data": null,
-      "id": 3,
-      "message": "foo",
-      "username": "supabot",
-    },
-  ],
   "count": null,
   "data": Array [
     Object {
@@ -1727,15 +1018,6 @@ Object {
 
 exports[`limit 1`] = `
 Object {
-  "body": Array [
-    Object {
-      "age_range": "[1,2)",
-      "catchphrase": "'cat' 'fat'",
-      "data": null,
-      "status": "ONLINE",
-      "username": "supabot",
-    },
-  ],
   "count": null,
   "data": Array [
     Object {
@@ -1754,7 +1036,6 @@ Object {
 
 exports[`maybeSingle 1`] = `
 Object {
-  "body": null,
   "count": null,
   "data": null,
   "error": null,
@@ -1765,7 +1046,6 @@ Object {
 
 exports[`missing table 1`] = `
 Object {
-  "body": null,
   "count": null,
   "data": null,
   "error": Object {
@@ -1781,15 +1061,6 @@ Object {
 
 exports[`on_conflict insert 1`] = `
 Object {
-  "body": Array [
-    Object {
-      "age_range": "[20,30)",
-      "catchphrase": "'fat' 'rat'",
-      "data": null,
-      "status": "ONLINE",
-      "username": "dragarcia",
-    },
-  ],
   "count": null,
   "data": Array [
     Object {
@@ -1808,36 +1079,6 @@ Object {
 
 exports[`order 1`] = `
 Object {
-  "body": Array [
-    Object {
-      "age_range": "[1,2)",
-      "catchphrase": "'cat' 'fat'",
-      "data": null,
-      "status": "ONLINE",
-      "username": "supabot",
-    },
-    Object {
-      "age_range": "[25,35)",
-      "catchphrase": "'bat' 'cat'",
-      "data": null,
-      "status": "OFFLINE",
-      "username": "kiwicopple",
-    },
-    Object {
-      "age_range": "[20,30)",
-      "catchphrase": "'fat' 'rat'",
-      "data": null,
-      "status": "ONLINE",
-      "username": "dragarcia",
-    },
-    Object {
-      "age_range": "[25,35)",
-      "catchphrase": "'bat' 'rat'",
-      "data": null,
-      "status": "ONLINE",
-      "username": "awailas",
-    },
-  ],
   "count": null,
   "data": Array [
     Object {
@@ -1877,22 +1118,6 @@ Object {
 
 exports[`order on multiple columns 1`] = `
 Object {
-  "body": Array [
-    Object {
-      "channel_id": 2,
-      "data": null,
-      "id": 2,
-      "message": "Perfection is attained, not when there is nothing more to add, but when there is nothing left to take away.",
-      "username": "supabot",
-    },
-    Object {
-      "channel_id": 1,
-      "data": null,
-      "id": 1,
-      "message": "Hello World 👋",
-      "username": "supabot",
-    },
-  ],
   "count": null,
   "data": Array [
     Object {
@@ -1918,29 +1143,6 @@ Object {
 
 exports[`range 1`] = `
 Object {
-  "body": Array [
-    Object {
-      "age_range": "[25,35)",
-      "catchphrase": "'bat' 'cat'",
-      "data": null,
-      "status": "OFFLINE",
-      "username": "kiwicopple",
-    },
-    Object {
-      "age_range": "[25,35)",
-      "catchphrase": "'bat' 'rat'",
-      "data": null,
-      "status": "ONLINE",
-      "username": "awailas",
-    },
-    Object {
-      "age_range": "[20,30)",
-      "catchphrase": "'fat' 'rat'",
-      "data": null,
-      "status": "ONLINE",
-      "username": "dragarcia",
-    },
-  ],
   "count": null,
   "data": Array [
     Object {
@@ -1973,7 +1175,6 @@ Object {
 
 exports[`rpc 1`] = `
 Object {
-  "body": "ONLINE",
   "count": null,
   "data": "ONLINE",
   "error": null,
@@ -1984,7 +1185,6 @@ Object {
 
 exports[`rpc returns void 1`] = `
 Object {
-  "body": null,
   "count": null,
   "data": null,
   "error": null,
@@ -1995,7 +1195,6 @@ Object {
 
 exports[`rpc with count: 'exact' 1`] = `
 Object {
-  "body": "ONLINE",
   "count": 1,
   "data": "ONLINE",
   "error": null,
@@ -2006,7 +1205,6 @@ Object {
 
 exports[`rpc with head:true, count:exact 1`] = `
 Object {
-  "body": null,
   "count": 1,
   "data": null,
   "error": null,
@@ -2017,11 +1215,6 @@ Object {
 
 exports[`select on insert 1`] = `
 Object {
-  "body": Array [
-    Object {
-      "status": "ONLINE",
-    },
-  ],
   "count": null,
   "data": Array [
     Object {
@@ -2036,11 +1229,6 @@ Object {
 
 exports[`select on rpc 1`] = `
 Object {
-  "body": Array [
-    Object {
-      "status": "ONLINE",
-    },
-  ],
   "count": null,
   "data": Array [
     Object {
@@ -2055,36 +1243,6 @@ Object {
 
 exports[`select with count:exact 1`] = `
 Object {
-  "body": Array [
-    Object {
-      "age_range": "[1,2)",
-      "catchphrase": "'cat' 'fat'",
-      "data": null,
-      "status": "ONLINE",
-      "username": "supabot",
-    },
-    Object {
-      "age_range": "[25,35)",
-      "catchphrase": "'bat' 'cat'",
-      "data": null,
-      "status": "OFFLINE",
-      "username": "kiwicopple",
-    },
-    Object {
-      "age_range": "[25,35)",
-      "catchphrase": "'bat' 'rat'",
-      "data": null,
-      "status": "ONLINE",
-      "username": "awailas",
-    },
-    Object {
-      "age_range": "[20,30)",
-      "catchphrase": "'fat' 'rat'",
-      "data": null,
-      "status": "ONLINE",
-      "username": "dragarcia",
-    },
-  ],
   "count": 4,
   "data": Array [
     Object {
@@ -2124,7 +1282,6 @@ Object {
 
 exports[`select with head:true 1`] = `
 Object {
-  "body": null,
   "count": null,
   "data": null,
   "error": null,
@@ -2135,7 +1292,6 @@ Object {
 
 exports[`select with head:true, count:estimated 1`] = `
 Object {
-  "body": null,
   "count": Any<Number>,
   "data": null,
   "error": null,
@@ -2146,7 +1302,6 @@ Object {
 
 exports[`select with head:true, count:exact 1`] = `
 Object {
-  "body": null,
   "count": 4,
   "data": null,
   "error": null,
@@ -2157,7 +1312,6 @@ Object {
 
 exports[`select with head:true, count:planned 1`] = `
 Object {
-  "body": null,
   "count": Any<Number>,
   "data": null,
   "error": null,
@@ -2168,13 +1322,6 @@ Object {
 
 exports[`single 1`] = `
 Object {
-  "body": Object {
-    "age_range": "[1,2)",
-    "catchphrase": "'cat' 'fat'",
-    "data": null,
-    "status": "ONLINE",
-    "username": "supabot",
-  },
   "count": null,
   "data": Object {
     "age_range": "[1,2)",
@@ -2191,13 +1338,6 @@ Object {
 
 exports[`single on insert 1`] = `
 Object {
-  "body": Object {
-    "age_range": null,
-    "catchphrase": null,
-    "data": null,
-    "status": "ONLINE",
-    "username": "foo",
-  },
   "count": null,
   "data": Object {
     "age_range": null,
@@ -2214,38 +1354,6 @@ Object {
 
 exports[`switch schema 1`] = `
 Object {
-  "body": Array [
-    Object {
-      "age_range": "[1,2)",
-      "data": null,
-      "status": "ONLINE",
-      "username": "supabot",
-    },
-    Object {
-      "age_range": "[25,35)",
-      "data": null,
-      "status": "OFFLINE",
-      "username": "kiwicopple",
-    },
-    Object {
-      "age_range": "[25,35)",
-      "data": null,
-      "status": "ONLINE",
-      "username": "awailas",
-    },
-    Object {
-      "age_range": "[20,30)",
-      "data": null,
-      "status": "ONLINE",
-      "username": "dragarcia",
-    },
-    Object {
-      "age_range": "[20,40)",
-      "data": null,
-      "status": "ONLINE",
-      "username": "leroyjenkins",
-    },
-  ],
   "count": null,
   "data": Array [
     Object {

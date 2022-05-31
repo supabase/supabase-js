@@ -371,7 +371,6 @@ test('select with no match', async () => {
   const res = await postgrest.from('users').select().eq('username', 'missing')
   expect(res).toMatchInlineSnapshot(`
     Object {
-      "body": Array [],
       "count": null,
       "data": Array [],
       "error": null,
