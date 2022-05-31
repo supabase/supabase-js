@@ -335,6 +335,9 @@ export default class GoTrueClient {
     return this.currentSession
   }
 
+  /**
+   * Returns the session data, refreshing it if necessary.
+   */
   async getSession(): Promise<
     | {
         session: Session
