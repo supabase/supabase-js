@@ -17,7 +17,7 @@ export default class PostgrestRpcBuilder<T> extends PostgrestBuilder<T> {
       shouldThrowOnError?: boolean
     } = {}
   ) {
-    super(({ fetch, shouldThrowOnError } as unknown) as PostgrestBuilder<T>)
+    super({ fetch, shouldThrowOnError } as unknown as PostgrestBuilder<T>)
     this.url = new URL(url)
     this.headers = { ...headers }
     this.schema = schema
