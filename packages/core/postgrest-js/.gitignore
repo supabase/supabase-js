@@ -6,3 +6,5 @@ docs
 # nyc
 coverage
 .nyc_output
+
+.idea

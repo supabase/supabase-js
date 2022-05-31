@@ -204,6 +204,20 @@ test('connection error w/ throwOnError', async () => {
   expect(isErrorCaught).toBe(true)
 })
 
+test('maybeSingle w/ throwOnError', async () => {
+  let passes = true
+  await postgrest
+    .from('messages')
+    .select()
+    .eq('message', 'i do not exist')
+    .throwOnError(true)
+    .maybeSingle()
+    .then(undefined, () => {
+      passes = false
+    })
+  expect(passes).toEqual(true)
+})
+
 test('custom type', async () => {
   interface User {
     username: string

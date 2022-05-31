@@ -109,23 +109,8 @@ export default class PostgrestTransformBuilder<T> extends PostgrestBuilder<T> {
    */
   maybeSingle(): PromiseLike<PostgrestMaybeSingleResponse<T>> {
     this.headers['Accept'] = 'application/vnd.pgrst.object+json'
-    const _this = new PostgrestTransformBuilder(this)
-    _this.then = ((onfulfilled: any, onrejected: any) =>
-      this.then((res: any): any => {
-        if (res.error?.details?.includes('Results contain 0 rows')) {
-          return onfulfilled({
-            error: null,
-            data: null,
-            count: res.count,
-            status: 200,
-            statusText: 'OK',
-            body: null,
-          })
-        }
-
-        return onfulfilled(res)
-      }, onrejected)) as any
-    return _this as PromiseLike<PostgrestMaybeSingleResponse<T>>
+    this.allowEmpty = true
+    return this as PromiseLike<PostgrestMaybeSingleResponse<T>>
   }
 
   /**

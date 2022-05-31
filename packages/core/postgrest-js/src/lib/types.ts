@@ -59,6 +59,7 @@ export abstract class PostgrestBuilder<T> implements PromiseLike<PostgrestRespon
   protected shouldThrowOnError: boolean
   protected signal?: AbortSignal
   protected fetch: Fetch
+  protected allowEmpty: boolean
 
   constructor(builder: PostgrestBuilder<T>) {
     Object.assign(this, builder)
@@ -72,6 +73,7 @@ export abstract class PostgrestBuilder<T> implements PromiseLike<PostgrestRespon
     }
     this.fetch = (...args) => _fetch(...args)
     this.shouldThrowOnError = builder.shouldThrowOnError || false
+    this.allowEmpty = builder.allowEmpty || false
   }
 
   /**
@@ -116,6 +118,8 @@ export abstract class PostgrestBuilder<T> implements PromiseLike<PostgrestRespon
       let error = null
       let data = null
       let count = null
+      let status = res.status
+      let statusText = res.statusText
 
       if (res.ok) {
         const isReturnMinimal = this.headers['Prefer']?.split(',').includes('return=minimal')
@@ -146,6 +150,12 @@ export abstract class PostgrestBuilder<T> implements PromiseLike<PostgrestRespon
           }
         }
 
+        if (error && this.allowEmpty && error?.details?.includes('Results contain 0 rows')) {
+          error = null
+          status = 200
+          statusText = 'OK'
+        }
+
         if (error && this.shouldThrowOnError) {
           throw error
         }
@@ -155,8 +165,8 @@ export abstract class PostgrestBuilder<T> implements PromiseLike<PostgrestRespon
         error,
         data,
         count,
-        status: res.status,
-        statusText: res.statusText,
+        status,
+        statusText,
         body: data,
       }
 
