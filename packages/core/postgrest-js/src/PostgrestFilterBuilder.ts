@@ -27,28 +27,6 @@ type FilterOperator =
   | 'plfts'
   | 'phfts'
   | 'wfts'
-  | 'not.eq'
-  | 'not.neq'
-  | 'not.gt'
-  | 'not.gte'
-  | 'not.lt'
-  | 'not.lte'
-  | 'not.like'
-  | 'not.ilike'
-  | 'not.is'
-  | 'not.in'
-  | 'not.cs'
-  | 'not.cd'
-  | 'not.sl'
-  | 'not.sr'
-  | 'not.nxl'
-  | 'not.nxr'
-  | 'not.adj'
-  | 'not.ov'
-  | 'not.fts'
-  | 'not.plfts'
-  | 'not.phfts'
-  | 'not.wfts'
 
 export default class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
   /**
@@ -449,7 +427,7 @@ export default class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder
    * @param operator  The operator to filter with.
    * @param value  The value to filter with.
    */
-  filter(column: keyof T, operator: FilterOperator, value: any): this {
+  filter(column: keyof T, operator: `${'' | 'not.'}${FilterOperator}`, value: any): this {
     this.url.searchParams.append(`${column}`, `${operator}.${value}`)
     return this
   }
