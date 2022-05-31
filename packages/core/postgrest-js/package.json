@@ -21,7 +21,7 @@
   "scripts": {
     "clean": "rimraf dist docs",
     "format": "prettier --write \"{src,test}/**/*.ts\"",
-    "build": "genversion src/lib/version.ts --es6 && run-s clean format build:*",
+    "build": "genversion src/version.ts --es6 && run-s clean format build:*",
     "build:main": "tsc -p tsconfig.json",
     "build:module": "tsc -p tsconfig.module.json",
     "test": "run-s test:db && jest --runInBand",

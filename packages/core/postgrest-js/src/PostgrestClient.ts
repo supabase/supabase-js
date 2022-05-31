@@ -1,8 +1,8 @@
-import PostgrestQueryBuilder from './lib/PostgrestQueryBuilder'
-import PostgrestRpcBuilder from './lib/PostgrestRpcBuilder'
-import PostgrestFilterBuilder from './lib/PostgrestFilterBuilder'
-import { DEFAULT_HEADERS } from './lib/constants'
-import { Fetch } from './lib/types'
+import PostgrestQueryBuilder from './PostgrestQueryBuilder'
+import PostgrestRpcBuilder from './PostgrestRpcBuilder'
+import PostgrestFilterBuilder from './PostgrestFilterBuilder'
+import { DEFAULT_HEADERS } from './constants'
+import { Fetch } from './types'
 
 export default class PostgrestClient {
   url: string
