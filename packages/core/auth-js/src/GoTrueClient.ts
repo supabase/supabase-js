@@ -194,7 +194,7 @@ export default class GoTrueClient {
       shouldCreateUser?: boolean
       scopes?: string
       captchaToken?: string
-      queryParams?: Record<string, string>
+      queryParams?: { [key: string]: string }
     } = {}
   ): Promise<{
     session: Session | null
@@ -552,7 +552,7 @@ export default class GoTrueClient {
     options: {
       redirectTo?: string
       scopes?: string
-      queryParams?: Record<string, string>
+      queryParams?: { [key: string]: string }
     } = {}
   ) {
     const url: string = this.api.getUrlForProvider(provider, {
