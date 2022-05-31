@@ -46,7 +46,7 @@ export default class PostgrestTransformBuilder<T> extends PostgrestBuilder<T> {
     column: keyof T,
     {
       ascending = true,
-      nullsFirst = false,
+      nullsFirst = true,
       foreignTable,
     }: { ascending?: boolean; nullsFirst?: boolean; foreignTable?: string } = {}
   ): this {
