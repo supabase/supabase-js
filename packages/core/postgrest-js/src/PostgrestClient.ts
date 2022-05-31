@@ -1,5 +1,4 @@
 import PostgrestQueryBuilder from './PostgrestQueryBuilder'
-import PostgrestRpcBuilder from './PostgrestRpcBuilder'
 import PostgrestFilterBuilder from './PostgrestFilterBuilder'
 import PostgrestBuilder from './PostgrestBuilder'
 import { DEFAULT_HEADERS } from './constants'
@@ -72,12 +71,13 @@ export default class PostgrestClient {
    *
    * @param fn  The function name to call.
    * @param params  The parameters to pass to the function call.
-   * @param head  When set to true, no data will be returned.
-   * @param count  Count algorithm to use to count rows in a table.
+   * @param options  Named parameters.
+   * @param options.head  When set to true, no data will be returned.
+   * @param options.count  Count algorithm to use to count rows in a table.
    */
   rpc<T = any>(
     fn: string,
-    params?: object,
+    params: Record<string, unknown> = {},
     {
       head = false,
       count = null,
@@ -86,12 +86,33 @@ export default class PostgrestClient {
       count?: null | 'exact' | 'planned' | 'estimated'
     } = {}
   ): PostgrestFilterBuilder<T> {
-    const url = `${this.url}/rpc/${fn}`
-    return new PostgrestRpcBuilder<T>(url, {
-      headers: this.headers,
+    let method: 'HEAD' | 'POST'
+    const url = new URL(`${this.url}/rpc/${fn}`)
+    let body: unknown | undefined
+    if (head) {
+      method = 'HEAD'
+      Object.entries(params).forEach(([name, value]) => {
+        url.searchParams.append(name, `${value}`)
+      })
+    } else {
+      method = 'POST'
+      body = params
+    }
+
+    const headers = { ...this.headers }
+    if (count) {
+      headers['Prefer'] = `count=${count}`
+    }
+
+    return new PostgrestFilterBuilder({
+      method,
+      url,
+      headers,
       schema: this.schema,
+      body,
       fetch: this.fetch,
       shouldThrowOnError: this.shouldThrowOnError,
-    }).rpc(params, { head, count })
+      allowEmpty: false,
+    } as unknown as PostgrestBuilder<T>)
   }
 }
