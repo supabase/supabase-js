@@ -3,9 +3,9 @@ import crossFetch from 'cross-fetch'
 import type { Fetch, PostgrestResponse } from './types'
 
 export default abstract class PostgrestBuilder<T> implements PromiseLike<PostgrestResponse<T>> {
-  protected method!: 'GET' | 'HEAD' | 'POST' | 'PATCH' | 'DELETE'
-  protected url!: URL
-  protected headers!: { [key: string]: string }
+  protected method: 'GET' | 'HEAD' | 'POST' | 'PATCH' | 'DELETE'
+  protected url: URL
+  protected headers: Record<string, string>
   protected schema?: string
   protected body?: Partial<T> | Partial<T>[]
   protected shouldThrowOnError: boolean
@@ -14,18 +14,22 @@ export default abstract class PostgrestBuilder<T> implements PromiseLike<Postgre
   protected allowEmpty: boolean
 
   constructor(builder: PostgrestBuilder<T>) {
-    Object.assign(this, builder)
-    let _fetch: Fetch
+    this.method = builder.method
+    this.url = builder.url
+    this.headers = builder.headers
+    this.schema = builder.schema
+    this.body = builder.body
+    this.shouldThrowOnError = builder.shouldThrowOnError
+    this.signal = builder.signal
+    this.allowEmpty = builder.allowEmpty
+
     if (builder.fetch) {
-      _fetch = builder.fetch
+      this.fetch = builder.fetch
     } else if (typeof fetch === 'undefined') {
-      _fetch = crossFetch
+      this.fetch = crossFetch
     } else {
-      _fetch = fetch
+      this.fetch = fetch
     }
-    this.fetch = (...args) => _fetch(...args)
-    this.shouldThrowOnError = builder.shouldThrowOnError || false
-    this.allowEmpty = builder.allowEmpty || false
   }
 
   /**
@@ -33,6 +37,8 @@ export default abstract class PostgrestBuilder<T> implements PromiseLike<Postgre
    * throwing the error instead of returning it as part of a successful response.
    *
    * {@link https://github.com/supabase/supabase-js/issues/92}
+   *
+   * @deprecated Use `throwOnError` in the `PostgrestClient` constructor instead.
    */
   throwOnError(throwOnError?: boolean): this {
     if (throwOnError === null || throwOnError === undefined) {
@@ -61,7 +67,10 @@ export default abstract class PostgrestBuilder<T> implements PromiseLike<Postgre
       this.headers['Content-Type'] = 'application/json'
     }
 
-    let res = this.fetch(this.url.toString(), {
+    // NOTE: Invoke w/o `this` to avoid illegal invocation error.
+    // https://github.com/supabase/postgrest-js/pull/247
+    const _fetch = this.fetch
+    let res = _fetch(this.url.toString(), {
       method: this.method,
       headers: this.headers,
       body: JSON.stringify(this.body),

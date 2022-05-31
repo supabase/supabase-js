@@ -1,15 +1,16 @@
 import PostgrestQueryBuilder from './PostgrestQueryBuilder'
 import PostgrestRpcBuilder from './PostgrestRpcBuilder'
 import PostgrestFilterBuilder from './PostgrestFilterBuilder'
+import PostgrestBuilder from './PostgrestBuilder'
 import { DEFAULT_HEADERS } from './constants'
 import { Fetch } from './types'
 
 export default class PostgrestClient {
   url: string
-  headers: { [key: string]: string }
+  headers: Record<string, string>
   schema?: string
   fetch?: Fetch
-  shouldThrowOnError?: boolean
+  shouldThrowOnError: boolean
 
   /**
    * Creates a PostgREST client.
@@ -24,9 +25,9 @@ export default class PostgrestClient {
       headers = {},
       schema,
       fetch,
-      throwOnError,
+      throwOnError = false,
     }: {
-      headers?: { [key: string]: string }
+      headers?: Record<string, string>
       schema?: string
       fetch?: Fetch
       throwOnError?: boolean
@@ -43,6 +44,8 @@ export default class PostgrestClient {
    * Authenticates the request with JWT.
    *
    * @param token  The JWT token to use.
+   *
+   * @deprecated Use `headers` in constructor instead.
    */
   auth(token: string): this {
     this.headers['Authorization'] = `Bearer ${token}`
@@ -57,7 +60,7 @@ export default class PostgrestClient {
   from<T = any>(table: string): PostgrestQueryBuilder<T> {
     const url = `${this.url}/${table}`
     return new PostgrestQueryBuilder<T>(url, {
-      headers: this.headers,
+      headers: { ...this.headers },
       schema: this.schema,
       fetch: this.fetch,
       shouldThrowOnError: this.shouldThrowOnError,
