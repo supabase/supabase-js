@@ -79,33 +79,10 @@ export default class PostgrestQueryBuilder<T> extends PostgrestBuilder<T> {
    */
   insert(
     values: Partial<T> | Partial<T>[],
-    options?: {
-      returning?: 'minimal' | 'representation'
-      count?: null | 'exact' | 'planned' | 'estimated'
-    }
-  ): PostgrestFilterBuilder<T>
-  /**
-   * @deprecated Use `upsert()` instead.
-   */
-  insert(
-    values: Partial<T> | Partial<T>[],
-    options?: {
-      upsert?: boolean
-      onConflict?: string
-      returning?: 'minimal' | 'representation'
-      count?: null | 'exact' | 'planned' | 'estimated'
-    }
-  ): PostgrestFilterBuilder<T>
-  insert(
-    values: Partial<T> | Partial<T>[],
     {
-      upsert = false,
-      onConflict,
       returning = 'representation',
       count = null,
     }: {
-      upsert?: boolean
-      onConflict?: string
       returning?: 'minimal' | 'representation'
       count?: null | 'exact' | 'planned' | 'estimated'
     } = {}
@@ -113,9 +90,6 @@ export default class PostgrestQueryBuilder<T> extends PostgrestBuilder<T> {
     this.method = 'POST'
 
     const prefersHeaders = [`return=${returning}`]
-    if (upsert) prefersHeaders.push('resolution=merge-duplicates')
-
-    if (upsert && onConflict !== undefined) this.url.searchParams.set('on_conflict', onConflict)
     this.body = values
     if (count) {
       prefersHeaders.push(`count=${count}`)

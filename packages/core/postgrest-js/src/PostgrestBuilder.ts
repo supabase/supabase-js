@@ -128,7 +128,6 @@ export default abstract class PostgrestBuilder<T> implements PromiseLike<Postgre
         count,
         status,
         statusText,
-        body: data,
       }
 
       return postgrestResponse
@@ -142,7 +141,6 @@ export default abstract class PostgrestBuilder<T> implements PromiseLike<Postgre
           code: fetchError.code || '',
         },
         data: null,
-        body: null,
         count: null,
         status: 400,
         statusText: 'Bad Request',

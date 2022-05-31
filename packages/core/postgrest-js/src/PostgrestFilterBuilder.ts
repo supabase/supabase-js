@@ -203,9 +203,6 @@ export default class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder
     return this
   }
 
-  /** @deprecated Use `contains()` instead. */
-  cs = this.contains
-
   /**
    * Finds all rows whose json, array, or range value on the stated `column` is
    * contained by the specified `value`.
@@ -227,9 +224,6 @@ export default class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder
     return this
   }
 
-  /** @deprecated Use `containedBy()` instead. */
-  cd = this.containedBy
-
   /**
    * Finds all rows whose range value on the stated `column` is strictly to the
    * left of the specified `range`.
@@ -241,9 +235,6 @@ export default class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder
     this.url.searchParams.append(`${column}`, `sl.${range}`)
     return this
   }
-
-  /** @deprecated Use `rangeLt()` instead. */
-  sl = this.rangeLt
 
   /**
    * Finds all rows whose range value on the stated `column` is strictly to
@@ -257,9 +248,6 @@ export default class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder
     return this
   }
 
-  /** @deprecated Use `rangeGt()` instead. */
-  sr = this.rangeGt
-
   /**
    * Finds all rows whose range value on the stated `column` does not extend
    * to the left of the specified `range`.
@@ -271,9 +259,6 @@ export default class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder
     this.url.searchParams.append(`${column}`, `nxl.${range}`)
     return this
   }
-
-  /** @deprecated Use `rangeGte()` instead. */
-  nxl = this.rangeGte
 
   /**
    * Finds all rows whose range value on the stated `column` does not extend
@@ -287,9 +272,6 @@ export default class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder
     return this
   }
 
-  /** @deprecated Use `rangeLte()` instead. */
-  nxr = this.rangeLte
-
   /**
    * Finds all rows whose range value on the stated `column` is adjacent to
    * the specified `range`.
@@ -301,9 +283,6 @@ export default class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder
     this.url.searchParams.append(`${column}`, `adj.${range}`)
     return this
   }
-
-  /** @deprecated Use `rangeAdjacent()` instead. */
-  adj = this.rangeAdjacent
 
   /**
    * Finds all rows whose array or range value on the stated `column` overlaps
@@ -322,9 +301,6 @@ export default class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder
     }
     return this
   }
-
-  /** @deprecated Use `overlaps()` instead. */
-  ov = this.overlaps
 
   /**
    * Finds all rows whose text or tsvector value on the stated `column` matches
@@ -353,70 +329,6 @@ export default class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder
     }
     const configPart = config === undefined ? '' : `(${config})`
     this.url.searchParams.append(`${column}`, `${typePart}fts${configPart}.${query}`)
-    return this
-  }
-
-  /**
-   * Finds all rows whose tsvector value on the stated `column` matches
-   * to_tsquery(`query`).
-   *
-   * @param column  The column to filter on.
-   * @param query  The Postgres tsquery string to filter with.
-   * @param config  The text search configuration to use.
-   *
-   * @deprecated Use `textSearch()` instead.
-   */
-  fts(column: keyof T, query: string, { config }: { config?: string } = {}): this {
-    const configPart = typeof config === 'undefined' ? '' : `(${config})`
-    this.url.searchParams.append(`${column}`, `fts${configPart}.${query}`)
-    return this
-  }
-
-  /**
-   * Finds all rows whose tsvector value on the stated `column` matches
-   * plainto_tsquery(`query`).
-   *
-   * @param column  The column to filter on.
-   * @param query  The Postgres tsquery string to filter with.
-   * @param config  The text search configuration to use.
-   *
-   * @deprecated Use `textSearch()` with `type: 'plain'` instead.
-   */
-  plfts(column: keyof T, query: string, { config }: { config?: string } = {}): this {
-    const configPart = typeof config === 'undefined' ? '' : `(${config})`
-    this.url.searchParams.append(`${column}`, `plfts${configPart}.${query}`)
-    return this
-  }
-
-  /**
-   * Finds all rows whose tsvector value on the stated `column` matches
-   * phraseto_tsquery(`query`).
-   *
-   * @param column  The column to filter on.
-   * @param query  The Postgres tsquery string to filter with.
-   * @param config  The text search configuration to use.
-   *
-   * @deprecated Use `textSearch()` with `type: 'phrase'` instead.
-   */
-  phfts(column: keyof T, query: string, { config }: { config?: string } = {}): this {
-    const configPart = typeof config === 'undefined' ? '' : `(${config})`
-    this.url.searchParams.append(`${column}`, `phfts${configPart}.${query}`)
-    return this
-  }
-
-  /**
-   * Finds all rows whose tsvector value on the stated `column` matches
-   * websearch_to_tsquery(`query`).
-   *
-   * @param column  The column to filter on.
-   * @param query  The Postgres tsquery string to filter with.
-   * @param config  The text search configuration to use.
-   *
-   * @deprecated Use `textSearch()` with `type: 'websearch'` instead.
-   */
-  wfts(column: keyof T, query: string, { config }: { config?: string } = {}): this {
-    const configPart = typeof config === 'undefined' ? '' : `(${config})`
-    this.url.searchParams.append(`${column}`, `wfts${configPart}.${query}`)
     return this
   }
 

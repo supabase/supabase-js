@@ -25,14 +25,11 @@ interface PostgrestResponseBase {
 interface PostgrestResponseSuccess<T> extends PostgrestResponseBase {
   error: null
   data: T[]
-  body: T[]
   count: number | null
 }
 interface PostgrestResponseFailure extends PostgrestResponseBase {
   error: PostgrestError
   data: null
-  // For backward compatibility: body === data
-  body: null
   count: null
 }
 export type PostgrestResponse<T> = PostgrestResponseSuccess<T> | PostgrestResponseFailure
@@ -40,8 +37,6 @@ export type PostgrestResponse<T> = PostgrestResponseSuccess<T> | PostgrestRespon
 interface PostgrestSingleResponseSuccess<T> extends PostgrestResponseBase {
   error: null
   data: T
-  // For backward compatibility: body === data
-  body: T
 }
 export type PostgrestSingleResponse<T> =
   | PostgrestSingleResponseSuccess<T>
