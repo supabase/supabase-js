@@ -11,8 +11,7 @@
   "license": "MIT",
   "author": "Supabase",
   "files": [
-    "dist",
-    "src"
+    "dist"
   ],
   "main": "dist/main/index.js",
   "module": "dist/module/index.js",
@@ -21,31 +20,31 @@
   "scripts": {
     "clean": "rimraf dist docs",
     "format": "prettier --write \"{src,test}/**/*.ts\"",
-    "build": "genversion src/version.ts --es6 && run-s clean format build:*",
+    "build": "run-s clean format build:*",
     "build:main": "tsc -p tsconfig.json",
     "build:module": "tsc -p tsconfig.module.json",
-    "test": "run-s test:db && jest --runInBand",
-    "test:clean": "cd test/db && docker-compose down",
-    "test:db": "cd test/db && docker-compose down && docker-compose up -d && wait-for-localhost 3000",
-    "docs": "typedoc --mode file --target ES6 --theme minimal",
-    "docs:json": "typedoc --json docs/spec.json --mode modules --includeDeclarations --excludeExternals"
+    "test": "run-s db:clean db:run && jest --runInBand; run-s db:clean",
+    "test:update": "run-s db:clean db:run && jest --runInBand --updateSnapshot; run-s db:clean",
+    "db:clean": "cd test/db && docker-compose down",
+    "db:run": "cd test/db && docker-compose up --detach && wait-for-localhost 3000",
+    "docs": "typedoc src/index.ts",
+    "docs:json": "typedoc --json docs/spec.json src/index.ts"
   },
   "dependencies": {
     "cross-fetch": "^3.1.5"
   },
   "devDependencies": {
-    "@types/jest": "^26.0.13",
-    "@types/node-fetch": "^2.5.7",
-    "genversion": "^3.0.1",
-    "jest": "^26.4.1",
-    "node-abort-controller": "^3.0.0",
+    "@types/jest": "^27.5.1",
+    "@types/node-fetch": "^2.6.1",
+    "jest": "^28.1.0",
+    "node-abort-controller": "^3.0.1",
     "npm-run-all": "^4.1.5",
-    "prettier": "^2.0.5",
+    "prettier": "^2.6.2",
     "rimraf": "^3.0.2",
     "semantic-release-plugin-update-version-in-files": "^1.1.0",
-    "ts-jest": "^26.3.0",
-    "typedoc": "^0.22.15",
-    "typescript": "^4.6.4",
-    "wait-for-localhost-cli": "^2.0.0"
+    "ts-jest": "^28.0.3",
+    "typedoc": "^0.22.16",
+    "typescript": "~4.6.4",
+    "wait-for-localhost-cli": "^3.0.0"
   }
 }
