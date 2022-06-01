@@ -323,6 +323,7 @@ export default class GoTrueClient {
    * Inside a browser context, `user()` will return the user data, if there is a logged in user.
    *
    * For server-side management, you can get a user through `auth.api.getUserByCookie()`
+   * @deprecated use `getUser()` instead
    */
   user(): User | null {
     return this.currentUser
@@ -330,6 +331,7 @@ export default class GoTrueClient {
 
   /**
    * Returns the session data, if there is an active session.
+   * @deprecated use `getSession()` instead
    */
   session(): Session | null {
     return this.currentSession
@@ -369,6 +371,35 @@ export default class GoTrueClient {
     }
 
     return { session, error: null }
+  }
+
+  /**
+   * Returns the user data, refreshing the session if necessary.
+   */
+  async getUser(): Promise<
+    | {
+        user: User
+        error: null
+      }
+    | {
+        user: null
+        error: ApiError
+      }
+    | {
+        user: null
+        error: null
+      }
+  > {
+    const { session, error } = await this.getSession()
+    if (error) {
+      return { user: null, error }
+    }
+
+    if (!session) {
+      return { user: null, error: null }
+    }
+
+    return { user: session.user, error: null }
   }
 
   /**
