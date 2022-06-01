@@ -314,10 +314,7 @@ export default class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder
   textSearch(
     column: keyof T,
     query: string,
-    {
-      config,
-      type = null,
-    }: { config?: string; type?: 'plain' | 'phrase' | 'websearch' | null } = {}
+    { config, type }: { config?: string; type?: 'plain' | 'phrase' | 'websearch' } = {}
   ): this {
     let typePart = ''
     if (type === 'plain') {

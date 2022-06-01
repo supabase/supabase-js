@@ -39,10 +39,10 @@ export default class PostgrestQueryBuilder<T> extends PostgrestBuilder<T> {
     columns = '*',
     {
       head = false,
-      count = null,
+      count,
     }: {
       head?: boolean
-      count?: null | 'exact' | 'planned' | 'estimated'
+      count?: 'exact' | 'planned' | 'estimated'
     } = {}
   ): PostgrestFilterBuilder<T> {
     this.method = 'GET'
@@ -79,9 +79,9 @@ export default class PostgrestQueryBuilder<T> extends PostgrestBuilder<T> {
   insert(
     values: Partial<T> | Partial<T>[],
     {
-      count = null,
+      count,
     }: {
-      count?: null | 'exact' | 'planned' | 'estimated'
+      count?: 'exact' | 'planned' | 'estimated'
     } = {}
   ): PostgrestFilterBuilder<T> {
     this.method = 'POST'
@@ -120,11 +120,11 @@ export default class PostgrestQueryBuilder<T> extends PostgrestBuilder<T> {
     values: Partial<T> | Partial<T>[],
     {
       onConflict,
-      count = null,
+      count,
       ignoreDuplicates = false,
     }: {
       onConflict?: string
-      count?: null | 'exact' | 'planned' | 'estimated'
+      count?: 'exact' | 'planned' | 'estimated'
       ignoreDuplicates?: boolean
     } = {}
   ): PostgrestFilterBuilder<T> {
@@ -154,9 +154,9 @@ export default class PostgrestQueryBuilder<T> extends PostgrestBuilder<T> {
   update(
     values: Partial<T>,
     {
-      count = null,
+      count,
     }: {
-      count?: null | 'exact' | 'planned' | 'estimated'
+      count?: 'exact' | 'planned' | 'estimated'
     } = {}
   ): PostgrestFilterBuilder<T> {
     this.method = 'PATCH'
@@ -178,9 +178,9 @@ export default class PostgrestQueryBuilder<T> extends PostgrestBuilder<T> {
    * @param count  Count algorithm to use to count rows in a table.
    */
   delete({
-    count = null,
+    count,
   }: {
-    count?: null | 'exact' | 'planned' | 'estimated'
+    count?: 'exact' | 'planned' | 'estimated'
   } = {}): PostgrestFilterBuilder<T> {
     this.method = 'DELETE'
     const prefersHeaders = []

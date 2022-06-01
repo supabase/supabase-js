@@ -80,10 +80,10 @@ export default class PostgrestClient {
     params: Record<string, unknown> = {},
     {
       head = false,
-      count = null,
+      count,
     }: {
       head?: boolean
-      count?: null | 'exact' | 'planned' | 'estimated'
+      count?: 'exact' | 'planned' | 'estimated'
     } = {}
   ): PostgrestFilterBuilder<T> {
     let method: 'HEAD' | 'POST'

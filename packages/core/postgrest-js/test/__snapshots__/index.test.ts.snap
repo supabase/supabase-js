@@ -1,6 +1,6 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`Prefer: return=minimal 1`] = `null`;
+exports[`Prefer: return=minimal 1`] = `undefined`;
 
 exports[`allow ordering on JSON column 1`] = `
 Array [
@@ -37,7 +37,7 @@ Array [
 
 exports[`basic insert, update, delete basic delete 1`] = `
 Object {
-  "count": null,
+  "count": undefined,
   "data": Array [
     Object {
       "channel_id": 2,
@@ -61,7 +61,7 @@ Object {
       "username": "supabot",
     },
   ],
-  "error": null,
+  "error": undefined,
   "status": 200,
   "statusText": "OK",
 }
@@ -69,7 +69,7 @@ Object {
 
 exports[`basic insert, update, delete basic delete 2`] = `
 Object {
-  "count": null,
+  "count": undefined,
   "data": Array [
     Object {
       "channel_id": 1,
@@ -86,7 +86,7 @@ Object {
       "username": "supabot",
     },
   ],
-  "error": null,
+  "error": undefined,
   "status": 200,
   "statusText": "OK",
 }
@@ -94,7 +94,7 @@ Object {
 
 exports[`basic insert, update, delete basic insert 1`] = `
 Object {
-  "count": null,
+  "count": undefined,
   "data": Array [
     Object {
       "channel_id": 1,
@@ -104,7 +104,7 @@ Object {
       "username": "supabot",
     },
   ],
-  "error": null,
+  "error": undefined,
   "status": 201,
   "statusText": "Created",
 }
@@ -112,7 +112,7 @@ Object {
 
 exports[`basic insert, update, delete basic insert 2`] = `
 Object {
-  "count": null,
+  "count": undefined,
   "data": Array [
     Object {
       "channel_id": 1,
@@ -136,7 +136,7 @@ Object {
       "username": "supabot",
     },
   ],
-  "error": null,
+  "error": undefined,
   "status": 200,
   "statusText": "OK",
 }
@@ -144,7 +144,7 @@ Object {
 
 exports[`basic insert, update, delete basic update 1`] = `
 Object {
-  "count": null,
+  "count": undefined,
   "data": Array [
     Object {
       "channel_id": 2,
@@ -168,7 +168,7 @@ Object {
       "username": "supabot",
     },
   ],
-  "error": null,
+  "error": undefined,
   "status": 200,
   "statusText": "OK",
 }
@@ -176,7 +176,7 @@ Object {
 
 exports[`basic insert, update, delete basic update 2`] = `
 Object {
-  "count": null,
+  "count": undefined,
   "data": Array [
     Object {
       "channel_id": 1,
@@ -214,7 +214,7 @@ Object {
       "username": "supabot",
     },
   ],
-  "error": null,
+  "error": undefined,
   "status": 200,
   "statusText": "OK",
 }
@@ -222,7 +222,7 @@ Object {
 
 exports[`basic insert, update, delete bulk insert 1`] = `
 Object {
-  "count": null,
+  "count": undefined,
   "data": Array [
     Object {
       "channel_id": 1,
@@ -239,7 +239,7 @@ Object {
       "username": "supabot",
     },
   ],
-  "error": null,
+  "error": undefined,
   "status": 201,
   "statusText": "Created",
 }
@@ -247,7 +247,7 @@ Object {
 
 exports[`basic insert, update, delete bulk insert 2`] = `
 Object {
-  "count": null,
+  "count": undefined,
   "data": Array [
     Object {
       "channel_id": 1,
@@ -285,7 +285,7 @@ Object {
       "username": "supabot",
     },
   ],
-  "error": null,
+  "error": undefined,
   "status": 200,
   "statusText": "OK",
 }
@@ -293,7 +293,7 @@ Object {
 
 exports[`basic insert, update, delete upsert 1`] = `
 Object {
-  "count": null,
+  "count": undefined,
   "data": Array [
     Object {
       "channel_id": 2,
@@ -303,7 +303,7 @@ Object {
       "username": "supabot",
     },
   ],
-  "error": null,
+  "error": undefined,
   "status": 201,
   "statusText": "Created",
 }
@@ -311,7 +311,7 @@ Object {
 
 exports[`basic insert, update, delete upsert 2`] = `
 Object {
-  "count": null,
+  "count": undefined,
   "data": Array [
     Object {
       "channel_id": 1,
@@ -335,7 +335,7 @@ Object {
       "username": "supabot",
     },
   ],
-  "error": null,
+  "error": undefined,
   "status": 200,
   "statusText": "OK",
 }
@@ -343,7 +343,7 @@ Object {
 
 exports[`basic select table 1`] = `
 Object {
-  "count": null,
+  "count": undefined,
   "data": Array [
     Object {
       "age_range": "[1,2)",
@@ -374,17 +374,17 @@ Object {
       "username": "dragarcia",
     },
   ],
-  "error": null,
+  "error": undefined,
   "status": 200,
   "statusText": "OK",
 }
 `;
 
-exports[`don't mutate PostgrestClient.headers 1`] = `null`;
+exports[`don't mutate PostgrestClient.headers 1`] = `undefined`;
 
 exports[`embedded filters embedded eq 1`] = `
 Object {
-  "count": null,
+  "count": undefined,
   "data": Array [
     Object {
       "messages": Array [
@@ -407,7 +407,7 @@ Object {
       "messages": Array [],
     },
   ],
-  "error": null,
+  "error": undefined,
   "status": 200,
   "statusText": "OK",
 }
@@ -415,7 +415,7 @@ Object {
 
 exports[`embedded filters embedded or 1`] = `
 Object {
-  "count": null,
+  "count": undefined,
   "data": Array [
     Object {
       "messages": Array [
@@ -445,7 +445,7 @@ Object {
       "messages": Array [],
     },
   ],
-  "error": null,
+  "error": undefined,
   "status": 200,
   "statusText": "OK",
 }
@@ -453,7 +453,7 @@ Object {
 
 exports[`embedded filters embedded or with and 1`] = `
 Object {
-  "count": null,
+  "count": undefined,
   "data": Array [
     Object {
       "messages": Array [
@@ -483,7 +483,7 @@ Object {
       "messages": Array [],
     },
   ],
-  "error": null,
+  "error": undefined,
   "status": 200,
   "statusText": "OK",
 }
@@ -491,7 +491,7 @@ Object {
 
 exports[`embedded select 1`] = `
 Object {
-  "count": null,
+  "count": undefined,
   "data": Array [
     Object {
       "messages": Array [
@@ -521,7 +521,7 @@ Object {
       "messages": Array [],
     },
   ],
-  "error": null,
+  "error": undefined,
   "status": 200,
   "statusText": "OK",
 }
@@ -529,7 +529,7 @@ Object {
 
 exports[`embedded transforms embedded limit 1`] = `
 Object {
-  "count": null,
+  "count": undefined,
   "data": Array [
     Object {
       "messages": Array [
@@ -552,7 +552,7 @@ Object {
       "messages": Array [],
     },
   ],
-  "error": null,
+  "error": undefined,
   "status": 200,
   "statusText": "OK",
 }
@@ -560,7 +560,7 @@ Object {
 
 exports[`embedded transforms embedded order 1`] = `
 Object {
-  "count": null,
+  "count": undefined,
   "data": Array [
     Object {
       "messages": Array [
@@ -590,7 +590,7 @@ Object {
       "messages": Array [],
     },
   ],
-  "error": null,
+  "error": undefined,
   "status": 200,
   "statusText": "OK",
 }
@@ -598,7 +598,7 @@ Object {
 
 exports[`embedded transforms embedded order on multiple columns 1`] = `
 Object {
-  "count": null,
+  "count": undefined,
   "data": Array [
     Object {
       "messages": Array [
@@ -628,7 +628,7 @@ Object {
       "messages": Array [],
     },
   ],
-  "error": null,
+  "error": undefined,
   "status": 200,
   "statusText": "OK",
 }
@@ -636,7 +636,7 @@ Object {
 
 exports[`embedded transforms embedded range 1`] = `
 Object {
-  "count": null,
+  "count": undefined,
   "data": Array [
     Object {
       "messages": Array [
@@ -659,7 +659,7 @@ Object {
       "messages": Array [],
     },
   ],
-  "error": null,
+  "error": undefined,
   "status": 200,
   "statusText": "OK",
 }
@@ -667,9 +667,9 @@ Object {
 
 exports[`ignoreDuplicates upsert 1`] = `
 Object {
-  "count": null,
+  "count": undefined,
   "data": Array [],
-  "error": null,
+  "error": undefined,
   "status": 201,
   "statusText": "Created",
 }
@@ -708,7 +708,7 @@ Object {
       "username": "supabot",
     },
   ],
-  "error": null,
+  "error": undefined,
   "status": 200,
   "statusText": "OK",
 }
@@ -716,7 +716,7 @@ Object {
 
 exports[`insert, update, delete with count: 'exact' basic delete count: 'exact' 2`] = `
 Object {
-  "count": null,
+  "count": undefined,
   "data": Array [
     Object {
       "channel_id": 1,
@@ -733,7 +733,7 @@ Object {
       "username": "supabot",
     },
   ],
-  "error": null,
+  "error": undefined,
   "status": 200,
   "statusText": "OK",
 }
@@ -758,7 +758,7 @@ Object {
       "username": "supabot",
     },
   ],
-  "error": null,
+  "error": undefined,
   "status": 201,
   "statusText": "Created",
 }
@@ -766,7 +766,7 @@ Object {
 
 exports[`insert, update, delete with count: 'exact' bulk insert with count: 'exact' 2`] = `
 Object {
-  "count": null,
+  "count": undefined,
   "data": Array [
     Object {
       "channel_id": 1,
@@ -811,7 +811,7 @@ Object {
       "username": "supabot",
     },
   ],
-  "error": null,
+  "error": undefined,
   "status": 200,
   "statusText": "OK",
 }
@@ -829,7 +829,7 @@ Object {
       "username": "supabot",
     },
   ],
-  "error": null,
+  "error": undefined,
   "status": 201,
   "statusText": "Created",
 }
@@ -837,7 +837,7 @@ Object {
 
 exports[`insert, update, delete with count: 'exact' insert with count: 'exact' 2`] = `
 Object {
-  "count": null,
+  "count": undefined,
   "data": Array [
     Object {
       "channel_id": 1,
@@ -861,7 +861,7 @@ Object {
       "username": "supabot",
     },
   ],
-  "error": null,
+  "error": undefined,
   "status": 200,
   "statusText": "OK",
 }
@@ -900,7 +900,7 @@ Object {
       "username": "supabot",
     },
   ],
-  "error": null,
+  "error": undefined,
   "status": 200,
   "statusText": "OK",
 }
@@ -908,7 +908,7 @@ Object {
 
 exports[`insert, update, delete with count: 'exact' update with count: 'exact' 2`] = `
 Object {
-  "count": null,
+  "count": undefined,
   "data": Array [
     Object {
       "channel_id": 1,
@@ -953,7 +953,7 @@ Object {
       "username": "supabot",
     },
   ],
-  "error": null,
+  "error": undefined,
   "status": 200,
   "statusText": "OK",
 }
@@ -971,7 +971,7 @@ Object {
       "username": "supabot",
     },
   ],
-  "error": null,
+  "error": undefined,
   "status": 201,
   "statusText": "Created",
 }
@@ -979,7 +979,7 @@ Object {
 
 exports[`insert, update, delete with count: 'exact' upsert with count: 'exact' 2`] = `
 Object {
-  "count": null,
+  "count": undefined,
   "data": Array [
     Object {
       "channel_id": 1,
@@ -1010,7 +1010,7 @@ Object {
       "username": "supabot",
     },
   ],
-  "error": null,
+  "error": undefined,
   "status": 200,
   "statusText": "OK",
 }
@@ -1018,7 +1018,7 @@ Object {
 
 exports[`limit 1`] = `
 Object {
-  "count": null,
+  "count": undefined,
   "data": Array [
     Object {
       "age_range": "[1,2)",
@@ -1028,7 +1028,7 @@ Object {
       "username": "supabot",
     },
   ],
-  "error": null,
+  "error": undefined,
   "status": 200,
   "statusText": "OK",
 }
@@ -1036,9 +1036,9 @@ Object {
 
 exports[`maybeSingle 1`] = `
 Object {
-  "count": null,
-  "data": null,
-  "error": null,
+  "count": undefined,
+  "data": undefined,
+  "error": undefined,
   "status": 200,
   "statusText": "OK",
 }
@@ -1046,8 +1046,8 @@ Object {
 
 exports[`missing table 1`] = `
 Object {
-  "count": null,
-  "data": null,
+  "count": undefined,
+  "data": undefined,
   "error": Object {
     "code": "42P01",
     "details": null,
@@ -1061,7 +1061,7 @@ Object {
 
 exports[`on_conflict insert 1`] = `
 Object {
-  "count": null,
+  "count": undefined,
   "data": Array [
     Object {
       "age_range": "[20,30)",
@@ -1071,7 +1071,7 @@ Object {
       "username": "dragarcia",
     },
   ],
-  "error": null,
+  "error": undefined,
   "status": 201,
   "statusText": "Created",
 }
@@ -1079,7 +1079,7 @@ Object {
 
 exports[`order 1`] = `
 Object {
-  "count": null,
+  "count": undefined,
   "data": Array [
     Object {
       "age_range": "[1,2)",
@@ -1110,7 +1110,7 @@ Object {
       "username": "awailas",
     },
   ],
-  "error": null,
+  "error": undefined,
   "status": 200,
   "statusText": "OK",
 }
@@ -1118,7 +1118,7 @@ Object {
 
 exports[`order on multiple columns 1`] = `
 Object {
-  "count": null,
+  "count": undefined,
   "data": Array [
     Object {
       "channel_id": 2,
@@ -1135,7 +1135,7 @@ Object {
       "username": "supabot",
     },
   ],
-  "error": null,
+  "error": undefined,
   "status": 200,
   "statusText": "OK",
 }
@@ -1143,7 +1143,7 @@ Object {
 
 exports[`range 1`] = `
 Object {
-  "count": null,
+  "count": undefined,
   "data": Array [
     Object {
       "age_range": "[25,35)",
@@ -1167,7 +1167,7 @@ Object {
       "username": "dragarcia",
     },
   ],
-  "error": null,
+  "error": undefined,
   "status": 200,
   "statusText": "OK",
 }
@@ -1175,9 +1175,9 @@ Object {
 
 exports[`rpc 1`] = `
 Object {
-  "count": null,
+  "count": undefined,
   "data": "ONLINE",
-  "error": null,
+  "error": undefined,
   "status": 200,
   "statusText": "OK",
 }
@@ -1185,9 +1185,9 @@ Object {
 
 exports[`rpc returns void 1`] = `
 Object {
-  "count": null,
+  "count": undefined,
   "data": null,
-  "error": null,
+  "error": undefined,
   "status": 204,
   "statusText": "No Content",
 }
@@ -1197,7 +1197,7 @@ exports[`rpc with count: 'exact' 1`] = `
 Object {
   "count": 1,
   "data": "ONLINE",
-  "error": null,
+  "error": undefined,
   "status": 200,
   "statusText": "OK",
 }
@@ -1206,8 +1206,8 @@ Object {
 exports[`rpc with head:true, count:exact 1`] = `
 Object {
   "count": 1,
-  "data": null,
-  "error": null,
+  "data": undefined,
+  "error": undefined,
   "status": 200,
   "statusText": "OK",
 }
@@ -1215,13 +1215,13 @@ Object {
 
 exports[`select on insert 1`] = `
 Object {
-  "count": null,
+  "count": undefined,
   "data": Array [
     Object {
       "status": "ONLINE",
     },
   ],
-  "error": null,
+  "error": undefined,
   "status": 201,
   "statusText": "Created",
 }
@@ -1229,13 +1229,13 @@ Object {
 
 exports[`select on rpc 1`] = `
 Object {
-  "count": null,
+  "count": undefined,
   "data": Array [
     Object {
       "status": "ONLINE",
     },
   ],
-  "error": null,
+  "error": undefined,
   "status": 200,
   "statusText": "OK",
 }
@@ -1274,7 +1274,7 @@ Object {
       "username": "dragarcia",
     },
   ],
-  "error": null,
+  "error": undefined,
   "status": 200,
   "statusText": "OK",
 }
@@ -1282,9 +1282,9 @@ Object {
 
 exports[`select with head:true 1`] = `
 Object {
-  "count": null,
-  "data": null,
-  "error": null,
+  "count": undefined,
+  "data": undefined,
+  "error": undefined,
   "status": 200,
   "statusText": "OK",
 }
@@ -1293,8 +1293,8 @@ Object {
 exports[`select with head:true, count:estimated 1`] = `
 Object {
   "count": Any<Number>,
-  "data": null,
-  "error": null,
+  "data": undefined,
+  "error": undefined,
   "status": 206,
   "statusText": "Partial Content",
 }
@@ -1303,8 +1303,8 @@ Object {
 exports[`select with head:true, count:exact 1`] = `
 Object {
   "count": 4,
-  "data": null,
-  "error": null,
+  "data": undefined,
+  "error": undefined,
   "status": 200,
   "statusText": "OK",
 }
@@ -1313,8 +1313,8 @@ Object {
 exports[`select with head:true, count:planned 1`] = `
 Object {
   "count": Any<Number>,
-  "data": null,
-  "error": null,
+  "data": undefined,
+  "error": undefined,
   "status": 206,
   "statusText": "Partial Content",
 }
@@ -1322,7 +1322,7 @@ Object {
 
 exports[`single 1`] = `
 Object {
-  "count": null,
+  "count": undefined,
   "data": Object {
     "age_range": "[1,2)",
     "catchphrase": "'cat' 'fat'",
@@ -1330,7 +1330,7 @@ Object {
     "status": "ONLINE",
     "username": "supabot",
   },
-  "error": null,
+  "error": undefined,
   "status": 200,
   "statusText": "OK",
 }
@@ -1338,7 +1338,7 @@ Object {
 
 exports[`single on insert 1`] = `
 Object {
-  "count": null,
+  "count": undefined,
   "data": Object {
     "age_range": null,
     "catchphrase": null,
@@ -1346,7 +1346,7 @@ Object {
     "status": "ONLINE",
     "username": "foo",
   },
-  "error": null,
+  "error": undefined,
   "status": 201,
   "statusText": "Created",
 }
@@ -1354,7 +1354,7 @@ Object {
 
 exports[`switch schema 1`] = `
 Object {
-  "count": null,
+  "count": undefined,
   "data": Array [
     Object {
       "age_range": "[1,2)",
@@ -1387,7 +1387,7 @@ Object {
       "username": "leroyjenkins",
     },
   ],
-  "error": null,
+  "error": undefined,
   "status": 200,
   "statusText": "OK",
 }

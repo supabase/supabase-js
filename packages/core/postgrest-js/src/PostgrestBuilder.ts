@@ -41,10 +41,7 @@ export default abstract class PostgrestBuilder<T> implements PromiseLike<Postgre
    * @deprecated Use `throwOnError` in the `PostgrestClient` constructor instead.
    */
   throwOnError(throwOnError?: boolean): this {
-    if (throwOnError === null || throwOnError === undefined) {
-      throwOnError = true
-    }
-    this.shouldThrowOnError = throwOnError
+    this.shouldThrowOnError = throwOnError ?? true
     return this
   }
 
@@ -76,9 +73,9 @@ export default abstract class PostgrestBuilder<T> implements PromiseLike<Postgre
       body: JSON.stringify(this.body),
       signal: this.signal,
     }).then(async (res) => {
-      let error = null
-      let data = null
-      let count = null
+      let error = undefined
+      let data = undefined
+      let count = undefined
       let status = res.status
       let statusText = res.statusText
 
@@ -112,7 +109,7 @@ export default abstract class PostgrestBuilder<T> implements PromiseLike<Postgre
         }
 
         if (error && this.allowEmpty && error?.details?.includes('Results contain 0 rows')) {
-          error = null
+          error = undefined
           status = 200
           statusText = 'OK'
         }
@@ -140,8 +137,8 @@ export default abstract class PostgrestBuilder<T> implements PromiseLike<Postgre
           hint: '',
           code: fetchError.code || '',
         },
-        data: null,
-        count: null,
+        data: undefined,
+        count: undefined,
         status: 400,
         statusText: 'Bad Request',
       }))
