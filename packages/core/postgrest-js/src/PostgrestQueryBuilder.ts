@@ -74,22 +74,19 @@ export default class PostgrestQueryBuilder<T> extends PostgrestBuilder<T> {
    * Performs an INSERT into the table.
    *
    * @param values  The values to insert.
-   * @param returning  By default the new record is returned. Set this to 'minimal' if you don't need this value.
    * @param count  Count algorithm to use to count rows in a table.
    */
   insert(
     values: Partial<T> | Partial<T>[],
     {
-      returning = 'representation',
       count = null,
     }: {
-      returning?: 'minimal' | 'representation'
       count?: null | 'exact' | 'planned' | 'estimated'
     } = {}
   ): PostgrestFilterBuilder<T> {
     this.method = 'POST'
 
-    const prefersHeaders = [`return=${returning}`]
+    const prefersHeaders = []
     this.body = values
     if (count) {
       prefersHeaders.push(`count=${count}`)
@@ -114,31 +111,26 @@ export default class PostgrestQueryBuilder<T> extends PostgrestBuilder<T> {
    * Performs an UPSERT into the table.
    *
    * @param values  The values to insert.
-   * @param onConflict  By specifying the `on_conflict` query parameter, you can make UPSERT work on a column(s) that has a UNIQUE constraint.
-   * @param returning  By default the new record is returned. Set this to 'minimal' if you don't need this value.
    * @param count  Count algorithm to use to count rows in a table.
-   * @param ignoreDuplicates  Specifies if duplicate rows should be ignored and not inserted.
+   * @param options  Named parameters.
+   * @param options.onConflict  By specifying the `on_conflict` query parameter, you can make UPSERT work on a column(s) that has a UNIQUE constraint.
+   * @param options.ignoreDuplicates  Specifies if duplicate rows should be ignored and not inserted.
    */
   upsert(
     values: Partial<T> | Partial<T>[],
     {
       onConflict,
-      returning = 'representation',
       count = null,
       ignoreDuplicates = false,
     }: {
       onConflict?: string
-      returning?: 'minimal' | 'representation'
       count?: null | 'exact' | 'planned' | 'estimated'
       ignoreDuplicates?: boolean
     } = {}
   ): PostgrestFilterBuilder<T> {
     this.method = 'POST'
 
-    const prefersHeaders = [
-      `resolution=${ignoreDuplicates ? 'ignore' : 'merge'}-duplicates`,
-      `return=${returning}`,
-    ]
+    const prefersHeaders = [`resolution=${ignoreDuplicates ? 'ignore' : 'merge'}-duplicates`]
 
     if (onConflict !== undefined) this.url.searchParams.set('on_conflict', onConflict)
     this.body = values
@@ -157,21 +149,18 @@ export default class PostgrestQueryBuilder<T> extends PostgrestBuilder<T> {
    * Performs an UPDATE on the table.
    *
    * @param values  The values to update.
-   * @param returning  By default the updated record is returned. Set this to 'minimal' if you don't need this value.
    * @param count  Count algorithm to use to count rows in a table.
    */
   update(
     values: Partial<T>,
     {
-      returning = 'representation',
       count = null,
     }: {
-      returning?: 'minimal' | 'representation'
       count?: null | 'exact' | 'planned' | 'estimated'
     } = {}
   ): PostgrestFilterBuilder<T> {
     this.method = 'PATCH'
-    const prefersHeaders = [`return=${returning}`]
+    const prefersHeaders = []
     this.body = values
     if (count) {
       prefersHeaders.push(`count=${count}`)
@@ -186,18 +175,15 @@ export default class PostgrestQueryBuilder<T> extends PostgrestBuilder<T> {
   /**
    * Performs a DELETE on the table.
    *
-   * @param returning  If `true`, return the deleted row(s) in the response.
    * @param count  Count algorithm to use to count rows in a table.
    */
   delete({
-    returning = 'representation',
     count = null,
   }: {
-    returning?: 'minimal' | 'representation'
     count?: null | 'exact' | 'planned' | 'estimated'
   } = {}): PostgrestFilterBuilder<T> {
     this.method = 'DELETE'
-    const prefersHeaders = [`return=${returning}`]
+    const prefersHeaders = []
     if (count) {
       prefersHeaders.push(`count=${count}`)
     }

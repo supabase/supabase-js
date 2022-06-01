@@ -26,25 +26,34 @@ test('custom headers', async () => {
 describe('custom prefer headers with ', () => {
   test('insert', async () => {
     const postgrest = new PostgrestClient(REST_URL, { headers: { Prefer: 'tx=rollback' } })
-    const postgrestFilterBuilder = postgrest.from('users').insert({ username: 'dragarcia' }) as any
+    const postgrestFilterBuilder = postgrest
+      .from('users')
+      .insert({ username: 'dragarcia' })
+      .select() as any
     expect(postgrestFilterBuilder.headers['Prefer']).toContain('tx=rollback')
     expect(postgrestFilterBuilder.headers['Prefer']).toContain('return=')
   })
   test('update', async () => {
     const postgrest = new PostgrestClient(REST_URL, { headers: { Prefer: 'tx=rollback' } })
-    const postgrestFilterBuilder = postgrest.from('users').update({ username: 'dragarcia' }) as any
+    const postgrestFilterBuilder = postgrest
+      .from('users')
+      .update({ username: 'dragarcia' })
+      .select() as any
     expect(postgrestFilterBuilder.headers['Prefer']).toContain('tx=rollback')
     expect(postgrestFilterBuilder.headers['Prefer']).toContain('return=')
   })
   test('upsert', async () => {
     const postgrest = new PostgrestClient(REST_URL, { headers: { Prefer: 'tx=rollback' } })
-    const postgrestFilterBuilder = postgrest.from('users').upsert({ username: 'dragarcia' }) as any
+    const postgrestFilterBuilder = postgrest
+      .from('users')
+      .upsert({ username: 'dragarcia' })
+      .select() as any
     expect(postgrestFilterBuilder.headers['Prefer']).toContain('tx=rollback')
     expect(postgrestFilterBuilder.headers['Prefer']).toContain('return=')
   })
   test('delete', async () => {
     const postgrest = new PostgrestClient(REST_URL, { headers: { Prefer: 'tx=rollback' } })
-    const postgrestFilterBuilder = postgrest.from('users').delete() as any
+    const postgrestFilterBuilder = postgrest.from('users').delete().select() as any
     expect(postgrestFilterBuilder.headers['Prefer']).toContain('tx=rollback')
     expect(postgrestFilterBuilder.headers['Prefer']).toContain('return=')
   })
@@ -65,6 +74,7 @@ test('on_conflict insert', async () => {
   const res = await postgrest
     .from('users')
     .upsert({ username: 'dragarcia' }, { onConflict: 'username' })
+    .select()
   expect(res).toMatchSnapshot()
 })
 
@@ -72,6 +82,7 @@ test('ignoreDuplicates upsert', async () => {
   const res = await postgrest
     .from('users')
     .upsert({ username: 'dragarcia' }, { onConflict: 'username', ignoreDuplicates: true })
+    .select()
   expect(res).toMatchSnapshot()
 })
 
@@ -80,6 +91,7 @@ describe('basic insert, update, delete', () => {
     let res = await postgrest
       .from('messages')
       .insert({ message: 'foo', username: 'supabot', channel_id: 1 })
+      .select()
     expect(res).toMatchSnapshot()
 
     res = await postgrest.from('messages').select()
@@ -90,6 +102,7 @@ describe('basic insert, update, delete', () => {
     let res = await postgrest
       .from('messages')
       .upsert({ id: 3, message: 'foo', username: 'supabot', channel_id: 2 })
+      .select()
     expect(res).toMatchSnapshot()
 
     res = await postgrest.from('messages').select()
@@ -97,10 +110,13 @@ describe('basic insert, update, delete', () => {
   })
 
   test('bulk insert', async () => {
-    let res = await postgrest.from('messages').insert([
-      { message: 'foo', username: 'supabot', channel_id: 1 },
-      { message: 'foo', username: 'supabot', channel_id: 1 },
-    ])
+    let res = await postgrest
+      .from('messages')
+      .insert([
+        { message: 'foo', username: 'supabot', channel_id: 1 },
+        { message: 'foo', username: 'supabot', channel_id: 1 },
+      ])
+      .select()
     expect(res).toMatchSnapshot()
 
     res = await postgrest.from('messages').select()
@@ -108,7 +124,11 @@ describe('basic insert, update, delete', () => {
   })
 
   test('basic update', async () => {
-    let res = await postgrest.from('messages').update({ channel_id: 2 }).eq('message', 'foo')
+    let res = await postgrest
+      .from('messages')
+      .update({ channel_id: 2 })
+      .eq('message', 'foo')
+      .select()
     expect(res).toMatchSnapshot()
 
     res = await postgrest.from('messages').select()
@@ -116,7 +136,7 @@ describe('basic insert, update, delete', () => {
   })
 
   test('basic delete', async () => {
-    let res = await postgrest.from('messages').delete().eq('message', 'foo')
+    let res = await postgrest.from('messages').delete().eq('message', 'foo').select()
     expect(res).toMatchSnapshot()
 
     res = await postgrest.from('messages').select()
@@ -249,9 +269,7 @@ test('allow ordering on JSON column', async () => {
 })
 
 test('Prefer: return=minimal', async () => {
-  const { data } = await postgrest
-    .from('users')
-    .insert({ username: 'bar' }, { returning: 'minimal' })
+  const { data } = await postgrest.from('users').insert({ username: 'bar' })
   expect(data).toMatchSnapshot()
 
   await postgrest.from('users').delete().eq('username', 'bar')
@@ -305,6 +323,7 @@ describe("insert, update, delete with count: 'exact'", () => {
     let res = await postgrest
       .from('messages')
       .insert({ message: 'foo', username: 'supabot', channel_id: 1 }, { count: 'exact' })
+      .select()
     expect(res).toMatchSnapshot()
 
     res = await postgrest.from('messages').select()
@@ -315,6 +334,7 @@ describe("insert, update, delete with count: 'exact'", () => {
     let res = await postgrest
       .from('messages')
       .upsert({ id: 3, message: 'foo', username: 'supabot', channel_id: 2 }, { count: 'exact' })
+      .select()
     expect(res).toMatchSnapshot()
 
     res = await postgrest.from('messages').select()
@@ -322,13 +342,16 @@ describe("insert, update, delete with count: 'exact'", () => {
   })
 
   test("bulk insert with count: 'exact'", async () => {
-    let res = await postgrest.from('messages').insert(
-      [
-        { message: 'foo', username: 'supabot', channel_id: 1 },
-        { message: 'foo', username: 'supabot', channel_id: 1 },
-      ],
-      { count: 'exact' }
-    )
+    let res = await postgrest
+      .from('messages')
+      .insert(
+        [
+          { message: 'foo', username: 'supabot', channel_id: 1 },
+          { message: 'foo', username: 'supabot', channel_id: 1 },
+        ],
+        { count: 'exact' }
+      )
+      .select()
     expect(res).toMatchSnapshot()
 
     res = await postgrest.from('messages').select()
@@ -340,6 +363,7 @@ describe("insert, update, delete with count: 'exact'", () => {
       .from('messages')
       .update({ channel_id: 2 }, { count: 'exact' })
       .eq('message', 'foo')
+      .select()
     expect(res).toMatchSnapshot()
 
     res = await postgrest.from('messages').select()
@@ -347,7 +371,11 @@ describe("insert, update, delete with count: 'exact'", () => {
   })
 
   test("basic delete count: 'exact'", async () => {
-    let res = await postgrest.from('messages').delete({ count: 'exact' }).eq('message', 'foo')
+    let res = await postgrest
+      .from('messages')
+      .delete({ count: 'exact' })
+      .eq('message', 'foo')
+      .select()
     expect(res).toMatchSnapshot()
 
     res = await postgrest.from('messages').select()

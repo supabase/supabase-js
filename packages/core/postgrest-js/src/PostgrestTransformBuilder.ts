@@ -27,6 +27,10 @@ export default class PostgrestTransformBuilder<T> extends PostgrestBuilder<T> {
       })
       .join('')
     this.url.searchParams.set('select', cleanedColumns)
+    if (this.headers['Prefer']) {
+      this.headers['Prefer'] += ','
+    }
+    this.headers['Prefer'] += 'return=representation'
     return this
   }
 
