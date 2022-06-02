@@ -1,8 +1,9 @@
 import { PostgrestClient } from '../src/index'
+import { Database } from './types'
 
 import { AbortController } from 'node-abort-controller'
 
-const postgrest = new PostgrestClient('http://localhost:3000')
+const postgrest = new PostgrestClient<Database>('http://localhost:3000')
 
 test('order', async () => {
   const res = await postgrest.from('users').select().order('username', { ascending: false })

@@ -1,7 +1,8 @@
 import { PostgrestClient } from '../src/index'
+import { Database } from './types'
 
 const REST_URL = 'http://localhost:3000'
-const postgrest = new PostgrestClient(REST_URL)
+const postgrest = new PostgrestClient<Database>(REST_URL)
 
 test('basic select table', async () => {
   const res = await postgrest.from('users').select()
@@ -19,13 +20,15 @@ test('rpc returns void', async () => {
 })
 
 test('custom headers', async () => {
-  const postgrest = new PostgrestClient(REST_URL, { headers: { apikey: 'foo' } })
+  const postgrest = new PostgrestClient<Database>(REST_URL, { headers: { apikey: 'foo' } })
   expect((postgrest.from('users').select() as any).headers['apikey']).toEqual('foo')
 })
 
 describe('custom prefer headers with ', () => {
   test('insert', async () => {
-    const postgrest = new PostgrestClient(REST_URL, { headers: { Prefer: 'tx=rollback' } })
+    const postgrest = new PostgrestClient<Database>(REST_URL, {
+      headers: { Prefer: 'tx=rollback' },
+    })
     const postgrestFilterBuilder = postgrest
       .from('users')
       .insert({ username: 'dragarcia' })
@@ -34,7 +37,9 @@ describe('custom prefer headers with ', () => {
     expect(postgrestFilterBuilder.headers['Prefer']).toContain('return=')
   })
   test('update', async () => {
-    const postgrest = new PostgrestClient(REST_URL, { headers: { Prefer: 'tx=rollback' } })
+    const postgrest = new PostgrestClient<Database>(REST_URL, {
+      headers: { Prefer: 'tx=rollback' },
+    })
     const postgrestFilterBuilder = postgrest
       .from('users')
       .update({ username: 'dragarcia' })
@@ -43,7 +48,9 @@ describe('custom prefer headers with ', () => {
     expect(postgrestFilterBuilder.headers['Prefer']).toContain('return=')
   })
   test('upsert', async () => {
-    const postgrest = new PostgrestClient(REST_URL, { headers: { Prefer: 'tx=rollback' } })
+    const postgrest = new PostgrestClient<Database>(REST_URL, {
+      headers: { Prefer: 'tx=rollback' },
+    })
     const postgrestFilterBuilder = postgrest
       .from('users')
       .upsert({ username: 'dragarcia' })
@@ -52,7 +59,9 @@ describe('custom prefer headers with ', () => {
     expect(postgrestFilterBuilder.headers['Prefer']).toContain('return=')
   })
   test('delete', async () => {
-    const postgrest = new PostgrestClient(REST_URL, { headers: { Prefer: 'tx=rollback' } })
+    const postgrest = new PostgrestClient<Database>(REST_URL, {
+      headers: { Prefer: 'tx=rollback' },
+    })
     const postgrestFilterBuilder = postgrest.from('users').delete().select() as any
     expect(postgrestFilterBuilder.headers['Prefer']).toContain('tx=rollback')
     expect(postgrestFilterBuilder.headers['Prefer']).toContain('return=')
@@ -60,12 +69,12 @@ describe('custom prefer headers with ', () => {
 })
 
 test('auth', async () => {
-  const postgrest = new PostgrestClient(REST_URL).auth('foo')
+  const postgrest = new PostgrestClient<Database>(REST_URL).auth('foo')
   expect((postgrest.from('users').select() as any).headers['Authorization']).toEqual('Bearer foo')
 })
 
 test('switch schema', async () => {
-  const postgrest = new PostgrestClient(REST_URL, { schema: 'personal' })
+  const postgrest = new PostgrestClient<Database, 'personal'>(REST_URL, { schema: 'personal' })
   const res = await postgrest.from('users').select()
   expect(res).toMatchSnapshot()
 })
@@ -145,6 +154,7 @@ describe('basic insert, update, delete', () => {
 })
 
 test('missing table', async () => {
+  // @ts-expect-error missing table
   const res = await postgrest.from('missing_table').select()
   expect(res).toMatchSnapshot()
 })
@@ -153,7 +163,8 @@ test('throwOnError throws errors instead of returning them', async () => {
   let isErrorCaught = false
 
   try {
-    await postgrest.from('missing_table').throwOnError().select()
+    // @ts-expect-error missing table
+    await postgrest.from('missing_table').select().throwOnError()
   } catch (error) {
     expect(error).toMatchSnapshot()
     isErrorCaught = true
@@ -164,9 +175,10 @@ test('throwOnError throws errors instead of returning them', async () => {
 
 test('throwOnError setting at the client level - query', async () => {
   let isErrorCaught = false
-  const postgrest_ = new PostgrestClient(REST_URL, { throwOnError: true })
+  const postgrest_ = new PostgrestClient<Database>(REST_URL, { throwOnError: true })
 
   try {
+    // @ts-expect-error missing table
     await postgrest_.from('missing_table').select()
   } catch (error) {
     expect(error).toMatchSnapshot()
@@ -178,9 +190,10 @@ test('throwOnError setting at the client level - query', async () => {
 
 test('throwOnError setting at the client level - rpc', async () => {
   let isErrorCaught = false
-  const postgrest_ = new PostgrestClient(REST_URL, { throwOnError: true })
+  const postgrest_ = new PostgrestClient<Database>(REST_URL, { throwOnError: true })
 
   try {
+    // @ts-expect-error missing function
     await postgrest_.rpc('missing_fn').select()
   } catch (error) {
     expect(error).toMatchSnapshot()
@@ -192,7 +205,8 @@ test('throwOnError setting at the client level - rpc', async () => {
 
 test('throwOnError can be disabled per call', async () => {
   let isErrorCaught = false
-  const postgrest_ = new PostgrestClient(REST_URL, { throwOnError: true })
+  const postgrest_ = new PostgrestClient<Database>(REST_URL, { throwOnError: true })
+  // @ts-expect-error missing table
   const { error } = await postgrest_.from('missing_table').select().throwOnError(false)
 
   expect(error).toMatchSnapshot()
@@ -200,9 +214,10 @@ test('throwOnError can be disabled per call', async () => {
 })
 
 test('connection error w/o throwing', async () => {
-  const postgrest = new PostgrestClient('http://foo.invalid')
+  const postgrest = new PostgrestClient<Database>('http://foo.invalid')
   let isErrorCaught = false
   await postgrest
+    // @ts-expect-error
     .from('user')
     .select()
     .then(undefined, () => {
@@ -212,9 +227,10 @@ test('connection error w/o throwing', async () => {
 })
 
 test('connection error w/ throwOnError', async () => {
-  const postgrest = new PostgrestClient('http://foo.invalid')
+  const postgrest = new PostgrestClient<Database>('http://foo.invalid')
   let isErrorCaught = false
   await postgrest
+    // @ts-expect-error
     .from('user')
     .select()
     .throwOnError()
@@ -239,22 +255,15 @@ test('maybeSingle w/ throwOnError', async () => {
 })
 
 test('custom type', async () => {
-  interface User {
-    username: string
-    data: object | null
-    age_range: string | null
-    status: 'ONLINE' | 'OFFLINE'
-    catchphrase: 'string' | null
+  const { data: users, error } = await postgrest.from('users').select().eq('username', 'supabot')
+
+  if (error) {
+    throw new Error(error.message)
   }
 
-  // TODO: Find a cleaner way to weave a custom type
-  // eq should show User's properties in LSP/IntelliSense
-  const { data: users } = <{ data: User[] }>(
-    await postgrest.from<User>('users').select().eq('username', 'supabot')
-  )
   const user = users[0]
   // Autocomplete should show properties of user after '.'
-  user.username
+  user?.username
 })
 
 test("don't mutate PostgrestClient.headers", async () => {
@@ -264,7 +273,10 @@ test("don't mutate PostgrestClient.headers", async () => {
 })
 
 test('allow ordering on JSON column', async () => {
-  const { data } = await postgrest.from('users').select().order('data->something')
+  const { data } = await postgrest
+    .from('users')
+    .select()
+    .order('data->something' as any)
   expect(data).toMatchSnapshot()
 })
 
@@ -384,14 +396,14 @@ describe("insert, update, delete with count: 'exact'", () => {
 })
 
 test('insert includes columns param', async () => {
-  const client = postgrest.from('users').insert([{ foo: 1 }, { bar: 2 }])
+  const client = postgrest.from('users').insert([{ foo: 1 }, { bar: 2 }] as any)
   expect((client as any).url.searchParams.get('columns')).toMatchInlineSnapshot(
     `"\\"foo\\",\\"bar\\""`
   )
 })
 
 test('insert w/ empty body has no columns param', async () => {
-  const client = postgrest.from('users').insert([{}, {}])
+  const client = postgrest.from('users').insert([{}, {}] as any)
   expect((client as any).url.searchParams.has('columns')).toBeFalsy()
 })
 

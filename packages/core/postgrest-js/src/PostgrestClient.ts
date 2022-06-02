@@ -2,12 +2,20 @@ import PostgrestQueryBuilder from './PostgrestQueryBuilder'
 import PostgrestFilterBuilder from './PostgrestFilterBuilder'
 import PostgrestBuilder from './PostgrestBuilder'
 import { DEFAULT_HEADERS } from './constants'
-import { Fetch } from './types'
+import { Fetch, GenericSchema } from './types'
 
-export default class PostgrestClient {
+export default class PostgrestClient<
+  Database = any,
+  SchemaName extends string & keyof Database = 'public' extends keyof Database
+    ? 'public'
+    : string & keyof Database,
+  Schema extends GenericSchema = Database[SchemaName] extends GenericSchema
+    ? Database[SchemaName]
+    : any
+> {
   url: string
   headers: Record<string, string>
-  schema?: string
+  schema?: SchemaName
   fetch?: Fetch
   shouldThrowOnError: boolean
 
@@ -27,7 +35,7 @@ export default class PostgrestClient {
       throwOnError = false,
     }: {
       headers?: Record<string, string>
-      schema?: string
+      schema?: SchemaName
       fetch?: Fetch
       throwOnError?: boolean
     } = {}
@@ -56,9 +64,12 @@ export default class PostgrestClient {
    *
    * @param table  The table name to operate on.
    */
-  from<T = any>(table: string): PostgrestQueryBuilder<T> {
-    const url = `${this.url}/${table}`
-    return new PostgrestQueryBuilder<T>(url, {
+  from<
+    TableName extends string & keyof Schema['Tables'],
+    Table extends Schema['Tables'][TableName]
+  >(table: TableName): PostgrestQueryBuilder<Table> {
+    const url = new URL(`${this.url}/${table}`)
+    return new PostgrestQueryBuilder<Table>(url, {
       headers: { ...this.headers },
       schema: this.schema,
       fetch: this.fetch,
@@ -70,14 +81,17 @@ export default class PostgrestClient {
    * Perform a function call.
    *
    * @param fn  The function name to call.
-   * @param params  The parameters to pass to the function call.
+   * @param args  The parameters to pass to the function call.
    * @param options  Named parameters.
    * @param options.head  When set to true, no data will be returned.
    * @param options.count  Count algorithm to use to count rows in a table.
    */
-  rpc<T = any>(
-    fn: string,
-    params: Record<string, unknown> = {},
+  rpc<
+    FunctionName extends string & keyof Schema['Functions'],
+    Function_ extends Schema['Functions'][FunctionName]
+  >(
+    fn: FunctionName,
+    args: Function_['Args'] = {},
     {
       head = false,
       count,
@@ -85,18 +99,25 @@ export default class PostgrestClient {
       head?: boolean
       count?: 'exact' | 'planned' | 'estimated'
     } = {}
-  ): PostgrestFilterBuilder<T> {
+  ): PostgrestFilterBuilder<
+    Function_['Returns'] extends any[]
+      ? Function_['Returns'][number] extends Record<string, unknown>
+        ? Function_['Returns'][number]
+        : never
+      : never,
+    Function_['Returns']
+  > {
     let method: 'HEAD' | 'POST'
     const url = new URL(`${this.url}/rpc/${fn}`)
     let body: unknown | undefined
     if (head) {
       method = 'HEAD'
-      Object.entries(params).forEach(([name, value]) => {
+      Object.entries(args).forEach(([name, value]) => {
         url.searchParams.append(name, `${value}`)
       })
     } else {
       method = 'POST'
-      body = params
+      body = args
     }
 
     const headers = { ...this.headers }
@@ -113,6 +134,6 @@ export default class PostgrestClient {
       fetch: this.fetch,
       shouldThrowOnError: this.shouldThrowOnError,
       allowEmpty: false,
-    } as unknown as PostgrestBuilder<T>)
+    } as unknown as PostgrestBuilder<Function_['Returns']>)
   }
 }

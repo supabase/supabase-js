@@ -1,10 +1,18 @@
 import PostgrestBuilder from './PostgrestBuilder'
 import PostgrestFilterBuilder from './PostgrestFilterBuilder'
-import { Fetch } from './types'
+import { GetResult } from './select-query-parser'
+import { Fetch, GenericTable } from './types'
 
-export default class PostgrestQueryBuilder<T> extends PostgrestBuilder<T> {
+export default class PostgrestQueryBuilder<Table extends GenericTable> {
+  url: URL
+  headers: Record<string, string>
+  schema?: string
+  shouldThrowOnError: boolean
+  signal?: AbortSignal
+  fetch?: Fetch
+
   constructor(
-    url: string,
+    url: URL,
     {
       headers = {},
       schema,
@@ -17,15 +25,11 @@ export default class PostgrestQueryBuilder<T> extends PostgrestBuilder<T> {
       shouldThrowOnError: boolean
     }
   ) {
-    super({
-      method: 'GET',
-      url: new URL(url),
-      headers,
-      schema,
-      fetch,
-      shouldThrowOnError,
-      allowEmpty: false,
-    } as unknown as PostgrestBuilder<T>)
+    this.url = url
+    this.headers = headers
+    this.schema = schema
+    this.fetch = fetch
+    this.shouldThrowOnError = shouldThrowOnError
   }
 
   /**
@@ -35,8 +39,14 @@ export default class PostgrestQueryBuilder<T> extends PostgrestBuilder<T> {
    * @param head  When set to true, select will void data.
    * @param count  Count algorithm to use to count rows in a table.
    */
-  select(
-    columns = '*',
+  select<
+    Query extends string = '*',
+    Result = GetResult<
+      Table['Required'] & Table['Optional'] & Table['Readonly'],
+      Query extends '*' ? '*' : Query
+    >
+  >(
+    columns?: Query,
     {
       head = false,
       count,
@@ -44,11 +54,11 @@ export default class PostgrestQueryBuilder<T> extends PostgrestBuilder<T> {
       head?: boolean
       count?: 'exact' | 'planned' | 'estimated'
     } = {}
-  ): PostgrestFilterBuilder<T> {
-    this.method = 'GET'
+  ): PostgrestFilterBuilder<Table['Required'] & Table['Optional'] & Table['Readonly'], Result> {
+    const method = head ? 'HEAD' : 'GET'
     // Remove whitespaces except when quoted
     let quoted = false
-    const cleanedColumns = columns
+    const cleanedColumns = (columns ?? '*')
       .split('')
       .map((c) => {
         if (/\s/.test(c) && !quoted) {
@@ -64,10 +74,16 @@ export default class PostgrestQueryBuilder<T> extends PostgrestBuilder<T> {
     if (count) {
       this.headers['Prefer'] = `count=${count}`
     }
-    if (head) {
-      this.method = 'HEAD'
-    }
-    return new PostgrestFilterBuilder(this)
+
+    return new PostgrestFilterBuilder({
+      method,
+      url: this.url,
+      headers: this.headers,
+      schema: this.schema,
+      fetch: this.fetch,
+      shouldThrowOnError: this.shouldThrowOnError,
+      allowEmpty: false,
+    } as unknown as PostgrestBuilder<Result>)
   }
 
   /**
@@ -76,18 +92,21 @@ export default class PostgrestQueryBuilder<T> extends PostgrestBuilder<T> {
    * @param values  The values to insert.
    * @param count  Count algorithm to use to count rows in a table.
    */
-  insert(
-    values: Partial<T> | Partial<T>[],
+  insert<
+    Row extends Table['Required'] &
+      Partial<Table['Optional'] & { [_ in keyof Table['Readonly']]?: never }>
+  >(
+    values: Row | Row[],
     {
       count,
     }: {
       count?: 'exact' | 'planned' | 'estimated'
     } = {}
-  ): PostgrestFilterBuilder<T> {
-    this.method = 'POST'
+  ): PostgrestFilterBuilder<Table['Required'] & Table['Optional'] & Table['Readonly'], undefined> {
+    const method = 'POST'
 
     const prefersHeaders = []
-    this.body = values
+    const body = values
     if (count) {
       prefersHeaders.push(`count=${count}`)
     }
@@ -104,7 +123,16 @@ export default class PostgrestQueryBuilder<T> extends PostgrestBuilder<T> {
       }
     }
 
-    return new PostgrestFilterBuilder(this)
+    return new PostgrestFilterBuilder({
+      method,
+      url: this.url,
+      headers: this.headers,
+      schema: this.schema,
+      body,
+      fetch: this.fetch,
+      shouldThrowOnError: this.shouldThrowOnError,
+      allowEmpty: false,
+    } as unknown as PostgrestBuilder<undefined>)
   }
 
   /**
@@ -116,8 +144,11 @@ export default class PostgrestQueryBuilder<T> extends PostgrestBuilder<T> {
    * @param options.onConflict  By specifying the `on_conflict` query parameter, you can make UPSERT work on a column(s) that has a UNIQUE constraint.
    * @param options.ignoreDuplicates  Specifies if duplicate rows should be ignored and not inserted.
    */
-  upsert(
-    values: Partial<T> | Partial<T>[],
+  upsert<
+    Row extends Table['Required'] &
+      Partial<Table['Optional']> & { [_ in keyof Table['Readonly']]?: never }
+  >(
+    values: Row | Row[],
     {
       onConflict,
       count,
@@ -127,13 +158,13 @@ export default class PostgrestQueryBuilder<T> extends PostgrestBuilder<T> {
       count?: 'exact' | 'planned' | 'estimated'
       ignoreDuplicates?: boolean
     } = {}
-  ): PostgrestFilterBuilder<T> {
-    this.method = 'POST'
+  ): PostgrestFilterBuilder<Table['Required'] & Table['Optional'] & Table['Readonly'], undefined> {
+    const method = 'POST'
 
     const prefersHeaders = [`resolution=${ignoreDuplicates ? 'ignore' : 'merge'}-duplicates`]
 
     if (onConflict !== undefined) this.url.searchParams.set('on_conflict', onConflict)
-    this.body = values
+    const body = values
     if (count) {
       prefersHeaders.push(`count=${count}`)
     }
@@ -142,7 +173,16 @@ export default class PostgrestQueryBuilder<T> extends PostgrestBuilder<T> {
     }
     this.headers['Prefer'] = prefersHeaders.join(',')
 
-    return new PostgrestFilterBuilder(this)
+    return new PostgrestFilterBuilder({
+      method,
+      url: this.url,
+      headers: this.headers,
+      schema: this.schema,
+      body,
+      fetch: this.fetch,
+      shouldThrowOnError: this.shouldThrowOnError,
+      allowEmpty: false,
+    } as unknown as PostgrestBuilder<undefined>)
   }
 
   /**
@@ -151,17 +191,21 @@ export default class PostgrestQueryBuilder<T> extends PostgrestBuilder<T> {
    * @param values  The values to update.
    * @param count  Count algorithm to use to count rows in a table.
    */
-  update(
-    values: Partial<T>,
+  update<
+    Row extends Table['Readonly'] extends Record<string, unknown>
+      ? Partial<Table['Optional' | 'Required']> & { [_ in keyof Table['Readonly']]?: never }
+      : any
+  >(
+    values: Row,
     {
       count,
     }: {
       count?: 'exact' | 'planned' | 'estimated'
     } = {}
-  ): PostgrestFilterBuilder<T> {
-    this.method = 'PATCH'
+  ): PostgrestFilterBuilder<Table['Required'] & Table['Optional'] & Table['Readonly'], undefined> {
+    const method = 'PATCH'
     const prefersHeaders = []
-    this.body = values
+    const body = values
     if (count) {
       prefersHeaders.push(`count=${count}`)
     }
@@ -169,7 +213,17 @@ export default class PostgrestQueryBuilder<T> extends PostgrestBuilder<T> {
       prefersHeaders.unshift(this.headers['Prefer'])
     }
     this.headers['Prefer'] = prefersHeaders.join(',')
-    return new PostgrestFilterBuilder(this)
+
+    return new PostgrestFilterBuilder({
+      method,
+      url: this.url,
+      headers: this.headers,
+      schema: this.schema,
+      body,
+      fetch: this.fetch,
+      shouldThrowOnError: this.shouldThrowOnError,
+      allowEmpty: false,
+    } as unknown as PostgrestBuilder<undefined>)
   }
 
   /**
@@ -181,8 +235,11 @@ export default class PostgrestQueryBuilder<T> extends PostgrestBuilder<T> {
     count,
   }: {
     count?: 'exact' | 'planned' | 'estimated'
-  } = {}): PostgrestFilterBuilder<T> {
-    this.method = 'DELETE'
+  } = {}): PostgrestFilterBuilder<
+    Table['Required'] & Table['Optional'] & Table['Readonly'],
+    undefined
+  > {
+    const method = 'DELETE'
     const prefersHeaders = []
     if (count) {
       prefersHeaders.push(`count=${count}`)
@@ -191,6 +248,15 @@ export default class PostgrestQueryBuilder<T> extends PostgrestBuilder<T> {
       prefersHeaders.unshift(this.headers['Prefer'])
     }
     this.headers['Prefer'] = prefersHeaders.join(',')
-    return new PostgrestFilterBuilder(this)
+
+    return new PostgrestFilterBuilder({
+      method,
+      url: this.url,
+      headers: this.headers,
+      schema: this.schema,
+      fetch: this.fetch,
+      shouldThrowOnError: this.shouldThrowOnError,
+      allowEmpty: false,
+    } as unknown as PostgrestBuilder<undefined>)
   }
 }
