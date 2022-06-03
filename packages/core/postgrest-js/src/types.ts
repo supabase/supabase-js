@@ -45,9 +45,9 @@ export type PostgrestSingleResponse<T> =
 export type PostgrestMaybeSingleResponse<T> = PostgrestSingleResponse<T | undefined>
 
 export type GenericTable = {
-  Required: Record<string, unknown>
-  Optional: Record<string, unknown>
-  Readonly: Record<string, unknown>
+  Row: Record<string, unknown>
+  Insert: Record<string, unknown>
+  Update: Record<string, unknown>
 }
 
 export type GenericFunction = {

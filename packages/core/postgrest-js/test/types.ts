@@ -4,37 +4,67 @@ export interface Database {
   public: {
     Tables: {
       users: {
-        Required: {
+        Row: {
           username: string
-        }
-        Optional: {
           data: Json | null
           age_range: string | null
           status: 'ONLINE' | 'OFFLINE' | null
           catchphrase: string | null
         }
-        Readonly: {}
+        Insert: {
+          username: string
+          data?: Json | null
+          age_range?: string | null
+          status?: 'ONLINE' | 'OFFLINE' | null
+          catchphrase?: string | null
+        }
+        Update: {
+          username?: string
+          data?: Json | null
+          age_range?: string | null
+          status?: 'ONLINE' | 'OFFLINE' | null
+          catchphrase?: string | null
+        }
       }
       channels: {
-        Required: {}
-        Optional: {
+        Row: {
           id: number
           data: Json | null
           slug: string | null
         }
-        Readonly: {}
+        Insert: {
+          id?: number
+          data?: Json | null
+          slug?: string | null
+        }
+        Update: {
+          id?: number
+          data?: Json | null
+          slug?: string | null
+        }
       }
       messages: {
-        Required: {
-          username: string
-          channel_id: number
-        }
-        Optional: {
+        Row: {
           id: number
           data: Json | null
           message: string | null
+          username: string
+          channel_id: number
         }
-        Readonly: {}
+        Insert: {
+          id?: number
+          data?: Json | null
+          message?: string | null
+          username: string
+          channel_id: number
+        }
+        Update: {
+          id?: number
+          data?: Json | null
+          message?: string | null
+          username?: string
+          channel_id?: number
+        }
       }
     }
     Functions: {
@@ -62,15 +92,24 @@ export interface Database {
   personal: {
     Tables: {
       users: {
-        Required: {
+        Row: {
           username: string
-        }
-        Optional: {
           data: Json | null
           age_range: string | null
           status: 'ONLINE' | 'OFFLINE' | null
         }
-        Readonly: {}
+        Insert: {
+          username: string
+          data?: Json | null
+          age_range?: string | null
+          status?: 'ONLINE' | 'OFFLINE' | null
+        }
+        Update: {
+          username?: string
+          data?: Json | null
+          age_range?: string | null
+          status?: 'ONLINE' | 'OFFLINE' | null
+        }
       }
     }
     Functions: {

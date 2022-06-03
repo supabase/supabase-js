@@ -41,10 +41,7 @@ export default class PostgrestQueryBuilder<Table extends GenericTable> {
    */
   select<
     Query extends string = '*',
-    Result = GetResult<
-      Table['Required'] & Table['Optional'] & Table['Readonly'],
-      Query extends '*' ? '*' : Query
-    >
+    Result = GetResult<Table['Row'], Query extends '*' ? '*' : Query>
   >(
     columns?: Query,
     {
@@ -54,7 +51,7 @@ export default class PostgrestQueryBuilder<Table extends GenericTable> {
       head?: boolean
       count?: 'exact' | 'planned' | 'estimated'
     } = {}
-  ): PostgrestFilterBuilder<Table['Required'] & Table['Optional'] & Table['Readonly'], Result> {
+  ): PostgrestFilterBuilder<Table['Row'], Result> {
     const method = head ? 'HEAD' : 'GET'
     // Remove whitespaces except when quoted
     let quoted = false
@@ -92,17 +89,14 @@ export default class PostgrestQueryBuilder<Table extends GenericTable> {
    * @param values  The values to insert.
    * @param count  Count algorithm to use to count rows in a table.
    */
-  insert<
-    Row extends Table['Required'] &
-      Partial<Table['Optional'] & { [_ in keyof Table['Readonly']]?: never }>
-  >(
+  insert<Row extends Table['Insert']>(
     values: Row | Row[],
     {
       count,
     }: {
       count?: 'exact' | 'planned' | 'estimated'
     } = {}
-  ): PostgrestFilterBuilder<Table['Required'] & Table['Optional'] & Table['Readonly'], undefined> {
+  ): PostgrestFilterBuilder<Table['Row'], undefined> {
     const method = 'POST'
 
     const prefersHeaders = []
@@ -144,10 +138,7 @@ export default class PostgrestQueryBuilder<Table extends GenericTable> {
    * @param options.onConflict  By specifying the `on_conflict` query parameter, you can make UPSERT work on a column(s) that has a UNIQUE constraint.
    * @param options.ignoreDuplicates  Specifies if duplicate rows should be ignored and not inserted.
    */
-  upsert<
-    Row extends Table['Required'] &
-      Partial<Table['Optional']> & { [_ in keyof Table['Readonly']]?: never }
-  >(
+  upsert<Row extends Table['Insert']>(
     values: Row | Row[],
     {
       onConflict,
@@ -158,7 +149,7 @@ export default class PostgrestQueryBuilder<Table extends GenericTable> {
       count?: 'exact' | 'planned' | 'estimated'
       ignoreDuplicates?: boolean
     } = {}
-  ): PostgrestFilterBuilder<Table['Required'] & Table['Optional'] & Table['Readonly'], undefined> {
+  ): PostgrestFilterBuilder<Table['Row'], undefined> {
     const method = 'POST'
 
     const prefersHeaders = [`resolution=${ignoreDuplicates ? 'ignore' : 'merge'}-duplicates`]
@@ -191,18 +182,14 @@ export default class PostgrestQueryBuilder<Table extends GenericTable> {
    * @param values  The values to update.
    * @param count  Count algorithm to use to count rows in a table.
    */
-  update<
-    Row extends Table['Readonly'] extends Record<string, unknown>
-      ? Partial<Table['Optional' | 'Required']> & { [_ in keyof Table['Readonly']]?: never }
-      : any
-  >(
+  update<Row extends Table['Update']>(
     values: Row,
     {
       count,
     }: {
       count?: 'exact' | 'planned' | 'estimated'
     } = {}
-  ): PostgrestFilterBuilder<Table['Required'] & Table['Optional'] & Table['Readonly'], undefined> {
+  ): PostgrestFilterBuilder<Table['Row'], undefined> {
     const method = 'PATCH'
     const prefersHeaders = []
     const body = values
@@ -235,10 +222,7 @@ export default class PostgrestQueryBuilder<Table extends GenericTable> {
     count,
   }: {
     count?: 'exact' | 'planned' | 'estimated'
-  } = {}): PostgrestFilterBuilder<
-    Table['Required'] & Table['Optional'] & Table['Readonly'],
-    undefined
-  > {
+  } = {}): PostgrestFilterBuilder<Table['Row'], undefined> {
     const method = 'DELETE'
     const prefersHeaders = []
     if (count) {
