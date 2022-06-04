@@ -10,9 +10,12 @@ import {
 import { mockUserCredentials } from './lib/utils'
 
 describe('GoTrueClient', () => {
+  const refreshAccessTokenSpy = jest.spyOn(authWithSession.api, 'refreshAccessToken')
+
   afterEach(async () => {
     await auth.signOut()
     await authWithSession.signOut()
+    refreshAccessTokenSpy.mockClear()
   })
 
   describe('Sessions', () => {
@@ -49,6 +52,87 @@ describe('GoTrueClient', () => {
       expect(userSession).not.toBeNull()
       expect(userSession).toHaveProperty('access_token')
       expect(userSession).toHaveProperty('user')
+    })
+
+    test('getSession() should return the currentUser session', async () => {
+      const { email, password } = mockUserCredentials()
+
+      const { error, session } = await authWithSession.signUp({
+        email,
+        password,
+      })
+
+      expect(error).toBeNull()
+      expect(session).not.toBeNull()
+
+      const { session: userSession, error: userError } = await authWithSession.getSession()
+
+      expect(userError).toBeNull()
+      expect(userSession).not.toBeNull()
+      expect(userSession).toHaveProperty('access_token')
+    })
+
+    test('getSession() should refresh the session', async () => {
+      const { email, password } = mockUserCredentials()
+
+      const { error, session } = await authWithSession.signUp({
+        email,
+        password,
+      })
+
+      expect(error).toBeNull()
+      expect(session).not.toBeNull()
+
+      const expired = new Date()
+      expired.setMinutes(expired.getMinutes() - 1)
+      const expiredSeconds = Math.floor(expired.getTime() / 1000)
+
+      // @ts-expect-error 'Allow access to protected currentSession'
+      authWithSession.currentSession = {
+        // @ts-expect-error 'Allow access to protected currentSession'
+        ...authWithSession.currentSession,
+        expires_at: expiredSeconds,
+      }
+
+      const { session: userSession, error: userError } = await authWithSession.getSession()
+
+      expect(userError).toBeNull()
+      expect(userSession).not.toBeNull()
+      expect(userSession).toHaveProperty('access_token')
+      expect(refreshAccessTokenSpy).toBeCalledTimes(1)
+
+      // @kangmingtay Looks like this fails due to the 10 second reuse interval
+      // returning back the same session. It works with a long timeout before getSession().
+      // Do we want the reuse interval to apply for the initial login session?
+      // expect(session!.access_token).not.toEqual(userSession!.access_token)
+    })
+
+    test('refresh should only happen once', async () => {
+      const { email, password } = mockUserCredentials()
+
+      const { error, session } = await authWithSession.signUp({
+        email,
+        password,
+      })
+
+      expect(error).toBeNull()
+      expect(session).not.toBeNull()
+
+      const [{ data: data1, error: error1 }, { data: data2, error: error2 }] = await Promise.all([
+        authWithSession.refreshSession(),
+        authWithSession.refreshSession(),
+      ])
+
+      expect(error1).toBeNull()
+      expect(error2).toBeNull()
+      expect(data1).toHaveProperty('access_token')
+      expect(data2).toHaveProperty('access_token')
+
+      // if both have the same access token, we can assume that they are
+      // the result of the same refresh
+      expect(data1!.access_token).toEqual(data2!.access_token)
+
+      expect(refreshAccessTokenSpy).toBeCalledTimes(1)
     })
 
     test('getSessionFromUrl() can only be called from a browser', async () => {

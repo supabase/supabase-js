@@ -7,6 +7,7 @@ import {
   removeItemAsync,
   getItemSynchronously,
   getItemAsync,
+  Deferred,
 } from './lib/helpers'
 import {
   GOTRUE_URL,
@@ -65,7 +66,11 @@ export default class GoTrueClient {
   protected multiTab: boolean
   protected stateChangeEmitters: Map<string, Subscription> = new Map()
   protected refreshTokenTimer?: ReturnType<typeof setTimeout>
-  protected networkRetries: number = 0
+  protected networkRetries = 0
+  protected refreshingDeferred: Deferred<{
+    data: Session
+    error: null
+  }> | null = null
 
   /**
    * Create a new client for use in the browser.
@@ -318,6 +323,7 @@ export default class GoTrueClient {
    * Inside a browser context, `user()` will return the user data, if there is a logged in user.
    *
    * For server-side management, you can get a user through `auth.api.getUserByCookie()`
+   * @deprecated use `getUser()` instead
    */
   user(): User | null {
     return this.currentUser
@@ -325,9 +331,75 @@ export default class GoTrueClient {
 
   /**
    * Returns the session data, if there is an active session.
+   * @deprecated use `getSession()` instead
    */
   session(): Session | null {
     return this.currentSession
+  }
+
+  /**
+   * Returns the session data, refreshing it if necessary.
+   */
+  async getSession(): Promise<
+    | {
+        session: Session
+        error: null
+      }
+    | {
+        session: null
+        error: ApiError
+      }
+    | {
+        session: null
+        error: null
+      }
+  > {
+    if (!this.currentSession) {
+      return { session: null, error: null }
+    }
+
+    const hasExpired = this.currentSession.expires_at
+      ? this.currentSession.expires_at <= Date.now() / 1000
+      : false
+    if (!hasExpired) {
+      return { session: this.currentSession, error: null }
+    }
+
+    const { data: session, error } = await this.refreshSession()
+    if (error) {
+      return { session: null, error }
+    }
+
+    return { session, error: null }
+  }
+
+  /**
+   * Returns the user data, refreshing the session if necessary.
+   */
+  async getUser(): Promise<
+    | {
+        user: User
+        error: null
+      }
+    | {
+        user: null
+        error: ApiError
+      }
+    | {
+        user: null
+        error: null
+      }
+  > {
+    const { session, error } = await this.getSession()
+    if (error) {
+      return { user: null, error }
+    }
+
+    if (!session) {
+      return { user: null, error: null }
+    }
+
+    return { user: session.user, error: null }
   }
 
   /**
@@ -681,6 +753,16 @@ export default class GoTrueClient {
 
   private async _callRefreshToken(refresh_token = this.currentSession?.refresh_token) {
     try {
+      // refreshing is already in progress
+      if (this.refreshingDeferred) {
+        return await this.refreshingDeferred.promise
+      }
+
+      this.refreshingDeferred = new Deferred<{
+        data: Session
+        error: null
+      }>()
+
       if (!refresh_token) {
         throw new Error('No current session.')
       }
@@ -692,7 +774,12 @@ export default class GoTrueClient {
       this._notifyAllSubscribers('TOKEN_REFRESHED')
       this._notifyAllSubscribers('SIGNED_IN')
 
-      return { data, error: null }
+      const result = { data, error: null }
+
+      this.refreshingDeferred.resolve(result)
+      this.refreshingDeferred = null
+
+      return result
     } catch (e) {
       return { data: null, error: e as ApiError }
     }

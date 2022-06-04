@@ -75,3 +75,25 @@ export const getItemSynchronously = (storage: SupportedStorage, key: string): an
 export const removeItemAsync = async (storage: SupportedStorage, key: string): Promise<void> => {
   isBrowser() && (await storage?.removeItem(key))
 }
+
+/**
+ * A deferred represents some asynchronous work that is not yet finished, which
+ * may or may not culminate in a value.
+ * Taken from: https://github.com/mike-north/types/blob/master/src/async.ts
+ */
+export class Deferred<T = any> {
+  public static promiseConstructor: PromiseConstructor = Promise
+
+  public readonly promise!: PromiseLike<T>
+
+  public readonly resolve!: (value?: T | PromiseLike<T>) => void
+
+  public readonly reject!: (reason?: any) => any
+
+  public constructor() {
+    (this as any).promise = new Deferred.promiseConstructor((res, rej) => {
+      (this as any).resolve = res
+      ;(this as any).reject = rej
+    })
+  }
+}
