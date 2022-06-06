@@ -43,7 +43,9 @@ export default class PostgrestFilterBuilder<
     column: ColumnName,
     operator: FilterOperator,
     value: Table[ColumnName]
-  ): this {
+  ): this
+  not(column: string, operator: string, value: unknown): this
+  not(column: string, operator: string, value: unknown): this {
     this.url.searchParams.append(column, `not.${operator}.${value}`)
     return this
   }
@@ -55,7 +57,7 @@ export default class PostgrestFilterBuilder<
    * @param foreignTable  The foreign table to use (if `column` is a foreign column).
    */
   or(filters: string, { foreignTable }: { foreignTable?: string } = {}): this {
-    const key = typeof foreignTable === 'undefined' ? 'or' : `${foreignTable}.or`
+    const key = foreignTable ? `${foreignTable}.or` : 'or'
     this.url.searchParams.append(key, `(${filters})`)
     return this
   }
@@ -67,7 +69,9 @@ export default class PostgrestFilterBuilder<
    * @param column  The column to filter on.
    * @param value  The value to filter with.
    */
-  eq<ColumnName extends string & keyof Table>(column: ColumnName, value: Table[ColumnName]): this {
+  eq<ColumnName extends string & keyof Table>(column: ColumnName, value: Table[ColumnName]): this
+  eq(column: string, value: unknown): this
+  eq(column: string, value: unknown): this {
     this.url.searchParams.append(column, `eq.${value}`)
     return this
   }
@@ -79,7 +83,9 @@ export default class PostgrestFilterBuilder<
    * @param column  The column to filter on.
    * @param value  The value to filter with.
    */
-  neq<ColumnName extends string & keyof Table>(column: ColumnName, value: Table[ColumnName]): this {
+  neq<ColumnName extends string & keyof Table>(column: ColumnName, value: Table[ColumnName]): this
+  neq(column: string, value: unknown): this
+  neq(column: string, value: unknown): this {
     this.url.searchParams.append(column, `neq.${value}`)
     return this
   }
@@ -91,7 +97,9 @@ export default class PostgrestFilterBuilder<
    * @param column  The column to filter on.
    * @param value  The value to filter with.
    */
-  gt<ColumnName extends string & keyof Table>(column: ColumnName, value: Table[ColumnName]): this {
+  gt<ColumnName extends string & keyof Table>(column: ColumnName, value: Table[ColumnName]): this
+  gt(column: string, value: unknown): this
+  gt(column: string, value: unknown): this {
     this.url.searchParams.append(column, `gt.${value}`)
     return this
   }
@@ -103,7 +111,9 @@ export default class PostgrestFilterBuilder<
    * @param column  The column to filter on.
    * @param value  The value to filter with.
    */
-  gte<ColumnName extends string & keyof Table>(column: ColumnName, value: Table[ColumnName]): this {
+  gte<ColumnName extends string & keyof Table>(column: ColumnName, value: Table[ColumnName]): this
+  gte(column: string, value: unknown): this
+  gte(column: string, value: unknown): this {
     this.url.searchParams.append(column, `gte.${value}`)
     return this
   }
@@ -115,7 +125,9 @@ export default class PostgrestFilterBuilder<
    * @param column  The column to filter on.
    * @param value  The value to filter with.
    */
-  lt<ColumnName extends string & keyof Table>(column: ColumnName, value: Table[ColumnName]): this {
+  lt<ColumnName extends string & keyof Table>(column: ColumnName, value: Table[ColumnName]): this
+  lt(column: string, value: unknown): this
+  lt(column: string, value: unknown): this {
     this.url.searchParams.append(column, `lt.${value}`)
     return this
   }
@@ -127,7 +139,9 @@ export default class PostgrestFilterBuilder<
    * @param column  The column to filter on.
    * @param value  The value to filter with.
    */
-  lte<ColumnName extends string & keyof Table>(column: ColumnName, value: Table[ColumnName]): this {
+  lte<ColumnName extends string & keyof Table>(column: ColumnName, value: Table[ColumnName]): this
+  lte(column: string, value: unknown): this
+  lte(column: string, value: unknown): this {
     this.url.searchParams.append(column, `lte.${value}`)
     return this
   }
@@ -139,7 +153,9 @@ export default class PostgrestFilterBuilder<
    * @param column  The column to filter on.
    * @param pattern  The pattern to filter with.
    */
-  like<ColumnName extends string & keyof Table>(column: ColumnName, pattern: string): this {
+  like<ColumnName extends string & keyof Table>(column: ColumnName, pattern: string): this
+  like(column: string, pattern: string): this
+  like(column: string, pattern: string): this {
     this.url.searchParams.append(column, `like.${pattern}`)
     return this
   }
@@ -151,7 +167,9 @@ export default class PostgrestFilterBuilder<
    * @param column  The column to filter on.
    * @param pattern  The pattern to filter with.
    */
-  ilike<ColumnName extends string & keyof Table>(column: ColumnName, pattern: string): this {
+  ilike<ColumnName extends string & keyof Table>(column: ColumnName, pattern: string): this
+  ilike(column: string, pattern: string): this
+  ilike(column: string, pattern: string): this {
     this.url.searchParams.append(column, `ilike.${pattern}`)
     return this
   }
@@ -166,7 +184,9 @@ export default class PostgrestFilterBuilder<
   is<ColumnName extends string & keyof Table>(
     column: ColumnName,
     value: Table[ColumnName] & (boolean | null)
-  ): this {
+  ): this
+  is(column: string, value: boolean | null): this
+  is(column: string, value: boolean | null): this {
     this.url.searchParams.append(column, `is.${value}`)
     return this
   }
@@ -178,10 +198,9 @@ export default class PostgrestFilterBuilder<
    * @param column  The column to filter on.
    * @param values  The values to filter with.
    */
-  in<ColumnName extends string & keyof Table>(
-    column: ColumnName,
-    values: Table[ColumnName][]
-  ): this {
+  in<ColumnName extends string & keyof Table>(column: ColumnName, values: Table[ColumnName][]): this
+  in(column: string, values: unknown[]): this
+  in(column: string, values: unknown[]): this {
     const cleanedValues = values
       .map((s) => {
         // handle postgrest reserved characters
@@ -204,7 +223,9 @@ export default class PostgrestFilterBuilder<
   contains<ColumnName extends string & keyof Table>(
     column: ColumnName,
     value: string | Table[ColumnName][] | Record<string, unknown>
-  ): this {
+  ): this
+  contains(column: string, value: string | unknown[] | Record<string, unknown>): this
+  contains(column: string, value: string | unknown[] | Record<string, unknown>): this {
     if (typeof value === 'string') {
       // range types can be inclusive '[', ']' or exclusive '(', ')' so just
       // keep it simple and accept a string
@@ -229,7 +250,9 @@ export default class PostgrestFilterBuilder<
   containedBy<ColumnName extends string & keyof Table>(
     column: ColumnName,
     value: string | Table[ColumnName][] | Record<string, unknown>
-  ): this {
+  ): this
+  containedBy(column: string, value: string | unknown[] | Record<string, unknown>): this
+  containedBy(column: string, value: string | unknown[] | Record<string, unknown>): this {
     if (typeof value === 'string') {
       // range
       this.url.searchParams.append(column, `cd.${value}`)
@@ -250,7 +273,9 @@ export default class PostgrestFilterBuilder<
    * @param column  The column to filter on.
    * @param range  The range to filter with.
    */
-  rangeLt<ColumnName extends string & keyof Table>(column: ColumnName, range: string): this {
+  rangeLt<ColumnName extends string & keyof Table>(column: ColumnName, range: string): this
+  rangeLt(column: string, range: string): this
+  rangeLt(column: string, range: string): this {
     this.url.searchParams.append(column, `sl.${range}`)
     return this
   }
@@ -262,7 +287,9 @@ export default class PostgrestFilterBuilder<
    * @param column  The column to filter on.
    * @param range  The range to filter with.
    */
-  rangeGt<ColumnName extends string & keyof Table>(column: ColumnName, range: string): this {
+  rangeGt<ColumnName extends string & keyof Table>(column: ColumnName, range: string): this
+  rangeGt(column: string, range: string): this
+  rangeGt(column: string, range: string): this {
     this.url.searchParams.append(column, `sr.${range}`)
     return this
   }
@@ -274,7 +301,9 @@ export default class PostgrestFilterBuilder<
    * @param column  The column to filter on.
    * @param range  The range to filter with.
    */
-  rangeGte<ColumnName extends string & keyof Table>(column: ColumnName, range: string): this {
+  rangeGte<ColumnName extends string & keyof Table>(column: ColumnName, range: string): this
+  rangeGte(column: string, range: string): this
+  rangeGte(column: string, range: string): this {
     this.url.searchParams.append(column, `nxl.${range}`)
     return this
   }
@@ -286,7 +315,9 @@ export default class PostgrestFilterBuilder<
    * @param column  The column to filter on.
    * @param range  The range to filter with.
    */
-  rangeLte<ColumnName extends string & keyof Table>(column: ColumnName, range: string): this {
+  rangeLte<ColumnName extends string & keyof Table>(column: ColumnName, range: string): this
+  rangeLte(column: string, range: string): this
+  rangeLte(column: string, range: string): this {
     this.url.searchParams.append(column, `nxr.${range}`)
     return this
   }
@@ -298,7 +329,9 @@ export default class PostgrestFilterBuilder<
    * @param column  The column to filter on.
    * @param range  The range to filter with.
    */
-  rangeAdjacent<ColumnName extends string & keyof Table>(column: ColumnName, range: string): this {
+  rangeAdjacent<ColumnName extends string & keyof Table>(column: ColumnName, range: string): this
+  rangeAdjacent(column: string, range: string): this
+  rangeAdjacent(column: string, range: string): this {
     this.url.searchParams.append(column, `adj.${range}`)
     return this
   }
@@ -313,7 +346,9 @@ export default class PostgrestFilterBuilder<
   overlaps<ColumnName extends string & keyof Table>(
     column: ColumnName,
     value: string | Table[ColumnName][]
-  ): this {
+  ): this
+  overlaps(column: string, value: string | unknown[]): this
+  overlaps(column: string, value: string | unknown[]): this {
     if (typeof value === 'string') {
       // range
       this.url.searchParams.append(column, `ov.${value}`)
@@ -335,6 +370,16 @@ export default class PostgrestFilterBuilder<
    */
   textSearch<ColumnName extends string & keyof Table>(
     column: ColumnName,
+    query: string,
+    options?: { config?: string; type?: 'plain' | 'phrase' | 'websearch' }
+  ): this
+  textSearch(
+    column: string,
+    query: string,
+    options?: { config?: string; type?: 'plain' | 'phrase' | 'websearch' }
+  ): this
+  textSearch(
+    column: string,
     query: string,
     { config, type }: { config?: string; type?: 'plain' | 'phrase' | 'websearch' } = {}
   ): this {
@@ -361,8 +406,10 @@ export default class PostgrestFilterBuilder<
   filter<ColumnName extends string & keyof Table>(
     column: ColumnName,
     operator: `${'' | 'not.'}${FilterOperator}`,
-    value: any
-  ): this {
+    value: unknown
+  ): this
+  filter(column: string, operator: string, value: unknown): this
+  filter(column: string, operator: string, value: unknown): this {
     this.url.searchParams.append(column, `${operator}.${value}`)
     return this
   }
@@ -373,9 +420,9 @@ export default class PostgrestFilterBuilder<
    * @param query  The object to filter with, with column names as keys mapped
    *               to their filter values.
    */
-  match<ColumnName extends string & keyof Table>(
-    query: Record<ColumnName, Table[ColumnName]>
-  ): this {
+  match<ColumnName extends string & keyof Table>(query: Record<ColumnName, Table[ColumnName]>): this
+  match(query: Record<string, unknown>): this
+  match(query: Record<string, unknown>): this {
     Object.entries(query).forEach(([column, value]) => {
       this.url.searchParams.append(column, `eq.${value}`)
     })

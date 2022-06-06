@@ -50,13 +50,21 @@ export default class PostgrestTransformBuilder<
    */
   order<ColumnName extends string & keyof Table>(
     column: ColumnName,
+    options?: { ascending?: boolean; nullsFirst?: boolean; foreignTable?: undefined }
+  ): this
+  order(
+    column: string,
+    options?: { ascending?: boolean; nullsFirst?: boolean; foreignTable: string }
+  ): this
+  order(
+    column: string,
     {
       ascending = true,
       nullsFirst = true,
       foreignTable,
     }: { ascending?: boolean; nullsFirst?: boolean; foreignTable?: string } = {}
   ): this {
-    const key = typeof foreignTable === 'undefined' ? 'order' : `${foreignTable}.order`
+    const key = foreignTable ? `${foreignTable}.order` : 'order'
     const existingOrder = this.url.searchParams.get(key)
 
     this.url.searchParams.set(
