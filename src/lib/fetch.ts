@@ -23,7 +23,7 @@ export const resolveHeadersConstructor = () => {
 }
 
 export const fetchWithAuth = (
-  supabaseAnonKey: string,
+  supabaseKey: string,
   getAccessToken: () => Promise<string | null>,
   customFetch?: Fetch
 ): Fetch => {
@@ -31,11 +31,11 @@ export const fetchWithAuth = (
   const HeadersConstructor = resolveHeadersConstructor()
 
   return async (input, init) => {
-    const accessToken = (await getAccessToken()) ?? supabaseAnonKey
+    const accessToken = (await getAccessToken()) ?? supabaseKey
     let headers = new HeadersConstructor(init?.headers)
 
     if (!headers.has('apikey')) {
-      headers.append('apikey', supabaseAnonKey)
+      headers.set('apikey', supabaseKey)
     }
 
     if (!headers.has('Authorization')) {
