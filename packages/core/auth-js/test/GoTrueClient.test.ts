@@ -87,10 +87,10 @@ describe('GoTrueClient', () => {
       expired.setMinutes(expired.getMinutes() - 1)
       const expiredSeconds = Math.floor(expired.getTime() / 1000)
 
-      // @ts-expect-error 'Allow access to protected currentSession'
-      authWithSession.currentSession = {
-        // @ts-expect-error 'Allow access to protected currentSession'
-        ...authWithSession.currentSession,
+      // @ts-expect-error 'Allow access to protected inMemorySession'
+      authWithSession.inMemorySession = {
+        // @ts-expect-error 'Allow access to protected inMemorySession'
+        ...authWithSession.inMemorySession,
         expires_at: expiredSeconds,
       }
 
