@@ -365,9 +365,15 @@ export default class GoTrueClient {
         error: null
       }
   > {
-    const currentSession = this.persistSession
-      ? ((await getItemAsync(this.localStorage, STORAGE_KEY)) as Session | null)
-      : this.inMemorySession
+    let currentSession: Session | null = null
+
+    if (this.persistSession) {
+      const persistedSession = await getItemAsync(this.localStorage, STORAGE_KEY)
+
+      currentSession = persistedSession?.currentSession ?? null
+    } else {
+      currentSession = this.inMemorySession
+    }
 
     if (!currentSession) {
       return { session: null, error: null }
