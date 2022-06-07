@@ -206,6 +206,7 @@ export default class GoTrueClient {
       shouldCreateUser?: boolean
       scopes?: string
       captchaToken?: string
+      queryParams?: { [key: string]: string }
     } = {}
   ): Promise<{
     session: Session | null
@@ -255,6 +256,7 @@ export default class GoTrueClient {
         return this._handleProviderSignIn(provider, {
           redirectTo: options.redirectTo,
           scopes: options.scopes,
+          queryParams: options.queryParams,
         })
       }
       if (oidc) {
@@ -631,11 +633,13 @@ export default class GoTrueClient {
     options: {
       redirectTo?: string
       scopes?: string
+      queryParams?: { [key: string]: string }
     } = {}
   ) {
     const url: string = this.api.getUrlForProvider(provider, {
       redirectTo: options.redirectTo,
       scopes: options.scopes,
+      queryParams: options.queryParams
     })
 
     try {
