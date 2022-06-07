@@ -1,18 +1,19 @@
+import { FunctionsClient } from '@supabase/functions-js'
+import { AuthChangeEvent } from '@supabase/gotrue-js'
+import { PostgrestClient } from '@supabase/postgrest-js'
+import {
+  RealtimeChannel,
+  RealtimeClient,
+  RealtimeClientOptions,
+  RealtimeSubscription,
+} from '@supabase/realtime-js'
+import { SupabaseStorageClient } from '@supabase/storage-js'
 import { DEFAULT_HEADERS, STORAGE_KEY } from './lib/constants'
-import { stripTrailingSlash, isBrowser } from './lib/helpers'
-import { Fetch, GenericObject, SupabaseClientOptions } from './lib/types'
+import { fetchWithAuth } from './lib/fetch'
+import { isBrowser, stripTrailingSlash } from './lib/helpers'
 import { SupabaseAuthClient } from './lib/SupabaseAuthClient'
 import { SupabaseQueryBuilder } from './lib/SupabaseQueryBuilder'
-import { SupabaseStorageClient } from '@supabase/storage-js'
-import { FunctionsClient } from '@supabase/functions-js'
-import { PostgrestClient } from '@supabase/postgrest-js'
-import { AuthChangeEvent } from '@supabase/gotrue-js'
-import {
-  RealtimeClient,
-  RealtimeSubscription,
-  RealtimeClientOptions,
-  RealtimeChannel,
-} from '@supabase/realtime-js'
+import { Fetch, SupabaseClientOptions } from './lib/types'
 
 const DEFAULT_OPTIONS = {
   schema: 'public',
@@ -89,12 +90,13 @@ export default class SupabaseClient {
 
     this.schema = settings.schema
     this.multiTab = settings.multiTab
-    this.fetch = settings.fetch
     this.headers = { ...DEFAULT_HEADERS, ...options?.headers }
     this.shouldThrowOnError = settings.shouldThrowOnError || false
 
     this.auth = this._initSupabaseAuthClient(settings)
     this.realtime = this._initRealtimeClient({ headers: this.headers, ...settings.realtime })
+
+    this.fetch = fetchWithAuth(this._getAccessToken.bind(this), settings.fetch)
 
     this._listenForAuthEvents()
     this._listenForMultiTabEvents()
@@ -110,7 +112,7 @@ export default class SupabaseClient {
    */
   get functions() {
     return new FunctionsClient(this.functionsUrl, {
-      headers: this._getAuthHeaders(),
+      headers: this.headers,
       customFetch: this.fetch,
     })
   }
@@ -119,7 +121,7 @@ export default class SupabaseClient {
    * Supabase Storage allows you to manage user-generated content, such as photos or videos.
    */
   get storage() {
-    return new SupabaseStorageClient(this.storageUrl, this._getAuthHeaders(), this.fetch)
+    return new SupabaseStorageClient(this.storageUrl, this.headers, this.fetch)
   }
 
   /**
@@ -130,7 +132,7 @@ export default class SupabaseClient {
   from<T = any>(table: string): SupabaseQueryBuilder<T> {
     const url = `${this.restUrl}/${table}`
     return new SupabaseQueryBuilder<T>(url, {
-      headers: this._getAuthHeaders(),
+      headers: this.headers,
       schema: this.schema,
       realtime: this.realtime,
       table,
@@ -227,6 +229,12 @@ export default class SupabaseClient {
     return { data: { openSubscriptions: openSubCount }, error }
   }
 
+  private async _getAccessToken() {
+    const { session } = await this.auth.getSession()
+
+    return session?.access_token ?? null
+  }
+
   private async _closeSubscription(
     subscription: RealtimeSubscription | RealtimeChannel
   ): Promise<{ error: Error | null }> {
@@ -297,19 +305,11 @@ export default class SupabaseClient {
 
   private _initPostgRESTClient() {
     return new PostgrestClient(this.restUrl, {
-      headers: this._getAuthHeaders(),
+      headers: this.headers,
       schema: this.schema,
       fetch: this.fetch,
       throwOnError: this.shouldThrowOnError,
     })
-  }
-
-  private _getAuthHeaders(): GenericObject {
-    const headers: GenericObject = { ...this.headers }
-    const authBearer = this.auth.session()?.access_token ?? this.supabaseKey
-    headers['apikey'] = this.supabaseKey
-    headers['Authorization'] = headers['Authorization'] || `Bearer ${authBearer}`
-    return headers
   }
 
   private _listenForMultiTabEvents() {
