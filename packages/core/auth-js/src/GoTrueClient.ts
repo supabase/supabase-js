@@ -53,12 +53,20 @@ export default class GoTrueClient {
   api: GoTrueApi
   /**
    * The currently logged in user or null.
+   * @deprecated use `getUser()` instead
    */
   protected currentUser: User | null
   /**
    * The session object for the currently logged in user or null.
+   * @deprecated use `getSession()` instead
    */
   protected currentSession: Session | null
+
+  /**
+   * The session object for the currently logged in user or null.
+   * Only used if persistSession is false.
+   */
+  protected inMemorySession: Session | null
 
   protected autoRefreshToken: boolean
   protected persistSession: boolean
@@ -98,6 +106,7 @@ export default class GoTrueClient {
     const settings = { ...DEFAULT_OPTIONS, ...options }
     this.currentUser = null
     this.currentSession = null
+    this.inMemorySession = null
     this.autoRefreshToken = settings.autoRefreshToken
     this.persistSession = settings.persistSession
     this.multiTab = settings.multiTab
@@ -356,18 +365,22 @@ export default class GoTrueClient {
         error: null
       }
   > {
-    if (!this.currentSession) {
+    const currentSession = this.persistSession
+      ? ((await getItemAsync(this.localStorage, STORAGE_KEY)) as Session | null)
+      : this.inMemorySession
+
+    if (!currentSession) {
       return { session: null, error: null }
     }
 
-    const hasExpired = this.currentSession.expires_at
-      ? this.currentSession.expires_at <= Date.now() / 1000
+    const hasExpired = currentSession.expires_at
+      ? currentSession.expires_at <= Date.now() / 1000
       : false
     if (!hasExpired) {
-      return { session: this.currentSession, error: null }
+      return { session: currentSession, error: null }
     }
 
-    const { data: session, error } = await this.refreshSession()
+    const { data: session, error } = await this._callRefreshToken(currentSession.refresh_token)
     if (error) {
       return { session: null, error }
     }
@@ -478,6 +491,7 @@ export default class GoTrueClient {
   /**
    * Overrides the JWT on the current client. The JWT will then be sent in all subsequent network requests.
    * @param access_token a jwt access token
+   * @deprecated you can use `getSession()` instead as it reads from storage every time (always fresh)
    */
   setAuth(access_token: string): Session {
     this.currentSession = {
@@ -639,7 +653,7 @@ export default class GoTrueClient {
     const url: string = this.api.getUrlForProvider(provider, {
       redirectTo: options.redirectTo,
       scopes: options.scopes,
-      queryParams: options.queryParams
+      queryParams: options.queryParams,
     })
 
     try {
@@ -801,6 +815,10 @@ export default class GoTrueClient {
     this.currentSession = session
     this.currentUser = session.user
 
+    if (!this.persistSession) {
+      this.inMemorySession = session
+    }
+
     const expiresAt = session.expires_at
     if (expiresAt) {
       const timeNow = Math.round(Date.now() / 1000)
@@ -824,8 +842,16 @@ export default class GoTrueClient {
   private async _removeSession() {
     this.currentSession = null
     this.currentUser = null
-    if (this.refreshTokenTimer) clearTimeout(this.refreshTokenTimer)
-    removeItemAsync(this.localStorage, STORAGE_KEY)
+
+    if (this.persistSession) {
+      removeItemAsync(this.localStorage, STORAGE_KEY)
+    } else {
+      this.inMemorySession = null
+    }
+
+    if (this.refreshTokenTimer) {
+      clearTimeout(this.refreshTokenTimer)
+    }
   }
 
   /**
