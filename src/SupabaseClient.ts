@@ -96,7 +96,7 @@ export default class SupabaseClient {
     this.auth = this._initSupabaseAuthClient(settings)
     this.realtime = this._initRealtimeClient({ headers: this.headers, ...settings.realtime })
 
-    this.fetch = fetchWithAuth(this._getAccessToken.bind(this), settings.fetch)
+    this.fetch = fetchWithAuth(supabaseKey, this._getAccessToken.bind(this), settings.fetch)
 
     this._listenForAuthEvents()
     this._listenForMultiTabEvents()
