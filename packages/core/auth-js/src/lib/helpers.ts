@@ -91,8 +91,11 @@ export class Deferred<T = any> {
   public readonly reject!: (reason?: any) => any
 
   public constructor() {
-    (this as any).promise = new Deferred.promiseConstructor((res, rej) => {
-      (this as any).resolve = res
+    // eslint-disable-next-line @typescript-eslint/no-extra-semi
+    ;(this as any).promise = new Deferred.promiseConstructor((res, rej) => {
+      // eslint-disable-next-line @typescript-eslint/no-extra-semi
+      ;(this as any).resolve = res
+      // eslint-disable-next-line @typescript-eslint/no-extra-semi
       ;(this as any).reject = rej
     })
   }
