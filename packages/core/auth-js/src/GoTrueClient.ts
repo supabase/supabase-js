@@ -19,7 +19,7 @@ import {
 import { polyfillGlobalThis } from './lib/polyfills'
 import { Fetch } from './lib/fetch'
 
-import { isAuthError, AuthError } from './lib/errors'
+import { isAuthError, AuthError, AuthUnknownError } from './lib/errors'
 
 import type {
   Session,
@@ -226,13 +226,22 @@ export default class GoTrueClient {
       captchaToken?: string
       queryParams?: { [key: string]: string }
     } = {}
-  ): Promise<{
-    session: Session | null
-    user: User | null
-    provider?: Provider
-    url?: string | null
-    error: AuthError | null
-  }> {
+  ): Promise<
+    | {
+        session: Session | null
+        user: User | null
+        provider?: Provider
+        url?: string | null
+        error: null
+      }
+    | {
+        session: Session | null
+        user: User | null
+        provider?: Provider
+        url?: string | null
+        error: AuthError
+      }
+  > {
     try {
       this._removeSession()
 
@@ -283,8 +292,12 @@ export default class GoTrueClient {
       throw new Error(
         `You must provide either an email, phone number, a third-party provider or OpenID Connect.`
       )
-    } catch (e) {
-      return { user: null, session: null, error: e as AuthError }
+    } catch (error) {
+      if (isAuthError(error)) {
+        return { user: null, session: null, error }
+      }
+
+      throw error
     }
   }
 
@@ -301,11 +314,14 @@ export default class GoTrueClient {
     options: {
       redirectTo?: string
     } = {}
-  ): Promise<{
-    user: User | null
-    session: Session | null
-    error: AuthError | null
-  }> {
+  ): Promise<
+    | {
+        user: User | null
+        session: Session | null
+        error: null
+      }
+    | { user: null; session: null; error: AuthError }
+  > {
     try {
       this._removeSession()
 
@@ -334,8 +350,12 @@ export default class GoTrueClient {
       }
 
       return { user, session, error: null }
-    } catch (e) {
-      return { user: null, session: null, error: e as AuthError }
+    } catch (error) {
+      if (isAuthError(error)) {
+        return { user: null, session: null, error }
+      }
+
+      throw error
     }
   }
 
@@ -435,30 +455,42 @@ export default class GoTrueClient {
   /**
    * Force refreshes the session including the user data in case it was updated in a different session.
    */
-  async refreshSession(): Promise<{
-    data: Session | null
-    user: User | null
-    error: AuthError | null
-  }> {
+  async refreshSession(): Promise<
+    | {
+        user: User | null
+        data: Session | null
+        error: null
+      }
+    | { user: null; data: null; error: AuthError }
+  > {
     try {
-      if (!this.currentSession?.access_token) throw new Error('Not logged in.')
+      if (!this.currentSession?.access_token) throw new AuthError('Not logged in.', 401)
 
       // currentSession and currentUser will be updated to latest on _callRefreshToken
       const { error } = await this._callRefreshToken()
       if (error) throw error
 
       return { data: this.currentSession, user: this.currentUser, error: null }
-    } catch (e) {
-      return { data: null, user: null, error: e as AuthError }
+    } catch (error) {
+      if (isAuthError(error)) {
+        return { user: null, data: null, error }
+      }
+
+      throw error
     }
   }
 
   /**
    * Updates user data, if there is a logged in user.
    */
-  async update(
-    attributes: UserAttributes
-  ): Promise<{ data: User | null; user: User | null; error: AuthError | null }> {
+  async update(attributes: UserAttributes): Promise<
+    | {
+        user: User | null
+        data: User | null
+        error: null
+      }
+    | { user: null; data: null; error: AuthError }
+  > {
     try {
       if (!this.currentSession?.access_token) throw new Error('Not logged in.')
 
@@ -474,8 +506,12 @@ export default class GoTrueClient {
       this._notifyAllSubscribers('USER_UPDATED')
 
       return { data: user, user, error: null }
-    } catch (e) {
-      return { data: null, user: null, error: e as AuthError }
+    } catch (error) {
+      if (isAuthError(error)) {
+        return { user: null, data: null, error }
+      }
+
+      throw error
     }
   }
 
@@ -483,9 +519,14 @@ export default class GoTrueClient {
    * Sets the session data from refresh_token and returns current Session and Error
    * @param refresh_token a JWT token
    */
-  async setSession(
-    refresh_token: string
-  ): Promise<{ session: Session | null; error: AuthError | null }> {
+  async setSession(refresh_token: string): Promise<
+    | {
+        session: Session
+        error: null
+      }
+    | { session: null; error: null }
+    | { session: null; error: AuthError }
+  > {
     try {
       if (!refresh_token) {
         throw new Error('No current session.')
@@ -498,8 +539,12 @@ export default class GoTrueClient {
       this._saveSession(data!)
       this._notifyAllSubscribers('SIGNED_IN')
       return { session: data, error: null }
-    } catch (e) {
-      return { error: e as AuthError, session: null }
+    } catch (error) {
+      if (isAuthError(error)) {
+        return { session: null, error }
+      }
+
+      throw error
     }
   }
 
@@ -533,11 +578,16 @@ export default class GoTrueClient {
    * Gets the session data from a URL string
    * @param options.storeSession Optionally store the session in the browser
    */
-  async getSessionFromUrl(options?: {
-    storeSession?: boolean
-  }): Promise<{ data: Session | null; error: AuthError | null }> {
+  async getSessionFromUrl(options?: { storeSession?: boolean }): Promise<
+    | {
+        data: Session
+        error: null
+      }
+    | { data: null; error: null }
+    | { data: null; error: AuthError }
+  > {
     try {
-      if (!isBrowser()) throw new Error('No browser detected.')
+      if (!isBrowser()) throw new AuthUnknownError('No browser detected.', 500)
 
       const error_description = getParameterByName('error_description')
       if (error_description) throw new Error(error_description)
@@ -579,8 +629,12 @@ export default class GoTrueClient {
       window.location.hash = ''
 
       return { data: session, error: null }
-    } catch (e) {
-      return { data: null, error: e as AuthError }
+    } catch (error) {
+      if (isAuthError(error)) {
+        return { data: null, error }
+      }
+
+      throw error
     }
   }
 
@@ -605,10 +659,12 @@ export default class GoTrueClient {
    * Receive a notification every time an auth event happens.
    * @returns {Subscription} A subscription object which can be used to unsubscribe itself.
    */
-  onAuthStateChange(callback: (event: AuthChangeEvent, session: Session | null) => void): {
-    data: Subscription | null
-    error: AuthError | null
-  } {
+  onAuthStateChange(callback: (event: AuthChangeEvent, session: Session | null) => void):
+    | {
+        data: Subscription
+        error: null
+      }
+    | { data: null; error: AuthError } {
     try {
       const id: string = uuid()
       const subscription: Subscription = {
@@ -620,8 +676,12 @@ export default class GoTrueClient {
       }
       this.stateChangeEmitters.set(id, subscription)
       return { data: subscription, error: null }
-    } catch (e) {
-      return { data: null, error: e as AuthError }
+    } catch (error) {
+      if (isAuthError(error)) {
+        return { data: null, error }
+      }
+
+      throw error
     }
   }
 
@@ -644,8 +704,12 @@ export default class GoTrueClient {
       }
 
       return { data, user: data.user, session: data, error: null }
-    } catch (e) {
-      return { data: null, user: null, session: null, error: e as AuthError }
+    } catch (error) {
+      if (isAuthError(error)) {
+        return { data: null, user: null, session: null, error }
+      }
+
+      throw error
     }
   }
 
@@ -660,8 +724,12 @@ export default class GoTrueClient {
       }
 
       return { data, user: data.user, session: data, error: null }
-    } catch (e) {
-      return { data: null, user: null, session: null, error: e as AuthError }
+    } catch (error) {
+      if (isAuthError(error)) {
+        return { data: null, user: null, session: null, error }
+      }
+
+      throw error
     }
   }
 
@@ -685,10 +753,14 @@ export default class GoTrueClient {
         window.location.href = url
       }
       return { provider, url, data: null, session: null, user: null, error: null }
-    } catch (e) {
-      // fallback to returning the URL
+    } catch (error) {
       if (url) return { provider, url, data: null, session: null, user: null, error: null }
-      return { data: null, user: null, session: null, error: e as AuthError }
+
+      if (isAuthError(error)) {
+        return { data: null, user: null, session: null, error }
+      }
+
+      throw error
     }
   }
 
@@ -698,11 +770,14 @@ export default class GoTrueClient {
     client_id,
     issuer,
     provider,
-  }: OpenIDConnectCredentials): Promise<{
-    session: Session | null
-    user: User | null
-    error: AuthError | null
-  }> {
+  }: OpenIDConnectCredentials): Promise<
+    | {
+        user: User | null
+        session: Session | null
+        error: null
+      }
+    | { user: null; session: null; error: AuthError }
+  > {
     if (id_token && nonce && ((client_id && issuer) || provider)) {
       try {
         const { data, error } = await this.api.signInWithOpenIDConnect({
@@ -716,8 +791,12 @@ export default class GoTrueClient {
         this._saveSession(data)
         this._notifyAllSubscribers('SIGNED_IN')
         return { user: data.user, session: data, error: null }
-      } catch (e) {
-        return { user: null, session: null, error: e as AuthError }
+      } catch (error) {
+        if (isAuthError(error)) {
+          return { user: null, session: null, error }
+        }
+
+        throw error
       }
     }
     throw new Error(`You must provide a OpenID Connect provider with your id token and nonce.`)
@@ -821,8 +900,12 @@ export default class GoTrueClient {
       this.refreshingDeferred = null
 
       return result
-    } catch (e) {
-      return { data: null, error: e as AuthError }
+    } catch (error) {
+      if (isAuthError(error)) {
+        return { data: null, error }
+      }
+
+      throw error
     }
   }
 
