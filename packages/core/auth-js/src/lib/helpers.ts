@@ -1,4 +1,4 @@
-import crossFetch from 'cross-fetch'
+import crossFetch, { Response as CrossFetchResponse } from 'cross-fetch'
 import { SupportedStorage } from './types'
 
 export function expiresAt(expiresIn: number) {
@@ -39,6 +39,14 @@ export const resolveFetch = (customFetch?: Fetch): Fetch => {
     _fetch = fetch
   }
   return (...args) => _fetch(...args)
+}
+
+export const resolveResponse = () => {
+  if (typeof Response === 'undefined') {
+    return CrossFetchResponse
+  }
+
+  return Response
 }
 
 // LocalStorage helpers

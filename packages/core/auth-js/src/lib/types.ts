@@ -24,10 +24,10 @@ export type AuthChangeEvent =
   | 'USER_UPDATED'
   | 'USER_DELETED'
 
-export interface ApiError {
-  message: string
-  status: number
-}
+// export interface ApiError {
+//   message: string
+//   status: number
+// }
 
 export interface Session {
   provider_token?: string | null

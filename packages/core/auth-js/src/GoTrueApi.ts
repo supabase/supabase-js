@@ -13,7 +13,8 @@ import { COOKIE_OPTIONS } from './lib/constants'
 import { setCookies, getCookieString } from './lib/cookies'
 import { expiresAt, resolveFetch } from './lib/helpers'
 
-import type { ApiError } from './lib/types'
+import { isAuthError, AuthError } from './lib/errors'
+
 export default class GoTrueApi {
   protected url: string
   protected headers: {
@@ -77,7 +78,7 @@ export default class GoTrueApi {
     if (options?.scopes) {
       urlParams.push(`scopes=${encodeURIComponent(options.scopes)}`)
     }
-    if(options?.queryParams) {
+    if (options?.queryParams) {
       const query = new URLSearchParams(options.queryParams)
       urlParams.push(`${query}`)
     }
@@ -102,7 +103,7 @@ export default class GoTrueApi {
       data?: object
       captchaToken?: string
     } = {}
-  ): Promise<{ data: Session | User | null; error: ApiError | null }> {
+  ): Promise<{ data: Session | User | null; error: AuthError | null }> {
     try {
       const headers = { ...this.headers }
       let queryString = ''
@@ -124,7 +125,7 @@ export default class GoTrueApi {
       if (session.expires_in) session.expires_at = expiresAt(data.expires_in)
       return { data: session, error: null }
     } catch (e) {
-      return { data: null, error: e as ApiError }
+      return { data: null, error: e as AuthError }
     }
   }
 
@@ -140,7 +141,7 @@ export default class GoTrueApi {
     options: {
       redirectTo?: string
     } = {}
-  ): Promise<{ data: Session | null; error: ApiError | null }> {
+  ): Promise<{ data: Session | null; error: AuthError | null }> {
     try {
       const headers = { ...this.headers }
       let queryString = '?grant_type=password'
@@ -157,7 +158,7 @@ export default class GoTrueApi {
       if (session.expires_in) session.expires_at = expiresAt(data.expires_in)
       return { data: session, error: null }
     } catch (e) {
-      return { data: null, error: e as ApiError }
+      return { data: null, error: e as AuthError }
     }
   }
 
@@ -174,7 +175,7 @@ export default class GoTrueApi {
       data?: object
       captchaToken?: string
     } = {}
-  ): Promise<{ data: Session | User | null; error: ApiError | null }> {
+  ): Promise<{ data: Session | User | null; error: AuthError | null }> {
     try {
       const headers = { ...this.headers }
       const data = await post(
@@ -192,7 +193,7 @@ export default class GoTrueApi {
       if (session.expires_in) session.expires_at = expiresAt(data.expires_in)
       return { data: session, error: null }
     } catch (e) {
-      return { data: null, error: e as ApiError }
+      return { data: null, error: e as AuthError }
     }
   }
 
@@ -204,7 +205,7 @@ export default class GoTrueApi {
   async signInWithPhone(
     phone: string,
     password: string
-  ): Promise<{ data: Session | null; error: ApiError | null }> {
+  ): Promise<{ data: Session | null; error: AuthError | null }> {
     try {
       const headers = { ...this.headers }
       const queryString = '?grant_type=password'
@@ -218,7 +219,7 @@ export default class GoTrueApi {
       if (session.expires_in) session.expires_at = expiresAt(data.expires_in)
       return { data: session, error: null }
     } catch (e) {
-      return { data: null, error: e as ApiError }
+      return { data: null, error: e as AuthError }
     }
   }
 
@@ -236,7 +237,7 @@ export default class GoTrueApi {
     client_id,
     issuer,
     provider,
-  }: OpenIDConnectCredentials): Promise<{ data: Session | null; error: ApiError | null }> {
+  }: OpenIDConnectCredentials): Promise<{ data: Session | null; error: AuthError | null }> {
     try {
       const headers = { ...this.headers }
       const queryString = '?grant_type=id_token'
@@ -250,7 +251,7 @@ export default class GoTrueApi {
       if (session.expires_in) session.expires_at = expiresAt(data.expires_in)
       return { data: session, error: null }
     } catch (e) {
-      return { data: null, error: e as ApiError }
+      return { data: null, error: e as AuthError }
     }
   }
 
@@ -267,7 +268,7 @@ export default class GoTrueApi {
       redirectTo?: string
       captchaToken?: string
     } = {}
-  ): Promise<{ data: {} | null; error: ApiError | null }> {
+  ): Promise<{ data: {} | null; error: AuthError | null }> {
     try {
       const headers = { ...this.headers }
       let queryString = ''
@@ -288,7 +289,7 @@ export default class GoTrueApi {
       )
       return { data, error: null }
     } catch (e) {
-      return { data: null, error: e as ApiError }
+      return { data: null, error: e as AuthError }
     }
   }
 
@@ -303,7 +304,7 @@ export default class GoTrueApi {
       shouldCreateUser?: boolean
       captchaToken?: string
     } = {}
-  ): Promise<{ data: {} | null; error: ApiError | null }> {
+  ): Promise<{ data: {} | null; error: AuthError | null }> {
     try {
       const shouldCreateUser = options.shouldCreateUser ?? true
       const headers = { ...this.headers }
@@ -319,7 +320,7 @@ export default class GoTrueApi {
       )
       return { data, error: null }
     } catch (e) {
-      return { data: null, error: e as ApiError }
+      return { data: null, error: e as AuthError }
     }
   }
 
@@ -327,7 +328,7 @@ export default class GoTrueApi {
    * Removes a logged-in session.
    * @param jwt A valid, logged-in JWT.
    */
-  async signOut(jwt: string): Promise<{ error: ApiError | null }> {
+  async signOut(jwt: string): Promise<{ error: AuthError | null }> {
     try {
       await post(
         this.fetch,
@@ -337,7 +338,7 @@ export default class GoTrueApi {
       )
       return { error: null }
     } catch (e) {
-      return { error: e as ApiError }
+      return { error: e as AuthError }
     }
   }
 
@@ -353,7 +354,7 @@ export default class GoTrueApi {
     options: {
       redirectTo?: string
     } = {}
-  ): Promise<{ data: Session | User | null; error: ApiError | null }> {
+  ): Promise<{ data: Session | User | null; error: AuthError | null }> {
     try {
       const headers = { ...this.headers }
       const data = await post(
@@ -366,7 +367,7 @@ export default class GoTrueApi {
       if (session.expires_in) session.expires_at = expiresAt(data.expires_in)
       return { data: session, error: null }
     } catch (e) {
-      return { data: null, error: e as ApiError }
+      return { data: null, error: e as AuthError }
     }
   }
 
@@ -383,7 +384,7 @@ export default class GoTrueApi {
     options: {
       redirectTo?: string
     } = {}
-  ): Promise<{ data: Session | User | null; error: ApiError | null }> {
+  ): Promise<{ data: Session | User | null; error: AuthError | null }> {
     try {
       const headers = { ...this.headers }
       const data = await post(
@@ -396,7 +397,7 @@ export default class GoTrueApi {
       if (session.expires_in) session.expires_at = expiresAt(data.expires_in)
       return { data: session, error: null }
     } catch (e) {
-      return { data: null, error: e as ApiError }
+      return { data: null, error: e as AuthError }
     }
   }
 
@@ -412,7 +413,7 @@ export default class GoTrueApi {
       redirectTo?: string
       data?: object
     } = {}
-  ): Promise<{ data: User | null; error: ApiError | null }> {
+  ): Promise<{ data: User | null; error: AuthError | null }> {
     try {
       const headers = { ...this.headers }
       let queryString = ''
@@ -427,7 +428,7 @@ export default class GoTrueApi {
       )
       return { data, error: null }
     } catch (e) {
-      return { data: null, error: e as ApiError }
+      return { data: null, error: e as AuthError }
     }
   }
 
@@ -442,7 +443,7 @@ export default class GoTrueApi {
       redirectTo?: string
       captchaToken?: string
     } = {}
-  ): Promise<{ data: {} | null; error: ApiError | null }> {
+  ): Promise<{ data: {} | null; error: AuthError | null }> {
     try {
       const headers = { ...this.headers }
       let queryString = ''
@@ -457,7 +458,7 @@ export default class GoTrueApi {
       )
       return { data, error: null }
     } catch (e) {
-      return { data: null, error: e as ApiError }
+      return { data: null, error: e as AuthError }
     }
   }
 
@@ -467,7 +468,7 @@ export default class GoTrueApi {
    */
   async refreshAccessToken(
     refreshToken: string
-  ): Promise<{ data: Session | null; error: ApiError | null }> {
+  ): Promise<{ data: Session | null; error: AuthError | null }> {
     try {
       const data: any = await post(
         this.fetch,
@@ -479,7 +480,7 @@ export default class GoTrueApi {
       if (session.expires_in) session.expires_at = expiresAt(data.expires_in)
       return { data: session, error: null }
     } catch (e) {
-      return { data: null, error: e as ApiError }
+      return { data: null, error: e as AuthError }
     }
   }
 
@@ -610,7 +611,7 @@ export default class GoTrueApi {
       data?: object
       redirectTo?: string
     } = {}
-  ): Promise<{ data: Session | User | null; error: ApiError | null }> {
+  ): Promise<{ data: Session | User | null; error: AuthError | null }> {
     try {
       const data: any = await post(
         this.fetch,
@@ -626,7 +627,7 @@ export default class GoTrueApi {
       )
       return { data, error: null }
     } catch (e) {
-      return { data: null, error: e as ApiError }
+      return { data: null, error: e as AuthError }
     }
   }
 
@@ -642,7 +643,7 @@ export default class GoTrueApi {
   async createUser(
     attributes: AdminUserAttributes
   ): Promise<
-    { user: null; data: null; error: ApiError } | { user: User; data: User; error: null }
+    { user: null; data: null; error: AuthError } | { user: User; data: User; error: null }
   > {
     try {
       const data: any = await post(this.fetch, `${this.url}/admin/users`, attributes, {
@@ -650,7 +651,7 @@ export default class GoTrueApi {
       })
       return { user: data, data, error: null }
     } catch (e) {
-      return { user: null, data: null, error: e as ApiError }
+      return { user: null, data: null, error: e as AuthError }
     }
   }
 
@@ -659,14 +660,14 @@ export default class GoTrueApi {
    *
    * This function should only be called on a server. Never expose your `service_role` key in the browser.
    */
-  async listUsers(): Promise<{ data: null; error: ApiError } | { data: User[]; error: null }> {
+  async listUsers(): Promise<{ data: null; error: AuthError } | { data: User[]; error: null }> {
     try {
       const data: any = await get(this.fetch, `${this.url}/admin/users`, {
         headers: this.headers,
       })
       return { data: data.users, error: null }
     } catch (e) {
-      return { data: null, error: e as ApiError }
+      return { data: null, error: e as AuthError }
     }
   }
 
@@ -679,14 +680,14 @@ export default class GoTrueApi {
    */
   async getUserById(
     uid: string
-  ): Promise<{ data: null; error: ApiError } | { data: User; error: null }> {
+  ): Promise<{ data: null; error: AuthError } | { data: User; error: null }> {
     try {
       const data: any = await get(this.fetch, `${this.url}/admin/users/${uid}`, {
         headers: this.headers,
       })
       return { data, error: null }
     } catch (e) {
-      return { data: null, error: e as ApiError }
+      return { data: null, error: e as AuthError }
     }
   }
 
@@ -701,7 +702,7 @@ export default class GoTrueApi {
     token: string | null
     user: User | null
     data: User | null
-    error: ApiError | null
+    error: AuthError | null
   }> {
     try {
       if (!req.cookies) {
@@ -746,7 +747,7 @@ export default class GoTrueApi {
       }
       return { token: access_token, user: user, data: user, error: null }
     } catch (e) {
-      return { token: null, user: null, data: null, error: e as ApiError }
+      return { token: null, user: null, data: null, error: e as AuthError }
     }
   }
 
@@ -760,7 +761,7 @@ export default class GoTrueApi {
   async updateUserById(
     uid: string,
     attributes: AdminUserAttributes
-  ): Promise<{ user: User | null; data: User | null; error: ApiError | null }> {
+  ): Promise<{ user: User | null; data: User | null; error: AuthError | null }> {
     try {
       this //
       const data: any = await put(this.fetch, `${this.url}/admin/users/${uid}`, attributes, {
@@ -768,7 +769,7 @@ export default class GoTrueApi {
       })
       return { user: data, data, error: null }
     } catch (e) {
-      return { user: null, data: null, error: e as ApiError }
+      return { user: null, data: null, error: e as AuthError }
     }
   }
 
@@ -781,7 +782,7 @@ export default class GoTrueApi {
    */
   async deleteUser(
     uid: string
-  ): Promise<{ user: User | null; data: User | null; error: ApiError | null }> {
+  ): Promise<{ user: User | null; data: User | null; error: AuthError | null }> {
     try {
       const data: any = await remove(
         this.fetch,
@@ -793,7 +794,7 @@ export default class GoTrueApi {
       )
       return { user: data, data, error: null }
     } catch (e) {
-      return { user: null, data: null, error: e as ApiError }
+      return { user: null, data: null, error: e as AuthError }
     }
   }
 
@@ -808,14 +809,14 @@ export default class GoTrueApi {
    */
   async getUser(
     jwt: string
-  ): Promise<{ user: User | null; data: User | null; error: ApiError | null }> {
+  ): Promise<{ user: User | null; data: User | null; error: AuthError | null }> {
     try {
       const data: any = await get(this.fetch, `${this.url}/user`, {
         headers: this._createRequestHeaders(jwt),
       })
       return { user: data, data, error: null }
     } catch (e) {
-      return { user: null, data: null, error: e as ApiError }
+      return { user: null, data: null, error: e as AuthError }
     }
   }
 
@@ -827,14 +828,14 @@ export default class GoTrueApi {
   async updateUser(
     jwt: string,
     attributes: UserAttributes
-  ): Promise<{ user: User | null; data: User | null; error: ApiError | null }> {
+  ): Promise<{ user: User | null; data: User | null; error: AuthError | null }> {
     try {
       const data: any = await put(this.fetch, `${this.url}/user`, attributes, {
         headers: this._createRequestHeaders(jwt),
       })
       return { user: data, data, error: null }
     } catch (e) {
-      return { user: null, data: null, error: e as ApiError }
+      return { user: null, data: null, error: e as AuthError }
     }
   }
 }

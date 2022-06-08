@@ -19,8 +19,9 @@ import {
 import { polyfillGlobalThis } from './lib/polyfills'
 import { Fetch } from './lib/fetch'
 
+import { isAuthError, AuthError } from './lib/errors'
+
 import type {
-  ApiError,
   Session,
   User,
   UserAttributes,
@@ -74,7 +75,8 @@ export default class GoTrueClient {
   protected multiTab: boolean
   protected stateChangeEmitters: Map<string, Subscription> = new Map()
   protected refreshTokenTimer?: ReturnType<typeof setTimeout>
-  protected networkRetries = 0
+  // eslint-disable-next-line @typescript-eslint/no-inferrable-types
+  protected networkRetries: number = 0
   protected refreshingDeferred: Deferred<{
     data: Session
     error: null
@@ -148,11 +150,14 @@ export default class GoTrueClient {
       data?: object
       captchaToken?: string
     } = {}
-  ): Promise<{
-    user: User | null
-    session: Session | null
-    error: ApiError | null
-  }> {
+  ): Promise<
+    | {
+        user: User | null
+        session: Session | null
+        error: null
+      }
+    | { user: null; session: null; error: AuthError }
+  > {
     try {
       this._removeSession()
 
@@ -191,8 +196,12 @@ export default class GoTrueClient {
       }
 
       return { user, session, error: null }
-    } catch (e) {
-      return { user: null, session: null, error: e as ApiError }
+    } catch (error) {
+      if (isAuthError(error)) {
+        return { user: null, session: null, error }
+      }
+
+      throw error
     }
   }
 
@@ -222,7 +231,7 @@ export default class GoTrueClient {
     user: User | null
     provider?: Provider
     url?: string | null
-    error: ApiError | null
+    error: AuthError | null
   }> {
     try {
       this._removeSession()
@@ -275,7 +284,7 @@ export default class GoTrueClient {
         `You must provide either an email, phone number, a third-party provider or OpenID Connect.`
       )
     } catch (e) {
-      return { user: null, session: null, error: e as ApiError }
+      return { user: null, session: null, error: e as AuthError }
     }
   }
 
@@ -295,7 +304,7 @@ export default class GoTrueClient {
   ): Promise<{
     user: User | null
     session: Session | null
-    error: ApiError | null
+    error: AuthError | null
   }> {
     try {
       this._removeSession()
@@ -326,7 +335,7 @@ export default class GoTrueClient {
 
       return { user, session, error: null }
     } catch (e) {
-      return { user: null, session: null, error: e as ApiError }
+      return { user: null, session: null, error: e as AuthError }
     }
   }
 
@@ -429,7 +438,7 @@ export default class GoTrueClient {
   async refreshSession(): Promise<{
     data: Session | null
     user: User | null
-    error: ApiError | null
+    error: AuthError | null
   }> {
     try {
       if (!this.currentSession?.access_token) throw new Error('Not logged in.')
@@ -440,7 +449,7 @@ export default class GoTrueClient {
 
       return { data: this.currentSession, user: this.currentUser, error: null }
     } catch (e) {
-      return { data: null, user: null, error: e as ApiError }
+      return { data: null, user: null, error: e as AuthError }
     }
   }
 
@@ -449,7 +458,7 @@ export default class GoTrueClient {
    */
   async update(
     attributes: UserAttributes
-  ): Promise<{ data: User | null; user: User | null; error: ApiError | null }> {
+  ): Promise<{ data: User | null; user: User | null; error: AuthError | null }> {
     try {
       if (!this.currentSession?.access_token) throw new Error('Not logged in.')
 
@@ -466,7 +475,7 @@ export default class GoTrueClient {
 
       return { data: user, user, error: null }
     } catch (e) {
-      return { data: null, user: null, error: e as ApiError }
+      return { data: null, user: null, error: e as AuthError }
     }
   }
 
@@ -476,7 +485,7 @@ export default class GoTrueClient {
    */
   async setSession(
     refresh_token: string
-  ): Promise<{ session: Session | null; error: ApiError | null }> {
+  ): Promise<{ session: Session | null; error: AuthError | null }> {
     try {
       if (!refresh_token) {
         throw new Error('No current session.')
@@ -490,7 +499,7 @@ export default class GoTrueClient {
       this._notifyAllSubscribers('SIGNED_IN')
       return { session: data, error: null }
     } catch (e) {
-      return { error: e as ApiError, session: null }
+      return { error: e as AuthError, session: null }
     }
   }
 
@@ -526,7 +535,7 @@ export default class GoTrueClient {
    */
   async getSessionFromUrl(options?: {
     storeSession?: boolean
-  }): Promise<{ data: Session | null; error: ApiError | null }> {
+  }): Promise<{ data: Session | null; error: AuthError | null }> {
     try {
       if (!isBrowser()) throw new Error('No browser detected.')
 
@@ -571,7 +580,7 @@ export default class GoTrueClient {
 
       return { data: session, error: null }
     } catch (e) {
-      return { data: null, error: e as ApiError }
+      return { data: null, error: e as AuthError }
     }
   }
 
@@ -581,7 +590,7 @@ export default class GoTrueClient {
    *
    * For server-side management, you can disable sessions by passing a JWT through to `auth.api.signOut(JWT: string)`
    */
-  async signOut(): Promise<{ error: ApiError | null }> {
+  async signOut(): Promise<{ error: AuthError | null }> {
     const accessToken = this.currentSession?.access_token
     this._removeSession()
     this._notifyAllSubscribers('SIGNED_OUT')
@@ -598,7 +607,7 @@ export default class GoTrueClient {
    */
   onAuthStateChange(callback: (event: AuthChangeEvent, session: Session | null) => void): {
     data: Subscription | null
-    error: ApiError | null
+    error: AuthError | null
   } {
     try {
       const id: string = uuid()
@@ -612,7 +621,7 @@ export default class GoTrueClient {
       this.stateChangeEmitters.set(id, subscription)
       return { data: subscription, error: null }
     } catch (e) {
-      return { data: null, error: e as ApiError }
+      return { data: null, error: e as AuthError }
     }
   }
 
@@ -636,7 +645,7 @@ export default class GoTrueClient {
 
       return { data, user: data.user, session: data, error: null }
     } catch (e) {
-      return { data: null, user: null, session: null, error: e as ApiError }
+      return { data: null, user: null, session: null, error: e as AuthError }
     }
   }
 
@@ -652,7 +661,7 @@ export default class GoTrueClient {
 
       return { data, user: data.user, session: data, error: null }
     } catch (e) {
-      return { data: null, user: null, session: null, error: e as ApiError }
+      return { data: null, user: null, session: null, error: e as AuthError }
     }
   }
 
@@ -679,7 +688,7 @@ export default class GoTrueClient {
     } catch (e) {
       // fallback to returning the URL
       if (url) return { provider, url, data: null, session: null, user: null, error: null }
-      return { data: null, user: null, session: null, error: e as ApiError }
+      return { data: null, user: null, session: null, error: e as AuthError }
     }
   }
 
@@ -692,7 +701,7 @@ export default class GoTrueClient {
   }: OpenIDConnectCredentials): Promise<{
     session: Session | null
     user: User | null
-    error: ApiError | null
+    error: AuthError | null
   }> {
     if (id_token && nonce && ((client_id && issuer) || provider)) {
       try {
@@ -708,7 +717,7 @@ export default class GoTrueClient {
         this._notifyAllSubscribers('SIGNED_IN')
         return { user: data.user, session: data, error: null }
       } catch (e) {
-        return { user: null, session: null, error: e as ApiError }
+        return { user: null, session: null, error: e as AuthError }
       }
     }
     throw new Error(`You must provide a OpenID Connect provider with your id token and nonce.`)
@@ -813,7 +822,7 @@ export default class GoTrueClient {
 
       return result
     } catch (e) {
-      return { data: null, error: e as ApiError }
+      return { data: null, error: e as AuthError }
     }
   }
 
