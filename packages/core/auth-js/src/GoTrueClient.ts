@@ -365,9 +365,15 @@ export default class GoTrueClient {
         error: null
       }
   > {
-    const currentSession = this.persistSession
-      ? ((await getItemAsync(this.localStorage, STORAGE_KEY)) as Session | null)
-      : this.inMemorySession
+    let currentSession: Session | null = null
+
+    if (this.persistSession) {
+      const persistedSession = await getItemAsync(this.localStorage, STORAGE_KEY)
+
+      currentSession = persistedSession?.currentSession ?? null
+    } else {
+      currentSession = this.inMemorySession
+    }
 
     if (!currentSession) {
       return { session: null, error: null }
@@ -491,7 +497,6 @@ export default class GoTrueClient {
   /**
    * Overrides the JWT on the current client. The JWT will then be sent in all subsequent network requests.
    * @param access_token a jwt access token
-   * @deprecated you can use `getSession()` instead as it reads from storage every time (always fresh)
    */
   setAuth(access_token: string): Session {
     this.currentSession = {
@@ -499,6 +504,15 @@ export default class GoTrueClient {
       access_token,
       token_type: 'bearer',
       user: this.user(),
+    }
+
+    if (!this.persistSession) {
+      this.inMemorySession = {
+        ...this.inMemorySession,
+        access_token,
+        token_type: 'bearer',
+        user: this.inMemorySession?.user ?? null,
+      }
     }
 
     this._notifyAllSubscribers('TOKEN_REFRESHED')
