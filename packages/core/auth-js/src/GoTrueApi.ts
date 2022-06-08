@@ -943,11 +943,13 @@ export default class GoTrueApi {
     attributes: AdminUserAttributes
   ): Promise<
     | {
+        user: null
         data: User
         error: null
       }
     | {
         user: User
+        data: null
         error: null
       }
     | { user: null; data: null; error: AuthError }
@@ -976,11 +978,13 @@ export default class GoTrueApi {
    */
   async deleteUser(uid: string): Promise<
     | {
+        user: null
         data: User
         error: null
       }
     | {
         user: User
+        data: null
         error: null
       }
     | { user: null; data: null; error: AuthError }
