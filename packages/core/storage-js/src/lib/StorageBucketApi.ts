@@ -66,7 +66,7 @@ export class StorageBucketApi {
   /**
    * Updates a new Storage bucket
    *
-   * @param id A unique identifier for the bucket you are creating.
+   * @param id A unique identifier for the bucket you are updating.
    */
   async updateBucket(
     id: string,
