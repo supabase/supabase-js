@@ -1,6 +1,6 @@
 {
   "name": "@supabase/gotrue-js",
-  "version": "0.2.0",
+  "version": "0.0.0",
   "description": "Isomorphic GoTrue client",
   "keywords": [
     "gotrue",
