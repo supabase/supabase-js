@@ -232,7 +232,6 @@ describe('GoTrueClient', () => {
       })
 
       expect(error).not.toBeNull()
-      expect(error?.status).toEqual(400)
       expect(session).toBeNull()
       expect(user).toBeNull()
 

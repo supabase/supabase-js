@@ -1,4 +1,4 @@
-export class AuthApiError extends Error {
+export class AuthError extends Error {
   protected __isAuthError = true
 
   constructor(message: string) {
@@ -11,7 +11,7 @@ export function isAuthError(error: unknown): error is AuthError {
   return typeof error === 'object' && error !== null && '__isAuthError' in error
 }
 
-export class AuthError extends AuthApiError {
+export class AuthApiError extends AuthError {
   status: number
 
   constructor(message: string, status: number) {
@@ -29,7 +29,7 @@ export class AuthError extends AuthApiError {
   }
 }
 
-export class AuthUnknownError extends AuthApiError {
+export class AuthUnknownError extends AuthError {
   originalError: unknown
 
   constructor(message: string, originalError: unknown) {

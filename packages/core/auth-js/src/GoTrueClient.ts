@@ -19,7 +19,7 @@ import {
 import { polyfillGlobalThis } from './lib/polyfills'
 import { Fetch } from './lib/fetch'
 
-import { isAuthError, AuthError, AuthUnknownError } from './lib/errors'
+import { isAuthError, AuthError, AuthApiError } from './lib/errors'
 
 import type {
   Session,
@@ -464,7 +464,7 @@ export default class GoTrueClient {
     | { user: null; data: null; error: AuthError }
   > {
     try {
-      if (!this.currentSession?.access_token) throw new AuthError('Not logged in.', 401)
+      if (!this.currentSession?.access_token) throw new AuthApiError('Not logged in.', 401)
 
       // currentSession and currentUser will be updated to latest on _callRefreshToken
       const { error } = await this._callRefreshToken()
@@ -587,7 +587,7 @@ export default class GoTrueClient {
     | { data: null; error: AuthError }
   > {
     try {
-      if (!isBrowser()) throw new AuthUnknownError('No browser detected.', 500)
+      if (!isBrowser()) throw new AuthApiError('No browser detected.', 500)
 
       const error_description = getParameterByName('error_description')
       if (error_description) throw new Error(error_description)

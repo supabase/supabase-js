@@ -13,7 +13,7 @@ import { COOKIE_OPTIONS } from './lib/constants'
 import { setCookies, getCookieString } from './lib/cookies'
 import { expiresAt, resolveFetch } from './lib/helpers'
 
-import { isAuthError, AuthError } from './lib/errors'
+import { isAuthError, AuthError, AuthApiError } from './lib/errors'
 
 export default class GoTrueApi {
   protected url: string
@@ -878,7 +878,7 @@ export default class GoTrueApi {
   > {
     try {
       if (!req.cookies) {
-        throw new AuthError(
+        throw new AuthApiError(
           'Not able to parse cookies! When using Express make sure the cookie-parser middleware is in use!',
           500
         )
@@ -893,9 +893,9 @@ export default class GoTrueApi {
 
       const { user, error } = await this.getUser(access_token)
       if (error) {
-        if (!refresh_token) throw new AuthError('No refresh_token cookie found!', 400)
+        if (!refresh_token) throw new AuthApiError('No refresh_token cookie found!', 400)
         if (!res)
-          throw new AuthError(
+          throw new AuthApiError(
             'You need to pass the res object to automatically refresh the session!',
             400
           )

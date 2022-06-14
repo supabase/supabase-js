@@ -1,4 +1,4 @@
-import { AuthError, AuthUnknownError } from './errors'
+import { AuthApiError, AuthUnknownError } from './errors'
 import { resolveResponse } from './helpers'
 
 export type Fetch = typeof fetch
@@ -24,7 +24,7 @@ const handleError = (error: unknown, reject: (reason?: any) => void) => {
 
   if (error instanceof Res) {
     error.json().then((err) => {
-      reject(new AuthError(_getErrorMessage(err), error.status || 500))
+      reject(new AuthApiError(_getErrorMessage(err), error.status || 500))
     })
   } else {
     reject(new AuthUnknownError(_getErrorMessage(error), error))

@@ -401,7 +401,6 @@ describe('GoTrueApi', () => {
         )
 
         expect(data).toBeNull()
-        expect(error?.status).toEqual(422)
         expect(error?.message).toEqual('Unable to validate email address: invalid format')
       })
 
@@ -437,7 +436,6 @@ describe('GoTrueApi', () => {
       test('signOut() with an invalid access token', async () => {
         const { error } = await serviceRoleApiClient.signOut('this-is-a-bad-token')
 
-        expect(error?.status).toEqual(401)
         expect(error?.message).toMatch(/^Invalid token/)
       })
     })
@@ -458,7 +456,6 @@ describe('GoTrueApi', () => {
         data // ?
 
         expect(data).toBeNull()
-        expect(error?.status).toEqual(422)
         expect(error?.message).toEqual('Invalid phone number format')
       })
     })
@@ -470,7 +467,6 @@ describe('GoTrueApi', () => {
         const { error, data } = await serviceRoleApiClientWithSms.signInWithPhone(phone, password)
 
         expect(data).toBeNull()
-        expect(error?.status).toEqual(400)
         expect(error?.message).toEqual('Invalid login credentials')
       })
     })
@@ -482,7 +478,6 @@ describe('GoTrueApi', () => {
         const { error, data } = await serviceRoleApiClient.sendMobileOTP(`++bad-${phone}-number`)
 
         expect(data).toBeNull()
-        expect(error?.status).toEqual(422)
         expect(error?.message).toMatch(/^Invalid phone number format/)
       })
     })
@@ -499,7 +494,6 @@ describe('GoTrueApi', () => {
         })
 
         expect(user).toBeNull()
-        expect(error?.status).toEqual(404)
         expect(error?.message).toEqual('User not found')
       })
 
@@ -512,7 +506,6 @@ describe('GoTrueApi', () => {
         })
 
         expect(user).toBeNull()
-        expect(error?.status).toEqual(422)
         expect(error?.message).toEqual('Invalid phone number format')
       })
     })
@@ -528,7 +521,6 @@ describe('GoTrueApi', () => {
         })
 
         expect(data).toBeNull()
-        expect(error?.status).toEqual(422)
         expect(error?.message).toEqual('Invalid email format')
       })
       test('verifyOTP() with invalid phone', async () => {
@@ -541,7 +533,6 @@ describe('GoTrueApi', () => {
         })
 
         expect(data).toBeNull()
-        expect(error?.status).toEqual(422)
         expect(error?.message).toEqual('Invalid phone number format')
       })
     })
