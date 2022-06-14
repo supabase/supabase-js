@@ -387,7 +387,7 @@ export default class GoTrueClient {
       }
     | {
         session: null
-        error: ApiError
+        error: AuthError
       }
     | {
         session: null
@@ -433,7 +433,7 @@ export default class GoTrueClient {
       }
     | {
         user: null
-        error: ApiError
+        error: AuthError
       }
     | {
         user: null
