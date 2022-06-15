@@ -13,7 +13,6 @@ export type GenericObject = { [key: string]: string }
 export type Fetch = typeof fetch
 
 export type SupabaseClientOptions = {
-  pf
   /**
    * The Postgres schema which your tables belong to. Must be on the list of exposed schemas in Supabase. Defaults to 'public'.
    */
@@ -63,7 +62,7 @@ export type SupabaseClientOptions = {
   /**
    * A custom `fetch` implementation.
    */
-  fetch?: Optional<Fetch>
+  fetch?: Fetch
   /**
    * Optional headers for initializing the client.
    */
