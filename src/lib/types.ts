@@ -13,67 +13,65 @@ export type GenericObject = { [key: string]: string }
 export type Fetch = typeof fetch
 
 export type SupabaseClientOptions = {
+  pf
   /**
    * The Postgres schema which your tables belong to. Must be on the list of exposed schemas in Supabase. Defaults to 'public'.
    */
-  rest?: {
-    schema?: string
-  },
+  db: {
+    schema: string
+  }
 
-  auth?: {
+  auth: {
     /**
      * Automatically refreshes the token for logged in users.
      */
-    autoRefreshToken?: boolean,
+    autoRefreshToken: boolean
     /**
      * Allows to enable/disable multi-tab/window events
      */
-    multiTab?: boolean,
+    multiTab: boolean
     /**
      * Whether to persist a logged in session to storage.
      */
-    persistSession?: boolean,
+    persistSession: boolean
     /**
      * Detect a session from the URL. Used for OAuth login callbacks.
      */
-    detectSessionInUrl?: boolean,
+    detectSessionInUrl: boolean
     /**
      * A storage provider. Used to store the logged in session.
      */
-    localStorage?: SupabaseAuthClientOptions['localStorage'],
+    localStorage: SupabaseAuthClientOptions['localStorage']
     /**
      * Options passed to the gotrue-js instance
      */
-    cookieOptions?: SupabaseAuthClientOptions['cookieOptions']
-  },
+    cookieOptions: SupabaseAuthClientOptions['cookieOptions']
+  }
 
   /**
    * Options passed to the realtime-js instance
    */
-  realtime?: RealtimeClientOptions,
-  // TODO(Joel) -- Validate if this is needed
+  realtime?: RealtimeClientOptions
   /**
    * Options passed to the storage-js instance
    */
-  storage?: StorageOptions,
+  storage?: StorageOptions
   /**
    * Options passed to the functions-js instance
    */
-  functions?: FunctionsOptions,
+  functions?: FunctionsOptions
   /**
    * A custom `fetch` implementation.
    */
-  fetch?: Fetch,
+  fetch?: Optional<Fetch>
   /**
    * Optional headers for initializing the client.
    */
-  headers?: GenericObject,
+  headers?: GenericObject
   /**
    * Throw errors, instead of returning them.
    */
-  shouldThrowOnError?: boolean,
-
-
+  shouldThrowOnError?: boolean
 }
 
 export type SupabaseRealtimePayload<T> = {

@@ -1,6 +1,6 @@
 import { DEFAULT_HEADERS, STORAGE_KEY } from './lib/constants'
 import { stripTrailingSlash, isBrowser } from './lib/helpers'
-import { Fetch, GenericObject, SupabaseClientOptions } from './lib/types'
+import { Fetch, GenericObject, SupabaseClientOptions, SupabaseAuthClientOptions } from './lib/types'
 import { SupabaseAuthClient } from './lib/SupabaseAuthClient'
 import { SupabaseQueryBuilder } from './lib/SupabaseQueryBuilder'
 import { SupabaseStorageClient } from '@supabase/storage-js'
@@ -87,13 +87,13 @@ export default class SupabaseClient {
       this.functionsUrl = `${_supabaseUrl}/functions/v1`
     }
 
-    this.schema = settings.schema
-    this.multiTab = settings.multiTab
+    this.schema = settings.db?.schema || ''
+    this.multiTab = settings.auth?.multiTab || false
     this.fetch = settings.fetch
     this.headers = { ...DEFAULT_HEADERS, ...options?.headers }
     this.shouldThrowOnError = settings.shouldThrowOnError || false
 
-    this.auth = this._initSupabaseAuthClient(settings)
+    this.auth = this._initSupabaseAuthClient(settings.auth || {}, this.headers, this.fetch)
     this.realtime = this._initRealtimeClient({ headers: this.headers, ...settings.realtime })
 
     this._listenForAuthEvents()
@@ -261,16 +261,18 @@ export default class SupabaseClient {
     return this.realtime.channels as RealtimeSubscription[]
   }
 
-  private _initSupabaseAuthClient({
-    autoRefreshToken,
-    persistSession,
-    detectSessionInUrl,
-    localStorage,
-    headers,
-    fetch,
-    cookieOptions,
-    multiTab,
-  }: SupabaseClientOptions) {
+  private _initSupabaseAuthClient(
+    {
+      autoRefreshToken,
+      multiTab,
+      persistSession,
+      detectSessionInUrl,
+      localStorage,
+      cookieOptions,
+    }: SupabaseAuthClientOptions,
+    headers?: GenericObject,
+    fetch?: Fetch
+  ) {
     const authHeaders = {
       Authorization: `Bearer ${this.supabaseKey}`,
       apikey: `${this.supabaseKey}`,
