@@ -245,26 +245,25 @@ export default class GoTrueApi {
     password: string
   ): Promise<
     | {
-        data: Session
+        session: Session
         error: null
       }
-    | { data: null; error: AuthError }
+    | { session: null; error: AuthError }
   > {
     try {
       const headers = { ...this.headers }
       const queryString = '?grant_type=password'
-      const data = await post(
+      const session = await post(
         this.fetch,
         `${this.url}/token${queryString}`,
         { phone, password },
         { headers }
       )
-      const session = { ...data }
-      if (session.expires_in) session.expires_at = expiresAt(data.expires_in)
-      return { data: session, error: null }
+      if (session.expires_in) session.expires_at = expiresAt(session.expires_in)
+      return { session, error: null }
     } catch (error) {
       if (isAuthError(error)) {
-        return { data: null, error }
+        return { session: null, error }
       }
 
       throw error
@@ -287,26 +286,26 @@ export default class GoTrueApi {
     provider,
   }: OpenIDConnectCredentials): Promise<
     | {
-        data: Session
+        session: Session
         error: null
       }
-    | { data: null; error: AuthError }
+    | { session: null; error: AuthError }
   > {
     try {
       const headers = { ...this.headers }
       const queryString = '?grant_type=id_token'
-      const data = await post(
+      const session = await post(
         this.fetch,
         `${this.url}/token${queryString}`,
         { id_token, nonce, client_id, issuer, provider },
         { headers }
       )
-      const session = { ...data }
-      if (session.expires_in) session.expires_at = expiresAt(data.expires_in)
-      return { data: session, error: null }
+      // const session = { ...data }
+      if (session.expires_in) session.expires_at = expiresAt(session.expires_in)
+      return { session, error: null }
     } catch (error) {
       if (isAuthError(error)) {
-        return { data: null, error }
+        return { session: null, error }
       }
 
       throw error
@@ -525,10 +524,10 @@ export default class GoTrueApi {
     } = {}
   ): Promise<
     | {
-        data: User
+        user: User
         error: null
       }
-    | { data: null; error: AuthError }
+    | { user: null; error: AuthError }
   > {
     try {
       const headers = { ...this.headers }
@@ -536,16 +535,16 @@ export default class GoTrueApi {
       if (options.redirectTo) {
         queryString += '?redirect_to=' + encodeURIComponent(options.redirectTo)
       }
-      const data = await post(
+      const user = await post(
         this.fetch,
         `${this.url}/invite${queryString}`,
         { email, data: options.data },
         { headers }
       )
-      return { data, error: null }
+      return { user, error: null }
     } catch (error) {
       if (isAuthError(error)) {
-        return { data: null, error }
+        return { user: null, error }
       }
 
       throw error
@@ -598,10 +597,10 @@ export default class GoTrueApi {
    */
   async refreshAccessToken(refreshToken: string): Promise<
     | {
-        data: Session
+        session: Session
         error: null
       }
-    | { data: null; error: AuthError }
+    | { session: null; error: AuthError }
   > {
     try {
       const data: any = await post(
@@ -612,10 +611,10 @@ export default class GoTrueApi {
       )
       const session = { ...data }
       if (session.expires_in) session.expires_at = expiresAt(data.expires_in)
-      return { data: session, error: null }
+      return { session, error: null }
     } catch (error) {
       if (isAuthError(error)) {
-        return { data: null, error }
+        return { session: null, error }
       }
 
       throw error
@@ -816,15 +815,15 @@ export default class GoTrueApi {
    *
    * This function should only be called on a server. Never expose your `service_role` key in the browser.
    */
-  async listUsers(): Promise<{ data: User[]; error: null } | { data: null; error: AuthError }> {
+  async listUsers(): Promise<{ users: User[]; error: null } | { users: null; error: AuthError }> {
     try {
       const data: any = await get(this.fetch, `${this.url}/admin/users`, {
         headers: this.headers,
       })
-      return { data: data.users, error: null }
+      return { users: data.users, error: null }
     } catch (error) {
       if (isAuthError(error)) {
-        return { data: null, error }
+        return { users: null, error }
       }
 
       throw error
@@ -840,15 +839,15 @@ export default class GoTrueApi {
    */
   async getUserById(
     uid: string
-  ): Promise<{ data: User; error: null } | { data: null; error: AuthError }> {
+  ): Promise<{ user: User; error: null } | { user: null; error: AuthError }> {
     try {
-      const data: any = await get(this.fetch, `${this.url}/admin/users/${uid}`, {
+      const user = await get(this.fetch, `${this.url}/admin/users/${uid}`, {
         headers: this.headers,
       })
-      return { data, error: null }
+      return { user, error: null }
     } catch (error) {
       if (isAuthError(error)) {
-        return { data: null, error }
+        return { user: null, error }
       }
 
       throw error
@@ -899,16 +898,16 @@ export default class GoTrueApi {
             'You need to pass the res object to automatically refresh the session!',
             400
           )
-        const { data, error } = await this.refreshAccessToken(refresh_token)
+        const { session, error } = await this.refreshAccessToken(refresh_token)
         if (error) {
           throw error
-        } else if (data) {
+        } else if (session) {
           setCookies(
             req,
             res,
             [
-              { key: 'access-token', value: data.access_token },
-              { key: 'refresh-token', value: data.refresh_token! },
+              { key: 'access-token', value: session.access_token },
+              { key: 'refresh-token', value: session.refresh_token! },
             ].map((token) => ({
               name: `${this.cookieName()}-${token.key}`,
               value: token.value,
@@ -918,7 +917,12 @@ export default class GoTrueApi {
               sameSite: this.cookieOptions.sameSite,
             }))
           )
-          return { token: data.access_token, user: data.user, data: data.user, error: null }
+          return {
+            token: session.access_token,
+            user: session.user,
+            data: session.user,
+            error: null,
+          }
         }
       }
       return { token: access_token, user: user, data: user, error: null }
@@ -943,26 +947,20 @@ export default class GoTrueApi {
     attributes: AdminUserAttributes
   ): Promise<
     | {
-        user: null
-        data: User
-        error: null
-      }
-    | {
         user: User
-        data: null
         error: null
       }
-    | { user: null; data: null; error: AuthError }
+    | { user: null; error: AuthError }
   > {
     try {
       this //
-      const data: any = await put(this.fetch, `${this.url}/admin/users/${uid}`, attributes, {
+      const user = await put(this.fetch, `${this.url}/admin/users/${uid}`, attributes, {
         headers: this.headers,
       })
-      return { user: data, data, error: null }
+      return { user, error: null }
     } catch (error) {
       if (isAuthError(error)) {
-        return { data: null, user: null, error }
+        return { user: null, error }
       }
 
       throw error
@@ -978,19 +976,13 @@ export default class GoTrueApi {
    */
   async deleteUser(uid: string): Promise<
     | {
-        user: null
-        data: User
-        error: null
-      }
-    | {
         user: User
-        data: null
         error: null
       }
-    | { user: null; data: null; error: AuthError }
+    | { user: null; error: AuthError }
   > {
     try {
-      const data: any = await remove(
+      const user = await remove(
         this.fetch,
         `${this.url}/admin/users/${uid}`,
         {},
@@ -998,10 +990,10 @@ export default class GoTrueApi {
           headers: this.headers,
         }
       )
-      return { user: data, data, error: null }
+      return { user, error: null }
     } catch (error) {
       if (isAuthError(error)) {
-        return { data: null, user: null, error }
+        return { user: null, error }
       }
 
       throw error
@@ -1020,29 +1012,18 @@ export default class GoTrueApi {
   async getUser(jwt: string): Promise<
     | {
         user: User
-        data: null
         error: null
       }
-    | {
-        user: null
-        data: User
-        error: null
-      }
-    | {
-        user: User
-        data: User
-        error: null
-      }
-    | { user: null; data: null; error: AuthError }
+    | { user: null; error: AuthError }
   > {
     try {
-      const data: User = await get(this.fetch, `${this.url}/user`, {
+      const user: User = await get(this.fetch, `${this.url}/user`, {
         headers: this._createRequestHeaders(jwt),
       })
-      return { user: data, data, error: null }
+      return { user, error: null }
     } catch (error) {
       if (isAuthError(error)) {
-        return { data: null, user: null, error }
+        return { user: null, error }
       }
 
       throw error
@@ -1059,25 +1040,19 @@ export default class GoTrueApi {
     attributes: UserAttributes
   ): Promise<
     | {
-        user: null
-        data: User
-        error: null
-      }
-    | {
         user: User
-        data: null
         error: null
       }
-    | { user: null; data: null; error: AuthError }
+    | { user: null; error: AuthError }
   > {
     try {
-      const data: any = await put(this.fetch, `${this.url}/user`, attributes, {
+      const user: User = await put(this.fetch, `${this.url}/user`, attributes, {
         headers: this._createRequestHeaders(jwt),
       })
-      return { user: data, data, error: null }
+      return { user, error: null }
     } catch (error) {
       if (isAuthError(error)) {
-        return { data: null, user: null, error }
+        return { user: null, error }
       }
 
       throw error

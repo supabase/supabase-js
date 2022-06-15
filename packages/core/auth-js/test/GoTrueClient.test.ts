@@ -118,35 +118,33 @@ describe('GoTrueClient', () => {
       expect(error).toBeNull()
       expect(session).not.toBeNull()
 
-      const [{ data: data1, error: error1 }, { data: data2, error: error2 }] = await Promise.all([
-        authWithSession.refreshSession(),
-        authWithSession.refreshSession(),
-      ])
+      const [{ session: session1, error: error1 }, { session: session2, error: error2 }] =
+        await Promise.all([authWithSession.refreshSession(), authWithSession.refreshSession()])
 
       expect(error1).toBeNull()
       expect(error2).toBeNull()
-      expect(data1).toHaveProperty('access_token')
-      expect(data2).toHaveProperty('access_token')
+      expect(session1).toHaveProperty('access_token')
+      expect(session2).toHaveProperty('access_token')
 
       // if both have the same access token, we can assume that they are
       // the result of the same refresh
-      expect(data1!.access_token).toEqual(data2!.access_token)
+      expect(session1!.access_token).toEqual(session2!.access_token)
 
       expect(refreshAccessTokenSpy).toBeCalledTimes(1)
     })
 
     test('getSessionFromUrl() can only be called from a browser', async () => {
-      const { error, data } = await authWithSession.getSessionFromUrl()
+      const { error, session } = await authWithSession.getSessionFromUrl()
 
       expect(error?.message).toEqual('No browser detected.')
-      expect(data).toBeNull()
+      expect(session).toBeNull()
     })
 
     test('refreshSession() raises error if not logged in', async () => {
-      const { error, user, data } = await authWithSession.refreshSession()
+      const { error, user, session } = await authWithSession.refreshSession()
       expect(error?.message).toEqual('Not logged in.')
       expect(user).toBeNull()
-      expect(data).toBeNull()
+      expect(session).toBeNull()
     })
 
     test('refreshSession() forces refreshes the session to get a new refresh token for same user', async () => {
@@ -162,15 +160,15 @@ describe('GoTrueClient', () => {
 
       const refreshToken = session?.refresh_token
 
-      const { error, user, data } = await authWithSession.refreshSession()
+      const { error, user, session: sessionRefreshed } = await authWithSession.refreshSession()
 
       expect(error).toBeNull()
       expect(user).not.toBeNull()
-      expect(data).not.toBeNull()
+      expect(sessionRefreshed).not.toBeNull()
 
       expect(user?.email).toEqual(email)
-      expect(data).toHaveProperty('refresh_token')
-      expect(refreshToken).not.toEqual(data?.refresh_token)
+      expect(sessionRefreshed).toHaveProperty('refresh_token')
+      expect(refreshToken).not.toEqual(sessionRefreshed?.refresh_token)
     })
   })
 
@@ -596,7 +594,7 @@ describe('The auth client can signin with third-party oAuth providers', () => {
   })
 
   describe('Developers can subscribe and unsubscribe', () => {
-    const { data: subscription } = authSubscriptionClient.onAuthStateChange(() =>
+    const { subscription } = authSubscriptionClient.onAuthStateChange(() =>
       console.log('onAuthStateChange was called')
     )
 
