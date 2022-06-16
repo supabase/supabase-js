@@ -8,7 +8,6 @@ export const NETWORK_FAILURE = {
   MAX_RETRIES: 10,
   RETRY_INTERVAL: 2, // in deciseconds
 }
-export const STORAGE_KEY = 'supabase.auth.token'
 export const COOKIE_OPTIONS = {
   name: 'sb',
   lifetime: 60 * 60 * 8,
