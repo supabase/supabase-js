@@ -1,18 +1,13 @@
 import { FunctionsClient } from '@supabase/functions-js'
 import { AuthChangeEvent } from '@supabase/gotrue-js'
-import { PostgrestClient } from '@supabase/postgrest-js'
-import {
-  RealtimeChannel,
-  RealtimeClient,
-  RealtimeClientOptions,
-  RealtimeSubscription,
-} from '@supabase/realtime-js'
+import { PostgrestClient, PostgrestQueryBuilder } from '@supabase/postgrest-js'
+import { RealtimeChannel, RealtimeClient, RealtimeClientOptions } from '@supabase/realtime-js'
 import { SupabaseStorageClient } from '@supabase/storage-js'
 import { DEFAULT_HEADERS, STORAGE_KEY } from './lib/constants'
 import { fetchWithAuth } from './lib/fetch'
 import { isBrowser, stripTrailingSlash } from './lib/helpers'
 import { SupabaseAuthClient } from './lib/SupabaseAuthClient'
-import { SupabaseQueryBuilder } from './lib/SupabaseQueryBuilder'
+import { SupabaseRealtimeClient } from './lib/SupabaseRealtimeClient'
 import { Fetch, SupabaseClientOptions } from './lib/types'
 
 const DEFAULT_OPTIONS = {
@@ -129,13 +124,11 @@ export default class SupabaseClient {
    *
    * @param table The table name to operate on.
    */
-  from<T = any>(table: string): SupabaseQueryBuilder<T> {
+  from<T = any>(table: string): PostgrestQueryBuilder<T> {
     const url = `${this.restUrl}/${table}`
-    return new SupabaseQueryBuilder<T>(url, {
+    return new PostgrestQueryBuilder<T>(url, {
       headers: this.headers,
       schema: this.schema,
-      realtime: this.realtime,
-      table,
       fetch: this.fetch,
       shouldThrowOnError: this.shouldThrowOnError,
     })
@@ -164,32 +157,31 @@ export default class SupabaseClient {
 
   /**
    * Creates a channel with Broadcast and Presence.
-   * Activated when vsndate query param is present in the WebSocket URL.
    */
-  channel(name: string, opts: { selfBroadcast: boolean; [key: string]: any }): RealtimeChannel {
-    const userToken = this.auth.session()?.access_token ?? this.supabaseKey
+  channel(name: string, opts?: { [key: string]: any }): SupabaseRealtimeClient {
+    const token = this.realtime.accessToken ?? this.supabaseKey
 
     if (!this.realtime.isConnected()) {
       this.realtime.connect()
     }
 
-    return this.realtime.channel(name, { ...opts, user_token: userToken }) as RealtimeChannel
+    return new SupabaseRealtimeClient(this.realtime, name, token, opts)
   }
 
   /**
-   * Closes and removes all subscriptions and returns a list of removed
-   * subscriptions and their errors.
+   * Closes and removes all channels and returns a list of removed
+   * channels and their errors.
    */
-  async removeAllSubscriptions(): Promise<
-    { data: { subscription: RealtimeSubscription }; error: Error | null }[]
+  async removeAllChannels(): Promise<
+    { data: { channels: RealtimeChannel }; error: Error | null }[]
   > {
-    const allSubs: RealtimeSubscription[] = this.getSubscriptions().slice()
-    const allSubPromises = allSubs.map((sub) => this.removeSubscription(sub))
-    const allRemovedSubs = await Promise.all(allSubPromises)
+    const allChans: RealtimeChannel[] = this.getChannels().slice()
+    const allChanPromises = allChans.map((chan) => this.removeChannel(chan))
+    const allRemovedChans = await Promise.all(allChanPromises)
 
-    return allRemovedSubs.map(({ error }, i) => {
+    return allRemovedChans.map(({ error }, i) => {
       return {
-        data: { subscription: allSubs[i] },
+        data: { channels: allChans[i] },
         error,
       }
     })
@@ -203,30 +195,13 @@ export default class SupabaseClient {
   async removeChannel(
     channel: RealtimeChannel
   ): Promise<{ data: { openChannels: number }; error: Error | null }> {
-    const { error } = await this._closeSubscription(channel)
-    const allChans: RealtimeSubscription[] = this.getSubscriptions()
+    const { error } = await this._closeChannel(channel)
+    const allChans: RealtimeChannel[] = this.getChannels()
     const openChanCount = allChans.filter((chan) => chan.isJoined()).length
 
     if (allChans.length === 0) await this.realtime.disconnect()
 
     return { data: { openChannels: openChanCount }, error }
-  }
-
-  /**
-   * Closes and removes a subscription and returns the number of open subscriptions.
-   *
-   * @param subscription The subscription you want to close and remove.
-   */
-  async removeSubscription(
-    subscription: RealtimeSubscription
-  ): Promise<{ data: { openSubscriptions: number }; error: Error | null }> {
-    const { error } = await this._closeSubscription(subscription)
-    const allSubs: RealtimeSubscription[] = this.getSubscriptions()
-    const openSubCount = allSubs.filter((chan) => chan.isJoined()).length
-
-    if (allSubs.length === 0) await this.realtime.disconnect()
-
-    return { data: { openSubscriptions: openSubCount }, error }
   }
 
   private async _getAccessToken() {
@@ -235,26 +210,22 @@ export default class SupabaseClient {
     return session?.access_token ?? null
   }
 
-  private async _closeSubscription(
-    subscription: RealtimeSubscription | RealtimeChannel
-  ): Promise<{ error: Error | null }> {
+  private async _closeChannel(channel: RealtimeChannel): Promise<{ error: Error | null }> {
     let error = null
 
-    if (!subscription.isClosed()) {
-      const { error: unsubError } = await this._unsubscribeSubscription(subscription)
+    if (!channel.isClosed()) {
+      const { error: unsubError } = await this._unsubscribeChannel(channel)
       error = unsubError
     }
 
-    this.realtime.remove(subscription)
+    this.realtime.remove(channel)
 
     return { error }
   }
 
-  private _unsubscribeSubscription(
-    subscription: RealtimeSubscription | RealtimeChannel
-  ): Promise<{ error: Error | null }> {
+  private _unsubscribeChannel(channel: RealtimeChannel): Promise<{ error: Error | null }> {
     return new Promise((resolve) => {
-      subscription
+      channel
         .unsubscribe()
         .receive('ok', () => resolve({ error: null }))
         .receive('error', (error: Error) => resolve({ error }))
@@ -263,10 +234,10 @@ export default class SupabaseClient {
   }
 
   /**
-   * Returns an array of all your subscriptions.
+   * Returns an array of all your channels.
    */
-  getSubscriptions(): RealtimeSubscription[] {
-    return this.realtime.channels as RealtimeSubscription[]
+  getChannels(): RealtimeChannel[] {
+    return this.realtime.channels as RealtimeChannel[]
   }
 
   private _initSupabaseAuthClient({
@@ -299,7 +270,7 @@ export default class SupabaseClient {
   private _initRealtimeClient(options?: RealtimeClientOptions) {
     return new RealtimeClient(this.realtimeUrl, {
       ...options,
-      params: { ...options?.params, apikey: this.supabaseKey },
+      params: { ...{ apikey: this.supabaseKey, vsndate: '2022' }, ...options?.params },
     })
   }
 
