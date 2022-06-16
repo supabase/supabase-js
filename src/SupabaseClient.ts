@@ -283,9 +283,11 @@ export default class SupabaseClient {
       Authorization: `Bearer ${this.supabaseKey}`,
       apikey: `${this.supabaseKey}`,
     }
+    const ref = new URL(this.authUrl).hostname.split('.')[0]
     return new SupabaseAuthClient({
       url: this.authUrl,
       headers: { ...headers, ...authHeaders },
+      storageKey: `sb-${ref}-auth-token`,
       autoRefreshToken,
       persistSession,
       detectSessionInUrl,
