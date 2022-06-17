@@ -35,10 +35,10 @@ export default function Account({
         throw 'You must select an image to upload.'
       }
 
-      const user = supabase.auth.user()
+      const { user } = await supabase.auth.getUser()
       const file = event.target.files[0]
       const fileExt = file.name.split('.').pop()
-      const fileName = `${session?.user.id}${Math.random()}.${fileExt}`
+      const fileName = `${session?.user?.id}${Math.random()}.${fileExt}`
       const filePath = `${fileName}`
 
       let { error: uploadError } = await supabase.storage
@@ -127,7 +127,7 @@ export default function Account({
     <div className="account">
       <div>
         <label htmlFor="email">Email</label>
-        <input id="email" type="text" value={session.user.email} disabled />
+        <input id="email" type="text" value={session?.user?.email} disabled />
       </div>
       <div>
         <label htmlFor="username">Name</label>
