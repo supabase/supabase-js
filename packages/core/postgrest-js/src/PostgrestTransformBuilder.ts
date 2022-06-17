@@ -60,7 +60,7 @@ export default class PostgrestTransformBuilder<
     column: string,
     {
       ascending = true,
-      nullsFirst = true,
+      nullsFirst,
       foreignTable,
     }: { ascending?: boolean; nullsFirst?: boolean; foreignTable?: string } = {}
   ): this {
@@ -69,8 +69,8 @@ export default class PostgrestTransformBuilder<
 
     this.url.searchParams.set(
       key,
-      `${existingOrder ? `${existingOrder},` : ''}${column}.${ascending ? 'asc' : 'desc'}.${
-        nullsFirst ? 'nullsfirst' : 'nullslast'
+      `${existingOrder ? `${existingOrder},` : ''}${column}.${ascending ? 'asc' : 'desc'}${
+        nullsFirst === undefined ? '' : nullsFirst ? '.nullsfirst' : '.nullslast'
       }`
     )
     return this
