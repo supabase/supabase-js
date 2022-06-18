@@ -1,19 +1,17 @@
-import { RealtimeSubscription, RealtimeClient, Transformers } from '@supabase/realtime-js'
-import { GenericObject, SupabaseEventTypes, SupabaseRealtimePayload } from './types'
+import { RealtimeChannel, RealtimeClient, Transformers } from '@supabase/realtime-js'
+import { GenericObject, SupabaseRealtimePayload } from './types'
 
 export class SupabaseRealtimeClient {
-  subscription: RealtimeSubscription
+  channel: RealtimeChannel
 
-  constructor(socket: RealtimeClient, headers: GenericObject, schema: string, tableName: string) {
-    const chanParams: GenericObject = {}
-    const topic = tableName === '*' ? `realtime:${schema}` : `realtime:${schema}:${tableName}`
-    const userToken = headers['Authorization'].split(' ')[1]
+  constructor(socket: RealtimeClient, name: string, token: string, opts?: { [key: string]: any }) {
+    let chanParams: GenericObject = { user_token: token }
 
-    if (userToken) {
-      chanParams['user_token'] = userToken
+    if (opts) {
+      chanParams = { ...chanParams, ...opts }
     }
 
-    this.subscription = socket.channel(topic, chanParams) as RealtimeSubscription
+    this.channel = socket.channel(`realtime:${name}`, chanParams) as RealtimeChannel
   }
 
   private getPayloadRecords(payload: any) {
@@ -37,38 +35,44 @@ export class SupabaseRealtimeClient {
    * The event you want to listen to.
    *
    * @param event The event
+   * @param filter An object that specifies what you want to listen to from the event.
    * @param callback A callback function that is called whenever the event occurs.
    */
-  on(event: SupabaseEventTypes, callback: (payload: SupabaseRealtimePayload<any>) => void) {
-    this.subscription.on(event, (payload: any) => {
+  on(
+    event: string,
+    filter?: GenericObject,
+    callback?: (payload: SupabaseRealtimePayload<any>) => void
+  ) {
+    this.channel.on(event, filter ?? {}, (payload: any) => {
+      const { schema, table, commit_timestamp, type, errors } = payload.payload
       let enrichedPayload: SupabaseRealtimePayload<any> = {
-        schema: payload.schema,
-        table: payload.table,
-        commit_timestamp: payload.commit_timestamp,
-        eventType: payload.type,
+        schema: schema,
+        table: table,
+        commit_timestamp: commit_timestamp,
+        eventType: type,
         new: {},
         old: {},
-        errors: payload.errors,
+        errors: errors,
       }
 
-      enrichedPayload = { ...enrichedPayload, ...this.getPayloadRecords(payload) }
+      enrichedPayload = { ...enrichedPayload, ...this.getPayloadRecords(payload.payload) }
 
-      callback(enrichedPayload)
+      callback && callback(enrichedPayload)
     })
     return this
   }
 
   /**
-   * Enables the subscription.
+   * Enables the channel.
    */
   subscribe(callback: Function = () => {}) {
-    this.subscription.onError((e: Error) => callback('SUBSCRIPTION_ERROR', e))
-    this.subscription.onClose(() => callback('CLOSED'))
-    this.subscription
+    this.channel.onError((e: Error) => callback('CHANNEL_ERROR', e))
+    this.channel.onClose(() => callback('CLOSED'))
+    this.channel
       .subscribe()
       .receive('ok', () => callback('SUBSCRIBED'))
-      .receive('error', (e: Error) => callback('SUBSCRIPTION_ERROR', e))
+      .receive('error', (e: Error) => callback('CHANNEL_ERROR', e))
       .receive('timeout', () => callback('RETRYING_AFTER_TIMEOUT'))
-    return this.subscription
+    return this.channel
   }
 }

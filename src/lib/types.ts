@@ -71,5 +71,3 @@ export type SupabaseRealtimePayload<T> = {
   old: T
   errors: string[] | null
 }
-
-export type SupabaseEventTypes = 'INSERT' | 'UPDATE' | 'DELETE' | '*'

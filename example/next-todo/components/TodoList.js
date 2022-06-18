@@ -11,17 +11,30 @@ export default function Todos({ user }) {
 
   useEffect(() => {
     fetchTodos()
+
     subscription1 = supabase
-      .from('todos')
-      .on('UPDATE', (v) => console.log('UPDATE on todos', v))
-      .on('INSERT', (v) => console.log('INSERT on todos', v))
+      .channel('todos-table-channel')
+      .on('realtime', { event: 'UPDATE', schema: 'public', table: 'todos' }, (v) =>
+        console.log('UPDATE on todos', v)
+      )
+      .on('realtime', { event: 'INSERT', schema: 'public', table: 'todos' }, (v) =>
+        console.log('INSERT on todos', v)
+      )
       .subscribe((change) => console.log('todos changed', change))
 
     subscription2 = supabase
-      .from('*')
-      .on('UPDATE', (v) => console.log('UPDATE on schema', v))
-      .on('INSERT', (v) => console.log('INSERT on schema', v))
+      .channel('public-schema-channel')
+      .on('realtime', { event: 'UPDATE', schema: 'public' }, (v) =>
+        console.log('UPDATE on schema', v)
+      )
+      .on('realtime', { event: 'INSERT', schema: 'public' }, (v) =>
+        console.log('INSERT on schema', v)
+      )
       .subscribe((change) => console.log('schema changed', change))
+
+    return () => {
+      supabase.removeAllChannels()
+    }
   }, [])
 
   const fetchTodos = async () => {
@@ -34,7 +47,7 @@ export default function Todos({ user }) {
   }
   const addTodo = async (taskText) => {
     try {
-      supabase.removeSubscription(subscription2)
+      supabase.removeChannel(subscription2)
 
       let task = taskText.trim()
       if (task.length) {
