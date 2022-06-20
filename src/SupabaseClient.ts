@@ -1,6 +1,10 @@
 import { FunctionsClient } from '@supabase/functions-js'
 import { AuthChangeEvent } from '@supabase/gotrue-js'
-import { PostgrestClient, PostgrestQueryBuilder } from '@supabase/postgrest-js'
+import {
+  PostgrestClient,
+  PostgrestFilterBuilder,
+  PostgrestQueryBuilder,
+} from '@supabase/postgrest-js'
 import { RealtimeChannel, RealtimeClient, RealtimeClientOptions } from '@supabase/realtime-js'
 import { SupabaseStorageClient } from '@supabase/storage-js'
 import { DEFAULT_HEADERS, STORAGE_KEY } from './lib/constants'
@@ -8,7 +12,7 @@ import { fetchWithAuth } from './lib/fetch'
 import { isBrowser, stripTrailingSlash } from './lib/helpers'
 import { SupabaseAuthClient } from './lib/SupabaseAuthClient'
 import { SupabaseRealtimeClient } from './lib/SupabaseRealtimeClient'
-import { Fetch, SupabaseClientOptions } from './lib/types'
+import { Fetch, GenericSchema, SupabaseClientOptions } from './lib/types'
 
 const DEFAULT_OPTIONS = {
   schema: 'public',
@@ -24,19 +28,26 @@ const DEFAULT_OPTIONS = {
  *
  * An isomorphic Javascript client for interacting with Postgres.
  */
-export default class SupabaseClient {
+export default class SupabaseClient<
+  Database = any,
+  SchemaName extends string & keyof Database = 'public' extends keyof Database
+    ? 'public'
+    : string & keyof Database,
+  Schema extends GenericSchema = Database[SchemaName] extends GenericSchema
+    ? Database[SchemaName]
+    : any
+> {
   /**
    * Supabase Auth allows you to create and manage user sessions for access to data that is secured by access policies.
    */
   auth: SupabaseAuthClient
 
-  protected schema: string
-  protected restUrl: string
   protected realtimeUrl: string
   protected authUrl: string
   protected storageUrl: string
   protected functionsUrl: string
   protected realtime: RealtimeClient
+  protected rest: PostgrestClient<Database, SchemaName>
   protected multiTab: boolean
   protected fetch?: Fetch
   protected changedAccessToken: string | undefined
@@ -62,7 +73,7 @@ export default class SupabaseClient {
   constructor(
     protected supabaseUrl: string,
     protected supabaseKey: string,
-    options?: SupabaseClientOptions
+    options?: SupabaseClientOptions<SchemaName>
   ) {
     if (!supabaseUrl) throw new Error('supabaseUrl is required.')
     if (!supabaseKey) throw new Error('supabaseKey is required.')
@@ -70,7 +81,6 @@ export default class SupabaseClient {
     const _supabaseUrl = stripTrailingSlash(supabaseUrl)
     const settings = { ...DEFAULT_OPTIONS, ...options }
 
-    this.restUrl = `${_supabaseUrl}/rest/v1`
     this.realtimeUrl = `${_supabaseUrl}/realtime/v1`.replace('http', 'ws')
     this.authUrl = `${_supabaseUrl}/auth/v1`
     this.storageUrl = `${_supabaseUrl}/storage/v1`
@@ -83,15 +93,20 @@ export default class SupabaseClient {
       this.functionsUrl = `${_supabaseUrl}/functions/v1`
     }
 
-    this.schema = settings.schema
     this.multiTab = settings.multiTab
     this.headers = { ...DEFAULT_HEADERS, ...options?.headers }
     this.shouldThrowOnError = settings.shouldThrowOnError || false
 
+    this.fetch = fetchWithAuth(supabaseKey, this._getAccessToken.bind(this), settings.fetch)
+
     this.auth = this._initSupabaseAuthClient(settings)
     this.realtime = this._initRealtimeClient({ headers: this.headers, ...settings.realtime })
-
-    this.fetch = fetchWithAuth(supabaseKey, this._getAccessToken.bind(this), settings.fetch)
+    this.rest = new PostgrestClient(`${_supabaseUrl}/rest/v1`, {
+      headers: this.headers,
+      schema: options?.schema,
+      fetch: this.fetch,
+      throwOnError: this.shouldThrowOnError,
+    })
 
     this._listenForAuthEvents()
     this._listenForMultiTabEvents()
@@ -124,14 +139,11 @@ export default class SupabaseClient {
    *
    * @param table The table name to operate on.
    */
-  from<T = any>(table: string): PostgrestQueryBuilder<T> {
-    const url = `${this.restUrl}/${table}`
-    return new PostgrestQueryBuilder<T>(url, {
-      headers: this.headers,
-      schema: this.schema,
-      fetch: this.fetch,
-      shouldThrowOnError: this.shouldThrowOnError,
-    })
+  from<
+    TableName extends string & keyof Schema['Tables'],
+    Table extends Schema['Tables'][TableName]
+  >(table: TableName): PostgrestQueryBuilder<Table> {
+    return this.rest.from(table)
   }
 
   /**
@@ -143,16 +155,25 @@ export default class SupabaseClient {
    * @param count  Count algorithm to use to count rows in a table.
    *
    */
-  rpc<T = any>(
-    fn: string,
-    params?: object,
-    {
-      head = false,
-      count = null,
-    }: { head?: boolean; count?: null | 'exact' | 'planned' | 'estimated' } = {}
-  ) {
-    const rest = this._initPostgRESTClient()
-    return rest.rpc<T>(fn, params, { head, count })
+  rpc<
+    FunctionName extends string & keyof Schema['Functions'],
+    Function_ extends Schema['Functions'][FunctionName]
+  >(
+    fn: FunctionName,
+    args: Function_['Args'] = {},
+    options?: {
+      head?: boolean
+      count?: 'exact' | 'planned' | 'estimated'
+    }
+  ): PostgrestFilterBuilder<
+    Function_['Returns'] extends any[]
+      ? Function_['Returns'][number] extends Record<string, unknown>
+        ? Function_['Returns'][number]
+        : never
+      : never,
+    Function_['Returns']
+  > {
+    return this.rest.rpc(fn, args, options)
   }
 
   /**
@@ -249,7 +270,7 @@ export default class SupabaseClient {
     fetch,
     cookieOptions,
     multiTab,
-  }: SupabaseClientOptions) {
+  }: SupabaseClientOptions<string>) {
     const authHeaders = {
       Authorization: `Bearer ${this.supabaseKey}`,
       apikey: `${this.supabaseKey}`,
@@ -271,15 +292,6 @@ export default class SupabaseClient {
     return new RealtimeClient(this.realtimeUrl, {
       ...options,
       params: { ...{ apikey: this.supabaseKey, vsndate: '2022' }, ...options?.params },
-    })
-  }
-
-  private _initPostgRESTClient() {
-    return new PostgrestClient(this.restUrl, {
-      headers: this.headers,
-      schema: this.schema,
-      fetch: this.fetch,
-      throwOnError: this.shouldThrowOnError,
     })
   }
 
