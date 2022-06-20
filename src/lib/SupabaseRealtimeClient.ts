@@ -1,11 +1,11 @@
 import { RealtimeChannel, RealtimeClient, Transformers } from '@supabase/realtime-js'
-import { GenericObject, SupabaseRealtimePayload } from './types'
+import { SupabaseRealtimePayload } from './types'
 
 export class SupabaseRealtimeClient {
   channel: RealtimeChannel
 
   constructor(socket: RealtimeClient, name: string, token: string, opts?: { [key: string]: any }) {
-    let chanParams: GenericObject = { user_token: token }
+    let chanParams: Record<string, string> = { user_token: token }
 
     if (opts) {
       chanParams = { ...chanParams, ...opts }
@@ -40,7 +40,7 @@ export class SupabaseRealtimeClient {
    */
   on(
     event: string,
-    filter?: GenericObject,
+    filter?: Record<string, string>,
     callback?: (payload: SupabaseRealtimePayload<any>) => void
   ) {
     this.channel.on(event, filter ?? {}, (payload: any) => {

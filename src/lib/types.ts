@@ -5,8 +5,6 @@ type GoTrueClientOptions = ConstructorParameters<typeof GoTrueClient>[0]
 
 export interface SupabaseAuthClientOptions extends GoTrueClientOptions {}
 
-export type GenericObject = { [key: string]: string }
-
 export type Fetch = typeof fetch
 
 export type SupabaseClientOptions = {
@@ -17,7 +15,7 @@ export type SupabaseClientOptions = {
   /**
    * Optional headers for initializing the client.
    */
-  headers?: GenericObject
+  headers?: Record<string, string>
   /**
    * Automatically refreshes the token for logged in users.
    */
