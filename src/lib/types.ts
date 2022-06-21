@@ -5,19 +5,17 @@ type GoTrueClientOptions = ConstructorParameters<typeof GoTrueClient>[0]
 
 export interface SupabaseAuthClientOptions extends GoTrueClientOptions {}
 
-export type GenericObject = { [key: string]: string }
-
 export type Fetch = typeof fetch
 
-export type SupabaseClientOptions = {
+export type SupabaseClientOptions<SchemaName> = {
   /**
    * The Postgres schema which your tables belong to. Must be on the list of exposed schemas in Supabase. Defaults to 'public'.
    */
-  schema?: string
+  schema?: SchemaName
   /**
    * Optional headers for initializing the client.
    */
-  headers?: GenericObject
+  headers?: Record<string, string>
   /**
    * Automatically refreshes the token for logged in users.
    */
@@ -70,4 +68,20 @@ export type SupabaseRealtimePayload<T> = {
   /** The previous record. Present for 'UPDATE' and 'DELETE' events. */
   old: T
   errors: string[] | null
+}
+
+export type GenericTable = {
+  Row: Record<string, unknown>
+  Insert: Record<string, unknown>
+  Update: Record<string, unknown>
+}
+
+export type GenericFunction = {
+  Args: Record<string, unknown>
+  Returns: unknown
+}
+
+export type GenericSchema = {
+  Tables: Record<string, GenericTable>
+  Functions: Record<string, GenericFunction>
 }
