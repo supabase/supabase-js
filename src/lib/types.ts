@@ -12,7 +12,7 @@ export type SupabaseClientOptions<SchemaName> = {
    * The Postgres schema which your tables belong to. Must be on the list of exposed schemas in Supabase. Defaults to 'public'.
    */
   db?: {
-    schema?: string
+    schema?: SchemaName
   }
 
   auth?: {
@@ -21,8 +21,7 @@ export type SupabaseClientOptions<SchemaName> = {
      */
     autoRefreshToken?: boolean
     /**
-     * Allows to enable/disable multi-tab/window events
-     */
+     * Allows to enable/disable multi-tab/window /
     multiTab?: boolean
     /**
      * Whether to persist a logged in session to storage.
@@ -40,6 +39,10 @@ export type SupabaseClientOptions<SchemaName> = {
      * Options passed to the gotrue-js instance
      */
     cookieOptions?: SupabaseAuthClientOptions['cookieOptions']
+    /**
+     * Allows to enable/disable multi-tab/window events
+     */
+    multiTab?: boolean
   }
   /**
    * Options passed to the realtime-js instance
