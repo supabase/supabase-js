@@ -1,31 +1,33 @@
 import SupabaseClient from './SupabaseClient'
-import { SupabaseClientOptions, SupabaseRealtimePayload } from './lib/types'
-import { User as AuthUser, Session as AuthSession } from '@supabase/gotrue-js'
+import type { GenericSchema, SupabaseClientOptions } from './lib/types'
+
 export * from '@supabase/gotrue-js'
-export {
+export type { User as AuthUser, Session as AuthSession } from '@supabase/gotrue-js'
+export type {
   PostgrestResponse,
   PostgrestSingleResponse,
   PostgrestMaybeSingleResponse,
   PostgrestError,
 } from '@supabase/postgrest-js'
 export * from '@supabase/realtime-js'
+export { default as SupabaseClient } from './SupabaseClient'
+export type { SupabaseClientOptions, SupabaseRealtimePayload } from './lib/types'
 
 /**
  * Creates a new Supabase Client.
  */
-const createClient = (
+export const createClient = <
+  Database = any,
+  SchemaName extends string & keyof Database = 'public' extends keyof Database
+    ? 'public'
+    : string & keyof Database,
+  Schema extends GenericSchema = Database[SchemaName] extends GenericSchema
+    ? Database[SchemaName]
+    : any
+>(
   supabaseUrl: string,
   supabaseKey: string,
-  options?: SupabaseClientOptions
-): SupabaseClient => {
+  options?: SupabaseClientOptions<SchemaName>
+): SupabaseClient<Database, SchemaName, Schema> => {
   return new SupabaseClient(supabaseUrl, supabaseKey, options)
-}
-
-export {
-  createClient,
-  SupabaseClient,
-  SupabaseClientOptions,
-  SupabaseRealtimePayload,
-  AuthUser,
-  AuthSession,
 }

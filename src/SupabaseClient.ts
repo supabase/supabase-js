@@ -1,18 +1,18 @@
-import { DEFAULT_HEADERS, STORAGE_KEY } from './lib/constants'
-import { stripTrailingSlash, isBrowser } from './lib/helpers'
-import { Fetch, GenericObject, SupabaseClientOptions, SupabaseAuthClientOptions } from './lib/types'
-import { SupabaseAuthClient } from './lib/SupabaseAuthClient'
-import { SupabaseQueryBuilder } from './lib/SupabaseQueryBuilder'
-import { SupabaseStorageClient } from '@supabase/storage-js'
 import { FunctionsClient } from '@supabase/functions-js'
-import { PostgrestClient } from '@supabase/postgrest-js'
 import { AuthChangeEvent } from '@supabase/gotrue-js'
 import {
-  RealtimeClient,
-  RealtimeSubscription,
-  RealtimeClientOptions,
-  RealtimeChannel,
-} from '@supabase/realtime-js'
+  PostgrestClient,
+  PostgrestFilterBuilder,
+  PostgrestQueryBuilder,
+} from '@supabase/postgrest-js'
+import { RealtimeChannel, RealtimeClient, RealtimeClientOptions } from '@supabase/realtime-js'
+import { SupabaseStorageClient } from '@supabase/storage-js'
+import { DEFAULT_HEADERS, STORAGE_KEY } from './lib/constants'
+import { fetchWithAuth } from './lib/fetch'
+import { isBrowser, stripTrailingSlash } from './lib/helpers'
+import { SupabaseAuthClient } from './lib/SupabaseAuthClient'
+import { SupabaseRealtimeClient } from './lib/SupabaseRealtimeClient'
+import { Fetch, GenericSchema, SupabaseClientOptions } from './lib/types'
 
 const DEFAULT_OPTIONS = {
   schema: 'public',
@@ -28,19 +28,26 @@ const DEFAULT_OPTIONS = {
  *
  * An isomorphic Javascript client for interacting with Postgres.
  */
-export default class SupabaseClient {
+export default class SupabaseClient<
+  Database = any,
+  SchemaName extends string & keyof Database = 'public' extends keyof Database
+    ? 'public'
+    : string & keyof Database,
+  Schema extends GenericSchema = Database[SchemaName] extends GenericSchema
+    ? Database[SchemaName]
+    : any
+> {
   /**
    * Supabase Auth allows you to create and manage user sessions for access to data that is secured by access policies.
    */
   auth: SupabaseAuthClient
 
-  protected schema: string
-  protected restUrl: string
   protected realtimeUrl: string
   protected authUrl: string
   protected storageUrl: string
   protected functionsUrl: string
   protected realtime: RealtimeClient
+  protected rest: PostgrestClient<Database, SchemaName>
   protected multiTab: boolean
   protected fetch?: Fetch
   protected changedAccessToken: string | undefined
@@ -66,7 +73,7 @@ export default class SupabaseClient {
   constructor(
     protected supabaseUrl: string,
     protected supabaseKey: string,
-    options?: SupabaseClientOptions
+    options?: SupabaseClientOptions<SchemaName>
   ) {
     if (!supabaseUrl) throw new Error('supabaseUrl is required.')
     if (!supabaseKey) throw new Error('supabaseKey is required.')
@@ -74,7 +81,6 @@ export default class SupabaseClient {
     const _supabaseUrl = stripTrailingSlash(supabaseUrl)
     const settings = { ...DEFAULT_OPTIONS, ...options }
 
-    this.restUrl = `${_supabaseUrl}/rest/v1`
     this.realtimeUrl = `${_supabaseUrl}/realtime/v1`.replace('http', 'ws')
     this.authUrl = `${_supabaseUrl}/auth/v1`
     this.storageUrl = `${_supabaseUrl}/storage/v1`
@@ -87,14 +93,20 @@ export default class SupabaseClient {
       this.functionsUrl = `${_supabaseUrl}/functions/v1`
     }
 
-    this.schema = settings.db?.schema ?? ''
     this.multiTab = settings.auth?.multiTab ?? false
-    this.fetch = settings.fetch
     this.headers = { ...DEFAULT_HEADERS, ...options?.headers }
     this.shouldThrowOnError = settings.shouldThrowOnError || false
 
+    this.fetch = fetchWithAuth(supabaseKey, this._getAccessToken.bind(this), settings.fetch)
+
     this.auth = this._initSupabaseAuthClient(settings.auth || {}, this.headers, this.fetch)
     this.realtime = this._initRealtimeClient({ headers: this.headers, ...settings.realtime })
+    this.rest = new PostgrestClient(`${_supabaseUrl}/rest/v1`, {
+      headers: this.headers,
+      schema: options?.schema,
+      fetch: this.fetch,
+      throwOnError: this.shouldThrowOnError,
+    })
 
     this._listenForAuthEvents()
     this._listenForMultiTabEvents()
@@ -110,7 +122,7 @@ export default class SupabaseClient {
    */
   get functions() {
     return new FunctionsClient(this.functionsUrl, {
-      headers: this._getAuthHeaders(),
+      headers: this.headers,
       customFetch: this.fetch,
     })
   }
@@ -119,7 +131,7 @@ export default class SupabaseClient {
    * Supabase Storage allows you to manage user-generated content, such as photos or videos.
    */
   get storage() {
-    return new SupabaseStorageClient(this.storageUrl, this._getAuthHeaders(), this.fetch)
+    return new SupabaseStorageClient(this.storageUrl, this.headers, this.fetch)
   }
 
   /**
@@ -127,16 +139,11 @@ export default class SupabaseClient {
    *
    * @param table The table name to operate on.
    */
-  from<T = any>(table: string): SupabaseQueryBuilder<T> {
-    const url = `${this.restUrl}/${table}`
-    return new SupabaseQueryBuilder<T>(url, {
-      headers: this._getAuthHeaders(),
-      schema: this.schema,
-      realtime: this.realtime,
-      table,
-      fetch: this.fetch,
-      shouldThrowOnError: this.shouldThrowOnError,
-    })
+  from<
+    TableName extends string & keyof Schema['Tables'],
+    Table extends Schema['Tables'][TableName]
+  >(table: TableName): PostgrestQueryBuilder<Table> {
+    return this.rest.from(table)
   }
 
   /**
@@ -148,46 +155,54 @@ export default class SupabaseClient {
    * @param count  Count algorithm to use to count rows in a table.
    *
    */
-  rpc<T = any>(
-    fn: string,
-    params?: object,
-    {
-      head = false,
-      count = null,
-    }: { head?: boolean; count?: null | 'exact' | 'planned' | 'estimated' } = {}
-  ) {
-    const rest = this._initPostgRESTClient()
-    return rest.rpc<T>(fn, params, { head, count })
+  rpc<
+    FunctionName extends string & keyof Schema['Functions'],
+    Function_ extends Schema['Functions'][FunctionName]
+  >(
+    fn: FunctionName,
+    args: Function_['Args'] = {},
+    options?: {
+      head?: boolean
+      count?: 'exact' | 'planned' | 'estimated'
+    }
+  ): PostgrestFilterBuilder<
+    Function_['Returns'] extends any[]
+      ? Function_['Returns'][number] extends Record<string, unknown>
+        ? Function_['Returns'][number]
+        : never
+      : never,
+    Function_['Returns']
+  > {
+    return this.rest.rpc(fn, args, options)
   }
 
   /**
    * Creates a channel with Broadcast and Presence.
-   * Activated when vsndate query param is present in the WebSocket URL.
    */
-  channel(name: string, opts: { selfBroadcast: boolean; [key: string]: any }): RealtimeChannel {
-    const userToken = this.auth.session()?.access_token ?? this.supabaseKey
+  channel(name: string, opts?: { [key: string]: any }): SupabaseRealtimeClient {
+    const token = this.realtime.accessToken ?? this.supabaseKey
 
     if (!this.realtime.isConnected()) {
       this.realtime.connect()
     }
 
-    return this.realtime.channel(name, { ...opts, user_token: userToken }) as RealtimeChannel
+    return new SupabaseRealtimeClient(this.realtime, name, token, opts)
   }
 
   /**
-   * Closes and removes all subscriptions and returns a list of removed
-   * subscriptions and their errors.
+   * Closes and removes all channels and returns a list of removed
+   * channels and their errors.
    */
-  async removeAllSubscriptions(): Promise<
-    { data: { subscription: RealtimeSubscription }; error: Error | null }[]
+  async removeAllChannels(): Promise<
+    { data: { channels: RealtimeChannel }; error: Error | null }[]
   > {
-    const allSubs: RealtimeSubscription[] = this.getSubscriptions().slice()
-    const allSubPromises = allSubs.map((sub) => this.removeSubscription(sub))
-    const allRemovedSubs = await Promise.all(allSubPromises)
+    const allChans: RealtimeChannel[] = this.getChannels().slice()
+    const allChanPromises = allChans.map((chan) => this.removeChannel(chan))
+    const allRemovedChans = await Promise.all(allChanPromises)
 
-    return allRemovedSubs.map(({ error }, i) => {
+    return allRemovedChans.map(({ error }, i) => {
       return {
-        data: { subscription: allSubs[i] },
+        data: { channels: allChans[i] },
         error,
       }
     })
@@ -201,8 +216,8 @@ export default class SupabaseClient {
   async removeChannel(
     channel: RealtimeChannel
   ): Promise<{ data: { openChannels: number }; error: Error | null }> {
-    const { error } = await this._closeSubscription(channel)
-    const allChans: RealtimeSubscription[] = this.getSubscriptions()
+    const { error } = await this._closeChannel(channel)
+    const allChans: RealtimeChannel[] = this.getChannels()
     const openChanCount = allChans.filter((chan) => chan.isJoined()).length
 
     if (allChans.length === 0) await this.realtime.disconnect()
@@ -210,43 +225,28 @@ export default class SupabaseClient {
     return { data: { openChannels: openChanCount }, error }
   }
 
-  /**
-   * Closes and removes a subscription and returns the number of open subscriptions.
-   *
-   * @param subscription The subscription you want to close and remove.
-   */
-  async removeSubscription(
-    subscription: RealtimeSubscription
-  ): Promise<{ data: { openSubscriptions: number }; error: Error | null }> {
-    const { error } = await this._closeSubscription(subscription)
-    const allSubs: RealtimeSubscription[] = this.getSubscriptions()
-    const openSubCount = allSubs.filter((chan) => chan.isJoined()).length
+  private async _getAccessToken() {
+    const { session } = await this.auth.getSession()
 
-    if (allSubs.length === 0) await this.realtime.disconnect()
-
-    return { data: { openSubscriptions: openSubCount }, error }
+    return session?.access_token ?? null
   }
 
-  private async _closeSubscription(
-    subscription: RealtimeSubscription | RealtimeChannel
-  ): Promise<{ error: Error | null }> {
+  private async _closeChannel(channel: RealtimeChannel): Promise<{ error: Error | null }> {
     let error = null
 
-    if (!subscription.isClosed()) {
-      const { error: unsubError } = await this._unsubscribeSubscription(subscription)
+    if (!channel.isClosed()) {
+      const { error: unsubError } = await this._unsubscribeChannel(channel)
       error = unsubError
     }
 
-    this.realtime.remove(subscription)
+    this.realtime.remove(channel)
 
     return { error }
   }
 
-  private _unsubscribeSubscription(
-    subscription: RealtimeSubscription | RealtimeChannel
-  ): Promise<{ error: Error | null }> {
+  private _unsubscribeChannel(channel: RealtimeChannel): Promise<{ error: Error | null }> {
     return new Promise((resolve) => {
-      subscription
+      channel
         .unsubscribe()
         .receive('ok', () => resolve({ error: null }))
         .receive('error', (error: Error) => resolve({ error }))
@@ -255,20 +255,20 @@ export default class SupabaseClient {
   }
 
   /**
-   * Returns an array of all your subscriptions.
+   * Returns an array of all your channels.
    */
-  getSubscriptions(): RealtimeSubscription[] {
-    return this.realtime.channels as RealtimeSubscription[]
+  getChannels(): RealtimeChannel[] {
+    return this.realtime.channels as RealtimeChannel[]
   }
 
   private _initSupabaseAuthClient(
     {
       autoRefreshToken,
-      multiTab,
       persistSession,
       detectSessionInUrl,
       localStorage,
       cookieOptions,
+      multiTab,
     }: SupabaseAuthClientOptions,
     headers?: GenericObject,
     fetch?: Fetch
@@ -293,25 +293,8 @@ export default class SupabaseClient {
   private _initRealtimeClient(options?: RealtimeClientOptions) {
     return new RealtimeClient(this.realtimeUrl, {
       ...options,
-      params: { ...options?.params, apikey: this.supabaseKey },
+      params: { ...{ apikey: this.supabaseKey, vsndate: '2022' }, ...options?.params },
     })
-  }
-
-  private _initPostgRESTClient() {
-    return new PostgrestClient(this.restUrl, {
-      headers: this._getAuthHeaders(),
-      schema: this.schema,
-      fetch: this.fetch,
-      throwOnError: this.shouldThrowOnError,
-    })
-  }
-
-  private _getAuthHeaders(): GenericObject {
-    const headers: GenericObject = { ...this.headers }
-    const authBearer = this.auth.session()?.access_token ?? this.supabaseKey
-    headers['apikey'] = this.supabaseKey
-    headers['Authorization'] = headers['Authorization'] || `Bearer ${authBearer}`
-    return headers
   }
 
   private _listenForMultiTabEvents() {
