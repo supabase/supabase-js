@@ -21,9 +21,6 @@ export type SupabaseClientOptions<SchemaName> = {
      */
     autoRefreshToken?: boolean
     /**
-     * Allows to enable/disable multi-tab/window /
-    multiTab?: boolean
-    /**
      * Whether to persist a logged in session to storage.
      */
     persistSession?: boolean
