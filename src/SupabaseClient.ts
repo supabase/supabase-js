@@ -103,7 +103,7 @@ export default class SupabaseClient<
     this.realtime = this._initRealtimeClient({ headers: this.headers, ...settings.realtime })
     this.rest = new PostgrestClient(`${_supabaseUrl}/rest/v1`, {
       headers: this.headers,
-      schema: options?.schema,
+      schema: options?.db?.schema ?? '',
       fetch: this.fetch,
       throwOnError: this.shouldThrowOnError,
     })
