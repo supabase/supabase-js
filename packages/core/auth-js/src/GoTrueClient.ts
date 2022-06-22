@@ -33,6 +33,7 @@ import type {
   VerifyOTPParams,
   OpenIDConnectCredentials,
   SupportedStorage,
+  SignInWithPasswordCredentials,
 } from './lib/types'
 
 polyfillGlobalThis() // Make "globalThis" available
@@ -207,37 +208,27 @@ export default class GoTrueClient {
 
   /**
    * Log in an existing user, or login via a third-party provider.
-   * @type UserCredentials
+   * @type SignInWithPasswordCredentials
    * @param email The user's email address.
    * @param phone The user's phone number.
    * @param password The user's password.
-   * @param refreshToken A valid refresh token that was returned on login.
-   * @param provider One of the providers supported by GoTrue.
-   * @param redirectTo A URL to send the user to after they are confirmed (OAuth logins only).
-   * @param shouldCreateUser A boolean flag to indicate whether to automatically create a user on magiclink / otp sign-ins if the user doesn't exist. Defaults to true.
-   * @param scopes A space-separated list of scopes granted to the OAuth application.
+   * @param options Valid options for password sign-ins.
    */
-  async signIn(
-    { email, phone, password, refreshToken, provider, oidc }: UserCredentials,
-    options: {
-      redirectTo?: string
-      shouldCreateUser?: boolean
-      scopes?: string
-      captchaToken?: string
-      queryParams?: { [key: string]: string }
-    } = {}
-  ): Promise<
+  async signInWithPassword({
+    email,
+    phone,
+    password,
+    options = {},
+  }: SignInWithPasswordCredentials): Promise<
     | {
         session: Session | null
         user: User | null
-        provider?: Provider
         url?: string | null
         error: null
       }
     | {
         session: Session | null
         user: User | null
-        provider?: Provider
         url?: string | null
         error: AuthError
       }
@@ -245,53 +236,15 @@ export default class GoTrueClient {
     try {
       this._removeSession()
 
-      if (email && !password) {
-        const { error } = await this.api.sendMagicLinkEmail(email, {
-          redirectTo: options.redirectTo,
-          shouldCreateUser: options.shouldCreateUser,
-          captchaToken: options.captchaToken,
-        })
-        return { user: null, session: null, error }
-      }
       if (email && password) {
         return this._handleEmailSignIn(email, password, {
-          redirectTo: options.redirectTo,
-        })
-      }
-      if (phone && !password) {
-        const { error } = await this.api.sendMobileOTP(phone, {
-          shouldCreateUser: options.shouldCreateUser,
           captchaToken: options.captchaToken,
         })
-        return { user: null, session: null, error }
       }
       if (phone && password) {
         return this._handlePhoneSignIn(phone, password)
       }
-      if (refreshToken) {
-        // currentSession and currentUser will be updated to latest on _callRefreshToken using the passed refreshToken
-        const { error } = await this._callRefreshToken(refreshToken)
-        if (error) throw error
-
-        return {
-          user: this.currentUser,
-          session: this.currentSession,
-          error: null,
-        }
-      }
-      if (provider) {
-        return this._handleProviderSignIn(provider, {
-          redirectTo: options.redirectTo,
-          scopes: options.scopes,
-          queryParams: options.queryParams,
-        })
-      }
-      if (oidc) {
-        return this._handleOpenIDConnectSignIn(oidc)
-      }
-      throw new Error(
-        `You must provide either an email, phone number, a third-party provider or OpenID Connect.`
-      )
+      throw new Error(`You must provide either an email or phone number and a password.`)
     } catch (error) {
       if (isAuthError(error)) {
         return { user: null, session: null, error }
@@ -485,7 +438,7 @@ export default class GoTrueClient {
    */
   async update(attributes: UserAttributes): Promise<
     | {
-        user: User | null
+        user: User
         error: null
       }
     | { user: null; error: AuthError }
@@ -687,12 +640,12 @@ export default class GoTrueClient {
     email: string,
     password: string,
     options: {
-      redirectTo?: string
+      captchaToken?: string
     } = {}
   ) {
     try {
       const { data, error } = await this.api.signInWithEmail(email, password, {
-        redirectTo: options.redirectTo,
+        captchaToken: options.captchaToken,
       })
       if (error || !data) return { data: null, user: null, session: null, error }
 
@@ -711,9 +664,17 @@ export default class GoTrueClient {
     }
   }
 
-  private async _handlePhoneSignIn(phone: string, password: string) {
+  private async _handlePhoneSignIn(
+    phone: string,
+    password: string,
+    options: {
+      captchaToken?: string
+    } = {}
+  ) {
     try {
-      const { session, error } = await this.api.signInWithPhone(phone, password)
+      const { session, error } = await this.api.signInWithPhone(phone, password, {
+        captchaToken: options.captchaToken,
+      })
       if (error || !session) return { session: null, user: null, error }
 
       if (session?.user?.phone_confirmed_at) {

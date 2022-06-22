@@ -181,6 +181,15 @@ export interface UserCredentials {
   provider?: Provider
   oidc?: OpenIDConnectCredentials
 }
+export interface SignInWithPasswordCredentials {
+  email?: string
+  phone?: string
+  password: string
+  options?: SignInWithPasswordOptions
+}
+export interface SignInWithPasswordOptions {
+  captchaToken?: string
+}
 
 export type VerifyOTPParams = VerifyMobileOTPParams | VerifyEmailOTPParams
 export interface VerifyMobileOTPParams {
