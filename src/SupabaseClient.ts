@@ -87,8 +87,8 @@ export default class SupabaseClient {
       this.functionsUrl = `${_supabaseUrl}/functions/v1`
     }
 
-    this.schema = settings.db?.schema || ''
-    this.multiTab = settings.auth?.multiTab || false
+    this.schema = settings.db?.schema ?? ''
+    this.multiTab = settings.auth?.multiTab ?? false
     this.fetch = settings.fetch
     this.headers = { ...DEFAULT_HEADERS, ...options?.headers }
     this.shouldThrowOnError = settings.shouldThrowOnError || false

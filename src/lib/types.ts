@@ -1,8 +1,5 @@
 import { GoTrueClient } from '@supabase/gotrue-js'
 import { RealtimeClientOptions } from '@supabase/realtime-js'
-// TODO(Joel): Validate if this is something we want
-// import { FunctionsOptions } from '@supabase/functions-js'
-// import { StorageOptions } from '@supabase/storage-js'
 
 type GoTrueClientOptions = ConstructorParameters<typeof GoTrueClient>[0]
 
@@ -24,27 +21,27 @@ export type SupabaseClientOptions = {
     /**
      * Automatically refreshes the token for logged in users.
      */
-    autoRefreshToken: boolean
+    autoRefreshToken?: boolean
     /**
      * Allows to enable/disable multi-tab/window events
      */
-    multiTab: boolean
+    multiTab?: boolean
     /**
      * Whether to persist a logged in session to storage.
      */
-    persistSession: boolean
+    persistSession?: boolean
     /**
      * Detect a session from the URL. Used for OAuth login callbacks.
      */
-    detectSessionInUrl: boolean
+    detectSessionInUrl?: boolean
     /**
      * A storage provider. Used to store the logged in session.
      */
-    localStorage: SupabaseAuthClientOptions['localStorage']
+    localStorage?: SupabaseAuthClientOptions['localStorage']
     /**
      * Options passed to the gotrue-js instance
      */
-    cookieOptions: SupabaseAuthClientOptions['cookieOptions']
+    cookieOptions?: SupabaseAuthClientOptions['cookieOptions']
   }
 
   /**
@@ -54,11 +51,13 @@ export type SupabaseClientOptions = {
   /**
    * Options passed to the storage-js instance
    */
-  storage?: StorageOptions
+  // TODO: Add StorageOptions once ready
+  storage?: GenericObject
   /**
    * Options passed to the functions-js instance
    */
-  functions?: FunctionsOptions
+  // TODO: Add Function Options once ready
+  functions?: GenericObject
   /**
    * A custom `fetch` implementation.
    */
