@@ -49,12 +49,12 @@ export type SupabaseClientOptions<SchemaName> = {
    * Options passed to the storage-js instance
    */
   // TODO: Add StorageOptions once ready
-  storage?: GenericObject
+  storage?: Record<string, string>
   /**
    * Options passed to the functions-js instance
    */
   // TODO: Add Function Options once ready
-  functions?: GenericObject
+  functions?: Record<string, string>
   /**
    * A custom `fetch` implementation.
    */
@@ -62,7 +62,7 @@ export type SupabaseClientOptions<SchemaName> = {
   /**
    * Optional headers for initializing the client.
    */
-  headers?: GenericObject
+  headers?: Record<string, string>
   /**
    * Throw errors, instead of returning them.
    */

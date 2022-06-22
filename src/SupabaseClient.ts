@@ -12,7 +12,7 @@ import { fetchWithAuth } from './lib/fetch'
 import { isBrowser, stripTrailingSlash } from './lib/helpers'
 import { SupabaseAuthClient } from './lib/SupabaseAuthClient'
 import { SupabaseRealtimeClient } from './lib/SupabaseRealtimeClient'
-import { Fetch, GenericSchema, SupabaseClientOptions } from './lib/types'
+import { Fetch, GenericSchema, SupabaseClientOptions, SupabaseAuthClientOptions } from './lib/types'
 
 const DEFAULT_OPTIONS = {
   schema: 'public',
@@ -270,7 +270,7 @@ export default class SupabaseClient<
       cookieOptions,
       multiTab,
     }: SupabaseAuthClientOptions,
-    headers?: GenericObject,
+    headers?: Record<string, string>,
     fetch?: Fetch
   ) {
     const authHeaders = {
