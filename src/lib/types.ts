@@ -49,16 +49,6 @@ export type SupabaseClientOptions<SchemaName> = {
    */
   realtime?: RealtimeClientOptions
   /**
-   * Options passed to the storage-js instance
-   */
-  // TODO: Add StorageOptions once ready
-  storage?: Record<string, string>
-  /**
-   * Options passed to the functions-js instance
-   */
-  // TODO: Add Function Options once ready
-  functions?: Record<string, string>
-  /**
    * A custom `fetch` implementation.
    */
   fetch?: Fetch
