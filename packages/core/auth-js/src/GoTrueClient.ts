@@ -14,6 +14,7 @@ import {
   DEFAULT_HEADERS,
   EXPIRY_MARGIN,
   NETWORK_FAILURE,
+  STORAGE_KEY,
 } from './lib/constants'
 import { polyfillGlobalThis } from './lib/polyfills'
 import { Fetch } from './lib/fetch'
@@ -38,7 +39,7 @@ polyfillGlobalThis() // Make "globalThis" available
 
 const DEFAULT_OPTIONS = {
   url: GOTRUE_URL,
-  storageKey: 'supabase.auth.token',
+  storageKey: STORAGE_KEY,
   autoRefreshToken: true,
   persistSession: true,
   detectSessionInUrl: true,
