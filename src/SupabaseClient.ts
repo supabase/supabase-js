@@ -12,7 +12,7 @@ import { fetchWithAuth } from './lib/fetch'
 import { isBrowser, stripTrailingSlash } from './lib/helpers'
 import { SupabaseAuthClient } from './lib/SupabaseAuthClient'
 import { SupabaseRealtimeClient } from './lib/SupabaseRealtimeClient'
-import { Fetch, GenericSchema, SupabaseClientOptions } from './lib/types'
+import { Fetch, GenericSchema, SupabaseClientOptions, SupabaseAuthClientOptions } from './lib/types'
 
 const DEFAULT_OPTIONS = {
   schema: 'public',
@@ -93,17 +93,17 @@ export default class SupabaseClient<
       this.functionsUrl = `${_supabaseUrl}/functions/v1`
     }
 
-    this.multiTab = settings.multiTab
+    this.multiTab = settings.auth?.multiTab ?? false
     this.headers = { ...DEFAULT_HEADERS, ...options?.headers }
     this.shouldThrowOnError = settings.shouldThrowOnError || false
 
     this.fetch = fetchWithAuth(supabaseKey, this._getAccessToken.bind(this), settings.fetch)
 
-    this.auth = this._initSupabaseAuthClient(settings)
+    this.auth = this._initSupabaseAuthClient(settings.auth || {}, this.headers, this.fetch)
     this.realtime = this._initRealtimeClient({ headers: this.headers, ...settings.realtime })
     this.rest = new PostgrestClient(`${_supabaseUrl}/rest/v1`, {
       headers: this.headers,
-      schema: options?.schema,
+      schema: options?.db?.schema,
       fetch: this.fetch,
       throwOnError: this.shouldThrowOnError,
     })
@@ -261,16 +261,18 @@ export default class SupabaseClient<
     return this.realtime.channels as RealtimeChannel[]
   }
 
-  private _initSupabaseAuthClient({
-    autoRefreshToken,
-    persistSession,
-    detectSessionInUrl,
-    localStorage,
-    headers,
-    fetch,
-    cookieOptions,
-    multiTab,
-  }: SupabaseClientOptions<string>) {
+  private _initSupabaseAuthClient(
+    {
+      autoRefreshToken,
+      persistSession,
+      detectSessionInUrl,
+      localStorage,
+      cookieOptions,
+      multiTab,
+    }: SupabaseAuthClientOptions,
+    headers?: Record<string, string>,
+    fetch?: Fetch
+  ) {
     const authHeaders = {
       Authorization: `Bearer ${this.supabaseKey}`,
       apikey: `${this.supabaseKey}`,

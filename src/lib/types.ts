@@ -11,51 +11,52 @@ export type SupabaseClientOptions<SchemaName> = {
   /**
    * The Postgres schema which your tables belong to. Must be on the list of exposed schemas in Supabase. Defaults to 'public'.
    */
-  schema?: SchemaName
+  db?: {
+    schema?: SchemaName
+  }
+
+  auth?: {
+    /**
+     * Automatically refreshes the token for logged in users.
+     */
+    autoRefreshToken?: boolean
+    /**
+     * Whether to persist a logged in session to storage.
+     */
+    persistSession?: boolean
+    /**
+     * Detect a session from the URL. Used for OAuth login callbacks.
+     */
+    detectSessionInUrl?: boolean
+    /**
+     * A storage provider. Used to store the logged in session.
+     */
+    localStorage?: SupabaseAuthClientOptions['localStorage']
+    /**
+     * Options passed to the gotrue-js instance
+     */
+    cookieOptions?: SupabaseAuthClientOptions['cookieOptions']
+    /**
+     * Allows to enable/disable multi-tab/window events
+     */
+    multiTab?: boolean
+  }
+  /**
+   * Options passed to the realtime-js instance
+   */
+  realtime?: RealtimeClientOptions
+  /**
+   * A custom `fetch` implementation.
+   */
+  fetch?: Fetch
   /**
    * Optional headers for initializing the client.
    */
   headers?: Record<string, string>
   /**
-   * Automatically refreshes the token for logged in users.
-   */
-  autoRefreshToken?: boolean
-  /**
-   * Allows to enable/disable multi-tab/window events
-   */
-  multiTab?: boolean
-  /**
-   * Whether to persist a logged in session to storage.
-   */
-  persistSession?: boolean
-  /**
-   * Detect a session from the URL. Used for OAuth login callbacks.
-   */
-  detectSessionInUrl?: boolean
-  /**
-   * A storage provider. Used to store the logged in session.
-   */
-  localStorage?: SupabaseAuthClientOptions['localStorage']
-
-  /**
-   * Options passed to the realtime-js instance
-   */
-  realtime?: RealtimeClientOptions
-
-  /**
-   * A custom `fetch` implementation.
-   */
-  fetch?: Fetch
-
-  /**
    * Throw errors, instead of returning them.
    */
   shouldThrowOnError?: boolean
-
-  /**
-   * Options passed to the gotrue-js instance
-   */
-  cookieOptions?: SupabaseAuthClientOptions['cookieOptions']
 }
 
 export type SupabaseRealtimePayload<T> = {
