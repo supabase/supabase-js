@@ -97,7 +97,7 @@ describe('GoTrueApi', () => {
       expect(createError).toBeNull()
       expect(user).not.toBeUndefined()
 
-      const { error: listUserError, data: users } = await serviceRoleApiClient.listUsers()
+      const { error: listUserError, users } = await serviceRoleApiClient.listUsers()
       expect(listUserError).toBeNull()
 
       const emails =
@@ -134,7 +134,7 @@ describe('GoTrueApi', () => {
 
     test('getUserById() should a registered user given its user identifier', async () => {
       const { email } = mockUserCredentials()
-      const { error: createError, data: user } = await createNewUserWithEmail({ email })
+      const { error: createError, user } = await createNewUserWithEmail({ email })
 
       expect(createError).toBeNull()
       expect(user).not.toBeUndefined()
@@ -142,7 +142,7 @@ describe('GoTrueApi', () => {
       const uid = user?.id || ''
       expect(uid).toBeTruthy()
 
-      const { error: foundError, data: foundUser } = await serviceRoleApiClient.getUserById(uid)
+      const { error: foundError, user: foundUser } = await serviceRoleApiClient.getUserById(uid)
 
       expect(foundError).toBeNull()
       expect(foundUser).not.toBeUndefined()
@@ -162,7 +162,7 @@ describe('GoTrueApi', () => {
 
       const attributes = { email: `new_${user?.email}` }
 
-      const { error: updatedError, data: updatedUser } = await serviceRoleApiClient.updateUserById(
+      const { error: updatedError, user: updatedUser } = await serviceRoleApiClient.updateUserById(
         uid,
         attributes
       )
@@ -184,7 +184,7 @@ describe('GoTrueApi', () => {
       const userMetaData = { favorite_color: 'yellow' }
       const attributes = { user_metadata: userMetaData }
 
-      const { error: updatedError, data: updatedUser } = await serviceRoleApiClient.updateUserById(
+      const { error: updatedError, user: updatedUser } = await serviceRoleApiClient.updateUserById(
         uid,
         attributes
       )
@@ -205,7 +205,7 @@ describe('GoTrueApi', () => {
       const uid = user?.id || ''
       const appMetadata = { roles: ['admin', 'publisher'] }
       const attributes = { app_metadata: appMetadata }
-      const { error: updatedError, data: updatedUser } = await serviceRoleApiClient.updateUserById(
+      const { error: updatedError, user: updatedUser } = await serviceRoleApiClient.updateUserById(
         uid,
         attributes
       )
@@ -233,7 +233,7 @@ describe('GoTrueApi', () => {
       const uid = user?.id || ''
 
       const attributes = { email_confirm: true }
-      const { error: updatedError, data: updatedUser } = await serviceRoleApiClient.updateUserById(
+      const { error: updatedError, user: updatedUser } = await serviceRoleApiClient.updateUserById(
         uid,
         attributes
       )
@@ -255,13 +255,13 @@ describe('GoTrueApi', () => {
 
       const uid = user?.id || ''
 
-      const { error: deletedError, data: deletedUser } = await serviceRoleApiClient.deleteUser(uid)
+      const { error: deletedError, user: deletedUser } = await serviceRoleApiClient.deleteUser(uid)
 
       expect(deletedError).toBeNull()
       expect(deletedError).not.toBeUndefined()
       expect(deletedUser).not.toBeUndefined()
 
-      const { error: listUserError, data: users } = await serviceRoleApiClient.listUsers()
+      const { error: listUserError, users } = await serviceRoleApiClient.listUsers()
       expect(listUserError).toBeNull()
 
       const emails =
@@ -320,7 +320,7 @@ describe('GoTrueApi', () => {
 
       const redirectTo = 'http://localhost:9999/welcome'
       const userMetadata = { status: 'alpha' }
-      const { error, data: user } = await serviceRoleApiClient.inviteUserByEmail(email, {
+      const { error, user } = await serviceRoleApiClient.inviteUserByEmail(email, {
         data: userMetadata,
         redirectTo,
       })
@@ -376,11 +376,11 @@ describe('GoTrueApi', () => {
 
       expect(initialError).toBeNull()
 
-      const { error, data } = await serviceRoleApiClient.refreshAccessToken(
+      const { error, session: refreshedSession } = await serviceRoleApiClient.refreshAccessToken(
         session?.refresh_token || ''
       )
 
-      const user = data?.user
+      const user = refreshedSession?.user
 
       expect(error).toBeNull()
       expect(user).not.toBeNull()
@@ -401,7 +401,6 @@ describe('GoTrueApi', () => {
         )
 
         expect(data).toBeNull()
-        expect(error?.status).toEqual(422)
         expect(error?.message).toEqual('Unable to validate email address: invalid format')
       })
 
@@ -437,7 +436,6 @@ describe('GoTrueApi', () => {
       test('signOut() with an invalid access token', async () => {
         const { error } = await serviceRoleApiClient.signOut('this-is-a-bad-token')
 
-        expect(error?.status).toEqual(401)
         expect(error?.message).toMatch(/^Invalid token/)
       })
     })
@@ -458,7 +456,6 @@ describe('GoTrueApi', () => {
         data // ?
 
         expect(data).toBeNull()
-        expect(error?.status).toEqual(422)
         expect(error?.message).toEqual('Invalid phone number format')
       })
     })
@@ -467,10 +464,12 @@ describe('GoTrueApi', () => {
       test('signInWithPhone() without an account', async () => {
         const { phone, password } = mockUserCredentials()
 
-        const { error, data } = await serviceRoleApiClientWithSms.signInWithPhone(phone, password)
+        const { error, session } = await serviceRoleApiClientWithSms.signInWithPhone(
+          phone,
+          password
+        )
 
-        expect(data).toBeNull()
-        expect(error?.status).toEqual(400)
+        expect(session).toBeNull()
         expect(error?.message).toEqual('Invalid login credentials')
       })
     })
@@ -482,7 +481,6 @@ describe('GoTrueApi', () => {
         const { error, data } = await serviceRoleApiClient.sendMobileOTP(`++bad-${phone}-number`)
 
         expect(data).toBeNull()
-        expect(error?.status).toEqual(422)
         expect(error?.message).toMatch(/^Invalid phone number format/)
       })
     })
@@ -499,7 +497,6 @@ describe('GoTrueApi', () => {
         })
 
         expect(user).toBeNull()
-        expect(error?.status).toEqual(404)
         expect(error?.message).toEqual('User not found')
       })
 
@@ -512,7 +509,6 @@ describe('GoTrueApi', () => {
         })
 
         expect(user).toBeNull()
-        expect(error?.status).toEqual(422)
         expect(error?.message).toEqual('Invalid phone number format')
       })
     })
@@ -528,7 +524,6 @@ describe('GoTrueApi', () => {
         })
 
         expect(data).toBeNull()
-        expect(error?.status).toEqual(422)
         expect(error?.message).toEqual('Invalid email format')
       })
       test('verifyOTP() with invalid phone', async () => {
@@ -541,7 +536,6 @@ describe('GoTrueApi', () => {
         })
 
         expect(data).toBeNull()
-        expect(error?.status).toEqual(422)
         expect(error?.message).toEqual('Invalid phone number format')
       })
     })
