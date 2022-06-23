@@ -269,7 +269,7 @@ describe('GoTrueClient', () => {
       password,
     })
 
-    const { error, session, user } = await auth.signIn({
+    const { error, session, user } = await auth.signInWithPassword({
       email,
       password,
     })
@@ -322,7 +322,7 @@ describe('GoTrueClient', () => {
     expect(initialSession).not.toBeNull()
 
     const refreshToken = initialSession?.refresh_token
-    const { error, user, session } = await authWithSession.signIn({ refreshToken })
+    const { error, user, session } = await authWithSession.refreshSession()
 
     expect(error).toBeNull()
     expect(session).toMatchObject({
@@ -368,7 +368,7 @@ describe('GoTrueClient', () => {
       nonce: 'random value',
       provider: 'google',
     }
-    const { session, user, error } = await auth.signIn({ oidc })
+    const { session, user, error } = await auth.signInWithOAuth({ oidc })
 
     expect(error).not.toBeNull()
     expect(session).toBeNull()
@@ -381,7 +381,7 @@ describe('GoTrueClient', () => {
         id_token: 'abcde',
         nonce: 'random value',
       }
-      await auth.signIn({ oidc })
+      await auth.signInWithOAuth({ oidc })
     }
     await expect(t).rejects.toThrow(Error)
   })
@@ -392,7 +392,7 @@ describe('GoTrueClient', () => {
         nonce: 'random value',
         provider: 'google',
       }
-      await auth.signIn({ oidc })
+      await auth.signInWithOAuth({ oidc })
     }
     await expect(t).rejects.toThrow(Error)
   })
@@ -405,7 +405,7 @@ describe('GoTrueClient', () => {
       password,
     })
 
-    await authWithSession.signIn({
+    await authWithSession.signInWithPassword({
       email,
       password,
     })
@@ -512,7 +512,7 @@ describe('User management', () => {
       password,
     })
 
-    await authWithSession.signIn({
+    await authWithSession.signInWithPassword({
       email,
       password,
     })
@@ -529,7 +529,7 @@ describe('User management', () => {
   test('signIn() with the wrong password', async () => {
     const { email, password } = mockUserCredentials()
 
-    const { error, session } = await auth.signIn({
+    const { error, session } = await auth.signInWithPassword({
       email,
       password: password + '-wrong',
     })
@@ -542,7 +542,7 @@ describe('User management', () => {
 
 describe('The auth client can signin with third-party oAuth providers', () => {
   test('signIn() with Provider', async () => {
-    const { error, url, provider } = await auth.signIn({
+    const { error, url, provider } = await auth.signInWithOAuth({
       provider: 'google',
     })
     expect(error).toBeNull()
@@ -551,13 +551,13 @@ describe('The auth client can signin with third-party oAuth providers', () => {
   })
 
   test('signIn() with Provider can append a redirectUrl ', async () => {
-    const { error, url, provider } = await auth.signIn(
+    const { error, url, provider } = await auth.signInWithOAuth(
       {
         provider: 'google',
+        options: {
+          redirectTo: 'https://localhost:9000/welcome',
+        }
       },
-      {
-        redirectTo: 'https://localhost:9000/welcome',
-      }
     )
     expect(error).toBeNull()
     expect(url).toBeTruthy()
@@ -565,13 +565,13 @@ describe('The auth client can signin with third-party oAuth providers', () => {
   })
 
   test('signIn() with Provider can append scopes', async () => {
-    const { error, url, provider } = await auth.signIn(
+    const { error, url, provider } = await auth.signInWithOAuth(
       {
         provider: 'github',
+        options: {
+          scopes: 'repo'
+        }
       },
-      {
-        scopes: 'repo',
-      }
     )
     expect(error).toBeNull()
     expect(url).toBeTruthy()
@@ -579,14 +579,14 @@ describe('The auth client can signin with third-party oAuth providers', () => {
   })
 
   test('signIn() with Provider can append multiple options', async () => {
-    const { error, url, provider } = await auth.signIn(
+    const { error, url, provider } = await auth.signInWithOAuth(
       {
         provider: 'github',
+        options: {
+          redirectTo: 'https://localhost:9000/welcome',
+          scopes: 'repo',
+        }
       },
-      {
-        redirectTo: 'https://localhost:9000/welcome',
-        scopes: 'repo',
-      }
     )
     expect(error).toBeNull()
     expect(url).toBeTruthy()
