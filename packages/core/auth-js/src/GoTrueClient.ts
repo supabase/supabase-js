@@ -12,9 +12,9 @@ import {
 import {
   GOTRUE_URL,
   DEFAULT_HEADERS,
-  STORAGE_KEY,
   EXPIRY_MARGIN,
   NETWORK_FAILURE,
+  STORAGE_KEY,
 } from './lib/constants'
 import { polyfillGlobalThis } from './lib/polyfills'
 import { Fetch } from './lib/fetch'
@@ -39,6 +39,7 @@ polyfillGlobalThis() // Make "globalThis" available
 
 const DEFAULT_OPTIONS = {
   url: GOTRUE_URL,
+  storageKey: STORAGE_KEY,
   autoRefreshToken: true,
   persistSession: true,
   detectSessionInUrl: true,
@@ -64,6 +65,11 @@ export default class GoTrueClient {
   protected currentSession: Session | null
 
   /**
+   * The storage key used to identity the values saved in localStorage
+   */
+  protected storageKey: string
+
+  /**
    * The session object for the currently logged in user or null.
    * Only used if persistSession is false.
    */
@@ -86,6 +92,7 @@ export default class GoTrueClient {
    * Create a new client for use in the browser.
    * @param options.url The URL of the GoTrue server.
    * @param options.headers Any additional headers to send to the GoTrue server.
+   * @param options.storageKey 
    * @param options.detectSessionInUrl Set to "true" if you want to automatically detects OAuth grants in the URL and signs in the user.
    * @param options.autoRefreshToken Set to "true" if you want to automatically refresh the token before expiring.
    * @param options.persistSession Set to "true" if you want to automatically save the user session into local storage.
@@ -97,6 +104,7 @@ export default class GoTrueClient {
   constructor(options: {
     url?: string
     headers?: { [key: string]: string }
+    storageKey?: string
     detectSessionInUrl?: boolean
     autoRefreshToken?: boolean
     persistSession?: boolean
@@ -109,6 +117,7 @@ export default class GoTrueClient {
     this.currentUser = null
     this.currentSession = null
     this.inMemorySession = null
+    this.storageKey = settings.storageKey
     this.autoRefreshToken = settings.autoRefreshToken
     this.persistSession = settings.persistSession
     this.multiTab = settings.multiTab
@@ -397,7 +406,7 @@ export default class GoTrueClient {
     let currentSession: Session | null = null
 
     if (this.persistSession) {
-      const persistedSession = await getItemAsync(this.localStorage, STORAGE_KEY)
+      const persistedSession = await getItemAsync(this.localStorage, this.storageKey)
 
       currentSession = persistedSession?.currentSession ?? null
     } else {
@@ -806,7 +815,7 @@ export default class GoTrueClient {
    */
   private _recoverSession() {
     try {
-      const data = getItemSynchronously(this.localStorage, STORAGE_KEY)
+      const data = getItemSynchronously(this.localStorage, this.storageKey)
       if (!data) return null
       const { currentSession, expiresAt } = data
       const timeNow = Math.round(Date.now() / 1000)
@@ -826,7 +835,7 @@ export default class GoTrueClient {
    */
   private async _recoverAndRefresh() {
     try {
-      const data = await getItemAsync(this.localStorage, STORAGE_KEY)
+      const data = await getItemAsync(this.localStorage, this.storageKey)
       if (!data) return null
       const { currentSession, expiresAt } = data
       const timeNow = Math.round(Date.now() / 1000)
@@ -940,7 +949,7 @@ export default class GoTrueClient {
 
   private _persistSession(currentSession: Session) {
     const data = { currentSession, expiresAt: currentSession.expires_at }
-    setItemAsync(this.localStorage, STORAGE_KEY, data)
+    setItemAsync(this.localStorage, this.storageKey, data)
   }
 
   private async _removeSession() {
@@ -948,7 +957,7 @@ export default class GoTrueClient {
     this.currentUser = null
 
     if (this.persistSession) {
-      removeItemAsync(this.localStorage, STORAGE_KEY)
+      removeItemAsync(this.localStorage, this.storageKey)
     } else {
       this.inMemorySession = null
     }
@@ -989,7 +998,7 @@ export default class GoTrueClient {
 
     try {
       window?.addEventListener('storage', (e: StorageEvent) => {
-        if (e.key === STORAGE_KEY) {
+        if (e.key === this.storageKey) {
           const newSession = JSON.parse(String(e.newValue))
           if (newSession?.currentSession?.access_token) {
             this._saveSession(newSession.currentSession)
