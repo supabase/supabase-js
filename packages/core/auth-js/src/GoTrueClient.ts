@@ -34,6 +34,8 @@ import type {
   OpenIDConnectCredentials,
   SupportedStorage,
   SignInWithPasswordCredentials,
+  SignInWithOAuthCredentials,
+  SignInWithPasswordlessCredentials,
 } from './lib/types'
 
 polyfillGlobalThis() // Make "globalThis" available
@@ -245,6 +247,109 @@ export default class GoTrueClient {
         return this._handlePhoneSignIn(phone, password)
       }
       throw new Error(`You must provide either an email or phone number and a password.`)
+    } catch (error) {
+      if (isAuthError(error)) {
+        return { user: null, session: null, error }
+      }
+
+      throw error
+    }
+  }
+
+  /**
+   * Log in an existing user via a third-party provider.
+   * @type SignInWithOAuthCredentials
+   * @param provider One of the providers supported by GoTrue.
+   * @param oidc See OpenIdCredentials type specification
+   * @param redirectTo A URL to send the user to after they are confirmed (OAuth logins only).
+   * @param scopes A space-separated list of scopes granted to the OAuth application.
+   * @param queryParams An object of query params 
+   */
+  async signInWithOAuth(
+    { provider, oidc, options = {} }: SignInWithOAuthCredentials,
+  ): Promise<
+    | {
+        session: Session | null
+        user: User | null
+        provider?: Provider
+        url?: string | null
+        error: null
+      }
+    | {
+        session: Session | null
+        user: User | null
+        provider?: Provider
+        url?: string | null
+        error: AuthError
+      }
+  > {
+    try {
+      this._removeSession()
+
+      if (provider) {
+        return this._handleProviderSignIn(provider, {
+          redirectTo: options.redirectTo,
+          scopes: options.scopes,
+          queryParams: options.queryParams,
+        })
+      }
+      if (oidc) {
+        return this._handleOpenIDConnectSignIn(oidc)
+      }
+      throw new Error(
+        `You must provide either an OAuth provider or OpenID Connect provider.`
+      )
+    } catch (error) {
+      if (isAuthError(error)) {
+        return { user: null, session: null, error }
+      }
+
+      throw error
+    }
+  }
+
+  /**
+   * Passwordless method for logging in an existing user.
+   * @type SignInWithPasswordlessCredentials
+   * @param email The user's email address.
+   * @param phone The user's phone number.
+   * @param options Valid options for passwordless sign-ins.
+   */
+  async signInWithOtp(
+    { email, phone, options = {} }: SignInWithPasswordlessCredentials,
+  ): Promise<
+    | {
+        session: Session | null
+        user: User | null
+        error: null
+      }
+    | {
+        session: Session | null
+        user: User | null
+        error: AuthError
+      }
+  > {
+    try {
+      this._removeSession()
+
+      if (email) {
+        const { error } = await this.api.sendMagicLinkEmail(email, {
+          redirectTo: options.emailRedirectTo,
+          shouldCreateUser: options.shouldCreateUser,
+          captchaToken: options.captchaToken,
+        })
+        return { user: null, session: null, error }
+      }
+      if (phone) {
+        const { error } = await this.api.sendMobileOTP(phone, {
+          shouldCreateUser: options.shouldCreateUser,
+          captchaToken: options.captchaToken,
+        })
+        return { user: null, session: null, error }
+      }
+      throw new Error(
+        `You must provide either an email or phone number.`
+      )
     } catch (error) {
       if (isAuthError(error)) {
         return { user: null, session: null, error }
@@ -758,7 +863,7 @@ export default class GoTrueClient {
         throw error
       }
     }
-    throw new Error(`You must provide a OpenID Connect provider with your id token and nonce.`)
+    throw new Error(`You must provide an OpenID Connect provider with your id token and nonce.`)
   }
 
   /**

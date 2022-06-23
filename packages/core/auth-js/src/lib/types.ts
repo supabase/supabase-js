@@ -190,6 +190,27 @@ export interface SignInWithPasswordCredentials {
 export interface SignInWithPasswordOptions {
   captchaToken?: string
 }
+export interface SignInWithPasswordlessCredentials {
+  email?: string
+  phone?: string
+  options?: SignInWithPasswordlessOptions
+}
+export interface SignInWithPasswordlessOptions {
+  // The redirect url embedded in the email link
+  emailRedirectTo?: string
+  shouldCreateUser?: boolean
+  captchaToken?: string
+}
+export interface SignInWithOAuthCredentials {
+  provider?: Provider
+  oidc?: OpenIDConnectCredentials
+  options?: SignInWithOAuthOptions
+}
+export interface SignInWithOAuthOptions {
+  redirectTo?: string
+  scopes?: string
+  queryParams?: { [key: string]: string }
+}
 
 export type VerifyOTPParams = VerifyMobileOTPParams | VerifyEmailOTPParams
 export interface VerifyMobileOTPParams {
