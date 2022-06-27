@@ -1,5 +1,3 @@
-import crossFetch from 'cross-fetch'
-
 export type Fetch = typeof fetch
 
 /**
@@ -67,7 +65,7 @@ export abstract class PostgrestBuilder<T> implements PromiseLike<PostgrestRespon
     if (builder.fetch) {
       _fetch = builder.fetch
     } else if (typeof fetch === 'undefined') {
-      _fetch = crossFetch
+      _fetch = async (...args) => await (await import('cross-fetch')).fetch(...args)
     } else {
       _fetch = fetch
     }
