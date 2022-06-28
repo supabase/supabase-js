@@ -45,7 +45,7 @@
     "babel-register": "^6.26.0",
     "eslint": "^7.0.0",
     "esm": "^3.2.25",
-    "jsdom": "16.4.0",
+    "jsdom": "16.5.0",
     "jsdom-global": "3.0.0",
     "mocha": "^8.0.1",
     "mock-socket": "^9.0.3",
