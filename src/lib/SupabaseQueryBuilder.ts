@@ -6,7 +6,6 @@ import { Fetch, GenericObject, SupabaseEventTypes, SupabaseRealtimePayload } fro
 export class SupabaseQueryBuilder<T> extends PostgrestQueryBuilder<T> {
   private _subscription: SupabaseRealtimeClient | null = null
   private _realtime: RealtimeClient
-  private _headers: GenericObject
   private _schema: string
   private _table: string
 
@@ -31,7 +30,6 @@ export class SupabaseQueryBuilder<T> extends PostgrestQueryBuilder<T> {
     super(url, { headers, schema, fetch, shouldThrowOnError })
 
     this._realtime = realtime
-    this._headers = headers
     this._schema = schema
     this._table = table
   }
@@ -49,12 +47,7 @@ export class SupabaseQueryBuilder<T> extends PostgrestQueryBuilder<T> {
       this._realtime.connect()
     }
     if (!this._subscription) {
-      this._subscription = new SupabaseRealtimeClient(
-        this._realtime,
-        this._headers,
-        this._schema,
-        this._table
-      )
+      this._subscription = new SupabaseRealtimeClient(this._realtime, this._schema, this._table)
     }
     return this._subscription.on(event, callback)
   }

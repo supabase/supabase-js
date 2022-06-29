@@ -1,19 +1,15 @@
-import { RealtimeSubscription, RealtimeClient, Transformers } from '@supabase/realtime-js'
-import { GenericObject, SupabaseEventTypes, SupabaseRealtimePayload } from './types'
+import { RealtimeClient, RealtimeSubscription, Transformers } from '@supabase/realtime-js'
+import { SupabaseEventTypes, SupabaseRealtimePayload } from './types'
 
 export class SupabaseRealtimeClient {
+  socket: RealtimeClient
   subscription: RealtimeSubscription
 
-  constructor(socket: RealtimeClient, headers: GenericObject, schema: string, tableName: string) {
-    const chanParams: GenericObject = {}
+  constructor(socket: RealtimeClient, schema: string, tableName: string) {
     const topic = tableName === '*' ? `realtime:${schema}` : `realtime:${schema}:${tableName}`
-    const userToken = headers['Authorization'].split(' ')[1]
 
-    if (userToken) {
-      chanParams['user_token'] = userToken
-    }
-
-    this.subscription = socket.channel(topic, chanParams) as RealtimeSubscription
+    this.socket = socket
+    this.subscription = socket.channel(topic) as RealtimeSubscription
   }
 
   private getPayloadRecords(payload: any) {
@@ -62,13 +58,30 @@ export class SupabaseRealtimeClient {
    * Enables the subscription.
    */
   subscribe(callback: Function = () => {}) {
+    // if the socket already has a good accessToken
+    // we can just use it strait away∏
+    if (this.socket.accessToken) {
+      this.subscription.updateJoinPayload({
+        user_token: this.socket.accessToken,
+      })
+    }
+
     this.subscription.onError((e: Error) => callback('SUBSCRIPTION_ERROR', e))
     this.subscription.onClose(() => callback('CLOSED'))
     this.subscription
       .subscribe()
-      .receive('ok', () => callback('SUBSCRIBED'))
+      .receive('ok', () => {
+        callback('SUBSCRIBED')
+
+        // re-set the accessToken again in case it was set while
+        // the subscription was isJoining
+        if (this.socket.accessToken) {
+          this.socket.setAuth(this.socket.accessToken)
+        }
+      })
       .receive('error', (e: Error) => callback('SUBSCRIPTION_ERROR', e))
       .receive('timeout', () => callback('RETRYING_AFTER_TIMEOUT'))
+
     return this.subscription
   }
 }

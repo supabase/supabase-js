@@ -167,13 +167,11 @@ export default class SupabaseClient {
    * Activated when vsndate query param is present in the WebSocket URL.
    */
   channel(name: string, opts: { selfBroadcast: boolean; [key: string]: any }): RealtimeChannel {
-    const userToken = this.auth.session()?.access_token ?? this.supabaseKey
-
     if (!this.realtime.isConnected()) {
       this.realtime.connect()
     }
 
-    return this.realtime.channel(name, { ...opts, user_token: userToken }) as RealtimeChannel
+    return this.realtime.channel(name, opts) as RealtimeChannel
   }
 
   /**
