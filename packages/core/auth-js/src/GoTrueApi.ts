@@ -116,7 +116,7 @@ export default class GoTrueApi {
           email,
           password,
           data: options.data,
-          gotrue_meta_security: { hcaptcha_token: options.captchaToken },
+          gotrue_meta_security: { captcha_token: options.captchaToken },
         },
         { headers }
       )
@@ -184,7 +184,7 @@ export default class GoTrueApi {
           phone,
           password,
           data: options.data,
-          gotrue_meta_security: { hcaptcha_token: options.captchaToken },
+          gotrue_meta_security: { captcha_token: options.captchaToken },
         },
         { headers }
       )
@@ -282,7 +282,7 @@ export default class GoTrueApi {
         {
           email,
           create_user: shouldCreateUser,
-          gotrue_meta_security: { hcaptcha_token: options.captchaToken },
+          gotrue_meta_security: { captcha_token: options.captchaToken },
         },
         { headers }
       )
@@ -313,7 +313,7 @@ export default class GoTrueApi {
         {
           phone,
           create_user: shouldCreateUser,
-          gotrue_meta_security: { hcaptcha_token: options.captchaToken },
+          gotrue_meta_security: { captcha_token: options.captchaToken },
         },
         { headers }
       )
@@ -452,7 +452,7 @@ export default class GoTrueApi {
       const data = await post(
         this.fetch,
         `${this.url}/recover${queryString}`,
-        { email, gotrue_meta_security: { hcaptcha_token: options.captchaToken } },
+        { email, gotrue_meta_security: { captcha_token: options.captchaToken } },
         { headers }
       )
       return { data, error: null }
