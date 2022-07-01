@@ -2,16 +2,12 @@ import { RealtimeChannel, RealtimeClient, Transformers } from '@supabase/realtim
 import { SupabaseRealtimePayload } from './types'
 
 export class SupabaseRealtimeClient {
+  socket: RealtimeClient
   channel: RealtimeChannel
 
-  constructor(socket: RealtimeClient, name: string, token: string, opts?: { [key: string]: any }) {
-    let chanParams: Record<string, string> = { user_token: token }
-
-    if (opts) {
-      chanParams = { ...chanParams, ...opts }
-    }
-
-    this.channel = socket.channel(`realtime:${name}`, chanParams) as RealtimeChannel
+  constructor(socket: RealtimeClient, name: string, opts: { [key: string]: any } = {}) {
+    this.socket = socket
+    this.channel = socket.channel(`realtime:${name}`, opts) as RealtimeChannel
   }
 
   private getPayloadRecords(payload: any) {
@@ -66,13 +62,30 @@ export class SupabaseRealtimeClient {
    * Enables the channel.
    */
   subscribe(callback: Function = () => {}) {
+    // if the socket already has a good accessToken
+    // we can just use it straight away
+    if (this.socket.accessToken) {
+      this.channel.updateJoinPayload({
+        user_token: this.socket.accessToken,
+      })
+    }
+
     this.channel.onError((e: Error) => callback('CHANNEL_ERROR', e))
     this.channel.onClose(() => callback('CLOSED'))
     this.channel
       .subscribe()
-      .receive('ok', () => callback('SUBSCRIBED'))
+      .receive('ok', () => {
+        callback('SUBSCRIBED')
+
+        // re-set the accessToken again in case it was set while
+        // the subscription was isJoining
+        if (this.socket.accessToken) {
+          this.socket.setAuth(this.socket.accessToken)
+        }
+      })
       .receive('error', (e: Error) => callback('CHANNEL_ERROR', e))
       .receive('timeout', () => callback('RETRYING_AFTER_TIMEOUT'))
+
     return this.channel
   }
 }

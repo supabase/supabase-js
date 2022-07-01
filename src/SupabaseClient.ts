@@ -97,9 +97,9 @@ export default class SupabaseClient<
     this.headers = { ...DEFAULT_HEADERS, ...options?.headers }
     this.shouldThrowOnError = settings.shouldThrowOnError || false
 
+    this.auth = this._initSupabaseAuthClient(settings.auth || {}, this.headers, settings.fetch)
     this.fetch = fetchWithAuth(supabaseKey, this._getAccessToken.bind(this), settings.fetch)
 
-    this.auth = this._initSupabaseAuthClient(settings.auth || {}, this.headers, this.fetch)
     this.realtime = this._initRealtimeClient({ headers: this.headers, ...settings.realtime })
     this.rest = new PostgrestClient(`${_supabaseUrl}/rest/v1`, {
       headers: this.headers,
@@ -180,13 +180,11 @@ export default class SupabaseClient<
    * Creates a channel with Broadcast and Presence.
    */
   channel(name: string, opts?: { [key: string]: any }): SupabaseRealtimeClient {
-    const token = this.realtime.accessToken ?? this.supabaseKey
-
     if (!this.realtime.isConnected()) {
       this.realtime.connect()
     }
 
-    return new SupabaseRealtimeClient(this.realtime, name, token, opts)
+    return new SupabaseRealtimeClient(this.realtime, name, opts)
   }
 
   /**
