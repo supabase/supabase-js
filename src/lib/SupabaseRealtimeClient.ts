@@ -63,7 +63,7 @@ export class SupabaseRealtimeClient {
    */
   subscribe(callback: Function = () => {}) {
     // if the socket already has a good accessToken
-    // we can just use it strait away∏
+    // we can just use it straight away
     if (this.socket.accessToken) {
       this.channel.updateJoinPayload({
         user_token: this.socket.accessToken,
