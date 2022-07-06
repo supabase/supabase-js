@@ -34,27 +34,27 @@ export class SupabaseRealtimeClient {
    * @param filter An object that specifies what you want to listen to from the event.
    * @param callback A callback function that is called whenever the event occurs.
    */
-  on(
-    event: string,
-    filter?: Record<string, string>,
-    callback?: (payload: SupabaseRealtimePayload<any>) => void
-  ) {
-    this.channel.on(event, filter ?? {}, (payload: any) => {
-      const { schema, table, commit_timestamp, type, errors } = payload.payload
-      let enrichedPayload: SupabaseRealtimePayload<any> = {
-        schema: schema,
-        table: table,
-        commit_timestamp: commit_timestamp,
-        eventType: type,
-        new: {},
-        old: {},
-        errors: errors,
-      }
+  on(event: string, filter?: Record<string, string>, callback?: (payload: any) => void) {
+    this.channel.on(event, filter ?? {}, ({ payload }: { payload: any }) => {
+      let enrichedPayload = payload
 
-      enrichedPayload = { ...enrichedPayload, ...this.getPayloadRecords(payload.payload) }
+      if (event === 'realtime') {
+        const { schema, table, commit_timestamp, type, errors } = enrichedPayload
+        enrichedPayload = {
+          schema: schema,
+          table: table,
+          commit_timestamp: commit_timestamp,
+          eventType: type,
+          new: {},
+          old: {},
+          errors: errors,
+        }
+        enrichedPayload = { ...enrichedPayload, ...this.getPayloadRecords(payload) }
+      }
 
       callback && callback(enrichedPayload)
     })
+
     return this
   }
 
