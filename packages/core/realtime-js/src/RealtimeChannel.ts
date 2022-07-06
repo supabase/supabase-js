@@ -244,9 +244,9 @@ export default class RealtimeChannel {
   send(payload: { type: string; [key: string]: any }) {
     const push = this.push(payload.type as any, payload)
 
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
       push.receive('ok', () => resolve('ok'))
-      push.receive('timeout', () => reject('timeout'))
+      push.receive('timeout', () => resolve('timeout'))
     })
   }
 
