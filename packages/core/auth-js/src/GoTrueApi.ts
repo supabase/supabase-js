@@ -802,7 +802,7 @@ export default class GoTrueApi {
    *
    * This method is called by the GoTrueClient `update` where
    * the jwt is set to this.currentSession.access_token
-   * and therefore, acts like getting the currently authenticated used
+   * and therefore, acts like getting the currently authenticated user
    *
    * @param jwt A valid, logged-in JWT. Typically, the access_token for the currentSession
    */
