@@ -112,7 +112,7 @@ export default class GoTrueClient {
       // Handle the OAuth redirect
       this.getSessionFromUrl({ storeSession: true }).then(({ error }) => {
         if (error) {
-          console.warn('Error getting session from URL.', error)
+          throw new Error('Error getting session from URL.')
         }
       })
     }
