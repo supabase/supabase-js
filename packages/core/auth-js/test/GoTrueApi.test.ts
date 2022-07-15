@@ -353,6 +353,19 @@ describe('GoTrueApi', () => {
       expect(error?.message).toBeUndefined()
     })
 
+    test('resetPasswordForEmail() if user does not exist, cannot send an email for password recovery', async () => {
+      const redirectTo = 'http://localhost:9999/welcome'
+      const { error, data: user } = await serviceRoleApiClient.resetPasswordForEmail(
+        'this_user@does-not-exist.com',
+        {
+          redirectTo,
+        }
+      )
+      expect(user).toEqual({})
+      console.log(error)
+      expect(error?.message).toEqual('User not found')
+    })
+
     test('refreshAccessToken()', async () => {
       const { email, password } = mockUserCredentials()
 
