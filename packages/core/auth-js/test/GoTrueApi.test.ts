@@ -333,7 +333,7 @@ describe('GoTrueApi', () => {
   })
 
   describe('User management', () => {
-    test('resetPasswordForEmail() sends an email for  password recovery', async () => {
+    test('resetPasswordForEmail() sends an email for password recovery', async () => {
       const { email, password } = mockUserCredentials()
 
       const { error: initialError, session } = await authClientWithSession.signUp({
@@ -353,7 +353,7 @@ describe('GoTrueApi', () => {
       expect(error?.message).toBeUndefined()
     })
 
-    test('resetPasswordForEmail() if user does not exist, cannot send an email for password recovery', async () => {
+    test('resetPasswordForEmail() if user does not exist, user details are not exposed', async () => {
       const redirectTo = 'http://localhost:9999/welcome'
       const { error, data: user } = await serviceRoleApiClient.resetPasswordForEmail(
         'this_user@does-not-exist.com',
@@ -361,9 +361,8 @@ describe('GoTrueApi', () => {
           redirectTo,
         }
       )
-
-      expect(user).toBeNull()
-      expect(error?.message).toEqual('User not found')
+      expect(user).toEqual({})
+      expect(error).toBeNull()
     })
 
     test('refreshAccessToken()', async () => {
