@@ -361,8 +361,8 @@ describe('GoTrueApi', () => {
           redirectTo,
         }
       )
-
-      expect(user).toBeNull()
+      expect(user).toEqual({})
+      console.log(error)
       expect(error?.message).toEqual('User not found')
     })
 
