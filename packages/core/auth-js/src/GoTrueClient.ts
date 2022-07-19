@@ -821,7 +821,11 @@ export default class GoTrueClient {
       const timeNow = Math.round(Date.now() / 1000)
 
       if (expiresAt >= timeNow + EXPIRY_MARGIN && currentSession?.user) {
-        this._saveSession(currentSession)
+        // should only save the session when it's coming from localStorage
+        // if the user has persistSession enabled
+        if (this.persistSession) {
+          this._saveSession(currentSession)
+        }
         this._notifyAllSubscribers('SIGNED_IN')
       }
     } catch (error) {
@@ -869,7 +873,9 @@ export default class GoTrueClient {
       } else {
         // should be handled on _recoverSession method already
         // But we still need the code here to accommodate for AsyncStorage e.g. in React native
-        this._saveSession(currentSession)
+        if (this.persistSession) {
+          this._saveSession(currentSession)
+        }
         this._notifyAllSubscribers('SIGNED_IN')
       }
     } catch (err) {
