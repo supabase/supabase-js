@@ -19,8 +19,8 @@ export type RequestMethodType = 'GET' | 'POST' | 'PUT' | 'DELETE'
 const _getErrorMessage = (err: any): string =>
   err.msg || err.message || err.error_description || err.error || JSON.stringify(err)
 
-const handleError = (error: unknown, reject: (reason?: any) => void) => {
-  const Res = resolveResponse()
+const handleError = async (error: unknown, reject: (reason?: any) => void) => {
+  const Res = await resolveResponse()
 
   if (error instanceof Res) {
     error.json().then((err) => {
