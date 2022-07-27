@@ -224,6 +224,7 @@ export default class GoTrueClient {
       if (email && password) {
         return this._handleEmailSignIn(email, password, {
           redirectTo: options.redirectTo,
+          captchaToken: options.captchaToken,
         })
       }
       if (phone && !password) {
@@ -521,11 +522,13 @@ export default class GoTrueClient {
     password: string,
     options: {
       redirectTo?: string
+      captchaToken?: string
     } = {}
   ) {
     try {
       const { data, error } = await this.api.signInWithEmail(email, password, {
         redirectTo: options.redirectTo,
+        captchaToken: options.captchaToken,
       })
       if (error || !data) return { data: null, user: null, session: null, error }
 
@@ -540,9 +543,15 @@ export default class GoTrueClient {
     }
   }
 
-  private async _handlePhoneSignIn(phone: string, password: string) {
+  private async _handlePhoneSignIn(
+    phone: string,
+    password: string,
+    options: {
+      captchaToken?: string
+    } = {}
+  ) {
     try {
-      const { data, error } = await this.api.signInWithPhone(phone, password)
+      const { data, error } = await this.api.signInWithPhone(phone, password, options)
       if (error || !data) return { data: null, user: null, session: null, error }
 
       if (data?.user?.phone_confirmed_at) {
@@ -567,7 +576,7 @@ export default class GoTrueClient {
     const url: string = this.api.getUrlForProvider(provider, {
       redirectTo: options.redirectTo,
       scopes: options.scopes,
-      queryParams: options.queryParams
+      queryParams: options.queryParams,
     })
 
     try {
