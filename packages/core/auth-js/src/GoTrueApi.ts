@@ -77,7 +77,7 @@ export default class GoTrueApi {
     if (options?.scopes) {
       urlParams.push(`scopes=${encodeURIComponent(options.scopes)}`)
     }
-    if(options?.queryParams) {
+    if (options?.queryParams) {
       const query = new URLSearchParams(options.queryParams)
       urlParams.push(`${query}`)
     }
@@ -90,6 +90,7 @@ export default class GoTrueApi {
    * @param password The password of the user.
    * @param redirectTo A URL or mobile address to send the user to after they are confirmed.
    * @param data Optional user metadata.
+   * @param captchaToken Verification token received when the user completes the captcha on your site.
    *
    * @returns A logged-in session if the server has "autoconfirm" ON
    * @returns A user if the server has "autoconfirm" OFF
@@ -133,12 +134,14 @@ export default class GoTrueApi {
    * @param email The email address of the user.
    * @param password The password of the user.
    * @param redirectTo A URL or mobile address to send the user to after they are confirmed.
+   * @param captchaToken Verification token received when the user completes the captcha on your site.
    */
   async signInWithEmail(
     email: string,
     password: string,
     options: {
       redirectTo?: string
+      captchaToken?: string
     } = {}
   ): Promise<{ data: Session | null; error: ApiError | null }> {
     try {
@@ -150,7 +153,7 @@ export default class GoTrueApi {
       const data = await post(
         this.fetch,
         `${this.url}/token${queryString}`,
-        { email, password },
+        { email, password, gotrue_meta_security: { captcha_token: options.captchaToken } },
         { headers }
       )
       const session = { ...data }
@@ -166,6 +169,7 @@ export default class GoTrueApi {
    * @param phone The phone number of the user.
    * @param password The password of the user.
    * @param data Optional user metadata.
+   * @param captchaToken Verification token received when the user completes the captcha on your site.
    */
   async signUpWithPhone(
     phone: string,
@@ -200,10 +204,14 @@ export default class GoTrueApi {
    * Logs in an existing user using their phone number and password.
    * @param phone The phone number of the user.
    * @param password The password of the user.
+   * @param captchaToken Verification token received when the user completes the captcha on your site.
    */
   async signInWithPhone(
     phone: string,
-    password: string
+    password: string,
+    options: {
+      captchaToken?: string
+    } = {}
   ): Promise<{ data: Session | null; error: ApiError | null }> {
     try {
       const headers = { ...this.headers }
@@ -211,7 +219,7 @@ export default class GoTrueApi {
       const data = await post(
         this.fetch,
         `${this.url}/token${queryString}`,
-        { phone, password },
+        { phone, password, gotrue_meta_security: { captcha_token: options.captchaToken } },
         { headers }
       )
       const session = { ...data }
@@ -259,6 +267,7 @@ export default class GoTrueApi {
    * @param email The email address of the user.
    * @param shouldCreateUser A boolean flag to indicate whether to automatically create a user on magiclink / otp sign-ins if the user doesn't exist. Defaults to true.
    * @param redirectTo A URL or mobile address to send the user to after they are confirmed.
+   * @param captchaToken Verification token received when the user completes the captcha on your site.
    */
   async sendMagicLinkEmail(
     email: string,
@@ -296,6 +305,7 @@ export default class GoTrueApi {
    * Sends a mobile OTP via SMS. Will register the account if it doesn't already exist
    * @param phone The user's phone number WITH international prefix
    * @param shouldCreateUser A boolean flag to indicate whether to automatically create a user on magiclink / otp sign-ins if the user doesn't exist. Defaults to true.
+   * @param captchaToken Verification token received when the user completes the captcha on your site.
    */
   async sendMobileOTP(
     phone: string,
@@ -435,6 +445,7 @@ export default class GoTrueApi {
    * Sends a reset request to an email address.
    * @param email The email address of the user.
    * @param redirectTo A URL or mobile address to send the user to after they are confirmed.
+   * @param captchaToken Verification token received when the user completes the captcha on your site.
    */
   async resetPasswordForEmail(
     email: string,
