@@ -7,7 +7,7 @@ import {
 } from '@supabase/postgrest-js'
 import { RealtimeChannel, RealtimeClient, RealtimeClientOptions } from '@supabase/realtime-js'
 import { SupabaseStorageClient } from '@supabase/storage-js'
-import { DEFAULT_HEADERS, STORAGE_KEY } from './lib/constants'
+import { DEFAULT_HEADERS } from './lib/constants'
 import { fetchWithAuth } from './lib/fetch'
 import { isBrowser, stripTrailingSlash } from './lib/helpers'
 import { SupabaseAuthClient } from './lib/SupabaseAuthClient'
@@ -49,6 +49,7 @@ export default class SupabaseClient<
   protected realtime: RealtimeClient
   protected rest: PostgrestClient<Database, SchemaName>
   protected multiTab: boolean
+  protected storageKey: string
   protected fetch?: Fetch
   protected changedAccessToken: string | undefined
   protected shouldThrowOnError: boolean
@@ -79,7 +80,6 @@ export default class SupabaseClient<
     if (!supabaseKey) throw new Error('supabaseKey is required.')
 
     const _supabaseUrl = stripTrailingSlash(supabaseUrl)
-    const settings = { ...DEFAULT_OPTIONS, ...options }
 
     this.realtimeUrl = `${_supabaseUrl}/realtime/v1`.replace('http', 'ws')
     this.authUrl = `${_supabaseUrl}/auth/v1`
@@ -92,6 +92,11 @@ export default class SupabaseClient<
     } else {
       this.functionsUrl = `${_supabaseUrl}/functions/v1`
     }
+    // default storage key uses the supabase project ref as a namespace
+    const defaultStorageKey = `sb-${new URL(this.authUrl).hostname.split('.')[0]}-auth-token`
+    this.storageKey = options?.auth?.storageKey ?? defaultStorageKey
+
+    const settings = { ...DEFAULT_OPTIONS, ...options, storageKey: this.storageKey }
 
     this.multiTab = settings.auth?.multiTab ?? false
     this.headers = { ...DEFAULT_HEADERS, ...options?.headers }
@@ -267,6 +272,7 @@ export default class SupabaseClient<
       localStorage,
       cookieOptions,
       multiTab,
+      storageKey,
     }: SupabaseAuthClientOptions,
     headers?: Record<string, string>,
     fetch?: Fetch
@@ -278,6 +284,7 @@ export default class SupabaseClient<
     return new SupabaseAuthClient({
       url: this.authUrl,
       headers: { ...headers, ...authHeaders },
+      storageKey: storageKey,
       autoRefreshToken,
       persistSession,
       detectSessionInUrl,
@@ -302,7 +309,7 @@ export default class SupabaseClient<
 
     try {
       return window?.addEventListener('storage', (e: StorageEvent) => {
-        if (e.key === STORAGE_KEY) {
+        if (e.key === this.storageKey) {
           const newSession = JSON.parse(String(e.newValue))
           const accessToken: string | undefined =
             newSession?.currentSession?.access_token ?? undefined
@@ -323,7 +330,7 @@ export default class SupabaseClient<
   }
 
   private _listenForAuthEvents() {
-    let { data } = this.auth.onAuthStateChange((event, session) => {
+    let data = this.auth.onAuthStateChange((event, session) => {
       this._handleTokenChanged(event, session?.access_token, 'CLIENT')
     })
     return data

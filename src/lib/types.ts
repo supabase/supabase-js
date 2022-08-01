@@ -21,6 +21,10 @@ export type SupabaseClientOptions<SchemaName> = {
      */
     autoRefreshToken?: boolean
     /**
+     * Optional key name used for storing tokens in local storage
+     */
+    storageKey?: string
+    /**
      * Whether to persist a logged in session to storage.
      */
     persistSession?: boolean
