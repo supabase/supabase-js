@@ -19,6 +19,10 @@ export type SupabaseClientOptions = {
    */
   headers?: GenericObject
   /**
+   * Optional key name used for storing tokens in local storage
+   */
+  storageKey?: string
+  /**
    * Automatically refreshes the token for logged in users.
    */
   autoRefreshToken?: boolean

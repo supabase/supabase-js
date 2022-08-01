@@ -8,7 +8,7 @@ import {
   RealtimeSubscription,
 } from '@supabase/realtime-js'
 import { SupabaseStorageClient } from '@supabase/storage-js'
-import { DEFAULT_HEADERS, STORAGE_KEY } from './lib/constants'
+import { DEFAULT_HEADERS } from './lib/constants'
 import { fetchWithAuth } from './lib/fetch'
 import { isBrowser, stripTrailingSlash } from './lib/helpers'
 import { SupabaseAuthClient } from './lib/SupabaseAuthClient'
@@ -43,6 +43,7 @@ export default class SupabaseClient {
   protected functionsUrl: string
   protected realtime: RealtimeClient
   protected multiTab: boolean
+  protected storageKey: string
   protected fetch?: Fetch
   protected changedAccessToken: string | undefined
   protected shouldThrowOnError: boolean
@@ -73,7 +74,6 @@ export default class SupabaseClient {
     if (!supabaseKey) throw new Error('supabaseKey is required.')
 
     const _supabaseUrl = stripTrailingSlash(supabaseUrl)
-    const settings = { ...DEFAULT_OPTIONS, ...options }
 
     this.restUrl = `${_supabaseUrl}/rest/v1`
     this.realtimeUrl = `${_supabaseUrl}/realtime/v1`.replace('http', 'ws')
@@ -88,6 +88,11 @@ export default class SupabaseClient {
       this.functionsUrl = `${_supabaseUrl}/functions/v1`
     }
 
+    // default storage key uses the supabase project ref as a namespace
+    const defaultStorageKey = `sb-${new URL(this.authUrl).hostname.split('.')[0]}-auth-token`
+    this.storageKey = options?.storageKey ? options?.storageKey : defaultStorageKey
+
+    const settings = { ...DEFAULT_OPTIONS, ...options, storageKey: this.storageKey }
     this.schema = settings.schema
     this.multiTab = settings.multiTab
     this.headers = { ...DEFAULT_HEADERS, ...options?.headers }
@@ -278,16 +283,16 @@ export default class SupabaseClient {
     fetch,
     cookieOptions,
     multiTab,
+    storageKey,
   }: SupabaseClientOptions) {
     const authHeaders = {
       Authorization: `Bearer ${this.supabaseKey}`,
       apikey: `${this.supabaseKey}`,
     }
-    const ref = new URL(this.authUrl).hostname.split('.')[0]
     return new SupabaseAuthClient({
       url: this.authUrl,
       headers: { ...headers, ...authHeaders },
-      storageKey: `sb-${ref}-auth-token`,
+      storageKey: storageKey,
       autoRefreshToken,
       persistSession,
       detectSessionInUrl,
@@ -321,7 +326,7 @@ export default class SupabaseClient {
 
     try {
       return window?.addEventListener('storage', (e: StorageEvent) => {
-        if (e.key === STORAGE_KEY) {
+        if (e.key === this.storageKey) {
           const newSession = JSON.parse(String(e.newValue))
           const accessToken: string | undefined =
             newSession?.currentSession?.access_token ?? undefined
