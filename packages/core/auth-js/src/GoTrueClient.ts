@@ -925,6 +925,7 @@ export default class GoTrueClient {
         return result;
       }
 
+      this.refreshingDeferred?.reject(error);
       throw error
     } finally {
       this.refreshingDeferred = null

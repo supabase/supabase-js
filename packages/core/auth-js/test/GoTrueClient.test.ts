@@ -134,7 +134,7 @@ describe('GoTrueClient', () => {
       expect(refreshAccessTokenSpy).toBeCalledTimes(1)
     })
 
-    test('refreshSession() should reject all pending refresh requests and reset deferred', async () => {
+    test('refreshSession() should resolve all pending refresh requests and reset deferred upon AuthError', async () => {
       const { email, password } = mockUserCredentials()
       refreshAccessTokenSpy.mockImplementationOnce(() => Promise.resolve({
         session: null,
@@ -156,6 +156,39 @@ describe('GoTrueClient', () => {
       expect(error2).toHaveProperty('message')
       expect(session1).toBeNull()
       expect(session2).toBeNull()
+
+      expect(refreshAccessTokenSpy).toBeCalledTimes(1)
+
+      // vreify the deferred has been reset and successive calls can be made
+      const { session: session3, error: error3 } = await authWithSession.refreshSession()
+
+      expect(error3).toBeNull()
+      expect(session3).toHaveProperty('access_token')
+    })
+
+    test('refreshSession() should reject all pending refresh requests and reset deferred upon any non AuthError', async () => {
+      const mockError = new Error('Something did not work as expected');
+
+      const { email, password } = mockUserCredentials()
+      refreshAccessTokenSpy.mockImplementationOnce(() => Promise.reject(mockError))
+
+      const { error, session } = await authWithSession.signUp({
+        email,
+        password,
+      })
+
+      expect(error).toBeNull()
+      expect(session).not.toBeNull()
+
+      const [error1, error2] =
+        await Promise.allSettled([authWithSession.refreshSession(), authWithSession.refreshSession()])
+
+      expect(error1.status).toEqual('rejected')
+      expect(error2.status).toEqual('rejected')
+
+      // status === 'rejected' above makes sure it is a PromiseRejectedResult
+      expect((error1 as PromiseRejectedResult).reason).toEqual(mockError)
+      expect((error1 as PromiseRejectedResult).reason).toEqual(mockError)
 
       expect(refreshAccessTokenSpy).toBeCalledTimes(1)
 
