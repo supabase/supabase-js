@@ -27,14 +27,24 @@ export type AuthChangeEvent =
   | 'USER_DELETED'
 
 export type AuthResponse = {
-  user: User | null,
-  session: Session | null,
+  user: User | null
+  session: Session | null
   error: null
 } | {
-  user: null,
-  session: null,
+  user: null
+  session: null
   error: AuthError
 } 
+
+export type OAuthResposne = {
+  provider: Provider
+  url: string
+  error: null
+} | {
+  provider: Provider
+  url: null
+  error: AuthError
+}
 export interface Session {
   provider_token?: string | null
   access_token: string

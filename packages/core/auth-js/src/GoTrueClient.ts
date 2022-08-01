@@ -37,6 +37,7 @@ import type {
   SignInWithOAuthCredentials,
   SignInWithPasswordlessCredentials,
   AuthResponse,
+  OAuthResposne,
 } from './lib/types'
 
 polyfillGlobalThis() // Make "globalThis" available
@@ -254,29 +255,19 @@ export default class GoTrueClient {
    */
   async signInWithOAuth(
     credentials: SignInWithOAuthCredentials,
-  ): Promise<
-    | AuthResponse & {
-        provider: Provider
-        url?: string | null
-      }
-    | AuthResponse & {
-        provider: Provider
-        url?: string
-      }
-  > {
+  ): Promise<OAuthResposne> {
     try {
       this._removeSession()
-      const { provider, options } = credentials
-      return this._handleProviderSignIn(provider, {
-        redirectTo: options?.redirectTo,
-        scopes: options?.scopes,
-        queryParams: options?.queryParams,
+      let { provider, url, error } = this._handleProviderSignIn(credentials.provider, {
+        redirectTo: credentials.options?.redirectTo,
+        scopes: credentials.options?.scopes,
+        queryParams: credentials.options?.queryParams,
       })
-    } catch (error) {
-      if (isAuthError(error)) {
-        return { provider: credentials.provider, user: null, session: null, error }
+      if (error) {
+        return { provider, url, error: error as AuthError }
       }
-
+      return { provider, url, error: null }
+    } catch (error) {
       throw error
     }
   }
@@ -762,20 +753,13 @@ export default class GoTrueClient {
       scopes: options.scopes,
       queryParams: options.queryParams,
     })
-
     try {
       // try to open on the browser
       if (isBrowser()) {
         window.location.href = url
       }
-      return { provider, url, session: null, user: null, error: null }
+      return { provider, url, error: null }
     } catch (error) {
-      if (url) return { provider, url, session: null, user: null, error: null }
-
-      if (isAuthError(error)) {
-        return { provider, url, user: null, session: null, error }
-      }
-
       throw error
     }
   }
