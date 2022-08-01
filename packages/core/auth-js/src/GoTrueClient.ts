@@ -225,12 +225,7 @@ export default class GoTrueClient {
    * @param password The user's password.
    * @param options Valid options for password sign-ins.
    */
-  async signInWithPassword({
-    email,
-    phone,
-    password,
-    options = {},
-  }: SignInWithPasswordCredentials): Promise<
+  async signInWithPassword(credentials: SignInWithPasswordCredentials): Promise<
     | {
         session: Session | null
         user: User | null
@@ -247,13 +242,18 @@ export default class GoTrueClient {
     try {
       this._removeSession()
 
-      if (email && password) {
+      if ('email' in credentials) {
+        let { email, password, options } = credentials
         return this._handleEmailSignIn(email, password, {
-          captchaToken: options.captchaToken,
+          captchaToken: options?.captchaToken,
         })
       }
-      if (phone && password) {
-        return this._handlePhoneSignIn(phone, password)
+      
+      if ('phone' in credentials) {
+        let { phone, password, options } = credentials
+        return this._handlePhoneSignIn(phone, password, {
+          captchaToken: options?.captchaToken
+        })
       }
       throw new Error(`You must provide either an email or phone number and a password.`)
     } catch (error) {
@@ -275,7 +275,7 @@ export default class GoTrueClient {
    * @param queryParams An object of query params 
    */
   async signInWithOAuth(
-    { provider, oidc, options = {} }: SignInWithOAuthCredentials,
+    credentials: SignInWithOAuthCredentials,
   ): Promise<
     | {
         session: Session | null
@@ -295,15 +295,16 @@ export default class GoTrueClient {
     try {
       this._removeSession()
 
-      if (provider) {
+      if ('provider' in credentials) {
+        let { provider, options } = credentials
         return this._handleProviderSignIn(provider, {
-          redirectTo: options.redirectTo,
-          scopes: options.scopes,
-          queryParams: options.queryParams,
+          redirectTo: options?.redirectTo,
+          scopes: options?.scopes,
+          queryParams: options?.queryParams,
         })
       }
-      if (oidc) {
-        return this._handleOpenIDConnectSignIn(oidc)
+      if ('oidc' in credentials) {
+        return this._handleOpenIDConnectSignIn(credentials.oidc)
       }
       throw new Error(
         `You must provide either an OAuth provider or OpenID Connect provider.`
@@ -325,7 +326,7 @@ export default class GoTrueClient {
    * @param options Valid options for passwordless sign-ins.
    */
   async signInWithOtp(
-    { email, phone, options = {} }: SignInWithPasswordlessCredentials,
+    credentials: SignInWithPasswordlessCredentials,
   ): Promise<
     | {
         session: Session | null
@@ -341,18 +342,20 @@ export default class GoTrueClient {
     try {
       this._removeSession()
 
-      if (email) {
+      if ('email' in credentials) {
+        let { email, options } = credentials
         const { error } = await this.api.sendMagicLinkEmail(email, {
-          redirectTo: options.emailRedirectTo,
-          shouldCreateUser: options.shouldCreateUser,
-          captchaToken: options.captchaToken,
+          redirectTo: options?.emailRedirectTo,
+          shouldCreateUser: options?.shouldCreateUser,
+          captchaToken: options?.captchaToken,
         })
         return { user: null, session: null, error }
       }
-      if (phone) {
+      if ('phone' in credentials) {
+        let { phone, options } = credentials
         const { error } = await this.api.sendMobileOTP(phone, {
-          shouldCreateUser: options.shouldCreateUser,
-          captchaToken: options.captchaToken,
+          shouldCreateUser: options?.shouldCreateUser,
+          captchaToken: options?.captchaToken,
         })
         return { user: null, session: null, error }
       }

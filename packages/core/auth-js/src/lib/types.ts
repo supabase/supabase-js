@@ -1,3 +1,5 @@
+import { type } from "os"
+
 export type Provider =
   | 'apple'
   | 'azure'
@@ -181,18 +183,23 @@ export interface UserCredentials {
   provider?: Provider
   oidc?: OpenIDConnectCredentials
 }
-export interface SignInWithPasswordCredentials {
-  email?: string
-  phone?: string
+export type SignInWithPasswordCredentials = {
+  email: string
+  password: string
+  options?: SignInWithPasswordOptions
+} | {
+  phone: string
   password: string
   options?: SignInWithPasswordOptions
 }
 export interface SignInWithPasswordOptions {
   captchaToken?: string
 }
-export interface SignInWithPasswordlessCredentials {
-  email?: string
-  phone?: string
+export type SignInWithPasswordlessCredentials = {
+  email: string
+  options?: SignInWithPasswordlessOptions
+} | {
+  phone: string
   options?: SignInWithPasswordlessOptions
 }
 export interface SignInWithPasswordlessOptions {
@@ -201,9 +208,11 @@ export interface SignInWithPasswordlessOptions {
   shouldCreateUser?: boolean
   captchaToken?: string
 }
-export interface SignInWithOAuthCredentials {
-  provider?: Provider
-  oidc?: OpenIDConnectCredentials
+export type SignInWithOAuthCredentials = {
+  provider: Provider
+  options?: SignInWithOAuthOptions
+} | {
+  oidc: OpenIDConnectCredentials
   options?: SignInWithOAuthOptions
 }
 export interface SignInWithOAuthOptions {
