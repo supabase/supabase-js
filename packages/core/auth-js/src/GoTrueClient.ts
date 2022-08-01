@@ -522,7 +522,9 @@ export default class GoTrueClient {
   /**
    * Force refreshes the session including the user data in case it was updated in a different session.
    */
-  async refreshSession(): Promise<
+  async refreshSession(
+    refreshToken?: string
+  ): Promise<
     | {
         user: User | null
         session: Session | null
@@ -534,7 +536,7 @@ export default class GoTrueClient {
       if (!this.currentSession?.access_token) throw new AuthApiError('Not logged in.', 401)
 
       // currentSession and currentUser will be updated to latest on _callRefreshToken
-      const { error } = await this._callRefreshToken()
+      const { error } = await this._callRefreshToken(refreshToken)
       if (error) throw error
 
       return { session: this.currentSession, user: this.currentUser, error: null }
