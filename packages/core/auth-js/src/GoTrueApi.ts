@@ -127,7 +127,7 @@ export default class GoTrueApi {
           email,
           password,
           data: options.data,
-          gotrue_meta_security: { hcaptcha_token: options.captchaToken },
+          gotrue_meta_security: { captcha_token: options.captchaToken },
         },
         { headers }
       )
@@ -214,7 +214,7 @@ export default class GoTrueApi {
           phone,
           password,
           data: options.data,
-          gotrue_meta_security: { hcaptcha_token: options.captchaToken },
+          gotrue_meta_security: { captcha_token: options.captchaToken },
         },
         { headers }
       )
@@ -344,7 +344,7 @@ export default class GoTrueApi {
         {
           email,
           create_user: shouldCreateUser,
-          gotrue_meta_security: { hcaptcha_token: options.captchaToken },
+          gotrue_meta_security: { captcha_token: options.captchaToken },
         },
         { headers }
       )
@@ -385,7 +385,7 @@ export default class GoTrueApi {
         {
           phone,
           create_user: shouldCreateUser,
-          gotrue_meta_security: { hcaptcha_token: options.captchaToken },
+          gotrue_meta_security: { captcha_token: options.captchaToken },
         },
         { headers }
       )
@@ -576,7 +576,7 @@ export default class GoTrueApi {
       const data = await post(
         this.fetch,
         `${this.url}/recover${queryString}`,
-        { email, gotrue_meta_security: { hcaptcha_token: options.captchaToken } },
+        { email, gotrue_meta_security: { captcha_token: options.captchaToken } },
         { headers }
       )
       return { data, error: null }
@@ -1003,7 +1003,7 @@ export default class GoTrueApi {
    *
    * This method is called by the GoTrueClient `update` where
    * the jwt is set to this.currentSession.access_token
-   * and therefore, acts like getting the currently authenticated used
+   * and therefore, acts like getting the currently authenticated user
    *
    * @param jwt A valid, logged-in JWT. Typically, the access_token for the currentSession
    */

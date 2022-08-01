@@ -140,7 +140,7 @@ export default class GoTrueClient {
       // Handle the OAuth redirect
       this.getSessionFromUrl({ storeSession: true }).then(({ error }) => {
         if (error) {
-          console.error('Error getting session from URL.', error)
+          throw new Error('Error getting session from URL.')
         }
       })
     }
@@ -707,7 +707,7 @@ export default class GoTrueClient {
    * Inside a browser context, `signOut()` will remove the logged in user from the browser session
    * and log them out - removing all items from localstorage and then trigger a "SIGNED_OUT" event.
    *
-   * For server-side management, you can disable sessions by passing a JWT through to `auth.api.signOut(JWT: string)`
+   * For server-side management, you can revoke all refresh tokens for a user by passing a user's JWT through to `auth.api.signOut(JWT: string)`. There is no way to revoke a user's session JWT before it automatically expires
    */
   async signOut(): Promise<{ error: AuthError | null }> {
     const accessToken = this.currentSession?.access_token
@@ -887,7 +887,11 @@ export default class GoTrueClient {
       const timeNow = Math.round(Date.now() / 1000)
 
       if (expiresAt >= timeNow + EXPIRY_MARGIN && currentSession?.user) {
-        this._saveSession(currentSession)
+        // should only save the session when it's coming from localStorage
+        // if the user has persistSession enabled
+        if (this.persistSession) {
+          this._saveSession(currentSession)
+        }
         this._notifyAllSubscribers('SIGNED_IN')
       }
     } catch (error) {
@@ -935,7 +939,9 @@ export default class GoTrueClient {
       } else {
         // should be handled on _recoverSession method already
         // But we still need the code here to accommodate for AsyncStorage e.g. in React native
-        this._saveSession(currentSession)
+        if (this.persistSession) {
+          this._saveSession(currentSession)
+        }
         this._notifyAllSubscribers('SIGNED_IN')
       }
     } catch (err) {
