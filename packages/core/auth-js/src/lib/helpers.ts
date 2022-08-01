@@ -1,4 +1,3 @@
-import crossFetch, { Response as CrossFetchResponse } from 'cross-fetch'
 import { SupportedStorage } from './types'
 
 export function expiresAt(expiresIn: number) {
@@ -34,16 +33,16 @@ export const resolveFetch = (customFetch?: Fetch): Fetch => {
   if (customFetch) {
     _fetch = customFetch
   } else if (typeof fetch === 'undefined') {
-    _fetch = crossFetch as unknown as Fetch
+    _fetch = async (...args) => await (await import('cross-fetch')).fetch(...args)
   } else {
     _fetch = fetch
   }
   return (...args) => _fetch(...args)
 }
 
-export const resolveResponse = () => {
+export const resolveResponse = async () => {
   if (typeof Response === 'undefined') {
-    return CrossFetchResponse
+    return (await import('cross-fetch')).Response
   }
 
   return Response

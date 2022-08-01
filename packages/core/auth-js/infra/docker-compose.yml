@@ -109,6 +109,7 @@ services:
     image: supabase/postgres:14.1.0
     ports:
       - '5432:5432'
+    command: postgres -c config_file=/etc/postgresql/postgresql.conf
     volumes:
       - ./db:/docker-entrypoint-initdb.d/
     environment:
