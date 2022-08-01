@@ -1,4 +1,4 @@
-import { type } from "os"
+import { AuthError } from "./errors"
 
 export type Provider =
   | 'apple'
@@ -25,6 +25,16 @@ export type AuthChangeEvent =
   | 'TOKEN_REFRESHED'
   | 'USER_UPDATED'
   | 'USER_DELETED'
+
+export type AuthResponse = {
+  user: User | null,
+  session: Session | null,
+  error: null
+} | {
+  user: null,
+  session: null,
+  error: AuthError
+} 
 export interface Session {
   provider_token?: string | null
   access_token: string
@@ -210,9 +220,6 @@ export interface SignInWithPasswordlessOptions {
 }
 export type SignInWithOAuthCredentials = {
   provider: Provider
-  options?: SignInWithOAuthOptions
-} | {
-  oidc: OpenIDConnectCredentials
   options?: SignInWithOAuthOptions
 }
 export interface SignInWithOAuthOptions {

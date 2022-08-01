@@ -36,6 +36,7 @@ import type {
   SignInWithPasswordCredentials,
   SignInWithOAuthCredentials,
   SignInWithPasswordlessCredentials,
+  AuthResponse,
 } from './lib/types'
 
 polyfillGlobalThis() // Make "globalThis" available
@@ -162,14 +163,7 @@ export default class GoTrueClient {
       data?: object
       captchaToken?: string
     } = {}
-  ): Promise<
-    | {
-        user: User | null
-        session: Session | null
-        error: null
-      }
-    | { user: null; session: null; error: AuthError }
-  > {
+  ): Promise<AuthResponse> {
     try {
       this._removeSession()
 
@@ -201,9 +195,7 @@ export default class GoTrueClient {
         user = session.user as User
         this._saveSession(session)
         this._notifyAllSubscribers('SIGNED_IN')
-      }
-
-      if ((data as User).id) {
+      } else {
         user = data as User
       }
 
@@ -225,20 +217,7 @@ export default class GoTrueClient {
    * @param password The user's password.
    * @param options Valid options for password sign-ins.
    */
-  async signInWithPassword(credentials: SignInWithPasswordCredentials): Promise<
-    | {
-        session: Session | null
-        user: User | null
-        url?: string | null
-        error: null
-      }
-    | {
-        session: Session | null
-        user: User | null
-        url?: string | null
-        error: AuthError
-      }
-  > {
+  async signInWithPassword(credentials: SignInWithPasswordCredentials): Promise<AuthResponse> {
     try {
       this._removeSession()
 
@@ -269,7 +248,6 @@ export default class GoTrueClient {
    * Log in an existing user via a third-party provider.
    * @type SignInWithOAuthCredentials
    * @param provider One of the providers supported by GoTrue.
-   * @param oidc See OpenIdCredentials type specification
    * @param redirectTo A URL to send the user to after they are confirmed (OAuth logins only).
    * @param scopes A space-separated list of scopes granted to the OAuth application.
    * @param queryParams An object of query params 
@@ -277,41 +255,26 @@ export default class GoTrueClient {
   async signInWithOAuth(
     credentials: SignInWithOAuthCredentials,
   ): Promise<
-    | {
-        session: Session | null
-        user: User | null
-        provider?: Provider
+    | AuthResponse & {
+        provider: Provider
         url?: string | null
-        error: null
       }
-    | {
-        session: Session | null
-        user: User | null
-        provider?: Provider
-        url?: string | null
-        error: AuthError
+    | AuthResponse & {
+        provider: Provider
+        url?: string
       }
   > {
     try {
       this._removeSession()
-
-      if ('provider' in credentials) {
-        let { provider, options } = credentials
-        return this._handleProviderSignIn(provider, {
-          redirectTo: options?.redirectTo,
-          scopes: options?.scopes,
-          queryParams: options?.queryParams,
-        })
-      }
-      if ('oidc' in credentials) {
-        return this._handleOpenIDConnectSignIn(credentials.oidc)
-      }
-      throw new Error(
-        `You must provide either an OAuth provider or OpenID Connect provider.`
-      )
+      const { provider, options } = credentials
+      return this._handleProviderSignIn(provider, {
+        redirectTo: options?.redirectTo,
+        scopes: options?.scopes,
+        queryParams: options?.queryParams,
+      })
     } catch (error) {
       if (isAuthError(error)) {
-        return { user: null, session: null, error }
+        return { provider: credentials.provider, user: null, session: null, error }
       }
 
       throw error
@@ -327,18 +290,7 @@ export default class GoTrueClient {
    */
   async signInWithOtp(
     credentials: SignInWithPasswordlessCredentials,
-  ): Promise<
-    | {
-        session: Session | null
-        user: User | null
-        error: null
-      }
-    | {
-        session: Session | null
-        user: User | null
-        error: AuthError
-      }
-  > {
+  ): Promise<AuthResponse> {
     try {
       this._removeSession()
 
@@ -384,14 +336,7 @@ export default class GoTrueClient {
     options: {
       redirectTo?: string
     } = {}
-  ): Promise<
-    | {
-        user: User | null
-        session: Session | null
-        error: null
-      }
-    | { user: null; session: null; error: AuthError }
-  > {
+  ): Promise<AuthResponse> {
     try {
       this._removeSession()
 
@@ -527,14 +472,7 @@ export default class GoTrueClient {
    */
   async refreshSession(
     refreshToken?: string
-  ): Promise<
-    | {
-        user: User | null
-        session: Session | null
-        error: null
-      }
-    | { user: null; session: null; error: AuthError }
-  > {
+  ): Promise<AuthResponse> {
     try {
       if (!this.currentSession?.access_token) throw new AuthApiError('Not logged in.', 401)
 
@@ -761,22 +699,22 @@ export default class GoTrueClient {
     options: {
       captchaToken?: string
     } = {}
-  ) {
+  ): Promise<AuthResponse> {
     try {
       const { data, error } = await this.api.signInWithEmail(email, password, {
         captchaToken: options.captchaToken,
       })
-      if (error || !data) return { data: null, user: null, session: null, error }
+      if (error || !data) return { user: null, session: null, error }
 
       if (data?.user?.confirmed_at || data?.user?.email_confirmed_at) {
         this._saveSession(data)
         this._notifyAllSubscribers('SIGNED_IN')
       }
 
-      return { data, user: data.user, session: data, error: null }
+      return { user: data.user, session: data, error: null }
     } catch (error) {
       if (isAuthError(error)) {
-        return { data: null, user: null, session: null, error }
+        return { user: null, session: null, error }
       }
 
       throw error
@@ -830,12 +768,12 @@ export default class GoTrueClient {
       if (isBrowser()) {
         window.location.href = url
       }
-      return { provider, url, data: null, session: null, user: null, error: null }
+      return { provider, url, session: null, user: null, error: null }
     } catch (error) {
-      if (url) return { provider, url, data: null, session: null, user: null, error: null }
+      if (url) return { provider, url, session: null, user: null, error: null }
 
       if (isAuthError(error)) {
-        return { data: null, user: null, session: null, error }
+        return { provider, url, user: null, session: null, error }
       }
 
       throw error
