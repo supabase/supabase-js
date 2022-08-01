@@ -37,6 +37,14 @@ import type {
 
 polyfillGlobalThis() // Make "globalThis" available
 
+type CallRefreshTokenResult = {
+  session: Session
+  error: null
+} | {
+  session: null
+  error: AuthError
+}
+
 const DEFAULT_OPTIONS = {
   url: GOTRUE_URL,
   storageKey: STORAGE_KEY,
@@ -83,10 +91,7 @@ export default class GoTrueClient {
   protected refreshTokenTimer?: ReturnType<typeof setTimeout>
   // eslint-disable-next-line @typescript-eslint/no-inferrable-types
   protected networkRetries: number = 0
-  protected refreshingDeferred: Deferred<{
-    session: Session
-    error: null
-  }> | null = null
+  protected refreshingDeferred: Deferred<CallRefreshTokenResult> | null = null
 
   /**
    * Create a new client for use in the browser.
@@ -884,17 +889,16 @@ export default class GoTrueClient {
     }
   }
 
-  private async _callRefreshToken(refresh_token = this.currentSession?.refresh_token) {
-    try {
-      // refreshing is already in progress
-      if (this.refreshingDeferred) {
-        return await this.refreshingDeferred.promise
-      }
+  private async _callRefreshToken(
+    refresh_token = this.currentSession?.refresh_token
+  ): Promise<CallRefreshTokenResult> {
+    // refreshing is already in progress
+    if (this.refreshingDeferred) {
+      return this.refreshingDeferred.promise
+    }
 
-      this.refreshingDeferred = new Deferred<{
-        session: Session
-        error: null
-      }>()
+    try {
+      this.refreshingDeferred = new Deferred<CallRefreshTokenResult>()
 
       if (!refresh_token) {
         throw new Error('No current session.')
@@ -910,15 +914,20 @@ export default class GoTrueClient {
       const result = { session, error: null }
 
       this.refreshingDeferred.resolve(result)
-      this.refreshingDeferred = null
 
       return result
     } catch (error) {
       if (isAuthError(error)) {
-        return { session: null, error }
+        const result = { session: null, error };
+
+        this.refreshingDeferred?.resolve(result);
+
+        return result;
       }
 
       throw error
+    } finally {
+      this.refreshingDeferred = null
     }
   }
 
