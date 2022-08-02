@@ -919,10 +919,10 @@ export default class GoTrueClient {
           const newSession = JSON.parse(String(e.newValue))
           if (newSession?.currentSession?.access_token) {
             this._saveSession(newSession.currentSession)
-            this._notifyAllSubscribers('SIGNED_IN', newSession)
+            this._notifyAllSubscribers('SIGNED_IN', newSession.currentSession)
           } else {
             this._removeSession()
-            this._notifyAllSubscribers('SIGNED_OUT', newSession)
+            this._notifyAllSubscribers('SIGNED_OUT', newSession.currentSession)
           }
         }
       })
