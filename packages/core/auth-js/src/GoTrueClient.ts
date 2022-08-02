@@ -258,15 +258,11 @@ export default class GoTrueClient {
   ): Promise<OAuthResposne> {
     try {
       this._removeSession()
-      let { provider, url, error } = this._handleProviderSignIn(credentials.provider, {
+      return this._handleProviderSignIn(credentials.provider, {
         redirectTo: credentials.options?.redirectTo,
         scopes: credentials.options?.scopes,
         queryParams: credentials.options?.queryParams,
       })
-      if (error) {
-        return { provider, url, error: error as AuthError }
-      }
-      return { provider, url, error: null }
     } catch (error) {
       throw error
     }
