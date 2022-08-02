@@ -56,9 +56,9 @@ export interface Session {
    * A timestamp of when the token will expire. Returned when a login is confirmed.
    */
   expires_at?: number
-  refresh_token?: string
+  refresh_token: string
   token_type: string
-  user: User | null
+  user: User
 }
 
 export interface UserIdentity {

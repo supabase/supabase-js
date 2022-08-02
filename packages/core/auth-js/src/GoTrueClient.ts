@@ -59,17 +59,6 @@ export default class GoTrueClient {
    */
   api: GoTrueApi
   /**
-   * The currently logged in user or null.
-   * @deprecated use `getUser()` instead
-   */
-  protected currentUser: User | null
-  /**
-   * The session object for the currently logged in user or null.
-   * @deprecated use `getSession()` instead
-   */
-  protected currentSession: Session | null
-
-  /**
    * The storage key used to identity the values saved in localStorage
    */
   protected storageKey: string
@@ -100,7 +89,7 @@ export default class GoTrueClient {
    * @param options.storageKey 
    * @param options.detectSessionInUrl Set to "true" if you want to automatically detects OAuth grants in the URL and signs in the user.
    * @param options.autoRefreshToken Set to "true" if you want to automatically refresh the token before expiring.
-   * @param options.persistSession Set to "true" if you want to automatically save the user session into local storage.
+   * @param options.persistSession Set to "true" if you want to automatically save the user session into local storage. If set to false, session will just be saved in memory.
    * @param options.localStorage Provide your own local storage implementation to use instead of the browser's local storage.
    * @param options.multiTab Set to "false" if you want to disable multi-tab/window events.
    * @param options.cookieOptions
@@ -119,8 +108,6 @@ export default class GoTrueClient {
     fetch?: Fetch
   }) {
     const settings = { ...DEFAULT_OPTIONS, ...options }
-    this.currentUser = null
-    this.currentSession = null
     this.inMemorySession = null
     this.storageKey = settings.storageKey
     this.autoRefreshToken = settings.autoRefreshToken
@@ -195,7 +182,7 @@ export default class GoTrueClient {
         session = data as Session
         user = session.user as User
         this._saveSession(session)
-        this._notifyAllSubscribers('SIGNED_IN')
+        this._notifyAllSubscribers('SIGNED_IN', session)
       } else {
         user = data as User
       }
@@ -344,7 +331,7 @@ export default class GoTrueClient {
         session = data as Session
         user = session.user as User
         this._saveSession(session)
-        this._notifyAllSubscribers('SIGNED_IN')
+        this._notifyAllSubscribers('SIGNED_IN', session)
       }
 
       if ((data as User).id) {
@@ -359,24 +346,6 @@ export default class GoTrueClient {
 
       throw error
     }
-  }
-
-  /**
-   * Inside a browser context, `user()` will return the user data, if there is a logged in user.
-   *
-   * For server-side management, you can get a user through `auth.api.getUserByCookie()`
-   * @deprecated use `getUser()` instead
-   */
-  user(): User | null {
-    return this.currentUser
-  }
-
-  /**
-   * Returns the session data, if there is an active session.
-   * @deprecated use `getSession()` instead
-   */
-  session(): Session | null {
-    return this.currentSession
   }
 
   /**
@@ -455,29 +424,6 @@ export default class GoTrueClient {
   }
 
   /**
-   * Force refreshes the session including the user data in case it was updated in a different session.
-   */
-  async refreshSession(
-    refreshToken?: string
-  ): Promise<AuthResponse> {
-    try {
-      if (!this.currentSession?.access_token) throw new AuthApiError('Not logged in.', 401)
-
-      // currentSession and currentUser will be updated to latest on _callRefreshToken
-      const { error } = await this._callRefreshToken(refreshToken)
-      if (error) throw error
-
-      return { session: this.currentSession, user: this.currentUser, error: null }
-    } catch (error) {
-      if (isAuthError(error)) {
-        return { user: null, session: null, error }
-      }
-
-      throw error
-    }
-  }
-
-  /**
    * Updates user data, if there is a logged in user.
    */
   async update(attributes: UserAttributes): Promise<
@@ -488,18 +434,22 @@ export default class GoTrueClient {
     | { user: null; error: AuthError }
   > {
     try {
-      if (!this.currentSession?.access_token) throw new Error('Not logged in.')
-
-      const { user, error } = await this.api.updateUser(
-        this.currentSession.access_token,
+      const { session, error: sessionError } = await this.getSession()
+      if (sessionError) {
+        throw sessionError
+      }
+      if (!session) {
+        throw new Error('Not logged in')
+      }
+      const { user, error: userError } = await this.api.updateUser(
+        session.access_token,
         attributes
       )
-      if (error) throw error
+      if (userError) throw userError
       if (!user) throw Error('Invalid user data.')
-
-      const session = { ...this.currentSession, user }
+      session.user = user
       this._saveSession(session)
-      this._notifyAllSubscribers('USER_UPDATED')
+      this._notifyAllSubscribers('USER_UPDATED', session)
 
       return { user, error: null }
     } catch (error) {
@@ -533,7 +483,7 @@ export default class GoTrueClient {
       }
 
       this._saveSession(session!)
-      this._notifyAllSubscribers('SIGNED_IN')
+      this._notifyAllSubscribers('SIGNED_IN', session)
       return { session: session, error: null }
     } catch (error) {
       if (isAuthError(error)) {
@@ -542,32 +492,6 @@ export default class GoTrueClient {
 
       throw error
     }
-  }
-
-  /**
-   * Overrides the JWT on the current client. The JWT will then be sent in all subsequent network requests.
-   * @param access_token a jwt access token
-   */
-  setAuth(access_token: string): Session {
-    this.currentSession = {
-      ...this.currentSession,
-      access_token,
-      token_type: 'bearer',
-      user: this.user(),
-    }
-
-    if (!this.persistSession) {
-      this.inMemorySession = {
-        ...this.inMemorySession,
-        access_token,
-        token_type: 'bearer',
-        user: this.inMemorySession?.user ?? null,
-      }
-    }
-
-    this._notifyAllSubscribers('TOKEN_REFRESHED')
-
-    return this.currentSession
   }
 
   /**
@@ -615,9 +539,9 @@ export default class GoTrueClient {
       if (options?.storeSession) {
         this._saveSession(session)
         const recoveryMode = getParameterByName('type')
-        this._notifyAllSubscribers('SIGNED_IN')
+        this._notifyAllSubscribers('SIGNED_IN', session)
         if (recoveryMode === 'recovery') {
-          this._notifyAllSubscribers('PASSWORD_RECOVERY')
+          this._notifyAllSubscribers('PASSWORD_RECOVERY', session)
         }
       }
       // Remove tokens from URL
@@ -640,9 +564,13 @@ export default class GoTrueClient {
    * For server-side management, you can revoke all refresh tokens for a user by passing a user's JWT through to `auth.api.signOut(JWT: string)`. There is no way to revoke a user's session JWT before it automatically expires
    */
   async signOut(): Promise<{ error: AuthError | null }> {
-    const accessToken = this.currentSession?.access_token
+    const { session, error: sessionError } = await this.getSession()
+    if (sessionError) {
+      throw sessionError
+    }
+    const accessToken = session?.access_token
     this._removeSession()
-    this._notifyAllSubscribers('SIGNED_OUT')
+    this._notifyAllSubscribers('SIGNED_OUT', session)
     if (accessToken) {
       const { error } = await this.api.signOut(accessToken)
       if (error) return { error }
@@ -695,7 +623,7 @@ export default class GoTrueClient {
 
       if (data?.user?.confirmed_at || data?.user?.email_confirmed_at) {
         this._saveSession(data)
-        this._notifyAllSubscribers('SIGNED_IN')
+        this._notifyAllSubscribers('SIGNED_IN', data)
       }
 
       return { user: data.user, session: data, error: null }
@@ -723,7 +651,7 @@ export default class GoTrueClient {
 
       if (session?.user?.phone_confirmed_at) {
         this._saveSession(session)
-        this._notifyAllSubscribers('SIGNED_IN')
+        this._notifyAllSubscribers('SIGNED_IN', session)
       }
 
       return { session, user: session.user, error: null }
@@ -785,7 +713,7 @@ export default class GoTrueClient {
         })
         if (error || !session) return { user: null, session: null, error }
         this._saveSession(session)
-        this._notifyAllSubscribers('SIGNED_IN')
+        this._notifyAllSubscribers('SIGNED_IN', session)
         return { user: session.user, session: session, error: null }
       } catch (error) {
         if (isAuthError(error)) {
@@ -815,7 +743,7 @@ export default class GoTrueClient {
         if (this.persistSession) {
           this._saveSession(currentSession)
         }
-        this._notifyAllSubscribers('SIGNED_IN')
+        this._notifyAllSubscribers('SIGNED_IN', currentSession)
       }
     } catch (error) {
       console.log('error', error)
@@ -865,7 +793,7 @@ export default class GoTrueClient {
         if (this.persistSession) {
           this._saveSession(currentSession)
         }
-        this._notifyAllSubscribers('SIGNED_IN')
+        this._notifyAllSubscribers('SIGNED_IN', currentSession)
       }
     } catch (err) {
       console.error(err)
@@ -873,7 +801,7 @@ export default class GoTrueClient {
     }
   }
 
-  private async _callRefreshToken(refresh_token = this.currentSession?.refresh_token) {
+  private async _callRefreshToken(refreshToken: string) {
     try {
       // refreshing is already in progress
       if (this.refreshingDeferred) {
@@ -885,16 +813,16 @@ export default class GoTrueClient {
         error: null
       }>()
 
-      if (!refresh_token) {
+      if (!refreshToken) {
         throw new Error('No current session.')
       }
-      const { session, error } = await this.api.refreshAccessToken(refresh_token)
+      const { session, error } = await this.api.refreshAccessToken(refreshToken)
       if (error) throw error
       if (!session) throw Error('Invalid session session.')
 
       this._saveSession(session)
-      this._notifyAllSubscribers('TOKEN_REFRESHED')
-      this._notifyAllSubscribers('SIGNED_IN')
+      this._notifyAllSubscribers('TOKEN_REFRESHED', session)
+      this._notifyAllSubscribers('SIGNED_IN', session)
 
       const result = { session, error: null }
 
@@ -911,8 +839,8 @@ export default class GoTrueClient {
     }
   }
 
-  private _notifyAllSubscribers(event: AuthChangeEvent) {
-    this.stateChangeEmitters.forEach((x) => x.callback(event, this.currentSession))
+  private _notifyAllSubscribers(event: AuthChangeEvent, session: Session | null) {
+    this.stateChangeEmitters.forEach((x) => x.callback(event, session))
   }
 
   /**
@@ -920,9 +848,6 @@ export default class GoTrueClient {
    * process to _startAutoRefreshToken if possible
    */
   private _saveSession(session: Session) {
-    this.currentSession = session
-    this.currentUser = session.user
-
     if (!this.persistSession) {
       this.inMemorySession = session
     }
@@ -932,13 +857,13 @@ export default class GoTrueClient {
       const timeNow = Math.round(Date.now() / 1000)
       const expiresIn = expiresAt - timeNow
       const refreshDurationBeforeExpires = expiresIn > EXPIRY_MARGIN ? EXPIRY_MARGIN : 0.5
-      this._startAutoRefreshToken((expiresIn - refreshDurationBeforeExpires) * 1000)
+      this._startAutoRefreshToken((expiresIn - refreshDurationBeforeExpires) * 1000, session)
     }
 
     // Do we need any extra check before persist session
     // access_token or user ?
     if (this.persistSession && session.expires_at) {
-      this._persistSession(this.currentSession)
+      this._persistSession(session)
     }
   }
 
@@ -948,9 +873,6 @@ export default class GoTrueClient {
   }
 
   private async _removeSession() {
-    this.currentSession = null
-    this.currentUser = null
-
     if (this.persistSession) {
       removeItemAsync(this.localStorage, this.storageKey)
     } else {
@@ -966,19 +888,19 @@ export default class GoTrueClient {
    * Clear and re-create refresh token timer
    * @param value time intervals in milliseconds
    */
-  private _startAutoRefreshToken(value: number) {
+  private _startAutoRefreshToken(value: number, session: Session) {
     if (this.refreshTokenTimer) clearTimeout(this.refreshTokenTimer)
     if (value <= 0 || !this.autoRefreshToken) return
 
     this.refreshTokenTimer = setTimeout(async () => {
       this.networkRetries++
-      const { error } = await this._callRefreshToken()
+      const { error } = await this._callRefreshToken(session.refresh_token)
       if (!error) this.networkRetries = 0
       if (
         error?.message === NETWORK_FAILURE.ERROR_MESSAGE &&
         this.networkRetries < NETWORK_FAILURE.MAX_RETRIES
       )
-        this._startAutoRefreshToken(NETWORK_FAILURE.RETRY_INTERVAL ** this.networkRetries * 100) // exponential backoff
+        this._startAutoRefreshToken(NETWORK_FAILURE.RETRY_INTERVAL ** this.networkRetries * 100, session) // exponential backoff
     }, value)
     if (typeof this.refreshTokenTimer.unref === 'function') this.refreshTokenTimer.unref()
   }
@@ -997,10 +919,10 @@ export default class GoTrueClient {
           const newSession = JSON.parse(String(e.newValue))
           if (newSession?.currentSession?.access_token) {
             this._saveSession(newSession.currentSession)
-            this._notifyAllSubscribers('SIGNED_IN')
+            this._notifyAllSubscribers('SIGNED_IN', newSession)
           } else {
             this._removeSession()
-            this._notifyAllSubscribers('SIGNED_OUT')
+            this._notifyAllSubscribers('SIGNED_OUT', newSession)
           }
         }
       })
