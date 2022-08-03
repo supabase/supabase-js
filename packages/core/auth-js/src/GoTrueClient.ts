@@ -19,7 +19,7 @@ import {
 import { polyfillGlobalThis } from './lib/polyfills'
 import { Fetch } from './lib/fetch'
 
-import { isAuthError, AuthError, AuthApiError } from './lib/errors'
+import { isAuthError, AuthError, AuthApiError, AuthSessionMissingError, AuthInvalidCredentialsError, AuthUnknownError } from './lib/errors'
 
 import type {
   Session,
@@ -86,7 +86,7 @@ export default class GoTrueClient {
    * Create a new client for use in the browser.
    * @param options.url The URL of the GoTrue server.
    * @param options.headers Any additional headers to send to the GoTrue server.
-   * @param options.storageKey 
+   * @param options.storageKey
    * @param options.detectSessionInUrl Set to "true" if you want to automatically detects OAuth grants in the URL and signs in the user.
    * @param options.autoRefreshToken Set to "true" if you want to automatically refresh the token before expiring.
    * @param options.persistSession Set to "true" if you want to automatically save the user session into local storage. If set to false, session will just be saved in memory.
@@ -129,7 +129,7 @@ export default class GoTrueClient {
       // Handle the OAuth redirect
       this.getSessionFromUrl({ storeSession: true }).then(({ error }) => {
         if (error) {
-          throw new Error('Error getting session from URL.')
+          throw new AuthUnknownError('Error getting session from URL.', error)
         }
       })
     }
@@ -215,14 +215,14 @@ export default class GoTrueClient {
           captchaToken: options?.captchaToken,
         })
       }
-      
+
       if ('phone' in credentials) {
         let { phone, password, options } = credentials
         return this._handlePhoneSignIn(phone, password, {
-          captchaToken: options?.captchaToken
+          captchaToken: options?.captchaToken,
         })
       }
-      throw new Error(`You must provide either an email or phone number and a password.`)
+      throw new AuthInvalidCredentialsError('You must provide either an email or phone number and a password.')
     } catch (error) {
       if (isAuthError(error)) {
         return { user: null, session: null, error }
@@ -238,11 +238,9 @@ export default class GoTrueClient {
    * @param provider One of the providers supported by GoTrue.
    * @param redirectTo A URL to send the user to after they are confirmed (OAuth logins only).
    * @param scopes A space-separated list of scopes granted to the OAuth application.
-   * @param queryParams An object of query params 
+   * @param queryParams An object of query params
    */
-  async signInWithOAuth(
-    credentials: SignInWithOAuthCredentials,
-  ): Promise<OAuthResposne> {
+  async signInWithOAuth(credentials: SignInWithOAuthCredentials): Promise<OAuthResposne> {
     try {
       this._removeSession()
       return this._handleProviderSignIn(credentials.provider, {
@@ -262,9 +260,7 @@ export default class GoTrueClient {
    * @param phone The user's phone number.
    * @param options Valid options for passwordless sign-ins.
    */
-  async signInWithOtp(
-    credentials: SignInWithPasswordlessCredentials,
-  ): Promise<AuthResponse> {
+  async signInWithOtp(credentials: SignInWithPasswordlessCredentials): Promise<AuthResponse> {
     try {
       this._removeSession()
 
@@ -285,9 +281,7 @@ export default class GoTrueClient {
         })
         return { user: null, session: null, error }
       }
-      throw new Error(
-        `You must provide either an email or phone number.`
-      )
+      throw new AuthInvalidCredentialsError('You must provide either an email or phone number.')
     } catch (error) {
       if (isAuthError(error)) {
         return { user: null, session: null, error }
@@ -439,14 +433,10 @@ export default class GoTrueClient {
         throw sessionError
       }
       if (!session) {
-        throw new Error('Not logged in')
+        throw new AuthSessionMissingError()
       }
-      const { user, error: userError } = await this.api.updateUser(
-        session.access_token,
-        attributes
-      )
+      const { user, error: userError } = await this.api.updateUser(session.access_token, attributes)
       if (userError) throw userError
-      if (!user) throw Error('Invalid user data.')
       session.user = user
       this._saveSession(session)
       this._notifyAllSubscribers('USER_UPDATED', session)
@@ -475,7 +465,7 @@ export default class GoTrueClient {
   > {
     try {
       if (!refresh_token) {
-        throw new Error('No current session.')
+        throw new AuthSessionMissingError()
       }
       const { session, error } = await this.api.refreshAccessToken(refresh_token)
       if (error) {
@@ -509,17 +499,17 @@ export default class GoTrueClient {
       if (!isBrowser()) throw new AuthApiError('No browser detected.', 500)
 
       const error_description = getParameterByName('error_description')
-      if (error_description) throw new Error(error_description)
+      if (error_description) throw new AuthApiError(error_description, 500)
 
       const provider_token = getParameterByName('provider_token')
       const access_token = getParameterByName('access_token')
-      if (!access_token) throw new Error('No access_token detected.')
+      if (!access_token) throw new AuthApiError('No access_token detected.', 500)
       const expires_in = getParameterByName('expires_in')
-      if (!expires_in) throw new Error('No expires_in detected.')
+      if (!expires_in) throw new AuthApiError('No expires_in detected.', 500)
       const refresh_token = getParameterByName('refresh_token')
-      if (!refresh_token) throw new Error('No refresh_token detected.')
+      if (!refresh_token) throw new AuthApiError('No refresh_token detected.', 500)
       const token_type = getParameterByName('token_type')
-      if (!token_type) throw new Error('No token_type detected.')
+      if (!token_type) throw new AuthApiError('No token_type detected.', 500)
 
       const timeNow = Math.round(Date.now() / 1000)
       const expires_at = timeNow + parseInt(expires_in)
@@ -723,7 +713,7 @@ export default class GoTrueClient {
         throw error
       }
     }
-    throw new Error(`You must provide an OpenID Connect provider with your id token and nonce.`)
+    throw new AuthInvalidCredentialsError('You must provide an OpenID Connect provider with your id token and nonce.')
   }
 
   /**
@@ -814,11 +804,11 @@ export default class GoTrueClient {
       }>()
 
       if (!refreshToken) {
-        throw new Error('No current session.')
+        throw new AuthSessionMissingError()
       }
       const { session, error } = await this.api.refreshAccessToken(refreshToken)
       if (error) throw error
-      if (!session) throw Error('Invalid session session.')
+      if (!session) throw new AuthSessionMissingError()
 
       this._saveSession(session)
       this._notifyAllSubscribers('TOKEN_REFRESHED', session)
@@ -900,7 +890,10 @@ export default class GoTrueClient {
         error?.message === NETWORK_FAILURE.ERROR_MESSAGE &&
         this.networkRetries < NETWORK_FAILURE.MAX_RETRIES
       )
-        this._startAutoRefreshToken(NETWORK_FAILURE.RETRY_INTERVAL ** this.networkRetries * 100, session) // exponential backoff
+        this._startAutoRefreshToken(
+          NETWORK_FAILURE.RETRY_INTERVAL ** this.networkRetries * 100,
+          session
+        ) // exponential backoff
     }, value)
     if (typeof this.refreshTokenTimer.unref === 'function') this.refreshTokenTimer.unref()
   }
