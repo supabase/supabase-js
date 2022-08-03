@@ -10,6 +10,7 @@ services:
       PGRST_DB_URI: postgres://postgres:postgres@db:5432/postgres
       PGRST_DB_SCHEMAS: public,personal
       PGRST_DB_ANON_ROLE: postgres
+      PGRST_DB_PLAN_ENABLED: 1
     depends_on:
       - db
   db:

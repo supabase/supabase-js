@@ -1,4 +1,4 @@
-import { PostgrestBuilder, PostgrestMaybeSingleResponse, PostgrestSingleResponse } from './types'
+import { PostgrestBuilder, PostgrestMaybeSingleResponse, PostgrestResponse, PostgrestSingleResponse } from './types'
 
 /**
  * Post-filters (transforms)
@@ -127,5 +127,44 @@ export default class PostgrestTransformBuilder<T> extends PostgrestBuilder<T> {
   geojson(): PromiseLike<PostgrestSingleResponse<Record<string, unknown>>> {
     this.headers['Accept'] = 'application/geo+json'
     return this as PromiseLike<PostgrestSingleResponse<Record<string, unknown>>>
+  }
+
+  /**
+   * Obtains the EXPLAIN plan for this request.
+   *
+   * @param analyze  If `true`, the query will be executed and the actual run time will be displayed.
+   * @param verbose  If `true`, the query identifier will be displayed and the result will include the output columns of the query.
+   * @param settings  If `true`, include information on configuration parameters that affect query planning.
+   * @param buffers  If `true`, include information on buffer usage.
+   * @param wal     If `true`, include information on WAL record generation
+   */
+  explain({
+    analyze = false,
+    verbose = false,
+    settings = false,
+    buffers = false,
+    wal = false,
+  }: {
+    analyze?: boolean
+    verbose?: boolean
+    settings?: boolean
+    buffers?: boolean
+    wal?: boolean
+  } = {}): PromiseLike<PostgrestResponse<Record<string, unknown>>> {
+    const options = [
+      analyze ? 'analyze' : null,
+      verbose ? 'verbose' : null,
+      settings ? 'settings' : null,
+      buffers ? 'buffers' : null,
+      wal ? 'wal' : null,
+    ]
+      .filter(Boolean)
+      .join('|')
+    // An Accept header can carry multiple media types but postgrest-js always sends one
+    const forMediatype = this.headers['Accept']
+    this.headers[
+      'Accept'
+    ] = `application/vnd.pgrst.plan+json; for="${forMediatype}"; options=${options};`
+    return this as PromiseLike<PostgrestResponse<Record<string, unknown>>>
   }
 }

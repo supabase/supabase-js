@@ -130,3 +130,95 @@ test('geojson', async () => {
     }
   `)
 })
+
+test('explain', async () => {
+  const res = await postgrest
+    .from('users')
+    .select()
+    .explain()
+    .then((res) => res.data)
+  expect(res).toMatchInlineSnapshot(`
+    Array [
+      Object {
+        "Plan": Object {
+          "Node Type": "Aggregate",
+          "Parallel Aware": false,
+          "Partial Mode": "Simple",
+          "Plan Rows": 1,
+          "Plan Width": 112,
+          "Plans": Array [
+            Object {
+              "Alias": "users",
+              "Node Type": "Seq Scan",
+              "Parallel Aware": false,
+              "Parent Relationship": "Outer",
+              "Plan Rows": 510,
+              "Plan Width": 132,
+              "Relation Name": "users",
+              "Startup Cost": 0,
+              "Total Cost": 15.1,
+            },
+          ],
+          "Startup Cost": 17.65,
+          "Strategy": "Plain",
+          "Total Cost": 17.68,
+        },
+      },
+    ]
+  `)
+})
+
+test('explain with options', async () => {
+  const res = await postgrest
+    .from('users')
+    .select()
+    .explain({ verbose: true, settings: true })
+    .then((res) => res.data)
+  expect(res).toMatchInlineSnapshot(`
+    Array [
+      Object {
+        "Plan": Object {
+          "Node Type": "Aggregate",
+          "Output": Array [
+            "NULL::bigint",
+            "count(ROW(users.username, users.data, users.age_range, users.status, users.catchphrase))",
+            "(COALESCE(json_agg(ROW(users.username, users.data, users.age_range, users.status, users.catchphrase)), '[]'::json))::character varying",
+            "NULLIF(current_setting('response.headers'::text, true), ''::text)",
+            "NULLIF(current_setting('response.status'::text, true), ''::text)",
+          ],
+          "Parallel Aware": false,
+          "Partial Mode": "Simple",
+          "Plan Rows": 1,
+          "Plan Width": 112,
+          "Plans": Array [
+            Object {
+              "Alias": "users",
+              "Node Type": "Seq Scan",
+              "Output": Array [
+                "users.username",
+                "users.data",
+                "users.age_range",
+                "users.status",
+                "users.catchphrase",
+              ],
+              "Parallel Aware": false,
+              "Parent Relationship": "Outer",
+              "Plan Rows": 510,
+              "Plan Width": 132,
+              "Relation Name": "users",
+              "Schema": "public",
+              "Startup Cost": 0,
+              "Total Cost": 15.1,
+            },
+          ],
+          "Startup Cost": 17.65,
+          "Strategy": "Plain",
+          "Total Cost": 17.68,
+        },
+        "Settings": Object {
+          "search_path": "\\\"public\\\", \\\"public\\\"",
+        },
+      },
+    ]
+  `)
+})
