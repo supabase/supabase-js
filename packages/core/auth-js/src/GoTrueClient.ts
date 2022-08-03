@@ -749,15 +749,11 @@ export default class GoTrueClient {
       scopes: options.scopes,
       queryParams: options.queryParams,
     })
-    try {
-      // try to open on the browser
-      if (isBrowser()) {
-        window.location.href = url
-      }
-      return { provider, url, error: null }
-    } catch (error) {
-      throw error
+    // try to open on the browser
+    if (isBrowser()) {
+      window.location.href = url
     }
+    return { provider, url, error: null }
   }
 
   private async _handleOpenIDConnectSignIn({
