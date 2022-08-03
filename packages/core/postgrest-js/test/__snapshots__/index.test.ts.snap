@@ -1988,8 +1988,8 @@ Object {
   "count": null,
   "data": null,
   "error": null,
-  "status": 200,
-  "statusText": "OK",
+  "status": 204,
+  "statusText": "No Content",
 }
 `;
 
@@ -2305,6 +2305,8 @@ Object {
 
 exports[`throwOnError setting at the client level - rpc 1`] = `
 Object {
+  "code": "PGRST202",
+  "details": null,
   "hint": "If a new function was created in the database with this name and parameters, try reloading the schema cache.",
   "message": "Could not find the public.missing_fn() function or the public.missing_fn function with a single unnamed json or jsonb parameter in the schema cache",
 }
