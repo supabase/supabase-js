@@ -13,7 +13,7 @@ services:
     depends_on:
       - db
   db:
-    image: postgres:12
+    image: postgis/postgis:12-3.2
     ports:
       - '5432:5432'
     volumes:

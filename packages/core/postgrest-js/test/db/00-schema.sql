@@ -13,7 +13,7 @@ CREATE TABLE public.users (
   status user_status DEFAULT 'ONLINE'::public.user_status,
   catchphrase tsvector DEFAULT null
 );
-ALTER TABLE public.users REPLICA IDENTITY FULL; -- Send "previous data" to supabase 
+ALTER TABLE public.users REPLICA IDENTITY FULL; -- Send "previous data" to supabase
 COMMENT ON COLUMN public.users.data IS 'For unstructured data and prototyping.';
 
 -- CHANNELS
@@ -47,9 +47,17 @@ RETURNS TABLE(username text, status user_status) AS $$
   SELECT username, status from users WHERE username=name_param;
 $$ LANGUAGE SQL IMMUTABLE;
 
-CREATE FUNCTION public.void_func() 
+CREATE FUNCTION public.void_func()
 RETURNS void AS $$
 $$ LANGUAGE SQL;
+
+create extension postgis;
+
+create table public.shops (
+  id        int primary key
+, address   text
+, shop_geom geometry(POINT, 4326)
+);
 
 -- SECOND SCHEMA USERS
 CREATE TYPE personal.user_status AS ENUM ('ONLINE', 'OFFLINE');

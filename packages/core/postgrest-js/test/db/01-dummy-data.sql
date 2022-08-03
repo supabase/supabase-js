@@ -26,3 +26,7 @@ VALUES
     ('awailas', 'ONLINE', '[25,35)'::int4range),
     ('dragarcia', 'ONLINE', '[20,30)'::int4range),
     ('leroyjenkins', 'ONLINE', '[20,40)'::int4range);
+
+INSERT INTO shops(id, address, shop_geom)
+VALUES
+  (1, '1369 Cambridge St', 'SRID=4326;POINT(-71.10044 42.373695)');

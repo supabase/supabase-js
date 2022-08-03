@@ -120,4 +120,12 @@ export default class PostgrestTransformBuilder<T> extends PostgrestBuilder<T> {
     this.headers['Accept'] = 'text/csv'
     return this as PromiseLike<PostgrestSingleResponse<string>>
   }
+
+  /**
+   * Set the response type to GeoJSON.
+   */
+  geojson(): PromiseLike<PostgrestSingleResponse<Record<string, unknown>>> {
+    this.headers['Accept'] = 'application/geo+json'
+    return this as PromiseLike<PostgrestSingleResponse<Record<string, unknown>>>
+  }
 }

@@ -101,3 +101,32 @@ test('abort signal', async () => {
     }
   `)
 })
+
+test('geojson', async () => {
+  const res = await postgrest
+    .from('shops')
+    .select()
+    .geojson()
+    .then((res) => res.data)
+  expect(res).toMatchInlineSnapshot(`
+    Object {
+      "features": Array [
+        Object {
+          "geometry": Object {
+            "coordinates": Array [
+              -71.10044,
+              42.373695,
+            ],
+            "type": "Point",
+          },
+          "properties": Object {
+            "address": "1369 Cambridge St",
+            "id": 1,
+          },
+          "type": "Feature",
+        },
+      ],
+      "type": "FeatureCollection",
+    }
+  `)
+})
