@@ -11,7 +11,7 @@ import {
 } from './lib/constants'
 import Timer from './lib/timer'
 import Serializer from './lib/serializer'
-import RealtimeSubscription from './RealtimeSubscription'
+import RealtimeChannel from './RealtimeChannel'
 
 export type Options = {
   transport?: WebSocket
@@ -41,7 +41,7 @@ const noop = () => {}
 
 export default class RealtimeClient {
   accessToken: string | null = null
-  channels: RealtimeSubscription[] = []
+  channels: RealtimeChannel[] = []
   endPoint: string = ''
   headers?: { [key: string]: string } = DEFAULT_HEADERS
   params?: { [key: string]: string } = {}
@@ -255,14 +255,43 @@ export default class RealtimeClient {
    *
    * @param channel An open subscription.
    */
-  remove(channel: RealtimeSubscription) {
+  remove(channel: RealtimeChannel) {
     this.channels = this.channels.filter(
-      (c: RealtimeSubscription) => c.joinRef() !== channel.joinRef()
+      (c: RealtimeChannel) => c.joinRef() !== channel.joinRef()
     )
   }
 
-  channel(topic: string, chanParams: ChannelParams = {}): RealtimeSubscription {
-    const chan = new RealtimeSubscription(topic, chanParams, this)
+  channel(topic: string, chanParams: ChannelParams = {}): RealtimeChannel {
+    const { selfBroadcast, ...params } = chanParams
+
+    if (selfBroadcast) {
+      params.self_broadcast = selfBroadcast
+    }
+
+    const chan = new RealtimeChannel(topic, params, this)
+
+    chan.presence.onJoin((key, currentPresences, newPresences) => {
+      chan.trigger('presence', {
+        event: 'join',
+        key,
+        currentPresences,
+        newPresences,
+      })
+    })
+
+    chan.presence.onLeave((key, currentPresences, leftPresences) => {
+      chan.trigger('presence', {
+        event: 'leave',
+        key,
+        currentPresences,
+        leftPresences,
+      })
+    })
+
+    chan.presence.onSync(() => {
+      chan.trigger('presence', { event: 'sync' })
+    })
+
     this.channels.push(chan)
     return chan
   }
@@ -306,8 +335,8 @@ export default class RealtimeClient {
         payload
       )
       this.channels
-        .filter((channel: RealtimeSubscription) => channel.isMember(topic))
-        .forEach((channel: RealtimeSubscription) =>
+        .filter((channel: RealtimeChannel) => channel.isMember(topic))
+        .forEach((channel: RealtimeChannel) =>
           channel.trigger(event, payload, ref)
         )
       this.stateChangeCallbacks.message.forEach((callback) => callback(msg))
@@ -395,7 +424,7 @@ export default class RealtimeClient {
   }
 
   private _triggerChanError() {
-    this.channels.forEach((channel: RealtimeSubscription) =>
+    this.channels.forEach((channel: RealtimeChannel) =>
       channel.trigger(CHANNEL_EVENTS.error)
     )
   }

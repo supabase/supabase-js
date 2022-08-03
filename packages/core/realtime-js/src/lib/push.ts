@@ -1,5 +1,5 @@
 import { DEFAULT_TIMEOUT } from '../lib/constants'
-import RealtimeSubscription from '../RealtimeSubscription'
+import RealtimeChannel from '../RealtimeChannel'
 
 export default class Push {
   sent: boolean = false
@@ -24,7 +24,7 @@ export default class Push {
    * @param timeout The push timeout in milliseconds
    */
   constructor(
-    public channel: RealtimeSubscription,
+    public channel: RealtimeChannel,
     public event: string,
     public payload: { [key: string]: unknown } = {},
     public timeout: number = DEFAULT_TIMEOUT
@@ -81,7 +81,7 @@ export default class Push {
       this._matchReceive(payload)
     }
 
-    this.channel.on(this.refEvent, callback)
+    this.channel.on(this.refEvent, {}, callback)
 
     this.timeoutTimer = <any>setTimeout(() => {
       this.trigger('timeout', {})
@@ -102,7 +102,7 @@ export default class Push {
       return
     }
 
-    this.channel.off(this.refEvent)
+    this.channel.off(this.refEvent, {})
   }
 
   private _cancelTimeout() {

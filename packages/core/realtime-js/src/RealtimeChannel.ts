@@ -2,8 +2,9 @@ import { CHANNEL_EVENTS, CHANNEL_STATES } from './lib/constants'
 import Push from './lib/push'
 import RealtimeClient from './RealtimeClient'
 import Timer from './lib/timer'
+import RealtimePresence from './RealtimePresence'
 
-export default class RealtimeSubscription {
+export default class RealtimeChannel {
   bindings: any[] = []
   timeout: number
   state = CHANNEL_STATES.closed
@@ -11,6 +12,7 @@ export default class RealtimeSubscription {
   joinPush: Push
   rejoinTimer: Timer
   pushBuffer: Push[] = []
+  presence: RealtimePresence
 
   constructor(
     public topic: string,
@@ -56,9 +58,38 @@ export default class RealtimeSubscription {
       this.state = CHANNEL_STATES.errored
       this.rejoinTimer.scheduleTimeout()
     })
-    this.on(CHANNEL_EVENTS.reply, (payload: any, ref: string) => {
+    this.on(CHANNEL_EVENTS.reply, {}, (payload: any, ref: string) => {
       this.trigger(this.replyEventName(ref), payload)
     })
+    this.presence = new RealtimePresence(this)
+  }
+
+  list() {
+    return this.presence.list()
+  }
+
+  async track(
+    payload: { [key: string]: any },
+    opts: { [key: string]: any } = {}
+  ) {
+    return await this.send(
+      {
+        type: 'presence',
+        event: 'track',
+        payload,
+      },
+      opts
+    )
+  }
+
+  async untrack(opts: { [key: string]: any } = {}) {
+    return await this.send(
+      {
+        type: 'presence',
+        event: 'untrack',
+      },
+      opts
+    )
   }
 
   rejoinUntilConnected() {
@@ -72,29 +103,69 @@ export default class RealtimeSubscription {
     if (this.joinedOnce) {
       throw `tried to subscribe multiple times. 'subscribe' can only be called a single time per channel instance`
     } else {
+      const configs = this.bindings.reduce(
+        (acc, binding: { [key: string]: any }) => {
+          const { type } = binding
+          if (
+            ![
+              'phx_close',
+              'phx_error',
+              'phx_reply',
+              'presence_diff',
+              'presence_state',
+            ].includes(type)
+          ) {
+            acc[type] = binding
+          }
+          return acc
+        },
+        {}
+      )
+
+      if (Object.keys(configs).length) {
+        this.updateJoinPayload({ configs })
+      }
+
       this.joinedOnce = true
       this.rejoin(timeout)
       return this.joinPush
     }
   }
 
+  /**
+   * Registers a callback that will be executed when the channel closes.
+   */
   onClose(callback: Function) {
-    this.on(CHANNEL_EVENTS.close, callback)
+    this.on(CHANNEL_EVENTS.close, {}, callback)
   }
 
+  /**
+   * Registers a callback that will be executed when the channel encounteres an error.
+   */
   onError(callback: Function) {
-    this.on(CHANNEL_EVENTS.error, (reason: string) => callback(reason))
+    this.on(CHANNEL_EVENTS.error, {}, (reason: string) => callback(reason))
   }
 
-  on(event: string, callback: Function) {
-    this.bindings.push({ event, callback })
+  on(type: string, filter?: { [key: string]: string }, callback?: Function) {
+    this.bindings.push({
+      type,
+      filter: filter ?? {},
+      callback: callback ?? (() => {}),
+    })
   }
 
-  off(event: string) {
-    this.bindings = this.bindings.filter((bind) => bind.event !== event)
+  off(type: string, filter: { [key: string]: any }) {
+    this.bindings = this.bindings.filter((bind) => {
+      return !(
+        bind.type === type && RealtimeChannel.isEqual(bind.filter, filter)
+      )
+    })
   }
 
-  canPush() {
+  /**
+   * Returns `true` if the socket is connected and the channel has been joined.
+   */
+  canPush(): boolean {
     return this.socket.isConnected() && this.isJoined()
   }
 
@@ -118,7 +189,7 @@ export default class RealtimeSubscription {
   }
 
   /**
-   * Leaves the channel
+   * Leaves the channel.
    *
    * Unsubscribes from server events, and instructs channel to terminate on server.
    * Triggers onClose() hooks.
@@ -126,16 +197,16 @@ export default class RealtimeSubscription {
    * To receive leave acknowledgements, use the a `receive` hook to bind to the server ack, ie:
    * channel.unsubscribe().receive("ok", () => alert("left!") )
    */
-  unsubscribe(timeout = this.timeout) {
+  unsubscribe(timeout = this.timeout): Push {
     this.state = CHANNEL_STATES.leaving
-    let onClose = () => {
+    const onClose = () => {
       this.socket.log('channel', `leave ${this.topic}`)
       this.trigger(CHANNEL_EVENTS.close, 'leave', this.joinRef())
     }
     // Destroy joinPush to avoid connection timeouts during unscription phase
     this.joinPush.destroy()
 
-    let leavePush = new Push(this, CHANNEL_EVENTS.leave, {}, timeout)
+    const leavePush = new Push(this, CHANNEL_EVENTS.leave, {}, timeout)
     leavePush.receive('ok', () => onClose()).receive('timeout', () => onClose())
     leavePush.send()
     if (!this.canPush()) {
@@ -155,15 +226,15 @@ export default class RealtimeSubscription {
     return payload
   }
 
-  isMember(topic: string) {
+  isMember(topic: string): boolean {
     return this.topic === topic
   }
 
-  joinRef() {
+  joinRef(): string {
     return this.joinPush.ref
   }
 
-  rejoin(timeout = this.timeout) {
+  rejoin(timeout = this.timeout): void {
     if (this.isLeaving()) {
       return
     }
@@ -172,46 +243,78 @@ export default class RealtimeSubscription {
     this.joinPush.resend(timeout)
   }
 
-  trigger(event: string, payload?: any, ref?: string) {
-    let { close, error, leave, join } = CHANNEL_EVENTS
-    let events: string[] = [close, error, leave, join]
-    if (ref && events.indexOf(event) >= 0 && ref !== this.joinRef()) {
+  trigger(type: string, payload?: any, ref?: string) {
+    const { close, error, leave, join } = CHANNEL_EVENTS
+    const events: string[] = [close, error, leave, join]
+    if (ref && events.indexOf(type) >= 0 && ref !== this.joinRef()) {
       return
     }
-    let handledPayload = this.onMessage(event, payload, ref)
+    const handledPayload = this.onMessage(type, payload, ref)
     if (payload && !handledPayload) {
       throw 'channel onMessage callbacks must return the payload, modified or unmodified'
     }
 
     this.bindings
       .filter((bind) => {
-        // Bind all events if the user specifies a wildcard.
-        if (bind.event === '*') {
-          return event === payload?.type
-        } else {
-          return bind.event === event
-        }
+        return (
+          bind?.type === type &&
+          (bind?.filter?.event === '*' ||
+            bind?.filter?.event === payload?.event)
+        )
       })
       .map((bind) => bind.callback(handledPayload, ref))
   }
 
-  replyEventName(ref: string) {
+  send(
+    payload: { type: string; [key: string]: any },
+    opts: { [key: string]: any } = {}
+  ) {
+    const push = this.push(
+      payload.type as any,
+      payload,
+      opts.timeout ?? this.timeout
+    )
+
+    return new Promise((resolve) => {
+      push.receive('ok', () => resolve('ok'))
+      push.receive('timeout', () => resolve('timeout'))
+    })
+  }
+
+  replyEventName(ref: string): string {
     return `chan_reply_${ref}`
   }
 
-  isClosed() {
+  isClosed(): boolean {
     return this.state === CHANNEL_STATES.closed
   }
-  isErrored() {
+  isErrored(): boolean {
     return this.state === CHANNEL_STATES.errored
   }
-  isJoined() {
+  isJoined(): boolean {
     return this.state === CHANNEL_STATES.joined
   }
-  isJoining() {
+  isJoining(): boolean {
     return this.state === CHANNEL_STATES.joining
   }
-  isLeaving() {
+  isLeaving(): boolean {
     return this.state === CHANNEL_STATES.leaving
+  }
+
+  private static isEqual(
+    obj1: { [key: string]: string },
+    obj2: { [key: string]: string }
+  ) {
+    if (Object.keys(obj1).length !== Object.keys(obj2).length) {
+      return false
+    }
+
+    for (const k in obj1) {
+      if (obj1[k] !== obj2[k]) {
+        return false
+      }
+    }
+
+    return true
   }
 }

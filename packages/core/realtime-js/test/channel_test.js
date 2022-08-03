@@ -1,7 +1,7 @@
 import assert from 'assert'
 import sinon from 'sinon'
 
-import { RealtimeSubscription, RealtimeClient } from '../dist/main'
+import { RealtimeChannel, RealtimeClient } from '../dist/main'
 
 let channel, socket
 
@@ -19,7 +19,7 @@ describe('constructor', () => {
   })
 
   it('sets defaults', () => {
-    channel = new RealtimeSubscription('topic', { one: 'two' }, socket)
+    channel = new RealtimeChannel('topic', { one: 'two' }, socket)
 
     assert.equal(channel.state, 'closed')
     assert.equal(channel.topic, 'topic')
@@ -32,7 +32,7 @@ describe('constructor', () => {
   })
 
   it('sets up joinPush object', () => {
-    channel = new RealtimeSubscription('topic', { one: 'two' }, socket)
+    channel = new RealtimeChannel('topic', { one: 'two' }, socket)
     const joinPush = channel.joinPush
 
     assert.deepEqual(joinPush.channel, channel)
@@ -181,8 +181,8 @@ describe('joinPush', () => {
       return joinPush.trigger('error', response)
     },
 
-    getBindings(event) {
-      return channel.bindings.filter((bind) => bind.event === event)
+    getBindings(type) {
+      return channel.bindings.filter((bind) => bind.type === type)
     },
   }
 
@@ -700,7 +700,7 @@ describe('on', () => {
     channel.trigger('event', {}, defaultRef)
     assert.ok(!spy.called)
 
-    channel.on('event', spy)
+    channel.on('event', {}, spy)
 
     channel.trigger('event', {}, defaultRef)
 
@@ -726,15 +726,11 @@ describe('on', () => {
   it('"*" bind all events', () => {
     const spy = sinon.spy()
 
-    channel.trigger('INSERT', {}, defaultRef)
+    channel.trigger('realtime', { event: 'INSERT' }, defaultRef)
     assert.ok(!spy.called)
 
-    channel.on('*', spy)
-    channel.trigger('*', { type: 'INSERT' }, defaultRef)
-    assert.ok(!spy.called)
-
-    channel.on('*', spy)
-    channel.trigger('INSERT', { type: 'INSERT' }, defaultRef)
+    channel.on('realtime', { event: 'INSERT' }, spy)
+    channel.trigger('realtime', { event: 'INSERT' }, defaultRef)
     assert.ok(spy.called)
   })
 })
@@ -757,11 +753,11 @@ describe('off', () => {
     const spy2 = sinon.spy()
     const spy3 = sinon.spy()
 
-    channel.on('event', spy1)
-    channel.on('event', spy2)
-    channel.on('other', spy3)
+    channel.on('event', {}, spy1)
+    channel.on('event', {}, spy2)
+    channel.on('other', {}, spy3)
 
-    channel.off('event')
+    channel.off('event', {})
 
     channel.trigger('event', {}, defaultRef)
     channel.trigger('other', {}, defaultRef)
