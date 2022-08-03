@@ -13,7 +13,7 @@ import { COOKIE_OPTIONS } from './lib/constants'
 import { setCookies, getCookieString } from './lib/cookies'
 import { expiresAt, resolveFetch } from './lib/helpers'
 
-import { isAuthError, AuthError, AuthApiError } from './lib/errors'
+import { isAuthError, AuthError, AuthApiError, AuthSessionMissingError, AuthEventMissingError, AuthNoCookieError } from './lib/errors'
 
 export default class GoTrueApi {
   protected url: string
@@ -632,9 +632,9 @@ export default class GoTrueApi {
     }
     const { event, session } = req.body
 
-    if (!event) throw new Error('Auth event missing!')
+    if (!event) throw new AuthEventMissingError()
     if (event === 'SIGNED_IN') {
-      if (!session) throw new Error('Auth session missing!')
+      if (!session) throw new AuthSessionMissingError()
       setCookies(
         req,
         res,
@@ -697,9 +697,9 @@ export default class GoTrueApi {
     }
     const { event, session } = req.body
 
-    if (!event) throw new Error('Auth event missing!')
+    if (!event) throw new AuthEventMissingError()
     if (event === 'SIGNED_IN') {
-      if (!session) throw new Error('Auth session missing!')
+      if (!session) throw new AuthSessionMissingError()
       return getCookieString(
         req,
         res,
@@ -885,7 +885,7 @@ export default class GoTrueApi {
       const refresh_token = req.cookies[`${this.cookieName()}-refresh-token`]
 
       if (!access_token) {
-        throw new Error('No cookie found!')
+        throw new AuthNoCookieError()
       }
 
       const { user, error } = await this.getUser(access_token)

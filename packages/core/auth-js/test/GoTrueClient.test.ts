@@ -1,4 +1,3 @@
-import { OpenIDConnectCredentials } from '../src'
 import {
   authClient as auth,
   authClientWithSession as authWithSession,
@@ -36,24 +35,6 @@ describe('GoTrueClient', () => {
       expect(user?.user_metadata).toStrictEqual({ hello: 'world' })
     })
 
-    test('session() should return the currentUser session', async () => {
-      const { email, password } = mockUserCredentials()
-
-      const { error, session } = await authWithSession.signUp({
-        email,
-        password,
-      })
-
-      expect(error).toBeNull()
-      expect(session).not.toBeNull()
-
-      const userSession = authWithSession.session()
-
-      expect(userSession).not.toBeNull()
-      expect(userSession).toHaveProperty('access_token')
-      expect(userSession).toHaveProperty('user')
-    })
-
     test('getSession() should return the currentUser session', async () => {
       const { email, password } = mockUserCredentials()
 
@@ -70,9 +51,10 @@ describe('GoTrueClient', () => {
       expect(userError).toBeNull()
       expect(userSession).not.toBeNull()
       expect(userSession).toHaveProperty('access_token')
+      expect(userSession).toHaveProperty('user')
     })
 
-    test('getSession() should refresh the session', async () => {
+    test('getSession() should refresh the session and return a new access token', async () => {
       const { email, password } = mockUserCredentials()
 
       const { error, session } = await authWithSession.signUp({
@@ -94,17 +76,15 @@ describe('GoTrueClient', () => {
         expires_at: expiredSeconds,
       }
 
+      // wait 1 seconds before calling getSession()
+      await new Promise(r => setTimeout(r, 1000))
       const { session: userSession, error: userError } = await authWithSession.getSession()
 
       expect(userError).toBeNull()
       expect(userSession).not.toBeNull()
       expect(userSession).toHaveProperty('access_token')
       expect(refreshAccessTokenSpy).toBeCalledTimes(1)
-
-      // @kangmingtay Looks like this fails due to the 10 second reuse interval
-      // returning back the same session. It works with a long timeout before getSession().
-      // Do we want the reuse interval to apply for the initial login session?
-      // expect(session!.access_token).not.toEqual(userSession!.access_token)
+      expect(session!.access_token).not.toEqual(userSession!.access_token)
     })
 
     test('refresh should only happen once', async () => {
@@ -119,7 +99,8 @@ describe('GoTrueClient', () => {
       expect(session).not.toBeNull()
 
       const [{ session: session1, error: error1 }, { session: session2, error: error2 }] =
-        await Promise.all([authWithSession.refreshSession(), authWithSession.refreshSession()])
+        // @ts-expect-error 'Allow access to private _callRefreshToken()'
+        await Promise.all([authWithSession._callRefreshToken(session?.refresh_token), authWithSession._callRefreshToken(session?.refresh_token)])
 
       expect(error1).toBeNull()
       expect(error2).toBeNull()
@@ -138,55 +119,6 @@ describe('GoTrueClient', () => {
 
       expect(error?.message).toEqual('No browser detected.')
       expect(session).toBeNull()
-    })
-
-    test('refreshSession() raises error if not logged in', async () => {
-      const { error, user, session } = await authWithSession.refreshSession()
-      expect(error?.message).toEqual('Not logged in.')
-      expect(user).toBeNull()
-      expect(session).toBeNull()
-    })
-
-    test('refreshSession() forces refreshes the session to get a new refresh token for same user', async () => {
-      const { email, password } = mockUserCredentials()
-
-      const { error: initialError, session } = await authWithSession.signUp({
-        email,
-        password,
-      })
-
-      expect(initialError).toBeNull()
-      expect(session).not.toBeNull()
-
-      const refreshToken = session?.refresh_token
-
-      const { error, user, session: sessionRefreshed } = await authWithSession.refreshSession()
-
-      expect(error).toBeNull()
-      expect(user).not.toBeNull()
-      expect(sessionRefreshed).not.toBeNull()
-
-      expect(user?.email).toEqual(email)
-      expect(sessionRefreshed).toHaveProperty('refresh_token')
-      expect(refreshToken).not.toEqual(sessionRefreshed?.refresh_token)
-    })
-  })
-
-  describe('Authentication', () => {
-    test('setAuth() should set the Auth headers on a new client', async () => {
-      const { email, password } = mockUserCredentials()
-
-      const { session } = await auth.signUp({
-        email,
-        password,
-      })
-
-      const access_token = session?.access_token || null
-
-      authWithSession.setAuth(access_token as string)
-
-      const authBearer = authWithSession.session()?.access_token
-      expect(authBearer).toEqual(access_token)
     })
   })
 
@@ -322,7 +254,7 @@ describe('GoTrueClient', () => {
     expect(initialSession).not.toBeNull()
 
     const refreshToken = initialSession?.refresh_token
-    const { error, user, session } = await authWithSession.refreshSession()
+    const { session, error } = await authWithSession.getSession()
 
     expect(error).toBeNull()
     expect(session).toMatchObject({
@@ -344,7 +276,7 @@ describe('GoTrueClient', () => {
         },
       },
     })
-    expect(user).toMatchObject({
+    expect(session?.user).toMatchObject({
       id: expect.any(String),
       email: expect.any(String),
       phone: expect.any(String),
@@ -358,8 +290,8 @@ describe('GoTrueClient', () => {
       },
     })
 
-    expect(user).not.toBeNull()
-    expect(user?.email).toBe(email)
+    expect(session?.user).not.toBeNull()
+    expect(session?.user?.email).toBe(email)
   })
 
   test('signOut', async () => {
@@ -390,9 +322,7 @@ describe('User management', () => {
       password,
     })
 
-    const user = authWithSession.user()
-
-    expect(user).toMatchObject({
+    expect(session?.user).toMatchObject({
       id: expect.any(String),
       email: expect.any(String),
       phone: expect.any(String),
@@ -412,14 +342,14 @@ describe('User management', () => {
   test('Update user', async () => {
     const { email, password } = mockUserCredentials()
 
-    await auth.signUp({
+    await authWithSession.signUp({
       email,
       password,
     })
 
     const userMetadata = { hello: 'world' }
 
-    const { error, user } = await auth.update({ data: userMetadata })
+    const { error, user } = await authWithSession.update({ data: userMetadata })
 
     expect(error).toBeNull()
     expect(user).toMatchObject({
@@ -444,17 +374,16 @@ describe('User management', () => {
   test('Get user after updating', async () => {
     const { email, password } = mockUserCredentials()
 
-    await auth.signUp({
+    await authWithSession.signUp({
       email,
       password,
     })
 
     const userMetadata = { hello: 'world' }
 
-    await auth.update({ data: userMetadata })
+    const { user, error } = await authWithSession.update({ data: userMetadata })
 
-    const user = auth.user()
-
+    expect(error).toBeNull()
     expect(user).toMatchObject({
       id: expect.any(String),
       aud: expect.any(String),
@@ -477,18 +406,17 @@ describe('User management', () => {
       password,
     })
 
-    await authWithSession.signInWithPassword({
+    const { user } = await authWithSession.signInWithPassword({
       email,
       password,
     })
 
-    const user = await authWithSession.user()
     expect(user).not.toBeNull()
 
     await authWithSession.signOut()
-    const userAfterSignOut = authWithSession.user()
-
-    expect(userAfterSignOut).toBeNull()
+    const { session, error } = await authWithSession.getSession()
+    expect(session).toBeNull()
+    expect(error).toBeNull()
   })
 
   test('signIn() with the wrong password', async () => {
