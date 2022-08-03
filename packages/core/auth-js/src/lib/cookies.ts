@@ -1,3 +1,5 @@
+import { AuthUnknownError } from "./errors"
+
 type Cookie = {
   name: string
   value: string
@@ -112,7 +114,7 @@ function serialize(
  */
 function isSecureEnvironment(req: any) {
   if (!req || !req.headers || !req.headers.host) {
-    throw new Error('The "host" request header is not available')
+    throw new AuthUnknownError('The "host" request header is not available', new Error('The "host" request header is not available'))
   }
 
   const host =
