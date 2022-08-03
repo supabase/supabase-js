@@ -36,7 +36,7 @@ export type AuthResponse = {
   error: AuthError
 } 
 
-export type OAuthResposne = {
+export type OAuthResponse = {
   provider: Provider
   url: string
   error: null

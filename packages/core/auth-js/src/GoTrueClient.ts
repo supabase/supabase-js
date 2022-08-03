@@ -37,7 +37,7 @@ import type {
   SignInWithOAuthCredentials,
   SignInWithPasswordlessCredentials,
   AuthResponse,
-  OAuthResposne,
+  OAuthResponse,
 } from './lib/types'
 
 polyfillGlobalThis() // Make "globalThis" available
@@ -240,7 +240,7 @@ export default class GoTrueClient {
    * @param scopes A space-separated list of scopes granted to the OAuth application.
    * @param queryParams An object of query params
    */
-  async signInWithOAuth(credentials: SignInWithOAuthCredentials): Promise<OAuthResposne> {
+  async signInWithOAuth(credentials: SignInWithOAuthCredentials): Promise<OAuthResponse> {
     try {
       this._removeSession()
       return this._handleProviderSignIn(credentials.provider, {
