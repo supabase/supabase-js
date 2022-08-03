@@ -54,7 +54,7 @@ describe('GoTrueClient', () => {
       expect(userSession).toHaveProperty('user')
     })
 
-    test('getSession() should refresh the session', async () => {
+    test('getSession() should refresh the session and return a new access token', async () => {
       const { email, password } = mockUserCredentials()
 
       const { error, session } = await authWithSession.signUp({
@@ -76,17 +76,15 @@ describe('GoTrueClient', () => {
         expires_at: expiredSeconds,
       }
 
+      // wait 1 seconds before calling getSession()
+      await new Promise(r => setTimeout(r, 1000))
       const { session: userSession, error: userError } = await authWithSession.getSession()
 
       expect(userError).toBeNull()
       expect(userSession).not.toBeNull()
       expect(userSession).toHaveProperty('access_token')
       expect(refreshAccessTokenSpy).toBeCalledTimes(1)
-
-      // @kangmingtay Looks like this fails due to the 10 second reuse interval
-      // returning back the same session. It works with a long timeout before getSession().
-      // Do we want the reuse interval to apply for the initial login session?
-      // expect(session!.access_token).not.toEqual(userSession!.access_token)
+      expect(session!.access_token).not.toEqual(userSession!.access_token)
     })
 
     test('refresh should only happen once', async () => {
