@@ -556,15 +556,15 @@ export default class GoTrueClient {
   async signOut(): Promise<{ error: AuthError | null }> {
     const { session, error: sessionError } = await this.getSession()
     if (sessionError) {
-      throw sessionError
+      return { error: sessionError }
     }
     const accessToken = session?.access_token
-    this._removeSession()
-    this._notifyAllSubscribers('SIGNED_OUT', session)
     if (accessToken) {
       const { error } = await this.api.signOut(accessToken)
       if (error) return { error }
     }
+    this._removeSession()
+    this._notifyAllSubscribers('SIGNED_OUT', null)
     return { error: null }
   }
 
