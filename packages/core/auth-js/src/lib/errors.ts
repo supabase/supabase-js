@@ -38,3 +38,45 @@ export class AuthUnknownError extends AuthError {
     this.originalError = originalError
   }
 }
+
+export class CustomAuthError extends AuthError {
+  name: string
+  status: number
+  constructor(message: string, name: string, status: number) {
+    super(message)
+    this.name = name
+    this.status = status
+  }
+  
+  toJSON() {
+    return {
+      name: this.name,
+      message: this.message,
+      status: this.status
+    }
+  }
+}
+
+export class AuthEventMissingError extends CustomAuthError {
+  constructor() {
+    super('Auth event missing!', 'AuthEventMissingError', 400)
+  }
+}
+
+export class AuthSessionMissingError extends CustomAuthError {
+  constructor() {
+    super('Auth session missing!', 'AuthSessionMissingError', 400)
+  }
+}
+
+export class AuthNoCookieError extends CustomAuthError {
+  constructor() {
+    super('No cooke found!', 'AuthNoCookieError', 401)
+  }
+}
+
+export class AuthInvalidCredentialsError extends CustomAuthError {
+  constructor(message: string) {
+    super(message, 'AuthInvalidCredentialsError', 400)
+  }
+}
