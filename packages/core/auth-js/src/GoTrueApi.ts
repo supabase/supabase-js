@@ -13,7 +13,7 @@ import { COOKIE_OPTIONS } from './lib/constants'
 import { setCookies, getCookieString } from './lib/cookies'
 import { expiresAt, resolveFetch } from './lib/helpers'
 
-import { isAuthError, AuthError, AuthApiError } from './lib/errors'
+import { isAuthError, AuthError, AuthApiError, AuthSessionMissingError, AuthEventMissingError, AuthNoCookieError } from './lib/errors'
 
 export default class GoTrueApi {
   protected url: string
@@ -147,13 +147,13 @@ export default class GoTrueApi {
    * Logs in an existing user using their email address.
    * @param email The email address of the user.
    * @param password The password of the user.
-   * @param redirectTo A URL or mobile address to send the user to after they are confirmed.
+   * @param captchaToken Verification token received when the user completes the captcha on your site.
    */
   async signInWithEmail(
     email: string,
     password: string,
     options: {
-      redirectTo?: string
+      captchaToken?: string
     } = {}
   ): Promise<
     | {
@@ -164,14 +164,10 @@ export default class GoTrueApi {
   > {
     try {
       const headers = { ...this.headers }
-      let queryString = '?grant_type=password'
-      if (options.redirectTo) {
-        queryString += '&redirect_to=' + encodeURIComponent(options.redirectTo)
-      }
       const data = await post(
         this.fetch,
-        `${this.url}/token${queryString}`,
-        { email, password },
+        `${this.url}/token?grant_type=password`,
+        { email, password, gotrue_meta_security: { hcaptcha_token: options.captchaToken } },
         { headers }
       )
       const session = { ...data }
@@ -181,7 +177,6 @@ export default class GoTrueApi {
       if (isAuthError(error)) {
         return { data: null, error }
       }
-
       throw error
     }
   }
@@ -239,10 +234,14 @@ export default class GoTrueApi {
    * Logs in an existing user using their phone number and password.
    * @param phone The phone number of the user.
    * @param password The password of the user.
+   * @param captchaToken Verification token received when the user completes the captcha on your site.
    */
   async signInWithPhone(
     phone: string,
-    password: string
+    password: string,
+    options: {
+      captchaToken?: string
+    } = {}
   ): Promise<
     | {
         session: Session
@@ -252,11 +251,10 @@ export default class GoTrueApi {
   > {
     try {
       const headers = { ...this.headers }
-      const queryString = '?grant_type=password'
       const session = await post(
         this.fetch,
-        `${this.url}/token${queryString}`,
-        { phone, password },
+        `${this.url}/token?grant_type=password`,
+        { phone, password, gotrue_meta_security: { hcaptcha_token: options.captchaToken } },
         { headers }
       )
       if (session.expires_in) session.expires_at = expiresAt(session.expires_in)
@@ -634,9 +632,9 @@ export default class GoTrueApi {
     }
     const { event, session } = req.body
 
-    if (!event) throw new Error('Auth event missing!')
+    if (!event) throw new AuthEventMissingError()
     if (event === 'SIGNED_IN') {
-      if (!session) throw new Error('Auth session missing!')
+      if (!session) throw new AuthSessionMissingError()
       setCookies(
         req,
         res,
@@ -699,9 +697,9 @@ export default class GoTrueApi {
     }
     const { event, session } = req.body
 
-    if (!event) throw new Error('Auth event missing!')
+    if (!event) throw new AuthEventMissingError()
     if (event === 'SIGNED_IN') {
-      if (!session) throw new Error('Auth session missing!')
+      if (!session) throw new AuthSessionMissingError()
       return getCookieString(
         req,
         res,
@@ -887,7 +885,7 @@ export default class GoTrueApi {
       const refresh_token = req.cookies[`${this.cookieName()}-refresh-token`]
 
       if (!access_token) {
-        throw new Error('No cookie found!')
+        throw new AuthNoCookieError()
       }
 
       const { user, error } = await this.getUser(access_token)
