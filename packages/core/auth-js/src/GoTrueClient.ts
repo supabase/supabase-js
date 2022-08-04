@@ -19,7 +19,14 @@ import {
 import { polyfillGlobalThis } from './lib/polyfills'
 import { Fetch } from './lib/fetch'
 
-import { isAuthError, AuthError, AuthApiError, AuthSessionMissingError, AuthInvalidCredentialsError, AuthUnknownError } from './lib/errors'
+import {
+  isAuthError,
+  AuthError,
+  AuthApiError,
+  AuthSessionMissingError,
+  AuthInvalidCredentialsError,
+  AuthUnknownError,
+} from './lib/errors'
 
 import type {
   Session,
@@ -85,7 +92,7 @@ export default class GoTrueClient {
    * Create a new client for use in the browser.
    * @param options.url The URL of the GoTrue server.
    * @param options.headers Any additional headers to send to the GoTrue server.
-   * @param options.storageKey Optional key name used for storing tokens in local storage 
+   * @param options.storageKey Optional key name used for storing tokens in local storage
    * @param options.detectSessionInUrl Set to "true" if you want to automatically detects OAuth grants in the URL and signs in the user.
    * @param options.autoRefreshToken Set to "true" if you want to automatically refresh the token before expiring.
    * @param options.persistSession Set to "true" if you want to automatically save the user session into local storage. If set to false, session will just be saved in memory.
@@ -219,7 +226,9 @@ export default class GoTrueClient {
           captchaToken: options?.captchaToken,
         })
       }
-      throw new AuthInvalidCredentialsError('You must provide either an email or phone number and a password.')
+      throw new AuthInvalidCredentialsError(
+        'You must provide either an email or phone number and a password.'
+      )
     } catch (error) {
       if (isAuthError(error)) {
         return { user: null, session: null, error }
@@ -703,7 +712,9 @@ export default class GoTrueClient {
         throw error
       }
     }
-    throw new AuthInvalidCredentialsError('You must provide an OpenID Connect provider with your id token and nonce.')
+    throw new AuthInvalidCredentialsError(
+      'You must provide an OpenID Connect provider with your id token and nonce.'
+    )
   }
 
   /**
