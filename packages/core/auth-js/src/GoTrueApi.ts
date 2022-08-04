@@ -13,7 +13,14 @@ import { COOKIE_OPTIONS } from './lib/constants'
 import { setCookies, getCookieString } from './lib/cookies'
 import { expiresAt, resolveFetch } from './lib/helpers'
 
-import { isAuthError, AuthError, AuthApiError, AuthSessionMissingError, AuthEventMissingError, AuthNoCookieError } from './lib/errors'
+import {
+  isAuthError,
+  AuthError,
+  AuthApiError,
+  AuthSessionMissingError,
+  AuthEventMissingError,
+  AuthNoCookieError,
+} from './lib/errors'
 
 export default class GoTrueApi {
   protected url: string

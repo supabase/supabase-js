@@ -19,7 +19,14 @@ import {
 import { polyfillGlobalThis } from './lib/polyfills'
 import { Fetch } from './lib/fetch'
 
-import { isAuthError, AuthError, AuthApiError, AuthSessionMissingError, AuthInvalidCredentialsError, AuthUnknownError } from './lib/errors'
+import {
+  isAuthError,
+  AuthError,
+  AuthApiError,
+  AuthSessionMissingError,
+  AuthInvalidCredentialsError,
+  AuthUnknownError,
+} from './lib/errors'
 
 import type {
   Session,
@@ -72,7 +79,6 @@ export default class GoTrueClient {
   protected autoRefreshToken: boolean
   protected persistSession: boolean
   protected localStorage: SupportedStorage
-  protected multiTab: boolean
   protected stateChangeEmitters: Map<string, Subscription> = new Map()
   protected refreshTokenTimer?: ReturnType<typeof setTimeout>
   // eslint-disable-next-line @typescript-eslint/no-inferrable-types
@@ -86,7 +92,7 @@ export default class GoTrueClient {
    * Create a new client for use in the browser.
    * @param options.url The URL of the GoTrue server.
    * @param options.headers Any additional headers to send to the GoTrue server.
-   * @param options.storageKey Optional key name used for storing tokens in local storage 
+   * @param options.storageKey Optional key name used for storing tokens in local storage
    * @param options.detectSessionInUrl Set to "true" if you want to automatically detects OAuth grants in the URL and signs in the user.
    * @param options.autoRefreshToken Set to "true" if you want to automatically refresh the token before expiring.
    * @param options.persistSession Set to "true" if you want to automatically save the user session into local storage. If set to false, session will just be saved in memory.
@@ -112,7 +118,6 @@ export default class GoTrueClient {
     this.storageKey = settings.storageKey
     this.autoRefreshToken = settings.autoRefreshToken
     this.persistSession = settings.persistSession
-    this.multiTab = settings.multiTab
     this.localStorage = settings.localStorage || globalThis.localStorage
     this.api = new GoTrueApi({
       url: settings.url,
@@ -122,7 +127,6 @@ export default class GoTrueClient {
     })
     this._recoverSession()
     this._recoverAndRefresh()
-    this._listenForMultiTabEvents()
     this._handleVisibilityChange()
 
     if (settings.detectSessionInUrl && isBrowser() && !!getParameterByName('access_token')) {
@@ -210,19 +214,21 @@ export default class GoTrueClient {
       this._removeSession()
 
       if ('email' in credentials) {
-        let { email, password, options } = credentials
+        const { email, password, options } = credentials
         return this._handleEmailSignIn(email, password, {
           captchaToken: options?.captchaToken,
         })
       }
 
       if ('phone' in credentials) {
-        let { phone, password, options } = credentials
+        const { phone, password, options } = credentials
         return this._handlePhoneSignIn(phone, password, {
           captchaToken: options?.captchaToken,
         })
       }
-      throw new AuthInvalidCredentialsError('You must provide either an email or phone number and a password.')
+      throw new AuthInvalidCredentialsError(
+        'You must provide either an email or phone number and a password.'
+      )
     } catch (error) {
       if (isAuthError(error)) {
         return { user: null, session: null, error }
@@ -241,16 +247,12 @@ export default class GoTrueClient {
    * @param queryParams An object of query params
    */
   async signInWithOAuth(credentials: SignInWithOAuthCredentials): Promise<OAuthResponse> {
-    try {
-      this._removeSession()
-      return this._handleProviderSignIn(credentials.provider, {
-        redirectTo: credentials.options?.redirectTo,
-        scopes: credentials.options?.scopes,
-        queryParams: credentials.options?.queryParams,
-      })
-    } catch (error) {
-      throw error
-    }
+    this._removeSession()
+    return this._handleProviderSignIn(credentials.provider, {
+      redirectTo: credentials.options?.redirectTo,
+      scopes: credentials.options?.scopes,
+      queryParams: credentials.options?.queryParams,
+    })
   }
 
   /**
@@ -265,7 +267,7 @@ export default class GoTrueClient {
       this._removeSession()
 
       if ('email' in credentials) {
-        let { email, options } = credentials
+        const { email, options } = credentials
         const { error } = await this.api.sendMagicLinkEmail(email, {
           redirectTo: options?.emailRedirectTo,
           shouldCreateUser: options?.shouldCreateUser,
@@ -274,7 +276,7 @@ export default class GoTrueClient {
         return { user: null, session: null, error }
       }
       if ('phone' in credentials) {
-        let { phone, options } = credentials
+        const { phone, options } = credentials
         const { error } = await this.api.sendMobileOTP(phone, {
           shouldCreateUser: options?.shouldCreateUser,
           captchaToken: options?.captchaToken,
@@ -473,7 +475,8 @@ export default class GoTrueClient {
       }
 
       this._saveSession(session!)
-      this._notifyAllSubscribers('SIGNED_IN', session)
+
+      this._notifyAllSubscribers('TOKEN_REFRESHED', session)
       return { session: session, error: null }
     } catch (error) {
       if (isAuthError(error)) {
@@ -709,7 +712,9 @@ export default class GoTrueClient {
         throw error
       }
     }
-    throw new AuthInvalidCredentialsError('You must provide an OpenID Connect provider with your id token and nonce.')
+    throw new AuthInvalidCredentialsError(
+      'You must provide an OpenID Connect provider with your id token and nonce.'
+    )
   }
 
   /**
@@ -729,7 +734,6 @@ export default class GoTrueClient {
         if (this.persistSession) {
           this._saveSession(currentSession)
         }
-        this._notifyAllSubscribers('SIGNED_IN', currentSession)
       }
     } catch (error) {
       console.log('error', error)
@@ -808,7 +812,6 @@ export default class GoTrueClient {
 
       this._saveSession(session)
       this._notifyAllSubscribers('TOKEN_REFRESHED', session)
-      this._notifyAllSubscribers('SIGNED_IN', session)
 
       const result = { session, error: null }
 
@@ -894,34 +897,8 @@ export default class GoTrueClient {
     if (typeof this.refreshTokenTimer.unref === 'function') this.refreshTokenTimer.unref()
   }
 
-  /**
-   * Listens for changes to LocalStorage and updates the current session.
-   */
-  private _listenForMultiTabEvents() {
-    if (!this.multiTab || !isBrowser() || !window?.addEventListener) {
-      return false
-    }
-
-    try {
-      window?.addEventListener('storage', (e: StorageEvent) => {
-        if (e.key === this.storageKey) {
-          const newSession = JSON.parse(String(e.newValue))
-          if (newSession?.currentSession?.access_token) {
-            this._saveSession(newSession.currentSession)
-            this._notifyAllSubscribers('SIGNED_IN', newSession.currentSession)
-          } else {
-            this._removeSession()
-            this._notifyAllSubscribers('SIGNED_OUT', newSession.currentSession)
-          }
-        }
-      })
-    } catch (error) {
-      console.error('_listenForMultiTabEvents', error)
-    }
-  }
-
   private _handleVisibilityChange() {
-    if (!this.multiTab || !isBrowser() || !window?.addEventListener) {
+    if (!isBrowser() || !window?.addEventListener) {
       return false
     }
 
