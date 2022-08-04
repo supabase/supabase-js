@@ -152,6 +152,7 @@ export default class RealtimeChannel {
       filter: filter ?? {},
       callback: callback ?? (() => {}),
     })
+    return this
   }
 
   off(type: string, filter: { [key: string]: any }) {
@@ -160,6 +161,7 @@ export default class RealtimeChannel {
         bind.type === type && RealtimeChannel.isEqual(bind.filter, filter)
       )
     })
+    return this
   }
 
   /**
