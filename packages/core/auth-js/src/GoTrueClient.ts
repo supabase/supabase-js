@@ -207,14 +207,14 @@ export default class GoTrueClient {
       this._removeSession()
 
       if ('email' in credentials) {
-        let { email, password, options } = credentials
+        const { email, password, options } = credentials
         return this._handleEmailSignIn(email, password, {
           captchaToken: options?.captchaToken,
         })
       }
 
       if ('phone' in credentials) {
-        let { phone, password, options } = credentials
+        const { phone, password, options } = credentials
         return this._handlePhoneSignIn(phone, password, {
           captchaToken: options?.captchaToken,
         })
@@ -238,16 +238,12 @@ export default class GoTrueClient {
    * @param queryParams An object of query params
    */
   async signInWithOAuth(credentials: SignInWithOAuthCredentials): Promise<OAuthResponse> {
-    try {
-      this._removeSession()
-      return this._handleProviderSignIn(credentials.provider, {
-        redirectTo: credentials.options?.redirectTo,
-        scopes: credentials.options?.scopes,
-        queryParams: credentials.options?.queryParams,
-      })
-    } catch (error) {
-      throw error
-    }
+    this._removeSession()
+    return this._handleProviderSignIn(credentials.provider, {
+      redirectTo: credentials.options?.redirectTo,
+      scopes: credentials.options?.scopes,
+      queryParams: credentials.options?.queryParams,
+    })
   }
 
   /**
@@ -262,7 +258,7 @@ export default class GoTrueClient {
       this._removeSession()
 
       if ('email' in credentials) {
-        let { email, options } = credentials
+        const { email, options } = credentials
         const { error } = await this.api.sendMagicLinkEmail(email, {
           redirectTo: options?.emailRedirectTo,
           shouldCreateUser: options?.shouldCreateUser,
@@ -271,7 +267,7 @@ export default class GoTrueClient {
         return { user: null, session: null, error }
       }
       if ('phone' in credentials) {
-        let { phone, options } = credentials
+        const { phone, options } = credentials
         const { error } = await this.api.sendMobileOTP(phone, {
           shouldCreateUser: options?.shouldCreateUser,
           captchaToken: options?.captchaToken,
