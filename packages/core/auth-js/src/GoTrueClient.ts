@@ -473,7 +473,8 @@ export default class GoTrueClient {
       }
 
       this._saveSession(session!)
-      this._notifyAllSubscribers('SIGNED_IN', session)
+
+      this._notifyAllSubscribers('TOKEN_REFRESHED', session)
       return { session: session, error: null }
     } catch (error) {
       if (isAuthError(error)) {
@@ -729,7 +730,6 @@ export default class GoTrueClient {
         if (this.persistSession) {
           this._saveSession(currentSession)
         }
-        this._notifyAllSubscribers('SIGNED_IN', currentSession)
       }
     } catch (error) {
       console.log('error', error)
@@ -808,7 +808,6 @@ export default class GoTrueClient {
 
       this._saveSession(session)
       this._notifyAllSubscribers('TOKEN_REFRESHED', session)
-      this._notifyAllSubscribers('SIGNED_IN', session)
 
       const result = { session, error: null }
 
