@@ -1,6 +1,11 @@
 name: CI
 
-on: [push]
+on:
+  push:
+    branches:
+      - master
+      - next
+  workflow_dispatch:
 
 jobs:
   test:
