@@ -88,30 +88,6 @@ export default class RealtimeChannel {
     return this.presence.list()
   }
 
-  async track(
-    payload: { [key: string]: any },
-    opts: { [key: string]: any } = {}
-  ) {
-    return this.send(
-      {
-        type: 'presence',
-        event: 'track',
-        payload,
-      },
-      opts
-    )
-  }
-
-  async untrack(opts: { [key: string]: any } = {}) {
-    return this.send(
-      {
-        type: 'presence',
-        event: 'untrack',
-      },
-      opts
-    )
-  }
-
   rejoinUntilConnected() {
     this.rejoinTimer.scheduleTimeout()
     if (this.socket.isConnected()) {
