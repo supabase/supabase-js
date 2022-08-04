@@ -266,8 +266,18 @@ export default class RealtimeChannel {
   send(
     payload: { type: string; [key: string]: any },
     opts: { [key: string]: any } = {}
-  ): Push {
-    return this.push(payload.type as any, payload, opts.timeout ?? this.timeout)
+  ): Promise<'ok' | 'timeout'> {
+    const push = this.push(
+      payload.type as any,
+      payload,
+      opts.timeout ?? this.timeout
+    )
+
+    return new Promise((resolve) => {
+      push
+        .receive('ok', () => resolve('ok'))
+        .receive('timeout', () => resolve('timeout'))
+    })
   }
 
   replyEventName(ref: string): string {
