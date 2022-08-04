@@ -72,7 +72,7 @@ export default class RealtimeChannel {
     payload: { [key: string]: any },
     opts: { [key: string]: any } = {}
   ) {
-    return await this.send(
+    return this.send(
       {
         type: 'presence',
         event: 'track',
@@ -83,7 +83,7 @@ export default class RealtimeChannel {
   }
 
   async untrack(opts: { [key: string]: any } = {}) {
-    return await this.send(
+    return this.send(
       {
         type: 'presence',
         event: 'untrack',
@@ -270,17 +270,8 @@ export default class RealtimeChannel {
   send(
     payload: { type: string; [key: string]: any },
     opts: { [key: string]: any } = {}
-  ) {
-    const push = this.push(
-      payload.type as any,
-      payload,
-      opts.timeout ?? this.timeout
-    )
-
-    return new Promise((resolve) => {
-      push.receive('ok', () => resolve('ok'))
-      push.receive('timeout', () => resolve('timeout'))
-    })
+  ): Push {
+    return this.push(payload.type as any, payload, opts.timeout ?? this.timeout)
   }
 
   replyEventName(ref: string): string {
