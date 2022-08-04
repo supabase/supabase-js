@@ -61,7 +61,27 @@ export default class RealtimeChannel {
     this.on(CHANNEL_EVENTS.reply, {}, (payload: any, ref: string) => {
       this.trigger(this.replyEventName(ref), payload)
     })
+
     this.presence = new RealtimePresence(this)
+    this.presence.onJoin((key, currentPresences, newPresences) => {
+      this.trigger('presence', {
+        event: 'join',
+        key,
+        currentPresences,
+        newPresences,
+      })
+    })
+    this.presence.onLeave((key, currentPresences, leftPresences) => {
+      this.trigger('presence', {
+        event: 'leave',
+        key,
+        currentPresences,
+        leftPresences,
+      })
+    })
+    this.presence.onSync(() => {
+      this.trigger('presence', { event: 'sync' })
+    })
   }
 
   list() {

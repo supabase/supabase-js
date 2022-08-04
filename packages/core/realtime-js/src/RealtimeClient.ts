@@ -270,29 +270,8 @@ export default class RealtimeClient {
 
     const chan = new RealtimeChannel(topic, params, this)
 
-    chan.presence.onJoin((key, currentPresences, newPresences) => {
-      chan.trigger('presence', {
-        event: 'join',
-        key,
-        currentPresences,
-        newPresences,
-      })
-    })
-
-    chan.presence.onLeave((key, currentPresences, leftPresences) => {
-      chan.trigger('presence', {
-        event: 'leave',
-        key,
-        currentPresences,
-        leftPresences,
-      })
-    })
-
-    chan.presence.onSync(() => {
-      chan.trigger('presence', { event: 'sync' })
-    })
-
     this.channels.push(chan)
+
     return chan
   }
 
