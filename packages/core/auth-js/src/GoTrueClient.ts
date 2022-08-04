@@ -72,7 +72,6 @@ export default class GoTrueClient {
   protected autoRefreshToken: boolean
   protected persistSession: boolean
   protected localStorage: SupportedStorage
-  protected multiTab: boolean
   protected stateChangeEmitters: Map<string, Subscription> = new Map()
   protected refreshTokenTimer?: ReturnType<typeof setTimeout>
   // eslint-disable-next-line @typescript-eslint/no-inferrable-types
@@ -112,7 +111,6 @@ export default class GoTrueClient {
     this.storageKey = settings.storageKey
     this.autoRefreshToken = settings.autoRefreshToken
     this.persistSession = settings.persistSession
-    this.multiTab = settings.multiTab
     this.localStorage = settings.localStorage || globalThis.localStorage
     this.api = new GoTrueApi({
       url: settings.url,
@@ -122,7 +120,6 @@ export default class GoTrueClient {
     })
     this._recoverSession()
     this._recoverAndRefresh()
-    this._listenForMultiTabEvents()
     this._handleVisibilityChange()
 
     if (settings.detectSessionInUrl && isBrowser() && !!getParameterByName('access_token')) {
@@ -893,34 +890,8 @@ export default class GoTrueClient {
     if (typeof this.refreshTokenTimer.unref === 'function') this.refreshTokenTimer.unref()
   }
 
-  /**
-   * Listens for changes to LocalStorage and updates the current session.
-   */
-  private _listenForMultiTabEvents() {
-    if (!this.multiTab || !isBrowser() || !window?.addEventListener) {
-      return false
-    }
-
-    try {
-      window?.addEventListener('storage', (e: StorageEvent) => {
-        if (e.key === this.storageKey) {
-          const newSession = JSON.parse(String(e.newValue))
-          if (newSession?.currentSession?.access_token) {
-            this._saveSession(newSession.currentSession)
-            this._notifyAllSubscribers('SIGNED_IN', newSession.currentSession)
-          } else {
-            this._removeSession()
-            this._notifyAllSubscribers('SIGNED_OUT', newSession.currentSession)
-          }
-        }
-      })
-    } catch (error) {
-      console.error('_listenForMultiTabEvents', error)
-    }
-  }
-
   private _handleVisibilityChange() {
-    if (!this.multiTab || !isBrowser() || !window?.addEventListener) {
+    if (!isBrowser() || !window?.addEventListener) {
       return false
     }
 
