@@ -84,10 +84,6 @@ export default class RealtimeChannel {
     })
   }
 
-  list() {
-    return this.presence.list()
-  }
-
   rejoinUntilConnected() {
     this.rejoinTimer.scheduleTimeout()
     if (this.socket.isConnected()) {
