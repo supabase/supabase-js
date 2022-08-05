@@ -11,7 +11,7 @@ import {
 import RealtimeChannel from './RealtimeChannel'
 
 type Presence = {
-  presence_id: string
+  presence_ref: string
   [key: string]: any
 }
 
@@ -140,15 +140,15 @@ export default class RealtimePresence {
       const currentPresences: Presence[] = state[key]
 
       if (currentPresences) {
-        const newPresenceIds = newPresences.map((m: Presence) => m.presence_id)
+        const newPresenceIds = newPresences.map((m: Presence) => m.presence_ref)
         const curPresenceIds = currentPresences.map(
-          (m: Presence) => m.presence_id
+          (m: Presence) => m.presence_ref
         )
         const joinedPresences: Presence[] = newPresences.filter(
-          (m: Presence) => curPresenceIds.indexOf(m.presence_id) < 0
+          (m: Presence) => curPresenceIds.indexOf(m.presence_ref) < 0
         )
         const leftPresences: Presence[] = currentPresences.filter(
-          (m: Presence) => newPresenceIds.indexOf(m.presence_id) < 0
+          (m: Presence) => newPresenceIds.indexOf(m.presence_ref) < 0
         )
 
         if (joinedPresences.length > 0) {
@@ -198,9 +198,9 @@ export default class RealtimePresence {
       state[key] = this.cloneDeep(newPresences)
 
       if (currentPresences) {
-        const joinedPresenceIds = state[key].map((m: Presence) => m.presence_id)
+        const joinedPresenceIds = state[key].map((m: Presence) => m.presence_ref)
         const curPresences: Presence[] = currentPresences.filter(
-          (m: Presence) => joinedPresenceIds.indexOf(m.presence_id) < 0
+          (m: Presence) => joinedPresenceIds.indexOf(m.presence_ref) < 0
         )
 
         state[key].unshift(...curPresences)
@@ -215,10 +215,10 @@ export default class RealtimePresence {
       if (!currentPresences) return
 
       const presenceIdsToRemove = leftPresences.map(
-        (m: Presence) => m.presence_id
+        (m: Presence) => m.presence_ref
       )
       currentPresences = currentPresences.filter(
-        (m: Presence) => presenceIdsToRemove.indexOf(m.presence_id) < 0
+        (m: Presence) => presenceIdsToRemove.indexOf(m.presence_ref) < 0
       )
 
       state[key] = currentPresences
@@ -256,14 +256,14 @@ export default class RealtimePresence {
 
   /**
    * Remove 'metas' key
-   * Change 'phx_ref' to 'presence_id'
+   * Change 'phx_ref' to 'presence_ref'
    * Remove 'phx_ref' and 'phx_ref_prev'
    *
    * @example
    * // returns {
    *  abc123: [
-   *    { presence_id: '2', user_id: 1 },
-   *    { presence_id: '3', user_id: 2 }
+   *    { presence_ref: '2', user_id: 1 },
+   *    { presence_ref: '3', user_id: 2 }
    *  ]
    * }
    * RealtimePresence.transformState({
@@ -285,7 +285,7 @@ export default class RealtimePresence {
 
       if ('metas' in presences) {
         newState[key] = presences.metas.map((presence) => {
-          presence['presence_id'] = presence['phx_ref']
+          presence['presence_ref'] = presence['phx_ref']
 
           delete presence['phx_ref']
           delete presence['phx_ref_prev']
