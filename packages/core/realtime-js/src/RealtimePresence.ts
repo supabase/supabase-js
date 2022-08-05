@@ -300,7 +300,7 @@ export default class RealtimePresence {
     }, {} as PresenceState)
   }
 
-  private static cloneDeep(obj: object) {
+  private static cloneDeep(obj: { [key: string]: any }) {
     return JSON.parse(JSON.stringify(obj))
   }
 

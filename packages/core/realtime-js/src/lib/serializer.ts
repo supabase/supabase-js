@@ -31,7 +31,7 @@ export default class Serializer {
     ref: null
     topic: string
     event: string
-    payload: object
+    payload: { [key: string]: any }
   } {
     const topicSize = view.getUint8(1)
     const eventSize = view.getUint8(2)

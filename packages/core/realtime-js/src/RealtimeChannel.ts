@@ -16,7 +16,7 @@ export default class RealtimeChannel {
 
   constructor(
     public topic: string,
-    public params: { [key: string]: unknown } = {},
+    public params: { [key: string]: any } = {},
     public socket: RealtimeClient
   ) {
     this.timeout = this.socket.timeout
@@ -163,7 +163,7 @@ export default class RealtimeChannel {
     return this.socket.isConnected() && this.isJoined()
   }
 
-  push(event: CHANNEL_EVENTS, payload: any, timeout = this.timeout) {
+  push(event: string, payload: { [key: string]: any }, timeout = this.timeout) {
     if (!this.joinedOnce) {
       throw `tried to push '${event}' to '${this.topic}' before joining. Use channel.subscribe() before pushing events`
     }
@@ -178,7 +178,7 @@ export default class RealtimeChannel {
     return pushEvent
   }
 
-  updateJoinPayload(payload: { [key: string]: unknown }): void {
+  updateJoinPayload(payload: { [key: string]: any }): void {
     this.joinPush.updatePayload(payload)
   }
 
@@ -257,23 +257,6 @@ export default class RealtimeChannel {
         )
       })
       .map((bind) => bind.callback(handledPayload, ref))
-  }
-
-  send(
-    payload: { type: string; [key: string]: any },
-    opts: { [key: string]: any } = {}
-  ): Promise<'ok' | 'timeout'> {
-    const push = this.push(
-      payload.type as any,
-      payload,
-      opts.timeout ?? this.timeout
-    )
-
-    return new Promise((resolve) => {
-      push
-        .receive('ok', () => resolve('ok'))
-        .receive('timeout', () => resolve('timeout'))
-    })
   }
 
   replyEventName(ref: string): string {

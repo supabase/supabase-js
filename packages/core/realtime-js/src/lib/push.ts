@@ -26,7 +26,7 @@ export default class Push {
   constructor(
     public channel: RealtimeChannel,
     public event: string,
-    public payload: { [key: string]: unknown } = {},
+    public payload: { [key: string]: any } = {},
     public timeout: number = DEFAULT_TIMEOUT
   ) {}
 
@@ -54,7 +54,7 @@ export default class Push {
     })
   }
 
-  updatePayload(payload: { [key: string]: unknown }): void {
+  updatePayload(payload: { [key: string]: any }): void {
     this.payload = { ...this.payload, ...payload }
   }
 
