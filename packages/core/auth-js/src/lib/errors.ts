@@ -47,12 +47,12 @@ export class CustomAuthError extends AuthError {
     this.name = name
     this.status = status
   }
-  
+
   toJSON() {
     return {
       name: this.name,
       message: this.message,
-      status: this.status
+      status: this.status,
     }
   }
 }
@@ -71,7 +71,7 @@ export class AuthSessionMissingError extends CustomAuthError {
 
 export class AuthNoCookieError extends CustomAuthError {
   constructor() {
-    super('No cooke found!', 'AuthNoCookieError', 401)
+    super('No cookie found!', 'AuthNoCookieError', 401)
   }
 }
 
