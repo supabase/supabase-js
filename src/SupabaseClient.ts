@@ -9,7 +9,7 @@ import { RealtimeChannel, RealtimeClient, RealtimeClientOptions } from '@supabas
 import { SupabaseStorageClient } from '@supabase/storage-js'
 import { DEFAULT_HEADERS } from './lib/constants'
 import { fetchWithAuth } from './lib/fetch'
-import { isBrowser, stripTrailingSlash } from './lib/helpers'
+import { stripTrailingSlash } from './lib/helpers'
 import { SupabaseAuthClient } from './lib/SupabaseAuthClient'
 import { SupabaseRealtimeClient } from './lib/SupabaseRealtimeClient'
 import { Fetch, GenericSchema, SupabaseClientOptions, SupabaseAuthClientOptions } from './lib/types'
@@ -48,7 +48,6 @@ export default class SupabaseClient<
   protected functionsUrl: string
   protected realtime: RealtimeClient
   protected rest: PostgrestClient<Database, SchemaName>
-  protected multiTab: boolean
   protected storageKey: string
   protected fetch?: Fetch
   protected changedAccessToken: string | undefined
@@ -68,7 +67,6 @@ export default class SupabaseClient<
    * @param options.detectSessionInUrl Set to "true" if you want to automatically detects OAuth grants in the URL and signs in the user.
    * @param options.headers Any additional headers to send with each network request.
    * @param options.realtime Options passed along to realtime-js constructor.
-   * @param options.multiTab Set to "false" if you want to disable multi-tab/window events.
    * @param options.fetch A custom fetch implementation.
    */
   constructor(
@@ -98,7 +96,6 @@ export default class SupabaseClient<
 
     const settings = { ...DEFAULT_OPTIONS, ...options, storageKey: this.storageKey }
 
-    this.multiTab = settings.auth?.multiTab ?? false
     this.headers = { ...DEFAULT_HEADERS, ...options?.headers }
     this.shouldThrowOnError = settings.shouldThrowOnError || false
 
@@ -114,7 +111,6 @@ export default class SupabaseClient<
     })
 
     this._listenForAuthEvents()
-    this._listenForMultiTabEvents()
 
     // In the future we might allow the user to pass in a logger to receive these events.
     // this.realtime.onOpen(() => console.log('OPEN'))
@@ -271,7 +267,6 @@ export default class SupabaseClient<
       detectSessionInUrl,
       localStorage,
       cookieOptions,
-      multiTab,
       storageKey,
     }: SupabaseAuthClientOptions,
     headers?: Record<string, string>,
@@ -291,7 +286,6 @@ export default class SupabaseClient<
       localStorage,
       fetch,
       cookieOptions,
-      multiTab,
     })
   }
 
@@ -300,33 +294,6 @@ export default class SupabaseClient<
       ...options,
       params: { ...{ apikey: this.supabaseKey, vsndate: '2022' }, ...options?.params },
     })
-  }
-
-  private _listenForMultiTabEvents() {
-    if (!this.multiTab || !isBrowser() || !window?.addEventListener) {
-      return null
-    }
-
-    try {
-      return window?.addEventListener('storage', (e: StorageEvent) => {
-        if (e.key === this.storageKey) {
-          const newSession = JSON.parse(String(e.newValue))
-          const accessToken: string | undefined =
-            newSession?.currentSession?.access_token ?? undefined
-          const previousAccessToken = this.auth.session()?.access_token
-          if (!accessToken) {
-            this._handleTokenChanged('SIGNED_OUT', accessToken, 'STORAGE')
-          } else if (!previousAccessToken && accessToken) {
-            this._handleTokenChanged('SIGNED_IN', accessToken, 'STORAGE')
-          } else if (previousAccessToken !== accessToken) {
-            this._handleTokenChanged('TOKEN_REFRESHED', accessToken, 'STORAGE')
-          }
-        }
-      })
-    } catch (error) {
-      console.error('_listenForMultiTabEvents', error)
-      return null
-    }
   }
 
   private _listenForAuthEvents() {
@@ -347,9 +314,6 @@ export default class SupabaseClient<
     ) {
       // Token has changed
       this.realtime.setAuth(token!)
-      // Ideally we should call this.auth.recoverSession() - need to make public
-      // to trigger a "SIGNED_IN" event on this client.
-      if (source == 'STORAGE') this.auth.setAuth(token!)
 
       this.changedAccessToken = token
     } else if (event === 'SIGNED_OUT' || event === 'USER_DELETED') {
