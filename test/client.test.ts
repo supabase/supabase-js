@@ -15,16 +15,6 @@ test('it should throw an error if no valid params are provided', async () => {
   expect(() => createClient(URL, '')).toThrowError('supabaseKey is required.')
 })
 
-test('it should not cache Authorization header', async () => {
-  supabase.auth.setAuth('token1')
-  supabase.rpc('')
-  expect(supabase.auth.session()?.access_token).toBe('token1')
-
-  supabase.auth.setAuth('token2')
-  supabase.rpc('')
-  expect(supabase.auth.session()?.access_token).toBe('token2')
-})
-
 describe('Custom Headers', () => {
   test('should have custom header set', () => {
     const customHeader = { 'X-Test-Header': 'value' }
@@ -35,18 +25,6 @@ describe('Custom Headers', () => {
     const getHeaders = request.headers
 
     expect(getHeaders).toHaveProperty('X-Test-Header', 'value')
-  })
-
-  test('should allow custom Authorization header', () => {
-    const customHeader = { Authorization: 'Bearer custom_token' }
-    supabase.auth.setAuth('override_me')
-
-    const request = createClient(URL, KEY, { headers: customHeader }).rpc('')
-
-    // @ts-ignore
-    const getHeaders = request.headers
-
-    expect(getHeaders).toHaveProperty('Authorization', 'Bearer custom_token')
   })
 })
 
