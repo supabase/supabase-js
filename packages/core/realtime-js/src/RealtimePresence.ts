@@ -196,10 +196,10 @@ export default class RealtimePresence {
     }
 
     this.map(joins, (key, newPresences: Presence[]) => {
-      const currentPresences: Presence[] = state[key]
+      const currentPresences: Presence[] = state[key] ?? []
       state[key] = this.cloneDeep(newPresences)
 
-      if (currentPresences) {
+      if (currentPresences.length > 0) {
         const joinedPresenceRefs = state[key].map(
           (m: Presence) => m.presence_ref
         )
