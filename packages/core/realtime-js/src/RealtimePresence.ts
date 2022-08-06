@@ -140,15 +140,17 @@ export default class RealtimePresence {
       const currentPresences: Presence[] = state[key]
 
       if (currentPresences) {
-        const newPresenceIds = newPresences.map((m: Presence) => m.presence_ref)
-        const curPresenceIds = currentPresences.map(
+        const newPresenceRefs = newPresences.map(
+          (m: Presence) => m.presence_ref
+        )
+        const curPresenceRefs = currentPresences.map(
           (m: Presence) => m.presence_ref
         )
         const joinedPresences: Presence[] = newPresences.filter(
-          (m: Presence) => curPresenceIds.indexOf(m.presence_ref) < 0
+          (m: Presence) => curPresenceRefs.indexOf(m.presence_ref) < 0
         )
         const leftPresences: Presence[] = currentPresences.filter(
-          (m: Presence) => newPresenceIds.indexOf(m.presence_ref) < 0
+          (m: Presence) => newPresenceRefs.indexOf(m.presence_ref) < 0
         )
 
         if (joinedPresences.length > 0) {
@@ -198,9 +200,11 @@ export default class RealtimePresence {
       state[key] = this.cloneDeep(newPresences)
 
       if (currentPresences) {
-        const joinedPresenceIds = state[key].map((m: Presence) => m.presence_ref)
+        const joinedPresenceRefs = state[key].map(
+          (m: Presence) => m.presence_ref
+        )
         const curPresences: Presence[] = currentPresences.filter(
-          (m: Presence) => joinedPresenceIds.indexOf(m.presence_ref) < 0
+          (m: Presence) => joinedPresenceRefs.indexOf(m.presence_ref) < 0
         )
 
         state[key].unshift(...curPresences)
@@ -214,11 +218,11 @@ export default class RealtimePresence {
 
       if (!currentPresences) return
 
-      const presenceIdsToRemove = leftPresences.map(
+      const presenceRefsToRemove = leftPresences.map(
         (m: Presence) => m.presence_ref
       )
       currentPresences = currentPresences.filter(
-        (m: Presence) => presenceIdsToRemove.indexOf(m.presence_ref) < 0
+        (m: Presence) => presenceRefsToRemove.indexOf(m.presence_ref) < 0
       )
 
       state[key] = currentPresences
