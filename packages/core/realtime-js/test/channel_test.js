@@ -85,7 +85,7 @@ describe('join', () => {
       spy.calledWith({
         topic: 'topic',
         event: 'phx_join',
-        payload: { one: 'two' },
+        payload: { one: 'two', configs: {} },
         ref: defaultRef,
       })
     )
