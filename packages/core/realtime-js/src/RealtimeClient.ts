@@ -261,17 +261,9 @@ export default class RealtimeClient {
     )
   }
 
-  channel(topic: string, chanParams: ChannelParams = {}): RealtimeChannel {
-    const { selfBroadcast, ...params } = chanParams
-
-    if (selfBroadcast) {
-      params.self_broadcast = selfBroadcast
-    }
-
+  channel(topic: string, params: ChannelParams = {}): RealtimeChannel {
     const chan = new RealtimeChannel(topic, params, this)
-
     this.channels.push(chan)
-
     return chan
   }
 

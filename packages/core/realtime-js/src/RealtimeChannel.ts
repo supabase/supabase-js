@@ -114,9 +114,7 @@ export default class RealtimeChannel {
         {}
       )
 
-      if (Object.keys(configs).length) {
-        this.updateJoinPayload({ configs })
-      }
+      this.updateJoinPayload({ configs })
 
       this.joinedOnce = true
       this.rejoin(timeout)
