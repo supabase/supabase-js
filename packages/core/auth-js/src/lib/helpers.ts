@@ -57,7 +57,7 @@ export const setItemAsync = async (
   isBrowser() && (await storage?.setItem(key, JSON.stringify(data)))
 }
 
-export const getItemAsync = async (storage: SupportedStorage, key: string): Promise<any | null> => {
+export const getItemAsync = async (storage: SupportedStorage, key: string): Promise<unknown> => {
   const value = isBrowser() && (await storage?.getItem(key))
   if (!value) return null
   try {

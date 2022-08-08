@@ -364,9 +364,13 @@ export default class GoTrueClient {
     let currentSession: Session | null = null
 
     if (this.persistSession) {
-      const persistedSession = await getItemAsync(this.localStorage, this.storageKey)
+      const maybeSession = await getItemAsync(this.localStorage, this.storageKey)
 
-      currentSession = persistedSession?.currentSession ?? null
+      if (this._isValidSession(maybeSession)) {
+        currentSession = maybeSession
+      } else {
+        await this._removeSession()
+      }
     } else {
       currentSession = this.inMemorySession
     }
@@ -474,7 +478,7 @@ export default class GoTrueClient {
         return { session: null, error: error }
       }
 
-      this._saveSession(session!)
+      this._saveSession(session)
 
       this._notifyAllSubscribers('TOKEN_REFRESHED', session)
       return { session: session, error: null }
@@ -527,7 +531,7 @@ export default class GoTrueClient {
         expires_at,
         refresh_token,
         token_type,
-        user: user!,
+        user,
       }
       if (options?.storeSession) {
         this._saveSession(session)
@@ -599,6 +603,17 @@ export default class GoTrueClient {
 
       throw error
     }
+  }
+
+  private _isValidSession(maybeSession: unknown): maybeSession is Session {
+    const isValidSession =
+      typeof maybeSession === 'object' &&
+      maybeSession !== null &&
+      'access_token' in maybeSession &&
+      'refresh_token' in maybeSession &&
+      'expires_at' in maybeSession
+
+    return isValidSession
   }
 
   private async _handleEmailSignIn(
@@ -746,12 +761,15 @@ export default class GoTrueClient {
    */
   private async _recoverAndRefresh() {
     try {
-      const data = await getItemAsync(this.localStorage, this.storageKey)
-      if (!data) return null
-      const { currentSession, expiresAt } = data
+      const currentSession = await getItemAsync(this.localStorage, this.storageKey)
+      if (!this._isValidSession(currentSession)) {
+        await this._removeSession()
+        return null
+      }
+
       const timeNow = Math.round(Date.now() / 1000)
 
-      if (expiresAt < timeNow + EXPIRY_MARGIN) {
+      if ((currentSession.expires_at ?? Infinity) < timeNow + EXPIRY_MARGIN) {
         if (this.autoRefreshToken && currentSession.refresh_token) {
           this.networkRetries++
           const { error } = await this._callRefreshToken(currentSession.refresh_token)
@@ -774,9 +792,6 @@ export default class GoTrueClient {
         } else {
           this._removeSession()
         }
-      } else if (!currentSession) {
-        console.log('Current session is missing data.')
-        this._removeSession()
       } else {
         // should be handled on _recoverSession method already
         // But we still need the code here to accommodate for AsyncStorage e.g. in React native
@@ -857,8 +872,7 @@ export default class GoTrueClient {
   }
 
   private _persistSession(currentSession: Session) {
-    const data = { currentSession, expiresAt: currentSession.expires_at }
-    setItemAsync(this.localStorage, this.storageKey, data)
+    setItemAsync(this.localStorage, this.storageKey, currentSession)
   }
 
   private async _removeSession() {
