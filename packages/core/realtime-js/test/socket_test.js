@@ -321,7 +321,7 @@ describe('channel', () => {
 
     assert.deepStrictEqual(channel.socket, socket)
     assert.equal(channel.topic, 'topic')
-    assert.deepEqual(channel.params, { one: 'two' })
+    assert.deepEqual(channel.params, { configs: { broadcast: { ack: false, self: false }, presence: { key: '' } }, one: 'two' })
   })
 
   it('adds channel to sockets channels list', () => {

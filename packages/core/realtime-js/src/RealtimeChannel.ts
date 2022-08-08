@@ -20,7 +20,12 @@ export default class RealtimeChannel {
     public socket: RealtimeClient
   ) {
     this.params = {
-      ...{ broadcast: { ack: false, self: false }, presence: { key: '' } },
+      ...{
+        configs: {
+          broadcast: { ack: false, self: false },
+          presence: { key: '' },
+        },
+      },
       ...params,
     }
     this.timeout = this.socket.timeout
@@ -99,7 +104,9 @@ export default class RealtimeChannel {
     if (this.joinedOnce) {
       throw `tried to subscribe multiple times. 'subscribe' can only be called a single time per channel instance`
     } else {
-      const { broadcast, presence } = this.params
+      const {
+        configs: { broadcast, presence },
+      } = this.params
       const configs = {
         broadcast,
         presence,
@@ -109,7 +116,7 @@ export default class RealtimeChannel {
       this.bindings.reduce((acc, binding) => {
         const { type } = binding
         if (type === 'realtime') {
-          acc[type] = acc[type].push(binding)
+          acc[type] = acc[type].push(binding.filter)
         }
 
         return acc
