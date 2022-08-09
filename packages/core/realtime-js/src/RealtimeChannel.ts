@@ -19,14 +19,12 @@ export default class RealtimeChannel {
     public params: { [key: string]: any } = {},
     public socket: RealtimeClient
   ) {
-    this.params = {
+    this.params.configs = {
       ...{
-        configs: {
-          broadcast: { ack: false, self: false },
-          presence: { key: '' },
-        },
+        broadcast: { ack: false, self: false },
+        presence: { key: '' },
       },
-      ...params,
+      ...params.configs,
     }
     this.timeout = this.socket.timeout
     this.joinPush = new Push(
