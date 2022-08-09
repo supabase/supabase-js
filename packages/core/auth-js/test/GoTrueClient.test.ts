@@ -150,7 +150,7 @@ describe('GoTrueClient', () => {
       // vreify the deferred has been reset and successive calls can be made
       // @ts-expect-error 'Allow access to private _callRefreshToken()'
       const { session: session3, error: error3 } = await authWithSession._callRefreshToken(
-        session?.refresh_token
+        session!.refresh_token
       )
 
       expect(error3).toBeNull()
@@ -191,7 +191,7 @@ describe('GoTrueClient', () => {
       // vreify the deferred has been reset and successive calls can be made
       // @ts-expect-error 'Allow access to private _callRefreshToken()'
       const { session: session3, error: error3 } = await authWithSession._callRefreshToken(
-        session?.refresh_token
+        session!.refresh_token
       )
 
       expect(error3).toBeNull()
