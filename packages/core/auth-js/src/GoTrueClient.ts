@@ -5,7 +5,6 @@ import {
   uuid,
   setItemAsync,
   removeItemAsync,
-  getItemSynchronously,
   getItemAsync,
   Deferred,
 } from './lib/helpers'
@@ -125,7 +124,6 @@ export default class GoTrueClient {
       cookieOptions: settings.cookieOptions,
       fetch: settings.fetch,
     })
-    this._recoverSession()
     this._recoverAndRefresh()
     this._handleVisibilityChange()
 
@@ -718,29 +716,6 @@ export default class GoTrueClient {
   }
 
   /**
-   * Attempts to get the session from LocalStorage
-   * Note: this should never be async (even for React Native), as we need it to return immediately in the constructor.
-   */
-  private _recoverSession() {
-    try {
-      const data = getItemSynchronously(this.localStorage, this.storageKey)
-      if (!data) return null
-      const { currentSession, expiresAt } = data
-      const timeNow = Math.round(Date.now() / 1000)
-
-      if (expiresAt >= timeNow + EXPIRY_MARGIN && currentSession?.user) {
-        // should only save the session when it's coming from localStorage
-        // if the user has persistSession enabled
-        if (this.persistSession) {
-          this._saveSession(currentSession)
-        }
-      }
-    } catch (error) {
-      console.log('error', error)
-    }
-  }
-
-  /**
    * Recovers the session from LocalStorage and refreshes
    * Note: this method is async to accommodate for AsyncStorage e.g. in React native.
    */
@@ -778,8 +753,6 @@ export default class GoTrueClient {
         console.log('Current session is missing data.')
         this._removeSession()
       } else {
-        // should be handled on _recoverSession method already
-        // But we still need the code here to accommodate for AsyncStorage e.g. in React native
         if (this.persistSession) {
           this._saveSession(currentSession)
         }

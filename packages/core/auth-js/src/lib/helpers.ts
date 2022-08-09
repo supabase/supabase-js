@@ -67,18 +67,6 @@ export const getItemAsync = async (storage: SupportedStorage, key: string): Prom
   }
 }
 
-export const getItemSynchronously = (storage: SupportedStorage, key: string): any | null => {
-  const value = isBrowser() && storage?.getItem(key)
-  if (!value || typeof value !== 'string') {
-    return null
-  }
-  try {
-    return JSON.parse(value)
-  } catch {
-    return value
-  }
-}
-
 export const removeItemAsync = async (storage: SupportedStorage, key: string): Promise<void> => {
   isBrowser() && (await storage?.removeItem(key))
 }
