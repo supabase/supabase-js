@@ -1,30 +1,12 @@
 import { RealtimeChannel, RealtimeClient, Transformers } from '@supabase/realtime-js'
-import { SupabaseRealtimePayload } from './types'
 
-export class SupabaseRealtimeClient {
+export class SupabaseRealtimeChannel {
   socket: RealtimeClient
   channel: RealtimeChannel
 
-  constructor(socket: RealtimeClient, name: string, opts: { [key: string]: any } = {}) {
+  constructor(name: string, opts: { [key: string]: any } = {}, socket: RealtimeClient) {
     this.socket = socket
     this.channel = socket.channel(`realtime:${name}`, opts) as RealtimeChannel
-  }
-
-  private getPayloadRecords(payload: any) {
-    const records = {
-      new: {},
-      old: {},
-    }
-
-    if (payload.type === 'INSERT' || payload.type === 'UPDATE') {
-      records.new = Transformers.convertChangeData(payload.columns, payload.record)
-    }
-
-    if (payload.type === 'UPDATE' || payload.type === 'DELETE') {
-      records.old = Transformers.convertChangeData(payload.columns, payload.old_record)
-    }
-
-    return records
   }
 
   /**
@@ -87,5 +69,70 @@ export class SupabaseRealtimeClient {
       .receive('timeout', () => callback('RETRYING_AFTER_TIMEOUT'))
 
     return this.channel
+  }
+
+  presenceList() {
+    return this.channel.presence.list()
+  }
+
+  send(
+    payload: { type: string; [key: string]: any },
+    opts: { [key: string]: any } = {}
+  ): Promise<['ok' | 'timeout', number]> {
+    return new Promise((resolve) => {
+      const now = performance.now()
+      const timeout = opts.timeout || this.channel.timeout
+
+      this.channel
+        .push(payload.type, payload, timeout)
+        .receive('ok', () => {
+          const diff = performance.now() - now
+          resolve(['ok', diff])
+        })
+        .receive('timeout', () => {
+          resolve(['timeout', timeout])
+        })
+    })
+  }
+
+  async track(
+    payload: { [key: string]: any },
+    opts: { [key: string]: any } = {}
+  ): Promise<['ok' | 'timeout', number]> {
+    return await this.send(
+      {
+        type: 'presence',
+        event: 'track',
+        payload,
+      },
+      opts
+    )
+  }
+
+  async untrack(opts: { [key: string]: any } = {}): Promise<['ok' | 'timeout', number]> {
+    return await this.send(
+      {
+        type: 'presence',
+        event: 'untrack',
+      },
+      opts
+    )
+  }
+
+  private getPayloadRecords(payload: any) {
+    const records = {
+      new: {},
+      old: {},
+    }
+
+    if (payload.type === 'INSERT' || payload.type === 'UPDATE') {
+      records.new = Transformers.convertChangeData(payload.columns, payload.record)
+    }
+
+    if (payload.type === 'UPDATE' || payload.type === 'DELETE') {
+      records.old = Transformers.convertChangeData(payload.columns, payload.old_record)
+    }
+
+    return records
   }
 }
