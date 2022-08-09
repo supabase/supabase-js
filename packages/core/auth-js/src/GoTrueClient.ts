@@ -366,7 +366,7 @@ export default class GoTrueClient {
     if (this.persistSession) {
       const maybeSession = await getItemAsync(this.localStorage, this.storageKey)
 
-      if (this._isValidSession(maybeSession)) {
+      if (this._doesSessionExist(maybeSession)) {
         currentSession = maybeSession
       } else {
         await this._removeSession()
@@ -605,7 +605,7 @@ export default class GoTrueClient {
     }
   }
 
-  private _isValidSession(maybeSession: unknown): maybeSession is Session {
+  private _doesSessionExist(maybeSession: unknown): maybeSession is Session {
     const isValidSession =
       typeof maybeSession === 'object' &&
       maybeSession !== null &&
@@ -762,7 +762,7 @@ export default class GoTrueClient {
   private async _recoverAndRefresh() {
     try {
       const currentSession = await getItemAsync(this.localStorage, this.storageKey)
-      if (!this._isValidSession(currentSession)) {
+      if (!this._doesSessionExist(currentSession)) {
         await this._removeSession()
         return null
       }
