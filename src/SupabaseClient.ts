@@ -11,7 +11,7 @@ import { DEFAULT_HEADERS } from './lib/constants'
 import { fetchWithAuth } from './lib/fetch'
 import { stripTrailingSlash } from './lib/helpers'
 import { SupabaseAuthClient } from './lib/SupabaseAuthClient'
-import { SupabaseRealtimeClient } from './lib/SupabaseRealtimeClient'
+import { SupabaseRealtimeChannel } from './lib/SupabaseRealtimeChannel'
 import { Fetch, GenericSchema, SupabaseClientOptions, SupabaseAuthClientOptions } from './lib/types'
 
 const DEFAULT_OPTIONS = {
@@ -180,12 +180,12 @@ export default class SupabaseClient<
   /**
    * Creates a channel with Broadcast and Presence.
    */
-  channel(name: string, opts?: { [key: string]: any }): SupabaseRealtimeClient {
+  channel(name: string, opts?: { [key: string]: any }): SupabaseRealtimeChannel {
     if (!this.realtime.isConnected()) {
       this.realtime.connect()
     }
 
-    return new SupabaseRealtimeClient(this.realtime, name, opts)
+    return new SupabaseRealtimeChannel(name, opts, this.realtime)
   }
 
   /**
