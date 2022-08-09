@@ -51,12 +51,13 @@ CREATE FUNCTION public.void_func()
 RETURNS void AS $$
 $$ LANGUAGE SQL;
 
-create extension postgis;
+create schema extensions;
+create extension postgis schema extensions;
 
 create table public.shops (
   id        int primary key
 , address   text
-, shop_geom geometry(POINT, 4326)
+, shop_geom extensions.geometry(POINT, 4326)
 );
 
 -- SECOND SCHEMA USERS

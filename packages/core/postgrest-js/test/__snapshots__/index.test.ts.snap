@@ -1186,7 +1186,7 @@ Object {
 exports[`rpc returns void 1`] = `
 Object {
   "count": undefined,
-  "data": null,
+  "data": undefined,
   "error": undefined,
   "status": 204,
   "statusText": "No Content",

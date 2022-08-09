@@ -25,7 +25,7 @@
     "build:module": "tsc -p tsconfig.module.json",
     "test": "run-s db:clean db:run && jest --runInBand; run-s db:clean",
     "test:update": "run-s db:clean db:run && jest --runInBand --updateSnapshot; run-s db:clean",
-    "db:clean": "cd test/db && docker-compose down",
+    "db:clean": "cd test/db && docker-compose down --volumes",
     "db:run": "cd test/db && docker-compose up --detach && wait-for-localhost 3000",
     "docs": "typedoc src/index.ts",
     "docs:json": "typedoc --json docs/spec.json src/index.ts"

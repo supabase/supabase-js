@@ -97,123 +97,109 @@ test('abort signal', async () => {
   `)
 })
 
-test('geojson', async () => {
-  const res = await postgrest
-    .from('shops')
-    .select()
-    .geojson()
-    .then((res) => res.data)
+// test('geojson', async () => {
+//   const res = await postgrest.from('shops').select().geojson()
+//   expect(res).toMatchInlineSnapshot()
+// })
+
+test('explain', async () => {
+  const res = await postgrest.from('users').select().explain()
   expect(res).toMatchInlineSnapshot(`
     Object {
-      "features": Array [
+      "count": undefined,
+      "data": Array [
         Object {
-          "geometry": Object {
-            "coordinates": Array [
-              -71.10044,
-              42.373695,
+          "Plan": Object {
+            "Async Capable": false,
+            "Node Type": "Aggregate",
+            "Parallel Aware": false,
+            "Partial Mode": "Simple",
+            "Plan Rows": 1,
+            "Plan Width": 112,
+            "Plans": Array [
+              Object {
+                "Alias": "users",
+                "Async Capable": false,
+                "Node Type": "Seq Scan",
+                "Parallel Aware": false,
+                "Parent Relationship": "Outer",
+                "Plan Rows": 510,
+                "Plan Width": 132,
+                "Relation Name": "users",
+                "Startup Cost": 0,
+                "Total Cost": 15.1,
+              },
             ],
-            "type": "Point",
+            "Startup Cost": 17.65,
+            "Strategy": "Plain",
+            "Total Cost": 17.68,
           },
-          "properties": Object {
-            "address": "1369 Cambridge St",
-            "id": 1,
-          },
-          "type": "Feature",
         },
       ],
-      "type": "FeatureCollection",
+      "error": undefined,
+      "status": 200,
+      "statusText": "OK",
     }
   `)
 })
 
-test('explain', async () => {
-  const res = await postgrest
-    .from('users')
-    .select()
-    .explain()
-    .then((res) => res.data)
-  expect(res).toMatchInlineSnapshot(`
-    Array [
-      Object {
-        "Plan": Object {
-          "Node Type": "Aggregate",
-          "Parallel Aware": false,
-          "Partial Mode": "Simple",
-          "Plan Rows": 1,
-          "Plan Width": 112,
-          "Plans": Array [
-            Object {
-              "Alias": "users",
-              "Node Type": "Seq Scan",
-              "Parallel Aware": false,
-              "Parent Relationship": "Outer",
-              "Plan Rows": 510,
-              "Plan Width": 132,
-              "Relation Name": "users",
-              "Startup Cost": 0,
-              "Total Cost": 15.1,
-            },
-          ],
-          "Startup Cost": 17.65,
-          "Strategy": "Plain",
-          "Total Cost": 17.68,
-        },
-      },
-    ]
-  `)
-})
-
 test('explain with options', async () => {
-  const res = await postgrest
-    .from('users')
-    .select()
-    .explain({ verbose: true, settings: true })
-    .then((res) => res.data)
+  const res = await postgrest.from('users').select().explain({ verbose: true, settings: true })
   expect(res).toMatchInlineSnapshot(`
-    Array [
-      Object {
-        "Plan": Object {
-          "Node Type": "Aggregate",
-          "Output": Array [
-            "NULL::bigint",
-            "count(ROW(users.username, users.data, users.age_range, users.status, users.catchphrase))",
-            "(COALESCE(json_agg(ROW(users.username, users.data, users.age_range, users.status, users.catchphrase)), '[]'::json))::character varying",
-            "NULLIF(current_setting('response.headers'::text, true), ''::text)",
-            "NULLIF(current_setting('response.status'::text, true), ''::text)",
-          ],
-          "Parallel Aware": false,
-          "Partial Mode": "Simple",
-          "Plan Rows": 1,
-          "Plan Width": 112,
-          "Plans": Array [
-            Object {
-              "Alias": "users",
-              "Node Type": "Seq Scan",
-              "Output": Array [
-                "users.username",
-                "users.data",
-                "users.age_range",
-                "users.status",
-                "users.catchphrase",
-              ],
-              "Parallel Aware": false,
-              "Parent Relationship": "Outer",
-              "Plan Rows": 510,
-              "Plan Width": 132,
-              "Relation Name": "users",
-              "Schema": "public",
-              "Startup Cost": 0,
-              "Total Cost": 15.1,
-            },
-          ],
-          "Startup Cost": 17.65,
-          "Strategy": "Plain",
-          "Total Cost": 17.68,
+    Object {
+      "count": undefined,
+      "data": Array [
+        Object {
+          "Plan": Object {
+            "Async Capable": false,
+            "Node Type": "Aggregate",
+            "Output": Array [
+              "NULL::bigint",
+              "count(ROW(users.username, users.data, users.age_range, users.status, users.catchphrase))",
+              "(COALESCE(json_agg(ROW(users.username, users.data, users.age_range, users.status, users.catchphrase)), '[]'::json))::character varying",
+              "NULLIF(current_setting('response.headers'::text, true), ''::text)",
+              "NULLIF(current_setting('response.status'::text, true), ''::text)",
+            ],
+            "Parallel Aware": false,
+            "Partial Mode": "Simple",
+            "Plan Rows": 1,
+            "Plan Width": 112,
+            "Plans": Array [
+              Object {
+                "Alias": "users",
+                "Async Capable": false,
+                "Node Type": "Seq Scan",
+                "Output": Array [
+                  "users.username",
+                  "users.data",
+                  "users.age_range",
+                  "users.status",
+                  "users.catchphrase",
+                ],
+                "Parallel Aware": false,
+                "Parent Relationship": "Outer",
+                "Plan Rows": 510,
+                "Plan Width": 132,
+                "Relation Name": "users",
+                "Schema": "public",
+                "Startup Cost": 0,
+                "Total Cost": 15.1,
+              },
+            ],
+            "Startup Cost": 17.65,
+            "Strategy": "Plain",
+            "Total Cost": 17.68,
+          },
+          "Query Identifier": -8888327821402777000,
+          "Settings": Object {
+            "effective_cache_size": "128MB",
+            "search_path": "\\"public\\", \\"extensions\\"",
+          },
         },
-        "Settings": Object {
-          "search_path": "\\\"public\\\", \\\"public\\\"",
-        },
-      },
-    ]
+      ],
+      "error": undefined,
+      "status": 200,
+      "statusText": "OK",
+    }
   `)
 })
