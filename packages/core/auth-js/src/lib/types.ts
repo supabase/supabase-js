@@ -272,3 +272,11 @@ type PromisifyMethods<T> = {
 }
 
 export type SupportedStorage = PromisifyMethods<Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>>
+
+export type CallRefreshTokenResult = {
+  session: Session
+  error: null
+} | {
+  session: null
+  error: AuthError
+}

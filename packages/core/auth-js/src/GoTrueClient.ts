@@ -44,17 +44,10 @@ import type {
   SignInWithPasswordlessCredentials,
   AuthResponse,
   OAuthResponse,
+  CallRefreshTokenResult,
 } from './lib/types'
 
 polyfillGlobalThis() // Make "globalThis" available
-
-type CallRefreshTokenResult = {
-  session: Session
-  error: null
-} | {
-  session: null
-  error: AuthError
-}
 
 const DEFAULT_OPTIONS = {
   url: GOTRUE_URL,
