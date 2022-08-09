@@ -1,4 +1,4 @@
-import { AuthError } from '../src/lib/errors';
+import { AuthError } from '../src/lib/errors'
 import {
   authClient as auth,
   authClientWithSession as authWithSession,
@@ -117,10 +117,12 @@ describe('GoTrueClient', () => {
 
     test('_callRefreshToken() should resolve all pending refresh requests and reset deferred upon AuthError', async () => {
       const { email, password } = mockUserCredentials()
-      refreshAccessTokenSpy.mockImplementationOnce(() => Promise.resolve({
-        session: null,
-        error: new AuthError('Something did not work as expected')
-      }))
+      refreshAccessTokenSpy.mockImplementationOnce(() =>
+        Promise.resolve({
+          session: null,
+          error: new AuthError('Something did not work as expected'),
+        })
+      )
 
       const { error, session } = await authWithSession.signUp({
         email,
@@ -131,8 +133,12 @@ describe('GoTrueClient', () => {
       expect(session).not.toBeNull()
 
       const [{ session: session1, error: error1 }, { session: session2, error: error2 }] =
-        // @ts-expect-error 'Allow access to private _callRefreshToken()'
-        await Promise.all([authWithSession._callRefreshToken(session?.refresh_token), authWithSession._callRefreshToken(session?.refresh_token)])
+        await Promise.all([
+          // @ts-expect-error 'Allow access to private _callRefreshToken()'
+          authWithSession._callRefreshToken(session?.refresh_token),
+          // @ts-expect-error 'Allow access to private _callRefreshToken()'
+          authWithSession._callRefreshToken(session?.refresh_token),
+        ])
 
       expect(error1).toHaveProperty('message')
       expect(error2).toHaveProperty('message')
@@ -143,14 +149,16 @@ describe('GoTrueClient', () => {
 
       // vreify the deferred has been reset and successive calls can be made
       // @ts-expect-error 'Allow access to private _callRefreshToken()'
-      const { session: session3, error: error3 } = await authWithSession._callRefreshToken(session?.refresh_token)
+      const { session: session3, error: error3 } = await authWithSession._callRefreshToken(
+        session?.refresh_token
+      )
 
       expect(error3).toBeNull()
       expect(session3).toHaveProperty('access_token')
     })
 
     test('_callRefreshToken() should reject all pending refresh requests and reset deferred upon any non AuthError', async () => {
-      const mockError = new Error('Something did not work as expected');
+      const mockError = new Error('Something did not work as expected')
 
       const { email, password } = mockUserCredentials()
       refreshAccessTokenSpy.mockImplementationOnce(() => Promise.reject(mockError))
@@ -164,8 +172,12 @@ describe('GoTrueClient', () => {
       expect(session).not.toBeNull()
 
       const [error1, error2] =
-        // @ts-expect-error 'Allow access to private _callRefreshToken()'
-        await Promise.allSettled([authWithSession._callRefreshToken(session?.refresh_token), authWithSession._callRefreshToken(session?.refresh_token)])
+        await Promise.allSettled([
+          // @ts-expect-error 'Allow access to private _callRefreshToken()'
+          authWithSession._callRefreshToken(session?.refresh_token),
+          // @ts-expect-error 'Allow access to private _callRefreshToken()'
+          authWithSession._callRefreshToken(session?.refresh_token),
+        ])
 
       expect(error1.status).toEqual('rejected')
       expect(error2.status).toEqual('rejected')
@@ -178,7 +190,9 @@ describe('GoTrueClient', () => {
 
       // vreify the deferred has been reset and successive calls can be made
       // @ts-expect-error 'Allow access to private _callRefreshToken()'
-      const { session: session3, error: error3 } = await authWithSession._callRefreshToken(session?.refresh_token)
+      const { session: session3, error: error3 } = await authWithSession._callRefreshToken(
+        session?.refresh_token
+      )
 
       expect(error3).toBeNull()
       expect(session3).toHaveProperty('access_token')

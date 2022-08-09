@@ -803,14 +803,14 @@ export default class GoTrueClient {
       return result
     } catch (error) {
       if (isAuthError(error)) {
-        const result = { session: null, error };
+        const result = { session: null, error }
 
-        this.refreshingDeferred?.resolve(result);
+        this.refreshingDeferred?.resolve(result)
 
-        return result;
+        return result
       }
 
-      this.refreshingDeferred?.reject(error);
+      this.refreshingDeferred?.reject(error)
       throw error
     } finally {
       this.refreshingDeferred = null
