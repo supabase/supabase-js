@@ -147,7 +147,7 @@ describe('GoTrueClient', () => {
 
       expect(refreshAccessTokenSpy).toBeCalledTimes(1)
 
-      // vreify the deferred has been reset and successive calls can be made
+      // verify the deferred has been reset and successive calls can be made
       // @ts-expect-error 'Allow access to private _callRefreshToken()'
       const { session: session3, error: error3 } = await authWithSession._callRefreshToken(
         session!.refresh_token
