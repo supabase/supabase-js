@@ -107,20 +107,14 @@ export default class RealtimeChannel {
       const {
         configs: { broadcast, presence },
       } = this.params
+      const realtime = this.bindings
+        .filter((b) => b.type === 'realtime')
+        .map((b) => b.filter)
       const configs = {
         broadcast,
         presence,
-        realtime: [],
+        realtime,
       }
-
-      this.bindings.reduce((acc, binding) => {
-        const { type } = binding
-        if (type === 'realtime') {
-          acc[type] = acc[type].push(binding.filter)
-        }
-
-        return acc
-      }, configs)
 
       this.updateJoinPayload({ configs })
 
