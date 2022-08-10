@@ -19,7 +19,6 @@ const DEFAULT_OPTIONS = {
   autoRefreshToken: true,
   persistSession: true,
   detectSessionInUrl: true,
-  multiTab: true,
   headers: DEFAULT_HEADERS,
 }
 

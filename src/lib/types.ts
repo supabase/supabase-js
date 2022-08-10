@@ -40,10 +40,6 @@ export type SupabaseClientOptions<SchemaName> = {
      * Options passed to the gotrue-js instance
      */
     cookieOptions?: SupabaseAuthClientOptions['cookieOptions']
-    /**
-     * Allows to enable/disable multi-tab/window events
-     */
-    multiTab?: boolean
   }
   /**
    * Options passed to the realtime-js instance
