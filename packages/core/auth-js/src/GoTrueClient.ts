@@ -44,6 +44,7 @@ import type {
   SignInWithPasswordlessCredentials,
   AuthResponse,
   OAuthResponse,
+  CallRefreshTokenResult,
 } from './lib/types'
 
 polyfillGlobalThis() // Make "globalThis" available
@@ -82,10 +83,7 @@ export default class GoTrueClient {
   protected refreshTokenTimer?: ReturnType<typeof setTimeout>
   // eslint-disable-next-line @typescript-eslint/no-inferrable-types
   protected networkRetries: number = 0
-  protected refreshingDeferred: Deferred<{
-    session: Session
-    error: null
-  }> | null = null
+  protected refreshingDeferred: Deferred<CallRefreshTokenResult> | null = null
 
   /**
    * Create a new client for use in the browser.
@@ -779,17 +777,14 @@ export default class GoTrueClient {
     }
   }
 
-  private async _callRefreshToken(refreshToken: string) {
-    try {
-      // refreshing is already in progress
-      if (this.refreshingDeferred) {
-        return await this.refreshingDeferred.promise
-      }
+  private async _callRefreshToken(refreshToken: string): Promise<CallRefreshTokenResult> {
+    // refreshing is already in progress
+    if (this.refreshingDeferred) {
+      return this.refreshingDeferred.promise
+    }
 
-      this.refreshingDeferred = new Deferred<{
-        session: Session
-        error: null
-      }>()
+    try {
+      this.refreshingDeferred = new Deferred<CallRefreshTokenResult>()
 
       if (!refreshToken) {
         throw new AuthSessionMissingError()
@@ -804,15 +799,21 @@ export default class GoTrueClient {
       const result = { session, error: null }
 
       this.refreshingDeferred.resolve(result)
-      this.refreshingDeferred = null
 
       return result
     } catch (error) {
       if (isAuthError(error)) {
-        return { session: null, error }
+        const result = { session: null, error }
+
+        this.refreshingDeferred?.resolve(result)
+
+        return result
       }
 
+      this.refreshingDeferred?.reject(error)
       throw error
+    } finally {
+      this.refreshingDeferred = null
     }
   }
 
