@@ -15,11 +15,14 @@ import { SupabaseRealtimeChannel } from './lib/SupabaseRealtimeChannel'
 import { Fetch, GenericSchema, SupabaseClientOptions, SupabaseAuthClientOptions } from './lib/types'
 
 const DEFAULT_OPTIONS = {
-  schema: 'public',
-  autoRefreshToken: true,
-  persistSession: true,
-  detectSessionInUrl: true,
-  headers: DEFAULT_HEADERS,
+  auth: {
+    autoRefreshToken: true,
+    persistSession: true,
+    detectSessionInUrl: true,
+  },
+  general: {
+    schema: 'public',
+  },
 }
 
 /**
@@ -50,7 +53,6 @@ export default class SupabaseClient<
   protected storageKey: string
   protected fetch?: Fetch
   protected changedAccessToken: string | undefined
-  protected shouldThrowOnError: boolean
 
   protected headers: {
     [key: string]: string
@@ -93,12 +95,15 @@ export default class SupabaseClient<
     const defaultStorageKey = `sb-${new URL(this.authUrl).hostname.split('.')[0]}-auth-token`
     this.storageKey = options?.auth?.storageKey ?? defaultStorageKey
 
-    const settings = { ...DEFAULT_OPTIONS, ...options, storageKey: this.storageKey }
+    const settings = { ...DEFAULT_OPTIONS?.general, ...options }
 
     this.headers = { ...DEFAULT_HEADERS, ...options?.headers }
-    this.shouldThrowOnError = settings.shouldThrowOnError || false
 
-    this.auth = this._initSupabaseAuthClient(settings.auth || {}, this.headers, settings.fetch)
+    this.auth = this._initSupabaseAuthClient(
+      settings.auth || DEFAULT_OPTIONS.auth,
+      this.headers,
+      settings.fetch
+    )
     this.fetch = fetchWithAuth(supabaseKey, this._getAccessToken.bind(this), settings.fetch)
 
     this.realtime = this._initRealtimeClient({ headers: this.headers, ...settings.realtime })
@@ -106,7 +111,7 @@ export default class SupabaseClient<
       headers: this.headers,
       schema: options?.db?.schema,
       fetch: this.fetch,
-      throwOnError: this.shouldThrowOnError,
+      throwOnError: options?.db?.shouldThrowOnError || false,
     })
 
     this._listenForAuthEvents()
