@@ -50,7 +50,6 @@ export default class SupabaseClient<
   protected storageKey: string
   protected fetch?: Fetch
   protected changedAccessToken: string | undefined
-  protected shouldThrowOnError: boolean
 
   protected headers: {
     [key: string]: string
@@ -96,7 +95,6 @@ export default class SupabaseClient<
     const settings = { ...DEFAULT_OPTIONS, ...options, storageKey: this.storageKey }
 
     this.headers = { ...DEFAULT_HEADERS, ...options?.headers }
-    this.shouldThrowOnError = settings.shouldThrowOnError || false
 
     this.auth = this._initSupabaseAuthClient(settings.auth || {}, this.headers, settings.fetch)
     this.fetch = fetchWithAuth(supabaseKey, this._getAccessToken.bind(this), settings.fetch)
@@ -106,7 +104,6 @@ export default class SupabaseClient<
       headers: this.headers,
       schema: options?.db?.schema,
       fetch: this.fetch,
-      throwOnError: this.shouldThrowOnError,
     })
 
     this._listenForAuthEvents()
