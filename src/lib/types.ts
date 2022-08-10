@@ -57,10 +57,6 @@ export type SupabaseClientOptions<SchemaName> = {
    * Optional headers for initializing the client.
    */
   headers?: Record<string, string>
-  /**
-   * Throw errors, instead of returning them.
-   */
-  shouldThrowOnError?: boolean
 }
 
 export type SupabaseRealtimePayload<T> = {
