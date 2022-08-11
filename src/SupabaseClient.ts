@@ -6,7 +6,7 @@ import {
   PostgrestQueryBuilder,
 } from '@supabase/postgrest-js'
 import { RealtimeChannel, RealtimeClient, RealtimeClientOptions } from '@supabase/realtime-js'
-import { SupabaseStorageClient } from '@supabase/storage-js'
+import { StorageClient as SupabaseStorageClient } from '@supabase/storage-js'
 import { DEFAULT_HEADERS } from './lib/constants'
 import { fetchWithAuth } from './lib/fetch'
 import { stripTrailingSlash } from './lib/helpers'

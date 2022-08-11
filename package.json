@@ -41,7 +41,7 @@
     "@supabase/gotrue-js": "^1.23.0-next.14",
     "@supabase/postgrest-js": "^1.0.0-next.2",
     "@supabase/realtime-js": "^1.8.0-next.13",
-    "@supabase/storage-js": "^1.8.0-next.3",
+    "@supabase/storage-js": "^1.8.0-next.4",
     "cross-fetch": "^3.1.5"
   },
   "devDependencies": {
