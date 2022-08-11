@@ -12,8 +12,8 @@
     "build": "run-s clean format build:*",
     "build:main": "tsc -p tsconfig.json",
     "build:module": "tsc -p tsconfig.module.json",
-    "docs": "typedoc src/index.ts",
-    "docs:json": "typedoc --json docs/spec.json --excludeExternals src/index.ts",
+    "docs": "typedoc src/index.ts src/types.ts --excludePrivate --excludeProtected",
+    "docs:json": "typedoc --json docs/spec.json --excludeExternals src/index.ts src/types.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
@@ -43,7 +43,7 @@
     "rimraf": "^3.0.2",
     "semantic-release": "^19.0.2",
     "semantic-release-plugin-update-version-in-files": "^1.1.0",
-    "typedoc": "^0.22.13",
+    "typedoc": "^0.23.10",
     "typescript": "^4.6.2"
   },
   "publishConfig": {
