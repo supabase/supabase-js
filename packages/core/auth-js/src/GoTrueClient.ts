@@ -78,7 +78,7 @@ export default class GoTrueClient {
 
   protected autoRefreshToken: boolean
   protected persistSession: boolean
-  protected localStorage: SupportedStorage
+  protected storage: SupportedStorage
   protected stateChangeEmitters: Map<string, Subscription> = new Map()
   protected refreshTokenTimer?: ReturnType<typeof setTimeout>
   // eslint-disable-next-line @typescript-eslint/no-inferrable-types
@@ -105,7 +105,7 @@ export default class GoTrueClient {
     detectSessionInUrl?: boolean
     autoRefreshToken?: boolean
     persistSession?: boolean
-    localStorage?: SupportedStorage
+    storage?: SupportedStorage
     multiTab?: boolean
     cookieOptions?: CookieOptions
     fetch?: Fetch
@@ -115,7 +115,7 @@ export default class GoTrueClient {
     this.storageKey = settings.storageKey
     this.autoRefreshToken = settings.autoRefreshToken
     this.persistSession = settings.persistSession
-    this.localStorage = settings.localStorage || globalThis.localStorage
+    this.storage = settings.storage || globalThis.localStorage
     this.api = new GoTrueApi({
       url: settings.url,
       headers: settings.headers,
@@ -360,7 +360,7 @@ export default class GoTrueClient {
     let currentSession: Session | null = null
 
     if (this.persistSession) {
-      const maybeSession = await getItemAsync(this.localStorage, this.storageKey)
+      const maybeSession = await getItemAsync(this.storage, this.storageKey)
 
       if (this._doesSessionExist(maybeSession)) {
         currentSession = maybeSession
@@ -734,7 +734,7 @@ export default class GoTrueClient {
    */
   private async _recoverAndRefresh() {
     try {
-      const currentSession = await getItemAsync(this.localStorage, this.storageKey)
+      const currentSession = await getItemAsync(this.storage, this.storageKey)
       if (!this._doesSessionExist(currentSession)) {
         await this._removeSession()
         return null
@@ -846,12 +846,12 @@ export default class GoTrueClient {
   }
 
   private _persistSession(currentSession: Session) {
-    setItemAsync(this.localStorage, this.storageKey, currentSession)
+    setItemAsync(this.storage, this.storageKey, currentSession)
   }
 
   private async _removeSession() {
     if (this.persistSession) {
-      removeItemAsync(this.localStorage, this.storageKey)
+      removeItemAsync(this.storage, this.storageKey)
     } else {
       this.inMemorySession = null
     }
