@@ -20,8 +20,13 @@ const DEFAULT_OPTIONS = {
     persistSession: true,
     detectSessionInUrl: true,
   },
-  general: {
+  global: {
+    timeoutMs: 500,
+    headers: DEFAULT_HEADERS,
+  },
+  db: {
     schema: 'public',
+    shouldThrowOnError: false,
   },
 }
 
@@ -95,23 +100,21 @@ export default class SupabaseClient<
     const defaultStorageKey = `sb-${new URL(this.authUrl).hostname.split('.')[0]}-auth-token`
     this.storageKey = options?.auth?.storageKey ?? defaultStorageKey
 
-    const settings = { ...DEFAULT_OPTIONS?.general, ...options }
+    const settings = { ...DEFAULT_OPTIONS?.global, ...options }
+    const authSettings = Object.assign(DEFAULT_OPTIONS.global, DEFAULT_OPTIONS.auth, settings.auth)
+    const dbSettings = Object.assign(DEFAULT_OPTIONS.global, DEFAULT_OPTIONS.db, settings.db)
 
-    this.headers = { ...DEFAULT_HEADERS, ...options?.headers }
+    this.headers = { ...DEFAULT_OPTIONS?.global?.headers, ...options?.headers }
 
-    this.auth = this._initSupabaseAuthClient(
-      settings.auth || DEFAULT_OPTIONS.auth,
-      this.headers,
-      settings.fetch
-    )
-    this.fetch = fetchWithAuth(supabaseKey, this._getAccessToken.bind(this), settings.fetch)
+    this.auth = this._initSupabaseAuthClient(authSettings, this.headers, this.fetch)
+    this.fetch = fetchWithAuth(supabaseKey, this._getAccessToken.bind(this), this.fetch)
 
     this.realtime = this._initRealtimeClient({ headers: this.headers, ...settings.realtime })
     this.rest = new PostgrestClient(`${_supabaseUrl}/rest/v1`, {
       headers: this.headers,
-      schema: options?.db?.schema,
+      schema: dbSettings.schema,
       fetch: this.fetch,
-      throwOnError: options?.db?.shouldThrowOnError || false,
+      throwOnError: dbSettings.shouldThrowOnError,
     })
 
     this._listenForAuthEvents()
