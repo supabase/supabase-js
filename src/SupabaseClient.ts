@@ -99,14 +99,15 @@ export default class SupabaseClient<
     const defaultStorageKey = `sb-${new URL(this.authUrl).hostname.split('.')[0]}-auth-token`
     this.storageKey = options?.auth?.storageKey ?? defaultStorageKey
 
-    const settings = { ...DEFAULT_OPTIONS?.global, ...options }
-    const authSettings = Object.assign(DEFAULT_OPTIONS.global, DEFAULT_OPTIONS.auth, settings.auth)
-    const dbSettings = Object.assign(DEFAULT_OPTIONS.global, DEFAULT_OPTIONS.db, settings.db)
+    const settings = Object.assign(DEFAULT_OPTIONS, options)
 
-    this.headers = settings.headers
+    const authSettings = settings.auth
+    const dbSettings = settings.db
 
-    this.auth = this._initSupabaseAuthClient(authSettings, this.headers, this.fetch)
-    this.fetch = fetchWithAuth(supabaseKey, this._getAccessToken.bind(this), this.fetch)
+    this.headers = settings.global.headers
+
+    this.auth = this._initSupabaseAuthClient(authSettings, this.headers, settings.global.fetch)
+    this.fetch = fetchWithAuth(supabaseKey, this._getAccessToken.bind(this), settings.global.fetch)
 
     this.realtime = this._initRealtimeClient({ headers: this.headers, ...settings.realtime })
     this.rest = new PostgrestClient(`${_supabaseUrl}/rest/v1`, {
