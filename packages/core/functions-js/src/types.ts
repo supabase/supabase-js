@@ -8,7 +8,7 @@ export enum ResponseType {
 }
 
 export type FunctionInvokeOptions = {
-  /** object representing the headers to send with the request 1 */
+  /** object representing the headers to send with the request */
   headers?: { [key: string]: string }
   /** the body of the request */
   body?: Blob | BufferSource | FormData | URLSearchParams | ReadableStream<Uint8Array> | string
