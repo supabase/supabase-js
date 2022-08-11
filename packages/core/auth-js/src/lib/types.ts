@@ -1,4 +1,4 @@
-import { AuthError } from "./errors"
+import { AuthError } from './errors'
 
 export type Provider =
   | 'apple'
@@ -26,25 +26,37 @@ export type AuthChangeEvent =
   | 'USER_UPDATED'
   | 'USER_DELETED'
 
-export type AuthResponse = {
-  user: User | null
-  session: Session | null
-  error: null
-} | {
-  user: null
-  session: null
-  error: AuthError
-} 
+export type AuthResponse =
+  | {
+      data: {
+        user: User | null
+        session: Session | null
+      }
+      error: null
+    }
+  | {
+      data: {
+        user: null
+        session: null
+      }
+      error: AuthError
+    }
 
-export type OAuthResponse = {
-  provider: Provider
-  url: string
-  error: null
-} | {
-  provider: Provider
-  url: null
-  error: AuthError
-}
+export type OAuthResponse =
+  | {
+      data: {
+        provider: Provider
+        url: string
+      }
+      error: null
+    }
+  | {
+      data: {
+        provider: Provider
+        url: null
+      }
+      error: AuthError
+    }
 export interface Session {
   provider_token?: string | null
   access_token: string
@@ -203,25 +215,29 @@ export interface UserCredentials {
   provider?: Provider
   oidc?: OpenIDConnectCredentials
 }
-export type SignInWithPasswordCredentials = {
-  email: string
-  password: string
-  options?: SignInWithPasswordOptions
-} | {
-  phone: string
-  password: string
-  options?: SignInWithPasswordOptions
-}
+export type SignInWithPasswordCredentials =
+  | {
+      email: string
+      password: string
+      options?: SignInWithPasswordOptions
+    }
+  | {
+      phone: string
+      password: string
+      options?: SignInWithPasswordOptions
+    }
 export interface SignInWithPasswordOptions {
   captchaToken?: string
 }
-export type SignInWithPasswordlessCredentials = {
-  email: string
-  options?: SignInWithPasswordlessOptions
-} | {
-  phone: string
-  options?: SignInWithPasswordlessOptions
-}
+export type SignInWithPasswordlessCredentials =
+  | {
+      email: string
+      options?: SignInWithPasswordlessOptions
+    }
+  | {
+      phone: string
+      options?: SignInWithPasswordlessOptions
+    }
 export interface SignInWithPasswordlessOptions {
   // The redirect url embedded in the email link
   emailRedirectTo?: string
