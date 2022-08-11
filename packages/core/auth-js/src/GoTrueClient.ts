@@ -187,10 +187,10 @@ export default class GoTrueClient {
         user = data as User
       }
 
-      return { user, session, error: null }
+      return { data: { user, session }, error: null }
     } catch (error) {
       if (isAuthError(error)) {
-        return { user: null, session: null, error }
+        return { data: { user: null, session: null }, error }
       }
 
       throw error
@@ -227,7 +227,7 @@ export default class GoTrueClient {
       )
     } catch (error) {
       if (isAuthError(error)) {
-        return { user: null, session: null, error }
+        return { data: { user: null, session: null }, error }
       }
 
       throw error
@@ -269,7 +269,7 @@ export default class GoTrueClient {
           shouldCreateUser: options?.shouldCreateUser,
           captchaToken: options?.captchaToken,
         })
-        return { user: null, session: null, error }
+        return { data: { user: null, session: null }, error }
       }
       if ('phone' in credentials) {
         const { phone, options } = credentials
@@ -277,12 +277,12 @@ export default class GoTrueClient {
           shouldCreateUser: options?.shouldCreateUser,
           captchaToken: options?.captchaToken,
         })
-        return { user: null, session: null, error }
+        return { data: { user: null, session: null }, error }
       }
       throw new AuthInvalidCredentialsError('You must provide either an email or phone number.')
     } catch (error) {
       if (isAuthError(error)) {
-        return { user: null, session: null, error }
+        return { data: { user: null, session: null }, error }
       }
 
       throw error
@@ -330,10 +330,10 @@ export default class GoTrueClient {
         user = data as User
       }
 
-      return { user, session, error: null }
+      return { data: { user, session }, error: null }
     } catch (error) {
       if (isAuthError(error)) {
-        return { user: null, session: null, error }
+        return { data: { user: null, session: null }, error }
       }
 
       throw error
@@ -623,17 +623,17 @@ export default class GoTrueClient {
       const { data, error } = await this.api.signInWithEmail(email, password, {
         captchaToken: options.captchaToken,
       })
-      if (error || !data) return { user: null, session: null, error }
+      if (error || !data) return { data: { user: null, session: null }, error }
 
       if (data?.user?.confirmed_at || data?.user?.email_confirmed_at) {
         this._saveSession(data)
         this._notifyAllSubscribers('SIGNED_IN', data)
       }
 
-      return { user: data.user, session: data, error: null }
+      return { data: { user: data.user, session: data }, error: null }
     } catch (error) {
       if (isAuthError(error)) {
-        return { user: null, session: null, error }
+        return { data: { user: null, session: null }, error }
       }
 
       throw error
@@ -651,17 +651,17 @@ export default class GoTrueClient {
       const { session, error } = await this.api.signInWithPhone(phone, password, {
         captchaToken: options.captchaToken,
       })
-      if (error || !session) return { session: null, user: null, error }
+      if (error || !session) return { data: { session: null, user: null }, error }
 
       if (session?.user?.phone_confirmed_at) {
         this._saveSession(session)
         this._notifyAllSubscribers('SIGNED_IN', session)
       }
 
-      return { session, user: session.user, error: null }
+      return { data: { session, user: session.user }, error: null }
     } catch (error) {
       if (isAuthError(error)) {
-        return { session: null, user: null, error }
+        return { data: { session: null, user: null }, error }
       }
 
       throw error
@@ -685,7 +685,7 @@ export default class GoTrueClient {
     if (isBrowser()) {
       window.location.href = url
     }
-    return { provider, url, error: null }
+    return { data: { provider, url }, error: null }
   }
 
   private async _handleOpenIDConnectSignIn({
