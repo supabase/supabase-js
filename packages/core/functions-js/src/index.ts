@@ -32,10 +32,6 @@ export class FunctionsClient {
   /**
    * Invokes a function
    * @param functionName - the name of the function to invoke
-   * @param invokeOptions - object with the following properties
-   * `headers`: object representing the headers to send with the request
-   * `body`: the body of the request
-   * `responseType`: how the response should be parsed. The default is `json`
    */
   async invoke<T = any>(
     functionName: string,

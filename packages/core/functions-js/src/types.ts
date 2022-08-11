@@ -8,7 +8,10 @@ export enum ResponseType {
 }
 
 export type FunctionInvokeOptions = {
+  /** object representing the headers to send with the request 1 */
   headers?: { [key: string]: string }
+  /** the body of the request */
   body?: Blob | BufferSource | FormData | URLSearchParams | ReadableStream<Uint8Array> | string
+  /** how the response should be parsed. The default is `json` */
   responseType?: keyof typeof ResponseType
 }
