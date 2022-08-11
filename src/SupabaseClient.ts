@@ -21,7 +21,6 @@ const DEFAULT_OPTIONS = {
     detectSessionInUrl: true,
   },
   global: {
-    timeoutMs: 500,
     headers: DEFAULT_HEADERS,
   },
   db: {
@@ -104,7 +103,7 @@ export default class SupabaseClient<
     const authSettings = Object.assign(DEFAULT_OPTIONS.global, DEFAULT_OPTIONS.auth, settings.auth)
     const dbSettings = Object.assign(DEFAULT_OPTIONS.global, DEFAULT_OPTIONS.db, settings.db)
 
-    this.headers = { ...DEFAULT_OPTIONS?.global?.headers, ...options?.headers }
+    this.headers = settings.headers
 
     this.auth = this._initSupabaseAuthClient(authSettings, this.headers, this.fetch)
     this.fetch = fetchWithAuth(supabaseKey, this._getAccessToken.bind(this), this.fetch)
