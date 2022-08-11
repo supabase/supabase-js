@@ -111,7 +111,10 @@ describe('GoTrueApi', () => {
 
     test('getUser() fetches a user by their access_token', async () => {
       const { email, password } = mockUserCredentials()
-      const { error: initialError, session } = await authClientWithSession.signUp({
+      const {
+        error: initialError,
+        data: { session },
+      } = await authClientWithSession.signUp({
         email,
         password,
       })
@@ -218,12 +221,13 @@ describe('GoTrueApi', () => {
 
     test('modify confirm email using updateUserById()', async () => {
       const { email, password } = mockUserCredentials()
-      const { error: createError, user } = await clientApiAutoConfirmOffSignupsEnabledClient.signUp(
-        {
-          email,
-          password,
-        }
-      )
+      const {
+        error: createError,
+        data: { user },
+      } = await clientApiAutoConfirmOffSignupsEnabledClient.signUp({
+        email,
+        password,
+      })
 
       expect(createError).toBeNull()
       expect(user).not.toBeUndefined()
@@ -336,7 +340,10 @@ describe('GoTrueApi', () => {
     test('resetPasswordForEmail() sends an email for password recovery', async () => {
       const { email, password } = mockUserCredentials()
 
-      const { error: initialError, session } = await authClientWithSession.signUp({
+      const {
+        error: initialError,
+        data: { session },
+      } = await authClientWithSession.signUp({
         email,
         password,
       })
@@ -368,7 +375,10 @@ describe('GoTrueApi', () => {
     test('refreshAccessToken()', async () => {
       const { email, password } = mockUserCredentials()
 
-      const { error: initialError, session } = await authClientWithSession.signUp({
+      const {
+        error: initialError,
+        data: { session },
+      } = await authClientWithSession.signUp({
         email,
         password,
       })
@@ -420,7 +430,10 @@ describe('GoTrueApi', () => {
       test('signOut() with an valid access token', async () => {
         const { email, password } = mockUserCredentials()
 
-        const { error: initialError, session } = await authClientWithSession.signUp({
+        const {
+          error: initialError,
+          data: { session },
+        } = await authClientWithSession.signUp({
           email,
           password,
         })
@@ -490,7 +503,10 @@ describe('GoTrueApi', () => {
       test('verifyOTP() with non-existent phone number', async () => {
         const { phone } = mockUserCredentials()
         const otp = mockVerificationOTP()
-        const { user, error } = await clientApiAutoConfirmDisabledClient.verifyOTP({
+        const {
+          data: { user },
+          error,
+        } = await clientApiAutoConfirmDisabledClient.verifyOTP({
           phone: `${phone}`,
           token: otp,
         })
@@ -502,7 +518,10 @@ describe('GoTrueApi', () => {
       test('verifyOTP() with invalid phone number', async () => {
         const { phone } = mockUserCredentials()
         const otp = mockVerificationOTP()
-        const { user, error } = await clientApiAutoConfirmDisabledClient.verifyOTP({
+        const {
+          data: { user },
+          error,
+        } = await clientApiAutoConfirmDisabledClient.verifyOTP({
           phone: `${phone}-invalid`,
           token: otp,
         })

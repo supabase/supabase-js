@@ -22,7 +22,10 @@ describe('GoTrueClient', () => {
     test('setSession should return no error', async () => {
       const { email, password } = mockUserCredentials()
 
-      const { error, session } = await authWithSession.signUp({
+      const {
+        error,
+        data: { session },
+      } = await authWithSession.signUp({
         email,
         password,
       })
@@ -39,7 +42,10 @@ describe('GoTrueClient', () => {
     test('getSession() should return the currentUser session', async () => {
       const { email, password } = mockUserCredentials()
 
-      const { error, session } = await authWithSession.signUp({
+      const {
+        error,
+        data: { session },
+      } = await authWithSession.signUp({
         email,
         password,
       })
@@ -58,7 +64,10 @@ describe('GoTrueClient', () => {
     test('getSession() should refresh the session and return a new access token', async () => {
       const { email, password } = mockUserCredentials()
 
-      const { error, session } = await authWithSession.signUp({
+      const {
+        error,
+        data: { session },
+      } = await authWithSession.signUp({
         email,
         password,
       })
@@ -78,7 +87,7 @@ describe('GoTrueClient', () => {
       }
 
       // wait 1 seconds before calling getSession()
-      await new Promise(r => setTimeout(r, 1000))
+      await new Promise((r) => setTimeout(r, 1000))
       const { session: userSession, error: userError } = await authWithSession.getSession()
 
       expect(userError).toBeNull()
@@ -91,7 +100,10 @@ describe('GoTrueClient', () => {
     test('refresh should only happen once', async () => {
       const { email, password } = mockUserCredentials()
 
-      const { error, session } = await authWithSession.signUp({
+      const {
+        error,
+        data: { session },
+      } = await authWithSession.signUp({
         email,
         password,
       })
@@ -100,8 +112,12 @@ describe('GoTrueClient', () => {
       expect(session).not.toBeNull()
 
       const [{ session: session1, error: error1 }, { session: session2, error: error2 }] =
-        // @ts-expect-error 'Allow access to private _callRefreshToken()'
-        await Promise.all([authWithSession._callRefreshToken(session?.refresh_token), authWithSession._callRefreshToken(session?.refresh_token)])
+        await Promise.all([
+          // @ts-expect-error 'Allow access to private _callRefreshToken()'
+          authWithSession._callRefreshToken(session?.refresh_token),
+          // @ts-expect-error 'Allow access to private _callRefreshToken()'
+          authWithSession._callRefreshToken(session?.refresh_token),
+        ])
 
       expect(error1).toBeNull()
       expect(error2).toBeNull()
@@ -124,7 +140,10 @@ describe('GoTrueClient', () => {
         })
       )
 
-      const { error, session } = await authWithSession.signUp({
+      const {
+        error,
+        data: { session },
+      } = await authWithSession.signUp({
         email,
         password,
       })
@@ -163,7 +182,10 @@ describe('GoTrueClient', () => {
       const { email, password } = mockUserCredentials()
       refreshAccessTokenSpy.mockImplementationOnce(() => Promise.reject(mockError))
 
-      const { error, session } = await authWithSession.signUp({
+      const {
+        error,
+        data: { session },
+      } = await authWithSession.signUp({
         email,
         password,
       })
@@ -171,13 +193,12 @@ describe('GoTrueClient', () => {
       expect(error).toBeNull()
       expect(session).not.toBeNull()
 
-      const [error1, error2] =
-        await Promise.allSettled([
-          // @ts-expect-error 'Allow access to private _callRefreshToken()'
-          authWithSession._callRefreshToken(session?.refresh_token),
-          // @ts-expect-error 'Allow access to private _callRefreshToken()'
-          authWithSession._callRefreshToken(session?.refresh_token),
-        ])
+      const [error1, error2] = await Promise.allSettled([
+        // @ts-expect-error 'Allow access to private _callRefreshToken()'
+        authWithSession._callRefreshToken(session?.refresh_token),
+        // @ts-expect-error 'Allow access to private _callRefreshToken()'
+        authWithSession._callRefreshToken(session?.refresh_token),
+      ])
 
       expect(error1.status).toEqual('rejected')
       expect(error2.status).toEqual('rejected')
@@ -209,7 +230,10 @@ describe('GoTrueClient', () => {
   test('signUp() with email', async () => {
     const { email, password } = mockUserCredentials()
 
-    const { error, session, user } = await auth.signUp({
+    const {
+      error,
+      data: { session, user },
+    } = await auth.signUp({
       email,
       password,
     })
@@ -225,7 +249,10 @@ describe('GoTrueClient', () => {
     test('signUp() when phone sign up missing provider account', async () => {
       const { phone, password } = mockUserCredentials()
 
-      const { error, session, user } = await phoneClient.signUp({
+      const {
+        error,
+        data: { session, user },
+      } = await phoneClient.signUp({
         phone,
         password,
       })
@@ -240,7 +267,10 @@ describe('GoTrueClient', () => {
     test('signUp() with phone', async () => {
       const { phone, password } = mockUserCredentials()
 
-      const { error, session, user } = await phoneClient.signUp({
+      const {
+        error,
+        data: { session, user },
+      } = await phoneClient.signUp({
         phone,
         password,
       })
@@ -266,7 +296,10 @@ describe('GoTrueClient', () => {
     })
 
     // sign up again
-    const { error, session, user } = await auth.signUp({
+    const {
+      error,
+      data: { session, user },
+    } = await auth.signUp({
       email,
       password,
     })
@@ -285,7 +318,10 @@ describe('GoTrueClient', () => {
       password,
     })
 
-    const { error, session, user } = await auth.signInWithPassword({
+    const {
+      error,
+      data: { session, user },
+    } = await auth.signInWithPassword({
       email,
       password,
     })
@@ -329,7 +365,10 @@ describe('GoTrueClient', () => {
   test('signIn() with refreshToken', async () => {
     const { email, password } = mockUserCredentials()
 
-    const { error: initialError, session: initialSession } = await authWithSession.signUp({
+    const {
+      error: initialError,
+      data: { session: initialSession },
+    } = await authWithSession.signUp({
       email,
       password,
     })
@@ -337,7 +376,6 @@ describe('GoTrueClient', () => {
     expect(initialError).toBeNull()
     expect(initialSession).not.toBeNull()
 
-    const refreshToken = initialSession?.refresh_token
     const { session, error } = await authWithSession.getSession()
 
     expect(error).toBeNull()
@@ -401,7 +439,9 @@ describe('User management', () => {
   test('Get user', async () => {
     const { email, password } = mockUserCredentials()
 
-    const { session } = await authWithSession.signUp({
+    const {
+      data: { session },
+    } = await authWithSession.signUp({
       email,
       password,
     })
@@ -490,7 +530,9 @@ describe('User management', () => {
       password,
     })
 
-    const { user } = await authWithSession.signInWithPassword({
+    const {
+      data: { user },
+    } = await authWithSession.signInWithPassword({
       email,
       password,
     })
@@ -506,7 +548,10 @@ describe('User management', () => {
   test('signIn() with the wrong password', async () => {
     const { email, password } = mockUserCredentials()
 
-    const { error, session } = await auth.signInWithPassword({
+    const {
+      error,
+      data: { session },
+    } = await auth.signInWithPassword({
       email,
       password: password + '-wrong',
     })
@@ -519,7 +564,10 @@ describe('User management', () => {
 
 describe('The auth client can signin with third-party oAuth providers', () => {
   test('signIn() with Provider', async () => {
-    const { error, url, provider } = await auth.signInWithOAuth({
+    const {
+      error,
+      data: { url, provider },
+    } = await auth.signInWithOAuth({
       provider: 'google',
     })
     expect(error).toBeNull()
@@ -528,43 +576,46 @@ describe('The auth client can signin with third-party oAuth providers', () => {
   })
 
   test('signIn() with Provider can append a redirectUrl ', async () => {
-    const { error, url, provider } = await auth.signInWithOAuth(
-      {
-        provider: 'google',
-        options: {
-          redirectTo: 'https://localhost:9000/welcome',
-        }
+    const {
+      error,
+      data: { url, provider },
+    } = await auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: 'https://localhost:9000/welcome',
       },
-    )
+    })
     expect(error).toBeNull()
     expect(url).toBeTruthy()
     expect(provider).toBeTruthy()
   })
 
   test('signIn() with Provider can append scopes', async () => {
-    const { error, url, provider } = await auth.signInWithOAuth(
-      {
-        provider: 'github',
-        options: {
-          scopes: 'repo'
-        }
+    const {
+      error,
+      data: { url, provider },
+    } = await auth.signInWithOAuth({
+      provider: 'github',
+      options: {
+        scopes: 'repo',
       },
-    )
+    })
     expect(error).toBeNull()
     expect(url).toBeTruthy()
     expect(provider).toBeTruthy()
   })
 
   test('signIn() with Provider can append multiple options', async () => {
-    const { error, url, provider } = await auth.signInWithOAuth(
-      {
-        provider: 'github',
-        options: {
-          redirectTo: 'https://localhost:9000/welcome',
-          scopes: 'repo',
-        }
+    const {
+      error,
+      data: { url, provider },
+    } = await auth.signInWithOAuth({
+      provider: 'github',
+      options: {
+        redirectTo: 'https://localhost:9000/welcome',
+        scopes: 'repo',
       },
-    )
+    })
     expect(error).toBeNull()
     expect(url).toBeTruthy()
     expect(provider).toBeTruthy()
@@ -592,7 +643,10 @@ describe('The auth client can signin with third-party oAuth providers', () => {
     test('User can sign up', async () => {
       const { email, password } = mockUserCredentials()
 
-      const { error, user } = await signUpEnabledClient.signUp({
+      const {
+        error,
+        data: { user },
+      } = await signUpEnabledClient.signUp({
         email,
         password,
       })
@@ -608,7 +662,10 @@ describe('The auth client can signin with third-party oAuth providers', () => {
     test('User cannot sign up', async () => {
       const { email, password } = mockUserCredentials()
 
-      const { error, user } = await signUpDisabledClient.signUp({
+      const {
+        error,
+        data: { user },
+      } = await signUpDisabledClient.signUp({
         email,
         password,
       })
