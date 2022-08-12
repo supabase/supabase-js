@@ -21,6 +21,7 @@ const DEFAULT_GLOBAL_OPTIONS = {
 const DEFAULT_DB_OPTIONS = {
   db: {
     schema: 'public',
+    shouldThrowOnError: false,
   },
 }
 
