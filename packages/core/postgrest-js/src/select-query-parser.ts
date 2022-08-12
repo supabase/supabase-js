@@ -117,6 +117,7 @@ type ParseIdentifier<Input extends string> = ReadLetters<Input>
  * - `*`
  * - `field`
  * - `field(nodes)`
+ * - `field!hint(nodes)`
  * - `renamed_field:field`
  * - `renamed_field:field(nodes)`
  * - `renamed_field:field!hint(nodes)`
@@ -160,6 +161,18 @@ type ParseNode<Input extends string> = Input extends ''
         : // `renamed_field:field`
           [{ name: Name; original: OriginalName }, EatWhitespace<Remainder>]
       : ParseIdentifier<EatWhitespace<Remainder>>
+    : EatWhitespace<Remainder> extends `!${infer Remainder}`
+    ? ParseIdentifier<EatWhitespace<Remainder>> extends [infer _Hint, `${infer Remainder}`]
+      ? ParseEmbeddedResource<EatWhitespace<Remainder>> extends [
+          infer _Fields,
+          `${infer Remainder}`
+        ]
+        ? // `field!hint(nodes)`
+          [{ name: Name; foreignTable: true }, EatWhitespace<Remainder>]
+        : ParseEmbeddedResource<EatWhitespace<Remainder>> extends ParserError<string>
+        ? ParseEmbeddedResource<EatWhitespace<Remainder>>
+        : ParserError<'Expected embedded resource after `!hint`'>
+      : ParserError<'Expected identifier after `!`'>
     : ParseEmbeddedResource<EatWhitespace<Remainder>> extends [infer _Fields, `${infer Remainder}`]
     ? // `field(nodes)`
       [{ name: Name; foreignTable: true }, EatWhitespace<Remainder>]
