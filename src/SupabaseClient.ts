@@ -261,7 +261,7 @@ export default class SupabaseClient<
       autoRefreshToken,
       persistSession,
       detectSessionInUrl,
-      localStorage,
+      storage,
       cookieOptions,
       storageKey,
     }: SupabaseAuthClientOptions,
@@ -279,7 +279,7 @@ export default class SupabaseClient<
       autoRefreshToken,
       persistSession,
       detectSessionInUrl,
-      localStorage,
+      storage,
       fetch,
       cookieOptions,
     })
