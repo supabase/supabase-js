@@ -11,7 +11,6 @@ import { DEFAULT_HEADERS } from './lib/constants'
 import { fetchWithAuth } from './lib/fetch'
 import { stripTrailingSlash, applySettingDefaults } from './lib/helpers'
 import { SupabaseAuthClient } from './lib/SupabaseAuthClient'
-import { SupabaseRealtimeChannel } from './lib/SupabaseRealtimeChannel'
 import { Fetch, GenericSchema, SupabaseClientOptions, SupabaseAuthClientOptions } from './lib/types'
 
 const DEFAULT_GLOBAL_OPTIONS = {
@@ -125,11 +124,6 @@ export default class SupabaseClient<
     })
 
     this._listenForAuthEvents()
-
-    // In the future we might allow the user to pass in a logger to receive these events.
-    // this.realtime.onOpen(() => console.log('OPEN'))
-    // this.realtime.onClose(() => console.log('CLOSED'))
-    // this.realtime.onError((e: Error) => console.log('Socket error', e))
   }
 
   /**
@@ -194,86 +188,44 @@ export default class SupabaseClient<
   }
 
   /**
-   * Creates a channel with Broadcast and Presence.
-   */
-  channel(name: string, opts?: { [key: string]: any }): SupabaseRealtimeChannel {
-    if (!this.realtime.isConnected()) {
-      this.realtime.connect()
-    }
-
-    return new SupabaseRealtimeChannel(name, opts, this.realtime)
-  }
-
-  /**
-   * Closes and removes all channels and returns a list of removed
-   * channels and their errors.
-   */
-  async removeAllChannels(): Promise<
-    { data: { channels: RealtimeChannel }; error: Error | null }[]
-  > {
-    const allChans: RealtimeChannel[] = this.getChannels().slice()
-    const allChanPromises = allChans.map((chan) => this.removeChannel(chan))
-    const allRemovedChans = await Promise.all(allChanPromises)
-
-    return allRemovedChans.map(({ error }, i) => {
-      return {
-        data: { channels: allChans[i] },
-        error,
-      }
-    })
-  }
-
-  /**
-   * Closes and removes a channel and returns the number of open channels.
+   * Creates a Realtime channel with Broadcast, Presence, and Postgres Changes.
    *
-   * @param channel The channel you want to close and remove.
+   * @param {string} name - The name of the Realtime channel.
+   * @param {Object} opts - The options to pass to the Realtime channel.
+   *
    */
-  async removeChannel(
-    channel: RealtimeChannel
-  ): Promise<{ data: { openChannels: number }; error: Error | null }> {
-    const { error } = await this._closeChannel(channel)
-    const allChans: RealtimeChannel[] = this.getChannels()
-    const openChanCount = allChans.filter((chan) => chan.isJoined()).length
+  channel(name: string, opts: { [key: string]: any } = {}): RealtimeChannel {
+    return this.realtime.channel(name, opts)
+  }
 
-    if (allChans.length === 0) await this.realtime.disconnect()
+  /**
+   * Returns all Realtime channels.
+   */
+  getChannels(): RealtimeChannel[] {
+    return this.realtime.getChannels()
+  }
 
-    return { data: { openChannels: openChanCount }, error }
+  /**
+   * Unsubscribes and removes Realtime channel from Realtime client.
+   *
+   * @param {RealtimeChannel} channel - The name of the Realtime channel.
+   *
+   */
+  removeChannel(channel: RealtimeChannel): Promise<'ok' | 'timed out' | 'error'> {
+    return this.realtime.removeChannel(channel)
+  }
+
+  /**
+   * Unsubscribes and removes all Realtime channels from Realtime client.
+   */
+  removeAllChannels(): Promise<('ok' | 'timed out' | 'error')[]> {
+    return this.realtime.removeAllChannels()
   }
 
   private async _getAccessToken() {
     const { session } = await this.auth.getSession()
 
     return session?.access_token ?? null
-  }
-
-  private async _closeChannel(channel: RealtimeChannel): Promise<{ error: Error | null }> {
-    let error = null
-
-    if (!channel.isClosed()) {
-      const { error: unsubError } = await this._unsubscribeChannel(channel)
-      error = unsubError
-    }
-
-    this.realtime.remove(channel)
-
-    return { error }
-  }
-
-  private _unsubscribeChannel(channel: RealtimeChannel): Promise<{ error: Error | null }> {
-    return new Promise((resolve) => {
-      channel
-        .unsubscribe()
-        .receive('ok', () => resolve({ error: null }))
-        .receive('error', (error: Error) => resolve({ error }))
-        .receive('timeout', () => resolve({ error: new Error('timed out') }))
-    })
-  }
-
-  /**
-   * Returns an array of all your channels.
-   */
-  getChannels(): RealtimeChannel[] {
-    return this.realtime.channels as RealtimeChannel[]
   }
 
   private _initSupabaseAuthClient(
@@ -305,10 +257,10 @@ export default class SupabaseClient<
     })
   }
 
-  private _initRealtimeClient(options?: RealtimeClientOptions) {
+  private _initRealtimeClient(options: RealtimeClientOptions) {
     return new RealtimeClient(this.realtimeUrl, {
       ...options,
-      params: { ...{ apikey: this.supabaseKey, vsndate: '2022' }, ...options?.params },
+      params: { ...{ apikey: this.supabaseKey }, ...options?.params },
     })
   }
 
@@ -329,7 +281,7 @@ export default class SupabaseClient<
       this.changedAccessToken !== token
     ) {
       // Token has changed
-      this.realtime.setAuth(token!)
+      this.realtime.setAuth(token ?? null)
 
       this.changedAccessToken = token
     } else if (event === 'SIGNED_OUT' || event === 'USER_DELETED') {
