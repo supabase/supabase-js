@@ -14,12 +14,20 @@ import { SupabaseAuthClient } from './lib/SupabaseAuthClient'
 import { SupabaseRealtimeChannel } from './lib/SupabaseRealtimeChannel'
 import { Fetch, GenericSchema, SupabaseClientOptions, SupabaseAuthClientOptions } from './lib/types'
 
-const DEFAULT_OPTIONS = {
+const DEFAULT_OPTIONS: SupabaseClientOptions<'public'> = {
+  headers: DEFAULT_HEADERS,
+}
+
+const DEFAULT_DB_OPTIONS = {
   schema: 'public',
+}
+
+const DEFAULT_REALTIME_OPTIONS: RealtimeClientOptions = {}
+
+const DEFAULT_AUTH_OPTIONS: SupabaseAuthClientOptions = {
   autoRefreshToken: true,
   persistSession: true,
   detectSessionInUrl: true,
-  headers: DEFAULT_HEADERS,
 }
 
 /**
@@ -90,9 +98,33 @@ export default class SupabaseClient<
     }
     // default storage key uses the supabase project ref as a namespace
     const defaultStorageKey = `sb-${new URL(this.authUrl).hostname.split('.')[0]}-auth-token`
-    this.storageKey = options?.auth?.storageKey ?? defaultStorageKey
 
-    const settings = { ...DEFAULT_OPTIONS, ...options, storageKey: this.storageKey }
+    const {
+      db: dbOptions,
+      auth: authOptions,
+      realtime: realtimeOptions,
+      ...restOptions
+    } = options || {}
+
+    const settings = {
+      ...DEFAULT_OPTIONS,
+      ...restOptions,
+      db: {
+        ...DEFAULT_DB_OPTIONS,
+        ...dbOptions,
+      },
+      auth: {
+        ...DEFAULT_AUTH_OPTIONS,
+        storageKey: defaultStorageKey,
+        ...authOptions,
+      },
+      realtime: {
+        ...DEFAULT_REALTIME_OPTIONS,
+        ...realtimeOptions,
+      },
+    }
+
+    this.storageKey = settings.auth.storageKey
 
     this.headers = { ...DEFAULT_HEADERS, ...options?.headers }
 
