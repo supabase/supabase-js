@@ -6,7 +6,7 @@ import {
   PostgrestQueryBuilder,
 } from '@supabase/postgrest-js'
 import { RealtimeChannel, RealtimeClient, RealtimeClientOptions } from '@supabase/realtime-js'
-import { SupabaseStorageClient } from '@supabase/storage-js'
+import { StorageClient as SupabaseStorageClient } from '@supabase/storage-js'
 import { DEFAULT_HEADERS } from './lib/constants'
 import { fetchWithAuth } from './lib/fetch'
 import { stripTrailingSlash } from './lib/helpers'
@@ -297,7 +297,7 @@ export default class SupabaseClient<
       autoRefreshToken,
       persistSession,
       detectSessionInUrl,
-      localStorage,
+      storage,
       cookieOptions,
       storageKey,
     }: SupabaseAuthClientOptions,
@@ -315,7 +315,7 @@ export default class SupabaseClient<
       autoRefreshToken,
       persistSession,
       detectSessionInUrl,
-      localStorage,
+      storage,
       fetch,
       cookieOptions,
     })

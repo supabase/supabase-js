@@ -39,7 +39,7 @@ export type SupabaseClientOptions<SchemaName> = {
     /**
      * A storage provider. Used to store the logged in session.
      */
-    localStorage?: SupabaseAuthClientOptions['localStorage']
+    storage?: SupabaseAuthClientOptions['storage']
     /**
      * Options passed to the gotrue-js instance
      */
