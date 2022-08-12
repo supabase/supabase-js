@@ -3,3 +3,4 @@ import GoTrueClient from './GoTrueClient'
 
 export { GoTrueApi, GoTrueClient }
 export * from './lib/types'
+export * from './lib/errors'
