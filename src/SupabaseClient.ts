@@ -21,7 +21,6 @@ const DEFAULT_GLOBAL_OPTIONS = {
 const DEFAULT_DB_OPTIONS = {
   db: {
     schema: 'public',
-    shouldThrowOnError: false,
   },
 }
 
@@ -101,7 +100,6 @@ export default class SupabaseClient<
     }
     // default storage key uses the supabase project ref as a namespace
     const defaultStorageKey = `sb-${new URL(this.authUrl).hostname.split('.')[0]}-auth-token`
-    this.storageKey = options?.auth?.storageKey ?? defaultStorageKey
 
     const {
       db: dbOptions,
@@ -130,7 +128,8 @@ export default class SupabaseClient<
       },
     }
 
-    this.headers = { ...DEFAULT_HEADERS, ...globalOptions?.headers }
+    this.storageKey = settings.auth.storageKey
+    this.headers = settings.global.headers
 
     this.auth = this._initSupabaseAuthClient(settings.auth, this.headers, settings.global.fetch)
     this.fetch = fetchWithAuth(supabaseKey, this._getAccessToken.bind(this), settings.global.fetch)
@@ -138,7 +137,7 @@ export default class SupabaseClient<
     this.realtime = this._initRealtimeClient({ headers: this.headers, ...settings.realtime })
     this.rest = new PostgrestClient(`${_supabaseUrl}/rest/v1`, {
       headers: this.headers,
-      schema: settings?.db?.schema,
+      schema: settings.db?.schema,
       fetch: this.fetch,
     })
 

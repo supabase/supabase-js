@@ -13,10 +13,6 @@ export type SupabaseClientOptions<SchemaName> = {
    */
   db?: {
     schema?: SchemaName
-    /**
-     * Throw errors, instead of returning them.
-     */
-    shouldThrowOnError?: boolean
   }
 
   auth?: {
