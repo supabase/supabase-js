@@ -19,9 +19,7 @@ const DEFAULT_GLOBAL_OPTIONS = {
 }
 
 const DEFAULT_DB_OPTIONS = {
-  db: {
-    schema: 'public',
-  },
+  schema: 'public',
 }
 
 const DEFAULT_AUTH_OPTIONS: SupabaseAuthClientOptions = {
@@ -100,39 +98,24 @@ export default class SupabaseClient<
     }
     // default storage key uses the supabase project ref as a namespace
     const defaultStorageKey = `sb-${new URL(this.authUrl).hostname.split('.')[0]}-auth-token`
-
-    const {
-      db: dbOptions,
-      auth: authOptions,
-      realtime: realtimeOptions,
-      global: globalOptions,
-    } = options || {}
-
-    const settings = {
-      db: {
-        ...DEFAULT_DB_OPTIONS,
-        ...dbOptions,
-      },
-      auth: {
-        ...DEFAULT_AUTH_OPTIONS,
-        storageKey: defaultStorageKey,
-        ...authOptions,
-      },
-      realtime: {
-        ...DEFAULT_REALTIME_OPTIONS,
-        ...realtimeOptions,
-      },
-      global: {
-        ...DEFAULT_GLOBAL_OPTIONS,
-        ...globalOptions,
-      },
+    const DEFAULTS = {
+      db: DEFAULT_DB_OPTIONS,
+      realtime: DEFAULT_REALTIME_OPTIONS,
+      auth: { ...DEFAULT_AUTH_OPTIONS, storageKey: defaultStorageKey },
+      global: DEFAULT_GLOBAL_OPTIONS,
     }
 
-    this.storageKey = settings.auth.storageKey
-    this.headers = settings.global.headers
+    const settings = this._applySettingDefaults(options || {}, DEFAULTS)
 
-    this.auth = this._initSupabaseAuthClient(settings.auth, this.headers, settings.global.fetch)
-    this.fetch = fetchWithAuth(supabaseKey, this._getAccessToken.bind(this), settings.global.fetch)
+    this.storageKey = settings.auth?.storageKey ?? ''
+    this.headers = settings.global?.headers ?? {}
+
+    this.auth = this._initSupabaseAuthClient(
+      settings?.auth || {},
+      this.headers,
+      settings.global?.fetch
+    )
+    this.fetch = fetchWithAuth(supabaseKey, this._getAccessToken.bind(this), settings.global?.fetch)
 
     this.realtime = this._initRealtimeClient({ headers: this.headers, ...settings.realtime })
     this.rest = new PostgrestClient(`${_supabaseUrl}/rest/v1`, {
@@ -351,6 +334,44 @@ export default class SupabaseClient<
       // Token is removed
       this.realtime.setAuth(this.supabaseKey)
       if (source == 'STORAGE') this.auth.signOut()
+    }
+  }
+
+  // TODO(Joel): Figure out how to properly type this
+  private _applySettingDefaults(
+    options: SupabaseClientOptions<SchemaName>,
+    defaults: any
+  ): SupabaseClientOptions<SchemaName> {
+    const {
+      db: dbOptions,
+      auth: authOptions,
+      realtime: realtimeOptions,
+      global: globalOptions,
+    } = options
+    const {
+      db: DEFAULT_DB_OPTIONS,
+      auth: DEFAULT_AUTH_OPTIONS,
+      realtime: DEFAULT_REALTIME_OPTIONS,
+      global: DEFAULT_GLOBAL_OPTIONS,
+    } = defaults
+
+    return {
+      db: {
+        ...DEFAULT_DB_OPTIONS,
+        ...dbOptions,
+      },
+      auth: {
+        ...DEFAULT_AUTH_OPTIONS,
+        ...authOptions,
+      },
+      realtime: {
+        ...DEFAULT_REALTIME_OPTIONS,
+        ...realtimeOptions,
+      },
+      global: {
+        ...DEFAULT_GLOBAL_OPTIONS,
+        ...globalOptions,
+      },
     }
   }
 }
