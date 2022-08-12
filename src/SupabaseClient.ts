@@ -14,20 +14,23 @@ import { SupabaseAuthClient } from './lib/SupabaseAuthClient'
 import { SupabaseRealtimeChannel } from './lib/SupabaseRealtimeChannel'
 import { Fetch, GenericSchema, SupabaseClientOptions, SupabaseAuthClientOptions } from './lib/types'
 
-const DEFAULT_OPTIONS = {
-  auth: {
-    autoRefreshToken: true,
-    persistSession: true,
-    detectSessionInUrl: true,
-  },
-  global: {
-    headers: DEFAULT_HEADERS,
-  },
+const DEFAULT_GLOBAL_OPTIONS = {
+  headers: DEFAULT_HEADERS,
+}
+
+const DEFAULT_DB_OPTIONS = {
   db: {
     schema: 'public',
-    shouldThrowOnError: false,
   },
 }
+
+const DEFAULT_AUTH_OPTIONS: SupabaseAuthClientOptions = {
+  autoRefreshToken: true,
+  persistSession: true,
+  detectSessionInUrl: true,
+}
+
+const DEFAULT_REALTIME_OPTIONS: RealtimeClientOptions = {}
 
 /**
  * Supabase Client.
@@ -99,22 +102,43 @@ export default class SupabaseClient<
     const defaultStorageKey = `sb-${new URL(this.authUrl).hostname.split('.')[0]}-auth-token`
     this.storageKey = options?.auth?.storageKey ?? defaultStorageKey
 
-    const settings = Object.assign(DEFAULT_OPTIONS, options)
+    const {
+      db: dbOptions,
+      auth: authOptions,
+      realtime: realtimeOptions,
+      global: globalOptions,
+    } = options || {}
 
-    const authSettings = settings.auth
-    const dbSettings = settings.db
+    const settings = {
+      db: {
+        ...DEFAULT_DB_OPTIONS,
+        ...dbOptions,
+      },
+      auth: {
+        ...DEFAULT_AUTH_OPTIONS,
+        storageKey: defaultStorageKey,
+        ...authOptions,
+      },
+      realtime: {
+        ...DEFAULT_REALTIME_OPTIONS,
+        ...realtimeOptions,
+      },
+      global: {
+        ...DEFAULT_GLOBAL_OPTIONS,
+        ...globalOptions,
+      },
+    }
 
-    this.headers = settings.global.headers
+    this.headers = { ...DEFAULT_HEADERS, ...globalOptions?.headers }
 
-    this.auth = this._initSupabaseAuthClient(authSettings, this.headers, settings.global.fetch)
+    this.auth = this._initSupabaseAuthClient(settings.auth, this.headers, settings.global.fetch)
     this.fetch = fetchWithAuth(supabaseKey, this._getAccessToken.bind(this), settings.global.fetch)
 
     this.realtime = this._initRealtimeClient({ headers: this.headers, ...settings.realtime })
     this.rest = new PostgrestClient(`${_supabaseUrl}/rest/v1`, {
       headers: this.headers,
-      schema: dbSettings.schema,
+      schema: settings?.db?.schema,
       fetch: this.fetch,
-      throwOnError: dbSettings.shouldThrowOnError,
     })
 
     this._listenForAuthEvents()
