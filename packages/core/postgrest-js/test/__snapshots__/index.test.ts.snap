@@ -1044,21 +1044,6 @@ Object {
 }
 `;
 
-exports[`missing table 1`] = `
-Object {
-  "count": undefined,
-  "data": undefined,
-  "error": Object {
-    "code": "42P01",
-    "details": null,
-    "hint": null,
-    "message": "relation \\"public.missing_table\\" does not exist",
-  },
-  "status": 404,
-  "statusText": "Not Found",
-}
-`;
-
 exports[`on_conflict insert 1`] = `
 Object {
   "count": undefined,

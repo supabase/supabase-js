@@ -153,17 +153,15 @@ describe('basic insert, update, delete', () => {
   })
 })
 
-test('missing table', async () => {
-  // @ts-expect-error missing table
-  const res = await postgrest.from('missing_table').select()
-  expect(res).toMatchSnapshot()
+test('table invalid type', async () => {
+  // @ts-expect-error table invalid type
+  postgrest.from(42)
 })
 
 test('throwOnError throws errors instead of returning them', async () => {
   let isErrorCaught = false
 
   try {
-    // @ts-expect-error missing table
     await postgrest.from('missing_table').select().throwOnError()
   } catch (error) {
     expect(error).toMatchSnapshot()
@@ -217,8 +215,7 @@ test('connection error w/o throwing', async () => {
   const postgrest = new PostgrestClient<Database>('http://foo.invalid')
   let isErrorCaught = false
   await postgrest
-    // @ts-expect-error
-    .from('user')
+    .from('users')
     .select()
     .then(undefined, () => {
       isErrorCaught = true
@@ -230,8 +227,7 @@ test('connection error w/ throwOnError', async () => {
   const postgrest = new PostgrestClient<Database>('http://foo.invalid')
   let isErrorCaught = false
   await postgrest
-    // @ts-expect-error
-    .from('user')
+    .from('users')
     .select()
     .throwOnError()
     .then(undefined, () => {

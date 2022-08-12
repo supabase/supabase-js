@@ -64,9 +64,11 @@ export default class PostgrestClient<
   from<
     TableName extends string & keyof Schema['Tables'],
     Table extends Schema['Tables'][TableName]
-  >(table: TableName): PostgrestQueryBuilder<Table> {
+  >(table: TableName): PostgrestQueryBuilder<Table>
+  from(table: string): PostgrestQueryBuilder<any>
+  from(table: string): PostgrestQueryBuilder<any> {
     const url = new URL(`${this.url}/${table}`)
-    return new PostgrestQueryBuilder<Table>(url, {
+    return new PostgrestQueryBuilder<any>(url, {
       headers: { ...this.headers },
       schema: this.schema,
       fetch: this.fetch,
