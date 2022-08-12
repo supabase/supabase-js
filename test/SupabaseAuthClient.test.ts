@@ -13,7 +13,6 @@ const DEFAULT_OPTIONS = {
   },
   db: {
     schema: 'public',
-    shouldThrowOnError: false,
   },
 }
 const settings = { ...DEFAULT_OPTIONS }
