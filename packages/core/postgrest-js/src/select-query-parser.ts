@@ -118,9 +118,13 @@ type ParseIdentifier<Input extends string> = ReadLetters<Input>
  * - `field`
  * - `field(nodes)`
  * - `field!hint(nodes)`
+ * - `field!inner(nodes)`
+ * - `field!hint!inner(nodes)`
  * - `renamed_field:field`
  * - `renamed_field:field(nodes)`
  * - `renamed_field:field!hint(nodes)`
+ * - `renamed_field:field!inner(nodes)`
+ * - `renamed_field:field!hint!inner(nodes)`
  *
  * TODO: casting operators `::text`, JSON operators `->`, `->>`.
  */
@@ -130,14 +134,63 @@ type ParseNode<Input extends string> = Input extends ''
   Input extends `*${infer Remainder}`
   ? [{ star: true }, EatWhitespace<Remainder>]
   : ParseIdentifier<Input> extends [infer Name, `${infer Remainder}`]
-  ? EatWhitespace<Remainder> extends `:${infer Remainder}`
+  ? EatWhitespace<Remainder> extends `!inner${infer Remainder}`
+    ? ParseEmbeddedResource<EatWhitespace<Remainder>> extends [infer _Fields, `${infer Remainder}`]
+      ? // `field!inner(nodes)`
+        [{ name: Name; foreignTable: true }, EatWhitespace<Remainder>]
+      : ParseEmbeddedResource<EatWhitespace<Remainder>> extends ParserError<string>
+      ? ParseEmbeddedResource<EatWhitespace<Remainder>>
+      : ParserError<'Expected embedded resource after `!inner`'>
+    : EatWhitespace<Remainder> extends `!${infer Remainder}`
+    ? ParseIdentifier<EatWhitespace<Remainder>> extends [infer _Hint, `${infer Remainder}`]
+      ? EatWhitespace<Remainder> extends `!inner${infer Remainder}`
+        ? ParseEmbeddedResource<EatWhitespace<Remainder>> extends [
+            infer _Fields,
+            `${infer Remainder}`
+          ]
+          ? // `field!hint!inner(nodes)`
+            [{ name: Name; foreignTable: true }, EatWhitespace<Remainder>]
+          : ParseEmbeddedResource<EatWhitespace<Remainder>> extends ParserError<string>
+          ? ParseEmbeddedResource<EatWhitespace<Remainder>>
+          : ParserError<'Expected embedded resource after `!inner`'>
+        : ParseEmbeddedResource<EatWhitespace<Remainder>> extends [
+            infer _Fields,
+            `${infer Remainder}`
+          ]
+        ? // `field!hint(nodes)`
+          [{ name: Name; foreignTable: true }, EatWhitespace<Remainder>]
+        : ParseEmbeddedResource<EatWhitespace<Remainder>> extends ParserError<string>
+        ? ParseEmbeddedResource<EatWhitespace<Remainder>>
+        : ParserError<'Expected embedded resource after `!hint`'>
+      : ParserError<'Expected identifier after `!`'>
+    : EatWhitespace<Remainder> extends `:${infer Remainder}`
     ? ParseIdentifier<EatWhitespace<Remainder>> extends [infer OriginalName, `${infer Remainder}`]
-      ? EatWhitespace<Remainder> extends `!${infer Remainder}`
+      ? EatWhitespace<Remainder> extends `!inner${infer Remainder}`
+        ? ParseEmbeddedResource<EatWhitespace<Remainder>> extends [
+            infer _Fields,
+            `${infer Remainder}`
+          ]
+          ? // `renamed_field:field!inner(nodes)`
+            [{ name: Name; foreignTable: true }, EatWhitespace<Remainder>]
+          : ParseEmbeddedResource<EatWhitespace<Remainder>> extends ParserError<string>
+          ? ParseEmbeddedResource<EatWhitespace<Remainder>>
+          : ParserError<'Expected embedded resource after `!inner`'>
+        : EatWhitespace<Remainder> extends `!${infer Remainder}`
         ? ParseIdentifier<EatWhitespace<Remainder>> extends [infer _Hint, `${infer Remainder}`]
-          ? ParseEmbeddedResource<EatWhitespace<Remainder>> extends [
-              infer _Fields,
-              `${infer Remainder}`
-            ]
+          ? EatWhitespace<Remainder> extends `!inner${infer Remainder}`
+            ? ParseEmbeddedResource<EatWhitespace<Remainder>> extends [
+                infer _Fields,
+                `${infer Remainder}`
+              ]
+              ? // `renamed_field:field!hint!inner(nodes)`
+                [{ name: Name; foreignTable: true }, EatWhitespace<Remainder>]
+              : ParseEmbeddedResource<EatWhitespace<Remainder>> extends ParserError<string>
+              ? ParseEmbeddedResource<EatWhitespace<Remainder>>
+              : ParserError<'Expected embedded resource after `!inner`'>
+            : ParseEmbeddedResource<EatWhitespace<Remainder>> extends [
+                infer _Fields,
+                `${infer Remainder}`
+              ]
             ? // `renamed_field:field!hint(nodes)`
               [
                 {
@@ -161,18 +214,6 @@ type ParseNode<Input extends string> = Input extends ''
         : // `renamed_field:field`
           [{ name: Name; original: OriginalName }, EatWhitespace<Remainder>]
       : ParseIdentifier<EatWhitespace<Remainder>>
-    : EatWhitespace<Remainder> extends `!${infer Remainder}`
-    ? ParseIdentifier<EatWhitespace<Remainder>> extends [infer _Hint, `${infer Remainder}`]
-      ? ParseEmbeddedResource<EatWhitespace<Remainder>> extends [
-          infer _Fields,
-          `${infer Remainder}`
-        ]
-        ? // `field!hint(nodes)`
-          [{ name: Name; foreignTable: true }, EatWhitespace<Remainder>]
-        : ParseEmbeddedResource<EatWhitespace<Remainder>> extends ParserError<string>
-        ? ParseEmbeddedResource<EatWhitespace<Remainder>>
-        : ParserError<'Expected embedded resource after `!hint`'>
-      : ParserError<'Expected identifier after `!`'>
     : ParseEmbeddedResource<EatWhitespace<Remainder>> extends [infer _Fields, `${infer Remainder}`]
     ? // `field(nodes)`
       [{ name: Name; foreignTable: true }, EatWhitespace<Remainder>]
