@@ -67,8 +67,8 @@ export default class GoTrueApi {
   /**
    * Generates the relevant login URL for a third-party provider.
    * @param provider One of the providers supported by GoTrue.
-   * @param redirectTo A URL or mobile address to send the user to after they are confirmed.
-   * @param scopes A space-separated list of scopes granted to the OAuth application.
+   * @param options.redirectTo A URL or mobile address to send the user to after they are confirmed.
+   * @param options.scopes A space-separated list of scopes granted to the OAuth application.
    */
   getUrlForProvider(
     provider: Provider,
@@ -96,8 +96,8 @@ export default class GoTrueApi {
    * Creates a new user using their email address.
    * @param email The email address of the user.
    * @param password The password of the user.
-   * @param redirectTo A URL or mobile address to send the user to after they are confirmed.
-   * @param data Optional user metadata.
+   * @param options.redirectTo A URL or mobile address to send the user to after they are confirmed.
+   * @param options.data Optional user metadata.
    *
    * @returns A logged-in session if the server has "autoconfirm" ON
    * @returns A user if the server has "autoconfirm" OFF
@@ -192,7 +192,7 @@ export default class GoTrueApi {
    * Signs up a new user using their phone number and a password.
    * @param phone The phone number of the user.
    * @param password The password of the user.
-   * @param data Optional user metadata.
+   * @param options.data Optional user metadata.
    */
   async signUpWithPhone(
     phone: string,
@@ -241,7 +241,7 @@ export default class GoTrueApi {
    * Logs in an existing user using their phone number and password.
    * @param phone The phone number of the user.
    * @param password The password of the user.
-   * @param captchaToken Verification token received when the user completes the captcha on your site.
+   * @param options.captchaToken Verification token received when the user completes the captcha on your site.
    */
   async signInWithPhone(
     phone: string,
@@ -320,8 +320,8 @@ export default class GoTrueApi {
   /**
    * Sends a magic login link to an email address.
    * @param email The email address of the user.
-   * @param shouldCreateUser A boolean flag to indicate whether to automatically create a user on magiclink / otp sign-ins if the user doesn't exist. Defaults to true.
-   * @param redirectTo A URL or mobile address to send the user to after they are confirmed.
+   * @param options.shouldCreateUser A boolean flag to indicate whether to automatically create a user on magiclink / otp sign-ins if the user doesn't exist. Defaults to true.
+   * @param options.redirectTo A URL or mobile address to send the user to after they are confirmed.
    */
   async sendMagicLinkEmail(
     email: string,
@@ -368,7 +368,7 @@ export default class GoTrueApi {
   /**
    * Sends a mobile OTP via SMS. Will register the account if it doesn't already exist
    * @param phone The user's phone number WITH international prefix
-   * @param shouldCreateUser A boolean flag to indicate whether to automatically create a user on magiclink / otp sign-ins if the user doesn't exist. Defaults to true.
+   * @param options.shouldCreateUser A boolean flag to indicate whether to automatically create a user on magiclink / otp sign-ins if the user doesn't exist. Defaults to true.
    */
   async sendMobileOTP(
     phone: string,
@@ -432,7 +432,7 @@ export default class GoTrueApi {
    * @deprecated Use `verifyOTP` instead!
    * @param phone The user's phone number WITH international prefix
    * @param token token that user was sent to their mobile phone
-   * @param redirectTo A URL or mobile address to send the user to after they are confirmed.
+   * @param options.redirectTo A URL or mobile address to send the user to after they are confirmed.
    */
   async verifyMobileOTP(
     phone: string,
@@ -477,7 +477,7 @@ export default class GoTrueApi {
    * @param phone The user's phone number WITH international prefix
    * @param token token that user was sent to their mobile phone
    * @param type verification type that the otp is generated for
-   * @param redirectTo A URL or mobile address to send the user to after they are confirmed.
+   * @param options.redirectTo A URL or mobile address to send the user to after they are confirmed.
    */
   async verifyOTP(
     { email, phone, token, type = 'sms' }: VerifyOTPParams,
@@ -518,8 +518,8 @@ export default class GoTrueApi {
   /**
    * Sends an invite link to an email address.
    * @param email The email address of the user.
-   * @param redirectTo A URL or mobile address to send the user to after they are confirmed.
-   * @param data Optional user metadata
+   * @param options.redirectTo A URL or mobile address to send the user to after they are confirmed.
+   * @param options.data Optional user metadata
    */
   async inviteUserByEmail(
     email: string,
@@ -559,7 +559,7 @@ export default class GoTrueApi {
   /**
    * Sends a reset request to an email address.
    * @param email The email address of the user.
-   * @param redirectTo A URL or mobile address to send the user to after they are confirmed.
+   * @param options.redirectTo A URL or mobile address to send the user to after they are confirmed.
    */
   async resetPasswordForEmail(
     email: string,
@@ -676,7 +676,7 @@ export default class GoTrueApi {
    * Deletes the Auth Cookies and redirects to the
    * @param req The request object.
    * @param res The response object.
-   * @param options Optionally specify a `redirectTo` URL in the options.
+   * @param options.redirectTo A URL or mobile address to send the user to after cookies are deleted
    */
   deleteAuthCookie(req: any, res: any, { redirectTo = '/' }: { redirectTo?: string }) {
     setCookies(
@@ -741,9 +741,9 @@ export default class GoTrueApi {
    * Generates links to be sent via email or other.
    * @param type The link type ("signup" or "magiclink" or "recovery" or "invite").
    * @param email The user's email.
-   * @param password User password. For signup only.
-   * @param data Optional user metadata. For signup only.
-   * @param redirectTo The link type ("signup" or "magiclink" or "recovery" or "invite").
+   * @param options.password User password. For signup only.
+   * @param options.data Optional user metadata. For signup only.
+   * @param options.redirectTo The link type ("signup" or "magiclink" or "recovery" or "invite").
    */
   async generateLink(
     type: 'signup' | 'magiclink' | 'recovery' | 'invite',

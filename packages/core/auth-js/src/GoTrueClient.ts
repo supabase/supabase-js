@@ -141,8 +141,8 @@ export default class GoTrueClient {
    * @param email The user's email address.
    * @param password The user's password.
    * @param phone The user's phone number.
-   * @param redirectTo The redirect URL attached to the signup confirmation link. Does not redirect the user if it's a mobile signup.
-   * @param data Optional user metadata.
+   * @param options.redirectTo The redirect URL attached to the signup confirmation link. Does not redirect the user if it's a mobile signup.
+   * @param options.data Optional user metadata.
    */
   async signUp(
     { email, password, phone }: UserCredentials,
@@ -295,7 +295,7 @@ export default class GoTrueClient {
    * @param phone The user's phone number.
    * @param token The user's password.
    * @param type The user's verification type.
-   * @param redirectTo A URL or mobile address to send the user to after they are confirmed.
+   * @param options.redirectTo A URL or mobile address to send the user to after they are confirmed.
    */
   async verifyOTP(
     params: VerifyOTPParams,
