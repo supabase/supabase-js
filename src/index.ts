@@ -11,7 +11,7 @@ export type {
 } from '@supabase/postgrest-js'
 export * from '@supabase/realtime-js'
 export { default as SupabaseClient } from './SupabaseClient'
-export type { SupabaseClientOptions, SupabaseRealtimePayload } from './lib/types'
+export type { SupabaseClientOptions } from './lib/types'
 
 /**
  * Creates a new Supabase Client.

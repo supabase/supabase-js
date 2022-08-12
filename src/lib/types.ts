@@ -57,18 +57,6 @@ export type SupabaseClientOptions<SchemaName> = {
   }
 }
 
-export type SupabaseRealtimePayload<T> = {
-  commit_timestamp: string
-  eventType: 'INSERT' | 'UPDATE' | 'DELETE'
-  schema: string
-  table: string
-  /** The new record. Present for 'INSERT' and 'UPDATE' events. */
-  new: T
-  /** The previous record. Present for 'UPDATE' and 'DELETE' events. */
-  old: T
-  errors: string[] | null
-}
-
 export type GenericTable = {
   Row: Record<string, unknown>
   Insert: Record<string, unknown>

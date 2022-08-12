@@ -1,6 +1,5 @@
 import ProfileCard from '../components/ProfileCard'
 import { Profile } from '../lib/constants'
-import { SupabaseRealtimePayload } from '@supabase/supabase-js'
 import { supabase } from '../lib/api'
 import { useState, useEffect } from 'react'
 
@@ -14,9 +13,9 @@ export default function ProfileList() {
     const realtimeProfiles = supabase
       .channel('profiles-channel')
       .on(
-        'realtime',
+        'postgres_changes',
         { event: '*', schema: 'public', table: 'profiles' },
-        (payload: SupabaseRealtimePayload<Profile>) => profileUpdated(profiles, payload.new)
+        (payload: { [key: string]: any }) => profileUpdated(profiles, payload.new)
       )
       .subscribe()
 

@@ -14,20 +14,20 @@ export default function Todos({ user }) {
 
     subscription1 = supabase
       .channel('todos-table-channel')
-      .on('realtime', { event: 'UPDATE', schema: 'public', table: 'todos' }, (v) =>
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'todos' }, (v) =>
         console.log('UPDATE on todos', v)
       )
-      .on('realtime', { event: 'INSERT', schema: 'public', table: 'todos' }, (v) =>
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'todos' }, (v) =>
         console.log('INSERT on todos', v)
       )
       .subscribe((change) => console.log('todos changed', change))
 
     subscription2 = supabase
       .channel('public-schema-channel')
-      .on('realtime', { event: 'UPDATE', schema: 'public' }, (v) =>
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public' }, (v) =>
         console.log('UPDATE on schema', v)
       )
-      .on('realtime', { event: 'INSERT', schema: 'public' }, (v) =>
+      .on('postgres_changes', { event: 'INSERT', schema: 'public' }, (v) =>
         console.log('INSERT on schema', v)
       )
       .subscribe((change) => console.log('schema changed', change))
