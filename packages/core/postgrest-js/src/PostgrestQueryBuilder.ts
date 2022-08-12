@@ -7,7 +7,6 @@ export default class PostgrestQueryBuilder<Table extends GenericTable> {
   url: URL
   headers: Record<string, string>
   schema?: string
-  shouldThrowOnError: boolean
   signal?: AbortSignal
   fetch?: Fetch
 
@@ -17,19 +16,16 @@ export default class PostgrestQueryBuilder<Table extends GenericTable> {
       headers = {},
       schema,
       fetch,
-      shouldThrowOnError,
     }: {
       headers?: Record<string, string>
       schema?: string
       fetch?: Fetch
-      shouldThrowOnError: boolean
     }
   ) {
     this.url = url
     this.headers = headers
     this.schema = schema
     this.fetch = fetch
-    this.shouldThrowOnError = shouldThrowOnError
   }
 
   /**
@@ -78,7 +74,6 @@ export default class PostgrestQueryBuilder<Table extends GenericTable> {
       headers: this.headers,
       schema: this.schema,
       fetch: this.fetch,
-      shouldThrowOnError: this.shouldThrowOnError,
       allowEmpty: false,
     } as unknown as PostgrestBuilder<Result>)
   }
@@ -124,7 +119,6 @@ export default class PostgrestQueryBuilder<Table extends GenericTable> {
       schema: this.schema,
       body,
       fetch: this.fetch,
-      shouldThrowOnError: this.shouldThrowOnError,
       allowEmpty: false,
     } as unknown as PostgrestBuilder<undefined>)
   }
@@ -171,7 +165,6 @@ export default class PostgrestQueryBuilder<Table extends GenericTable> {
       schema: this.schema,
       body,
       fetch: this.fetch,
-      shouldThrowOnError: this.shouldThrowOnError,
       allowEmpty: false,
     } as unknown as PostgrestBuilder<undefined>)
   }
@@ -208,7 +201,6 @@ export default class PostgrestQueryBuilder<Table extends GenericTable> {
       schema: this.schema,
       body,
       fetch: this.fetch,
-      shouldThrowOnError: this.shouldThrowOnError,
       allowEmpty: false,
     } as unknown as PostgrestBuilder<undefined>)
   }
@@ -239,7 +231,6 @@ export default class PostgrestQueryBuilder<Table extends GenericTable> {
       headers: this.headers,
       schema: this.schema,
       fetch: this.fetch,
-      shouldThrowOnError: this.shouldThrowOnError,
       allowEmpty: false,
     } as unknown as PostgrestBuilder<undefined>)
   }

@@ -17,8 +17,8 @@ export default class PostgrestClient<
   headers: Record<string, string>
   schema?: SchemaName
   fetch?: Fetch
-  shouldThrowOnError: boolean
 
+  // TODO: Add back shouldThrowOnError once we figure out the typings
   /**
    * Creates a PostgREST client.
    *
@@ -32,19 +32,16 @@ export default class PostgrestClient<
       headers = {},
       schema,
       fetch,
-      throwOnError = false,
     }: {
       headers?: Record<string, string>
       schema?: SchemaName
       fetch?: Fetch
-      throwOnError?: boolean
     } = {}
   ) {
     this.url = url
     this.headers = { ...DEFAULT_HEADERS, ...headers }
     this.schema = schema
     this.fetch = fetch
-    this.shouldThrowOnError = throwOnError
   }
 
   /**
@@ -73,7 +70,6 @@ export default class PostgrestClient<
       headers: { ...this.headers },
       schema: this.schema,
       fetch: this.fetch,
-      shouldThrowOnError: this.shouldThrowOnError,
     })
   }
 
@@ -132,7 +128,6 @@ export default class PostgrestClient<
       schema: this.schema,
       body,
       fetch: this.fetch,
-      shouldThrowOnError: this.shouldThrowOnError,
       allowEmpty: false,
     } as unknown as PostgrestBuilder<Function_['Returns']>)
   }

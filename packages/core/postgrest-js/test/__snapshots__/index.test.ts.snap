@@ -1393,33 +1393,6 @@ Object {
 }
 `;
 
-exports[`throwOnError can be disabled per call 1`] = `
-Object {
-  "code": "42P01",
-  "details": null,
-  "hint": null,
-  "message": "relation \\"public.missing_table\\" does not exist",
-}
-`;
-
-exports[`throwOnError setting at the client level - query 1`] = `
-Object {
-  "code": "42P01",
-  "details": null,
-  "hint": null,
-  "message": "relation \\"public.missing_table\\" does not exist",
-}
-`;
-
-exports[`throwOnError setting at the client level - rpc 1`] = `
-Object {
-  "code": "PGRST202",
-  "details": null,
-  "hint": "If a new function was created in the database with this name and parameters, try reloading the schema cache.",
-  "message": "Could not find the public.missing_fn() function or the public.missing_fn function with a single unnamed json or jsonb parameter in the schema cache",
-}
-`;
-
 exports[`throwOnError throws errors instead of returning them 1`] = `
 Object {
   "code": "42P01",

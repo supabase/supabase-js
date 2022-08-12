@@ -10,7 +10,7 @@ export default abstract class PostgrestBuilder<Result>
   protected headers: Record<string, string>
   protected schema?: string
   protected body?: unknown
-  protected shouldThrowOnError: boolean
+  protected shouldThrowOnError = false
   protected signal?: AbortSignal
   protected fetch: Fetch
   protected allowEmpty: boolean
@@ -39,11 +39,9 @@ export default abstract class PostgrestBuilder<Result>
    * throwing the error instead of returning it as part of a successful response.
    *
    * {@link https://github.com/supabase/supabase-js/issues/92}
-   *
-   * @deprecated Use `throwOnError` in the `PostgrestClient` constructor instead.
    */
-  throwOnError(throwOnError?: boolean): this {
-    this.shouldThrowOnError = throwOnError ?? true
+  throwOnError(): this {
+    this.shouldThrowOnError = true
     return this
   }
 

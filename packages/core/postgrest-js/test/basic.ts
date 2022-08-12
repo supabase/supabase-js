@@ -173,45 +173,45 @@ test('throwOnError throws errors instead of returning them', async () => {
   expect(isErrorCaught).toBe(true)
 })
 
-test('throwOnError setting at the client level - query', async () => {
-  let isErrorCaught = false
-  const postgrest_ = new PostgrestClient<Database>(REST_URL, { throwOnError: true })
+// test('throwOnError setting at the client level - query', async () => {
+//   let isErrorCaught = false
+//   const postgrest_ = new PostgrestClient<Database>(REST_URL, { throwOnError: true })
 
-  try {
-    // @ts-expect-error missing table
-    await postgrest_.from('missing_table').select()
-  } catch (error) {
-    expect(error).toMatchSnapshot()
-    isErrorCaught = true
-  }
+//   try {
+//     // @ts-expect-error missing table
+//     await postgrest_.from('missing_table').select()
+//   } catch (error) {
+//     expect(error).toMatchSnapshot()
+//     isErrorCaught = true
+//   }
 
-  expect(isErrorCaught).toBe(true)
-})
+//   expect(isErrorCaught).toBe(true)
+// })
 
-test('throwOnError setting at the client level - rpc', async () => {
-  let isErrorCaught = false
-  const postgrest_ = new PostgrestClient<Database>(REST_URL, { throwOnError: true })
+// test('throwOnError setting at the client level - rpc', async () => {
+//   let isErrorCaught = false
+//   const postgrest_ = new PostgrestClient<Database>(REST_URL, { throwOnError: true })
 
-  try {
-    // @ts-expect-error missing function
-    await postgrest_.rpc('missing_fn').select()
-  } catch (error) {
-    expect(error).toMatchSnapshot()
-    isErrorCaught = true
-  }
+//   try {
+//     // @ts-expect-error missing function
+//     await postgrest_.rpc('missing_fn').select()
+//   } catch (error) {
+//     expect(error).toMatchSnapshot()
+//     isErrorCaught = true
+//   }
 
-  expect(isErrorCaught).toBe(true)
-})
+//   expect(isErrorCaught).toBe(true)
+// })
 
-test('throwOnError can be disabled per call', async () => {
-  let isErrorCaught = false
-  const postgrest_ = new PostgrestClient<Database>(REST_URL, { throwOnError: true })
-  // @ts-expect-error missing table
-  const { error } = await postgrest_.from('missing_table').select().throwOnError(false)
+// test('throwOnError can be disabled per call', async () => {
+//   let isErrorCaught = false
+//   const postgrest_ = new PostgrestClient<Database>(REST_URL, { throwOnError: true })
+//   // @ts-expect-error missing table
+//   const { error } = await postgrest_.from('missing_table').select().throwOnError(false)
 
-  expect(error).toMatchSnapshot()
-  expect(isErrorCaught).toBe(false)
-})
+//   expect(error).toMatchSnapshot()
+//   expect(isErrorCaught).toBe(false)
+// })
 
 test('connection error w/o throwing', async () => {
   const postgrest = new PostgrestClient<Database>('http://foo.invalid')
@@ -246,7 +246,7 @@ test('maybeSingle w/ throwOnError', async () => {
     .from('messages')
     .select()
     .eq('message', 'i do not exist')
-    .throwOnError(true)
+    .throwOnError()
     .maybeSingle()
     .then(undefined, () => {
       passes = false
