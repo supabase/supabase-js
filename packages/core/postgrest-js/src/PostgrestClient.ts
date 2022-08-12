@@ -45,18 +45,6 @@ export default class PostgrestClient<
   }
 
   /**
-   * Authenticates the request with JWT.
-   *
-   * @param token  The JWT token to use.
-   *
-   * @deprecated Use `headers` in constructor instead.
-   */
-  auth(token: string): this {
-    this.headers['Authorization'] = `Bearer ${token}`
-    return this
-  }
-
-  /**
    * Perform a table operation.
    *
    * @param table  The table name to operate on.

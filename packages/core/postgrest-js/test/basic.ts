@@ -68,11 +68,6 @@ describe('custom prefer headers with ', () => {
   })
 })
 
-test('auth', async () => {
-  const postgrest = new PostgrestClient<Database>(REST_URL).auth('foo')
-  expect((postgrest.from('users').select() as any).headers['Authorization']).toEqual('Bearer foo')
-})
-
 test('switch schema', async () => {
   const postgrest = new PostgrestClient<Database, 'personal'>(REST_URL, { schema: 'personal' })
   const res = await postgrest.from('users').select()
