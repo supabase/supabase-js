@@ -68,3 +68,9 @@ export class AuthInvalidCredentialsError extends CustomAuthError {
     super(message, 'AuthInvalidCredentialsError', 400)
   }
 }
+
+export class AuthRetryableFetchError extends CustomAuthError {
+  constructor(message: string, status: number) {
+    super(message, 'AuthRetryableFetchError', status)
+  }
+}
