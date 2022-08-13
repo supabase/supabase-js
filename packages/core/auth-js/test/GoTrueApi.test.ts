@@ -131,10 +131,6 @@ describe('GoTrueApi', () => {
       expect(user?.email).toEqual(email)
     })
 
-    test('getUserByCookie() fetches a user by its Cookie', async () => {
-      // may not be able to test via Jest without request.cookie
-    })
-
     test('getUserById() should a registered user given its user identifier', async () => {
       const { email } = mockUserCredentials()
       const { error: createError, user } = await createNewUserWithEmail({ email })

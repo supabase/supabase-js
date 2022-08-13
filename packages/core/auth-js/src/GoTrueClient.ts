@@ -1,50 +1,47 @@
 import GoTrueApi from './GoTrueApi'
 import {
-  isBrowser,
-  getParameterByName,
-  uuid,
-  setItemAsync,
-  removeItemAsync,
-  getItemAsync,
-  Deferred,
-} from './lib/helpers'
-import {
-  GOTRUE_URL,
   DEFAULT_HEADERS,
   EXPIRY_MARGIN,
+  GOTRUE_URL,
   NETWORK_FAILURE,
   STORAGE_KEY,
 } from './lib/constants'
-import { polyfillGlobalThis } from './lib/polyfills'
-import { Fetch } from './lib/fetch'
-
 import {
-  isAuthError,
-  AuthError,
   AuthApiError,
-  AuthSessionMissingError,
+  AuthError,
   AuthInvalidCredentialsError,
+  AuthSessionMissingError,
   AuthUnknownError,
+  isAuthError,
 } from './lib/errors'
-
+import { Fetch } from './lib/fetch'
+import {
+  Deferred,
+  getItemAsync,
+  getParameterByName,
+  isBrowser,
+  removeItemAsync,
+  setItemAsync,
+  uuid,
+} from './lib/helpers'
+import { polyfillGlobalThis } from './lib/polyfills'
 import type {
+  AuthChangeEvent,
+  AuthResponse,
+  CallRefreshTokenResult,
+  OAuthResponse,
+  OpenIDConnectCredentials,
+  Provider,
   Session,
+  SignInWithOAuthCredentials,
+  SignInWithPasswordCredentials,
+  SignInWithPasswordlessCredentials,
+  Subscription,
+  SupportedStorage,
   User,
   UserAttributes,
-  Provider,
-  Subscription,
-  AuthChangeEvent,
-  CookieOptions,
   UserCredentials,
   VerifyOTPParams,
-  OpenIDConnectCredentials,
-  SupportedStorage,
-  SignInWithPasswordCredentials,
-  SignInWithOAuthCredentials,
-  SignInWithPasswordlessCredentials,
-  AuthResponse,
-  OAuthResponse,
-  CallRefreshTokenResult,
 } from './lib/types'
 
 polyfillGlobalThis() // Make "globalThis" available
@@ -95,7 +92,6 @@ export default class GoTrueClient {
    * @param options.persistSession Set to "true" if you want to automatically save the user session into local storage. If set to false, session will just be saved in memory.
    * @param options.localStorage Provide your own local storage implementation to use instead of the browser's local storage.
    * @param options.multiTab Set to "false" if you want to disable multi-tab/window events.
-   * @param options.cookieOptions
    * @param options.fetch A custom fetch implementation.
    */
   constructor(options: {
@@ -107,7 +103,6 @@ export default class GoTrueClient {
     persistSession?: boolean
     storage?: SupportedStorage
     multiTab?: boolean
-    cookieOptions?: CookieOptions
     fetch?: Fetch
   }) {
     const settings = { ...DEFAULT_OPTIONS, ...options }
@@ -119,7 +114,6 @@ export default class GoTrueClient {
     this.api = new GoTrueApi({
       url: settings.url,
       headers: settings.headers,
-      cookieOptions: settings.cookieOptions,
       fetch: settings.fetch,
     })
     this._recoverAndRefresh()
