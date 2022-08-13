@@ -1,3 +1,4 @@
+import { User } from '../src'
 import { AuthError } from '../src/lib/errors'
 import {
   authClient as auth,
@@ -33,8 +34,12 @@ describe('GoTrueClient', () => {
       expect(session).not.toBeNull()
 
       await authWithSession.setSession(session?.refresh_token as string)
-      const { user } = await authWithSession.update({ data: { hello: 'world' } })
+      const {
+        data: { user },
+        error: updateError,
+      } = await authWithSession.update({ data: { hello: 'world' } })
 
+      expect(updateError).not.toBeNull()
       expect(user).not.toBeNull()
       expect(user?.user_metadata).toStrictEqual({ hello: 'world' })
     })
@@ -473,7 +478,10 @@ describe('User management', () => {
 
     const userMetadata = { hello: 'world' }
 
-    const { error, user } = await authWithSession.update({ data: userMetadata })
+    const {
+      error,
+      data: { user },
+    } = await authWithSession.update({ data: userMetadata })
 
     expect(error).toBeNull()
     expect(user).toMatchObject({
@@ -505,7 +513,10 @@ describe('User management', () => {
 
     const userMetadata = { hello: 'world' }
 
-    const { user, error } = await authWithSession.update({ data: userMetadata })
+    const {
+      data: { user },
+      error,
+    } = await authWithSession.update({ data: userMetadata })
 
     expect(error).toBeNull()
     expect(user).toMatchObject({

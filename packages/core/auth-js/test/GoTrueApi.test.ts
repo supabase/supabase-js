@@ -124,7 +124,10 @@ describe('GoTrueApi', () => {
 
       const jwt = session?.access_token || ''
 
-      const { error, user } = await serviceRoleApiClient.getUser(jwt)
+      const {
+        error,
+        data: { user },
+      } = await serviceRoleApiClient.getUser(jwt)
 
       expect(error).toBeNull()
       expect(user).not.toBeUndefined()

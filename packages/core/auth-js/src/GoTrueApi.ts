@@ -8,6 +8,7 @@ import {
   User,
   UserAttributes,
   VerifyOTPParams,
+  UserResponse,
 } from './lib/types'
 import { AuthError, isAuthError } from './lib/errors'
 
@@ -803,21 +804,15 @@ export default class GoTrueApi {
    *
    * @param jwt A valid, logged-in JWT. Typically, the access_token for the currentSession
    */
-  async getUser(jwt: string): Promise<
-    | {
-        user: User
-        error: null
-      }
-    | { user: null; error: AuthError }
-  > {
+  async getUser(jwt: string): Promise<UserResponse> {
     try {
       const user: User = await get(this.fetch, `${this.url}/user`, {
         headers: this._createRequestHeaders(jwt),
       })
-      return { user, error: null }
+      return { data: { user }, error: null }
     } catch (error) {
       if (isAuthError(error)) {
-        return { user: null, error }
+        return { data: { user: null }, error }
       }
 
       throw error
@@ -829,26 +824,16 @@ export default class GoTrueApi {
    * @param jwt A valid, logged-in JWT.
    * @param attributes The data you want to update.
    */
-  async updateUser(
-    jwt: string,
-    attributes: UserAttributes
-  ): Promise<
-    | {
-        user: User
-        error: null
-      }
-    | { user: null; error: AuthError }
-  > {
+  async updateUser(jwt: string, attributes: UserAttributes): Promise<UserResponse> {
     try {
       const user: User = await put(this.fetch, `${this.url}/user`, attributes, {
         headers: this._createRequestHeaders(jwt),
       })
-      return { user, error: null }
+      return { data: { user }, error: null }
     } catch (error) {
       if (isAuthError(error)) {
-        return { user: null, error }
+        return { data: { user: null }, error }
       }
-
       throw error
     }
   }
