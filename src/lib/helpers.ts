@@ -13,3 +13,40 @@ export function stripTrailingSlash(url: string): string {
 }
 
 export const isBrowser = () => typeof window !== 'undefined'
+
+export function applySettingDefaults(
+  options: SupabaseClientOptions<SchemaName>,
+  defaults: SupabaseClientOptions<any>
+): SupabaseClientOptions<SchemaName> {
+  const {
+    db: dbOptions,
+    auth: authOptions,
+    realtime: realtimeOptions,
+    global: globalOptions,
+  } = options
+  const {
+    db: DEFAULT_DB_OPTIONS,
+    auth: DEFAULT_AUTH_OPTIONS,
+    realtime: DEFAULT_REALTIME_OPTIONS,
+    global: DEFAULT_GLOBAL_OPTIONS,
+  } = defaults
+
+  return {
+    db: {
+      ...DEFAULT_DB_OPTIONS,
+      ...dbOptions,
+    },
+    auth: {
+      ...DEFAULT_AUTH_OPTIONS,
+      ...authOptions,
+    },
+    realtime: {
+      ...DEFAULT_REALTIME_OPTIONS,
+      ...realtimeOptions,
+    },
+    global: {
+      ...DEFAULT_GLOBAL_OPTIONS,
+      ...globalOptions,
+    },
+  }
+}

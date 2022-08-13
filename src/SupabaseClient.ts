@@ -9,7 +9,7 @@ import { RealtimeChannel, RealtimeClient, RealtimeClientOptions } from '@supabas
 import { StorageClient as SupabaseStorageClient } from '@supabase/storage-js'
 import { DEFAULT_HEADERS } from './lib/constants'
 import { fetchWithAuth } from './lib/fetch'
-import { stripTrailingSlash } from './lib/helpers'
+import { stripTrailingSlash, applySettingDefaults } from './lib/helpers'
 import { SupabaseAuthClient } from './lib/SupabaseAuthClient'
 import { SupabaseRealtimeChannel } from './lib/SupabaseRealtimeChannel'
 import { Fetch, GenericSchema, SupabaseClientOptions, SupabaseAuthClientOptions } from './lib/types'
@@ -105,7 +105,7 @@ export default class SupabaseClient<
       global: DEFAULT_GLOBAL_OPTIONS,
     }
 
-    const settings = this._applySettingDefaults(options || {}, DEFAULTS)
+    const settings = applySettingDefaults(options || {}, DEFAULTS)
 
     this.storageKey = settings.auth?.storageKey ?? ''
     this.headers = settings.global?.headers ?? {}
@@ -334,44 +334,6 @@ export default class SupabaseClient<
       // Token is removed
       this.realtime.setAuth(this.supabaseKey)
       if (source == 'STORAGE') this.auth.signOut()
-    }
-  }
-
-  // TODO(Joel): Figure out how to properly type this
-  private _applySettingDefaults(
-    options: SupabaseClientOptions<SchemaName>,
-    defaults: any
-  ): SupabaseClientOptions<SchemaName> {
-    const {
-      db: dbOptions,
-      auth: authOptions,
-      realtime: realtimeOptions,
-      global: globalOptions,
-    } = options
-    const {
-      db: DEFAULT_DB_OPTIONS,
-      auth: DEFAULT_AUTH_OPTIONS,
-      realtime: DEFAULT_REALTIME_OPTIONS,
-      global: DEFAULT_GLOBAL_OPTIONS,
-    } = defaults
-
-    return {
-      db: {
-        ...DEFAULT_DB_OPTIONS,
-        ...dbOptions,
-      },
-      auth: {
-        ...DEFAULT_AUTH_OPTIONS,
-        ...authOptions,
-      },
-      realtime: {
-        ...DEFAULT_REALTIME_OPTIONS,
-        ...realtimeOptions,
-      },
-      global: {
-        ...DEFAULT_GLOBAL_OPTIONS,
-        ...globalOptions,
-      },
     }
   }
 }
