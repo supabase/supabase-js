@@ -1,4 +1,4 @@
-type Fetch = typeof fetch
+import { Fetch } from './types'
 
 export const resolveFetch = (customFetch?: Fetch): Fetch => {
   let _fetch: Fetch

@@ -1,17 +1,42 @@
 export type Fetch = typeof fetch
 
-export enum ResponseType {
-  json,
-  text,
-  arrayBuffer,
-  blob,
+/**
+ * Response format
+ *
+ */
+interface FunctionsResponseSuccess {
+  data: any
+  error: null
+}
+interface FunctionsResponseFailure {
+  data: null
+  error: any
+}
+export type FunctionsResponse = FunctionsResponseSuccess | FunctionsResponseFailure
+
+export class FunctionsError extends Error {
+  context: any
+  constructor(message: string, name = 'FunctionsError', context?: any) {
+    super(message)
+    super.name = name
+    this.context = context
+  }
 }
 
-export type FunctionInvokeOptions = {
-  /** object representing the headers to send with the request */
-  headers?: { [key: string]: string }
-  /** the body of the request */
-  body?: Blob | BufferSource | FormData | URLSearchParams | ReadableStream<Uint8Array> | string
-  /** how the response should be parsed. The default is `json` */
-  responseType?: keyof typeof ResponseType
+export class FunctionsFetchError extends FunctionsError {
+  constructor(context: any) {
+    super('Failed to perform request to Edge Function', 'FunctionsFetchError', context)
+  }
+}
+
+export class FunctionsRelayError extends FunctionsError {
+  constructor(context: any) {
+    super('Relay error communicating with deno backend', 'FunctionsRelayError', context)
+  }
+}
+
+export class FunctionsHttpError extends FunctionsError {
+  constructor(context: any) {
+    super('Edge Function returned a non-2xx status code', 'FunctionsHttpError', context)
+  }
 }
