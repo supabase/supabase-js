@@ -1,4 +1,5 @@
 // helpers.ts
+import { SupabaseClientOptions } from './types'
 
 export function uuid() {
   return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
@@ -14,7 +15,12 @@ export function stripTrailingSlash(url: string): string {
 
 export const isBrowser = () => typeof window !== 'undefined'
 
-export function applySettingDefaults(
+export function applySettingDefaults<
+  Database = any,
+  SchemaName extends string & keyof Database = 'public' extends keyof Database
+    ? 'public'
+    : string & keyof Database
+>(
   options: SupabaseClientOptions<SchemaName>,
   defaults: SupabaseClientOptions<any>
 ): SupabaseClientOptions<SchemaName> {
