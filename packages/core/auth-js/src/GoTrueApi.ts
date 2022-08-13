@@ -411,49 +411,6 @@ export default class GoTrueApi {
   }
 
   /**
-   * @deprecated Use `verifyOTP` instead!
-   * @param phone The user's phone number WITH international prefix
-   * @param token token that user was sent to their mobile phone
-   * @param options.redirectTo A URL or mobile address to send the user to after they are confirmed.
-   */
-  async verifyMobileOTP(
-    phone: string,
-    token: string,
-    options: {
-      redirectTo?: string
-    } = {}
-  ): Promise<
-    | {
-        data: User
-        error: null
-      }
-    | {
-        data: Session
-        error: null
-      }
-    | { data: null; error: AuthError }
-  > {
-    try {
-      const headers = { ...this.headers }
-      const data = await post(
-        this.fetch,
-        `${this.url}/verify`,
-        { phone, token, type: 'sms', redirect_to: options.redirectTo },
-        { headers }
-      )
-      const session = { ...data }
-      if (session.expires_in) session.expires_at = expiresAt(data.expires_in)
-      return { data: session, error: null }
-    } catch (error) {
-      if (isAuthError(error)) {
-        return { data: null, error }
-      }
-
-      throw error
-    }
-  }
-
-  /**
    * Send User supplied Email / Mobile OTP to be verified
    * @param email The user's email address
    * @param phone The user's phone number WITH international prefix
