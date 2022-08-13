@@ -9,10 +9,3 @@ export const NETWORK_FAILURE = {
   MAX_RETRIES: 10,
   RETRY_INTERVAL: 2, // in deciseconds
 }
-export const COOKIE_OPTIONS = {
-  name: 'sb',
-  lifetime: 60 * 60 * 8,
-  domain: '',
-  path: '/',
-  sameSite: 'lax',
-}

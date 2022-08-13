@@ -57,21 +57,9 @@ export class CustomAuthError extends AuthError {
   }
 }
 
-export class AuthEventMissingError extends CustomAuthError {
-  constructor() {
-    super('Auth event missing!', 'AuthEventMissingError', 400)
-  }
-}
-
 export class AuthSessionMissingError extends CustomAuthError {
   constructor() {
     super('Auth session missing!', 'AuthSessionMissingError', 400)
-  }
-}
-
-export class AuthNoCookieError extends CustomAuthError {
-  constructor() {
-    super('No cookie found!', 'AuthNoCookieError', 401)
   }
 }
 
