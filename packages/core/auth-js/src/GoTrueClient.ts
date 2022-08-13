@@ -411,6 +411,7 @@ export default class GoTrueClient {
 
   /**
    * Updates user data, if there is a logged in user.
+   * @param attributes The data you want to update.
    */
   async update(attributes: UserAttributes): Promise<UserResponse> {
     try {
