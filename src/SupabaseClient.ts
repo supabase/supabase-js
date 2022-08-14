@@ -9,18 +9,26 @@ import { RealtimeChannel, RealtimeClient, RealtimeClientOptions } from '@supabas
 import { StorageClient as SupabaseStorageClient } from '@supabase/storage-js'
 import { DEFAULT_HEADERS } from './lib/constants'
 import { fetchWithAuth } from './lib/fetch'
-import { stripTrailingSlash } from './lib/helpers'
+import { stripTrailingSlash, applySettingDefaults } from './lib/helpers'
 import { SupabaseAuthClient } from './lib/SupabaseAuthClient'
 import { SupabaseRealtimeChannel } from './lib/SupabaseRealtimeChannel'
 import { Fetch, GenericSchema, SupabaseClientOptions, SupabaseAuthClientOptions } from './lib/types'
 
-const DEFAULT_OPTIONS = {
+const DEFAULT_GLOBAL_OPTIONS = {
+  headers: DEFAULT_HEADERS,
+}
+
+const DEFAULT_DB_OPTIONS = {
   schema: 'public',
+}
+
+const DEFAULT_AUTH_OPTIONS: SupabaseAuthClientOptions = {
   autoRefreshToken: true,
   persistSession: true,
   detectSessionInUrl: true,
-  headers: DEFAULT_HEADERS,
 }
+
+const DEFAULT_REALTIME_OPTIONS: RealtimeClientOptions = {}
 
 /**
  * Supabase Client.
@@ -59,13 +67,13 @@ export default class SupabaseClient<
    * Create a new client for use in the browser.
    * @param supabaseUrl The unique Supabase URL which is supplied when you create a new project in your project dashboard.
    * @param supabaseKey The unique Supabase Key which is supplied when you create a new project in your project dashboard.
-   * @param options.schema You can switch in between schemas. The schema needs to be on the list of exposed schemas inside Supabase.
-   * @param options.autoRefreshToken Set to "true" if you want to automatically refresh the token before expiring.
-   * @param options.persistSession Set to "true" if you want to automatically save the user session into local storage.
-   * @param options.detectSessionInUrl Set to "true" if you want to automatically detects OAuth grants in the URL and signs in the user.
-   * @param options.headers Any additional headers to send with each network request.
+   * @param options.db.schema You can switch in between schemas. The schema needs to be on the list of exposed schemas inside Supabase.
+   * @param options.auth.autoRefreshToken Set to "true" if you want to automatically refresh the token before expiring.
+   * @param options.auth.persistSession Set to "true" if you want to automatically save the user session into local storage.
+   * @param options.auth.detectSessionInUrl Set to "true" if you want to automatically detects OAuth grants in the URL and signs in the user.
    * @param options.realtime Options passed along to realtime-js constructor.
-   * @param options.fetch A custom fetch implementation.
+   * @param options.global.fetch A custom fetch implementation.
+   * @param options.global.headers Any additional headers to send with each network request.
    */
   constructor(
     protected supabaseUrl: string,
@@ -90,19 +98,29 @@ export default class SupabaseClient<
     }
     // default storage key uses the supabase project ref as a namespace
     const defaultStorageKey = `sb-${new URL(this.authUrl).hostname.split('.')[0]}-auth-token`
-    this.storageKey = options?.auth?.storageKey ?? defaultStorageKey
+    const DEFAULTS = {
+      db: DEFAULT_DB_OPTIONS,
+      realtime: DEFAULT_REALTIME_OPTIONS,
+      auth: { ...DEFAULT_AUTH_OPTIONS, storageKey: defaultStorageKey },
+      global: DEFAULT_GLOBAL_OPTIONS,
+    }
 
-    const settings = { ...DEFAULT_OPTIONS, ...options, storageKey: this.storageKey }
+    const settings = applySettingDefaults(options ?? {}, DEFAULTS)
 
-    this.headers = { ...DEFAULT_HEADERS, ...options?.headers }
+    this.storageKey = settings.auth?.storageKey ?? ''
+    this.headers = settings.global?.headers ?? {}
 
-    this.auth = this._initSupabaseAuthClient(settings.auth || {}, this.headers, settings.fetch)
-    this.fetch = fetchWithAuth(supabaseKey, this._getAccessToken.bind(this), settings.fetch)
+    this.auth = this._initSupabaseAuthClient(
+      settings.auth ?? {},
+      this.headers,
+      settings.global?.fetch
+    )
+    this.fetch = fetchWithAuth(supabaseKey, this._getAccessToken.bind(this), settings.global?.fetch)
 
     this.realtime = this._initRealtimeClient({ headers: this.headers, ...settings.realtime })
     this.rest = new PostgrestClient(`${_supabaseUrl}/rest/v1`, {
       headers: this.headers,
-      schema: options?.db?.schema,
+      schema: settings.db?.schema,
       fetch: this.fetch,
     })
 

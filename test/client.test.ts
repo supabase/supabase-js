@@ -19,7 +19,7 @@ describe('Custom Headers', () => {
   test('should have custom header set', () => {
     const customHeader = { 'X-Test-Header': 'value' }
 
-    const request = createClient(URL, KEY, { headers: customHeader }).rpc('')
+    const request = createClient(URL, KEY, { global: { headers: customHeader } }).rpc('')
 
     // @ts-ignore
     const getHeaders = request.headers

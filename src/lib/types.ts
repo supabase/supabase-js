@@ -45,14 +45,16 @@ export type SupabaseClientOptions<SchemaName> = {
    * Options passed to the realtime-js instance
    */
   realtime?: RealtimeClientOptions
-  /**
-   * A custom `fetch` implementation.
-   */
-  fetch?: Fetch
-  /**
-   * Optional headers for initializing the client.
-   */
-  headers?: Record<string, string>
+  global?: {
+    /**
+     * A custom `fetch` implementation.
+     */
+    fetch?: Fetch
+    /**
+     * Optional headers for initializing the client.
+     */
+    headers?: Record<string, string>
+  }
 }
 
 export type SupabaseRealtimePayload<T> = {
