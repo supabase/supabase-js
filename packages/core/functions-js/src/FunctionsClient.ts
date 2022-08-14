@@ -54,7 +54,10 @@ export class FunctionsClient {
     try {
       let _headers: Record<string, string> = {}
       let body: any
-      if (functionArgs instanceof Blob || functionArgs instanceof ArrayBuffer) {
+      if (
+        (typeof Blob !== 'undefined' && functionArgs instanceof Blob) ||
+        functionArgs instanceof ArrayBuffer
+      ) {
         // will work for File as File inherits Blob
         // also works for ArrayBuffer as it is the same underlying structure as a Blob
         _headers['Content-Type'] = 'application/octet-stream'
@@ -63,7 +66,7 @@ export class FunctionsClient {
         // plain string
         _headers['Content-Type'] = 'text/plain'
         body = functionArgs
-      } else if (functionArgs instanceof FormData) {
+      } else if (typeof FormData !== 'undefined' && functionArgs instanceof FormData) {
         // don't set content-type headers
         // Request will automatically add the right boundary value
         body = functionArgs
