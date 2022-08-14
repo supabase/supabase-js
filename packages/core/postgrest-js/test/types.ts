@@ -110,6 +110,10 @@ export interface Database {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
+      offline_user: {
+        Args: { name_param: string }
+        Returns: 'ONLINE' | 'OFFLINE'
+      }
     }
   }
 }
