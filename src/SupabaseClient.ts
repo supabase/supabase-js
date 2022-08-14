@@ -67,13 +67,13 @@ export default class SupabaseClient<
    * Create a new client for use in the browser.
    * @param supabaseUrl The unique Supabase URL which is supplied when you create a new project in your project dashboard.
    * @param supabaseKey The unique Supabase Key which is supplied when you create a new project in your project dashboard.
-   * @param options.schema You can switch in between schemas. The schema needs to be on the list of exposed schemas inside Supabase.
-   * @param options.autoRefreshToken Set to "true" if you want to automatically refresh the token before expiring.
-   * @param options.persistSession Set to "true" if you want to automatically save the user session into local storage.
-   * @param options.detectSessionInUrl Set to "true" if you want to automatically detects OAuth grants in the URL and signs in the user.
-   * @param options.headers Any additional headers to send with each network request.
+   * @param options.db.schema You can switch in between schemas. The schema needs to be on the list of exposed schemas inside Supabase.
+   * @param options.auth.autoRefreshToken Set to "true" if you want to automatically refresh the token before expiring.
+   * @param options.auth.persistSession Set to "true" if you want to automatically save the user session into local storage.
+   * @param options.auth.detectSessionInUrl Set to "true" if you want to automatically detects OAuth grants in the URL and signs in the user.
    * @param options.realtime Options passed along to realtime-js constructor.
-   * @param options.fetch A custom fetch implementation.
+   * @param options.global.fetch A custom fetch implementation.
+   * @param options.global.headers Any additional headers to send with each network request.
    */
   constructor(
     protected supabaseUrl: string,
@@ -105,13 +105,13 @@ export default class SupabaseClient<
       global: DEFAULT_GLOBAL_OPTIONS,
     }
 
-    const settings = applySettingDefaults(options || {}, DEFAULTS)
+    const settings = applySettingDefaults(options ?? {}, DEFAULTS)
 
     this.storageKey = settings.auth?.storageKey ?? ''
     this.headers = settings.global?.headers ?? {}
 
     this.auth = this._initSupabaseAuthClient(
-      settings?.auth || {},
+      settings.auth ?? {},
       this.headers,
       settings.global?.fetch
     )
