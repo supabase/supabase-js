@@ -111,20 +111,20 @@ describe('GoTrueApi', () => {
 
     test('getUser() fetches a user by their access_token', async () => {
       const { email, password } = mockUserCredentials()
-      const {
-        error: initialError,
-        data: { session },
-      } = await authClientWithSession.signUp({
+      const { error: initialError, data } = await authClientWithSession.signUp({
         email,
         password,
       })
 
       expect(initialError).toBeNull()
-      expect(session).not.toBeNull()
+      expect(data.session).not.toBeNull()
 
-      const jwt = session?.access_token || ''
+      const jwt = data.session?.access_token || ''
 
-      const { error, user } = await serviceRoleApiClient.getUser(jwt)
+      const {
+        error,
+        data: { user },
+      } = await serviceRoleApiClient.getUser(jwt)
 
       expect(error).toBeNull()
       expect(user).not.toBeUndefined()
@@ -336,16 +336,13 @@ describe('GoTrueApi', () => {
     test('resetPasswordForEmail() sends an email for password recovery', async () => {
       const { email, password } = mockUserCredentials()
 
-      const {
-        error: initialError,
-        data: { session },
-      } = await authClientWithSession.signUp({
+      const { error: initialError, data } = await authClientWithSession.signUp({
         email,
         password,
       })
 
       expect(initialError).toBeNull()
-      expect(session).not.toBeNull()
+      expect(data.session).not.toBeNull()
 
       const redirectTo = 'http://localhost:9999/welcome'
       const { error, data: user } = await serviceRoleApiClient.resetPasswordForEmail(email, {
@@ -371,10 +368,7 @@ describe('GoTrueApi', () => {
     test('refreshAccessToken()', async () => {
       const { email, password } = mockUserCredentials()
 
-      const {
-        error: initialError,
-        data: { session },
-      } = await authClientWithSession.signUp({
+      const { error: initialError, data } = await authClientWithSession.signUp({
         email,
         password,
       })
@@ -382,7 +376,7 @@ describe('GoTrueApi', () => {
       expect(initialError).toBeNull()
 
       const { error, session: refreshedSession } = await serviceRoleApiClient.refreshAccessToken(
-        session?.refresh_token || ''
+        data.session?.refresh_token || ''
       )
 
       const user = refreshedSession?.user
@@ -426,18 +420,15 @@ describe('GoTrueApi', () => {
       test('signOut() with an valid access token', async () => {
         const { email, password } = mockUserCredentials()
 
-        const {
-          error: initialError,
-          data: { session },
-        } = await authClientWithSession.signUp({
+        const { error: initialError, data } = await authClientWithSession.signUp({
           email,
           password,
         })
 
         expect(initialError).toBeNull()
-        expect(session).not.toBeNull()
+        expect(data.session).not.toBeNull()
 
-        const { error } = await serviceRoleApiClient.signOut(session?.access_token || '')
+        const { error } = await serviceRoleApiClient.signOut(data.session?.access_token || '')
         expect(error).toBeNull()
       })
 

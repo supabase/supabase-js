@@ -57,6 +57,21 @@ export type OAuthResponse =
       }
       error: AuthError
     }
+
+export type UserResponse =
+  | {
+      data: {
+        user: User
+      }
+      error: null
+    }
+  | {
+      data: {
+        user: null
+      }
+      error: AuthError
+    }
+
 export interface Session {
   provider_token?: string | null
   access_token: string

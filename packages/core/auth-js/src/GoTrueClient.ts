@@ -42,6 +42,7 @@ import type {
   User,
   UserAttributes,
   UserCredentials,
+  UserResponse,
   VerifyOTPParams,
 } from './lib/types'
 
@@ -386,44 +387,34 @@ export default class GoTrueClient {
   }
 
   /**
-   * Returns the user data, refreshing the session if necessary.
+   * Returns the user data based on the current session, refreshing the session if necessary.
    */
-  async getUser(): Promise<
+  async getUserFromSession(): Promise<
+    | UserResponse
     | {
-        user: User
-        error: null
-      }
-    | {
-        user: null
-        error: AuthError
-      }
-    | {
-        user: null
+        data: {
+          user: null
+        }
         error: null
       }
   > {
     const { session, error } = await this.getSession()
     if (error) {
-      return { user: null, error }
+      return { data: { user: null }, error }
     }
 
     if (!session) {
-      return { user: null, error: null }
+      return { data: { user: null }, error: null }
     }
 
-    return { user: session.user, error: null }
+    return { data: { user: session.user }, error: null }
   }
 
   /**
    * Updates user data, if there is a logged in user.
+   * @param attributes The data you want to update.
    */
-  async update(attributes: UserAttributes): Promise<
-    | {
-        user: User
-        error: null
-      }
-    | { user: null; error: AuthError }
-  > {
+  async update(attributes: UserAttributes): Promise<UserResponse> {
     try {
       const { session, error: sessionError } = await this.getSession()
       if (sessionError) {
@@ -432,16 +423,16 @@ export default class GoTrueClient {
       if (!session) {
         throw new AuthSessionMissingError()
       }
-      const { user, error: userError } = await this.api.updateUser(session.access_token, attributes)
+      const { data, error: userError } = await this.api.updateUser(session.access_token, attributes)
       if (userError) throw userError
-      session.user = user
+      session.user = data.user as User
       this._saveSession(session)
       this._notifyAllSubscribers('USER_UPDATED', session)
 
-      return { user, error: null }
+      return { data: { user: session.user }, error: null }
     } catch (error) {
       if (isAuthError(error)) {
-        return { user: null, error }
+        return { data: { user: null }, error }
       }
 
       throw error
@@ -512,9 +503,10 @@ export default class GoTrueClient {
       const timeNow = Math.round(Date.now() / 1000)
       const expires_at = timeNow + parseInt(expires_in)
 
-      const { user, error } = await this.api.getUser(access_token)
+      const { data, error } = await this.api.getUser(access_token)
       if (error) throw error
 
+      const user: User = data.user
       const session: Session = {
         provider_token,
         access_token,

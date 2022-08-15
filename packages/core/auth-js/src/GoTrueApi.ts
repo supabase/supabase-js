@@ -8,6 +8,7 @@ import {
   User,
   UserAttributes,
   VerifyOTPParams,
+  UserResponse,
 } from './lib/types'
 import { AuthError, isAuthError } from './lib/errors'
 
@@ -414,49 +415,6 @@ export default class GoTrueApi {
   }
 
   /**
-   * @deprecated Use `verifyOTP` instead!
-   * @param phone The user's phone number WITH international prefix
-   * @param token token that user was sent to their mobile phone
-   * @param options.redirectTo A URL or mobile address to send the user to after they are confirmed.
-   */
-  async verifyMobileOTP(
-    phone: string,
-    token: string,
-    options: {
-      redirectTo?: string
-    } = {}
-  ): Promise<
-    | {
-        data: User
-        error: null
-      }
-    | {
-        data: Session
-        error: null
-      }
-    | { data: null; error: AuthError }
-  > {
-    try {
-      const headers = { ...this.headers }
-      const data = await post(
-        this.fetch,
-        `${this.url}/verify`,
-        { phone, token, type: 'sms', redirect_to: options.redirectTo },
-        { headers }
-      )
-      const session = { ...data }
-      if (session.expires_in) session.expires_at = expiresAt(data.expires_in)
-      return { data: session, error: null }
-    } catch (error) {
-      if (isAuthError(error)) {
-        return { data: null, error }
-      }
-
-      throw error
-    }
-  }
-
-  /**
    * Send User supplied Email / Mobile OTP to be verified
    * @param email The user's email address
    * @param phone The user's phone number WITH international prefix
@@ -814,21 +772,15 @@ export default class GoTrueApi {
    *
    * @param jwt A valid, logged-in JWT. Typically, the access_token for the currentSession
    */
-  async getUser(jwt: string): Promise<
-    | {
-        user: User
-        error: null
-      }
-    | { user: null; error: AuthError }
-  > {
+  async getUser(jwt: string): Promise<UserResponse> {
     try {
       const user: User = await get(this.fetch, `${this.url}/user`, {
         headers: this._createRequestHeaders(jwt),
       })
-      return { user, error: null }
+      return { data: { user }, error: null }
     } catch (error) {
       if (isAuthError(error)) {
-        return { user: null, error }
+        return { data: { user: null }, error }
       }
 
       throw error
@@ -840,26 +792,16 @@ export default class GoTrueApi {
    * @param jwt A valid, logged-in JWT.
    * @param attributes The data you want to update.
    */
-  async updateUser(
-    jwt: string,
-    attributes: UserAttributes
-  ): Promise<
-    | {
-        user: User
-        error: null
-      }
-    | { user: null; error: AuthError }
-  > {
+  async updateUser(jwt: string, attributes: UserAttributes): Promise<UserResponse> {
     try {
       const user: User = await put(this.fetch, `${this.url}/user`, attributes, {
         headers: this._createRequestHeaders(jwt),
       })
-      return { user, error: null }
+      return { data: { user }, error: null }
     } catch (error) {
       if (isAuthError(error)) {
-        return { user: null, error }
+        return { data: { user: null }, error }
       }
-
       throw error
     }
   }
