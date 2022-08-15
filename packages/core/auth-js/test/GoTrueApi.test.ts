@@ -304,60 +304,6 @@ describe('GoTrueApi', () => {
     })
   })
 
-  describe('User management', () => {
-    test('resetPasswordForEmail() sends an email for password recovery', async () => {
-      const { email, password } = mockUserCredentials()
-
-      const { error: initialError, data } = await authClientWithSession.signUp({
-        email,
-        password,
-      })
-
-      expect(initialError).toBeNull()
-      expect(data.session).not.toBeNull()
-
-      const redirectTo = 'http://localhost:9999/welcome'
-      const { error, data: user } = await serviceRoleApiClient.resetPasswordForEmail(email, {
-        redirectTo,
-      })
-      expect(user).toBeTruthy()
-      expect(error?.message).toBeUndefined()
-    })
-
-    test('resetPasswordForEmail() if user does not exist, user details are not exposed', async () => {
-      const redirectTo = 'http://localhost:9999/welcome'
-      const { error, data } = await serviceRoleApiClient.resetPasswordForEmail(
-        'this_user@does-not-exist.com',
-        {
-          redirectTo,
-        }
-      )
-      expect(data).toEqual({})
-      expect(error).toBeNull()
-    })
-
-    test('refreshAccessToken()', async () => {
-      const { email, password } = mockUserCredentials()
-
-      const { error: initialError, data } = await authClientWithSession.signUp({
-        email,
-        password,
-      })
-
-      expect(initialError).toBeNull()
-
-      const { error, data: refreshedSession } = await serviceRoleApiClient.refreshAccessToken(
-        data.session?.refresh_token || ''
-      )
-
-      const user = refreshedSession?.user
-
-      expect(error).toBeNull()
-      expect(user).not.toBeNull()
-      expect(user?.email).toEqual(email)
-    })
-  })
-
   describe('User authentication', () => {
     describe('signOut()', () => {
       test('signOut() with an valid access token', async () => {

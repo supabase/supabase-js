@@ -496,7 +496,7 @@ export default class GoTrueClient {
       if (!refresh_token) {
         throw new AuthSessionMissingError()
       }
-      const { data, error } = await this.api.refreshAccessToken(refresh_token)
+      const { data, error } = await this.refreshAccessToken(refresh_token)
       if (error) {
         return { data: { session: null, user: null }, error: error }
       }
@@ -516,7 +516,7 @@ export default class GoTrueClient {
 
   /**
    * Gets the session data from a URL string
-   * @param options.storeSession Optionally store the session in the browser
+   * @param options.storeSession Optionally store the session in the browser or in-memory
    */
   async getSessionFromUrl(options?: { storeSession?: boolean }): Promise<
     | {
@@ -629,6 +629,58 @@ export default class GoTrueClient {
     }
   }
 
+  /**
+   * Sends a reset request to an email address.
+   * @param email The email address of the user.
+   * @param options.redirectTo A URL or mobile address to send the user to after they are confirmed.
+   */
+  async resetPasswordForEmail(
+    email: string,
+    options: {
+      redirectTo?: string
+      captchaToken?: string
+    } = {}
+  ): Promise<
+    | {
+        data: {}
+        error: null
+      }
+    | { data: null; error: AuthError }
+  > {
+    try {
+      return await _request(this.fetch, 'POST', `${this.url}/recover`, {
+        body: { email, gotrue_meta_security: { captcha_token: options.captchaToken } },
+        headers: this.headers,
+        redirectTo: options.redirectTo,
+      })
+    } catch (error) {
+      if (isAuthError(error)) {
+        return { data: null, error }
+      }
+
+      throw error
+    }
+  }
+
+  /**
+   * Generates a new JWT.
+   * @param refreshToken A valid refresh token that was returned on login.
+   */
+  async refreshAccessToken(refreshToken: string): Promise<AuthResponse> {
+    try {
+      return await _request(this.fetch, 'POST', `${this.url}/token?grant_type=refresh_token`, {
+        body: { refresh_token: refreshToken },
+        headers: this.headers,
+        xform: _sessionResponse,
+      })
+    } catch (error) {
+      if (isAuthError(error)) {
+        return { data: { session: null, user: null }, error }
+      }
+      throw error
+    }
+  }
+
   private _doesSessionExist(maybeSession: unknown): maybeSession is Session {
     const isValidSession =
       typeof maybeSession === 'object' &&
@@ -721,7 +773,7 @@ export default class GoTrueClient {
       if (!refreshToken) {
         throw new AuthSessionMissingError()
       }
-      const { data, error } = await this.api.refreshAccessToken(refreshToken)
+      const { data, error } = await this.refreshAccessToken(refreshToken)
       if (error) throw error
       if (!data.session) throw new AuthSessionMissingError()
 

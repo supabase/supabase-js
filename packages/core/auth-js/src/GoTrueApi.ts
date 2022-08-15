@@ -1,13 +1,6 @@
 import { Fetch, _request, _sessionResponse, _userResponse } from './lib/fetch'
 import { resolveFetch } from './lib/helpers'
-import {
-  AdminUserAttributes,
-  AuthResponse,
-  Provider,
-  Session,
-  User,
-  UserResponse,
-} from './lib/types'
+import { AdminUserAttributes, Provider, Session, User, UserResponse } from './lib/types'
 import { AuthError, isAuthError } from './lib/errors'
 
 export default class GoTrueApi {
@@ -107,58 +100,6 @@ export default class GoTrueApi {
         return { data: { user: null }, error }
       }
 
-      throw error
-    }
-  }
-
-  /**
-   * Sends a reset request to an email address.
-   * @param email The email address of the user.
-   * @param options.redirectTo A URL or mobile address to send the user to after they are confirmed.
-   */
-  async resetPasswordForEmail(
-    email: string,
-    options: {
-      redirectTo?: string
-      captchaToken?: string
-    } = {}
-  ): Promise<
-    | {
-        data: {}
-        error: null
-      }
-    | { data: null; error: AuthError }
-  > {
-    try {
-      return await _request(this.fetch, 'POST', `${this.url}/recover`, {
-        body: { email, gotrue_meta_security: { captcha_token: options.captchaToken } },
-        headers: this.headers,
-        redirectTo: options.redirectTo,
-      })
-    } catch (error) {
-      if (isAuthError(error)) {
-        return { data: null, error }
-      }
-
-      throw error
-    }
-  }
-
-  /**
-   * Generates a new JWT.
-   * @param refreshToken A valid refresh token that was returned on login.
-   */
-  async refreshAccessToken(refreshToken: string): Promise<AuthResponse> {
-    try {
-      return await _request(this.fetch, 'POST', `${this.url}/token?grant_type=refresh_token`, {
-        body: { refresh_token: refreshToken },
-        headers: this.headers,
-        xform: _sessionResponse,
-      })
-    } catch (error) {
-      if (isAuthError(error)) {
-        return { data: { session: null, user: null }, error }
-      }
       throw error
     }
   }
