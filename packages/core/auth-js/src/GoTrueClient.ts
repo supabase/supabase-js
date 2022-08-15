@@ -1,4 +1,4 @@
-import GoTrueApi from './GoTrueApi'
+import GoTrueAdminApi from './GoTrueAdminApi'
 import {
   DEFAULT_HEADERS,
   EXPIRY_MARGIN,
@@ -31,7 +31,6 @@ import type {
   AuthResponse,
   CallRefreshTokenResult,
   OAuthResponse,
-  OpenIDConnectCredentials,
   Provider,
   Session,
   SignInWithOAuthCredentials,
@@ -60,10 +59,11 @@ const DEFAULT_OPTIONS = {
 
 export default class GoTrueClient {
   /**
-   * Namespace for the GoTrue API methods.
-   * These can be used for example to get a user from a JWT in a server environment or reset a user's password.
+   * Namespace for the GoTrue admin methods.
+   * These methods should only be used in a trusted server-side environment.
+   * These methods
    */
-  api: GoTrueApi
+  admin: GoTrueAdminApi
   /**
    * The storage key used to identity the values saved in localStorage
    */
@@ -118,7 +118,7 @@ export default class GoTrueClient {
     this.autoRefreshToken = settings.autoRefreshToken
     this.persistSession = settings.persistSession
     this.storage = settings.storage || globalThis.localStorage
-    this.api = new GoTrueApi({
+    this.admin = new GoTrueAdminApi({
       url: settings.url,
       headers: settings.headers,
       fetch: settings.fetch,
@@ -466,7 +466,6 @@ export default class GoTrueClient {
       if (!session) {
         throw new AuthSessionMissingError()
       }
-      // const { data, error: userError } = await this.api.updateUser(session.access_token, attributes)
       const { data, error: userError } = await _request(this.fetch, 'PUT', `${this.url}/user`, {
         body: attributes,
         jwt: session.access_token,
@@ -591,7 +590,7 @@ export default class GoTrueClient {
     }
     const accessToken = session?.access_token
     if (accessToken) {
-      const { error } = await this.api.signOut(accessToken)
+      const { error } = await this.admin.signOut(accessToken)
       if (error) return { error }
     }
     this._removeSession()
@@ -700,7 +699,7 @@ export default class GoTrueClient {
       queryParams?: { [key: string]: string }
     } = {}
   ) {
-    const url: string = this.api.getUrlForProvider(provider, {
+    const url: string = this._getUrlForProvider(provider, {
       redirectTo: options.redirectTo,
       scopes: options.scopes,
       queryParams: options.queryParams,
@@ -883,5 +882,34 @@ export default class GoTrueClient {
     } catch (error) {
       console.error('_handleVisibilityChange', error)
     }
+  }
+
+  /**
+   * Generates the relevant login URL for a third-party provider.
+   * @param provider One of the providers supported by GoTrue.
+   * @param options.redirectTo A URL or mobile address to send the user to after they are confirmed.
+   * @param options.scopes A space-separated list of scopes granted to the OAuth application.
+   * @param options.queryParams An object of key-value pairs containing query parameters granted to the OAuth application.
+   */
+  private _getUrlForProvider(
+    provider: Provider,
+    options: {
+      redirectTo?: string
+      scopes?: string
+      queryParams?: { [key: string]: string }
+    }
+  ) {
+    const urlParams: string[] = [`provider=${encodeURIComponent(provider)}`]
+    if (options?.redirectTo) {
+      urlParams.push(`redirect_to=${encodeURIComponent(options.redirectTo)}`)
+    }
+    if (options?.scopes) {
+      urlParams.push(`scopes=${encodeURIComponent(options.scopes)}`)
+    }
+    if (options?.queryParams) {
+      const query = new URLSearchParams(options.queryParams)
+      urlParams.push(query.toString())
+    }
+    return `${this.url}/authorize?${urlParams.join('&')}`
   }
 }

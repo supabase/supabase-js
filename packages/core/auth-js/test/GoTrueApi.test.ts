@@ -15,7 +15,7 @@ import {
 
 import type { User } from '../src/lib/types'
 
-describe('GoTrueApi', () => {
+describe('GoTrueAdminApi', () => {
   describe('User creation', () => {
     test('createUser() should create a new user', async () => {
       const { email } = mockUserCredentials()

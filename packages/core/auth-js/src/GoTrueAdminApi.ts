@@ -1,9 +1,9 @@
-import { Fetch, _request, _sessionResponse, _userResponse } from './lib/fetch'
+import { Fetch, _request, _userResponse } from './lib/fetch'
 import { resolveFetch } from './lib/helpers'
-import { AdminUserAttributes, Provider, Session, User, UserResponse } from './lib/types'
+import { AdminUserAttributes, Session, User, UserResponse } from './lib/types'
 import { AuthError, isAuthError } from './lib/errors'
 
-export default class GoTrueApi {
+export default class GoTrueAdminApi {
   protected url: string
   protected headers: {
     [key: string]: string
@@ -24,35 +24,6 @@ export default class GoTrueApi {
     this.url = url
     this.headers = headers
     this.fetch = resolveFetch(fetch)
-  }
-
-  /**
-   * Generates the relevant login URL for a third-party provider.
-   * @param provider One of the providers supported by GoTrue.
-   * @param options.redirectTo A URL or mobile address to send the user to after they are confirmed.
-   * @param options.scopes A space-separated list of scopes granted to the OAuth application.
-   * @param options.queryParams An object of key-value pairs containing query parameters granted to the OAuth application.
-   */
-  getUrlForProvider(
-    provider: Provider,
-    options: {
-      redirectTo?: string
-      scopes?: string
-      queryParams?: { [key: string]: string }
-    }
-  ) {
-    const urlParams: string[] = [`provider=${encodeURIComponent(provider)}`]
-    if (options?.redirectTo) {
-      urlParams.push(`redirect_to=${encodeURIComponent(options.redirectTo)}`)
-    }
-    if (options?.scopes) {
-      urlParams.push(`scopes=${encodeURIComponent(options.scopes)}`)
-    }
-    if (options?.queryParams) {
-      const query = new URLSearchParams(options.queryParams)
-      urlParams.push(query.toString())
-    }
-    return `${this.url}/authorize?${urlParams.join('&')}`
   }
 
   /**
