@@ -275,22 +275,6 @@ describe('GoTrueApi', () => {
   })
 
   describe('User registration', () => {
-    test('signUpWithEmail() creates a new user', async () => {
-      const { email, password } = mockUserCredentials()
-
-      const { error, data } = await serviceRoleApiClient.signUpWithEmail(email, password, {
-        redirectTo: GOTRUE_URL_SIGNUP_ENABLED_AUTO_CONFIRM_ON,
-        data: { status: 'alpha' },
-      })
-
-      const user = (data as Session).user as User
-
-      expect(error).toBeNull()
-      expect(user).not.toBeUndefined()
-      expect(user?.email).toEqual(email)
-      expect(user).toHaveProperty('email_confirmed_at')
-    })
-
     test('generateLink() supports signUp with generate confirmation signup link ', async () => {
       const { email, password } = mockUserCredentials()
 
@@ -388,34 +372,6 @@ describe('GoTrueApi', () => {
   })
 
   describe('User authentication', () => {
-    describe('sendMagicLinkEmail()', () => {
-      test('sendMagicLinkEmail() with invalid email', async () => {
-        const redirectTo = 'http://localhost:9999/welcome'
-
-        const { error, data } = await serviceRoleApiClient.sendMagicLinkEmail(
-          'this-is-not-an-email',
-          {
-            redirectTo,
-          }
-        )
-
-        expect(data).toBeNull()
-        expect(error?.message).toEqual('Unable to validate email address: invalid format')
-      })
-
-      test('sendMagicLinkEmail() with valid email', async () => {
-        const { email } = mockUserCredentials()
-        const redirectTo = 'http://localhost:9999/welcome'
-
-        const { error, data } = await serviceRoleApiClient.sendMagicLinkEmail(email, {
-          redirectTo,
-        })
-
-        expect(data).toBeTruthy()
-        expect(error).toBeNull()
-      })
-    })
-
     describe('signOut()', () => {
       test('signOut() with an valid access token', async () => {
         const { email, password } = mockUserCredentials()
@@ -440,51 +396,6 @@ describe('GoTrueApi', () => {
     })
   })
 
-  describe('Phone/One-Time-Password authentication', () => {
-    describe('signUpWithPhone()', () => {
-      test('signUpWithPhone() with an invalid phone number', async () => {
-        const { phone, password } = mockUserCredentials()
-        const { error, data } = await serviceRoleApiClientWithSms.signUpWithPhone(
-          `${phone}-invalid`,
-          password,
-          {
-            data: { mobile_provider: 'Supaphone' },
-          }
-        )
-
-        data // ?
-
-        expect(data).toBeNull()
-        expect(error?.message).toEqual('Invalid phone number format')
-      })
-    })
-
-    describe('signInWithPhone()', () => {
-      test('signInWithPhone() without an account', async () => {
-        const { phone, password } = mockUserCredentials()
-
-        const { error, session } = await serviceRoleApiClientWithSms.signInWithPhone(
-          phone,
-          password
-        )
-
-        expect(session).toBeNull()
-        expect(error?.message).toEqual('Invalid login credentials')
-      })
-    })
-
-    describe('sendMobileOTP()', () => {
-      test('sendMobileOTP() with an Invalid Phone Number', async () => {
-        const { phone } = mockUserCredentials()
-
-        const { error, data } = await serviceRoleApiClient.sendMobileOTP(`++bad-${phone}-number`)
-
-        expect(data).toBeNull()
-        expect(error?.message).toMatch(/^Invalid phone number format/)
-      })
-    })
-  })
-
   describe('Email/Phone OTP Verification', () => {
     describe('GoTrueClient verifyOTP()', () => {
       test('verifyOTP() with non-existent phone number', async () => {
@@ -496,6 +407,7 @@ describe('GoTrueApi', () => {
         } = await clientApiAutoConfirmDisabledClient.verifyOTP({
           phone: `${phone}`,
           token: otp,
+          type: 'sms',
         })
 
         expect(user).toBeNull()
@@ -511,36 +423,10 @@ describe('GoTrueApi', () => {
         } = await clientApiAutoConfirmDisabledClient.verifyOTP({
           phone: `${phone}-invalid`,
           token: otp,
-        })
-
-        expect(user).toBeNull()
-        expect(error?.message).toEqual('Invalid phone number format')
-      })
-    })
-
-    describe('GoTrueApi verifyOTP()', () => {
-      test('verifyOTP() with invalid email', async () => {
-        const { email } = mockUserCredentials()
-        const otp = mockVerificationOTP()
-        const { data, error } = await serviceRoleApiClientWithSms.verifyOTP({
-          email: `${email}-@invalid`,
-          token: otp,
-          type: 'signup',
-        })
-
-        expect(data).toBeNull()
-        expect(error?.message).toEqual('Invalid email format')
-      })
-      test('verifyOTP() with invalid phone', async () => {
-        const { phone } = mockUserCredentials()
-        const otp = mockVerificationOTP()
-        const { data, error } = await serviceRoleApiClientWithSms.verifyOTP({
-          phone: `${phone}-invalid`,
-          token: otp,
           type: 'sms',
         })
 
-        expect(data).toBeNull()
+        expect(user).toBeNull()
         expect(error?.message).toEqual('Invalid phone number format')
       })
     })

@@ -78,7 +78,7 @@ export interface Session {
   /**
    * The number of seconds until the token expires (since it was issued). Returned when a login is confirmed.
    */
-  expires_in?: number
+  expires_in: number
   /**
    * A timestamp of when the token will expire. Returned when a login is confirmed.
    */
@@ -262,7 +262,7 @@ export interface VerifyMobileOTPParams {
   email?: undefined
   phone: string
   token: string
-  type?: MobileOTPType
+  type: MobileOTPType
 }
 export interface VerifyEmailOTPParams {
   email: string

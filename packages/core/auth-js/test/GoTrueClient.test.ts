@@ -1,4 +1,3 @@
-import { User } from '../src'
 import { AuthError } from '../src/lib/errors'
 import {
   authClient as auth,
@@ -502,14 +501,12 @@ describe('User management', () => {
       password,
     })
 
-    const {
-      data: { user },
-    } = await authWithSession.signInWithPassword({
+    const { data } = await authWithSession.signInWithPassword({
       email,
       password,
     })
 
-    expect(user).not.toBeNull()
+    expect(data.user).not.toBeNull()
 
     await authWithSession.signOut()
     const { session, error } = await authWithSession.getSession()

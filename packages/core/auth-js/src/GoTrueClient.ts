@@ -14,13 +14,14 @@ import {
   AuthUnknownError,
   isAuthError,
 } from './lib/errors'
-import { Fetch } from './lib/fetch'
+import { Fetch, _request, _sessionResponse } from './lib/fetch'
 import {
   Deferred,
   getItemAsync,
   getParameterByName,
   isBrowser,
   removeItemAsync,
+  resolveFetch,
   setItemAsync,
   uuid,
 } from './lib/helpers'
@@ -82,6 +83,11 @@ export default class GoTrueClient {
   // eslint-disable-next-line @typescript-eslint/no-inferrable-types
   protected networkRetries: number = 0
   protected refreshingDeferred: Deferred<CallRefreshTokenResult> | null = null
+  protected url: string
+  protected headers: {
+    [key: string]: string
+  }
+  protected fetch: Fetch
 
   /**
    * Create a new client for use in the browser.
@@ -119,6 +125,9 @@ export default class GoTrueClient {
     })
     this._recoverAndRefresh()
     this._handleVisibilityChange()
+    this.url = settings.url
+    this.headers = settings.headers
+    this.fetch = resolveFetch(settings.fetch)
 
     if (settings.detectSessionInUrl && isBrowser() && !!getParameterByName('access_token')) {
       // Handle the OAuth redirect
@@ -152,14 +161,27 @@ export default class GoTrueClient {
 
       const { data, error } =
         phone && password
-          ? await this.api.signUpWithPhone(phone!, password!, {
-              data: options.data,
-              captchaToken: options.captchaToken,
-            })
-          : await this.api.signUpWithEmail(email!, password!, {
+          ? await _request(this.fetch, 'POST', `${this.url}/signup`, {
+              headers: this.headers,
               redirectTo: options.redirectTo,
-              data: options.data,
-              captchaToken: options.captchaToken,
+              body: {
+                phone,
+                password,
+                data: options.data,
+                gotrue_meta_security: { captcha_token: options.captchaToken },
+              },
+              xform: _sessionResponse,
+            })
+          : await _request(this.fetch, 'POST', `${this.url}/signup`, {
+              headers: this.headers,
+              redirectTo: options.redirectTo,
+              body: {
+                email,
+                password,
+                data: options.data,
+                gotrue_meta_security: { captcha_token: options.captchaToken },
+              },
+              xform: _sessionResponse,
             })
 
       if (error) {
@@ -170,16 +192,12 @@ export default class GoTrueClient {
         throw 'An error occurred on sign up.'
       }
 
-      let session: Session | null = null
-      let user: User | null = null
+      const session: Session | null = data.session
+      const user: User | null = data.user
 
-      if ((data as Session).access_token) {
-        session = data as Session
-        user = session.user as User
-        this._saveSession(session)
+      if (data.session) {
+        this._saveSession(data.session)
         this._notifyAllSubscribers('SIGNED_IN', session)
-      } else {
-        user = data as User
       }
 
       return { data: { user, session }, error: null }
@@ -206,15 +224,25 @@ export default class GoTrueClient {
 
       if ('email' in credentials) {
         const { email, password, options } = credentials
-        return this._handleEmailSignIn(email, password, {
-          captchaToken: options?.captchaToken,
+        return await _request(this.fetch, 'POST', `${this.url}/token?grant_type=password`, {
+          body: {
+            email,
+            password,
+            gotrue_meta_security: { hcaptcha_token: options?.captchaToken },
+          },
+          xform: _sessionResponse,
         })
       }
 
       if ('phone' in credentials) {
         const { phone, password, options } = credentials
-        return this._handlePhoneSignIn(phone, password, {
-          captchaToken: options?.captchaToken,
+        return await _request(this.fetch, 'POST', `${this.url}/token?grant_type=password`, {
+          body: {
+            phone,
+            password,
+            gotrue_meta_security: { hcaptcha_token: options?.captchaToken },
+          },
+          xform: _sessionResponse,
         })
       }
       throw new AuthInvalidCredentialsError(
@@ -259,18 +287,25 @@ export default class GoTrueClient {
 
       if ('email' in credentials) {
         const { email, options } = credentials
-        const { error } = await this.api.sendMagicLinkEmail(email, {
+        const { error } = await _request(this.fetch, 'POST', `${this.url}/otp`, {
+          body: {
+            email,
+            create_user: options?.shouldCreateUser ?? true,
+            gotrue_meta_security: { captcha_token: options?.captchaToken },
+          },
           redirectTo: options?.emailRedirectTo,
-          shouldCreateUser: options?.shouldCreateUser,
-          captchaToken: options?.captchaToken,
+          headers: this.headers,
         })
         return { data: { user: null, session: null }, error }
       }
       if ('phone' in credentials) {
         const { phone, options } = credentials
-        const { error } = await this.api.sendMobileOTP(phone, {
-          shouldCreateUser: options?.shouldCreateUser,
-          captchaToken: options?.captchaToken,
+        const { error } = await _request(this.fetch, 'POST', `${this.url}/otp`, {
+          body: {
+            phone,
+            create_user: options?.shouldCreateUser ?? true,
+            gotrue_meta_security: { captcha_token: options?.captchaToken },
+          },
         })
         return { data: { user: null, session: null }, error }
       }
@@ -291,17 +326,26 @@ export default class GoTrueClient {
    * @param token The user's password.
    * @param type The user's verification type.
    * @param options.redirectTo A URL or mobile address to send the user to after they are confirmed.
+   * @param options.captchaToken An optional hCaptcha verification token.
    */
   async verifyOTP(
     params: VerifyOTPParams,
     options: {
       redirectTo?: string
+      captchaToken?: string
     } = {}
   ): Promise<AuthResponse> {
     try {
       this._removeSession()
 
-      const { data, error } = await this.api.verifyOTP(params, options)
+      const { data, error } = await _request(this.fetch, 'POST', `${this.url}/verify`, {
+        body: {
+          ...params,
+          gotrue_meta_security: { captchaToken: options?.captchaToken },
+        },
+        redirectTo: options.redirectTo,
+        xform: _sessionResponse,
+      })
 
       if (error) {
         throw error
@@ -311,18 +355,12 @@ export default class GoTrueClient {
         throw 'An error occurred on token verification.'
       }
 
-      let session: Session | null = null
-      let user: User | null = null
+      const session: Session | null = data.session
+      const user: User = data.user
 
       if ((data as Session).access_token) {
-        session = data as Session
-        user = session.user as User
-        this._saveSession(session)
+        this._saveSession(session as Session)
         this._notifyAllSubscribers('SIGNED_IN', session)
-      }
-
-      if ((data as User).id) {
-        user = data as User
       }
 
       return { data: { user, session }, error: null }
@@ -459,7 +497,7 @@ export default class GoTrueClient {
         return { session: null, error: error }
       }
 
-      this._saveSession(session)
+      this._saveSession(session!)
 
       this._notifyAllSubscribers('TOKEN_REFRESHED', session)
       return { session: session, error: null }
@@ -505,7 +543,7 @@ export default class GoTrueClient {
       const { data, error } = await this.api.getUser(access_token)
       if (error) throw error
 
-      const user: User = data.user
+      const user: User = data.user!
       const session: Session = {
         provider_token,
         access_token,
@@ -596,62 +634,6 @@ export default class GoTrueClient {
       'expires_at' in maybeSession
 
     return isValidSession
-  }
-
-  private async _handleEmailSignIn(
-    email: string,
-    password: string,
-    options: {
-      captchaToken?: string
-    } = {}
-  ): Promise<AuthResponse> {
-    try {
-      const { data, error } = await this.api.signInWithEmail(email, password, {
-        captchaToken: options.captchaToken,
-      })
-      if (error || !data) return { data: { user: null, session: null }, error }
-
-      if (data?.user?.confirmed_at || data?.user?.email_confirmed_at) {
-        this._saveSession(data)
-        this._notifyAllSubscribers('SIGNED_IN', data)
-      }
-
-      return { data: { user: data.user, session: data }, error: null }
-    } catch (error) {
-      if (isAuthError(error)) {
-        return { data: { user: null, session: null }, error }
-      }
-
-      throw error
-    }
-  }
-
-  private async _handlePhoneSignIn(
-    phone: string,
-    password: string,
-    options: {
-      captchaToken?: string
-    } = {}
-  ) {
-    try {
-      const { session, error } = await this.api.signInWithPhone(phone, password, {
-        captchaToken: options.captchaToken,
-      })
-      if (error || !session) return { data: { session: null, user: null }, error }
-
-      if (session?.user?.phone_confirmed_at) {
-        this._saveSession(session)
-        this._notifyAllSubscribers('SIGNED_IN', session)
-      }
-
-      return { data: { session, user: session.user }, error: null }
-    } catch (error) {
-      if (isAuthError(error)) {
-        return { data: { session: null, user: null }, error }
-      }
-
-      throw error
-    }
   }
 
   private _handleProviderSignIn(
