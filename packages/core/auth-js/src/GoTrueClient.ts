@@ -132,7 +132,7 @@ export default class GoTrueClient {
 
     if (settings.detectSessionInUrl && isBrowser() && !!getParameterByName('access_token')) {
       // Handle the OAuth redirect
-      this.getSessionFromUrl({ storeSession: true }).then(({ error }) => {
+      this._getSessionFromUrl().then(({ error }) => {
         if (error) {
           throw new AuthUnknownError('Error getting session from URL.', error)
         }
@@ -503,7 +503,7 @@ export default class GoTrueClient {
       if (!refresh_token) {
         throw new AuthSessionMissingError()
       }
-      const { data, error } = await this.refreshAccessToken(refresh_token)
+      const { data, error } = await this._refreshAccessToken(refresh_token)
       if (error) {
         return { data: { session: null, user: null }, error: error }
       }
@@ -525,7 +525,7 @@ export default class GoTrueClient {
    * Gets the session data from a URL string
    * @param options.storeSession Optionally store the session in the browser or in-memory
    */
-  async getSessionFromUrl(options?: { storeSession?: boolean }): Promise<
+  private async _getSessionFromUrl(): Promise<
     | {
         session: Session
         error: null
@@ -564,14 +564,14 @@ export default class GoTrueClient {
         token_type,
         user,
       }
-      if (options?.storeSession) {
-        this._saveSession(session)
-        const recoveryMode = getParameterByName('type')
-        this._notifyAllSubscribers('SIGNED_IN', session)
-        if (recoveryMode === 'recovery') {
-          this._notifyAllSubscribers('PASSWORD_RECOVERY', session)
-        }
+
+      this._saveSession(session)
+      const recoveryMode = getParameterByName('type')
+      this._notifyAllSubscribers('SIGNED_IN', session)
+      if (recoveryMode === 'recovery') {
+        this._notifyAllSubscribers('PASSWORD_RECOVERY', session)
       }
+
       // Remove tokens from URL
       window.location.hash = ''
 
@@ -674,7 +674,7 @@ export default class GoTrueClient {
    * Generates a new JWT.
    * @param refreshToken A valid refresh token that was returned on login.
    */
-  async refreshAccessToken(refreshToken: string): Promise<AuthResponse> {
+  private async _refreshAccessToken(refreshToken: string): Promise<AuthResponse> {
     try {
       return await _request(this.fetch, 'POST', `${this.url}/token?grant_type=refresh_token`, {
         body: { refresh_token: refreshToken },
@@ -781,7 +781,7 @@ export default class GoTrueClient {
       if (!refreshToken) {
         throw new AuthSessionMissingError()
       }
-      const { data, error } = await this.refreshAccessToken(refreshToken)
+      const { data, error } = await this._refreshAccessToken(refreshToken)
       if (error) throw error
       if (!data.session) throw new AuthSessionMissingError()
 

@@ -10,7 +10,8 @@ import {
 import { mockUserCredentials } from './lib/utils'
 
 describe('GoTrueClient', () => {
-  const refreshAccessTokenSpy = jest.spyOn(authWithSession, 'refreshAccessToken')
+  // @ts-expect-error 'Allow access to private _refreshAccessToken'
+  const refreshAccessTokenSpy = jest.spyOn(authWithSession, '_refreshAccessToken')
 
   afterEach(async () => {
     await auth.signOut()
@@ -126,6 +127,7 @@ describe('GoTrueClient', () => {
     test('_callRefreshToken() should resolve all pending refresh requests and reset deferred upon AuthError', async () => {
       const { email, password } = mockUserCredentials()
       refreshAccessTokenSpy.mockImplementationOnce(() =>
+        // @ts-expect-error 'Allow access to private _refreshAccessToken()'
         Promise.resolve({
           data: { session: null, user: null },
           error: new AuthError('Something did not work as expected'),
@@ -169,6 +171,8 @@ describe('GoTrueClient', () => {
       const mockError = new Error('Something did not work as expected')
 
       const { email, password } = mockUserCredentials()
+
+      // @ts-expect-error 'Allow access to private _refreshAccessToken()'
       refreshAccessTokenSpy.mockImplementationOnce(() => Promise.reject(mockError))
 
       const { error, data } = await authWithSession.signUp({
@@ -205,8 +209,9 @@ describe('GoTrueClient', () => {
       expect(session3).toHaveProperty('access_token')
     })
 
-    test('getSessionFromUrl() can only be called from a browser', async () => {
-      const { error, session } = await authWithSession.getSessionFromUrl()
+    test('_getSessionFromUrl() can only be called from a browser', async () => {
+      // @ts-expect-error 'Allow access to private _getSessionFromUrl()'
+      const { error, session } = await authWithSession._getSessionFromUrl()
 
       expect(error?.message).toEqual('No browser detected.')
       expect(session).toBeNull()
@@ -685,7 +690,8 @@ describe('User management', () => {
 
     expect(initialError).toBeNull()
 
-    const { error, data: refreshedSession } = await authWithSession.refreshAccessToken(
+    // @ts-expect-error 'Allow access to private _refreshAccessToken()'
+    const { error, data: refreshedSession } = await authWithSession._refreshAccessToken(
       data.session?.refresh_token || ''
     )
 
