@@ -148,6 +148,10 @@ export default class GoTrueClient {
    * @param phone The user's phone number.
    * @param options.redirectTo The redirect URL attached to the signup confirmation link. Does not redirect the user if it's a mobile signup.
    * @param options.data Optional user metadata.
+   * @param options.captchaToken Verification token received when the user completes the captcha on the site.
+   *
+   * @returns A logged-in session if the server has "autoconfirm" ON
+   * @returns A user if the server has "autoconfirm" OFF
    */
   async signUp(
     { email, password, phone }: UserCredentials,
@@ -217,7 +221,7 @@ export default class GoTrueClient {
    * @param email The user's email address.
    * @param phone The user's phone number.
    * @param password The user's password.
-   * @param options Valid options for password sign-ins.
+   * @param options.captchaToken Verification token received when the user completes the captcha on the site.
    */
   async signInWithPassword(credentials: SignInWithPasswordCredentials): Promise<AuthResponse> {
     try {
@@ -229,7 +233,7 @@ export default class GoTrueClient {
           body: {
             email,
             password,
-            gotrue_meta_security: { hcaptcha_token: options?.captchaToken },
+            gotrue_meta_security: { captcha_token: options?.captchaToken },
           },
           xform: _sessionResponse,
         })
@@ -241,7 +245,7 @@ export default class GoTrueClient {
           body: {
             phone,
             password,
-            gotrue_meta_security: { hcaptcha_token: options?.captchaToken },
+            gotrue_meta_security: { captcha_token: options?.captchaToken },
           },
           xform: _sessionResponse,
         })
@@ -263,8 +267,9 @@ export default class GoTrueClient {
    * @type SignInWithOAuthCredentials
    * @param provider One of the providers supported by GoTrue.
    * @param redirectTo A URL to send the user to after they are confirmed (OAuth logins only).
-   * @param scopes A space-separated list of scopes granted to the OAuth application.
-   * @param queryParams An object of query params
+   * @param options.scopes A space-separated list of scopes granted to the OAuth application.
+   * @param options.queryParams An object of query params
+   * @param options.captchaToken Verification token received when the user completes the captcha on the site.
    */
   async signInWithOAuth(credentials: SignInWithOAuthCredentials): Promise<OAuthResponse> {
     this._removeSession()
@@ -280,7 +285,9 @@ export default class GoTrueClient {
    * @type SignInWithPasswordlessCredentials
    * @param email The user's email address.
    * @param phone The user's phone number.
-   * @param options Valid options for passwordless sign-ins.
+   * @param options.captchaToken Verification token received when the user completes the captcha on the site.
+   * @param options.emailRedirectTo The redirect url sent in the magiclink. The url will be appended to the end of the magiclink url. Does not serve to redirect the user after this method is invoked.
+   * @param options.shouldCreateUser If set to false, signInWithOtp will not create a new user if the user does not exist. Defaults to true.
    */
   async signInWithOtp(credentials: SignInWithPasswordlessCredentials): Promise<AuthResponse> {
     try {
@@ -326,8 +333,8 @@ export default class GoTrueClient {
    * @param phone The user's phone number.
    * @param token The user's password.
    * @param type The user's verification type.
-   * @param options.redirectTo A URL or mobile address to send the user to after they are confirmed.
-   * @param options.captchaToken An optional hCaptcha verification token.
+   * @param options.redirectTo A URL to send the user to after they are confirmed.
+   * @param options.captchaToken An optional captcha verification token.
    */
   async verifyOTP(
     params: VerifyOTPParams,
@@ -632,7 +639,8 @@ export default class GoTrueClient {
   /**
    * Sends a reset request to an email address.
    * @param email The email address of the user.
-   * @param options.redirectTo A URL or mobile address to send the user to after they are confirmed.
+   * @param options.redirectTo A URL to send the user to after they are confirmed.
+   * @param captchaToken Verification token received when the user completes the captcha on the site.
    */
   async resetPasswordForEmail(
     email: string,

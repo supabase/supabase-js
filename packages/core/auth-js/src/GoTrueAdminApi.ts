@@ -84,7 +84,13 @@ export default class GoTrueAdminApi {
    * @param options.redirectTo The link type ("signup" or "magiclink" or "recovery" or "invite").
    */
   async generateLink(
-    type: 'signup' | 'magiclink' | 'recovery' | 'invite',
+    type:
+      | 'signup'
+      | 'magiclink'
+      | 'recovery'
+      | 'invite'
+      | 'email_change_current'
+      | 'email_change_new',
     email: string,
     options: {
       password?: string
