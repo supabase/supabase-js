@@ -15,7 +15,7 @@ type Presence = {
   [key: string]: any
 }
 
-type PresenceState = { [key: string]: Presence[] }
+export type PresenceState = { [key: string]: Presence[] }
 
 type PresenceDiff = {
   joins: PresenceState
@@ -108,6 +108,28 @@ export default class RealtimePresence {
 
         onSync()
       }
+    })
+
+    this.onJoin((key, currentPresences, newPresences) => {
+      this.channel.trigger('presence', {
+        event: 'join',
+        key,
+        currentPresences,
+        newPresences,
+      })
+    })
+
+    this.onLeave((key, currentPresences, leftPresences) => {
+      this.channel.trigger('presence', {
+        event: 'leave',
+        key,
+        currentPresences,
+        leftPresences,
+      })
+    })
+
+    this.onSync(() => {
+      this.channel.trigger('presence', { event: 'sync' })
     })
   }
 

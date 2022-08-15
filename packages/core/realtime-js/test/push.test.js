@@ -9,9 +9,9 @@ describe('constructor', () => {
     socket = new RealtimeClient('/socket', { timeout: 1234 })
   })
 
-  afterEach(async () => {
+  afterEach(() => {
     channel.unsubscribe()
-    await socket.disconnect()
+    socket.disconnect()
   })
 
   it('sets defaults', () => {
@@ -30,9 +30,9 @@ describe('updatePayload', () => {
     socket = new RealtimeClient('/socket', { timeout: 1234 })
   })
 
-  afterEach(async () => {
+  afterEach(() => {
     channel.unsubscribe()
-    await socket.disconnect()
+    socket.disconnect()
   })
 
   it('updates push payload', () => {

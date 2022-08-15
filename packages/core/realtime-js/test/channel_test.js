@@ -10,11 +10,11 @@ const defaultTimeout = 10000
 
 describe('constructor', () => {
   beforeEach(() => {
-    socket = new RealtimeClient('/socket', { timeout: 1234 })
+    socket = new RealtimeClient('ws://example.com/socket', { timeout: 1234 })
   })
 
-  afterEach(async () => {
-    await socket.disconnect()
+  afterEach(() => {
+    socket.disconnect()
     channel.unsubscribe()
   })
 
@@ -49,8 +49,8 @@ describe('join', () => {
     channel = socket.channel('topic', { one: 'two' })
   })
 
-  afterEach(async () => {
-    await socket.disconnect()
+  afterEach(() => {
+    socket.disconnect()
     channel.unsubscribe()
   })
 
@@ -83,9 +83,9 @@ describe('join', () => {
     assert.ok(spy.calledOnce)
     assert.ok(
       spy.calledWith({
-        topic: 'topic',
+        topic: 'realtime:topic',
         event: 'phx_join',
-        payload: { configs: { broadcast: { ack: false, self: false }, presence: { key: '' }, realtime: [] }, one: 'two' },
+        payload: { configs: { broadcast: { ack: false, self: false }, presence: { key: '' }, postgres_changes: [] }, one: 'two' },
         ref: defaultRef,
       })
     )
@@ -97,28 +97,17 @@ describe('join', () => {
 
     assert.equal(joinPush.timeout, defaultTimeout)
 
-    channel.subscribe(newTimeout)
+    channel.subscribe(() => {}, newTimeout)
 
     assert.equal(joinPush.timeout, newTimeout)
   })
 
-  describe('updateJoinPayload', () => {
-    beforeEach(() => {
-      socket = new RealtimeClient('/socket', { timeout: 1234 })
-    })
-  
-    afterEach(async () => {
-      await socket.disconnect()
-      channel.unsubscribe()
-    })
+  it('updates channel joinPush payload', () => {
+    const payloadStub = sinon.stub(channel.joinPush, 'updatePayload')
 
-    it('updates channel joinPush payload', () => {
-      const payloadStub = sinon.stub(channel.joinPush, 'updatePayload')
+    channel.updateJoinPayload({ access_token: 'token123' })
 
-      channel.updateJoinPayload({ user_token: 'token123' })
-
-      assert.ok(payloadStub.calledWith({ user_token: 'token123' }))
-    })
+    assert.ok(payloadStub.calledWith({ access_token: 'token123' }))
   })
 
   describe('timeout behavior', () => {
@@ -182,14 +171,14 @@ describe('joinPush', () => {
     },
 
     getBindings(type) {
-      return channel.bindings.filter((bind) => bind.type === type)
+      return channel.bindings[type].filter((bind) => bind.type === type)
     },
   }
 
   beforeEach(() => {
     clock = sinon.useFakeTimers()
 
-    socket = new RealtimeClient('/socket', { timeout: defaultTimeout })
+    socket = new RealtimeClient('ws://example.com/socket', { timeout: defaultTimeout })
 
     channel = socket.channel('topic', { one: 'two' })
     joinPush = channel.joinPush
@@ -197,9 +186,9 @@ describe('joinPush', () => {
     channel.subscribe()
   })
 
-  afterEach(async () => {
+  afterEach(() => {
     clock.restore()
-    await socket.disconnect()
+    socket.disconnect()
     channel.unsubscribe()
   })
 
@@ -466,7 +455,7 @@ describe('onError', () => {
   beforeEach(() => {
     clock = sinon.useFakeTimers()
 
-    socket = new RealtimeClient('/socket', { timeout: defaultTimeout })
+    socket = new RealtimeClient('ws://example.com/socket', { timeout: defaultTimeout })
     sinon.stub(socket, 'isConnected').callsFake(() => true)
     sinon.stub(socket, 'push').callsFake(() => true)
 
@@ -477,9 +466,9 @@ describe('onError', () => {
     channel.subscribe()
   })
 
-  afterEach(async () => {
+  afterEach(() => {
     clock.restore()
-    await socket.disconnect()
+    socket.disconnect()
     channel.unsubscribe()
   })
 
@@ -564,7 +553,7 @@ describe('onClose', () => {
   beforeEach(() => {
     clock = sinon.useFakeTimers()
 
-    socket = new RealtimeClient('/socket', { timeout: defaultTimeout })
+    socket = new RealtimeClient('ws://example.com/socket', { timeout: defaultTimeout })
     sinon.stub(socket, 'isConnected').callsFake(() => true)
     sinon.stub(socket, 'push').callsFake(() => true)
 
@@ -575,9 +564,9 @@ describe('onClose', () => {
     channel.subscribe()
   })
 
-  afterEach(async () => {
+  afterEach(() => {
     clock.restore()
-    await socket.disconnect()
+    socket.disconnect()
     channel.unsubscribe()
   })
 
@@ -624,13 +613,13 @@ describe('onClose', () => {
 
 describe('onMessage', () => {
   beforeEach(() => {
-    socket = new RealtimeClient('/socket')
+    socket = new RealtimeClient('ws://example.com/socket')
 
     channel = socket.channel('topic', { one: 'two' })
   })
 
-  afterEach(async () => {
-    await socket.disconnect()
+  afterEach(() => {
+    socket.disconnect()
     channel.unsubscribe()
   })
 
@@ -644,13 +633,13 @@ describe('onMessage', () => {
 
 describe('canPush', () => {
   beforeEach(() => {
-    socket = new RealtimeClient('/socket')
+    socket = new RealtimeClient('ws://example.com/socket')
 
     channel = socket.channel('topic', { one: 'two' })
   })
 
-  afterEach(async () => {
-    await socket.disconnect()
+  afterEach(() => {
+    socket.disconnect()
     channel.unsubscribe()
   })
 
@@ -683,14 +672,14 @@ describe('canPush', () => {
 
 describe('on', () => {
   beforeEach(() => {
-    socket = new RealtimeClient('/socket')
+    socket = new RealtimeClient('ws://example.com/socket')
     sinon.stub(socket, 'makeRef').callsFake(() => defaultRef)
 
     channel = socket.channel('topic', { one: 'two' })
   })
 
-  afterEach(async () => {
-    await socket.disconnect()
+  afterEach(() => {
+    socket.disconnect()
     channel.unsubscribe()
   })
 
@@ -715,8 +704,8 @@ describe('on', () => {
 
     assert.ok(!ignoredSpy.called)
 
-    channel.on('event', spy)
-    channel.on('otherEvent', ignoredSpy)
+    channel.on('event', {}, spy)
+    channel.on('otherEvent', {}, ignoredSpy)
 
     channel.trigger('event', {}, defaultRef)
 
@@ -737,14 +726,14 @@ describe('on', () => {
 
 describe('off', () => {
   beforeEach(() => {
-    socket = new RealtimeClient('/socket')
+    socket = new RealtimeClient('ws://example.com/socket')
     sinon.stub(socket, 'makeRef').callsFake(() => defaultRef)
 
     channel = socket.channel('topic', { one: 'two' })
   })
 
-  afterEach(async () => {
-    await socket.disconnect()
+  afterEach(() => {
+    socket.disconnect()
     channel.unsubscribe()
   })
 
@@ -773,7 +762,7 @@ describe('push', () => {
   let socketSpy
 
   const pushParams = {
-    topic: 'topic',
+    topic: 'realtime:topic',
     event: 'event',
     payload: { foo: 'bar' },
     ref: defaultRef,
@@ -782,7 +771,7 @@ describe('push', () => {
   beforeEach(() => {
     clock = sinon.useFakeTimers()
 
-    socket = new RealtimeClient('/socket', { timeout: defaultTimeout })
+    socket = new RealtimeClient('ws://example.com/socket', { timeout: defaultTimeout })
     sinon.stub(socket, 'makeRef').callsFake(() => defaultRef)
     sinon.stub(socket, 'isConnected').callsFake(() => true)
     socketSpy = sinon.stub(socket, 'push')
@@ -790,46 +779,48 @@ describe('push', () => {
     channel = socket.channel('topic', { one: 'two' })
   })
 
-  afterEach(async () => {
+  afterEach(() => {
     clock.restore()
-    await socket.disconnect()
+    socket.disconnect()
     channel.unsubscribe()
   })
 
   it('sends push event when successfully joined', () => {
-    channel.subscribe().trigger('ok', {})
+    channel.subscribe()
+    channel.joinPush.trigger('ok', {})
     channel.push('event', { foo: 'bar' })
 
     assert.ok(socketSpy.calledWith(pushParams))
   })
 
   it('enqueues push event to be sent once join has succeeded', () => {
-    joinPush = channel.subscribe()
+    channel.subscribe()
     channel.push('event', { foo: 'bar' })
 
     assert.ok(!socketSpy.calledWith(pushParams))
 
     clock.tick(channel.timeout / 2)
-    joinPush.trigger('ok', {})
+    channel.joinPush.trigger('ok', {})
 
     assert.ok(socketSpy.calledWith(pushParams))
   })
 
   it('does not push if channel join times out', () => {
-    joinPush = channel.subscribe()
+    channel.subscribe()
     channel.push('event', { foo: 'bar' })
 
     assert.ok(!socketSpy.calledWith(pushParams))
 
     clock.tick(channel.timeout * 2)
-    joinPush.trigger('ok', {})
+    channel.joinPush.trigger('ok', {})
 
     assert.ok(!socketSpy.calledWith(pushParams))
   })
 
   it('uses channel timeout by default', () => {
     const timeoutSpy = sinon.spy()
-    channel.subscribe().trigger('ok', {})
+    channel.subscribe()
+    channel.joinPush.trigger('ok', {})
 
     channel.push('event', { foo: 'bar' }).receive('timeout', timeoutSpy)
 
@@ -842,7 +833,8 @@ describe('push', () => {
 
   it('accepts timeout arg', () => {
     const timeoutSpy = sinon.spy()
-    channel.subscribe().trigger('ok', {})
+    channel.subscribe()
+    channel.joinPush.trigger('ok', {})
 
     channel
       .push('event', { foo: 'bar' }, channel.timeout * 2)
@@ -856,7 +848,8 @@ describe('push', () => {
   })
 
   it("does not time out after receiving 'ok'", () => {
-    channel.subscribe().trigger('ok', {})
+    channel.subscribe()
+    channel.joinPush.trigger('ok', {})
     const timeoutSpy = sinon.spy()
     const push = channel.push('event', { foo: 'bar' })
     push.receive('timeout', timeoutSpy)
@@ -885,17 +878,18 @@ describe('leave', () => {
   beforeEach(() => {
     clock = sinon.useFakeTimers()
 
-    socket = new RealtimeClient('/socket', { timeout: defaultTimeout })
+    socket = new RealtimeClient('ws://example.com/socket', { timeout: defaultTimeout })
     sinon.stub(socket, 'isConnected').callsFake(() => true)
     socketSpy = sinon.stub(socket, 'push')
 
     channel = socket.channel('topic', { one: 'two' })
-    channel.subscribe().trigger('ok', {})
+    channel.subscribe()
+    channel.joinPush.trigger('ok', {})
   })
 
-  afterEach(async () => {
+  afterEach(() => {
     clock.restore()
-    await socket.disconnect()
+    socket.disconnect()
     channel.unsubscribe();
   })
 
@@ -906,7 +900,7 @@ describe('leave', () => {
 
     assert.ok(
       socketSpy.calledWith({
-        topic: 'topic',
+        topic: 'realtime:topic',
         event: 'phx_leave',
         payload: {},
         ref: defaultRef,
@@ -918,7 +912,8 @@ describe('leave', () => {
     const anotherChannel = socket.channel('another', { three: 'four' })
     assert.equal(socket.channels.length, 2)
 
-    channel.unsubscribe().trigger('ok', {})
+    channel.unsubscribe()
+    channel.joinPush.trigger('ok', {})
 
     assert.equal(socket.channels.length, 1)
     assert.deepEqual(socket.channels[0], anotherChannel)
@@ -927,7 +922,8 @@ describe('leave', () => {
   it("sets state to closed on 'ok' event", () => {
     assert.notEqual(channel.state, 'closed')
 
-    channel.unsubscribe().trigger('ok', {})
+    channel.unsubscribe()
+    channel.joinPush.trigger('ok', {})
 
     assert.equal(channel.state, 'closed')
   })

@@ -17,7 +17,6 @@ export type Options = {
   transport?: WebSocket
   timeout?: number
   heartbeatIntervalMs?: number
-  longpollerTimeout?: number
   logger?: Function
   encode?: Function
   decode?: Function
@@ -48,7 +47,6 @@ export default class RealtimeClient {
   timeout: number = DEFAULT_TIMEOUT
   transport: any = w3cwebsocket
   heartbeatIntervalMs: number = 30000
-  longpollerTimeout: number = 20000
   heartbeatTimer: ReturnType<typeof setInterval> | undefined = undefined
   pendingHeartbeatRef: string | null = null
   ref: number = 0
@@ -84,7 +82,6 @@ export default class RealtimeClient {
    * @param options.logger The optional function for specialized logging, ie: logger: (kind, msg, data) => { console.log(`${kind}: ${msg}`, data) }
    * @param options.encode The function to encode outgoing messages. Defaults to JSON: (payload, callback) => callback(JSON.stringify(payload))
    * @param options.decode The function to decode incoming messages. Defaults to Serializer's decode.
-   * @param options.longpollerTimeout The maximum timeout of a long poll AJAX request. Defaults to 20s (double the server long poll timer).
    * @param options.reconnectAfterMs he optional function that returns the millsec reconnect interval. Defaults to stepped backoff off.
    */
   constructor(endPoint: string, options?: Options) {
@@ -97,8 +94,6 @@ export default class RealtimeClient {
     if (options?.transport) this.transport = options.transport
     if (options?.heartbeatIntervalMs)
       this.heartbeatIntervalMs = options.heartbeatIntervalMs
-    if (options?.longpollerTimeout)
-      this.longpollerTimeout = options.longpollerTimeout
 
     this.reconnectAfterMs = options?.reconnectAfterMs
       ? options.reconnectAfterMs
@@ -114,7 +109,7 @@ export default class RealtimeClient {
       ? options.decode
       : this.serializer.decode.bind(this.serializer)
     this.reconnectTimer = new Timer(async () => {
-      await this.disconnect()
+      this.disconnect()
       this.connect()
     }, this.reconnectAfterMs)
   }
@@ -130,7 +125,6 @@ export default class RealtimeClient {
     this.conn = new this.transport(this.endPointURL(), [], null, this.headers)
 
     if (this.conn) {
-      // this.conn.timeout = this.longpollerTimeout // TYPE ERROR
       this.conn.binaryType = 'arraybuffer'
       this.conn.onopen = () => this._onConnOpen()
       this.conn.onerror = (error) => this._onConnError(error as ErrorEvent)
@@ -145,28 +139,42 @@ export default class RealtimeClient {
    * @param code A numeric status code to send on disconnect.
    * @param reason A custom reason for the disconnect.
    */
-  disconnect(
-    code?: number,
-    reason?: string
-  ): Promise<{ error: Error | null; data: boolean }> {
-    return new Promise((resolve, _reject) => {
-      try {
-        if (this.conn) {
-          this.conn.onclose = function () {} // noop
-          if (code) {
-            this.conn.close(code, reason || '')
-          } else {
-            this.conn.close()
-          }
-          this.conn = null
-          // remove open handles
-          this.heartbeatTimer && clearInterval(this.heartbeatTimer)
-          this.reconnectTimer.reset()
-        }
-        resolve({ error: null, data: true })
-      } catch (error) {
-        resolve({ error: error as Error, data: false })
+  disconnect(code?: number, reason?: string): void {
+    if (this.conn) {
+      this.conn.onclose = function () {} // noop
+      if (code) {
+        this.conn.close(code, reason ?? '')
+      } else {
+        this.conn.close()
       }
+      this.conn = null
+      // remove open handles
+      this.heartbeatTimer && clearInterval(this.heartbeatTimer)
+      this.reconnectTimer.reset()
+    }
+  }
+
+  getChannels(): RealtimeChannel[] {
+    return this.channels
+  }
+
+  removeChannel(
+    channel: RealtimeChannel
+  ): Promise<'ok' | 'timed out' | 'error'> {
+    return channel.unsubscribe().then((status) => {
+      if (this.channels.length === 0) {
+        this.disconnect()
+      }
+      return status
+    })
+  }
+
+  removeAllChannels(): Promise<('ok' | 'timed out' | 'error')[]> {
+    return Promise.all(
+      this.channels.map((channel) => channel.unsubscribe())
+    ).then((values) => {
+      this.disconnect()
+      return values
     })
   }
 
@@ -262,7 +270,11 @@ export default class RealtimeClient {
   }
 
   channel(topic: string, params: ChannelParams = {}): RealtimeChannel {
-    const chan = new RealtimeChannel(topic, params, this)
+    if (!this.isConnected()) {
+      this.connect()
+    }
+
+    const chan = new RealtimeChannel(`realtime:${topic}`, params, this)
     this.channels.push(chan)
     return chan
   }
@@ -347,7 +359,7 @@ export default class RealtimeClient {
     this.accessToken = token
 
     this.channels.forEach((channel) => {
-      token && channel.updateJoinPayload({ user_token: token })
+      token && channel.updateJoinPayload({ access_token: token })
 
       if (channel.joinedOnce && channel.isJoined()) {
         channel.push(CHANNEL_EVENTS.access_token, { access_token: token })
