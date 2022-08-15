@@ -1,4 +1,4 @@
-import GoTrueApi from './GoTrueApi'
+import GoTrueAdminApi from './GoTrueAdminApi'
 import {
   DEFAULT_HEADERS,
   EXPIRY_MARGIN,
@@ -15,13 +15,14 @@ import {
   AuthUnknownError,
   isAuthError,
 } from './lib/errors'
-import { Fetch } from './lib/fetch'
+import { Fetch, _request, _sessionResponse, _userResponse } from './lib/fetch'
 import {
   Deferred,
   getItemAsync,
   getParameterByName,
   isBrowser,
   removeItemAsync,
+  resolveFetch,
   setItemAsync,
   uuid,
 } from './lib/helpers'
@@ -31,7 +32,6 @@ import type {
   AuthResponse,
   CallRefreshTokenResult,
   OAuthResponse,
-  OpenIDConnectCredentials,
   Provider,
   Session,
   SignInWithOAuthCredentials,
@@ -60,10 +60,11 @@ const DEFAULT_OPTIONS = {
 
 export default class GoTrueClient {
   /**
-   * Namespace for the GoTrue API methods.
-   * These can be used for example to get a user from a JWT in a server environment or reset a user's password.
+   * Namespace for the GoTrue admin methods.
+   * These methods should only be used in a trusted server-side environment.
+   * These methods
    */
-  api: GoTrueApi
+  admin: GoTrueAdminApi
   /**
    * The storage key used to identity the values saved in localStorage
    */
@@ -83,6 +84,11 @@ export default class GoTrueClient {
   // eslint-disable-next-line @typescript-eslint/no-inferrable-types
   protected networkRetries: number = 0
   protected refreshingDeferred: Deferred<CallRefreshTokenResult> | null = null
+  protected url: string
+  protected headers: {
+    [key: string]: string
+  }
+  protected fetch: Fetch
 
   /**
    * Create a new client for use in the browser.
@@ -113,17 +119,20 @@ export default class GoTrueClient {
     this.autoRefreshToken = settings.autoRefreshToken
     this.persistSession = settings.persistSession
     this.storage = settings.storage || globalThis.localStorage
-    this.api = new GoTrueApi({
+    this.admin = new GoTrueAdminApi({
       url: settings.url,
       headers: settings.headers,
       fetch: settings.fetch,
     })
     this._recoverAndRefresh()
     this._handleVisibilityChange()
+    this.url = settings.url
+    this.headers = settings.headers
+    this.fetch = resolveFetch(settings.fetch)
 
     if (settings.detectSessionInUrl && isBrowser() && !!getParameterByName('access_token')) {
       // Handle the OAuth redirect
-      this.getSessionFromUrl({ storeSession: true }).then(({ error }) => {
+      this._getSessionFromUrl().then(({ error }) => {
         if (error) {
           throw new AuthUnknownError('Error getting session from URL.', error)
         }
@@ -139,6 +148,10 @@ export default class GoTrueClient {
    * @param phone The user's phone number.
    * @param options.redirectTo The redirect URL attached to the signup confirmation link. Does not redirect the user if it's a mobile signup.
    * @param options.data Optional user metadata.
+   * @param options.captchaToken Verification token received when the user completes the captcha on the site.
+   *
+   * @returns A logged-in session if the server has "autoconfirm" ON
+   * @returns A user if the server has "autoconfirm" OFF
    */
   async signUp(
     { email, password, phone }: UserCredentials,
@@ -153,14 +166,27 @@ export default class GoTrueClient {
 
       const { data, error } =
         phone && password
-          ? await this.api.signUpWithPhone(phone!, password!, {
-              data: options.data,
-              captchaToken: options.captchaToken,
-            })
-          : await this.api.signUpWithEmail(email!, password!, {
+          ? await _request(this.fetch, 'POST', `${this.url}/signup`, {
+              headers: this.headers,
               redirectTo: options.redirectTo,
-              data: options.data,
-              captchaToken: options.captchaToken,
+              body: {
+                phone,
+                password,
+                data: options.data,
+                gotrue_meta_security: { captcha_token: options.captchaToken },
+              },
+              xform: _sessionResponse,
+            })
+          : await _request(this.fetch, 'POST', `${this.url}/signup`, {
+              headers: this.headers,
+              redirectTo: options.redirectTo,
+              body: {
+                email,
+                password,
+                data: options.data,
+                gotrue_meta_security: { captcha_token: options.captchaToken },
+              },
+              xform: _sessionResponse,
             })
 
       if (error) {
@@ -171,16 +197,12 @@ export default class GoTrueClient {
         throw 'An error occurred on sign up.'
       }
 
-      let session: Session | null = null
-      let user: User | null = null
+      const session: Session | null = data.session
+      const user: User | null = data.user
 
-      if ((data as Session).access_token) {
-        session = data as Session
-        user = session.user as User
-        this._saveSession(session)
+      if (data.session) {
+        this._saveSession(data.session)
         this._notifyAllSubscribers('SIGNED_IN', session)
-      } else {
-        user = data as User
       }
 
       return { data: { user, session }, error: null }
@@ -199,7 +221,7 @@ export default class GoTrueClient {
    * @param email The user's email address.
    * @param phone The user's phone number.
    * @param password The user's password.
-   * @param options Valid options for password sign-ins.
+   * @param options.captchaToken Verification token received when the user completes the captcha on the site.
    */
   async signInWithPassword(credentials: SignInWithPasswordCredentials): Promise<AuthResponse> {
     try {
@@ -207,15 +229,25 @@ export default class GoTrueClient {
 
       if ('email' in credentials) {
         const { email, password, options } = credentials
-        return this._handleEmailSignIn(email, password, {
-          captchaToken: options?.captchaToken,
+        return await _request(this.fetch, 'POST', `${this.url}/token?grant_type=password`, {
+          body: {
+            email,
+            password,
+            gotrue_meta_security: { captcha_token: options?.captchaToken },
+          },
+          xform: _sessionResponse,
         })
       }
 
       if ('phone' in credentials) {
         const { phone, password, options } = credentials
-        return this._handlePhoneSignIn(phone, password, {
-          captchaToken: options?.captchaToken,
+        return await _request(this.fetch, 'POST', `${this.url}/token?grant_type=password`, {
+          body: {
+            phone,
+            password,
+            gotrue_meta_security: { captcha_token: options?.captchaToken },
+          },
+          xform: _sessionResponse,
         })
       }
       throw new AuthInvalidCredentialsError(
@@ -235,8 +267,9 @@ export default class GoTrueClient {
    * @type SignInWithOAuthCredentials
    * @param provider One of the providers supported by GoTrue.
    * @param redirectTo A URL to send the user to after they are confirmed (OAuth logins only).
-   * @param scopes A space-separated list of scopes granted to the OAuth application.
-   * @param queryParams An object of query params
+   * @param options.scopes A space-separated list of scopes granted to the OAuth application.
+   * @param options.queryParams An object of query params
+   * @param options.captchaToken Verification token received when the user completes the captcha on the site.
    */
   async signInWithOAuth(credentials: SignInWithOAuthCredentials): Promise<OAuthResponse> {
     this._removeSession()
@@ -252,7 +285,9 @@ export default class GoTrueClient {
    * @type SignInWithPasswordlessCredentials
    * @param email The user's email address.
    * @param phone The user's phone number.
-   * @param options Valid options for passwordless sign-ins.
+   * @param options.captchaToken Verification token received when the user completes the captcha on the site.
+   * @param options.emailRedirectTo The redirect url sent in the magiclink. The url will be appended to the end of the magiclink url. Does not serve to redirect the user after this method is invoked.
+   * @param options.shouldCreateUser If set to false, signInWithOtp will not create a new user if the user does not exist. Defaults to true.
    */
   async signInWithOtp(credentials: SignInWithPasswordlessCredentials): Promise<AuthResponse> {
     try {
@@ -260,18 +295,25 @@ export default class GoTrueClient {
 
       if ('email' in credentials) {
         const { email, options } = credentials
-        const { error } = await this.api.sendMagicLinkEmail(email, {
+        const { error } = await _request(this.fetch, 'POST', `${this.url}/otp`, {
+          body: {
+            email,
+            create_user: options?.shouldCreateUser ?? true,
+            gotrue_meta_security: { captcha_token: options?.captchaToken },
+          },
           redirectTo: options?.emailRedirectTo,
-          shouldCreateUser: options?.shouldCreateUser,
-          captchaToken: options?.captchaToken,
+          headers: this.headers,
         })
         return { data: { user: null, session: null }, error }
       }
       if ('phone' in credentials) {
         const { phone, options } = credentials
-        const { error } = await this.api.sendMobileOTP(phone, {
-          shouldCreateUser: options?.shouldCreateUser,
-          captchaToken: options?.captchaToken,
+        const { error } = await _request(this.fetch, 'POST', `${this.url}/otp`, {
+          body: {
+            phone,
+            create_user: options?.shouldCreateUser ?? true,
+            gotrue_meta_security: { captcha_token: options?.captchaToken },
+          },
         })
         return { data: { user: null, session: null }, error }
       }
@@ -291,18 +333,27 @@ export default class GoTrueClient {
    * @param phone The user's phone number.
    * @param token The user's password.
    * @param type The user's verification type.
-   * @param options.redirectTo A URL or mobile address to send the user to after they are confirmed.
+   * @param options.redirectTo A URL to send the user to after they are confirmed.
+   * @param options.captchaToken An optional captcha verification token.
    */
   async verifyOTP(
     params: VerifyOTPParams,
     options: {
       redirectTo?: string
+      captchaToken?: string
     } = {}
   ): Promise<AuthResponse> {
     try {
       this._removeSession()
 
-      const { data, error } = await this.api.verifyOTP(params, options)
+      const { data, error } = await _request(this.fetch, 'POST', `${this.url}/verify`, {
+        body: {
+          ...params,
+          gotrue_meta_security: { captchaToken: options?.captchaToken },
+        },
+        redirectTo: options.redirectTo,
+        xform: _sessionResponse,
+      })
 
       if (error) {
         throw error
@@ -312,18 +363,12 @@ export default class GoTrueClient {
         throw 'An error occurred on token verification.'
       }
 
-      let session: Session | null = null
-      let user: User | null = null
+      const session: Session | null = data.session
+      const user: User = data.user
 
       if ((data as Session).access_token) {
-        session = data as Session
-        user = session.user as User
-        this._saveSession(session)
+        this._saveSession(session as Session)
         this._notifyAllSubscribers('SIGNED_IN', session)
-      }
-
-      if ((data as User).id) {
-        user = data as User
       }
 
       return { data: { user, session }, error: null }
@@ -387,34 +432,40 @@ export default class GoTrueClient {
   }
 
   /**
-   * Returns the user data based on the current session, refreshing the session if necessary.
+   * Gets the current user details if there is an existing session.
    */
-  async getUserFromSession(): Promise<
-    | UserResponse
-    | {
-        data: {
-          user: null
+  async getUser(): Promise<UserResponse> {
+    try {
+      let access_token = ''
+      if (!('Authorization' in this.headers)) {
+        const { session, error } = await this.getSession()
+        if (error) {
+          throw error
         }
-        error: null
+        if (!session) {
+          throw new AuthSessionMissingError()
+        }
+        access_token = session.access_token
       }
-  > {
-    const { session, error } = await this.getSession()
-    if (error) {
-      return { data: { user: null }, error }
-    }
+      return await _request(this.fetch, 'GET', `${this.url}/user`, {
+        headers: this.headers,
+        jwt: access_token,
+        xform: _userResponse,
+      })
+    } catch (error) {
+      if (isAuthError(error)) {
+        return { data: { user: null }, error }
+      }
 
-    if (!session) {
-      return { data: { user: null }, error: null }
+      throw error
     }
-
-    return { data: { user: session.user }, error: null }
   }
 
   /**
    * Updates user data, if there is a logged in user.
    * @param attributes The data you want to update.
    */
-  async update(attributes: UserAttributes): Promise<UserResponse> {
+  async updateUser(attributes: UserAttributes): Promise<UserResponse> {
     try {
       const { session, error: sessionError } = await this.getSession()
       if (sessionError) {
@@ -423,7 +474,11 @@ export default class GoTrueClient {
       if (!session) {
         throw new AuthSessionMissingError()
       }
-      const { data, error: userError } = await this.api.updateUser(session.access_token, attributes)
+      const { data, error: userError } = await _request(this.fetch, 'PUT', `${this.url}/user`, {
+        body: attributes,
+        jwt: session.access_token,
+        xform: _userResponse,
+      })
       if (userError) throw userError
       session.user = data.user as User
       this._saveSession(session)
@@ -443,30 +498,23 @@ export default class GoTrueClient {
    * Sets the session data from refresh_token and returns current Session and Error
    * @param refresh_token a JWT token
    */
-  async setSession(refresh_token: string): Promise<
-    | {
-        session: Session
-        error: null
-      }
-    | { session: null; error: null }
-    | { session: null; error: AuthError }
-  > {
+  async setSession(refresh_token: string): Promise<AuthResponse> {
     try {
       if (!refresh_token) {
         throw new AuthSessionMissingError()
       }
-      const { session, error } = await this.api.refreshAccessToken(refresh_token)
+      const { data, error } = await this._refreshAccessToken(refresh_token)
       if (error) {
-        return { session: null, error: error }
+        return { data: { session: null, user: null }, error: error }
       }
 
-      this._saveSession(session)
+      this._saveSession(data.session!)
 
-      this._notifyAllSubscribers('TOKEN_REFRESHED', session)
-      return { session: session, error: null }
+      this._notifyAllSubscribers('TOKEN_REFRESHED', data.session)
+      return { data, error: null }
     } catch (error) {
       if (isAuthError(error)) {
-        return { session: null, error }
+        return { data: { session: null, user: null }, error }
       }
 
       throw error
@@ -475,9 +523,9 @@ export default class GoTrueClient {
 
   /**
    * Gets the session data from a URL string
-   * @param options.storeSession Optionally store the session in the browser
+   * @param options.storeSession Optionally store the session in the browser or in-memory
    */
-  async getSessionFromUrl(options?: { storeSession?: boolean }): Promise<
+  private async _getSessionFromUrl(): Promise<
     | {
         session: Session
         error: null
@@ -503,10 +551,10 @@ export default class GoTrueClient {
       const timeNow = Math.round(Date.now() / 1000)
       const expires_at = timeNow + parseInt(expires_in)
 
-      const { data, error } = await this.api.getUser(access_token)
+      const { data, error } = await this.getUser()
       if (error) throw error
 
-      const user: User = data.user
+      const user: User = data.user!
       const session: Session = {
         provider_token,
         access_token,
@@ -516,14 +564,14 @@ export default class GoTrueClient {
         token_type,
         user,
       }
-      if (options?.storeSession) {
-        this._saveSession(session)
-        const recoveryMode = getParameterByName('type')
-        this._notifyAllSubscribers('SIGNED_IN', session)
-        if (recoveryMode === 'recovery') {
-          this._notifyAllSubscribers('PASSWORD_RECOVERY', session)
-        }
+
+      this._saveSession(session)
+      const recoveryMode = getParameterByName('type')
+      this._notifyAllSubscribers('SIGNED_IN', session)
+      if (recoveryMode === 'recovery') {
+        this._notifyAllSubscribers('PASSWORD_RECOVERY', session)
       }
+
       // Remove tokens from URL
       window.location.hash = ''
 
@@ -550,7 +598,7 @@ export default class GoTrueClient {
     }
     const accessToken = session?.access_token
     if (accessToken) {
-      const { error } = await this.api.signOut(accessToken)
+      const { error } = await this.admin.signOut(accessToken)
       if (error) return { error }
     }
     this._removeSession()
@@ -588,6 +636,59 @@ export default class GoTrueClient {
     }
   }
 
+  /**
+   * Sends a reset request to an email address.
+   * @param email The email address of the user.
+   * @param options.redirectTo A URL to send the user to after they are confirmed.
+   * @param options.captchaToken Verification token received when the user completes the captcha on the site.
+   */
+  async resetPasswordForEmail(
+    email: string,
+    options: {
+      redirectTo?: string
+      captchaToken?: string
+    } = {}
+  ): Promise<
+    | {
+        data: {}
+        error: null
+      }
+    | { data: null; error: AuthError }
+  > {
+    try {
+      return await _request(this.fetch, 'POST', `${this.url}/recover`, {
+        body: { email, gotrue_meta_security: { captcha_token: options.captchaToken } },
+        headers: this.headers,
+        redirectTo: options.redirectTo,
+      })
+    } catch (error) {
+      if (isAuthError(error)) {
+        return { data: null, error }
+      }
+
+      throw error
+    }
+  }
+
+  /**
+   * Generates a new JWT.
+   * @param refreshToken A valid refresh token that was returned on login.
+   */
+  private async _refreshAccessToken(refreshToken: string): Promise<AuthResponse> {
+    try {
+      return await _request(this.fetch, 'POST', `${this.url}/token?grant_type=refresh_token`, {
+        body: { refresh_token: refreshToken },
+        headers: this.headers,
+        xform: _sessionResponse,
+      })
+    } catch (error) {
+      if (isAuthError(error)) {
+        return { data: { session: null, user: null }, error }
+      }
+      throw error
+    }
+  }
+
   private _doesSessionExist(maybeSession: unknown): maybeSession is Session {
     const isValidSession =
       typeof maybeSession === 'object' &&
@@ -599,62 +700,6 @@ export default class GoTrueClient {
     return isValidSession
   }
 
-  private async _handleEmailSignIn(
-    email: string,
-    password: string,
-    options: {
-      captchaToken?: string
-    } = {}
-  ): Promise<AuthResponse> {
-    try {
-      const { data, error } = await this.api.signInWithEmail(email, password, {
-        captchaToken: options.captchaToken,
-      })
-      if (error || !data) return { data: { user: null, session: null }, error }
-
-      if (data?.user?.confirmed_at || data?.user?.email_confirmed_at) {
-        this._saveSession(data)
-        this._notifyAllSubscribers('SIGNED_IN', data)
-      }
-
-      return { data: { user: data.user, session: data }, error: null }
-    } catch (error) {
-      if (isAuthError(error)) {
-        return { data: { user: null, session: null }, error }
-      }
-
-      throw error
-    }
-  }
-
-  private async _handlePhoneSignIn(
-    phone: string,
-    password: string,
-    options: {
-      captchaToken?: string
-    } = {}
-  ) {
-    try {
-      const { session, error } = await this.api.signInWithPhone(phone, password, {
-        captchaToken: options.captchaToken,
-      })
-      if (error || !session) return { data: { session: null, user: null }, error }
-
-      if (session?.user?.phone_confirmed_at) {
-        this._saveSession(session)
-        this._notifyAllSubscribers('SIGNED_IN', session)
-      }
-
-      return { data: { session, user: session.user }, error: null }
-    } catch (error) {
-      if (isAuthError(error)) {
-        return { data: { session: null, user: null }, error }
-      }
-
-      throw error
-    }
-  }
-
   private _handleProviderSignIn(
     provider: Provider,
     options: {
@@ -663,7 +708,7 @@ export default class GoTrueClient {
       queryParams?: { [key: string]: string }
     } = {}
   ) {
-    const url: string = this.api.getUrlForProvider(provider, {
+    const url: string = this._getUrlForProvider(provider, {
       redirectTo: options.redirectTo,
       scopes: options.scopes,
       queryParams: options.queryParams,
@@ -673,46 +718,6 @@ export default class GoTrueClient {
       window.location.href = url
     }
     return { data: { provider, url }, error: null }
-  }
-
-  private async _handleOpenIDConnectSignIn({
-    id_token,
-    nonce,
-    client_id,
-    issuer,
-    provider,
-  }: OpenIDConnectCredentials): Promise<
-    | {
-        user: User | null
-        session: Session | null
-        error: null
-      }
-    | { user: null; session: null; error: AuthError }
-  > {
-    if (id_token && nonce && ((client_id && issuer) || provider)) {
-      try {
-        const { session, error } = await this.api.signInWithOpenIDConnect({
-          id_token,
-          nonce,
-          client_id,
-          issuer,
-          provider,
-        })
-        if (error || !session) return { user: null, session: null, error }
-        this._saveSession(session)
-        this._notifyAllSubscribers('SIGNED_IN', session)
-        return { user: session.user, session: session, error: null }
-      } catch (error) {
-        if (isAuthError(error)) {
-          return { user: null, session: null, error }
-        }
-
-        throw error
-      }
-    }
-    throw new AuthInvalidCredentialsError(
-      'You must provide an OpenID Connect provider with your id token and nonce.'
-    )
   }
 
   /**
@@ -776,14 +781,14 @@ export default class GoTrueClient {
       if (!refreshToken) {
         throw new AuthSessionMissingError()
       }
-      const { session, error } = await this.api.refreshAccessToken(refreshToken)
+      const { data, error } = await this._refreshAccessToken(refreshToken)
       if (error) throw error
-      if (!session) throw new AuthSessionMissingError()
+      if (!data.session) throw new AuthSessionMissingError()
 
-      this._saveSession(session)
-      this._notifyAllSubscribers('TOKEN_REFRESHED', session)
+      this._saveSession(data.session)
+      this._notifyAllSubscribers('TOKEN_REFRESHED', data.session)
 
-      const result = { session, error: null }
+      const result = { session: data.session, error: null }
 
       this.refreshingDeferred.resolve(result)
 
@@ -886,5 +891,34 @@ export default class GoTrueClient {
     } catch (error) {
       console.error('_handleVisibilityChange', error)
     }
+  }
+
+  /**
+   * Generates the relevant login URL for a third-party provider.
+   * @param provider One of the providers supported by GoTrue.
+   * @param options.redirectTo A URL or mobile address to send the user to after they are confirmed.
+   * @param options.scopes A space-separated list of scopes granted to the OAuth application.
+   * @param options.queryParams An object of key-value pairs containing query parameters granted to the OAuth application.
+   */
+  private _getUrlForProvider(
+    provider: Provider,
+    options: {
+      redirectTo?: string
+      scopes?: string
+      queryParams?: { [key: string]: string }
+    }
+  ) {
+    const urlParams: string[] = [`provider=${encodeURIComponent(provider)}`]
+    if (options?.redirectTo) {
+      urlParams.push(`redirect_to=${encodeURIComponent(options.redirectTo)}`)
+    }
+    if (options?.scopes) {
+      urlParams.push(`scopes=${encodeURIComponent(options.scopes)}`)
+    }
+    if (options?.queryParams) {
+      const query = new URLSearchParams(options.queryParams)
+      urlParams.push(query.toString())
+    }
+    return `${this.url}/authorize?${urlParams.join('&')}`
   }
 }

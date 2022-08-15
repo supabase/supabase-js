@@ -1,4 +1,3 @@
-import { User } from '../src'
 import { AuthError } from '../src/lib/errors'
 import {
   authClient as auth,
@@ -11,7 +10,8 @@ import {
 import { mockUserCredentials } from './lib/utils'
 
 describe('GoTrueClient', () => {
-  const refreshAccessTokenSpy = jest.spyOn(authWithSession.api, 'refreshAccessToken')
+  // @ts-expect-error 'Allow access to private _refreshAccessToken'
+  const refreshAccessTokenSpy = jest.spyOn(authWithSession, '_refreshAccessToken')
 
   afterEach(async () => {
     await auth.signOut()
@@ -34,7 +34,7 @@ describe('GoTrueClient', () => {
       const {
         data: { user },
         error: updateError,
-      } = await authWithSession.update({ data: { hello: 'world' } })
+      } = await authWithSession.updateUser({ data: { hello: 'world' } })
 
       expect(updateError).toBeNull()
       expect(user).not.toBeNull()
@@ -127,8 +127,9 @@ describe('GoTrueClient', () => {
     test('_callRefreshToken() should resolve all pending refresh requests and reset deferred upon AuthError', async () => {
       const { email, password } = mockUserCredentials()
       refreshAccessTokenSpy.mockImplementationOnce(() =>
+        // @ts-expect-error 'Allow access to private _refreshAccessToken()'
         Promise.resolve({
-          session: null,
+          data: { session: null, user: null },
           error: new AuthError('Something did not work as expected'),
         })
       )
@@ -170,6 +171,8 @@ describe('GoTrueClient', () => {
       const mockError = new Error('Something did not work as expected')
 
       const { email, password } = mockUserCredentials()
+
+      // @ts-expect-error 'Allow access to private _refreshAccessToken()'
       refreshAccessTokenSpy.mockImplementationOnce(() => Promise.reject(mockError))
 
       const { error, data } = await authWithSession.signUp({
@@ -206,8 +209,9 @@ describe('GoTrueClient', () => {
       expect(session3).toHaveProperty('access_token')
     })
 
-    test('getSessionFromUrl() can only be called from a browser', async () => {
-      const { error, session } = await authWithSession.getSessionFromUrl()
+    test('_getSessionFromUrl() can only be called from a browser', async () => {
+      // @ts-expect-error 'Allow access to private _getSessionFromUrl()'
+      const { error, session } = await authWithSession._getSessionFromUrl()
 
       expect(error?.message).toEqual('No browser detected.')
       expect(session).toBeNull()
@@ -442,7 +446,7 @@ describe('User management', () => {
     const {
       error,
       data: { user },
-    } = await authWithSession.update({ data: userMetadata })
+    } = await authWithSession.updateUser({ data: userMetadata })
 
     expect(error).toBeNull()
     expect(user).toMatchObject({
@@ -477,7 +481,7 @@ describe('User management', () => {
     const {
       data: { user },
       error,
-    } = await authWithSession.update({ data: userMetadata })
+    } = await authWithSession.updateUser({ data: userMetadata })
 
     expect(error).toBeNull()
     expect(user).toMatchObject({
@@ -502,14 +506,12 @@ describe('User management', () => {
       password,
     })
 
-    const {
-      data: { user },
-    } = await authWithSession.signInWithPassword({
+    const { data } = await authWithSession.signInWithPassword({
       email,
       password,
     })
 
-    expect(user).not.toBeNull()
+    expect(data.user).not.toBeNull()
 
     await authWithSession.signOut()
     const { session, error } = await authWithSession.getSession()
@@ -643,5 +645,60 @@ describe('The auth client can signin with third-party oAuth providers', () => {
       expect(error).not.toBeNull()
       expect(error?.message).toEqual('Signups not allowed for this instance')
     })
+  })
+})
+
+describe('User management', () => {
+  test('resetPasswordForEmail() sends an email for password recovery', async () => {
+    const { email, password } = mockUserCredentials()
+
+    const { error: initialError, data } = await authWithSession.signUp({
+      email,
+      password,
+    })
+
+    expect(initialError).toBeNull()
+    expect(data.session).not.toBeNull()
+
+    const redirectTo = 'http://localhost:9999/welcome'
+    const { error, data: user } = await authWithSession.resetPasswordForEmail(email, {
+      redirectTo,
+    })
+    expect(user).toBeTruthy()
+    expect(error?.message).toBeUndefined()
+  })
+
+  test('resetPasswordForEmail() if user does not exist, user details are not exposed', async () => {
+    const redirectTo = 'http://localhost:9999/welcome'
+    const { error, data } = await authWithSession.resetPasswordForEmail(
+      'this_user@does-not-exist.com',
+      {
+        redirectTo,
+      }
+    )
+    expect(data).toEqual({})
+    expect(error).toBeNull()
+  })
+
+  test('refreshAccessToken()', async () => {
+    const { email, password } = mockUserCredentials()
+
+    const { error: initialError, data } = await authWithSession.signUp({
+      email,
+      password,
+    })
+
+    expect(initialError).toBeNull()
+
+    // @ts-expect-error 'Allow access to private _refreshAccessToken()'
+    const { error, data: refreshedSession } = await authWithSession._refreshAccessToken(
+      data.session?.refresh_token || ''
+    )
+
+    const user = refreshedSession?.user
+
+    expect(error).toBeNull()
+    expect(user).not.toBeNull()
+    expect(user?.email).toEqual(email)
   })
 })

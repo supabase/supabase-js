@@ -1,6 +1,6 @@
-import GoTrueApi from './GoTrueApi'
+import GoTrueAdminApi from './GoTrueAdminApi'
 import GoTrueClient from './GoTrueClient'
 
-export { GoTrueApi, GoTrueClient }
+export { GoTrueAdminApi, GoTrueClient }
 export * from './lib/types'
 export * from './lib/errors'

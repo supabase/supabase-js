@@ -1,7 +1,7 @@
 import { MockServer } from 'jest-mock-server'
 import fetch from 'cross-fetch'
 import { AuthUnknownError, AuthRetryableFetchError } from '../src/lib/errors'
-import { get } from '../src/lib/fetch'
+import { _request } from '../src/lib/fetch'
 
 describe('fetch', () => {
   const server = new MockServer()
@@ -24,7 +24,7 @@ describe('fetch', () => {
 
       const url = server.getURL().toString()
 
-      await expect(get(fetch, url)).rejects.toBeInstanceOf(AuthUnknownError)
+      await expect(_request(fetch, 'GET', url)).rejects.toBeInstanceOf(AuthUnknownError)
 
       expect(route).toHaveBeenCalledTimes(1)
     })
@@ -42,7 +42,7 @@ describe('fetch', () => {
 
       const url = server.getURL().toString()
 
-      await expect(get(fetch, url)).rejects.toBeInstanceOf(AuthUnknownError)
+      await expect(_request(fetch, 'GET', url)).rejects.toBeInstanceOf(AuthUnknownError)
 
       expect(route).toHaveBeenCalledTimes(1)
     })
@@ -60,7 +60,7 @@ describe('fetch', () => {
 
       const url = server.getURL().toString()
 
-      await expect(get(fetch, url)).rejects.toBeInstanceOf(AuthRetryableFetchError)
+      await expect(_request(fetch, 'GET', url)).rejects.toBeInstanceOf(AuthRetryableFetchError)
 
       expect(route).toHaveBeenCalledTimes(1)
     })
@@ -78,7 +78,7 @@ describe('fetch', () => {
 
       const url = server.getURL().toString()
 
-      await expect(get(fetch, url)).rejects.toBeInstanceOf(AuthRetryableFetchError)
+      await expect(_request(fetch, 'GET', url)).rejects.toBeInstanceOf(AuthRetryableFetchError)
 
       expect(route).toHaveBeenCalledTimes(1)
     })
@@ -97,7 +97,7 @@ describe('fetch', () => {
       const url = server.getURL().toString()
       await server.stop()
 
-      await expect(get(fetch, url)).rejects.toBeInstanceOf(AuthRetryableFetchError)
+      await expect(_request(fetch, 'GET', url)).rejects.toBeInstanceOf(AuthRetryableFetchError)
 
       expect(route).toHaveBeenCalledTimes(0)
 
