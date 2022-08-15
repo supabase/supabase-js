@@ -127,7 +127,7 @@ describe('GoTrueClient', () => {
       const { email, password } = mockUserCredentials()
       refreshAccessTokenSpy.mockImplementationOnce(() =>
         Promise.resolve({
-          session: null,
+          data: { session: null, user: null },
           error: new AuthError('Something did not work as expected'),
         })
       )

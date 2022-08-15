@@ -13,16 +13,16 @@ import {
   mockVerificationOTP,
 } from './lib/utils'
 
-import type { Session, User } from '../src/lib/types'
+import type { User } from '../src/lib/types'
 
 describe('GoTrueApi', () => {
   describe('User creation', () => {
     test('createUser() should create a new user', async () => {
       const { email } = mockUserCredentials()
-      const { error, data: user } = await createNewUserWithEmail({ email })
+      const { error, data } = await createNewUserWithEmail({ email })
 
       expect(error).toBeNull()
-      expect(user?.email).toEqual(email)
+      expect(data.user?.email).toEqual(email)
     })
 
     test('createUser() with user metadata', async () => {
@@ -36,14 +36,13 @@ describe('GoTrueApi', () => {
       })
 
       expect(error).toBeNull()
-      expect(data?.email).toEqual(email)
-      expect(data?.user_metadata).toEqual(user_metadata)
-      expect(data?.user_metadata).toHaveProperty('profile_image')
-      expect(data?.user_metadata?.profile_image).toMatch(/https.*avatars.*(jpg|png)/)
+      expect(data.user?.email).toEqual(email)
+      expect(data.user?.user_metadata).toEqual(user_metadata)
+      expect(data.user?.user_metadata).toHaveProperty('profile_image')
+      expect(data.user?.user_metadata?.profile_image).toMatch(/https.*avatars.*(jpg|png)/)
     })
 
-    // Note: GoTrue does not yest support creating a user with app metadata
-    test.skip('createUser() with app metadata', async () => {
+    test('createUser() with app metadata', async () => {
       const app_metadata = mockAppMetadata()
       const { email, password } = mockUserCredentials()
 
@@ -54,15 +53,12 @@ describe('GoTrueApi', () => {
       })
 
       expect(error).toBeNull()
-      expect(data?.email).toEqual(email)
-      expect(data?.app_metadata).toHaveProperty('provider')
-      expect(data?.app_metadata).toHaveProperty('providers')
-      expect(data?.app_metadata).toHaveProperty('roles')
-      expect(data?.app_metadata?.roles.length).toBeGreaterThanOrEqual(1)
+      expect(data.user?.email).toEqual(email)
+      expect(data.user?.app_metadata).toHaveProperty('provider')
+      expect(data.user?.app_metadata).toHaveProperty('providers')
     })
 
-    // Note: GoTrue does not yest support creating a user with app metadata
-    test.skip('createUser() with user and app metadata', async () => {
+    test('createUser() with user and app metadata', async () => {
       const user_metadata = mockUserMetadata()
       const app_metadata = mockAppMetadata()
 
@@ -76,30 +72,27 @@ describe('GoTrueApi', () => {
       })
 
       expect(error).toBeNull()
-      expect(data?.email).toEqual(email)
-
-      expect(data?.user_metadata).toHaveProperty('profile_image')
-      expect(data?.user_metadata?.profile_image).toMatch(/https.*avatars.*(jpg|png)/)
-
-      expect(data?.app_metadata).toHaveProperty('provider')
-      expect(data?.app_metadata).toHaveProperty('providers')
-      expect(data?.app_metadata).toHaveProperty('roles')
-      expect(data?.app_metadata?.roles.length).toBeGreaterThanOrEqual(1)
+      expect(data.user?.email).toEqual(email)
+      expect(data.user?.user_metadata).toHaveProperty('profile_image')
+      expect(data.user?.user_metadata?.profile_image).toMatch(/https.*avatars.*(jpg|png)/)
+      expect(data.user?.app_metadata).toHaveProperty('provider')
+      expect(data.user?.app_metadata).toHaveProperty('providers')
     })
   })
 
   describe('User fetch', () => {
     test('listUsers() should return registered users', async () => {
       const { email } = mockUserCredentials()
-      const { error: createError, data: user } = await createNewUserWithEmail({ email })
+      const { error: createError, data: createdUser } = await createNewUserWithEmail({ email })
       expect(createError).toBeNull()
-      expect(user).not.toBeUndefined()
+      expect(createdUser.user).not.toBeUndefined()
 
-      const { error: listUserError, users } = await serviceRoleApiClient.listUsers()
+      const { error: listUserError, data: userList } = await serviceRoleApiClient.listUsers()
       expect(listUserError).toBeNull()
-
+      expect(userList).toHaveProperty('users')
+      expect(userList).toHaveProperty('aud')
       const emails =
-        users?.map((user) => {
+        userList.users?.map((user: User) => {
           return user.email
         }) || []
 
@@ -129,139 +122,138 @@ describe('GoTrueApi', () => {
 
     test('getUserById() should a registered user given its user identifier', async () => {
       const { email } = mockUserCredentials()
-      const { error: createError, user } = await createNewUserWithEmail({ email })
+      const { error: createError, data: createdUser } = await createNewUserWithEmail({ email })
 
       expect(createError).toBeNull()
-      expect(user).not.toBeUndefined()
+      expect(createdUser.user).not.toBeUndefined()
 
-      const uid = user?.id || ''
+      const uid = createdUser.user?.id || ''
       expect(uid).toBeTruthy()
 
-      const { error: foundError, user: foundUser } = await serviceRoleApiClient.getUserById(uid)
+      const { error: foundError, data: foundUser } = await serviceRoleApiClient.getUserById(uid)
 
       expect(foundError).toBeNull()
       expect(foundUser).not.toBeUndefined()
-      expect(foundUser?.email).toEqual(email)
+      expect(foundUser.user?.email).toEqual(email)
     })
   })
 
   describe('User updates', () => {
     test('modify email using updateUserById()', async () => {
       const { email } = mockUserCredentials()
-      const { error: createError, data: user } = await createNewUserWithEmail({ email })
+      const { error: createError, data: createdUser } = await createNewUserWithEmail({ email })
 
       expect(createError).toBeNull()
-      expect(user).not.toBeUndefined()
+      expect(createdUser.user).not.toBeUndefined()
 
-      const uid = user?.id || ''
+      const uid = createdUser.user?.id || ''
 
-      const attributes = { email: `new_${user?.email}` }
+      const attributes = { email: `new_${createdUser.user?.email}` }
 
-      const { error: updatedError, user: updatedUser } = await serviceRoleApiClient.updateUserById(
+      const { error: updatedError, data: updatedUser } = await serviceRoleApiClient.updateUserById(
         uid,
         attributes
       )
 
       expect(updatedError).toBeNull()
       expect(updatedError).not.toBeUndefined()
-      expect(updatedUser?.email).toEqual(`new_${user?.email}`)
+      expect(updatedUser.user?.email).toEqual(`new_${createdUser.user?.email}`)
     })
 
     test('modify user metadata using updateUserById()', async () => {
       const { email } = mockUserCredentials()
-      const { error: createError, data: user } = await createNewUserWithEmail({ email })
+      const { error: createError, data: createdUser } = await createNewUserWithEmail({ email })
 
       expect(createError).toBeNull()
-      expect(user).not.toBeUndefined()
+      expect(createdUser.user).not.toBeUndefined()
 
-      const uid = user?.id || ''
+      const uid = createdUser.user?.id || ''
 
       const userMetaData = { favorite_color: 'yellow' }
       const attributes = { user_metadata: userMetaData }
 
-      const { error: updatedError, user: updatedUser } = await serviceRoleApiClient.updateUserById(
+      const { error: updatedError, data: updatedUser } = await serviceRoleApiClient.updateUserById(
         uid,
         attributes
       )
 
       expect(updatedError).toBeNull()
       expect(updatedError).not.toBeUndefined()
-      expect(updatedUser?.email).toEqual(email)
-      expect(updatedUser?.user_metadata).toEqual(userMetaData)
+      expect(updatedUser.user?.email).toEqual(email)
+      expect(updatedUser.user?.user_metadata).toEqual(userMetaData)
     })
 
     test('modify app metadata using updateUserById()', async () => {
       const { email } = mockUserCredentials()
-      const { error: createError, data: user } = await createNewUserWithEmail({ email })
+      const { error: createError, data: createdUser } = await createNewUserWithEmail({ email })
 
       expect(createError).toBeNull()
-      expect(user).not.toBeUndefined()
+      expect(createdUser.user).not.toBeUndefined()
 
-      const uid = user?.id || ''
+      const uid = createdUser.user?.id || ''
       const appMetadata = { roles: ['admin', 'publisher'] }
       const attributes = { app_metadata: appMetadata }
-      const { error: updatedError, user: updatedUser } = await serviceRoleApiClient.updateUserById(
+      const { error: updatedError, data: updatedUser } = await serviceRoleApiClient.updateUserById(
         uid,
         attributes
       )
 
       expect(updatedError).toBeNull()
       expect(updatedError).not.toBeUndefined()
-      expect(updatedUser?.email).toEqual(email)
-      expect(updatedUser?.app_metadata).toHaveProperty('roles')
+      expect(updatedUser.user?.email).toEqual(email)
+      expect(updatedUser.user?.app_metadata).toHaveProperty('roles')
     })
 
     test('modify confirm email using updateUserById()', async () => {
       const { email, password } = mockUserCredentials()
-      const {
-        error: createError,
-        data: { user },
-      } = await clientApiAutoConfirmOffSignupsEnabledClient.signUp({
-        email,
-        password,
-      })
+      const { error: createError, data } = await clientApiAutoConfirmOffSignupsEnabledClient.signUp(
+        {
+          email,
+          password,
+        }
+      )
 
       expect(createError).toBeNull()
-      expect(user).not.toBeUndefined()
-      expect(user).not.toHaveProperty('email_confirmed_at')
-      expect(user?.email_confirmed_at).toBeFalsy()
+      expect(data.user).not.toBeUndefined()
+      expect(data.user).not.toHaveProperty('email_confirmed_at')
+      expect(data.user?.email_confirmed_at).toBeFalsy()
 
-      const uid = user?.id || ''
+      const uid = data.user?.id || ''
 
       const attributes = { email_confirm: true }
-      const { error: updatedError, user: updatedUser } = await serviceRoleApiClient.updateUserById(
+      const { error: updatedError, data: updatedUser } = await serviceRoleApiClient.updateUserById(
         uid,
         attributes
       )
 
       expect(updatedError).toBeNull()
       expect(updatedUser).not.toBeUndefined()
-      expect(updatedUser).toHaveProperty('email_confirmed_at')
-      expect(updatedUser?.email_confirmed_at).toBeTruthy()
+      expect(updatedUser.user).toHaveProperty('email_confirmed_at')
+      expect(updatedUser.user?.email_confirmed_at).toBeTruthy()
     })
   })
 
   describe('User deletes', () => {
     test('deleteUser() should be able delete an existing user', async () => {
       const { email } = mockUserCredentials()
-      const { error: createError, data: user } = await createNewUserWithEmail({ email })
+      const { error: createError, data: createdUser } = await createNewUserWithEmail({ email })
 
       expect(createError).toBeNull()
-      expect(user).not.toBeUndefined()
+      expect(createdUser.user).not.toBeUndefined()
 
-      const uid = user?.id || ''
+      const uid = createdUser.user?.id || ''
 
-      const { error: deletedError, user: deletedUser } = await serviceRoleApiClient.deleteUser(uid)
+      const { error: deletedError, data: deletedUser } = await serviceRoleApiClient.deleteUser(uid)
 
       expect(deletedError).toBeNull()
       expect(deletedError).not.toBeUndefined()
-      expect(deletedUser).not.toBeUndefined()
+      expect(deletedUser.user).not.toBeUndefined()
 
-      const { error: listUserError, users } = await serviceRoleApiClient.listUsers()
+      const { error: listUserError, data } = await serviceRoleApiClient.listUsers()
       expect(listUserError).toBeNull()
 
       const emails =
-        users?.map((user) => {
+        data.users?.map((user) => {
           return user.email
         }) || []
 
@@ -300,15 +292,15 @@ describe('GoTrueApi', () => {
 
       const redirectTo = 'http://localhost:9999/welcome'
       const userMetadata = { status: 'alpha' }
-      const { error, user } = await serviceRoleApiClient.inviteUserByEmail(email, {
+      const { error, data } = await serviceRoleApiClient.inviteUserByEmail(email, {
         data: userMetadata,
         redirectTo,
       })
 
       expect(error).toBeNull()
-      expect(user).not.toBeNull()
-      expect(user).toHaveProperty('invited_at')
-      expect(user?.invited_at).toBeDefined()
+      expect(data.user).not.toBeNull()
+      expect(data.user).toHaveProperty('invited_at')
+      expect(data.user?.invited_at).toBeDefined()
     })
   })
 
@@ -328,20 +320,19 @@ describe('GoTrueApi', () => {
       const { error, data: user } = await serviceRoleApiClient.resetPasswordForEmail(email, {
         redirectTo,
       })
-
       expect(user).toBeTruthy()
       expect(error?.message).toBeUndefined()
     })
 
     test('resetPasswordForEmail() if user does not exist, user details are not exposed', async () => {
       const redirectTo = 'http://localhost:9999/welcome'
-      const { error, data: user } = await serviceRoleApiClient.resetPasswordForEmail(
+      const { error, data } = await serviceRoleApiClient.resetPasswordForEmail(
         'this_user@does-not-exist.com',
         {
           redirectTo,
         }
       )
-      expect(user).toEqual({})
+      expect(data).toEqual({})
       expect(error).toBeNull()
     })
 
@@ -355,7 +346,7 @@ describe('GoTrueApi', () => {
 
       expect(initialError).toBeNull()
 
-      const { error, session: refreshedSession } = await serviceRoleApiClient.refreshAccessToken(
+      const { error, data: refreshedSession } = await serviceRoleApiClient.refreshAccessToken(
         data.session?.refresh_token || ''
       )
 

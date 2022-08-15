@@ -79,11 +79,11 @@ export async function _request(
     fetcher,
     method,
     url + queryString,
-    { headers },
+    { headers, noResolveJson: options?.noResolveJson },
     {},
     options?.body
   )
-  return options?.xform ? options?.xform(data) : { data, error: null }
+  return options?.xform ? options?.xform(data) : { data: { ...data }, error: null }
 }
 
 async function _handleRequest(
@@ -104,45 +104,6 @@ async function _handleRequest(
       .then((data) => resolve(data))
       .catch((error) => handleError(error, reject))
   })
-}
-
-export async function get(
-  fetcher: Fetch,
-  url: string,
-  options?: FetchOptions,
-  parameters?: FetchParameters
-): Promise<any> {
-  return _handleRequest(fetcher, 'GET', url, options, parameters)
-}
-
-export async function post(
-  fetcher: Fetch,
-  url: string,
-  body: object,
-  options?: FetchOptions,
-  parameters?: FetchParameters
-): Promise<any> {
-  return _handleRequest(fetcher, 'POST', url, options, parameters, body)
-}
-
-export async function put(
-  fetcher: Fetch,
-  url: string,
-  body: object,
-  options?: FetchOptions,
-  parameters?: FetchParameters
-): Promise<any> {
-  return _handleRequest(fetcher, 'PUT', url, options, parameters, body)
-}
-
-export async function remove(
-  fetcher: Fetch,
-  url: string,
-  body: object,
-  options?: FetchOptions,
-  parameters?: FetchParameters
-): Promise<any> {
-  return _handleRequest(fetcher, 'DELETE', url, options, parameters, body)
 }
 
 export function _sessionResponse(data: any): AuthResponse {

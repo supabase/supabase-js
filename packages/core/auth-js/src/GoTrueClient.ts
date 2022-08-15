@@ -491,30 +491,23 @@ export default class GoTrueClient {
    * Sets the session data from refresh_token and returns current Session and Error
    * @param refresh_token a JWT token
    */
-  async setSession(refresh_token: string): Promise<
-    | {
-        session: Session
-        error: null
-      }
-    | { session: null; error: null }
-    | { session: null; error: AuthError }
-  > {
+  async setSession(refresh_token: string): Promise<AuthResponse> {
     try {
       if (!refresh_token) {
         throw new AuthSessionMissingError()
       }
-      const { session, error } = await this.api.refreshAccessToken(refresh_token)
+      const { data, error } = await this.api.refreshAccessToken(refresh_token)
       if (error) {
-        return { session: null, error: error }
+        return { data: { session: null, user: null }, error: error }
       }
 
-      this._saveSession(session!)
+      this._saveSession(data.session!)
 
-      this._notifyAllSubscribers('TOKEN_REFRESHED', session)
-      return { session: session, error: null }
+      this._notifyAllSubscribers('TOKEN_REFRESHED', data.session)
+      return { data, error: null }
     } catch (error) {
       if (isAuthError(error)) {
-        return { session: null, error }
+        return { data: { session: null, user: null }, error }
       }
 
       throw error
@@ -667,46 +660,6 @@ export default class GoTrueClient {
     return { data: { provider, url }, error: null }
   }
 
-  private async _handleOpenIDConnectSignIn({
-    id_token,
-    nonce,
-    client_id,
-    issuer,
-    provider,
-  }: OpenIDConnectCredentials): Promise<
-    | {
-        user: User | null
-        session: Session | null
-        error: null
-      }
-    | { user: null; session: null; error: AuthError }
-  > {
-    if (id_token && nonce && ((client_id && issuer) || provider)) {
-      try {
-        const { session, error } = await this.api.signInWithOpenIDConnect({
-          id_token,
-          nonce,
-          client_id,
-          issuer,
-          provider,
-        })
-        if (error || !session) return { user: null, session: null, error }
-        this._saveSession(session)
-        this._notifyAllSubscribers('SIGNED_IN', session)
-        return { user: session.user, session: session, error: null }
-      } catch (error) {
-        if (isAuthError(error)) {
-          return { user: null, session: null, error }
-        }
-
-        throw error
-      }
-    }
-    throw new AuthInvalidCredentialsError(
-      'You must provide an OpenID Connect provider with your id token and nonce.'
-    )
-  }
-
   /**
    * Recovers the session from LocalStorage and refreshes
    * Note: this method is async to accommodate for AsyncStorage e.g. in React native.
@@ -768,14 +721,14 @@ export default class GoTrueClient {
       if (!refreshToken) {
         throw new AuthSessionMissingError()
       }
-      const { session, error } = await this.api.refreshAccessToken(refreshToken)
+      const { data, error } = await this.api.refreshAccessToken(refreshToken)
       if (error) throw error
-      if (!session) throw new AuthSessionMissingError()
+      if (!data.session) throw new AuthSessionMissingError()
 
-      this._saveSession(session)
-      this._notifyAllSubscribers('TOKEN_REFRESHED', session)
+      this._saveSession(data.session)
+      this._notifyAllSubscribers('TOKEN_REFRESHED', data.session)
 
-      const result = { session, error: null }
+      const result = { session: data.session, error: null }
 
       this.refreshingDeferred.resolve(result)
 
