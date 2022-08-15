@@ -410,8 +410,9 @@ export default class RealtimeChannel {
       })
       .map((bind) => {
         if (typeof handledPayload === 'object' && 'ids' in handledPayload) {
+          const postgresChanges = handledPayload.data
           const { schema, table, commit_timestamp, type, errors } =
-            handledPayload.data
+            postgresChanges
           const enrichedPayload = {
             schema: schema,
             table: table,
@@ -423,7 +424,7 @@ export default class RealtimeChannel {
           }
           handledPayload = {
             ...enrichedPayload,
-            ...this.getPayloadRecords(payload),
+            ...this.getPayloadRecords(postgresChanges),
           }
         }
         bind.callback(handledPayload, ref)
