@@ -4,11 +4,11 @@ export type Fetch = typeof fetch
  * Response format
  *
  */
-interface FunctionsResponseSuccess<T> {
+export interface FunctionsResponseSuccess<T> {
   data: T
   error: null
 }
-interface FunctionsResponseFailure {
+export interface FunctionsResponseFailure {
   data: null
   error: any
 }
@@ -42,7 +42,13 @@ export class FunctionsHttpError extends FunctionsError {
 }
 
 export type FunctionInvokeOptions = {
+  /**
+   * object representing the headers to send with the request
+   * */
   headers?: { [key: string]: string }
+  /**
+   * the body of the request
+   */
   body?:
     | File
     | Blob

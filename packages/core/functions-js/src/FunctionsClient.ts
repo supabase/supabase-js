@@ -30,7 +30,7 @@ export class FunctionsClient {
 
   /**
    * Updates the authorization header
-   * @params token - the new jwt token sent in the authorisation header
+   * @param token - the new jwt token sent in the authorisation header
    */
   setAuth(token: string) {
     this.headers.Authorization = `Bearer ${token}`
@@ -39,8 +39,6 @@ export class FunctionsClient {
   /**
    * Invokes a function
    * @param functionName - the name of the function to invoke
-   * @param invokeOption.headers - object representing the headers to send with the request
-   * @param invokeOptions.body - the body of the request
    */
   async invoke<T = any>(
     functionName: string,
