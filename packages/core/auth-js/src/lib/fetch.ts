@@ -75,7 +75,14 @@ export async function _request(
     qs['redirect_to'] = options.redirectTo
   }
   const queryString = Object.keys(qs).length ? '?' + new URLSearchParams(qs).toString() : ''
-  const data = await _handleRequest(fetcher, method, url + queryString, options, {}, options?.body)
+  const data = await _handleRequest(
+    fetcher,
+    method,
+    url + queryString,
+    { headers },
+    {},
+    options?.body
+  )
   return options?.xform ? options?.xform(data) : { data, error: null }
 }
 

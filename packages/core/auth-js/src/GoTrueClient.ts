@@ -14,7 +14,7 @@ import {
   AuthUnknownError,
   isAuthError,
 } from './lib/errors'
-import { Fetch, _request, _sessionResponse } from './lib/fetch'
+import { Fetch, _request, _sessionResponse, _userResponse } from './lib/fetch'
 import {
   Deferred,
   getItemAsync,
@@ -460,7 +460,12 @@ export default class GoTrueClient {
       if (!session) {
         throw new AuthSessionMissingError()
       }
-      const { data, error: userError } = await this.api.updateUser(session.access_token, attributes)
+      // const { data, error: userError } = await this.api.updateUser(session.access_token, attributes)
+      const { data, error: userError } = await _request(this.fetch, 'PUT', `${this.url}/user`, {
+        body: attributes,
+        jwt: session.access_token,
+        xform: _userResponse,
+      })
       if (userError) throw userError
       session.user = data.user as User
       this._saveSession(session)
