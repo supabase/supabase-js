@@ -196,7 +196,7 @@ export default class RealtimeChannel {
   async track(
     payload: { [key: string]: any },
     opts: { [key: string]: any } = {}
-  ): Promise<'ok' | 'timed out'> {
+  ): Promise<'ok' | 'timed out' | 'rate limited'> {
     return await this.send(
       {
         type: 'presence',
@@ -209,7 +209,7 @@ export default class RealtimeChannel {
 
   async untrack(
     opts: { [key: string]: any } = {}
-  ): Promise<'ok' | 'timed out'> {
+  ): Promise<'ok' | 'timed out' | 'rate limited'> {
     return await this.send(
       {
         type: 'presence',
@@ -288,13 +288,27 @@ export default class RealtimeChannel {
   send(
     payload: { type: string; [key: string]: any },
     opts: { [key: string]: any } = {}
-  ): Promise<'ok' | 'timed out'> {
+  ): Promise<'ok' | 'timed out' | 'rate limited'> {
     return new Promise((resolve) => {
-      const timeout = opts.timeout || this.timeout
+      const push = this.push(
+        payload.type,
+        payload,
+        opts.timeout || this.timeout
+      )
 
-      this.push(payload.type, payload, timeout)
-        .receive('ok', () => resolve('ok'))
-        .receive('timeout', () => resolve('timed out'))
+      if (push.rateLimited) {
+        resolve('rate limited')
+      }
+
+      if (
+        payload.type === 'broadcast' &&
+        !this.params?.configs?.broadcast?.ack
+      ) {
+        resolve('ok')
+      }
+
+      push.receive('ok', () => resolve('ok'))
+      push.receive('timeout', () => resolve('timed out'))
     })
   }
 

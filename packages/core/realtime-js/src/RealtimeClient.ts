@@ -22,7 +22,7 @@ export type Options = {
   decode?: Function
   reconnectAfterMs?: Function
   headers?: { [key: string]: string }
-  params?: { [key: string]: string }
+  params?: { [key: string]: any }
 }
 type Message = {
   topic: string
@@ -69,6 +69,8 @@ export default class RealtimeClient {
     error: [],
     message: [],
   }
+  eventsPerSecondLimitMs: number = 100
+  inThrottle: boolean = false
 
   /**
    * Initializes the Socket.
@@ -94,6 +96,10 @@ export default class RealtimeClient {
     if (options?.transport) this.transport = options.transport
     if (options?.heartbeatIntervalMs)
       this.heartbeatIntervalMs = options.heartbeatIntervalMs
+
+    const eventsPerSecond = options?.params?.eventsPerSecond
+    if (eventsPerSecond)
+      this.eventsPerSecondLimitMs = Math.floor(1000 / eventsPerSecond)
 
     this.reconnectAfterMs = options?.reconnectAfterMs
       ? options.reconnectAfterMs
@@ -284,7 +290,7 @@ export default class RealtimeClient {
    *
    * If the socket is not connected, the message gets enqueued within a local buffer, and sent out when a connection is next established.
    */
-  push(data: Message): void {
+  push(data: Message): 'rate limited' | void {
     const { topic, event, payload, ref } = data
     let callback = () => {
       this.encode(data, (result: any) => {
@@ -293,7 +299,14 @@ export default class RealtimeClient {
     }
     this.log('push', `${topic} ${event} (${ref})`, payload)
     if (this.isConnected()) {
-      callback()
+      if (['broadcast', 'presence', 'postgres_changes'].includes(event)) {
+        const isThrottled = this.throttle(callback)()
+        if (isThrottled) {
+          return 'rate limited'
+        }
+      } else {
+        callback()
+      }
     } else {
       this.sendBuffer.push(callback)
     }
@@ -453,5 +466,20 @@ export default class RealtimeClient {
       ref: this.pendingHeartbeatRef,
     })
     this.setAuth(this.accessToken)
+  }
+
+  private throttle(
+    callback: Function,
+    eventsPerSecondLimit: number = this.eventsPerSecondLimitMs
+  ): () => boolean {
+    return () => {
+      if (this.inThrottle) return true
+      callback()
+      this.inThrottle = true
+      setTimeout(() => {
+        this.inThrottle = false
+      }, eventsPerSecondLimit)
+      return false
+    }
   }
 }
