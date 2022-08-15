@@ -33,7 +33,7 @@ describe('GoTrueClient', () => {
       const {
         data: { user },
         error: updateError,
-      } = await authWithSession.update({ data: { hello: 'world' } })
+      } = await authWithSession.updateUser({ data: { hello: 'world' } })
 
       expect(updateError).toBeNull()
       expect(user).not.toBeNull()
@@ -441,7 +441,7 @@ describe('User management', () => {
     const {
       error,
       data: { user },
-    } = await authWithSession.update({ data: userMetadata })
+    } = await authWithSession.updateUser({ data: userMetadata })
 
     expect(error).toBeNull()
     expect(user).toMatchObject({
@@ -476,7 +476,7 @@ describe('User management', () => {
     const {
       data: { user },
       error,
-    } = await authWithSession.update({ data: userMetadata })
+    } = await authWithSession.updateUser({ data: userMetadata })
 
     expect(error).toBeNull()
     expect(user).toMatchObject({

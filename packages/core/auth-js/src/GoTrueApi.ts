@@ -1,14 +1,6 @@
 import { Fetch, get, post, put, remove, _request, _sessionResponse } from './lib/fetch'
 import { expiresAt, resolveFetch } from './lib/helpers'
-import {
-  AdminUserAttributes,
-  OpenIDConnectCredentials,
-  Provider,
-  Session,
-  User,
-  UserAttributes,
-  UserResponse,
-} from './lib/types'
+import { AdminUserAttributes, OpenIDConnectCredentials, Provider, Session, User } from './lib/types'
 import { AuthError, isAuthError } from './lib/errors'
 
 export default class GoTrueApi {
@@ -432,49 +424,6 @@ export default class GoTrueApi {
         return { user: null, error }
       }
 
-      throw error
-    }
-  }
-
-  /**
-   * Gets the current user details.
-   *
-   * This method is called by the GoTrueClient `update` where
-   * the jwt is set to this.currentSession.access_token
-   * and therefore, acts like getting the currently authenticated user
-   *
-   * @param jwt A valid, logged-in JWT. Typically, the access_token for the currentSession
-   */
-  async getUser(jwt: string): Promise<UserResponse> {
-    try {
-      const user: User = await get(this.fetch, `${this.url}/user`, {
-        headers: this._createRequestHeaders(jwt),
-      })
-      return { data: { user }, error: null }
-    } catch (error) {
-      if (isAuthError(error)) {
-        return { data: { user: null }, error }
-      }
-
-      throw error
-    }
-  }
-
-  /**
-   * Updates the user data.
-   * @param jwt A valid, logged-in JWT.
-   * @param attributes The data you want to update.
-   */
-  async updateUser(jwt: string, attributes: UserAttributes): Promise<UserResponse> {
-    try {
-      const user: User = await put(this.fetch, `${this.url}/user`, attributes, {
-        headers: this._createRequestHeaders(jwt),
-      })
-      return { data: { user }, error: null }
-    } catch (error) {
-      if (isAuthError(error)) {
-        return { data: { user: null }, error }
-      }
       throw error
     }
   }

@@ -424,34 +424,40 @@ export default class GoTrueClient {
   }
 
   /**
-   * Returns the user data based on the current session, refreshing the session if necessary.
+   * Gets the current user details if there is an existing session.
    */
-  async getUserFromSession(): Promise<
-    | UserResponse
-    | {
-        data: {
-          user: null
+  async getUser(): Promise<UserResponse> {
+    try {
+      let access_token = ''
+      if (!('Authorization' in this.headers)) {
+        const { session, error } = await this.getSession()
+        if (error) {
+          throw error
         }
-        error: null
+        if (!session) {
+          throw new AuthSessionMissingError()
+        }
+        access_token = session.access_token
       }
-  > {
-    const { session, error } = await this.getSession()
-    if (error) {
-      return { data: { user: null }, error }
-    }
+      return await _request(this.fetch, 'GET', `${this.url}/user`, {
+        headers: this.headers,
+        jwt: access_token,
+        xform: _userResponse,
+      })
+    } catch (error) {
+      if (isAuthError(error)) {
+        return { data: { user: null }, error }
+      }
 
-    if (!session) {
-      return { data: { user: null }, error: null }
+      throw error
     }
-
-    return { data: { user: session.user }, error: null }
   }
 
   /**
    * Updates user data, if there is a logged in user.
    * @param attributes The data you want to update.
    */
-  async update(attributes: UserAttributes): Promise<UserResponse> {
+  async updateUser(attributes: UserAttributes): Promise<UserResponse> {
     try {
       const { session, error: sessionError } = await this.getSession()
       if (sessionError) {
@@ -545,7 +551,7 @@ export default class GoTrueClient {
       const timeNow = Math.round(Date.now() / 1000)
       const expires_at = timeNow + parseInt(expires_in)
 
-      const { data, error } = await this.api.getUser(access_token)
+      const { data, error } = await this.getUser()
       if (error) throw error
 
       const user: User = data.user!

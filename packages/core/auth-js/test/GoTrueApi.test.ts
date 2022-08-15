@@ -1,9 +1,7 @@
 import {
-  GOTRUE_URL_SIGNUP_ENABLED_AUTO_CONFIRM_ON,
   authClientWithSession,
   clientApiAutoConfirmOffSignupsEnabledClient,
   serviceRoleApiClient,
-  serviceRoleApiClientWithSms,
   clientApiAutoConfirmDisabledClient,
 } from './lib/clients'
 
@@ -119,12 +117,10 @@ describe('GoTrueApi', () => {
       expect(initialError).toBeNull()
       expect(data.session).not.toBeNull()
 
-      const jwt = data.session?.access_token || ''
-
       const {
         error,
         data: { user },
-      } = await serviceRoleApiClient.getUser(jwt)
+      } = await authClientWithSession.getUser()
 
       expect(error).toBeNull()
       expect(user).not.toBeUndefined()
