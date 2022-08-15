@@ -640,7 +640,7 @@ export default class GoTrueClient {
    * Sends a reset request to an email address.
    * @param email The email address of the user.
    * @param options.redirectTo A URL to send the user to after they are confirmed.
-   * @param captchaToken Verification token received when the user completes the captcha on the site.
+   * @param options.captchaToken Verification token received when the user completes the captcha on the site.
    */
   async resetPasswordForEmail(
     email: string,
