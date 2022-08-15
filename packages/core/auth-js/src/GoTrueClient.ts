@@ -10,6 +10,7 @@ import {
   AuthApiError,
   AuthError,
   AuthInvalidCredentialsError,
+  AuthRetryableFetchError,
   AuthSessionMissingError,
   AuthUnknownError,
   isAuthError,
@@ -732,7 +733,7 @@ export default class GoTrueClient {
           if (error) {
             console.log(error.message)
             if (
-              error.message === NETWORK_FAILURE.ERROR_MESSAGE &&
+              error instanceof AuthRetryableFetchError &&
               this.networkRetries < NETWORK_FAILURE.MAX_RETRIES
             ) {
               if (this.refreshTokenTimer) clearTimeout(this.refreshTokenTimer)
@@ -857,7 +858,7 @@ export default class GoTrueClient {
       const { error } = await this._callRefreshToken(session.refresh_token)
       if (!error) this.networkRetries = 0
       if (
-        error?.message === NETWORK_FAILURE.ERROR_MESSAGE &&
+        error instanceof AuthRetryableFetchError &&
         this.networkRetries < NETWORK_FAILURE.MAX_RETRIES
       )
         this._startAutoRefreshToken(

@@ -1,6 +1,6 @@
-import { AuthApiError, AuthUnknownError } from './errors'
 import { expiresAt, resolveResponse } from './helpers'
-import { AuthResponse, Session, User, UserResponse } from './types'
+import { AuthResponse, User, UserResponse } from './types'
+import { AuthApiError, AuthRetryableFetchError, AuthUnknownError } from './errors'
 
 export type Fetch = typeof fetch
 
@@ -23,12 +23,22 @@ const _getErrorMessage = (err: any): string =>
 const handleError = async (error: unknown, reject: (reason?: any) => void) => {
   const Res = await resolveResponse()
 
-  if (error instanceof Res) {
-    error.json().then((err) => {
-      reject(new AuthApiError(_getErrorMessage(err), error.status || 500))
-    })
+  if (!(error instanceof Res)) {
+    reject(new AuthRetryableFetchError(_getErrorMessage(error), 0))
+  } else if (error.status >= 500 && error.status <= 599) {
+    // status in 500...599 range - server had an error, request might be retryed.
+    reject(new AuthRetryableFetchError(_getErrorMessage(error), error.status))
   } else {
-    reject(new AuthUnknownError(_getErrorMessage(error), error))
+    // got a response from server that is not in the 500...599 range - should not retry
+    error
+      .json()
+      .then((err) => {
+        reject(new AuthApiError(_getErrorMessage(err), error.status || 500))
+      })
+      .catch((e) => {
+        // not a valid json response
+        reject(new AuthUnknownError(_getErrorMessage(e), e))
+      })
   }
 }
 
