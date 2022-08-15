@@ -79,6 +79,7 @@ export default class GoTrueApi {
    * @param password The password of the user.
    * @param options.redirectTo A URL or mobile address to send the user to after they are confirmed.
    * @param options.data Optional user metadata.
+   * @param options.captchaToken Verification token received when the user completes the captcha on your site.
    *
    * @returns A logged-in session if the server has "autoconfirm" ON
    * @returns A user if the server has "autoconfirm" OFF
@@ -155,7 +156,7 @@ export default class GoTrueApi {
       const data = await post(
         this.fetch,
         `${this.url}/token?grant_type=password`,
-        { email, password, gotrue_meta_security: { hcaptcha_token: options.captchaToken } },
+        { email, password, gotrue_meta_security: { captcha_token: options.captchaToken } },
         { headers }
       )
       const session = { ...data }
@@ -174,6 +175,7 @@ export default class GoTrueApi {
    * @param phone The phone number of the user.
    * @param password The password of the user.
    * @param options.data Optional user metadata.
+   * @param options.captchaToken Verification token received when the user completes the captcha on your site.
    */
   async signUpWithPhone(
     phone: string,
@@ -242,7 +244,7 @@ export default class GoTrueApi {
       const session = await post(
         this.fetch,
         `${this.url}/token?grant_type=password`,
-        { phone, password, gotrue_meta_security: { hcaptcha_token: options.captchaToken } },
+        { phone, password, gotrue_meta_security: { captcha_token: options.captchaToken } },
         { headers }
       )
       if (session.expires_in) session.expires_at = expiresAt(session.expires_in)
@@ -303,6 +305,7 @@ export default class GoTrueApi {
    * @param email The email address of the user.
    * @param options.shouldCreateUser A boolean flag to indicate whether to automatically create a user on magiclink / otp sign-ins if the user doesn't exist. Defaults to true.
    * @param options.redirectTo A URL or mobile address to send the user to after they are confirmed.
+   * @param options.captchaToken Verification token received when the user completes the captcha on your site.
    */
   async sendMagicLinkEmail(
     email: string,
@@ -350,6 +353,7 @@ export default class GoTrueApi {
    * Sends a mobile OTP via SMS. Will register the account if it doesn't already exist
    * @param phone The user's phone number WITH international prefix
    * @param options.shouldCreateUser A boolean flag to indicate whether to automatically create a user on magiclink / otp sign-ins if the user doesn't exist. Defaults to true.
+   * @param options.captchaToken Verification token received when the user completes the captcha on your site.
    */
   async sendMobileOTP(
     phone: string,
@@ -541,6 +545,7 @@ export default class GoTrueApi {
    * Sends a reset request to an email address.
    * @param email The email address of the user.
    * @param options.redirectTo A URL or mobile address to send the user to after they are confirmed.
+   * @param options.captchaToken Verification token received when the user completes the captcha on your site.
    */
   async resetPasswordForEmail(
     email: string,
@@ -616,7 +621,13 @@ export default class GoTrueApi {
    * @param options.redirectTo The link type ("signup" or "magiclink" or "recovery" or "invite").
    */
   async generateLink(
-    type: 'signup' | 'magiclink' | 'recovery' | 'invite',
+    type:
+      | 'signup'
+      | 'magiclink'
+      | 'recovery'
+      | 'invite'
+      | 'email_change_current'
+      | 'email_change_new',
     email: string,
     options: {
       password?: string
