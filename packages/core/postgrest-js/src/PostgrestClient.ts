@@ -71,6 +71,7 @@ export default class PostgrestClient<
    * @param options  Named parameters.
    * @param options.head  When set to true, no data will be returned.
    * @param options.count  Count algorithm to use to count rows in a table.
+   * @param rollback  Rollback the operation
    */
   rpc<
     FunctionName extends string & keyof Schema['Functions'],
@@ -81,9 +82,11 @@ export default class PostgrestClient<
     {
       head = false,
       count,
+      rollback = false,
     }: {
       head?: boolean
       count?: 'exact' | 'planned' | 'estimated'
+      rollback?: boolean
     } = {}
   ): PostgrestFilterBuilder<
     Function_['Returns'] extends any[]
@@ -107,9 +110,7 @@ export default class PostgrestClient<
     }
 
     const headers = { ...this.headers }
-    if (count) {
-      headers['Prefer'] = `count=${count}`
-    }
+    headers['Prefer'] = [count ? `count=${count}` : null, rollback ? 'tx=rollback' : null].join(',')
 
     return new PostgrestFilterBuilder({
       method,

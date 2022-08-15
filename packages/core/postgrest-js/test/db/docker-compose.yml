@@ -12,6 +12,7 @@ services:
       PGRST_DB_EXTRA_SEARCH_PATH: extensions
       PGRST_DB_ANON_ROLE: postgres
       PGRST_DB_PLAN_ENABLED: 1
+      PGRST_DB_TX_END: commit-allow-override
     depends_on:
       - db
   db:
