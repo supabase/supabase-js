@@ -5,6 +5,7 @@ import {
   FunctionsHttpError,
   FunctionsRelayError,
   FunctionsResponse,
+  FunctionInvokeOptions,
 } from './types'
 
 export class FunctionsClient {
@@ -38,23 +39,22 @@ export class FunctionsClient {
   /**
    * Invokes a function
    * @param functionName - the name of the function to invoke
-   * @param functionArgs - the arguments to the function
-   * @param options - function invoke options
-   * @param options.headers - headers to send with the request
+   * @param invokeOption.headers - object representing the headers to send with the request
+   * @param invokeOptions.body - the body of the request
    */
-  async invoke(
+  async invoke<T = any>(
     functionName: string,
-    functionArgs: any,
-    {
-      headers = {},
-    }: {
-      headers?: Record<string, string>
-    } = {}
-  ): Promise<FunctionsResponse> {
+    invokeOptions: FunctionInvokeOptions = {}
+  ): Promise<FunctionsResponse<T>> {
     try {
+      const { headers, body: functionArgs } = invokeOptions
+
       let _headers: Record<string, string> = {}
       let body: any
-      if (functionArgs && !Object.prototype.hasOwnProperty.call(headers, 'Content-Type')) {
+      if (
+        functionArgs &&
+        ((headers && !Object.prototype.hasOwnProperty.call(headers, 'Content-Type')) || !headers)
+      ) {
         if (
           (typeof Blob !== 'undefined' && functionArgs instanceof Blob) ||
           functionArgs instanceof ArrayBuffer
