@@ -51,6 +51,7 @@ export default class GoTrueApi {
    * @param provider One of the providers supported by GoTrue.
    * @param options.redirectTo A URL or mobile address to send the user to after they are confirmed.
    * @param options.scopes A space-separated list of scopes granted to the OAuth application.
+   * @param options.queryParams An object of key-value pairs containing query parameters granted to the OAuth application.
    */
   getUrlForProvider(
     provider: Provider,
@@ -69,7 +70,7 @@ export default class GoTrueApi {
     }
     if (options?.queryParams) {
       const query = new URLSearchParams(options.queryParams)
-      urlParams.push(`${query}`)
+      urlParams.push(query.toString())
     }
     return `${this.url}/authorize?${urlParams.join('&')}`
   }
