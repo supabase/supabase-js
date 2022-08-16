@@ -65,12 +65,12 @@ export default class GoTrueClient {
    */
   admin: GoTrueAdminApi
   /**
-   * The storage key used to identity the values saved in localStorage
+   * The storage key used to identify the values saved in localStorage
    */
   protected storageKey: string
 
   /**
-   * The session object for the currently logged in user or null.
+   * The session object for the currently logged in user. If null, it means there isn't a logged-in user.
    * Only used if persistSession is false.
    */
   protected inMemorySession: Session | null
@@ -339,7 +339,7 @@ export default class GoTrueClient {
    * @param token The user's password.
    * @param type The user's verification type.
    * @param options.redirectTo A URL to send the user to after they are confirmed.
-   * @param options.captchaToken An optional captcha verification token.
+   * @param options.captchaToken Verification token received when the user completes the captcha on the site.
    */
   async verifyOtp(
     params: VerifyOtpParams,
@@ -388,6 +388,7 @@ export default class GoTrueClient {
 
   /**
    * Returns the session data, refreshing it if necessary.
+   * If no session is detected, the session returned will be null.
    */
   async getSession(): Promise<
     | {
@@ -444,7 +445,7 @@ export default class GoTrueClient {
 
   /**
    * Gets the current user details if there is an existing session.
-   * @param jwt Takes in an optional jwt.
+   * @param jwt Takes in an optional access token jwt. If no jwt is provided, getUser() will attempt to get the jwt from the current session.
    */
   async getUser(jwt?: string): Promise<UserResponse> {
     try {
@@ -507,8 +508,8 @@ export default class GoTrueClient {
   }
 
   /**
-   * Sets the session data from refresh_token and returns current Session and Error
-   * @param refresh_token a JWT token
+   * Sets the session data from refresh_token and returns current session or an error if the refresh_token is invalid.
+   * @param refresh_token The refresh token returned by gotrue.
    */
   async setSession(refresh_token: string): Promise<AuthResponse> {
     try {
@@ -535,7 +536,6 @@ export default class GoTrueClient {
 
   /**
    * Gets the session data from a URL string
-   * @param options.storeSession Optionally store the session in the browser or in-memory
    */
   private async _getSessionFromUrl(): Promise<
     | {
@@ -599,7 +599,8 @@ export default class GoTrueClient {
    * Inside a browser context, `signOut()` will remove the logged in user from the browser session
    * and log them out - removing all items from localstorage and then trigger a "SIGNED_OUT" event.
    *
-   * For server-side management, you can revoke all refresh tokens for a user by passing a user's JWT through to `auth.api.signOut(JWT: string)`. There is no way to revoke a user's session JWT before it automatically expires
+   * For server-side management, you can revoke all refresh tokens for a user by passing a user's JWT through to `auth.api.signOut(JWT: string)`.
+   * There is no way to revoke a user's access token jwt until it expires. It is recommended to set a shorter expiry on the jwt for this reason.
    */
   async signOut(): Promise<{ error: AuthError | null }> {
     const { data, error: sessionError } = await this.getSession()
@@ -618,6 +619,7 @@ export default class GoTrueClient {
 
   /**
    * Receive a notification every time an auth event happens.
+   * @param callback A callback function to be invoked when an auth event happens.
    * @returns {Subscription} A subscription object which can be used to unsubscribe itself.
    */
   onAuthStateChange(callback: (event: AuthChangeEvent, session: Session | null) => void):
@@ -840,8 +842,6 @@ export default class GoTrueClient {
       this._startAutoRefreshToken((expiresIn - refreshDurationBeforeExpires) * 1000, session)
     }
 
-    // Do we need any extra check before persist session
-    // access_token or user ?
     if (this.persistSession && session.expires_at) {
       this._persistSession(session)
     }
@@ -865,7 +865,8 @@ export default class GoTrueClient {
 
   /**
    * Clear and re-create refresh token timer
-   * @param value time intervals in milliseconds
+   * @param value time intervals in milliseconds.
+   * @param session The current session.
    */
   private _startAutoRefreshToken(value: number, session: Session) {
     if (this.refreshTokenTimer) clearTimeout(this.refreshTokenTimer)
