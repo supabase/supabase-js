@@ -1,7 +1,10 @@
 import ProfileCard from '../components/ProfileCard'
 import { Profile } from '../lib/constants'
+import { Subscription, SupabaseRealtimePayload } from '@supabase/supabase-js'
 import { supabase } from '../lib/api'
 import { useState, useEffect } from 'react'
+
+var realtimeProfiles: Subscription | null = null
 
 export default function ProfileList() {
   const [profiles, setProfiles] = useState<Profile[]>([])
@@ -10,17 +13,13 @@ export default function ProfileList() {
     // getPublicProfiles()
     getUserProfile()
 
-    const realtimeProfiles = supabase
-      .channel('profiles-channel')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'profiles' },
-        (payload: { [key: string]: any }) => profileUpdated(profiles, payload.new)
-      )
+    realtimeProfiles = supabase
+      .from('profiles')
+      .on('*', (payload: SupabaseRealtimePayload<Profile>) => profileUpdated(profiles, payload.new))
       .subscribe()
 
     return () => {
-      if (realtimeProfiles) supabase.removeChannel(realtimeProfiles)
+      if (realtimeProfiles) supabase.removeSubscription(realtimeProfiles)
     }
   }, [])
 
