@@ -1,6 +1,6 @@
 import { Fetch, _request, _userResponse } from './lib/fetch'
 import { resolveFetch } from './lib/helpers'
-import { AdminUserAttributes, Session, User, UserResponse } from './lib/types'
+import { AdminUserAttributes, GenerateLinkTypes, Session, User, UserResponse } from './lib/types'
 import { AuthError, isAuthError } from './lib/errors'
 
 export default class GoTrueAdminApi {
@@ -81,16 +81,10 @@ export default class GoTrueAdminApi {
    * @param email The user's email.
    * @param options.password User password. For signup only.
    * @param options.data Optional user metadata. For signup only.
-   * @param options.redirectTo The link type ("signup" or "magiclink" or "recovery" or "invite").
+   * @param options.redirectTo The redirect url which should be appended to the generated link
    */
   async generateLink(
-    type:
-      | 'signup'
-      | 'magiclink'
-      | 'recovery'
-      | 'invite'
-      | 'email_change_current'
-      | 'email_change_new',
+    type: GenerateLinkTypes,
     email: string,
     options: {
       password?: string

@@ -74,7 +74,14 @@ export type UserResponse =
 
 export interface Session {
   provider_token?: string | null
+  /**
+   * The access token jwt. It is recommended to set the JWT_EXPIRY to a shorter expiry value.
+   */
   access_token: string
+  /**
+   * A one-time used refresh token that never expires.
+   */
+  refresh_token: string
   /**
    * The number of seconds until the token expires (since it was issued). Returned when a login is confirmed.
    */
@@ -83,7 +90,6 @@ export interface Session {
    * A timestamp of when the token will expire. Returned when a login is confirmed.
    */
   expires_at?: number
-  refresh_token: string
   token_type: string
   user: User
 }
@@ -164,7 +170,7 @@ export interface AdminUserAttributes extends UserAttributes {
    * Only a service role can modify.
    *
    * Note: When using the GoTrueAdminApi and wanting to modify a user's user_metadata,
-   * this attribute is used instead of UserAttributes data.
+   * this attribute is used instead of UserAttributes.data.
    *
    */
   user_metadata?: object
@@ -257,21 +263,28 @@ export interface SignInWithOAuthOptions {
   queryParams?: { [key: string]: string }
 }
 
-export type VerifyOTPParams = VerifyMobileOTPParams | VerifyEmailOTPParams
-export interface VerifyMobileOTPParams {
+export type VerifyOtpParams = VerifyMobileOtpParams | VerifyEmailOtpParams
+export interface VerifyMobileOtpParams {
   email?: undefined
   phone: string
   token: string
-  type: MobileOTPType
+  type: MobileOtpType
 }
-export interface VerifyEmailOTPParams {
+export interface VerifyEmailOtpParams {
   email: string
   phone?: undefined
   token: string
-  type: EmailOTPType
+  type: EmailOtpType
 }
-export type MobileOTPType = 'sms' | 'phone_change'
-export type EmailOTPType = 'signup' | 'invite' | 'magiclink' | 'recovery' | 'email_change'
+export type MobileOtpType = 'sms' | 'phone_change'
+export type EmailOtpType = 'signup' | 'invite' | 'magiclink' | 'recovery' | 'email_change'
+export type GenerateLinkTypes =
+  | 'signup'
+  | 'invite'
+  | 'magiclink'
+  | 'recovery'
+  | 'email_change_current'
+  | 'email_change_new'
 
 export interface OpenIDConnectCredentials {
   id_token: string

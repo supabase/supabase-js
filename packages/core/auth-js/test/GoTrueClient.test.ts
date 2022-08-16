@@ -52,12 +52,12 @@ describe('GoTrueClient', () => {
       expect(error).toBeNull()
       expect(data.session).not.toBeNull()
 
-      const { session: userSession, error: userError } = await authWithSession.getSession()
+      const { data: userSession, error: userError } = await authWithSession.getSession()
 
       expect(userError).toBeNull()
-      expect(userSession).not.toBeNull()
-      expect(userSession).toHaveProperty('access_token')
-      expect(userSession).toHaveProperty('user')
+      expect(userSession.session).not.toBeNull()
+      expect(userSession.session).toHaveProperty('access_token')
+      expect(userSession.session).toHaveProperty('user')
     })
 
     test('getSession() should refresh the session and return a new access token', async () => {
@@ -84,13 +84,13 @@ describe('GoTrueClient', () => {
 
       // wait 1 seconds before calling getSession()
       await new Promise((r) => setTimeout(r, 1000))
-      const { session: userSession, error: userError } = await authWithSession.getSession()
+      const { data: userSession, error: userError } = await authWithSession.getSession()
 
       expect(userError).toBeNull()
-      expect(userSession).not.toBeNull()
-      expect(userSession).toHaveProperty('access_token')
+      expect(userSession.session).not.toBeNull()
+      expect(userSession.session).toHaveProperty('access_token')
       expect(refreshAccessTokenSpy).toBeCalledTimes(1)
-      expect(data.session?.access_token).not.toEqual(userSession?.access_token)
+      expect(data.session?.access_token).not.toEqual(userSession.session?.access_token)
     })
 
     test('refresh should only happen once', async () => {
@@ -348,10 +348,10 @@ describe('GoTrueClient', () => {
     const initialSession = data.session
     expect(initialSession).not.toBeNull()
 
-    const { session, error } = await authWithSession.getSession()
+    const { data: userSession, error } = await authWithSession.getSession()
 
     expect(error).toBeNull()
-    expect(session).toMatchObject({
+    expect(userSession.session).toMatchObject({
       access_token: expect.any(String),
       refresh_token: expect.any(String),
       expires_in: expect.any(Number),
@@ -370,7 +370,7 @@ describe('GoTrueClient', () => {
         },
       },
     })
-    expect(session?.user).toMatchObject({
+    expect(userSession.session?.user).toMatchObject({
       id: expect.any(String),
       email: expect.any(String),
       phone: expect.any(String),
@@ -384,8 +384,8 @@ describe('GoTrueClient', () => {
       },
     })
 
-    expect(session?.user).not.toBeNull()
-    expect(session?.user?.email).toBe(email)
+    expect(userSession.session?.user).not.toBeNull()
+    expect(userSession.session?.user?.email).toBe(email)
   })
 
   test('signOut', async () => {
@@ -514,8 +514,8 @@ describe('User management', () => {
     expect(data.user).not.toBeNull()
 
     await authWithSession.signOut()
-    const { session, error } = await authWithSession.getSession()
-    expect(session).toBeNull()
+    const { data: userSession, error } = await authWithSession.getSession()
+    expect(userSession.session).toBeNull()
     expect(error).toBeNull()
   })
 

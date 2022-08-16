@@ -43,7 +43,7 @@ import type {
   UserAttributes,
   UserCredentials,
   UserResponse,
-  VerifyOTPParams,
+  VerifyOtpParams,
 } from './lib/types'
 
 polyfillGlobalThis() // Make "globalThis" available
@@ -62,16 +62,15 @@ export default class GoTrueClient {
   /**
    * Namespace for the GoTrue admin methods.
    * These methods should only be used in a trusted server-side environment.
-   * These methods
    */
   admin: GoTrueAdminApi
   /**
-   * The storage key used to identity the values saved in localStorage
+   * The storage key used to identify the values saved in localStorage
    */
   protected storageKey: string
 
   /**
-   * The session object for the currently logged in user or null.
+   * The session object for the currently logged in user. If null, it means there isn't a logged-in user.
    * Only used if persistSession is false.
    */
   protected inMemorySession: Session | null
@@ -227,9 +226,10 @@ export default class GoTrueClient {
     try {
       this._removeSession()
 
+      let res: AuthResponse
       if ('email' in credentials) {
         const { email, password, options } = credentials
-        return await _request(this.fetch, 'POST', `${this.url}/token?grant_type=password`, {
+        res = await _request(this.fetch, 'POST', `${this.url}/token?grant_type=password`, {
           body: {
             email,
             password,
@@ -237,11 +237,9 @@ export default class GoTrueClient {
           },
           xform: _sessionResponse,
         })
-      }
-
-      if ('phone' in credentials) {
+      } else if ('phone' in credentials) {
         const { phone, password, options } = credentials
-        return await _request(this.fetch, 'POST', `${this.url}/token?grant_type=password`, {
+        res = await _request(this.fetch, 'POST', `${this.url}/token?grant_type=password`, {
           body: {
             phone,
             password,
@@ -249,15 +247,22 @@ export default class GoTrueClient {
           },
           xform: _sessionResponse,
         })
+      } else {
+        throw new AuthInvalidCredentialsError(
+          'You must provide either an email or phone number and a password'
+        )
       }
-      throw new AuthInvalidCredentialsError(
-        'You must provide either an email or phone number and a password.'
-      )
+      const { data, error } = res
+      if (error || !data) return { data: { user: null, session: null }, error }
+      if (data.session) {
+        this._saveSession(data.session)
+        this._notifyAllSubscribers('SIGNED_IN', data.session)
+      }
+      return { data, error }
     } catch (error) {
       if (isAuthError(error)) {
         return { data: { user: null, session: null }, error }
       }
-
       throw error
     }
   }
@@ -328,16 +333,16 @@ export default class GoTrueClient {
   }
 
   /**
-   * Log in a user given a User supplied OTP received via mobile.
+   * Log in a user given a User supplied Otp received via mobile.
    * @param email The user's email address.
    * @param phone The user's phone number.
    * @param token The user's password.
    * @param type The user's verification type.
    * @param options.redirectTo A URL to send the user to after they are confirmed.
-   * @param options.captchaToken An optional captcha verification token.
+   * @param options.captchaToken Verification token received when the user completes the captcha on the site.
    */
-  async verifyOTP(
-    params: VerifyOTPParams,
+  async verifyOtp(
+    params: VerifyOtpParams,
     options: {
       redirectTo?: string
       captchaToken?: string
@@ -366,7 +371,7 @@ export default class GoTrueClient {
       const session: Session | null = data.session
       const user: User = data.user
 
-      if ((data as Session).access_token) {
+      if (session?.access_token) {
         this._saveSession(session as Session)
         this._notifyAllSubscribers('SIGNED_IN', session)
       }
@@ -383,18 +388,25 @@ export default class GoTrueClient {
 
   /**
    * Returns the session data, refreshing it if necessary.
+   * If no session is detected, the session returned will be null.
    */
   async getSession(): Promise<
     | {
-        session: Session
+        data: {
+          session: Session
+        }
         error: null
       }
     | {
-        session: null
+        data: {
+          session: null
+        }
         error: AuthError
       }
     | {
-        session: null
+        data: {
+          session: null
+        }
         error: null
       }
   > {
@@ -413,43 +425,43 @@ export default class GoTrueClient {
     }
 
     if (!currentSession) {
-      return { session: null, error: null }
+      return { data: { session: null }, error: null }
     }
 
     const hasExpired = currentSession.expires_at
       ? currentSession.expires_at <= Date.now() / 1000
       : false
     if (!hasExpired) {
-      return { session: currentSession, error: null }
+      return { data: { session: currentSession }, error: null }
     }
 
     const { session, error } = await this._callRefreshToken(currentSession.refresh_token)
     if (error) {
-      return { session: null, error }
+      return { data: { session: null }, error }
     }
 
-    return { session, error: null }
+    return { data: { session }, error: null }
   }
 
   /**
    * Gets the current user details if there is an existing session.
+   * @param jwt Takes in an optional access token jwt. If no jwt is provided, getUser() will attempt to get the jwt from the current session.
    */
-  async getUser(): Promise<UserResponse> {
+  async getUser(jwt?: string): Promise<UserResponse> {
     try {
-      let access_token = ''
-      if (!('Authorization' in this.headers)) {
-        const { session, error } = await this.getSession()
+      if (!jwt) {
+        const { data, error } = await this.getSession()
         if (error) {
           throw error
         }
-        if (!session) {
-          throw new AuthSessionMissingError()
-        }
-        access_token = session.access_token
+
+        // Default to Authorization header if there is no existing session
+        jwt = data.session?.access_token ?? this.headers['Authorization']
       }
+
       return await _request(this.fetch, 'GET', `${this.url}/user`, {
         headers: this.headers,
-        jwt: access_token,
+        jwt: jwt,
         xform: _userResponse,
       })
     } catch (error) {
@@ -467,13 +479,14 @@ export default class GoTrueClient {
    */
   async updateUser(attributes: UserAttributes): Promise<UserResponse> {
     try {
-      const { session, error: sessionError } = await this.getSession()
+      const { data: sessionData, error: sessionError } = await this.getSession()
       if (sessionError) {
         throw sessionError
       }
-      if (!session) {
+      if (!sessionData.session) {
         throw new AuthSessionMissingError()
       }
+      const session: Session = sessionData.session
       const { data, error: userError } = await _request(this.fetch, 'PUT', `${this.url}/user`, {
         body: attributes,
         jwt: session.access_token,
@@ -495,8 +508,8 @@ export default class GoTrueClient {
   }
 
   /**
-   * Sets the session data from refresh_token and returns current Session and Error
-   * @param refresh_token a JWT token
+   * Sets the session data from refresh_token and returns current session or an error if the refresh_token is invalid.
+   * @param refresh_token The refresh token returned by gotrue.
    */
   async setSession(refresh_token: string): Promise<AuthResponse> {
     try {
@@ -523,7 +536,6 @@ export default class GoTrueClient {
 
   /**
    * Gets the session data from a URL string
-   * @param options.storeSession Optionally store the session in the browser or in-memory
    */
   private async _getSessionFromUrl(): Promise<
     | {
@@ -551,9 +563,8 @@ export default class GoTrueClient {
       const timeNow = Math.round(Date.now() / 1000)
       const expires_at = timeNow + parseInt(expires_in)
 
-      const { data, error } = await this.getUser()
+      const { data, error } = await this.getUser(access_token)
       if (error) throw error
-
       const user: User = data.user!
       const session: Session = {
         provider_token,
@@ -564,7 +575,6 @@ export default class GoTrueClient {
         token_type,
         user,
       }
-
       this._saveSession(session)
       const recoveryMode = getParameterByName('type')
       this._notifyAllSubscribers('SIGNED_IN', session)
@@ -589,14 +599,15 @@ export default class GoTrueClient {
    * Inside a browser context, `signOut()` will remove the logged in user from the browser session
    * and log them out - removing all items from localstorage and then trigger a "SIGNED_OUT" event.
    *
-   * For server-side management, you can revoke all refresh tokens for a user by passing a user's JWT through to `auth.api.signOut(JWT: string)`. There is no way to revoke a user's session JWT before it automatically expires
+   * For server-side management, you can revoke all refresh tokens for a user by passing a user's JWT through to `auth.api.signOut(JWT: string)`.
+   * There is no way to revoke a user's access token jwt until it expires. It is recommended to set a shorter expiry on the jwt for this reason.
    */
   async signOut(): Promise<{ error: AuthError | null }> {
-    const { session, error: sessionError } = await this.getSession()
+    const { data, error: sessionError } = await this.getSession()
     if (sessionError) {
       return { error: sessionError }
     }
-    const accessToken = session?.access_token
+    const accessToken = data.session?.access_token
     if (accessToken) {
       const { error } = await this.admin.signOut(accessToken)
       if (error) return { error }
@@ -608,6 +619,7 @@ export default class GoTrueClient {
 
   /**
    * Receive a notification every time an auth event happens.
+   * @param callback A callback function to be invoked when an auth event happens.
    * @returns {Subscription} A subscription object which can be used to unsubscribe itself.
    */
   onAuthStateChange(callback: (event: AuthChangeEvent, session: Session | null) => void):
@@ -830,8 +842,6 @@ export default class GoTrueClient {
       this._startAutoRefreshToken((expiresIn - refreshDurationBeforeExpires) * 1000, session)
     }
 
-    // Do we need any extra check before persist session
-    // access_token or user ?
     if (this.persistSession && session.expires_at) {
       this._persistSession(session)
     }
@@ -855,7 +865,8 @@ export default class GoTrueClient {
 
   /**
    * Clear and re-create refresh token timer
-   * @param value time intervals in milliseconds
+   * @param value time intervals in milliseconds.
+   * @param session The current session.
    */
   private _startAutoRefreshToken(value: number, session: Session) {
     if (this.refreshTokenTimer) clearTimeout(this.refreshTokenTimer)
