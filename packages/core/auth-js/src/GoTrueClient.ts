@@ -43,7 +43,7 @@ import type {
   UserAttributes,
   UserCredentials,
   UserResponse,
-  VerifyOTPParams,
+  VerifyOtpParams,
 } from './lib/types'
 
 polyfillGlobalThis() // Make "globalThis" available
@@ -334,7 +334,7 @@ export default class GoTrueClient {
   }
 
   /**
-   * Log in a user given a User supplied OTP received via mobile.
+   * Log in a user given a User supplied Otp received via mobile.
    * @param email The user's email address.
    * @param phone The user's phone number.
    * @param token The user's password.
@@ -342,8 +342,8 @@ export default class GoTrueClient {
    * @param options.redirectTo A URL to send the user to after they are confirmed.
    * @param options.captchaToken An optional captcha verification token.
    */
-  async verifyOTP(
-    params: VerifyOTPParams,
+  async verifyOtp(
+    params: VerifyOtpParams,
     options: {
       redirectTo?: string
       captchaToken?: string

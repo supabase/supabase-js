@@ -257,21 +257,21 @@ export interface SignInWithOAuthOptions {
   queryParams?: { [key: string]: string }
 }
 
-export type VerifyOTPParams = VerifyMobileOTPParams | VerifyEmailOTPParams
-export interface VerifyMobileOTPParams {
+export type VerifyOtpParams = VerifyMobileOtpParams | VerifyEmailOtpParams
+export interface VerifyMobileOtpParams {
   email?: undefined
   phone: string
   token: string
-  type: MobileOTPType
+  type: MobileOtpType
 }
-export interface VerifyEmailOTPParams {
+export interface VerifyEmailOtpParams {
   email: string
   phone?: undefined
   token: string
-  type: EmailOTPType
+  type: EmailOtpType
 }
-export type MobileOTPType = 'sms' | 'phone_change'
-export type EmailOTPType = 'signup' | 'invite' | 'magiclink' | 'recovery' | 'email_change'
+export type MobileOtpType = 'sms' | 'phone_change'
+export type EmailOtpType = 'signup' | 'invite' | 'magiclink' | 'recovery' | 'email_change'
 
 export interface OpenIDConnectCredentials {
   id_token: string

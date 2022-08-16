@@ -329,15 +329,15 @@ describe('GoTrueAdminApi', () => {
     })
   })
 
-  describe('Email/Phone OTP Verification', () => {
-    describe('GoTrueClient verifyOTP()', () => {
-      test('verifyOTP() with non-existent phone number', async () => {
+  describe('Email/Phone Otp Verification', () => {
+    describe('GoTrueClient verifyOtp()', () => {
+      test('verifyOtp() with non-existent phone number', async () => {
         const { phone } = mockUserCredentials()
         const otp = mockVerificationOTP()
         const {
           data: { user },
           error,
-        } = await clientApiAutoConfirmDisabledClient.verifyOTP({
+        } = await clientApiAutoConfirmDisabledClient.verifyOtp({
           phone: `${phone}`,
           token: otp,
           type: 'sms',
@@ -353,7 +353,7 @@ describe('GoTrueAdminApi', () => {
         const {
           data: { user },
           error,
-        } = await clientApiAutoConfirmDisabledClient.verifyOTP({
+        } = await clientApiAutoConfirmDisabledClient.verifyOtp({
           phone: `${phone}-invalid`,
           token: otp,
           type: 'sms',
