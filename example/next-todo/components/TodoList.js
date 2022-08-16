@@ -13,7 +13,7 @@ export default function Todos({ user }) {
     fetchTodos()
 
     subscription1 = supabase
-      .channel('todos-table-channel')
+      .channel('public:todos')
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'todos' }, (v) =>
         console.log('UPDATE on todos', v)
       )
@@ -23,7 +23,7 @@ export default function Todos({ user }) {
       .subscribe((change) => console.log('todos changed', change))
 
     subscription2 = supabase
-      .channel('public-schema-channel')
+      .channel('public')
       .on('postgres_changes', { event: 'UPDATE', schema: 'public' }, (v) =>
         console.log('UPDATE on schema', v)
       )
