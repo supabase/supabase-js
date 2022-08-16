@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { GoTrueClient } from '@supabase/gotrue-js'
 import './tailwind.output.css'
 
@@ -20,6 +20,18 @@ function App() {
   auth.onAuthStateChange((_event, session) => {
     setSession(session)
   })
+
+  useEffect(() => {
+    async function session() {
+      const { data, error } = await auth.getSession()
+      if (error | !data) {
+        setSession('')
+      } else {
+        setSession(data.session)
+      }
+    }
+    session()
+  }, [])
 
   async function handleOAuthLogin(provider) {
     let { error } = await auth.signInWithOAuth({
@@ -48,7 +60,11 @@ function App() {
     if (error) console.log('Error: ', error.message)
   }
   async function handleEmailSignUp() {
-    let { error } = await auth.signUp({ email, password })
+    let { error } = await auth.signUp({
+      email,
+      password,
+      options: { emailRedirectTo: 'http://localhost:3000/welcome' },
+    })
     if (error) console.log('Error: ', error.message)
   }
   async function handleSignOut() {
