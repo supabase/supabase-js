@@ -81,7 +81,7 @@ export default class GoTrueAdminApi {
    * @param email The user's email.
    * @param options.password User password. For signup only.
    * @param options.data Optional user metadata. For signup only.
-   * @param options.redirectTo The link type ("signup" or "magiclink" or "recovery" or "invite").
+   * @param options.redirectTo The redirect url which should be appended to the generated link
    */
   async generateLink(
     type:

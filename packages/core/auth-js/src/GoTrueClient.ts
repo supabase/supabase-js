@@ -62,7 +62,6 @@ export default class GoTrueClient {
   /**
    * Namespace for the GoTrue admin methods.
    * These methods should only be used in a trusted server-side environment.
-   * These methods
    */
   admin: GoTrueAdminApi
   /**
@@ -392,15 +391,21 @@ export default class GoTrueClient {
    */
   async getSession(): Promise<
     | {
-        session: Session
+        data: {
+          session: Session
+        }
         error: null
       }
     | {
-        session: null
+        data: {
+          session: null
+        }
         error: AuthError
       }
     | {
-        session: null
+        data: {
+          session: null
+        }
         error: null
       }
   > {
@@ -419,22 +424,22 @@ export default class GoTrueClient {
     }
 
     if (!currentSession) {
-      return { session: null, error: null }
+      return { data: { session: null }, error: null }
     }
 
     const hasExpired = currentSession.expires_at
       ? currentSession.expires_at <= Date.now() / 1000
       : false
     if (!hasExpired) {
-      return { session: currentSession, error: null }
+      return { data: { session: currentSession }, error: null }
     }
 
     const { session, error } = await this._callRefreshToken(currentSession.refresh_token)
     if (error) {
-      return { session: null, error }
+      return { data: { session: null }, error }
     }
 
-    return { session, error: null }
+    return { data: { session }, error: null }
   }
 
   /**
@@ -444,13 +449,13 @@ export default class GoTrueClient {
   async getUser(jwt?: string): Promise<UserResponse> {
     try {
       if (!jwt) {
-        const { session, error } = await this.getSession()
+        const { data, error } = await this.getSession()
         if (error) {
           throw error
         }
 
         // Default to Authorization header if there is no existing session
-        jwt = session?.access_token ?? this.headers['Authorization']
+        jwt = data.session?.access_token ?? this.headers['Authorization']
       }
 
       return await _request(this.fetch, 'GET', `${this.url}/user`, {
@@ -473,13 +478,14 @@ export default class GoTrueClient {
    */
   async updateUser(attributes: UserAttributes): Promise<UserResponse> {
     try {
-      const { session, error: sessionError } = await this.getSession()
+      const { data: sessionData, error: sessionError } = await this.getSession()
       if (sessionError) {
         throw sessionError
       }
-      if (!session) {
+      if (!sessionData.session) {
         throw new AuthSessionMissingError()
       }
+      const session: Session = sessionData.session
       const { data, error: userError } = await _request(this.fetch, 'PUT', `${this.url}/user`, {
         body: attributes,
         jwt: session.access_token,
@@ -596,11 +602,11 @@ export default class GoTrueClient {
    * For server-side management, you can revoke all refresh tokens for a user by passing a user's JWT through to `auth.api.signOut(JWT: string)`. There is no way to revoke a user's session JWT before it automatically expires
    */
   async signOut(): Promise<{ error: AuthError | null }> {
-    const { session, error: sessionError } = await this.getSession()
+    const { data, error: sessionError } = await this.getSession()
     if (sessionError) {
       return { error: sessionError }
     }
-    const accessToken = session?.access_token
+    const accessToken = data.session?.access_token
     if (accessToken) {
       const { error } = await this.admin.signOut(accessToken)
       if (error) return { error }
