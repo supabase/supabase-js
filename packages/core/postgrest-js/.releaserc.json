@@ -1,4 +1,9 @@
 {
+  "branches": [
+    { "name": "master" },
+    { "name": "next", "channel": "next", "prerelease": true },
+    { "name": "rc", "channel": "rc", "prerelease": true }
+  ],
   "plugins": [
     [
       "semantic-release-plugin-update-version-in-files",
