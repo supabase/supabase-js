@@ -5,14 +5,13 @@ import {
   PostgrestFilterBuilder,
   PostgrestQueryBuilder,
 } from '@supabase/postgrest-js'
-import { RealtimeSubscription, RealtimeClient, RealtimeClientOptions } from '@supabase/realtime-js'
+import { RealtimeChannel, RealtimeClient, RealtimeClientOptions } from '@supabase/realtime-js'
 import { StorageClient as SupabaseStorageClient } from '@supabase/storage-js'
 import { DEFAULT_HEADERS } from './lib/constants'
 import { fetchWithAuth } from './lib/fetch'
 import { stripTrailingSlash, applySettingDefaults } from './lib/helpers'
 import { SupabaseAuthClient } from './lib/SupabaseAuthClient'
 import { Fetch, GenericSchema, SupabaseClientOptions, SupabaseAuthClientOptions } from './lib/types'
-import { SupabaseQueryBuilder } from './lib/SupabaseQueryBuilder'
 
 const DEFAULT_GLOBAL_OPTIONS = {
   headers: DEFAULT_HEADERS,
@@ -53,13 +52,11 @@ export default class SupabaseClient<
   protected authUrl: string
   protected storageUrl: string
   protected functionsUrl: string
-  protected restUrl: string
   protected realtime: RealtimeClient
   protected rest: PostgrestClient<Database, SchemaName>
   protected storageKey: string
   protected fetch?: Fetch
   protected changedAccessToken: string | undefined
-  protected settings: SupabaseClientOptions<SchemaName> = {}
 
   protected headers: {
     [key: string]: string
@@ -90,7 +87,6 @@ export default class SupabaseClient<
     this.realtimeUrl = `${_supabaseUrl}/realtime/v1`.replace('http', 'ws')
     this.authUrl = `${_supabaseUrl}/auth/v1`
     this.storageUrl = `${_supabaseUrl}/storage/v1`
-    this.restUrl = `${_supabaseUrl}/rest/v1`
 
     const isPlatform = _supabaseUrl.match(/(supabase\.co)|(supabase\.in)/)
     if (isPlatform) {
@@ -108,26 +104,22 @@ export default class SupabaseClient<
       global: DEFAULT_GLOBAL_OPTIONS,
     }
 
-    this.settings = applySettingDefaults(options ?? {}, DEFAULTS)
+    const settings = applySettingDefaults(options ?? {}, DEFAULTS)
 
-    this.storageKey = this.settings.auth?.storageKey ?? ''
-    this.headers = this.settings.global?.headers ?? {}
+    this.storageKey = settings.auth?.storageKey ?? ''
+    this.headers = settings.global?.headers ?? {}
 
     this.auth = this._initSupabaseAuthClient(
-      this.settings.auth ?? {},
+      settings.auth ?? {},
       this.headers,
-      this.settings.global?.fetch
+      settings.global?.fetch
     )
-    this.fetch = fetchWithAuth(
-      supabaseKey,
-      this._getAccessToken.bind(this),
-      this.settings.global?.fetch
-    )
+    this.fetch = fetchWithAuth(supabaseKey, this._getAccessToken.bind(this), settings.global?.fetch)
 
-    this.realtime = this._initRealtimeClient({ headers: this.headers, ...this.settings.realtime })
-    this.rest = new PostgrestClient(this.restUrl, {
+    this.realtime = this._initRealtimeClient({ headers: this.headers, ...settings.realtime })
+    this.rest = new PostgrestClient(`${_supabaseUrl}/rest/v1`, {
       headers: this.headers,
-      schema: this.settings.db?.schema,
+      schema: settings.db?.schema,
       fetch: this.fetch,
     })
 
@@ -162,18 +154,7 @@ export default class SupabaseClient<
   >(table: TableName): PostgrestQueryBuilder<Table>
   from(table: string): PostgrestQueryBuilder<any>
   from(table: string): PostgrestQueryBuilder<any> {
-    /*
-      This is temporary and will be swapped back for this.rest.from(table)
-      once realtime-js v2 migration is complete.
-    */
-    const url = new URL(`${this.restUrl}/${table}`)
-    return new SupabaseQueryBuilder<any>(url, {
-      headers: { ...{ Authorization: `Bearer ${this.supabaseKey}` }, ...this.headers },
-      fetch: this.fetch,
-      realtime: this.realtime,
-      schema: this.settings.db?.schema,
-      table,
-    })
+    return this.rest.from(table)
   }
 
   /**
@@ -207,79 +188,44 @@ export default class SupabaseClient<
   }
 
   /**
-   * Closes and removes all subscriptions and returns a list of removed
-   * subscriptions and their errors.
+   * Creates a Realtime channel with Broadcast, Presence, and Postgres Changes.
+   *
+   * @param {string} name - The name of the Realtime channel.
+   * @param {Object} opts - The options to pass to the Realtime channel.
+   *
    */
-  async removeAllSubscriptions(): Promise<
-    { data: { subscription: RealtimeSubscription }; error: Error | null }[]
-  > {
-    const allSubs: RealtimeSubscription[] = this.getSubscriptions().slice()
-    const allSubPromises = allSubs.map((sub) => this.removeSubscription(sub))
-    const allRemovedSubs = await Promise.all(allSubPromises)
-
-    return allRemovedSubs.map(({ error }, i) => {
-      return {
-        data: { subscription: allSubs[i] },
-        error,
-      }
-    })
+  channel(name: string, opts: { [key: string]: any } = {}): RealtimeChannel {
+    return this.realtime.channel(name, opts)
   }
 
   /**
-   * Closes and removes a subscription and returns the number of open subscriptions.
-   *
-   * @param subscription The subscription you want to close and remove.
+   * Returns all Realtime channels.
    */
-  async removeSubscription(
-    subscription: RealtimeSubscription
-  ): Promise<{ data: { openSubscriptions: number }; error: Error | null }> {
-    const { error } = await this._closeSubscription(subscription)
-    const allSubs: RealtimeSubscription[] = this.getSubscriptions()
-    const openSubCount = allSubs.filter((chan) => chan.isJoined()).length
+  getChannels(): RealtimeChannel[] {
+    return this.realtime.getChannels()
+  }
 
-    if (allSubs.length === 0) await this.realtime.disconnect()
+  /**
+   * Unsubscribes and removes Realtime channel from Realtime client.
+   *
+   * @param {RealtimeChannel} channel - The name of the Realtime channel.
+   *
+   */
+  removeChannel(channel: RealtimeChannel): Promise<'ok' | 'timed out' | 'error'> {
+    return this.realtime.removeChannel(channel)
+  }
 
-    return { data: { openSubscriptions: openSubCount }, error }
+  /**
+   * Unsubscribes and removes all Realtime channels from Realtime client.
+   */
+  removeAllChannels(): Promise<('ok' | 'timed out' | 'error')[]> {
+    return this.realtime.removeAllChannels()
   }
 
   private async _getAccessToken() {
     const { data } = await this.auth.getSession()
 
     return data.session?.access_token ?? null
-  }
-
-  private async _closeSubscription(
-    subscription: RealtimeSubscription
-  ): Promise<{ error: Error | null }> {
-    let error = null
-
-    if (!subscription.isClosed()) {
-      const { error: unsubError } = await this._unsubscribeSubscription(subscription)
-      error = unsubError
-    }
-
-    this.realtime.remove(subscription)
-
-    return { error }
-  }
-
-  private _unsubscribeSubscription(
-    subscription: RealtimeSubscription
-  ): Promise<{ error: Error | null }> {
-    return new Promise((resolve) => {
-      subscription
-        .unsubscribe()
-        .receive('ok', () => resolve({ error: null }))
-        .receive('error', (error: Error) => resolve({ error }))
-        .receive('timeout', () => resolve({ error: new Error('timed out') }))
-    })
-  }
-
-  /**
-   * Returns an array of all your subscriptions.
-   */
-  getSubscriptions(): RealtimeSubscription[] {
-    return this.realtime.channels as RealtimeSubscription[]
   }
 
   private _initSupabaseAuthClient(

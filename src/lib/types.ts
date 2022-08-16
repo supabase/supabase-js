@@ -5,8 +5,6 @@ type GoTrueClientOptions = ConstructorParameters<typeof GoTrueClient>[0]
 
 export interface SupabaseAuthClientOptions extends GoTrueClientOptions {}
 
-export type GenericObject = { [key: string]: any }
-
 export type Fetch = typeof fetch
 
 export type SupabaseClientOptions<SchemaName> = {
@@ -70,17 +68,3 @@ export type GenericSchema = {
   Tables: Record<string, GenericTable>
   Functions: Record<string, GenericFunction>
 }
-
-export type SupabaseRealtimePayload<T> = {
-  commit_timestamp: string
-  eventType: 'INSERT' | 'UPDATE' | 'DELETE'
-  schema: string
-  table: string
-  /** The new record. Present for 'INSERT' and 'UPDATE' events. */
-  new: T
-  /** The previous record. Present for 'UPDATE' and 'DELETE' events. */
-  old: T
-  errors: string[] | null
-}
-
-export type SupabaseEventTypes = 'INSERT' | 'UPDATE' | 'DELETE' | '*'
