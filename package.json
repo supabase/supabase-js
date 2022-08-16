@@ -37,11 +37,11 @@
     "docs:json": "typedoc --entryPoints src/index.ts --out docs --includes src/**/*.ts --json docs/spec.json"
   },
   "dependencies": {
-    "@supabase/functions-js": "^1.4.0-next.5",
-    "@supabase/gotrue-js": "^1.23.0-next.24",
-    "@supabase/postgrest-js": "^1.0.0-next.7",
-    "@supabase/realtime-js": "^1.8.0-next.17",
-    "@supabase/storage-js": "^1.8.0-next.6",
+    "@supabase/functions-js": "^2.0.0-rc.1",
+    "@supabase/gotrue-js": "^2.0.0-rc.1",
+    "@supabase/postgrest-js": "^1.0.0-rc.1",
+    "@supabase/realtime-js": "^2.0.0-rc.1",
+    "@supabase/storage-js": "^2.0.0-rc.1",
     "cross-fetch": "^3.1.5"
   },
   "devDependencies": {
