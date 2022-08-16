@@ -9,6 +9,12 @@ export type {
   PostgrestMaybeSingleResponse,
   PostgrestError,
 } from '@supabase/postgrest-js'
+export {
+  FunctionsHttpError,
+  FunctionsFetchError,
+  FunctionsRelayError,
+  FunctionsError,
+} from '@supabase/functions-js'
 export * from '@supabase/realtime-js'
 export { default as SupabaseClient } from './SupabaseClient'
 export type { SupabaseClientOptions, SupabaseRealtimePayload } from './lib/types'
