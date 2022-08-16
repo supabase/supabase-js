@@ -6,6 +6,7 @@ on:
     branches:
       - master
       - next
+      - rc
   workflow_dispatch:
 
 jobs:
