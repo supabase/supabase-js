@@ -142,13 +142,9 @@ export default class GoTrueClient {
   /**
    * Creates a new user.
    * @type UserCredentials
-   * @param email The user's email address.
-   * @param password The user's password.
-   * @param phone The user's phone number.
    * @param options.redirectTo The redirect URL attached to the signup confirmation link. Does not redirect the user if it's a mobile signup.
    * @param options.data Optional user metadata.
    * @param options.captchaToken Verification token received when the user completes the captcha on the site.
-   *
    * @returns A logged-in session if the server has "autoconfirm" ON
    * @returns A user if the server has "autoconfirm" OFF
    */
@@ -216,11 +212,6 @@ export default class GoTrueClient {
 
   /**
    * Log in an existing user, or login via a third-party provider.
-   * @type SignInWithPasswordCredentials
-   * @param email The user's email address.
-   * @param phone The user's phone number.
-   * @param password The user's password.
-   * @param options.captchaToken Verification token received when the user completes the captcha on the site.
    */
   async signInWithPassword(credentials: SignInWithPasswordCredentials): Promise<AuthResponse> {
     try {
@@ -269,12 +260,6 @@ export default class GoTrueClient {
 
   /**
    * Log in an existing user via a third-party provider.
-   * @type SignInWithOAuthCredentials
-   * @param provider One of the providers supported by GoTrue.
-   * @param redirectTo A URL to send the user to after they are confirmed (OAuth logins only).
-   * @param options.scopes A space-separated list of scopes granted to the OAuth application.
-   * @param options.queryParams An object of query params
-   * @param options.captchaToken Verification token received when the user completes the captcha on the site.
    */
   async signInWithOAuth(credentials: SignInWithOAuthCredentials): Promise<OAuthResponse> {
     this._removeSession()
@@ -287,12 +272,6 @@ export default class GoTrueClient {
 
   /**
    * Passwordless method for logging in an existing user.
-   * @type SignInWithPasswordlessCredentials
-   * @param email The user's email address.
-   * @param phone The user's phone number.
-   * @param options.captchaToken Verification token received when the user completes the captcha on the site.
-   * @param options.emailRedirectTo The redirect url sent in the magiclink. The url will be appended to the end of the magiclink url. Does not serve to redirect the user after this method is invoked.
-   * @param options.shouldCreateUser If set to false, signInWithOtp will not create a new user if the user does not exist. Defaults to true.
    */
   async signInWithOtp(credentials: SignInWithPasswordlessCredentials): Promise<AuthResponse> {
     try {
@@ -333,11 +312,7 @@ export default class GoTrueClient {
   }
 
   /**
-   * Log in a user given a User supplied Otp received via mobile.
-   * @param email The user's email address.
-   * @param phone The user's phone number.
-   * @param token The user's password.
-   * @param type The user's verification type.
+   * Log in a user given a User supplied OTP received via mobile.
    * @param options.redirectTo A URL to send the user to after they are confirmed.
    * @param options.captchaToken Verification token received when the user completes the captcha on the site.
    */
@@ -475,7 +450,6 @@ export default class GoTrueClient {
 
   /**
    * Updates user data, if there is a logged in user.
-   * @param attributes The data you want to update.
    */
   async updateUser(attributes: UserAttributes): Promise<UserResponse> {
     try {
@@ -906,7 +880,6 @@ export default class GoTrueClient {
 
   /**
    * Generates the relevant login URL for a third-party provider.
-   * @param provider One of the providers supported by GoTrue.
    * @param options.redirectTo A URL or mobile address to send the user to after they are confirmed.
    * @param options.scopes A space-separated list of scopes granted to the OAuth application.
    * @param options.queryParams An object of key-value pairs containing query parameters granted to the OAuth application.

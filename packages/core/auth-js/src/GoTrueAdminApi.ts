@@ -77,7 +77,6 @@ export default class GoTrueAdminApi {
 
   /**
    * Generates links to be sent via email or other.
-   * @param type The link type ("signup" or "magiclink" or "recovery" or "invite").
    * @param email The user's email.
    * @param options.password User password. For signup only.
    * @param options.data Optional user metadata. For signup only.
@@ -124,9 +123,6 @@ export default class GoTrueAdminApi {
   // User Admin API
   /**
    * Creates a new user.
-   *
-   * @param attributes The data you want to create the user with.
-   *
    * This function should only be called on a server. Never expose your `service_role` key in the browser.
    */
   async createUser(attributes: AdminUserAttributes): Promise<UserResponse> {
