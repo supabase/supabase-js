@@ -1,5 +1,6 @@
 import { AuthError } from './errors'
 
+/** One of the providers supported by GoTrue. */
 export type Provider =
   | 'apple'
   | 'azure'
@@ -170,7 +171,7 @@ export interface AdminUserAttributes extends UserAttributes {
    * Only a service role can modify.
    *
    * Note: When using the GoTrueAdminApi and wanting to modify a user's user_metadata,
-   * this attribute is used instead of UserAttributes.data.
+   * this attribute is used instead of UserAttributes data.
    *
    */
   user_metadata?: object
@@ -216,8 +217,11 @@ export interface Subscription {
 }
 
 export interface UserCredentials {
+  /** The user's email address. */
   email?: string
+  /** The user's phone number. */
   phone?: string
+  /** The user's password. */
   password?: string
   refreshToken?: string
   /** The name of the provider. */
@@ -226,12 +230,16 @@ export interface UserCredentials {
 }
 export type SignInWithPasswordCredentials =
   | {
+      /** The user's email address. */
       email: string
+      /** The user's password. */
       password: string
       options?: SignInWithPasswordOptions
     }
   | {
+      /** The user's phone number. */
       phone: string
+      /** The user's password. */
       password: string
       options?: SignInWithPasswordOptions
     }
@@ -240,10 +248,12 @@ export interface SignInWithPasswordOptions {
 }
 export type SignInWithPasswordlessCredentials =
   | {
+      /** The user's email address. */
       email: string
       options?: SignInWithPasswordlessOptions
     }
   | {
+      /** The user's phone number. */
       phone: string
       options?: SignInWithPasswordlessOptions
     }
@@ -254,20 +264,28 @@ export interface SignInWithPasswordlessOptions {
   captchaToken?: string
 }
 export type SignInWithOAuthCredentials = {
+  /** One of the providers supported by GoTrue. */
   provider: Provider
   options?: SignInWithOAuthOptions
 }
 export interface SignInWithOAuthOptions {
+  /** A URL to send the user to after they are confirmed (OAuth logins only). */
   redirectTo?: string
+  /** A space-separated list of scopes granted to the OAuth application. */
   scopes?: string
+  /** An object of query params */
   queryParams?: { [key: string]: string }
 }
 
 export type VerifyOtpParams = VerifyMobileOtpParams | VerifyEmailOtpParams
 export interface VerifyMobileOtpParams {
+  /** The user's email address. */
   email?: undefined
+  /** The user's phone number. */
   phone: string
+  /** The user's password. */
   token: string
+  /** The user's verification type. */
   type: MobileOtpType
 }
 export interface VerifyEmailOtpParams {
@@ -276,8 +294,11 @@ export interface VerifyEmailOtpParams {
   token: string
   type: EmailOtpType
 }
+
 export type MobileOtpType = 'sms' | 'phone_change'
 export type EmailOtpType = 'signup' | 'invite' | 'magiclink' | 'recovery' | 'email_change'
+
+/** The link type */
 export type GenerateLinkTypes =
   | 'signup'
   | 'invite'

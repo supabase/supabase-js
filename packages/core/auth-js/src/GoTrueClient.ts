@@ -313,7 +313,6 @@ export default class GoTrueClient {
 
   /**
    * Log in a user given a User supplied OTP received via mobile.
-   * @param type The user's verification type.
    * @param options.redirectTo A URL to send the user to after they are confirmed.
    * @param options.captchaToken Verification token received when the user completes the captcha on the site.
    */

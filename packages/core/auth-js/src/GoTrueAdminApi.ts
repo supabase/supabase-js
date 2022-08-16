@@ -77,7 +77,6 @@ export default class GoTrueAdminApi {
 
   /**
    * Generates links to be sent via email or other.
-   * @param type The link type ("signup" or "magiclink" or "recovery" or "invite").
    * @param email The user's email.
    * @param options.password User password. For signup only.
    * @param options.data Optional user metadata. For signup only.
