@@ -372,7 +372,7 @@ export default class GoTrueClient {
       const session: Session | null = data.session
       const user: User = data.user
 
-      if ((data as Session).access_token) {
+      if (session?.access_token) {
         this._saveSession(session as Session)
         this._notifyAllSubscribers('SIGNED_IN', session)
       }
