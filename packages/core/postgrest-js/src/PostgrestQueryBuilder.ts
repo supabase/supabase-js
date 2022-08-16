@@ -32,8 +32,6 @@ export default class PostgrestQueryBuilder<Table extends GenericTable> {
    * Performs vertical filtering with SELECT.
    *
    * @param columns  The columns to retrieve, separated by commas.
-   * @param head  When set to true, select will void data.
-   * @param count  Count algorithm to use to count rows in a table.
    */
   select<
     Query extends string = '*',
@@ -44,7 +42,9 @@ export default class PostgrestQueryBuilder<Table extends GenericTable> {
       head = false,
       count,
     }: {
+      /** When set to true, select will void data. */
       head?: boolean
+      /** Count algorithm to use to count rows in a table. */
       count?: 'exact' | 'planned' | 'estimated'
     } = {}
   ): PostgrestFilterBuilder<Table['Row'], Result> {
@@ -82,8 +82,6 @@ export default class PostgrestQueryBuilder<Table extends GenericTable> {
    * Performs an INSERT into the table.
    *
    * @param values    The values to insert.
-   * @param count     Count algorithm to use to count rows in a table.
-   * @param rollback  Rollback the operation
    */
   insert<Row extends Table['Insert']>(
     values: Row | Row[],
@@ -91,7 +89,9 @@ export default class PostgrestQueryBuilder<Table extends GenericTable> {
       count,
       rollback = false,
     }: {
+      /** Count algorithm to use to count rows in a table. */
       count?: 'exact' | 'planned' | 'estimated'
+      /** Rollback the operation */
       rollback?: boolean
     } = {}
   ): PostgrestFilterBuilder<Table['Row'], undefined> {
@@ -133,11 +133,6 @@ export default class PostgrestQueryBuilder<Table extends GenericTable> {
    * Performs an UPSERT into the table.
    *
    * @param values  The values to insert.
-   * @param count  Count algorithm to use to count rows in a table.
-   * @param options  Named parameters.
-   * @param options.onConflict  By specifying the `on_conflict` query parameter, you can make UPSERT work on a column(s) that has a UNIQUE constraint.
-   * @param options.ignoreDuplicates  Specifies if duplicate rows should be ignored and not inserted.
-   * @param rollback  Rollback the operation
    */
   upsert<Row extends Table['Insert']>(
     values: Row | Row[],
@@ -147,9 +142,13 @@ export default class PostgrestQueryBuilder<Table extends GenericTable> {
       ignoreDuplicates = false,
       rollback = false,
     }: {
+      /** By specifying the `on_conflict` query parameter, you can make UPSERT work on a column(s) that has a UNIQUE constraint. */
       onConflict?: string
+      /** Count algorithm to use to count rows in a table. */
       count?: 'exact' | 'planned' | 'estimated'
+      /** Specifies if duplicate rows should be ignored and not inserted. */
       ignoreDuplicates?: boolean
+      /** Rollback the operation */
       rollback?: boolean
     } = {}
   ): PostgrestFilterBuilder<Table['Row'], undefined> {
@@ -185,8 +184,6 @@ export default class PostgrestQueryBuilder<Table extends GenericTable> {
    * Performs an UPDATE on the table.
    *
    * @param values  The values to update.
-   * @param count  Count algorithm to use to count rows in a table.
-   * @param rollback  Rollback the operation
    */
   update<Row extends Table['Update']>(
     values: Row,
@@ -194,7 +191,9 @@ export default class PostgrestQueryBuilder<Table extends GenericTable> {
       count,
       rollback = false,
     }: {
+      /** Count algorithm to use to count rows in a table. */
       count?: 'exact' | 'planned' | 'estimated'
+      /** Rollback the operation */
       rollback?: boolean
     } = {}
   ): PostgrestFilterBuilder<Table['Row'], undefined> {
@@ -225,15 +224,14 @@ export default class PostgrestQueryBuilder<Table extends GenericTable> {
 
   /**
    * Performs a DELETE on the table.
-   *
-   * @param count  Count algorithm to use to count rows in a table.
-   * @param rollback  Rollback the operation
    */
   delete({
     count,
     rollback = false,
   }: {
+    /** Count algorithm to use to count rows in a table. */
     count?: 'exact' | 'planned' | 'estimated'
+    /**  Rollback the operation */
     rollback?: boolean
   } = {}): PostgrestFilterBuilder<Table['Row'], undefined> {
     const method = 'DELETE'

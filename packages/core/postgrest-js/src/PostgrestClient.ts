@@ -69,9 +69,6 @@ export default class PostgrestClient<
    * @param fn  The function name to call.
    * @param args  The parameters to pass to the function call.
    * @param options  Named parameters.
-   * @param options.head  When set to true, no data will be returned.
-   * @param options.count  Count algorithm to use to count rows in a table.
-   * @param rollback  Rollback the operation
    */
   rpc<
     FunctionName extends string & keyof Schema['Functions'],
@@ -84,8 +81,11 @@ export default class PostgrestClient<
       count,
       rollback = false,
     }: {
+      /** When set to true, no data will be returned. */
       head?: boolean
+      /** Count algorithm to use to count rows in a table. */
       count?: 'exact' | 'planned' | 'estimated'
+      /** Rollback the operation */
       rollback?: boolean
     } = {}
   ): PostgrestFilterBuilder<
