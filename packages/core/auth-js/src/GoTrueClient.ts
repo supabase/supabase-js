@@ -215,6 +215,7 @@ export default class GoTrueClient {
       if ('email' in credentials) {
         const { email, password, options } = credentials
         res = await _request(this.fetch, 'POST', `${this.url}/token?grant_type=password`, {
+          headers: this.headers,
           body: {
             email,
             password,
@@ -225,6 +226,7 @@ export default class GoTrueClient {
       } else if ('phone' in credentials) {
         const { phone, password, options } = credentials
         res = await _request(this.fetch, 'POST', `${this.url}/token?grant_type=password`, {
+          headers: this.headers,
           body: {
             phone,
             password,
@@ -274,19 +276,20 @@ export default class GoTrueClient {
       if ('email' in credentials) {
         const { email, options } = credentials
         const { error } = await _request(this.fetch, 'POST', `${this.url}/otp`, {
+          headers: this.headers,
           body: {
             email,
             create_user: options?.shouldCreateUser ?? true,
             gotrue_meta_security: { captcha_token: options?.captchaToken },
           },
           redirectTo: options?.emailRedirectTo,
-          headers: this.headers,
         })
         return { data: { user: null, session: null }, error }
       }
       if ('phone' in credentials) {
         const { phone, options } = credentials
         const { error } = await _request(this.fetch, 'POST', `${this.url}/otp`, {
+          headers: this.headers,
           body: {
             phone,
             create_user: options?.shouldCreateUser ?? true,
@@ -321,6 +324,7 @@ export default class GoTrueClient {
       this._removeSession()
 
       const { data, error } = await _request(this.fetch, 'POST', `${this.url}/verify`, {
+        headers: this.headers,
         body: {
           ...params,
           gotrue_meta_security: { captchaToken: options?.captchaToken },
@@ -456,6 +460,7 @@ export default class GoTrueClient {
       }
       const session: Session = sessionData.session
       const { data, error: userError } = await _request(this.fetch, 'PUT', `${this.url}/user`, {
+        headers: this.headers,
         body: attributes,
         jwt: session.access_token,
         xform: _userResponse,

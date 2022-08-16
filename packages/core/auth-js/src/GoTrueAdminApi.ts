@@ -33,6 +33,7 @@ export default class GoTrueAdminApi {
   async signOut(jwt: string): Promise<{ error: AuthError | null }> {
     try {
       await _request(this.fetch, 'POST', `${this.url}/logout`, {
+        headers: this.headers,
         jwt,
         noResolveJson: true,
       })
