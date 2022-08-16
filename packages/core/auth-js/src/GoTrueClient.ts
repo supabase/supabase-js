@@ -439,23 +439,23 @@ export default class GoTrueClient {
 
   /**
    * Gets the current user details if there is an existing session.
+   * @param jwt Takes in an optional jwt.
    */
-  async getUser(): Promise<UserResponse> {
+  async getUser(jwt?: string): Promise<UserResponse> {
     try {
-      let access_token = ''
-      if (!('Authorization' in this.headers)) {
+      if (!jwt) {
         const { session, error } = await this.getSession()
         if (error) {
           throw error
         }
-        if (!session) {
-          throw new AuthSessionMissingError()
-        }
-        access_token = session.access_token
+
+        // Default to Authorization header if there is no existing session
+        jwt = session?.access_token ?? this.headers['Authorization']
       }
+
       return await _request(this.fetch, 'GET', `${this.url}/user`, {
         headers: this.headers,
-        jwt: access_token,
+        jwt: jwt,
         xform: _userResponse,
       })
     } catch (error) {
@@ -557,9 +557,8 @@ export default class GoTrueClient {
       const timeNow = Math.round(Date.now() / 1000)
       const expires_at = timeNow + parseInt(expires_in)
 
-      const { data, error } = await this.getUser()
+      const { data, error } = await this.getUser(access_token)
       if (error) throw error
-
       const user: User = data.user!
       const session: Session = {
         provider_token,
@@ -570,7 +569,6 @@ export default class GoTrueClient {
         token_type,
         user,
       }
-
       this._saveSession(session)
       const recoveryMode = getParameterByName('type')
       this._notifyAllSubscribers('SIGNED_IN', session)
