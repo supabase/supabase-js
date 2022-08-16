@@ -37,11 +37,11 @@ import type {
   SignInWithOAuthCredentials,
   SignInWithPasswordCredentials,
   SignInWithPasswordlessCredentials,
+  SignUpWithPasswordCredentials,
   Subscription,
   SupportedStorage,
   User,
   UserAttributes,
-  UserCredentials,
   UserResponse,
   VerifyOtpParams,
 } from './lib/types'
@@ -141,55 +141,49 @@ export default class GoTrueClient {
 
   /**
    * Creates a new user.
-   * @type UserCredentials
-   * @param options.redirectTo The redirect URL attached to the signup confirmation link. Does not redirect the user if it's a mobile signup.
-   * @param options.data Optional user metadata.
-   * @param options.captchaToken Verification token received when the user completes the captcha on the site.
    * @returns A logged-in session if the server has "autoconfirm" ON
    * @returns A user if the server has "autoconfirm" OFF
    */
-  async signUp(
-    { email, password, phone }: UserCredentials,
-    options: {
-      redirectTo?: string
-      data?: object
-      captchaToken?: string
-    } = {}
-  ): Promise<AuthResponse> {
+  async signUp(credentials: SignUpWithPasswordCredentials): Promise<AuthResponse> {
     try {
       this._removeSession()
 
-      const { data, error } =
-        phone && password
-          ? await _request(this.fetch, 'POST', `${this.url}/signup`, {
-              headers: this.headers,
-              redirectTo: options.redirectTo,
-              body: {
-                phone,
-                password,
-                data: options.data,
-                gotrue_meta_security: { captcha_token: options.captchaToken },
-              },
-              xform: _sessionResponse,
-            })
-          : await _request(this.fetch, 'POST', `${this.url}/signup`, {
-              headers: this.headers,
-              redirectTo: options.redirectTo,
-              body: {
-                email,
-                password,
-                data: options.data,
-                gotrue_meta_security: { captcha_token: options.captchaToken },
-              },
-              xform: _sessionResponse,
-            })
-
-      if (error) {
-        throw error
+      let res: AuthResponse
+      if ('email' in credentials) {
+        const { email, password, options } = credentials
+        res = await _request(this.fetch, 'POST', `${this.url}/signup`, {
+          headers: this.headers,
+          redirectTo: options?.emailRedirectTo,
+          body: {
+            email,
+            password,
+            data: options?.data,
+            gotrue_meta_security: { captcha_token: options?.captchaToken },
+          },
+          xform: _sessionResponse,
+        })
+      } else if ('phone' in credentials) {
+        const { phone, password, options } = credentials
+        res = await _request(this.fetch, 'POST', `${this.url}/signup`, {
+          headers: this.headers,
+          body: {
+            phone,
+            password,
+            data: options?.data,
+            gotrue_meta_security: { captcha_token: options?.captchaToken },
+          },
+          xform: _sessionResponse,
+        })
+      } else {
+        throw new AuthInvalidCredentialsError(
+          'You must provide either an email or phone number and a password'
+        )
       }
 
-      if (!data) {
-        throw 'An error occurred on sign up.'
+      const { data, error } = res
+
+      if (error || !data) {
+        return { data: { user: null, session: null }, error: error }
       }
 
       const session: Session | null = data.session
