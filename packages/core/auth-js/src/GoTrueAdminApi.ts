@@ -124,9 +124,6 @@ export default class GoTrueAdminApi {
   // User Admin API
   /**
    * Creates a new user.
-   *
-   * @param attributes The data you want to create the user with.
-   *
    * This function should only be called on a server. Never expose your `service_role` key in the browser.
    */
   async createUser(attributes: AdminUserAttributes): Promise<UserResponse> {
