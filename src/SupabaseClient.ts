@@ -234,7 +234,6 @@ export default class SupabaseClient<
       persistSession,
       detectSessionInUrl,
       storage,
-      cookieOptions,
       storageKey,
     }: SupabaseAuthClientOptions,
     headers?: Record<string, string>,
@@ -253,7 +252,6 @@ export default class SupabaseClient<
       detectSessionInUrl,
       storage,
       fetch,
-      cookieOptions,
     })
   }
 
