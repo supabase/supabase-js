@@ -131,45 +131,51 @@ export default class RealtimeChannel {
             this.socket.accessToken &&
               this.socket.setAuth(this.socket.accessToken)
 
-            const clientPostgresBindings = this.bindings.postgres_changes
-            const bindingsLen = clientPostgresBindings?.length ?? 0
-            const newPostgresBindings = []
+            if (serverPostgresFilters === undefined) {
+              callback && callback('SUBSCRIBED')
+              return
+            } else {
+              const clientPostgresBindings = this.bindings.postgres_changes
+              const bindingsLen = clientPostgresBindings?.length ?? 0
+              const newPostgresBindings = []
 
-            for (let i = 0; i < bindingsLen; i++) {
-              const clientPostgresBinding = clientPostgresBindings[i]
-              const {
-                filter: { event, schema, table, filter },
-              } = clientPostgresBinding
-              const serverPostgresFilter = serverPostgresFilters[i]
+              for (let i = 0; i < bindingsLen; i++) {
+                const clientPostgresBinding = clientPostgresBindings[i]
+                const {
+                  filter: { event, schema, table, filter },
+                } = clientPostgresBinding
+                const serverPostgresFilter =
+                  serverPostgresFilters && serverPostgresFilters[i]
 
-              if (
-                serverPostgresFilter &&
-                serverPostgresFilter.event === event &&
-                serverPostgresFilter.schema === schema &&
-                serverPostgresFilter.table === table &&
-                serverPostgresFilter.filter === filter
-              ) {
-                newPostgresBindings.push({
-                  ...clientPostgresBinding,
-                  id: serverPostgresFilter.id,
-                })
-              } else {
-                this.unsubscribe()
-                callback &&
-                  callback(
-                    'CHANNEL_ERROR',
-                    new Error(
-                      'mismatch between server and client bindings for postgres changes'
+                if (
+                  serverPostgresFilter &&
+                  serverPostgresFilter.event === event &&
+                  serverPostgresFilter.schema === schema &&
+                  serverPostgresFilter.table === table &&
+                  serverPostgresFilter.filter === filter
+                ) {
+                  newPostgresBindings.push({
+                    ...clientPostgresBinding,
+                    id: serverPostgresFilter.id,
+                  })
+                } else {
+                  this.unsubscribe()
+                  callback &&
+                    callback(
+                      'CHANNEL_ERROR',
+                      new Error(
+                        'mismatch between server and client bindings for postgres changes'
+                      )
                     )
-                  )
-                return
+                  return
+                }
               }
+
+              this.bindings.postgres_changes = newPostgresBindings
+
+              callback && callback('SUBSCRIBED')
+              return
             }
-
-            this.bindings.postgres_changes = newPostgresBindings
-
-            callback && callback('SUBSCRIBED')
-            return
           }
         )
         .receive('error', (error: { [key: string]: any }) => {
@@ -398,51 +404,64 @@ export default class RealtimeChannel {
       throw 'channel onMessage callbacks must return the payload, modified or unmodified'
     }
 
-    this.bindings[typeLower]
-      ?.filter((bind) => {
-        if (['broadcast', 'presence', 'postgres_changes'].includes(typeLower)) {
-          if ('id' in bind) {
-            const bindId = bind.id
-            const bindEvent = bind.filter?.event
-            return (
-              bindId &&
-              payload.ids?.includes(bindId) &&
-              (bindEvent === '*' ||
-                bindEvent?.toLocaleLowerCase() ===
-                  payload.data?.type.toLocaleLowerCase())
-            )
+    if (['insert', 'update', 'delete'].includes(typeLower)) {
+      this.bindings.postgres_changes
+        ?.filter((bind) => {
+          return (
+            bind.filter?.event === '*' ||
+            bind.filter?.event?.toLocaleLowerCase() === typeLower
+          )
+        })
+        .map((bind) => bind.callback(handledPayload, ref))
+    } else {
+      this.bindings[typeLower]
+        ?.filter((bind) => {
+          if (
+            ['broadcast', 'presence', 'postgres_changes'].includes(typeLower)
+          ) {
+            if ('id' in bind) {
+              const bindId = bind.id
+              const bindEvent = bind.filter?.event
+              return (
+                bindId &&
+                payload.ids?.includes(bindId) &&
+                (bindEvent === '*' ||
+                  bindEvent?.toLocaleLowerCase() ===
+                    payload.data?.type.toLocaleLowerCase())
+              )
+            } else {
+              const bindEvent = bind?.filter?.event?.toLocaleLowerCase()
+              return (
+                bindEvent === '*' ||
+                bindEvent === payload?.event?.toLocaleLowerCase()
+              )
+            }
           } else {
-            const bindEvent = bind?.filter?.event?.toLocaleLowerCase()
-            return (
-              bindEvent === '*' ||
-              bindEvent === payload?.event?.toLocaleLowerCase()
-            )
+            return bind.type.toLocaleLowerCase() === typeLower
           }
-        } else {
-          return bind.type.toLocaleLowerCase() === typeLower
-        }
-      })
-      .map((bind) => {
-        if (typeof handledPayload === 'object' && 'ids' in handledPayload) {
-          const postgresChanges = handledPayload.data
-          const { schema, table, commit_timestamp, type, errors } =
-            postgresChanges
-          const enrichedPayload = {
-            schema: schema,
-            table: table,
-            commit_timestamp: commit_timestamp,
-            eventType: type,
-            new: {},
-            old: {},
-            errors: errors,
+        })
+        .map((bind) => {
+          if (typeof handledPayload === 'object' && 'ids' in handledPayload) {
+            const postgresChanges = handledPayload.data
+            const { schema, table, commit_timestamp, type, errors } =
+              postgresChanges
+            const enrichedPayload = {
+              schema: schema,
+              table: table,
+              commit_timestamp: commit_timestamp,
+              eventType: type,
+              new: {},
+              old: {},
+              errors: errors,
+            }
+            handledPayload = {
+              ...enrichedPayload,
+              ...this.getPayloadRecords(postgresChanges),
+            }
           }
-          handledPayload = {
-            ...enrichedPayload,
-            ...this.getPayloadRecords(postgresChanges),
-          }
-        }
-        bind.callback(handledPayload, ref)
-      })
+          bind.callback(handledPayload, ref)
+        })
+    }
   }
 
   replyEventName(ref: string): string {
