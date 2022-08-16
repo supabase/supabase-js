@@ -243,9 +243,9 @@ export default class SupabaseClient<
   }
 
   private async _getAccessToken() {
-    const { session } = await this.auth.getSession()
+    const { data } = await this.auth.getSession()
 
-    return session?.access_token ?? null
+    return data.session?.access_token ?? null
   }
 
   private async _closeSubscription(
