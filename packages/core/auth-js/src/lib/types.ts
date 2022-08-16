@@ -226,7 +226,6 @@ export interface UserCredentials {
   refreshToken?: string
   /** The name of the provider. */
   provider?: Provider
-  oidc?: OpenIDConnectCredentials
 }
 export type SignInWithPasswordCredentials =
   | {
@@ -306,14 +305,6 @@ export type GenerateLinkTypes =
   | 'recovery'
   | 'email_change_current'
   | 'email_change_new'
-
-export interface OpenIDConnectCredentials {
-  id_token: string
-  nonce: string
-  provider?: Provider
-  client_id?: string
-  issuer?: string
-}
 
 type AnyFunction = (...args: any[]) => any
 type MaybePromisify<T> = T | Promise<T>
