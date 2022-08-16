@@ -227,9 +227,10 @@ export default class GoTrueClient {
     try {
       this._removeSession()
 
+      let res: AuthResponse
       if ('email' in credentials) {
         const { email, password, options } = credentials
-        return await _request(this.fetch, 'POST', `${this.url}/token?grant_type=password`, {
+        res = await _request(this.fetch, 'POST', `${this.url}/token?grant_type=password`, {
           body: {
             email,
             password,
@@ -237,11 +238,9 @@ export default class GoTrueClient {
           },
           xform: _sessionResponse,
         })
-      }
-
-      if ('phone' in credentials) {
+      } else if ('phone' in credentials) {
         const { phone, password, options } = credentials
-        return await _request(this.fetch, 'POST', `${this.url}/token?grant_type=password`, {
+        res = await _request(this.fetch, 'POST', `${this.url}/token?grant_type=password`, {
           body: {
             phone,
             password,
@@ -249,15 +248,22 @@ export default class GoTrueClient {
           },
           xform: _sessionResponse,
         })
+      } else {
+        throw new AuthInvalidCredentialsError(
+          'You must provide either an email or phone number and a password'
+        )
       }
-      throw new AuthInvalidCredentialsError(
-        'You must provide either an email or phone number and a password.'
-      )
+      const { data, error } = res
+      if (error || !data) return { data: { user: null, session: null }, error }
+      if (data.session) {
+        this._saveSession(data.session)
+        this._notifyAllSubscribers('SIGNED_IN', data.session)
+      }
+      return { data, error }
     } catch (error) {
       if (isAuthError(error)) {
         return { data: { user: null, session: null }, error }
       }
-
       throw error
     }
   }
