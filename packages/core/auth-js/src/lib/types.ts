@@ -1,5 +1,6 @@
 import { AuthError } from './errors'
 
+/** One of the providers supported by GoTrue. */
 export type Provider =
   | 'apple'
   | 'azure'
@@ -74,7 +75,14 @@ export type UserResponse =
 
 export interface Session {
   provider_token?: string | null
+  /**
+   * The access token jwt. It is recommended to set the JWT_EXPIRY to a shorter expiry value.
+   */
   access_token: string
+  /**
+   * A one-time used refresh token that never expires.
+   */
+  refresh_token: string
   /**
    * The number of seconds until the token expires (since it was issued). Returned when a login is confirmed.
    */
@@ -83,7 +91,6 @@ export interface Session {
    * A timestamp of when the token will expire. Returned when a login is confirmed.
    */
   expires_at?: number
-  refresh_token: string
   token_type: string
   user: User
 }
@@ -209,77 +216,121 @@ export interface Subscription {
   unsubscribe: () => void
 }
 
-export interface UserCredentials {
-  email?: string
-  phone?: string
-  password?: string
-  refreshToken?: string
-  /** The name of the provider. */
-  provider?: Provider
-  oidc?: OpenIDConnectCredentials
-}
+export type SignUpWithPasswordCredentials =
+  | {
+      /** The user's email address. */
+      email: string
+      /** The user's password. */
+      password: string
+      options?: {
+        /** The redirect url embedded in the email link */
+        emailRedirectTo?: string
+        /** The user's metadata. */
+        data?: object
+        /** Verification token received when the user completes the captcha on the site. */
+        captchaToken?: string
+      }
+    }
+  | {
+      /** The user's phone number. */
+      phone: string
+      /** The user's password. */
+      password: string
+      options?: {
+        /** The user's metadata. */
+        data?: object
+        /** Verification token received when the user completes the captcha on the site. */
+        captchaToken?: string
+      }
+    }
 export type SignInWithPasswordCredentials =
   | {
+      /** The user's email address. */
       email: string
+      /** The user's password. */
       password: string
-      options?: SignInWithPasswordOptions
+      options?: {
+        /** Verification token received when the user completes the captcha on the site. */
+        captchaToken?: string
+      }
     }
   | {
+      /** The user's phone number. */
       phone: string
+      /** The user's password. */
       password: string
-      options?: SignInWithPasswordOptions
+      options?: {
+        /** Verification token received when the user completes the captcha on the site. */
+        captchaToken?: string
+      }
     }
-export interface SignInWithPasswordOptions {
-  captchaToken?: string
-}
+
 export type SignInWithPasswordlessCredentials =
   | {
+      /** The user's email address. */
       email: string
-      options?: SignInWithPasswordlessOptions
+      options?: {
+        /** The redirect url embedded in the email link */
+        emailRedirectTo?: string
+        /** If set to false, this method will not create a new user. Defaults to true. */
+        shouldCreateUser?: boolean
+        /** Verification token received when the user completes the captcha on the site. */
+        captchaToken?: string
+      }
     }
   | {
+      /** The user's phone number. */
       phone: string
-      options?: SignInWithPasswordlessOptions
+      options?: {
+        /** If set to false, this method will not create a new user. Defaults to true. */
+        shouldCreateUser?: boolean
+        /** Verification token received when the user completes the captcha on the site. */
+        captchaToken?: string
+      }
     }
-export interface SignInWithPasswordlessOptions {
-  /** The redirect url embedded in the email link */
-  emailRedirectTo?: string
-  shouldCreateUser?: boolean
-  captchaToken?: string
-}
+
 export type SignInWithOAuthCredentials = {
+  /** One of the providers supported by GoTrue. */
   provider: Provider
-  options?: SignInWithOAuthOptions
-}
-export interface SignInWithOAuthOptions {
-  redirectTo?: string
-  scopes?: string
-  queryParams?: { [key: string]: string }
+  options?: {
+    /** A URL to send the user to after they are confirmed (OAuth logins only). */
+    redirectTo?: string
+    /** A space-separated list of scopes granted to the OAuth application. */
+    scopes?: string
+    /** An object of query params */
+    queryParams?: { [key: string]: string }
+  }
 }
 
-export type VerifyOTPParams = VerifyMobileOTPParams | VerifyEmailOTPParams
-export interface VerifyMobileOTPParams {
-  email?: undefined
+export type VerifyOtpParams = VerifyMobileOtpParams | VerifyEmailOtpParams
+export interface VerifyMobileOtpParams {
+  /** The user's phone number. */
   phone: string
+  /** The otp sent to the user's phone number. */
   token: string
-  type: MobileOTPType
+  /** The user's verification type. */
+  type: MobileOtpType
 }
-export interface VerifyEmailOTPParams {
+export interface VerifyEmailOtpParams {
+  /** The user's email address. */
   email: string
-  phone?: undefined
+  /** The otp sent to the user's email address. */
   token: string
-  type: EmailOTPType
+  /** The user's verification type. */
+  type: EmailOtpType
 }
-export type MobileOTPType = 'sms' | 'phone_change'
-export type EmailOTPType = 'signup' | 'invite' | 'magiclink' | 'recovery' | 'email_change'
 
-export interface OpenIDConnectCredentials {
-  id_token: string
-  nonce: string
-  provider?: Provider
-  client_id?: string
-  issuer?: string
-}
+export type MobileOtpType = 'sms' | 'phone_change'
+export type EmailOtpType = 'signup' | 'invite' | 'magiclink' | 'recovery' | 'email_change'
+
+/** The link type */
+export type GenerateLinkType =
+  | 'signup'
+  | 'invite'
+  | 'magiclink'
+  | 'recovery'
+  | 'email_change_current'
+  | 'email_change_new'
 
 type AnyFunction = (...args: any[]) => any
 type MaybePromisify<T> = T | Promise<T>

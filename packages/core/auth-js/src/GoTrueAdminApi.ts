@@ -1,6 +1,6 @@
 import { Fetch, _request, _userResponse } from './lib/fetch'
 import { resolveFetch } from './lib/helpers'
-import { AdminUserAttributes, Session, User, UserResponse } from './lib/types'
+import { AdminUserAttributes, GenerateLinkType, Session, User, UserResponse } from './lib/types'
 import { AuthError, isAuthError } from './lib/errors'
 
 export default class GoTrueAdminApi {
@@ -77,20 +77,13 @@ export default class GoTrueAdminApi {
 
   /**
    * Generates links to be sent via email or other.
-   * @param type The link type ("signup" or "magiclink" or "recovery" or "invite").
    * @param email The user's email.
    * @param options.password User password. For signup only.
    * @param options.data Optional user metadata. For signup only.
-   * @param options.redirectTo The link type ("signup" or "magiclink" or "recovery" or "invite").
+   * @param options.redirectTo The redirect url which should be appended to the generated link
    */
   async generateLink(
-    type:
-      | 'signup'
-      | 'magiclink'
-      | 'recovery'
-      | 'invite'
-      | 'email_change_current'
-      | 'email_change_new',
+    type: GenerateLinkType,
     email: string,
     options: {
       password?: string
@@ -130,9 +123,6 @@ export default class GoTrueAdminApi {
   // User Admin API
   /**
    * Creates a new user.
-   *
-   * @param attributes The data you want to create the user with.
-   *
    * This function should only be called on a server. Never expose your `service_role` key in the browser.
    */
   async createUser(attributes: AdminUserAttributes): Promise<UserResponse> {
