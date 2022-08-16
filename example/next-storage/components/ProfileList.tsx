@@ -11,7 +11,7 @@ export default function ProfileList() {
     getUserProfile()
 
     const realtimeProfiles = supabase
-      .channel('profiles-channel')
+      .channel('public:profiles')
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'profiles' },
