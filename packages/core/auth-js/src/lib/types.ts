@@ -216,81 +216,107 @@ export interface Subscription {
   unsubscribe: () => void
 }
 
-export interface UserCredentials {
-  /** The user's email address. */
-  email?: string
-  /** The user's phone number. */
-  phone?: string
-  /** The user's password. */
-  password?: string
-  refreshToken?: string
-  /** The name of the provider. */
-  provider?: Provider
-}
+export type SignUpWithPasswordCredentials =
+  | {
+      /** The user's email address. */
+      email: string
+      /** The user's password. */
+      password: string
+      options?: {
+        /** The redirect url embedded in the email link */
+        emailRedirectTo?: string
+        /** The user's metadata. */
+        data?: object
+        /** Verification token received when the user completes the captcha on the site. */
+        captchaToken?: string
+      }
+    }
+  | {
+      /** The user's phone number. */
+      phone: string
+      /** The user's password. */
+      password: string
+      options?: {
+        /** The user's metadata. */
+        data?: object
+        /** Verification token received when the user completes the captcha on the site. */
+        captchaToken?: string
+      }
+    }
 export type SignInWithPasswordCredentials =
   | {
       /** The user's email address. */
       email: string
       /** The user's password. */
       password: string
-      options?: SignInWithPasswordOptions
+      options?: {
+        /** Verification token received when the user completes the captcha on the site. */
+        captchaToken?: string
+      }
     }
   | {
       /** The user's phone number. */
       phone: string
       /** The user's password. */
       password: string
-      options?: SignInWithPasswordOptions
+      options?: {
+        /** Verification token received when the user completes the captcha on the site. */
+        captchaToken?: string
+      }
     }
-export interface SignInWithPasswordOptions {
-  captchaToken?: string
-}
+
 export type SignInWithPasswordlessCredentials =
   | {
       /** The user's email address. */
       email: string
-      options?: SignInWithPasswordlessOptions
+      options?: {
+        /** The redirect url embedded in the email link */
+        emailRedirectTo?: string
+        /** If set to false, this method will not create a new user. Defaults to true. */
+        shouldCreateUser?: boolean
+        /** Verification token received when the user completes the captcha on the site. */
+        captchaToken?: string
+      }
     }
   | {
       /** The user's phone number. */
       phone: string
-      options?: SignInWithPasswordlessOptions
+      options?: {
+        /** If set to false, this method will not create a new user. Defaults to true. */
+        shouldCreateUser?: boolean
+        /** Verification token received when the user completes the captcha on the site. */
+        captchaToken?: string
+      }
     }
-export interface SignInWithPasswordlessOptions {
-  /** The redirect url embedded in the email link */
-  emailRedirectTo?: string
-  shouldCreateUser?: boolean
-  captchaToken?: string
-}
+
 export type SignInWithOAuthCredentials = {
   /** One of the providers supported by GoTrue. */
   provider: Provider
-  options?: SignInWithOAuthOptions
-}
-export interface SignInWithOAuthOptions {
-  /** A URL to send the user to after they are confirmed (OAuth logins only). */
-  redirectTo?: string
-  /** A space-separated list of scopes granted to the OAuth application. */
-  scopes?: string
-  /** An object of query params */
-  queryParams?: { [key: string]: string }
+  options?: {
+    /** A URL to send the user to after they are confirmed (OAuth logins only). */
+    redirectTo?: string
+    /** A space-separated list of scopes granted to the OAuth application. */
+    scopes?: string
+    /** An object of query params */
+    queryParams?: { [key: string]: string }
+  }
 }
 
 export type VerifyOtpParams = VerifyMobileOtpParams | VerifyEmailOtpParams
 export interface VerifyMobileOtpParams {
-  /** The user's email address. */
-  email?: undefined
   /** The user's phone number. */
   phone: string
-  /** The user's password. */
+  /** The otp sent to the user's phone number. */
   token: string
   /** The user's verification type. */
   type: MobileOtpType
 }
 export interface VerifyEmailOtpParams {
+  /** The user's email address. */
   email: string
-  phone?: undefined
+  /** The otp sent to the user's email address. */
   token: string
+  /** The user's verification type. */
   type: EmailOtpType
 }
 
@@ -298,7 +324,7 @@ export type MobileOtpType = 'sms' | 'phone_change'
 export type EmailOtpType = 'signup' | 'invite' | 'magiclink' | 'recovery' | 'email_change'
 
 /** The link type */
-export type GenerateLinkTypes =
+export type GenerateLinkType =
   | 'signup'
   | 'invite'
   | 'magiclink'

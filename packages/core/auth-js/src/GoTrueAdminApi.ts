@@ -1,6 +1,6 @@
 import { Fetch, _request, _userResponse } from './lib/fetch'
 import { resolveFetch } from './lib/helpers'
-import { AdminUserAttributes, GenerateLinkTypes, Session, User, UserResponse } from './lib/types'
+import { AdminUserAttributes, GenerateLinkType, Session, User, UserResponse } from './lib/types'
 import { AuthError, isAuthError } from './lib/errors'
 
 export default class GoTrueAdminApi {
@@ -83,7 +83,7 @@ export default class GoTrueAdminApi {
    * @param options.redirectTo The redirect url which should be appended to the generated link
    */
   async generateLink(
-    type: GenerateLinkTypes,
+    type: GenerateLinkType,
     email: string,
     options: {
       password?: string
