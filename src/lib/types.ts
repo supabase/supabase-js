@@ -36,10 +36,6 @@ export type SupabaseClientOptions<SchemaName> = {
      * A storage provider. Used to store the logged in session.
      */
     storage?: SupabaseAuthClientOptions['storage']
-    /**
-     * Options passed to the gotrue-js instance
-     */
-    cookieOptions?: SupabaseAuthClientOptions['cookieOptions']
   }
   /**
    * Options passed to the realtime-js instance
