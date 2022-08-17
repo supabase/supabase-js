@@ -103,7 +103,7 @@ test('abort signal', async () => {
 // })
 
 test('explain with json/text format', async () => {
-  const res1 = await postgrest.from('users').select().explain()
+  const res1 = await postgrest.from('users').select().explain({format: 'json'})
   expect(res1).toMatchInlineSnapshot(`
     Object {
       "count": undefined,
@@ -142,7 +142,7 @@ test('explain with json/text format', async () => {
     }
   `)
 
-  const res2 = await postgrest.from('users').select().explain({ format: 'text' })
+  const res2 = await postgrest.from('users').select().explain()
   expect(res2.data).toMatch(
     `Aggregate  (cost=17.65..17.68 rows=1 width=112)
   ->  Seq Scan on users  (cost=0.00..15.10 rows=510 width=132)
@@ -151,7 +151,7 @@ test('explain with json/text format', async () => {
 })
 
 test('explain with options', async () => {
-  const res = await postgrest.from('users').select().explain({ verbose: true, settings: true })
+  const res = await postgrest.from('users').select().explain({ verbose: true, settings: true, format: 'json' })
   expect(res).toMatchInlineSnapshot(`
     Object {
       "count": undefined,

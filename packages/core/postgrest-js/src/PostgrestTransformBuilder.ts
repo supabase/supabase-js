@@ -156,7 +156,7 @@ export default class PostgrestTransformBuilder<
    * @param settings  If `true`, include information on configuration parameters that affect query planning.
    * @param buffers  If `true`, include information on buffer usage.
    * @param wal     If `true`, include information on WAL record generation
-   * @param format  The format of the output, can be 'json'(default) or 'text'
+   * @param format  The format of the output, can be 'text'(default) or `json`
    */
   explain({
     analyze = false,
@@ -164,7 +164,7 @@ export default class PostgrestTransformBuilder<
     settings = false,
     buffers = false,
     wal = false,
-    format = 'json',
+    format = 'text',
   }: {
     analyze?: boolean
     verbose?: boolean
