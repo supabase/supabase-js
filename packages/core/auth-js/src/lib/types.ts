@@ -1,5 +1,5 @@
 import { AuthError } from './errors'
-import { Fetch } from './fetch';
+import { Fetch } from './fetch'
 
 /** One of the providers supported by GoTrue. */
 export type Provider =

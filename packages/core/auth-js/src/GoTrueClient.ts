@@ -167,7 +167,7 @@ export default class GoTrueClient {
 
           return { error }
         } else {
-          console.warn('Malformed Callback URL detected', error);
+          console.warn('Malformed Callback URL detected', error)
         }
       }
 
@@ -573,7 +573,7 @@ export default class GoTrueClient {
   > {
     try {
       if (!this._isCallbackUrl()) {
-        return { error: new AuthMalformedCallbackUrlError('not a callback url'), session: null };
+        return { error: new AuthMalformedCallbackUrlError('not a callback url'), session: null }
       }
 
       const error_description = getParameterByName('error_description')
