@@ -149,7 +149,7 @@ export default class GoTrueClient {
    */
   async signUp(credentials: SignUpWithPasswordCredentials): Promise<AuthResponse> {
     try {
-      this._removeSession()
+      await this._removeSession()
 
       let res: AuthResponse
       if ('email' in credentials) {
@@ -193,7 +193,7 @@ export default class GoTrueClient {
       const user: User | null = data.user
 
       if (data.session) {
-        this._saveSession(data.session)
+        await this._saveSession(data.session)
         this._notifyAllSubscribers('SIGNED_IN', session)
       }
 
@@ -212,7 +212,7 @@ export default class GoTrueClient {
    */
   async signInWithPassword(credentials: SignInWithPasswordCredentials): Promise<AuthResponse> {
     try {
-      this._removeSession()
+      await this._removeSession()
 
       let res: AuthResponse
       if ('email' in credentials) {
@@ -245,7 +245,7 @@ export default class GoTrueClient {
       const { data, error } = res
       if (error || !data) return { data: { user: null, session: null }, error }
       if (data.session) {
-        this._saveSession(data.session)
+        await this._saveSession(data.session)
         this._notifyAllSubscribers('SIGNED_IN', data.session)
       }
       return { data, error }
@@ -261,7 +261,7 @@ export default class GoTrueClient {
    * Log in an existing user via a third-party provider.
    */
   async signInWithOAuth(credentials: SignInWithOAuthCredentials): Promise<OAuthResponse> {
-    this._removeSession()
+    await this._removeSession()
     return this._handleProviderSignIn(credentials.provider, {
       redirectTo: credentials.options?.redirectTo,
       scopes: credentials.options?.scopes,
@@ -274,7 +274,7 @@ export default class GoTrueClient {
    */
   async signInWithOtp(credentials: SignInWithPasswordlessCredentials): Promise<AuthResponse> {
     try {
-      this._removeSession()
+      await this._removeSession()
 
       if ('email' in credentials) {
         const { email, options } = credentials
@@ -324,7 +324,7 @@ export default class GoTrueClient {
     } = {}
   ): Promise<AuthResponse> {
     try {
-      this._removeSession()
+      await this._removeSession()
 
       const { data, error } = await _request(this.fetch, 'POST', `${this.url}/verify`, {
         headers: this.headers,
@@ -348,7 +348,7 @@ export default class GoTrueClient {
       const user: User = data.user
 
       if (session?.access_token) {
-        this._saveSession(session as Session)
+        await this._saveSession(session as Session)
         this._notifyAllSubscribers('SIGNED_IN', session)
       }
 
@@ -477,7 +477,7 @@ export default class GoTrueClient {
       })
       if (userError) throw userError
       session.user = data.user as User
-      this._saveSession(session)
+      await this._saveSession(session)
       this._notifyAllSubscribers('USER_UPDATED', session)
 
       return { data: { user: session.user }, error: null }
@@ -504,7 +504,7 @@ export default class GoTrueClient {
         return { data: { session: null, user: null }, error: error }
       }
 
-      this._saveSession(data.session!)
+      await this._saveSession(data.session!)
 
       this._notifyAllSubscribers('TOKEN_REFRESHED', data.session)
       return { data, error: null }
@@ -558,7 +558,7 @@ export default class GoTrueClient {
         token_type,
         user,
       }
-      this._saveSession(session)
+      await this._saveSession(session)
       const recoveryMode = getParameterByName('type')
       this._notifyAllSubscribers('SIGNED_IN', session)
       if (recoveryMode === 'recovery') {
@@ -595,7 +595,7 @@ export default class GoTrueClient {
       const { error } = await this.admin.signOut(accessToken)
       if (error) return { error }
     }
-    this._removeSession()
+    await this._removeSession()
     this._notifyAllSubscribers('SIGNED_OUT', null)
     return { error: null }
   }
@@ -752,11 +752,11 @@ export default class GoTrueClient {
           }
           this.networkRetries = 0
         } else {
-          this._removeSession()
+          await this._removeSession()
         }
       } else {
         if (this.persistSession) {
-          this._saveSession(currentSession)
+          await this._saveSession(currentSession)
         }
         this._notifyAllSubscribers('SIGNED_IN', currentSession)
       }
@@ -782,7 +782,7 @@ export default class GoTrueClient {
       if (error) throw error
       if (!data.session) throw new AuthSessionMissingError()
 
-      this._saveSession(data.session)
+      await this._saveSession(data.session)
       this._notifyAllSubscribers('TOKEN_REFRESHED', data.session)
 
       const result = { session: data.session, error: null }
@@ -814,7 +814,7 @@ export default class GoTrueClient {
    * set currentSession and currentUser
    * process to _startAutoRefreshToken if possible
    */
-  private _saveSession(session: Session) {
+  private async _saveSession(session: Session) {
     if (!this.persistSession) {
       this.inMemorySession = session
     }
@@ -828,17 +828,17 @@ export default class GoTrueClient {
     }
 
     if (this.persistSession && session.expires_at) {
-      this._persistSession(session)
+      await this._persistSession(session)
     }
   }
 
   private _persistSession(currentSession: Session) {
-    setItemAsync(this.storage, this.storageKey, currentSession)
+    return setItemAsync(this.storage, this.storageKey, currentSession)
   }
 
   private async _removeSession() {
     if (this.persistSession) {
-      removeItemAsync(this.storage, this.storageKey)
+      await removeItemAsync(this.storage, this.storageKey)
     } else {
       this.inMemorySession = null
     }
