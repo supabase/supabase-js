@@ -124,8 +124,7 @@ export default class GoTrueClient {
       headers: settings.headers,
       fetch: settings.fetch,
     })
-    this._recoverAndRefresh()
-    this._handleVisibilityChange()
+
     this.url = settings.url
     this.headers = settings.headers
     this.fetch = resolveFetch(settings.fetch)
@@ -138,6 +137,9 @@ export default class GoTrueClient {
         }
       })
     }
+
+    this._recoverAndRefresh()
+    this._handleVisibilityChange()
   }
 
   /**
@@ -546,7 +548,7 @@ export default class GoTrueClient {
 
       const { data, error } = await this.getUser(access_token)
       if (error) throw error
-      const user: User = data.user!
+      const user: User = data.user
       const session: Session = {
         provider_token,
         access_token,
@@ -719,6 +721,8 @@ export default class GoTrueClient {
    */
   private async _recoverAndRefresh() {
     try {
+      await this.gettingSessionFromUrlPromise
+
       const currentSession = await getItemAsync(this.storage, this.storageKey)
       if (!this._doesSessionExist(currentSession)) {
         await this._removeSession()
