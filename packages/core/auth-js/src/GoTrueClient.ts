@@ -83,6 +83,7 @@ export default class GoTrueClient {
   // eslint-disable-next-line @typescript-eslint/no-inferrable-types
   protected networkRetries: number = 0
   protected refreshingDeferred: Deferred<CallRefreshTokenResult> | null = null
+  protected gettingSessionFromUrlPromise: Promise<void> = Promise.resolve()
   protected url: string
   protected headers: {
     [key: string]: string
@@ -131,7 +132,7 @@ export default class GoTrueClient {
 
     if (settings.detectSessionInUrl && isBrowser() && !!getParameterByName('access_token')) {
       // Handle the OAuth redirect
-      this._getSessionFromUrl().then(({ error }) => {
+      this.gettingSessionFromUrlPromise = this._getSessionFromUrl().then(({ error }) => {
         if (error) {
           throw new AuthUnknownError('Error getting session from URL.', error)
         }
@@ -383,6 +384,13 @@ export default class GoTrueClient {
         error: null
       }
   > {
+    try {
+      // make sure we've read the session from the url if there is one
+      await this.gettingSessionFromUrlPromise
+    } catch (_error) {
+      // ignore the error as it will be thrown by the constructor
+    }
+
     let currentSession: Session | null = null
 
     if (this.persistSession) {
