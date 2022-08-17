@@ -398,10 +398,12 @@ export default class GoTrueClient {
     if (this.persistSession) {
       const maybeSession = await getItemAsync(this.storage, this.storageKey)
 
-      if (this._doesSessionExist(maybeSession)) {
-        currentSession = maybeSession
-      } else {
-        await this._removeSession()
+      if (maybeSession !== null) {
+        if (this._isValidSession(maybeSession)) {
+          currentSession = maybeSession
+        } else {
+          await this._removeSession()
+        }
       }
     } else {
       currentSession = this.inMemorySession
@@ -684,7 +686,7 @@ export default class GoTrueClient {
     }
   }
 
-  private _doesSessionExist(maybeSession: unknown): maybeSession is Session {
+  private _isValidSession(maybeSession: unknown): maybeSession is Session {
     const isValidSession =
       typeof maybeSession === 'object' &&
       maybeSession !== null &&
@@ -724,8 +726,11 @@ export default class GoTrueClient {
       await this.gettingSessionFromUrlPromise
 
       const currentSession = await getItemAsync(this.storage, this.storageKey)
-      if (!this._doesSessionExist(currentSession)) {
-        await this._removeSession()
+      if (!this._isValidSession(currentSession)) {
+        if (currentSession !== null) {
+          await this._removeSession()
+        }
+
         return null
       }
 
