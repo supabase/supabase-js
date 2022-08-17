@@ -31,6 +31,7 @@ import type {
   AuthChangeEvent,
   AuthResponse,
   CallRefreshTokenResult,
+  InitializeResult,
   OAuthResponse,
   Provider,
   Session,
@@ -83,7 +84,14 @@ export default class GoTrueClient {
   // eslint-disable-next-line @typescript-eslint/no-inferrable-types
   protected networkRetries: number = 0
   protected refreshingDeferred: Deferred<CallRefreshTokenResult> | null = null
-  protected gettingSessionFromUrlPromise: Promise<void> = Promise.resolve()
+  /**
+   * Keeps track of the async client initialization.
+   * When null or not yet resolved the auth state is `unknown`
+   * Once resolved the the auth state is known and it's save to call any further client methods.
+   * Keep extra care to never reject or throw uncaught errors
+   */
+  protected initializePromise: Promise<InitializeResult> | null = null
+  protected detectSessionInUrl: boolean = true
   protected url: string
   protected headers: {
     [key: string]: string
@@ -128,18 +136,53 @@ export default class GoTrueClient {
     this.url = settings.url
     this.headers = settings.headers
     this.fetch = resolveFetch(settings.fetch)
+    this.detectSessionInUrl = settings.detectSessionInUrl
 
-    if (settings.detectSessionInUrl && isBrowser() && !!getParameterByName('access_token')) {
-      // Handle the OAuth redirect
-      this.gettingSessionFromUrlPromise = this._getSessionFromUrl().then(({ error }) => {
-        if (error) {
-          throw new AuthUnknownError('Error getting session from URL.', error)
-        }
-      })
+    this.initialize()
+  }
+
+  initialize(): Promise<InitializeResult> {
+    if (!this.initializePromise) {
+      this.initializePromise = this._initialize()
     }
 
-    this._recoverAndRefresh()
-    this._handleVisibilityChange()
+    return this.initializePromise
+  }
+
+  /**
+   * Initializes the client session either from url or from storage
+   * IMPORTANT:
+   * 1. Never throw in this method, as it is called from the constructor
+   * 2. Never return a session from this method as it would be cached over
+   *    the whole lifetime of the client
+   */
+  private async _initialize(): Promise<InitializeResult> {
+    if (this.initializePromise) {
+      return this.initializePromise
+    }
+
+    try {
+      if (this.detectSessionInUrl && this._isCallbackUrl()) {
+        // login attempt via url, remove old session as in verifyOtp, singUp and singInWith*
+        await this._removeSession()
+        const { error } = await this._getSessionFromUrl()
+        return { error }
+      } else {
+        // no login attempt via callback url try to recover session from storage
+        await this._recoverAndRefresh()
+        return { error: null }
+      }
+    } catch (error) {
+      if (isAuthError(error)) {
+        return { error }
+      }
+
+      return {
+        error: new AuthUnknownError('Unexpected error during initialization', error),
+      }
+    } finally {
+      this._handleVisibilityChange()
+    }
   }
 
   /**
@@ -386,12 +429,9 @@ export default class GoTrueClient {
         error: null
       }
   > {
-    try {
-      // make sure we've read the session from the url if there is one
-      await this.gettingSessionFromUrlPromise
-    } catch (_error) {
-      // ignore the error as it will be thrown by the constructor
-    }
+    // make sure we've read the session from the url if there is one
+    // save to just await, as long we make sure _initialize() never throws
+    await this.initializePromise
 
     let currentSession: Session | null = null
 
@@ -581,6 +621,16 @@ export default class GoTrueClient {
   }
 
   /**
+   * Checks if the current URL is an auth callback url (magic link, oauth et al)
+   */
+  private _isCallbackUrl(): boolean {
+    return (
+      isBrowser() &&
+      (!!getParameterByName('access_token') || !!getParameterByName('error_description'))
+    )
+  }
+
+  /**
    * Inside a browser context, `signOut()` will remove the logged in user from the browser session
    * and log them out - removing all items from localstorage and then trigger a "SIGNED_OUT" event.
    *
@@ -723,8 +773,6 @@ export default class GoTrueClient {
    */
   private async _recoverAndRefresh() {
     try {
-      await this.gettingSessionFromUrlPromise
-
       const currentSession = await getItemAsync(this.storage, this.storageKey)
       if (!this._isValidSession(currentSession)) {
         if (currentSession !== null) {
