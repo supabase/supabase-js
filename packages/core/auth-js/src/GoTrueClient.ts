@@ -577,7 +577,14 @@ export default class GoTrueClient {
       }
 
       const error_description = getParameterByName('error_description')
-      if (error_description) throw new AuthApiError(error_description, 500)
+      if (error_description) {
+        const error_code = getParameterByName('error_code')
+        if (!error_code) throw new AuthMalformedCallbackUrlError('No error_code detected.')
+        const error = getParameterByName('error')
+        if (!error) throw new AuthMalformedCallbackUrlError('No error detected.')
+
+        throw new AuthApiError(error_description, 500)
+      }
 
       const provider_token = getParameterByName('provider_token')
       const access_token = getParameterByName('access_token')
