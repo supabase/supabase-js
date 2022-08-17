@@ -572,6 +572,7 @@ export default class GoTrueClient {
     | { session: null; error: AuthError }
   > {
     try {
+      if (!isBrowser()) throw new AuthMalformedCallbackUrlError('No browser detected.')
       if (!this._isCallbackUrl()) {
         return { error: new AuthMalformedCallbackUrlError('not a callback url'), session: null }
       }
