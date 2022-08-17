@@ -87,6 +87,11 @@ export default abstract class PostgrestBuilder<Result>
             // discard `text`
           } else if (this.headers['Accept'] === 'text/csv') {
             data = text
+          } else if (
+            this.headers['Accept'] &&
+            this.headers['Accept'].indexOf('application/vnd.pgrst.plan+text') !== -1
+          ) {
+            data = text
           } else {
             data = JSON.parse(text)
           }
