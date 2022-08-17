@@ -31,6 +31,7 @@ import type {
   AuthChangeEvent,
   AuthResponse,
   CallRefreshTokenResult,
+  GoTrueClientOptions,
   InitializeResult,
   OAuthResponse,
   Provider,
@@ -49,13 +50,12 @@ import type {
 
 polyfillGlobalThis() // Make "globalThis" available
 
-const DEFAULT_OPTIONS = {
+const DEFAULT_OPTIONS: Omit<Required<GoTrueClientOptions>, 'fetch' | 'storage'> = {
   url: GOTRUE_URL,
   storageKey: STORAGE_KEY,
   autoRefreshToken: true,
   persistSession: true,
   detectSessionInUrl: true,
-  multiTab: true,
   headers: DEFAULT_HEADERS,
 }
 
@@ -107,20 +107,9 @@ export default class GoTrueClient {
    * @param options.autoRefreshToken Set to "true" if you want to automatically refresh the token before expiring.
    * @param options.persistSession Set to "true" if you want to automatically save the user session into local storage. If set to false, session will just be saved in memory.
    * @param options.localStorage Provide your own local storage implementation to use instead of the browser's local storage.
-   * @param options.multiTab Set to "false" if you want to disable multi-tab/window events.
    * @param options.fetch A custom fetch implementation.
    */
-  constructor(options: {
-    url?: string
-    headers?: { [key: string]: string }
-    storageKey?: string
-    detectSessionInUrl?: boolean
-    autoRefreshToken?: boolean
-    persistSession?: boolean
-    storage?: SupportedStorage
-    multiTab?: boolean
-    fetch?: Fetch
-  }) {
+  constructor(options: GoTrueClientOptions) {
     const settings = { ...DEFAULT_OPTIONS, ...options }
     this.inMemorySession = null
     this.storageKey = settings.storageKey
