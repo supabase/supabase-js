@@ -7,9 +7,8 @@ import {
   STORAGE_KEY,
 } from './lib/constants'
 import {
-  AuthApiError,
-  AuthImplicitGrantRedirectError,
   AuthError,
+  AuthImplicitGrantRedirectError,
   AuthInvalidCredentialsError,
   AuthRetryableFetchError,
   AuthSessionMissingError,
@@ -122,6 +121,11 @@ export default class GoTrueClient {
     this.initialize()
   }
 
+  /**
+   * Initializes the client session either from the url or from storage.
+   * This method is automatically called when instantiating the client, but should also be called
+   * manually when checking for an error from an auth redirect (oauth, magiclink, password recovery, etc).
+   */
   initialize(): Promise<InitializeResult> {
     if (!this.initializePromise) {
       this.initializePromise = this._initialize()
@@ -131,7 +135,6 @@ export default class GoTrueClient {
   }
 
   /**
-   * Initializes the client session either from url or from storage
    * IMPORTANT:
    * 1. Never throw in this method, as it is called from the constructor
    * 2. Never return a session from this method as it would be cached over
@@ -144,22 +147,25 @@ export default class GoTrueClient {
 
     try {
       if (this.detectSessionInUrl && this._isImplicitGrantFlow()) {
-        const { session, error } = await this._getSessionFromUrl()
+        const { data, error } = await this._getSessionFromUrl()
 
-        if (session) {
-          return { error: null }
-        }
-
-        // ignore AuthImplicitGrantRedirectError
-        if (!(error instanceof AuthImplicitGrantRedirectError)) {
+        if (error) {
           // failed login attempt via url,
           // remove old session as in verifyOtp, singUp and singInWith*
           await this._removeSession()
 
           return { error }
-        } else {
-          console.warn('Malformed implicit grant query parameters detected', error)
         }
+
+        const { session, redirectType } = data
+
+        await this._saveSession(session)
+        this._notifyAllSubscribers('SIGNED_IN', session)
+        if (redirectType === 'recovery') {
+          this._notifyAllSubscribers('PASSWORD_RECOVERY', session)
+        }
+
+        return { error: null }
       }
 
       // no login attempt via callback url try to recover session from storage
@@ -557,18 +563,15 @@ export default class GoTrueClient {
    */
   private async _getSessionFromUrl(): Promise<
     | {
-        session: Session
+        data: { session: Session; redirectType: string | null }
         error: null
       }
-    | { session: null; error: AuthError }
+    | { data: { session: null; redirectType: null }; error: AuthError }
   > {
     try {
       if (!isBrowser()) throw new AuthImplicitGrantRedirectError('No browser detected.')
       if (!this._isImplicitGrantFlow()) {
-        return {
-          error: new AuthImplicitGrantRedirectError('not a callback url'),
-          session: null,
-        }
+        throw new AuthImplicitGrantRedirectError('Not a valid implicit grant flow url.')
       }
 
       const error_description = getParameterByName('error_description')
@@ -578,7 +581,7 @@ export default class GoTrueClient {
         const error = getParameterByName('error')
         if (!error) throw new AuthImplicitGrantRedirectError('No error detected.')
 
-        throw new AuthApiError(error_description, 500)
+        throw new AuthImplicitGrantRedirectError(error_description, { error, code: error_code })
       }
 
       const provider_token = getParameterByName('provider_token')
@@ -606,20 +609,15 @@ export default class GoTrueClient {
         token_type,
         user,
       }
-      await this._saveSession(session)
-      const recoveryMode = getParameterByName('type')
-      this._notifyAllSubscribers('SIGNED_IN', session)
-      if (recoveryMode === 'recovery') {
-        this._notifyAllSubscribers('PASSWORD_RECOVERY', session)
-      }
+      const redirectType = getParameterByName('type')
 
       // Remove tokens from URL
       window.location.hash = ''
 
-      return { session, error: null }
+      return { data: { session, redirectType }, error: null }
     } catch (error) {
       if (isAuthError(error)) {
-        return { session: null, error }
+        return { data: { session: null, redirectType: null }, error }
       }
 
       throw error
@@ -632,7 +630,8 @@ export default class GoTrueClient {
   private _isImplicitGrantFlow(): boolean {
     return (
       isBrowser() &&
-      (!!getParameterByName('access_token') || !!getParameterByName('error_description'))
+      (Boolean(getParameterByName('access_token')) ||
+        Boolean(getParameterByName('error_description')))
     )
   }
 
@@ -785,7 +784,7 @@ export default class GoTrueClient {
           await this._removeSession()
         }
 
-        return null
+        return
       }
 
       const timeNow = Math.round(Date.now() / 1000)
@@ -821,7 +820,7 @@ export default class GoTrueClient {
       }
     } catch (err) {
       console.error(err)
-      return null
+      return
     }
   }
 
