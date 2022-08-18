@@ -29,13 +29,21 @@ export type AuthChangeEvent =
   | 'USER_DELETED'
 
 export type GoTrueClientOptions = {
+  /* The URL of the GoTrue server. */
   url?: string
+  /* Any additional headers to send to the GoTrue server. */
   headers?: { [key: string]: string }
+  /* Optional key name used for storing tokens in local storage. */
   storageKey?: string
+  /* Set to "true" if you want to automatically detects OAuth grants in the URL and signs in the user. */
   detectSessionInUrl?: boolean
+  /* Set to "true" if you want to automatically refresh the token before expiring. */
   autoRefreshToken?: boolean
+  /* Set to "true" if you want to automatically save the user session into local storage. If set to false, session will just be saved in memory. */
   persistSession?: boolean
+  /* Provide your own local storage implementation to use instead of the browser's local storage. */
   storage?: SupportedStorage
+  /* A custom fetch implementation. */
   fetch?: Fetch
 }
 

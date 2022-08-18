@@ -8,7 +8,7 @@ import {
 } from './lib/constants'
 import {
   AuthApiError,
-  AuthMalformedCallbackUrlError,
+  AuthImplicitGrantRedirectError,
   AuthError,
   AuthInvalidCredentialsError,
   AuthRetryableFetchError,
@@ -82,8 +82,7 @@ export default class GoTrueClient {
   protected storage: SupportedStorage
   protected stateChangeEmitters: Map<string, Subscription> = new Map()
   protected refreshTokenTimer?: ReturnType<typeof setTimeout>
-  // eslint-disable-next-line @typescript-eslint/no-inferrable-types
-  protected networkRetries: number = 0
+  protected networkRetries = 0
   protected refreshingDeferred: Deferred<CallRefreshTokenResult> | null = null
   /**
    * Keeps track of the async client initialization.
@@ -92,7 +91,7 @@ export default class GoTrueClient {
    * Keep extra care to never reject or throw uncaught errors
    */
   protected initializePromise: Promise<InitializeResult> | null = null
-  protected detectSessionInUrl: boolean = true
+  protected detectSessionInUrl = true
   protected url: string
   protected headers: {
     [key: string]: string
@@ -101,14 +100,6 @@ export default class GoTrueClient {
 
   /**
    * Create a new client for use in the browser.
-   * @param options.url The URL of the GoTrue server.
-   * @param options.headers Any additional headers to send to the GoTrue server.
-   * @param options.storageKey Optional key name used for storing tokens in local storage
-   * @param options.detectSessionInUrl Set to "true" if you want to automatically detects OAuth grants in the URL and signs in the user.
-   * @param options.autoRefreshToken Set to "true" if you want to automatically refresh the token before expiring.
-   * @param options.persistSession Set to "true" if you want to automatically save the user session into local storage. If set to false, session will just be saved in memory.
-   * @param options.localStorage Provide your own local storage implementation to use instead of the browser's local storage.
-   * @param options.fetch A custom fetch implementation.
    */
   constructor(options: GoTrueClientOptions) {
     const settings = { ...DEFAULT_OPTIONS, ...options }
@@ -152,22 +143,22 @@ export default class GoTrueClient {
     }
 
     try {
-      if (this.detectSessionInUrl && this._isCallbackUrl()) {
+      if (this.detectSessionInUrl && this._isImplicitGrantFlow()) {
         const { session, error } = await this._getSessionFromUrl()
 
         if (session) {
           return { error: null }
         }
 
-        // ignore AuthMalformedCallbackUrlErrors
-        if (!(error instanceof AuthMalformedCallbackUrlError)) {
+        // ignore AuthImplicitGrantRedirectError
+        if (!(error instanceof AuthImplicitGrantRedirectError)) {
           // failed login attempt via url,
           // remove old session as in verifyOtp, singUp and singInWith*
           await this._removeSession()
 
           return { error }
         } else {
-          console.warn('Malformed Callback URL detected', error)
+          console.warn('Malformed implicit grant query parameters detected', error)
         }
       }
 
@@ -572,30 +563,33 @@ export default class GoTrueClient {
     | { session: null; error: AuthError }
   > {
     try {
-      if (!isBrowser()) throw new AuthMalformedCallbackUrlError('No browser detected.')
-      if (!this._isCallbackUrl()) {
-        return { error: new AuthMalformedCallbackUrlError('not a callback url'), session: null }
+      if (!isBrowser()) throw new AuthImplicitGrantRedirectError('No browser detected.')
+      if (!this._isImplicitGrantFlow()) {
+        return {
+          error: new AuthImplicitGrantRedirectError('not a callback url'),
+          session: null,
+        }
       }
 
       const error_description = getParameterByName('error_description')
       if (error_description) {
         const error_code = getParameterByName('error_code')
-        if (!error_code) throw new AuthMalformedCallbackUrlError('No error_code detected.')
+        if (!error_code) throw new AuthImplicitGrantRedirectError('No error_code detected.')
         const error = getParameterByName('error')
-        if (!error) throw new AuthMalformedCallbackUrlError('No error detected.')
+        if (!error) throw new AuthImplicitGrantRedirectError('No error detected.')
 
         throw new AuthApiError(error_description, 500)
       }
 
       const provider_token = getParameterByName('provider_token')
       const access_token = getParameterByName('access_token')
-      if (!access_token) throw new AuthMalformedCallbackUrlError('No access_token detected.')
+      if (!access_token) throw new AuthImplicitGrantRedirectError('No access_token detected.')
       const expires_in = getParameterByName('expires_in')
-      if (!expires_in) throw new AuthMalformedCallbackUrlError('No expires_in detected.')
+      if (!expires_in) throw new AuthImplicitGrantRedirectError('No expires_in detected.')
       const refresh_token = getParameterByName('refresh_token')
-      if (!refresh_token) throw new AuthMalformedCallbackUrlError('No refresh_token detected.')
+      if (!refresh_token) throw new AuthImplicitGrantRedirectError('No refresh_token detected.')
       const token_type = getParameterByName('token_type')
-      if (!token_type) throw new AuthMalformedCallbackUrlError('No token_type detected.')
+      if (!token_type) throw new AuthImplicitGrantRedirectError('No token_type detected.')
 
       const timeNow = Math.round(Date.now() / 1000)
       const expires_at = timeNow + parseInt(expires_in)
@@ -633,9 +627,9 @@ export default class GoTrueClient {
   }
 
   /**
-   * Checks if the current URL is an auth callback url (magic link, oauth et al)
+   * Checks if the current URL contains parameters given by an implicit oauth grant flow (https://www.rfc-editor.org/rfc/rfc6749.html#section-4.2)
    */
-  private _isCallbackUrl(): boolean {
+  private _isImplicitGrantFlow(): boolean {
     return (
       isBrowser() &&
       (!!getParameterByName('access_token') || !!getParameterByName('error_description'))

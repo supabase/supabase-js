@@ -69,9 +69,9 @@ export class AuthInvalidCredentialsError extends CustomAuthError {
   }
 }
 
-export class AuthMalformedCallbackUrlError extends CustomAuthError {
+export class AuthImplicitGrantRedirectError extends CustomAuthError {
   constructor(message: string) {
-    super(message, 'AuthCallbackUrlError', 500)
+    super(message, 'AuthImplicitGrantRedirectError', 500)
   }
 }
 
