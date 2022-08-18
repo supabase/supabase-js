@@ -27,12 +27,12 @@ export default class RealtimeChannel {
     public params: { [key: string]: any } = {},
     public socket: RealtimeClient
   ) {
-    this.params.configs = {
+    this.params.config = {
       ...{
         broadcast: { ack: false, self: false },
         presence: { key: '' },
       },
-      ...params.configs,
+      ...params.config,
     }
     this.timeout = this.socket.timeout
     this.joinPush = new Push(
@@ -92,13 +92,13 @@ export default class RealtimeChannel {
       throw `tried to subscribe multiple times. 'subscribe' can only be called a single time per channel instance`
     } else {
       const {
-        configs: { broadcast, presence },
+        config: { broadcast, presence },
       } = this.params
       this.onError((e: Error) => callback && callback('CHANNEL_ERROR', e))
       this.onClose(() => callback && callback('CLOSED'))
 
       const accessTokenPayload: { access_token?: string } = {}
-      const configs = {
+      const config = {
         broadcast,
         presence,
         postgres_changes:
@@ -109,7 +109,7 @@ export default class RealtimeChannel {
         accessTokenPayload.access_token = this.socket.accessToken
       }
 
-      this.updateJoinPayload({ ...{ configs }, ...accessTokenPayload })
+      this.updateJoinPayload({ ...{ config }, ...accessTokenPayload })
 
       this.joinedOnce = true
       this.rejoin(timeout)
@@ -308,7 +308,7 @@ export default class RealtimeChannel {
 
       if (
         payload.type === 'broadcast' &&
-        !this.params?.configs?.broadcast?.ack
+        !this.params?.config?.broadcast?.ack
       ) {
         resolve('ok')
       }

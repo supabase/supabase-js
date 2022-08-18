@@ -23,7 +23,7 @@ describe('constructor', () => {
 
     assert.equal(channel.state, 'closed')
     assert.equal(channel.topic, 'topic')
-    assert.deepEqual(channel.params, { configs: { broadcast: { ack: false, self: false }, presence: { key: '' } }, one: 'two' })
+    assert.deepEqual(channel.params, { config: { broadcast: { ack: false, self: false }, presence: { key: '' } }, one: 'two' })
     assert.deepEqual(channel.socket, socket)
     assert.equal(channel.timeout, 1234)
     assert.equal(channel.joinedOnce, false)
@@ -36,7 +36,7 @@ describe('constructor', () => {
     const joinPush = channel.joinPush
 
     assert.deepEqual(joinPush.channel, channel)
-    assert.deepEqual(joinPush.payload, { configs: { broadcast: { ack: false, self: false }, presence: { key: '' } }, one: 'two' })
+    assert.deepEqual(joinPush.payload, { config: { broadcast: { ack: false, self: false }, presence: { key: '' } }, one: 'two' })
     assert.equal(joinPush.event, 'phx_join')
     assert.equal(joinPush.timeout, 1234)
   })
@@ -85,7 +85,7 @@ describe('join', () => {
       spy.calledWith({
         topic: 'realtime:topic',
         event: 'phx_join',
-        payload: { configs: { broadcast: { ack: false, self: false }, presence: { key: '' }, postgres_changes: [] }, one: 'two' },
+        payload: { config: { broadcast: { ack: false, self: false }, presence: { key: '' }, postgres_changes: [] }, one: 'two' },
         ref: defaultRef,
       })
     )
