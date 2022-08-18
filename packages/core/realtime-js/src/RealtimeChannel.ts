@@ -6,7 +6,14 @@ import RealtimePresence, { PresenceState } from './RealtimePresence'
 import * as Transformers from './lib/transformers'
 
 export type RealtimeChannelConfig = {
+  /**
+   * self option enables client to receive message it broadcast
+   * ack option instructs server to acknowlege that broadcast message was received
+   */
   broadcast?: { self?: boolean; ack?: boolean }
+  /**
+   * key option is used to track presence payload across clients
+   */
   presence?: { key?: string }
   [key: string]: any
 }
