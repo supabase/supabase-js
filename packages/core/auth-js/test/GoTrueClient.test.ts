@@ -210,8 +210,11 @@ describe('GoTrueClient', () => {
     })
 
     test('_getSessionFromUrl() can only be called from a browser', async () => {
-      // @ts-expect-error 'Allow access to private _getSessionFromUrl()'
-      const { error, session } = await authWithSession._getSessionFromUrl()
+      const {
+        error,
+        data: { session },
+        // @ts-expect-error 'Allow access to private _getSessionFromUrl()'
+      } = await authWithSession._getSessionFromUrl()
 
       expect(error?.message).toEqual('No browser detected.')
       expect(session).toBeNull()
