@@ -5,6 +5,25 @@ import Timer from './lib/timer'
 import RealtimePresence, { PresenceState } from './RealtimePresence'
 import * as Transformers from './lib/transformers'
 
+export type RealtimeChannelConfig = {
+  broadcast?: { self?: boolean; ack?: boolean }
+  presence?: { key?: string }
+  [key: string]: any
+}
+
+export enum REALTIME_LISTEN_TYPES {
+  broadcast = 'broadcast',
+  presence = 'presence',
+  postgres_changes = 'postgres_changes',
+}
+
+export enum REALTIME_SUBSCRIBE_STATES {
+  SUBSCRIBED = 'SUBSCRIBED',
+  TIMED_OUT = 'TIMED_OUT',
+  CLOSED = 'CLOSED',
+  CHANNEL_ERROR = 'CHANNEL_ERROR',
+}
+
 export default class RealtimeChannel {
   bindings: {
     [key: string]: {
@@ -24,7 +43,7 @@ export default class RealtimeChannel {
 
   constructor(
     public topic: string,
-    public params: { [key: string]: any } = {},
+    public params: RealtimeChannelConfig = {},
     public socket: RealtimeClient
   ) {
     this.params.config = {
@@ -189,7 +208,7 @@ export default class RealtimeChannel {
           return
         })
         .receive('timeout', () => {
-          callback && callback('TIMED OUT')
+          callback && callback('TIMED_OUT')
           return
         })
     }
