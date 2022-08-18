@@ -8,6 +8,7 @@ import {
 } from './lib/constants'
 import {
   AuthApiError,
+  AuthMalformedCallbackUrlError,
   AuthError,
   AuthInvalidCredentialsError,
   AuthRetryableFetchError,
@@ -31,6 +32,7 @@ import type {
   AuthChangeEvent,
   AuthResponse,
   CallRefreshTokenResult,
+  GoTrueClientOptions,
   InitializeResult,
   OAuthResponse,
   Provider,
@@ -49,13 +51,12 @@ import type {
 
 polyfillGlobalThis() // Make "globalThis" available
 
-const DEFAULT_OPTIONS = {
+const DEFAULT_OPTIONS: Omit<Required<GoTrueClientOptions>, 'fetch' | 'storage'> = {
   url: GOTRUE_URL,
   storageKey: STORAGE_KEY,
   autoRefreshToken: true,
   persistSession: true,
   detectSessionInUrl: true,
-  multiTab: true,
   headers: DEFAULT_HEADERS,
 }
 
@@ -107,20 +108,9 @@ export default class GoTrueClient {
    * @param options.autoRefreshToken Set to "true" if you want to automatically refresh the token before expiring.
    * @param options.persistSession Set to "true" if you want to automatically save the user session into local storage. If set to false, session will just be saved in memory.
    * @param options.localStorage Provide your own local storage implementation to use instead of the browser's local storage.
-   * @param options.multiTab Set to "false" if you want to disable multi-tab/window events.
    * @param options.fetch A custom fetch implementation.
    */
-  constructor(options: {
-    url?: string
-    headers?: { [key: string]: string }
-    storageKey?: string
-    detectSessionInUrl?: boolean
-    autoRefreshToken?: boolean
-    persistSession?: boolean
-    storage?: SupportedStorage
-    multiTab?: boolean
-    fetch?: Fetch
-  }) {
+  constructor(options: GoTrueClientOptions) {
     const settings = { ...DEFAULT_OPTIONS, ...options }
     this.inMemorySession = null
     this.storageKey = settings.storageKey
@@ -163,15 +153,27 @@ export default class GoTrueClient {
 
     try {
       if (this.detectSessionInUrl && this._isCallbackUrl()) {
-        // login attempt via url, remove old session as in verifyOtp, singUp and singInWith*
-        await this._removeSession()
-        const { error } = await this._getSessionFromUrl()
-        return { error }
-      } else {
-        // no login attempt via callback url try to recover session from storage
-        await this._recoverAndRefresh()
-        return { error: null }
+        const { session, error } = await this._getSessionFromUrl()
+
+        if (session) {
+          return { error: null }
+        }
+
+        // ignore AuthMalformedCallbackUrlErrors
+        if (!(error instanceof AuthMalformedCallbackUrlError)) {
+          // failed login attempt via url,
+          // remove old session as in verifyOtp, singUp and singInWith*
+          await this._removeSession()
+
+          return { error }
+        } else {
+          console.warn('Malformed Callback URL detected', error)
+        }
       }
+
+      // no login attempt via callback url try to recover session from storage
+      await this._recoverAndRefresh()
+      return { error: null }
     } catch (error) {
       if (isAuthError(error)) {
         return { error }
@@ -570,20 +572,30 @@ export default class GoTrueClient {
     | { session: null; error: AuthError }
   > {
     try {
-      if (!isBrowser()) throw new AuthApiError('No browser detected.', 500)
+      if (!isBrowser()) throw new AuthMalformedCallbackUrlError('No browser detected.')
+      if (!this._isCallbackUrl()) {
+        return { error: new AuthMalformedCallbackUrlError('not a callback url'), session: null }
+      }
 
       const error_description = getParameterByName('error_description')
-      if (error_description) throw new AuthApiError(error_description, 500)
+      if (error_description) {
+        const error_code = getParameterByName('error_code')
+        if (!error_code) throw new AuthMalformedCallbackUrlError('No error_code detected.')
+        const error = getParameterByName('error')
+        if (!error) throw new AuthMalformedCallbackUrlError('No error detected.')
+
+        throw new AuthApiError(error_description, 500)
+      }
 
       const provider_token = getParameterByName('provider_token')
       const access_token = getParameterByName('access_token')
-      if (!access_token) throw new AuthApiError('No access_token detected.', 500)
+      if (!access_token) throw new AuthMalformedCallbackUrlError('No access_token detected.')
       const expires_in = getParameterByName('expires_in')
-      if (!expires_in) throw new AuthApiError('No expires_in detected.', 500)
+      if (!expires_in) throw new AuthMalformedCallbackUrlError('No expires_in detected.')
       const refresh_token = getParameterByName('refresh_token')
-      if (!refresh_token) throw new AuthApiError('No refresh_token detected.', 500)
+      if (!refresh_token) throw new AuthMalformedCallbackUrlError('No refresh_token detected.')
       const token_type = getParameterByName('token_type')
-      if (!token_type) throw new AuthApiError('No token_type detected.', 500)
+      if (!token_type) throw new AuthMalformedCallbackUrlError('No token_type detected.')
 
       const timeNow = Math.round(Date.now() / 1000)
       const expires_at = timeNow + parseInt(expires_in)

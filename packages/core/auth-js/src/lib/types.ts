@@ -1,4 +1,5 @@
 import { AuthError } from './errors'
+import { Fetch } from './fetch'
 
 /** One of the providers supported by GoTrue. */
 export type Provider =
@@ -26,6 +27,17 @@ export type AuthChangeEvent =
   | 'TOKEN_REFRESHED'
   | 'USER_UPDATED'
   | 'USER_DELETED'
+
+export type GoTrueClientOptions = {
+  url?: string
+  headers?: { [key: string]: string }
+  storageKey?: string
+  detectSessionInUrl?: boolean
+  autoRefreshToken?: boolean
+  persistSession?: boolean
+  storage?: SupportedStorage
+  fetch?: Fetch
+}
 
 export type AuthResponse =
   | {

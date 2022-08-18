@@ -69,6 +69,12 @@ export class AuthInvalidCredentialsError extends CustomAuthError {
   }
 }
 
+export class AuthMalformedCallbackUrlError extends CustomAuthError {
+  constructor(message: string) {
+    super(message, 'AuthCallbackUrlError', 500)
+  }
+}
+
 export class AuthRetryableFetchError extends CustomAuthError {
   constructor(message: string, status: number) {
     super(message, 'AuthRetryableFetchError', status)
