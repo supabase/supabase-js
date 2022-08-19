@@ -40,7 +40,7 @@
     "@supabase/functions-js": "^2.0.0-rc.1",
     "@supabase/gotrue-js": "^2.0.0-rc.2",
     "@supabase/postgrest-js": "^1.0.0-rc.1",
-    "@supabase/realtime-js": "^2.0.0-rc.2",
+    "@supabase/realtime-js": "^2.0.0-rc.4",
     "@supabase/storage-js": "^2.0.0-rc.1",
     "cross-fetch": "^3.1.5"
   },
