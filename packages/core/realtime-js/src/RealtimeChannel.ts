@@ -113,7 +113,7 @@ export default class RealtimeChannel {
     }
   }
 
-  subscribe(callback?: Function, timeout = this.timeout): void {
+  subscribe(callback?: Function, timeout = this.timeout): RealtimeChannel {
     if (this.joinedOnce) {
       throw `tried to subscribe multiple times. 'subscribe' can only be called a single time per channel instance`
     } else {
@@ -219,6 +219,8 @@ export default class RealtimeChannel {
           return
         })
     }
+
+    return this
   }
 
   presenceState(): PresenceState {
