@@ -356,16 +356,8 @@ export default class GoTrueClient {
 
   /**
    * Log in a user given a User supplied OTP received via mobile.
-   * @param options.redirectTo A URL to send the user to after they are confirmed.
-   * @param options.captchaToken Verification token received when the user completes the captcha on the site.
    */
-  async verifyOtp(
-    params: VerifyOtpParams,
-    options: {
-      redirectTo?: string
-      captchaToken?: string
-    } = {}
-  ): Promise<AuthResponse> {
+  async verifyOtp(params: VerifyOtpParams): Promise<AuthResponse> {
     try {
       await this._removeSession()
 
@@ -373,9 +365,9 @@ export default class GoTrueClient {
         headers: this.headers,
         body: {
           ...params,
-          gotrue_meta_security: { captchaToken: options?.captchaToken },
+          gotrue_meta_security: { captchaToken: params.options?.captchaToken },
         },
-        redirectTo: options.redirectTo,
+        redirectTo: params.options?.redirectTo,
         xform: _sessionResponse,
       })
 

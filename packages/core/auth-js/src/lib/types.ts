@@ -313,7 +313,7 @@ export type SignInWithOAuthCredentials = {
   /** One of the providers supported by GoTrue. */
   provider: Provider
   options?: {
-    /** A URL to send the user to after they are confirmed (OAuth logins only). */
+    /** A URL to send the user to after they are confirmed. */
     redirectTo?: string
     /** A space-separated list of scopes granted to the OAuth application. */
     scopes?: string
@@ -330,6 +330,12 @@ export interface VerifyMobileOtpParams {
   token: string
   /** The user's verification type. */
   type: MobileOtpType
+  options?: {
+    /** A URL to send the user to after they are confirmed. */
+    redirectTo?: string
+    /** Verification token received when the user completes the captcha on the site. */
+    captchaToken?: string
+  }
 }
 export interface VerifyEmailOtpParams {
   /** The user's email address. */
@@ -338,6 +344,12 @@ export interface VerifyEmailOtpParams {
   token: string
   /** The user's verification type. */
   type: EmailOtpType
+  options?: {
+    /** A URL to send the user to after they are confirmed. */
+    redirectTo?: string
+    /** Verification token received when the user completes the captcha on the site. */
+    captchaToken?: string
+  }
 }
 
 export type MobileOtpType = 'sms' | 'phone_change'
