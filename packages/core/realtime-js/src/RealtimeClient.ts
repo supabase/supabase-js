@@ -30,6 +30,7 @@ type Message = {
   event: string
   payload: any
   ref: string
+  join_ref?: string
 }
 
 type ChannelParams = {

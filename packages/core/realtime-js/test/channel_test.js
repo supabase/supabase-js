@@ -5,7 +5,7 @@ import { RealtimeSubscription, RealtimeClient } from '../dist/main'
 
 let channel, socket
 
-const defaultRef = 1
+const defaultRef = '1'
 const defaultTimeout = 10000
 
 describe('constructor', () => {
@@ -87,6 +87,7 @@ describe('join', () => {
         event: 'phx_join',
         payload: { one: 'two' },
         ref: defaultRef,
+        join_ref: defaultRef
       })
     )
   })
@@ -781,6 +782,7 @@ describe('push', () => {
     event: 'event',
     payload: { foo: 'bar' },
     ref: defaultRef,
+    join_ref: defaultRef
   }
 
   beforeEach(() => {
@@ -914,6 +916,7 @@ describe('leave', () => {
         event: 'phx_leave',
         payload: {},
         ref: defaultRef,
+        join_ref: defaultRef
       })
     )
   })
