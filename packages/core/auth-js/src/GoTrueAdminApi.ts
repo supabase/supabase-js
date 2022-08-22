@@ -91,17 +91,18 @@ export default class GoTrueAdminApi {
    */
   async generateLink(params: GenerateLinkParams): Promise<GenerateLinkResponse> {
     try {
+      const { options, ...rest } = params
+      const body: any = { ...rest, ...options }
+      if ('newEmail' in rest) {
+        // replace newEmail with new_email in request body
+        body.new_email = rest?.newEmail
+        delete body['newEmail']
+      }
       return await _request(this.fetch, 'POST', `${this.url}/admin/generate_link`, {
-        body: {
-          type: params.type,
-          email: params.email,
-          new_email: params.options?.new_email,
-          password: params.options?.password,
-          data: params.options?.data,
-          redirect_to: params.options?.redirectTo,
-        },
+        body: body,
         headers: this.headers,
         xform: _generateLinkResponse,
+        redirectTo: options?.redirectTo,
       })
     } catch (error) {
       if (isAuthError(error)) {

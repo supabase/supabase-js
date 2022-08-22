@@ -355,27 +355,52 @@ export interface VerifyEmailOtpParams {
 export type MobileOtpType = 'sms' | 'phone_change'
 export type EmailOtpType = 'signup' | 'invite' | 'magiclink' | 'recovery' | 'email_change'
 
-export type GenerateLinkParams = {
-  type: GenerateLinkType
+export type GenerateSignupLinkParams = {
+  type: 'signup'
+  email: string
+  password: string
+  options?: Pick<GenerateLinkOptions, 'data' | 'redirectTo'>
+}
+
+export type GenerateInviteOrMagiclinkParams = {
+  type: 'invite' | 'magiclink'
   /** The user's email */
   email: string
-  options?: {
-    /**
-     * The user's new email. Only required if type is 'email_change_current' or 'email_change_new'.
-     */
-    new_email?: string
-    /**
-     * The user's password. Only required if type is 'signup'.
-     */
-    password?: string
-    /**
-     * The user's metadata. Only valid if type is 'signup', 'magiclink' or 'invite'.
-     */
-    data?: object
-    /** The URL which will be appended to the email link generated. */
-    redirectTo?: string
-  }
+  options?: Pick<GenerateLinkOptions, 'data' | 'redirectTo'>
 }
+
+export type GenerateRecoveryLinkParams = {
+  type: 'recovery'
+  /** The user's email */
+  email: string
+  options?: Pick<GenerateLinkOptions, 'redirectTo'>
+}
+
+export type GenerateEmailChangeLinkParams = {
+  type: 'email_change_current' | 'email_change_new'
+  /** The user's email */
+  email: string
+  /**
+   * The user's new email. Only required if type is 'email_change_current' or 'email_change_new'.
+   */
+  newEmail: string
+  options?: Pick<GenerateLinkOptions, 'redirectTo'>
+}
+
+export interface GenerateLinkOptions {
+  /**
+   * The user's metadata.
+   */
+  data?: object
+  /** The URL which will be appended to the email link generated. */
+  redirectTo?: string
+}
+
+export type GenerateLinkParams =
+  | GenerateSignupLinkParams
+  | GenerateInviteOrMagiclinkParams
+  | GenerateRecoveryLinkParams
+  | GenerateEmailChangeLinkParams
 
 export type GenerateLinkResponse =
   | {
