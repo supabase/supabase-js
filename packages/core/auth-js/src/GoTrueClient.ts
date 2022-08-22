@@ -314,6 +314,9 @@ export default class GoTrueClient {
 
   /**
    * Passwordless method for logging in an existing user.
+   * A one-time password (OTP) can either be in the form of an email link or a numerical code.
+   * You can decide whether to send an email link or code or both in your email template.
+   * If you're using passwordless phone sign-ins, your OTP will always be in the form of a code.
    */
   async signInWithOtp(credentials: SignInWithPasswordlessCredentials): Promise<AuthResponse> {
     try {

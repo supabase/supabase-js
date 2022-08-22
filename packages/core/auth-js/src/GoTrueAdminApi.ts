@@ -50,7 +50,7 @@ export default class GoTrueAdminApi {
   /**
    * Sends an invite link to an email address.
    * @param email The email address of the user.
-   * @param options.redirectTo A URL or mobile address to send the user to after they are confirmed.
+   * @param options.redirectTo A URL or mobile deeplink to send the user to after they are confirmed.
    * @param options.data Optional user metadata
    */
   async inviteUserByEmail(
