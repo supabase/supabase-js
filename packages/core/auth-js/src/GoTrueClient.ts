@@ -26,6 +26,7 @@ import {
   setItemAsync,
   uuid,
 } from './lib/helpers'
+import localStorageAdapter from './lib/local-storage'
 import { polyfillGlobalThis } from './lib/polyfills'
 import type {
   AuthChangeEvent,
@@ -106,7 +107,7 @@ export default class GoTrueClient {
     this.storageKey = settings.storageKey
     this.autoRefreshToken = settings.autoRefreshToken
     this.persistSession = settings.persistSession
-    this.storage = settings.storage || globalThis.localStorage
+    this.storage = settings.storage || localStorageAdapter
     this.admin = new GoTrueAdminApi({
       url: settings.url,
       headers: settings.headers,
@@ -937,9 +938,10 @@ export default class GoTrueClient {
     }
 
     try {
-      window?.addEventListener('visibilitychange', () => {
+      window?.addEventListener('visibilitychange', async () => {
         if (document.visibilityState === 'visible') {
-          this._recoverAndRefresh()
+          await this.initializePromise
+          await this._recoverAndRefresh()
         }
       })
     } catch (error) {
