@@ -52,6 +52,7 @@ export default class Push {
       event: this.event,
       payload: this.payload,
       ref: this.ref,
+      join_ref: this.channel.joinRef(),
     })
     if (status === 'rate limited') {
       this.rateLimited = true

@@ -365,6 +365,8 @@ export default class RealtimeChannel {
       this.socket.log('channel', `leave ${this.topic}`)
       this.trigger(CHANNEL_EVENTS.close, 'leave', this.joinRef())
     }
+
+    this.rejoinTimer.reset()
     // Destroy joinPush to avoid connection timeouts during unscription phase
     this.joinPush.destroy()
 
@@ -381,7 +383,6 @@ export default class RealtimeChannel {
           resolve('timed out')
         })
         .receive('error', () => {
-          onClose()
           resolve('error')
         })
 
