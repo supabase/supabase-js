@@ -1,6 +1,12 @@
-import { Fetch, _request, _userResponse } from './lib/fetch'
+import { Fetch, _generateLinkResponse, _request, _userResponse } from './lib/fetch'
 import { resolveFetch } from './lib/helpers'
-import { AdminUserAttributes, GenerateLinkType, Session, User, UserResponse } from './lib/types'
+import {
+  AdminUserAttributes,
+  GenerateLinkParams,
+  GenerateLinkResponse,
+  User,
+  UserResponse,
+} from './lib/types'
 import { AuthError, isAuthError } from './lib/errors'
 
 export default class GoTrueAdminApi {
@@ -83,39 +89,29 @@ export default class GoTrueAdminApi {
    * @param options.data Optional user metadata. For signup only.
    * @param options.redirectTo The redirect url which should be appended to the generated link
    */
-  async generateLink(
-    type: GenerateLinkType,
-    email: string,
-    options: {
-      password?: string
-      data?: object
-      redirectTo?: string
-    } = {}
-  ): Promise<
-    | {
-        data: User
-        error: null
-      }
-    | {
-        data: Session
-        error: null
-      }
-    | { data: null; error: AuthError }
-  > {
+  async generateLink(params: GenerateLinkParams): Promise<GenerateLinkResponse> {
     try {
       return await _request(this.fetch, 'POST', `${this.url}/admin/generate_link`, {
         body: {
-          type,
-          email,
-          password: options.password,
-          data: options.data,
-          redirect_to: options.redirectTo,
+          type: params.type,
+          email: params.email,
+          new_email: params.options?.new_email,
+          password: params.options?.password,
+          data: params.options?.data,
+          redirect_to: params.options?.redirectTo,
         },
         headers: this.headers,
+        xform: _generateLinkResponse,
       })
     } catch (error) {
       if (isAuthError(error)) {
-        return { data: null, error }
+        return {
+          data: {
+            properties: null,
+            user: null,
+          },
+          error,
+        }
       }
       throw error
     }

@@ -355,7 +355,66 @@ export interface VerifyEmailOtpParams {
 export type MobileOtpType = 'sms' | 'phone_change'
 export type EmailOtpType = 'signup' | 'invite' | 'magiclink' | 'recovery' | 'email_change'
 
-/** The link type */
+export type GenerateLinkParams = {
+  type: GenerateLinkType
+  /** The user's email */
+  email: string
+  options?: {
+    /**
+     * The user's new email. Only required if type is 'email_change_current' or 'email_change_new'.
+     */
+    new_email?: string
+    /**
+     * The user's password. Only required if type is 'signup'.
+     */
+    password?: string
+    /**
+     * The user's metadata. Only valid if type is 'signup', 'magiclink' or 'invite'.
+     */
+    data?: object
+    /** The URL which will be appended to the email link generated. */
+    redirectTo?: string
+  }
+}
+
+export type GenerateLinkResponse =
+  | {
+      data: {
+        properties: GenerateLinkProperties
+        user: User
+      }
+      error: null
+    }
+  | {
+      data: {
+        properties: null
+        user: null
+      }
+      error: AuthError
+    }
+
+/** The properties related to the email link generated  */
+export type GenerateLinkProperties = {
+  /**
+   * The email link to send to the user.
+   * The action_link follows the following format: auth/v1/verify?type={verification_type}&token={hashed_token}&redirect_to={redirect_to}
+   * */
+  action_link: string
+  /**
+   * The raw email OTP.
+   * You should send this in the email if you want your users to verify using an OTP instead of the action link.
+   * */
+  email_otp: string
+  /**
+   * The hashed token appended to the action link.
+   * */
+  hashed_token: string
+  /** The URL appended to the action link. */
+  redirect_to: string
+  /** The verification type that the email link is associated to. */
+  verification_type: GenerateLinkType
+}
+
 export type GenerateLinkType =
   | 'signup'
   | 'invite'
