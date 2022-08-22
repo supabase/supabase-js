@@ -13,7 +13,7 @@ import {
   mockVerificationOTP,
 } from './lib/utils'
 
-import type { User } from '../src/lib/types'
+import type { GenerateLinkProperties, User } from '../src/lib/types'
 
 describe('GoTrueAdminApi', () => {
   describe('User creation', () => {
@@ -269,22 +269,38 @@ describe('GoTrueAdminApi', () => {
       const redirectTo = 'http://localhost:9999/welcome'
       const userMetadata = { status: 'alpha' }
 
-      const { error, data } = await serviceRoleApiClient.generateLink('signup', email, {
-        password: password,
-        data: userMetadata,
-        redirectTo,
+      const { error, data } = await serviceRoleApiClient.generateLink({
+        type: 'signup',
+        email,
+        options: {
+          password: password,
+          data: userMetadata,
+          redirectTo,
+        },
       })
 
-      const user = data as User
+      const properties = data.properties as GenerateLinkProperties
+      const user = data.user as User
 
       expect(error).toBeNull()
+      /** Check that the user object returned has the update metadata and an email */
       expect(user).not.toBeNull()
-      expect(user).toHaveProperty('action_link')
-      expect(user?.['action_link']).toMatch(/\?token/)
-      expect(user?.['action_link']).toMatch(/type=signup/)
-      expect(user?.['action_link']).toMatch(new RegExp(`redirect_to=${redirectTo}`))
+      expect(user).toHaveProperty('email')
       expect(user).toHaveProperty('user_metadata')
       expect(user?.['user_metadata']).toEqual(userMetadata)
+
+      /** Check that properties returned contains the generateLink properties */
+      expect(properties).not.toBeNull()
+      expect(properties).toHaveProperty('action_link')
+      expect(properties).toHaveProperty('email_otp')
+      expect(properties).toHaveProperty('hashed_token')
+      expect(properties).toHaveProperty('redirect_to')
+      expect(properties).toHaveProperty('verification_type')
+
+      /** Check if the action link returned is correctly formatted */
+      expect(properties?.['action_link']).toMatch(/\?token/)
+      expect(properties?.['action_link']).toMatch(/type=signup/)
+      expect(properties?.['action_link']).toMatch(new RegExp(`redirect_to=${redirectTo}`))
     })
 
     test('inviteUserByEmail() creates a new user with an invited_at timestamp', async () => {
@@ -362,6 +378,57 @@ describe('GoTrueAdminApi', () => {
         expect(user).toBeNull()
         expect(error?.message).toEqual('Invalid phone number format')
       })
+    })
+  })
+
+  describe('User updates email', () => {
+    test('generateLink supports updating emails with generate email change links ', async () => {
+      const { email, password } = mockUserCredentials()
+      const {
+        data: { user: createdUser },
+        error: createError,
+      } = await createNewUserWithEmail({
+        email,
+        password,
+      })
+      expect(createError).toBeNull()
+      expect(createdUser).not.toBeNull()
+
+      const { email: newEmail } = mockUserCredentials()
+      const redirectTo = 'http://localhost:9999/welcome'
+
+      const { data, error } = await serviceRoleApiClient.generateLink({
+        type: 'email_change_current',
+        email,
+        options: {
+          new_email: newEmail,
+          redirectTo,
+        },
+      })
+
+      const properties = data.properties as GenerateLinkProperties
+      const user = data.user as User
+
+      expect(error).toBeNull()
+      /** Check that the user object returned has the update metadata and an email */
+      expect(user).not.toBeNull()
+      expect(user).toHaveProperty('email')
+      expect(user).toHaveProperty('new_email')
+      expect(user).toHaveProperty('user_metadata')
+      expect(user?.new_email).toEqual(newEmail)
+
+      /** Check that properties returned contains the generateLink properties */
+      expect(properties).not.toBeNull()
+      expect(properties).toHaveProperty('action_link')
+      expect(properties).toHaveProperty('email_otp')
+      expect(properties).toHaveProperty('hashed_token')
+      expect(properties).toHaveProperty('redirect_to')
+      expect(properties).toHaveProperty('verification_type')
+
+      /** Check if the action link returned is correctly formatted */
+      expect(properties?.['action_link']).toMatch(/\?token/)
+      expect(properties?.['action_link']).toMatch(/type=email_change/)
+      expect(properties?.['action_link']).toMatch(new RegExp(`redirect_to=${redirectTo}`))
     })
   })
 })
