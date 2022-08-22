@@ -596,9 +596,9 @@ describe('The auth client can signin with third-party oAuth providers', () => {
   })
 
   describe('Developers can subscribe and unsubscribe', () => {
-    const { subscription } = authSubscriptionClient.onAuthStateChange(() =>
-      console.log('onAuthStateChange was called')
-    )
+    const {
+      data: { subscription },
+    } = authSubscriptionClient.onAuthStateChange(() => console.log('onAuthStateChange was called'))
 
     test('Subscribe a listener', async () => {
       // @ts-expect-error 'Allow access to protected stateChangeEmitters'

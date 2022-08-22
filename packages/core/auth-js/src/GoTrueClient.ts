@@ -541,9 +541,14 @@ export default class GoTrueClient {
         return { data: { session: null, user: null }, error: error }
       }
 
-      await this._saveSession(data.session!)
+      if (!data.session) {
+        return { data: { session: null, user: null }, error: null }
+      }
+
+      await this._saveSession(data.session)
 
       this._notifyAllSubscribers('TOKEN_REFRESHED', data.session)
+
       return { data, error: null }
     } catch (error) {
       if (isAuthError(error)) {
@@ -656,32 +661,22 @@ export default class GoTrueClient {
   /**
    * Receive a notification every time an auth event happens.
    * @param callback A callback function to be invoked when an auth event happens.
-   * @returns {Subscription} A subscription object which can be used to unsubscribe itself.
    */
-  onAuthStateChange(callback: (event: AuthChangeEvent, session: Session | null) => void):
-    | {
-        subscription: Subscription
-        error: null
-      }
-    | { subscription: null; error: AuthError } {
-    try {
-      const id: string = uuid()
-      const subscription: Subscription = {
-        id,
-        callback,
-        unsubscribe: () => {
-          this.stateChangeEmitters.delete(id)
-        },
-      }
-      this.stateChangeEmitters.set(id, subscription)
-      return { subscription, error: null }
-    } catch (error) {
-      if (isAuthError(error)) {
-        return { subscription: null, error }
-      }
-
-      throw error
+  onAuthStateChange(callback: (event: AuthChangeEvent, session: Session | null) => void): {
+    data: { subscription: Subscription }
+  } {
+    const id: string = uuid()
+    const subscription: Subscription = {
+      id,
+      callback,
+      unsubscribe: () => {
+        this.stateChangeEmitters.delete(id)
+      },
     }
+
+    this.stateChangeEmitters.set(id, subscription)
+
+    return { data: { subscription } }
   }
 
   /**
