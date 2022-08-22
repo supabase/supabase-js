@@ -26,6 +26,7 @@ import {
   setItemAsync,
   uuid,
 } from './lib/helpers'
+import localStorageAdapter from './lib/local-storage'
 import { polyfillGlobalThis } from './lib/polyfills'
 import type {
   AuthChangeEvent,
@@ -106,7 +107,7 @@ export default class GoTrueClient {
     this.storageKey = settings.storageKey
     this.autoRefreshToken = settings.autoRefreshToken
     this.persistSession = settings.persistSession
-    this.storage = settings.storage || globalThis.localStorage
+    this.storage = settings.storage || localStorageAdapter
     this.admin = new GoTrueAdminApi({
       url: settings.url,
       headers: settings.headers,
@@ -313,6 +314,9 @@ export default class GoTrueClient {
 
   /**
    * Passwordless method for logging in an existing user.
+   * A one-time password (OTP) can either be in the form of an email link or a numerical code.
+   * You can decide whether to send an email link or code or both in your email template.
+   * If you're using passwordless phone sign-ins, your OTP will always be in the form of a code.
    */
   async signInWithOtp(credentials: SignInWithPasswordlessCredentials): Promise<AuthResponse> {
     try {
@@ -355,16 +359,8 @@ export default class GoTrueClient {
 
   /**
    * Log in a user given a User supplied OTP received via mobile.
-   * @param options.redirectTo A URL to send the user to after they are confirmed.
-   * @param options.captchaToken Verification token received when the user completes the captcha on the site.
    */
-  async verifyOtp(
-    params: VerifyOtpParams,
-    options: {
-      redirectTo?: string
-      captchaToken?: string
-    } = {}
-  ): Promise<AuthResponse> {
+  async verifyOtp(params: VerifyOtpParams): Promise<AuthResponse> {
     try {
       await this._removeSession()
 
@@ -372,9 +368,9 @@ export default class GoTrueClient {
         headers: this.headers,
         body: {
           ...params,
-          gotrue_meta_security: { captchaToken: options?.captchaToken },
+          gotrue_meta_security: { captchaToken: params.options?.captchaToken },
         },
-        redirectTo: options.redirectTo,
+        redirectTo: params.options?.redirectTo,
         xform: _sessionResponse,
       })
 
@@ -545,9 +541,14 @@ export default class GoTrueClient {
         return { data: { session: null, user: null }, error: error }
       }
 
-      await this._saveSession(data.session!)
+      if (!data.session) {
+        return { data: { session: null, user: null }, error: null }
+      }
+
+      await this._saveSession(data.session)
 
       this._notifyAllSubscribers('TOKEN_REFRESHED', data.session)
+
       return { data, error: null }
     } catch (error) {
       if (isAuthError(error)) {
@@ -660,32 +661,22 @@ export default class GoTrueClient {
   /**
    * Receive a notification every time an auth event happens.
    * @param callback A callback function to be invoked when an auth event happens.
-   * @returns {Subscription} A subscription object which can be used to unsubscribe itself.
    */
-  onAuthStateChange(callback: (event: AuthChangeEvent, session: Session | null) => void):
-    | {
-        subscription: Subscription
-        error: null
-      }
-    | { subscription: null; error: AuthError } {
-    try {
-      const id: string = uuid()
-      const subscription: Subscription = {
-        id,
-        callback,
-        unsubscribe: () => {
-          this.stateChangeEmitters.delete(id)
-        },
-      }
-      this.stateChangeEmitters.set(id, subscription)
-      return { subscription, error: null }
-    } catch (error) {
-      if (isAuthError(error)) {
-        return { subscription: null, error }
-      }
-
-      throw error
+  onAuthStateChange(callback: (event: AuthChangeEvent, session: Session | null) => void): {
+    data: { subscription: Subscription }
+  } {
+    const id: string = uuid()
+    const subscription: Subscription = {
+      id,
+      callback,
+      unsubscribe: () => {
+        this.stateChangeEmitters.delete(id)
+      },
     }
+
+    this.stateChangeEmitters.set(id, subscription)
+
+    return { data: { subscription } }
   }
 
   /**
@@ -937,9 +928,10 @@ export default class GoTrueClient {
     }
 
     try {
-      window?.addEventListener('visibilitychange', () => {
+      window?.addEventListener('visibilitychange', async () => {
         if (document.visibilityState === 'visible') {
-          this._recoverAndRefresh()
+          await this.initializePromise
+          await this._recoverAndRefresh()
         }
       })
     } catch (error) {

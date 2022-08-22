@@ -48,18 +48,22 @@ export const resolveResponse = async () => {
   return Response
 }
 
-// LocalStorage helpers
+// Storage helpers
 export const setItemAsync = async (
   storage: SupportedStorage,
   key: string,
   data: any
 ): Promise<void> => {
-  isBrowser() && (await storage?.setItem(key, JSON.stringify(data)))
+  await storage.setItem(key, JSON.stringify(data))
 }
 
 export const getItemAsync = async (storage: SupportedStorage, key: string): Promise<unknown> => {
-  const value = isBrowser() && (await storage?.getItem(key))
-  if (!value) return null
+  const value = await storage.getItem(key)
+
+  if (!value) {
+    return null
+  }
+
   try {
     return JSON.parse(value)
   } catch {
@@ -68,7 +72,7 @@ export const getItemAsync = async (storage: SupportedStorage, key: string): Prom
 }
 
 export const removeItemAsync = async (storage: SupportedStorage, key: string): Promise<void> => {
-  isBrowser() && (await storage?.removeItem(key))
+  await storage.removeItem(key)
 }
 
 /**

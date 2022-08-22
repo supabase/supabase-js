@@ -1,5 +1,11 @@
 import { expiresAt, resolveResponse } from './helpers'
-import { AuthResponse, User, UserResponse } from './types'
+import {
+  AuthResponse,
+  GenerateLinkProperties,
+  GenerateLinkResponse,
+  User,
+  UserResponse,
+} from './types'
 import { AuthApiError, AuthRetryableFetchError, AuthUnknownError } from './errors'
 
 export type Fetch = typeof fetch
@@ -129,6 +135,27 @@ export function _sessionResponse(data: any): AuthResponse {
 export function _userResponse(data: any): UserResponse {
   const user: User = data.user ?? (data as User)
   return { data: { user }, error: null }
+}
+
+export function _generateLinkResponse(data: any): GenerateLinkResponse {
+  const { action_link, email_otp, hashed_token, redirect_to, verification_type, ...rest } = data
+
+  const properties: GenerateLinkProperties = {
+    action_link,
+    email_otp,
+    hashed_token,
+    redirect_to,
+    verification_type,
+  }
+
+  const user: User = { ...rest }
+  return {
+    data: {
+      properties,
+      user,
+    },
+    error: null,
+  }
 }
 
 /**

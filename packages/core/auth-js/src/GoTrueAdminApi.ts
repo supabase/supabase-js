@@ -1,6 +1,12 @@
-import { Fetch, _request, _userResponse } from './lib/fetch'
+import { Fetch, _generateLinkResponse, _request, _userResponse } from './lib/fetch'
 import { resolveFetch } from './lib/helpers'
-import { AdminUserAttributes, GenerateLinkType, Session, User, UserResponse } from './lib/types'
+import {
+  AdminUserAttributes,
+  GenerateLinkParams,
+  GenerateLinkResponse,
+  User,
+  UserResponse,
+} from './lib/types'
 import { AuthError, isAuthError } from './lib/errors'
 
 export default class GoTrueAdminApi {
@@ -50,7 +56,7 @@ export default class GoTrueAdminApi {
   /**
    * Sends an invite link to an email address.
    * @param email The email address of the user.
-   * @param options.redirectTo A URL or mobile address to send the user to after they are confirmed.
+   * @param options.redirectTo A URL or mobile deeplink to send the user to after they are confirmed.
    * @param options.data Optional user metadata
    */
   async inviteUserByEmail(
@@ -83,39 +89,30 @@ export default class GoTrueAdminApi {
    * @param options.data Optional user metadata. For signup only.
    * @param options.redirectTo The redirect url which should be appended to the generated link
    */
-  async generateLink(
-    type: GenerateLinkType,
-    email: string,
-    options: {
-      password?: string
-      data?: object
-      redirectTo?: string
-    } = {}
-  ): Promise<
-    | {
-        data: User
-        error: null
-      }
-    | {
-        data: Session
-        error: null
-      }
-    | { data: null; error: AuthError }
-  > {
+  async generateLink(params: GenerateLinkParams): Promise<GenerateLinkResponse> {
     try {
+      const { options, ...rest } = params
+      const body: any = { ...rest, ...options }
+      if ('newEmail' in rest) {
+        // replace newEmail with new_email in request body
+        body.new_email = rest?.newEmail
+        delete body['newEmail']
+      }
       return await _request(this.fetch, 'POST', `${this.url}/admin/generate_link`, {
-        body: {
-          type,
-          email,
-          password: options.password,
-          data: options.data,
-          redirect_to: options.redirectTo,
-        },
+        body: body,
         headers: this.headers,
+        xform: _generateLinkResponse,
+        redirectTo: options?.redirectTo,
       })
     } catch (error) {
       if (isAuthError(error)) {
-        return { data: null, error }
+        return {
+          data: {
+            properties: null,
+            user: null,
+          },
+          error,
+        }
       }
       throw error
     }

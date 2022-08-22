@@ -313,7 +313,7 @@ export type SignInWithOAuthCredentials = {
   /** One of the providers supported by GoTrue. */
   provider: Provider
   options?: {
-    /** A URL to send the user to after they are confirmed (OAuth logins only). */
+    /** A URL to send the user to after they are confirmed. */
     redirectTo?: string
     /** A space-separated list of scopes granted to the OAuth application. */
     scopes?: string
@@ -330,6 +330,12 @@ export interface VerifyMobileOtpParams {
   token: string
   /** The user's verification type. */
   type: MobileOtpType
+  options?: {
+    /** A URL to send the user to after they are confirmed. */
+    redirectTo?: string
+    /** Verification token received when the user completes the captcha on the site. */
+    captchaToken?: string
+  }
 }
 export interface VerifyEmailOtpParams {
   /** The user's email address. */
@@ -338,12 +344,102 @@ export interface VerifyEmailOtpParams {
   token: string
   /** The user's verification type. */
   type: EmailOtpType
+  options?: {
+    /** A URL to send the user to after they are confirmed. */
+    redirectTo?: string
+    /** Verification token received when the user completes the captcha on the site. */
+    captchaToken?: string
+  }
 }
 
 export type MobileOtpType = 'sms' | 'phone_change'
 export type EmailOtpType = 'signup' | 'invite' | 'magiclink' | 'recovery' | 'email_change'
 
-/** The link type */
+export type GenerateSignupLinkParams = {
+  type: 'signup'
+  email: string
+  password: string
+  options?: Pick<GenerateLinkOptions, 'data' | 'redirectTo'>
+}
+
+export type GenerateInviteOrMagiclinkParams = {
+  type: 'invite' | 'magiclink'
+  /** The user's email */
+  email: string
+  options?: Pick<GenerateLinkOptions, 'data' | 'redirectTo'>
+}
+
+export type GenerateRecoveryLinkParams = {
+  type: 'recovery'
+  /** The user's email */
+  email: string
+  options?: Pick<GenerateLinkOptions, 'redirectTo'>
+}
+
+export type GenerateEmailChangeLinkParams = {
+  type: 'email_change_current' | 'email_change_new'
+  /** The user's email */
+  email: string
+  /**
+   * The user's new email. Only required if type is 'email_change_current' or 'email_change_new'.
+   */
+  newEmail: string
+  options?: Pick<GenerateLinkOptions, 'redirectTo'>
+}
+
+export interface GenerateLinkOptions {
+  /**
+   * The user's metadata.
+   */
+  data?: object
+  /** The URL which will be appended to the email link generated. */
+  redirectTo?: string
+}
+
+export type GenerateLinkParams =
+  | GenerateSignupLinkParams
+  | GenerateInviteOrMagiclinkParams
+  | GenerateRecoveryLinkParams
+  | GenerateEmailChangeLinkParams
+
+export type GenerateLinkResponse =
+  | {
+      data: {
+        properties: GenerateLinkProperties
+        user: User
+      }
+      error: null
+    }
+  | {
+      data: {
+        properties: null
+        user: null
+      }
+      error: AuthError
+    }
+
+/** The properties related to the email link generated  */
+export type GenerateLinkProperties = {
+  /**
+   * The email link to send to the user.
+   * The action_link follows the following format: auth/v1/verify?type={verification_type}&token={hashed_token}&redirect_to={redirect_to}
+   * */
+  action_link: string
+  /**
+   * The raw email OTP.
+   * You should send this in the email if you want your users to verify using an OTP instead of the action link.
+   * */
+  email_otp: string
+  /**
+   * The hashed token appended to the action link.
+   * */
+  hashed_token: string
+  /** The URL appended to the action link. */
+  redirect_to: string
+  /** The verification type that the email link is associated to. */
+  verification_type: GenerateLinkType
+}
+
 export type GenerateLinkType =
   | 'signup'
   | 'invite'
