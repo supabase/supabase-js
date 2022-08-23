@@ -9,7 +9,7 @@ import { RealtimeChannel, RealtimeClient, RealtimeClientOptions } from '@supabas
 import { StorageClient as SupabaseStorageClient } from '@supabase/storage-js'
 import { DEFAULT_HEADERS } from './lib/constants'
 import { fetchWithAuth } from './lib/fetch'
-import { stripTrailingSlash, applySettingDefaults } from './lib/helpers'
+import { cleanUrl, applySettingDefaults } from './lib/helpers'
 import { SupabaseAuthClient } from './lib/SupabaseAuthClient'
 import { Fetch, GenericSchema, SupabaseClientOptions, SupabaseAuthClientOptions } from './lib/types'
 
@@ -82,7 +82,7 @@ export default class SupabaseClient<
     if (!supabaseUrl) throw new Error('supabaseUrl is required.')
     if (!supabaseKey) throw new Error('supabaseKey is required.')
 
-    const _supabaseUrl = stripTrailingSlash(supabaseUrl)
+    const _supabaseUrl = cleanUrl(supabaseUrl)
 
     this.realtimeUrl = `${_supabaseUrl}/realtime/v1`.replace('http', 'ws')
     this.authUrl = `${_supabaseUrl}/auth/v1`
