@@ -213,3 +213,120 @@ test('explain with options', async () => {
     }
   `)
 })
+
+test('rollback insert/upsert', async () => {
+  //No row at the start
+  const res1 = await postgrest.from('users').select().eq('username', 'soedirgo')
+  expect(res1.data).toMatchInlineSnapshot(`Array []`)
+
+  //Insert the row and rollback
+  const res2 = await postgrest
+    .from('users')
+    .insert({
+      age_range: '[20,25)',
+      catchphrase: "'cat' 'fat'",
+      data: null,
+      status: 'ONLINE',
+      username: 'soedirgo',
+    })
+    .select()
+    .rollback()
+    .single()
+  expect(res2.data).toMatchInlineSnapshot(`
+    Object {
+      "age_range": "[20,25)",
+      "catchphrase": "'cat' 'fat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "soedirgo",
+    }
+  `)
+
+  //Upsert the row and rollback
+  const res3 = await postgrest
+    .from('users')
+    .upsert({
+      age_range: '[20,25)',
+      catchphrase: "'cat' 'fat'",
+      data: null,
+      status: 'ONLINE',
+      username: 'soedirgo',
+    })
+    .select()
+    .rollback()
+    .single()
+  expect(res3.data).toMatchInlineSnapshot(`
+    Object {
+      "age_range": "[20,25)",
+      "catchphrase": "'cat' 'fat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "soedirgo",
+    }
+  `)
+
+  //No row at the end
+  const res4 = await postgrest.from('users').select().eq('username', 'soedirgo')
+  expect(res4.data).toMatchInlineSnapshot(`Array []`)
+})
+
+test('rollback update/rpc', async () => {
+  const res1 = await postgrest.from('users').select('status').eq('username', 'dragarcia').single()
+  expect(res1.data).toMatchInlineSnapshot(`
+    Object {
+      "status": "ONLINE",
+    }
+  `)
+
+  const res2 = await postgrest
+    .from('users')
+    .update({ status: 'OFFLINE' })
+    .eq('username', 'dragarcia')
+    .select('status')
+    .rollback()
+    .single()
+  expect(res2.data).toMatchInlineSnapshot(`
+    Object {
+      "status": "OFFLINE",
+    }
+  `)
+
+  const res3 = await postgrest.rpc('offline_user', { name_param: 'dragarcia' }).rollback()
+  expect(res3.data).toMatchInlineSnapshot(`"OFFLINE"`)
+
+  const res4 = await postgrest.from('users').select('status').eq('username', 'dragarcia').single()
+  expect(res4.data).toMatchInlineSnapshot(`
+    Object {
+      "status": "ONLINE",
+    }
+  `)
+})
+
+test('rollback delete', async () => {
+  const res1 = await postgrest.from('users').select('username').eq('username', 'dragarcia').single()
+  expect(res1.data).toMatchInlineSnapshot(`
+    Object {
+      "username": "dragarcia",
+    }
+  `)
+
+  const res2 = await postgrest
+    .from('users')
+    .delete()
+    .eq('username', 'dragarcia')
+    .select('username')
+    .rollback()
+    .single()
+  expect(res2.data).toMatchInlineSnapshot(`
+    Object {
+      "username": "dragarcia",
+    }
+  `)
+
+  const res3 = await postgrest.from('users').select('username').eq('username', 'dragarcia').single()
+  expect(res3.data).toMatchInlineSnapshot(`
+    Object {
+      "username": "dragarcia",
+    }
+  `)
+})

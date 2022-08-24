@@ -87,12 +87,9 @@ export default class PostgrestQueryBuilder<Table extends GenericTable> {
     values: Row | Row[],
     {
       count,
-      rollback = false,
     }: {
       /** Count algorithm to use to count rows in a table. */
       count?: 'exact' | 'planned' | 'estimated'
-      /** Rollback the operation */
-      rollback?: boolean
     } = {}
   ): PostgrestFilterBuilder<Table['Row'], undefined> {
     const method = 'POST'
@@ -101,9 +98,6 @@ export default class PostgrestQueryBuilder<Table extends GenericTable> {
     const body = values
     if (count) {
       prefersHeaders.push(`count=${count}`)
-    }
-    if (rollback) {
-      prefersHeaders.push(`tx=rollback`)
     }
     if (this.headers['Prefer']) {
       prefersHeaders.unshift(this.headers['Prefer'])
@@ -140,7 +134,6 @@ export default class PostgrestQueryBuilder<Table extends GenericTable> {
       onConflict,
       count,
       ignoreDuplicates = false,
-      rollback = false,
     }: {
       /** By specifying the `on_conflict` query parameter, you can make UPSERT work on a column(s) that has a UNIQUE constraint. */
       onConflict?: string
@@ -148,8 +141,6 @@ export default class PostgrestQueryBuilder<Table extends GenericTable> {
       count?: 'exact' | 'planned' | 'estimated'
       /** Specifies if duplicate rows should be ignored and not inserted. */
       ignoreDuplicates?: boolean
-      /** Rollback the operation */
-      rollback?: boolean
     } = {}
   ): PostgrestFilterBuilder<Table['Row'], undefined> {
     const method = 'POST'
@@ -160,9 +151,6 @@ export default class PostgrestQueryBuilder<Table extends GenericTable> {
     const body = values
     if (count) {
       prefersHeaders.push(`count=${count}`)
-    }
-    if (rollback) {
-      prefersHeaders.push(`tx=rollback`)
     }
     if (this.headers['Prefer']) {
       prefersHeaders.unshift(this.headers['Prefer'])
@@ -189,12 +177,9 @@ export default class PostgrestQueryBuilder<Table extends GenericTable> {
     values: Row,
     {
       count,
-      rollback = false,
     }: {
       /** Count algorithm to use to count rows in a table. */
       count?: 'exact' | 'planned' | 'estimated'
-      /** Rollback the operation */
-      rollback?: boolean
     } = {}
   ): PostgrestFilterBuilder<Table['Row'], undefined> {
     const method = 'PATCH'
@@ -202,9 +187,6 @@ export default class PostgrestQueryBuilder<Table extends GenericTable> {
     const body = values
     if (count) {
       prefersHeaders.push(`count=${count}`)
-    }
-    if (rollback) {
-      prefersHeaders.push(`tx=rollback`)
     }
     if (this.headers['Prefer']) {
       prefersHeaders.unshift(this.headers['Prefer'])
@@ -227,20 +209,14 @@ export default class PostgrestQueryBuilder<Table extends GenericTable> {
    */
   delete({
     count,
-    rollback = false,
   }: {
     /** Count algorithm to use to count rows in a table. */
     count?: 'exact' | 'planned' | 'estimated'
-    /**  Rollback the operation */
-    rollback?: boolean
   } = {}): PostgrestFilterBuilder<Table['Row'], undefined> {
     const method = 'DELETE'
     const prefersHeaders = []
     if (count) {
       prefersHeaders.push(`count=${count}`)
-    }
-    if (rollback) {
-      prefersHeaders.push(`tx=rollback`)
     }
     if (this.headers['Prefer']) {
       prefersHeaders.unshift(this.headers['Prefer'])

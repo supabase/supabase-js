@@ -192,4 +192,13 @@ export default class PostgrestTransformBuilder<
     if (format === 'json') return this as PromiseLike<PostgrestResponse<Record<string, unknown>>>
     else return this as PromiseLike<PostgrestSingleResponse<string>>
   }
+
+  rollback(): this {
+    if ((this.headers['Prefer'] ?? '').trim().length > 0) {
+      this.headers['Prefer'] += ',tx=rollback'
+    } else {
+      this.headers['Prefer'] = 'tx=rollback'
+    }
+    return this
+  }
 }
