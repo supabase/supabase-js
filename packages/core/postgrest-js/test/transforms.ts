@@ -103,7 +103,7 @@ test('abort signal', async () => {
 // })
 
 test('explain with json/text format', async () => {
-  const res1 = await postgrest.from('users').select().explain({format: 'json'})
+  const res1 = await postgrest.from('users').select().explain({ format: 'json' })
   expect(res1).toMatchInlineSnapshot(`
     Object {
       "count": undefined,
@@ -151,7 +151,10 @@ test('explain with json/text format', async () => {
 })
 
 test('explain with options', async () => {
-  const res = await postgrest.from('users').select().explain({ verbose: true, settings: true, format: 'json' })
+  const res = await postgrest
+    .from('users')
+    .select()
+    .explain({ verbose: true, settings: true, format: 'json' })
   expect(res).toMatchInlineSnapshot(`
     Object {
       "count": undefined,
