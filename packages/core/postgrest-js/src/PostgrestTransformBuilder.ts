@@ -156,6 +156,7 @@ export default class PostgrestTransformBuilder<
    * @param settings  If `true`, include information on configuration parameters that affect query planning.
    * @param buffers  If `true`, include information on buffer usage.
    * @param wal     If `true`, include information on WAL record generation
+   * @param format  The format of the output, can be 'text'(default) or `json`
    */
   explain({
     analyze = false,
@@ -163,13 +164,17 @@ export default class PostgrestTransformBuilder<
     settings = false,
     buffers = false,
     wal = false,
+    format = 'text',
   }: {
     analyze?: boolean
     verbose?: boolean
     settings?: boolean
     buffers?: boolean
     wal?: boolean
-  } = {}): PromiseLike<PostgrestResponse<Record<string, unknown>>> {
+    format?: 'json' | 'text'
+  } = {}):
+    | PromiseLike<PostgrestResponse<Record<string, unknown>>>
+    | PromiseLike<PostgrestSingleResponse<string>> {
     const options = [
       analyze ? 'analyze' : null,
       verbose ? 'verbose' : null,
@@ -183,7 +188,8 @@ export default class PostgrestTransformBuilder<
     const forMediatype = this.headers['Accept']
     this.headers[
       'Accept'
-    ] = `application/vnd.pgrst.plan+json; for="${forMediatype}"; options=${options};`
-    return this as PromiseLike<PostgrestResponse<Record<string, unknown>>>
+    ] = `application/vnd.pgrst.plan+${format}; for="${forMediatype}"; options=${options};`
+    if (format === 'json') return this as PromiseLike<PostgrestResponse<Record<string, unknown>>>
+    else return this as PromiseLike<PostgrestSingleResponse<string>>
   }
 }
