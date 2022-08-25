@@ -60,12 +60,6 @@ const DEFAULT_OPTIONS: Omit<Required<GoTrueClientOptions>, 'fetch' | 'storage'> 
   headers: DEFAULT_HEADERS,
 }
 
-class GoTrueMFAApi {
-  constructor({url = ''}) {
-        this.url = url
-    }
-}
-
 export default class GoTrueClient {
   /**
    * Namespace for the GoTrue admin methods.
@@ -128,8 +122,6 @@ export default class GoTrueClient {
     this.headers = settings.headers
     this.fetch = resolveFetch(settings.fetch)
     this.detectSessionInUrl = settings.detectSessionInUrl
-    this.mfa = new GoTrueMFAApi({
-    })
 
     this.initialize()
   }
