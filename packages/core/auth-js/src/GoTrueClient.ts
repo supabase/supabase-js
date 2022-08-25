@@ -67,6 +67,10 @@ export default class GoTrueClient {
    */
   admin: GoTrueAdminApi
   /**
+   * Namespace for the MFA methods.
+   */
+  mfa: GoTrueMFAApi
+  /**
    * The storage key used to identify the values saved in localStorage
    */
   protected storageKey: string
@@ -731,6 +735,8 @@ export default class GoTrueClient {
       throw error
     }
   }
+
+
 
   private _isValidSession(maybeSession: unknown): maybeSession is Session {
     const isValidSession =

@@ -10,6 +10,10 @@ import {
 import { AuthError, isAuthError } from './lib/errors'
 
 export default class GoTrueAdminApi {
+  /**
+   * Namespaces for the GoTrue admin MFA methods
+   */
+  mfa: GoTrueAdminMFAApi
   protected url: string
   protected headers: {
     [key: string]: string
