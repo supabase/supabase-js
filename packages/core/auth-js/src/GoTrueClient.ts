@@ -251,7 +251,7 @@ export default class GoTrueClient {
   }
 
   /**
-   * Log in an existing user, or login via a third-party provider.
+   * Log in an existing user with an email and password or phone and password.
    */
   async signInWithPassword(credentials: SignInWithPasswordCredentials): Promise<AuthResponse> {
     try {
@@ -313,7 +313,7 @@ export default class GoTrueClient {
   }
 
   /**
-   * Passwordless method for logging in an existing user.
+   * Passwordless method for an existing user to login.
    * A one-time password (OTP) can either be in the form of an email link or a numerical code.
    * You can decide whether to send an email link or code or both in your email template.
    * If you're using passwordless phone sign-ins, your OTP will always be in the form of a code.
@@ -638,7 +638,7 @@ export default class GoTrueClient {
 
   /**
    * Inside a browser context, `signOut()` will remove the logged in user from the browser session
-   * and log them out - removing all items from localstorage and then trigger a "SIGNED_OUT" event.
+   * and log them out - removing all items from localstorage and then trigger a `"SIGNED_OUT"` event.
    *
    * For server-side management, you can revoke all refresh tokens for a user by passing a user's JWT through to `auth.api.signOut(JWT: string)`.
    * There is no way to revoke a user's access token jwt until it expires. It is recommended to set a shorter expiry on the jwt for this reason.
