@@ -115,6 +115,12 @@ export interface Session {
   user: User
 }
 
+export interface GoTrueMFAApi {
+  verify(): Promise<string>
+  enroll(): Promise<string>
+  unenroll(): Promise<string>
+}
+
 export interface UserIdentity {
   id: string
   user_id: string

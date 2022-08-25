@@ -1,5 +1,4 @@
 import GoTrueAdminApi from './GoTrueAdminApi'
-import GoTrueMFAApi from './GoTrueMFAApi'
 import {
   DEFAULT_HEADERS,
   EXPIRY_MARGIN,
@@ -48,6 +47,7 @@ import type {
   UserAttributes,
   UserResponse,
   VerifyOtpParams,
+  GoTrueMFAApi,
 } from './lib/types'
 
 polyfillGlobalThis() // Make "globalThis" available
@@ -60,6 +60,8 @@ const DEFAULT_OPTIONS: Omit<Required<GoTrueClientOptions>, 'fetch' | 'storage'> 
   detectSessionInUrl: true,
   headers: DEFAULT_HEADERS,
 }
+
+
 
 export default class GoTrueClient {
   /**
@@ -118,10 +120,12 @@ export default class GoTrueClient {
       headers: settings.headers,
       fetch: settings.fetch,
     })
-    this.mfa = new GoTrueMFAApi({
-      url: ''
-    })
+    this.mfa = {
+      verify: this._verify,
+      enroll: this._enroll,
+      unenroll: this._unenroll,
 
+    }
     this.url = settings.url
     this.headers = settings.headers
     this.fetch = resolveFetch(settings.fetch)
@@ -975,5 +979,16 @@ export default class GoTrueClient {
       urlParams.push(query.toString())
     }
     return `${this.url}/authorize?${urlParams.join('&')}`
+  }
+
+
+  private async _unenroll() {
+    return ''
+  }
+  private async _enroll() {
+    return ''
+  }
+  private async _verify() {
+    return ''
   }
 }
