@@ -1,9 +1,14 @@
 export default class GoTrueMFAApi {
+    protected url: string
     constructor({
         url = '',
-        headers = {},
     }) {
         this.url = url
-        this.headers = headers
+    }
+    /**
+     * Namespace for the GoTrue MFA methods.
+     */
+    async unenroll() {
+        console.log("hello")
     }
 }

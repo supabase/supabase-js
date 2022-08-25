@@ -8,6 +8,7 @@ import {
   UserResponse,
 } from './lib/types'
 import { AuthError, isAuthError } from './lib/errors'
+import GoTrueAdminMFAApi from './GoTrueAdminMFAApi'
 
 export default class GoTrueAdminApi {
   /**
@@ -34,6 +35,9 @@ export default class GoTrueAdminApi {
     this.url = url
     this.headers = headers
     this.fetch = resolveFetch(fetch)
+    this.mfa = new GoTrueAdminMFAApi({
+      url: ''
+    })
   }
 
   /**

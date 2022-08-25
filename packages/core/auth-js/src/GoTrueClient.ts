@@ -1,4 +1,5 @@
 import GoTrueAdminApi from './GoTrueAdminApi'
+import GoTrueMFAApi from './GoTrueMFAApi'
 import {
   DEFAULT_HEADERS,
   EXPIRY_MARGIN,
@@ -116,6 +117,9 @@ export default class GoTrueClient {
       url: settings.url,
       headers: settings.headers,
       fetch: settings.fetch,
+    })
+    this.mfa = new GoTrueMFAApi({
+      url: ''
     })
 
     this.url = settings.url

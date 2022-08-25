@@ -1,5 +1,6 @@
 export default class GoTrueAdminMFAApi {
-    constructor(url = '') {
+    protected url: string
+    constructor({url = ''}) {
         this.url = url
     }
 }
