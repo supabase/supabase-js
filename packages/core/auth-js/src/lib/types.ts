@@ -121,6 +121,10 @@ export interface GoTrueMFAApi {
   unenroll(): Promise<string>
 }
 
+export interface GoTrueAdminMFAApi {
+  deleteFactor(): Promise<string>
+}
+
 export interface UserIdentity {
   id: string
   user_id: string
