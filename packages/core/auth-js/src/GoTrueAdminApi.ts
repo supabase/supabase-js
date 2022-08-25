@@ -9,6 +9,13 @@ import {
 } from './lib/types'
 import { AuthError, isAuthError } from './lib/errors'
 
+class GoTrueAdminMFAApi {
+  constructor({url = ''}) {
+        this.url = url
+    }
+}
+
+
 export default class GoTrueAdminApi {
   /**
    * Namespaces for the GoTrue admin MFA methods
@@ -31,6 +38,7 @@ export default class GoTrueAdminApi {
     }
     fetch?: Fetch
   }) {
+    this.mfa = new GoTrueAdminMFAApi({url: ''})
     this.url = url
     this.headers = headers
     this.fetch = resolveFetch(fetch)
@@ -231,4 +239,5 @@ export default class GoTrueAdminApi {
       throw error
     }
   }
+
 }
