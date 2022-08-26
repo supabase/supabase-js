@@ -471,13 +471,17 @@ export type MFALoginParams = {
 
 export type MFAChallengeAndVerifyParams = {
   factorID: string
+  code: string
 }
 
 export type MFALoginParams = {
   factorID: string
+  recoveryCode: string
+  code: string
 }
 
 export type MFAUnenrollParams = {
+  factorID: string
   code: string
 }
 
