@@ -221,7 +221,7 @@ export default class GoTrueAdminApi {
    *
    * This function should only be called on a server. Never expose your `service_role` key in the browser.
    */
-  async deleteUser(uid: string): Promise<UserResponse> {
+  async private deleteUser(uid: string): Promise<UserResponse> {
     try {
       return await _request(this.fetch, 'DELETE', `${this.url}/admin/users/${uid}`, {
         headers: this.headers,
@@ -235,8 +235,22 @@ export default class GoTrueAdminApi {
       throw error
     }
   }
-
-  async _deleteFactor() {
+  /**
+   *
+   */
+  async private _deleteFactor() {
+    return ''
+  }
+  async private _listFactors() {
+    return ''
+  }
+  async private _deleteRecoveryCodes() {
+    return ''
+  }
+  async private _updateFactor() {
+    return ''
+  }
+  async private _listFactor() {
     return ''
   }
 }

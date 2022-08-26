@@ -116,7 +116,7 @@ export interface Session {
 }
 
 export interface GoTrueMFAApi {
-  verify(): Promise<string>
+  verify(code: string): Promise<string>
   enroll(): Promise<string>
   unenroll(): Promise<string>
 }
@@ -457,6 +457,38 @@ export type GenerateLinkType =
   | 'recovery'
   | 'email_change_current'
   | 'email_change_new'
+
+// MFA related types
+export type MFAEnrollParams = {
+  friendlyName?: string
+}
+
+export type MFALoginParams = {
+  factorID: string
+  code: string
+  recoveryCode: string
+}
+
+export type MFAChallengeAndVerifyParams = {
+  factorID: string
+}
+
+export type MFALoginParams = {
+  factorID: string
+}
+
+export type MFAUnenrollParams = {
+  code: string
+}
+
+export type MFAVerifyParams = {
+  factorID: string
+  code: string
+}
+
+export type MFAChallengeParams = {
+  factorID: string
+}
 
 type AnyFunction = (...args: any[]) => any
 type MaybePromisify<T> = T | Promise<T>
