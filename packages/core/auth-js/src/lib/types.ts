@@ -246,6 +246,11 @@ export interface Subscription {
   unsubscribe: () => void
 }
 
+export interface UpdatableFactorAttributes {
+  friendlyName: string
+
+}
+
 export type SignUpWithPasswordCredentials =
   | {
       /** The user's email address. */
@@ -491,6 +496,10 @@ export type MFAVerifyParams = {
 }
 
 export type MFAChallengeParams = {
+  factorID: string
+}
+
+export type DeleteFactorParams = {
   factorID: string
 }
 

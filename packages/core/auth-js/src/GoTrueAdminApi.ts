@@ -6,7 +6,10 @@ import {
   GenerateLinkResponse,
   User,
   UserResponse,
-  GoTrueAdminMFAApi
+  GoTrueAdminMFAApi,
+  DeleteFactorParams,
+  UpdatableFactorAttributes
+
 } from './lib/types'
 import { AuthError, isAuthError } from './lib/errors'
 
@@ -236,18 +239,18 @@ export default class GoTrueAdminApi {
     }
   }
   /**
-   *
-   */
-  async private _deleteFactor() {
+   *1G
+   */a
+  async private _deleteFactor(factorID: string) {
     return ''
   }
   async private _listFactors() {
     return ''
   }
-  async private _deleteRecoveryCodes() {
+  async private _deleteRecoveryCodes(uid: string) {
     return ''
   }
-  async private _updateFactor() {
+  async private _updateFactor(factorID: string, attributes: UpdatableFactorAttributes) {
     return ''
   }
   async private _listFactor() {
