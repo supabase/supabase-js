@@ -84,7 +84,7 @@ export default class SupabaseClient<
 
     const _supabaseUrl = stripTrailingSlash(supabaseUrl)
 
-    this.realtimeUrl = `${_supabaseUrl}/realtime/v1`.replace('http', 'ws')
+    this.realtimeUrl = `${_supabaseUrl}/realtime/v1`.replace(/^http/i, 'ws')
     this.authUrl = `${_supabaseUrl}/auth/v1`
     this.storageUrl = `${_supabaseUrl}/storage/v1`
 

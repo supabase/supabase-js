@@ -28,6 +28,35 @@ describe('Custom Headers', () => {
   })
 })
 
+describe('Realtime url', () => {
+  test('should switch protocol from http to ws', () => {
+    const client = createClient('http://localhost:3000', KEY)
+
+    // @ts-ignore
+    const realtimeUrl = client.realtimeUrl
+
+    expect(realtimeUrl).toEqual('ws://localhost:3000/realtime/v1')
+  })
+
+  test('should switch protocol from https to wss', () => {
+    const client = createClient('https://localhost:3000', KEY)
+
+    // @ts-ignore
+    const realtimeUrl = client.realtimeUrl
+
+    expect(realtimeUrl).toEqual('wss://localhost:3000/realtime/v1')
+  })
+
+  test('should ignore case', () => {
+    const client = createClient('HTTP://localhost:3000', KEY)
+
+    // @ts-ignore
+    const realtimeUrl = client.realtimeUrl
+
+    expect(realtimeUrl).toEqual('ws://localhost:3000/realtime/v1')
+  })
+})
+
 // Socket should close when there are no open connections
 // https://github.com/supabase/supabase-js/issues/44
 
