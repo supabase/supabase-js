@@ -83,7 +83,7 @@ export default class GoTrueAdminApi {
   }
 
   /**
-   * Generates links to be sent via email or other.
+   * Generates email links and OTPs to be sent via a custom email provider.
    * @param email The user's email.
    * @param options.password User password. For signup only.
    * @param options.data Optional user metadata. For signup only.
@@ -209,13 +209,13 @@ export default class GoTrueAdminApi {
   /**
    * Delete a user. Requires a `service_role` key.
    *
-   * @param uid The user uid you want to remove.
+   * @param id The user id you want to remove.
    *
    * This function should only be called on a server. Never expose your `service_role` key in the browser.
    */
-  async deleteUser(uid: string): Promise<UserResponse> {
+  async deleteUser(id: string): Promise<UserResponse> {
     try {
-      return await _request(this.fetch, 'DELETE', `${this.url}/admin/users/${uid}`, {
+      return await _request(this.fetch, 'DELETE', `${this.url}/admin/users/${id}`, {
         headers: this.headers,
         xform: _userResponse,
       })
