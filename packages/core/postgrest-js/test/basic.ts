@@ -9,6 +9,11 @@ test('basic select table', async () => {
   expect(res).toMatchSnapshot()
 })
 
+test('basic select view', async () => {
+  const res = await postgrest.from('updatable_view').select()
+  expect(res).toMatchSnapshot()
+})
+
 test('rpc', async () => {
   const res = await postgrest.rpc('get_status', { name_param: 'supabot' })
   expect(res).toMatchSnapshot()
@@ -409,4 +414,14 @@ test('select with no match', async () => {
       "statusText": "OK",
     }
   `)
+})
+
+test('cannot update non-updatable views', () => {
+  // @ts-expect-error TS2345
+  postgrest.from('non_updatable_view').update({})
+})
+
+test('cannot update non-updatable columns', () => {
+  // @ts-expect-error TS2322
+  postgrest.from('updatable_view').update({ non_updatable_column: 0 as any })
 })
