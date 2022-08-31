@@ -67,14 +67,14 @@ type EatWhitespace<Input extends string> = string extends Input
  * @param Name Name of the table being queried.
  * @param Field Single field parsed by `ParseQuery`.
  */
-type ConstructFieldDefinition<Table extends Record<string, unknown>, Field> = Field extends {
+type ConstructFieldDefinition<Row extends Record<string, unknown>, Field> = Field extends {
   star: true
 }
-  ? Table
+  ? Row
   : Field extends { name: string; foreignTable: true }
   ? { [K in Field['name']]: unknown }
   : Field extends { name: string; original: string }
-  ? { [K in Field['name']]: Table[Field['original']] }
+  ? { [K in Field['name']]: Row[Field['original']] }
   : Record<string, unknown>
 
 /**
@@ -274,24 +274,24 @@ type ParseQuery<Query extends string> = string extends Query
   : ParseNodes<EatWhitespace<Query>>
 
 type GetResultHelper<
-  Table extends Record<string, unknown>,
+  Row extends Record<string, unknown>,
   Fields extends unknown[],
   Acc
 > = Fields extends [infer R]
-  ? GetResultHelper<Table, [], ConstructFieldDefinition<Table, R> & Acc>
+  ? GetResultHelper<Row, [], ConstructFieldDefinition<Row, R> & Acc>
   : Fields extends [infer R, ...infer Rest]
-  ? GetResultHelper<Table, Rest, ConstructFieldDefinition<Table, R> & Acc>
+  ? GetResultHelper<Row, Rest, ConstructFieldDefinition<Row, R> & Acc>
   : Acc
 
 /**
  * Constructs a type definition for an object based on a given PostgREST query.
  *
- * @param Table Record<string, unknown>.
+ * @param Row Record<string, unknown>.
  * @param Query Select query string literal to parse.
  */
 export type GetResult<
-  Table extends Record<string, unknown>,
+  Row extends Record<string, unknown>,
   Query extends string
 > = ParseQuery<Query> extends unknown[]
-  ? GetResultHelper<Table, ParseQuery<Query>, unknown>
+  ? GetResultHelper<Row, ParseQuery<Query>, unknown>
   : ParseQuery<Query>

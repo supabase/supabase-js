@@ -7,7 +7,7 @@ import { PostgrestMaybeSingleResponse, PostgrestResponse, PostgrestSingleRespons
  */
 
 export default class PostgrestTransformBuilder<
-  Table extends Record<string, unknown>,
+  Row extends Record<string, unknown>,
   Result
 > extends PostgrestBuilder<Result> {
   /**
@@ -15,9 +15,9 @@ export default class PostgrestTransformBuilder<
    *
    * @param columns  The columns to retrieve, separated by commas.
    */
-  select<Query extends string = '*', NewResult = GetResult<Table, Query extends '*' ? '*' : Query>>(
+  select<Query extends string = '*', NewResult = GetResult<Row, Query extends '*' ? '*' : Query>>(
     columns?: Query
-  ): PostgrestTransformBuilder<Table, NewResult> {
+  ): PostgrestTransformBuilder<Row, NewResult> {
     // Remove whitespaces except when quoted
     let quoted = false
     const cleanedColumns = (columns ?? '*')
@@ -37,7 +37,7 @@ export default class PostgrestTransformBuilder<
       this.headers['Prefer'] += ','
     }
     this.headers['Prefer'] += 'return=representation'
-    return this as unknown as PostgrestTransformBuilder<Table, NewResult>
+    return this as unknown as PostgrestTransformBuilder<Row, NewResult>
   }
 
   /**
@@ -48,7 +48,7 @@ export default class PostgrestTransformBuilder<
    * @param nullsFirst  If `true`, `null`s appear first.
    * @param foreignTable  The foreign table to use (if `column` is a foreign column).
    */
-  order<ColumnName extends string & keyof Table>(
+  order<ColumnName extends string & keyof Row>(
     column: ColumnName,
     options?: { ascending?: boolean; nullsFirst?: boolean; foreignTable?: undefined }
   ): this
