@@ -51,14 +51,6 @@ export const looksLikeFetchResponse = (maybeResponse: unknown): maybeResponse is
   )
 }
 
-export const resolveResponse = async () => {
-  if (typeof Response === 'undefined') {
-    return (await import('cross-fetch')).Response
-  }
-
-  return Response
-}
-
 // Storage helpers
 export const setItemAsync = async (
   storage: SupportedStorage,
