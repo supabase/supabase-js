@@ -103,5 +103,21 @@ describe('fetch', () => {
 
       await server.start()
     })
+
+    test('should work with custom fetch implementation', async () => {
+      const customFetch = (async () => {
+        return {
+          status: 400,
+          ok: false,
+          json: async () => {
+            return {'message': 'invalid params'}
+          }
+        };
+      }) as unknown as typeof fetch
+
+      const url = server.getURL().toString()
+
+      await expect(_request(customFetch, 'GET', url)).rejects.toBeInstanceOf(AuthApiError)
+    })
   })
 })

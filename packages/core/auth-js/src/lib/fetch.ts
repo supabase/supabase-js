@@ -1,4 +1,4 @@
-import { expiresAt, resolveResponse } from './helpers'
+import { expiresAt, looksLikeFetchResponse } from './helpers'
 import {
   AuthResponse,
   GenerateLinkProperties,
@@ -27,9 +27,7 @@ const _getErrorMessage = (err: any): string =>
   err.msg || err.message || err.error_description || err.error || JSON.stringify(err)
 
 const handleError = async (error: unknown, reject: (reason?: any) => void) => {
-  const Res = await resolveResponse()
-
-  if (!(error instanceof Res)) {
+  if (!(looksLikeFetchResponse(error))) {
     reject(new AuthRetryableFetchError(_getErrorMessage(error), 0))
   } else if (error.status >= 500 && error.status <= 599) {
     // status in 500...599 range - server had an error, request might be retryed.

@@ -40,6 +40,17 @@ export const resolveFetch = (customFetch?: Fetch): Fetch => {
   return (...args) => _fetch(...args)
 }
 
+export const looksLikeFetchResponse = (maybeResponse: unknown): maybeResponse is Response => {
+  return (
+    typeof maybeResponse === 'object'
+    && maybeResponse !== null
+    && 'status' in maybeResponse
+    && 'ok' in maybeResponse
+    && 'json' in maybeResponse
+    && typeof (maybeResponse as any).json === 'function'
+  )
+}
+
 export const resolveResponse = async () => {
   if (typeof Response === 'undefined') {
     return (await import('cross-fetch')).Response
