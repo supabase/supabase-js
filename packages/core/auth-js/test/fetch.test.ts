@@ -16,7 +16,7 @@ describe('fetch', () => {
         .get('/')
         .mockImplementationOnce((ctx) => {
           ctx.status = 400
-          ctx.body = {'message': 'invalid params'}
+          ctx.body = { message: 'invalid params' }
         })
         .mockImplementation((ctx) => {
           ctx.status = 200
@@ -110,9 +110,9 @@ describe('fetch', () => {
           status: 400,
           ok: false,
           json: async () => {
-            return {'message': 'invalid params'}
-          }
-        };
+            return { message: 'invalid params' }
+          },
+        }
       }) as unknown as typeof fetch
 
       const url = server.getURL().toString()

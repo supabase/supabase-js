@@ -42,12 +42,12 @@ export const resolveFetch = (customFetch?: Fetch): Fetch => {
 
 export const looksLikeFetchResponse = (maybeResponse: unknown): maybeResponse is Response => {
   return (
-    typeof maybeResponse === 'object'
-    && maybeResponse !== null
-    && 'status' in maybeResponse
-    && 'ok' in maybeResponse
-    && 'json' in maybeResponse
-    && typeof (maybeResponse as any).json === 'function'
+    typeof maybeResponse === 'object' &&
+    maybeResponse !== null &&
+    'status' in maybeResponse &&
+    'ok' in maybeResponse &&
+    'json' in maybeResponse &&
+    typeof (maybeResponse as any).json === 'function'
   )
 }
 
