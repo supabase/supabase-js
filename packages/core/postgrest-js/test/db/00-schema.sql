@@ -66,6 +66,12 @@ create table public.shops (
 , shop_geom extensions.geometry(POINT, 4326)
 );
 
+create view public.non_updatable_view as
+  select username from public.users limit 1;
+
+create view public.updatable_view as
+  select username, 1 as non_updatable_column from public.users;
+
 -- SECOND SCHEMA USERS
 CREATE TYPE personal.user_status AS ENUM ('ONLINE', 'OFFLINE');
 CREATE TABLE personal.users(

@@ -45,17 +45,20 @@ export default class PostgrestClient<
   }
 
   /**
-   * Perform a table operation.
+   * Perform a query on a table or a view.
    *
-   * @param table  The table name to operate on.
+   * @param relation  The table or view name to query.
    */
   from<
     TableName extends string & keyof Schema['Tables'],
     Table extends Schema['Tables'][TableName]
-  >(table: TableName): PostgrestQueryBuilder<Table>
-  from(table: string): PostgrestQueryBuilder<any>
-  from(table: string): PostgrestQueryBuilder<any> {
-    const url = new URL(`${this.url}/${table}`)
+  >(relation: TableName): PostgrestQueryBuilder<Table>
+  from<ViewName extends string & keyof Schema['Views'], View extends Schema['Views'][ViewName]>(
+    relation: ViewName
+  ): PostgrestQueryBuilder<View>
+  from(relation: string): PostgrestQueryBuilder<any>
+  from(relation: string): PostgrestQueryBuilder<any> {
+    const url = new URL(`${this.url}/${relation}`)
     return new PostgrestQueryBuilder<any>(url, {
       headers: { ...this.headers },
       schema: this.schema,

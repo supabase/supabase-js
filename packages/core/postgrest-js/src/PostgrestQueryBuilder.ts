@@ -1,9 +1,9 @@
 import PostgrestBuilder from './PostgrestBuilder'
 import PostgrestFilterBuilder from './PostgrestFilterBuilder'
 import { GetResult } from './select-query-parser'
-import { Fetch, GenericTable } from './types'
+import { Fetch, GenericTable, GenericView } from './types'
 
-export default class PostgrestQueryBuilder<Table extends GenericTable> {
+export default class PostgrestQueryBuilder<Relation extends GenericTable | GenericView> {
   url: URL
   headers: Record<string, string>
   schema?: string
@@ -35,7 +35,7 @@ export default class PostgrestQueryBuilder<Table extends GenericTable> {
    */
   select<
     Query extends string = '*',
-    Result = GetResult<Table['Row'], Query extends '*' ? '*' : Query>
+    Result = GetResult<Relation['Row'], Query extends '*' ? '*' : Query>
   >(
     columns?: Query,
     {
@@ -47,7 +47,7 @@ export default class PostgrestQueryBuilder<Table extends GenericTable> {
       /** Count algorithm to use to count rows in a table. */
       count?: 'exact' | 'planned' | 'estimated'
     } = {}
-  ): PostgrestFilterBuilder<Table['Row'], Result> {
+  ): PostgrestFilterBuilder<Relation['Row'], Result> {
     const method = head ? 'HEAD' : 'GET'
     // Remove whitespaces except when quoted
     let quoted = false
@@ -83,7 +83,7 @@ export default class PostgrestQueryBuilder<Table extends GenericTable> {
    *
    * @param values    The values to insert.
    */
-  insert<Row extends Table['Insert']>(
+  insert<Row extends Relation extends { Insert: unknown } ? Relation['Insert'] : never>(
     values: Row | Row[],
     {
       count,
@@ -91,7 +91,7 @@ export default class PostgrestQueryBuilder<Table extends GenericTable> {
       /** Count algorithm to use to count rows in a table. */
       count?: 'exact' | 'planned' | 'estimated'
     } = {}
-  ): PostgrestFilterBuilder<Table['Row'], undefined> {
+  ): PostgrestFilterBuilder<Relation['Row'], undefined> {
     const method = 'POST'
 
     const prefersHeaders = []
@@ -128,7 +128,7 @@ export default class PostgrestQueryBuilder<Table extends GenericTable> {
    *
    * @param values  The values to insert.
    */
-  upsert<Row extends Table['Insert']>(
+  upsert<Row extends Relation extends { Insert: unknown } ? Relation['Insert'] : never>(
     values: Row | Row[],
     {
       onConflict,
@@ -142,7 +142,7 @@ export default class PostgrestQueryBuilder<Table extends GenericTable> {
       /** Specifies if duplicate rows should be ignored and not inserted. */
       ignoreDuplicates?: boolean
     } = {}
-  ): PostgrestFilterBuilder<Table['Row'], undefined> {
+  ): PostgrestFilterBuilder<Relation['Row'], undefined> {
     const method = 'POST'
 
     const prefersHeaders = [`resolution=${ignoreDuplicates ? 'ignore' : 'merge'}-duplicates`]
@@ -173,7 +173,7 @@ export default class PostgrestQueryBuilder<Table extends GenericTable> {
    *
    * @param values  The values to update.
    */
-  update<Row extends Table['Update']>(
+  update<Row extends Relation extends { Update: unknown } ? Relation['Update'] : never>(
     values: Row,
     {
       count,
@@ -181,7 +181,7 @@ export default class PostgrestQueryBuilder<Table extends GenericTable> {
       /** Count algorithm to use to count rows in a table. */
       count?: 'exact' | 'planned' | 'estimated'
     } = {}
-  ): PostgrestFilterBuilder<Table['Row'], undefined> {
+  ): PostgrestFilterBuilder<Relation['Row'], undefined> {
     const method = 'PATCH'
     const prefersHeaders = []
     const body = values
@@ -212,7 +212,7 @@ export default class PostgrestQueryBuilder<Table extends GenericTable> {
   }: {
     /** Count algorithm to use to count rows in a table. */
     count?: 'exact' | 'planned' | 'estimated'
-  } = {}): PostgrestFilterBuilder<Table['Row'], undefined> {
+  } = {}): PostgrestFilterBuilder<Relation['Row'], undefined> {
     const method = 'DELETE'
     const prefersHeaders = []
     if (count) {
