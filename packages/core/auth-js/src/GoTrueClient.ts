@@ -152,7 +152,7 @@ export default class GoTrueClient {
 
         if (error) {
           // failed login attempt via url,
-          // remove old session as in verifyOtp, singUp and singInWith*
+          // remove old session as in verifyOtp, signUp and signInWith*
           await this._removeSession()
 
           return { error }
