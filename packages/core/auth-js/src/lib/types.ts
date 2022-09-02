@@ -217,6 +217,18 @@ export interface AdminUserAttributes extends UserAttributes {
    * Only a service role can modify.
    */
   phone_confirm?: boolean
+
+  /**
+   * Determines how long a user should be banned for
+   *
+   * The format for the ban duration strictly follows a sequence of decimal numbers with a unit suffix.
+   *
+   * For example, some possible durations include: '300ms', '2h45m'.
+   * Valid time units are "ns", "us" (or "µs"), "ms", "s", "m", "h".
+   *
+   * Setting the ban duration to 'none' lifts the ban on the user
+   */
+  ban_duration?: string | 'none'
 }
 
 export interface Subscription {
