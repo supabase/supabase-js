@@ -1,6 +1,6 @@
 import { MockServer } from 'jest-mock-server'
 import fetch from 'cross-fetch'
-import { AuthUnknownError, AuthRetryableFetchError } from '../src/lib/errors'
+import { AuthUnknownError, AuthApiError, AuthRetryableFetchError } from '../src/lib/errors'
 import { _request } from '../src/lib/fetch'
 
 describe('fetch', () => {
@@ -16,7 +16,7 @@ describe('fetch', () => {
         .get('/')
         .mockImplementationOnce((ctx) => {
           ctx.status = 400
-          ctx.body = 'Bad Request'
+          ctx.body = { message: 'invalid params' }
         })
         .mockImplementation((ctx) => {
           ctx.status = 200
@@ -24,7 +24,7 @@ describe('fetch', () => {
 
       const url = server.getURL().toString()
 
-      await expect(_request(fetch, 'GET', url)).rejects.toBeInstanceOf(AuthUnknownError)
+      await expect(_request(fetch, 'GET', url)).rejects.toBeInstanceOf(AuthApiError)
 
       expect(route).toHaveBeenCalledTimes(1)
     })
@@ -102,6 +102,22 @@ describe('fetch', () => {
       expect(route).toHaveBeenCalledTimes(0)
 
       await server.start()
+    })
+
+    test('should work with custom fetch implementation', async () => {
+      const customFetch = (async () => {
+        return {
+          status: 400,
+          ok: false,
+          json: async () => {
+            return { message: 'invalid params' }
+          },
+        }
+      }) as unknown as typeof fetch
+
+      const url = server.getURL().toString()
+
+      await expect(_request(customFetch, 'GET', url)).rejects.toBeInstanceOf(AuthApiError)
     })
   })
 })
