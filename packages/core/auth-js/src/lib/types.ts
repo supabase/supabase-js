@@ -63,6 +63,31 @@ export type AuthResponse =
       error: AuthError
     }
 
+// TODO(Joe)
+export type AuthMFAResponse =
+  | {
+      data: {
+        id: string
+        TOTP: {
+          qr_code: string
+          uri: string
+        }
+      }
+      error: null
+    }
+  | {
+      data: {
+        user: null
+        session: null
+      }
+      error: AuthError
+    }
+  | {
+      data: {
+        success: string
+      }
+    }
+
 export type OAuthResponse =
   | {
       data: {
@@ -77,6 +102,12 @@ export type OAuthResponse =
         url: null
       }
       error: AuthError
+    }
+  | {
+      data: {
+        id: string
+        expires_at: string
+      }
     }
 
 export type UserResponse =
@@ -153,6 +184,7 @@ export interface User {
   role?: string
   updated_at?: string
   identities?: UserIdentity[]
+  factors?: string[]
 }
 
 export interface UserAttributes {
@@ -462,6 +494,7 @@ export type MFAEnrollParams = {
 export type MFAChallengeAndVerifyParams = {
   factorID: string
   code: string
+  factorType: 'totp'
 }
 
 export type MFAUnenrollParams = {
@@ -471,6 +504,7 @@ export type MFAUnenrollParams = {
 
 export type MFAVerifyParams = {
   factorID: string
+  challengeID: string
   code: string
 }
 
@@ -483,10 +517,11 @@ export type DeleteFactorParams = {
 }
 
 export interface GoTrueMFAApi {
-  verify(params: MFAVerifyParams): Promise<string>
-  enroll(params: MFAEnrollParams): Promise<string>
-  unenroll(params: MFAUnenrollParams): Promise<string>
-  challenge(params: MFAChallengeParams): Promise<string>
+  verify(params: MFAVerifyParams): Promise<AuthMFAResponse>
+  enroll(params: MFAEnrollParams): Promise<AuthMFAResponse>
+  unenroll(params: MFAUnenrollParams): Promise<AuthMFAResponse>
+  challenge(params: MFAChallengeParams): Promise<AuthMFAResponse>
+  listDevices(): Promise<string[]>
 }
 
 export interface GoTrueAdminMFAApi {
