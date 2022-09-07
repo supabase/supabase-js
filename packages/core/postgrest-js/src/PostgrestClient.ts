@@ -4,6 +4,16 @@ import PostgrestBuilder from './PostgrestBuilder'
 import { DEFAULT_HEADERS } from './constants'
 import { Fetch, GenericSchema } from './types'
 
+/**
+ * PostgREST client.
+ *
+ * @typeParam Database - Types for the schema from the [type
+ * generator](https://supabase.com/docs/reference/javascript/next/typescript-support)
+ *
+ * @typeParam SchemaName - Postgres schema to switch to. Must be a string
+ * literal, the same one passed to the constructor. If the schema is not
+ * `"public"`, this must be supplied manually.
+ */
 export default class PostgrestClient<
   Database = any,
   SchemaName extends string & keyof Database = 'public' extends keyof Database
@@ -22,9 +32,11 @@ export default class PostgrestClient<
   /**
    * Creates a PostgREST client.
    *
-   * @param url  URL of the PostgREST endpoint.
-   * @param headers  Custom headers.
-   * @param schema  Postgres schema to switch to.
+   * @param url - URL of the PostgREST endpoint
+   * @param options - Named parameters
+   * @param options.headers - Custom headers
+   * @param options.schema - Postgres schema to switch to
+   * @param options.fetch - Custom fetch
    */
   constructor(
     url: string,
@@ -47,7 +59,7 @@ export default class PostgrestClient<
   /**
    * Perform a query on a table or a view.
    *
-   * @param relation  The table or view name to query.
+   * @param relation - The table or view name to query
    */
   from<
     TableName extends string & keyof Schema['Tables'],
@@ -69,9 +81,23 @@ export default class PostgrestClient<
   /**
    * Perform a function call.
    *
-   * @param fn  The function name to call.
-   * @param args  The parameters to pass to the function call.
-   * @param options  Named parameters.
+   * @param fn - The function name to call
+   * @param args - The arguments to pass to the function call
+   * @param options - Named parameters
+   * @param options.head - When set to `true`, `data` will not be returned.
+   * Useful if you only need the count.
+   * @param options.count - Count algorithm to use to count rows returned by the
+   * function. Only applicable for [set-returning
+   * functions](https://www.postgresql.org/docs/current/functions-srf.html).
+   *
+   * `"exact"`: Exact but slow count algorithm. Performs a `COUNT(*)` under the
+   * hood.
+   *
+   * `"planned"`: Approximated but fast count algorithm. Uses the Postgres
+   * statistics under the hood.
+   *
+   * `"estimated"`: Uses exact count for low numbers and planned count for high
+   * numbers.
    */
   rpc<
     FunctionName extends string & keyof Schema['Functions'],
@@ -83,9 +109,7 @@ export default class PostgrestClient<
       head = false,
       count,
     }: {
-      /** When set to true, no data will be returned. */
       head?: boolean
-      /** Count algorithm to use to count rows in a table. */
       count?: 'exact' | 'planned' | 'estimated'
     } = {}
   ): PostgrestFilterBuilder<

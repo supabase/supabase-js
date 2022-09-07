@@ -2,18 +2,18 @@ import PostgrestBuilder from './PostgrestBuilder'
 import { GetResult } from './select-query-parser'
 import { PostgrestMaybeSingleResponse, PostgrestResponse, PostgrestSingleResponse } from './types'
 
-/**
- * Post-filters (transforms)
- */
-
 export default class PostgrestTransformBuilder<
   Row extends Record<string, unknown>,
   Result
 > extends PostgrestBuilder<Result> {
   /**
-   * Performs vertical filtering with SELECT.
+   * Perform a SELECT on the query result.
    *
-   * @param columns  The columns to retrieve, separated by commas.
+   * By default, `.insert()`, `.update()`, `.upsert()`, and `.delete()` do not
+   * return modified rows. By calling this method, modified rows are returned in
+   * `data`.
+   *
+   * @param columns - The columns to retrieve, separated by commas
    */
   select<Query extends string = '*', NewResult = GetResult<Row, Query extends '*' ? '*' : Query>>(
     columns?: Query
@@ -41,12 +41,20 @@ export default class PostgrestTransformBuilder<
   }
 
   /**
-   * Orders the result with the specified `column`.
+   * Order the query result by `column`.
    *
-   * @param column  The column to order on.
-   * @param ascending  If `true`, the result will be in ascending order.
-   * @param nullsFirst  If `true`, `null`s appear first.
-   * @param foreignTable  The foreign table to use (if `column` is a foreign column).
+   * You can call this method multiple times to order by multiple columns.
+   *
+   * You can order foreign tables, but it doesn't affect the ordering of the
+   * current table.
+   *
+   * @param column - The column to order by
+   * @param options - Named parameters
+   * @param options.ascending - If `true`, the result will be in ascending order
+   * @param options.nullsFirst - If `true`, `null`s appear first. If `false`,
+   * `null`s appear last.
+   * @param options.foreignTable - Set this to order a foreign table by foreign
+   * columns
    */
   order<ColumnName extends string & keyof Row>(
     column: ColumnName,
@@ -77,10 +85,12 @@ export default class PostgrestTransformBuilder<
   }
 
   /**
-   * Limits the result with the specified `count`.
+   * Limit the query result by `count`.
    *
-   * @param count  The maximum no. of rows to limit to.
-   * @param foreignTable  The foreign table to use (for foreign columns).
+   * @param count - The maximum number of rows to return
+   * @param options - Named parameters
+   * @param options.foreignTable - Set this to limit rows of foreign tables
+   * instead of the current table
    */
   limit(count: number, { foreignTable }: { foreignTable?: string } = {}): this {
     const key = typeof foreignTable === 'undefined' ? 'limit' : `${foreignTable}.limit`
@@ -89,11 +99,13 @@ export default class PostgrestTransformBuilder<
   }
 
   /**
-   * Limits the result to rows within the specified range, inclusive.
+   * Limit the query result by `from` and `to` inclusively.
    *
-   * @param from  The starting index from which to limit the result, inclusive.
-   * @param to  The last index to which to limit the result, inclusive.
-   * @param foreignTable  The foreign table to use (for foreign columns).
+   * @param from - The starting index from which to limit the result
+   * @param to - The last index to which to limit the result
+   * @param options - Named parameters
+   * @param options.foreignTable - Set this to limit rows of foreign tables
+   * instead of the current table
    */
   range(from: number, to: number, { foreignTable }: { foreignTable?: string } = {}): this {
     const keyOffset = typeof foreignTable === 'undefined' ? 'offset' : `${foreignTable}.offset`
@@ -105,7 +117,9 @@ export default class PostgrestTransformBuilder<
   }
 
   /**
-   * Sets the AbortSignal for the fetch request.
+   * Set the AbortSignal for the fetch request.
+   *
+   * @param signal - The AbortSignal to use for the fetch request
    */
   abortSignal(signal: AbortSignal): this {
     this.signal = signal
@@ -113,8 +127,10 @@ export default class PostgrestTransformBuilder<
   }
 
   /**
-   * Retrieves only one row from the result. Result must be one row (e.g. using
-   * `limit`), otherwise this will result in an error.
+   * Return `data` as a single object instead of an array of objects.
+   *
+   * Query result must be one row (e.g. using `.limit(1)`), otherwise this
+   * returns an error.
    */
   single(): PromiseLike<PostgrestSingleResponse<Result>> {
     this.headers['Accept'] = 'application/vnd.pgrst.object+json'
@@ -122,9 +138,10 @@ export default class PostgrestTransformBuilder<
   }
 
   /**
-   * Retrieves at most one row from the result. Result must be at most one row
-   * (e.g. using `eq` on a UNIQUE column), otherwise this will result in an
-   * error.
+   * Return `data` as a single object instead of an array of objects.
+   *
+   * Query result must be zero or one row (e.g. using `.limit(1)`), otherwise
+   * this returns an error.
    */
   maybeSingle(): PromiseLike<PostgrestMaybeSingleResponse<Result>> {
     this.headers['Accept'] = 'application/vnd.pgrst.object+json'
@@ -133,7 +150,7 @@ export default class PostgrestTransformBuilder<
   }
 
   /**
-   * Set the response type to CSV.
+   * Return `data` as a string in CSV format.
    */
   csv(): PromiseLike<PostgrestSingleResponse<string>> {
     this.headers['Accept'] = 'text/csv'
@@ -141,7 +158,7 @@ export default class PostgrestTransformBuilder<
   }
 
   /**
-   * Set the response type to GeoJSON.
+   * Return `data` as an object in [GeoJSON](https://geojson.org) format.
    */
   geojson(): PromiseLike<PostgrestSingleResponse<Record<string, unknown>>> {
     this.headers['Accept'] = 'application/geo+json'
@@ -149,14 +166,25 @@ export default class PostgrestTransformBuilder<
   }
 
   /**
-   * Obtains the EXPLAIN plan for this request.
+   * Return `data` as the EXPLAIN plan for the query.
    *
-   * @param analyze  If `true`, the query will be executed and the actual run time will be displayed.
-   * @param verbose  If `true`, the query identifier will be displayed and the result will include the output columns of the query.
-   * @param settings  If `true`, include information on configuration parameters that affect query planning.
-   * @param buffers  If `true`, include information on buffer usage.
-   * @param wal     If `true`, include information on WAL record generation
-   * @param format  The format of the output, can be 'text'(default) or `json`
+   * @param options - Named parameters
+   *
+   * @param options.analyze - If `true`, the query will be executed and the
+   * actual run time will be returned
+   *
+   * @param options.verbose - If `true`, the query identifier will be returned
+   * and `data` will include the output columns of the query
+   *
+   * @param options.settings - If `true`, include information on configuration
+   * parameters that affect query planning
+   *
+   * @param options.buffers - If `true`, include information on buffer usage
+   *
+   * @param options.wal - If `true`, include information on WAL record generation
+   *
+   * @param options.format - The format of the output, can be `"text"` (default)
+   * or `"json"`
    */
   explain({
     analyze = false,
@@ -193,6 +221,11 @@ export default class PostgrestTransformBuilder<
     else return this as PromiseLike<PostgrestSingleResponse<string>>
   }
 
+  /**
+   * Rollback the query.
+   *
+   * `data` will still be returned, but the query is not committed.
+   */
   rollback(): this {
     if ((this.headers['Prefer'] ?? '').trim().length > 0) {
       this.headers['Prefer'] += ',tx=rollback'
