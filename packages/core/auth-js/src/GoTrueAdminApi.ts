@@ -8,8 +8,7 @@ import {
   UserResponse,
   GoTrueAdminMFAApi,
   DeleteFactorParams,
-  UpdatableFactorAttributes
-
+  UpdatableFactorAttributes,
 } from './lib/types'
 import { AuthError, isAuthError } from './lib/errors'
 
@@ -39,7 +38,7 @@ export default class GoTrueAdminApi {
     this.headers = headers
     this.fetch = resolveFetch(fetch)
     this.mfa = {
-      deleteFactor: this._deleteFactor
+      deleteFactor: this._deleteFactor,
     }
   }
 
@@ -224,7 +223,7 @@ export default class GoTrueAdminApi {
    *
    * This function should only be called on a server. Never expose your `service_role` key in the browser.
    */
-  async private deleteUser(uid: string): Promise<UserResponse> {
+  private async deleteUser(uid: string): Promise<UserResponse> {
     try {
       return await _request(this.fetch, 'DELETE', `${this.url}/admin/users/${uid}`, {
         headers: this.headers,
@@ -240,20 +239,20 @@ export default class GoTrueAdminApi {
   }
   /**
    *1G
-   */a
-  async private _deleteFactor(factorID: string) {
+   */
+  private async _deleteFactor(factorID: string) {
     return ''
   }
-  async private _listFactors() {
+  private async _listFactors() {
     return ''
   }
-  async private _deleteRecoveryCodes(uid: string) {
+  private async _deleteRecoveryCodes(uid: string) {
     return ''
   }
-  async private _updateFactor(factorID: string, attributes: UpdatableFactorAttributes) {
+  private async _updateFactor(factorID: string, attributes: UpdatableFactorAttributes) {
     return ''
   }
-  async private _listFactor() {
+  private async _listFactor() {
     return ''
   }
 }

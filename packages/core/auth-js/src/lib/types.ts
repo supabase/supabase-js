@@ -115,16 +115,6 @@ export interface Session {
   user: User
 }
 
-export interface GoTrueMFAApi {
-  verify(code: string): Promise<string>
-  enroll(): Promise<string>
-  unenroll(): Promise<string>
-}
-
-export interface GoTrueAdminMFAApi {
-  deleteFactor(): Promise<string>
-}
-
 export interface UserIdentity {
   id: string
   user_id: string
@@ -248,7 +238,6 @@ export interface Subscription {
 
 export interface UpdatableFactorAttributes {
   friendlyName: string
-
 }
 
 export type SignUpWithPasswordCredentials =
@@ -466,22 +455,12 @@ export type GenerateLinkType =
 // MFA related types
 export type MFAEnrollParams = {
   friendlyName?: string
-}
-
-export type MFALoginParams = {
-  factorID: string
-  code: string
-  recoveryCode: string
+  factorType: 'totp'
+  issuer: string
 }
 
 export type MFAChallengeAndVerifyParams = {
   factorID: string
-  code: string
-}
-
-export type MFALoginParams = {
-  factorID: string
-  recoveryCode: string
   code: string
 }
 
@@ -501,6 +480,17 @@ export type MFAChallengeParams = {
 
 export type DeleteFactorParams = {
   factorID: string
+}
+
+export interface GoTrueMFAApi {
+  verify(params: MFAVerifyParams): Promise<string>
+  enroll(params: MFAEnrollParams): Promise<string>
+  unenroll(params: MFAUnenrollParams): Promise<string>
+  challenge(params: MFAChallengeParams): Promise<string>
+}
+
+export interface GoTrueAdminMFAApi {
+  deleteFactor(factorID: string): Promise<string>
 }
 
 type AnyFunction = (...args: any[]) => any
