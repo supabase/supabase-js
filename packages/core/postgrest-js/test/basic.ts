@@ -11,7 +11,32 @@ test('basic select table', async () => {
 
 test('basic select view', async () => {
   const res = await postgrest.from('updatable_view').select()
-  expect(res).toMatchSnapshot()
+  expect(res).toMatchInlineSnapshot(`
+    Object {
+      "count": undefined,
+      "data": Array [
+        Object {
+          "non_updatable_column": 1,
+          "username": "supabot",
+        },
+        Object {
+          "non_updatable_column": 1,
+          "username": "kiwicopple",
+        },
+        Object {
+          "non_updatable_column": 1,
+          "username": "awailas",
+        },
+        Object {
+          "non_updatable_column": 1,
+          "username": "dragarcia",
+        },
+      ],
+      "error": undefined,
+      "status": 200,
+      "statusText": "OK",
+    }
+  `)
 })
 
 test('rpc', async () => {
@@ -423,5 +448,5 @@ test('cannot update non-updatable views', () => {
 
 test('cannot update non-updatable columns', () => {
   // @ts-expect-error TS2322
-  postgrest.from('updatable_view').update({ non_updatable_column: 0 as any })
+  postgrest.from('updatable_view').update({ non_updatable_column: 0 })
 })

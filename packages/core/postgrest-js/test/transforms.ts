@@ -78,7 +78,7 @@ test('csv', async () => {
 })
 
 test('abort signal', async () => {
-  const ac = new AbortController()
+  const ac = new AbortController() as globalThis.AbortController
   ac.abort()
   const res = await postgrest.from('users').select().abortSignal(ac.signal)
   expect(res).toMatchInlineSnapshot(`
