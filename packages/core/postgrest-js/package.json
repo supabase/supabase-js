@@ -24,8 +24,9 @@
     "build": "run-s clean format build:*",
     "build:main": "tsc -p tsconfig.json",
     "build:module": "tsc -p tsconfig.module.json",
-    "test": "run-s db:clean db:run && jest --runInBand; run-s db:clean",
-    "test:update": "run-s db:clean db:run && jest --runInBand --updateSnapshot; run-s db:clean",
+    "test": "run-s db:clean db:run test:run db:clean",
+    "test:run": "jest --runInBand",
+    "test:update": "run-s db:clean db:run && jest --runInBand --updateSnapshot && run-s db:clean",
     "db:clean": "cd test/db && docker-compose down --volumes",
     "db:run": "cd test/db && docker-compose up --detach && wait-for-localhost 3000",
     "docs": "typedoc src/index.ts",
@@ -36,7 +37,6 @@
   },
   "devDependencies": {
     "@types/jest": "^27.5.1",
-    "@types/node-fetch": "^2.6.1",
     "jest": "^28.1.0",
     "node-abort-controller": "^3.0.1",
     "npm-run-all": "^4.1.5",
@@ -45,7 +45,7 @@
     "semantic-release-plugin-update-version-in-files": "^1.1.0",
     "ts-jest": "^28.0.3",
     "typedoc": "^0.22.16",
-    "typescript": "~4.6.4",
+    "typescript": "~4.7",
     "wait-for-localhost-cli": "^3.0.0"
   }
 }
