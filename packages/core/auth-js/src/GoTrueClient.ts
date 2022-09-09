@@ -1087,24 +1087,23 @@ export default class GoTrueClient {
   /**
    * Enrollment step condensed into one call
    */
-  private async _challengeAndVerify(params: MFAChallengeAndVerifyParams) {
-    // const { code: code, factorID: factorID, challengeID: challengeID } = params
+  // private async _challengeAndVerify(params: MFAChallengeAndVerifyParams) {
+  //   // const { code: code, factorID: factorID } = params
     // try {
-    //   const res = this.mfa.challenge({factorID})
-
+    //   const challengeRes = this.mfa.challenge({factorID: factorID})
+  //    return this.mfa.verify({challengeID: challengeRes.challengeID, code: code, factorID: factorID})
     // } catch (error) {
     //   if (isAuthError(error)) {
     //     return { data: null, error }
     //   }
     // }
     // throw error
-    return 'unimplemented'
-  }
+  // }
 
   /**
    * Displays all devices for a given user
    */
-  private async _listDevices() {
+  private async _listFactors() {
     const { data, error } = await this.getUser()
     if (error) throw error
     return data.user.factors || []

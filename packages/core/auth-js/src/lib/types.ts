@@ -63,7 +63,6 @@ export type AuthResponse =
       error: AuthError
     }
 
-// TODO(Joe)
 export type AuthMFAResponse =
   | {
       data: {
@@ -494,7 +493,6 @@ export type MFAEnrollParams = {
 export type MFAChallengeAndVerifyParams = {
   factorID: string
   code: string
-  factorType: 'totp'
 }
 
 export type MFAUnenrollParams = {
@@ -521,7 +519,7 @@ export interface GoTrueMFAApi {
   enroll(params: MFAEnrollParams): Promise<AuthMFAResponse>
   unenroll(params: MFAUnenrollParams): Promise<AuthMFAResponse>
   challenge(params: MFAChallengeParams): Promise<AuthMFAResponse>
-  listDevices(): Promise<string[]>
+  listFactors(): Promise<string[]>
 }
 
 export interface GoTrueAdminMFAApi {
