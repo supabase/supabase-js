@@ -151,10 +151,13 @@ export default class SupabaseClient<
   from<
     TableName extends string & keyof Schema['Tables'],
     Table extends Schema['Tables'][TableName]
-  >(table: TableName): PostgrestQueryBuilder<Table>
-  from(table: string): PostgrestQueryBuilder<any>
-  from(table: string): PostgrestQueryBuilder<any> {
-    return this.rest.from(table)
+  >(relation: TableName): PostgrestQueryBuilder<Table>
+  from<ViewName extends string & keyof Schema['Views'], View extends Schema['Views'][ViewName]>(
+    relation: ViewName
+  ): PostgrestQueryBuilder<View>
+  from(relation: string): PostgrestQueryBuilder<any>
+  from(relation: string): PostgrestQueryBuilder<any> {
+    return this.rest.from(relation)
   }
 
   /**
