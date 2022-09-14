@@ -1009,17 +1009,21 @@ export default class GoTrueClient {
       throw error
     }
   }
+
   /**
    * Deletes a registered factor from GoTrue
    * @param friendlyName Human readable name assigned to a device
+   * @param factorType device which we're validating against. Can only be TOTP for now.
+   * @param issuer domain which the user is enrolling with
    */
   private async _enroll(params: MFAEnrollParams) {
     const { data, error } = await this.getUser()
     if (error) throw error
     const user: User = data.user
+    const { friendlyName: friendlyName, factorType: factorType, issuer: issuer } = params
     try {
       return await _request(this.fetch, 'POST', `${this.url}/user/${user.id}/factor`, {
-        body: { ...params },
+        body: {friendly_name: friendlyName, factor_type: factorType, issuer: issuer},
         headers: this.headers,
       })
     } catch (error) {
@@ -1058,7 +1062,10 @@ export default class GoTrueClient {
       throw error
     }
   }
-
+  /**
+   * Creates a challenge which a user can verify against
+   * @param factorID System assigned identifier for authenticator device as returned by enroll
+   */
   private async _challenge(params: MFAChallengeParams) {
     const { data, error } = await this.getUser()
     if (error) throw error
@@ -1084,21 +1091,6 @@ export default class GoTrueClient {
     }
   }
 
-  /**
-   * Enrollment step condensed into one call
-   */
-  // private async _challengeAndVerify(params: MFAChallengeAndVerifyParams) {
-  //   // const { code: code, factorID: factorID } = params
-    // try {
-    //   const challengeRes = this.mfa.challenge({factorID: factorID})
-  //    return this.mfa.verify({challengeID: challengeRes.challengeID, code: code, factorID: factorID})
-    // } catch (error) {
-    //   if (isAuthError(error)) {
-    //     return { data: null, error }
-    //   }
-    // }
-    // throw error
-  // }
 
   /**
    * Displays all devices for a given user
