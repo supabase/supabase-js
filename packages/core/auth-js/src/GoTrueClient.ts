@@ -1013,13 +1013,17 @@ export default class GoTrueClient {
    * Deletes a registered factor from GoTrue
    * @param friendlyName Human readable name assigned to a device
    */
-  private async _enroll(params: MFAEnrollParams) {
+  private async _enroll({ factorType = 'totp', ...params }: MFAEnrollParams) {
     const { data, error } = await this.getUser()
     if (error) throw error
     const user: User = data.user
     try {
       return await _request(this.fetch, 'POST', `${this.url}/user/${user.id}/factor`, {
-        body: { ...params },
+        body: {
+          friendly_name: params.friendlyName,
+          factor_type: factorType,
+          issuer: params.issuer,
+        },
         headers: this.headers,
       })
     } catch (error) {
