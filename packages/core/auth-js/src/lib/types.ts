@@ -492,28 +492,28 @@ export type MFAEnrollParams = {
 }
 
 export type MFAChallengeAndVerifyParams = {
-  factorID: string
+  factorId: string
   code: string
   factorType: 'totp'
 }
 
 export type MFAUnenrollParams = {
-  factorID: string
+  factorId: string
   code: string
 }
 
 export type MFAVerifyParams = {
-  factorID: string
-  challengeID: string
+  factorId: string
+  challengeId: string
   code: string
 }
 
 export type MFAChallengeParams = {
-  factorID: string
+  factorId: string
 }
 
 export type DeleteFactorParams = {
-  factorID: string
+  factorId: string
 }
 
 export interface GoTrueMFAApi {
