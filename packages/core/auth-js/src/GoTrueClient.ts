@@ -135,7 +135,7 @@ export default class GoTrueClient {
       enroll: this._enroll.bind(this),
       unenroll: this._unenroll.bind(this),
       challenge: this._challenge.bind(this),
-      listDevices: this._listDevices.bind(this),
+      listFactors: this._listFactors.bind(this),
     }
   }
 
@@ -1106,6 +1106,6 @@ export default class GoTrueClient {
   private async _listFactors() {
     const { data, error } = await this.getUser()
     if (error) throw error
-    return data.user.factors || []
+    return {data: {factors: data.user?.factors ?? []}, error: error}
   }
 }
