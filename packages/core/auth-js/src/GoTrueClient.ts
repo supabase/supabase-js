@@ -989,15 +989,13 @@ export default class GoTrueClient {
     if (error) throw error
     const user: User = data.user
 
-    const { factorID: factorID, code: code } = params
-
     try {
       return await _request(
         this.fetch,
         'DELETE',
-        `${this.url}/user/${user.id}/factor/${factorID}`,
+        `${this.url}/user/${user.id}/factor/${params.factorId}`,
         {
-          body: { code: code },
+          body: { code: params.code },
           headers: this.headers,
         }
       )
@@ -1016,14 +1014,17 @@ export default class GoTrueClient {
    * @param factorType device which we're validating against. Can only be TOTP for now.
    * @param issuer domain which the user is enrolling with
    */
-  private async _enroll(params: MFAEnrollParams) {
+  private async _enroll({ factorType = 'totp', ...params }: MFAEnrollParams) {
     const { data, error } = await this.getUser()
     if (error) throw error
     const user: User = data.user
-    const { friendlyName: friendlyName, factorType: factorType, issuer: issuer } = params
     try {
       return await _request(this.fetch, 'POST', `${this.url}/user/${user.id}/factor`, {
-        body: {friendly_name: friendlyName, factor_type: factorType, issuer: issuer},
+        body: {
+          friendly_name: params.friendlyName,
+          factor_type: factorType,
+          issuer: params.issuer,
+        },
         headers: this.headers,
       })
     } catch (error) {
@@ -1043,14 +1044,13 @@ export default class GoTrueClient {
     const { data, error } = await this.getUser()
     if (error) throw error
     const user: User = data.user
-    const { code: code, factorID: factorID, challengeID: challengeID } = params
     try {
       return await _request(
         this.fetch,
         'POST',
-        `${this.url}/user/${user.id}/factor/${factorID}/verify`,
+        `${this.url}/user/${user.id}/factor/${params.factorId}/verify`,
         {
-          body: { code: code, challenge_id: challengeID },
+          body: { code: params.code, challenge_id: params.challengeId },
           headers: this.headers,
         }
       )
@@ -1070,15 +1070,13 @@ export default class GoTrueClient {
     const { data, error } = await this.getUser()
     if (error) throw error
     const user: User = data.user
-    const factorID = params.factorID
 
     try {
       return await _request(
         this.fetch,
         'POST',
-        `${this.url}/user/${user.id}/factor/${factorID}/challenge`,
+        `${this.url}/user/${user.id}/factor/${params.factorId}/challenge`,
         {
-          body: {},
           headers: this.headers,
         }
       )
@@ -1091,13 +1089,12 @@ export default class GoTrueClient {
     }
   }
 
-
   /**
    * Displays all devices for a given user
    */
   private async _listFactors() {
     const { data, error } = await this.getUser()
     if (error) throw error
-    return {data: {factors: data.user?.factors ?? []}, error: error}
+    return { data: { factors: data.user?.factors ?? [] }, error: error }
   }
 }
