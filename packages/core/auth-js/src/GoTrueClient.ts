@@ -135,7 +135,7 @@ export default class GoTrueClient {
       enroll: this._enroll.bind(this),
       unenroll: this._unenroll.bind(this),
       challenge: this._challenge.bind(this),
-      listDevices: this._listDevices.bind(this),
+      listFactors: this._listFactors.bind(this),
     }
   }
 
@@ -1007,9 +1007,12 @@ export default class GoTrueClient {
       throw error
     }
   }
+
   /**
    * Deletes a registered factor from GoTrue
    * @param friendlyName Human readable name assigned to a device
+   * @param factorType device which we're validating against. Can only be TOTP for now.
+   * @param issuer domain which the user is enrolling with
    */
   private async _enroll({ factorType = 'totp', ...params }: MFAEnrollParams) {
     const { data, error } = await this.getUser()
@@ -1059,7 +1062,10 @@ export default class GoTrueClient {
       throw error
     }
   }
-
+  /**
+   * Creates a challenge which a user can verify against
+   * @param factorID System assigned identifier for authenticator device as returned by enroll
+   */
   private async _challenge(params: MFAChallengeParams) {
     const { data, error } = await this.getUser()
     if (error) throw error
@@ -1084,28 +1090,11 @@ export default class GoTrueClient {
   }
 
   /**
-   * Enrollment step condensed into one call
-   */
-  private async _challengeAndVerify(params: MFAChallengeAndVerifyParams) {
-    // const { code: code, factorID: factorID, challengeID: challengeID } = params
-    // try {
-    //   const res = this.mfa.challenge({factorID})
-
-    // } catch (error) {
-    //   if (isAuthError(error)) {
-    //     return { data: null, error }
-    //   }
-    // }
-    // throw error
-    return 'unimplemented'
-  }
-
-  /**
    * Displays all devices for a given user
    */
-  private async _listDevices() {
+  private async _listFactors() {
     const { data, error } = await this.getUser()
     if (error) throw error
-    return data.user.factors || []
+    return { data: { factors: data.user?.factors ?? [] }, error: error }
   }
 }
