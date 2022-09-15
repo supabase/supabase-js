@@ -27,6 +27,7 @@ export type AuthChangeEvent =
   | 'TOKEN_REFRESHED'
   | 'USER_UPDATED'
   | 'USER_DELETED'
+  | 'MFA_CHALLENGE_VERIFIED'
 
 export type GoTrueClientOptions = {
   /* The URL of the GoTrue server. */
@@ -83,15 +84,10 @@ export type AuthMFAResponse =
     }
   | {
       data: {
-        success: string
+        factors: string[]
       }
+      error: null
     }
-  | {
-    data: {
-      factors: string[]
-    }
-    error: null
-  }
 
 export type OAuthResponse =
   | {
@@ -107,12 +103,6 @@ export type OAuthResponse =
         url: null
       }
       error: AuthError
-    }
-  | {
-      data: {
-        id: string
-        expires_at: string
-      }
     }
 
 export type UserResponse =
@@ -529,7 +519,7 @@ export type DeleteFactorParams = {
 }
 
 export interface GoTrueMFAApi {
-  verify(params: MFAVerifyParams): Promise<AuthMFAResponse>
+  verify(params: MFAVerifyParams): Promise<AuthResponse>
   enroll(params: MFAEnrollParams): Promise<AuthMFAResponse>
   unenroll(params: MFAUnenrollParams): Promise<AuthMFAResponse>
   challenge(params: MFAChallengeParams): Promise<AuthMFAResponse>
