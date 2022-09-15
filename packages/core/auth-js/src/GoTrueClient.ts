@@ -328,6 +328,7 @@ export default class GoTrueClient {
           headers: this.headers,
           body: {
             email,
+            data: options?.data ?? {},
             create_user: options?.shouldCreateUser ?? true,
             gotrue_meta_security: { captcha_token: options?.captchaToken },
           },
@@ -341,6 +342,7 @@ export default class GoTrueClient {
           headers: this.headers,
           body: {
             phone,
+            data: options?.data ?? {},
             create_user: options?.shouldCreateUser ?? true,
             gotrue_meta_security: { captcha_token: options?.captchaToken },
           },

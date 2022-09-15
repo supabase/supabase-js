@@ -312,6 +312,12 @@ export type SignInWithPasswordlessCredentials =
         emailRedirectTo?: string
         /** If set to false, this method will not create a new user. Defaults to true. */
         shouldCreateUser?: boolean
+        /**
+         * A custom data object to store the user's metadata. This maps to the `auth.users.user_metadata` column.
+         *
+         * The `data` should be a JSON object that includes user-specific info, such as their first and last name.
+         */
+        data?: object
         /** Verification token received when the user completes the captcha on the site. */
         captchaToken?: string
       }
@@ -322,6 +328,12 @@ export type SignInWithPasswordlessCredentials =
       options?: {
         /** If set to false, this method will not create a new user. Defaults to true. */
         shouldCreateUser?: boolean
+        /**
+         * A custom data object to store the user's metadata. This maps to the `auth.users.user_metadata` column.
+         *
+         * The `data` should be a JSON object that includes user-specific info, such as their first and last name.
+         */
+        data?: object
         /** Verification token received when the user completes the captcha on the site. */
         captchaToken?: string
       }
