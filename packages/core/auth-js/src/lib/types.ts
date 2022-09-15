@@ -217,6 +217,18 @@ export interface AdminUserAttributes extends UserAttributes {
    * Only a service role can modify.
    */
   phone_confirm?: boolean
+
+  /**
+   * Determines how long a user is banned for.
+   *
+   * The format for the ban duration follows a strict sequence of decimal numbers with a unit suffix.
+   * Valid time units are "ns", "us" (or "µs"), "ms", "s", "m", "h".
+   *
+   * For example, some possible durations include: '300ms', '2h45m'.
+   *
+   * Setting the ban duration to 'none' lifts the ban on the user.
+   */
+  ban_duration?: string | 'none'
 }
 
 export interface Subscription {
@@ -300,6 +312,12 @@ export type SignInWithPasswordlessCredentials =
         emailRedirectTo?: string
         /** If set to false, this method will not create a new user. Defaults to true. */
         shouldCreateUser?: boolean
+        /**
+         * A custom data object to store the user's metadata. This maps to the `auth.users.user_metadata` column.
+         *
+         * The `data` should be a JSON object that includes user-specific info, such as their first and last name.
+         */
+        data?: object
         /** Verification token received when the user completes the captcha on the site. */
         captchaToken?: string
       }
@@ -310,6 +328,12 @@ export type SignInWithPasswordlessCredentials =
       options?: {
         /** If set to false, this method will not create a new user. Defaults to true. */
         shouldCreateUser?: boolean
+        /**
+         * A custom data object to store the user's metadata. This maps to the `auth.users.user_metadata` column.
+         *
+         * The `data` should be a JSON object that includes user-specific info, such as their first and last name.
+         */
+        data?: object
         /** Verification token received when the user completes the captcha on the site. */
         captchaToken?: string
       }
