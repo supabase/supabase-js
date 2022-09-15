@@ -205,49 +205,47 @@ export interface UserAttributes {
   password?: string
 
   /**
-   * An email change token.
-   */
-  email_change_token?: string
-
-  /**
-   * A custom data object for user_metadata that a user can modify. Can be any JSON.
+   * A custom data object to store the user's metadata. This maps to the `auth.users.user_metadata` column.
+   *
+   * The `data` should be a JSON object that includes user-specific info, such as their first and last name.
+   *
    */
   data?: object
 }
 
 export interface AdminUserAttributes extends UserAttributes {
   /**
-   * A custom data object for user_metadata.
-   *
-   * Can be any JSON.
+   * A custom data object to store the user's metadata. This maps to the `auth.users.user_metadata` column.
    *
    * Only a service role can modify.
    *
-   * Note: When using the GoTrueAdminApi and wanting to modify a user's user_metadata,
+   * The `user_metadata` should be a JSON object that includes user-specific info, such as their first and last name.
+   *
+   * Note: When using the GoTrueAdminApi and wanting to modify a user's metadata,
    * this attribute is used instead of UserAttributes data.
    *
    */
   user_metadata?: object
 
   /**
-   * A custom data object for app_metadata that.
+   * A custom data object to store the user's application specific metadata. This maps to the `auth.users.app_metadata` column.
    *
    * Only a service role can modify.
    *
-   * Can be any JSON that includes app-specific info, such as identity providers, roles, and other
+   * The `app_metadata` should be a JSON object that includes app-specific info, such as identity providers, roles, and other
    * access control information.
    */
   app_metadata?: object
 
   /**
-   * Sets if a user has confirmed their email address.
+   * Confirms the user's email address if set to true.
    *
    * Only a service role can modify.
    */
   email_confirm?: boolean
 
   /**
-   * Sets if a user has confirmed their phone number.
+   * Confirms the user's phone number if set to true.
    *
    * Only a service role can modify.
    */
@@ -282,7 +280,11 @@ export type SignUpWithPasswordCredentials =
       options?: {
         /** The redirect url embedded in the email link */
         emailRedirectTo?: string
-        /** The user's metadata. */
+        /**
+         * A custom data object to store the user's metadata. This maps to the `auth.users.user_metadata` column.
+         *
+         * The `data` should be a JSON object that includes user-specific info, such as their first and last name.
+         */
         data?: object
         /** Verification token received when the user completes the captcha on the site. */
         captchaToken?: string
@@ -294,7 +296,11 @@ export type SignUpWithPasswordCredentials =
       /** The user's password. */
       password: string
       options?: {
-        /** The user's metadata. */
+        /**
+         * A custom data object to store the user's metadata. This maps to the `auth.users.user_metadata` column.
+         *
+         * The `data` should be a JSON object that includes user-specific info, such as their first and last name.
+         */
         data?: object
         /** Verification token received when the user completes the captcha on the site. */
         captchaToken?: string
@@ -426,7 +432,9 @@ export type GenerateEmailChangeLinkParams = {
 
 export interface GenerateLinkOptions {
   /**
-   * The user's metadata.
+   * A custom data object to store the user's metadata. This maps to the `auth.users.user_metadata` column.
+   *
+   * The `data` should be a JSON object that includes user-specific info, such as their first and last name.
    */
   data?: object
   /** The URL which will be appended to the email link generated. */
