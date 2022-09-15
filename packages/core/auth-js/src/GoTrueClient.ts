@@ -169,7 +169,7 @@ export default class GoTrueClient {
 
         if (error) {
           // failed login attempt via url,
-          // remove old session as in verifyOtp, singUp and singInWith*
+          // remove old session as in verifyOtp, signUp and signInWith*
           await this._removeSession()
 
           return { error }
@@ -268,7 +268,7 @@ export default class GoTrueClient {
   }
 
   /**
-   * Log in an existing user, or login via a third-party provider.
+   * Log in an existing user with an email and password or phone and password.
    */
   async signInWithPassword(credentials: SignInWithPasswordCredentials): Promise<AuthResponse> {
     try {
@@ -330,10 +330,10 @@ export default class GoTrueClient {
   }
 
   /**
-   * Passwordless method for logging in an existing user.
-   * A one-time password (OTP) can either be in the form of an email link or a numerical code.
-   * You can decide whether to send an email link or code or both in your email template.
-   * If you're using passwordless phone sign-ins, your OTP will always be in the form of a code.
+   * Log in a user using magiclink or a one-time password (OTP).
+   * If the `{{ .ConfirmationURL }}` variable is specified in the email template, a magiclink will be sent.
+   * If the `{{ .Token }}` variable is specified in the email template, an OTP will be sent.
+   * If you're using phone sign-ins, only an OTP will be sent. You won't be able to send a magiclink for phone sign-ins.
    */
   async signInWithOtp(credentials: SignInWithPasswordlessCredentials): Promise<AuthResponse> {
     try {
@@ -418,8 +418,8 @@ export default class GoTrueClient {
   }
 
   /**
-   * Returns the session data, refreshing it if necessary.
-   * If no session is detected, the session returned will be null.
+   * Returns the session, refreshing it if necessary.
+   * The session returned can be null if the session is not detected which can happen in the event a user is not signed-in or has logged out.
    */
   async getSession(): Promise<
     | {
@@ -545,8 +545,8 @@ export default class GoTrueClient {
   }
 
   /**
-   * Sets the session data from refresh_token and returns current session or an error if the refresh_token is invalid.
-   * @param refresh_token The refresh token returned by gotrue.
+   * Sets the session data from refresh token and returns current session or an error if the refresh token is invalid.
+   * @param refresh_token A refresh token returned by supabase auth.
    */
   async setSession(refresh_token: string): Promise<AuthResponse> {
     try {
@@ -655,7 +655,7 @@ export default class GoTrueClient {
 
   /**
    * Inside a browser context, `signOut()` will remove the logged in user from the browser session
-   * and log them out - removing all items from localstorage and then trigger a "SIGNED_OUT" event.
+   * and log them out - removing all items from localstorage and then trigger a `"SIGNED_OUT"` event.
    *
    * For server-side management, you can revoke all refresh tokens for a user by passing a user's JWT through to `auth.api.signOut(JWT: string)`.
    * There is no way to revoke a user's access token jwt until it expires. It is recommended to set a shorter expiry on the jwt for this reason.
@@ -697,9 +697,9 @@ export default class GoTrueClient {
   }
 
   /**
-   * Sends a reset request to an email address.
+   * Sends a password reset request to an email address.
    * @param email The email address of the user.
-   * @param options.redirectTo A URL to send the user to after they are confirmed.
+   * @param options.redirectTo The URL to send the user to after they click the password reset link.
    * @param options.captchaToken Verification token received when the user completes the captcha on the site.
    */
   async resetPasswordForEmail(
