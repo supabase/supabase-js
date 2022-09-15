@@ -219,14 +219,14 @@ export interface AdminUserAttributes extends UserAttributes {
   phone_confirm?: boolean
 
   /**
-   * Determines how long a user should be banned for
+   * Determines how long a user is banned for.
    *
-   * The format for the ban duration strictly follows a sequence of decimal numbers with a unit suffix.
-   *
-   * For example, some possible durations include: '300ms', '2h45m'.
+   * The format for the ban duration follows a strict sequence of decimal numbers with a unit suffix.
    * Valid time units are "ns", "us" (or "µs"), "ms", "s", "m", "h".
    *
-   * Setting the ban duration to 'none' lifts the ban on the user
+   * For example, some possible durations include: '300ms', '2h45m'.
+   *
+   * Setting the ban duration to 'none' lifts the ban on the user.
    */
   ban_duration?: string | 'none'
 }
