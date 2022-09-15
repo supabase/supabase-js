@@ -104,12 +104,6 @@ export type OAuthResponse =
       }
       error: AuthError
     }
-  | {
-      data: {
-        id: string
-        expires_at: string
-      }
-    }
 
 export type UserResponse =
   | {
