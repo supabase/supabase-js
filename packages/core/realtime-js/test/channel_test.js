@@ -42,7 +42,7 @@ describe('constructor', () => {
   })
 })
 
-describe('join', () => {
+describe('subscribe', () => {
   beforeEach(() => {
     socket = new RealtimeClient('wss://example.com/socket', { timeout: defaultTimeout })
 
@@ -74,11 +74,36 @@ describe('join', () => {
     assert.throws(() => channel.subscribe(), /tried to subscribe multiple times/)
   })
 
-  it('triggers socket push with channel params', () => {
-    sinon.stub(socket, 'makeRef').callsFake(() => defaultRef)
-    const spy = sinon.spy(socket, 'push')
+  it ('updates join push payload access token', () => {
+    socket.accessToken = 'token123'
 
     channel.subscribe()
+
+    assert.deepEqual(channel.joinPush.payload, {
+      access_token: 'token123',
+      config: {
+        broadcast: {
+          ack: false,
+          self: false
+        },
+        presence: {
+          key: ''
+        },
+        postgres_changes: []
+      },
+      one: 'two'
+    })
+  })
+
+  it('triggers socket push with default channel params', () => {
+    sinon.stub(socket, 'makeRef').callsFake(() => defaultRef)
+    const spy = sinon.spy(socket, 'push')
+    const cbSpy = sinon.spy()
+
+    channel.subscribe(cbSpy)
+
+    const cb = channel.bindings['chan_reply_1'][0].callback
+    cb({ status: 'ok', response: { postgres_changes: undefined }})
 
     assert.ok(spy.calledOnce)
     assert.ok(
@@ -90,6 +115,60 @@ describe('join', () => {
         join_ref: defaultRef
       })
     )
+    assert.ok(cbSpy.calledWith('SUBSCRIBED'))
+  })
+
+  it('triggers socket push with postgres_changes channel params with correct server resp', () => {
+    sinon.stub(socket, 'makeRef').callsFake(() => defaultRef)
+    const spy = sinon.spy(socket, 'push')
+    const cbSpy = sinon.spy()
+    const func = () => {}
+
+    channel.bindings.postgres_changes = [
+      { type: 'postgres_changes', filter: { event: '*', schema: '*' }, callback: func},
+      { type: 'postgres_changes', filter: { event: 'INSERT', schema: 'public', table: 'test' }, callback: func},
+      { type: 'postgres_changes', filter: { event: 'UPDATE', schema: 'public', table: 'test', filter: 'id=eq.1' }, callback: func}
+    ]
+    channel.subscribe(cbSpy)
+
+    const cb = channel.bindings['chan_reply_1'][0].callback
+    cb({ status: 'ok', response: { postgres_changes: [{ id: 'abc', event: '*', schema: '*' }, { id: 'def', event: 'INSERT', schema: 'public', table: 'test' }, { id: 'ghi', event: 'UPDATE', schema: 'public', table: 'test', filter: 'id=eq.1' }] }})
+
+    assert.ok(spy.calledOnce)
+    assert.ok(
+      spy.calledWith({
+        topic: 'realtime:topic',
+        event: 'phx_join',
+        payload: { config: { broadcast: { ack: false, self: false }, presence: { key: '' }, postgres_changes: [{ event: '*', schema: '*' }, { event: 'INSERT', schema: 'public', table: 'test' }, { event: 'UPDATE', schema: 'public', table: 'test', filter: 'id=eq.1' }] }, one: 'two' },
+        ref: defaultRef,
+        join_ref: defaultRef
+      })
+    )
+    assert.ok(cbSpy.calledWith('SUBSCRIBED'))
+    assert.deepEqual(channel.bindings.postgres_changes, [
+      { id: 'abc', type: 'postgres_changes', filter: { event: '*', schema: '*' }, callback: func},
+      { id: 'def', type: 'postgres_changes', filter: { event: 'INSERT', schema: 'public', table: 'test' }, callback: func},
+      { id: 'ghi', type: 'postgres_changes', filter: { event: 'UPDATE', schema: 'public', table: 'test', filter: 'id=eq.1' }, callback: func}
+    ])
+  })
+
+  it('unsubscribes to channel with incorrect server postgres_changes resp', () => {
+    const unsubscribeSpy = sinon.spy(channel, 'unsubscribe')
+    const cbSpy = sinon.spy()
+    const func = () => {}
+
+    channel.bindings.postgres_changes = [
+      { type: 'postgres_changes', filter: { event: '*', schema: '*' }, callback: func},
+      { type: 'postgres_changes', filter: { event: 'INSERT', schema: 'public', table: 'test' }, callback: func},
+      { type: 'postgres_changes', filter: { event: 'UPDATE', schema: 'public', table: 'test', filter: 'id=eq.1' }, callback: func}
+    ]
+    channel.subscribe(cbSpy)
+
+    const cb = channel.bindings['chan_reply_1'][0].callback
+    cb({ status: 'ok', response: { postgres_changes: [{ id: 'abc', event: '*', schema: '*' }] }})
+
+    assert.ok(unsubscribeSpy.calledOnce)
+    assert.ok(cbSpy.calledWith('CHANNEL_ERROR', sinon.match({ message: 'mismatch between server and client bindings for postgres changes' })))
   })
 
   it('can set timeout on joinPush', () => {
@@ -960,5 +1039,167 @@ describe('leave', () => {
     clock.tick(channel.timeout * 2)
 
     assert.equal(channel.state, 'closed')
+  })
+})
+
+describe('presence helper methods', () => {
+  beforeEach(() => {
+    channel = socket.channel('topic', { one: 'two' })
+  })
+
+  it("gets presence state", () => {
+    channel.presence.state = { u1: [{ id: 1, presence_ref: "1" }] }
+
+    assert.deepEqual(channel.presenceState(), { u1: [{ id: 1, presence_ref: "1" }] })
+  })
+
+  it("tracks presence", () => {
+    const sendStub = sinon.stub(channel, 'send')
+
+    channel.track({ id: 123 })
+
+    assert.ok(sendStub.calledWith({ type: 'presence', event: 'track', payload: { id: 123 }}))
+  })
+
+  it("untracks presence", () => {
+    const sendStub = sinon.stub(channel, 'send')
+
+    channel.untrack()
+
+    assert.ok(sendStub.calledWith({ type: 'presence', event: 'untrack' }))
+  })
+})
+
+describe('send', () => {
+  let pushStub
+
+  beforeEach(() => {
+    channel = socket.channel('topic', { one: 'two' })
+  })
+
+  it("sends message", async () => {
+    pushStub = sinon.stub(channel, 'push')
+    pushStub.returns({ rateLimited: false, receive: (status, cb) => {
+      if (status === 'ok') cb()
+    }})
+
+    const res = await channel.send({ type: 'broadcast', id: 'u123' })
+
+    assert.equal(res, 'ok')
+  })
+
+  it("sends message but is rate limited", async () => {
+    pushStub = sinon.stub(channel, 'push')
+    pushStub.returns({ rateLimited: true })
+
+    const res = await channel.send({ type: 'test', id: 'u123' })
+
+    assert.equal(res, 'rate limited')
+  })
+
+  it("sends message but times out", async () => {
+    pushStub = sinon.stub(channel, 'push')
+    pushStub.returns({ rateLimited: false, receive: (status, cb) => {
+      if (status === 'timeout') cb()
+    }})
+
+    const res = await channel.send({ type: 'test', id: 'u123' })
+
+    assert.equal(res, 'timed out')
+  })
+})
+
+describe('trigger', () => {
+  let spy
+
+  beforeEach(() => {
+    channel = socket.channel('topic', { one: 'two' })
+  })
+
+  it("triggers when type is insert, update, delete", () => {
+    spy = sinon.spy()
+
+    channel.bindings.postgres_changes = [
+      { type: 'postgres_changes', filter: { event: 'INSERT' }, callback: spy },
+      { type: 'postgres_changes', filter: { event: 'UPDATE' }, callback: spy },
+      { type: 'postgres_changes', filter: { event: 'DELETE' }, callback: spy },
+      { type: 'postgres_changes', filter: { event: '*' }, callback: spy }
+    ]
+
+    channel.trigger('insert', { test: '123' }, '1')
+    channel.trigger('update', { test: '123' }, '2')
+    channel.trigger('delete', { test: '123' }, '3')
+
+    assert.equal(spy.getCalls().length, 6)
+  })
+
+  it("triggers when type is broadcast", () => {
+    spy = sinon.spy()
+
+    channel.bindings.broadcast = [
+      { type: 'broadcast', filter: { event: '*' }, callback: spy },
+      { type: 'broadcast', filter: { event: 'test' }, callback: spy }
+    ]
+
+    channel.trigger('broadcast', { event: 'test', id: '123' }, '1')
+
+    assert.ok(spy.calledTwice)
+    assert.ok(spy.calledWith({ event: 'test', id: '123' }, '1'))
+  })
+
+  it("triggers when type is presence", () => {
+    spy = sinon.spy()
+
+    channel.bindings.presence = [
+      { type: 'presence', filter: { event: 'sync' }, callback: spy },
+      { type: 'presence', filter: { event: 'join' }, callback: spy },
+      { type: 'presence', filter: { event: 'leave' }, callback: spy }
+    ]
+
+    channel.trigger('presence', { event: 'sync' }, '1')
+    channel.trigger('presence', { event: 'join' }, '2')
+    channel.trigger('presence', { event: 'leave' }, '3')
+
+    assert.ok(spy.calledThrice)
+  })
+
+  it("triggers when type is postgres_changes", () => {
+    spy = sinon.spy()
+
+    channel.bindings.postgres_changes = [
+      { id: 'abc123', type: 'postgres_changes', filter: { event: 'INSERT', schema: 'public', table: 'test' }, callback: spy }
+    ]
+
+    channel.trigger(
+      'postgres_changes',
+      {
+        ids: ['abc123'],
+        data: {
+          type: 'INSERT',
+          table: 'test',
+          record: { id: 1 },
+          schema: 'public',
+          columns: [{ name: 'id', type: 'int4' }],
+          commit_timestamp: '2000-01-01T00:01:01Z',
+          errors: []
+        } 
+      },
+      '1'
+    )
+
+    assert.ok(
+      spy.calledWith(
+        {
+          schema: 'public',
+          table: 'test',
+          commit_timestamp: '2000-01-01T00:01:01Z',
+          eventType: 'INSERT',
+          new: { id: 1 },
+          old: {},
+          errors: [],
+        },
+        '1'
+      )
+    )
   })
 })

@@ -3,6 +3,7 @@ import { Server as WebSocketServer, WebSocket } from 'mock-socket'
 import sinon from 'sinon'
 import { w3cwebsocket as W3CWebSocket } from 'websocket'
 import { RealtimeClient } from '../dist/main'
+import { CONNECTION_STATE } from '../dist/main/lib/constants'
 
 let socket
 
@@ -330,6 +331,44 @@ describe('channel', () => {
 
     const [foundChannel] = socket.channels
     assert.deepStrictEqual(foundChannel, channel)
+  })
+
+  it('gets all channels', () => {
+    assert.equal(socket.getChannels().length, 0)
+
+    const chan1 = socket.channel('chan1', { one: 'two' })
+    const chan2 = socket.channel('chan2', { one: 'two' })
+
+    assert.deepEqual(socket.getChannels(), [chan1, chan2])
+  })
+
+  it('removes a channel', async () => {
+    const connectStub = sinon.stub(socket, 'connect')
+    const disconnectStub = sinon.stub(socket, 'disconnect')
+
+    channel = socket.channel('topic', { one: 'two' }).subscribe()
+
+    assert.equal(socket.channels.length, 1)
+    assert.ok(connectStub.called)
+
+    await socket.removeChannel(channel)
+
+    assert.equal(socket.channels.length, 0)
+    assert.ok(disconnectStub.called)
+  })
+
+  it('removes all channels', async () => {
+    const disconnectStub = sinon.stub(socket, 'disconnect')
+
+    socket.channel('chan1', { one: 'two' }).subscribe()
+    socket.channel('chan2', { one: 'two' }).subscribe()
+
+    assert.equal(socket.channels.length, 2)
+
+    await socket.removeAllChannels()
+
+    assert.equal(socket.channels.length, 0)
+    assert.ok(disconnectStub.called)
   })
 })
 

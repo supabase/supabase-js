@@ -7,7 +7,7 @@ export default class Push {
   ref: string = ''
   receivedResp: {
     status: string
-    response: Function
+    response: { [key: string]: any }
   } | null = null
   recHooks: {
     status: string
