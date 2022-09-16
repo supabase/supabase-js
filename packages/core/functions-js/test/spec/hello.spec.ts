@@ -34,7 +34,7 @@ describe('basic tests (hello function)', () => {
     })
 
     log('invoke hello')
-    const { data, error } = await fclient.invoke<string>('hello', { responseType: 'text' })
+    const { data, error } = await fclient.invoke<string>('hello', {})
 
     log('assert no error')
     expect(error).toBeNull()
@@ -52,7 +52,7 @@ describe('basic tests (hello function)', () => {
     fclient.setAuth(apiKey)
 
     log('invoke hello')
-    const { data, error } = await fclient.invoke<string>('hello', { responseType: 'text' })
+    const { data, error } = await fclient.invoke<string>('hello', {})
 
     log('assert no error')
     expect(error).toBeNull()
@@ -71,11 +71,11 @@ describe('basic tests (hello function)', () => {
     fclient.setAuth(wrongKey)
 
     log('invoke hello')
-    const { data, error } = await fclient.invoke<string>('hello', { responseType: 'text' })
+    const { data, error } = await fclient.invoke<string>('hello', {})
 
     log('check error')
     expect(error).not.toBeNull()
-    expect(error?.message).toEqual('Invalid JWT')
+    expect(error?.message).toEqual('Relay Error invoking the Edge Function')
     expect(data).toBeNull()
   })
 
@@ -94,11 +94,11 @@ describe('basic tests (hello function)', () => {
     fclient.setAuth(wrongKey)
 
     log('invoke hello')
-    const { data, error } = await fclient.invoke<string>('hello', { responseType: 'text' })
+    const { data, error } = await fclient.invoke<string>('hello', {})
 
     log('check error')
     expect(error).not.toBeNull()
-    expect(error?.message).toEqual('Invalid JWT')
+    expect(error?.message).toEqual('Relay Error invoking the Edge Function')
     expect(data).toBeNull()
   })
 
@@ -119,7 +119,7 @@ describe('basic tests (hello function)', () => {
     fclient.setAuth(apiKey)
 
     log('invoke hello')
-    const { data, error } = await fclient.invoke<string>('hello', { responseType: 'text' })
+    const { data, error } = await fclient.invoke<string>('hello', {})
 
     log('assert no error')
     expect(error).toBeNull()
@@ -136,7 +136,6 @@ describe('basic tests (hello function)', () => {
 
     log('invoke hello with Authorization header')
     const { data, error } = await fclient.invoke<string>('hello', {
-      responseType: 'text',
       headers: {
         Authorization: `Bearer ${apiKey}`,
       },
@@ -161,7 +160,6 @@ describe('basic tests (hello function)', () => {
 
     log('invoke hello with Authorization header')
     const { data, error } = await fclient.invoke<string>('hello', {
-      responseType: 'text',
       headers: {
         Authorization: `Bearer ${apiKey}`,
       },
@@ -187,7 +185,6 @@ describe('basic tests (hello function)', () => {
     const wrongKey = sign({ name: 'anon' }, 'wrong_jwt')
     log('invoke hello with wrong Authorization header')
     const { data, error } = await fclient.invoke<string>('hello', {
-      responseType: 'text',
       headers: {
         Authorization: `Bearer ${wrongKey}`,
       },
@@ -195,7 +192,7 @@ describe('basic tests (hello function)', () => {
 
     log('check error')
     expect(error).not.toBeNull()
-    expect(error?.message).toEqual('Invalid JWT')
+    expect(error?.message).toEqual('Relay Error invoking the Edge Function')
     expect(data).toBeNull()
   })
 
@@ -211,7 +208,7 @@ describe('basic tests (hello function)', () => {
     })
 
     log('invoke hello')
-    const { data, error } = await fclient.invoke<string>('missing', { responseType: 'text' })
+    const { data, error } = await fclient.invoke<string>('missing', {})
 
     log('check error')
     expect(error).not.toBeNull()
@@ -237,7 +234,7 @@ describe('basic tests (hello function)', () => {
     })
 
     log('invoke hello')
-    const { data, error } = await fclient.invoke<string>('', { responseType: 'text' })
+    const { data, error } = await fclient.invoke<string>('', {})
 
     log('assert no error')
     expect(error).toBeNull()
@@ -263,12 +260,11 @@ describe('basic tests (hello function)', () => {
     })
 
     log('invoke hello')
-    const { data, error } = await fclient.invoke<string>('', { responseType: 'text' })
+    const { data, error } = await fclient.invoke<string>('', {})
 
     log('check error')
     expect(error).not.toBeNull()
-    log(`assert ${error?.message} is equal to 'Only POST and OPTIONS requests are supported'`)
-    expect(error?.message).toEqual('Only POST and OPTIONS requests are supported')
+    expect(error?.message).toEqual('Relay Error invoking the Edge Function')
     expect(data).toBeNull()
   })
 
@@ -294,9 +290,7 @@ describe('basic tests (hello function)', () => {
     })
 
     log('invoke hello with Authorization header')
-    const { data, error } = await fclient.invoke<string>('hello', {
-      responseType: 'text',
-    })
+    const { data, error } = await fclient.invoke<string>('hello', {})
 
     log('assert no error')
     expect(error).toBeNull()

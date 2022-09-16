@@ -5,6 +5,7 @@ import 'jest'
 import { nanoid } from 'nanoid'
 import { sign } from 'jsonwebtoken'
 import { ContentType } from 'allure-js-commons'
+import FormData from 'form-data'
 
 import { FunctionsClient } from '../../src/index'
 
@@ -38,7 +39,7 @@ describe('params reached to function', () => {
     })
 
     log('invoke mirror')
-    const { data, error } = await fclient.invoke<MirrorResponse>('mirror', { responseType: 'json' })
+    const { data, error } = await fclient.invoke<MirrorResponse>('mirror', {})
 
     log('assert no error')
     expect(error).toBeNull()
@@ -70,7 +71,7 @@ describe('params reached to function', () => {
     })
 
     log('invoke mirror')
-    const { data, error } = await fclient.invoke<MirrorResponse>('mirror', { responseType: 'json' })
+    const { data, error } = await fclient.invoke<MirrorResponse>('mirror', {})
 
     log('assert no error')
     expect(error).toBeNull()
@@ -111,7 +112,6 @@ describe('params reached to function', () => {
     log('invoke mirror')
     const customHeader = nanoid()
     const { data, error } = await fclient.invoke<MirrorResponse>('mirror', {
-      responseType: 'json',
       headers: {
         'custom-header': customHeader,
         Authorization: `Bearer ${apiKey}`,
@@ -157,15 +157,17 @@ describe('params reached to function', () => {
     fclient.setAuth(apiKey)
 
     log('invoke mirror')
-    var form = new URLSearchParams()
-    form.append(nanoid(5), nanoid(10))
-    form.append(nanoid(7), nanoid(5))
-    form.append(nanoid(15), nanoid())
+    var form = new FormData()
+    const formData = [
+      [nanoid(5), nanoid(10)],
+      [nanoid(7), nanoid(5)],
+      [nanoid(15), nanoid()],
+    ]
+    formData.forEach((e) => form.append(e[0], e[1]))
+
     const { data, error } = await fclient.invoke<MirrorResponse>('mirror', {
-      responseType: 'json',
       body: form,
       headers: {
-        'content-type': 'application/x-www-form-urlencoded',
         'response-type': 'form',
       },
     })
@@ -173,15 +175,11 @@ describe('params reached to function', () => {
     log('assert no error')
     expect(error).toBeNull()
 
-    const body = []
-    for (const e of form.entries()) {
-      body.push(e)
-    }
     const expected = {
       url: 'http://localhost:8000/mirror',
       method: 'POST',
       headers: data?.headers ?? [],
-      body: body,
+      body: formData,
     }
     attach(
       'check data from function',
@@ -209,7 +207,6 @@ describe('params reached to function', () => {
       flag: false,
     }
     const { data, error } = await fclient.invoke<MirrorResponse>('mirror', {
-      responseType: 'json',
       body: JSON.stringify(body),
       headers: {
         'content-type': 'application/json',
@@ -252,15 +249,16 @@ describe('params reached to function', () => {
       flag: false,
     }
     const arrayBuffer = str2ab(JSON.stringify(body))
-    const { data, error } = await fclient.invoke<ArrayBuffer>('mirror', {
-      responseType: 'arrayBuffer',
+    const { data, error } = await fclient.invoke<Blob>('mirror', {
       body: arrayBuffer,
       headers: {
         'content-type': 'application/octet-stream',
         'response-type': 'arrayBuffer',
       },
     })
-    const dataJSON = JSON.parse(new TextDecoder().decode(data ?? Buffer.from('').buffer))
+
+    const arrayBuf = await data?.arrayBuffer()
+    const dataJSON = JSON.parse(new TextDecoder().decode(arrayBuf ?? Buffer.from('').buffer))
     dataJSON.body = JSON.parse(dataJSON.body.replace(/\0/g, ''))
 
     log('assert no error')
@@ -299,7 +297,6 @@ describe('params reached to function', () => {
     }
     const bodyEncoded = str2ab(JSON.stringify(body))
     const { data, error } = await fclient.invoke<Blob>('mirror', {
-      responseType: 'blob',
       body: bodyEncoded,
       headers: {
         'content-type': 'application/octet-stream',
@@ -346,9 +343,7 @@ describe('params reached to function', () => {
     const queryParams = new URLSearchParams(body)
     const { data, error } = await fclient.invoke<MirrorResponse>(
       `mirror?${queryParams.toString()}`,
-      {
-        responseType: 'json',
-      }
+      {}
     )
 
     log('assert no error')

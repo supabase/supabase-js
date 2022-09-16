@@ -8,8 +8,8 @@ import crossFetch from 'cross-fetch'
  * @returns A new crossFetch function that ignores args and returns a response promise.
  */
 export function getCustomFetch(
-  reqInfo: RequestInfo,
+  reqInfo: RequestInfo | URL,
   reqInit?: RequestInit | undefined
-): (input: RequestInfo, init?: RequestInit | undefined) => Promise<Response> {
+): (input: RequestInfo | URL, init?: RequestInit | undefined) => Promise<Response> {
   return (input, init) => crossFetch(reqInfo, reqInit)
 }

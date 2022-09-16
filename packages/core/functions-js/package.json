@@ -14,7 +14,6 @@
     "build:module": "tsc -p tsconfig.module.json",
     "docs": "typedoc src/index.ts src/types.ts --excludePrivate --excludeProtected",
     "docs:json": "typedoc --json docs/spec.json --excludeExternals src/index.ts src/types.ts",
-    "test": "mocha",
     "test": "jest",
     "allure:generate": "rm -rf allure-report && node_modules/allure-commandline/bin/allure generate",
     "allure:serve": "node_modules/allure-commandline/bin/allure serve",
@@ -39,7 +38,8 @@
   },
   "homepage": "https://github.com/supabase/functions-js#readme",
   "dependencies": {
-    "cross-fetch": "^3.1.5"
+    "cross-fetch": "^3.1.5",
+    "form-data": "^4.0.0"
   },
   "devDependencies": {
     "@types/jest": "^27.4.1",
@@ -56,7 +56,6 @@
     "rimraf": "^3.0.2",
     "semantic-release": "^19.0.2",
     "semantic-release-plugin-update-version-in-files": "^1.1.0",
-    "typedoc": "^0.22.16",
     "testcontainers": "^8.5.1",
     "ts-jest": "^27.1.4",
     "ts-node": "^10.7.0",

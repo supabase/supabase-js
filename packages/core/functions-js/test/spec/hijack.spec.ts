@@ -33,9 +33,7 @@ describe('hijack connection', () => {
     })
 
     log('invoke func')
-    const { data, error } = await fclient.invoke(func, {
-      responseType: 'text',
-    })
+    const { data, error } = await fclient.invoke(func, {})
 
     log('assert error to be "Connection Upgrade is not supported"')
     expect(error).not.toBeNull()
