@@ -1014,7 +1014,7 @@ export default class GoTrueClient {
    * @param factorType device which we're validating against. Can only be TOTP for now.
    * @param issuer domain which the user is enrolling with
    */
-  private async _enroll({ factorType = 'totp', ...params }: MFAEnrollParams) {
+  private async _enroll({ factorType = 'TOTP', ...params }: MFAEnrollParams) {
     const { data, error } = await this.getUser()
     if (error) throw error
     const user: User = data.user
