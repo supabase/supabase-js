@@ -256,25 +256,15 @@ describe('params reached to function', () => {
       },
     })
 
-    const arrayBuf = typeof data?.body === 'string' ? str2ab(data.body) : Buffer.from('').buffer
-    const dataJSON = JSON.parse(new TextDecoder().decode(arrayBuf))
-    dataJSON.body = JSON.parse(dataJSON.body.replace(/\0/g, ''))
-
     log('assert no error')
     expect(error).toBeNull()
 
     const expected = {
       url: 'http://localhost:8000/mirror',
       method: 'POST',
-      headers: dataJSON?.headers ?? [],
-      body: body,
+      body: arrayBuffer,
     }
-    attach(
-      'check data from function',
-      `expected: ${JSON.stringify(expected)}\n actual: ${JSON.stringify(dataJSON)}`,
-      ContentType.TEXT
-    )
-    expect(dataJSON).toEqual(expected)
+    expect(data).toMatchObject(expected)
   })
 
   test('invoke mirror with body blob', async () => {
@@ -303,25 +293,15 @@ describe('params reached to function', () => {
       },
     })
 
-    const bodyBlob = JSON.parse(typeof data?.body === 'string' ? data?.body : '')
-    const dataJSON = (await bodyBlob.text()) ?? ''
-    dataJSON.body = JSON.parse(dataJSON.body.replace(/\0/g, ''))
-
     log('assert no error')
     expect(error).toBeNull()
 
     const expected = {
       url: 'http://localhost:8000/mirror',
       method: 'POST',
-      headers: dataJSON?.headers ?? [],
-      body: body,
+      body: bodyEncoded,
     }
-    attach(
-      'check data from function',
-      `expected: ${JSON.stringify(expected)}\n actual: ${JSON.stringify(dataJSON)}`,
-      ContentType.TEXT
-    )
-    expect(dataJSON).toEqual(expected)
+    expect(data).toMatchObject(expected)
   })
 
   test('invoke mirror with url params', async () => {
@@ -354,11 +334,6 @@ describe('params reached to function', () => {
       url: `http://localhost:8000/mirror?${queryParams.toString()}`,
       method: 'POST',
     }
-    attach(
-      'check data from function',
-      `expected: ${JSON.stringify(expected)}\n actual: ${JSON.stringify(data)}`,
-      ContentType.TEXT
-    )
     expect(data).toMatchObject(expected)
   })
 })
