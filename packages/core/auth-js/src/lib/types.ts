@@ -490,7 +490,7 @@ export type GenerateLinkType =
 // MFA related types
 export type MFAEnrollParams = {
   friendlyName?: string
-  factorType: 'totp'
+  factorType: 'TOTP'
   issuer: string
 }
 
