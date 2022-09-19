@@ -5,7 +5,6 @@ import 'jest'
 import { nanoid } from 'nanoid'
 import { sign } from 'jsonwebtoken'
 import { ContentType } from 'allure-js-commons'
-import FormData from 'form-data'
 
 import { FunctionsClient } from '../../src/index'
 
@@ -249,7 +248,7 @@ describe('params reached to function', () => {
       flag: false,
     }
     const arrayBuffer = str2ab(JSON.stringify(body))
-    const { data, error } = await fclient.invoke<Blob>('mirror', {
+    const { data, error } = await fclient.invoke<MirrorResponse>('mirror', {
       body: arrayBuffer,
       headers: {
         'content-type': 'application/octet-stream',
@@ -257,8 +256,8 @@ describe('params reached to function', () => {
       },
     })
 
-    const arrayBuf = await data?.arrayBuffer()
-    const dataJSON = JSON.parse(new TextDecoder().decode(arrayBuf ?? Buffer.from('').buffer))
+    const arrayBuf = typeof data?.body === 'string' ? str2ab(data.body) : Buffer.from('').buffer
+    const dataJSON = JSON.parse(new TextDecoder().decode(arrayBuf))
     dataJSON.body = JSON.parse(dataJSON.body.replace(/\0/g, ''))
 
     log('assert no error')
@@ -296,14 +295,16 @@ describe('params reached to function', () => {
       flag: false,
     }
     const bodyEncoded = str2ab(JSON.stringify(body))
-    const { data, error } = await fclient.invoke<Blob>('mirror', {
+    const { data, error } = await fclient.invoke<MirrorResponse>('mirror', {
       body: bodyEncoded,
       headers: {
         'content-type': 'application/octet-stream',
         'response-type': 'blob',
       },
     })
-    const dataJSON = JSON.parse((await data?.text()) ?? '')
+
+    const bodyBlob = JSON.parse(typeof data?.body === 'string' ? data?.body : '')
+    const dataJSON = (await bodyBlob.text()) ?? ''
     dataJSON.body = JSON.parse(dataJSON.body.replace(/\0/g, ''))
 
     log('assert no error')
@@ -352,14 +353,12 @@ describe('params reached to function', () => {
     const expected = {
       url: `http://localhost:8000/mirror?${queryParams.toString()}`,
       method: 'POST',
-      headers: data?.headers ?? [],
-      body: '',
     }
     attach(
       'check data from function',
       `expected: ${JSON.stringify(expected)}\n actual: ${JSON.stringify(data)}`,
       ContentType.TEXT
     )
-    expect(data).toEqual(expected)
+    expect(data).toMatchObject(expected)
   })
 })

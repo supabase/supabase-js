@@ -54,7 +54,7 @@ serve(async (request: Request) => {
   return new Response(responseData, {
     status: 200,
     headers: {
-      'content-type': contentType,
+      'content-type': 'application/json',
     },
   })
 })

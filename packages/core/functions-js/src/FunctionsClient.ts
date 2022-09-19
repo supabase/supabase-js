@@ -7,7 +7,6 @@ import {
   FunctionsResponse,
   FunctionInvokeOptions,
 } from './types'
-import FormData from 'form-data'
 
 export class FunctionsClient {
   protected url: string
