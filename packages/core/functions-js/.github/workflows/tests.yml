@@ -1,16 +1,16 @@
-name: Release
+name: Tests
 
 on:
+  pull_request:
   push:
     branches:
       - main
-      - next
       - rc
   workflow_dispatch:
 
 jobs:
-  release:
-    name: Release / Node ${{ matrix.node }}
+  autotests:
+    name: Run tests
     strategy:
       matrix:
         node: ['18']
@@ -25,12 +25,9 @@ jobs:
         with:
           node-version: ${{ matrix.node }}
 
-      - run: |
-          npm ci
-          npm run build
+      - name: Install dependencies
+        run: npm ci
 
-      - name: Create a release
-        run: npx semantic-release
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - name: Run Test
+        run: npm run test
+        continue-on-error: true
