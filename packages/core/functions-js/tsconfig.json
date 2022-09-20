@@ -18,5 +18,8 @@
     "forceConsistentCasingInFileNames": true,
     "stripInternal": true,
     "allowSyntheticDefaultImports": true
-  }
+  },
+  "typeRoots": [
+    "./src/types"
+  ]
 }
