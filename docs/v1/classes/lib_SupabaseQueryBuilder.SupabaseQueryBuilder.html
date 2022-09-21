@@ -1,0 +1,2937 @@
+<!DOCTYPE html>
+<html class="default">
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="x-ua-compatible" content="IE=edge" />
+    <title>SupabaseQueryBuilder | @supabase/supabase-js</title>
+    <meta name="description" content="Documentation for @supabase/supabase-js" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="stylesheet" href="../assets/style.css" />
+    <link rel="stylesheet" href="../assets/highlight.css" />
+    <script async src="../assets/search.js" id="search-script"></script>
+  </head>
+  <body>
+    <script>
+      document.body.classList.add(localStorage.getItem('tsd-theme') || 'os')
+    </script>
+    <header>
+      <div class="tsd-page-toolbar">
+        <div class="container">
+          <div class="table-wrap">
+            <div class="table-cell" id="tsd-search" data-base="..">
+              <div class="field">
+                <label for="tsd-search-field" class="tsd-widget search no-caption">Search</label
+                ><input type="text" id="tsd-search-field" />
+              </div>
+              <ul class="results">
+                <li class="state loading">Preparing search index...</li>
+                <li class="state failure">The search index is not available</li>
+              </ul>
+              <a href="../index.html" class="title">@supabase/supabase-js</a>
+            </div>
+            <div class="table-cell" id="tsd-widgets">
+              <div id="tsd-filter">
+                <a href="#" class="tsd-widget options no-caption" data-toggle="options">Options</a>
+                <div class="tsd-filter-group">
+                  <div class="tsd-select" id="tsd-filter-visibility">
+                    <span class="tsd-select-label">All</span>
+                    <ul class="tsd-select-list">
+                      <li data-value="public">Public</li>
+                      <li data-value="protected">Public/Protected</li>
+                      <li data-value="private" class="selected">All</li>
+                    </ul>
+                  </div>
+                  <input type="checkbox" id="tsd-filter-inherited" checked /><label
+                    class="tsd-widget"
+                    for="tsd-filter-inherited"
+                    >Inherited</label
+                  ><input type="checkbox" id="tsd-filter-externals" checked /><label
+                    class="tsd-widget"
+                    for="tsd-filter-externals"
+                    >Externals</label
+                  >
+                </div>
+              </div>
+              <a href="#" class="tsd-widget menu no-caption" data-toggle="menu">Menu</a>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="tsd-page-title">
+        <div class="container">
+          <ul class="tsd-breadcrumb">
+            <li><a href="../modules.html">@supabase/supabase-js</a></li>
+            <li><a href="../modules/lib_SupabaseQueryBuilder.html">lib/SupabaseQueryBuilder</a></li>
+            <li>
+              <a href="lib_SupabaseQueryBuilder.SupabaseQueryBuilder.html">SupabaseQueryBuilder</a>
+            </li>
+          </ul>
+          <h1>Class SupabaseQueryBuilder&lt;T&gt;</h1>
+        </div>
+      </div>
+    </header>
+    <div class="container container-main">
+      <div class="row">
+        <div class="col-8 col-content">
+          <section class="tsd-panel tsd-type-parameters">
+            <h3>Type Parameters</h3>
+            <ul class="tsd-type-parameters">
+              <li><h4>T</h4></li>
+            </ul>
+          </section>
+          <section class="tsd-panel tsd-hierarchy">
+            <h3>Hierarchy</h3>
+            <ul class="tsd-hierarchy">
+              <li>
+                <span class="tsd-signature-type">default</span
+                ><span class="tsd-signature-symbol">&lt;</span
+                ><span class="tsd-signature-type" data-tsd-kind="Type parameter">T</span
+                ><span class="tsd-signature-symbol">&gt;</span>
+                <ul class="tsd-hierarchy">
+                  <li><span class="target">SupabaseQueryBuilder</span></li>
+                </ul>
+              </li>
+            </ul>
+          </section>
+          <section class="tsd-panel-group tsd-index-group">
+            <h2>Index</h2>
+            <section class="tsd-panel tsd-index-panel">
+              <div class="tsd-index-content">
+                <section class="tsd-index-section">
+                  <h3>Constructors</h3>
+                  <ul class="tsd-index-list">
+                    <li
+                      class="tsd-kind-constructor tsd-parent-kind-class tsd-has-type-parameter tsd-is-overwrite"
+                    >
+                      <a
+                        href="lib_SupabaseQueryBuilder.SupabaseQueryBuilder.html#constructor"
+                        class="tsd-kind-icon"
+                        >constructor</a
+                      >
+                    </li>
+                  </ul>
+                </section>
+                <section class="tsd-index-section tsd-is-private-protected">
+                  <h3>Properties</h3>
+                  <ul class="tsd-index-list">
+                    <li class="tsd-kind-property tsd-parent-kind-class tsd-is-private">
+                      <a
+                        href="lib_SupabaseQueryBuilder.SupabaseQueryBuilder.html#_headers"
+                        class="tsd-kind-icon"
+                        >_headers</a
+                      >
+                    </li>
+                    <li class="tsd-kind-property tsd-parent-kind-class tsd-is-private">
+                      <a
+                        href="lib_SupabaseQueryBuilder.SupabaseQueryBuilder.html#_realtime"
+                        class="tsd-kind-icon"
+                        >_realtime</a
+                      >
+                    </li>
+                    <li class="tsd-kind-property tsd-parent-kind-class tsd-is-private">
+                      <a
+                        href="lib_SupabaseQueryBuilder.SupabaseQueryBuilder.html#_schema"
+                        class="tsd-kind-icon"
+                        >_schema</a
+                      >
+                    </li>
+                    <li class="tsd-kind-property tsd-parent-kind-class tsd-is-private">
+                      <a
+                        href="lib_SupabaseQueryBuilder.SupabaseQueryBuilder.html#_subscription"
+                        class="tsd-kind-icon"
+                        >_subscription</a
+                      >
+                    </li>
+                    <li class="tsd-kind-property tsd-parent-kind-class tsd-is-private">
+                      <a
+                        href="lib_SupabaseQueryBuilder.SupabaseQueryBuilder.html#_table"
+                        class="tsd-kind-icon"
+                        >_table</a
+                      >
+                    </li>
+                    <li
+                      class="tsd-kind-property tsd-parent-kind-class tsd-is-inherited tsd-is-protected tsd-is-external"
+                    >
+                      <a
+                        href="lib_SupabaseQueryBuilder.SupabaseQueryBuilder.html#allowEmpty"
+                        class="tsd-kind-icon"
+                        >allow<wbr />Empty</a
+                      >
+                    </li>
+                    <li
+                      class="tsd-kind-property tsd-parent-kind-class tsd-is-inherited tsd-is-protected tsd-is-external"
+                    >
+                      <a
+                        href="lib_SupabaseQueryBuilder.SupabaseQueryBuilder.html#body"
+                        class="tsd-kind-icon"
+                        >body</a
+                      >
+                    </li>
+                    <li
+                      class="tsd-kind-property tsd-parent-kind-class tsd-is-inherited tsd-is-protected tsd-is-external"
+                    >
+                      <a
+                        href="lib_SupabaseQueryBuilder.SupabaseQueryBuilder.html#fetch"
+                        class="tsd-kind-icon"
+                        >fetch</a
+                      >
+                    </li>
+                    <li
+                      class="tsd-kind-property tsd-parent-kind-class tsd-is-inherited tsd-is-protected tsd-is-external"
+                    >
+                      <a
+                        href="lib_SupabaseQueryBuilder.SupabaseQueryBuilder.html#headers"
+                        class="tsd-kind-icon"
+                        >headers</a
+                      >
+                    </li>
+                    <li
+                      class="tsd-kind-property tsd-parent-kind-class tsd-is-inherited tsd-is-protected tsd-is-external"
+                    >
+                      <a
+                        href="lib_SupabaseQueryBuilder.SupabaseQueryBuilder.html#method"
+                        class="tsd-kind-icon"
+                        >method</a
+                      >
+                    </li>
+                    <li
+                      class="tsd-kind-property tsd-parent-kind-class tsd-is-inherited tsd-is-protected tsd-is-external"
+                    >
+                      <a
+                        href="lib_SupabaseQueryBuilder.SupabaseQueryBuilder.html#schema"
+                        class="tsd-kind-icon"
+                        >schema</a
+                      >
+                    </li>
+                    <li
+                      class="tsd-kind-property tsd-parent-kind-class tsd-is-inherited tsd-is-protected tsd-is-external"
+                    >
+                      <a
+                        href="lib_SupabaseQueryBuilder.SupabaseQueryBuilder.html#shouldThrowOnError"
+                        class="tsd-kind-icon"
+                        >should<wbr />Throw<wbr />On<wbr />Error</a
+                      >
+                    </li>
+                    <li
+                      class="tsd-kind-property tsd-parent-kind-class tsd-is-inherited tsd-is-protected tsd-is-external"
+                    >
+                      <a
+                        href="lib_SupabaseQueryBuilder.SupabaseQueryBuilder.html#signal"
+                        class="tsd-kind-icon"
+                        >signal</a
+                      >
+                    </li>
+                    <li
+                      class="tsd-kind-property tsd-parent-kind-class tsd-is-inherited tsd-is-protected tsd-is-external"
+                    >
+                      <a
+                        href="lib_SupabaseQueryBuilder.SupabaseQueryBuilder.html#url"
+                        class="tsd-kind-icon"
+                        >url</a
+                      >
+                    </li>
+                  </ul>
+                </section>
+                <section class="tsd-index-section">
+                  <h3>Methods</h3>
+                  <ul class="tsd-index-list">
+                    <li
+                      class="tsd-kind-method tsd-parent-kind-class tsd-is-inherited tsd-is-external"
+                    >
+                      <a
+                        href="lib_SupabaseQueryBuilder.SupabaseQueryBuilder.html#delete"
+                        class="tsd-kind-icon"
+                        >delete</a
+                      >
+                    </li>
+                    <li
+                      class="tsd-kind-method tsd-parent-kind-class tsd-is-inherited tsd-is-external"
+                    >
+                      <a
+                        href="lib_SupabaseQueryBuilder.SupabaseQueryBuilder.html#insert"
+                        class="tsd-kind-icon"
+                        >insert</a
+                      >
+                    </li>
+                    <li class="tsd-kind-method tsd-parent-kind-class">
+                      <a
+                        href="lib_SupabaseQueryBuilder.SupabaseQueryBuilder.html#on"
+                        class="tsd-kind-icon"
+                        >on</a
+                      >
+                    </li>
+                    <li
+                      class="tsd-kind-method tsd-parent-kind-class tsd-is-inherited tsd-is-external"
+                    >
+                      <a
+                        href="lib_SupabaseQueryBuilder.SupabaseQueryBuilder.html#select"
+                        class="tsd-kind-icon"
+                        >select</a
+                      >
+                    </li>
+                    <li
+                      class="tsd-kind-method tsd-parent-kind-class tsd-has-type-parameter tsd-is-inherited tsd-is-external"
+                    >
+                      <a
+                        href="lib_SupabaseQueryBuilder.SupabaseQueryBuilder.html#then"
+                        class="tsd-kind-icon"
+                        >then</a
+                      >
+                    </li>
+                    <li
+                      class="tsd-kind-method tsd-parent-kind-class tsd-is-inherited tsd-is-external"
+                    >
+                      <a
+                        href="lib_SupabaseQueryBuilder.SupabaseQueryBuilder.html#throwOnError"
+                        class="tsd-kind-icon"
+                        >throw<wbr />On<wbr />Error</a
+                      >
+                    </li>
+                    <li
+                      class="tsd-kind-method tsd-parent-kind-class tsd-is-inherited tsd-is-external"
+                    >
+                      <a
+                        href="lib_SupabaseQueryBuilder.SupabaseQueryBuilder.html#update"
+                        class="tsd-kind-icon"
+                        >update</a
+                      >
+                    </li>
+                    <li
+                      class="tsd-kind-method tsd-parent-kind-class tsd-is-inherited tsd-is-external"
+                    >
+                      <a
+                        href="lib_SupabaseQueryBuilder.SupabaseQueryBuilder.html#upsert"
+                        class="tsd-kind-icon"
+                        >upsert</a
+                      >
+                    </li>
+                  </ul>
+                </section>
+              </div>
+            </section>
+          </section>
+          <section class="tsd-panel-group tsd-member-group">
+            <h2>Constructors</h2>
+            <section
+              class="tsd-panel tsd-member tsd-kind-constructor tsd-parent-kind-class tsd-has-type-parameter tsd-is-overwrite"
+            >
+              <a id="constructor" class="tsd-anchor"></a>
+              <h3 class="tsd-anchor-link">
+                constructor<a href="#constructor" aria-label="Permalink" class="tsd-anchor-icon"
+                  ><svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    class="icon icon-tabler icon-tabler-link"
+                    viewBox="0 0 24 24"
+                    stroke-width="2"
+                    stroke="currentColor"
+                    fill="none"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+                    <path d="M10 14a3.5 3.5 0 0 0 5 0l4 -4a3.5 3.5 0 0 0 -5 -5l-.5 .5"></path>
+                    <path d="M14 10a3.5 3.5 0 0 0 -5 0l-4 4a3.5 3.5 0 0 0 5 5l.5 -.5"></path></svg
+                ></a>
+              </h3>
+              <ul
+                class="tsd-signatures tsd-kind-constructor tsd-parent-kind-class tsd-has-type-parameter tsd-is-overwrite"
+              >
+                <li class="tsd-signature tsd-kind-icon">
+                  new <wbr />Supabase<wbr />Query<wbr />Builder<span class="tsd-signature-symbol"
+                    >&lt;</span
+                  ><span class="tsd-signature-type" data-tsd-kind="Type parameter">T</span
+                  ><span class="tsd-signature-symbol">&gt;</span
+                  ><span class="tsd-signature-symbol">(</span>url<span class="tsd-signature-symbol"
+                    >: </span
+                  ><span class="tsd-signature-type">string</span>, __namedParameters<span
+                    class="tsd-signature-symbol"
+                    >: </span
+                  ><span class="tsd-signature-symbol">{ </span>fetch<span
+                    class="tsd-signature-symbol"
+                    >?: </span
+                  ><span class="tsd-signature-symbol">(</span
+                  ><span class="tsd-signature-symbol">(</span>input<span
+                    class="tsd-signature-symbol"
+                    >: </span
+                  ><span class="tsd-signature-type">RequestInfo</span
+                  ><span class="tsd-signature-symbol"> | </span
+                  ><span class="tsd-signature-type">URL</span>, init<span
+                    class="tsd-signature-symbol"
+                    >?: </span
+                  ><span class="tsd-signature-type">RequestInit</span
+                  ><span class="tsd-signature-symbol">)</span
+                  ><span class="tsd-signature-symbol"> =&gt; </span
+                  ><span class="tsd-signature-type">Promise</span
+                  ><span class="tsd-signature-symbol">&lt;</span
+                  ><span class="tsd-signature-type">Response</span
+                  ><span class="tsd-signature-symbol">&gt;</span
+                  ><span class="tsd-signature-symbol">)</span
+                  ><span class="tsd-signature-symbol">; </span>headers<span
+                    class="tsd-signature-symbol"
+                    >?: </span
+                  ><a
+                    href="../modules/lib_types.html#GenericObject"
+                    class="tsd-signature-type"
+                    data-tsd-kind="Type alias"
+                    >GenericObject</a
+                  ><span class="tsd-signature-symbol">; </span>realtime<span
+                    class="tsd-signature-symbol"
+                    >: </span
+                  ><a
+                    href="index.RealtimeClient.html"
+                    class="tsd-signature-type"
+                    data-tsd-kind="Class"
+                    >RealtimeClient</a
+                  ><span class="tsd-signature-symbol">; </span>schema<span
+                    class="tsd-signature-symbol"
+                    >: </span
+                  ><span class="tsd-signature-type">string</span
+                  ><span class="tsd-signature-symbol">; </span>shouldThrowOnError<span
+                    class="tsd-signature-symbol"
+                    >?: </span
+                  ><span class="tsd-signature-type">boolean</span
+                  ><span class="tsd-signature-symbol">; </span>table<span
+                    class="tsd-signature-symbol"
+                    >: </span
+                  ><span class="tsd-signature-type">string</span
+                  ><span class="tsd-signature-symbol"> }</span
+                  ><span class="tsd-signature-symbol">)</span
+                  ><span class="tsd-signature-symbol">: </span
+                  ><a
+                    href="lib_SupabaseQueryBuilder.SupabaseQueryBuilder.html"
+                    class="tsd-signature-type"
+                    data-tsd-kind="Class"
+                    >SupabaseQueryBuilder</a
+                  ><span class="tsd-signature-symbol">&lt;</span
+                  ><span class="tsd-signature-type" data-tsd-kind="Type parameter">T</span
+                  ><span class="tsd-signature-symbol">&gt;</span>
+                </li>
+              </ul>
+              <ul class="tsd-descriptions">
+                <li class="tsd-description">
+                  <aside class="tsd-sources">
+                    <p>Overrides PostgrestQueryBuilder&lt;T&gt;.constructor</p>
+                    <ul>
+                      <li>
+                        Defined in
+                        <a
+                          href="https://github.com/supabase/supabase-js/blob/18b7022/src/lib/SupabaseQueryBuilder.ts#L13"
+                          >src/lib/SupabaseQueryBuilder.ts:13</a
+                        >
+                      </li>
+                    </ul>
+                  </aside>
+                  <h4 class="tsd-type-parameters-title">Type Parameters</h4>
+                  <ul class="tsd-type-parameters">
+                    <li><h4>T</h4></li>
+                  </ul>
+                  <h4 class="tsd-parameters-title">Parameters</h4>
+                  <ul class="tsd-parameters">
+                    <li>
+                      <h5>url: <span class="tsd-signature-type">string</span></h5>
+                    </li>
+                    <li>
+                      <h5>
+                        __namedParameters: <span class="tsd-signature-symbol">{ </span>fetch<span
+                          class="tsd-signature-symbol"
+                          >?: </span
+                        ><span class="tsd-signature-symbol">(</span
+                        ><span class="tsd-signature-symbol">(</span>input<span
+                          class="tsd-signature-symbol"
+                          >: </span
+                        ><span class="tsd-signature-type">RequestInfo</span
+                        ><span class="tsd-signature-symbol"> | </span
+                        ><span class="tsd-signature-type">URL</span>, init<span
+                          class="tsd-signature-symbol"
+                          >?: </span
+                        ><span class="tsd-signature-type">RequestInit</span
+                        ><span class="tsd-signature-symbol">)</span
+                        ><span class="tsd-signature-symbol"> =&gt; </span
+                        ><span class="tsd-signature-type">Promise</span
+                        ><span class="tsd-signature-symbol">&lt;</span
+                        ><span class="tsd-signature-type">Response</span
+                        ><span class="tsd-signature-symbol">&gt;</span
+                        ><span class="tsd-signature-symbol">)</span
+                        ><span class="tsd-signature-symbol">; </span>headers<span
+                          class="tsd-signature-symbol"
+                          >?: </span
+                        ><a
+                          href="../modules/lib_types.html#GenericObject"
+                          class="tsd-signature-type"
+                          data-tsd-kind="Type alias"
+                          >GenericObject</a
+                        ><span class="tsd-signature-symbol">; </span>realtime<span
+                          class="tsd-signature-symbol"
+                          >: </span
+                        ><a
+                          href="index.RealtimeClient.html"
+                          class="tsd-signature-type"
+                          data-tsd-kind="Class"
+                          >RealtimeClient</a
+                        ><span class="tsd-signature-symbol">; </span>schema<span
+                          class="tsd-signature-symbol"
+                          >: </span
+                        ><span class="tsd-signature-type">string</span
+                        ><span class="tsd-signature-symbol">; </span>shouldThrowOnError<span
+                          class="tsd-signature-symbol"
+                          >?: </span
+                        ><span class="tsd-signature-type">boolean</span
+                        ><span class="tsd-signature-symbol">; </span>table<span
+                          class="tsd-signature-symbol"
+                          >: </span
+                        ><span class="tsd-signature-type">string</span
+                        ><span class="tsd-signature-symbol"> }</span>
+                      </h5>
+                      <ul class="tsd-parameters">
+                        <li class="tsd-parameter">
+                          <h5>
+                            <span class="tsd-flag ts-flagOptional">Optional</span> fetch<span
+                              class="tsd-signature-symbol"
+                              >?: </span
+                            ><span class="tsd-signature-symbol">(</span
+                            ><span class="tsd-signature-symbol">(</span>input<span
+                              class="tsd-signature-symbol"
+                              >: </span
+                            ><span class="tsd-signature-type">RequestInfo</span
+                            ><span class="tsd-signature-symbol"> | </span
+                            ><span class="tsd-signature-type">URL</span>, init<span
+                              class="tsd-signature-symbol"
+                              >?: </span
+                            ><span class="tsd-signature-type">RequestInit</span
+                            ><span class="tsd-signature-symbol">)</span
+                            ><span class="tsd-signature-symbol"> =&gt; </span
+                            ><span class="tsd-signature-type">Promise</span
+                            ><span class="tsd-signature-symbol">&lt;</span
+                            ><span class="tsd-signature-type">Response</span
+                            ><span class="tsd-signature-symbol">&gt;</span
+                            ><span class="tsd-signature-symbol">)</span>
+                          </h5>
+                          <ul class="tsd-parameters">
+                            <li class="tsd-parameter-signature">
+                              <ul
+                                class="tsd-signatures tsd-kind-type-literal tsd-parent-kind-type-literal"
+                              >
+                                <li class="tsd-signature tsd-kind-icon">
+                                  <span class="tsd-signature-symbol">(</span>input<span
+                                    class="tsd-signature-symbol"
+                                    >: </span
+                                  ><span class="tsd-signature-type">RequestInfo</span
+                                  ><span class="tsd-signature-symbol"> | </span
+                                  ><span class="tsd-signature-type">URL</span>, init<span
+                                    class="tsd-signature-symbol"
+                                    >?: </span
+                                  ><span class="tsd-signature-type">RequestInit</span
+                                  ><span class="tsd-signature-symbol">)</span
+                                  ><span class="tsd-signature-symbol">: </span
+                                  ><span class="tsd-signature-type">Promise</span
+                                  ><span class="tsd-signature-symbol">&lt;</span
+                                  ><span class="tsd-signature-type">Response</span
+                                  ><span class="tsd-signature-symbol">&gt;</span>
+                                </li>
+                              </ul>
+                              <ul class="tsd-descriptions">
+                                <li class="tsd-description">
+                                  <h4 class="tsd-parameters-title">Parameters</h4>
+                                  <ul class="tsd-parameters">
+                                    <li>
+                                      <h5>
+                                        input: <span class="tsd-signature-type">RequestInfo</span
+                                        ><span class="tsd-signature-symbol"> | </span
+                                        ><span class="tsd-signature-type">URL</span>
+                                      </h5>
+                                    </li>
+                                    <li>
+                                      <h5>
+                                        <span class="tsd-flag ts-flagOptional">Optional</span> init:
+                                        <span class="tsd-signature-type">RequestInit</span>
+                                      </h5>
+                                    </li>
+                                  </ul>
+                                  <h4 class="tsd-returns-title">
+                                    Returns <span class="tsd-signature-type">Promise</span
+                                    ><span class="tsd-signature-symbol">&lt;</span
+                                    ><span class="tsd-signature-type">Response</span
+                                    ><span class="tsd-signature-symbol">&gt;</span>
+                                  </h4>
+                                </li>
+                              </ul>
+                            </li>
+                          </ul>
+                        </li>
+                        <li class="tsd-parameter">
+                          <h5>
+                            <span class="tsd-flag ts-flagOptional">Optional</span> headers<span
+                              class="tsd-signature-symbol"
+                              >?: </span
+                            ><a
+                              href="../modules/lib_types.html#GenericObject"
+                              class="tsd-signature-type"
+                              data-tsd-kind="Type alias"
+                              >GenericObject</a
+                            >
+                          </h5>
+                        </li>
+                        <li class="tsd-parameter">
+                          <h5>
+                            realtime<span class="tsd-signature-symbol">: </span
+                            ><a
+                              href="index.RealtimeClient.html"
+                              class="tsd-signature-type"
+                              data-tsd-kind="Class"
+                              >RealtimeClient</a
+                            >
+                          </h5>
+                        </li>
+                        <li class="tsd-parameter">
+                          <h5>
+                            schema<span class="tsd-signature-symbol">: </span
+                            ><span class="tsd-signature-type">string</span>
+                          </h5>
+                        </li>
+                        <li class="tsd-parameter">
+                          <h5>
+                            <span class="tsd-flag ts-flagOptional">Optional</span>
+                            should<wbr />Throw<wbr />On<wbr />Error<span
+                              class="tsd-signature-symbol"
+                              >?: </span
+                            ><span class="tsd-signature-type">boolean</span>
+                          </h5>
+                        </li>
+                        <li class="tsd-parameter">
+                          <h5>
+                            table<span class="tsd-signature-symbol">: </span
+                            ><span class="tsd-signature-type">string</span>
+                          </h5>
+                        </li>
+                      </ul>
+                    </li>
+                  </ul>
+                  <h4 class="tsd-returns-title">
+                    Returns
+                    <a
+                      href="lib_SupabaseQueryBuilder.SupabaseQueryBuilder.html"
+                      class="tsd-signature-type"
+                      data-tsd-kind="Class"
+                      >SupabaseQueryBuilder</a
+                    ><span class="tsd-signature-symbol">&lt;</span
+                    ><span class="tsd-signature-type" data-tsd-kind="Type parameter">T</span
+                    ><span class="tsd-signature-symbol">&gt;</span>
+                  </h4>
+                </li>
+              </ul>
+            </section>
+          </section>
+          <section class="tsd-panel-group tsd-member-group tsd-is-private-protected">
+            <h2>Properties</h2>
+            <section
+              class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-class tsd-is-private"
+            >
+              <a id="_headers" class="tsd-anchor"></a>
+              <h3 class="tsd-anchor-link">
+                <span class="tsd-flag ts-flagPrivate">Private</span> _headers<a
+                  href="#_headers"
+                  aria-label="Permalink"
+                  class="tsd-anchor-icon"
+                  ><svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    class="icon icon-tabler icon-tabler-link"
+                    viewBox="0 0 24 24"
+                    stroke-width="2"
+                    stroke="currentColor"
+                    fill="none"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+                    <path d="M10 14a3.5 3.5 0 0 0 5 0l4 -4a3.5 3.5 0 0 0 -5 -5l-.5 .5"></path>
+                    <path d="M14 10a3.5 3.5 0 0 0 -5 0l-4 4a3.5 3.5 0 0 0 5 5l.5 -.5"></path></svg
+                ></a>
+              </h3>
+              <div class="tsd-signature tsd-kind-icon">
+                _headers<span class="tsd-signature-symbol">:</span>
+                <a
+                  href="../modules/lib_types.html#GenericObject"
+                  class="tsd-signature-type"
+                  data-tsd-kind="Type alias"
+                  >GenericObject</a
+                >
+              </div>
+              <aside class="tsd-sources">
+                <ul>
+                  <li>
+                    Defined in
+                    <a
+                      href="https://github.com/supabase/supabase-js/blob/18b7022/src/lib/SupabaseQueryBuilder.ts#L9"
+                      >src/lib/SupabaseQueryBuilder.ts:9</a
+                    >
+                  </li>
+                </ul>
+              </aside>
+            </section>
+            <section
+              class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-class tsd-is-private"
+            >
+              <a id="_realtime" class="tsd-anchor"></a>
+              <h3 class="tsd-anchor-link">
+                <span class="tsd-flag ts-flagPrivate">Private</span> _realtime<a
+                  href="#_realtime"
+                  aria-label="Permalink"
+                  class="tsd-anchor-icon"
+                  ><svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    class="icon icon-tabler icon-tabler-link"
+                    viewBox="0 0 24 24"
+                    stroke-width="2"
+                    stroke="currentColor"
+                    fill="none"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+                    <path d="M10 14a3.5 3.5 0 0 0 5 0l4 -4a3.5 3.5 0 0 0 -5 -5l-.5 .5"></path>
+                    <path d="M14 10a3.5 3.5 0 0 0 -5 0l-4 4a3.5 3.5 0 0 0 5 5l.5 -.5"></path></svg
+                ></a>
+              </h3>
+              <div class="tsd-signature tsd-kind-icon">
+                _realtime<span class="tsd-signature-symbol">:</span>
+                <a href="index.RealtimeClient.html" class="tsd-signature-type" data-tsd-kind="Class"
+                  >RealtimeClient</a
+                >
+              </div>
+              <aside class="tsd-sources">
+                <ul>
+                  <li>
+                    Defined in
+                    <a
+                      href="https://github.com/supabase/supabase-js/blob/18b7022/src/lib/SupabaseQueryBuilder.ts#L8"
+                      >src/lib/SupabaseQueryBuilder.ts:8</a
+                    >
+                  </li>
+                </ul>
+              </aside>
+            </section>
+            <section
+              class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-class tsd-is-private"
+            >
+              <a id="_schema" class="tsd-anchor"></a>
+              <h3 class="tsd-anchor-link">
+                <span class="tsd-flag ts-flagPrivate">Private</span> _schema<a
+                  href="#_schema"
+                  aria-label="Permalink"
+                  class="tsd-anchor-icon"
+                  ><svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    class="icon icon-tabler icon-tabler-link"
+                    viewBox="0 0 24 24"
+                    stroke-width="2"
+                    stroke="currentColor"
+                    fill="none"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+                    <path d="M10 14a3.5 3.5 0 0 0 5 0l4 -4a3.5 3.5 0 0 0 -5 -5l-.5 .5"></path>
+                    <path d="M14 10a3.5 3.5 0 0 0 -5 0l-4 4a3.5 3.5 0 0 0 5 5l.5 -.5"></path></svg
+                ></a>
+              </h3>
+              <div class="tsd-signature tsd-kind-icon">
+                _schema<span class="tsd-signature-symbol">:</span>
+                <span class="tsd-signature-type">string</span>
+              </div>
+              <aside class="tsd-sources">
+                <ul>
+                  <li>
+                    Defined in
+                    <a
+                      href="https://github.com/supabase/supabase-js/blob/18b7022/src/lib/SupabaseQueryBuilder.ts#L10"
+                      >src/lib/SupabaseQueryBuilder.ts:10</a
+                    >
+                  </li>
+                </ul>
+              </aside>
+            </section>
+            <section
+              class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-class tsd-is-private"
+            >
+              <a id="_subscription" class="tsd-anchor"></a>
+              <h3 class="tsd-anchor-link">
+                <span class="tsd-flag ts-flagPrivate">Private</span> _subscription<a
+                  href="#_subscription"
+                  aria-label="Permalink"
+                  class="tsd-anchor-icon"
+                  ><svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    class="icon icon-tabler icon-tabler-link"
+                    viewBox="0 0 24 24"
+                    stroke-width="2"
+                    stroke="currentColor"
+                    fill="none"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+                    <path d="M10 14a3.5 3.5 0 0 0 5 0l4 -4a3.5 3.5 0 0 0 -5 -5l-.5 .5"></path>
+                    <path d="M14 10a3.5 3.5 0 0 0 -5 0l-4 4a3.5 3.5 0 0 0 5 5l.5 -.5"></path></svg
+                ></a>
+              </h3>
+              <div class="tsd-signature tsd-kind-icon">
+                _subscription<span class="tsd-signature-symbol">:</span>
+                <span class="tsd-signature-type">null</span
+                ><span class="tsd-signature-symbol"> | </span
+                ><a
+                  href="lib_SupabaseRealtimeClient.SupabaseRealtimeClient.html"
+                  class="tsd-signature-type"
+                  data-tsd-kind="Class"
+                  >SupabaseRealtimeClient</a
+                ><span class="tsd-signature-symbol"> = null</span>
+              </div>
+              <aside class="tsd-sources">
+                <ul>
+                  <li>
+                    Defined in
+                    <a
+                      href="https://github.com/supabase/supabase-js/blob/18b7022/src/lib/SupabaseQueryBuilder.ts#L7"
+                      >src/lib/SupabaseQueryBuilder.ts:7</a
+                    >
+                  </li>
+                </ul>
+              </aside>
+            </section>
+            <section
+              class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-class tsd-is-private"
+            >
+              <a id="_table" class="tsd-anchor"></a>
+              <h3 class="tsd-anchor-link">
+                <span class="tsd-flag ts-flagPrivate">Private</span> _table<a
+                  href="#_table"
+                  aria-label="Permalink"
+                  class="tsd-anchor-icon"
+                  ><svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    class="icon icon-tabler icon-tabler-link"
+                    viewBox="0 0 24 24"
+                    stroke-width="2"
+                    stroke="currentColor"
+                    fill="none"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+                    <path d="M10 14a3.5 3.5 0 0 0 5 0l4 -4a3.5 3.5 0 0 0 -5 -5l-.5 .5"></path>
+                    <path d="M14 10a3.5 3.5 0 0 0 -5 0l-4 4a3.5 3.5 0 0 0 5 5l.5 -.5"></path></svg
+                ></a>
+              </h3>
+              <div class="tsd-signature tsd-kind-icon">
+                _table<span class="tsd-signature-symbol">:</span>
+                <span class="tsd-signature-type">string</span>
+              </div>
+              <aside class="tsd-sources">
+                <ul>
+                  <li>
+                    Defined in
+                    <a
+                      href="https://github.com/supabase/supabase-js/blob/18b7022/src/lib/SupabaseQueryBuilder.ts#L11"
+                      >src/lib/SupabaseQueryBuilder.ts:11</a
+                    >
+                  </li>
+                </ul>
+              </aside>
+            </section>
+            <section
+              class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-class tsd-is-inherited tsd-is-protected tsd-is-external"
+            >
+              <a id="allowEmpty" class="tsd-anchor"></a>
+              <h3 class="tsd-anchor-link">
+                <span class="tsd-flag ts-flagProtected">Protected</span> allow<wbr />Empty<a
+                  href="#allowEmpty"
+                  aria-label="Permalink"
+                  class="tsd-anchor-icon"
+                  ><svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    class="icon icon-tabler icon-tabler-link"
+                    viewBox="0 0 24 24"
+                    stroke-width="2"
+                    stroke="currentColor"
+                    fill="none"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+                    <path d="M10 14a3.5 3.5 0 0 0 5 0l4 -4a3.5 3.5 0 0 0 -5 -5l-.5 .5"></path>
+                    <path d="M14 10a3.5 3.5 0 0 0 -5 0l-4 4a3.5 3.5 0 0 0 5 5l.5 -.5"></path></svg
+                ></a>
+              </h3>
+              <div class="tsd-signature tsd-kind-icon">
+                allow<wbr />Empty<span class="tsd-signature-symbol">:</span>
+                <span class="tsd-signature-type">boolean</span>
+              </div>
+              <aside class="tsd-sources">
+                <p>Inherited from PostgrestQueryBuilder.allowEmpty</p>
+                <ul>
+                  <li>
+                    Defined in node_modules/@supabase/postgrest-js/dist/module/lib/types.d.ts:53
+                  </li>
+                </ul>
+              </aside>
+            </section>
+            <section
+              class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-class tsd-is-inherited tsd-is-protected tsd-is-external"
+            >
+              <a id="body" class="tsd-anchor"></a>
+              <h3 class="tsd-anchor-link">
+                <span class="tsd-flag ts-flagProtected">Protected</span>
+                <span class="tsd-flag ts-flagOptional">Optional</span> body<a
+                  href="#body"
+                  aria-label="Permalink"
+                  class="tsd-anchor-icon"
+                  ><svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    class="icon icon-tabler icon-tabler-link"
+                    viewBox="0 0 24 24"
+                    stroke-width="2"
+                    stroke="currentColor"
+                    fill="none"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+                    <path d="M10 14a3.5 3.5 0 0 0 5 0l4 -4a3.5 3.5 0 0 0 -5 -5l-.5 .5"></path>
+                    <path d="M14 10a3.5 3.5 0 0 0 -5 0l-4 4a3.5 3.5 0 0 0 5 5l.5 -.5"></path></svg
+                ></a>
+              </h3>
+              <div class="tsd-signature tsd-kind-icon">
+                body<span class="tsd-signature-symbol">?:</span>
+                <span class="tsd-signature-type">Partial</span
+                ><span class="tsd-signature-symbol">&lt;</span
+                ><span class="tsd-signature-type" data-tsd-kind="Type parameter">T</span
+                ><span class="tsd-signature-symbol">&gt;</span
+                ><span class="tsd-signature-symbol"> | </span
+                ><span class="tsd-signature-type">Partial</span
+                ><span class="tsd-signature-symbol">&lt;</span
+                ><span class="tsd-signature-type" data-tsd-kind="Type parameter">T</span
+                ><span class="tsd-signature-symbol">&gt;</span
+                ><span class="tsd-signature-symbol">[]</span>
+              </div>
+              <aside class="tsd-sources">
+                <p>Inherited from PostgrestQueryBuilder.body</p>
+                <ul>
+                  <li>
+                    Defined in node_modules/@supabase/postgrest-js/dist/module/lib/types.d.ts:49
+                  </li>
+                </ul>
+              </aside>
+            </section>
+            <section
+              class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-class tsd-is-inherited tsd-is-protected tsd-is-external"
+            >
+              <a id="fetch" class="tsd-anchor"></a>
+              <h3 class="tsd-anchor-link">
+                <span class="tsd-flag ts-flagProtected">Protected</span> fetch<a
+                  href="#fetch"
+                  aria-label="Permalink"
+                  class="tsd-anchor-icon"
+                  ><svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    class="icon icon-tabler icon-tabler-link"
+                    viewBox="0 0 24 24"
+                    stroke-width="2"
+                    stroke="currentColor"
+                    fill="none"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+                    <path d="M10 14a3.5 3.5 0 0 0 5 0l4 -4a3.5 3.5 0 0 0 -5 -5l-.5 .5"></path>
+                    <path d="M14 10a3.5 3.5 0 0 0 -5 0l-4 4a3.5 3.5 0 0 0 5 5l.5 -.5"></path></svg
+                ></a>
+              </h3>
+              <div class="tsd-signature tsd-kind-icon">
+                fetch<span class="tsd-signature-symbol">:</span>
+                <span class="tsd-signature-symbol">(</span
+                ><span class="tsd-signature-symbol">(</span>input<span class="tsd-signature-symbol"
+                  >: </span
+                ><span class="tsd-signature-type">RequestInfo</span
+                ><span class="tsd-signature-symbol"> | </span
+                ><span class="tsd-signature-type">URL</span>, init<span class="tsd-signature-symbol"
+                  >?: </span
+                ><span class="tsd-signature-type">RequestInit</span
+                ><span class="tsd-signature-symbol">)</span
+                ><span class="tsd-signature-symbol"> =&gt; </span
+                ><span class="tsd-signature-type">Promise</span
+                ><span class="tsd-signature-symbol">&lt;</span
+                ><span class="tsd-signature-type">Response</span
+                ><span class="tsd-signature-symbol">&gt;</span
+                ><span class="tsd-signature-symbol">)</span>
+              </div>
+              <aside class="tsd-sources">
+                <p>Inherited from PostgrestQueryBuilder.fetch</p>
+                <ul>
+                  <li>
+                    Defined in node_modules/@supabase/postgrest-js/dist/module/lib/types.d.ts:52
+                  </li>
+                </ul>
+              </aside>
+              <div class="tsd-type-declaration">
+                <h4>Type declaration</h4>
+                <ul class="tsd-parameters">
+                  <li class="tsd-parameter-signature">
+                    <ul class="tsd-signatures tsd-kind-type-literal tsd-parent-kind-class">
+                      <li class="tsd-signature tsd-kind-icon">
+                        <span class="tsd-signature-symbol">(</span>input<span
+                          class="tsd-signature-symbol"
+                          >: </span
+                        ><span class="tsd-signature-type">RequestInfo</span
+                        ><span class="tsd-signature-symbol"> | </span
+                        ><span class="tsd-signature-type">URL</span>, init<span
+                          class="tsd-signature-symbol"
+                          >?: </span
+                        ><span class="tsd-signature-type">RequestInit</span
+                        ><span class="tsd-signature-symbol">)</span
+                        ><span class="tsd-signature-symbol">: </span
+                        ><span class="tsd-signature-type">Promise</span
+                        ><span class="tsd-signature-symbol">&lt;</span
+                        ><span class="tsd-signature-type">Response</span
+                        ><span class="tsd-signature-symbol">&gt;</span>
+                      </li>
+                    </ul>
+                    <ul class="tsd-descriptions">
+                      <li class="tsd-description">
+                        <h4 class="tsd-parameters-title">Parameters</h4>
+                        <ul class="tsd-parameters">
+                          <li>
+                            <h5>
+                              input: <span class="tsd-signature-type">RequestInfo</span
+                              ><span class="tsd-signature-symbol"> | </span
+                              ><span class="tsd-signature-type">URL</span>
+                            </h5>
+                          </li>
+                          <li>
+                            <h5>
+                              <span class="tsd-flag ts-flagOptional">Optional</span> init:
+                              <span class="tsd-signature-type">RequestInit</span>
+                            </h5>
+                          </li>
+                        </ul>
+                        <h4 class="tsd-returns-title">
+                          Returns <span class="tsd-signature-type">Promise</span
+                          ><span class="tsd-signature-symbol">&lt;</span
+                          ><span class="tsd-signature-type">Response</span
+                          ><span class="tsd-signature-symbol">&gt;</span>
+                        </h4>
+                      </li>
+                    </ul>
+                  </li>
+                </ul>
+              </div>
+            </section>
+            <section
+              class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-class tsd-is-inherited tsd-is-protected tsd-is-external"
+            >
+              <a id="headers" class="tsd-anchor"></a>
+              <h3 class="tsd-anchor-link">
+                <span class="tsd-flag ts-flagProtected">Protected</span> headers<a
+                  href="#headers"
+                  aria-label="Permalink"
+                  class="tsd-anchor-icon"
+                  ><svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    class="icon icon-tabler icon-tabler-link"
+                    viewBox="0 0 24 24"
+                    stroke-width="2"
+                    stroke="currentColor"
+                    fill="none"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+                    <path d="M10 14a3.5 3.5 0 0 0 5 0l4 -4a3.5 3.5 0 0 0 -5 -5l-.5 .5"></path>
+                    <path d="M14 10a3.5 3.5 0 0 0 -5 0l-4 4a3.5 3.5 0 0 0 5 5l.5 -.5"></path></svg
+                ></a>
+              </h3>
+              <div class="tsd-signature tsd-kind-icon">
+                headers<span class="tsd-signature-symbol">:</span>
+                <span class="tsd-signature-symbol">{}</span>
+              </div>
+              <aside class="tsd-sources">
+                <p>Inherited from PostgrestQueryBuilder.headers</p>
+                <ul>
+                  <li>
+                    Defined in node_modules/@supabase/postgrest-js/dist/module/lib/types.d.ts:45
+                  </li>
+                </ul>
+              </aside>
+              <div class="tsd-type-declaration">
+                <h4>Type declaration</h4>
+                <ul class="tsd-parameters">
+                  <li class="tsd-parameter-index-signature">
+                    <h5>
+                      <span class="tsd-signature-symbol">[</span>key:
+                      <span class="tsd-signature-type">string</span
+                      ><span class="tsd-signature-symbol">]: </span
+                      ><span class="tsd-signature-type">string</span>
+                    </h5>
+                  </li>
+                </ul>
+              </div>
+            </section>
+            <section
+              class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-class tsd-is-inherited tsd-is-protected tsd-is-external"
+            >
+              <a id="method" class="tsd-anchor"></a>
+              <h3 class="tsd-anchor-link">
+                <span class="tsd-flag ts-flagProtected">Protected</span> method<a
+                  href="#method"
+                  aria-label="Permalink"
+                  class="tsd-anchor-icon"
+                  ><svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    class="icon icon-tabler icon-tabler-link"
+                    viewBox="0 0 24 24"
+                    stroke-width="2"
+                    stroke="currentColor"
+                    fill="none"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+                    <path d="M10 14a3.5 3.5 0 0 0 5 0l4 -4a3.5 3.5 0 0 0 -5 -5l-.5 .5"></path>
+                    <path d="M14 10a3.5 3.5 0 0 0 -5 0l-4 4a3.5 3.5 0 0 0 5 5l.5 -.5"></path></svg
+                ></a>
+              </h3>
+              <div class="tsd-signature tsd-kind-icon">
+                method<span class="tsd-signature-symbol">:</span>
+                <span class="tsd-signature-type">&quot;GET&quot;</span
+                ><span class="tsd-signature-symbol"> | </span
+                ><span class="tsd-signature-type">&quot;POST&quot;</span
+                ><span class="tsd-signature-symbol"> | </span
+                ><span class="tsd-signature-type">&quot;PATCH&quot;</span
+                ><span class="tsd-signature-symbol"> | </span
+                ><span class="tsd-signature-type">&quot;DELETE&quot;</span
+                ><span class="tsd-signature-symbol"> | </span
+                ><span class="tsd-signature-type">&quot;HEAD&quot;</span>
+              </div>
+              <aside class="tsd-sources">
+                <p>Inherited from PostgrestQueryBuilder.method</p>
+                <ul>
+                  <li>
+                    Defined in node_modules/@supabase/postgrest-js/dist/module/lib/types.d.ts:43
+                  </li>
+                </ul>
+              </aside>
+            </section>
+            <section
+              class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-class tsd-is-inherited tsd-is-protected tsd-is-external"
+            >
+              <a id="schema" class="tsd-anchor"></a>
+              <h3 class="tsd-anchor-link">
+                <span class="tsd-flag ts-flagProtected">Protected</span>
+                <span class="tsd-flag ts-flagOptional">Optional</span> schema<a
+                  href="#schema"
+                  aria-label="Permalink"
+                  class="tsd-anchor-icon"
+                  ><svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    class="icon icon-tabler icon-tabler-link"
+                    viewBox="0 0 24 24"
+                    stroke-width="2"
+                    stroke="currentColor"
+                    fill="none"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+                    <path d="M10 14a3.5 3.5 0 0 0 5 0l4 -4a3.5 3.5 0 0 0 -5 -5l-.5 .5"></path>
+                    <path d="M14 10a3.5 3.5 0 0 0 -5 0l-4 4a3.5 3.5 0 0 0 5 5l.5 -.5"></path></svg
+                ></a>
+              </h3>
+              <div class="tsd-signature tsd-kind-icon">
+                schema<span class="tsd-signature-symbol">?:</span>
+                <span class="tsd-signature-type">string</span>
+              </div>
+              <aside class="tsd-sources">
+                <p>Inherited from PostgrestQueryBuilder.schema</p>
+                <ul>
+                  <li>
+                    Defined in node_modules/@supabase/postgrest-js/dist/module/lib/types.d.ts:48
+                  </li>
+                </ul>
+              </aside>
+            </section>
+            <section
+              class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-class tsd-is-inherited tsd-is-protected tsd-is-external"
+            >
+              <a id="shouldThrowOnError" class="tsd-anchor"></a>
+              <h3 class="tsd-anchor-link">
+                <span class="tsd-flag ts-flagProtected">Protected</span>
+                should<wbr />Throw<wbr />On<wbr />Error<a
+                  href="#shouldThrowOnError"
+                  aria-label="Permalink"
+                  class="tsd-anchor-icon"
+                  ><svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    class="icon icon-tabler icon-tabler-link"
+                    viewBox="0 0 24 24"
+                    stroke-width="2"
+                    stroke="currentColor"
+                    fill="none"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+                    <path d="M10 14a3.5 3.5 0 0 0 5 0l4 -4a3.5 3.5 0 0 0 -5 -5l-.5 .5"></path>
+                    <path d="M14 10a3.5 3.5 0 0 0 -5 0l-4 4a3.5 3.5 0 0 0 5 5l.5 -.5"></path></svg
+                ></a>
+              </h3>
+              <div class="tsd-signature tsd-kind-icon">
+                should<wbr />Throw<wbr />On<wbr />Error<span class="tsd-signature-symbol">:</span>
+                <span class="tsd-signature-type">boolean</span>
+              </div>
+              <aside class="tsd-sources">
+                <p>Inherited from PostgrestQueryBuilder.shouldThrowOnError</p>
+                <ul>
+                  <li>
+                    Defined in node_modules/@supabase/postgrest-js/dist/module/lib/types.d.ts:50
+                  </li>
+                </ul>
+              </aside>
+            </section>
+            <section
+              class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-class tsd-is-inherited tsd-is-protected tsd-is-external"
+            >
+              <a id="signal" class="tsd-anchor"></a>
+              <h3 class="tsd-anchor-link">
+                <span class="tsd-flag ts-flagProtected">Protected</span>
+                <span class="tsd-flag ts-flagOptional">Optional</span> signal<a
+                  href="#signal"
+                  aria-label="Permalink"
+                  class="tsd-anchor-icon"
+                  ><svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    class="icon icon-tabler icon-tabler-link"
+                    viewBox="0 0 24 24"
+                    stroke-width="2"
+                    stroke="currentColor"
+                    fill="none"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+                    <path d="M10 14a3.5 3.5 0 0 0 5 0l4 -4a3.5 3.5 0 0 0 -5 -5l-.5 .5"></path>
+                    <path d="M14 10a3.5 3.5 0 0 0 -5 0l-4 4a3.5 3.5 0 0 0 5 5l.5 -.5"></path></svg
+                ></a>
+              </h3>
+              <div class="tsd-signature tsd-kind-icon">
+                signal<span class="tsd-signature-symbol">?:</span>
+                <span class="tsd-signature-type">AbortSignal</span>
+              </div>
+              <aside class="tsd-sources">
+                <p>Inherited from PostgrestQueryBuilder.signal</p>
+                <ul>
+                  <li>
+                    Defined in node_modules/@supabase/postgrest-js/dist/module/lib/types.d.ts:51
+                  </li>
+                </ul>
+              </aside>
+            </section>
+            <section
+              class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-class tsd-is-inherited tsd-is-protected tsd-is-external"
+            >
+              <a id="url" class="tsd-anchor"></a>
+              <h3 class="tsd-anchor-link">
+                <span class="tsd-flag ts-flagProtected">Protected</span> url<a
+                  href="#url"
+                  aria-label="Permalink"
+                  class="tsd-anchor-icon"
+                  ><svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    class="icon icon-tabler icon-tabler-link"
+                    viewBox="0 0 24 24"
+                    stroke-width="2"
+                    stroke="currentColor"
+                    fill="none"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+                    <path d="M10 14a3.5 3.5 0 0 0 5 0l4 -4a3.5 3.5 0 0 0 -5 -5l-.5 .5"></path>
+                    <path d="M14 10a3.5 3.5 0 0 0 -5 0l-4 4a3.5 3.5 0 0 0 5 5l.5 -.5"></path></svg
+                ></a>
+              </h3>
+              <div class="tsd-signature tsd-kind-icon">
+                url<span class="tsd-signature-symbol">:</span>
+                <span class="tsd-signature-type">URL</span>
+              </div>
+              <aside class="tsd-sources">
+                <p>Inherited from PostgrestQueryBuilder.url</p>
+                <ul>
+                  <li>
+                    Defined in node_modules/@supabase/postgrest-js/dist/module/lib/types.d.ts:44
+                  </li>
+                </ul>
+              </aside>
+            </section>
+          </section>
+          <section class="tsd-panel-group tsd-member-group">
+            <h2>Methods</h2>
+            <section
+              class="tsd-panel tsd-member tsd-kind-method tsd-parent-kind-class tsd-is-inherited tsd-is-external"
+            >
+              <a id="delete" class="tsd-anchor"></a>
+              <h3 class="tsd-anchor-link">
+                delete<a href="#delete" aria-label="Permalink" class="tsd-anchor-icon"
+                  ><svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    class="icon icon-tabler icon-tabler-link"
+                    viewBox="0 0 24 24"
+                    stroke-width="2"
+                    stroke="currentColor"
+                    fill="none"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+                    <path d="M10 14a3.5 3.5 0 0 0 5 0l4 -4a3.5 3.5 0 0 0 -5 -5l-.5 .5"></path>
+                    <path d="M14 10a3.5 3.5 0 0 0 -5 0l-4 4a3.5 3.5 0 0 0 5 5l.5 -.5"></path></svg
+                ></a>
+              </h3>
+              <ul
+                class="tsd-signatures tsd-kind-method tsd-parent-kind-class tsd-is-inherited tsd-is-external"
+              >
+                <li class="tsd-signature tsd-kind-icon">
+                  delete<span class="tsd-signature-symbol">(</span>__namedParameters<span
+                    class="tsd-signature-symbol"
+                    >?: </span
+                  ><span class="tsd-signature-symbol">{ </span>count<span
+                    class="tsd-signature-symbol"
+                    >?: </span
+                  ><span class="tsd-signature-type">null</span
+                  ><span class="tsd-signature-symbol"> | </span
+                  ><span class="tsd-signature-type">&quot;exact&quot;</span
+                  ><span class="tsd-signature-symbol"> | </span
+                  ><span class="tsd-signature-type">&quot;planned&quot;</span
+                  ><span class="tsd-signature-symbol"> | </span
+                  ><span class="tsd-signature-type">&quot;estimated&quot;</span
+                  ><span class="tsd-signature-symbol">; </span>returning<span
+                    class="tsd-signature-symbol"
+                    >?: </span
+                  ><span class="tsd-signature-type">&quot;minimal&quot;</span
+                  ><span class="tsd-signature-symbol"> | </span
+                  ><span class="tsd-signature-type">&quot;representation&quot;</span
+                  ><span class="tsd-signature-symbol"> }</span
+                  ><span class="tsd-signature-symbol">)</span
+                  ><span class="tsd-signature-symbol">: </span
+                  ><span class="tsd-signature-type">default</span
+                  ><span class="tsd-signature-symbol">&lt;</span
+                  ><span class="tsd-signature-type" data-tsd-kind="Type parameter">T</span
+                  ><span class="tsd-signature-symbol">&gt;</span>
+                </li>
+              </ul>
+              <ul class="tsd-descriptions">
+                <li class="tsd-description">
+                  <aside class="tsd-sources">
+                    <p>Inherited from PostgrestQueryBuilder.delete</p>
+                    <ul>
+                      <li>
+                        Defined in
+                        node_modules/@supabase/postgrest-js/dist/module/lib/PostgrestQueryBuilder.d.ts:75
+                      </li>
+                    </ul>
+                  </aside>
+                  <div class="tsd-comment tsd-typography">
+                    <div class="lead">
+                      <p>Performs a DELETE on the table.</p>
+                    </div>
+                  </div>
+                  <h4 class="tsd-parameters-title">Parameters</h4>
+                  <ul class="tsd-parameters">
+                    <li>
+                      <h5>
+                        <span class="tsd-flag ts-flagOptional">Optional</span> __namedParameters:
+                        <span class="tsd-signature-symbol">{ </span>count<span
+                          class="tsd-signature-symbol"
+                          >?: </span
+                        ><span class="tsd-signature-type">null</span
+                        ><span class="tsd-signature-symbol"> | </span
+                        ><span class="tsd-signature-type">&quot;exact&quot;</span
+                        ><span class="tsd-signature-symbol"> | </span
+                        ><span class="tsd-signature-type">&quot;planned&quot;</span
+                        ><span class="tsd-signature-symbol"> | </span
+                        ><span class="tsd-signature-type">&quot;estimated&quot;</span
+                        ><span class="tsd-signature-symbol">; </span>returning<span
+                          class="tsd-signature-symbol"
+                          >?: </span
+                        ><span class="tsd-signature-type">&quot;minimal&quot;</span
+                        ><span class="tsd-signature-symbol"> | </span
+                        ><span class="tsd-signature-type">&quot;representation&quot;</span
+                        ><span class="tsd-signature-symbol"> }</span>
+                      </h5>
+                      <ul class="tsd-parameters">
+                        <li class="tsd-parameter">
+                          <h5>
+                            <span class="tsd-flag ts-flagOptional">Optional</span> count<span
+                              class="tsd-signature-symbol"
+                              >?: </span
+                            ><span class="tsd-signature-type">null</span
+                            ><span class="tsd-signature-symbol"> | </span
+                            ><span class="tsd-signature-type">&quot;exact&quot;</span
+                            ><span class="tsd-signature-symbol"> | </span
+                            ><span class="tsd-signature-type">&quot;planned&quot;</span
+                            ><span class="tsd-signature-symbol"> | </span
+                            ><span class="tsd-signature-type">&quot;estimated&quot;</span>
+                          </h5>
+                        </li>
+                        <li class="tsd-parameter">
+                          <h5>
+                            <span class="tsd-flag ts-flagOptional">Optional</span> returning<span
+                              class="tsd-signature-symbol"
+                              >?: </span
+                            ><span class="tsd-signature-type">&quot;minimal&quot;</span
+                            ><span class="tsd-signature-symbol"> | </span
+                            ><span class="tsd-signature-type">&quot;representation&quot;</span>
+                          </h5>
+                        </li>
+                      </ul>
+                    </li>
+                  </ul>
+                  <h4 class="tsd-returns-title">
+                    Returns <span class="tsd-signature-type">default</span
+                    ><span class="tsd-signature-symbol">&lt;</span
+                    ><span class="tsd-signature-type" data-tsd-kind="Type parameter">T</span
+                    ><span class="tsd-signature-symbol">&gt;</span>
+                  </h4>
+                </li>
+              </ul>
+            </section>
+            <section
+              class="tsd-panel tsd-member tsd-kind-method tsd-parent-kind-class tsd-is-inherited tsd-is-external"
+            >
+              <a id="insert" class="tsd-anchor"></a>
+              <h3 class="tsd-anchor-link">
+                insert<a href="#insert" aria-label="Permalink" class="tsd-anchor-icon"
+                  ><svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    class="icon icon-tabler icon-tabler-link"
+                    viewBox="0 0 24 24"
+                    stroke-width="2"
+                    stroke="currentColor"
+                    fill="none"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+                    <path d="M10 14a3.5 3.5 0 0 0 5 0l4 -4a3.5 3.5 0 0 0 -5 -5l-.5 .5"></path>
+                    <path d="M14 10a3.5 3.5 0 0 0 -5 0l-4 4a3.5 3.5 0 0 0 5 5l.5 -.5"></path></svg
+                ></a>
+              </h3>
+              <ul
+                class="tsd-signatures tsd-kind-method tsd-parent-kind-class tsd-is-inherited tsd-is-external"
+              >
+                <li class="tsd-signature tsd-kind-icon">
+                  insert<span class="tsd-signature-symbol">(</span>values<span
+                    class="tsd-signature-symbol"
+                    >: </span
+                  ><span class="tsd-signature-type">Partial</span
+                  ><span class="tsd-signature-symbol">&lt;</span
+                  ><span class="tsd-signature-type" data-tsd-kind="Type parameter">T</span
+                  ><span class="tsd-signature-symbol">&gt;</span
+                  ><span class="tsd-signature-symbol"> | </span
+                  ><span class="tsd-signature-type">Partial</span
+                  ><span class="tsd-signature-symbol">&lt;</span
+                  ><span class="tsd-signature-type" data-tsd-kind="Type parameter">T</span
+                  ><span class="tsd-signature-symbol">&gt;</span
+                  ><span class="tsd-signature-symbol">[]</span>, options<span
+                    class="tsd-signature-symbol"
+                    >?: </span
+                  ><span class="tsd-signature-symbol">{ </span>count<span
+                    class="tsd-signature-symbol"
+                    >?: </span
+                  ><span class="tsd-signature-type">null</span
+                  ><span class="tsd-signature-symbol"> | </span
+                  ><span class="tsd-signature-type">&quot;exact&quot;</span
+                  ><span class="tsd-signature-symbol"> | </span
+                  ><span class="tsd-signature-type">&quot;planned&quot;</span
+                  ><span class="tsd-signature-symbol"> | </span
+                  ><span class="tsd-signature-type">&quot;estimated&quot;</span
+                  ><span class="tsd-signature-symbol">; </span>returning<span
+                    class="tsd-signature-symbol"
+                    >?: </span
+                  ><span class="tsd-signature-type">&quot;minimal&quot;</span
+                  ><span class="tsd-signature-symbol"> | </span
+                  ><span class="tsd-signature-type">&quot;representation&quot;</span
+                  ><span class="tsd-signature-symbol"> }</span
+                  ><span class="tsd-signature-symbol">)</span
+                  ><span class="tsd-signature-symbol">: </span
+                  ><span class="tsd-signature-type">default</span
+                  ><span class="tsd-signature-symbol">&lt;</span
+                  ><span class="tsd-signature-type" data-tsd-kind="Type parameter">T</span
+                  ><span class="tsd-signature-symbol">&gt;</span>
+                </li>
+                <li class="tsd-signature tsd-kind-icon">
+                  insert<span class="tsd-signature-symbol">(</span>values<span
+                    class="tsd-signature-symbol"
+                    >: </span
+                  ><span class="tsd-signature-type">Partial</span
+                  ><span class="tsd-signature-symbol">&lt;</span
+                  ><span class="tsd-signature-type" data-tsd-kind="Type parameter">T</span
+                  ><span class="tsd-signature-symbol">&gt;</span
+                  ><span class="tsd-signature-symbol"> | </span
+                  ><span class="tsd-signature-type">Partial</span
+                  ><span class="tsd-signature-symbol">&lt;</span
+                  ><span class="tsd-signature-type" data-tsd-kind="Type parameter">T</span
+                  ><span class="tsd-signature-symbol">&gt;</span
+                  ><span class="tsd-signature-symbol">[]</span>, options<span
+                    class="tsd-signature-symbol"
+                    >?: </span
+                  ><span class="tsd-signature-symbol">{ </span>count<span
+                    class="tsd-signature-symbol"
+                    >?: </span
+                  ><span class="tsd-signature-type">null</span
+                  ><span class="tsd-signature-symbol"> | </span
+                  ><span class="tsd-signature-type">&quot;exact&quot;</span
+                  ><span class="tsd-signature-symbol"> | </span
+                  ><span class="tsd-signature-type">&quot;planned&quot;</span
+                  ><span class="tsd-signature-symbol"> | </span
+                  ><span class="tsd-signature-type">&quot;estimated&quot;</span
+                  ><span class="tsd-signature-symbol">; </span>onConflict<span
+                    class="tsd-signature-symbol"
+                    >?: </span
+                  ><span class="tsd-signature-type">string</span
+                  ><span class="tsd-signature-symbol">; </span>returning<span
+                    class="tsd-signature-symbol"
+                    >?: </span
+                  ><span class="tsd-signature-type">&quot;minimal&quot;</span
+                  ><span class="tsd-signature-symbol"> | </span
+                  ><span class="tsd-signature-type">&quot;representation&quot;</span
+                  ><span class="tsd-signature-symbol">; </span>upsert<span
+                    class="tsd-signature-symbol"
+                    >?: </span
+                  ><span class="tsd-signature-type">boolean</span
+                  ><span class="tsd-signature-symbol"> }</span
+                  ><span class="tsd-signature-symbol">)</span
+                  ><span class="tsd-signature-symbol">: </span
+                  ><span class="tsd-signature-type">default</span
+                  ><span class="tsd-signature-symbol">&lt;</span
+                  ><span class="tsd-signature-type" data-tsd-kind="Type parameter">T</span
+                  ><span class="tsd-signature-symbol">&gt;</span>
+                </li>
+              </ul>
+              <ul class="tsd-descriptions">
+                <li class="tsd-description">
+                  <aside class="tsd-sources">
+                    <p>Inherited from PostgrestQueryBuilder.insert</p>
+                    <ul>
+                      <li>
+                        Defined in
+                        node_modules/@supabase/postgrest-js/dist/module/lib/PostgrestQueryBuilder.d.ts:30
+                      </li>
+                    </ul>
+                  </aside>
+                  <div class="tsd-comment tsd-typography">
+                    <div class="lead">
+                      <p>Performs an INSERT into the table.</p>
+                    </div>
+                  </div>
+                  <h4 class="tsd-parameters-title">Parameters</h4>
+                  <ul class="tsd-parameters">
+                    <li>
+                      <h5>
+                        values: <span class="tsd-signature-type">Partial</span
+                        ><span class="tsd-signature-symbol">&lt;</span
+                        ><span class="tsd-signature-type" data-tsd-kind="Type parameter">T</span
+                        ><span class="tsd-signature-symbol">&gt;</span
+                        ><span class="tsd-signature-symbol"> | </span
+                        ><span class="tsd-signature-type">Partial</span
+                        ><span class="tsd-signature-symbol">&lt;</span
+                        ><span class="tsd-signature-type" data-tsd-kind="Type parameter">T</span
+                        ><span class="tsd-signature-symbol">&gt;</span
+                        ><span class="tsd-signature-symbol">[]</span>
+                      </h5>
+                      <div class="tsd-comment tsd-typography">
+                        <div class="lead">
+                          <p>The values to insert.</p>
+                        </div>
+                      </div>
+                    </li>
+                    <li>
+                      <h5>
+                        <span class="tsd-flag ts-flagOptional">Optional</span> options:
+                        <span class="tsd-signature-symbol">{ </span>count<span
+                          class="tsd-signature-symbol"
+                          >?: </span
+                        ><span class="tsd-signature-type">null</span
+                        ><span class="tsd-signature-symbol"> | </span
+                        ><span class="tsd-signature-type">&quot;exact&quot;</span
+                        ><span class="tsd-signature-symbol"> | </span
+                        ><span class="tsd-signature-type">&quot;planned&quot;</span
+                        ><span class="tsd-signature-symbol"> | </span
+                        ><span class="tsd-signature-type">&quot;estimated&quot;</span
+                        ><span class="tsd-signature-symbol">; </span>returning<span
+                          class="tsd-signature-symbol"
+                          >?: </span
+                        ><span class="tsd-signature-type">&quot;minimal&quot;</span
+                        ><span class="tsd-signature-symbol"> | </span
+                        ><span class="tsd-signature-type">&quot;representation&quot;</span
+                        ><span class="tsd-signature-symbol"> }</span>
+                      </h5>
+                      <ul class="tsd-parameters">
+                        <li class="tsd-parameter">
+                          <h5>
+                            <span class="tsd-flag ts-flagOptional">Optional</span> count<span
+                              class="tsd-signature-symbol"
+                              >?: </span
+                            ><span class="tsd-signature-type">null</span
+                            ><span class="tsd-signature-symbol"> | </span
+                            ><span class="tsd-signature-type">&quot;exact&quot;</span
+                            ><span class="tsd-signature-symbol"> | </span
+                            ><span class="tsd-signature-type">&quot;planned&quot;</span
+                            ><span class="tsd-signature-symbol"> | </span
+                            ><span class="tsd-signature-type">&quot;estimated&quot;</span>
+                          </h5>
+                        </li>
+                        <li class="tsd-parameter">
+                          <h5>
+                            <span class="tsd-flag ts-flagOptional">Optional</span> returning<span
+                              class="tsd-signature-symbol"
+                              >?: </span
+                            ><span class="tsd-signature-type">&quot;minimal&quot;</span
+                            ><span class="tsd-signature-symbol"> | </span
+                            ><span class="tsd-signature-type">&quot;representation&quot;</span>
+                          </h5>
+                        </li>
+                      </ul>
+                    </li>
+                  </ul>
+                  <h4 class="tsd-returns-title">
+                    Returns <span class="tsd-signature-type">default</span
+                    ><span class="tsd-signature-symbol">&lt;</span
+                    ><span class="tsd-signature-type" data-tsd-kind="Type parameter">T</span
+                    ><span class="tsd-signature-symbol">&gt;</span>
+                  </h4>
+                </li>
+                <li class="tsd-description">
+                  <aside class="tsd-sources">
+                    <p>Inherited from PostgrestQueryBuilder.insert</p>
+                    <ul>
+                      <li>
+                        Defined in
+                        node_modules/@supabase/postgrest-js/dist/module/lib/PostgrestQueryBuilder.d.ts:37
+                      </li>
+                    </ul>
+                  </aside>
+                  <div class="tsd-comment tsd-typography">
+                    <dl class="tsd-comment-tags">
+                      <dt>deprecated</dt>
+                      <dd>
+                        <p>Use <code>upsert()</code> instead.</p>
+                      </dd>
+                    </dl>
+                  </div>
+                  <h4 class="tsd-parameters-title">Parameters</h4>
+                  <ul class="tsd-parameters">
+                    <li>
+                      <h5>
+                        values: <span class="tsd-signature-type">Partial</span
+                        ><span class="tsd-signature-symbol">&lt;</span
+                        ><span class="tsd-signature-type" data-tsd-kind="Type parameter">T</span
+                        ><span class="tsd-signature-symbol">&gt;</span
+                        ><span class="tsd-signature-symbol"> | </span
+                        ><span class="tsd-signature-type">Partial</span
+                        ><span class="tsd-signature-symbol">&lt;</span
+                        ><span class="tsd-signature-type" data-tsd-kind="Type parameter">T</span
+                        ><span class="tsd-signature-symbol">&gt;</span
+                        ><span class="tsd-signature-symbol">[]</span>
+                      </h5>
+                    </li>
+                    <li>
+                      <h5>
+                        <span class="tsd-flag ts-flagOptional">Optional</span> options:
+                        <span class="tsd-signature-symbol">{ </span>count<span
+                          class="tsd-signature-symbol"
+                          >?: </span
+                        ><span class="tsd-signature-type">null</span
+                        ><span class="tsd-signature-symbol"> | </span
+                        ><span class="tsd-signature-type">&quot;exact&quot;</span
+                        ><span class="tsd-signature-symbol"> | </span
+                        ><span class="tsd-signature-type">&quot;planned&quot;</span
+                        ><span class="tsd-signature-symbol"> | </span
+                        ><span class="tsd-signature-type">&quot;estimated&quot;</span
+                        ><span class="tsd-signature-symbol">; </span>onConflict<span
+                          class="tsd-signature-symbol"
+                          >?: </span
+                        ><span class="tsd-signature-type">string</span
+                        ><span class="tsd-signature-symbol">; </span>returning<span
+                          class="tsd-signature-symbol"
+                          >?: </span
+                        ><span class="tsd-signature-type">&quot;minimal&quot;</span
+                        ><span class="tsd-signature-symbol"> | </span
+                        ><span class="tsd-signature-type">&quot;representation&quot;</span
+                        ><span class="tsd-signature-symbol">; </span>upsert<span
+                          class="tsd-signature-symbol"
+                          >?: </span
+                        ><span class="tsd-signature-type">boolean</span
+                        ><span class="tsd-signature-symbol"> }</span>
+                      </h5>
+                      <ul class="tsd-parameters">
+                        <li class="tsd-parameter">
+                          <h5>
+                            <span class="tsd-flag ts-flagOptional">Optional</span> count<span
+                              class="tsd-signature-symbol"
+                              >?: </span
+                            ><span class="tsd-signature-type">null</span
+                            ><span class="tsd-signature-symbol"> | </span
+                            ><span class="tsd-signature-type">&quot;exact&quot;</span
+                            ><span class="tsd-signature-symbol"> | </span
+                            ><span class="tsd-signature-type">&quot;planned&quot;</span
+                            ><span class="tsd-signature-symbol"> | </span
+                            ><span class="tsd-signature-type">&quot;estimated&quot;</span>
+                          </h5>
+                        </li>
+                        <li class="tsd-parameter">
+                          <h5>
+                            <span class="tsd-flag ts-flagOptional">Optional</span>
+                            on<wbr />Conflict<span class="tsd-signature-symbol">?: </span
+                            ><span class="tsd-signature-type">string</span>
+                          </h5>
+                        </li>
+                        <li class="tsd-parameter">
+                          <h5>
+                            <span class="tsd-flag ts-flagOptional">Optional</span> returning<span
+                              class="tsd-signature-symbol"
+                              >?: </span
+                            ><span class="tsd-signature-type">&quot;minimal&quot;</span
+                            ><span class="tsd-signature-symbol"> | </span
+                            ><span class="tsd-signature-type">&quot;representation&quot;</span>
+                          </h5>
+                        </li>
+                        <li class="tsd-parameter">
+                          <h5>
+                            <span class="tsd-flag ts-flagOptional">Optional</span> upsert<span
+                              class="tsd-signature-symbol"
+                              >?: </span
+                            ><span class="tsd-signature-type">boolean</span>
+                          </h5>
+                        </li>
+                      </ul>
+                    </li>
+                  </ul>
+                  <h4 class="tsd-returns-title">
+                    Returns <span class="tsd-signature-type">default</span
+                    ><span class="tsd-signature-symbol">&lt;</span
+                    ><span class="tsd-signature-type" data-tsd-kind="Type parameter">T</span
+                    ><span class="tsd-signature-symbol">&gt;</span>
+                  </h4>
+                </li>
+              </ul>
+            </section>
+            <section class="tsd-panel tsd-member tsd-kind-method tsd-parent-kind-class">
+              <a id="on" class="tsd-anchor"></a>
+              <h3 class="tsd-anchor-link">
+                on<a href="#on" aria-label="Permalink" class="tsd-anchor-icon"
+                  ><svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    class="icon icon-tabler icon-tabler-link"
+                    viewBox="0 0 24 24"
+                    stroke-width="2"
+                    stroke="currentColor"
+                    fill="none"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+                    <path d="M10 14a3.5 3.5 0 0 0 5 0l4 -4a3.5 3.5 0 0 0 -5 -5l-.5 .5"></path>
+                    <path d="M14 10a3.5 3.5 0 0 0 -5 0l-4 4a3.5 3.5 0 0 0 5 5l.5 -.5"></path></svg
+                ></a>
+              </h3>
+              <ul class="tsd-signatures tsd-kind-method tsd-parent-kind-class">
+                <li class="tsd-signature tsd-kind-icon">
+                  on<span class="tsd-signature-symbol">(</span>event<span
+                    class="tsd-signature-symbol"
+                    >: </span
+                  ><a
+                    href="../modules/lib_types.html#SupabaseEventTypes"
+                    class="tsd-signature-type"
+                    data-tsd-kind="Type alias"
+                    >SupabaseEventTypes</a
+                  >, callback<span class="tsd-signature-symbol">: </span
+                  ><span class="tsd-signature-symbol">(</span
+                  ><span class="tsd-signature-symbol">(</span>payload<span
+                    class="tsd-signature-symbol"
+                    >: </span
+                  ><a
+                    href="../modules/lib_types.html#SupabaseRealtimePayload"
+                    class="tsd-signature-type"
+                    data-tsd-kind="Type alias"
+                    >SupabaseRealtimePayload</a
+                  ><span class="tsd-signature-symbol">&lt;</span
+                  ><span class="tsd-signature-type" data-tsd-kind="Type parameter">T</span
+                  ><span class="tsd-signature-symbol">&gt;</span
+                  ><span class="tsd-signature-symbol">)</span
+                  ><span class="tsd-signature-symbol"> =&gt; </span
+                  ><span class="tsd-signature-type">void</span
+                  ><span class="tsd-signature-symbol">)</span
+                  ><span class="tsd-signature-symbol">)</span
+                  ><span class="tsd-signature-symbol">: </span
+                  ><a
+                    href="lib_SupabaseRealtimeClient.SupabaseRealtimeClient.html"
+                    class="tsd-signature-type"
+                    data-tsd-kind="Class"
+                    >SupabaseRealtimeClient</a
+                  >
+                </li>
+              </ul>
+              <ul class="tsd-descriptions">
+                <li class="tsd-description">
+                  <aside class="tsd-sources">
+                    <ul>
+                      <li>
+                        Defined in
+                        <a
+                          href="https://github.com/supabase/supabase-js/blob/18b7022/src/lib/SupabaseQueryBuilder.ts#L44"
+                          >src/lib/SupabaseQueryBuilder.ts:44</a
+                        >
+                      </li>
+                    </ul>
+                  </aside>
+                  <div class="tsd-comment tsd-typography">
+                    <div class="lead">
+                      <p>Subscribe to realtime changes in your database.</p>
+                    </div>
+                  </div>
+                  <h4 class="tsd-parameters-title">Parameters</h4>
+                  <ul class="tsd-parameters">
+                    <li>
+                      <h5>
+                        event:
+                        <a
+                          href="../modules/lib_types.html#SupabaseEventTypes"
+                          class="tsd-signature-type"
+                          data-tsd-kind="Type alias"
+                          >SupabaseEventTypes</a
+                        >
+                      </h5>
+                      <div class="tsd-comment tsd-typography">
+                        <div class="lead">
+                          <p>
+                            The database event which you would like to receive updates for, or you
+                            can use the special wildcard <code>*</code> to listen to all changes.
+                          </p>
+                        </div>
+                      </div>
+                    </li>
+                    <li>
+                      <h5>
+                        callback: <span class="tsd-signature-symbol">(</span
+                        ><span class="tsd-signature-symbol">(</span>payload<span
+                          class="tsd-signature-symbol"
+                          >: </span
+                        ><a
+                          href="../modules/lib_types.html#SupabaseRealtimePayload"
+                          class="tsd-signature-type"
+                          data-tsd-kind="Type alias"
+                          >SupabaseRealtimePayload</a
+                        ><span class="tsd-signature-symbol">&lt;</span
+                        ><span class="tsd-signature-type" data-tsd-kind="Type parameter">T</span
+                        ><span class="tsd-signature-symbol">&gt;</span
+                        ><span class="tsd-signature-symbol">)</span
+                        ><span class="tsd-signature-symbol"> =&gt; </span
+                        ><span class="tsd-signature-type">void</span
+                        ><span class="tsd-signature-symbol">)</span>
+                      </h5>
+                      <div class="tsd-comment tsd-typography">
+                        <div class="lead">
+                          <p>
+                            A callback that will handle the payload that is sent whenever your
+                            database changes.
+                          </p>
+                        </div>
+                      </div>
+                      <ul class="tsd-parameters">
+                        <li class="tsd-parameter-signature">
+                          <ul class="tsd-signatures tsd-kind-type-literal">
+                            <li class="tsd-signature tsd-kind-icon">
+                              <span class="tsd-signature-symbol">(</span>payload<span
+                                class="tsd-signature-symbol"
+                                >: </span
+                              ><a
+                                href="../modules/lib_types.html#SupabaseRealtimePayload"
+                                class="tsd-signature-type"
+                                data-tsd-kind="Type alias"
+                                >SupabaseRealtimePayload</a
+                              ><span class="tsd-signature-symbol">&lt;</span
+                              ><span class="tsd-signature-type" data-tsd-kind="Type parameter"
+                                >T</span
+                              ><span class="tsd-signature-symbol">&gt;</span
+                              ><span class="tsd-signature-symbol">)</span
+                              ><span class="tsd-signature-symbol">: </span
+                              ><span class="tsd-signature-type">void</span>
+                            </li>
+                          </ul>
+                          <ul class="tsd-descriptions">
+                            <li class="tsd-description">
+                              <h4 class="tsd-parameters-title">Parameters</h4>
+                              <ul class="tsd-parameters">
+                                <li>
+                                  <h5>
+                                    payload:
+                                    <a
+                                      href="../modules/lib_types.html#SupabaseRealtimePayload"
+                                      class="tsd-signature-type"
+                                      data-tsd-kind="Type alias"
+                                      >SupabaseRealtimePayload</a
+                                    ><span class="tsd-signature-symbol">&lt;</span
+                                    ><span class="tsd-signature-type" data-tsd-kind="Type parameter"
+                                      >T</span
+                                    ><span class="tsd-signature-symbol">&gt;</span>
+                                  </h5>
+                                </li>
+                              </ul>
+                              <h4 class="tsd-returns-title">
+                                Returns <span class="tsd-signature-type">void</span>
+                              </h4>
+                            </li>
+                          </ul>
+                        </li>
+                      </ul>
+                    </li>
+                  </ul>
+                  <h4 class="tsd-returns-title">
+                    Returns
+                    <a
+                      href="lib_SupabaseRealtimeClient.SupabaseRealtimeClient.html"
+                      class="tsd-signature-type"
+                      data-tsd-kind="Class"
+                      >SupabaseRealtimeClient</a
+                    >
+                  </h4>
+                </li>
+              </ul>
+            </section>
+            <section
+              class="tsd-panel tsd-member tsd-kind-method tsd-parent-kind-class tsd-is-inherited tsd-is-external"
+            >
+              <a id="select" class="tsd-anchor"></a>
+              <h3 class="tsd-anchor-link">
+                select<a href="#select" aria-label="Permalink" class="tsd-anchor-icon"
+                  ><svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    class="icon icon-tabler icon-tabler-link"
+                    viewBox="0 0 24 24"
+                    stroke-width="2"
+                    stroke="currentColor"
+                    fill="none"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+                    <path d="M10 14a3.5 3.5 0 0 0 5 0l4 -4a3.5 3.5 0 0 0 -5 -5l-.5 .5"></path>
+                    <path d="M14 10a3.5 3.5 0 0 0 -5 0l-4 4a3.5 3.5 0 0 0 5 5l.5 -.5"></path></svg
+                ></a>
+              </h3>
+              <ul
+                class="tsd-signatures tsd-kind-method tsd-parent-kind-class tsd-is-inherited tsd-is-external"
+              >
+                <li class="tsd-signature tsd-kind-icon">
+                  select<span class="tsd-signature-symbol">(</span>columns<span
+                    class="tsd-signature-symbol"
+                    >?: </span
+                  ><span class="tsd-signature-type">string</span>, __namedParameters<span
+                    class="tsd-signature-symbol"
+                    >?: </span
+                  ><span class="tsd-signature-symbol">{ </span>count<span
+                    class="tsd-signature-symbol"
+                    >?: </span
+                  ><span class="tsd-signature-type">null</span
+                  ><span class="tsd-signature-symbol"> | </span
+                  ><span class="tsd-signature-type">&quot;exact&quot;</span
+                  ><span class="tsd-signature-symbol"> | </span
+                  ><span class="tsd-signature-type">&quot;planned&quot;</span
+                  ><span class="tsd-signature-symbol"> | </span
+                  ><span class="tsd-signature-type">&quot;estimated&quot;</span
+                  ><span class="tsd-signature-symbol">; </span>head<span
+                    class="tsd-signature-symbol"
+                    >?: </span
+                  ><span class="tsd-signature-type">boolean</span
+                  ><span class="tsd-signature-symbol"> }</span
+                  ><span class="tsd-signature-symbol">)</span
+                  ><span class="tsd-signature-symbol">: </span
+                  ><span class="tsd-signature-type">default</span
+                  ><span class="tsd-signature-symbol">&lt;</span
+                  ><span class="tsd-signature-type" data-tsd-kind="Type parameter">T</span
+                  ><span class="tsd-signature-symbol">&gt;</span>
+                </li>
+              </ul>
+              <ul class="tsd-descriptions">
+                <li class="tsd-description">
+                  <aside class="tsd-sources">
+                    <p>Inherited from PostgrestQueryBuilder.select</p>
+                    <ul>
+                      <li>
+                        Defined in
+                        node_modules/@supabase/postgrest-js/dist/module/lib/PostgrestQueryBuilder.d.ts:19
+                      </li>
+                    </ul>
+                  </aside>
+                  <div class="tsd-comment tsd-typography">
+                    <div class="lead">
+                      <p>Performs vertical filtering with SELECT.</p>
+                    </div>
+                  </div>
+                  <h4 class="tsd-parameters-title">Parameters</h4>
+                  <ul class="tsd-parameters">
+                    <li>
+                      <h5>
+                        <span class="tsd-flag ts-flagOptional">Optional</span> columns:
+                        <span class="tsd-signature-type">string</span>
+                      </h5>
+                      <div class="tsd-comment tsd-typography">
+                        <div class="lead">
+                          <p>The columns to retrieve, separated by commas.</p>
+                        </div>
+                      </div>
+                    </li>
+                    <li>
+                      <h5>
+                        <span class="tsd-flag ts-flagOptional">Optional</span> __namedParameters:
+                        <span class="tsd-signature-symbol">{ </span>count<span
+                          class="tsd-signature-symbol"
+                          >?: </span
+                        ><span class="tsd-signature-type">null</span
+                        ><span class="tsd-signature-symbol"> | </span
+                        ><span class="tsd-signature-type">&quot;exact&quot;</span
+                        ><span class="tsd-signature-symbol"> | </span
+                        ><span class="tsd-signature-type">&quot;planned&quot;</span
+                        ><span class="tsd-signature-symbol"> | </span
+                        ><span class="tsd-signature-type">&quot;estimated&quot;</span
+                        ><span class="tsd-signature-symbol">; </span>head<span
+                          class="tsd-signature-symbol"
+                          >?: </span
+                        ><span class="tsd-signature-type">boolean</span
+                        ><span class="tsd-signature-symbol"> }</span>
+                      </h5>
+                      <ul class="tsd-parameters">
+                        <li class="tsd-parameter">
+                          <h5>
+                            <span class="tsd-flag ts-flagOptional">Optional</span> count<span
+                              class="tsd-signature-symbol"
+                              >?: </span
+                            ><span class="tsd-signature-type">null</span
+                            ><span class="tsd-signature-symbol"> | </span
+                            ><span class="tsd-signature-type">&quot;exact&quot;</span
+                            ><span class="tsd-signature-symbol"> | </span
+                            ><span class="tsd-signature-type">&quot;planned&quot;</span
+                            ><span class="tsd-signature-symbol"> | </span
+                            ><span class="tsd-signature-type">&quot;estimated&quot;</span>
+                          </h5>
+                        </li>
+                        <li class="tsd-parameter">
+                          <h5>
+                            <span class="tsd-flag ts-flagOptional">Optional</span> head<span
+                              class="tsd-signature-symbol"
+                              >?: </span
+                            ><span class="tsd-signature-type">boolean</span>
+                          </h5>
+                        </li>
+                      </ul>
+                    </li>
+                  </ul>
+                  <h4 class="tsd-returns-title">
+                    Returns <span class="tsd-signature-type">default</span
+                    ><span class="tsd-signature-symbol">&lt;</span
+                    ><span class="tsd-signature-type" data-tsd-kind="Type parameter">T</span
+                    ><span class="tsd-signature-symbol">&gt;</span>
+                  </h4>
+                </li>
+              </ul>
+            </section>
+            <section
+              class="tsd-panel tsd-member tsd-kind-method tsd-parent-kind-class tsd-has-type-parameter tsd-is-inherited tsd-is-external"
+            >
+              <a id="then" class="tsd-anchor"></a>
+              <h3 class="tsd-anchor-link">
+                then<a href="#then" aria-label="Permalink" class="tsd-anchor-icon"
+                  ><svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    class="icon icon-tabler icon-tabler-link"
+                    viewBox="0 0 24 24"
+                    stroke-width="2"
+                    stroke="currentColor"
+                    fill="none"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+                    <path d="M10 14a3.5 3.5 0 0 0 5 0l4 -4a3.5 3.5 0 0 0 -5 -5l-.5 .5"></path>
+                    <path d="M14 10a3.5 3.5 0 0 0 -5 0l-4 4a3.5 3.5 0 0 0 5 5l.5 -.5"></path></svg
+                ></a>
+              </h3>
+              <ul
+                class="tsd-signatures tsd-kind-method tsd-parent-kind-class tsd-has-type-parameter tsd-is-inherited tsd-is-external"
+              >
+                <li class="tsd-signature tsd-kind-icon">
+                  then<span class="tsd-signature-symbol">&lt;</span
+                  ><span class="tsd-signature-type" data-tsd-kind="Type parameter">TResult1</span
+                  ><span class="tsd-signature-symbol">, </span
+                  ><span class="tsd-signature-type" data-tsd-kind="Type parameter">TResult2</span
+                  ><span class="tsd-signature-symbol">&gt;</span
+                  ><span class="tsd-signature-symbol">(</span>onfulfilled<span
+                    class="tsd-signature-symbol"
+                    >?: </span
+                  ><span class="tsd-signature-type">null</span
+                  ><span class="tsd-signature-symbol"> | </span
+                  ><span class="tsd-signature-symbol">(</span
+                  ><span class="tsd-signature-symbol">(</span>value<span
+                    class="tsd-signature-symbol"
+                    >: </span
+                  ><a
+                    href="../modules/index.html#PostgrestResponse"
+                    class="tsd-signature-type"
+                    data-tsd-kind="Type alias"
+                    >PostgrestResponse</a
+                  ><span class="tsd-signature-symbol">&lt;</span
+                  ><span class="tsd-signature-type" data-tsd-kind="Type parameter">T</span
+                  ><span class="tsd-signature-symbol">&gt;</span
+                  ><span class="tsd-signature-symbol">)</span
+                  ><span class="tsd-signature-symbol"> =&gt; </span
+                  ><span class="tsd-signature-type" data-tsd-kind="Type parameter">TResult1</span
+                  ><span class="tsd-signature-symbol"> | </span
+                  ><span class="tsd-signature-type">PromiseLike</span
+                  ><span class="tsd-signature-symbol">&lt;</span
+                  ><span class="tsd-signature-type" data-tsd-kind="Type parameter">TResult1</span
+                  ><span class="tsd-signature-symbol">&gt;</span
+                  ><span class="tsd-signature-symbol">)</span>, onrejected<span
+                    class="tsd-signature-symbol"
+                    >?: </span
+                  ><span class="tsd-signature-type">null</span
+                  ><span class="tsd-signature-symbol"> | </span
+                  ><span class="tsd-signature-symbol">(</span
+                  ><span class="tsd-signature-symbol">(</span>reason<span
+                    class="tsd-signature-symbol"
+                    >: </span
+                  ><span class="tsd-signature-type">any</span
+                  ><span class="tsd-signature-symbol">)</span
+                  ><span class="tsd-signature-symbol"> =&gt; </span
+                  ><span class="tsd-signature-type" data-tsd-kind="Type parameter">TResult2</span
+                  ><span class="tsd-signature-symbol"> | </span
+                  ><span class="tsd-signature-type">PromiseLike</span
+                  ><span class="tsd-signature-symbol">&lt;</span
+                  ><span class="tsd-signature-type" data-tsd-kind="Type parameter">TResult2</span
+                  ><span class="tsd-signature-symbol">&gt;</span
+                  ><span class="tsd-signature-symbol">)</span
+                  ><span class="tsd-signature-symbol">)</span
+                  ><span class="tsd-signature-symbol">: </span
+                  ><span class="tsd-signature-type">PromiseLike</span
+                  ><span class="tsd-signature-symbol">&lt;</span
+                  ><span class="tsd-signature-type" data-tsd-kind="Type parameter">TResult1</span
+                  ><span class="tsd-signature-symbol"> | </span
+                  ><span class="tsd-signature-type" data-tsd-kind="Type parameter">TResult2</span
+                  ><span class="tsd-signature-symbol">&gt;</span>
+                </li>
+              </ul>
+              <ul class="tsd-descriptions">
+                <li class="tsd-description">
+                  <aside class="tsd-sources">
+                    <p>Inherited from PostgrestQueryBuilder.then</p>
+                    <ul>
+                      <li>
+                        Defined in node_modules/@supabase/postgrest-js/dist/module/lib/types.d.ts:62
+                      </li>
+                    </ul>
+                  </aside>
+                  <h4 class="tsd-type-parameters-title">Type Parameters</h4>
+                  <ul class="tsd-type-parameters">
+                    <li>
+                      <h4>
+                        TResult1 =
+                        <a
+                          href="../modules/index.html#PostgrestResponse"
+                          class="tsd-signature-type"
+                          data-tsd-kind="Type alias"
+                          >PostgrestResponse</a
+                        ><span class="tsd-signature-symbol">&lt;</span
+                        ><span class="tsd-signature-type" data-tsd-kind="Type parameter">T</span
+                        ><span class="tsd-signature-symbol">&gt;</span>
+                      </h4>
+                    </li>
+                    <li>
+                      <h4>TResult2 = <span class="tsd-signature-type">never</span></h4>
+                    </li>
+                  </ul>
+                  <h4 class="tsd-parameters-title">Parameters</h4>
+                  <ul class="tsd-parameters">
+                    <li>
+                      <h5>
+                        <span class="tsd-flag ts-flagOptional">Optional</span> onfulfilled:
+                        <span class="tsd-signature-type">null</span
+                        ><span class="tsd-signature-symbol"> | </span
+                        ><span class="tsd-signature-symbol">(</span
+                        ><span class="tsd-signature-symbol">(</span>value<span
+                          class="tsd-signature-symbol"
+                          >: </span
+                        ><a
+                          href="../modules/index.html#PostgrestResponse"
+                          class="tsd-signature-type"
+                          data-tsd-kind="Type alias"
+                          >PostgrestResponse</a
+                        ><span class="tsd-signature-symbol">&lt;</span
+                        ><span class="tsd-signature-type" data-tsd-kind="Type parameter">T</span
+                        ><span class="tsd-signature-symbol">&gt;</span
+                        ><span class="tsd-signature-symbol">)</span
+                        ><span class="tsd-signature-symbol"> =&gt; </span
+                        ><span class="tsd-signature-type" data-tsd-kind="Type parameter"
+                          >TResult1</span
+                        ><span class="tsd-signature-symbol"> | </span
+                        ><span class="tsd-signature-type">PromiseLike</span
+                        ><span class="tsd-signature-symbol">&lt;</span
+                        ><span class="tsd-signature-type" data-tsd-kind="Type parameter"
+                          >TResult1</span
+                        ><span class="tsd-signature-symbol">&gt;</span
+                        ><span class="tsd-signature-symbol">)</span>
+                      </h5>
+                    </li>
+                    <li>
+                      <h5>
+                        <span class="tsd-flag ts-flagOptional">Optional</span> onrejected:
+                        <span class="tsd-signature-type">null</span
+                        ><span class="tsd-signature-symbol"> | </span
+                        ><span class="tsd-signature-symbol">(</span
+                        ><span class="tsd-signature-symbol">(</span>reason<span
+                          class="tsd-signature-symbol"
+                          >: </span
+                        ><span class="tsd-signature-type">any</span
+                        ><span class="tsd-signature-symbol">)</span
+                        ><span class="tsd-signature-symbol"> =&gt; </span
+                        ><span class="tsd-signature-type" data-tsd-kind="Type parameter"
+                          >TResult2</span
+                        ><span class="tsd-signature-symbol"> | </span
+                        ><span class="tsd-signature-type">PromiseLike</span
+                        ><span class="tsd-signature-symbol">&lt;</span
+                        ><span class="tsd-signature-type" data-tsd-kind="Type parameter"
+                          >TResult2</span
+                        ><span class="tsd-signature-symbol">&gt;</span
+                        ><span class="tsd-signature-symbol">)</span>
+                      </h5>
+                    </li>
+                  </ul>
+                  <h4 class="tsd-returns-title">
+                    Returns <span class="tsd-signature-type">PromiseLike</span
+                    ><span class="tsd-signature-symbol">&lt;</span
+                    ><span class="tsd-signature-type" data-tsd-kind="Type parameter">TResult1</span
+                    ><span class="tsd-signature-symbol"> | </span
+                    ><span class="tsd-signature-type" data-tsd-kind="Type parameter">TResult2</span
+                    ><span class="tsd-signature-symbol">&gt;</span>
+                  </h4>
+                </li>
+              </ul>
+            </section>
+            <section
+              class="tsd-panel tsd-member tsd-kind-method tsd-parent-kind-class tsd-is-inherited tsd-is-external"
+            >
+              <a id="throwOnError" class="tsd-anchor"></a>
+              <h3 class="tsd-anchor-link">
+                throw<wbr />On<wbr />Error<a
+                  href="#throwOnError"
+                  aria-label="Permalink"
+                  class="tsd-anchor-icon"
+                  ><svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    class="icon icon-tabler icon-tabler-link"
+                    viewBox="0 0 24 24"
+                    stroke-width="2"
+                    stroke="currentColor"
+                    fill="none"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+                    <path d="M10 14a3.5 3.5 0 0 0 5 0l4 -4a3.5 3.5 0 0 0 -5 -5l-.5 .5"></path>
+                    <path d="M14 10a3.5 3.5 0 0 0 -5 0l-4 4a3.5 3.5 0 0 0 5 5l.5 -.5"></path></svg
+                ></a>
+              </h3>
+              <ul
+                class="tsd-signatures tsd-kind-method tsd-parent-kind-class tsd-is-inherited tsd-is-external"
+              >
+                <li class="tsd-signature tsd-kind-icon">
+                  throw<wbr />On<wbr />Error<span class="tsd-signature-symbol">(</span
+                  >throwOnError<span class="tsd-signature-symbol">?: </span
+                  ><span class="tsd-signature-type">boolean</span
+                  ><span class="tsd-signature-symbol">)</span
+                  ><span class="tsd-signature-symbol">: </span
+                  ><a
+                    href="lib_SupabaseQueryBuilder.SupabaseQueryBuilder.html"
+                    class="tsd-signature-type"
+                    data-tsd-kind="Class"
+                    >SupabaseQueryBuilder</a
+                  ><span class="tsd-signature-symbol">&lt;</span
+                  ><span class="tsd-signature-type" data-tsd-kind="Type parameter">T</span
+                  ><span class="tsd-signature-symbol">&gt;</span>
+                </li>
+              </ul>
+              <ul class="tsd-descriptions">
+                <li class="tsd-description">
+                  <aside class="tsd-sources">
+                    <p>Inherited from PostgrestQueryBuilder.throwOnError</p>
+                    <ul>
+                      <li>
+                        Defined in node_modules/@supabase/postgrest-js/dist/module/lib/types.d.ts:61
+                      </li>
+                    </ul>
+                  </aside>
+                  <div class="tsd-comment tsd-typography">
+                    <div class="lead">
+                      <p>
+                        If there&#39;s an error with the query, throwOnError will reject the promise
+                        by throwing the error instead of returning it as part of a successful
+                        response.
+                      </p>
+                    </div>
+                    <div>
+                      <p>
+                        <a href="https://github.com/supabase/supabase-js/issues/92" class="external"
+                          >https://github.com/supabase/supabase-js/issues/92</a
+                        >
+                      </p>
+                    </div>
+                  </div>
+                  <h4 class="tsd-parameters-title">Parameters</h4>
+                  <ul class="tsd-parameters">
+                    <li>
+                      <h5>
+                        <span class="tsd-flag ts-flagOptional">Optional</span> throwOnError:
+                        <span class="tsd-signature-type">boolean</span>
+                      </h5>
+                    </li>
+                  </ul>
+                  <h4 class="tsd-returns-title">
+                    Returns
+                    <a
+                      href="lib_SupabaseQueryBuilder.SupabaseQueryBuilder.html"
+                      class="tsd-signature-type"
+                      data-tsd-kind="Class"
+                      >SupabaseQueryBuilder</a
+                    ><span class="tsd-signature-symbol">&lt;</span
+                    ><span class="tsd-signature-type" data-tsd-kind="Type parameter">T</span
+                    ><span class="tsd-signature-symbol">&gt;</span>
+                  </h4>
+                </li>
+              </ul>
+            </section>
+            <section
+              class="tsd-panel tsd-member tsd-kind-method tsd-parent-kind-class tsd-is-inherited tsd-is-external"
+            >
+              <a id="update" class="tsd-anchor"></a>
+              <h3 class="tsd-anchor-link">
+                update<a href="#update" aria-label="Permalink" class="tsd-anchor-icon"
+                  ><svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    class="icon icon-tabler icon-tabler-link"
+                    viewBox="0 0 24 24"
+                    stroke-width="2"
+                    stroke="currentColor"
+                    fill="none"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+                    <path d="M10 14a3.5 3.5 0 0 0 5 0l4 -4a3.5 3.5 0 0 0 -5 -5l-.5 .5"></path>
+                    <path d="M14 10a3.5 3.5 0 0 0 -5 0l-4 4a3.5 3.5 0 0 0 5 5l.5 -.5"></path></svg
+                ></a>
+              </h3>
+              <ul
+                class="tsd-signatures tsd-kind-method tsd-parent-kind-class tsd-is-inherited tsd-is-external"
+              >
+                <li class="tsd-signature tsd-kind-icon">
+                  update<span class="tsd-signature-symbol">(</span>values<span
+                    class="tsd-signature-symbol"
+                    >: </span
+                  ><span class="tsd-signature-type">Partial</span
+                  ><span class="tsd-signature-symbol">&lt;</span
+                  ><span class="tsd-signature-type" data-tsd-kind="Type parameter">T</span
+                  ><span class="tsd-signature-symbol">&gt;</span>, __namedParameters<span
+                    class="tsd-signature-symbol"
+                    >?: </span
+                  ><span class="tsd-signature-symbol">{ </span>count<span
+                    class="tsd-signature-symbol"
+                    >?: </span
+                  ><span class="tsd-signature-type">null</span
+                  ><span class="tsd-signature-symbol"> | </span
+                  ><span class="tsd-signature-type">&quot;exact&quot;</span
+                  ><span class="tsd-signature-symbol"> | </span
+                  ><span class="tsd-signature-type">&quot;planned&quot;</span
+                  ><span class="tsd-signature-symbol"> | </span
+                  ><span class="tsd-signature-type">&quot;estimated&quot;</span
+                  ><span class="tsd-signature-symbol">; </span>returning<span
+                    class="tsd-signature-symbol"
+                    >?: </span
+                  ><span class="tsd-signature-type">&quot;minimal&quot;</span
+                  ><span class="tsd-signature-symbol"> | </span
+                  ><span class="tsd-signature-type">&quot;representation&quot;</span
+                  ><span class="tsd-signature-symbol"> }</span
+                  ><span class="tsd-signature-symbol">)</span
+                  ><span class="tsd-signature-symbol">: </span
+                  ><span class="tsd-signature-type">default</span
+                  ><span class="tsd-signature-symbol">&lt;</span
+                  ><span class="tsd-signature-type" data-tsd-kind="Type parameter">T</span
+                  ><span class="tsd-signature-symbol">&gt;</span>
+                </li>
+              </ul>
+              <ul class="tsd-descriptions">
+                <li class="tsd-description">
+                  <aside class="tsd-sources">
+                    <p>Inherited from PostgrestQueryBuilder.update</p>
+                    <ul>
+                      <li>
+                        Defined in
+                        node_modules/@supabase/postgrest-js/dist/module/lib/PostgrestQueryBuilder.d.ts:65
+                      </li>
+                    </ul>
+                  </aside>
+                  <div class="tsd-comment tsd-typography">
+                    <div class="lead">
+                      <p>Performs an UPDATE on the table.</p>
+                    </div>
+                  </div>
+                  <h4 class="tsd-parameters-title">Parameters</h4>
+                  <ul class="tsd-parameters">
+                    <li>
+                      <h5>
+                        values: <span class="tsd-signature-type">Partial</span
+                        ><span class="tsd-signature-symbol">&lt;</span
+                        ><span class="tsd-signature-type" data-tsd-kind="Type parameter">T</span
+                        ><span class="tsd-signature-symbol">&gt;</span>
+                      </h5>
+                      <div class="tsd-comment tsd-typography">
+                        <div class="lead">
+                          <p>The values to update.</p>
+                        </div>
+                      </div>
+                    </li>
+                    <li>
+                      <h5>
+                        <span class="tsd-flag ts-flagOptional">Optional</span> __namedParameters:
+                        <span class="tsd-signature-symbol">{ </span>count<span
+                          class="tsd-signature-symbol"
+                          >?: </span
+                        ><span class="tsd-signature-type">null</span
+                        ><span class="tsd-signature-symbol"> | </span
+                        ><span class="tsd-signature-type">&quot;exact&quot;</span
+                        ><span class="tsd-signature-symbol"> | </span
+                        ><span class="tsd-signature-type">&quot;planned&quot;</span
+                        ><span class="tsd-signature-symbol"> | </span
+                        ><span class="tsd-signature-type">&quot;estimated&quot;</span
+                        ><span class="tsd-signature-symbol">; </span>returning<span
+                          class="tsd-signature-symbol"
+                          >?: </span
+                        ><span class="tsd-signature-type">&quot;minimal&quot;</span
+                        ><span class="tsd-signature-symbol"> | </span
+                        ><span class="tsd-signature-type">&quot;representation&quot;</span
+                        ><span class="tsd-signature-symbol"> }</span>
+                      </h5>
+                      <ul class="tsd-parameters">
+                        <li class="tsd-parameter">
+                          <h5>
+                            <span class="tsd-flag ts-flagOptional">Optional</span> count<span
+                              class="tsd-signature-symbol"
+                              >?: </span
+                            ><span class="tsd-signature-type">null</span
+                            ><span class="tsd-signature-symbol"> | </span
+                            ><span class="tsd-signature-type">&quot;exact&quot;</span
+                            ><span class="tsd-signature-symbol"> | </span
+                            ><span class="tsd-signature-type">&quot;planned&quot;</span
+                            ><span class="tsd-signature-symbol"> | </span
+                            ><span class="tsd-signature-type">&quot;estimated&quot;</span>
+                          </h5>
+                        </li>
+                        <li class="tsd-parameter">
+                          <h5>
+                            <span class="tsd-flag ts-flagOptional">Optional</span> returning<span
+                              class="tsd-signature-symbol"
+                              >?: </span
+                            ><span class="tsd-signature-type">&quot;minimal&quot;</span
+                            ><span class="tsd-signature-symbol"> | </span
+                            ><span class="tsd-signature-type">&quot;representation&quot;</span>
+                          </h5>
+                        </li>
+                      </ul>
+                    </li>
+                  </ul>
+                  <h4 class="tsd-returns-title">
+                    Returns <span class="tsd-signature-type">default</span
+                    ><span class="tsd-signature-symbol">&lt;</span
+                    ><span class="tsd-signature-type" data-tsd-kind="Type parameter">T</span
+                    ><span class="tsd-signature-symbol">&gt;</span>
+                  </h4>
+                </li>
+              </ul>
+            </section>
+            <section
+              class="tsd-panel tsd-member tsd-kind-method tsd-parent-kind-class tsd-is-inherited tsd-is-external"
+            >
+              <a id="upsert" class="tsd-anchor"></a>
+              <h3 class="tsd-anchor-link">
+                upsert<a href="#upsert" aria-label="Permalink" class="tsd-anchor-icon"
+                  ><svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    class="icon icon-tabler icon-tabler-link"
+                    viewBox="0 0 24 24"
+                    stroke-width="2"
+                    stroke="currentColor"
+                    fill="none"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+                    <path d="M10 14a3.5 3.5 0 0 0 5 0l4 -4a3.5 3.5 0 0 0 -5 -5l-.5 .5"></path>
+                    <path d="M14 10a3.5 3.5 0 0 0 -5 0l-4 4a3.5 3.5 0 0 0 5 5l.5 -.5"></path></svg
+                ></a>
+              </h3>
+              <ul
+                class="tsd-signatures tsd-kind-method tsd-parent-kind-class tsd-is-inherited tsd-is-external"
+              >
+                <li class="tsd-signature tsd-kind-icon">
+                  upsert<span class="tsd-signature-symbol">(</span>values<span
+                    class="tsd-signature-symbol"
+                    >: </span
+                  ><span class="tsd-signature-type">Partial</span
+                  ><span class="tsd-signature-symbol">&lt;</span
+                  ><span class="tsd-signature-type" data-tsd-kind="Type parameter">T</span
+                  ><span class="tsd-signature-symbol">&gt;</span
+                  ><span class="tsd-signature-symbol"> | </span
+                  ><span class="tsd-signature-type">Partial</span
+                  ><span class="tsd-signature-symbol">&lt;</span
+                  ><span class="tsd-signature-type" data-tsd-kind="Type parameter">T</span
+                  ><span class="tsd-signature-symbol">&gt;</span
+                  ><span class="tsd-signature-symbol">[]</span>, __namedParameters<span
+                    class="tsd-signature-symbol"
+                    >?: </span
+                  ><span class="tsd-signature-symbol">{ </span>count<span
+                    class="tsd-signature-symbol"
+                    >?: </span
+                  ><span class="tsd-signature-type">null</span
+                  ><span class="tsd-signature-symbol"> | </span
+                  ><span class="tsd-signature-type">&quot;exact&quot;</span
+                  ><span class="tsd-signature-symbol"> | </span
+                  ><span class="tsd-signature-type">&quot;planned&quot;</span
+                  ><span class="tsd-signature-symbol"> | </span
+                  ><span class="tsd-signature-type">&quot;estimated&quot;</span
+                  ><span class="tsd-signature-symbol">; </span>ignoreDuplicates<span
+                    class="tsd-signature-symbol"
+                    >?: </span
+                  ><span class="tsd-signature-type">boolean</span
+                  ><span class="tsd-signature-symbol">; </span>onConflict<span
+                    class="tsd-signature-symbol"
+                    >?: </span
+                  ><span class="tsd-signature-type">string</span
+                  ><span class="tsd-signature-symbol">; </span>returning<span
+                    class="tsd-signature-symbol"
+                    >?: </span
+                  ><span class="tsd-signature-type">&quot;minimal&quot;</span
+                  ><span class="tsd-signature-symbol"> | </span
+                  ><span class="tsd-signature-type">&quot;representation&quot;</span
+                  ><span class="tsd-signature-symbol"> }</span
+                  ><span class="tsd-signature-symbol">)</span
+                  ><span class="tsd-signature-symbol">: </span
+                  ><span class="tsd-signature-type">default</span
+                  ><span class="tsd-signature-symbol">&lt;</span
+                  ><span class="tsd-signature-type" data-tsd-kind="Type parameter">T</span
+                  ><span class="tsd-signature-symbol">&gt;</span>
+                </li>
+              </ul>
+              <ul class="tsd-descriptions">
+                <li class="tsd-description">
+                  <aside class="tsd-sources">
+                    <p>Inherited from PostgrestQueryBuilder.upsert</p>
+                    <ul>
+                      <li>
+                        Defined in
+                        node_modules/@supabase/postgrest-js/dist/module/lib/PostgrestQueryBuilder.d.ts:52
+                      </li>
+                    </ul>
+                  </aside>
+                  <div class="tsd-comment tsd-typography">
+                    <div class="lead">
+                      <p>Performs an UPSERT into the table.</p>
+                    </div>
+                  </div>
+                  <h4 class="tsd-parameters-title">Parameters</h4>
+                  <ul class="tsd-parameters">
+                    <li>
+                      <h5>
+                        values: <span class="tsd-signature-type">Partial</span
+                        ><span class="tsd-signature-symbol">&lt;</span
+                        ><span class="tsd-signature-type" data-tsd-kind="Type parameter">T</span
+                        ><span class="tsd-signature-symbol">&gt;</span
+                        ><span class="tsd-signature-symbol"> | </span
+                        ><span class="tsd-signature-type">Partial</span
+                        ><span class="tsd-signature-symbol">&lt;</span
+                        ><span class="tsd-signature-type" data-tsd-kind="Type parameter">T</span
+                        ><span class="tsd-signature-symbol">&gt;</span
+                        ><span class="tsd-signature-symbol">[]</span>
+                      </h5>
+                      <div class="tsd-comment tsd-typography">
+                        <div class="lead">
+                          <p>The values to insert.</p>
+                        </div>
+                      </div>
+                    </li>
+                    <li>
+                      <h5>
+                        <span class="tsd-flag ts-flagOptional">Optional</span> __namedParameters:
+                        <span class="tsd-signature-symbol">{ </span>count<span
+                          class="tsd-signature-symbol"
+                          >?: </span
+                        ><span class="tsd-signature-type">null</span
+                        ><span class="tsd-signature-symbol"> | </span
+                        ><span class="tsd-signature-type">&quot;exact&quot;</span
+                        ><span class="tsd-signature-symbol"> | </span
+                        ><span class="tsd-signature-type">&quot;planned&quot;</span
+                        ><span class="tsd-signature-symbol"> | </span
+                        ><span class="tsd-signature-type">&quot;estimated&quot;</span
+                        ><span class="tsd-signature-symbol">; </span>ignoreDuplicates<span
+                          class="tsd-signature-symbol"
+                          >?: </span
+                        ><span class="tsd-signature-type">boolean</span
+                        ><span class="tsd-signature-symbol">; </span>onConflict<span
+                          class="tsd-signature-symbol"
+                          >?: </span
+                        ><span class="tsd-signature-type">string</span
+                        ><span class="tsd-signature-symbol">; </span>returning<span
+                          class="tsd-signature-symbol"
+                          >?: </span
+                        ><span class="tsd-signature-type">&quot;minimal&quot;</span
+                        ><span class="tsd-signature-symbol"> | </span
+                        ><span class="tsd-signature-type">&quot;representation&quot;</span
+                        ><span class="tsd-signature-symbol"> }</span>
+                      </h5>
+                      <ul class="tsd-parameters">
+                        <li class="tsd-parameter">
+                          <h5>
+                            <span class="tsd-flag ts-flagOptional">Optional</span> count<span
+                              class="tsd-signature-symbol"
+                              >?: </span
+                            ><span class="tsd-signature-type">null</span
+                            ><span class="tsd-signature-symbol"> | </span
+                            ><span class="tsd-signature-type">&quot;exact&quot;</span
+                            ><span class="tsd-signature-symbol"> | </span
+                            ><span class="tsd-signature-type">&quot;planned&quot;</span
+                            ><span class="tsd-signature-symbol"> | </span
+                            ><span class="tsd-signature-type">&quot;estimated&quot;</span>
+                          </h5>
+                        </li>
+                        <li class="tsd-parameter">
+                          <h5>
+                            <span class="tsd-flag ts-flagOptional">Optional</span>
+                            ignore<wbr />Duplicates<span class="tsd-signature-symbol">?: </span
+                            ><span class="tsd-signature-type">boolean</span>
+                          </h5>
+                        </li>
+                        <li class="tsd-parameter">
+                          <h5>
+                            <span class="tsd-flag ts-flagOptional">Optional</span>
+                            on<wbr />Conflict<span class="tsd-signature-symbol">?: </span
+                            ><span class="tsd-signature-type">string</span>
+                          </h5>
+                        </li>
+                        <li class="tsd-parameter">
+                          <h5>
+                            <span class="tsd-flag ts-flagOptional">Optional</span> returning<span
+                              class="tsd-signature-symbol"
+                              >?: </span
+                            ><span class="tsd-signature-type">&quot;minimal&quot;</span
+                            ><span class="tsd-signature-symbol"> | </span
+                            ><span class="tsd-signature-type">&quot;representation&quot;</span>
+                          </h5>
+                        </li>
+                      </ul>
+                    </li>
+                  </ul>
+                  <h4 class="tsd-returns-title">
+                    Returns <span class="tsd-signature-type">default</span
+                    ><span class="tsd-signature-symbol">&lt;</span
+                    ><span class="tsd-signature-type" data-tsd-kind="Type parameter">T</span
+                    ><span class="tsd-signature-symbol">&gt;</span>
+                  </h4>
+                </li>
+              </ul>
+            </section>
+          </section>
+        </div>
+        <div class="col-4 col-menu menu-sticky-wrap menu-highlight">
+          <nav class="tsd-navigation primary">
+            <ul>
+              <li class=""><a href="../modules.html">Modules</a></li>
+              <li class="tsd-kind-module"><a href="../modules/index.html">index</a></li>
+              <li class="current tsd-kind-module">
+                <a href="../modules/lib_SupabaseQueryBuilder.html"
+                  >lib/<wbr />Supabase<wbr />Query<wbr />Builder</a
+                >
+              </li>
+              <li class="tsd-kind-module">
+                <a href="../modules/lib_SupabaseRealtimeClient.html"
+                  >lib/<wbr />Supabase<wbr />Realtime<wbr />Client</a
+                >
+              </li>
+              <li class="tsd-kind-module">
+                <a href="../modules/lib_constants.html">lib/constants</a>
+              </li>
+              <li class="tsd-kind-module"><a href="../modules/lib_helpers.html">lib/helpers</a></li>
+              <li class="tsd-kind-module"><a href="../modules/lib_types.html">lib/types</a></li>
+              <li class="tsd-kind-module"><a href="../modules/lib_version.html">lib/version</a></li>
+            </ul>
+          </nav>
+          <nav class="tsd-navigation secondary menu-sticky">
+            <ul>
+              <li class="current tsd-kind-class tsd-parent-kind-module tsd-has-type-parameter">
+                <a href="lib_SupabaseQueryBuilder.SupabaseQueryBuilder.html" class="tsd-kind-icon"
+                  >Supabase<wbr />Query<wbr />Builder</a
+                >
+                <ul>
+                  <li
+                    class="tsd-kind-constructor tsd-parent-kind-class tsd-has-type-parameter tsd-is-overwrite"
+                  >
+                    <a
+                      href="lib_SupabaseQueryBuilder.SupabaseQueryBuilder.html#constructor"
+                      class="tsd-kind-icon"
+                      >constructor</a
+                    >
+                  </li>
+                  <li class="tsd-kind-property tsd-parent-kind-class tsd-is-private">
+                    <a
+                      href="lib_SupabaseQueryBuilder.SupabaseQueryBuilder.html#_headers"
+                      class="tsd-kind-icon"
+                      >_headers</a
+                    >
+                  </li>
+                  <li class="tsd-kind-property tsd-parent-kind-class tsd-is-private">
+                    <a
+                      href="lib_SupabaseQueryBuilder.SupabaseQueryBuilder.html#_realtime"
+                      class="tsd-kind-icon"
+                      >_realtime</a
+                    >
+                  </li>
+                  <li class="tsd-kind-property tsd-parent-kind-class tsd-is-private">
+                    <a
+                      href="lib_SupabaseQueryBuilder.SupabaseQueryBuilder.html#_schema"
+                      class="tsd-kind-icon"
+                      >_schema</a
+                    >
+                  </li>
+                  <li class="tsd-kind-property tsd-parent-kind-class tsd-is-private">
+                    <a
+                      href="lib_SupabaseQueryBuilder.SupabaseQueryBuilder.html#_subscription"
+                      class="tsd-kind-icon"
+                      >_subscription</a
+                    >
+                  </li>
+                  <li class="tsd-kind-property tsd-parent-kind-class tsd-is-private">
+                    <a
+                      href="lib_SupabaseQueryBuilder.SupabaseQueryBuilder.html#_table"
+                      class="tsd-kind-icon"
+                      >_table</a
+                    >
+                  </li>
+                  <li
+                    class="tsd-kind-property tsd-parent-kind-class tsd-is-inherited tsd-is-protected tsd-is-external"
+                  >
+                    <a
+                      href="lib_SupabaseQueryBuilder.SupabaseQueryBuilder.html#allowEmpty"
+                      class="tsd-kind-icon"
+                      >allow<wbr />Empty</a
+                    >
+                  </li>
+                  <li
+                    class="tsd-kind-property tsd-parent-kind-class tsd-is-inherited tsd-is-protected tsd-is-external"
+                  >
+                    <a
+                      href="lib_SupabaseQueryBuilder.SupabaseQueryBuilder.html#body"
+                      class="tsd-kind-icon"
+                      >body</a
+                    >
+                  </li>
+                  <li
+                    class="tsd-kind-property tsd-parent-kind-class tsd-is-inherited tsd-is-protected tsd-is-external"
+                  >
+                    <a
+                      href="lib_SupabaseQueryBuilder.SupabaseQueryBuilder.html#fetch"
+                      class="tsd-kind-icon"
+                      >fetch</a
+                    >
+                  </li>
+                  <li
+                    class="tsd-kind-property tsd-parent-kind-class tsd-is-inherited tsd-is-protected tsd-is-external"
+                  >
+                    <a
+                      href="lib_SupabaseQueryBuilder.SupabaseQueryBuilder.html#headers"
+                      class="tsd-kind-icon"
+                      >headers</a
+                    >
+                  </li>
+                  <li
+                    class="tsd-kind-property tsd-parent-kind-class tsd-is-inherited tsd-is-protected tsd-is-external"
+                  >
+                    <a
+                      href="lib_SupabaseQueryBuilder.SupabaseQueryBuilder.html#method"
+                      class="tsd-kind-icon"
+                      >method</a
+                    >
+                  </li>
+                  <li
+                    class="tsd-kind-property tsd-parent-kind-class tsd-is-inherited tsd-is-protected tsd-is-external"
+                  >
+                    <a
+                      href="lib_SupabaseQueryBuilder.SupabaseQueryBuilder.html#schema"
+                      class="tsd-kind-icon"
+                      >schema</a
+                    >
+                  </li>
+                  <li
+                    class="tsd-kind-property tsd-parent-kind-class tsd-is-inherited tsd-is-protected tsd-is-external"
+                  >
+                    <a
+                      href="lib_SupabaseQueryBuilder.SupabaseQueryBuilder.html#shouldThrowOnError"
+                      class="tsd-kind-icon"
+                      >should<wbr />Throw<wbr />On<wbr />Error</a
+                    >
+                  </li>
+                  <li
+                    class="tsd-kind-property tsd-parent-kind-class tsd-is-inherited tsd-is-protected tsd-is-external"
+                  >
+                    <a
+                      href="lib_SupabaseQueryBuilder.SupabaseQueryBuilder.html#signal"
+                      class="tsd-kind-icon"
+                      >signal</a
+                    >
+                  </li>
+                  <li
+                    class="tsd-kind-property tsd-parent-kind-class tsd-is-inherited tsd-is-protected tsd-is-external"
+                  >
+                    <a
+                      href="lib_SupabaseQueryBuilder.SupabaseQueryBuilder.html#url"
+                      class="tsd-kind-icon"
+                      >url</a
+                    >
+                  </li>
+                  <li
+                    class="tsd-kind-method tsd-parent-kind-class tsd-is-inherited tsd-is-external"
+                  >
+                    <a
+                      href="lib_SupabaseQueryBuilder.SupabaseQueryBuilder.html#delete"
+                      class="tsd-kind-icon"
+                      >delete</a
+                    >
+                  </li>
+                  <li
+                    class="tsd-kind-method tsd-parent-kind-class tsd-is-inherited tsd-is-external"
+                  >
+                    <a
+                      href="lib_SupabaseQueryBuilder.SupabaseQueryBuilder.html#insert"
+                      class="tsd-kind-icon"
+                      >insert</a
+                    >
+                  </li>
+                  <li class="tsd-kind-method tsd-parent-kind-class">
+                    <a
+                      href="lib_SupabaseQueryBuilder.SupabaseQueryBuilder.html#on"
+                      class="tsd-kind-icon"
+                      >on</a
+                    >
+                  </li>
+                  <li
+                    class="tsd-kind-method tsd-parent-kind-class tsd-is-inherited tsd-is-external"
+                  >
+                    <a
+                      href="lib_SupabaseQueryBuilder.SupabaseQueryBuilder.html#select"
+                      class="tsd-kind-icon"
+                      >select</a
+                    >
+                  </li>
+                  <li
+                    class="tsd-kind-method tsd-parent-kind-class tsd-has-type-parameter tsd-is-inherited tsd-is-external"
+                  >
+                    <a
+                      href="lib_SupabaseQueryBuilder.SupabaseQueryBuilder.html#then"
+                      class="tsd-kind-icon"
+                      >then</a
+                    >
+                  </li>
+                  <li
+                    class="tsd-kind-method tsd-parent-kind-class tsd-is-inherited tsd-is-external"
+                  >
+                    <a
+                      href="lib_SupabaseQueryBuilder.SupabaseQueryBuilder.html#throwOnError"
+                      class="tsd-kind-icon"
+                      >throw<wbr />On<wbr />Error</a
+                    >
+                  </li>
+                  <li
+                    class="tsd-kind-method tsd-parent-kind-class tsd-is-inherited tsd-is-external"
+                  >
+                    <a
+                      href="lib_SupabaseQueryBuilder.SupabaseQueryBuilder.html#update"
+                      class="tsd-kind-icon"
+                      >update</a
+                    >
+                  </li>
+                  <li
+                    class="tsd-kind-method tsd-parent-kind-class tsd-is-inherited tsd-is-external"
+                  >
+                    <a
+                      href="lib_SupabaseQueryBuilder.SupabaseQueryBuilder.html#upsert"
+                      class="tsd-kind-icon"
+                      >upsert</a
+                    >
+                  </li>
+                </ul>
+              </li>
+            </ul>
+          </nav>
+        </div>
+      </div>
+    </div>
+    <footer class="with-border-bottom">
+      <div class="container">
+        <h2>Legend</h2>
+        <div class="tsd-legend-group">
+          <ul class="tsd-legend">
+            <li class="tsd-kind-variable"><span class="tsd-kind-icon">Variable</span></li>
+            <li class="tsd-kind-function"><span class="tsd-kind-icon">Function</span></li>
+            <li class="tsd-kind-type-alias"><span class="tsd-kind-icon">Type alias</span></li>
+            <li class="tsd-kind-type-alias tsd-has-type-parameter">
+              <span class="tsd-kind-icon">Type alias with type parameter</span>
+            </li>
+          </ul>
+          <ul class="tsd-legend">
+            <li class="tsd-kind-class"><span class="tsd-kind-icon">Class</span></li>
+            <li class="tsd-kind-class tsd-has-type-parameter">
+              <span class="tsd-kind-icon">Class with type parameter</span>
+            </li>
+            <li class="tsd-kind-method tsd-parent-kind-class">
+              <span class="tsd-kind-icon">Method</span>
+            </li>
+          </ul>
+          <ul class="tsd-legend">
+            <li class="tsd-kind-interface"><span class="tsd-kind-icon">Interface</span></li>
+          </ul>
+          <ul class="tsd-legend">
+            <li class="tsd-kind-property tsd-parent-kind-class tsd-is-private">
+              <span class="tsd-kind-icon">Private property</span>
+            </li>
+          </ul>
+        </div>
+        <h2>Settings</h2>
+        <p>
+          Theme
+          <select id="theme">
+            <option value="os">OS</option>
+            <option value="light">Light</option>
+            <option value="dark">Dark</option>
+          </select>
+        </p>
+      </div>
+    </footer>
+    <div class="container tsd-generator">
+      <p>Generated using <a href="https://typedoc.org/" target="_blank">TypeDoc</a></p>
+    </div>
+    <div class="overlay"></div>
+    <script src="../assets/main.js"></script>
+  </body>
+</html>
