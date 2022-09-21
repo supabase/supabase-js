@@ -108,4 +108,5 @@ dist
 .vscode/
 
 # Docs via yarn docs
-docs
+# docs
+# !docs/v1/**/*
