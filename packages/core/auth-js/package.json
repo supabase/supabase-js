@@ -30,8 +30,10 @@
     "test:suite": "jest --runInBand",
     "test:infra": "cd infra && docker-compose down && docker-compose pull && docker-compose up -d && sleep 30",
     "test:clean": "cd infra && docker-compose down --remove-orphans",
-    "docs": "typedoc src/index.ts  --out docs/v1",
-    "docs:json": "typedoc src/index.ts --json docs/v1/spec.json"
+    "docs": "typedoc src/index.ts --out docs/latest",
+    "docs:json": "typedoc src/index.ts --json docs/spec.json --out docs/latest",
+    "v1:docs": "typedoc src/index.ts  --out docs/v1",
+    "v1:docs:json": "typedoc src/index.ts --json docs/v1/spec.json"
   },
   "dependencies": {
     "cross-fetch": "^3.0.6"
