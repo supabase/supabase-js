@@ -88,6 +88,13 @@ export type AuthMFAResponse =
       }
       error: null
     }
+  | {
+    data: {
+      id: string
+      expires_at: number
+    }
+    error: null
+    }
 
 export type OAuthResponse =
   | {
