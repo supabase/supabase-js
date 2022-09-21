@@ -12,8 +12,10 @@
     "build": "run-s clean format build:*",
     "build:main": "tsc -p tsconfig.json",
     "build:module": "tsc -p tsconfig.module.json",
-    "docs": "typedoc src/index.ts",
-    "docs:json": "typedoc --json docs/spec.json --excludeExternals src/index.ts",
+    "v1:docs": "typedoc src/index.ts --out docs/v1",
+    "v1:docs:json": "typedoc --json docs/v1/spec.json --excludeExternals src/index.ts",
+    "v2:docs": "typedoc src/index.ts --out docs/v2",
+    "v2:docs:json": "typedoc --json docs/v2/spec.json --excludeExternals src/index.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
