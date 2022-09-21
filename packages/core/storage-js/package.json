@@ -32,8 +32,10 @@
     "test:suite": "jest --runInBand",
     "test:infra": "cd infra && docker-compose down && docker-compose up -d && sleep 10",
     "test:clean": "cd infra && docker-compose down --remove-orphans",
-    "docs": "typedoc --mode file --target ES6 --theme minimal",
-    "docs:json": "typedoc --json docs/spec.json --mode modules --includeDeclarations --excludeExternals"
+    "v1:docs": "typedoc --mode file --target ES6 --theme minimal --out docs/v1",
+    "v1:docs:json": "typedoc --json docs/v1/spec.json --mode modules --includeDeclarations --excludeExternals",
+    "v2:docs": "typedoc --mode file --target ES6 --theme minimal --out docs/v2",
+    "v2:docs:json": "typedoc --json docs/v2/spec.json --mode modules --includeDeclarations --excludeExternals"
   },
   "dependencies": {
     "cross-fetch": "^3.1.0"
