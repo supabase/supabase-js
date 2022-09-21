@@ -27,8 +27,10 @@
     "test": "run-s test:db && jest --runInBand",
     "test:clean": "cd test/db && docker-compose down",
     "test:db": "cd test/db && docker-compose down && docker-compose up -d && wait-for-localhost 3000",
-    "docs": "typedoc --mode file --target ES6 --theme minimal",
-    "docs:json": "typedoc --json docs/spec.json --mode modules --includeDeclarations --excludeExternals"
+    "v1:docs": "typedoc --mode file --target ES6 --theme minimal --out docs/v1",
+    "v1:docs:json": "typedoc --json docs/v1/spec.json --mode modules --includeDeclarations --excludeExternals",
+    "v2:docs": "typedoc --mode file --target ES6 --theme minimal --out docs/v2",
+    "v2:docs:json": "typedoc --json docs/v2/spec.json --mode modules --includeDeclarations --excludeExternals"
   },
   "dependencies": {
     "cross-fetch": "^3.1.5"
