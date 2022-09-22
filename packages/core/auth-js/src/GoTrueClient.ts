@@ -25,6 +25,7 @@ import {
   resolveFetch,
   setItemAsync,
   uuid,
+  decodeJWT,
 } from './lib/helpers'
 import localStorageAdapter from './lib/local-storage'
 import { polyfillGlobalThis } from './lib/polyfills'
@@ -51,8 +52,8 @@ import type {
   MFAEnrollParams,
   MFAChallengeParams,
   MFAUnenrollParams,
-  MFAChallengeAndVerifyParams,
   MFAVerifyParams,
+  AMREntry,
 } from './lib/types'
 
 polyfillGlobalThis() // Make "globalThis" available
@@ -136,6 +137,8 @@ export default class GoTrueClient {
       unenroll: this._unenroll.bind(this),
       challenge: this._challenge.bind(this),
       listFactors: this._listFactors.bind(this),
+      getAMR: this._getAMR.bind(this),
+      getAAL: this._getAAL.bind(this),
     }
   }
 
@@ -1103,5 +1106,58 @@ export default class GoTrueClient {
     const { data, error } = await this.getUser()
     if (error) throw error
     return { data: { factors: data.user?.factors ?? [] }, error: error }
+  }
+
+  /**
+   * Returns the current AMR level
+   * @param jwt Takes in an optional access token jwt. If no jwt is provided, getAMR() will attempt to get the jwt from the current session.
+   */
+  private async _getAMR(jwt: string) {
+    try {
+      if (!jwt) {
+        const { data, error } = await this.getSession()
+        if (error) {
+          throw error
+        }
+        // Default to Authorization header if there is no existing session
+        jwt = data.session?.access_token ?? this.headers['Authorization']
+      }
+    } catch (error) {
+      if (isAuthError(error)) {
+        return { data: { AMR: [], user: null, session: null }, error }
+      }
+
+      throw error
+    }
+    const parsedJWT = decodeJWT(jwt)
+    const AMR: AMREntry[] = parsedJWT?.AMR ?? []
+
+    return { data: { AMR: AMR }, error: null }
+  }
+
+  /**
+   * Returns the current AAL level
+   * @param jwt Takes in an optional access token jwt. If no jwt is provided, getAAL() will attempt to get the jwt from the current session.
+   */
+  private async _getAAL(jwt: string) {
+    try {
+      if (!jwt) {
+        const { data, error } = await this.getSession()
+        if (error) {
+          throw error
+        }
+        // Default to Authorization header if there is no existing session
+        jwt = data.session?.access_token ?? this.headers['Authorization']
+      }
+    } catch (error) {
+      if (isAuthError(error)) {
+        return { data: { AAL: '', user: null, session: null }, error }
+      }
+
+      throw error
+    }
+    const parsedJWT = decodeJWT(jwt)
+    const AAL: string = parsedJWT?.AAL ?? ''
+    return { data: { AAL: AAL }, error: null }
   }
 }
