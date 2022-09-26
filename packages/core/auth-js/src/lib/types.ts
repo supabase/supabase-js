@@ -558,8 +558,8 @@ export interface GoTrueMFAApi {
   unenroll(params: MFAUnenrollParams): Promise<AuthMFAResponse>
   challenge(params: MFAChallengeParams): Promise<AuthMFAResponse>
   listFactors(): Promise<AuthMFAResponse>
-  getAMR(jwt: string): Promise<AuthMFAResponse>
-  getAAL(jwt: string): Promise<AuthMFAResponse>
+  getAMR(jwt?: string): Promise<AuthMFAResponse>
+  getAAL(jwt?: string): Promise<AuthMFAResponse>
 }
 
 export interface GoTrueAdminMFAApi {

@@ -1054,8 +1054,8 @@ export default class GoTrueClient {
         `${this.url}/user/${user.id}/factor/${params.factorId}/verify`,
         {
           body: { code: params.code, challenge_id: params.challengeId },
-          headers: this.headers,
           xform: _sessionResponse,
+          headers: this.headers,
         }
       )
       if (error || !data) return { data: { user: null, session: null }, error }
@@ -1087,6 +1087,7 @@ export default class GoTrueClient {
         'POST',
         `${this.url}/user/${user.id}/factor/${params.factorId}/challenge`,
         {
+          body: {},
           headers: this.headers,
         }
       )
@@ -1112,7 +1113,7 @@ export default class GoTrueClient {
    * Returns the current AMR level
    * @param jwt Takes in an optional access token jwt. If no jwt is provided, getAMR() will attempt to get the jwt from the current session.
    */
-  private async _getAMR(jwt: string) {
+  private async _getAMR(jwt?: string) {
     try {
       if (!jwt) {
         const { data, error } = await this.getSession()
@@ -1130,7 +1131,7 @@ export default class GoTrueClient {
       throw error
     }
     const parsedJWT = decodeJWT(jwt)
-    const AMR: AMREntry[] = parsedJWT?.AMR ?? []
+    const AMR: AMREntry[] = parsedJWT?.amr ?? []
 
     return { data: { AMR: AMR }, error: null }
   }
@@ -1139,7 +1140,7 @@ export default class GoTrueClient {
    * Returns the current AAL level
    * @param jwt Takes in an optional access token jwt. If no jwt is provided, getAAL() will attempt to get the jwt from the current session.
    */
-  private async _getAAL(jwt: string) {
+  private async _getAAL(jwt?: string) {
     try {
       if (!jwt) {
         const { data, error } = await this.getSession()
@@ -1157,7 +1158,7 @@ export default class GoTrueClient {
       throw error
     }
     const parsedJWT = decodeJWT(jwt)
-    const AAL: string = parsedJWT?.AAL ?? ''
+    const AAL: string = parsedJWT?.aal ?? ''
     return { data: { AAL: AAL }, error: null }
   }
 }
