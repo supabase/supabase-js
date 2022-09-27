@@ -31,6 +31,7 @@ export interface ApiError {
 
 export interface Session {
   provider_token?: string | null
+  provider_refresh_token?: string | null
   access_token: string
   /**
    * The number of seconds until the token expires (since it was issued). Returned when a login is confirmed.
