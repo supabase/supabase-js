@@ -164,9 +164,9 @@ export default class SupabaseClient<
    * Perform a function call.
    *
    * @param fn  The function name to call.
-   * @param params  The parameters to pass to the function call.
-   * @param head   When set to true, no data will be returned.
-   * @param count  Count algorithm to use to count rows in a table.
+   * @param args  The parameters to pass to the function call.
+   * @param options.head   When set to true, no data will be returned.
+   * @param options.count  Count algorithm to use to count rows in a table.
    *
    */
   rpc<
