@@ -27,9 +27,10 @@ const _getErrorMessage = (err: any): string =>
   err.msg || err.message || err.error_description || err.error || JSON.stringify(err)
 
 const handleError = async (error: unknown, reject: (reason?: any) => void) => {
+  const NETWORK_ERROR_CODES = [502, 503, 504]
   if (!looksLikeFetchResponse(error)) {
     reject(new AuthRetryableFetchError(_getErrorMessage(error), 0))
-  } else if (error.status >= 500 && error.status <= 599) {
+  } else if (NETWORK_ERROR_CODES.includes(error.status)) {
     // status in 500...599 range - server had an error, request might be retryed.
     reject(new AuthRetryableFetchError(_getErrorMessage(error), error.status))
   } else {
