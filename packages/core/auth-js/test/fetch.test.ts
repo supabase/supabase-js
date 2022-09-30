@@ -47,7 +47,7 @@ describe('fetch', () => {
       expect(route).toHaveBeenCalledTimes(1)
     })
 
-    test('should throw AuthRetryableFetchError upon internal server error', async () => {
+    test('should not throw AuthRetryableFetchError upon internal server error', async () => {
       const route = server
         .get('/')
         .mockImplementationOnce((ctx) => {
@@ -60,7 +60,7 @@ describe('fetch', () => {
 
       const url = server.getURL().toString()
 
-      await expect(_request(fetch, 'GET', url)).rejects.toBeInstanceOf(AuthRetryableFetchError)
+      await expect(_request(fetch, 'GET', url)).rejects.not.toBeInstanceOf(AuthRetryableFetchError)
 
       expect(route).toHaveBeenCalledTimes(1)
     })
