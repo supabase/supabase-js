@@ -23,26 +23,26 @@ interface PostgrestResponseBase {
 }
 
 interface PostgrestResponseSuccess<T> extends PostgrestResponseBase {
-  error: undefined
+  error: null
   data: T[]
-  count: number | undefined
+  count: number | null
 }
 interface PostgrestResponseFailure extends PostgrestResponseBase {
   error: PostgrestError
-  data: undefined
-  count: undefined
+  data: null
+  count: null
 }
 export type PostgrestResponse<T> = PostgrestResponseSuccess<T> | PostgrestResponseFailure
 
 interface PostgrestSingleResponseSuccess<T> extends PostgrestResponseBase {
-  error: undefined
+  error: null
   data: T
-  count: number | undefined
+  count: number | null
 }
 export type PostgrestSingleResponse<T> =
   | PostgrestSingleResponseSuccess<T>
   | PostgrestResponseFailure
-export type PostgrestMaybeSingleResponse<T> = PostgrestSingleResponse<T | undefined>
+export type PostgrestMaybeSingleResponse<T> = PostgrestSingleResponse<T | null>
 
 export type GenericTable = {
   Row: Record<string, unknown>

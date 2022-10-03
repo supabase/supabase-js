@@ -64,13 +64,13 @@ test('csv', async () => {
   const res = await postgrest.from('users').select().csv()
   expect(res).toMatchInlineSnapshot(`
     Object {
-      "count": undefined,
+      "count": null,
       "data": "username,data,age_range,status,catchphrase
     supabot,,\\"[1,2)\\",ONLINE,\\"'cat' 'fat'\\"
     kiwicopple,,\\"[25,35)\\",OFFLINE,\\"'bat' 'cat'\\"
     awailas,,\\"[25,35)\\",ONLINE,\\"'bat' 'rat'\\"
     dragarcia,,\\"[20,30)\\",ONLINE,\\"'fat' 'rat'\\"",
-      "error": undefined,
+      "error": null,
       "status": 200,
       "statusText": "OK",
     }
@@ -83,16 +83,16 @@ test('abort signal', async () => {
   const res = await postgrest.from('users').select().abortSignal(ac.signal)
   expect(res).toMatchInlineSnapshot(`
     Object {
-      "count": undefined,
-      "data": undefined,
+      "count": null,
+      "data": null,
       "error": Object {
         "code": "",
         "details": "",
         "hint": "",
         "message": "FetchError: The user aborted a request.",
       },
-      "status": 400,
-      "statusText": "Bad Request",
+      "status": 0,
+      "statusText": "",
     }
   `)
 })
@@ -106,7 +106,7 @@ test('explain with json/text format', async () => {
   const res1 = await postgrest.from('users').select().explain({ format: 'json' })
   expect(res1).toMatchInlineSnapshot(`
     Object {
-      "count": undefined,
+      "count": null,
       "data": Array [
         Object {
           "Plan": Object {
@@ -136,7 +136,7 @@ test('explain with json/text format', async () => {
           },
         },
       ],
-      "error": undefined,
+      "error": null,
       "status": 200,
       "statusText": "OK",
     }
@@ -157,7 +157,7 @@ test('explain with options', async () => {
     .explain({ verbose: true, settings: true, format: 'json' })
   expect(res).toMatchInlineSnapshot(`
     Object {
-      "count": undefined,
+      "count": null,
       "data": Array [
         Object {
           "Plan": Object {
@@ -207,7 +207,7 @@ test('explain with options', async () => {
           },
         },
       ],
-      "error": undefined,
+      "error": null,
       "status": 200,
       "statusText": "OK",
     }

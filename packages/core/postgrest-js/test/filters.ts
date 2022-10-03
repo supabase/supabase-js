@@ -7,7 +7,7 @@ test('not', async () => {
   const res = await postgrest.from('users').select('status').not('status', 'eq', 'OFFLINE')
   expect(res).toMatchInlineSnapshot(`
     Object {
-      "count": undefined,
+      "count": null,
       "data": Array [
         Object {
           "status": "ONLINE",
@@ -19,7 +19,7 @@ test('not', async () => {
           "status": "ONLINE",
         },
       ],
-      "error": undefined,
+      "error": null,
       "status": 200,
       "statusText": "OK",
     }
@@ -33,7 +33,7 @@ test('or', async () => {
     .or('status.eq.OFFLINE,username.eq.supabot')
   expect(res).toMatchInlineSnapshot(`
     Object {
-      "count": undefined,
+      "count": null,
       "data": Array [
         Object {
           "status": "ONLINE",
@@ -44,7 +44,7 @@ test('or', async () => {
           "username": "kiwicopple",
         },
       ],
-      "error": undefined,
+      "error": null,
       "status": 200,
       "statusText": "OK",
     }
@@ -55,13 +55,13 @@ test('eq', async () => {
   const res = await postgrest.from('users').select('username').eq('username', 'supabot')
   expect(res).toMatchInlineSnapshot(`
     Object {
-      "count": undefined,
+      "count": null,
       "data": Array [
         Object {
           "username": "supabot",
         },
       ],
-      "error": undefined,
+      "error": null,
       "status": 200,
       "statusText": "OK",
     }
@@ -72,7 +72,7 @@ test('neq', async () => {
   const res = await postgrest.from('users').select('username').neq('username', 'supabot')
   expect(res).toMatchInlineSnapshot(`
     Object {
-      "count": undefined,
+      "count": null,
       "data": Array [
         Object {
           "username": "kiwicopple",
@@ -84,7 +84,7 @@ test('neq', async () => {
           "username": "dragarcia",
         },
       ],
-      "error": undefined,
+      "error": null,
       "status": 200,
       "statusText": "OK",
     }
@@ -95,13 +95,13 @@ test('gt', async () => {
   const res = await postgrest.from('messages').select('id').gt('id', 1)
   expect(res).toMatchInlineSnapshot(`
     Object {
-      "count": undefined,
+      "count": null,
       "data": Array [
         Object {
           "id": 2,
         },
       ],
-      "error": undefined,
+      "error": null,
       "status": 200,
       "statusText": "OK",
     }
@@ -112,7 +112,7 @@ test('gte', async () => {
   const res = await postgrest.from('messages').select('id').gte('id', 1)
   expect(res).toMatchInlineSnapshot(`
     Object {
-      "count": undefined,
+      "count": null,
       "data": Array [
         Object {
           "id": 1,
@@ -121,7 +121,7 @@ test('gte', async () => {
           "id": 2,
         },
       ],
-      "error": undefined,
+      "error": null,
       "status": 200,
       "statusText": "OK",
     }
@@ -132,13 +132,13 @@ test('lt', async () => {
   const res = await postgrest.from('messages').select('id').lt('id', 2)
   expect(res).toMatchInlineSnapshot(`
     Object {
-      "count": undefined,
+      "count": null,
       "data": Array [
         Object {
           "id": 1,
         },
       ],
-      "error": undefined,
+      "error": null,
       "status": 200,
       "statusText": "OK",
     }
@@ -149,7 +149,7 @@ test('lte', async () => {
   const res = await postgrest.from('messages').select('id').lte('id', 2)
   expect(res).toMatchInlineSnapshot(`
     Object {
-      "count": undefined,
+      "count": null,
       "data": Array [
         Object {
           "id": 1,
@@ -158,7 +158,7 @@ test('lte', async () => {
           "id": 2,
         },
       ],
-      "error": undefined,
+      "error": null,
       "status": 200,
       "statusText": "OK",
     }
@@ -169,13 +169,13 @@ test('like', async () => {
   const res = await postgrest.from('users').select('username').like('username', '%supa%')
   expect(res).toMatchInlineSnapshot(`
     Object {
-      "count": undefined,
+      "count": null,
       "data": Array [
         Object {
           "username": "supabot",
         },
       ],
-      "error": undefined,
+      "error": null,
       "status": 200,
       "statusText": "OK",
     }
@@ -186,13 +186,13 @@ test('ilike', async () => {
   const res = await postgrest.from('users').select('username').ilike('username', '%SUPA%')
   expect(res).toMatchInlineSnapshot(`
     Object {
-      "count": undefined,
+      "count": null,
       "data": Array [
         Object {
           "username": "supabot",
         },
       ],
-      "error": undefined,
+      "error": null,
       "status": 200,
       "statusText": "OK",
     }
@@ -203,7 +203,7 @@ test('is', async () => {
   const res = await postgrest.from('users').select('data').is('data', null)
   expect(res).toMatchInlineSnapshot(`
     Object {
-      "count": undefined,
+      "count": null,
       "data": Array [
         Object {
           "data": null,
@@ -218,7 +218,7 @@ test('is', async () => {
           "data": null,
         },
       ],
-      "error": undefined,
+      "error": null,
       "status": 200,
       "statusText": "OK",
     }
@@ -229,7 +229,7 @@ test('in', async () => {
   const res = await postgrest.from('users').select('status').in('status', ['ONLINE', 'OFFLINE'])
   expect(res).toMatchInlineSnapshot(`
     Object {
-      "count": undefined,
+      "count": null,
       "data": Array [
         Object {
           "status": "ONLINE",
@@ -244,7 +244,7 @@ test('in', async () => {
           "status": "ONLINE",
         },
       ],
-      "error": undefined,
+      "error": null,
       "status": 200,
       "statusText": "OK",
     }
@@ -255,13 +255,13 @@ test('contains', async () => {
   const res = await postgrest.from('users').select('age_range').contains('age_range', '[1,2)')
   expect(res).toMatchInlineSnapshot(`
     Object {
-      "count": undefined,
+      "count": null,
       "data": Array [
         Object {
           "age_range": "[1,2)",
         },
       ],
-      "error": undefined,
+      "error": null,
       "status": 200,
       "statusText": "OK",
     }
@@ -272,13 +272,13 @@ test('containedBy', async () => {
   const res = await postgrest.from('users').select('age_range').containedBy('age_range', '[1,2)')
   expect(res).toMatchInlineSnapshot(`
     Object {
-      "count": undefined,
+      "count": null,
       "data": Array [
         Object {
           "age_range": "[1,2)",
         },
       ],
-      "error": undefined,
+      "error": null,
       "status": 200,
       "statusText": "OK",
     }
@@ -289,13 +289,13 @@ test('rangeLt', async () => {
   const res = await postgrest.from('users').select('age_range').rangeLt('age_range', '[2,25)')
   expect(res).toMatchInlineSnapshot(`
     Object {
-      "count": undefined,
+      "count": null,
       "data": Array [
         Object {
           "age_range": "[1,2)",
         },
       ],
-      "error": undefined,
+      "error": null,
       "status": 200,
       "statusText": "OK",
     }
@@ -306,7 +306,7 @@ test('rangeGt', async () => {
   const res = await postgrest.from('users').select('age_range').rangeGt('age_range', '[2,25)')
   expect(res).toMatchInlineSnapshot(`
     Object {
-      "count": undefined,
+      "count": null,
       "data": Array [
         Object {
           "age_range": "[25,35)",
@@ -315,7 +315,7 @@ test('rangeGt', async () => {
           "age_range": "[25,35)",
         },
       ],
-      "error": undefined,
+      "error": null,
       "status": 200,
       "statusText": "OK",
     }
@@ -326,7 +326,7 @@ test('rangeGte', async () => {
   const res = await postgrest.from('users').select('age_range').rangeGte('age_range', '[2,25)')
   expect(res).toMatchInlineSnapshot(`
     Object {
-      "count": undefined,
+      "count": null,
       "data": Array [
         Object {
           "age_range": "[25,35)",
@@ -338,7 +338,7 @@ test('rangeGte', async () => {
           "age_range": "[20,30)",
         },
       ],
-      "error": undefined,
+      "error": null,
       "status": 200,
       "statusText": "OK",
     }
@@ -349,13 +349,13 @@ test('rangeLte', async () => {
   const res = await postgrest.from('users').select('age_range').rangeLte('age_range', '[2,25)')
   expect(res).toMatchInlineSnapshot(`
     Object {
-      "count": undefined,
+      "count": null,
       "data": Array [
         Object {
           "age_range": "[1,2)",
         },
       ],
-      "error": undefined,
+      "error": null,
       "status": 200,
       "statusText": "OK",
     }
@@ -366,7 +366,7 @@ test('rangeAdjacent', async () => {
   const res = await postgrest.from('users').select('age_range').rangeAdjacent('age_range', '[2,25)')
   expect(res).toMatchInlineSnapshot(`
     Object {
-      "count": undefined,
+      "count": null,
       "data": Array [
         Object {
           "age_range": "[1,2)",
@@ -378,7 +378,7 @@ test('rangeAdjacent', async () => {
           "age_range": "[25,35)",
         },
       ],
-      "error": undefined,
+      "error": null,
       "status": 200,
       "statusText": "OK",
     }
@@ -389,13 +389,13 @@ test('overlaps', async () => {
   const res = await postgrest.from('users').select('age_range').overlaps('age_range', '[2,25)')
   expect(res).toMatchInlineSnapshot(`
     Object {
-      "count": undefined,
+      "count": null,
       "data": Array [
         Object {
           "age_range": "[20,30)",
         },
       ],
-      "error": undefined,
+      "error": null,
       "status": 200,
       "statusText": "OK",
     }
@@ -409,13 +409,13 @@ test('textSearch', async () => {
     .textSearch('catchphrase', `'fat' & 'cat'`, { config: 'english' })
   expect(res).toMatchInlineSnapshot(`
     Object {
-      "count": undefined,
+      "count": null,
       "data": Array [
         Object {
           "catchphrase": "'cat' 'fat'",
         },
       ],
-      "error": undefined,
+      "error": null,
       "status": 200,
       "statusText": "OK",
     }
@@ -429,13 +429,13 @@ test('textSearch with plainto_tsquery', async () => {
     .textSearch('catchphrase', `'fat' & 'cat'`, { config: 'english', type: 'plain' })
   expect(res).toMatchInlineSnapshot(`
     Object {
-      "count": undefined,
+      "count": null,
       "data": Array [
         Object {
           "catchphrase": "'cat' 'fat'",
         },
       ],
-      "error": undefined,
+      "error": null,
       "status": 200,
       "statusText": "OK",
     }
@@ -449,7 +449,7 @@ test('textSearch with phraseto_tsquery', async () => {
     .textSearch('catchphrase', 'cat', { config: 'english', type: 'phrase' })
   expect(res).toMatchInlineSnapshot(`
     Object {
-      "count": undefined,
+      "count": null,
       "data": Array [
         Object {
           "catchphrase": "'cat' 'fat'",
@@ -458,7 +458,7 @@ test('textSearch with phraseto_tsquery', async () => {
           "catchphrase": "'bat' 'cat'",
         },
       ],
-      "error": undefined,
+      "error": null,
       "status": 200,
       "statusText": "OK",
     }
@@ -472,13 +472,13 @@ test('textSearch with websearch_to_tsquery', async () => {
     .textSearch('catchphrase', `'fat' & 'cat'`, { config: 'english', type: 'websearch' })
   expect(res).toMatchInlineSnapshot(`
     Object {
-      "count": undefined,
+      "count": null,
       "data": Array [
         Object {
           "catchphrase": "'cat' 'fat'",
         },
       ],
-      "error": undefined,
+      "error": null,
       "status": 200,
       "statusText": "OK",
     }
@@ -496,7 +496,7 @@ test('multiple filters', async () => {
     .textSearch('catchphrase', 'cat')
   expect(res).toMatchInlineSnapshot(`
     Object {
-      "count": undefined,
+      "count": null,
       "data": Array [
         Object {
           "age_range": "[1,2)",
@@ -506,7 +506,7 @@ test('multiple filters', async () => {
           "username": "supabot",
         },
       ],
-      "error": undefined,
+      "error": null,
       "status": 200,
       "statusText": "OK",
     }
@@ -517,13 +517,13 @@ test('filter', async () => {
   const res = await postgrest.from('users').select('username').filter('username', 'eq', 'supabot')
   expect(res).toMatchInlineSnapshot(`
     Object {
-      "count": undefined,
+      "count": null,
       "data": Array [
         Object {
           "username": "supabot",
         },
       ],
-      "error": undefined,
+      "error": null,
       "status": 200,
       "statusText": "OK",
     }
@@ -537,14 +537,14 @@ test('match', async () => {
     .match({ username: 'supabot', status: 'ONLINE' })
   expect(res).toMatchInlineSnapshot(`
     Object {
-      "count": undefined,
+      "count": null,
       "data": Array [
         Object {
           "status": "ONLINE",
           "username": "supabot",
         },
       ],
-      "error": undefined,
+      "error": null,
       "status": 200,
       "statusText": "OK",
     }
@@ -557,9 +557,9 @@ test('filter on rpc', async () => {
     .neq('status', 'ONLINE')
   expect(res).toMatchInlineSnapshot(`
     Object {
-      "count": undefined,
+      "count": null,
       "data": Array [],
-      "error": undefined,
+      "error": null,
       "status": 200,
       "statusText": "OK",
     }

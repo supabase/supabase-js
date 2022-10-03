@@ -53,7 +53,7 @@ export default abstract class PostgrestBuilder<Result>
     onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null
   ): PromiseLike<TResult1 | TResult2> {
     // https://postgrest.org/en/stable/api.html#switching-schemas
-    if (typeof this.schema === 'undefined') {
+    if (this.schema === undefined) {
       // skip
     } else if (['GET', 'HEAD'].includes(this.method)) {
       this.headers['Accept-Profile'] = this.schema
@@ -73,27 +73,26 @@ export default abstract class PostgrestBuilder<Result>
       body: JSON.stringify(this.body),
       signal: this.signal,
     }).then(async (res) => {
-      let error = undefined
-      let data = undefined
-      let count = undefined
+      let error = null
+      let data = null
+      let count: number | null = null
       let status = res.status
       let statusText = res.statusText
 
       if (res.ok) {
-        const isReturnMinimal = this.headers['Prefer']?.split(',').includes('return=minimal')
-        if (this.method !== 'HEAD' && !isReturnMinimal) {
-          const text = await res.text()
-          if (!text) {
-            // discard `text`
+        if (this.method !== 'HEAD') {
+          const body = await res.text()
+          if (body === "") {
+            // Prefer: return=minimal
           } else if (this.headers['Accept'] === 'text/csv') {
-            data = text
+            data = body
           } else if (
             this.headers['Accept'] &&
-            this.headers['Accept'].indexOf('application/vnd.pgrst.plan+text') !== -1
+            this.headers['Accept'].includes('application/vnd.pgrst.plan+text')
           ) {
-            data = text
+            data = body
           } else {
-            data = JSON.parse(text)
+            data = JSON.parse(body)
           }
         }
 
@@ -114,7 +113,7 @@ export default abstract class PostgrestBuilder<Result>
         }
 
         if (error && this.allowEmpty && error?.details?.includes('Results contain 0 rows')) {
-          error = undefined
+          error = null
           status = 200
           statusText = 'OK'
         }
@@ -142,10 +141,10 @@ export default abstract class PostgrestBuilder<Result>
           hint: '',
           code: fetchError.code || '',
         },
-        data: undefined,
-        count: undefined,
-        status: 400,
-        statusText: 'Bad Request',
+        data: null,
+        count: null,
+        status: 0,
+        statusText: '',
       }))
     }
 

@@ -13,7 +13,7 @@ test('basic select view', async () => {
   const res = await postgrest.from('updatable_view').select()
   expect(res).toMatchInlineSnapshot(`
     Object {
-      "count": undefined,
+      "count": null,
       "data": Array [
         Object {
           "non_updatable_column": 1,
@@ -32,7 +32,7 @@ test('basic select view', async () => {
           "username": "dragarcia",
         },
       ],
-      "error": undefined,
+      "error": null,
       "status": 200,
       "statusText": "OK",
     }
@@ -432,9 +432,9 @@ test('select with no match', async () => {
   const res = await postgrest.from('users').select().eq('username', 'missing')
   expect(res).toMatchInlineSnapshot(`
     Object {
-      "count": undefined,
+      "count": null,
       "data": Array [],
-      "error": undefined,
+      "error": null,
       "status": 200,
       "statusText": "OK",
     }
