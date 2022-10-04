@@ -535,26 +535,25 @@ export default class GoTrueClient {
    * If the current session does not contain at expires_at field, setSession will use the exp claim defined in the access token.
    * @param currentSession The current session that minimally contains an access token, refresh token and a user.
    */
-  async setSession(currentSession: Session): Promise<AuthResponse> {
+  async setSession(refresh_token: string, access_token = ''): Promise<AuthResponse> {
     try {
-      let hasExpired = true
       const timeNow = Date.now() / 1000
-      if (currentSession.expires_at) {
-        hasExpired = currentSession.expires_at <= timeNow
-      } else {
-        // use exp claim from access token jwt if expires_at is missing
-        const payload = JSON.parse(
-          Buffer.from(currentSession.access_token.split('.')[1], 'base64').toString()
-        )
-        hasExpired = payload.exp ? payload.exp <= timeNow : true
+      let expiresAt = timeNow
+      let hasExpired = true
+      let session: Session | null = null
+      if (access_token && access_token.split('.')[1]) {
+        const payload = JSON.parse(Buffer.from(access_token.split('.')[1], 'base64').toString())
+        if (payload.exp) {
+          expiresAt = payload.exp
+          hasExpired = expiresAt <= timeNow
+        }
       }
 
-      let session: Session = currentSession
       if (hasExpired) {
-        if (!currentSession.refresh_token) {
+        if (!refresh_token) {
           throw new AuthSessionMissingError()
         }
-        const { data, error } = await this._refreshAccessToken(currentSession.refresh_token)
+        const { data, error } = await this._refreshAccessToken(refresh_token)
         if (error) {
           return { data: { session: null, user: null }, error: error }
         }
@@ -563,6 +562,19 @@ export default class GoTrueClient {
           return { data: { session: null, user: null }, error: null }
         }
         session = data.session
+      } else {
+        const { data, error } = await this.getUser(access_token)
+        if (error) {
+          throw error
+        }
+        session = {
+          access_token: access_token,
+          refresh_token: refresh_token,
+          user: data.user,
+          token_type: 'bearer',
+          expires_in: expiresAt - timeNow,
+          expires_at: expiresAt,
+        }
       }
 
       await this._saveSession(session)
