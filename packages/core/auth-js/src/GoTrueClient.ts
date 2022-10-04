@@ -588,6 +588,7 @@ export default class GoTrueClient {
       }
 
       const provider_token = getParameterByName('provider_token')
+      const provider_refresh_token = getParameterByName('provider_refresh_token')
       const access_token = getParameterByName('access_token')
       if (!access_token) throw new AuthImplicitGrantRedirectError('No access_token detected.')
       const expires_in = getParameterByName('expires_in')
@@ -605,6 +606,7 @@ export default class GoTrueClient {
       const user: User = data.user
       const session: Session = {
         provider_token,
+        provider_refresh_token,
         access_token,
         expires_in: parseInt(expires_in),
         expires_at,
