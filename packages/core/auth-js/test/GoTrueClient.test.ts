@@ -30,7 +30,8 @@ describe('GoTrueClient', () => {
       expect(error).toBeNull()
       expect(data.session).not.toBeNull()
 
-      await authWithSession.setSession(data.session?.refresh_token as string)
+      // @ts-expect-error 'data.session should not be null because of the assertion above'
+      await authWithSession.setSession(data.session)
       const {
         data: { user },
         error: updateError,

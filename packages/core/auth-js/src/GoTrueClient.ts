@@ -530,28 +530,45 @@ export default class GoTrueClient {
   }
 
   /**
-   * Sets the session data from refresh token and returns current session or an error if the refresh token is invalid.
-   * @param refresh_token A refresh token returned by supabase auth.
+   * Sets the session data from the current session. If the current session is expired, setSession will take care of refreshing it to obtain a new session.
+   * If the refresh token in the current session is invalid and the current session has expired, an error will be thrown.
+   * If the current session does not contain at expires_at field, setSession will use the exp claim defined in the access token.
+   * @param currentSession The current session that minimally contains an access token, refresh token and a user.
    */
-  async setSession(refresh_token: string): Promise<AuthResponse> {
+  async setSession(currentSession: Session): Promise<AuthResponse> {
     try {
-      if (!refresh_token) {
-        throw new AuthSessionMissingError()
+      let hasExpired = true
+      const timeNow = Date.now() / 1000
+      if (currentSession.expires_at) {
+        hasExpired = currentSession.expires_at <= timeNow
+      } else {
+        // use exp claim from access token jwt if expires_at is missing
+        const payload = JSON.parse(
+          Buffer.from(currentSession.access_token.split('.')[1], 'base64').toString()
+        )
+        hasExpired = payload.exp ? payload.exp <= timeNow : true
       }
-      const { data, error } = await this._refreshAccessToken(refresh_token)
-      if (error) {
-        return { data: { session: null, user: null }, error: error }
+
+      let session: Session = currentSession
+      if (hasExpired) {
+        if (!currentSession.refresh_token) {
+          throw new AuthSessionMissingError()
+        }
+        const { data, error } = await this._refreshAccessToken(currentSession.refresh_token)
+        if (error) {
+          return { data: { session: null, user: null }, error: error }
+        }
+
+        if (!data.session) {
+          return { data: { session: null, user: null }, error: null }
+        }
+        session = data.session
       }
 
-      if (!data.session) {
-        return { data: { session: null, user: null }, error: null }
-      }
+      await this._saveSession(session)
+      this._notifyAllSubscribers('TOKEN_REFRESHED', session)
 
-      await this._saveSession(data.session)
-
-      this._notifyAllSubscribers('TOKEN_REFRESHED', data.session)
-
-      return { data, error: null }
+      return { data: { session, user: session.user }, error: null }
     } catch (error) {
       if (isAuthError(error)) {
         return { data: { session: null, user: null }, error }
