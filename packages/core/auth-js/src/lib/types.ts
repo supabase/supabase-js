@@ -58,15 +58,19 @@ export interface UserIdentity {
   updated_at?: string
 }
 
+export interface UserAppMetadata {
+  provider?: string
+  [key: string]: any
+}
+
+export interface UserMetadata {
+  [key: string]: any
+}
+
 export interface User {
   id: string
-  app_metadata: {
-    provider?: string
-    [key: string]: any
-  }
-  user_metadata: {
-    [key: string]: any
-  }
+  app_metadata: UserAppMetadata
+  user_metadata: UserMetadata
   aud: string
   confirmation_sent_at?: string
   recovery_sent_at?: string
