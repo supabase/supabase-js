@@ -478,7 +478,7 @@ export default class GoTrueClient {
         }
 
         // Default to Authorization header if there is no existing session
-        jwt = data.session?.access_token ?? this.headers['Authorization']
+        jwt = data.session?.access_token ?? undefined
       }
 
       return await _request(this.fetch, 'GET', `${this.url}/user`, {
