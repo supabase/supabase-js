@@ -17,6 +17,7 @@ import {
 } from './lib/errors'
 import { Fetch, _request, _sessionResponse, _userResponse } from './lib/fetch'
 import {
+  decodeBase64URL,
   Deferred,
   getItemAsync,
   getParameterByName,
@@ -544,14 +545,7 @@ export default class GoTrueClient {
       let hasExpired = true
       let session: Session | null = null
       if (currentSession.access_token && currentSession.access_token.split('.')[1]) {
-        const payload = JSON.parse(
-          atob(
-            currentSession.access_token
-              .split('.')[1]
-              .replaceAll(/[-]/g, '+')
-              .replaceAll(/[_]/g, '/')
-          )
-        )
+        const payload = JSON.parse(decodeBase64URL(currentSession.access_token.split('.')[1]))
         if (payload.exp) {
           expiresAt = payload.exp
           hasExpired = expiresAt <= timeNow
