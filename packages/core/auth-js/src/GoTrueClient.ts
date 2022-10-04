@@ -535,14 +535,18 @@ export default class GoTrueClient {
    * If the current session does not contain at expires_at field, setSession will use the exp claim defined in the access token.
    * @param currentSession The current session that minimally contains an access token, refresh token and a user.
    */
-  async setSession(refresh_token: string, access_token = ''): Promise<AuthResponse> {
+  async setSession(
+    currentSession: Pick<Session, 'access_token' | 'refresh_token'>
+  ): Promise<AuthResponse> {
     try {
       const timeNow = Date.now() / 1000
       let expiresAt = timeNow
       let hasExpired = true
       let session: Session | null = null
-      if (access_token && access_token.split('.')[1]) {
-        const payload = JSON.parse(Buffer.from(access_token.split('.')[1], 'base64').toString())
+      if (currentSession.access_token && currentSession.access_token.split('.')[1]) {
+        const payload = JSON.parse(
+          Buffer.from(currentSession.access_token.split('.')[1], 'base64').toString()
+        )
         if (payload.exp) {
           expiresAt = payload.exp
           hasExpired = expiresAt <= timeNow
@@ -550,10 +554,10 @@ export default class GoTrueClient {
       }
 
       if (hasExpired) {
-        if (!refresh_token) {
+        if (!currentSession.refresh_token) {
           throw new AuthSessionMissingError()
         }
-        const { data, error } = await this._refreshAccessToken(refresh_token)
+        const { data, error } = await this._refreshAccessToken(currentSession.refresh_token)
         if (error) {
           return { data: { session: null, user: null }, error: error }
         }
@@ -563,13 +567,13 @@ export default class GoTrueClient {
         }
         session = data.session
       } else {
-        const { data, error } = await this.getUser(access_token)
+        const { data, error } = await this.getUser(currentSession.access_token)
         if (error) {
           throw error
         }
         session = {
-          access_token: access_token,
-          refresh_token: refresh_token,
+          access_token: currentSession.access_token,
+          refresh_token: currentSession.refresh_token,
           user: data.user,
           token_type: 'bearer',
           expires_in: expiresAt - timeNow,
