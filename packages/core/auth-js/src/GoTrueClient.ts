@@ -545,7 +545,12 @@ export default class GoTrueClient {
       let session: Session | null = null
       if (currentSession.access_token && currentSession.access_token.split('.')[1]) {
         const payload = JSON.parse(
-          Buffer.from(currentSession.access_token.split('.')[1], 'base64').toString()
+          atob(
+            currentSession.access_token
+              .split('.')[1]
+              .replaceAll(/[-]/g, '+')
+              .replaceAll(/[_]/g, '/')
+          )
         )
         if (payload.exp) {
           expiresAt = payload.exp
