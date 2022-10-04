@@ -8,6 +8,7 @@
     "rootDir": "src",
     "sourceMap": true,
     "target": "ES2015",
+    "lib": ["ES2021.String"],
 
     "strict": true,
 
@@ -18,6 +19,6 @@
     "stripInternal": true
   },
   "typedocOptions": {
-    "excludeExternals": true,
+    "excludeExternals": true
   }
 }
