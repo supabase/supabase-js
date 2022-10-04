@@ -875,7 +875,7 @@ export default class GoTrueClient {
       const timeNow = Math.round(Date.now() / 1000)
       const expiresIn = expiresAt - timeNow
       const refreshDurationBeforeExpires = expiresIn > EXPIRY_MARGIN ? EXPIRY_MARGIN : 0.5
-      this._startAutoRefreshToken((expiresIn - refreshDurationBeforeExpires) * 1000, session)
+      this._startAutoRefreshToken((expiresIn - refreshDurationBeforeExpires) * 1000)
     }
 
     if (this.persistSession && session.expires_at) {
@@ -904,22 +904,25 @@ export default class GoTrueClient {
    * @param value time intervals in milliseconds.
    * @param session The current session.
    */
-  private _startAutoRefreshToken(value: number, session: Session) {
+  private _startAutoRefreshToken(value: number) {
     if (this.refreshTokenTimer) clearTimeout(this.refreshTokenTimer)
     if (value <= 0 || !this.autoRefreshToken) return
 
     this.refreshTokenTimer = setTimeout(async () => {
       this.networkRetries++
-      const { error } = await this._callRefreshToken(session.refresh_token)
-      if (!error) this.networkRetries = 0
-      if (
-        error instanceof AuthRetryableFetchError &&
-        this.networkRetries < NETWORK_FAILURE.MAX_RETRIES
-      )
-        this._startAutoRefreshToken(
-          NETWORK_FAILURE.RETRY_INTERVAL ** this.networkRetries * 100,
-          session
-        ) // exponential backoff
+      const {
+        data: { session },
+        error: sessionError,
+      } = await this.getSession()
+      if (!sessionError && session) {
+        const { error } = await this._callRefreshToken(session.refresh_token)
+        if (!error) this.networkRetries = 0
+        if (
+          error instanceof AuthRetryableFetchError &&
+          this.networkRetries < NETWORK_FAILURE.MAX_RETRIES
+        )
+          this._startAutoRefreshToken(NETWORK_FAILURE.RETRY_INTERVAL ** this.networkRetries * 100) // exponential backoff
+      }
     }, value)
     if (typeof this.refreshTokenTimer.unref === 'function') this.refreshTokenTimer.unref()
   }
