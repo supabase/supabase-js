@@ -30,7 +30,24 @@ describe('GoTrueClient', () => {
       expect(error).toBeNull()
       expect(data.session).not.toBeNull()
 
-      await authWithSession.setSession(data.session?.refresh_token as string)
+      const {
+        data: { session },
+        error: setSessionError,
+      } = await authWithSession.setSession({
+        // @ts-expect-error 'data.session should not be null because of the assertion above'
+        access_token: data.session.access_token,
+        // @ts-expect-error 'data.session should not be null because of the assertion above'
+        refresh_token: data.session.refresh_token,
+      })
+      expect(setSessionError).toBeNull()
+      expect(session).not.toBeNull()
+      expect(session!.user).not.toBeNull()
+      expect(session!.expires_in).not.toBeNull()
+      expect(session!.expires_at).not.toBeNull()
+      expect(session!.access_token).not.toBeNull()
+      expect(session!.refresh_token).not.toBeNull()
+      expect(session!.token_type).toStrictEqual('bearer')
+
       const {
         data: { user },
         error: updateError,
