@@ -84,7 +84,26 @@ export type AuthMFAResponse =
     }
   | {
       data: {
-        factors: string[]
+        factors: Factor[]
+      }
+      error: null
+    }
+  | {
+      data: {
+        id: string
+        expires_at: number
+      }
+      error: null
+    }
+  | {
+      data: {
+        AAL: string
+      }
+      error: null
+    }
+  | {
+      data: {
+        AMR: AMREntry[]
       }
       error: null
     }
@@ -139,6 +158,12 @@ export interface Session {
   expires_at?: number
   token_type: string
   user: User
+  aal_level?: string
+  amr?: AMREntry[]
+}
+export interface AMREntry {
+  authentication_method: string
+  timestamp: string
 }
 
 export interface UserIdentity {
@@ -151,6 +176,15 @@ export interface UserIdentity {
   created_at: string
   last_sign_in_at: string
   updated_at?: string
+}
+
+export interface Factor {
+  id: string
+  created_at: string
+  updated_at: string
+  status: string
+  friendly_name?: string
+  factor_type: string
 }
 
 export interface User {
@@ -179,7 +213,7 @@ export interface User {
   role?: string
   updated_at?: string
   identities?: UserIdentity[]
-  factors?: string[]
+  factors?: Factor[]
 }
 
 export interface UserAttributes {
@@ -524,6 +558,8 @@ export interface GoTrueMFAApi {
   unenroll(params: MFAUnenrollParams): Promise<AuthMFAResponse>
   challenge(params: MFAChallengeParams): Promise<AuthMFAResponse>
   listFactors(): Promise<AuthMFAResponse>
+  getAMR(jwt?: string): Promise<AuthMFAResponse>
+  getAAL(jwt?: string): Promise<AuthMFAResponse>
 }
 
 export interface GoTrueAdminMFAApi {
