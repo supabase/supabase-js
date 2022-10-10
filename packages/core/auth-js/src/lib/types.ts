@@ -140,6 +140,7 @@ export type UserResponse =
 
 export interface Session {
   provider_token?: string | null
+  provider_refresh_token?: string | null
   /**
    * The access token jwt. It is recommended to set the JWT_EXPIRY to a shorter expiry value.
    */
@@ -187,15 +188,19 @@ export interface Factor {
   factor_type: string
 }
 
+export interface UserAppMetadata {
+  provider?: string
+  [key: string]: any
+}
+
+export interface UserMetadata {
+  [key: string]: any
+}
+
 export interface User {
   id: string
-  app_metadata: {
-    provider?: string
-    [key: string]: any
-  }
-  user_metadata: {
-    [key: string]: any
-  }
+  app_metadata: UserAppMetadata
+  user_metadata: UserMetadata
   aud: string
   confirmation_sent_at?: string
   recovery_sent_at?: string

@@ -58,7 +58,8 @@ const _getRequestParams = (
     return params
   }
 
-  params.headers = { 'Content-Type': 'application/json', ...options?.headers }
+
+  params.headers = { 'Content-Type': 'application/json;charset=UTF-8', ...options?.headers }
   params.body = JSON.stringify(body)
   return { ...params, ...parameters }
 }

@@ -32,8 +32,11 @@
     "test:suite": "jest --runInBand",
     "test:infra": "cd infra && docker-compose down && docker-compose pull && docker-compose up -d && sleep 30",
     "test:clean": "cd infra && docker-compose down --remove-orphans",
-    "docs": "typedoc src/index.ts --excludePrivate --excludeProtected",
-    "docs:json": "typedoc src/index.ts --json docs/spec.json --excludeProtected --excludePrivate"
+
+    "v1:docs": "typedoc src/index.ts  --out docs/v1",
+    "v1:docs:json": "typedoc src/index.ts --json docs/v1/spec.json",
+    "v2:docs": "typedoc src/index.ts --out docs/v2",
+    "v2:docs:json": "typedoc src/index.ts --json docs/spec.json --out docs/v2"
   },
   "dependencies": {
     "cross-fetch": "^3.1.5"
