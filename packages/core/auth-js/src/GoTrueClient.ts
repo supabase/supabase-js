@@ -44,6 +44,24 @@ const DEFAULT_OPTIONS = {
   headers: DEFAULT_HEADERS,
 }
 
+const decodeBase64URL = (value: string): string => {
+  try {
+    // atob is present in all browsers and nodejs >= 16
+    // but if it is not it will throw a ReferenceError in which case we can try to use Buffer
+    // replace are here to convert the Base64-URL into Base64 which is what atob supports
+    // replace with //g regex acts like replaceAll
+    return atob(value.replace(/[-]/g, '+').replace(/[_]/g, '/'))
+  } catch (e) {
+    if (e instanceof ReferenceError) {
+      // running on nodejs < 16
+      // Buffer supports Base64-URL transparently
+      return Buffer.from(value, 'base64').toString('utf-8')
+    } else {
+      throw e
+    }
+  }
+}
+
 export default class GoTrueClient {
   /**
    * Namespace for the GoTrue API methods.
@@ -381,24 +399,97 @@ export default class GoTrueClient {
   }
 
   /**
+   * Sets the session from the provided session information. The access_token
+   * is reused if it is not expired, otherwise a new access token is fetched by
+   * refreshing the session with the provided refresh_token.
+   *
+   * This method is useful when using in a server-side rendered context.
+   *
+   * @param params.refresh_token A valid refresh token (typically obtained from a cookie)
+   * @param params.access_token An access token (typically obtained from a cookie)
+   */
+  async setSession(params: {
+    refresh_token: string
+    access_token: string
+  }): Promise<{ session: Session | null; error: ApiError | null }>
+
+  /**
    * Sets the session data from refresh_token and returns current Session and Error
    * @param refresh_token a JWT token
    */
   async setSession(
     refresh_token: string
+  ): Promise<{ session: Session | null; error: ApiError | null }>
+
+  async setSession(
+    arg0: string | { access_token: string; refresh_token: string }
   ): Promise<{ session: Session | null; error: ApiError | null }> {
-    try {
-      if (!refresh_token) {
-        throw new Error('No current session.')
-      }
+    let session: Session
+
+    if (typeof arg0 === 'string') {
+      // using the refresh_token string API
+      const refresh_token = arg0
+
       const { data, error } = await this.api.refreshAccessToken(refresh_token)
       if (error) {
         return { session: null, error: error }
       }
 
-      this._saveSession(data!)
+      session = data!
+    } else {
+      // using the object parameter API
+
+      const timeNow = Math.round(Date.now() / 1000)
+
+      let { refresh_token, access_token } = arg0
+      let expires_at = 0
+      let expires_in = 0
+
+      const tokenParts = access_token.split('.')
+      if (tokenParts.length !== 3) throw new Error('access_token is not a proper JWT')
+
+      const bodyJSON = decodeBase64URL(tokenParts[1])
+
+      let parsed: any = undefined
+      try {
+        parsed = JSON.parse(bodyJSON)
+      } catch (e) {
+        throw new Error('access_token is not a proper JWT, invalid JSON in body')
+      }
+
+      if (typeof parsed === 'object' && parsed && typeof parsed.exp === 'number') {
+        expires_at = parsed.exp
+        expires_in = timeNow - parsed.exp
+      } else {
+        throw new Error('access_token is not a proper JWT, missing exp claim')
+      }
+
+      if (timeNow > expires_at) {
+        const { data, error } = await this.api.refreshAccessToken(refresh_token)
+        if (error) {
+          return { session: null, error: error }
+        }
+
+        session = data!
+      } else {
+        const { user, error } = await this.api.getUser(access_token)
+        if (error) throw error
+
+        session = {
+          access_token,
+          expires_in,
+          expires_at,
+          refresh_token,
+          token_type: 'bearer',
+          user: user!,
+        }
+      }
+    }
+
+    try {
+      this._saveSession(session)
       this._notifyAllSubscribers('SIGNED_IN')
-      return { session: data, error: null }
+      return { session, error: null }
     } catch (e) {
       return { error: e as ApiError, session: null }
     }
