@@ -480,7 +480,7 @@ export default class GoTrueClient {
           expires_in,
           expires_at,
           refresh_token,
-          token_type: 'Bearer',
+          token_type: 'bearer',
           user: user!,
         }
       }
