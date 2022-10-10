@@ -248,7 +248,7 @@ export default class SupabaseClient<
     }
     return new SupabaseAuthClient({
       url: this.authUrl,
-      headers: { ...headers, ...authHeaders },
+      headers: { ...authHeaders, ...headers },
       storageKey: storageKey,
       autoRefreshToken,
       persistSession,
