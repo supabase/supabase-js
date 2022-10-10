@@ -34,16 +34,16 @@ const channelStub = {
   ref: 1,
   bindings: {},
 
-  on(type, filter, callback){
+  _on(type, filter, callback){
     this.bindings[type] = { callback, filter, type }
   },
 
-  trigger(type, data){
+  _trigger(type, data){
     const bind = this.bindings[type]
     bind && bind.callback(data)
   },
 
-  joinRef(){ return `${this.ref}` },
+  _joinRef(){ return `${this.ref}` },
 
   simulateDisconnectAndReconnect() {
     this.ref++
@@ -141,32 +141,6 @@ describe("syncDiff", function(){
   })
 })
 
-describe("list", function(){
-  it("lists full presence by default", function(){
-    const state = fixtures.state()
-    assert.deepEqual(RealtimePresence.list(state), [
-      [{id: 1, presence_ref: "1"}],
-      [{id: 2, presence_ref: "2"}],
-      [{id: 3, presence_ref: "3"}]
-    ])
-  })
-
-  it("lists with custom function", function(){
-    const state = {u1: [
-      {id: 1, presence_ref: "1.first"},
-      {id: 1, presence_ref: "1.second"}]
-    }
-
-    const listBy = (_key, [first, ..._rest]) => {
-      return first
-    }
-
-    assert.deepEqual(RealtimePresence.list(state, listBy), [
-      {id: 1, presence_ref: "1.first"}
-    ])
-  })
-})
-
 describe("instance", function(){
   it("syncs state and diffs", function(){
     const presence = new RealtimePresence(channelStub)
@@ -174,12 +148,12 @@ describe("instance", function(){
     const user2 = [{id: 2, presence_ref: "2"}]
     const newState = {u1: user1, u2: user2}
 
-    channelStub.trigger("presence_state", newState)
-    assert.deepEqual(presence.list(listByFirst), [{id: 1, presence_ref: 1},
-      {id: 2, presence_ref: 2}])
+    channelStub._trigger("presence_state", newState)
+    assert.deepEqual(RealtimePresence.map(presence.state, listByFirst), [{id: 1, presence_ref: "1"},
+      {id: 2, presence_ref: "2"}])
 
-    channelStub.trigger("presence_diff", {joins: {}, leaves: {u1: user1}})
-    assert.deepEqual(presence.list(listByFirst), [{id: 2, presence_ref: 2}])
+    channelStub._trigger("presence_diff", {joins: {}, leaves: {u1: user1}})
+    assert.deepEqual(RealtimePresence.map(presence.state, listByFirst), [{id: 2, presence_ref: "2"}])
   })
 
   it("applies pending diff if state is not yet synced", function(){
@@ -201,17 +175,17 @@ describe("instance", function(){
     const newState = {u1: user1, u2: user2}
     const leaves = {u2: user2}
 
-    channelStub.trigger("presence_diff", {joins: {}, leaves: leaves})
+    channelStub._trigger("presence_diff", {joins: {}, leaves: leaves})
 
-    assert.deepEqual(presence.list(listByFirst), [])
+    assert.deepEqual(RealtimePresence.map(presence.state, listByFirst), [])
     assert.deepEqual(presence.pendingDiffs, [{joins: {}, leaves: leaves}])
 
-    channelStub.trigger("presence_state", newState)
+    channelStub._trigger("presence_state", newState)
     assert.deepEqual(onLeaves, [
       {id: "u2", current: [], leftPres: [{id: 2, presence_ref: "2"}]}
     ])
 
-    assert.deepEqual(presence.list(listByFirst), [{id: 1, presence_ref: "1"}])
+    assert.deepEqual(RealtimePresence.map(presence.state, listByFirst), [{id: 1, presence_ref: "1"}])
     assert.deepEqual(presence.pendingDiffs, [])
     assert.deepEqual(onJoins, [
       {id: "u1", current: [], newPres: [{id: 1, presence_ref: "1"}]},
@@ -223,11 +197,11 @@ describe("instance", function(){
     channelStub.simulateDisconnectAndReconnect()
     assert.equal(presence.inPendingSyncState(), true)
 
-    channelStub.trigger("presence_diff", {joins: {}, leaves: {u1: user1}})
-    assert.deepEqual(presence.list(listByFirst), [{id: 1, presence_ref: "1"}])
+    channelStub._trigger("presence_diff", {joins: {}, leaves: {u1: user1}})
+    assert.deepEqual(RealtimePresence.map(presence.state, listByFirst), [{id: 1, presence_ref: "1"}])
 
-    channelStub.trigger("presence_state", {u1: user1, u3: user3})
-    assert.deepEqual(presence.list(listByFirst), [{id: 3, presence_ref: "3"}])
+    channelStub._trigger("presence_state", {u1: user1, u3: user3})
+    assert.deepEqual(RealtimePresence.map(presence.state, listByFirst), [{id: 3, presence_ref: "3"}])
   })
 
   it("allows custom channel events", function(){
@@ -237,10 +211,10 @@ describe("instance", function(){
     }})
 
     const user1 = [{id: 1, presence_ref: "1"}]
-    channelStub.trigger("the_state", {user1: user1})
-    assert.deepEqual(presence.list(listByFirst), [{id: 1, presence_ref: "1"}])
-    channelStub.trigger("the_diff", {joins: {}, leaves: {user1: user1}})
-    assert.deepEqual(presence.list(listByFirst), [])
+    channelStub._trigger("the_state", {user1: user1})
+    assert.deepEqual(RealtimePresence.map(presence.state, listByFirst), [{id: 1, presence_ref: "1"}])
+    channelStub._trigger("the_diff", {joins: {}, leaves: {user1: user1}})
+    assert.deepEqual(RealtimePresence.map(presence.state, listByFirst), [])
   })
 
   it("updates existing presences for a presence update (leave + join)", function(){
@@ -253,7 +227,7 @@ describe("instance", function(){
     const user2 = [{id: 2, name: "bo", presence_ref: "2"}]
     const newState = {u1: user1, u2: user2}
 
-    channelStub.trigger("presence_state", clone(newState))
+    channelStub._trigger("presence_state", clone(newState))
 
     presence.onJoin((id, current, newPres) => {
       onJoins.push(clone({id, current, newPres}))
@@ -262,7 +236,7 @@ describe("instance", function(){
       onLeaves.push(clone({id, current, leftPres}))
     })
 
-    assert.deepEqual(presence.list((_id, presences) => presences),
+    assert.deepEqual(RealtimePresence.map(presence.state, (_id, presences) => presences),
       [
         [
           {
@@ -282,9 +256,9 @@ describe("instance", function(){
 
     const leaves = {u2: user2}
     const joins = {u2: [{id: 2, name: "bo.2", presence_ref: "2.2"}]}
-    channelStub.trigger("presence_diff", {joins: joins, leaves: leaves})
+    channelStub._trigger("presence_diff", {joins: joins, leaves: leaves})
 
-    assert.deepEqual(presence.list((_id, presences) => presences),
+    assert.deepEqual(RealtimePresence.map(presence.state, (_id, presences) => presences),
       [
         [
           {

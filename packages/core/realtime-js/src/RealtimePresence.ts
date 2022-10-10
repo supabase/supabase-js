@@ -15,22 +15,41 @@ type Presence = {
   [key: string]: any
 }
 
-export type PresenceState = { [key: string]: Presence[] }
+export type RealtimePresenceState = { [key: string]: Presence[] }
+
+export type RealtimePresenceJoinPayload = {
+  event: REALTIME_PRESENCE_LISTEN_EVENTS.JOIN
+  key: string
+  currentPresences: Presence[]
+  newPresences: Presence[]
+}
+
+export type RealtimePresenceLeavePayload = {
+  event: REALTIME_PRESENCE_LISTEN_EVENTS.LEAVE
+  key: string
+  currentPresences: Presence[]
+  leftPresences: Presence[]
+}
+
+export enum REALTIME_PRESENCE_LISTEN_EVENTS {
+  SYNC = 'sync',
+  JOIN = 'join',
+  LEAVE = 'leave',
+}
 
 type PresenceDiff = {
-  joins: PresenceState
-  leaves: PresenceState
+  joins: RealtimePresenceState
+  leaves: RealtimePresenceState
 }
 
 type RawPresenceState = {
-  [key: string]: Record<
-    'metas',
-    {
+  [key: string]: {
+    metas: {
       phx_ref?: string
       phx_ref_prev?: string
       [key: string]: any
     }[]
-  >
+  }
 }
 
 type RawPresenceDiff = {
@@ -38,10 +57,10 @@ type RawPresenceDiff = {
   leaves: RawPresenceState
 }
 
-type PresenceChooser<T> = (key: string, presences: any) => T
+type PresenceChooser<T> = (key: string, presences: Presence[]) => T
 
 export default class RealtimePresence {
-  state: PresenceState = {}
+  state: RealtimePresenceState = {}
   pendingDiffs: RawPresenceDiff[] = []
   joinRef: string | null = null
   caller: {
@@ -67,10 +86,10 @@ export default class RealtimePresence {
       diff: 'presence_diff',
     }
 
-    this.channel.on(events.state, {}, (newState: RawPresenceState) => {
+    this.channel._on(events.state, {}, (newState: RawPresenceState) => {
       const { onJoin, onLeave, onSync } = this.caller
 
-      this.joinRef = this.channel.joinRef()
+      this.joinRef = this.channel._joinRef()
 
       this.state = RealtimePresence.syncState(
         this.state,
@@ -93,7 +112,7 @@ export default class RealtimePresence {
       onSync()
     })
 
-    this.channel.on(events.diff, {}, (diff: RawPresenceDiff) => {
+    this.channel._on(events.diff, {}, (diff: RawPresenceDiff) => {
       const { onJoin, onLeave, onSync } = this.caller
 
       if (this.inPendingSyncState()) {
@@ -111,7 +130,7 @@ export default class RealtimePresence {
     })
 
     this.onJoin((key, currentPresences, newPresences) => {
-      this.channel.trigger('presence', {
+      this.channel._trigger('presence', {
         event: 'join',
         key,
         currentPresences,
@@ -120,7 +139,7 @@ export default class RealtimePresence {
     })
 
     this.onLeave((key, currentPresences, leftPresences) => {
-      this.channel.trigger('presence', {
+      this.channel._trigger('presence', {
         event: 'leave',
         key,
         currentPresences,
@@ -129,7 +148,7 @@ export default class RealtimePresence {
     })
 
     this.onSync(() => {
-      this.channel.trigger('presence', { event: 'sync' })
+      this.channel._trigger('presence', { event: 'sync' })
     })
   }
 
@@ -141,16 +160,16 @@ export default class RealtimePresence {
    * react to changes in the client's local presences across
    * disconnects and reconnects with the server.
    */
-  static syncState(
-    currentState: PresenceState,
-    newState: RawPresenceState | PresenceState,
+  private static syncState(
+    currentState: RealtimePresenceState,
+    newState: RawPresenceState | RealtimePresenceState,
     onJoin: PresenceOnJoinCallback,
     onLeave: PresenceOnLeaveCallback
-  ): PresenceState {
+  ): RealtimePresenceState {
     const state = this.cloneDeep(currentState)
     const transformedState = this.transformState(newState)
-    const joins: PresenceState = {}
-    const leaves: PresenceState = {}
+    const joins: RealtimePresenceState = {}
+    const leaves: RealtimePresenceState = {}
 
     this.map(state, (key: string, presences: Presence[]) => {
       if (!transformedState[key]) {
@@ -198,12 +217,12 @@ export default class RealtimePresence {
    * `onLeave` callbacks to react to a user joining or leaving from a
    * device.
    */
-  static syncDiff(
-    state: PresenceState,
+  private static syncDiff(
+    state: RealtimePresenceState,
     diff: RawPresenceDiff | PresenceDiff,
     onJoin: PresenceOnJoinCallback,
     onLeave: PresenceOnLeaveCallback
-  ): PresenceState {
+  ): RealtimePresenceState {
     const { joins, leaves } = {
       joins: this.transformState(diff.joins),
       leaves: this.transformState(diff.leaves),
@@ -257,24 +276,8 @@ export default class RealtimePresence {
     return state
   }
 
-  /**
-   * Returns the array of presences, with selected metadata.
-   */
-  static list<T = any>(
-    presences: PresenceState,
-    chooser: PresenceChooser<T> | undefined
-  ): T[] {
-    if (!chooser) {
-      chooser = (_key, pres) => pres
-    }
-
-    return this.map(presences, (key, presences: Presence[]) =>
-      chooser!(key, presences)
-    )
-  }
-
   private static map<T = any>(
-    obj: PresenceState,
+    obj: RealtimePresenceState,
     func: PresenceChooser<T>
   ): T[] {
     return Object.getOwnPropertyNames(obj).map((key) => func(key, obj[key]))
@@ -302,8 +305,8 @@ export default class RealtimePresence {
    * })
    */
   private static transformState(
-    state: RawPresenceState | PresenceState
-  ): PresenceState {
+    state: RawPresenceState | RealtimePresenceState
+  ): RealtimePresenceState {
     state = this.cloneDeep(state)
 
     return Object.getOwnPropertyNames(state).reduce((newState, key) => {
@@ -323,30 +326,26 @@ export default class RealtimePresence {
       }
 
       return newState
-    }, {} as PresenceState)
+    }, {} as RealtimePresenceState)
   }
 
   private static cloneDeep(obj: { [key: string]: any }) {
     return JSON.parse(JSON.stringify(obj))
   }
 
-  onJoin(callback: PresenceOnJoinCallback): void {
+  private onJoin(callback: PresenceOnJoinCallback): void {
     this.caller.onJoin = callback
   }
 
-  onLeave(callback: PresenceOnLeaveCallback): void {
+  private onLeave(callback: PresenceOnLeaveCallback): void {
     this.caller.onLeave = callback
   }
 
-  onSync(callback: () => void): void {
+  private onSync(callback: () => void): void {
     this.caller.onSync = callback
   }
 
-  list<T = any>(by?: PresenceChooser<T>): T[] {
-    return RealtimePresence.list<T>(this.state, by)
-  }
-
   private inPendingSyncState(): boolean {
-    return !this.joinRef || this.joinRef !== this.channel.joinRef()
+    return !this.joinRef || this.joinRef !== this.channel._joinRef()
   }
 }
