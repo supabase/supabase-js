@@ -7,15 +7,13 @@
   "types": "dist/module/index.d.ts",
   "sideEffects": false,
   "scripts": {
-    "clean": "rimraf dist docs",
+    "clean": "rimraf dist docs/v2",
     "format": "prettier --write \"{src,test}/**/*.ts\"",
     "build": "run-s clean format build:*",
     "build:main": "tsc -p tsconfig.json",
     "build:module": "tsc -p tsconfig.module.json",
-    "v1:docs": "typedoc src/index.ts --out docs/v1",
-    "v1:docs:json": "typedoc --json docs/v1/spec.json --excludeExternals src/index.ts",
-    "v2:docs": "typedoc src/index.ts --out docs/v2",
-    "v2:docs:json": "typedoc --json docs/v2/spec.json --excludeExternals src/index.ts",
+    "docs": "typedoc src/index.ts --out docs/v2",
+    "docs:json": "typedoc --json docs/v2/spec.json --excludeExternals src/index.ts",
     "test": "jest"
   },
   "repository": {
