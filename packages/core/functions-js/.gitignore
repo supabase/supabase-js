@@ -105,7 +105,7 @@ dist
 .tern-port
 
 # Generated docs
-docs/
+docs/v2
 
 # Test reports
 allure-results
