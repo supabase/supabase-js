@@ -24,15 +24,15 @@
   "author": "Supabase",
   "license": "MIT",
   "scripts": {
-    "clean": "rimraf dist docs",
+    "clean": "rimraf dist docs/v2",
     "format": "prettier --write \"{src,test}/**/*.ts\"",
     "build": "run-s clean format build:*",
     "build:main": "tsc -p tsconfig.json",
     "build:module": "tsc -p tsconfig.module.json",
     "mocha": "node -r esm node_modules/.bin/mocha ./test/**/*.js -r jsdom-global/register",
-    "test": "nyc run-s clean build mocha",
-    "docs": "typedoc src/index.ts --excludePrivate",
-    "docs:json": "typedoc --json docs/spec.json --entryPoints src/index.ts --excludePrivate --excludeExternals"
+    "test": "run-s clean build mocha",
+    "docs": "typedoc src/index.ts --out docs/v2",
+    "docs:json": "typedoc --json docs/v2/spec.json --excludeExternals src/index.ts"
   },
   "dependencies": {
     "@types/phoenix": "^1.5.4",
