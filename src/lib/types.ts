@@ -5,71 +5,79 @@ type GoTrueClientOptions = ConstructorParameters<typeof GoTrueClient>[0]
 
 export interface SupabaseAuthClientOptions extends GoTrueClientOptions {}
 
-export type GenericObject = { [key: string]: string }
-
 export type Fetch = typeof fetch
 
-export type SupabaseClientOptions = {
+export type SupabaseClientOptions<SchemaName> = {
   /**
    * The Postgres schema which your tables belong to. Must be on the list of exposed schemas in Supabase. Defaults to 'public'.
    */
-  schema?: string
-  /**
-   * Optional headers for initializing the client.
-   */
-  headers?: GenericObject
-  /**
-   * Automatically refreshes the token for logged in users.
-   */
-  autoRefreshToken?: boolean
-  /**
-   * Allows to enable/disable multi-tab/window events
-   */
-  multiTab?: boolean
-  /**
-   * Whether to persist a logged in session to storage.
-   */
-  persistSession?: boolean
-  /**
-   * Detect a session from the URL. Used for OAuth login callbacks.
-   */
-  detectSessionInUrl?: boolean
-  /**
-   * A storage provider. Used to store the logged in session.
-   */
-  localStorage?: SupabaseAuthClientOptions['localStorage']
+  db?: {
+    schema?: SchemaName
+  }
 
+  auth?: {
+    /**
+     * Automatically refreshes the token for logged in users.
+     */
+    autoRefreshToken?: boolean
+    /**
+     * Optional key name used for storing tokens in local storage
+     */
+    storageKey?: string
+    /**
+     * Whether to persist a logged in session to storage.
+     */
+    persistSession?: boolean
+    /**
+     * Detect a session from the URL. Used for OAuth login callbacks.
+     */
+    detectSessionInUrl?: boolean
+    /**
+     * A storage provider. Used to store the logged in session.
+     */
+    storage?: SupabaseAuthClientOptions['storage']
+  }
   /**
    * Options passed to the realtime-js instance
    */
   realtime?: RealtimeClientOptions
-
-  /**
-   * A custom `fetch` implementation.
-   */
-  fetch?: Fetch
-
-  /**
-   * Throw errors, instead of returning them.
-   */
-  shouldThrowOnError?: boolean
-
-  /**
-   * Options passed to the gotrue-js instance
-   */
-  cookieOptions?: SupabaseAuthClientOptions['cookieOptions']
+  global?: {
+    /**
+     * A custom `fetch` implementation.
+     */
+    fetch?: Fetch
+    /**
+     * Optional headers for initializing the client.
+     */
+    headers?: Record<string, string>
+  }
 }
 
-export type SupabaseRealtimePayload<T> = {
-  commit_timestamp: string
-  eventType: 'INSERT' | 'UPDATE' | 'DELETE'
-  schema: string
-  table: string
-  /** The new record. Present for 'INSERT' and 'UPDATE' events. */
-  new: T
-  /** The previous record. Present for 'UPDATE' and 'DELETE' events. */
-  old: T
-  errors: string[] | null
+export type GenericTable = {
+  Row: Record<string, unknown>
+  Insert: Record<string, unknown>
+  Update: Record<string, unknown>
 }
 
-export type SupabaseEventTypes = 'INSERT' | 'UPDATE' | 'DELETE' | '*'
+export type GenericUpdatableView = {
+  Row: Record<string, unknown>
+  Insert: Record<string, unknown>
+  Update: Record<string, unknown>
+}
+
+export type GenericNonUpdatableView = {
+  Row: Record<string, unknown>
+}
+
+export type GenericView = GenericUpdatableView | GenericNonUpdatableView
+
+export type GenericFunction = {
+  Args: Record<string, unknown>
+  Returns: unknown
+}
+
+export type GenericSchema = {
+  Tables: Record<string, GenericTable>
+  Views: Record<string, GenericView>
+  Functions: Record<string, GenericFunction>
+}

@@ -1,10 +1,7 @@
 import ProfileCard from '../components/ProfileCard'
 import { Profile } from '../lib/constants'
-import { Subscription, SupabaseRealtimePayload } from '@supabase/supabase-js'
 import { supabase } from '../lib/api'
 import { useState, useEffect } from 'react'
-
-var realtimeProfiles: Subscription | null = null
 
 export default function ProfileList() {
   const [profiles, setProfiles] = useState<Profile[]>([])
@@ -13,13 +10,17 @@ export default function ProfileList() {
     // getPublicProfiles()
     getUserProfile()
 
-    realtimeProfiles = supabase
-      .from('profiles')
-      .on('*', (payload: SupabaseRealtimePayload<Profile>) => profileUpdated(profiles, payload.new))
+    const realtimeProfiles = supabase
+      .channel('public:profiles')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'profiles' },
+        (payload: { [key: string]: any }) => profileUpdated(profiles, payload.new)
+      )
       .subscribe()
 
     return () => {
-      if (realtimeProfiles) supabase.removeSubscription(realtimeProfiles)
+      if (realtimeProfiles) supabase.removeChannel(realtimeProfiles)
     }
   }, [])
 
@@ -29,12 +30,12 @@ export default function ProfileList() {
   }
 
   async function getUserProfile() {
-    const user = supabase.auth.user()
+    const { user } = await supabase.auth.getUser()
     try {
       const { data, error } = await supabase
         .from('profiles')
         .select('id, username, avatar_url, website, updated_at')
-        .eq('id', user.id)
+        .eq('id', user?.id)
         .order('updated_at', { ascending: false })
       if (error) {
         throw error

@@ -37,9 +37,8 @@ create policy "Users can update own profile."
 -- Set up Realtime!
 begin;
   drop publication if exists supabase_realtime;
-  create publication supabase_realtime;
+  create publication supabase_realtime for table profiles;
 commit;
-alter publication supabase_realtime add table profiles;
 
 -- Set up Storage!
 insert into storage.buckets (id, name)
