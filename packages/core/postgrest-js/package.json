@@ -19,18 +19,16 @@
   "types": "dist/module/index.d.ts",
   "repository": "supabase/postgrest-js",
   "scripts": {
-    "clean": "rimraf dist docs",
+    "clean": "rimraf dist docs/v2",
     "format": "prettier --write \"{src,test}/**/*.ts\"",
     "build": "run-s clean format build:*",
     "build:main": "tsc -p tsconfig.json",
     "build:module": "tsc -p tsconfig.module.json",
-    "test": "run-s db:clean db:run test:run db:clean",
-    "test:run": "jest --runInBand",
-    "test:update": "run-s db:clean db:run && jest --runInBand --updateSnapshot && run-s db:clean",
-    "db:clean": "cd test/db && docker-compose down --volumes",
-    "db:run": "cd test/db && docker-compose up --detach && wait-for-localhost 3000",
-    "docs": "typedoc src/index.ts",
-    "docs:json": "typedoc --json docs/spec.json src/index.ts"
+    "docs": "typedoc src/index.ts --out docs/v2",
+    "docs:json": "typedoc --json docs/v2/spec.json --excludeExternals src/index.ts",
+    "test": "run-s test:db && jest --runInBand",
+    "test:clean": "cd test/db && docker-compose down",
+    "test:db": "cd test/db && docker-compose down && docker-compose up -d && wait-for-localhost 3000"
   },
   "dependencies": {
     "cross-fetch": "^3.1.5"
