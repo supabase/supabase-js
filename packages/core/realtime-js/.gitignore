@@ -1,5 +1,5 @@
 node_modules/
 dist
-docs
+docs/v2
 .env
 .nyc_output
