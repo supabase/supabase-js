@@ -34,14 +34,18 @@
     "test:watch": "jest --watch --verbose false --silent false",
     "test:clean": "cd infra/db && docker-compose down",
     "docs": "typedoc --entryPoints src/index.ts --out docs --includes src/**/*.ts",
-    "docs:json": "typedoc --entryPoints src/index.ts --out docs --includes src/**/*.ts --json docs/spec.json"
+    "docs:json": "typedoc --entryPoints src/index.ts --out docs --includes src/**/*.ts --json docs/spec.json",
+    "v1:docs": "typedoc src/index.ts --includes src/**/*.ts --out docs/v1",
+    "v1:docs:json": "typedoc --includes  src/**/*.ts --json docs/v1/spec.json --excludeExternals src/index.ts",
+    "v2:docs": "typedoc src/index.ts --includes src/**/*.ts --out docs/v2",
+    "v2:docs:json": "typedoc --includes src/**/*.ts --json docs/v2/spec.json --excludeExternals src/index.ts"
   },
   "dependencies": {
-    "@supabase/functions-js": "^2.0.0-rc.1",
-    "@supabase/gotrue-js": "^2.0.0-rc.10",
-    "@supabase/postgrest-js": "^1.0.0-rc.5",
-    "@supabase/realtime-js": "^2.0.0-rc.5",
-    "@supabase/storage-js": "^2.0.0-rc.1",
+    "@supabase/functions-js": "^2.0.0",
+    "@supabase/gotrue-js": "^2.0.1",
+    "@supabase/postgrest-js": "^1.0.0",
+    "@supabase/realtime-js": "^2.0.0",
+    "@supabase/storage-js": "^2.0.0",
     "cross-fetch": "^3.1.5"
   },
   "devDependencies": {
