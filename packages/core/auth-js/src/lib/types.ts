@@ -139,7 +139,15 @@ export type UserResponse =
     }
 
 export interface Session {
+  /**
+   * The oauth provider token. If present, this can be used to make external API requests to the oauth provider used.
+   */
   provider_token?: string | null
+  /**
+   * The oauth provider refresh token. If present, this can be used to refresh the provider_token via the oauth provider's API.
+   * Not all oauth providers return a provider refresh token. If the provider_refresh_token is missing, please refer to the oauth provider's documentation for information on how to obtain the provider refresh token.
+   */
+  provider_refresh_token?: string | null
   /**
    * The access token jwt. It is recommended to set the JWT_EXPIRY to a shorter expiry value.
    */
@@ -187,15 +195,19 @@ export interface Factor {
   factor_type: string
 }
 
+export interface UserAppMetadata {
+  provider?: string
+  [key: string]: any
+}
+
+export interface UserMetadata {
+  [key: string]: any
+}
+
 export interface User {
   id: string
-  app_metadata: {
-    provider?: string
-    [key: string]: any
-  }
-  user_metadata: {
-    [key: string]: any
-  }
+  app_metadata: UserAppMetadata
+  user_metadata: UserMetadata
   aud: string
   confirmation_sent_at?: string
   recovery_sent_at?: string
@@ -278,6 +290,18 @@ export interface AdminUserAttributes extends UserAttributes {
    * Only a service role can modify.
    */
   phone_confirm?: boolean
+
+  /**
+   * Determines how long a user is banned for.
+   *
+   * The format for the ban duration follows a strict sequence of decimal numbers with a unit suffix.
+   * Valid time units are "ns", "us" (or "µs"), "ms", "s", "m", "h".
+   *
+   * For example, some possible durations include: '300ms', '2h45m'.
+   *
+   * Setting the ban duration to 'none' lifts the ban on the user.
+   */
+  ban_duration?: string | 'none'
 }
 
 export interface Subscription {
@@ -365,6 +389,12 @@ export type SignInWithPasswordlessCredentials =
         emailRedirectTo?: string
         /** If set to false, this method will not create a new user. Defaults to true. */
         shouldCreateUser?: boolean
+        /**
+         * A custom data object to store the user's metadata. This maps to the `auth.users.user_metadata` column.
+         *
+         * The `data` should be a JSON object that includes user-specific info, such as their first and last name.
+         */
+        data?: object
         /** Verification token received when the user completes the captcha on the site. */
         captchaToken?: string
       }
@@ -375,6 +405,12 @@ export type SignInWithPasswordlessCredentials =
       options?: {
         /** If set to false, this method will not create a new user. Defaults to true. */
         shouldCreateUser?: boolean
+        /**
+         * A custom data object to store the user's metadata. This maps to the `auth.users.user_metadata` column.
+         *
+         * The `data` should be a JSON object that includes user-specific info, such as their first and last name.
+         */
+        data?: object
         /** Verification token received when the user completes the captcha on the site. */
         captchaToken?: string
       }
