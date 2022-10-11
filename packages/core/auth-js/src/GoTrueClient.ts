@@ -17,6 +17,7 @@ import {
 } from './lib/errors'
 import { Fetch, _request, _sessionResponse, _userResponse } from './lib/fetch'
 import {
+  decodeBase64URL,
   Deferred,
   getItemAsync,
   getParameterByName,
@@ -348,6 +349,7 @@ export default class GoTrueClient {
           headers: this.headers,
           body: {
             email,
+            data: options?.data ?? {},
             create_user: options?.shouldCreateUser ?? true,
             gotrue_meta_security: { captcha_token: options?.captchaToken },
           },
@@ -361,6 +363,7 @@ export default class GoTrueClient {
           headers: this.headers,
           body: {
             phone,
+            data: options?.data ?? {},
             create_user: options?.shouldCreateUser ?? true,
             gotrue_meta_security: { captcha_token: options?.captchaToken },
           },
@@ -496,7 +499,7 @@ export default class GoTrueClient {
         }
 
         // Default to Authorization header if there is no existing session
-        jwt = data.session?.access_token ?? this.headers['Authorization']
+        jwt = data.session?.access_token ?? undefined
       }
 
       return await _request(this.fetch, 'GET', `${this.url}/user`, {
@@ -548,28 +551,59 @@ export default class GoTrueClient {
   }
 
   /**
-   * Sets the session data from refresh token and returns current session or an error if the refresh token is invalid.
-   * @param refresh_token A refresh token returned by supabase auth.
+   * Sets the session data from the current session. If the current session is expired, setSession will take care of refreshing it to obtain a new session.
+   * If the refresh token in the current session is invalid and the current session has expired, an error will be thrown.
+   * If the current session does not contain at expires_at field, setSession will use the exp claim defined in the access token.
+   * @param currentSession The current session that minimally contains an access token, refresh token and a user.
    */
-  async setSession(refresh_token: string): Promise<AuthResponse> {
+  async setSession(
+    currentSession: Pick<Session, 'access_token' | 'refresh_token'>
+  ): Promise<AuthResponse> {
     try {
-      if (!refresh_token) {
-        throw new AuthSessionMissingError()
+      const timeNow = Date.now() / 1000
+      let expiresAt = timeNow
+      let hasExpired = true
+      let session: Session | null = null
+      if (currentSession.access_token && currentSession.access_token.split('.')[1]) {
+        const payload = JSON.parse(decodeBase64URL(currentSession.access_token.split('.')[1]))
+        if (payload.exp) {
+          expiresAt = payload.exp
+          hasExpired = expiresAt <= timeNow
+        }
       }
-      const { data, error } = await this._refreshAccessToken(refresh_token)
-      if (error) {
-        return { data: { session: null, user: null }, error: error }
+
+      if (hasExpired) {
+        if (!currentSession.refresh_token) {
+          throw new AuthSessionMissingError()
+        }
+        const { data, error } = await this._refreshAccessToken(currentSession.refresh_token)
+        if (error) {
+          return { data: { session: null, user: null }, error: error }
+        }
+
+        if (!data.session) {
+          return { data: { session: null, user: null }, error: null }
+        }
+        session = data.session
+      } else {
+        const { data, error } = await this.getUser(currentSession.access_token)
+        if (error) {
+          throw error
+        }
+        session = {
+          access_token: currentSession.access_token,
+          refresh_token: currentSession.refresh_token,
+          user: data.user,
+          token_type: 'bearer',
+          expires_in: expiresAt - timeNow,
+          expires_at: expiresAt,
+        }
       }
 
-      if (!data.session) {
-        return { data: { session: null, user: null }, error: null }
-      }
+      await this._saveSession(session)
+      this._notifyAllSubscribers('TOKEN_REFRESHED', session)
 
-      await this._saveSession(data.session)
-
-      this._notifyAllSubscribers('TOKEN_REFRESHED', data.session)
-
-      return { data, error: null }
+      return { data: { session, user: session.user }, error: null }
     } catch (error) {
       if (isAuthError(error)) {
         return { data: { session: null, user: null }, error }
@@ -606,6 +640,7 @@ export default class GoTrueClient {
       }
 
       const provider_token = getParameterByName('provider_token')
+      const provider_refresh_token = getParameterByName('provider_refresh_token')
       const access_token = getParameterByName('access_token')
       if (!access_token) throw new AuthImplicitGrantRedirectError('No access_token detected.')
       const expires_in = getParameterByName('expires_in')
@@ -623,6 +658,7 @@ export default class GoTrueClient {
       const user: User = data.user
       const session: Session = {
         provider_token,
+        provider_refresh_token,
         access_token,
         expires_in: parseInt(expires_in),
         expires_at,
@@ -893,7 +929,7 @@ export default class GoTrueClient {
       const timeNow = Math.round(Date.now() / 1000)
       const expiresIn = expiresAt - timeNow
       const refreshDurationBeforeExpires = expiresIn > EXPIRY_MARGIN ? EXPIRY_MARGIN : 0.5
-      this._startAutoRefreshToken((expiresIn - refreshDurationBeforeExpires) * 1000, session)
+      this._startAutoRefreshToken((expiresIn - refreshDurationBeforeExpires) * 1000)
     }
 
     if (this.persistSession && session.expires_at) {
@@ -922,22 +958,25 @@ export default class GoTrueClient {
    * @param value time intervals in milliseconds.
    * @param session The current session.
    */
-  private _startAutoRefreshToken(value: number, session: Session) {
+  private _startAutoRefreshToken(value: number) {
     if (this.refreshTokenTimer) clearTimeout(this.refreshTokenTimer)
     if (value <= 0 || !this.autoRefreshToken) return
 
     this.refreshTokenTimer = setTimeout(async () => {
       this.networkRetries++
-      const { error } = await this._callRefreshToken(session.refresh_token)
-      if (!error) this.networkRetries = 0
-      if (
-        error instanceof AuthRetryableFetchError &&
-        this.networkRetries < NETWORK_FAILURE.MAX_RETRIES
-      )
-        this._startAutoRefreshToken(
-          NETWORK_FAILURE.RETRY_INTERVAL ** this.networkRetries * 100,
-          session
-        ) // exponential backoff
+      const {
+        data: { session },
+        error: sessionError,
+      } = await this.getSession()
+      if (!sessionError && session) {
+        const { error } = await this._callRefreshToken(session.refresh_token)
+        if (!error) this.networkRetries = 0
+        if (
+          error instanceof AuthRetryableFetchError &&
+          this.networkRetries < NETWORK_FAILURE.MAX_RETRIES
+        )
+          this._startAutoRefreshToken(NETWORK_FAILURE.RETRY_INTERVAL ** this.networkRetries * 100) // exponential backoff
+      }
     }, value)
     if (typeof this.refreshTokenTimer.unref === 'function') this.refreshTokenTimer.unref()
   }

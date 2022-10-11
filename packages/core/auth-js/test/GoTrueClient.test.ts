@@ -30,7 +30,24 @@ describe('GoTrueClient', () => {
       expect(error).toBeNull()
       expect(data.session).not.toBeNull()
 
-      await authWithSession.setSession(data.session?.refresh_token as string)
+      const {
+        data: { session },
+        error: setSessionError,
+      } = await authWithSession.setSession({
+        // @ts-expect-error 'data.session should not be null because of the assertion above'
+        access_token: data.session.access_token,
+        // @ts-expect-error 'data.session should not be null because of the assertion above'
+        refresh_token: data.session.refresh_token,
+      })
+      expect(setSessionError).toBeNull()
+      expect(session).not.toBeNull()
+      expect(session!.user).not.toBeNull()
+      expect(session!.expires_in).not.toBeNull()
+      expect(session!.expires_at).not.toBeNull()
+      expect(session!.access_token).not.toBeNull()
+      expect(session!.refresh_token).not.toBeNull()
+      expect(session!.token_type).toStrictEqual('bearer')
+
       const {
         data: { user },
         error: updateError,
@@ -221,19 +238,21 @@ describe('GoTrueClient', () => {
     })
   })
 
-  test('signUp() with email', async () => {
-    const { email, password } = mockUserCredentials()
+  describe('Email Auth', () => {
+    test('signUp() with email', async () => {
+      const { email, password } = mockUserCredentials()
 
-    const { error, data } = await auth.signUp({
-      email,
-      password,
+      const { error, data } = await auth.signUp({
+        email,
+        password,
+      })
+
+      expect(error).toBeNull()
+      expect(data.session).not.toBeNull()
+      expect(data.user).not.toBeNull()
+
+      expect(data.user?.email).toEqual(email)
     })
-
-    expect(error).toBeNull()
-    expect(data.session).not.toBeNull()
-    expect(data.user).not.toBeNull()
-
-    expect(data.user?.email).toEqual(email)
   })
 
   describe('Phone OTP Auth', () => {
@@ -265,6 +284,17 @@ describe('GoTrueClient', () => {
       expect(data.user).toBeNull()
     })
 
+    test('signInWithOtp() with phone', async () => {
+      const { phone } = mockUserCredentials()
+
+      const { data, error } = await phoneClient.signInWithOtp({
+        phone,
+      })
+      expect(error).not.toBeNull()
+      expect(data.session).toBeNull()
+      expect(data.user).toBeNull()
+    })
+
     test('verifyOTP()', async () => {
       // unable to test
     })
@@ -290,7 +320,59 @@ describe('GoTrueClient', () => {
     expect(error?.message).toMatch(/^User already registered/)
   })
 
-  test('signIn()', async () => {
+  test('signInWithOtp() for email', async () => {
+    const { email } = mockUserCredentials()
+    const userMetadata = { hello: 'world' }
+    const { data, error } = await auth.signInWithOtp({
+      email,
+      options: {
+        data: userMetadata,
+      },
+    })
+    expect(error).toBeNull()
+    expect(data.user).toBeNull()
+    expect(data.session).toBeNull()
+  })
+
+  test('signInWithPassword() for phone', async () => {
+    const { phone, password } = mockUserCredentials()
+
+    await auth.signUp({
+      phone,
+      password,
+    })
+
+    const { data, error } = await auth.signInWithPassword({
+      phone,
+      password,
+    })
+    expect(error).toBeNull()
+    const expectedUser = {
+      id: expect.any(String),
+      email: expect.any(String),
+      phone: expect.any(String),
+      aud: expect.any(String),
+      phone_confirmed_at: expect.any(String),
+      last_sign_in_at: expect.any(String),
+      created_at: expect.any(String),
+      updated_at: expect.any(String),
+      app_metadata: {
+        provider: 'phone',
+      },
+    }
+    expect(error).toBeNull()
+    expect(data.session).toMatchObject({
+      access_token: expect.any(String),
+      refresh_token: expect.any(String),
+      expires_in: expect.any(Number),
+      expires_at: expect.any(Number),
+      user: expectedUser,
+    })
+    expect(data.user).toMatchObject(expectedUser)
+    expect(data.user?.phone).toBe(phone)
+  })
+
+  test('signInWithPassword() for email', async () => {
     const { email, password } = mockUserCredentials()
 
     await auth.signUp({
@@ -303,27 +385,7 @@ describe('GoTrueClient', () => {
       password,
     })
 
-    expect(error).toBeNull()
-    expect(data.session).toMatchObject({
-      access_token: expect.any(String),
-      refresh_token: expect.any(String),
-      expires_in: expect.any(Number),
-      expires_at: expect.any(Number),
-      user: {
-        id: expect.any(String),
-        email: expect.any(String),
-        phone: expect.any(String),
-        aud: expect.any(String),
-        email_confirmed_at: expect.any(String),
-        last_sign_in_at: expect.any(String),
-        created_at: expect.any(String),
-        updated_at: expect.any(String),
-        app_metadata: {
-          provider: 'email',
-        },
-      },
-    })
-    expect(data.user).toMatchObject({
+    const expectedUser = {
       id: expect.any(String),
       email: expect.any(String),
       phone: expect.any(String),
@@ -335,7 +397,16 @@ describe('GoTrueClient', () => {
       app_metadata: {
         provider: 'email',
       },
+    }
+    expect(error).toBeNull()
+    expect(data.session).toMatchObject({
+      access_token: expect.any(String),
+      refresh_token: expect.any(String),
+      expires_in: expect.any(Number),
+      expires_at: expect.any(Number),
+      user: expectedUser,
     })
+    expect(data.user).toMatchObject(expectedUser)
     expect(data.user?.email).toBe(email)
   })
 
