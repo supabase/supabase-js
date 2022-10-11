@@ -5,7 +5,12 @@ import {
   PostgrestFilterBuilder,
   PostgrestQueryBuilder,
 } from '@supabase/postgrest-js'
-import { RealtimeChannel, RealtimeClient, RealtimeClientOptions } from '@supabase/realtime-js'
+import {
+  RealtimeChannel,
+  RealtimeChannelOptions,
+  RealtimeClient,
+  RealtimeClientOptions,
+} from '@supabase/realtime-js'
 import { StorageClient as SupabaseStorageClient } from '@supabase/storage-js'
 import { DEFAULT_HEADERS } from './lib/constants'
 import { fetchWithAuth } from './lib/fetch'
@@ -197,7 +202,7 @@ export default class SupabaseClient<
    * @param {Object} opts - The options to pass to the Realtime channel.
    *
    */
-  channel(name: string, opts: { [key: string]: any } = {}): RealtimeChannel {
+  channel(name: string, opts: RealtimeChannelOptions = { config: {} }): RealtimeChannel {
     return this.realtime.channel(name, opts)
   }
 
