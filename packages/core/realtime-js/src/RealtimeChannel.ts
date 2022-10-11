@@ -29,9 +29,9 @@ export type RealtimePostgresChangesPayload<T extends { [key: string]: any }> = {
   table: string
   commit_timestamp: string
   eventType:
-    | REALTIME_POSTGRES_CHANGES_LISTEN_EVENT.INSERT
-    | REALTIME_POSTGRES_CHANGES_LISTEN_EVENT.UPDATE
-    | REALTIME_POSTGRES_CHANGES_LISTEN_EVENT.DELETE
+    | `${REALTIME_POSTGRES_CHANGES_LISTEN_EVENT.INSERT}`
+    | `${REALTIME_POSTGRES_CHANGES_LISTEN_EVENT.UPDATE}`
+    | `${REALTIME_POSTGRES_CHANGES_LISTEN_EVENT.DELETE}`
   new: T | {}
   old: Partial<T> | {}
   errors: string[]
@@ -281,7 +281,7 @@ export default class RealtimeChannel {
     type: `${REALTIME_LISTEN_TYPES.BROADCAST}`,
     filter: { event: string },
     callback: (payload: {
-      type: REALTIME_LISTEN_TYPES.BROADCAST
+      type: `${REALTIME_LISTEN_TYPES.BROADCAST}`
       event: string
       [key: string]: any
     }) => void
@@ -299,7 +299,7 @@ export default class RealtimeChannel {
   on<T extends { [key: string]: any }>(
     type: `${REALTIME_LISTEN_TYPES.POSTGRES_CHANGES}`,
     filter: {
-      event: REALTIME_POSTGRES_CHANGES_LISTEN_EVENT
+      event: `${REALTIME_POSTGRES_CHANGES_LISTEN_EVENT}`
       schema: string
       table?: string
       filter?: string

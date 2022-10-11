@@ -18,14 +18,14 @@ type Presence = {
 export type RealtimePresenceState = { [key: string]: Presence[] }
 
 export type RealtimePresenceJoinPayload = {
-  event: REALTIME_PRESENCE_LISTEN_EVENTS.JOIN
+  event: `${REALTIME_PRESENCE_LISTEN_EVENTS.JOIN}`
   key: string
   currentPresences: Presence[]
   newPresences: Presence[]
 }
 
 export type RealtimePresenceLeavePayload = {
-  event: REALTIME_PRESENCE_LISTEN_EVENTS.LEAVE
+  event: `${REALTIME_PRESENCE_LISTEN_EVENTS.LEAVE}`
   key: string
   currentPresences: Presence[]
   leftPresences: Presence[]
