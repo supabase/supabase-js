@@ -29,13 +29,13 @@ describe('useful helper utilities when using the auth clients', () => {
 
     test('createNewUserWithEmail()', async () => {
       const email = `user+${Date.now()}@example.com`
-      const { data: user } = await createNewUserWithEmail({
+      const { data } = await createNewUserWithEmail({
         email,
       })
 
-      expect(user).not.toBeNull()
-      expect(user?.email).not.toBeUndefined()
-      expect(user?.email).toEqual(email)
+      expect(data.user).not.toBeNull()
+      expect(data.user?.email).not.toBeUndefined()
+      expect(data.user?.email).toEqual(email)
     })
   })
   describe('Mocks User Metadata()', () => {

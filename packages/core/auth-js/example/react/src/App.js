@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { GoTrueClient } from '@supabase/gotrue-js'
 import './tailwind.output.css'
 
@@ -9,7 +9,7 @@ const auth = new GoTrueClient({
 })
 
 function App() {
-  let [session, setSession] = useState(auth.session())
+  let [session, setSession] = useState()
   let [email, setEmail] = useState(localStorage.getItem('email') ?? '')
   let [phone, setPhone] = useState(localStorage.getItem('phone') ?? '')
   let [password, setPassword] = useState('')
@@ -17,20 +17,37 @@ function App() {
   let [rememberMe, setRememberMe] = useState(false)
 
   // Keep the session up to date
-  auth.onAuthStateChange((_event, session) => setSession(session))
+  auth.onAuthStateChange((_event, session) => {
+    setSession(session)
+  })
+
+  useEffect(() => {
+    async function session() {
+      const { data, error } = await auth.getSession()
+      if (error | !data) {
+        setSession('')
+      } else {
+        setSession(data.session)
+      }
+    }
+    session()
+  }, [])
 
   async function handleOAuthLogin(provider) {
-    let { error } = await auth.signIn({ provider }, { redirectTo: 'http://localhost:3000/welcome'})
+    let { error } = await auth.signInWithOAuth({
+      provider,
+      options: {
+        redirectTo: 'http://localhost:3000/welcome',
+      },
+    })
     if (error) console.log('Error: ', error.message)
   }
   async function handleVerifyOtp() {
-    let data = await auth.verifyOTP({ phone: phone, token: otp })
-    console.log(data)
+    await auth.verifyOTP({ phone: phone, token: otp, type: 'sms' })
   }
 
   async function handleSendOtp() {
-    let data = await auth.signIn({ phone: phone })
-    console.log(data)
+    await auth.signInWithOtp({ phone: phone, type: 'sms' })
   }
   async function handleEmailSignIn() {
     if (rememberMe) {
@@ -38,24 +55,28 @@ function App() {
     } else {
       localStorage.removeItem('email')
     }
-    let { error, user } = await auth.signIn({ email, password })
-    if (!error && !user) alert('Check your email for the login link!')
+    let { error, data } = await auth.signInWithPassword({ email, password })
+    if (!error && !data) alert('Check your email for the login link!')
     if (error) console.log('Error: ', error.message)
   }
   async function handleEmailSignUp() {
-    let { error } = await auth.signUp({ email, password })
+    let { error } = await auth.signUp({
+      email,
+      password,
+      options: { emailRedirectTo: 'http://localhost:3000/welcome' },
+    })
     if (error) console.log('Error: ', error.message)
   }
   async function handleSignOut() {
     let { error } = await auth.signOut()
-    if (error) console.log('Error: ', error.message)
+    if (error) console.log('Error: ', error)
   }
   async function forgotPassword() {
     var email = prompt('Please enter your email:')
     if (email === null || email === '') {
       window.alert('You must enter your email.')
     } else {
-      let { error } = await auth.api.resetPasswordForEmail(email)
+      let { error } = await auth.resetPasswordForEmail(email)
       if (error) {
         console.log('Error: ', error.message)
       } else {

@@ -1,4 +1,4 @@
-import { OpenIDConnectCredentials } from '../src'
+import { AuthError } from '../src/lib/errors'
 import {
   authClient as auth,
   authClientWithSession as authWithSession,
@@ -10,162 +10,263 @@ import {
 import { mockUserCredentials } from './lib/utils'
 
 describe('GoTrueClient', () => {
+  // @ts-expect-error 'Allow access to private _refreshAccessToken'
+  const refreshAccessTokenSpy = jest.spyOn(authWithSession, '_refreshAccessToken')
+
   afterEach(async () => {
     await auth.signOut()
     await authWithSession.signOut()
+    refreshAccessTokenSpy.mockClear()
   })
 
   describe('Sessions', () => {
-    test('setSession(refreshToken) should return no error', async () => {
+    test('setSession should return no error', async () => {
       const { email, password } = mockUserCredentials()
 
-      const { error, session } = await authWithSession.signUp({
+      const { error, data } = await authWithSession.signUp({
         email,
         password,
       })
       expect(error).toBeNull()
+      expect(data.session).not.toBeNull()
+
+      const {
+        data: { session },
+        error: setSessionError,
+      } = await authWithSession.setSession({
+        // @ts-expect-error 'data.session should not be null because of the assertion above'
+        access_token: data.session.access_token,
+        // @ts-expect-error 'data.session should not be null because of the assertion above'
+        refresh_token: data.session.refresh_token,
+      })
+      expect(setSessionError).toBeNull()
       expect(session).not.toBeNull()
+      expect(session!.user).not.toBeNull()
+      expect(session!.expires_in).not.toBeNull()
+      expect(session!.expires_at).not.toBeNull()
+      expect(session!.access_token).not.toBeNull()
+      expect(session!.refresh_token).not.toBeNull()
+      expect(session!.token_type).toStrictEqual('bearer')
 
-      const { error: sessionError } = await authWithSession.setSession(session!.refresh_token!)
-      expect(sessionError).toBeNull()
+      const {
+        data: { user },
+        error: updateError,
+      } = await authWithSession.updateUser({ data: { hello: 'world' } })
 
-      const { user } = await authWithSession.update({ data: { hello: 'world' } })
-
+      expect(updateError).toBeNull()
       expect(user).not.toBeNull()
       expect(user?.user_metadata).toStrictEqual({ hello: 'world' })
     })
 
-    test('setSession({ access_token, refresh_token }) should return no error', async () => {
+    test('getSession() should return the currentUser session', async () => {
       const { email, password } = mockUserCredentials()
 
-      const { error, session } = await authWithSession.signUp({
-        email,
-        password,
-      })
-      expect(error).toBeNull()
-      expect(session).not.toBeNull()
-
-      const { session: setSession, error: sessionError } = await authWithSession.setSession({
-        refresh_token: session!.refresh_token!,
-        access_token: session!.access_token!,
-      })
-      expect(sessionError).toBeNull()
-      expect(setSession).not.toBeNull()
-      expect(setSession!.user).not.toBeNull()
-      expect(setSession!.expires_in).not.toBeNull()
-      expect(setSession!.expires_at).not.toBeNull()
-      expect(setSession!.access_token).not.toBeNull()
-      expect(setSession!.refresh_token).not.toBeNull()
-      expect(setSession!.token_type).toStrictEqual('Bearer')
-
-      const { user } = await authWithSession.update({ data: { hello: 'world' } })
-
-      expect(user).not.toBeNull()
-      expect(user?.user_metadata).toStrictEqual({ hello: 'world' })
-    })
-
-    test('session() should return the currentUser session', async () => {
-      const { email, password } = mockUserCredentials()
-
-      const { error, session } = await authWithSession.signUp({
+      const { error, data } = await authWithSession.signUp({
         email,
         password,
       })
 
       expect(error).toBeNull()
-      expect(session).not.toBeNull()
+      expect(data.session).not.toBeNull()
 
-      const userSession = authWithSession.session()
+      const { data: userSession, error: userError } = await authWithSession.getSession()
 
-      expect(userSession).not.toBeNull()
-      expect(userSession).toHaveProperty('access_token')
-      expect(userSession).toHaveProperty('user')
+      expect(userError).toBeNull()
+      expect(userSession.session).not.toBeNull()
+      expect(userSession.session).toHaveProperty('access_token')
+      expect(userSession.session).toHaveProperty('user')
     })
 
-    test('getSessionFromUrl() can only be called from a browser', async () => {
-      const { error, data } = await authWithSession.getSessionFromUrl()
+    test('getSession() should refresh the session and return a new access token', async () => {
+      const { email, password } = mockUserCredentials()
+
+      const { error, data } = await authWithSession.signUp({
+        email,
+        password,
+      })
+
+      expect(error).toBeNull()
+      expect(data.session).not.toBeNull()
+
+      const expired = new Date()
+      expired.setMinutes(expired.getMinutes() - 1)
+      const expiredSeconds = Math.floor(expired.getTime() / 1000)
+
+      // @ts-expect-error 'Allow access to protected inMemorySession'
+      authWithSession.inMemorySession = {
+        // @ts-expect-error 'Allow access to protected inMemorySession'
+        ...authWithSession.inMemorySession,
+        expires_at: expiredSeconds,
+      }
+
+      // wait 1 seconds before calling getSession()
+      await new Promise((r) => setTimeout(r, 1000))
+      const { data: userSession, error: userError } = await authWithSession.getSession()
+
+      expect(userError).toBeNull()
+      expect(userSession.session).not.toBeNull()
+      expect(userSession.session).toHaveProperty('access_token')
+      expect(refreshAccessTokenSpy).toBeCalledTimes(1)
+      expect(data.session?.access_token).not.toEqual(userSession.session?.access_token)
+    })
+
+    test('refresh should only happen once', async () => {
+      const { email, password } = mockUserCredentials()
+
+      const { error, data } = await authWithSession.signUp({
+        email,
+        password,
+      })
+
+      expect(error).toBeNull()
+      expect(data.session).not.toBeNull()
+
+      const [{ session: session1, error: error1 }, { session: session2, error: error2 }] =
+        await Promise.all([
+          // @ts-expect-error 'Allow access to private _callRefreshToken()'
+          authWithSession._callRefreshToken(data.session?.refresh_token),
+          // @ts-expect-error 'Allow access to private _callRefreshToken()'
+          authWithSession._callRefreshToken(data.session?.refresh_token),
+        ])
+
+      expect(error1).toBeNull()
+      expect(error2).toBeNull()
+      expect(session1).toHaveProperty('access_token')
+      expect(session2).toHaveProperty('access_token')
+
+      // if both have the same access token, we can assume that they are
+      // the result of the same refresh
+      expect(session1?.access_token).toEqual(session2?.access_token)
+
+      expect(refreshAccessTokenSpy).toBeCalledTimes(1)
+    })
+
+    test('_callRefreshToken() should resolve all pending refresh requests and reset deferred upon AuthError', async () => {
+      const { email, password } = mockUserCredentials()
+      refreshAccessTokenSpy.mockImplementationOnce(() =>
+        // @ts-expect-error 'Allow access to private _refreshAccessToken()'
+        Promise.resolve({
+          data: { session: null, user: null },
+          error: new AuthError('Something did not work as expected'),
+        })
+      )
+
+      const { error, data } = await authWithSession.signUp({
+        email,
+        password,
+      })
+
+      expect(error).toBeNull()
+      expect(data.session).not.toBeNull()
+
+      const [{ session: session1, error: error1 }, { session: session2, error: error2 }] =
+        await Promise.all([
+          // @ts-expect-error 'Allow access to private _callRefreshToken()'
+          authWithSession._callRefreshToken(data.session?.refresh_token),
+          // @ts-expect-error 'Allow access to private _callRefreshToken()'
+          authWithSession._callRefreshToken(data.session?.refresh_token),
+        ])
+
+      expect(error1).toHaveProperty('message')
+      expect(error2).toHaveProperty('message')
+      expect(session1).toBeNull()
+      expect(session2).toBeNull()
+
+      expect(refreshAccessTokenSpy).toBeCalledTimes(1)
+
+      // verify the deferred has been reset and successive calls can be made
+      // @ts-expect-error 'Allow access to private _callRefreshToken()'
+      const { session: session3, error: error3 } = await authWithSession._callRefreshToken(
+        data.session!.refresh_token
+      )
+
+      expect(error3).toBeNull()
+      expect(session3).toHaveProperty('access_token')
+    })
+
+    test('_callRefreshToken() should reject all pending refresh requests and reset deferred upon any non AuthError', async () => {
+      const mockError = new Error('Something did not work as expected')
+
+      const { email, password } = mockUserCredentials()
+
+      // @ts-expect-error 'Allow access to private _refreshAccessToken()'
+      refreshAccessTokenSpy.mockImplementationOnce(() => Promise.reject(mockError))
+
+      const { error, data } = await authWithSession.signUp({
+        email,
+        password,
+      })
+
+      expect(error).toBeNull()
+      expect(data.session).not.toBeNull()
+
+      const [error1, error2] = await Promise.allSettled([
+        // @ts-expect-error 'Allow access to private _callRefreshToken()'
+        authWithSession._callRefreshToken(data.session?.refresh_token),
+        // @ts-expect-error 'Allow access to private _callRefreshToken()'
+        authWithSession._callRefreshToken(data.session?.refresh_token),
+      ])
+
+      expect(error1.status).toEqual('rejected')
+      expect(error2.status).toEqual('rejected')
+
+      // status === 'rejected' above makes sure it is a PromiseRejectedResult
+      expect((error1 as PromiseRejectedResult).reason).toEqual(mockError)
+      expect((error1 as PromiseRejectedResult).reason).toEqual(mockError)
+
+      expect(refreshAccessTokenSpy).toBeCalledTimes(1)
+
+      // vreify the deferred has been reset and successive calls can be made
+      // @ts-expect-error 'Allow access to private _callRefreshToken()'
+      const { session: session3, error: error3 } = await authWithSession._callRefreshToken(
+        data.session!.refresh_token
+      )
+
+      expect(error3).toBeNull()
+      expect(session3).toHaveProperty('access_token')
+    })
+
+    test('_getSessionFromUrl() can only be called from a browser', async () => {
+      const {
+        error,
+        data: { session },
+        // @ts-expect-error 'Allow access to private _getSessionFromUrl()'
+      } = await authWithSession._getSessionFromUrl()
 
       expect(error?.message).toEqual('No browser detected.')
-      expect(data).toBeNull()
+      expect(session).toBeNull()
     })
+  })
 
-    test('refreshSession() raises error if not logged in', async () => {
-      const { error, user, data } = await authWithSession.refreshSession()
-      expect(error?.message).toEqual('Not logged in.')
-      expect(user).toBeNull()
-      expect(data).toBeNull()
-    })
-
-    test('refreshSession() forces refreshes the session to get a new refresh token for same user', async () => {
+  describe('Email Auth', () => {
+    test('signUp() with email', async () => {
       const { email, password } = mockUserCredentials()
 
-      const { error: initialError, session } = await authWithSession.signUp({
+      const { error, data } = await auth.signUp({
         email,
         password,
       })
-
-      expect(initialError).toBeNull()
-      expect(session).not.toBeNull()
-
-      const refreshToken = session?.refresh_token
-
-      const { error, user, data } = await authWithSession.refreshSession()
 
       expect(error).toBeNull()
-      expect(user).not.toBeNull()
-      expect(data).not.toBeNull()
+      expect(data.session).not.toBeNull()
+      expect(data.user).not.toBeNull()
 
-      expect(user?.email).toEqual(email)
-      expect(data).toHaveProperty('refresh_token')
-      expect(refreshToken).not.toEqual(data?.refresh_token)
+      expect(data.user?.email).toEqual(email)
     })
-  })
-
-  describe('Authentication', () => {
-    test('setAuth() should set the Auth headers on a new client', async () => {
-      const { email, password } = mockUserCredentials()
-
-      const { session } = await auth.signUp({
-        email,
-        password,
-      })
-
-      const access_token = session?.access_token || null
-
-      authWithSession.setAuth(access_token as string)
-
-      const authBearer = authWithSession.session()?.access_token
-      expect(authBearer).toEqual(access_token)
-    })
-  })
-
-  test('signUp() with email', async () => {
-    const { email, password } = mockUserCredentials()
-
-    const { error, session, user } = await auth.signUp({
-      email,
-      password,
-    })
-
-    expect(error).toBeNull()
-    expect(session).not.toBeNull()
-    expect(user).not.toBeNull()
-
-    expect(user?.email).toEqual(email)
   })
 
   describe('Phone OTP Auth', () => {
     test('signUp() when phone sign up missing provider account', async () => {
       const { phone, password } = mockUserCredentials()
 
-      const { error, session, user } = await phoneClient.signUp({
+      const { error, data } = await phoneClient.signUp({
         phone,
         password,
       })
 
       expect(error).not.toBeNull()
-      expect(session).toBeNull()
-      expect(user).toBeNull()
+      expect(data.session).toBeNull()
+      expect(data.user).toBeNull()
 
       expect(error?.message).toEqual('Error sending confirmation sms: Missing Twilio account SID')
     })
@@ -173,17 +274,25 @@ describe('GoTrueClient', () => {
     test('signUp() with phone', async () => {
       const { phone, password } = mockUserCredentials()
 
-      const { error, session, user } = await phoneClient.signUp({
+      const { error, data } = await phoneClient.signUp({
         phone,
         password,
       })
 
       expect(error).not.toBeNull()
-      expect(error?.status).toEqual(400)
-      expect(session).toBeNull()
-      expect(user).toBeNull()
+      expect(data.session).toBeNull()
+      expect(data.user).toBeNull()
+    })
 
-      // expect(user?.phone).toEqual(phone)
+    test('signInWithOtp() with phone', async () => {
+      const { phone } = mockUserCredentials()
+
+      const { data, error } = await phoneClient.signInWithOtp({
+        phone,
+      })
+      expect(error).not.toBeNull()
+      expect(data.session).toBeNull()
+      expect(data.user).toBeNull()
     })
 
     test('verifyOTP()', async () => {
@@ -200,18 +309,70 @@ describe('GoTrueClient', () => {
     })
 
     // sign up again
-    const { error, session, user } = await auth.signUp({
+    const { error, data } = await auth.signUp({
       email,
       password,
     })
 
-    expect(session).toBeNull()
-    expect(user).toBeNull()
+    expect(data.session).toBeNull()
+    expect(data.user).toBeNull()
 
     expect(error?.message).toMatch(/^User already registered/)
   })
 
-  test('signIn()', async () => {
+  test('signInWithOtp() for email', async () => {
+    const { email } = mockUserCredentials()
+    const userMetadata = { hello: 'world' }
+    const { data, error } = await auth.signInWithOtp({
+      email,
+      options: {
+        data: userMetadata,
+      },
+    })
+    expect(error).toBeNull()
+    expect(data.user).toBeNull()
+    expect(data.session).toBeNull()
+  })
+
+  test('signInWithPassword() for phone', async () => {
+    const { phone, password } = mockUserCredentials()
+
+    await auth.signUp({
+      phone,
+      password,
+    })
+
+    const { data, error } = await auth.signInWithPassword({
+      phone,
+      password,
+    })
+    expect(error).toBeNull()
+    const expectedUser = {
+      id: expect.any(String),
+      email: expect.any(String),
+      phone: expect.any(String),
+      aud: expect.any(String),
+      phone_confirmed_at: expect.any(String),
+      last_sign_in_at: expect.any(String),
+      created_at: expect.any(String),
+      updated_at: expect.any(String),
+      app_metadata: {
+        provider: 'phone',
+      },
+    }
+    expect(error).toBeNull()
+    expect(data.session).toMatchObject({
+      access_token: expect.any(String),
+      refresh_token: expect.any(String),
+      expires_in: expect.any(Number),
+      expires_at: expect.any(Number),
+      user: expectedUser,
+    })
+    expect(data.user).toMatchObject(expectedUser)
+    expect(data.user?.phone).toBe(phone)
+  })
+
+  test('signInWithPassword() for email', async () => {
     const { email, password } = mockUserCredentials()
 
     await auth.signUp({
@@ -219,32 +380,12 @@ describe('GoTrueClient', () => {
       password,
     })
 
-    const { error, session, user } = await auth.signIn({
+    const { error, data } = await auth.signInWithPassword({
       email,
       password,
     })
 
-    expect(error).toBeNull()
-    expect(session).toMatchObject({
-      access_token: expect.any(String),
-      refresh_token: expect.any(String),
-      expires_in: expect.any(Number),
-      expires_at: expect.any(Number),
-      user: {
-        id: expect.any(String),
-        email: expect.any(String),
-        phone: expect.any(String),
-        aud: expect.any(String),
-        email_confirmed_at: expect.any(String),
-        last_sign_in_at: expect.any(String),
-        created_at: expect.any(String),
-        updated_at: expect.any(String),
-        app_metadata: {
-          provider: 'email',
-        },
-      },
-    })
-    expect(user).toMatchObject({
+    const expectedUser = {
       id: expect.any(String),
       email: expect.any(String),
       phone: expect.any(String),
@@ -256,26 +397,35 @@ describe('GoTrueClient', () => {
       app_metadata: {
         provider: 'email',
       },
+    }
+    expect(error).toBeNull()
+    expect(data.session).toMatchObject({
+      access_token: expect.any(String),
+      refresh_token: expect.any(String),
+      expires_in: expect.any(Number),
+      expires_at: expect.any(Number),
+      user: expectedUser,
     })
-    expect(user?.email).toBe(email)
+    expect(data.user).toMatchObject(expectedUser)
+    expect(data.user?.email).toBe(email)
   })
 
   test('signIn() with refreshToken', async () => {
     const { email, password } = mockUserCredentials()
 
-    const { error: initialError, session: initialSession } = await authWithSession.signUp({
+    const { error: initialError, data } = await authWithSession.signUp({
       email,
       password,
     })
 
     expect(initialError).toBeNull()
+    const initialSession = data.session
     expect(initialSession).not.toBeNull()
 
-    const refreshToken = initialSession?.refresh_token
-    const { error, user, session } = await authWithSession.signIn({ refreshToken })
+    const { data: userSession, error } = await authWithSession.getSession()
 
     expect(error).toBeNull()
-    expect(session).toMatchObject({
+    expect(userSession.session).toMatchObject({
       access_token: expect.any(String),
       refresh_token: expect.any(String),
       expires_in: expect.any(Number),
@@ -294,7 +444,7 @@ describe('GoTrueClient', () => {
         },
       },
     })
-    expect(user).toMatchObject({
+    expect(userSession.session?.user).toMatchObject({
       id: expect.any(String),
       email: expect.any(String),
       phone: expect.any(String),
@@ -308,43 +458,8 @@ describe('GoTrueClient', () => {
       },
     })
 
-    expect(user).not.toBeNull()
-    expect(user?.email).toBe(email)
-  })
-
-  test('signIn with OpenIDConnect wrong id_token', async () => {
-    const oidc: OpenIDConnectCredentials = {
-      id_token: 'abcde',
-      nonce: 'random value',
-      provider: 'google',
-    }
-    const { session, user, error } = await auth.signIn({ oidc })
-
-    expect(error).not.toBeNull()
-    expect(session).toBeNull()
-    expect(user).toBeNull()
-  })
-
-  test('signIn with OpenIDConnect both client_id and provider are null', async () => {
-    const t = async () => {
-      const oidc: OpenIDConnectCredentials = {
-        id_token: 'abcde',
-        nonce: 'random value',
-      }
-      await auth.signIn({ oidc })
-    }
-    await expect(t).rejects.toThrow(Error)
-  })
-
-  test('signIn with OpenIDConnect both id_token and client_id is null', async () => {
-    const t = async () => {
-      const oidc: any = {
-        nonce: 'random value',
-        provider: 'google',
-      }
-      await auth.signIn({ oidc })
-    }
-    await expect(t).rejects.toThrow(Error)
+    expect(userSession.session?.user).not.toBeNull()
+    expect(userSession.session?.user?.email).toBe(email)
   })
 
   test('signOut', async () => {
@@ -355,7 +470,7 @@ describe('GoTrueClient', () => {
       password,
     })
 
-    await authWithSession.signIn({
+    await authWithSession.signInWithPassword({
       email,
       password,
     })
@@ -370,14 +485,12 @@ describe('User management', () => {
   test('Get user', async () => {
     const { email, password } = mockUserCredentials()
 
-    const { session } = await authWithSession.signUp({
+    const { data } = await authWithSession.signUp({
       email,
       password,
     })
 
-    const user = authWithSession.user()
-
-    expect(user).toMatchObject({
+    expect(data.user).toMatchObject({
       id: expect.any(String),
       email: expect.any(String),
       phone: expect.any(String),
@@ -391,20 +504,23 @@ describe('User management', () => {
       },
     })
 
-    expect(session?.user?.email).toBe(email)
+    expect(data.user?.email).toBe(email)
   })
 
   test('Update user', async () => {
     const { email, password } = mockUserCredentials()
 
-    await auth.signUp({
+    await authWithSession.signUp({
       email,
       password,
     })
 
     const userMetadata = { hello: 'world' }
 
-    const { error, user } = await auth.update({ data: userMetadata })
+    const {
+      error,
+      data: { user },
+    } = await authWithSession.updateUser({ data: userMetadata })
 
     expect(error).toBeNull()
     expect(user).toMatchObject({
@@ -429,17 +545,19 @@ describe('User management', () => {
   test('Get user after updating', async () => {
     const { email, password } = mockUserCredentials()
 
-    await auth.signUp({
+    await authWithSession.signUp({
       email,
       password,
     })
 
     const userMetadata = { hello: 'world' }
 
-    await auth.update({ data: userMetadata })
+    const {
+      data: { user },
+      error,
+    } = await authWithSession.updateUser({ data: userMetadata })
 
-    const user = auth.user()
-
+    expect(error).toBeNull()
     expect(user).toMatchObject({
       id: expect.any(String),
       aud: expect.any(String),
@@ -462,37 +580,39 @@ describe('User management', () => {
       password,
     })
 
-    await authWithSession.signIn({
+    const { data } = await authWithSession.signInWithPassword({
       email,
       password,
     })
 
-    const user = await authWithSession.user()
-    expect(user).not.toBeNull()
+    expect(data.user).not.toBeNull()
 
     await authWithSession.signOut()
-    const userAfterSignOut = authWithSession.user()
-
-    expect(userAfterSignOut).toBeNull()
+    const { data: userSession, error } = await authWithSession.getSession()
+    expect(userSession.session).toBeNull()
+    expect(error).toBeNull()
   })
 
   test('signIn() with the wrong password', async () => {
     const { email, password } = mockUserCredentials()
 
-    const { error, session } = await auth.signIn({
+    const { error, data } = await auth.signInWithPassword({
       email,
       password: password + '-wrong',
     })
 
     expect(error).not.toBeNull()
     expect(error?.message).not.toBeNull()
-    expect(session).toBeNull()
+    expect(data.session).toBeNull()
   })
 })
 
 describe('The auth client can signin with third-party oAuth providers', () => {
   test('signIn() with Provider', async () => {
-    const { error, url, provider } = await auth.signIn({
+    const {
+      error,
+      data: { url, provider },
+    } = await auth.signInWithOAuth({
       provider: 'google',
     })
     expect(error).toBeNull()
@@ -501,52 +621,55 @@ describe('The auth client can signin with third-party oAuth providers', () => {
   })
 
   test('signIn() with Provider can append a redirectUrl ', async () => {
-    const { error, url, provider } = await auth.signIn(
-      {
-        provider: 'google',
-      },
-      {
+    const {
+      error,
+      data: { url, provider },
+    } = await auth.signInWithOAuth({
+      provider: 'google',
+      options: {
         redirectTo: 'https://localhost:9000/welcome',
-      }
-    )
+      },
+    })
     expect(error).toBeNull()
     expect(url).toBeTruthy()
     expect(provider).toBeTruthy()
   })
 
   test('signIn() with Provider can append scopes', async () => {
-    const { error, url, provider } = await auth.signIn(
-      {
-        provider: 'github',
-      },
-      {
+    const {
+      error,
+      data: { url, provider },
+    } = await auth.signInWithOAuth({
+      provider: 'github',
+      options: {
         scopes: 'repo',
-      }
-    )
+      },
+    })
     expect(error).toBeNull()
     expect(url).toBeTruthy()
     expect(provider).toBeTruthy()
   })
 
   test('signIn() with Provider can append multiple options', async () => {
-    const { error, url, provider } = await auth.signIn(
-      {
-        provider: 'github',
-      },
-      {
+    const {
+      error,
+      data: { url, provider },
+    } = await auth.signInWithOAuth({
+      provider: 'github',
+      options: {
         redirectTo: 'https://localhost:9000/welcome',
         scopes: 'repo',
-      }
-    )
+      },
+    })
     expect(error).toBeNull()
     expect(url).toBeTruthy()
     expect(provider).toBeTruthy()
   })
 
   describe('Developers can subscribe and unsubscribe', () => {
-    const { data: subscription } = authSubscriptionClient.onAuthStateChange(() =>
-      console.log('onAuthStateChange was called')
-    )
+    const {
+      data: { subscription },
+    } = authSubscriptionClient.onAuthStateChange(() => console.log('onAuthStateChange was called'))
 
     test('Subscribe a listener', async () => {
       // @ts-expect-error 'Allow access to protected stateChangeEmitters'
@@ -565,7 +688,10 @@ describe('The auth client can signin with third-party oAuth providers', () => {
     test('User can sign up', async () => {
       const { email, password } = mockUserCredentials()
 
-      const { error, user } = await signUpEnabledClient.signUp({
+      const {
+        error,
+        data: { user },
+      } = await signUpEnabledClient.signUp({
         email,
         password,
       })
@@ -581,7 +707,10 @@ describe('The auth client can signin with third-party oAuth providers', () => {
     test('User cannot sign up', async () => {
       const { email, password } = mockUserCredentials()
 
-      const { error, user } = await signUpDisabledClient.signUp({
+      const {
+        error,
+        data: { user },
+      } = await signUpDisabledClient.signUp({
         email,
         password,
       })
@@ -590,5 +719,60 @@ describe('The auth client can signin with third-party oAuth providers', () => {
       expect(error).not.toBeNull()
       expect(error?.message).toEqual('Signups not allowed for this instance')
     })
+  })
+})
+
+describe('User management', () => {
+  test('resetPasswordForEmail() sends an email for password recovery', async () => {
+    const { email, password } = mockUserCredentials()
+
+    const { error: initialError, data } = await authWithSession.signUp({
+      email,
+      password,
+    })
+
+    expect(initialError).toBeNull()
+    expect(data.session).not.toBeNull()
+
+    const redirectTo = 'http://localhost:9999/welcome'
+    const { error, data: user } = await authWithSession.resetPasswordForEmail(email, {
+      redirectTo,
+    })
+    expect(user).toBeTruthy()
+    expect(error?.message).toBeUndefined()
+  })
+
+  test('resetPasswordForEmail() if user does not exist, user details are not exposed', async () => {
+    const redirectTo = 'http://localhost:9999/welcome'
+    const { error, data } = await authWithSession.resetPasswordForEmail(
+      'this_user@does-not-exist.com',
+      {
+        redirectTo,
+      }
+    )
+    expect(data).toEqual({})
+    expect(error).toBeNull()
+  })
+
+  test('refreshAccessToken()', async () => {
+    const { email, password } = mockUserCredentials()
+
+    const { error: initialError, data } = await authWithSession.signUp({
+      email,
+      password,
+    })
+
+    expect(initialError).toBeNull()
+
+    // @ts-expect-error 'Allow access to private _refreshAccessToken()'
+    const { error, data: refreshedSession } = await authWithSession._refreshAccessToken(
+      data.session?.refresh_token || ''
+    )
+
+    const user = refreshedSession?.user
+
+    expect(error).toBeNull()
+    expect(user).not.toBeNull()
+    expect(user?.email).toEqual(email)
   })
 })

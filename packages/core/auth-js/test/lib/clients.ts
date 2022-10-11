@@ -1,5 +1,5 @@
 import jwt from 'jsonwebtoken'
-import { GoTrueApi, GoTrueClient } from '../../src/index'
+import { GoTrueAdminApi, GoTrueClient } from '../../src/index'
 
 export const SIGNUP_ENABLED_AUTO_CONFIRM_OFF_PORT = 9999
 
@@ -56,14 +56,14 @@ export const clientApiAutoConfirmDisabledClient = new GoTrueClient({
   persistSession: true,
 })
 
-export const authAdminApiAutoConfirmEnabledClient = new GoTrueApi({
+export const authAdminApiAutoConfirmEnabledClient = new GoTrueAdminApi({
   url: GOTRUE_URL_SIGNUP_ENABLED_AUTO_CONFIRM_ON,
   headers: {
     Authorization: `Bearer ${AUTH_ADMIN_JWT}`,
   },
 })
 
-export const authAdminApiAutoConfirmDisabledClient = new GoTrueApi({
+export const authAdminApiAutoConfirmDisabledClient = new GoTrueAdminApi({
   url: GOTRUE_URL_SIGNUP_ENABLED_AUTO_CONFIRM_OFF,
   headers: {
     Authorization: `Bearer ${AUTH_ADMIN_JWT}`,
@@ -77,21 +77,21 @@ const SERVICE_ROLE_JWT = jwt.sign(
   GOTRUE_JWT_SECRET
 )
 
-export const serviceRoleApiClient = new GoTrueApi({
+export const serviceRoleApiClient = new GoTrueAdminApi({
   url: GOTRUE_URL_SIGNUP_ENABLED_AUTO_CONFIRM_ON,
   headers: {
     Authorization: `Bearer ${SERVICE_ROLE_JWT}`,
   },
 })
 
-export const serviceRoleApiClientWithSms = new GoTrueApi({
+export const serviceRoleApiClientWithSms = new GoTrueAdminApi({
   url: GOTRUE_URL_SIGNUP_ENABLED_AUTO_CONFIRM_OFF,
   headers: {
     Authorization: `Bearer ${SERVICE_ROLE_JWT}`,
   },
 })
 
-export const serviceRoleApiClientNoSms = new GoTrueApi({
+export const serviceRoleApiClientNoSms = new GoTrueAdminApi({
   url: GOTRUE_URL_SIGNUP_DISABLED_AUTO_CONFIRM_OFF,
   headers: {
     Authorization: `Bearer ${SERVICE_ROLE_JWT}`,

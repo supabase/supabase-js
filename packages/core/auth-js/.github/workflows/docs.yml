@@ -26,8 +26,8 @@ jobs:
 
       - run: |
           npm ci
-          npm run v1:docs
-          npm run v1:docs:json
+          npm run docs
+          npm run docs:json
 
       - name: Publish
         uses: peaceiris/actions-gh-pages@v3

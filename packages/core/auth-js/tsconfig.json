@@ -18,6 +18,6 @@
     "stripInternal": true
   },
   "typedocOptions": {
-    "excludeExternals": true,
+    "excludeExternals": true
   }
 }

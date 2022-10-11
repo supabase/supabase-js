@@ -40,30 +40,33 @@ export const resolveFetch = (customFetch?: Fetch): Fetch => {
   return (...args) => _fetch(...args)
 }
 
-// LocalStorage helpers
+export const looksLikeFetchResponse = (maybeResponse: unknown): maybeResponse is Response => {
+  return (
+    typeof maybeResponse === 'object' &&
+    maybeResponse !== null &&
+    'status' in maybeResponse &&
+    'ok' in maybeResponse &&
+    'json' in maybeResponse &&
+    typeof (maybeResponse as any).json === 'function'
+  )
+}
+
+// Storage helpers
 export const setItemAsync = async (
   storage: SupportedStorage,
   key: string,
   data: any
 ): Promise<void> => {
-  isBrowser() && (await storage?.setItem(key, JSON.stringify(data)))
+  await storage.setItem(key, JSON.stringify(data))
 }
 
-export const getItemAsync = async (storage: SupportedStorage, key: string): Promise<any | null> => {
-  const value = isBrowser() && (await storage?.getItem(key))
-  if (!value) return null
-  try {
-    return JSON.parse(value)
-  } catch {
-    return value
-  }
-}
+export const getItemAsync = async (storage: SupportedStorage, key: string): Promise<unknown> => {
+  const value = await storage.getItem(key)
 
-export const getItemSynchronously = (storage: SupportedStorage, key: string): any | null => {
-  const value = isBrowser() && storage?.getItem(key)
-  if (!value || typeof value !== 'string') {
+  if (!value) {
     return null
   }
+
   try {
     return JSON.parse(value)
   } catch {
@@ -72,5 +75,48 @@ export const getItemSynchronously = (storage: SupportedStorage, key: string): an
 }
 
 export const removeItemAsync = async (storage: SupportedStorage, key: string): Promise<void> => {
-  isBrowser() && (await storage?.removeItem(key))
+  await storage.removeItem(key)
+}
+
+export const decodeBase64URL = (value: string): string => {
+  try {
+    // atob is present in all browsers and nodejs >= 16
+    // but if it is not it will throw a ReferenceError in which case we can try to use Buffer
+    // replace are here to convert the Base64-URL into Base64 which is what atob supports
+    // replace with //g regex acts like replaceAll
+    return atob(value.replace(/[-]/g, '+').replace(/[_]/g, '/'))
+  } catch (e) {
+    if (e instanceof ReferenceError) {
+      // running on nodejs < 16
+      // Buffer supports Base64-URL transparently
+      return Buffer.from(value, 'base64').toString('utf-8')
+    } else {
+      throw e
+    }
+  }
+}
+
+/**
+ * A deferred represents some asynchronous work that is not yet finished, which
+ * may or may not culminate in a value.
+ * Taken from: https://github.com/mike-north/types/blob/master/src/async.ts
+ */
+export class Deferred<T = any> {
+  public static promiseConstructor: PromiseConstructor = Promise
+
+  public readonly promise!: PromiseLike<T>
+
+  public readonly resolve!: (value?: T | PromiseLike<T>) => void
+
+  public readonly reject!: (reason?: any) => any
+
+  public constructor() {
+    // eslint-disable-next-line @typescript-eslint/no-extra-semi
+    ;(this as any).promise = new Deferred.promiseConstructor((res, rej) => {
+      // eslint-disable-next-line @typescript-eslint/no-extra-semi
+      ;(this as any).resolve = res
+      // eslint-disable-next-line @typescript-eslint/no-extra-semi
+      ;(this as any).reject = rej
+    })
+  }
 }
