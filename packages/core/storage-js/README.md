@@ -82,6 +82,16 @@ const storageClient = new SupabaseStorageClient(STORAGE_URL, {
   const { data, error } = await storageClient.from('bucket').upload('path/to/file', fileBody)
   ```
 
+  > Note:  
+  > The path in `data.Key` is prefixed by the bucket ID and is not the value which should be passed to the `download` method in order to fetch the file.  
+  > To fetch the file via the `download` method, use `data.path` and `data.bucketId` as follows:
+  >
+  > ```javascript
+  > const { data, error } = await storageClient.from('bucket').upload('/folder/file.txt', fileBody)
+  > // check for errors
+  > const { data2, error2 } = await storageClient.from(data.bucketId).download(data.path)
+  > ```
+
   > Note: The `upload` method also accepts a map of optional parameters. For a complete list see the [Supabase API reference](https://supabase.com/docs/reference/javascript/storage-from-upload).
 
 - Download a file from an exisiting bucket:
@@ -128,7 +138,7 @@ const storageClient = new SupabaseStorageClient(STORAGE_URL, {
 
   ```js
   const expireIn = 60
-  
+
   const { data, error } = await storageClient
     .from('bucket')
     .createSignedUrl('path/to/file', expireIn)

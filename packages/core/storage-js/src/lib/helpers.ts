@@ -11,3 +11,11 @@ export const resolveFetch = (customFetch?: Fetch): Fetch => {
   }
   return (...args) => _fetch(...args)
 }
+
+export const resolveResponse = async () => {
+  if (typeof Response === 'undefined') {
+    return (await import('cross-fetch')).Response
+  }
+
+  return Response
+}

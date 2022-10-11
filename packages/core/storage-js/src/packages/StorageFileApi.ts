@@ -1,6 +1,7 @@
-import { Fetch, FetchParameters, get, post, remove } from './fetch'
-import { resolveFetch } from './helpers'
-import { FileObject, FileOptions, SearchOptions } from './types'
+import { isStorageError, StorageError } from '../lib/errors'
+import { Fetch, get, post, remove } from '../lib/fetch'
+import { resolveFetch } from '../lib/helpers'
+import { FileObject, FileOptions, SearchOptions, FetchParameters } from '../lib/types'
 
 const DEFAULT_SEARCH_OPTIONS = {
   limit: 100,
@@ -17,7 +18,7 @@ const DEFAULT_FILE_OPTIONS: FileOptions = {
   upsert: false,
 }
 
-export class StorageFileApi {
+export default class StorageFileApi {
   protected url: string
   protected headers: { [key: string]: string }
   protected bucketId?: string
@@ -41,10 +42,6 @@ export class StorageFileApi {
    * @param method HTTP method.
    * @param path The relative file path. Should be of the format `folder/subfolder/filename.png`. The bucket must already exist before attempting to upload.
    * @param fileBody The body of the file to be stored in the bucket.
-   * @param fileOptions HTTP headers.
-   * `cacheControl`: string, the `Cache-Control: max-age=<seconds>` seconds value.
-   * `contentType`: string, the `Content-Type` header value. Should be specified if using a `fileBody` that is neither `Blob` nor `File` nor `FormData`, otherwise will default to `text/plain;charset=UTF-8`.
-   * `upsert`: boolean, whether to perform an upsert.
    */
   private async uploadOrUpdate(
     method: 'POST' | 'PUT',
@@ -61,7 +58,16 @@ export class StorageFileApi {
       | URLSearchParams
       | string,
     fileOptions?: FileOptions
-  ): Promise<{ data: { Key: string } | null; error: Error | null }> {
+  ): Promise<
+    | {
+        data: { path: string }
+        error: null
+      }
+    | {
+        data: null
+        error: StorageError
+      }
+  > {
     try {
       let body
       const options = { ...DEFAULT_FILE_OPTIONS, ...fileOptions }
@@ -92,27 +98,28 @@ export class StorageFileApi {
       })
 
       if (res.ok) {
-        // const data = await res.json()
-        // temporary fix till backend is updated to the latest storage-api version
-        return { data: { Key: _path }, error: null }
+        return {
+          data: { path: cleanPath },
+          error: null,
+        }
       } else {
         const error = await res.json()
         return { data: null, error }
       }
     } catch (error) {
-      return { data: null, error }
+      if (isStorageError(error)) {
+        return { data: null, error }
+      }
+
+      throw error
     }
   }
 
   /**
    * Uploads a file to an existing bucket.
    *
-   * @param path The relative file path. Should be of the format `folder/subfolder/filename.png`. The bucket must already exist before attempting to upload.
+   * @param path The file path, including the file name. Should be of the format `folder/subfolder/filename.png`. The bucket must already exist before attempting to upload.
    * @param fileBody The body of the file to be stored in the bucket.
-   * @param fileOptions HTTP headers.
-   * `cacheControl`: string, the `Cache-Control: max-age=<seconds>` seconds value.
-   * `contentType`: string, the `Content-Type` header value. Should be specified if using a `fileBody` that is neither `Blob` nor `File` nor `FormData`, otherwise will default to `text/plain;charset=UTF-8`.
-   * `upsert`: boolean, whether to perform an upsert.
    */
   async upload(
     path: string,
@@ -128,19 +135,24 @@ export class StorageFileApi {
       | URLSearchParams
       | string,
     fileOptions?: FileOptions
-  ): Promise<{ data: { Key: string } | null; error: Error | null }> {
+  ): Promise<
+    | {
+        data: { path: string }
+        error: null
+      }
+    | {
+        data: null
+        error: StorageError
+      }
+  > {
     return this.uploadOrUpdate('POST', path, fileBody, fileOptions)
   }
 
   /**
    * Replaces an existing file at the specified path with a new one.
    *
-   * @param path The relative file path. Should be of the format `folder/subfolder/filename.png`. The bucket must already exist before attempting to upload.
+   * @param path The relative file path. Should be of the format `folder/subfolder/filename.png`. The bucket must already exist before attempting to update.
    * @param fileBody The body of the file to be stored in the bucket.
-   * @param fileOptions HTTP headers.
-   * `cacheControl`: string, the `Cache-Control: max-age=<seconds>` seconds value.
-   * `contentType`: string, the `Content-Type` header value. Should be specified if using a `fileBody` that is neither `Blob` nor `File` nor `FormData`, otherwise will default to `text/plain;charset=UTF-8`.
-   * `upsert`: boolean, whether to perform an upsert.
    */
   async update(
     path: string,
@@ -156,12 +168,21 @@ export class StorageFileApi {
       | URLSearchParams
       | string,
     fileOptions?: FileOptions
-  ): Promise<{ data: { Key: string } | null; error: Error | null }> {
+  ): Promise<
+    | {
+        data: { path: string }
+        error: null
+      }
+    | {
+        data: null
+        error: StorageError
+      }
+  > {
     return this.uploadOrUpdate('PUT', path, fileBody, fileOptions)
   }
 
   /**
-   * Moves an existing file.
+   * Moves an existing file to a new path in the same bucket.
    *
    * @param fromPath The original file path, including the current file name. For example `folder/image.png`.
    * @param toPath The new file path, including the new file name. For example `folder/image-new.png`.
@@ -169,7 +190,16 @@ export class StorageFileApi {
   async move(
     fromPath: string,
     toPath: string
-  ): Promise<{ data: { message: string } | null; error: Error | null }> {
+  ): Promise<
+    | {
+        data: { message: string }
+        error: null
+      }
+    | {
+        data: null
+        error: StorageError
+      }
+  > {
     try {
       const data = await post(
         this.fetch,
@@ -179,12 +209,16 @@ export class StorageFileApi {
       )
       return { data, error: null }
     } catch (error) {
-      return { data: null, error }
+      if (isStorageError(error)) {
+        return { data: null, error }
+      }
+
+      throw error
     }
   }
 
   /**
-   * Copies an existing file.
+   * Copies an existing file to a new path in the same bucket.
    *
    * @param fromPath The original file path, including the current file name. For example `folder/image.png`.
    * @param toPath The new file path, including the new file name. For example `folder/image-copy.png`.
@@ -192,7 +226,16 @@ export class StorageFileApi {
   async copy(
     fromPath: string,
     toPath: string
-  ): Promise<{ data: { message: string } | null; error: Error | null }> {
+  ): Promise<
+    | {
+        data: { path: string }
+        error: null
+      }
+    | {
+        data: null
+        error: StorageError
+      }
+  > {
     try {
       const data = await post(
         this.fetch,
@@ -200,26 +243,37 @@ export class StorageFileApi {
         { bucketId: this.bucketId, sourceKey: fromPath, destinationKey: toPath },
         { headers: this.headers }
       )
-      return { data, error: null }
+      return { data: { path: data.Key }, error: null }
     } catch (error) {
-      return { data: null, error }
+      if (isStorageError(error)) {
+        return { data: null, error }
+      }
+
+      throw error
     }
   }
 
   /**
-   * Create signed URL to download file without requiring permissions. This URL can be valid for a set number of seconds.
+   * Creates a signed URL. Use a signed URL to share a file for a fixed amount of time.
    *
-   * @param path The file path to be downloaded, including the current file name. For example `folder/image.png`.
+   * @param path The file path, including the current file name. For example `folder/image.png`.
    * @param expiresIn The number of seconds until the signed URL expires. For example, `60` for a URL which is valid for one minute.
+   * @param options.download triggers the file as a download if set to true. Set this parameter as the name of the file if you want to trigger the download with a different filename.
    */
   async createSignedUrl(
     path: string,
-    expiresIn: number
-  ): Promise<{
-    data: { signedURL: string } | null
-    error: Error | null
-    signedURL: string | null
-  }> {
+    expiresIn: number,
+    options?: { download: string | boolean }
+  ): Promise<
+    | {
+        data: { signedUrl: string }
+        error: null
+      }
+    | {
+        data: null
+        error: StorageError
+      }
+  > {
     try {
       const _path = this._getFinalPath(path)
       let data = await post(
@@ -228,27 +282,42 @@ export class StorageFileApi {
         { expiresIn },
         { headers: this.headers }
       )
-      const signedURL = `${this.url}${data.signedURL}`
-      data = { signedURL }
-      return { data, error: null, signedURL }
+      const downloadQueryParam = options?.download
+        ? `&download=${options.download === true ? '' : options.download}`
+        : ''
+      const signedUrl = encodeURI(`${this.url}${data.signedURL}${downloadQueryParam}`)
+      data = { signedUrl }
+      return { data, error: null }
     } catch (error) {
-      return { data: null, error, signedURL: null }
+      if (isStorageError(error)) {
+        return { data: null, error }
+      }
+
+      throw error
     }
   }
 
   /**
-   * Create signed URLs to download files without requiring permissions. These URLs can be valid for a set number of seconds.
+   * Creates multiple signed URLs. Use a signed URL to share a file for a fixed amount of time.
    *
    * @param paths The file paths to be downloaded, including the current file names. For example `['folder/image.png', 'folder2/image2.png']`.
    * @param expiresIn The number of seconds until the signed URLs expire. For example, `60` for URLs which are valid for one minute.
+   * @param options.download triggers the file as a download if set to true. Set this parameter as the name of the file if you want to trigger the download with a different filename.
    */
   async createSignedUrls(
     paths: string[],
-    expiresIn: number
-  ): Promise<{
-    data: { error: string | null; path: string | null; signedURL: string }[] | null
-    error: Error | null
-  }> {
+    expiresIn: number,
+    options?: { download: string | boolean }
+  ): Promise<
+    | {
+        data: { error: string | null; path: string | null; signedUrl: string }[]
+        error: null
+      }
+    | {
+        data: null
+        error: StorageError
+      }
+  > {
     try {
       const data = await post(
         this.fetch,
@@ -256,24 +325,45 @@ export class StorageFileApi {
         { expiresIn, paths },
         { headers: this.headers }
       )
+
+      const downloadQueryParam = options?.download
+        ? `&download=${options.download === true ? '' : options.download}`
+        : ''
       return {
         data: data.map((datum: { signedURL: string }) => ({
           ...datum,
-          signedURL: datum.signedURL ? `${this.url}${datum.signedURL}` : null,
+          signedUrl: datum.signedURL
+            ? encodeURI(`${this.url}${datum.signedURL}${downloadQueryParam}`)
+            : null,
         })),
         error: null,
       }
     } catch (error) {
-      return { data: null, error }
+      if (isStorageError(error)) {
+        return { data: null, error }
+      }
+
+      throw error
     }
   }
 
   /**
    * Downloads a file.
    *
-   * @param path The file path to be downloaded, including the path and file name. For example `folder/image.png`.
+   * @param path The full path and file name of the file to be downloaded. For example `folder/image.png`.
    */
-  async download(path: string): Promise<{ data: Blob | null; error: Error | null }> {
+  async download(
+    path: string
+  ): Promise<
+    | {
+        data: Blob
+        error: null
+      }
+    | {
+        data: null
+        error: StorageError
+      }
+  > {
     try {
       const _path = this._getFinalPath(path)
       const res = await get(this.fetch, `${this.url}/object/${_path}`, {
@@ -283,38 +373,52 @@ export class StorageFileApi {
       const data = await res.blob()
       return { data, error: null }
     } catch (error) {
-      return { data: null, error }
+      if (isStorageError(error)) {
+        return { data: null, error }
+      }
+
+      throw error
     }
   }
 
   /**
-   * Retrieve URLs for assets in public buckets
+   * Retrieves the URL for an asset in a public bucket.
+   * This function does not verify if the bucket is public. If a public URL is created for a bucket which is not public, you will not be able to download the asset.
    *
-   * @param path The file path to be downloaded, including the path and file name. For example `folder/image.png`.
+   * @param path The path and name of the file to generate the public URL for. For example `folder/image.png`.
+   * @param options.download triggers the file as a download if set to true. Set this parameter as the name of the file if you want to trigger the download with a different filename.
    */
   getPublicUrl(
-    path: string
-  ): {
-    data: { publicURL: string } | null
-    error: Error | null
-    publicURL: string | null
-  } {
-    try {
-      const _path = this._getFinalPath(path)
-      const publicURL = `${this.url}/object/public/${_path}`
-      const data = { publicURL }
-      return { data, error: null, publicURL }
-    } catch (error) {
-      return { data: null, error, publicURL: null }
+    path: string,
+    options?: { download: string | boolean }
+  ): { data: { publicUrl: string } } {
+    const _path = this._getFinalPath(path)
+    const downloadQueryParam = options?.download
+      ? `?download=${options.download === true ? '' : options.download}`
+      : ''
+
+    return {
+      data: { publicUrl: encodeURI(`${this.url}/object/public/${_path}${downloadQueryParam}`) },
     }
   }
 
   /**
    * Deletes files within the same bucket
    *
-   * @param paths An array of files to be deleted, including the path and file name. For example [`folder/image.png`].
+   * @param paths An array of files to delete, including the path and file name. For example [`'folder/image.png'`].
    */
-  async remove(paths: string[]): Promise<{ data: FileObject[] | null; error: Error | null }> {
+  async remove(
+    paths: string[]
+  ): Promise<
+    | {
+        data: FileObject[]
+        error: null
+      }
+    | {
+        data: null
+        error: StorageError
+      }
+  > {
     try {
       const data = await remove(
         this.fetch,
@@ -324,7 +428,11 @@ export class StorageFileApi {
       )
       return { data, error: null }
     } catch (error) {
-      return { data: null, error }
+      if (isStorageError(error)) {
+        return { data: null, error }
+      }
+
+      throw error
     }
   }
 
@@ -332,12 +440,27 @@ export class StorageFileApi {
    * Get file metadata
    * @param id the file id to retrieve metadata
    */
-  // async getMetadata(id: string): Promise<{ data: Metadata | null; error: Error | null }> {
+  // async getMetadata(
+  //   id: string
+  // ): Promise<
+  //   | {
+  //       data: Metadata
+  //       error: null
+  //     }
+  //   | {
+  //       data: null
+  //       error: StorageError
+  //     }
+  // > {
   //   try {
-  //     const data = await get(`${this.url}/metadata/${id}`, { headers: this.headers })
+  //     const data = await get(this.fetch, `${this.url}/metadata/${id}`, { headers: this.headers })
   //     return { data, error: null }
   //   } catch (error) {
-  //     return { data: null, error }
+  //     if (isStorageError(error)) {
+  //       return { data: null, error }
+  //     }
+
+  //     throw error
   //   }
   // }
 
@@ -349,26 +472,51 @@ export class StorageFileApi {
   // async updateMetadata(
   //   id: string,
   //   meta: Metadata
-  // ): Promise<{ data: Metadata | null; error: Error | null }> {
+  // ): Promise<
+  //   | {
+  //       data: Metadata
+  //       error: null
+  //     }
+  //   | {
+  //       data: null
+  //       error: StorageError
+  //     }
+  // > {
   //   try {
-  //     const data = await post(`${this.url}/metadata/${id}`, { ...meta }, { headers: this.headers })
+  //     const data = await post(
+  //       this.fetch,
+  //       `${this.url}/metadata/${id}`,
+  //       { ...meta },
+  //       { headers: this.headers }
+  //     )
   //     return { data, error: null }
   //   } catch (error) {
-  //     return { data: null, error }
+  //     if (isStorageError(error)) {
+  //       return { data: null, error }
+  //     }
+
+  //     throw error
   //   }
   // }
 
   /**
    * Lists all the files within a bucket.
    * @param path The folder path.
-   * @param options Search options, including `limit`, `offset`, `sortBy`, and `search`.
-   * @param parameters Fetch parameters, currently only supports `signal`, which is an AbortController's signal
    */
   async list(
     path?: string,
     options?: SearchOptions,
     parameters?: FetchParameters
-  ): Promise<{ data: FileObject[] | null; error: Error | null }> {
+  ): Promise<
+    | {
+        data: FileObject[]
+        error: null
+      }
+    | {
+        data: null
+        error: StorageError
+      }
+  > {
     try {
       const body = { ...DEFAULT_SEARCH_OPTIONS, ...options, prefix: path || '' }
       const data = await post(
@@ -380,15 +528,19 @@ export class StorageFileApi {
       )
       return { data, error: null }
     } catch (error) {
-      return { data: null, error }
+      if (isStorageError(error)) {
+        return { data: null, error }
+      }
+
+      throw error
     }
   }
 
-  _getFinalPath(path: string) {
+  private _getFinalPath(path: string) {
     return `${this.bucketId}/${path}`
   }
 
-  _removeEmptyFolders(path: string) {
+  private _removeEmptyFolders(path: string) {
     return path.replace(/^\/|\/$/g, '').replace(/\/+/g, '/')
   }
 }

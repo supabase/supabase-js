@@ -103,3 +103,9 @@ dist
 
 # TernJS port file
 .tern-port
+
+# generated docs
+docs/v2
+
+# IDE
+.idea/

@@ -1,4 +1,5 @@
-import { StorageBucketApi, StorageFileApi } from './lib'
+import StorageFileApi from './packages/StorageFileApi'
+import StorageBucketApi from './packages/StorageBucketApi'
 import { Fetch } from './lib/fetch'
 
 export class StorageClient extends StorageBucketApi {
