@@ -103,3 +103,13 @@ dist
 
 # TernJS port file
 .tern-port
+
+# Generated docs
+docs/v2
+
+# Test reports
+allure-results
+allure-report
+
+# IDE specific
+.vscode
