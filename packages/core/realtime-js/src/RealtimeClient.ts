@@ -11,9 +11,9 @@ import {
 } from './lib/constants'
 import Timer from './lib/timer'
 import Serializer from './lib/serializer'
-import RealtimeChannel from './RealtimeChannel'
+import RealtimeChannel, { RealtimeChannelOptions } from './RealtimeChannel'
 
-export type Options = {
+export type RealtimeClientOptions = {
   transport?: WebSocket
   timeout?: number
   heartbeatIntervalMs?: number
@@ -24,7 +24,8 @@ export type Options = {
   headers?: { [key: string]: string }
   params?: { [key: string]: any }
 }
-type Message = {
+
+export type RealtimeMessage = {
   topic: string
   event: string
   payload: any
@@ -32,10 +33,7 @@ type Message = {
   join_ref?: string
 }
 
-type ChannelParams = {
-  selfBroadcast?: boolean
-  [key: string]: any
-}
+export type RealtimeRemoveChannelResponse = 'ok' | 'timed out' | 'error'
 
 const noop = () => {}
 
@@ -87,7 +85,7 @@ export default class RealtimeClient {
    * @param options.decode The function to decode incoming messages. Defaults to Serializer's decode.
    * @param options.reconnectAfterMs he optional function that returns the millsec reconnect interval. Defaults to stepped backoff off.
    */
-  constructor(endPoint: string, options?: Options) {
+  constructor(endPoint: string, options?: RealtimeClientOptions) {
     this.endPoint = `${endPoint}/${TRANSPORTS.websocket}`
 
     if (options?.params) this.params = options.params
@@ -129,13 +127,13 @@ export default class RealtimeClient {
       return
     }
 
-    this.conn = new this.transport(this.endPointURL(), [], null, this.headers)
+    this.conn = new this.transport(this._endPointURL(), [], null, this.headers)
 
     if (this.conn) {
       this.conn.binaryType = 'arraybuffer'
       this.conn.onopen = () => this._onConnOpen()
       this.conn.onerror = (error) => this._onConnError(error as ErrorEvent)
-      this.conn.onmessage = (event) => this.onConnMessage(event)
+      this.conn.onmessage = (event) => this._onConnMessage(event)
       this.conn.onclose = (event) => this._onConnClose(event)
     }
   }
@@ -167,7 +165,7 @@ export default class RealtimeClient {
 
   removeChannel(
     channel: RealtimeChannel
-  ): Promise<'ok' | 'timed out' | 'error'> {
+  ): Promise<RealtimeRemoveChannelResponse> {
     return channel.unsubscribe().then((status) => {
       if (this.channels.length === 0) {
         this.disconnect()
@@ -176,7 +174,7 @@ export default class RealtimeClient {
     })
   }
 
-  removeAllChannels(): Promise<('ok' | 'timed out' | 'error')[]> {
+  removeAllChannels(): Promise<RealtimeRemoveChannelResponse[]> {
     return Promise.all(
       this.channels.map((channel) => channel.unsubscribe())
     ).then((values) => {
@@ -192,54 +190,6 @@ export default class RealtimeClient {
    */
   log(kind: string, msg: string, data?: any) {
     this.logger(kind, msg, data)
-  }
-
-  /**
-   * Registers a callback for connection state change event.
-   *
-   * @param callback A function to be called when the event occurs.
-   *
-   * @example
-   *    socket.onOpen(() => console.log("Socket opened."))
-   */
-  onOpen(callback: Function) {
-    this.stateChangeCallbacks.open.push(callback)
-  }
-
-  /**
-   * Registers a callback for connection state change events.
-   *
-   * @param callback A function to be called when the event occurs.
-   *
-   * @example
-   *    socket.onOpen(() => console.log("Socket closed."))
-   */
-  onClose(callback: Function) {
-    this.stateChangeCallbacks.close.push(callback)
-  }
-
-  /**
-   * Registers a callback for connection state change events.
-   *
-   * @param callback A function to be called when the event occurs.
-   *
-   * @example
-   *    socket.onOpen((error) => console.log("An error occurred"))
-   */
-  onError(callback: Function) {
-    this.stateChangeCallbacks.error.push(callback)
-  }
-
-  /**
-   * Calls a function any time a message is received.
-   *
-   * @param callback A function to be called when the event occurs.
-   *
-   * @example
-   *    socket.onMessage((message) => console.log(message))
-   */
-  onMessage(callback: Function) {
-    this.stateChangeCallbacks.message.push(callback)
   }
 
   /**
@@ -265,18 +215,10 @@ export default class RealtimeClient {
     return this.connectionState() === CONNECTION_STATE.Open
   }
 
-  /**
-   * Removes a subscription from the socket.
-   *
-   * @param channel An open subscription.
-   */
-  remove(channel: RealtimeChannel) {
-    this.channels = this.channels.filter(
-      (c: RealtimeChannel) => c.joinRef() !== channel.joinRef()
-    )
-  }
-
-  channel(topic: string, params: ChannelParams = {}): RealtimeChannel {
+  channel(
+    topic: string,
+    params: RealtimeChannelOptions = { config: {} }
+  ): RealtimeChannel {
     if (!this.isConnected()) {
       this.connect()
     }
@@ -291,7 +233,7 @@ export default class RealtimeClient {
    *
    * If the socket is not connected, the message gets enqueued within a local buffer, and sent out when a connection is next established.
    */
-  push(data: Message): 'rate limited' | void {
+  push(data: RealtimeMessage): 'rate limited' | void {
     const { topic, event, payload, ref } = data
     let callback = () => {
       this.encode(data, (result: any) => {
@@ -301,7 +243,7 @@ export default class RealtimeClient {
     this.log('push', `${topic} ${event} (${ref})`, payload)
     if (this.isConnected()) {
       if (['broadcast', 'presence', 'postgres_changes'].includes(event)) {
-        const isThrottled = this.throttle(callback)()
+        const isThrottled = this._throttle(callback)()
         if (isThrottled) {
           return 'rate limited'
         }
@@ -313,8 +255,73 @@ export default class RealtimeClient {
     }
   }
 
-  onConnMessage(rawMessage: { data: any }) {
-    this.decode(rawMessage.data, (msg: Message) => {
+  /**
+   * Sets the JWT access token used for channel subscription authorization and Realtime RLS.
+   *
+   * @param token A JWT string.
+   */
+  setAuth(token: string | null): void {
+    this.accessToken = token
+
+    this.channels.forEach((channel) => {
+      token && channel.updateJoinPayload({ access_token: token })
+
+      if (channel.joinedOnce && channel._isJoined()) {
+        channel._push(CHANNEL_EVENTS.access_token, { access_token: token })
+      }
+    })
+  }
+
+  /**
+   * Return the next message ref, accounting for overflows
+   */
+  _makeRef(): string {
+    let newRef = this.ref + 1
+    if (newRef === this.ref) {
+      this.ref = 0
+    } else {
+      this.ref = newRef
+    }
+
+    return this.ref.toString()
+  }
+
+  /**
+   * Unsubscribe from channels with the specified topic.
+   */
+  _leaveOpenTopic(topic: string): void {
+    let dupChannel = this.channels.find(
+      (c) => c.topic === topic && (c._isJoined() || c._isJoining())
+    )
+    if (dupChannel) {
+      this.log('transport', `leaving duplicate topic "${topic}"`)
+      dupChannel.unsubscribe()
+    }
+  }
+
+  /**
+   * Removes a subscription from the socket.
+   *
+   * @param channel An open subscription.
+   */
+  _remove(channel: RealtimeChannel) {
+    this.channels = this.channels.filter(
+      (c: RealtimeChannel) => c._joinRef() !== channel._joinRef()
+    )
+  }
+
+  /**
+   * Returns the URL of the websocket.
+   */
+  private _endPointURL(): string {
+    return this._appendParams(
+      this.endPoint,
+      Object.assign({}, this.params, { vsn: VSN })
+    )
+  }
+
+  private _onConnMessage(rawMessage: { data: any }) {
+    this.decode(rawMessage.data, (msg: RealtimeMessage) => {
       let { topic, event, payload, ref } = msg
 
       if (
@@ -332,70 +339,16 @@ export default class RealtimeClient {
         payload
       )
       this.channels
-        .filter((channel: RealtimeChannel) => channel.isMember(topic))
+        .filter((channel: RealtimeChannel) => channel._isMember(topic))
         .forEach((channel: RealtimeChannel) =>
-          channel.trigger(event, payload, ref)
+          channel._trigger(event, payload, ref)
         )
       this.stateChangeCallbacks.message.forEach((callback) => callback(msg))
     })
   }
 
-  /**
-   * Returns the URL of the websocket.
-   */
-  endPointURL(): string {
-    return this._appendParams(
-      this.endPoint,
-      Object.assign({}, this.params, { vsn: VSN })
-    )
-  }
-
-  /**
-   * Return the next message ref, accounting for overflows
-   */
-  makeRef(): string {
-    let newRef = this.ref + 1
-    if (newRef === this.ref) {
-      this.ref = 0
-    } else {
-      this.ref = newRef
-    }
-
-    return this.ref.toString()
-  }
-
-  /**
-   * Sets the JWT access token used for channel subscription authorization and Realtime RLS.
-   *
-   * @param token A JWT string.
-   */
-  setAuth(token: string | null) {
-    this.accessToken = token
-
-    this.channels.forEach((channel) => {
-      token && channel.updateJoinPayload({ access_token: token })
-
-      if (channel.joinedOnce && channel.isJoined()) {
-        channel.push(CHANNEL_EVENTS.access_token, { access_token: token })
-      }
-    })
-  }
-
-  /**
-   * Unsubscribe from channels with the specified topic.
-   */
-  leaveOpenTopic(topic: string): void {
-    let dupChannel = this.channels.find(
-      (c) => c.topic === topic && (c.isJoined() || c.isJoining())
-    )
-    if (dupChannel) {
-      this.log('transport', `leaving duplicate topic "${topic}"`)
-      dupChannel.unsubscribe()
-    }
-  }
-
   private _onConnOpen() {
-    this.log('transport', `connected to ${this.endPointURL()}`)
+    this.log('transport', `connected to ${this._endPointURL()}`)
     this._flushSendBuffer()
     this.reconnectTimer.reset()
     this.heartbeatTimer && clearInterval(this.heartbeatTimer)
@@ -422,7 +375,7 @@ export default class RealtimeClient {
 
   private _triggerChanError() {
     this.channels.forEach((channel: RealtimeChannel) =>
-      channel.trigger(CHANNEL_EVENTS.error)
+      channel._trigger(CHANNEL_EVENTS.error)
     )
   }
 
@@ -459,7 +412,7 @@ export default class RealtimeClient {
       this.conn?.close(WS_CLOSE_NORMAL, 'hearbeat timeout')
       return
     }
-    this.pendingHeartbeatRef = this.makeRef()
+    this.pendingHeartbeatRef = this._makeRef()
     this.push({
       topic: 'phoenix',
       event: 'heartbeat',
@@ -469,7 +422,7 @@ export default class RealtimeClient {
     this.setAuth(this.accessToken)
   }
 
-  private throttle(
+  private _throttle(
     callback: Function,
     eventsPerSecondLimit: number = this.eventsPerSecondLimitMs
   ): () => boolean {

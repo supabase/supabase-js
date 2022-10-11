@@ -95,7 +95,7 @@ describe('endpointURL', () => {
   it('returns endpoint for given full url', () => {
     socket = new RealtimeClient('wss://example.org/chat')
     assert.equal(
-      socket.endPointURL(),
+      socket._endPointURL(),
       'wss://example.org/chat/websocket?vsn=1.0.0'
     )
   })
@@ -103,7 +103,7 @@ describe('endpointURL', () => {
   it('returns endpoint with parameters', () => {
     socket = new RealtimeClient('ws://example.org/chat', { params: { foo: 'bar' } })
     assert.equal(
-      socket.endPointURL(),
+      socket._endPointURL(),
       'ws://example.org/chat/websocket?foo=bar&vsn=1.0.0'
     )
   })
@@ -113,7 +113,7 @@ describe('endpointURL', () => {
       params: { apikey: '123456789' },
     })
     assert.equal(
-      socket.endPointURL(),
+      socket._endPointURL(),
       'ws://example.org/chat/websocket?apikey=123456789&vsn=1.0.0'
     )
   })
@@ -146,38 +146,7 @@ describe('connect with WebSocket', () => {
 
     let conn = socket.conn
     assert.ok(conn instanceof W3CWebSocket)
-    assert.equal(conn.url, socket.endPointURL())
-  })
-
-  it('sets callbacks for connection', () => {
-    let opens = 0
-    socket.onOpen(() => ++opens)
-    let closes = 0
-    socket.onClose(() => ++closes)
-    let lastError
-    socket.onError((error) => (lastError = error))
-    let lastMessage
-    socket.onMessage((message) => (lastMessage = message.payload))
-
-    socket.connect()
-
-    socket.conn.onopen()
-    assert.equal(opens, 1)
-
-    socket.conn.onclose()
-    assert.equal(closes, 1)
-
-    socket.conn.onerror('error')
-    assert.equal(lastError, 'error')
-
-    const data = {
-      topic: 'topic',
-      event: 'event',
-      payload: 'payload',
-      status: 'ok',
-    }
-    socket.conn.onmessage({ data: JSON.stringify(data) })
-    assert.equal(lastMessage, 'payload')
+    assert.equal(conn.url, socket._endPointURL())
   })
 
   it('is idempotent', () => {
@@ -410,10 +379,10 @@ describe('remove', () => {
     const channel1 = socket.channel('topic-1')
     const channel2 = socket.channel('topic-2')
 
-    sinon.stub(channel1, 'joinRef').returns(1)
-    sinon.stub(channel2, 'joinRef').returns(2)
+    sinon.stub(channel1, '_joinRef').returns(1)
+    sinon.stub(channel2, '_joinRef').returns(2)
 
-    socket.remove(channel1)
+    socket._remove(channel1)
 
     assert.equal(socket.channels.length, 1)
 
@@ -491,16 +460,16 @@ describe('makeRef', () => {
 
   it('returns next message ref', () => {
     assert.strictEqual(socket.ref, 0)
-    assert.strictEqual(socket.makeRef(), '1')
+    assert.strictEqual(socket._makeRef(), '1')
     assert.strictEqual(socket.ref, 1)
-    assert.strictEqual(socket.makeRef(), '2')
+    assert.strictEqual(socket._makeRef(), '2')
     assert.strictEqual(socket.ref, 2)
   })
 
   it('restarts for overflow', () => {
     socket.ref = Number.MAX_SAFE_INTEGER + 1
 
-    assert.strictEqual(socket.makeRef(), '0')
+    assert.strictEqual(socket._makeRef(), '0')
     assert.strictEqual(socket.ref, 0)
   })
 })
@@ -526,9 +495,9 @@ describe('setAuth', () => {
     channel3.joinedOnce = true
     channel3.state = 'joined'
 
-    const pushStub1 = sinon.stub(channel1, 'push')
-    const pushStub2 = sinon.stub(channel2, 'push')
-    const pushStub3 = sinon.stub(channel3, 'push')
+    const pushStub1 = sinon.stub(channel1, '_push')
+    const pushStub2 = sinon.stub(channel2, '_push')
+    const pushStub3 = sinon.stub(channel3, '_push')
 
     const payloadStub1 = sinon.stub(channel1, 'updateJoinPayload')
     const payloadStub2 = sinon.stub(channel2, 'updateJoinPayload')
@@ -696,16 +665,6 @@ describe('_onConnOpen', () => {
 
     assert.ok(spy.calledOnce)
   })
-
-  it('triggers onOpen callback', () => {
-    const spy = sinon.spy()
-
-    socket.onOpen(spy)
-
-    socket._onConnOpen()
-
-    assert.ok(spy.calledOnce)
-  })
 })
 
 describe('_onConnClose', () => {
@@ -741,19 +700,9 @@ describe('_onConnClose', () => {
     assert.ok(spy.calledOnce)
   })
 
-  it('triggers onClose callback', () => {
-    const spy = sinon.spy()
-
-    socket.onClose(spy)
-
-    socket._onConnClose('event')
-
-    assert.ok(spy.calledWith('event'))
-  })
-
   it('triggers channel error', () => {
     const channel = socket.channel('topic')
-    const spy = sinon.spy(channel, 'trigger')
+    const spy = sinon.spy(channel, '_trigger')
 
     socket._onConnClose()
 
@@ -786,19 +735,9 @@ describe('_onConnError', () => {
     socket.disconnect()
   })
 
-  it('triggers onClose callback', () => {
-    const spy = sinon.spy()
-
-    socket.onError(spy)
-
-    socket._onConnError('error')
-
-    assert.ok(spy.calledWith('error'))
-  })
-
   it('triggers channel error', () => {
     const channel = socket.channel('topic')
-    const spy = sinon.spy(channel, 'trigger')
+    const spy = sinon.spy(channel, '_trigger')
 
     socket._onConnError('error')
 
@@ -839,36 +778,16 @@ describe('onConnMessage', () => {
     const targetChannel = socket.channel('topic')
     const otherChannel = socket.channel('off-topic')
 
-    const targetSpy = sinon.spy(targetChannel, 'trigger')
-    const otherSpy = sinon.spy(otherChannel, 'trigger')
+    const targetSpy = sinon.spy(targetChannel, '_trigger')
+    const otherSpy = sinon.spy(otherChannel, '_trigger')
 
     socket.pendingHeartbeatRef = '3'
-    socket.onConnMessage(data)
+    socket._onConnMessage(data)
 
     // assert.ok(targetSpy.calledWith('INSERT', {type: 'INSERT'}, 'ref'))
     assert.strictEqual(targetSpy.callCount, 1)
     assert.strictEqual(otherSpy.callCount, 0)
     assert.strictEqual(socket.pendingHeartbeatRef, null)
-  })
-
-  it('triggers onMessage callback', () => {
-    const message =
-      '{"topic":"topic","event":"event","payload":"payload","ref":"ref"}'
-    const data = { data: message }
-    const spy = sinon.spy()
-
-    socket.onMessage(spy)
-
-    socket.onConnMessage(data)
-
-    assert.ok(
-      spy.calledWith({
-        topic: 'topic',
-        event: 'event',
-        payload: 'payload',
-        ref: 'ref',
-      })
-    )
   })
 })
 
