@@ -1,6 +1,7 @@
 import { PostgrestClient } from '../src/index'
+import { Database } from './types'
 
-const postgrest = new PostgrestClient('http://localhost:3000')
+const postgrest = new PostgrestClient<Database>('http://localhost:3000')
 
 test('embedded select', async () => {
   const res = await postgrest.from('users').select('messages(*)')
@@ -10,7 +11,10 @@ test('embedded select', async () => {
 describe('embedded filters', () => {
   // TODO: Test more filters
   test('embedded eq', async () => {
-    const res = await postgrest.from('users').select('messages(*)').eq('messages.channel_id', 1)
+    const res = await postgrest
+      .from('users')
+      .select('messages(*)')
+      .eq('messages.channel_id' as any, 1)
     expect(res).toMatchSnapshot()
   })
   test('embedded or', async () => {
@@ -36,7 +40,7 @@ describe('embedded transforms', () => {
     const res = await postgrest
       .from('users')
       .select('messages(*)')
-      .order('channel_id', { foreignTable: 'messages', ascending: false })
+      .order('channel_id' as any, { foreignTable: 'messages', ascending: false })
     expect(res).toMatchSnapshot()
   })
 
@@ -44,7 +48,7 @@ describe('embedded transforms', () => {
     const res = await postgrest
       .from('users')
       .select('messages(*)')
-      .order('channel_id', { foreignTable: 'messages', ascending: false })
+      .order('channel_id' as any, { foreignTable: 'messages', ascending: false })
       .order('username', { foreignTable: 'messages', ascending: false })
     expect(res).toMatchSnapshot()
   })

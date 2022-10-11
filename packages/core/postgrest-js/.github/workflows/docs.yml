@@ -15,12 +15,12 @@ jobs:
 
       - uses: actions/setup-node@v2
         with:
-          node-version: '14'
+          node-version: '16'
 
       - run: |
           npm clean-install
-          npm run v1:docs
-          npm run v1:docs:json
+          npm run docs
+          npm run docs:json
 
       - name: Publish
         uses: peaceiris/actions-gh-pages@v3
