@@ -58,6 +58,26 @@ export type SupabaseClientOptions = {
    * Options passed to the gotrue-js instance
    */
   cookieOptions?: SupabaseAuthClientOptions['cookieOptions']
+
+  /**
+   * Override the restUrl
+   */
+  restUrl?: string
+
+  /**
+   * Override the realtimeUrl (must be ws:// scheme)
+   */
+  realtimeUrl?: string
+
+  /**
+   * Override the authUrl
+   */
+  authUrl?: string
+
+  /**
+   * Override the storageUrl
+   */
+  storageUrl?: string
 }
 
 export type SupabaseRealtimePayload<T> = {
