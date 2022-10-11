@@ -1,7 +1,7 @@
 import assert from 'assert'
 import sinon from 'sinon'
 
-import { RealtimeSubscription, RealtimeClient } from '../dist/main'
+import { RealtimeChannel, RealtimeClient } from '../dist/main'
 
 let channel, socket
 
@@ -10,20 +10,20 @@ const defaultTimeout = 10000
 
 describe('constructor', () => {
   beforeEach(() => {
-    socket = new RealtimeClient('/socket', { timeout: 1234 })
+    socket = new RealtimeClient('ws://example.com/socket', { timeout: 1234 })
   })
 
-  afterEach(async () => {
-    await socket.disconnect()
+  afterEach(() => {
+    socket.disconnect()
     channel.unsubscribe()
   })
 
   it('sets defaults', () => {
-    channel = new RealtimeSubscription('topic', { one: 'two' }, socket)
+    channel = new RealtimeChannel('topic', { one: 'two' }, socket)
 
     assert.equal(channel.state, 'closed')
     assert.equal(channel.topic, 'topic')
-    assert.deepEqual(channel.params, { one: 'two' })
+    assert.deepEqual(channel.params, { config: { broadcast: { ack: false, self: false }, presence: { key: '' } }, one: 'two' })
     assert.deepEqual(channel.socket, socket)
     assert.equal(channel.timeout, 1234)
     assert.equal(channel.joinedOnce, false)
@@ -32,25 +32,25 @@ describe('constructor', () => {
   })
 
   it('sets up joinPush object', () => {
-    channel = new RealtimeSubscription('topic', { one: 'two' }, socket)
+    channel = new RealtimeChannel('topic', { one: 'two' }, socket)
     const joinPush = channel.joinPush
 
     assert.deepEqual(joinPush.channel, channel)
-    assert.deepEqual(joinPush.payload, { one: 'two' })
+    assert.deepEqual(joinPush.payload, { config: { broadcast: { ack: false, self: false }, presence: { key: '' } }, one: 'two' })
     assert.equal(joinPush.event, 'phx_join')
     assert.equal(joinPush.timeout, 1234)
   })
 })
 
-describe('join', () => {
+describe('subscribe', () => {
   beforeEach(() => {
     socket = new RealtimeClient('wss://example.com/socket', { timeout: defaultTimeout })
 
     channel = socket.channel('topic', { one: 'two' })
   })
 
-  afterEach(async () => {
-    await socket.disconnect()
+  afterEach(() => {
+    socket.disconnect()
     channel.unsubscribe()
   })
 
@@ -74,22 +74,101 @@ describe('join', () => {
     assert.throws(() => channel.subscribe(), /tried to subscribe multiple times/)
   })
 
-  it('triggers socket push with channel params', () => {
-    sinon.stub(socket, 'makeRef').callsFake(() => defaultRef)
-    const spy = sinon.spy(socket, 'push')
+  it ('updates join push payload access token', () => {
+    socket.accessToken = 'token123'
 
     channel.subscribe()
+
+    assert.deepEqual(channel.joinPush.payload, {
+      access_token: 'token123',
+      config: {
+        broadcast: {
+          ack: false,
+          self: false
+        },
+        presence: {
+          key: ''
+        },
+        postgres_changes: []
+      },
+      one: 'two'
+    })
+  })
+
+  it('triggers socket push with default channel params', () => {
+    sinon.stub(socket, '_makeRef').callsFake(() => defaultRef)
+    const spy = sinon.spy(socket, 'push')
+    const cbSpy = sinon.spy()
+
+    channel.subscribe(cbSpy)
+
+    const cb = channel.bindings['chan_reply_1'][0].callback
+    cb({ status: 'ok', response: { postgres_changes: undefined }})
 
     assert.ok(spy.calledOnce)
     assert.ok(
       spy.calledWith({
-        topic: 'topic',
+        topic: 'realtime:topic',
         event: 'phx_join',
-        payload: { one: 'two' },
+        payload: { config: { broadcast: { ack: false, self: false }, presence: { key: '' }, postgres_changes: [] }, one: 'two' },
         ref: defaultRef,
         join_ref: defaultRef
       })
     )
+    assert.ok(cbSpy.calledWith('SUBSCRIBED'))
+  })
+
+  it('triggers socket push with postgres_changes channel params with correct server resp', () => {
+    sinon.stub(socket, '_makeRef').callsFake(() => defaultRef)
+    const spy = sinon.spy(socket, 'push')
+    const cbSpy = sinon.spy()
+    const func = () => {}
+
+    channel.bindings.postgres_changes = [
+      { type: 'postgres_changes', filter: { event: '*', schema: '*' }, callback: func},
+      { type: 'postgres_changes', filter: { event: 'INSERT', schema: 'public', table: 'test' }, callback: func},
+      { type: 'postgres_changes', filter: { event: 'UPDATE', schema: 'public', table: 'test', filter: 'id=eq.1' }, callback: func}
+    ]
+    channel.subscribe(cbSpy)
+
+    const cb = channel.bindings['chan_reply_1'][0].callback
+    cb({ status: 'ok', response: { postgres_changes: [{ id: 'abc', event: '*', schema: '*' }, { id: 'def', event: 'INSERT', schema: 'public', table: 'test' }, { id: 'ghi', event: 'UPDATE', schema: 'public', table: 'test', filter: 'id=eq.1' }] }})
+
+    assert.ok(spy.calledOnce)
+    assert.ok(
+      spy.calledWith({
+        topic: 'realtime:topic',
+        event: 'phx_join',
+        payload: { config: { broadcast: { ack: false, self: false }, presence: { key: '' }, postgres_changes: [{ event: '*', schema: '*' }, { event: 'INSERT', schema: 'public', table: 'test' }, { event: 'UPDATE', schema: 'public', table: 'test', filter: 'id=eq.1' }] }, one: 'two' },
+        ref: defaultRef,
+        join_ref: defaultRef
+      })
+    )
+    assert.ok(cbSpy.calledWith('SUBSCRIBED'))
+    assert.deepEqual(channel.bindings.postgres_changes, [
+      { id: 'abc', type: 'postgres_changes', filter: { event: '*', schema: '*' }, callback: func},
+      { id: 'def', type: 'postgres_changes', filter: { event: 'INSERT', schema: 'public', table: 'test' }, callback: func},
+      { id: 'ghi', type: 'postgres_changes', filter: { event: 'UPDATE', schema: 'public', table: 'test', filter: 'id=eq.1' }, callback: func}
+    ])
+  })
+
+  it('unsubscribes to channel with incorrect server postgres_changes resp', () => {
+    const unsubscribeSpy = sinon.spy(channel, 'unsubscribe')
+    const cbSpy = sinon.spy()
+    const func = () => {}
+
+    channel.bindings.postgres_changes = [
+      { type: 'postgres_changes', filter: { event: '*', schema: '*' }, callback: func},
+      { type: 'postgres_changes', filter: { event: 'INSERT', schema: 'public', table: 'test' }, callback: func},
+      { type: 'postgres_changes', filter: { event: 'UPDATE', schema: 'public', table: 'test', filter: 'id=eq.1' }, callback: func}
+    ]
+    channel.subscribe(cbSpy)
+
+    const cb = channel.bindings['chan_reply_1'][0].callback
+    cb({ status: 'ok', response: { postgres_changes: [{ id: 'abc', event: '*', schema: '*' }] }})
+
+    assert.ok(unsubscribeSpy.calledOnce)
+    assert.ok(cbSpy.calledWith('CHANNEL_ERROR', sinon.match({ message: 'mismatch between server and client bindings for postgres changes' })))
   })
 
   it('can set timeout on joinPush', () => {
@@ -98,28 +177,17 @@ describe('join', () => {
 
     assert.equal(joinPush.timeout, defaultTimeout)
 
-    channel.subscribe(newTimeout)
+    channel.subscribe(() => {}, newTimeout)
 
     assert.equal(joinPush.timeout, newTimeout)
   })
 
-  describe('updateJoinPayload', () => {
-    beforeEach(() => {
-      socket = new RealtimeClient('/socket', { timeout: 1234 })
-    })
-  
-    afterEach(async () => {
-      await socket.disconnect()
-      channel.unsubscribe()
-    })
+  it('updates channel joinPush payload', () => {
+    const payloadStub = sinon.stub(channel.joinPush, 'updatePayload')
 
-    it('updates channel joinPush payload', () => {
-      const payloadStub = sinon.stub(channel.joinPush, 'updatePayload')
+    channel.updateJoinPayload({ access_token: 'token123' })
 
-      channel.updateJoinPayload({ user_token: 'token123' })
-
-      assert.ok(payloadStub.calledWith({ user_token: 'token123' }))
-    })
+    assert.ok(payloadStub.calledWith({ access_token: 'token123' }))
   })
 
   describe('timeout behavior', () => {
@@ -182,15 +250,15 @@ describe('joinPush', () => {
       return joinPush.trigger('error', response)
     },
 
-    getBindings(event) {
-      return channel.bindings.filter((bind) => bind.event === event)
+    getBindings(type) {
+      return channel.bindings[type].filter((bind) => bind.type === type)
     },
   }
 
   beforeEach(() => {
     clock = sinon.useFakeTimers()
 
-    socket = new RealtimeClient('/socket', { timeout: defaultTimeout })
+    socket = new RealtimeClient('ws://example.com/socket', { timeout: defaultTimeout })
 
     channel = socket.channel('topic', { one: 'two' })
     joinPush = channel.joinPush
@@ -198,9 +266,9 @@ describe('joinPush', () => {
     channel.subscribe()
   })
 
-  afterEach(async () => {
+  afterEach(() => {
     clock.restore()
-    await socket.disconnect()
+    socket.disconnect()
     channel.unsubscribe()
   })
 
@@ -467,7 +535,7 @@ describe('onError', () => {
   beforeEach(() => {
     clock = sinon.useFakeTimers()
 
-    socket = new RealtimeClient('/socket', { timeout: defaultTimeout })
+    socket = new RealtimeClient('ws://example.com/socket', { timeout: defaultTimeout })
     sinon.stub(socket, 'isConnected').callsFake(() => true)
     sinon.stub(socket, 'push').callsFake(() => true)
 
@@ -478,27 +546,27 @@ describe('onError', () => {
     channel.subscribe()
   })
 
-  afterEach(async () => {
+  afterEach(() => {
     clock.restore()
-    await socket.disconnect()
+    socket.disconnect()
     channel.unsubscribe()
   })
 
   it("sets state to 'errored'", () => {
     assert.notEqual(channel.state, 'errored')
 
-    channel.trigger('phx_error')
+    channel._trigger('phx_error')
 
     assert.equal(channel.state, 'errored')
   })
 
   it('tries to rejoin with backoff', () => {
-    const leaveTopicSpy = sinon.stub(socket, 'leaveOpenTopic')
+    const leaveTopicSpy = sinon.stub(socket, '_leaveOpenTopic')
     const spy = sinon.stub(joinPush, 'send')
 
     assert.equal(spy.callCount, 0)
 
-    channel.trigger('phx_error')
+    channel._trigger('phx_error')
 
     clock.tick(1000)
     assert.equal(spy.callCount, 1)
@@ -520,7 +588,7 @@ describe('onError', () => {
 
     const spy = sinon.stub(joinPush, 'send')
 
-    channel.trigger('phx_error')
+    channel._trigger('phx_error')
 
     clock.tick(1000)
     assert.equal(spy.callCount, 0)
@@ -536,7 +604,7 @@ describe('onError', () => {
 
     const spy = sinon.stub(joinPush, 'send')
 
-    channel.trigger('phx_error')
+    channel._trigger('phx_error')
 
     clock.tick(1000)
     assert.equal(spy.callCount, 0)
@@ -549,11 +617,11 @@ describe('onError', () => {
 
   it('triggers additional callbacks', () => {
     const spy = sinon.spy()
-    channel.onError(spy)
+    channel._onError(spy)
 
     assert.equal(spy.callCount, 0)
 
-    channel.trigger('phx_error')
+    channel._trigger('phx_error')
 
     assert.equal(spy.callCount, 1)
   })
@@ -565,7 +633,7 @@ describe('onClose', () => {
   beforeEach(() => {
     clock = sinon.useFakeTimers()
 
-    socket = new RealtimeClient('/socket', { timeout: defaultTimeout })
+    socket = new RealtimeClient('ws://example.com/socket', { timeout: defaultTimeout })
     sinon.stub(socket, 'isConnected').callsFake(() => true)
     sinon.stub(socket, 'push').callsFake(() => true)
 
@@ -576,16 +644,16 @@ describe('onClose', () => {
     channel.subscribe()
   })
 
-  afterEach(async () => {
+  afterEach(() => {
     clock.restore()
-    await socket.disconnect()
+    socket.disconnect()
     channel.unsubscribe()
   })
 
   it("sets state to 'closed'", () => {
     assert.notEqual(channel.state, 'closed')
 
-    channel.trigger('phx_close')
+    channel._trigger('phx_close')
 
     assert.equal(channel.state, 'closed')
   })
@@ -593,7 +661,7 @@ describe('onClose', () => {
   it('does not rejoin', () => {
     const spy = sinon.stub(joinPush, 'send')
 
-    channel.trigger('phx_close')
+    channel._trigger('phx_close')
 
     clock.tick(1000)
     assert.equal(spy.callCount, 0)
@@ -604,11 +672,11 @@ describe('onClose', () => {
 
   it('triggers additional callbacks', () => {
     const spy = sinon.spy()
-    channel.onClose(spy)
+    channel._onClose(spy)
 
     assert.equal(spy.callCount, 0)
 
-    channel.trigger('phx_close')
+    channel._trigger('phx_close')
 
     assert.equal(spy.callCount, 1)
   })
@@ -617,7 +685,7 @@ describe('onClose', () => {
     assert.equal(socket.channels.length, 1)
     assert.deepEqual(socket.channels[0], channel)
 
-    channel.trigger('phx_close')
+    channel._trigger('phx_close')
 
     assert.equal(socket.channels.length, 0)
   })
@@ -625,19 +693,19 @@ describe('onClose', () => {
 
 describe('onMessage', () => {
   beforeEach(() => {
-    socket = new RealtimeClient('/socket')
+    socket = new RealtimeClient('ws://example.com/socket')
 
     channel = socket.channel('topic', { one: 'two' })
   })
 
-  afterEach(async () => {
-    await socket.disconnect()
+  afterEach(() => {
+    socket.disconnect()
     channel.unsubscribe()
   })
 
   it('returns payload by default', () => {
-    sinon.stub(socket, 'makeRef').callsFake(() => defaultRef)
-    const payload = channel.onMessage('event', { one: 'two' }, defaultRef)
+    sinon.stub(socket, '_makeRef').callsFake(() => defaultRef)
+    const payload = channel._onMessage('event', { one: 'two' }, defaultRef)
 
     assert.deepEqual(payload, { one: 'two' })
   })
@@ -645,13 +713,13 @@ describe('onMessage', () => {
 
 describe('canPush', () => {
   beforeEach(() => {
-    socket = new RealtimeClient('/socket')
+    socket = new RealtimeClient('ws://example.com/socket')
 
     channel = socket.channel('topic', { one: 'two' })
   })
 
-  afterEach(async () => {
-    await socket.disconnect()
+  afterEach(() => {
+    socket.disconnect()
     channel.unsubscribe()
   })
 
@@ -659,7 +727,7 @@ describe('canPush', () => {
     sinon.stub(socket, 'isConnected').returns(true)
     channel.state = 'joined'
 
-    assert.ok(channel.canPush())
+    assert.ok(channel._canPush())
   })
 
   it('otherwise returns false', () => {
@@ -668,42 +736,42 @@ describe('canPush', () => {
     isConnectedStub.returns(false)
     channel.state = 'joined'
 
-    assert.ok(!channel.canPush())
+    assert.ok(!channel._canPush())
 
     isConnectedStub.returns(true)
     channel.state = 'joining'
 
-    assert.ok(!channel.canPush())
+    assert.ok(!channel._canPush())
 
     isConnectedStub.returns(false)
     channel.state = 'joining'
 
-    assert.ok(!channel.canPush())
+    assert.ok(!channel._canPush())
   })
 })
 
 describe('on', () => {
   beforeEach(() => {
-    socket = new RealtimeClient('/socket')
-    sinon.stub(socket, 'makeRef').callsFake(() => defaultRef)
+    socket = new RealtimeClient('ws://example.com/socket')
+    sinon.stub(socket, '_makeRef').callsFake(() => defaultRef)
 
     channel = socket.channel('topic', { one: 'two' })
   })
 
-  afterEach(async () => {
-    await socket.disconnect()
+  afterEach(() => {
+    socket.disconnect()
     channel.unsubscribe()
   })
 
   it('sets up callback for event', () => {
     const spy = sinon.spy()
 
-    channel.trigger('event', {}, defaultRef)
+    channel._trigger('event', {}, defaultRef)
     assert.ok(!spy.called)
 
-    channel.on('event', spy)
+    channel.on('event', {}, spy)
 
-    channel.trigger('event', {}, defaultRef)
+    channel._trigger('event', {}, defaultRef)
 
     assert.ok(spy.called)
   })
@@ -712,14 +780,14 @@ describe('on', () => {
     const spy = sinon.spy()
     const ignoredSpy = sinon.spy()
 
-    channel.trigger('event', {}, defaultRef)
+    channel._trigger('event', {}, defaultRef)
 
     assert.ok(!ignoredSpy.called)
 
-    channel.on('event', spy)
-    channel.on('otherEvent', ignoredSpy)
+    channel.on('event', {}, spy)
+    channel.on('otherEvent', {}, ignoredSpy)
 
-    channel.trigger('event', {}, defaultRef)
+    channel._trigger('event', {}, defaultRef)
 
     assert.ok(!ignoredSpy.called)
   })
@@ -727,29 +795,25 @@ describe('on', () => {
   it('"*" bind all events', () => {
     const spy = sinon.spy()
 
-    channel.trigger('INSERT', {}, defaultRef)
+    channel._trigger('realtime', { event: 'INSERT' }, defaultRef)
     assert.ok(!spy.called)
 
-    channel.on('*', spy)
-    channel.trigger('*', { type: 'INSERT' }, defaultRef)
-    assert.ok(!spy.called)
-
-    channel.on('*', spy)
-    channel.trigger('INSERT', { type: 'INSERT' }, defaultRef)
+    channel.on('realtime', { event: 'INSERT' }, spy)
+    channel._trigger('realtime', { event: 'INSERT' }, defaultRef)
     assert.ok(spy.called)
   })
 })
 
 describe('off', () => {
   beforeEach(() => {
-    socket = new RealtimeClient('/socket')
-    sinon.stub(socket, 'makeRef').callsFake(() => defaultRef)
+    socket = new RealtimeClient('ws://example.com/socket')
+    sinon.stub(socket, '_makeRef').callsFake(() => defaultRef)
 
     channel = socket.channel('topic', { one: 'two' })
   })
 
-  afterEach(async () => {
-    await socket.disconnect()
+  afterEach(() => {
+    socket.disconnect()
     channel.unsubscribe()
   })
 
@@ -758,14 +822,14 @@ describe('off', () => {
     const spy2 = sinon.spy()
     const spy3 = sinon.spy()
 
-    channel.on('event', spy1)
-    channel.on('event', spy2)
-    channel.on('other', spy3)
+    channel.on('event', {}, spy1)
+    channel.on('event', {}, spy2)
+    channel.on('other', {}, spy3)
 
-    channel.off('event')
+    channel._off('event', {})
 
-    channel.trigger('event', {}, defaultRef)
-    channel.trigger('other', {}, defaultRef)
+    channel._trigger('event', {}, defaultRef)
+    channel._trigger('other', {}, defaultRef)
 
     assert.ok(!spy1.called)
     assert.ok(!spy2.called)
@@ -778,7 +842,7 @@ describe('push', () => {
   let socketSpy
 
   const pushParams = {
-    topic: 'topic',
+    topic: 'realtime:topic',
     event: 'event',
     payload: { foo: 'bar' },
     ref: defaultRef,
@@ -788,56 +852,58 @@ describe('push', () => {
   beforeEach(() => {
     clock = sinon.useFakeTimers()
 
-    socket = new RealtimeClient('/socket', { timeout: defaultTimeout })
-    sinon.stub(socket, 'makeRef').callsFake(() => defaultRef)
+    socket = new RealtimeClient('ws://example.com/socket', { timeout: defaultTimeout })
+    sinon.stub(socket, '_makeRef').callsFake(() => defaultRef)
     sinon.stub(socket, 'isConnected').callsFake(() => true)
     socketSpy = sinon.stub(socket, 'push')
 
     channel = socket.channel('topic', { one: 'two' })
   })
 
-  afterEach(async () => {
+  afterEach(() => {
     clock.restore()
-    await socket.disconnect()
+    socket.disconnect()
     channel.unsubscribe()
   })
 
   it('sends push event when successfully joined', () => {
-    channel.subscribe().trigger('ok', {})
-    channel.push('event', { foo: 'bar' })
+    channel.subscribe()
+    channel.joinPush.trigger('ok', {})
+    channel._push('event', { foo: 'bar' })
 
     assert.ok(socketSpy.calledWith(pushParams))
   })
 
   it('enqueues push event to be sent once join has succeeded', () => {
-    joinPush = channel.subscribe()
-    channel.push('event', { foo: 'bar' })
+    channel.subscribe()
+    channel._push('event', { foo: 'bar' })
 
     assert.ok(!socketSpy.calledWith(pushParams))
 
     clock.tick(channel.timeout / 2)
-    joinPush.trigger('ok', {})
+    channel.joinPush.trigger('ok', {})
 
     assert.ok(socketSpy.calledWith(pushParams))
   })
 
   it('does not push if channel join times out', () => {
-    joinPush = channel.subscribe()
-    channel.push('event', { foo: 'bar' })
+    channel.subscribe()
+    channel._push('event', { foo: 'bar' })
 
     assert.ok(!socketSpy.calledWith(pushParams))
 
     clock.tick(channel.timeout * 2)
-    joinPush.trigger('ok', {})
+    channel.joinPush.trigger('ok', {})
 
     assert.ok(!socketSpy.calledWith(pushParams))
   })
 
   it('uses channel timeout by default', () => {
     const timeoutSpy = sinon.spy()
-    channel.subscribe().trigger('ok', {})
+    channel.subscribe()
+    channel.joinPush.trigger('ok', {})
 
-    channel.push('event', { foo: 'bar' }).receive('timeout', timeoutSpy)
+    channel._push('event', { foo: 'bar' }).receive('timeout', timeoutSpy)
 
     clock.tick(channel.timeout / 2)
     assert.ok(!timeoutSpy.called)
@@ -848,10 +914,11 @@ describe('push', () => {
 
   it('accepts timeout arg', () => {
     const timeoutSpy = sinon.spy()
-    channel.subscribe().trigger('ok', {})
+    channel.subscribe()
+    channel.joinPush.trigger('ok', {})
 
     channel
-      .push('event', { foo: 'bar' }, channel.timeout * 2)
+      ._push('event', { foo: 'bar' }, channel.timeout * 2)
       .receive('timeout', timeoutSpy)
 
     clock.tick(channel.timeout)
@@ -862,9 +929,10 @@ describe('push', () => {
   })
 
   it("does not time out after receiving 'ok'", () => {
-    channel.subscribe().trigger('ok', {})
+    channel.subscribe()
+    channel.joinPush.trigger('ok', {})
     const timeoutSpy = sinon.spy()
-    const push = channel.push('event', { foo: 'bar' })
+    const push = channel._push('event', { foo: 'bar' })
     push.receive('timeout', timeoutSpy)
 
     clock.tick(push.timeout / 2)
@@ -878,7 +946,7 @@ describe('push', () => {
 
   it('throws if channel has not been joined', () => {
     assert.throws(
-      () => channel.push('event', {}),
+      () => channel._push('event', {}),
       /tried to push.*before joining/
     )
   })
@@ -891,28 +959,29 @@ describe('leave', () => {
   beforeEach(() => {
     clock = sinon.useFakeTimers()
 
-    socket = new RealtimeClient('/socket', { timeout: defaultTimeout })
+    socket = new RealtimeClient('ws://example.com/socket', { timeout: defaultTimeout })
     sinon.stub(socket, 'isConnected').callsFake(() => true)
     socketSpy = sinon.stub(socket, 'push')
 
     channel = socket.channel('topic', { one: 'two' })
-    channel.subscribe().trigger('ok', {})
+    channel.subscribe()
+    channel.joinPush.trigger('ok', {})
   })
 
-  afterEach(async () => {
+  afterEach(() => {
     clock.restore()
-    await socket.disconnect()
+    socket.disconnect()
     channel.unsubscribe();
   })
 
   it('unsubscribes from server events', () => {
-    sinon.stub(socket, 'makeRef').callsFake(() => defaultRef)
+    sinon.stub(socket, '_makeRef').callsFake(() => defaultRef)
 
     channel.unsubscribe()
 
     assert.ok(
       socketSpy.calledWith({
-        topic: 'topic',
+        topic: 'realtime:topic',
         event: 'phx_leave',
         payload: {},
         ref: defaultRef,
@@ -925,7 +994,8 @@ describe('leave', () => {
     const anotherChannel = socket.channel('another', { three: 'four' })
     assert.equal(socket.channels.length, 2)
 
-    channel.unsubscribe().trigger('ok', {})
+    channel.unsubscribe()
+    channel.joinPush.trigger('ok', {})
 
     assert.equal(socket.channels.length, 1)
     assert.deepEqual(socket.channels[0], anotherChannel)
@@ -934,7 +1004,8 @@ describe('leave', () => {
   it("sets state to closed on 'ok' event", () => {
     assert.notEqual(channel.state, 'closed')
 
-    channel.unsubscribe().trigger('ok', {})
+    channel.unsubscribe()
+    channel.joinPush.trigger('ok', {})
 
     assert.equal(channel.state, 'closed')
   })
@@ -968,5 +1039,167 @@ describe('leave', () => {
     clock.tick(channel.timeout * 2)
 
     assert.equal(channel.state, 'closed')
+  })
+})
+
+describe('presence helper methods', () => {
+  beforeEach(() => {
+    channel = socket.channel('topic', { one: 'two' })
+  })
+
+  it("gets presence state", () => {
+    channel.presence.state = { u1: [{ id: 1, presence_ref: "1" }] }
+
+    assert.deepEqual(channel.presenceState(), { u1: [{ id: 1, presence_ref: "1" }] })
+  })
+
+  it("tracks presence", () => {
+    const sendStub = sinon.stub(channel, 'send')
+
+    channel.track({ id: 123 })
+
+    assert.ok(sendStub.calledWith({ type: 'presence', event: 'track', payload: { id: 123 }}))
+  })
+
+  it("untracks presence", () => {
+    const sendStub = sinon.stub(channel, 'send')
+
+    channel.untrack()
+
+    assert.ok(sendStub.calledWith({ type: 'presence', event: 'untrack' }))
+  })
+})
+
+describe('send', () => {
+  let pushStub
+
+  beforeEach(() => {
+    channel = socket.channel('topic', { one: 'two' })
+  })
+
+  it("sends message", async () => {
+    pushStub = sinon.stub(channel, '_push')
+    pushStub.returns({ rateLimited: false, receive: (status, cb) => {
+      if (status === 'ok') cb()
+    }})
+
+    const res = await channel.send({ type: 'broadcast', id: 'u123' })
+
+    assert.equal(res, 'ok')
+  })
+
+  it("sends message but is rate limited", async () => {
+    pushStub = sinon.stub(channel, '_push')
+    pushStub.returns({ rateLimited: true })
+
+    const res = await channel.send({ type: 'test', id: 'u123' })
+
+    assert.equal(res, 'rate limited')
+  })
+
+  it("sends message but times out", async () => {
+    pushStub = sinon.stub(channel, '_push')
+    pushStub.returns({ rateLimited: false, receive: (status, cb) => {
+      if (status === 'timeout') cb()
+    }})
+
+    const res = await channel.send({ type: 'test', id: 'u123' })
+
+    assert.equal(res, 'timed out')
+  })
+})
+
+describe('trigger', () => {
+  let spy
+
+  beforeEach(() => {
+    channel = socket.channel('topic', { one: 'two' })
+  })
+
+  it("triggers when type is insert, update, delete", () => {
+    spy = sinon.spy()
+
+    channel.bindings.postgres_changes = [
+      { type: 'postgres_changes', filter: { event: 'INSERT' }, callback: spy },
+      { type: 'postgres_changes', filter: { event: 'UPDATE' }, callback: spy },
+      { type: 'postgres_changes', filter: { event: 'DELETE' }, callback: spy },
+      { type: 'postgres_changes', filter: { event: '*' }, callback: spy }
+    ]
+
+    channel._trigger('insert', { test: '123' }, '1')
+    channel._trigger('update', { test: '123' }, '2')
+    channel._trigger('delete', { test: '123' }, '3')
+
+    assert.equal(spy.getCalls().length, 6)
+  })
+
+  it("triggers when type is broadcast", () => {
+    spy = sinon.spy()
+
+    channel.bindings.broadcast = [
+      { type: 'broadcast', filter: { event: '*' }, callback: spy },
+      { type: 'broadcast', filter: { event: 'test' }, callback: spy }
+    ]
+
+    channel._trigger('broadcast', { event: 'test', id: '123' }, '1')
+
+    assert.ok(spy.calledTwice)
+    assert.ok(spy.calledWith({ event: 'test', id: '123' }, '1'))
+  })
+
+  it("triggers when type is presence", () => {
+    spy = sinon.spy()
+
+    channel.bindings.presence = [
+      { type: 'presence', filter: { event: 'sync' }, callback: spy },
+      { type: 'presence', filter: { event: 'join' }, callback: spy },
+      { type: 'presence', filter: { event: 'leave' }, callback: spy }
+    ]
+
+    channel._trigger('presence', { event: 'sync' }, '1')
+    channel._trigger('presence', { event: 'join' }, '2')
+    channel._trigger('presence', { event: 'leave' }, '3')
+
+    assert.ok(spy.calledThrice)
+  })
+
+  it("triggers when type is postgres_changes", () => {
+    spy = sinon.spy()
+
+    channel.bindings.postgres_changes = [
+      { id: 'abc123', type: 'postgres_changes', filter: { event: 'INSERT', schema: 'public', table: 'test' }, callback: spy }
+    ]
+
+    channel._trigger(
+      'postgres_changes',
+      {
+        ids: ['abc123'],
+        data: {
+          type: 'INSERT',
+          table: 'test',
+          record: { id: 1 },
+          schema: 'public',
+          columns: [{ name: 'id', type: 'int4' }],
+          commit_timestamp: '2000-01-01T00:01:01Z',
+          errors: []
+        } 
+      },
+      '1'
+    )
+
+    assert.ok(
+      spy.calledWith(
+        {
+          schema: 'public',
+          table: 'test',
+          commit_timestamp: '2000-01-01T00:01:01Z',
+          eventType: 'INSERT',
+          new: { id: 1 },
+          old: {},
+          errors: [],
+        },
+        '1'
+      )
+    )
   })
 })

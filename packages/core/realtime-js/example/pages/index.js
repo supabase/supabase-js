@@ -19,13 +19,6 @@ export default function IndexPage() {
   let [channelStatus, setChannelStatus] = useState('')
 
   useEffect(() => {
-    // Socket events
-    socket.onOpen(() => setSocketStatus('OPEN'))
-    socket.onClose(() => setSocketStatus('CLOSED'))
-    socket.onError((e) => {
-      setSocketStatus('ERROR')
-      console.log('Socket error', e.message)
-    })
     // Subscribe
     createSubscription()
 
@@ -39,8 +32,8 @@ export default function IndexPage() {
     publicSchema.on('DELETE', (e) => setDeletes([...deletes, e]))
 
     // Channel events
-    publicSchema.onError(() => setChannelStatus('ERROR'))
-    publicSchema.onClose(() => setChannelStatus('Closed gracefully.'))
+    publicSchema._onError(() => setChannelStatus('ERROR'))
+    publicSchema._onClose(() => setChannelStatus('Closed gracefully.'))
     publicSchema
       .subscribe()
       .receive('ok', () => setChannelStatus('SUBSCRIBED'))

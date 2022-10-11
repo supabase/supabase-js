@@ -1,5 +1,5 @@
 import assert from 'assert'
-import { RealtimeSubscription, RealtimeClient } from '../dist/main'
+import { RealtimeChannel, RealtimeClient } from '../dist/main'
 import Push from '../dist/main/lib/push'
 
 let socket, channel, push
@@ -9,13 +9,13 @@ describe('constructor', () => {
     socket = new RealtimeClient('/socket', { timeout: 1234 })
   })
 
-  afterEach(async () => {
+  afterEach(() => {
     channel.unsubscribe()
-    await socket.disconnect()
+    socket.disconnect()
   })
 
   it('sets defaults', () => {
-    channel = new RealtimeSubscription('test_topic', {}, socket)
+    channel = new RealtimeChannel('test_topic', {}, socket)
     push = new Push(channel, 'test_event')
 
     assert.strictEqual(push.channel, channel)
@@ -30,13 +30,13 @@ describe('updatePayload', () => {
     socket = new RealtimeClient('/socket', { timeout: 1234 })
   })
 
-  afterEach(async () => {
+  afterEach(() => {
     channel.unsubscribe()
-    await socket.disconnect()
+    socket.disconnect()
   })
 
   it('updates push payload', () => {
-    channel = new RealtimeSubscription('test_topic', {}, socket)
+    channel = new RealtimeChannel('test_topic', {}, socket)
     push = new Push(channel, 'test_event', { test: 'test' })
 
     assert.deepEqual(push.payload, { test: 'test' })

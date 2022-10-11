@@ -1,12 +1,38 @@
-import * as Transformers from './lib/transformers'
 import RealtimeClient, {
-  Options as RealtimeClientOptions,
+  RealtimeClientOptions,
+  RealtimeMessage,
+  RealtimeRemoveChannelResponse,
 } from './RealtimeClient'
-import RealtimeSubscription from './RealtimeSubscription'
+import RealtimeChannel, {
+  RealtimeChannelOptions,
+  RealtimeChannelSendResponse,
+  RealtimePostgresChangesPayload,
+  REALTIME_LISTEN_TYPES,
+  REALTIME_POSTGRES_CHANGES_LISTEN_EVENT,
+  REALTIME_SUBSCRIBE_STATES,
+} from './RealtimeChannel'
+import RealtimePresence, {
+  RealtimePresenceState,
+  RealtimePresenceJoinPayload,
+  RealtimePresenceLeavePayload,
+  REALTIME_PRESENCE_LISTEN_EVENTS,
+} from './RealtimePresence'
 
 export {
+  RealtimePresence,
+  RealtimeChannel,
+  RealtimeChannelOptions,
+  RealtimeChannelSendResponse,
   RealtimeClient,
   RealtimeClientOptions,
-  RealtimeSubscription,
-  Transformers,
+  RealtimeMessage,
+  RealtimePostgresChangesPayload,
+  RealtimePresenceJoinPayload,
+  RealtimePresenceLeavePayload,
+  RealtimePresenceState,
+  RealtimeRemoveChannelResponse,
+  REALTIME_LISTEN_TYPES,
+  REALTIME_POSTGRES_CHANGES_LISTEN_EVENT,
+  REALTIME_PRESENCE_LISTEN_EVENTS,
+  REALTIME_SUBSCRIBE_STATES,
 }
