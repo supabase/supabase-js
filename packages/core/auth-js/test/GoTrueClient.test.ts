@@ -20,7 +20,7 @@ describe('GoTrueClient', () => {
   })
 
   describe('Sessions', () => {
-    test('setSession(refreshToken) should return no error', async () => {
+    test('setSession should return no error', async () => {
       const { email, password } = mockUserCredentials()
 
       const { error, data } = await authWithSession.signUp({
@@ -30,39 +30,11 @@ describe('GoTrueClient', () => {
       expect(error).toBeNull()
       expect(data.session).not.toBeNull()
 
-      const { error: sessionError } = await authWithSession.setSession(session!.refresh_token!)
-      expect(sessionError).toBeNull()
-
-      const { user } = await authWithSession.update({ data: { hello: 'world' } })
-
-      expect(user).not.toBeNull()
-      expect(user?.user_metadata).toStrictEqual({ hello: 'world' })
-    })
-
-    test('setSession({ access_token, refresh_token }) should return no error', async () => {
-      const { email, password } = mockUserCredentials()
-
-      const { error, session } = await authWithSession.signUp({
-        email,
-        password,
-      })
-      expect(error).toBeNull()
-      expect(session).not.toBeNull()
-
-      const { session: setSession, error: sessionError } = await authWithSession.setSession({
-        refresh_token: session!.refresh_token!,
-        access_token: session!.access_token!,
-      })
-      expect(sessionError).toBeNull()
-      expect(setSession).not.toBeNull()
-      expect(setSession!.user).not.toBeNull()
-      expect(setSession!.expires_in).not.toBeNull()
-      expect(setSession!.expires_at).not.toBeNull()
-      expect(setSession!.access_token).not.toBeNull()
-      expect(setSession!.refresh_token).not.toBeNull()
-      expect(setSession!.token_type).toStrictEqual('Bearer')
-
-      const { user } = await authWithSession.update({ data: { hello: 'world' } })
+      await authWithSession.setSession(data.session?.refresh_token as string)
+      const {
+        data: { user },
+        error: updateError,
+      } = await authWithSession.updateUser({ data: { hello: 'world' } })
 
       expect(updateError).toBeNull()
       expect(user).not.toBeNull()

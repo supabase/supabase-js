@@ -106,3 +106,6 @@ dist
 
 # VisualStudioCode
 .vscode/
+
+# Docs via yarn docs
+docs
