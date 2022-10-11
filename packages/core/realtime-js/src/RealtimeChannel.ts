@@ -24,17 +24,44 @@ export type RealtimeChannelOptions = {
   }
 }
 
-export type RealtimePostgresChangesPayload<T extends { [key: string]: any }> = {
+type RealtimePostgresChangesPayloadBase = {
   schema: string
   table: string
   commit_timestamp: string
-  eventType:
-    | `${REALTIME_POSTGRES_CHANGES_LISTEN_EVENT.INSERT}`
-    | `${REALTIME_POSTGRES_CHANGES_LISTEN_EVENT.UPDATE}`
-    | `${REALTIME_POSTGRES_CHANGES_LISTEN_EVENT.DELETE}`
-  new: T | {}
-  old: Partial<T> | {}
   errors: string[]
+}
+
+export type RealtimePostgresInsertPayload<T extends { [key: string]: any }> =
+  RealtimePostgresChangesPayloadBase & {
+    eventType: `${REALTIME_POSTGRES_CHANGES_LISTEN_EVENT.INSERT}`
+    new: T
+    old: {}
+  }
+
+export type RealtimePostgresUpdatePayload<T extends { [key: string]: any }> =
+  RealtimePostgresChangesPayloadBase & {
+    eventType: `${REALTIME_POSTGRES_CHANGES_LISTEN_EVENT.UPDATE}`
+    new: T
+    old: Partial<T>
+  }
+
+export type RealtimePostgresDeletePayload<T extends { [key: string]: any }> =
+  RealtimePostgresChangesPayloadBase & {
+    eventType: `${REALTIME_POSTGRES_CHANGES_LISTEN_EVENT.DELETE}`
+    new: {}
+    old: Partial<T>
+  }
+
+export type RealtimePostgresChangesPayload<T extends { [key: string]: any }> =
+  | RealtimePostgresInsertPayload<T>
+  | RealtimePostgresUpdatePayload<T>
+  | RealtimePostgresDeletePayload<T>
+
+type RealtimePostgresChangesFilter<T extends string> = {
+  event: T
+  schema: string
+  table?: string
+  filter?: string
 }
 
 export type RealtimeChannelSendResponse = 'ok' | 'timed out' | 'rate limited'
@@ -296,23 +323,38 @@ export default class RealtimeChannel {
   ): RealtimeChannel
   on(
     type: `${REALTIME_LISTEN_TYPES.PRESENCE}`,
-    filter: { event: `${REALTIME_PRESENCE_LISTEN_EVENTS}` },
-    callback: (
-      payload:
-        | RealtimePresenceJoinPayload
-        | RealtimePresenceLeavePayload
-        | undefined
-    ) => void
+    filter: { event: `${REALTIME_PRESENCE_LISTEN_EVENTS.SYNC}` },
+    callback: () => void
+  ): RealtimeChannel
+  on(
+    type: `${REALTIME_LISTEN_TYPES.PRESENCE}`,
+    filter: { event: `${REALTIME_PRESENCE_LISTEN_EVENTS.JOIN}` },
+    callback: (payload: RealtimePresenceJoinPayload) => void
+  ): RealtimeChannel
+  on(
+    type: `${REALTIME_LISTEN_TYPES.PRESENCE}`,
+    filter: { event: `${REALTIME_PRESENCE_LISTEN_EVENTS.LEAVE}` },
+    callback: (payload: RealtimePresenceLeavePayload) => void
   ): RealtimeChannel
   on<T extends { [key: string]: any }>(
     type: `${REALTIME_LISTEN_TYPES.POSTGRES_CHANGES}`,
-    filter: {
-      event: `${REALTIME_POSTGRES_CHANGES_LISTEN_EVENT}`
-      schema: string
-      table?: string
-      filter?: string
-    },
+    filter: RealtimePostgresChangesFilter<`${REALTIME_POSTGRES_CHANGES_LISTEN_EVENT.ALL}`>,
     callback: (payload: RealtimePostgresChangesPayload<T>) => void
+  ): RealtimeChannel
+  on<T extends { [key: string]: any }>(
+    type: `${REALTIME_LISTEN_TYPES.POSTGRES_CHANGES}`,
+    filter: RealtimePostgresChangesFilter<`${REALTIME_POSTGRES_CHANGES_LISTEN_EVENT.INSERT}`>,
+    callback: (payload: RealtimePostgresInsertPayload<T>) => void
+  ): RealtimeChannel
+  on<T extends { [key: string]: any }>(
+    type: `${REALTIME_LISTEN_TYPES.POSTGRES_CHANGES}`,
+    filter: RealtimePostgresChangesFilter<`${REALTIME_POSTGRES_CHANGES_LISTEN_EVENT.UPDATE}`>,
+    callback: (payload: RealtimePostgresUpdatePayload<T>) => void
+  ): RealtimeChannel
+  on<T extends { [key: string]: any }>(
+    type: `${REALTIME_LISTEN_TYPES.POSTGRES_CHANGES}`,
+    filter: RealtimePostgresChangesFilter<`${REALTIME_POSTGRES_CHANGES_LISTEN_EVENT.DELETE}`>,
+    callback: (payload: RealtimePostgresDeletePayload<T>) => void
   ): RealtimeChannel
   on(
     type: `${REALTIME_LISTEN_TYPES}`,
