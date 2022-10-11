@@ -1,3 +1,3 @@
 # `functions-js`
 
-JS Client library to interact with Supabase Functions.
+JS Client library to interact with Supabase Edge Functions.
