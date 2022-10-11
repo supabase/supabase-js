@@ -57,7 +57,7 @@ export type RealtimePostgresChangesPayload<T extends { [key: string]: any }> =
   | RealtimePostgresUpdatePayload<T>
   | RealtimePostgresDeletePayload<T>
 
-type RealtimePostgresChangesFilter<T extends string> = {
+export type RealtimePostgresChangesFilter<T extends string> = {
   event: T
   schema: string
   table?: string
