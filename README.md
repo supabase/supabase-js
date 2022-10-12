@@ -2,7 +2,7 @@
 
 An isomorphic JavaScript client for Supabase.
 
-- **Documentation:** https://supabase.com/docs/client/supabase-client
+- **Documentation:** https://supabase.com/docs/reference
 - TypeDoc: https://supabase.github.io/supabase-js
 
 ## Usage
