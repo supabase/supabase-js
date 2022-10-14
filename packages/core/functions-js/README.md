@@ -3,7 +3,7 @@
 JS Client library to interact with Supabase Functions.
 
 ## Docs
-https://supabase.github.io/functions-js/index.html
+https://supabase.github.io/functions-js/v2
 
 ## testing
 
