@@ -274,6 +274,7 @@ export default class RealtimeClient {
 
   /**
    * Return the next message ref, accounting for overflows
+   * @internal
    */
   _makeRef(): string {
     let newRef = this.ref + 1
@@ -288,6 +289,7 @@ export default class RealtimeClient {
 
   /**
    * Unsubscribe from channels with the specified topic.
+   * @internal
    */
   _leaveOpenTopic(topic: string): void {
     let dupChannel = this.channels.find(
@@ -303,6 +305,7 @@ export default class RealtimeClient {
    * Removes a subscription from the socket.
    *
    * @param channel An open subscription.
+   * @internal
    */
   _remove(channel: RealtimeChannel) {
     this.channels = this.channels.filter(
@@ -312,6 +315,7 @@ export default class RealtimeClient {
 
   /**
    * Returns the URL of the websocket.
+   * @internal
    */
   private _endPointURL(): string {
     return this._appendParams(
@@ -320,6 +324,7 @@ export default class RealtimeClient {
     )
   }
 
+  /** @internal */
   private _onConnMessage(rawMessage: { data: any }) {
     this.decode(rawMessage.data, (msg: RealtimeMessage) => {
       let { topic, event, payload, ref } = msg
@@ -347,6 +352,7 @@ export default class RealtimeClient {
     })
   }
 
+  /** @internal */
   private _onConnOpen() {
     this.log('transport', `connected to ${this._endPointURL()}`)
     this._flushSendBuffer()
@@ -359,6 +365,7 @@ export default class RealtimeClient {
     this.stateChangeCallbacks.open.forEach((callback) => callback())!
   }
 
+  /** @internal */
   private _onConnClose(event: any) {
     this.log('transport', 'close', event)
     this._triggerChanError()
@@ -367,18 +374,21 @@ export default class RealtimeClient {
     this.stateChangeCallbacks.close.forEach((callback) => callback(event))
   }
 
+  /** @internal */
   private _onConnError(error: ErrorEvent) {
     this.log('transport', error.message)
     this._triggerChanError()
     this.stateChangeCallbacks.error.forEach((callback) => callback(error))
   }
 
+  /** @internal */
   private _triggerChanError() {
     this.channels.forEach((channel: RealtimeChannel) =>
       channel._trigger(CHANNEL_EVENTS.error)
     )
   }
 
+  /** @internal */
   private _appendParams(
     url: string,
     params: { [key: string]: string }
@@ -392,13 +402,14 @@ export default class RealtimeClient {
     return `${url}${prefix}${query}`
   }
 
+  /** @internal */
   private _flushSendBuffer() {
     if (this.isConnected() && this.sendBuffer.length > 0) {
       this.sendBuffer.forEach((callback) => callback())
       this.sendBuffer = []
     }
   }
-
+  /** @internal */
   private _sendHeartbeat() {
     if (!this.isConnected()) {
       return
@@ -422,6 +433,7 @@ export default class RealtimeClient {
     this.setAuth(this.accessToken)
   }
 
+  /** @internal */
   private _throttle(
     callback: Function,
     eventsPerSecondLimit: number = this.eventsPerSecondLimitMs

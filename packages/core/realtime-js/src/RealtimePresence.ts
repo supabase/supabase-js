@@ -159,6 +159,7 @@ export default class RealtimePresence {
    * An optional `onJoin` and `onLeave` callback can be provided to
    * react to changes in the client's local presences across
    * disconnects and reconnects with the server.
+   * @internal
    */
   private static syncState(
     currentState: RealtimePresenceState,
@@ -216,6 +217,8 @@ export default class RealtimePresence {
    * Like `syncState`, `syncDiff` accepts optional `onJoin` and
    * `onLeave` callbacks to react to a user joining or leaving from a
    * device.
+   *
+   *   @internal
    */
   private static syncDiff(
     state: RealtimePresenceState,
@@ -276,6 +279,7 @@ export default class RealtimePresence {
     return state
   }
 
+  /** @internal */
   private static map<T = any>(
     obj: RealtimePresenceState,
     func: PresenceChooser<T>
@@ -303,6 +307,7 @@ export default class RealtimePresence {
    *    ]
    *  }
    * })
+   *  @internal
    */
   private static transformState(
     state: RawPresenceState | RealtimePresenceState
@@ -329,21 +334,27 @@ export default class RealtimePresence {
     }, {} as RealtimePresenceState)
   }
 
+  /** @internal */
+
   private static cloneDeep(obj: { [key: string]: any }) {
     return JSON.parse(JSON.stringify(obj))
   }
 
+  /** @internal */
   private onJoin(callback: PresenceOnJoinCallback): void {
     this.caller.onJoin = callback
   }
+  /** @internal */
 
   private onLeave(callback: PresenceOnLeaveCallback): void {
     this.caller.onLeave = callback
   }
+  /** @internal */
 
   private onSync(callback: () => void): void {
     this.caller.onSync = callback
   }
+  /** @internal */
 
   private inPendingSyncState(): boolean {
     return !this.joinRef || this.joinRef !== this.channel._joinRef()
