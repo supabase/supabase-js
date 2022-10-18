@@ -30,6 +30,11 @@ describe('GoTrueClient', () => {
       expect(error).toBeNull()
       expect(data.session).not.toBeNull()
 
+      /** wait 1 second before calling refreshSession()
+       * resolves issue of tokens being equal
+       */
+      await new Promise((r) => setTimeout(r, 1000))
+
       const {
         data: { session },
         error: refreshSessionError,
