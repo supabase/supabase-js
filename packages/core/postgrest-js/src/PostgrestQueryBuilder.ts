@@ -1,9 +1,12 @@
 import PostgrestBuilder from './PostgrestBuilder'
 import PostgrestFilterBuilder from './PostgrestFilterBuilder'
 import { GetResult } from './select-query-parser'
-import { Fetch, GenericTable, GenericView } from './types'
+import { Fetch, GenericSchema, GenericTable, GenericView } from './types'
 
-export default class PostgrestQueryBuilder<Relation extends GenericTable | GenericView> {
+export default class PostgrestQueryBuilder<
+  Schema extends GenericSchema,
+  Relation extends GenericTable | GenericView
+> {
   url: URL
   headers: Record<string, string>
   schema?: string
@@ -51,7 +54,7 @@ export default class PostgrestQueryBuilder<Relation extends GenericTable | Gener
    */
   select<
     Query extends string = '*',
-    Result = GetResult<Relation['Row'], Query extends '*' ? '*' : Query>
+    Result = GetResult<Schema, Relation['Row'], Query>
   >(
     columns?: Query,
     {
@@ -61,7 +64,7 @@ export default class PostgrestQueryBuilder<Relation extends GenericTable | Gener
       head?: boolean
       count?: 'exact' | 'planned' | 'estimated'
     } = {}
-  ): PostgrestFilterBuilder<Relation['Row'], Result> {
+  ): PostgrestFilterBuilder<Schema, Relation['Row'], Result> {
     const method = head ? 'HEAD' : 'GET'
     // Remove whitespaces except when quoted
     let quoted = false
@@ -121,7 +124,7 @@ export default class PostgrestQueryBuilder<Relation extends GenericTable | Gener
     }: {
       count?: 'exact' | 'planned' | 'estimated'
     } = {}
-  ): PostgrestFilterBuilder<Relation['Row'], undefined> {
+  ): PostgrestFilterBuilder<Schema, Relation['Row'], undefined> {
     const method = 'POST'
 
     const prefersHeaders = []
@@ -197,7 +200,7 @@ export default class PostgrestQueryBuilder<Relation extends GenericTable | Gener
       ignoreDuplicates?: boolean
       count?: 'exact' | 'planned' | 'estimated'
     } = {}
-  ): PostgrestFilterBuilder<Relation['Row'], undefined> {
+  ): PostgrestFilterBuilder<Schema, Relation['Row'], undefined> {
     const method = 'POST'
 
     const prefersHeaders = [`resolution=${ignoreDuplicates ? 'ignore' : 'merge'}-duplicates`]
@@ -251,7 +254,7 @@ export default class PostgrestQueryBuilder<Relation extends GenericTable | Gener
     }: {
       count?: 'exact' | 'planned' | 'estimated'
     } = {}
-  ): PostgrestFilterBuilder<Relation['Row'], undefined> {
+  ): PostgrestFilterBuilder<Schema, Relation['Row'], undefined> {
     const method = 'PATCH'
     const prefersHeaders = []
     const body = values
@@ -297,7 +300,7 @@ export default class PostgrestQueryBuilder<Relation extends GenericTable | Gener
     count,
   }: {
     count?: 'exact' | 'planned' | 'estimated'
-  } = {}): PostgrestFilterBuilder<Relation['Row'], undefined> {
+  } = {}): PostgrestFilterBuilder<Schema, Relation['Row'], undefined> {
     const method = 'DELETE'
     const prefersHeaders = []
     if (count) {

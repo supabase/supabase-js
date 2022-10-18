@@ -64,14 +64,14 @@ export default class PostgrestClient<
   from<
     TableName extends string & keyof Schema['Tables'],
     Table extends Schema['Tables'][TableName]
-  >(relation: TableName): PostgrestQueryBuilder<Table>
+  >(relation: TableName): PostgrestQueryBuilder<Schema, Table>
   from<ViewName extends string & keyof Schema['Views'], View extends Schema['Views'][ViewName]>(
     relation: ViewName
-  ): PostgrestQueryBuilder<View>
-  from(relation: string): PostgrestQueryBuilder<any>
-  from(relation: string): PostgrestQueryBuilder<any> {
+  ): PostgrestQueryBuilder<Schema, View>
+  from(relation: string): PostgrestQueryBuilder<Schema, any>
+  from(relation: string): PostgrestQueryBuilder<Schema, any> {
     const url = new URL(`${this.url}/${relation}`)
-    return new PostgrestQueryBuilder<any>(url, {
+    return new PostgrestQueryBuilder<Schema, any>(url, {
       headers: { ...this.headers },
       schema: this.schema,
       fetch: this.fetch,
@@ -113,6 +113,7 @@ export default class PostgrestClient<
       count?: 'exact' | 'planned' | 'estimated'
     } = {}
   ): PostgrestFilterBuilder<
+    Schema,
     Function_['Returns'] extends any[]
       ? Function_['Returns'][number] extends Record<string, unknown>
         ? Function_['Returns'][number]

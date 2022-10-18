@@ -1,4 +1,5 @@
 import PostgrestTransformBuilder from './PostgrestTransformBuilder'
+import { GenericSchema } from './types'
 
 type FilterOperator =
   | 'eq'
@@ -25,9 +26,10 @@ type FilterOperator =
   | 'wfts'
 
 export default class PostgrestFilterBuilder<
+  Schema extends GenericSchema,
   Row extends Record<string, unknown>,
   Result
-> extends PostgrestTransformBuilder<Row, Result> {
+> extends PostgrestTransformBuilder<Schema, Row, Result> {
   /**
    * Match only rows where `column` is equal to `value`.
    *

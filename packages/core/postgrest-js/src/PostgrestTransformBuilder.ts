@@ -1,8 +1,14 @@
 import PostgrestBuilder from './PostgrestBuilder'
 import { GetResult } from './select-query-parser'
-import { PostgrestMaybeSingleResponse, PostgrestResponse, PostgrestSingleResponse } from './types'
+import {
+  GenericSchema,
+  PostgrestMaybeSingleResponse,
+  PostgrestResponse,
+  PostgrestSingleResponse,
+} from './types'
 
 export default class PostgrestTransformBuilder<
+  Schema extends GenericSchema,
   Row extends Record<string, unknown>,
   Result
 > extends PostgrestBuilder<Result> {
@@ -15,9 +21,9 @@ export default class PostgrestTransformBuilder<
    *
    * @param columns - The columns to retrieve, separated by commas
    */
-  select<Query extends string = '*', NewResult = GetResult<Row, Query extends '*' ? '*' : Query>>(
+  select<Query extends string = '*', NewResult = GetResult<Schema, Row, Query>>(
     columns?: Query
-  ): PostgrestTransformBuilder<Row, NewResult> {
+  ): PostgrestTransformBuilder<Schema, Row, NewResult> {
     // Remove whitespaces except when quoted
     let quoted = false
     const cleanedColumns = (columns ?? '*')
@@ -37,7 +43,7 @@ export default class PostgrestTransformBuilder<
       this.headers['Prefer'] += ','
     }
     this.headers['Prefer'] += 'return=representation'
-    return this as unknown as PostgrestTransformBuilder<Row, NewResult>
+    return this as unknown as PostgrestTransformBuilder<Schema, Row, NewResult>
   }
 
   /**
@@ -233,5 +239,14 @@ export default class PostgrestTransformBuilder<
       this.headers['Prefer'] = 'tx=rollback'
     }
     return this
+  }
+
+  /**
+   * Override the type of the returned `data`.
+   *
+   * @typeParam NewResult - The new result type to override with
+   */
+  returns<NewResult>(): PostgrestTransformBuilder<Schema, Row, NewResult> {
+    return this as unknown as PostgrestTransformBuilder<Schema, Row, NewResult>
   }
 }

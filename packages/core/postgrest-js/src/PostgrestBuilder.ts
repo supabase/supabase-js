@@ -82,7 +82,7 @@ export default abstract class PostgrestBuilder<Result>
       if (res.ok) {
         if (this.method !== 'HEAD') {
           const body = await res.text()
-          if (body === "") {
+          if (body === '') {
             // Prefer: return=minimal
           } else if (this.headers['Accept'] === 'text/csv') {
             data = body
