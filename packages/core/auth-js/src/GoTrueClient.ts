@@ -905,7 +905,7 @@ export default class GoTrueClient {
       const { data, error } = await this._refreshAccessToken(refreshToken)
       if (error) throw error
       if (!data.session) throw new AuthSessionMissingError()
-      
+
       await this._saveSession(data.session)
       this._notifyAllSubscribers('TOKEN_REFRESHED', data.session)
 
