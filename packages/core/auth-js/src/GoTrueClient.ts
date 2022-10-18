@@ -13,6 +13,7 @@ import {
   AuthRetryableFetchError,
   AuthSessionMissingError,
   AuthUnknownError,
+  CustomAuthError,
   isAuthError,
 } from './lib/errors'
 import { Fetch, _request, _sessionResponse, _userResponse } from './lib/fetch'
@@ -594,6 +595,43 @@ export default class GoTrueClient {
   }
 
   /**
+   * Returns a new session, from the current session, regardless of expiry status.
+   * If the access token or refresh token are invalid, an error will be thrown.
+   * @param currentSession The current session that minimally contains an access token and refresh token.
+   */
+  // async refreshSession(
+  //   currentSession: Pick<Session, 'access_token' | 'refresh_token'>
+  // ): Promise<AuthResponse> {
+  //   try {
+  //     if (!currentSession.access_token || !currentSession.refresh_token) {
+  //       throw new AuthSessionMissingError()
+  //     }
+
+  //     const payload = decodeJWTPayload(currentSession.access_token)
+  //     if (!payload.exp) {
+  //       throw new CustomAuthError('Invalid access token!', 'AuthTokenInvalidError', 400)
+  //     }
+
+  //     const { session, error } = await this._callRefreshToken(currentSession.refresh_token)
+  //     if (error) {
+  //       return { data: { user: null, session: null }, error: error }
+  //     }
+
+  //     if (!session) {
+  //       return { data: { user: null, session: null }, error: null }
+  //     }
+
+  //     return { data: { user: session.user, session }, error: null }
+  //   } catch (error) {
+  //     if (isAuthError(error)) {
+  //       return { data: { user: null, session: null }, error }
+  //     }
+
+  //     throw error
+  //   }
+  // }
+
+  /**
    * Gets the session data from a URL string
    */
   private async _getSessionFromUrl(): Promise<
@@ -866,7 +904,7 @@ export default class GoTrueClient {
       const { data, error } = await this._refreshAccessToken(refreshToken)
       if (error) throw error
       if (!data.session) throw new AuthSessionMissingError()
-
+      console.log(data.session)
       await this._saveSession(data.session)
       this._notifyAllSubscribers('TOKEN_REFRESHED', data.session)
 
