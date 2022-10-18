@@ -20,6 +20,40 @@ describe('GoTrueClient', () => {
   })
 
   describe('Sessions', () => {
+    test('refreshSession() should return a new session', async () => {
+      const { email, password } = mockUserCredentials()
+
+      const { error, data } = await authWithSession.signUp({
+        email,
+        password,
+      })
+      expect(error).toBeNull()
+      expect(data.session).not.toBeNull()
+
+      const {
+        data: { session },
+        error: refreshSessionError,
+      } = await authWithSession.refreshSession({
+        // @ts-expect-error 'data.session should not be null because of the assertion above'
+        access_token: data.session.access_token,
+        // @ts-expect-error 'data.session should not be null because of the assertion above'
+        refresh_token: data.session.refresh_token,
+      })
+      expect(refreshSessionError).toBeNull()
+      expect(session).not.toBeNull()
+      expect(session!.user).not.toBeNull()
+      expect(session!.expires_in).not.toBeNull()
+      expect(session!.expires_at).not.toBeNull()
+      expect(session!.access_token).not.toBeNull()
+      expect(session!.refresh_token).not.toBeNull()
+      expect(session!.token_type).toStrictEqual('bearer')
+      expect(refreshAccessTokenSpy).toBeCalledTimes(1)
+      // @ts-expect-error 'data.session and session should not be null because of the assertion above'
+      expect(data.session.access_token).not.toEqual(session.access_token)
+      // @ts-expect-error 'data.session and session should not be null because of the assertion above'
+      expect(data.session.refresh_token).not.toEqual(session.refresh_token)
+    })
+
     test('setSession should return no error', async () => {
       const { email, password } = mockUserCredentials()
 
