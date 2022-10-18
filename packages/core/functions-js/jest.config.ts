@@ -8,6 +8,13 @@ const config: Config.InitialOptions = {
   moduleFileExtensions: ['ts', 'js', 'cjs', 'json', 'node'],
   setupFilesAfterEnv: ['./test/utils/jest-custom-reporter.ts'],
   testTimeout: 60000,
+  collectCoverageFrom: [
+    '!**/node_modules/**',
+    'src/**/*.{ts,tsx}',
+    '!src/version.ts',
+    '!src/index.ts',
+  ],
+  coverageProvider: 'v8',
   coverageThreshold: {
     global: {
       branches: 0,
