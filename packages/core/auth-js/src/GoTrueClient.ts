@@ -13,13 +13,11 @@ import {
   AuthRetryableFetchError,
   AuthSessionMissingError,
   AuthUnknownError,
-  CustomAuthError,
   isAuthError,
 } from './lib/errors'
 import { Fetch, _request, _sessionResponse, _userResponse } from './lib/fetch'
 import {
   decodeBase64URL,
-  decodeJWTPayload,
   Deferred,
   getItemAsync,
   getParameterByName,
@@ -596,21 +594,26 @@ export default class GoTrueClient {
   }
 
   /**
-   * Returns a new session, from the current session, regardless of expiry status.
-   * If the access token or refresh token are invalid, an error will be thrown.
-   * @param currentSession The current session that minimally contains an access token and refresh token.
+   * Returns a new session, regardless of expiry status.
+   * Takes in an optional current session. If not passed in, then refreshSession() will attempt to retreive it from getSession().
+   * If the current session's refresh token is invalid, an error will be thrown.
+   * @param currentSession The current session. If passed in, it must contain a refresh token.
    */
   async refreshSession(
-    currentSession: Pick<Session, 'access_token' | 'refresh_token'>
+    currentSession?: Pick<Session, 'refresh_token'>
   ): Promise<AuthResponse> {
     try {
-      if (!currentSession.access_token || !currentSession.refresh_token) {
-        throw new AuthSessionMissingError()
+      if (!currentSession) {
+        const { data, error } = await this.getSession()
+        if (error) {
+          throw error
+        }
+
+        currentSession = data.session ?? undefined
       }
 
-      const payload = decodeJWTPayload(currentSession.access_token)
-      if (!payload.exp) {
-        throw new CustomAuthError('Invalid access token!', 'AuthTokenInvalidError', 400)
+      if (!currentSession?.refresh_token) {
+        throw new AuthSessionMissingError()
       }
 
       const { session, error } = await this._callRefreshToken(currentSession.refresh_token)
