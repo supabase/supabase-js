@@ -120,19 +120,3 @@ export class Deferred<T = any> {
     })
   }
 }
-
-export function decodeJWTPayload(token: string) {
-  const base64Regex = /^([a-z0-9_-]{4})*($|[a-z0-9_-]{3}=?$|[a-z0-9_-]{2}(==)?$)$/i
-  const parts = token.split('.')
-
-  if (parts.length !== 3) {
-    throw new Error('JWT is not valid: not a JWT structure')
-  }
-
-  if (!base64Regex.test(parts[1])) {
-    throw new Error('JWT is not valid: payload is not base64')
-  }
-
-  const base64Url = parts[1]
-  return JSON.parse(decodeBase64URL(base64Url))
-}
