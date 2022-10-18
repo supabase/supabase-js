@@ -178,11 +178,6 @@ describe('basic insert, update, delete', () => {
   })
 })
 
-test('table invalid type', async () => {
-  // @ts-expect-error table invalid type
-  postgrest.from(42)
-})
-
 test('throwOnError throws errors instead of returning them', async () => {
   let isErrorCaught = false
 
@@ -273,18 +268,6 @@ test('maybeSingle w/ throwOnError', async () => {
       passes = false
     })
   expect(passes).toEqual(true)
-})
-
-test('custom type', async () => {
-  const { data: users, error } = await postgrest.from('users').select().eq('username', 'supabot')
-
-  if (error) {
-    throw new Error(error.message)
-  }
-
-  const user = users[0]
-  // Autocomplete should show properties of user after '.'
-  user?.username
 })
 
 test("don't mutate PostgrestClient.headers", async () => {
@@ -439,14 +422,4 @@ test('select with no match', async () => {
       "statusText": "OK",
     }
   `)
-})
-
-test('cannot update non-updatable views', () => {
-  // @ts-expect-error TS2345
-  postgrest.from('non_updatable_view').update({})
-})
-
-test('cannot update non-updatable columns', () => {
-  // @ts-expect-error TS2322
-  postgrest.from('updatable_view').update({ non_updatable_column: 0 })
 })
