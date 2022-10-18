@@ -64,50 +64,6 @@ export type AuthResponse =
       error: AuthError
     }
 
-export type AuthMFAResponse =
-  | {
-      data: {
-        id: string
-        TOTP: {
-          qr_code: string
-          uri: string
-        }
-      }
-      error: null
-    }
-  | {
-      data: {
-        user: null
-        session: null
-      }
-      error: AuthError
-    }
-  | {
-      data: {
-        factors: Factor[]
-      }
-      error: null
-    }
-  | {
-      data: {
-        id: string
-        expires_at: number
-      }
-      error: null
-    }
-  | {
-      data: {
-        AAL: string
-      }
-      error: null
-    }
-  | {
-      data: {
-        AMR: AMREntry[]
-      }
-      error: null
-    }
-
 export type OAuthResponse =
   | {
       data: {
@@ -166,12 +122,25 @@ export interface Session {
   expires_at?: number
   token_type: string
   user: User
-  aal_level?: string
-  amr?: AMREntry[]
 }
+
+/**
+ * An authentication methord reference (AMR) entry.
+ *
+ * An entry designates what method was used by the user to verify their
+ * identity and at what time.
+ *
+ * @see {@link GoTrueMFAApi#getAuthenticatorAssuranceLevel}.
+ */
 export interface AMREntry {
-  authentication_method: string
-  timestamp: string
+  /** Authentication method name. */
+  method: 'password' | 'otp' | 'oauth' | 'mfa/totp' | string
+
+  /**
+   * Timestamp when the method was successfully used. Represents number of
+   * seconds since 1st January 1970 (UNIX epoch) in UTC.
+   */
+  timestamp: number
 }
 
 export interface UserIdentity {
@@ -186,13 +155,31 @@ export interface UserIdentity {
   updated_at?: string
 }
 
+/**
+ * A MFA factor.
+ *
+ * @see {@link GoTrueMFAApi#enroll}
+ * @see {@link GoTrueMFAApi#listFactors}
+ * @see {@link GoTrueMFAAdminApi#listFactors}
+ */
 export interface Factor {
+  /** ID of the factor. */
   id: string
+
+  /** Friendly name of the factor, useful to disambiguate between multiple factors. */
+  friendly_name?: string
+
+  /**
+   * Type of factor. Only `totp` supported with this version but may change in
+   * future versions.
+   */
+  factor_type: 'totp' | string
+
+  /** Factor's status. */
+  status: 'verified' | 'unverified'
+
   created_at: string
   updated_at: string
-  status: string
-  friendly_name?: string
-  factor_type: string
 }
 
 export interface UserAppMetadata {
@@ -559,47 +546,268 @@ export type GenerateLinkType =
 
 // MFA related types
 export type MFAEnrollParams = {
+  factorType: 'totp'
+  issuer?: string
   friendlyName?: string
-  factorType: 'TOTP'
-  issuer: string
-}
-
-export type MFAChallengeAndVerifyParams = {
-  factorId: string
-  code: string
 }
 
 export type MFAUnenrollParams = {
+  /** ID of the factor being unenrolled. */
   factorId: string
-  code: string
 }
 
 export type MFAVerifyParams = {
+  /** ID of the factor being verified. */
   factorId: string
+
+  /** ID of the challenge being verified. */
   challengeId: string
+
+  /** Verification code provided by the user. */
   code: string
 }
 
 export type MFAChallengeParams = {
+  /** ID of the factor to be challenged. */
   factorId: string
 }
 
-export type DeleteFactorParams = {
-  factorId: string
-}
+export type AuthMFAVerifyResponse =
+  | {
+      data: {
+        /** New access token (JWT) after successful verification. */
+        access_token: string
+
+        /** Type of token, typically `Bearer`. */
+        token_type: string
+
+        /** Number of seconds in which the access token will expire. */
+        expires_in: number
+
+        /** Refresh token you can use to obtain new access tokens when expired. */
+        refresh_token: string
+
+        /** Updated user profile. */
+        user: User
+      }
+      error: null
+    }
+  | {
+      data: null
+      error: AuthError
+    }
+
+export type AuthMFAEnrollResponse =
+  | {
+      data: {
+        /** ID of the factor that was just enrolled (in an unverified state). */
+        id: string
+
+        /** Type of MFA factor. Only `totp` supported for now. */
+        type: 'totp'
+
+        /** TOTP enrollment information. */
+        totp: {
+          /** Contains a QR code encoding the authenticator URI. You can
+           * convert it to a URL by prepending `data:image/svg+xml;utf-8,` to
+           * the value. Avoid logging this value to the console. */
+          qr_code: string
+
+          /** The TOTP secret (also encoded in the QR code). Show this secret
+           * in a password-style field to the user, in case they are unable to
+           * scan the QR code. Avoid logging this value to the console. */
+          secret: string
+
+          /** The authenticator URI encoded within the QR code, should you need
+           * to use it. Avoid loggin this value to the console. */
+          uri: string
+        }
+      }
+      error: null
+    }
+  | {
+      data: null
+      error: AuthError
+    }
+
+export type AuthMFAUnenrollResponse =
+  | {
+      data: {
+        /** ID of the factor that was successfully unenrolled. */
+        id: string
+      }
+      error: null
+    }
+  | { data: null; error: AuthError }
+
+export type AuthMFAChallengeResponse =
+  | {
+      data: {
+        /** ID of the newly created challenge. */
+        id: string
+
+        /** Timestamp in UNIX seconds when this challenge will no longer be usable. */
+        expires_at: number
+      }
+      error: null
+    }
+  | { data: null; error: AuthError }
+
+export type AuthMFAListFactorsResponse =
+  | {
+      data: {
+        /** All available factors (verified and unverified). */
+        all: Factor[]
+
+        /** Only verified TOTP factors. (A subset of `all`.) */
+        totp: Factor[]
+      }
+      error: null
+    }
+  | { data: null; error: AuthError }
+
+export type AuthenticatorAssuranceLevels = 'aal1' | 'aal2'
+
+export type AuthMFAGetAuthenticatorAssuranceLevelResponse =
+  | {
+      data: {
+        /** Current AAL level of the session. */
+        currentLevel: AuthenticatorAssuranceLevels | null
+
+        /**
+         * Next possible AAL level for the session. If the next level is higher
+         * than the current one, the user should go through MFA.
+         *
+         * @see {@link GoTrueMFAApi#challenge}
+         */
+        nextLevel: AuthenticatorAssuranceLevels | null
+
+        /**
+         * A list of all authentication methods attached to this session. Use
+         * the information here to detect the last time a user verified a
+         * factor, for example if implementing a step-up scenario.
+         */
+        currentAuthenticationMethods: AMREntry[] | null
+      }
+      error: null
+    }
+  | { data: null; error: AuthError }
 
 export interface GoTrueMFAApi {
-  verify(params: MFAVerifyParams): Promise<AuthResponse>
-  enroll(params: MFAEnrollParams): Promise<AuthMFAResponse>
-  unenroll(params: MFAUnenrollParams): Promise<AuthMFAResponse>
-  challenge(params: MFAChallengeParams): Promise<AuthMFAResponse>
-  listFactors(): Promise<AuthMFAResponse>
-  getAMR(jwt?: string): Promise<AuthMFAResponse>
-  getAAL(jwt?: string): Promise<AuthMFAResponse>
+  /**
+   * Starts the enrollment process for a new Multi-Factor Authentication
+   * factor. This method creates a new factor in the 'unverified' state.
+   * Present the QR code or secret to the user and ask them to add it to their
+   * authenticator app. Ask the user to provide you with an authenticator code
+   * from their app and verify it by calling challenge and then verify.
+   *
+   * The first successful verification of an unverified factor activates the
+   * factor. All other sessions are logged out and the current one gets an
+   * `aal2` authenticator level.
+   *
+   * @see {@link GoTrueMFAApi#challenge}
+   * @see {@link GoTrueMFAApi#verify}
+   * @see {@link GoTrueMFAApi#getAuthenticatorAssuranceLevel}
+   */
+  enroll(params: MFAEnrollParams): Promise<AuthMFAEnrollResponse>
+
+  /**
+   * Prepares a challenge used to verify that a user has access to a MFA
+   * factor. Provide the challenge ID and verification code by calling
+   * {@link GoTrueMFAApi#verify}.
+   */
+  challenge(params: MFAChallengeParams): Promise<AuthMFAChallengeResponse>
+
+  /**
+   * Verifies a verification code against a challenge. The verification code is
+   * provided by the user by entering a code seen in their authenticator app.
+   *
+   * @see {@link GoTrueMFAApi#challenge}
+   */
+  verify(params: MFAVerifyParams): Promise<AuthMFAVerifyResponse>
+
+  /**
+   * Unenroll removes a MFA factor. Unverified factors can safely be ignored
+   * and it's not necessary to unenroll them. Unenrolling a verified MFA factor
+   * cannot be done from a session with an `aal1` authenticator level.
+   */
+  unenroll(params: MFAUnenrollParams): Promise<AuthMFAUnenrollResponse>
+
+  /**
+   * Returns the list of MFA factors enabled for this user. For most use cases
+   * you should consider using {@link
+   * GoTrueMFAApi#getAuthenticatorAssuranceLevel}. This uses a cached version
+   * of the factors and avoids incurring a network call. If you need to update
+   * this list, call {@link GoTrueClient#getUser} first.
+   *
+   * @see {@link GoTrueMFAApi#enroll}
+   * @see {@link GoTrueMFAApi#getAuthenticatorAssuranceLevel}
+   * @see {@link GoTrueClient#getUser}
+   */
+  listFactors(): Promise<AuthMFAListFactorsResponse>
+
+  /**
+   * Returns the Authenticator Assurance Level (AAL) for the active session.
+   *
+   * - `aal1` (or `null`) means that the user's identity has been verified only
+   * with a conventional login (email+password, OTP, magic link, social login,
+   * etc.).
+   * - `aal2` means that the user's identity has been verified both with a conventional login and at least one MFA factor.
+   *
+   * Although this method returns a promise, it's fairly quick (microseconds)
+   * and rarely uses the network. You can use this to check whether the current
+   * user needs to be shown a screen to verify their MFA factors.
+   */
+  getAuthenticatorAssuranceLevel(): Promise<AuthMFAGetAuthenticatorAssuranceLevelResponse>
+}
+
+export type AuthMFAAdminDeleteFactorResponse =
+  | {
+      data: {
+        /** ID of the factor that was successfully deleted. */
+        id: string
+      }
+      error: null
+    }
+  | { data: null; error: AuthError }
+
+export type AuthMFAAdminDeleteFactorParams = {
+  /** ID of the MFA factor to delete. */
+  id: string
+
+  /** ID of the user whose factor is being deleted. */
+  userId: string
+}
+
+export type AuthMFAAdminListFactorsResponse =
+  | {
+      data: {
+        /** All factors attached to the user. */
+        factors: Factor[]
+      }
+      error: null
+    }
+  | { data: null; error: AuthError }
+
+export type AuthMFAAdminListFactorsParams = {
+  /** ID of the user for which to list all MFA factors. */
+  userId: string
 }
 
 export interface GoTrueAdminMFAApi {
-  deleteFactor(factorID: string): Promise<string>
+  /**
+   * Lists all factors attached to a user.
+   */
+  listFactors(params: AuthMFAAdminListFactorsParams): Promise<AuthMFAAdminListFactorsResponse>
+
+  /**
+   * Deletes a factor on a user. This will log the user out of all active
+   * sessions (if the deleted factor was verified). There's no need to delete
+   * unverified factors.
+   *
+   * @see {@link GoTrueMFAApi#unenroll}
+   */
+  deleteFactor(params: AuthMFAAdminDeleteFactorParams): Promise<AuthMFAAdminDeleteFactorResponse>
 }
 
 type AnyFunction = (...args: any[]) => any

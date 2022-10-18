@@ -26,7 +26,7 @@ import {
   resolveFetch,
   setItemAsync,
   uuid,
-  decodeJWT,
+  decodeJWTPayload,
 } from './lib/helpers'
 import localStorageAdapter from './lib/local-storage'
 import { polyfillGlobalThis } from './lib/polyfills'
@@ -51,10 +51,17 @@ import type {
   VerifyOtpParams,
   GoTrueMFAApi,
   MFAEnrollParams,
+  AuthMFAEnrollResponse,
   MFAChallengeParams,
+  AuthMFAChallengeResponse,
   MFAUnenrollParams,
+  AuthMFAUnenrollResponse,
   MFAVerifyParams,
+  AuthMFAVerifyResponse,
+  AuthMFAListFactorsResponse,
   AMREntry,
+  AuthMFAGetAuthenticatorAssuranceLevelResponse,
+  AuthenticatorAssuranceLevels,
 } from './lib/types'
 
 polyfillGlobalThis() // Make "globalThis" available
@@ -138,8 +145,7 @@ export default class GoTrueClient {
       unenroll: this._unenroll.bind(this),
       challenge: this._challenge.bind(this),
       listFactors: this._listFactors.bind(this),
-      getAMR: this._getAMR.bind(this),
-      getAAL: this._getAAL.bind(this),
+      getAuthenticatorAssuranceLevel: this._getAuthenticatorAssuranceLevel.bind(this),
     }
   }
 
@@ -551,6 +557,17 @@ export default class GoTrueClient {
   }
 
   /**
+   * Decodes a JWT (without performing any validation).
+   */
+  private _decodeJWT(jwt: string): {
+    exp?: number
+    aal?: AuthenticatorAssuranceLevels | null
+    amr?: AMREntry[] | null
+  } {
+    return decodeJWTPayload(jwt)
+  }
+
+  /**
    * Sets the session data from the current session. If the current session is expired, setSession will take care of refreshing it to obtain a new session.
    * If the refresh token in the current session is invalid and the current session has expired, an error will be thrown.
    * If the current session does not contain at expires_at field, setSession will use the exp claim defined in the access token.
@@ -565,7 +582,8 @@ export default class GoTrueClient {
       let hasExpired = true
       let session: Session | null = null
       if (currentSession.access_token && currentSession.access_token.split('.')[1]) {
-        const payload = JSON.parse(decodeBase64URL(currentSession.access_token.split('.')[1]))
+        const payload = this._decodeJWT(currentSession.access_token)
+
         if (payload.exp) {
           expiresAt = payload.exp
           hasExpired = expiresAt <= timeNow
@@ -1026,28 +1044,16 @@ export default class GoTrueClient {
     return `${this.url}/authorize?${urlParams.join('&')}`
   }
 
-  private async _unenroll(params: MFAUnenrollParams) {
-    const { data, error } = await this.getUser()
-    if (error) throw error
-    const user: User = data.user
-
-    try {
-      return await _request(
-        this.fetch,
-        'DELETE',
-        `${this.url}/user/${user.id}/factor/${params.factorId}`,
-        {
-          body: { code: params.code },
-          headers: this.headers,
-        }
-      )
-    } catch (error) {
-      if (isAuthError(error)) {
-        return { data: null, error }
-      }
-
-      throw error
+  private async _unenroll(params: MFAUnenrollParams): Promise<AuthMFAUnenrollResponse> {
+    const { data: sessionData, error: sessionError } = await this.getSession()
+    if (sessionError) {
+      return { data: null, error: sessionError }
     }
+
+    return await _request(this.fetch, 'DELETE', `${this.url}/factors/${params.factorId}`, {
+      headers: this.headers,
+      jwt: sessionData?.session?.access_token,
+    })
   }
 
   /**
@@ -1056,25 +1062,31 @@ export default class GoTrueClient {
    * @param factorType device which we're validating against. Can only be TOTP for now.
    * @param issuer domain which the user is enrolling with
    */
-  private async _enroll({ factorType = 'TOTP', ...params }: MFAEnrollParams) {
-    const { data, error } = await this.getUser()
-    if (error) throw error
-    const user: User = data.user
-    try {
-      return await _request(this.fetch, 'POST', `${this.url}/user/${user.id}/factor`, {
-        body: {
-          friendly_name: params.friendlyName,
-          factor_type: factorType,
-          issuer: params.issuer,
-        },
-        headers: this.headers,
-      })
-    } catch (error) {
-      if (isAuthError(error)) {
-        return { data: null, error }
-      }
-      throw error
+  private async _enroll(params: MFAEnrollParams): Promise<AuthMFAEnrollResponse> {
+    const { data: sessionData, error: sessionError } = await this.getSession()
+    if (sessionError) {
+      return { data: null, error: sessionError }
     }
+
+    const { data, error } = await _request(this.fetch, 'POST', `${this.url}/factors`, {
+      body: {
+        friendly_name: params.friendlyName,
+        factor_type: params.factorType,
+        issuer: params.issuer,
+      },
+      headers: this.headers,
+      jwt: sessionData?.session?.access_token,
+    })
+
+    if (error) {
+      return { data: null, error }
+    }
+
+    if (data?.totp?.qr_code) {
+      data.totp.qr_code = `data:image/svg+xml;utf-8,${data.totp.qr_code}`
+    }
+
+    return { data, error: null }
   }
 
   /**
@@ -1082,122 +1094,99 @@ export default class GoTrueClient {
    * @param factorID System assigned identifier for authenticator device as returned by enroll
    * @param code Code Generated by an authenticator device
    */
-  private async _verify(params: MFAVerifyParams): Promise<AuthResponse> {
-    const { data, error } = await this.getUser()
-    if (error) throw error
-    const user: User = data.user
-    try {
-      const { data, error } = await _request(
-        this.fetch,
-        'POST',
-        `${this.url}/user/${user.id}/factor/${params.factorId}/verify`,
-        {
-          body: { code: params.code, challenge_id: params.challengeId },
-          xform: _sessionResponse,
-          headers: this.headers,
-        }
-      )
-      if (error || !data) return { data: { user: null, session: null }, error }
-      if (data.session) {
-        await this._saveSession(data.session)
-        this._notifyAllSubscribers('MFA_CHALLENGE_VERIFIED', data.session)
-      }
-      return { data, error }
-    } catch (error) {
-      if (isAuthError(error)) {
-        return { data: { user: null, session: null }, error }
-      }
-
-      throw error
+  private async _verify(params: MFAVerifyParams): Promise<AuthMFAVerifyResponse> {
+    const { data: sessionData, error: sessionError } = await this.getSession()
+    if (sessionError) {
+      return { data: null, error: sessionError }
     }
+
+    const { data, error } = await _request(
+      this.fetch,
+      'POST',
+      `${this.url}/factors/${params.factorId}/verify`,
+      {
+        body: { code: params.code, challenge_id: params.challengeId },
+        headers: this.headers,
+        jwt: sessionData?.session?.access_token,
+      }
+    )
+    if (error) {
+      return { data: null, error }
+    }
+
+    await this._saveSession({
+      expires_at: Math.round(Date.now() / 1000) + data.expires_in,
+      ...data,
+    })
+    this._notifyAllSubscribers('MFA_CHALLENGE_VERIFIED', data)
+
+    return { data, error }
   }
+
   /**
    * Creates a challenge which a user can verify against
    * @param factorID System assigned identifier for authenticator device as returned by enroll
    */
-  private async _challenge(params: MFAChallengeParams) {
-    const { data, error } = await this.getUser()
-    if (error) throw error
-    const user: User = data.user
-
-    try {
-      return await _request(
-        this.fetch,
-        'POST',
-        `${this.url}/user/${user.id}/factor/${params.factorId}/challenge`,
-        {
-          body: {},
-          headers: this.headers,
-        }
-      )
-    } catch (error) {
-      if (isAuthError(error)) {
-        return { data: null, error }
-      }
-
-      throw error
+  private async _challenge(params: MFAChallengeParams): Promise<AuthMFAChallengeResponse> {
+    const { data: sessionData, error: sessionError } = await this.getSession()
+    if (sessionError) {
+      return { data: null, error: sessionError }
     }
+
+    return await _request(this.fetch, 'POST', `${this.url}/factors/${params.factorId}/challenge`, {
+      headers: this.headers,
+      jwt: sessionData?.session?.access_token,
+    })
   }
 
   /**
    * Displays all devices for a given user
    */
-  private async _listFactors() {
-    const { data, error } = await this.getUser()
-    if (error) throw error
-    return { data: { factors: data.user?.factors ?? [] }, error: error }
+  private async _listFactors(): Promise<AuthMFAListFactorsResponse> {
+    const { data: sessionData, error: sessionError } = await this.getSession()
+    if (sessionError) {
+      return { data: { all: [], totp: [] }, error: sessionError }
+    }
+
+    const factors = sessionData?.session?.user?.factors || []
+    const totp = factors.filter(
+      (factor) => 'totp' === factor.factor_type && 'verified' === factor.status
+    )
+
+    return {
+      data: {
+        all: factors,
+        totp,
+      },
+      error: null,
+    }
   }
 
-  /**
-   * Returns the current AMR level
-   * @param jwt Takes in an optional access token jwt. If no jwt is provided, getAMR() will attempt to get the jwt from the current session.
-   */
-  private async _getAMR(jwt?: string) {
-    try {
-      if (!jwt) {
-        const { data, error } = await this.getSession()
-        if (error) {
-          throw error
-        }
-        // Default to Authorization header if there is no existing session
-        jwt = data.session?.access_token ?? this.headers['Authorization']
-      }
-    } catch (error) {
-      if (isAuthError(error)) {
-        return { data: { AMR: [], user: null, session: null }, error }
-      }
-
-      throw error
+  private async _getAuthenticatorAssuranceLevel(): Promise<AuthMFAGetAuthenticatorAssuranceLevelResponse> {
+    const { data: sessionData, error: sessionError } = await this.getSession()
+    if (sessionError) {
+      return { data: null, error: sessionError }
     }
-    const parsedJWT = decodeJWT(jwt)
-    const AMR: AMREntry[] = parsedJWT?.amr ?? []
 
-    return { data: { AMR: AMR }, error: null }
-  }
+    const payload = this._decodeJWT(sessionData!.session!.access_token!)
 
-  /**
-   * Returns the current AAL level
-   * @param jwt Takes in an optional access token jwt. If no jwt is provided, getAAL() will attempt to get the jwt from the current session.
-   */
-  private async _getAAL(jwt?: string) {
-    try {
-      if (!jwt) {
-        const { data, error } = await this.getSession()
-        if (error) {
-          throw error
-        }
-        // Default to Authorization header if there is no existing session
-        jwt = data.session?.access_token ?? this.headers['Authorization']
-      }
-    } catch (error) {
-      if (isAuthError(error)) {
-        return { data: { AAL: '', user: null, session: null }, error }
-      }
+    let currentLevel: AuthenticatorAssuranceLevels | null = null
 
-      throw error
+    if (payload.aal) {
+      currentLevel = payload.aal
     }
-    const parsedJWT = decodeJWT(jwt)
-    const AAL: string = parsedJWT?.aal ?? ''
-    return { data: { AAL: AAL }, error: null }
+
+    let nextLevel: AuthenticatorAssuranceLevels | null = currentLevel
+
+    const verifiedFactors =
+      sessionData?.session?.user?.factors?.filter((factor) => factor.status === 'verified') ?? []
+
+    if (verifiedFactors.length > 0) {
+      nextLevel = 'aal2'
+    }
+
+    const currentAuthenticationMethods = payload.amr || null
+
+    return { data: { currentLevel, nextLevel, currentAuthenticationMethods }, error: null }
   }
 }

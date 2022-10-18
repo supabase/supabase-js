@@ -7,16 +7,18 @@ import {
   User,
   UserResponse,
   GoTrueAdminMFAApi,
-  DeleteFactorParams,
   UpdatableFactorAttributes,
+  AuthMFAAdminDeleteFactorParams,
+  AuthMFAAdminDeleteFactorResponse,
+  AuthMFAAdminListFactorsParams,
+  AuthMFAAdminListFactorsResponse,
 } from './lib/types'
 import { AuthError, isAuthError } from './lib/errors'
 
 export default class GoTrueAdminApi {
-  /**
-   * Namespaces for the GoTrue admin MFA methods
-   */
+  /** Contains all MFA administration methods. */
   mfa: GoTrueAdminMFAApi
+
   protected url: string
   protected headers: {
     [key: string]: string
@@ -38,7 +40,8 @@ export default class GoTrueAdminApi {
     this.headers = headers
     this.fetch = resolveFetch(fetch)
     this.mfa = {
-      deleteFactor: this._deleteFactor,
+      listFactors: this._listFactors.bind(this),
+      deleteFactor: this._deleteFactor.bind(this),
     }
   }
 
@@ -46,17 +49,17 @@ export default class GoTrueAdminApi {
    * Removes a logged-in session.
    * @param jwt A valid, logged-in JWT.
    */
-  async signOut(jwt: string): Promise<{ error: AuthError | null }> {
+  async signOut(jwt: string): Promise<{ data: null; error: AuthError | null }> {
     try {
       await _request(this.fetch, 'POST', `${this.url}/logout`, {
         headers: this.headers,
         jwt,
         noResolveJson: true,
       })
-      return { error: null }
+      return { data: null, error: null }
     } catch (error) {
       if (isAuthError(error)) {
-        return { error }
+        return { data: null, error }
       }
 
       throw error
@@ -237,22 +240,51 @@ export default class GoTrueAdminApi {
       throw error
     }
   }
-  /**
-   *1G
-   */
-  private async _deleteFactor(factorID: string) {
-    return ''
+
+  private async _listFactors(
+    params: AuthMFAAdminListFactorsParams
+  ): Promise<AuthMFAAdminListFactorsResponse> {
+    try {
+      const data = await _request(
+        this.fetch,
+        'GET',
+        `${this.url}/admin/users/${params.userId}/factors`,
+        {
+          headers: this.headers,
+          xform: _userResponse,
+        }
+      )
+      return { data, error: null }
+    } catch (error) {
+      if (isAuthError(error)) {
+        return { data: null, error }
+      }
+
+      throw error
+    }
   }
-  private async _listFactors() {
-    return ''
-  }
-  private async _deleteRecoveryCodes(uid: string) {
-    return ''
-  }
-  private async _updateFactor(factorID: string, attributes: UpdatableFactorAttributes) {
-    return ''
-  }
-  private async _listFactor() {
-    return ''
+
+  private async _deleteFactor(
+    params: AuthMFAAdminDeleteFactorParams
+  ): Promise<AuthMFAAdminDeleteFactorResponse> {
+    try {
+      const data = await _request(
+        this.fetch,
+        'DELETE',
+        `${this.url}/admin/users/${params.userId}/factors/${params.id}`,
+        {
+          headers: this.headers,
+          xform: _userResponse,
+        }
+      )
+
+      return { data, error: null }
+    } catch (error) {
+      if (isAuthError(error)) {
+        return { data: null, error }
+      }
+
+      throw error
+    }
   }
 }
