@@ -274,6 +274,7 @@ export default class RealtimeClient {
 
   /**
    * Return the next message ref, accounting for overflows
+   * 
    * @internal
    */
   _makeRef(): string {
@@ -289,6 +290,7 @@ export default class RealtimeClient {
 
   /**
    * Unsubscribe from channels with the specified topic.
+   * 
    * @internal
    */
   _leaveOpenTopic(topic: string): void {
@@ -305,6 +307,7 @@ export default class RealtimeClient {
    * Removes a subscription from the socket.
    *
    * @param channel An open subscription.
+   * 
    * @internal
    */
   _remove(channel: RealtimeChannel) {
@@ -315,6 +318,7 @@ export default class RealtimeClient {
 
   /**
    * Returns the URL of the websocket.
+   * 
    * @internal
    */
   private _endPointURL(): string {

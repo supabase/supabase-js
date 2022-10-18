@@ -81,9 +81,8 @@ export default class RealtimeChannel {
   pushBuffer: Push[] = []
   presence: RealtimePresence
 
-  /* Topic name can be any string.
-   */
   constructor(
+    /** Topic name can be any string. */
     public topic: string,
     public params: RealtimeChannelOptions = { config: {} },
     public socket: RealtimeClient
@@ -141,8 +140,7 @@ export default class RealtimeChannel {
     this.presence = new RealtimePresence(this)
   }
 
-  /* Subscribe registers your client with the server
-   */
+  /** Subscribe registers your client with the server */
   subscribe(
     callback?: (status: `${REALTIME_SUBSCRIBE_STATES}`, err?: Error) => void,
     timeout = this.timeout
@@ -286,9 +284,7 @@ export default class RealtimeChannel {
     )
   }
 
-  /**
-   *   Listen to messages.
-   */
+  /** Listen to messages. */
   on(
     type: `${REALTIME_LISTEN_TYPES.BROADCAST}`,
     filter: { event: string },
@@ -400,8 +396,8 @@ export default class RealtimeChannel {
       }
     })
   }
-  /** @internal */
 
+  /** @internal */
   _push(
     event: string,
     payload: { [key: string]: any },
@@ -426,6 +422,7 @@ export default class RealtimeChannel {
    *
    * Receives all events for specialized message handling before dispatching to the channel callbacks.
    * Must return the payload, modified or unmodified.
+   *
    * @internal
    */
   _onMessage(_event: string, payload: any, _ref?: string) {
@@ -436,13 +433,13 @@ export default class RealtimeChannel {
   _isMember(topic: string): boolean {
     return this.topic === topic
   }
-  /** @internal */
 
+  /** @internal */
   _joinRef(): string {
     return this.joinPush.ref
   }
-  /** @internal */
 
+  /** @internal */
   _trigger(type: string, payload?: any, ref?: string) {
     const typeLower = type.toLocaleLowerCase()
     const { close, error, leave, join } = CHANNEL_EVENTS
@@ -514,33 +511,33 @@ export default class RealtimeChannel {
         })
     }
   }
-  /** @internal */
 
+  /** @internal */
   _isClosed(): boolean {
     return this.state === CHANNEL_STATES.closed
   }
-  /** @internal */
 
+  /** @internal */
   _isJoined(): boolean {
     return this.state === CHANNEL_STATES.joined
   }
-  /** @internal */
 
+  /** @internal */
   _isJoining(): boolean {
     return this.state === CHANNEL_STATES.joining
   }
-  /** @internal */
 
+  /** @internal */
   _isLeaving(): boolean {
     return this.state === CHANNEL_STATES.leaving
   }
-  /** @internal */
 
+  /** @internal */
   _replyEventName(ref: string): string {
     return `chan_reply_${ref}`
   }
-  /** @internal */
 
+  /** @internal */
   _on(type: string, filter: { [key: string]: any }, callback: Function) {
     const typeLower = type.toLocaleLowerCase()
 
@@ -558,8 +555,8 @@ export default class RealtimeChannel {
 
     return this
   }
-  /** @internal */
 
+  /** @internal */
   _off(type: string, filter: { [key: string]: any }) {
     const typeLower = type.toLocaleLowerCase()
 
@@ -571,8 +568,8 @@ export default class RealtimeChannel {
     })
     return this
   }
-  /** @internal */
 
+  /** @internal */
   private static isEqual(
     obj1: { [key: string]: string },
     obj2: { [key: string]: string }
@@ -600,6 +597,7 @@ export default class RealtimeChannel {
 
   /**
    * Registers a callback that will be executed when the channel closes.
+   * 
    * @internal
    */
   private _onClose(callback: Function) {
@@ -608,6 +606,7 @@ export default class RealtimeChannel {
 
   /**
    * Registers a callback that will be executed when the channel encounteres an error.
+   * 
    * @internal
    */
   private _onError(callback: Function) {
@@ -616,6 +615,7 @@ export default class RealtimeChannel {
 
   /**
    * Returns `true` if the socket is connected and the channel has been joined.
+   * 
    * @internal
    */
   private _canPush(): boolean {
