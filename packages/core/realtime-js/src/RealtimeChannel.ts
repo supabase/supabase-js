@@ -60,9 +60,9 @@ export enum REALTIME_SUBSCRIBE_STATES {
 }
 
 /** A channel is the basic building block of Realtime
- * It narrows the scope of data flow to subscribed clients.
+ * and narrows the scope of data flow to subscribed clients.
  * You can think of a channel as a chatroom where participants are able to see who's online
- * and send and receive messages; similar to a Discord or Slack channel.
+ * and send and receive messages.
  **/
 export default class RealtimeChannel {
   bindings: {
