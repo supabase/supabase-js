@@ -1145,7 +1145,7 @@ export default class GoTrueClient {
   private async _listFactors(): Promise<AuthMFAListFactorsResponse> {
     const { data: sessionData, error: sessionError } = await this.getSession()
     if (sessionError) {
-      return { data: { all: [], totp: [] }, error: sessionError }
+      return { data: null, error: sessionError }
     }
 
     const factors = sessionData?.session?.user?.factors || []
