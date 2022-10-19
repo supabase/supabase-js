@@ -599,9 +599,9 @@ export default class GoTrueClient {
    * If the current session's refresh token is invalid, an error will be thrown.
    * @param currentSession The current session. If passed in, it must contain a refresh token.
    */
-  async refreshSession(
-    currentSession?: Pick<Session, 'refresh_token'>
-  ): Promise<AuthResponse> {
+  async refreshSession(currentSession?: {
+    refresh_token: string
+  }): Promise<AuthResponse> {
     try {
       if (!currentSession) {
         const { data, error } = await this.getSession()
