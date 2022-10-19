@@ -300,6 +300,12 @@ export type SignInWithPasswordCredentials =
       /** The user's password. */
       password: string
       options?: {
+        /**
+         * A custom data object to store the user's metadata. This maps to the `auth.users.user_metadata` column.
+         *
+         * The `data` should be a JSON object that includes user-specific info, such as their first and last name.
+         */
+        data?: object
         /** Verification token received when the user completes the captcha on the site. */
         captchaToken?: string
       }
@@ -310,6 +316,12 @@ export type SignInWithPasswordCredentials =
       /** The user's password. */
       password: string
       options?: {
+        /**
+         * A custom data object to store the user's metadata. This maps to the `auth.users.user_metadata` column.
+         *
+         * The `data` should be a JSON object that includes user-specific info, such as their first and last name.
+         */
+        data?: object
         /** Verification token received when the user completes the captcha on the site. */
         captchaToken?: string
       }

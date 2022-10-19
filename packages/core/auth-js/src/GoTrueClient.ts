@@ -204,7 +204,7 @@ export default class GoTrueClient {
           body: {
             email,
             password,
-            data: options?.data,
+            data: options?.data ?? {},
             gotrue_meta_security: { captcha_token: options?.captchaToken },
           },
           xform: _sessionResponse,
@@ -216,7 +216,7 @@ export default class GoTrueClient {
           body: {
             phone,
             password,
-            data: options?.data,
+            data: options?.data ?? {},
             gotrue_meta_security: { captcha_token: options?.captchaToken },
           },
           xform: _sessionResponse,
@@ -266,6 +266,7 @@ export default class GoTrueClient {
           body: {
             email,
             password,
+            data: options?.data ?? {},
             gotrue_meta_security: { captcha_token: options?.captchaToken },
           },
           xform: _sessionResponse,
@@ -277,6 +278,7 @@ export default class GoTrueClient {
           body: {
             phone,
             password,
+            data: options?.data ?? {},
             gotrue_meta_security: { captcha_token: options?.captchaToken },
           },
           xform: _sessionResponse,
