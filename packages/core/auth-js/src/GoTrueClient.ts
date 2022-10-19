@@ -17,7 +17,6 @@ import {
 } from './lib/errors'
 import { Fetch, _request, _sessionResponse, _userResponse } from './lib/fetch'
 import {
-  decodeBase64URL,
   Deferred,
   getItemAsync,
   getParameterByName,
@@ -62,6 +61,7 @@ import type {
   AMREntry,
   AuthMFAGetAuthenticatorAssuranceLevelResponse,
   AuthenticatorAssuranceLevels,
+  Factor,
 } from './lib/types'
 
 polyfillGlobalThis() // Make "globalThis" available
@@ -1163,12 +1163,21 @@ export default class GoTrueClient {
   }
 
   private async _getAuthenticatorAssuranceLevel(): Promise<AuthMFAGetAuthenticatorAssuranceLevelResponse> {
-    const { data: sessionData, error: sessionError } = await this.getSession()
+    const {
+      data: { session },
+      error: sessionError,
+    } = await this.getSession()
     if (sessionError) {
       return { data: null, error: sessionError }
     }
+    if (!session) {
+      return {
+        data: { currentLevel: null, nextLevel: null, currentAuthenticationMethods: [] },
+        error: null,
+      }
+    }
 
-    const payload = this._decodeJWT(sessionData!.session!.access_token!)
+    const payload = this._decodeJWT(session.access_token)
 
     let currentLevel: AuthenticatorAssuranceLevels | null = null
 
@@ -1179,13 +1188,13 @@ export default class GoTrueClient {
     let nextLevel: AuthenticatorAssuranceLevels | null = currentLevel
 
     const verifiedFactors =
-      sessionData?.session?.user?.factors?.filter((factor) => factor.status === 'verified') ?? []
+      session.user.factors?.filter((factor: Factor) => factor.status === 'verified') ?? []
 
     if (verifiedFactors.length > 0) {
       nextLevel = 'aal2'
     }
 
-    const currentAuthenticationMethods = payload.amr || null
+    const currentAuthenticationMethods = payload.amr || []
 
     return { data: { currentLevel, nextLevel, currentAuthenticationMethods }, error: null }
   }
