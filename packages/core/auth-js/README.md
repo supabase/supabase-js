@@ -5,7 +5,7 @@ An isomorphic JavaScript client library for the [GoTrue](https://github.com/supa
 ## Docs
 
 - Using `gotrue-js`: https://supabase.com/docs/reference/javascript/auth-signup
-- TypeDoc: https://supabase.github.io/gotrue-js/
+- TypeDoc: https://supabase.github.io/gotrue-js/v2
 
 ## Quick start
 
