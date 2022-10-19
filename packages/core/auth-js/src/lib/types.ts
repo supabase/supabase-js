@@ -687,7 +687,7 @@ export type AuthMFAGetAuthenticatorAssuranceLevelResponse =
          * the information here to detect the last time a user verified a
          * factor, for example if implementing a step-up scenario.
          */
-        currentAuthenticationMethods: AMREntry[] | null
+        currentAuthenticationMethods: AMREntry[]
       }
       error: null
     }
