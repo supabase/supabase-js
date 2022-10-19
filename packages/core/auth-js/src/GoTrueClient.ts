@@ -595,7 +595,7 @@ export default class GoTrueClient {
 
   /**
    * Returns a new session, regardless of expiry status.
-   * Takes in an optional current session. If not passed in, then refreshSession() will attempt to retreive it from getSession().
+   * Takes in an optional current session. If not passed in, then refreshSession() will attempt to retrieve it from getSession().
    * If the current session's refresh token is invalid, an error will be thrown.
    * @param currentSession The current session. If passed in, it must contain a refresh token.
    */
