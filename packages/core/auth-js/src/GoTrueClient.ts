@@ -1148,12 +1148,7 @@ export default class GoTrueClient {
     if (challengeError) {
       return { data: null, error: challengeError}
     }
-    return await _request(this.fetch, 'POST', `${this.url}/factors/${params.factorId}/verify`, {
-      body: { code: params.code, challenge_id: challengeData.id },
-      headers: this.headers,
-      jwt: sessionData?.session?.access_token,
-
-    })
+    return this._verify({challengeId: challengeData.id, code: params.code})
   }
 
   /**
