@@ -1143,14 +1143,17 @@ export default class GoTrueClient {
    * Displays all devices for a given user
    */
   private async _listFactors(): Promise<AuthMFAListFactorsResponse> {
-    const { data: sessionData, error: sessionError } = await this.getSession()
-    if (sessionError) {
-      return { data: null, error: sessionError }
+    const {
+      data: { user },
+      error: userError,
+    } = await this.getUser()
+    if (userError) {
+      return { data: null, error: userError }
     }
 
-    const factors = sessionData?.session?.user?.factors || []
+    const factors = user?.factors || []
     const totp = factors.filter(
-      (factor) => 'totp' === factor.factor_type && 'verified' === factor.status
+      (factor) => factor.factor_type === 'totp' && factor.status === 'verified'
     )
 
     return {
