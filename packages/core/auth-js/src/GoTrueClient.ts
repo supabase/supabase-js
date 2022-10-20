@@ -1144,7 +1144,7 @@ export default class GoTrueClient {
     if (sessionError) {
       return { data: null, error: sessionError }
     }
-    const {data: challengeData, error: challengeError} = await this.mfa.challenge({factorId: params.factorId})
+    const { data: challengeData, error: challengeError } = await this.mfa.challenge({factorId: params.factorId})
     if (challengeError) {
       return { data: null, error: challengeError}
     }
