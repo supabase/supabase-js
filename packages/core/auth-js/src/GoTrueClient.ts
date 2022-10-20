@@ -145,6 +145,7 @@ export default class GoTrueClient {
       unenroll: this._unenroll.bind(this),
       challenge: this._challenge.bind(this),
       listFactors: this._listFactors.bind(this),
+      challengeAndVerify: this._challengeAndVerify.bind(this),
       getAuthenticatorAssuranceLevel: this._getAuthenticatorAssuranceLevel.bind(this),
     }
   }
@@ -1137,6 +1138,17 @@ export default class GoTrueClient {
       headers: this.headers,
       jwt: sessionData?.session?.access_token,
     })
+  }
+  private async _challengeAndVerify(params: MFAChallengeAndVerifyParams): Promise<AuthMFAVerifyResponse> {
+    const { data: sessionData, error: sessionError } = await this.getSession()
+    if (sessionError) {
+      return { data: null, error: sessionError }
+    }
+    const { data: challengeData, error: challengeError } = await this.mfa.challenge({factorId: params.factorId})
+    if (challengeError) {
+      return { data: null, error: challengeError}
+    }
+    return this._verify({challengeId: challengeData.id, code: params.code})
   }
 
   /**

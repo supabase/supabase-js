@@ -591,6 +591,16 @@ export type MFAChallengeParams = {
 /**
  * @experimental
  */
+export type MFAChallengeAndVerifyParams = {
+  /** ID of the factor being verified. */
+  factorId: string
+  /** Verification code provided by the user. */
+  code: string
+}
+
+/**
+ * @experimental
+ */
 export type AuthMFAVerifyResponse =
   | {
       data: {
@@ -782,6 +792,16 @@ export interface GoTrueMFAApi {
    * @experimental
    */
   unenroll(params: MFAUnenrollParams): Promise<AuthMFAUnenrollResponse>
+
+/**
+   * Helper method which creates a challenge and immediately uses the given code to verify against it thereafter. The verification code is
+   * provided by the user by entering a code seen in their authenticator app.
+   *
+   * @see {@link GoTrueMFAApi#challengeAndVerify}
+   *
+   * @experimental
+   */
+  challengeAndVerify(params: MFAChallengeAndVerifyParams): Promise<AuthMFAVerifyResponse>
 
   /**
    * Returns the list of MFA factors enabled for this user. For most use cases
