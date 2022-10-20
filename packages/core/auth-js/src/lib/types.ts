@@ -794,7 +794,7 @@ export interface GoTrueMFAApi {
   unenroll(params: MFAUnenrollParams): Promise<AuthMFAUnenrollResponse>
 
 /**
-   * Helper methdo which creates a challenge and immediately uses the given code to verify against it thereafter. The verification code is
+   * Helper method which creates a challenge and immediately uses the given code to verify against it thereafter. The verification code is
    * provided by the user by entering a code seen in their authenticator app.
    *
    * @see {@link GoTrueMFAApi#challengeAndVerify}
