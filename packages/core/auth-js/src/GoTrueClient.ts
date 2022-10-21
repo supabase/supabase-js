@@ -635,6 +635,48 @@ export default class GoTrueClient {
   }
 
   /**
+   * Returns a new session, regardless of expiry status.
+   * Takes in an optional current session. If not passed in, then refreshSession() will attempt to retrieve it from getSession().
+   * If the current session's refresh token is invalid, an error will be thrown.
+   * @param currentSession The current session. If passed in, it must contain a refresh token.
+   */
+  async refreshSession(currentSession?: {
+    refresh_token: string
+  }): Promise<AuthResponse> {
+    try {
+      if (!currentSession) {
+        const { data, error } = await this.getSession()
+        if (error) {
+          throw error
+        }
+
+        currentSession = data.session ?? undefined
+      }
+
+      if (!currentSession?.refresh_token) {
+        throw new AuthSessionMissingError()
+      }
+
+      const { session, error } = await this._callRefreshToken(currentSession.refresh_token)
+      if (error) {
+        return { data: { user: null, session: null }, error: error }
+      }
+
+      if (!session) {
+        return { data: { user: null, session: null }, error: null }
+      }
+
+      return { data: { user: session.user, session }, error: null }
+    } catch (error) {
+      if (isAuthError(error)) {
+        return { data: { user: null, session: null }, error }
+      }
+
+      throw error
+    }
+  }
+
+  /**
    * Gets the session data from a URL string
    */
   private async _getSessionFromUrl(): Promise<
