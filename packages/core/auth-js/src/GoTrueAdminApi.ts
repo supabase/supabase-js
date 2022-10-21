@@ -251,7 +251,6 @@ export default class GoTrueAdminApi {
         `${this.url}/admin/users/${params.userId}/factors`,
         {
           headers: this.headers,
-          xform: _userResponse,
         }
       )
       return { data, error: null }
@@ -274,7 +273,6 @@ export default class GoTrueAdminApi {
         `${this.url}/admin/users/${params.userId}/factors/${params.id}`,
         {
           headers: this.headers,
-          xform: _userResponse,
         }
       )
 
