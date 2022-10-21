@@ -62,6 +62,7 @@ import type {
   AuthMFAGetAuthenticatorAssuranceLevelResponse,
   AuthenticatorAssuranceLevels,
   Factor,
+  MFAChallengeAndVerifyParams,
 } from './lib/types'
 
 polyfillGlobalThis() // Make "globalThis" available
@@ -640,9 +641,7 @@ export default class GoTrueClient {
    * If the current session's refresh token is invalid, an error will be thrown.
    * @param currentSession The current session. If passed in, it must contain a refresh token.
    */
-  async refreshSession(currentSession?: {
-    refresh_token: string
-  }): Promise<AuthResponse> {
+  async refreshSession(currentSession?: { refresh_token: string }): Promise<AuthResponse> {
     try {
       if (!currentSession) {
         const { data, error } = await this.getSession()
@@ -1183,16 +1182,20 @@ export default class GoTrueClient {
       jwt: sessionData?.session?.access_token,
     })
   }
-  private async _challengeAndVerify(params: MFAChallengeAndVerifyParams): Promise<AuthMFAVerifyResponse> {
-    const { data: sessionData, error: sessionError } = await this.getSession()
-    if (sessionError) {
-      return { data: null, error: sessionError }
-    }
-    const { data: challengeData, error: challengeError } = await this.mfa.challenge({factorId: params.factorId})
+  private async _challengeAndVerify(
+    params: MFAChallengeAndVerifyParams
+  ): Promise<AuthMFAVerifyResponse> {
+    const { data: challengeData, error: challengeError } = await this._challenge({
+      factorId: params.factorId,
+    })
     if (challengeError) {
-      return { data: null, error: challengeError}
+      return { data: null, error: challengeError }
     }
-    return this._verify({challengeId: challengeData.id, code: params.code})
+    return await this._verify({
+      factorId: params.factorId,
+      challengeId: challengeData.id,
+      code: params.code,
+    })
   }
 
   /**
