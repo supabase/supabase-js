@@ -481,8 +481,9 @@ export default class GoTrueClient {
       return { data: { session: null }, error: null }
     }
 
+    const timeNow = Math.round(Date.now() / 1000);
     const hasExpired = currentSession.expires_at
-      ? currentSession.expires_at <= Date.now() / 1000
+      ? currentSession.expires_at <= timeNow + EXPIRY_MARGIN
       : false
     if (!hasExpired) {
       return { data: { session: currentSession }, error: null }
