@@ -1,128 +1,213 @@
-# Realtime Client
+<br />
+<p align="center">
+  <a href="https://supabase.io">
+        <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/supabase/supabase/master/packages/common/assets/images/supabase-logo-wordmark--dark.svg">
+      <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/supabase/supabase/master/packages/common/assets/images/supabase-logo-wordmark--light.svg">
+      <img alt="Supabase Logo" width="300" src="https://raw.githubusercontent.com/supabase/supabase/master/packages/common/assets/images/logo-preview.jpg">
+    </picture>
+  </a>
 
-Listens to changes in a PostgreSQL Database and via websockets.
+  <h1 align="center">Supabase Realtime Client</h1>
 
-This is for usage with Supabase [Realtime](https://github.com/supabase/realtime) server.
+  <h3 align="center">Send ephemeral messages with <b>Broadcast</b>, track and synchronize state with <b>Presence</b>, and listen to database changes with <b>Postgres Change Data Capture (CDC)</b>.</h3>
 
-## Usage
+  <p align="center">
+    <a href="https://supabase.com/docs/guides/realtime">Guides</a>
+    ·
+    <a href="https://supabase.com/docs/reference/javascript">Reference Docs</a>
+    ·
+    <a href="https://multiplayer.dev">Multiplayer Demo</a>
+  </p>
+</p>
 
-### Creating a Socket connection
+# Overview
 
-You can set up one connection to be used across the whole app.
+This client enables you to use the following Supabase Realtime's features:
 
-```js
-import { RealtimeClient } from '@supabase/realtime-js'
+- **Broadcast**: send ephemeral messages from client to clients with minimal latency. Use cases include sharing cursor positions between users.
+- **Presence**: track and synchronize shared state across clients with the help of CRDTs. Use cases include tracking which users are currently viewing a specific webpage.
+- **Postgres Change Data Capture (CDC)**: listen for changes in your PostgreSQL database and send them to clients.
 
-var client = new RealtimeClient(process.env.REALTIME_URL)
-client.connect()
+# Usage
+
+## Installing the Package
+
+```bash
+npm install @supabase/realtime-js
 ```
 
-REALTIME_URL is `'ws://localhost:4000/socket'` when developing locally and `'wss://<project_ref>.supabase.co/realtime/v1'` when connecting to your Supabase project.
-
-You can pass in your JWT If you have enabled JWT authorization in Supabase [Realtime](https://github.com/supabase/realtime) server.
+## Creating a Channel
 
 ```js
 import { RealtimeClient } from '@supabase/realtime-js'
 
-var client = new RealtimeClient(process.env.REALTIME_URL, {
-  params: { apikey: 'token123' },
+const client = new RealtimeClient(REALTIME_URL, {
+  params: {
+    apikey: API_KEY,
+    eventsPerSecond: 10,
+  },
 })
-client.connect()
+
+const channel = client.channel('test-channel', {})
+
+channel.subscribe((status, err) => {
+  if (status === 'SUBSCRIBED') {
+    console.log('Connected!')
+  }
+
+  if (status === 'CHANNEL_ERROR') {
+    console.log(`There was an error subscribing to channel: ${err.message}`)
+  }
+
+  if (status === 'TIMED_OUT') {
+    console.log('Realtime server did not respond in time.')
+  }
+
+  if (status === 'CLOSED') {
+    console.log('Realtime channel was unexpectedly closed.')
+  }
+})
 ```
 
-See [Realtime: Websocket Connection Authorization](https://github.com/supabase/realtime#websocket-connection-authorization) for more information.
+### Notes:
 
-### Subscribing to events
+- `REALTIME_URL` is `'ws://localhost:4000/socket'` when developing locally and `'wss://<project_ref>.supabase.co/realtime/v1'` when connecting to your Supabase project.
+- `API_KEY` is a JWT whose claims must contain `exp` and `role` (existing database role).
+- Channel name can be any `string`.
+- `eventsPerSecond`, or client-side rate limiting, enforces the number of events sent to the Realtime server uniformly spread across a second. The default is 10, which means that the client can send one event, whether that's **Broadcast**/**Presence**/**Postgres CDC**, every 100 milliseconds. You may change this as you see fit but note that the server's rate limiting will need to be updated accordingly. You can learn more about Realtime's rate limits here: https://supabase.com/docs/guides/realtime/rate-limits.
 
-You can listen to `INSERT`, `UPDATE`, `DELETE`, or all `*` events.
+## Broadcast
 
-You can subscribe to events on the whole database, schema, table, or individual columns using `channel()`. Channels are multiplexed over the Socket connection.
-
-To join a channel, you must provide the `topic`, where a topic is either:
-
-- `realtime` - entire database
-- `realtime:{schema}` - where `{schema}` is the Postgres Schema
-- `realtime:{schema}:{table}` - where `{table}` is the Postgres table name
-- `realtime:{schema}:{table}:{col}=eq.{val}` - where `{col}` is the column name, and `{val}` is the value which you want to match
-
-**Examples**
+Your client can send and receive messages based on the `event`.
 
 ```js
-// Listen to events on the entire database.
-var databaseChanges = client.channel('realtime:*')
-databaseChanges.on('*', (e) => console.log(e))
-databaseChanges.on('INSERT', (e) => console.log(e))
-databaseChanges.on('UPDATE', (e) => console.log(e))
-databaseChanges.on('DELETE', (e) => console.log(e))
-databaseChanges.subscribe()
+// Setup...
 
-// Listen to events on a schema, using the format `realtime:{SCHEMA}`
-var publicSchema = client.channel('realtime:public')
-publicSchema.on('*', (e) => console.log(e))
-publicSchema.on('INSERT', (e) => console.log(e))
-publicSchema.on('UPDATE', (e) => console.log(e))
-publicSchema.on('DELETE', (e) => console.log(e))
-publicSchema.subscribe()
+const channel = client.channel('broadcast-test', { broadcast: { ack: false, self: false } })
 
-// Listen to events on a table, using the format `realtime:{SCHEMA}:{TABLE}`
-var usersTable = client.channel('realtime:public:users')
-usersTable.on('*', (e) => console.log(e))
-usersTable.on('INSERT', (e) => console.log(e))
-usersTable.on('UPDATE', (e) => console.log(e))
-usersTable.on('DELETE', (e) => console.log(e))
-usersTable.subscribe()
+channel.on('broadcast', { event: 'some-event' }, (payload) =>
+  console.log(payload)
+)
 
-// Listen to events on a row, using the format `realtime:{SCHEMA}:{TABLE}:{COL}=eq.{VAL}`
-var rowChanges = client.channel('realtime:public:users:id=eq.1')
-rowChanges.on('*', (e) => console.log(e))
-rowChanges.on('INSERT', (e) => console.log(e))
-rowChanges.on('UPDATE', (e) => console.log(e))
-rowChanges.on('DELETE', (e) => console.log(e))
-rowChanges.subscribe()
+channel.subscribe(async (status) => {
+  if (status === 'SUBSCRIBED') {
+    // Send message to other clients listening to 'broadcast-test' channel
+    await channel.send({
+      type: 'broadcast',
+      event: 'some-event',
+      payload: { hello: 'world' },
+    })
+  }
+})
 ```
 
-**Removing a subscription**
+### Notes:
 
-You can unsubscribe from a topic using `channel.unsubscribe()`.
+- Setting `ack` to `true` means that the `channel.send` promise will resolve once server replies with acknowledgement that it received the broadcast message request.
+- Setting `self` to `true` means that the client will receive the broadcast message it sent out.
 
-**Disconnect the socket**
+## Presence
 
-Call `disconnect()` on the socket:
+Your client can track and sync state that's stored in the channel.
 
 ```js
-let { error, data } = await client.disconnect()
+// Setup...
+
+const channel = client.channel('presence-test', { presence: { key: '' } })
+
+channel.on('presence', { event: 'sync' }, () => {
+  console.log('Online users: ', channel.presenceState())
+})
+
+channel.on('presence', { event: 'join' }, ({ newPresences }) => {
+  console.log('New users have joined: ', newPresences)
+})
+
+channel.on('presence', { event: 'leave' }, ({ leftPresences }) => {
+  console.log('Users have left: ', newPresences)
+})
+
+channel.subscribe(async (status) => {
+  if (status === 'SUBSCRIBED') {
+    const status = await channel.track({ 'user_id': 1 })
+    console.log(status)
+  }
+})
 ```
 
-**Duplicate Join Subscriptions**
+## Postgres CDC
 
-While the client may join any number of topics on any number of channels, the client may only hold a single subscription for each unique topic at any given time. When attempting to create a duplicate subscription, the server will close the existing channel, log a warning, and spawn a new channel for the topic. The client will have their `channel.onClose` callbacks fired for the existing channel, and the new
-channel join will have its receive hooks processed as normal.
-
-**Channel Hooks**
+Receive database changes on the client.
 
 ```js
-channel._onError(() => console.log('there was an error!'))
-channel._onClose(() => console.log('the channel has gone away gracefully'))
+// Setup...
+
+const channel = client.channel('db-changes')
+
+channel.on('postgres_changes', { event: '*', schema: 'public' }, (payload) => {
+  console.log('All changes in public schema: ', payload)
+})
+
+channel.on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, (payload) => {
+  console.log('All inserts in messages table: ', payload)
+})
+
+channel.on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'users', filter: 'username=eq.Realtime' }, (payload) => {
+  console.log('All updates on users table when username is Realtime: ', payload)
+})
+
+channel.subscribe(async (status) => {
+  if (status === 'SUBSCRIBED') {
+    console.log('Ready to receive database changes!')
+  }
+})
 ```
 
-- `onError` hooks are invoked if the socket connection drops, or the channel crashes on the server. In either case, a channel rejoin is attempted automatically in an exponential backoff manner.
-- `onClose` hooks are invoked only in two cases. 1) the channel explicitly closed on the server, or 2). The client explicitly closed, by calling `channel.unsubscribe()`
+## Get All Channels
 
-**Subscription Hooks**
+You can see all the channels that your client has instantiatied.
 
 ```js
-publicSchema
-  .subscribe()
-  .receive('ok', () => console.log('Connected.'))
-  .receive('error', () => console.log('Failed.'))
-  .receive('timeout', () => console.log('Timed out, retrying.'))
+// Setup...
+
+client.getChannels()
+```
+
+## Cleanup
+
+It is highly recommended that you clean up your channels after you're done with them.
+
+- Remove a single channel
+
+```js
+// Setup...
+
+const channel = client.channel('some-channel-to-remove')
+
+channel.subscribe()
+
+client.removeChannel(channel)
+```
+
+- Remove all channels
+
+```js
+// Setup...
+
+const channel1 = client.channel('a-channel-to-remove')
+const channel2 = client.channel('another-channel-to-remove')
+
+channel1.subscribe()
+channel2.subscribe()
+
+client.removeAllChannels()
 ```
 
 ## Credits
 
-- Original Node.js client was made by Mario Campa of [phoenix-channels](github.com/mcampa/phoenix-client).
-- API was made by authors of the [Phoenix Framework](http://www.phoenixframework.org/). See their website for complete list of authors.
+This repo draws heavily from [phoenix-js](https://github.com/phoenixframework/phoenix/tree/master/assets/js/phoenix).
 
 ## License
 
-MIT. License is the same as [phoenix-channels](https://github.com/mcampa/phoenix-client) and [Phoenix Framework](https://phoenixframework.org/).
+MIT.
