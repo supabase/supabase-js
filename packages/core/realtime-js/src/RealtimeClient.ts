@@ -186,7 +186,7 @@ export default class RealtimeClient {
   /**
    * Logs the message.
    *
-   * For customized logging, `this.logger` can be overriden.
+   * For customized logging, `this.logger` can be overridden.
    */
   log(kind: string, msg: string, data?: any) {
     this.logger(kind, msg, data)
@@ -209,7 +209,7 @@ export default class RealtimeClient {
   }
 
   /**
-   * Retuns `true` is the connection is open.
+   * Returns `true` is the connection is open.
    */
   isConnected(): boolean {
     return this.connectionState() === CONNECTION_STATE.Open
@@ -274,7 +274,7 @@ export default class RealtimeClient {
 
   /**
    * Return the next message ref, accounting for overflows
-   * 
+   *
    * @internal
    */
   _makeRef(): string {
@@ -290,7 +290,7 @@ export default class RealtimeClient {
 
   /**
    * Unsubscribe from channels with the specified topic.
-   * 
+   *
    * @internal
    */
   _leaveOpenTopic(topic: string): void {
@@ -307,7 +307,7 @@ export default class RealtimeClient {
    * Removes a subscription from the socket.
    *
    * @param channel An open subscription.
-   * 
+   *
    * @internal
    */
   _remove(channel: RealtimeChannel) {
@@ -318,7 +318,7 @@ export default class RealtimeClient {
 
   /**
    * Returns the URL of the websocket.
-   * 
+   *
    * @internal
    */
   private _endPointURL(): string {

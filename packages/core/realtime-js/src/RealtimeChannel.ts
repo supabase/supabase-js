@@ -14,7 +14,7 @@ export type RealtimeChannelOptions = {
   config: {
     /**
      * self option enables client to receive message it broadcast
-     * ack option instructs server to acknowlege that broadcast message was received
+     * ack option instructs server to acknowledge that broadcast message was received
      */
     broadcast?: { self?: boolean; ack?: boolean }
     /**
@@ -639,7 +639,7 @@ export default class RealtimeChannel {
 
   /**
    * Registers a callback that will be executed when the channel closes.
-   * 
+   *
    * @internal
    */
   private _onClose(callback: Function) {
@@ -648,7 +648,7 @@ export default class RealtimeChannel {
 
   /**
    * Registers a callback that will be executed when the channel encounteres an error.
-   * 
+   *
    * @internal
    */
   private _onError(callback: Function) {
@@ -657,7 +657,7 @@ export default class RealtimeChannel {
 
   /**
    * Returns `true` if the socket is connected and the channel has been joined.
-   * 
+   *
    * @internal
    */
   private _canPush(): boolean {
