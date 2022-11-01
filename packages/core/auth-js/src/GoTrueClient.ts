@@ -401,7 +401,7 @@ export default class GoTrueClient {
         headers: this.headers,
         body: {
           ...params,
-          gotrue_meta_security: { captchaToken: params.options?.captchaToken },
+          gotrue_meta_security: { captcha_token: params.options?.captchaToken },
         },
         redirectTo: params.options?.redirectTo,
         xform: _sessionResponse,
