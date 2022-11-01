@@ -71,7 +71,9 @@ import { createClient } from '@supabase/supabase-js'
 
 // Provide a custom `fetch` implementation as an option
 const supabase = createClient('https://xyzcompany.supabase.co', 'public-anon-key', {
-  fetch: (...args) => fetch(...args),
+  global: {
+    fetch: (...args) => fetch(...args),
+  },
 })
 ```
 
