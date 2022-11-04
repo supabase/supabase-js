@@ -576,11 +576,12 @@ export default class GoTrueClient {
    * Sets the session data from the current session. If the current session is expired, setSession will take care of refreshing it to obtain a new session.
    * If the refresh token in the current session is invalid and the current session has expired, an error will be thrown.
    * If the current session does not contain at expires_at field, setSession will use the exp claim defined in the access token.
-   * @param currentSession The current session that minimally contains an access token, refresh token and a user.
+   * @param currentSession The current session that minimally contains an access token and refresh token.
    */
-  async setSession(
-    currentSession: Pick<Session, 'access_token' | 'refresh_token'>
-  ): Promise<AuthResponse> {
+  async setSession(currentSession: {
+    access_token: string
+    refresh_token: string
+  }): Promise<AuthResponse> {
     try {
       const timeNow = Date.now() / 1000
       let expiresAt = timeNow
