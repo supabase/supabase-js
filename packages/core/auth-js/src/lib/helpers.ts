@@ -88,7 +88,7 @@ export const decodeBase64URL = (value: string): string => {
     return decodeURIComponent(
       atob(value.replace(/[-]/g, '+').replace(/[_]/g, '/'))
         .split('')
-        .map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+        .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
         .join('')
     )
   } catch (e) {

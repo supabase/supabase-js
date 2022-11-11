@@ -1,6 +1,7 @@
 import { expiresAt, looksLikeFetchResponse } from './helpers'
 import {
   AuthResponse,
+  SSOResponse,
   GenerateLinkProperties,
   GenerateLinkResponse,
   User,
@@ -134,6 +135,10 @@ export function _sessionResponse(data: any): AuthResponse {
 export function _userResponse(data: any): UserResponse {
   const user: User = data.user ?? (data as User)
   return { data: { user }, error: null }
+}
+
+export function _ssoResponse(data: any): SSOResponse {
+  return { data, error: null }
 }
 
 export function _generateLinkResponse(data: any): GenerateLinkResponse {
