@@ -6,6 +6,7 @@ import {
   clientApiAutoConfirmOffSignupsEnabledClient as phoneClient,
   clientApiAutoConfirmDisabledClient as signUpDisabledClient,
   clientApiAutoConfirmEnabledClient as signUpEnabledClient,
+  authAdminApiAutoConfirmEnabledClient,
 } from './lib/clients'
 import { mockUserCredentials } from './lib/utils'
 
@@ -528,7 +529,9 @@ describe('GoTrueClient', () => {
     expect(userSession.session?.user).not.toBeNull()
     expect(userSession.session?.user?.email).toBe(email)
   })
+})
 
+describe('Signout behaviour', () => {
   test('signOut', async () => {
     const { email, password } = mockUserCredentials()
 
@@ -542,9 +545,45 @@ describe('GoTrueClient', () => {
       password,
     })
 
-    const res = await authWithSession.signOut()
+    const { error } = await authWithSession.signOut()
 
-    expect(res).toBeTruthy()
+    expect(error).toBe(null)
+    const {
+      data: { user },
+    } = await authWithSession.getUser()
+    expect(user).toBe(null)
+  })
+
+  test('signOut should remove session if user is not found or jwt is invalid', async () => {
+    const { email, password } = mockUserCredentials()
+
+    await authWithSession.signUp({
+      email,
+      password,
+    })
+
+    const {
+      data: { user },
+      error: signInError,
+    } = await authWithSession.signInWithPassword({
+      email,
+      password,
+    })
+    expect(signInError).toBe(null)
+    expect(user).not.toBe(null)
+
+    const {
+      data: { session },
+      error: sessionError,
+    } = await authWithSession.getSession()
+    expect(session).not.toBe(null)
+    expect(sessionError).toBe(null)
+
+    const id = user ? user.id : '' // user should not be null
+    await authAdminApiAutoConfirmEnabledClient.deleteUser(id)
+
+    const { error } = await authWithSession.signOut()
+    expect(error).toBe(null)
   })
 })
 

@@ -13,6 +13,7 @@ import {
   AuthRetryableFetchError,
   AuthSessionMissingError,
   AuthUnknownError,
+  isAuthApiError,
   isAuthError,
 } from './lib/errors'
 import { Fetch, _request, _sessionResponse, _userResponse, _ssoResponse } from './lib/fetch'
@@ -816,7 +817,13 @@ export default class GoTrueClient {
     const accessToken = data.session?.access_token
     if (accessToken) {
       const { error } = await this.admin.signOut(accessToken)
-      if (error) return { error }
+      if (error) {
+        // ignore 404s since user might not exist anymore
+        // ignore 401s since an invalid or expired JWT should sign out the current session
+        if (!(isAuthApiError(error) && (error.status === 404 || error.status === 401))) {
+          return { error }
+        }
+      }
     }
     await this._removeSession()
     this._notifyAllSubscribers('SIGNED_OUT', null)

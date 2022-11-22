@@ -82,7 +82,7 @@ export async function _request(
   url: string,
   options?: GotrueRequestOptions
 ) {
-  const headers = options?.headers ?? {}
+  const headers = { ...options?.headers }
   if (options?.jwt) {
     headers['Authorization'] = `Bearer ${options.jwt}`
   }

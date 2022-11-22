@@ -29,6 +29,10 @@ export class AuthApiError extends AuthError {
   }
 }
 
+export function isAuthApiError(error: unknown): error is AuthApiError {
+  return isAuthError(error) && error.name === 'AuthApiError'
+}
+
 export class AuthUnknownError extends AuthError {
   originalError: unknown
 

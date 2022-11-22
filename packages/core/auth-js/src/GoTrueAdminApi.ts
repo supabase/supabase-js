@@ -7,7 +7,6 @@ import {
   User,
   UserResponse,
   GoTrueAdminMFAApi,
-  UpdatableFactorAttributes,
   AuthMFAAdminDeleteFactorParams,
   AuthMFAAdminDeleteFactorResponse,
   AuthMFAAdminListFactorsParams,
