@@ -30,6 +30,8 @@ export default class PostgrestFilterBuilder<
   Row extends Record<string, unknown>,
   Result
 > extends PostgrestTransformBuilder<Schema, Row, Result> {
+  eq<ColumnName extends string & keyof Row>(column: ColumnName, value: Row[ColumnName]): this
+  eq(column: string, value: unknown): this
   /**
    * Match only rows where `column` is equal to `value`.
    *
@@ -38,104 +40,107 @@ export default class PostgrestFilterBuilder<
    * @param column - The column to filter on
    * @param value - The value to filter with
    */
-  eq<ColumnName extends string & keyof Row>(column: ColumnName, value: Row[ColumnName]): this
-  eq(column: string, value: unknown): this
   eq(column: string, value: unknown): this {
     this.url.searchParams.append(column, `eq.${value}`)
     return this
   }
 
+  neq<ColumnName extends string & keyof Row>(column: ColumnName, value: Row[ColumnName]): this
+  neq(column: string, value: unknown): this
   /**
    * Match only rows where `column` is not equal to `value`.
    *
    * @param column - The column to filter on
    * @param value - The value to filter with
    */
-  neq<ColumnName extends string & keyof Row>(column: ColumnName, value: Row[ColumnName]): this
-  neq(column: string, value: unknown): this
   neq(column: string, value: unknown): this {
     this.url.searchParams.append(column, `neq.${value}`)
     return this
   }
 
+  gt<ColumnName extends string & keyof Row>(column: ColumnName, value: Row[ColumnName]): this
+  gt(column: string, value: unknown): this
   /**
    * Match only rows where `column` is greater than `value`.
    *
    * @param column - The column to filter on
    * @param value - The value to filter with
    */
-  gt<ColumnName extends string & keyof Row>(column: ColumnName, value: Row[ColumnName]): this
-  gt(column: string, value: unknown): this
   gt(column: string, value: unknown): this {
     this.url.searchParams.append(column, `gt.${value}`)
     return this
   }
 
+  gte<ColumnName extends string & keyof Row>(column: ColumnName, value: Row[ColumnName]): this
+  gte(column: string, value: unknown): this
   /**
    * Match only rows where `column` is greater than or equal to `value`.
    *
    * @param column - The column to filter on
    * @param value - The value to filter with
    */
-  gte<ColumnName extends string & keyof Row>(column: ColumnName, value: Row[ColumnName]): this
-  gte(column: string, value: unknown): this
   gte(column: string, value: unknown): this {
     this.url.searchParams.append(column, `gte.${value}`)
     return this
   }
 
+  lt<ColumnName extends string & keyof Row>(column: ColumnName, value: Row[ColumnName]): this
+  lt(column: string, value: unknown): this
   /**
    * Match only rows where `column` is less than `value`.
    *
    * @param column - The column to filter on
    * @param value - The value to filter with
    */
-  lt<ColumnName extends string & keyof Row>(column: ColumnName, value: Row[ColumnName]): this
-  lt(column: string, value: unknown): this
   lt(column: string, value: unknown): this {
     this.url.searchParams.append(column, `lt.${value}`)
     return this
   }
 
+  lte<ColumnName extends string & keyof Row>(column: ColumnName, value: Row[ColumnName]): this
+  lte(column: string, value: unknown): this
   /**
    * Match only rows where `column` is less than or equal to `value`.
    *
    * @param column - The column to filter on
    * @param value - The value to filter with
    */
-  lte<ColumnName extends string & keyof Row>(column: ColumnName, value: Row[ColumnName]): this
-  lte(column: string, value: unknown): this
   lte(column: string, value: unknown): this {
     this.url.searchParams.append(column, `lte.${value}`)
     return this
   }
 
+  like<ColumnName extends string & keyof Row>(column: ColumnName, pattern: string): this
+  like(column: string, pattern: string): this
   /**
    * Match only rows where `column` matches `pattern` case-sensitively.
    *
    * @param column - The column to filter on
    * @param pattern - The pattern to match with
    */
-  like<ColumnName extends string & keyof Row>(column: ColumnName, pattern: string): this
-  like(column: string, pattern: string): this
   like(column: string, pattern: string): this {
     this.url.searchParams.append(column, `like.${pattern}`)
     return this
   }
 
+  ilike<ColumnName extends string & keyof Row>(column: ColumnName, pattern: string): this
+  ilike(column: string, pattern: string): this
   /**
    * Match only rows where `column` matches `pattern` case-insensitively.
    *
    * @param column - The column to filter on
    * @param pattern - The pattern to match with
    */
-  ilike<ColumnName extends string & keyof Row>(column: ColumnName, pattern: string): this
-  ilike(column: string, pattern: string): this
   ilike(column: string, pattern: string): this {
     this.url.searchParams.append(column, `ilike.${pattern}`)
     return this
   }
 
+  is<ColumnName extends string & keyof Row>(
+    column: ColumnName,
+    value: Row[ColumnName] & (boolean | null)
+  ): this
+  is(column: string, value: boolean | null): this
   /**
    * Match only rows where `column` IS `value`.
    *
@@ -148,24 +153,19 @@ export default class PostgrestFilterBuilder<
    * @param column - The column to filter on
    * @param value - The value to filter with
    */
-  is<ColumnName extends string & keyof Row>(
-    column: ColumnName,
-    value: Row[ColumnName] & (boolean | null)
-  ): this
-  is(column: string, value: boolean | null): this
   is(column: string, value: boolean | null): this {
     this.url.searchParams.append(column, `is.${value}`)
     return this
   }
 
+  in<ColumnName extends string & keyof Row>(column: ColumnName, values: Row[ColumnName][]): this
+  in(column: string, values: unknown[]): this
   /**
    * Match only rows where `column` is included in the `values` array.
    *
    * @param column - The column to filter on
    * @param values - The values array to filter with
    */
-  in<ColumnName extends string & keyof Row>(column: ColumnName, values: Row[ColumnName][]): this
-  in(column: string, values: unknown[]): this
   in(column: string, values: unknown[]): this {
     const cleanedValues = values
       .map((s) => {
@@ -179,6 +179,11 @@ export default class PostgrestFilterBuilder<
     return this
   }
 
+  contains<ColumnName extends string & keyof Row>(
+    column: ColumnName,
+    value: string | Row[ColumnName][] | Record<string, unknown>
+  ): this
+  contains(column: string, value: string | unknown[] | Record<string, unknown>): this
   /**
    * Only relevant for jsonb, array, and range columns. Match only rows where
    * `column` contains every element appearing in `value`.
@@ -186,11 +191,6 @@ export default class PostgrestFilterBuilder<
    * @param column - The jsonb, array, or range column to filter on
    * @param value - The jsonb, array, or range value to filter with
    */
-  contains<ColumnName extends string & keyof Row>(
-    column: ColumnName,
-    value: string | Row[ColumnName][] | Record<string, unknown>
-  ): this
-  contains(column: string, value: string | unknown[] | Record<string, unknown>): this
   contains(column: string, value: string | unknown[] | Record<string, unknown>): this {
     if (typeof value === 'string') {
       // range types can be inclusive '[', ']' or exclusive '(', ')' so just
@@ -206,6 +206,11 @@ export default class PostgrestFilterBuilder<
     return this
   }
 
+  containedBy<ColumnName extends string & keyof Row>(
+    column: ColumnName,
+    value: string | Row[ColumnName][] | Record<string, unknown>
+  ): this
+  containedBy(column: string, value: string | unknown[] | Record<string, unknown>): this
   /**
    * Only relevant for jsonb, array, and range columns. Match only rows where
    * every element appearing in `column` is contained by `value`.
@@ -213,11 +218,6 @@ export default class PostgrestFilterBuilder<
    * @param column - The jsonb, array, or range column to filter on
    * @param value - The jsonb, array, or range value to filter with
    */
-  containedBy<ColumnName extends string & keyof Row>(
-    column: ColumnName,
-    value: string | Row[ColumnName][] | Record<string, unknown>
-  ): this
-  containedBy(column: string, value: string | unknown[] | Record<string, unknown>): this
   containedBy(column: string, value: string | unknown[] | Record<string, unknown>): this {
     if (typeof value === 'string') {
       // range
@@ -232,6 +232,8 @@ export default class PostgrestFilterBuilder<
     return this
   }
 
+  rangeGt<ColumnName extends string & keyof Row>(column: ColumnName, range: string): this
+  rangeGt(column: string, range: string): this
   /**
    * Only relevant for range columns. Match only rows where every element in
    * `column` is greater than any element in `range`.
@@ -239,13 +241,13 @@ export default class PostgrestFilterBuilder<
    * @param column - The range column to filter on
    * @param range - The range to filter with
    */
-  rangeGt<ColumnName extends string & keyof Row>(column: ColumnName, range: string): this
-  rangeGt(column: string, range: string): this
   rangeGt(column: string, range: string): this {
     this.url.searchParams.append(column, `sr.${range}`)
     return this
   }
 
+  rangeGte<ColumnName extends string & keyof Row>(column: ColumnName, range: string): this
+  rangeGte(column: string, range: string): this
   /**
    * Only relevant for range columns. Match only rows where every element in
    * `column` is either contained in `range` or greater than any element in
@@ -254,13 +256,13 @@ export default class PostgrestFilterBuilder<
    * @param column - The range column to filter on
    * @param range - The range to filter with
    */
-  rangeGte<ColumnName extends string & keyof Row>(column: ColumnName, range: string): this
-  rangeGte(column: string, range: string): this
   rangeGte(column: string, range: string): this {
     this.url.searchParams.append(column, `nxl.${range}`)
     return this
   }
 
+  rangeLt<ColumnName extends string & keyof Row>(column: ColumnName, range: string): this
+  rangeLt(column: string, range: string): this
   /**
    * Only relevant for range columns. Match only rows where every element in
    * `column` is less than any element in `range`.
@@ -268,13 +270,13 @@ export default class PostgrestFilterBuilder<
    * @param column - The range column to filter on
    * @param range - The range to filter with
    */
-  rangeLt<ColumnName extends string & keyof Row>(column: ColumnName, range: string): this
-  rangeLt(column: string, range: string): this
   rangeLt(column: string, range: string): this {
     this.url.searchParams.append(column, `sl.${range}`)
     return this
   }
 
+  rangeLte<ColumnName extends string & keyof Row>(column: ColumnName, range: string): this
+  rangeLte(column: string, range: string): this
   /**
    * Only relevant for range columns. Match only rows where every element in
    * `column` is either contained in `range` or less than any element in
@@ -283,13 +285,13 @@ export default class PostgrestFilterBuilder<
    * @param column - The range column to filter on
    * @param range - The range to filter with
    */
-  rangeLte<ColumnName extends string & keyof Row>(column: ColumnName, range: string): this
-  rangeLte(column: string, range: string): this
   rangeLte(column: string, range: string): this {
     this.url.searchParams.append(column, `nxr.${range}`)
     return this
   }
 
+  rangeAdjacent<ColumnName extends string & keyof Row>(column: ColumnName, range: string): this
+  rangeAdjacent(column: string, range: string): this
   /**
    * Only relevant for range columns. Match only rows where `column` is
    * mutually exclusive to `range` and there can be no element between the two
@@ -298,13 +300,16 @@ export default class PostgrestFilterBuilder<
    * @param column - The range column to filter on
    * @param range - The range to filter with
    */
-  rangeAdjacent<ColumnName extends string & keyof Row>(column: ColumnName, range: string): this
-  rangeAdjacent(column: string, range: string): this
   rangeAdjacent(column: string, range: string): this {
     this.url.searchParams.append(column, `adj.${range}`)
     return this
   }
 
+  overlaps<ColumnName extends string & keyof Row>(
+    column: ColumnName,
+    value: string | Row[ColumnName][]
+  ): this
+  overlaps(column: string, value: string | unknown[]): this
   /**
    * Only relevant for array and range columns. Match only rows where
    * `column` and `value` have an element in common.
@@ -312,11 +317,6 @@ export default class PostgrestFilterBuilder<
    * @param column - The array or range column to filter on
    * @param value - The array or range value to filter with
    */
-  overlaps<ColumnName extends string & keyof Row>(
-    column: ColumnName,
-    value: string | Row[ColumnName][]
-  ): this
-  overlaps(column: string, value: string | unknown[]): this
   overlaps(column: string, value: string | unknown[]): this {
     if (typeof value === 'string') {
       // range
@@ -328,16 +328,6 @@ export default class PostgrestFilterBuilder<
     return this
   }
 
-  /**
-   * Only relevant for text and tsvector columns. Match only rows where
-   * `column` matches the query string in `query`.
-   *
-   * @param column - The text or tsvector column to filter on
-   * @param query - The query text to match with
-   * @param options - Named parameters
-   * @param options.config - The text search configuration to use
-   * @param options.type - Change how the `query` text is interpreted
-   */
   textSearch<ColumnName extends string & keyof Row>(
     column: ColumnName,
     query: string,
@@ -348,6 +338,16 @@ export default class PostgrestFilterBuilder<
     query: string,
     options?: { config?: string; type?: 'plain' | 'phrase' | 'websearch' }
   ): this
+  /**
+   * Only relevant for text and tsvector columns. Match only rows where
+   * `column` matches the query string in `query`.
+   *
+   * @param column - The text or tsvector column to filter on
+   * @param query - The query text to match with
+   * @param options - Named parameters
+   * @param options.config - The text search configuration to use
+   * @param options.type - Change how the `query` text is interpreted
+   */
   textSearch(
     column: string,
     query: string,
@@ -366,6 +366,8 @@ export default class PostgrestFilterBuilder<
     return this
   }
 
+  match<ColumnName extends string & keyof Row>(query: Record<ColumnName, Row[ColumnName]>): this
+  match(query: Record<string, unknown>): this
   /**
    * Match only rows where each column in `query` keys is equal to its
    * associated value. Shorthand for multiple `.eq()`s.
@@ -373,8 +375,6 @@ export default class PostgrestFilterBuilder<
    * @param query - The object to filter with, with column names as keys mapped
    * to their filter values
    */
-  match<ColumnName extends string & keyof Row>(query: Record<ColumnName, Row[ColumnName]>): this
-  match(query: Record<string, unknown>): this
   match(query: Record<string, unknown>): this {
     Object.entries(query).forEach(([column, value]) => {
       this.url.searchParams.append(column, `eq.${value}`)
@@ -382,6 +382,12 @@ export default class PostgrestFilterBuilder<
     return this
   }
 
+  not<ColumnName extends string & keyof Row>(
+    column: ColumnName,
+    operator: FilterOperator,
+    value: Row[ColumnName]
+  ): this
+  not(column: string, operator: string, value: unknown): this
   /**
    * Match only rows which doesn't satisfy the filter.
    *
@@ -395,12 +401,6 @@ export default class PostgrestFilterBuilder<
    * PostgREST syntax
    * @param value - The value to filter with, following PostgREST syntax
    */
-  not<ColumnName extends string & keyof Row>(
-    column: ColumnName,
-    operator: FilterOperator,
-    value: Row[ColumnName]
-  ): this
-  not(column: string, operator: string, value: unknown): this
   not(column: string, operator: string, value: unknown): this {
     this.url.searchParams.append(column, `not.${operator}.${value}`)
     return this
@@ -425,6 +425,12 @@ export default class PostgrestFilterBuilder<
     return this
   }
 
+  filter<ColumnName extends string & keyof Row>(
+    column: ColumnName,
+    operator: `${'' | 'not.'}${FilterOperator}`,
+    value: unknown
+  ): this
+  filter(column: string, operator: string, value: unknown): this
   /**
    * Match only rows which satisfy the filter. This is an escape hatch - you
    * should use the specific filter methods wherever possible.
@@ -438,12 +444,6 @@ export default class PostgrestFilterBuilder<
    * @param operator - The operator to filter with, following PostgREST syntax
    * @param value - The value to filter with, following PostgREST syntax
    */
-  filter<ColumnName extends string & keyof Row>(
-    column: ColumnName,
-    operator: `${'' | 'not.'}${FilterOperator}`,
-    value: unknown
-  ): this
-  filter(column: string, operator: string, value: unknown): this
   filter(column: string, operator: string, value: unknown): this {
     this.url.searchParams.append(column, `${operator}.${value}`)
     return this

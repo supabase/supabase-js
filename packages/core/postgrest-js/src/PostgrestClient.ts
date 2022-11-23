@@ -56,11 +56,6 @@ export default class PostgrestClient<
     this.fetch = fetch
   }
 
-  /**
-   * Perform a query on a table or a view.
-   *
-   * @param relation - The table or view name to query
-   */
   from<
     TableName extends string & keyof Schema['Tables'],
     Table extends Schema['Tables'][TableName]
@@ -69,6 +64,11 @@ export default class PostgrestClient<
     relation: ViewName
   ): PostgrestQueryBuilder<Schema, View>
   from(relation: string): PostgrestQueryBuilder<Schema, any>
+  /**
+   * Perform a query on a table or a view.
+   *
+   * @param relation - The table or view name to query
+   */
   from(relation: string): PostgrestQueryBuilder<Schema, any> {
     const url = new URL(`${this.url}/${relation}`)
     return new PostgrestQueryBuilder<Schema, any>(url, {

@@ -52,10 +52,7 @@ export default class PostgrestQueryBuilder<
    * `"estimated"`: Uses exact count for low numbers and planned count for high
    * numbers.
    */
-  select<
-    Query extends string = '*',
-    Result = GetResult<Schema, Relation['Row'], Query>
-  >(
+  select<Query extends string = '*', Result = GetResult<Schema, Relation['Row'], Query>>(
     columns?: Query,
     {
       head = false,

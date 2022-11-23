@@ -46,6 +46,14 @@ export default class PostgrestTransformBuilder<
     return this as unknown as PostgrestTransformBuilder<Schema, Row, NewResult>
   }
 
+  order<ColumnName extends string & keyof Row>(
+    column: ColumnName,
+    options?: { ascending?: boolean; nullsFirst?: boolean; foreignTable?: undefined }
+  ): this
+  order(
+    column: string,
+    options?: { ascending?: boolean; nullsFirst?: boolean; foreignTable: string }
+  ): this
   /**
    * Order the query result by `column`.
    *
@@ -62,14 +70,6 @@ export default class PostgrestTransformBuilder<
    * @param options.foreignTable - Set this to order a foreign table by foreign
    * columns
    */
-  order<ColumnName extends string & keyof Row>(
-    column: ColumnName,
-    options?: { ascending?: boolean; nullsFirst?: boolean; foreignTable?: undefined }
-  ): this
-  order(
-    column: string,
-    options?: { ascending?: boolean; nullsFirst?: boolean; foreignTable: string }
-  ): this
   order(
     column: string,
     {
