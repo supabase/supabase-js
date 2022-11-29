@@ -15,12 +15,12 @@ npm install @supabase/storage-js
 ### Connecting to the storage backend
 
 ```js
-import { SupabaseStorageClient } from '@supabase/storage-js'
+import { StorageClient } from '@supabase/storage-js'
 
 const STORAGE_URL = 'https://<project_ref>.supabase.co/storage/v1'
 const SERVICE_KEY = '<service_role>' //! service key, not anon key
 
-const storageClient = new SupabaseStorageClient(STORAGE_URL, {
+const storageClient = new StorageClient(STORAGE_URL, {
   apikey: SERVICE_KEY,
   Authorization: `Bearer ${SERVICE_KEY}`,
 })
