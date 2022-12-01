@@ -20,9 +20,6 @@ export type Provider =
   | 'twitter'
   | 'workos'
 
-/**
- * @experimental
- */
 export type AuthChangeEventMFA = 'MFA_CHALLENGE_VERIFIED'
 
 export type AuthChangeEvent =
@@ -597,26 +594,17 @@ export type GenerateLinkType =
   | 'email_change_current'
   | 'email_change_new'
 
-/**
- * @experimental
- */
 export type MFAEnrollParams = {
   factorType: 'totp'
   issuer?: string
   friendlyName?: string
 }
 
-/**
- * @experimental
- */
 export type MFAUnenrollParams = {
   /** ID of the factor being unenrolled. */
   factorId: string
 }
 
-/**
- * @experimental
- */
 export type MFAVerifyParams = {
   /** ID of the factor being verified. */
   factorId: string
@@ -628,17 +616,11 @@ export type MFAVerifyParams = {
   code: string
 }
 
-/**
- * @experimental
- */
 export type MFAChallengeParams = {
   /** ID of the factor to be challenged. */
   factorId: string
 }
 
-/**
- * @experimental
- */
 export type MFAChallengeAndVerifyParams = {
   /** ID of the factor being verified. */
   factorId: string
@@ -646,9 +628,6 @@ export type MFAChallengeAndVerifyParams = {
   code: string
 }
 
-/**
- * @experimental
- */
 export type AuthMFAVerifyResponse =
   | {
       data: {
@@ -674,9 +653,6 @@ export type AuthMFAVerifyResponse =
       error: AuthError
     }
 
-/**
- * @experimental
- */
 export type AuthMFAEnrollResponse =
   | {
       data: {
@@ -710,9 +686,6 @@ export type AuthMFAEnrollResponse =
       error: AuthError
     }
 
-/**
- * @experimental
- */
 export type AuthMFAUnenrollResponse =
   | {
       data: {
@@ -723,9 +696,6 @@ export type AuthMFAUnenrollResponse =
     }
   | { data: null; error: AuthError }
 
-/**
- * @experimental
- */
 export type AuthMFAChallengeResponse =
   | {
       data: {
@@ -739,9 +709,6 @@ export type AuthMFAChallengeResponse =
     }
   | { data: null; error: AuthError }
 
-/**
- * @experimental
- */
 export type AuthMFAListFactorsResponse =
   | {
       data: {
@@ -755,14 +722,8 @@ export type AuthMFAListFactorsResponse =
     }
   | { data: null; error: AuthError }
 
-/**
- * @experimental
- */
 export type AuthenticatorAssuranceLevels = 'aal1' | 'aal2'
 
-/**
- * @experimental
- */
 export type AuthMFAGetAuthenticatorAssuranceLevelResponse =
   | {
       data: {
@@ -791,7 +752,6 @@ export type AuthMFAGetAuthenticatorAssuranceLevelResponse =
 /**
  * Contains the full multi-factor authentication API.
  *
- * @experimental
  */
 export interface GoTrueMFAApi {
   /**
@@ -809,7 +769,6 @@ export interface GoTrueMFAApi {
    * @see {@link GoTrueMFAApi#verify}
    * @see {@link GoTrueMFAApi#getAuthenticatorAssuranceLevel}
    *
-   * @experimental
    */
   enroll(params: MFAEnrollParams): Promise<AuthMFAEnrollResponse>
 
@@ -818,7 +777,6 @@ export interface GoTrueMFAApi {
    * factor. Provide the challenge ID and verification code by calling
    * {@link GoTrueMFAApi#verify}.
    *
-   * @experimental
    */
   challenge(params: MFAChallengeParams): Promise<AuthMFAChallengeResponse>
 
@@ -828,7 +786,6 @@ export interface GoTrueMFAApi {
    *
    * @see {@link GoTrueMFAApi#challenge}
    *
-   * @experimental
    */
   verify(params: MFAVerifyParams): Promise<AuthMFAVerifyResponse>
 
@@ -837,7 +794,6 @@ export interface GoTrueMFAApi {
    * and it's not necessary to unenroll them. Unenrolling a verified MFA factor
    * cannot be done from a session with an `aal1` authenticator level.
    *
-   * @experimental
    */
   unenroll(params: MFAUnenrollParams): Promise<AuthMFAUnenrollResponse>
 
@@ -847,7 +803,6 @@ export interface GoTrueMFAApi {
    *
    * @see {@link GoTrueMFAApi#challengeAndVerify}
    *
-   * @experimental
    */
   challengeAndVerify(params: MFAChallengeAndVerifyParams): Promise<AuthMFAVerifyResponse>
 
@@ -862,7 +817,6 @@ export interface GoTrueMFAApi {
    * @see {@link GoTrueMFAApi#getAuthenticatorAssuranceLevel}
    * @see {@link GoTrueClient#getUser}
    *
-   * @experimental
    */
   listFactors(): Promise<AuthMFAListFactorsResponse>
 
@@ -878,7 +832,6 @@ export interface GoTrueMFAApi {
    * and rarely uses the network. You can use this to check whether the current
    * user needs to be shown a screen to verify their MFA factors.
    *
-   * @experimental
    */
   getAuthenticatorAssuranceLevel(): Promise<AuthMFAGetAuthenticatorAssuranceLevelResponse>
 }
@@ -937,7 +890,6 @@ export interface GoTrueAdminMFAApi {
   /**
    * Lists all factors attached to a user.
    *
-   * @experimental
    */
   listFactors(params: AuthMFAAdminListFactorsParams): Promise<AuthMFAAdminListFactorsResponse>
 
