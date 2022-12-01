@@ -457,7 +457,12 @@ export interface VerifyMobileOtpParams {
   options?: {
     /** A URL to send the user to after they are confirmed. */
     redirectTo?: string
-    /** Verification token received when the user completes the captcha on the site. */
+
+    /**
+     * Verification token received when the user completes the captcha on the site.
+     *
+     * @deprecated
+     */
     captchaToken?: string
   }
 }
