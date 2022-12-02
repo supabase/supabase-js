@@ -665,6 +665,7 @@ export default class GoTrueClient {
           expires_in: expiresAt - timeNow,
           expires_at: expiresAt,
         }
+        await this._saveSession(session)
       }
 
       return { data: { user: session.user, session }, error: null }

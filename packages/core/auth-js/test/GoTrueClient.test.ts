@@ -98,6 +98,15 @@ describe('GoTrueClient', () => {
       expect(error).toBeNull()
       expect(data.session).not.toBeNull()
 
+      /** 
+       * Sign out the user to verify setSession, getSession and updateUser
+       * are truly working; because the signUp method will already save the session.
+       * And that session will be available to getSession and updateUser,
+       * even if setSession isn't called or fails to save the session.
+       * The tokens are still valid after logout, and therefore usable.
+       */
+      await authWithSession.signOut()
+
       const {
         data: { session },
         error: setSessionError,
@@ -115,6 +124,17 @@ describe('GoTrueClient', () => {
       expect(session!.access_token).not.toBeNull()
       expect(session!.refresh_token).not.toBeNull()
       expect(session!.token_type).toStrictEqual('bearer')
+
+      /**
+       * getSession has been added to verify setSession is also saving
+       * the session, not just returning it.
+       */
+      const { 
+        data: getSessionData, 
+        error: getSessionError 
+      } = await authWithSession.getSession()
+      expect(getSessionError).toBeNull()
+      expect(getSessionData).not.toBeNull()
 
       const {
         data: { user },
