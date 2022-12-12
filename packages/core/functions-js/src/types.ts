@@ -43,11 +43,11 @@ export class FunctionsHttpError extends FunctionsError {
 
 export type FunctionInvokeOptions = {
   /**
-   * object representing the headers to send with the request
+   * Object representing the headers to send with the request.
    * */
   headers?: { [key: string]: string }
   /**
-   * the body of the request
+   * The body of the request.
    */
   body?:
     | File

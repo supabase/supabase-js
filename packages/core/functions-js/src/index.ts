@@ -1,5 +1,6 @@
 export { FunctionsClient } from './FunctionsClient'
 export {
+  FunctionInvokeOptions,
   FunctionsError,
   FunctionsFetchError,
   FunctionsHttpError,

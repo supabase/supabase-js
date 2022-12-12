@@ -38,14 +38,15 @@ export class FunctionsClient {
 
   /**
    * Invokes a function
-   * @param functionName - the name of the function to invoke
+   * @param functionName - The name of the Function to invoke.
+   * @param options - Options for invoking the Function.
    */
   async invoke<T = any>(
     functionName: string,
-    invokeOptions: FunctionInvokeOptions = {}
+    options: FunctionInvokeOptions = {}
   ): Promise<FunctionsResponse<T>> {
     try {
-      const { headers, body: functionArgs } = invokeOptions
+      const { headers, body: functionArgs } = options
 
       let _headers: Record<string, string> = {}
       let body: any
