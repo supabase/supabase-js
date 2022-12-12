@@ -242,7 +242,7 @@ describe('basic tests (hello function)', () => {
     expect(data).toEqual('Hello World')
   })
 
-  test('invoke with custom fetch wrong method', async () => {
+  test('invoke with custom fetch GET method', async () => {
     /**
      * @feature fetch
      */
@@ -262,10 +262,10 @@ describe('basic tests (hello function)', () => {
     log('invoke hello')
     const { data, error } = await fclient.invoke<string>('', {})
 
-    log('check error')
-    expect(error).not.toBeNull()
-    expect(error?.message).toEqual('Relay Error invoking the Edge Function')
-    expect(data).toBeNull()
+    log('assert no error')
+    expect(error).toBeNull()
+    log(`assert ${data} is equal to 'Hello World'`)
+    expect(data).toEqual('Hello World')
   })
 
   test('invoke hello with custom fetch override header', async () => {

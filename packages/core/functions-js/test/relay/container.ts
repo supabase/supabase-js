@@ -57,7 +57,7 @@ export async function runRelay(
 
   // create relay container
   log(`create relay ${slug + '-' + id}`)
-  const relay = await new GenericContainer('supabase/deno-relay:v1.1.0')
+  const relay = await new GenericContainer('supabase/deno-relay:v1.5.0')
     .withName(slug + '-' + id)
     .withBindMount(`${process.cwd()}/test/functions/${slug}`, `/home/deno/${slug}`, 'ro')
     .withNetworkMode(network.getName())
