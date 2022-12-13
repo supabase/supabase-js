@@ -6,6 +6,7 @@ on:
       - main
       - next
       - rc
+      - next-rc-1
   workflow_dispatch:
 
 jobs:

@@ -17,7 +17,8 @@ services:
     ports:
       - '3000:3000'
     depends_on:
-      - db
+      storage:
+        condition: service_healthy
     restart: always
     environment:
       PGRST_DB_URI: postgres://postgres:postgres@db:5432/postgres
@@ -25,12 +26,13 @@ services:
       PGRST_DB_ANON_ROLE: postgres
       PGRST_JWT_SECRET: super-secret-jwt-token-with-at-least-32-characters-long
   storage:
-    image: supabase/storage-api:v0.20.2
+    build:
+      context: ./storage
     ports:
       - '5000:5000'
     depends_on:
-      - db
-      - rest
+      db:
+        condition: service_healthy
     restart: always
     environment:
       ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlhdCI6MTYxMzUzMTk4NSwiZXhwIjoxOTI5MTA3OTg1fQ.ReNhHIoXIOa-8tL1DO3e26mJmOTnYuvdgobwIYGzrLQ
@@ -47,6 +49,12 @@ services:
       FILE_SIZE_LIMIT: 52428800
       STORAGE_BACKEND: file
       FILE_STORAGE_BACKEND_PATH: /tmp/storage
+      ENABLE_IMAGE_TRANSFORMATION: "true"
+      IMGPROXY_URL: http://imgproxy:8080
+    volumes:
+      - assets-volume:/tmp/storage
+    healthcheck:
+      test: ['CMD-SHELL', 'curl -f -LI http://localhost:5000/status']
   db:
     build:
       context: ./postgres
@@ -61,3 +69,20 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
       POSTGRES_PORT: 5432
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  imgproxy:
+    image: darthsim/imgproxy
+    ports:
+      - 50020:8080
+    volumes:
+    -   assets-volume:/tmp/storage
+    environment:
+      - IMGPROXY_LOCAL_FILESYSTEM_ROOT=/
+      - IMGPROXY_USE_ETAG=true
+volumes:
+  assets-volume:

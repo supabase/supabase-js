@@ -52,3 +52,5 @@ CREATE POLICY authenticated_folder ON storage.objects for all USING (bucket_id='
 CREATE POLICY crud_owner_only ON storage.objects for all USING (bucket_id='bucket2' and (storage.foldername(name))[1] = 'only_owner' and owner = auth.uid());
 -- allow CRUD access to bucket4
 CREATE POLICY open_all_update ON storage.objects for all WITH CHECK (bucket_id='bucket4');
+
+CREATE POLICY crud_my_bucket ON storage.objects for all USING (bucket_id='my-private-bucket' and auth.uid()::text = '317eadce-631a-4429-a0bb-f19a7a517b4a');

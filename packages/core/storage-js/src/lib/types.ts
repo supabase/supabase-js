@@ -72,3 +72,21 @@ export interface FetchParameters {
 export interface Metadata {
   name: string
 }
+
+export interface TransformOptions {
+  /**
+   * The width of the image in pixels.
+   */
+  width?: number
+  /**
+   * The height of the image in pixels.
+   */
+  height?: number
+  /**
+   * The resize mode can be cover, contain or fill. Defaults to cover.
+   * Cover resizes the image to maintain it's aspect ratio while filling the entire width and height.
+   * Contain resizes the image to maintain it's aspect ratio while fitting the entire image within the width and height.
+   * Fill resizes the image to fill the entire width and height. If the object's aspect ratio does not match the width and height, the image will be stretched to fit.
+   */
+  resize?: 'cover' | 'contain' | 'fill'
+}
