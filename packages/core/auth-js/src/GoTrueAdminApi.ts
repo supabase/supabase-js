@@ -156,15 +156,18 @@ export default class GoTrueAdminApi {
    * Get a list of users.
    *
    * This function should only be called on a server. Never expose your `service_role` key in the browser.
-   * @param params An object which supports `page` and `per_page` as strings, to alter the paginated results.
+   * @param params An object which supports `page` and `per_page` as numbers, to alter the paginated results.
    */
-  async listUsers(params?: PageParams): Promise<
-    { data: { users: User[] }; error: null } | { data: { users: [] }; error: AuthError }
-  > {
+  async listUsers(
+    params?: PageParams
+  ): Promise<{ data: { users: User[] }; error: null } | { data: { users: [] }; error: AuthError }> {
     try {
       const { data, error } = await _request(this.fetch, 'GET', `${this.url}/admin/users`, {
         headers: this.headers,
-        query: { page: params?.page ?? '', per_page: params?.perPage ?? '' },
+        query: {
+          page: params?.page?.toString() ?? '',
+          per_page: params?.perPage?.toString() ?? '',
+        },
       })
       if (error) throw error
       return { data: { ...data }, error: null }

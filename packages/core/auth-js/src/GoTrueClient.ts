@@ -1159,7 +1159,7 @@ export default class GoTrueClient {
   }
 
   /**
-   * Deletes a registered factor from GoTrue
+   * Enrolls a factor
    * @param friendlyName Human readable name assigned to a device
    * @param factorType device which we're validating against. Can only be TOTP for now.
    * @param issuer domain which the user is enrolling with

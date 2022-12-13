@@ -595,8 +595,11 @@ export type GenerateLinkType =
   | 'email_change_new'
 
 export type MFAEnrollParams = {
+  /** The type of factor being enrolled. */
   factorType: 'totp'
+  /** Domain which the user is enrolled with. */
   issuer?: string
+  /** Human readable name assigned to the factor. */
   friendlyName?: string
 }
 
@@ -606,10 +609,10 @@ export type MFAUnenrollParams = {
 }
 
 export type MFAVerifyParams = {
-  /** ID of the factor being verified. */
+  /** ID of the factor being verified. Returned in enroll(). */
   factorId: string
 
-  /** ID of the challenge being verified. */
+  /** ID of the challenge being verified. Returned in challenge(). */
   challengeId: string
 
   /** Verification code provided by the user. */
@@ -617,12 +620,12 @@ export type MFAVerifyParams = {
 }
 
 export type MFAChallengeParams = {
-  /** ID of the factor to be challenged. */
+  /** ID of the factor to be challenged. Returned in enroll(). */
   factorId: string
 }
 
 export type MFAChallengeAndVerifyParams = {
-  /** ID of the factor being verified. */
+  /** ID of the factor being verified. Returned in enroll(). */
   factorId: string
   /** Verification code provided by the user. */
   code: string
@@ -755,54 +758,38 @@ export type AuthMFAGetAuthenticatorAssuranceLevelResponse =
  */
 export interface GoTrueMFAApi {
   /**
-   * Starts the enrollment process for a new Multi-Factor Authentication
-   * factor. This method creates a new factor in the 'unverified' state.
-   * Present the QR code or secret to the user and ask them to add it to their
-   * authenticator app. Ask the user to provide you with an authenticator code
-   * from their app and verify it by calling challenge and then verify.
+   * Starts the enrollment process for a new Multi-Factor Authentication (MFA)
+   * factor. This method creates a new `unverified` factor.
+   * To verify a factor, present the QR code or secret to the user and ask them to add it to their
+   * authenticator app.
+   * The user has to enter the code from their authenticator app to verify it.
    *
-   * The first successful verification of an unverified factor activates the
-   * factor. All other sessions are logged out and the current one gets an
-   * `aal2` authenticator level.
-   *
-   * @see {@link GoTrueMFAApi#challenge}
-   * @see {@link GoTrueMFAApi#verify}
-   * @see {@link GoTrueMFAApi#getAuthenticatorAssuranceLevel}
+   * Upon verifying a factor, all other sessions are logged out and the current session's authenticator level is promoted to `aal2`.
    *
    */
   enroll(params: MFAEnrollParams): Promise<AuthMFAEnrollResponse>
 
   /**
    * Prepares a challenge used to verify that a user has access to a MFA
-   * factor. Provide the challenge ID and verification code by calling
-   * {@link GoTrueMFAApi#verify}.
-   *
+   * factor.
    */
   challenge(params: MFAChallengeParams): Promise<AuthMFAChallengeResponse>
 
   /**
-   * Verifies a verification code against a challenge. The verification code is
+   * Verifies a code against a challenge. The verification code is
    * provided by the user by entering a code seen in their authenticator app.
-   *
-   * @see {@link GoTrueMFAApi#challenge}
-   *
    */
   verify(params: MFAVerifyParams): Promise<AuthMFAVerifyResponse>
 
   /**
-   * Unenroll removes a MFA factor. Unverified factors can safely be ignored
-   * and it's not necessary to unenroll them. Unenrolling a verified MFA factor
-   * cannot be done from a session with an `aal1` authenticator level.
-   *
+   * Unenroll removes a MFA factor.
+   * A user has to have an `aal2` authenticator level in order to unenroll a `verified` factor.
    */
   unenroll(params: MFAUnenrollParams): Promise<AuthMFAUnenrollResponse>
 
   /**
    * Helper method which creates a challenge and immediately uses the given code to verify against it thereafter. The verification code is
    * provided by the user by entering a code seen in their authenticator app.
-   *
-   * @see {@link GoTrueMFAApi#challengeAndVerify}
-   *
    */
   challengeAndVerify(params: MFAChallengeAndVerifyParams): Promise<AuthMFAVerifyResponse>
 
@@ -877,7 +864,7 @@ export type AuthMFAAdminListFactorsResponse =
  * @expermental
  */
 export type AuthMFAAdminListFactorsParams = {
-  /** ID of the user for which to list all MFA factors. */
+  /** ID of the user. */
   userId: string
 }
 
@@ -888,15 +875,14 @@ export type AuthMFAAdminListFactorsParams = {
  */
 export interface GoTrueAdminMFAApi {
   /**
-   * Lists all factors attached to a user.
+   * Lists all factors associated to a user.
    *
    */
   listFactors(params: AuthMFAAdminListFactorsParams): Promise<AuthMFAAdminListFactorsResponse>
 
   /**
    * Deletes a factor on a user. This will log the user out of all active
-   * sessions (if the deleted factor was verified). There's no need to delete
-   * unverified factors.
+   * sessions if the deleted factor was verified.
    *
    * @see {@link GoTrueMFAApi#unenroll}
    *
@@ -929,6 +915,8 @@ export type CallRefreshTokenResult =
     }
 
 export type PageParams = {
-  page?: number,
+  /** The page number */
+  page?: number
+  /** Number of items returned per page */
   perPage?: number
 }
