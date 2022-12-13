@@ -927,3 +927,8 @@ export type CallRefreshTokenResult =
       session: null
       error: AuthError
     }
+
+export type PageParams = {
+  page?: number,
+  perPage?: number
+}
