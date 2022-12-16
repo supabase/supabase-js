@@ -423,3 +423,29 @@ test('select with no match', async () => {
     }
   `)
 })
+
+test('update with no match - return=minimal', async () => {
+  const res = await postgrest.from('users').update({ data: '' }).eq('username', 'missing')
+  expect(res).toMatchInlineSnapshot(`
+    Object {
+      "count": null,
+      "data": null,
+      "error": null,
+      "status": 204,
+      "statusText": "No Content",
+    }
+  `)
+})
+
+test('update with no match - return=representation', async () => {
+  const res = await postgrest.from('users').update({ data: '' }).eq('username', 'missing').select()
+  expect(res).toMatchInlineSnapshot(`
+    Object {
+      "count": null,
+      "data": Array [],
+      "error": null,
+      "status": 200,
+      "statusText": "OK",
+    }
+  `)
+})
