@@ -106,9 +106,23 @@ export default abstract class PostgrestBuilder<Result>
 
         try {
           error = JSON.parse(body)
+
+          // Workaround for https://github.com/supabase/postgrest-js/issues/295
+          if (Array.isArray(error) && res.status === 404) {
+            data = []
+            error = null
+            status = 200
+            statusText = 'OK'
+          }
         } catch {
-          error = {
-            message: body,
+          // Workaround for https://github.com/supabase/postgrest-js/issues/295
+          if (res.status === 404 && body === '') {
+            status = 204
+            statusText = 'No Content'
+          } else {
+            error = {
+              message: body,
+            }
           }
         }
 
