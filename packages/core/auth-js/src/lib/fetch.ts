@@ -162,6 +162,10 @@ export function _generateLinkResponse(data: any): GenerateLinkResponse {
   }
 }
 
+export function _noResolveJsonResponse(data: any): Response {
+  return data
+}
+
 /**
  * hasSession checks if the response object contains a valid session
  * @param data A response object

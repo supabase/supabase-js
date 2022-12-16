@@ -1,9 +1,16 @@
-import { Fetch, _generateLinkResponse, _request, _userResponse } from './lib/fetch'
+import {
+  Fetch,
+  _generateLinkResponse,
+  _noResolveJsonResponse,
+  _request,
+  _userResponse,
+} from './lib/fetch'
 import { resolveFetch } from './lib/helpers'
 import {
   AdminUserAttributes,
   GenerateLinkParams,
   GenerateLinkResponse,
+  Pagination,
   User,
   UserResponse,
   GoTrueAdminMFAApi,
@@ -156,21 +163,49 @@ export default class GoTrueAdminApi {
    * Get a list of users.
    *
    * This function should only be called on a server. Never expose your `service_role` key in the browser.
-   * @param params An object which supports `page` and `per_page` as numbers, to alter the paginated results.
+   * @param params An object which supports `page` and `perPage` as numbers, to alter the paginated results.
    */
   async listUsers(
     params?: PageParams
-  ): Promise<{ data: { users: User[] }; error: null } | { data: { users: [] }; error: AuthError }> {
+  ): Promise<
+    | { data: { users: User[]; aud: string } & Pagination; error: null }
+    | { data: { users: [] }; error: AuthError }
+  > {
     try {
-      const { data, error } = await _request(this.fetch, 'GET', `${this.url}/admin/users`, {
+      let pagination: Pagination = { nextPage: null, lastPage: 0, total: 0 }
+      const response = await _request(this.fetch, 'GET', `${this.url}/admin/users`, {
         headers: this.headers,
+        noResolveJson: true,
         query: {
           page: params?.page?.toString() ?? '',
           per_page: params?.perPage?.toString() ?? '',
         },
+        xform: _noResolveJsonResponse,
       })
-      if (error) throw error
-      return { data: { ...data }, error: null }
+      if (response.error) throw response.error
+
+      const users = await response.json()
+      const total = response.headers.get('x-total-count') ?? 0
+      const links = response.headers.get('link')?.split(',') ?? []
+      if (links.length > 0) {
+        links.forEach((link: string) => {
+          const page = parseInt(
+            link
+              .split(';')[0]
+              .split('=')[1]
+              .substring(0,1)
+          )
+          const rel = JSON.parse(
+            link
+              .split(';')[1]
+              .split('=')[1]
+          )
+          pagination[`${rel}Page`] = page
+        })
+
+        pagination.total = parseInt(total)
+      }
+      return { data: { ...users, ...pagination }, error: null }
     } catch (error) {
       if (isAuthError(error)) {
         return { data: { users: [] }, error }

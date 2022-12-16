@@ -914,6 +914,13 @@ export type CallRefreshTokenResult =
       error: AuthError
     }
 
+export type Pagination = {
+  [key: string]: any
+  nextPage: number | null,
+  lastPage: number,
+  total: number
+}
+
 export type PageParams = {
   /** The page number */
   page?: number
