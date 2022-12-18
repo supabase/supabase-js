@@ -172,7 +172,7 @@ export default class GoTrueAdminApi {
     | { data: { users: [] }; error: AuthError }
   > {
     try {
-      let pagination: Pagination = { nextPage: null, lastPage: 0, total: 0 }
+      const pagination: Pagination = { nextPage: null, lastPage: 0, total: 0 }
       const response = await _request(this.fetch, 'GET', `${this.url}/admin/users`, {
         headers: this.headers,
         noResolveJson: true,
@@ -189,17 +189,8 @@ export default class GoTrueAdminApi {
       const links = response.headers.get('link')?.split(',') ?? []
       if (links.length > 0) {
         links.forEach((link: string) => {
-          const page = parseInt(
-            link
-              .split(';')[0]
-              .split('=')[1]
-              .substring(0,1)
-          )
-          const rel = JSON.parse(
-            link
-              .split(';')[1]
-              .split('=')[1]
-          )
+          const page = parseInt(link.split(';')[0].split('=')[1].substring(0, 1))
+          const rel = JSON.parse(link.split(';')[1].split('=')[1])
           pagination[`${rel}Page`] = page
         })
 
@@ -285,15 +276,18 @@ export default class GoTrueAdminApi {
     params: AuthMFAAdminListFactorsParams
   ): Promise<AuthMFAAdminListFactorsResponse> {
     try {
-      const data = await _request(
+      const { data, error } = await _request(
         this.fetch,
         'GET',
         `${this.url}/admin/users/${params.userId}/factors`,
         {
           headers: this.headers,
+          xform: (factors: any) => {
+            return { data: { factors }, error: null }
+          },
         }
       )
-      return { data, error: null }
+      return { data, error }
     } catch (error) {
       if (isAuthError(error)) {
         return { data: null, error }
