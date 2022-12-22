@@ -19,8 +19,8 @@ import { SupabaseAuthClient } from './lib/SupabaseAuthClient'
 import { Fetch, GenericSchema, SupabaseClientOptions, SupabaseAuthClientOptions } from './lib/types'
 import psl from 'psl'
 
-function extractHostname(url: string) {
-  let hostname
+const extractHostname = (url: string): string => {
+  let hostname: string
   //find & remove protocol (http, ftp, etc.) and get hostname
 
   if (url.indexOf('//') > -1) {
@@ -120,9 +120,8 @@ export default class SupabaseClient<
       this.functionsUrl = `${_supabaseUrl}/functions/v1`
     }
     // default storage key uses the supabase project ref as a namespace
-    const defaultStorageKey = `sb-${
-      psl.get(extractHostname(this.authUrl)).split('.')[0]
-    }-auth-token`
+    const hostName = `${psl.get(extractHostname(this.authUrl))?.split('.')[0] ?? 'development'}`
+    const defaultStorageKey = `sb-${hostName}-auth-token`
     const DEFAULTS = {
       db: DEFAULT_DB_OPTIONS,
       realtime: DEFAULT_REALTIME_OPTIONS,
