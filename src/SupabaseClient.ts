@@ -17,6 +17,25 @@ import { fetchWithAuth } from './lib/fetch'
 import { stripTrailingSlash, applySettingDefaults } from './lib/helpers'
 import { SupabaseAuthClient } from './lib/SupabaseAuthClient'
 import { Fetch, GenericSchema, SupabaseClientOptions, SupabaseAuthClientOptions } from './lib/types'
+import psl from 'psl'
+
+function extractHostname(url: string) {
+  let hostname
+  //find & remove protocol (http, ftp, etc.) and get hostname
+
+  if (url.indexOf('//') > -1) {
+    hostname = url.split('/')[2]
+  } else {
+    hostname = url.split('/')[0]
+  }
+
+  //find & remove port number
+  hostname = hostname.split(':')[0]
+  //find & remove "?"
+  hostname = hostname.split('?')[0]
+
+  return hostname
+}
 
 const DEFAULT_GLOBAL_OPTIONS = {
   headers: DEFAULT_HEADERS,
@@ -101,7 +120,9 @@ export default class SupabaseClient<
       this.functionsUrl = `${_supabaseUrl}/functions/v1`
     }
     // default storage key uses the supabase project ref as a namespace
-    const defaultStorageKey = `sb-${new URL(this.authUrl).hostname.split('.')[0]}-auth-token`
+    const defaultStorageKey = `sb-${
+      psl.get(extractHostname(this.authUrl)).split('.')[0]
+    }-auth-token`
     const DEFAULTS = {
       db: DEFAULT_DB_OPTIONS,
       realtime: DEFAULT_REALTIME_OPTIONS,
