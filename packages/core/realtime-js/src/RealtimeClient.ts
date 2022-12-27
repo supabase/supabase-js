@@ -159,10 +159,17 @@ export default class RealtimeClient {
     }
   }
 
+  /**
+   * Returns all created channels
+   */
   getChannels(): RealtimeChannel[] {
     return this.channels
   }
 
+  /**
+   * Unsubscribes and removes a single channel
+   * @param channel A RealtimeChannel instance
+   */
   removeChannel(
     channel: RealtimeChannel
   ): Promise<RealtimeRemoveChannelResponse> {
@@ -174,6 +181,9 @@ export default class RealtimeClient {
     })
   }
 
+  /**
+   * Unsubscribes and removes all channels
+   */
   removeAllChannels(): Promise<RealtimeRemoveChannelResponse[]> {
     return Promise.all(
       this.channels.map((channel) => channel.unsubscribe())
