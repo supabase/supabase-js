@@ -295,6 +295,7 @@ export default class SupabaseClient<
       // Token is removed
       this.realtime.setAuth(this.supabaseKey)
       if (source == 'STORAGE') this.auth.signOut()
+      this.changedAccessToken = undefined
     }
   }
 }
