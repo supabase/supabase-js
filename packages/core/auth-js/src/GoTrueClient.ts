@@ -219,6 +219,10 @@ export default class GoTrueClient {
 
   /**
    * Creates a new user.
+   *
+   * Be aware that if a user account exists in the system you may get back an
+   * error message that attempts to hide this information from the user.
+   *
    * @returns A logged-in session if the server has "autoconfirm" ON
    * @returns A user if the server has "autoconfirm" OFF
    */
@@ -284,6 +288,11 @@ export default class GoTrueClient {
 
   /**
    * Log in an existing user with an email and password or phone and password.
+   *
+   * Be aware that you may get back an error message that will not distingish
+   * between the cases where the account does not exist or that the
+   * email/phone and password combination is wrong or that the account can only
+   * be accessed via social login.
    */
   async signInWithPassword(credentials: SignInWithPasswordCredentials): Promise<AuthResponse> {
     try {
@@ -348,9 +357,14 @@ export default class GoTrueClient {
 
   /**
    * Log in a user using magiclink or a one-time password (OTP).
+   *
    * If the `{{ .ConfirmationURL }}` variable is specified in the email template, a magiclink will be sent.
    * If the `{{ .Token }}` variable is specified in the email template, an OTP will be sent.
    * If you're using phone sign-ins, only an OTP will be sent. You won't be able to send a magiclink for phone sign-ins.
+   *
+   * Be aware that you may get back an error message that will not distinguish
+   * between the cases where the account does not exist or, that the account
+   * can only be accessed via social login.
    */
   async signInWithOtp(credentials: SignInWithPasswordlessCredentials): Promise<AuthResponse> {
     try {
