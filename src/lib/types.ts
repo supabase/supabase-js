@@ -17,7 +17,7 @@ export type SupabaseClientOptions<SchemaName> = {
 
   auth?: {
     /**
-     * Automatically refreshes the token for logged in users. Defaults to true.
+     * Automatically refreshes the token for logged-in users. Defaults to true.
      */
     autoRefreshToken?: boolean
     /**
@@ -25,7 +25,7 @@ export type SupabaseClientOptions<SchemaName> = {
      */
     storageKey?: string
     /**
-     * Whether to persist a logged in session to storage. Defaults to true.
+     * Whether to persist a logged-in session to storage. Defaults to true.
      */
     persistSession?: boolean
     /**
