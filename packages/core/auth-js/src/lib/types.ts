@@ -794,11 +794,7 @@ export interface GoTrueMFAApi {
   challengeAndVerify(params: MFAChallengeAndVerifyParams): Promise<AuthMFAVerifyResponse>
 
   /**
-   * Returns the list of MFA factors enabled for this user. For most use cases
-   * you should consider using {@link
-   * GoTrueMFAApi#getAuthenticatorAssuranceLevel}. This uses a cached version
-   * of the factors and avoids incurring a network call. If you need to update
-   * this list, call {@link GoTrueClient#getUser} first.
+   * Returns the list of MFA factors enabled for this user.
    *
    * @see {@link GoTrueMFAApi#enroll}
    * @see {@link GoTrueMFAApi#getAuthenticatorAssuranceLevel}
