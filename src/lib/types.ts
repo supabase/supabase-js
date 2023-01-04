@@ -25,7 +25,7 @@ export type SupabaseClientOptions<SchemaName> = {
      */
     storageKey?: string
     /**
-     * Whether to persist a logged in session to storage.
+     * Whether to persist a logged in session to storage. Defaults to true.
      */
     persistSession?: boolean
     /**
@@ -33,7 +33,7 @@ export type SupabaseClientOptions<SchemaName> = {
      */
     detectSessionInUrl?: boolean
     /**
-     * A storage provider. Used to store the logged in session. Defaults to true.
+     * A storage provider. Used to store the logged-in session.
      */
     storage?: SupabaseAuthClientOptions['storage']
   }
