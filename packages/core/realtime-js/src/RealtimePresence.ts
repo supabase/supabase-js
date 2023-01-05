@@ -17,18 +17,20 @@ type Presence = {
 
 export type RealtimePresenceState = { [key: string]: Presence[] }
 
-export type RealtimePresenceJoinPayload = {
+export type RealTimeGenericPresence<T> = Presence & T
+
+export type RealtimePresenceJoinPayload<T> = {
   event: `${REALTIME_PRESENCE_LISTEN_EVENTS.JOIN}`
   key: string
-  currentPresences: Presence[]
-  newPresences: Presence[]
+  currentPresences: RealTimeGenericPresence<T>[]
+  newPresences: RealTimeGenericPresence<T>[]
 }
 
-export type RealtimePresenceLeavePayload = {
+export type RealtimePresenceLeavePayload<T> = {
   event: `${REALTIME_PRESENCE_LISTEN_EVENTS.LEAVE}`
   key: string
-  currentPresences: Presence[]
-  leftPresences: Presence[]
+  currentPresences: RealTimeGenericPresence<T>[]
+  leftPresences: RealTimeGenericPresence<T>[]
 }
 
 export enum REALTIME_PRESENCE_LISTEN_EVENTS {

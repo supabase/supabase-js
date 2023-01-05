@@ -338,15 +338,15 @@ export default class RealtimeChannel {
     filter: { event: `${REALTIME_PRESENCE_LISTEN_EVENTS.SYNC}` },
     callback: () => void
   ): RealtimeChannel
-  on(
+  on<T>(
     type: `${REALTIME_LISTEN_TYPES.PRESENCE}`,
     filter: { event: `${REALTIME_PRESENCE_LISTEN_EVENTS.JOIN}` },
-    callback: (payload: RealtimePresenceJoinPayload) => void
+    callback: (payload: RealtimePresenceJoinPayload<T>) => void
   ): RealtimeChannel
-  on(
+  on<T>(
     type: `${REALTIME_LISTEN_TYPES.PRESENCE}`,
     filter: { event: `${REALTIME_PRESENCE_LISTEN_EVENTS.LEAVE}` },
-    callback: (payload: RealtimePresenceLeavePayload) => void
+    callback: (payload: RealtimePresenceLeavePayload<T>) => void
   ): RealtimeChannel
   on<T extends { [key: string]: any }>(
     type: `${REALTIME_LISTEN_TYPES.POSTGRES_CHANGES}`,
