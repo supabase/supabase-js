@@ -10,27 +10,24 @@ import {
 } from 'phoenix'
 import RealtimeChannel from './RealtimeChannel'
 
-type Presence = {
+type Presence<T extends { [key: string]: any } = {}> = {
   presence_ref: string
-  [key: string]: any
-}
+} & T
 
 export type RealtimePresenceState = { [key: string]: Presence[] }
 
-export type RealTimeGenericPresence<T> = Presence & T
-
-export type RealtimePresenceJoinPayload<T> = {
+export type RealtimePresenceJoinPayload<T extends { [key: string]: any }> = {
   event: `${REALTIME_PRESENCE_LISTEN_EVENTS.JOIN}`
   key: string
-  currentPresences: RealTimeGenericPresence<T>[]
-  newPresences: RealTimeGenericPresence<T>[]
+  currentPresences: Presence<T>[]
+  newPresences: Presence<T>[]
 }
 
-export type RealtimePresenceLeavePayload<T> = {
+export type RealtimePresenceLeavePayload<T extends { [key: string]: any }> = {
   event: `${REALTIME_PRESENCE_LISTEN_EVENTS.LEAVE}`
   key: string
-  currentPresences: RealTimeGenericPresence<T>[]
-  leftPresences: RealTimeGenericPresence<T>[]
+  currentPresences: Presence<T>[]
+  leftPresences: Presence<T>[]
 }
 
 export enum REALTIME_PRESENCE_LISTEN_EVENTS {
@@ -161,7 +158,7 @@ export default class RealtimePresence {
    * An optional `onJoin` and `onLeave` callback can be provided to
    * react to changes in the client's local presences across
    * disconnects and reconnects with the server.
-   * 
+   *
    * @internal
    */
   private static syncState(
@@ -310,7 +307,7 @@ export default class RealtimePresence {
    *    ]
    *  }
    * })
-   * 
+   *
    * @internal
    */
   private static transformState(
