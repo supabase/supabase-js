@@ -356,7 +356,7 @@ export default class StorageFileApi {
   }
 
   /**
-   * Downloads a file.
+   * Downloads a file from a private bucket. For public buckets, make a request to the URL returned from `getPublicUrl` instead.
    *
    * @param path The full path and file name of the file to be downloaded. For example `folder/image.png`.
    * @param options.transform Transform the asset before serving it to the client.
