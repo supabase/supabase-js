@@ -58,19 +58,19 @@ export type RealtimePostgresChangesPayload<T extends { [key: string]: any }> =
   | RealtimePostgresDeletePayload<T>
 
 export type RealtimePostgresChangesFilter<T extends `${REALTIME_POSTGRES_CHANGES_LISTEN_EVENT}`> = {
-  /*
+  /**
   * The type of database change to listen to.
   */
   event: T
-  /*
+  /**
   * The database schema to listen to.
   */
   schema: string
-  /*
+  /**
   * The database table to listen to.
   */
   table?: string
-  /*
+  /**
   * Receive database changes when filter is matched.
   */
   filter?: string
