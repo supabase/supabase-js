@@ -941,7 +941,7 @@ export default class GoTrueClient {
     })
     // try to open on the browser
     if (isBrowser()) {
-      window.location.href = url
+      window.location.assign(url)
     }
     return { data: { provider, url }, error: null }
   }
