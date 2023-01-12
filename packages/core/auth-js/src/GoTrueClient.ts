@@ -789,8 +789,8 @@ export default class GoTrueClient {
       }
       const redirectType = getParameterByName('type')
 
-      // Remove tokens from URL
-      window.location.hash = ''
+      // Remove tokens from URL and popping the URL from the back stack
+      window.location.replace(window.location.href.split('#')[0])
 
       return { data: { session, redirectType }, error: null }
     } catch (error) {
