@@ -397,7 +397,7 @@ export default class StorageFileApi {
   }
 
   /**
-   * Retrieves the URL for an asset in a public bucket.
+   * A simple convenience function to get the URL for an asset in a public bucket. If you do not want to use this function, you can construct the public URL by concatenating the bucket URL with the path to the asset.
    * This function does not verify if the bucket is public. If a public URL is created for a bucket which is not public, you will not be able to download the asset.
    *
    * @param path The path and name of the file to generate the public URL for. For example `folder/image.png`.
