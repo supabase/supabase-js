@@ -1,9 +1,11 @@
 export class AuthError extends Error {
+  status: number | undefined
   protected __isAuthError = true
 
-  constructor(message: string) {
+  constructor(message: string, status?: number) {
     super(message)
     this.name = 'AuthError'
+    this.status = status
   }
 }
 
@@ -15,7 +17,7 @@ export class AuthApiError extends AuthError {
   status: number
 
   constructor(message: string, status: number) {
-    super(message)
+    super(message, status)
     this.name = 'AuthApiError'
     this.status = status
   }
