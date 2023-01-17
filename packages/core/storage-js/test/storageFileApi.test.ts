@@ -248,6 +248,47 @@ describe('Object API', () => {
     })
   })
 
+  it('will return the image as webp when the browser support it', async () => {
+    const storage = new StorageClient(URL, { Authorization: `Bearer ${KEY}`, Accept: 'image/webp' })
+    const privateBucketName = 'my-private-bucket'
+    await findOrCreateBucket(privateBucketName)
+
+    const { error: uploadError } = await storage.from(privateBucketName).upload(uploadPath, file)
+    expect(uploadError).toBeNull()
+
+    const res = await storage.from(privateBucketName).download(uploadPath, {
+      transform: {
+        width: 200,
+        height: 200,
+      },
+    })
+
+    expect(res.error).toBeNull()
+    expect(res.data?.size).toBeGreaterThan(0)
+    expect(res.data?.type).toEqual('image/webp')
+  })
+
+  it('will return the original image format when format is origin', async () => {
+    const storage = new StorageClient(URL, { Authorization: `Bearer ${KEY}`, Accept: 'image/webp' })
+    const privateBucketName = 'my-private-bucket'
+    await findOrCreateBucket(privateBucketName)
+
+    const { error: uploadError } = await storage.from(privateBucketName).upload(uploadPath, file)
+    expect(uploadError).toBeNull()
+
+    const res = await storage.from(privateBucketName).download(uploadPath, {
+      transform: {
+        width: 200,
+        height: 200,
+        format: 'origin',
+      },
+    })
+
+    expect(res.error).toBeNull()
+    expect(res.data?.size).toBeGreaterThan(0)
+    expect(res.data?.type).toEqual('image/jpeg')
+  })
+
   it('will get a signed transformed image', async () => {
     await storage.from(bucketName).upload(uploadPath, file)
     const res = await storage.from(bucketName).createSignedUrl(uploadPath, 60000, {

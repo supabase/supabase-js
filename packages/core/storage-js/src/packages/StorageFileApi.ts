@@ -593,6 +593,10 @@ export default class StorageFileApi {
       params.push(`resize=${transform.resize}`)
     }
 
+    if (transform.format) {
+      params.push(`format=${transform.format}`)
+    }
+
     return params.join('&')
   }
 }

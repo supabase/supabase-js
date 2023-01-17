@@ -89,4 +89,11 @@ export interface TransformOptions {
    * Fill resizes the image to fill the entire width and height. If the object's aspect ratio does not match the width and height, the image will be stretched to fit.
    */
   resize?: 'cover' | 'contain' | 'fill'
+  /**
+   * Specify the format of the image requested.
+   *
+   * When using 'origin' we force the format to be the same as the original image,
+   * bypassing automatic browser optimisation such as webp conversion
+   */
+  format?: 'origin'
 }
