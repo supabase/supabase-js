@@ -6,7 +6,7 @@
     "module": "CommonJS",
     "outDir": "dist/main",
     "sourceMap": true,
-    "target": "ES2015",
+    "target": "ES2017",
 
     "strict": true,
 
