@@ -254,13 +254,18 @@ export default class GoTrueAdminApi {
    * Delete a user. Requires a `service_role` key.
    *
    * @param id The user id you want to remove.
+   * @param shouldSoftDelete If true, then the user will be soft-deleted from the auth schema.
+   * Defaults to false for backward compatibility.
    *
    * This function should only be called on a server. Never expose your `service_role` key in the browser.
    */
-  async deleteUser(id: string): Promise<UserResponse> {
+  async deleteUser(id: string, shouldSoftDelete = false): Promise<UserResponse> {
     try {
       return await _request(this.fetch, 'DELETE', `${this.url}/admin/users/${id}`, {
         headers: this.headers,
+        body: {
+          should_soft_delete: shouldSoftDelete,
+        },
         xform: _userResponse,
       })
     } catch (error) {
