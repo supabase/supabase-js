@@ -78,28 +78,32 @@ export const removeItemAsync = async (storage: SupportedStorage, key: string): P
   await storage.removeItem(key)
 }
 
-export const decodeBase64URL = (value: string): string => {
-  try {
-    // atob is present in all browsers and nodejs >= 16
-    // but if it is not it will throw a ReferenceError in which case we can try to use Buffer
-    // replace are here to convert the Base64-URL into Base64 which is what atob supports
-    // replace with //g regex acts like replaceAll
-    // Decoding base64 to UTF8 see https://stackoverflow.com/a/30106551/17622044
-    return decodeURIComponent(
-      atob(value.replace(/[-]/g, '+').replace(/[_]/g, '/'))
-        .split('')
-        .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
-        .join('')
-    )
-  } catch (e) {
-    if (e instanceof ReferenceError) {
-      // running on nodejs < 16
-      // Buffer supports Base64-URL transparently
-      return Buffer.from(value, 'base64').toString('utf-8')
-    } else {
-      throw e
+export function decodeBase64URL(value: string): string {
+  const key = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=';
+  let base64 = '';
+  let chr1, chr2, chr3;
+  let enc1, enc2, enc3, enc4;
+  let i = 0;
+  value = value.replace('-', '+').replace('_', '/');
+
+  while (i < value.length) {
+    enc1 = key.indexOf(value.charAt(i++));
+    enc2 = key.indexOf(value.charAt(i++));
+    enc3 = key.indexOf(value.charAt(i++));
+    enc4 = key.indexOf(value.charAt(i++));
+    chr1 = (enc1 << 2) | (enc2 >> 4);
+    chr2 = ((enc2 & 15) << 4) | (enc3 >> 2);
+    chr3 = ((enc3 & 3) << 6) | enc4;
+    base64 = base64 + String.fromCharCode(chr1);
+
+    if (enc3 != 64 && chr2 != 0) {
+      base64 = base64 + String.fromCharCode(chr2);
+    }
+    if (enc4 != 64 && chr3 != 0) {
+      base64 = base64 + String.fromCharCode(chr3);
     }
   }
+  return base64;
 }
 
 /**
