@@ -597,6 +597,10 @@ export default class StorageFileApi {
       params.push(`format=${transform.format}`)
     }
 
+    if (transform.quality) {
+      params.push(`quality=${transform.quality}`)
+    }
+
     return params.join('&')
   }
 }

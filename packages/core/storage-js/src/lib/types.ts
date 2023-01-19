@@ -90,6 +90,10 @@ export interface TransformOptions {
    */
   resize?: 'cover' | 'contain' | 'fill'
   /**
+   * Set the quality of the returned image, this is percentage based, default 80
+   */
+  quality?: number
+  /**
    * Specify the format of the image requested.
    *
    * When using 'origin' we force the format to be the same as the original image,

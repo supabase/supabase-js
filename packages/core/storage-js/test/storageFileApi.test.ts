@@ -221,10 +221,11 @@ describe('Object API', () => {
         transform: {
           width: 200,
           height: 300,
+          quality: 70,
         },
       })
       expect(res.data.publicUrl).toEqual(
-        `${URL}/render/image/public/${bucketName}/${uploadPath}?width=200&height=300`
+        `${URL}/render/image/public/${bucketName}/${uploadPath}?width=200&height=300&quality=70`
       )
     })
 
@@ -295,6 +296,7 @@ describe('Object API', () => {
       transform: {
         width: 200,
         height: 200,
+        quality: 60,
       },
     })
 
@@ -306,7 +308,7 @@ describe('Object API', () => {
     expect(parseInt(imageResp.headers.get('content-length') || '')).toBeGreaterThan(0)
     expect(imageResp.status).toEqual(200)
     expect(imageResp.headers.get('x-transformations')).toEqual(
-      'height:200,width:200,resizing_type:fill'
+      'height:200,width:200,resizing_type:fill,quality:60'
     )
   })
 })
