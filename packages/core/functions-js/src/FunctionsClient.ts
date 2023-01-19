@@ -46,7 +46,7 @@ export class FunctionsClient {
     options: FunctionInvokeOptions = {}
   ): Promise<FunctionsResponse<T>> {
     try {
-      const { headers, body: functionArgs } = options
+      const { headers, method, body: functionArgs } = options
 
       let _headers: Record<string, string> = {}
       let body: any
@@ -78,7 +78,7 @@ export class FunctionsClient {
       }
 
       const response = await this.fetch(`${this.url}/${functionName}`, {
-        method: 'POST',
+        method: method || 'POST',
         // headers priority is (high to low):
         // 1. invoke-level headers
         // 2. client-level headers
