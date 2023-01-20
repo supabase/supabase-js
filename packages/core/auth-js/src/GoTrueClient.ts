@@ -682,6 +682,7 @@ export default class GoTrueClient {
           expires_at: expiresAt,
         }
         await this._saveSession(session)
+        this._notifyAllSubscribers('SIGNED_IN', session)
       }
 
       return { data: { user: session.user, session }, error: null }
