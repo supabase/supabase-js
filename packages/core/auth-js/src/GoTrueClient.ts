@@ -27,6 +27,8 @@ import {
   resolveFetch,
   setItemAsync,
   uuid,
+  retryable,
+  sleep,
 } from './lib/helpers'
 import localStorageAdapter from './lib/local-storage'
 import { polyfillGlobalThis } from './lib/polyfills'
@@ -79,6 +81,13 @@ const DEFAULT_OPTIONS: Omit<Required<GoTrueClientOptions>, 'fetch' | 'storage'> 
   headers: DEFAULT_HEADERS,
 }
 
+/** Current session will be checked for refresh at this interval. */
+const AUTO_REFRESH_TICK_DURATION = 10 * 1000
+
+/**
+ * A token refresh will be attempted this many ticks before the current session expires. */
+const AUTO_REFRESH_TICK_THRESHOLD = 3
+
 export default class GoTrueClient {
   /**
    * Namespace for the GoTrue admin methods.
@@ -104,8 +113,7 @@ export default class GoTrueClient {
   protected persistSession: boolean
   protected storage: SupportedStorage
   protected stateChangeEmitters: Map<string, Subscription> = new Map()
-  protected refreshTokenTimer?: ReturnType<typeof setTimeout>
-  protected networkRetries = 0
+  protected autoRefreshTicker: ReturnType<typeof setInterval> | null = null
   protected refreshingDeferred: Deferred<CallRefreshTokenResult> | null = null
   /**
    * Keeps track of the async client initialization.
@@ -142,7 +150,6 @@ export default class GoTrueClient {
     this.fetch = resolveFetch(settings.fetch)
     this.detectSessionInUrl = settings.detectSessionInUrl
 
-    this.initialize()
     this.mfa = {
       verify: this._verify.bind(this),
       enroll: this._enroll.bind(this),
@@ -152,6 +159,8 @@ export default class GoTrueClient {
       challengeAndVerify: this._challengeAndVerify.bind(this),
       getAuthenticatorAssuranceLevel: this._getAuthenticatorAssuranceLevel.bind(this),
     }
+
+    this.initialize()
   }
 
   /**
@@ -213,7 +222,7 @@ export default class GoTrueClient {
         error: new AuthUnknownError('Unexpected error during initialization', error),
       }
     } finally {
-      this._handleVisibilityChange()
+      await this._handleVisibilityChange()
     }
   }
 
@@ -904,11 +913,26 @@ export default class GoTrueClient {
    */
   private async _refreshAccessToken(refreshToken: string): Promise<AuthResponse> {
     try {
-      return await _request(this.fetch, 'POST', `${this.url}/token?grant_type=refresh_token`, {
-        body: { refresh_token: refreshToken },
-        headers: this.headers,
-        xform: _sessionResponse,
-      })
+      const startedAt = Date.now()
+
+      // will attempt to refresh the token with exponential backoff
+      return await retryable(
+        async (attempt) => {
+          await sleep(attempt * 200) // 0, 200, 400, 800, ...
+
+          return await _request(this.fetch, 'POST', `${this.url}/token?grant_type=refresh_token`, {
+            body: { refresh_token: refreshToken },
+            headers: this.headers,
+            xform: _sessionResponse,
+          })
+        },
+        (attempt, _, result) =>
+          result &&
+          result.error &&
+          result.error instanceof AuthRetryableFetchError &&
+          // retryable only if the request can be sent before the backoff overflows the tick duration
+          Date.now() + (attempt + 1) * 200 - startedAt < AUTO_REFRESH_TICK_DURATION
+      )
     } catch (error) {
       if (isAuthError(error)) {
         return { data: { session: null, user: null }, error }
@@ -968,24 +992,12 @@ export default class GoTrueClient {
 
       if ((currentSession.expires_at ?? Infinity) < timeNow + EXPIRY_MARGIN) {
         if (this.autoRefreshToken && currentSession.refresh_token) {
-          this.networkRetries++
           const { error } = await this._callRefreshToken(currentSession.refresh_token)
+
           if (error) {
             console.log(error.message)
-            if (
-              error instanceof AuthRetryableFetchError &&
-              this.networkRetries < NETWORK_FAILURE.MAX_RETRIES
-            ) {
-              if (this.refreshTokenTimer) clearTimeout(this.refreshTokenTimer)
-              this.refreshTokenTimer = setTimeout(
-                () => this._recoverAndRefresh(),
-                NETWORK_FAILURE.RETRY_INTERVAL ** this.networkRetries * 100 // exponential backoff
-              )
-              return
-            }
             await this._removeSession()
           }
-          this.networkRetries = 0
         } else {
           await this._removeSession()
         }
@@ -1054,14 +1066,6 @@ export default class GoTrueClient {
       this.inMemorySession = session
     }
 
-    const expiresAt = session.expires_at
-    if (expiresAt) {
-      const timeNow = Math.round(Date.now() / 1000)
-      const expiresIn = expiresAt - timeNow
-      const refreshDurationBeforeExpires = expiresIn > EXPIRY_MARGIN ? EXPIRY_MARGIN : 0.5
-      this._startAutoRefreshToken((expiresIn - refreshDurationBeforeExpires) * 1000)
-    }
-
     if (this.persistSession && session.expires_at) {
       await this._persistSession(session)
     }
@@ -1077,54 +1081,130 @@ export default class GoTrueClient {
     } else {
       this.inMemorySession = null
     }
+  }
 
-    if (this.refreshTokenTimer) {
-      clearTimeout(this.refreshTokenTimer)
+  /**
+   * Starts an auto-refresh process in the background. The session is checked
+   * every few seconds. Close to the time of expiration a process is started to
+   * refresh the session. If refreshing fails it will be retried for as long as
+   * necessary.
+   *
+   * If you set the {@link GoTrueClientOptions#autoRefreshToken} you don't need
+   * to call this function, it will be called for you.
+   *
+   * On browsers the refresh process works only when the tab/window is in the
+   * foreground to conserve resources as well as prevent race conditions and
+   * flooding auth with requests.
+   *
+   * On non-browser platforms the refresh process works *continuously* in the
+   * background, which may not be desireable. You should hook into your
+   * platform's foreground indication mechanism and call these methods
+   * appropriately to conserve resources.
+   *
+   * {@see #stopAutoRefresh}
+   */
+  async startAutoRefresh() {
+    await this.stopAutoRefresh()
+    this.autoRefreshTicker = setInterval(
+      () => this._autoRefreshTokenTick(),
+      AUTO_REFRESH_TICK_DURATION
+    )
+
+    // run the tick immediately
+    await this._autoRefreshTokenTick()
+  }
+
+  /**
+   * Stops an active auto refresh process running in the background (if any).
+   * See {@link #startAutoRefresh} for more details.
+   */
+  async stopAutoRefresh() {
+    const ticker = this.autoRefreshTicker
+    this.autoRefreshTicker = null
+
+    if (ticker) {
+      clearInterval(ticker)
     }
   }
 
   /**
-   * Clear and re-create refresh token timer
-   * @param value time intervals in milliseconds.
-   * @param session The current session.
+   * Runs the auto refresh token tick.
    */
-  private _startAutoRefreshToken(value: number) {
-    if (this.refreshTokenTimer) clearTimeout(this.refreshTokenTimer)
-    if (value <= 0 || !this.autoRefreshToken) return
+  private async _autoRefreshTokenTick() {
+    const now = Date.now()
 
-    this.refreshTokenTimer = setTimeout(async () => {
-      this.networkRetries++
+    try {
       const {
         data: { session },
-        error: sessionError,
+        error,
       } = await this.getSession()
-      if (!sessionError && session) {
-        const { error } = await this._callRefreshToken(session.refresh_token)
-        if (!error) this.networkRetries = 0
-        if (
-          error instanceof AuthRetryableFetchError &&
-          this.networkRetries < NETWORK_FAILURE.MAX_RETRIES
-        )
-          this._startAutoRefreshToken(NETWORK_FAILURE.RETRY_INTERVAL ** this.networkRetries * 100) // exponential backoff
+
+      if (!session || !session.refresh_token || !session.expires_at) {
+        return
       }
-    }, value)
-    if (typeof this.refreshTokenTimer.unref === 'function') this.refreshTokenTimer.unref()
+
+      // session will expire in this many ticks (or has already expired if <= 0)
+      const expiresInTicks = Math.floor(
+        (session.expires_at * 1000 - now) / AUTO_REFRESH_TICK_DURATION
+      )
+
+      if (expiresInTicks < AUTO_REFRESH_TICK_THRESHOLD) {
+        await this._callRefreshToken(session.refresh_token)
+      }
+    } catch (e: any) {
+      console.error('Auto refresh tick failed with error. This is likely a transient error.', e)
+    }
   }
 
-  private _handleVisibilityChange() {
+  /**
+   * Registers callbacks on the browser / platform, which in-turn run
+   * algorithms when the browser window/tab are in foreground. On non-browser
+   * platforms it assumes always foreground.
+   */
+  private async _handleVisibilityChange() {
     if (!isBrowser() || !window?.addEventListener) {
+      if (this.autoRefreshToken) {
+        // in non-browser environments the refresh token ticker runs always
+        this.startAutoRefresh()
+      }
+
       return false
     }
 
     try {
-      window?.addEventListener('visibilitychange', async () => {
-        if (document.visibilityState === 'visible') {
-          await this.initializePromise
-          await this._recoverAndRefresh()
-        }
-      })
+      window?.addEventListener(
+        'visibilitychange',
+        async () => await this._onVisibilityChanged(false)
+      )
+
+      // now immediately call the visbility changed callback to setup with the
+      // current visbility state
+      await this._onVisibilityChanged(true) // initial call
     } catch (error) {
       console.error('_handleVisibilityChange', error)
+    }
+  }
+
+  /**
+   * Callback registered with `window.addEventListener('visibilitychange')`.
+   */
+  private async _onVisibilityChanged(isInitial: boolean) {
+    if (document.visibilityState === 'visible') {
+      if (!isInitial) {
+        // initial visibility change setup is handled in another flow under #initialize()
+        await this.initializePromise
+        await this._recoverAndRefresh()
+      }
+
+      if (this.autoRefreshToken) {
+        // in browser environments the refresh token ticker runs only on focused tabs
+        // which prevents race conditions
+        this.startAutoRefresh()
+      }
+    } else if (document.visibilityState === 'hidden') {
+      if (this.autoRefreshToken) {
+        this.stopAutoRefresh()
+      }
     }
   }
 
@@ -1176,10 +1256,7 @@ export default class GoTrueClient {
   }
 
   /**
-   * Enrolls a factor
-   * @param friendlyName Human readable name assigned to a device
-   * @param factorType device which we're validating against. Can only be TOTP for now.
-   * @param issuer domain which the user is enrolling with
+   * {@see GoTrueMFAApi#enroll}
    */
   private async _enroll(params: MFAEnrollParams): Promise<AuthMFAEnrollResponse> {
     try {
@@ -1216,9 +1293,7 @@ export default class GoTrueClient {
   }
 
   /**
-   * Validates a device as part of the enrollment step.
-   * @param factorId System assigned identifier for authenticator device as returned by enroll
-   * @param code Code Generated by an authenticator device
+   * {@see GoTrueMFAApi#verify}
    */
   private async _verify(params: MFAVerifyParams): Promise<AuthMFAVerifyResponse> {
     try {
@@ -1257,8 +1332,7 @@ export default class GoTrueClient {
   }
 
   /**
-   * Creates a challenge which a user can verify against
-   * @param factorId System assigned identifier for authenticator device as returned by enroll
+   * {@see GoTrueMFAApi#challenge}
    */
   private async _challenge(params: MFAChallengeParams): Promise<AuthMFAChallengeResponse> {
     try {
@@ -1285,9 +1359,7 @@ export default class GoTrueClient {
   }
 
   /**
-   * Creates a challenge and immediately verifies it
-   * @param factorId System assigned identifier for authenticator device as returned by enroll
-   * @param code Code Generated by an authenticator device
+   * {@see GoTrueMFAApi#challengeAndVerify}
    */
   private async _challengeAndVerify(
     params: MFAChallengeAndVerifyParams
@@ -1306,7 +1378,7 @@ export default class GoTrueClient {
   }
 
   /**
-   * Displays all devices for a given user
+   * {@see GoTrueMFAApi#listFactors}
    */
   private async _listFactors(): Promise<AuthMFAListFactorsResponse> {
     const {
@@ -1332,8 +1404,7 @@ export default class GoTrueClient {
   }
 
   /**
-   * Gets the current and next authenticator assurance level (AAL)
-   * and the current authentication methods for the session (AMR)
+   * {@see GoTrueMFAApi#getAuthenticatorAssuranceLevel}
    */
   private async _getAuthenticatorAssuranceLevel(): Promise<AuthMFAGetAuthenticatorAssuranceLevelResponse> {
     const {

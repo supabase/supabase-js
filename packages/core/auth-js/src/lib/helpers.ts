@@ -135,7 +135,7 @@ export class Deferred<T = any> {
 export function decodeJWTPayload(token: string) {
   // Regex checks for base64url format
   const base64UrlRegex = /^([a-z0-9_-]{4})*($|[a-z0-9_-]{3}=?$|[a-z0-9_-]{2}(==)?$)$/i
-  
+
   const parts = token.split('.')
 
   if (parts.length !== 3) {
@@ -148,4 +148,46 @@ export function decodeJWTPayload(token: string) {
 
   const base64Url = parts[1]
   return JSON.parse(decodeBase64URL(base64Url))
+}
+
+/**
+ * Creates a promise that resolves to null after some time.
+ */
+export function sleep(time: number): Promise<null> {
+  return new Promise((accept) => {
+    setTimeout(() => accept(null), time)
+  })
+}
+
+/**
+ * Converts the provided async function into a retryable function. Each result
+ * or thrown error is sent to the isRetryable function which should return true
+ * if the function should run again.
+ */
+export function retryable<T>(
+  fn: (attempt: number) => Promise<T>,
+  isRetryable: (attempt: number, error: any | null, result?: T) => boolean
+): Promise<T> {
+  const promise = new Promise<T>((accept, reject) => {
+    // eslint-disable-next-line @typescript-eslint/no-extra-semi
+    ;(async () => {
+      for (let attempt = 0; attempt < Infinity; attempt++) {
+        try {
+          const result = await fn(attempt)
+
+          if (!isRetryable(attempt, null, result)) {
+            accept(result)
+            return
+          }
+        } catch (e: any) {
+          if (!isRetryable(attempt, e)) {
+            reject(e)
+            return
+          }
+        }
+      }
+    })()
+  })
+
+  return promise
 }

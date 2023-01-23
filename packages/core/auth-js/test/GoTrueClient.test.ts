@@ -98,7 +98,7 @@ describe('GoTrueClient', () => {
       expect(error).toBeNull()
       expect(data.session).not.toBeNull()
 
-      /** 
+      /**
        * Sign out the user to verify setSession, getSession and updateUser
        * are truly working; because the signUp method will already save the session.
        * And that session will be available to getSession and updateUser,
@@ -129,10 +129,7 @@ describe('GoTrueClient', () => {
        * getSession has been added to verify setSession is also saving
        * the session, not just returning it.
        */
-      const { 
-        data: getSessionData, 
-        error: getSessionError 
-      } = await authWithSession.getSession()
+      const { data: getSessionData, error: getSessionError } = await authWithSession.getSession()
       expect(getSessionError).toBeNull()
       expect(getSessionData).not.toBeNull()
 
