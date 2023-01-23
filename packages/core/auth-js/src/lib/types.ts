@@ -440,6 +440,8 @@ export type SignInWithOAuthCredentials = {
     scopes?: string
     /** An object of query params */
     queryParams?: { [key: string]: string }
+    /** If set to true does not immediately redirect the current browser context to visit the OAuth authorization page for the provider. */
+    skipBrowserRedirect?: boolean
   }
 }
 
@@ -912,8 +914,8 @@ export type CallRefreshTokenResult =
 
 export type Pagination = {
   [key: string]: any
-  nextPage: number | null,
-  lastPage: number,
+  nextPage: number | null
+  lastPage: number
   total: number
 }
 

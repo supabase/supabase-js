@@ -352,6 +352,7 @@ export default class GoTrueClient {
       redirectTo: credentials.options?.redirectTo,
       scopes: credentials.options?.scopes,
       queryParams: credentials.options?.queryParams,
+      skipBrowserRedirect: credentials.options?.skipBrowserRedirect,
     })
   }
 
@@ -933,6 +934,7 @@ export default class GoTrueClient {
       redirectTo?: string
       scopes?: string
       queryParams?: { [key: string]: string }
+      skipBrowserRedirect?: boolean
     } = {}
   ) {
     const url: string = this._getUrlForProvider(provider, {
@@ -941,7 +943,7 @@ export default class GoTrueClient {
       queryParams: options.queryParams,
     })
     // try to open on the browser
-    if (isBrowser()) {
+    if (isBrowser() && !options.skipBrowserRedirect) {
       window.location.assign(url)
     }
     return { data: { provider, url }, error: null }
