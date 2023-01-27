@@ -450,15 +450,21 @@ export default class RealtimeClient {
   /** @internal */
   private _throttle(
     callback: Function,
-    eventsPerSecondLimit: number = this.eventsPerSecondLimitMs
+    eventsPerSecondLimitMs: number = this.eventsPerSecondLimitMs
   ): () => boolean {
     return () => {
       if (this.inThrottle) return true
+
       callback()
-      this.inThrottle = true
-      setTimeout(() => {
-        this.inThrottle = false
-      }, eventsPerSecondLimit)
+
+      if (eventsPerSecondLimitMs > 0) {
+        this.inThrottle = true
+
+        setTimeout(() => {
+          this.inThrottle = false
+        }, eventsPerSecondLimitMs)
+      }
+
       return false
     }
   }
