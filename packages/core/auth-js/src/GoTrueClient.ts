@@ -1105,10 +1105,19 @@ export default class GoTrueClient {
    */
   async startAutoRefresh() {
     await this.stopAutoRefresh()
-    this.autoRefreshTicker = setInterval(
-      () => this._autoRefreshTokenTick(),
-      AUTO_REFRESH_TICK_DURATION
-    )
+
+    const ticker = setInterval(() => this._autoRefreshTokenTick(), AUTO_REFRESH_TICK_DURATION)
+    this.autoRefreshTicker = ticker
+
+    if (ticker && typeof ticker === 'object' && typeof ticker.unref === 'function') {
+      // ticker is a NodeJS Timeout object that has an `unref` method
+      // https://nodejs.org/api/timers.html#timeoutunref
+      // When auto refresh is used in NodeJS (like for testing) the
+      // `setInterval` is preventing the process from being marked as
+      // finished and tests run endlessly. This can be prevented by calling
+      // `unref()` on the returned object.
+      ticker.unref()
+    }
 
     // run the tick immediately
     await this._autoRefreshTokenTick()
