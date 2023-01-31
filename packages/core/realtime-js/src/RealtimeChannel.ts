@@ -327,17 +327,7 @@ export default class RealtimeChannel {
   }
 
   /**
-   * Creates an event handler that listens to changes
-   * @param type Realtime feature (broadcast, presence, or postgres_changes)
-   * @param filter Pre-defined and custom values specific to the Realtime feature
-   * @param filter.schema Database schema
-   * @param filter.event Event to listen to. If listening to postgres_changes type
-   * then this value is one of INSERT, UPDATE, DELETE, *
-   * @param filter.filter If listening to postgres_changes type then this value is used to specify
-   * the Postgres Changes filter (eq, neq, lt, lte, gt, or gte) and value to listen to
-   * @param filter.table If listening to postgres_changes type then this value is used to specify
-   * the database table to listen to
-   * @param callback Function to be invoked when event handler is triggered
+   * Creates an event handler that listens to changes.
    */
   on(
     type: `${REALTIME_LISTEN_TYPES.BROADCAST}`,
@@ -378,6 +368,21 @@ export default class RealtimeChannel {
     filter: RealtimePostgresChangesFilter<`${REALTIME_POSTGRES_CHANGES_LISTEN_EVENT.UPDATE}`>,
     callback: (payload: RealtimePostgresUpdatePayload<T>) => void
   ): RealtimeChannel
+  /**
+   * The following is placed here to display on supabase.com/docs/reference/javascript/subscribe.
+   * @param type One of broadcast, presence, or postgres_changes.
+   * @param filter Custom object specific to the Realtime feature.
+   * @param filter.schema Database schema used only for postgres_changes type.
+   * @param filter.event Event to listen to.
+   * If listening to broadcast type, this can by any string.
+   * If listening to presence type, this is one of sync, join, or leave.
+   * If listening to postgres_changes type, this value is one of INSERT, UPDATE, DELETE, or *.
+   * @param filter.filter If listening to postgres_changes type then this value is used to specify
+   * the postgres changes filter (eq, neq, lt, lte, gt, or gte) and value to listen to.
+   * @param filter.table If listening to postgres_changes type then this value is used to specify
+   * the database table to listen to.
+   * @param callback Function to be invoked when event handler is triggered
+   */
   on<T extends { [key: string]: any }>(
     type: `${REALTIME_LISTEN_TYPES.POSTGRES_CHANGES}`,
     filter: RealtimePostgresChangesFilter<`${REALTIME_POSTGRES_CHANGES_LISTEN_EVENT.DELETE}`>,
