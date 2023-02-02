@@ -79,31 +79,31 @@ export const removeItemAsync = async (storage: SupportedStorage, key: string): P
 }
 
 export function decodeBase64URL(value: string): string {
-  const key = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=';
-  let base64 = '';
-  let chr1, chr2, chr3;
-  let enc1, enc2, enc3, enc4;
-  let i = 0;
-  value = value.replace('-', '+').replace('_', '/');
+  const key = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/='
+  let base64 = ''
+  let chr1, chr2, chr3
+  let enc1, enc2, enc3, enc4
+  let i = 0
+  value = value.replace('-', '+').replace('_', '/')
 
   while (i < value.length) {
-    enc1 = key.indexOf(value.charAt(i++));
-    enc2 = key.indexOf(value.charAt(i++));
-    enc3 = key.indexOf(value.charAt(i++));
-    enc4 = key.indexOf(value.charAt(i++));
-    chr1 = (enc1 << 2) | (enc2 >> 4);
-    chr2 = ((enc2 & 15) << 4) | (enc3 >> 2);
-    chr3 = ((enc3 & 3) << 6) | enc4;
-    base64 = base64 + String.fromCharCode(chr1);
+    enc1 = key.indexOf(value.charAt(i++))
+    enc2 = key.indexOf(value.charAt(i++))
+    enc3 = key.indexOf(value.charAt(i++))
+    enc4 = key.indexOf(value.charAt(i++))
+    chr1 = (enc1 << 2) | (enc2 >> 4)
+    chr2 = ((enc2 & 15) << 4) | (enc3 >> 2)
+    chr3 = ((enc3 & 3) << 6) | enc4
+    base64 = base64 + String.fromCharCode(chr1)
 
     if (enc3 != 64 && chr2 != 0) {
-      base64 = base64 + String.fromCharCode(chr2);
+      base64 = base64 + String.fromCharCode(chr2)
     }
     if (enc4 != 64 && chr3 != 0) {
-      base64 = base64 + String.fromCharCode(chr3);
+      base64 = base64 + String.fromCharCode(chr3)
     }
   }
-  return base64;
+  return base64
 }
 
 /**

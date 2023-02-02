@@ -114,6 +114,7 @@ export default class GoTrueClient {
   protected storage: SupportedStorage
   protected stateChangeEmitters: Map<string, Subscription> = new Map()
   protected autoRefreshTicker: ReturnType<typeof setInterval> | null = null
+  protected visibilityChangedCallback: (() => Promise<any>) | null = null
   protected refreshingDeferred: Deferred<CallRefreshTokenResult> | null = null
   /**
    * Keeps track of the async client initialization.
@@ -128,6 +129,11 @@ export default class GoTrueClient {
     [key: string]: string
   }
   protected fetch: Fetch
+
+  /**
+   * Used to broadcast state change events to other tabs listening.
+   */
+  protected broadcastChannel: BroadcastChannel | null = null
 
   /**
    * Create a new client for use in the browser.
@@ -158,6 +164,13 @@ export default class GoTrueClient {
       listFactors: this._listFactors.bind(this),
       challengeAndVerify: this._challengeAndVerify.bind(this),
       getAuthenticatorAssuranceLevel: this._getAuthenticatorAssuranceLevel.bind(this),
+    }
+
+    if (isBrowser() && globalThis.BroadcastChannel && this.persistSession && this.storageKey) {
+      this.broadcastChannel = new globalThis.BroadcastChannel(this.storageKey)
+      this.broadcastChannel.addEventListener('message', (event) => {
+        this._notifyAllSubscribers(event.data.event, event.data.session, false) // broadcast = false so we don't get an endless loop of messages
+      })
     }
 
     this.initialize()
@@ -1053,7 +1066,15 @@ export default class GoTrueClient {
     }
   }
 
-  private _notifyAllSubscribers(event: AuthChangeEvent, session: Session | null) {
+  private _notifyAllSubscribers(
+    event: AuthChangeEvent,
+    session: Session | null,
+    broadcast: boolean = true
+  ) {
+    if (this.broadcastChannel && broadcast) {
+      this.broadcastChannel.postMessage({ event, session })
+    }
+
     this.stateChangeEmitters.forEach((x) => x.callback(event, session))
   }
 
@@ -1084,28 +1105,31 @@ export default class GoTrueClient {
   }
 
   /**
-   * Starts an auto-refresh process in the background. The session is checked
-   * every few seconds. Close to the time of expiration a process is started to
-   * refresh the session. If refreshing fails it will be retried for as long as
-   * necessary.
+   * Removes any registered visibilitychange callback.
    *
-   * If you set the {@link GoTrueClientOptions#autoRefreshToken} you don't need
-   * to call this function, it will be called for you.
-   *
-   * On browsers the refresh process works only when the tab/window is in the
-   * foreground to conserve resources as well as prevent race conditions and
-   * flooding auth with requests.
-   *
-   * On non-browser platforms the refresh process works *continuously* in the
-   * background, which may not be desireable. You should hook into your
-   * platform's foreground indication mechanism and call these methods
-   * appropriately to conserve resources.
-   *
+   * {@see #startAutoRefresh}
    * {@see #stopAutoRefresh}
    */
-  async startAutoRefresh() {
-    await this.stopAutoRefresh()
+  private _removeVisibilityChangedCallback() {
+    const callback = this.visibilityChangedCallback
+    this.visibilityChangedCallback = null
 
+    try {
+      if (callback && isBrowser() && window?.removeEventListener) {
+        window.removeEventListener('visibilitychange', callback)
+      }
+    } catch (e) {
+      console.error('removing visibilitychange callback failed', e)
+    }
+  }
+
+  /**
+   * This is the private implementation of {@link #startAutoRefresh}. Use this
+   * within the library.
+   */
+  private async _startAutoRefresh() {
+    await this._stopAutoRefresh()
+    
     const ticker = setInterval(() => this._autoRefreshTokenTick(), AUTO_REFRESH_TICK_DURATION)
     this.autoRefreshTicker = ticker
 
@@ -1124,16 +1148,56 @@ export default class GoTrueClient {
   }
 
   /**
-   * Stops an active auto refresh process running in the background (if any).
-   * See {@link #startAutoRefresh} for more details.
+   * This is the private implementation of {@link #stopAutoRefresh}. Use this
+   * within the library.
    */
-  async stopAutoRefresh() {
+  private async _stopAutoRefresh() {
     const ticker = this.autoRefreshTicker
     this.autoRefreshTicker = null
 
     if (ticker) {
       clearInterval(ticker)
     }
+  }
+
+  /**
+   * Starts an auto-refresh process in the background. The session is checked
+   * every few seconds. Close to the time of expiration a process is started to
+   * refresh the session. If refreshing fails it will be retried for as long as
+   * necessary.
+   *
+   * If you set the {@link GoTrueClientOptions#autoRefreshToken} you don't need
+   * to call this function, it will be called for you.
+   *
+   * On browsers the refresh process works only when the tab/window is in the
+   * foreground to conserve resources as well as prevent race conditions and
+   * flooding auth with requests. If you call this method any managed
+   * visibility change callback will be removed and you must manage visibility
+   * changes on your own.
+   *
+   * On non-browser platforms the refresh process works *continuously* in the
+   * background, which may not be desireable. You should hook into your
+   * platform's foreground indication mechanism and call these methods
+   * appropriately to conserve resources.
+   *
+   * {@see #stopAutoRefresh}
+   */
+  async startAutoRefresh() {
+    this._removeVisibilityChangedCallback()
+    await this._startAutoRefresh()
+  }
+
+  /**
+   * Stops an active auto refresh process running in the background (if any).
+   *
+   * If you call this method any managed visibility change callback will be
+   * removed and you must manage visibility changes on your own.
+   *
+   * See {@link #startAutoRefresh} for more details.
+   */
+  async stopAutoRefresh() {
+    this._removeVisibilityChangedCallback()
+    await this._stopAutoRefresh()
   }
 
   /**
@@ -1181,10 +1245,9 @@ export default class GoTrueClient {
     }
 
     try {
-      window?.addEventListener(
-        'visibilitychange',
-        async () => await this._onVisibilityChanged(false)
-      )
+      this.visibilityChangedCallback = async () => await this._onVisibilityChanged(false)
+
+      window?.addEventListener('visibilitychange', this.visibilityChangedCallback)
 
       // now immediately call the visbility changed callback to setup with the
       // current visbility state
@@ -1208,11 +1271,11 @@ export default class GoTrueClient {
       if (this.autoRefreshToken) {
         // in browser environments the refresh token ticker runs only on focused tabs
         // which prevents race conditions
-        this.startAutoRefresh()
+        this._startAutoRefresh()
       }
     } else if (document.visibilityState === 'hidden') {
       if (this.autoRefreshToken) {
-        this.stopAutoRefresh()
+        this._stopAutoRefresh()
       }
     }
   }
