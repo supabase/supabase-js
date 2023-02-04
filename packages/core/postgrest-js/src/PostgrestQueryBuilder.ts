@@ -121,7 +121,7 @@ export default class PostgrestQueryBuilder<
     }: {
       count?: 'exact' | 'planned' | 'estimated'
     } = {}
-  ): PostgrestFilterBuilder<Schema, Relation['Row'], undefined> {
+  ): PostgrestFilterBuilder<Schema, Relation['Row'], null> {
     const method = 'POST'
 
     const prefersHeaders = []
@@ -150,7 +150,7 @@ export default class PostgrestQueryBuilder<
       body,
       fetch: this.fetch,
       allowEmpty: false,
-    } as unknown as PostgrestBuilder<undefined>)
+    } as unknown as PostgrestBuilder<null>)
   }
 
   /**
@@ -197,7 +197,7 @@ export default class PostgrestQueryBuilder<
       ignoreDuplicates?: boolean
       count?: 'exact' | 'planned' | 'estimated'
     } = {}
-  ): PostgrestFilterBuilder<Schema, Relation['Row'], undefined> {
+  ): PostgrestFilterBuilder<Schema, Relation['Row'], null> {
     const method = 'POST'
 
     const prefersHeaders = [`resolution=${ignoreDuplicates ? 'ignore' : 'merge'}-duplicates`]
@@ -220,7 +220,7 @@ export default class PostgrestQueryBuilder<
       body,
       fetch: this.fetch,
       allowEmpty: false,
-    } as unknown as PostgrestBuilder<undefined>)
+    } as unknown as PostgrestBuilder<null>)
   }
 
   /**
@@ -251,7 +251,7 @@ export default class PostgrestQueryBuilder<
     }: {
       count?: 'exact' | 'planned' | 'estimated'
     } = {}
-  ): PostgrestFilterBuilder<Schema, Relation['Row'], undefined> {
+  ): PostgrestFilterBuilder<Schema, Relation['Row'], null> {
     const method = 'PATCH'
     const prefersHeaders = []
     const body = values
@@ -271,7 +271,7 @@ export default class PostgrestQueryBuilder<
       body,
       fetch: this.fetch,
       allowEmpty: false,
-    } as unknown as PostgrestBuilder<undefined>)
+    } as unknown as PostgrestBuilder<null>)
   }
 
   /**
@@ -297,7 +297,7 @@ export default class PostgrestQueryBuilder<
     count,
   }: {
     count?: 'exact' | 'planned' | 'estimated'
-  } = {}): PostgrestFilterBuilder<Schema, Relation['Row'], undefined> {
+  } = {}): PostgrestFilterBuilder<Schema, Relation['Row'], null> {
     const method = 'DELETE'
     const prefersHeaders = []
     if (count) {
@@ -315,6 +315,6 @@ export default class PostgrestQueryBuilder<
       schema: this.schema,
       fetch: this.fetch,
       allowEmpty: false,
-    } as unknown as PostgrestBuilder<undefined>)
+    } as unknown as PostgrestBuilder<null>)
   }
 }
