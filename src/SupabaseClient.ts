@@ -265,11 +265,9 @@ export default class SupabaseClient<
   }
 
   private _initRealtimeClient(options: RealtimeClientOptions) {
-    const authHeader = options.headers?.Authorization
-    const authToken = authHeader?.startsWith('Bearer ') && authHeader.split(' ')[1]
     return new RealtimeClient(this.realtimeUrl, {
       ...options,
-      params: { ...{ apikey: authToken || this.supabaseKey }, ...options?.params },
+      params: { ...{ apikey: this.supabaseKey }, ...options?.params },
     })
   }
 
