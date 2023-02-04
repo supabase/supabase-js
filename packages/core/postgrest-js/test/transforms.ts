@@ -366,7 +366,7 @@ test('explain with options', async () => {
             "Strategy": "Plain",
             "Total Cost": 17.68,
           },
-          "Query Identifier": -8888327821402777000,
+          "Query Identifier": -6192475787150577000,
           "Settings": Object {
             "effective_cache_size": "128MB",
             "search_path": "\\"public\\", \\"extensions\\"",
