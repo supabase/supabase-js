@@ -274,6 +274,7 @@ export default class SupabaseClient<
     if ( authToken ) {
       newRealtimeClient.setAuth(authToken)
     }
+    return newRealtimeClient
   }
 
   private _listenForAuthEvents() {
