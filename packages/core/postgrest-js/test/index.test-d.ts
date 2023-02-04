@@ -15,7 +15,7 @@ const postgrest = new PostgrestClient<Database>(REST_URL)
   const { data, error } = await postgrest
     .from('users')
     .select('*, messages(*)')
-    .returns<{ messages: { foo: 'bar' }[] }>()
+    .returns<{ messages: { foo: 'bar' }[] }[]>()
   if (error) {
     throw new Error(error.message)
   }
@@ -26,7 +26,7 @@ const postgrest = new PostgrestClient<Database>(REST_URL)
     .from('users')
     .insert({ username: 'foo' })
     .select('*, messages(*)')
-    .returns<{ messages: { foo: 'bar' }[] }>()
+    .returns<{ messages: { foo: 'bar' }[] }[]>()
   if (error) {
     throw new Error(error.message)
   }
@@ -53,4 +53,13 @@ const postgrest = new PostgrestClient<Database>(REST_URL)
     throw new Error(error.message)
   }
   expectType<{ bar: Json } & { baz: string }>(data)
+}
+
+// rpc return type
+{
+  const { data, error } = await postgrest.rpc('get_status')
+  if (error) {
+    throw new Error(error.message)
+  }
+  expectType<'ONLINE' | 'OFFLINE'>(data)
 }
