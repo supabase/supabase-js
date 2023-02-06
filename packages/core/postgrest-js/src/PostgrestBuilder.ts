@@ -1,9 +1,9 @@
 import crossFetch from 'cross-fetch'
 
-import type { Fetch, PostgrestResponse } from './types'
+import type { Fetch, PostgrestSingleResponse } from './types'
 
 export default abstract class PostgrestBuilder<Result>
-  implements PromiseLike<PostgrestResponse<Result>>
+  implements PromiseLike<PostgrestSingleResponse<Result>>
 {
   protected method: 'GET' | 'HEAD' | 'POST' | 'PATCH' | 'DELETE'
   protected url: URL
@@ -45,9 +45,9 @@ export default abstract class PostgrestBuilder<Result>
     return this
   }
 
-  then<TResult1 = PostgrestResponse<Result>, TResult2 = never>(
+  then<TResult1 = PostgrestSingleResponse<Result>, TResult2 = never>(
     onfulfilled?:
-      | ((value: PostgrestResponse<Result>) => TResult1 | PromiseLike<TResult1>)
+      | ((value: PostgrestSingleResponse<Result>) => TResult1 | PromiseLike<TResult1>)
       | undefined
       | null,
     onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null

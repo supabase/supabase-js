@@ -1,11 +1,6 @@
 import PostgrestBuilder from './PostgrestBuilder'
 import { GetResult } from './select-query-parser'
-import {
-  GenericSchema,
-  PostgrestMaybeSingleResponse,
-  PostgrestResponse,
-  PostgrestSingleResponse,
-} from './types'
+import { GenericSchema } from './types'
 
 export default class PostgrestTransformBuilder<
   Schema extends GenericSchema,
@@ -21,9 +16,9 @@ export default class PostgrestTransformBuilder<
    *
    * @param columns - The columns to retrieve, separated by commas
    */
-  select<Query extends string = '*', NewResult = GetResult<Schema, Row, Query>>(
+  select<Query extends string = '*', NewResultOne = GetResult<Schema, Row, Query>>(
     columns?: Query
-  ): PostgrestTransformBuilder<Schema, Row, NewResult> {
+  ): PostgrestTransformBuilder<Schema, Row, NewResultOne[]> {
     // Remove whitespaces except when quoted
     let quoted = false
     const cleanedColumns = (columns ?? '*')
@@ -43,7 +38,7 @@ export default class PostgrestTransformBuilder<
       this.headers['Prefer'] += ','
     }
     this.headers['Prefer'] += 'return=representation'
-    return this as unknown as PostgrestTransformBuilder<Schema, Row, NewResult>
+    return this as unknown as PostgrestTransformBuilder<Schema, Row, NewResultOne[]>
   }
 
   order<ColumnName extends string & keyof Row>(
@@ -138,9 +133,11 @@ export default class PostgrestTransformBuilder<
    * Query result must be one row (e.g. using `.limit(1)`), otherwise this
    * returns an error.
    */
-  single(): PromiseLike<PostgrestSingleResponse<Result>> {
+  single<
+    ResultOne = Result extends (infer ResultOne)[] ? ResultOne : never
+  >(): PostgrestBuilder<ResultOne> {
     this.headers['Accept'] = 'application/vnd.pgrst.object+json'
-    return this as PromiseLike<PostgrestSingleResponse<Result>>
+    return this as PostgrestBuilder<ResultOne>
   }
 
   /**
@@ -149,26 +146,28 @@ export default class PostgrestTransformBuilder<
    * Query result must be zero or one row (e.g. using `.limit(1)`), otherwise
    * this returns an error.
    */
-  maybeSingle(): PromiseLike<PostgrestMaybeSingleResponse<Result>> {
+  maybeSingle<
+    ResultOne = Result extends (infer ResultOne)[] ? ResultOne : never
+  >(): PostgrestBuilder<ResultOne | null> {
     this.headers['Accept'] = 'application/vnd.pgrst.object+json'
     this.allowEmpty = true
-    return this as PromiseLike<PostgrestMaybeSingleResponse<Result>>
+    return this as PostgrestBuilder<ResultOne | null>
   }
 
   /**
    * Return `data` as a string in CSV format.
    */
-  csv(): PromiseLike<PostgrestSingleResponse<string>> {
+  csv(): PostgrestBuilder<string> {
     this.headers['Accept'] = 'text/csv'
-    return this as PromiseLike<PostgrestSingleResponse<string>>
+    return this as PostgrestBuilder<string>
   }
 
   /**
    * Return `data` as an object in [GeoJSON](https://geojson.org) format.
    */
-  geojson(): PromiseLike<PostgrestSingleResponse<Record<string, unknown>>> {
+  geojson(): PostgrestBuilder<Record<string, unknown>> {
     this.headers['Accept'] = 'application/geo+json'
-    return this as PromiseLike<PostgrestSingleResponse<Record<string, unknown>>>
+    return this as PostgrestBuilder<Record<string, unknown>>
   }
 
   /**
@@ -206,9 +205,7 @@ export default class PostgrestTransformBuilder<
     buffers?: boolean
     wal?: boolean
     format?: 'json' | 'text'
-  } = {}):
-    | PromiseLike<PostgrestResponse<Record<string, unknown>>>
-    | PromiseLike<PostgrestSingleResponse<string>> {
+  } = {}): PostgrestBuilder<Record<string, unknown>[]> | PostgrestBuilder<string> {
     const options = [
       analyze ? 'analyze' : null,
       verbose ? 'verbose' : null,
@@ -223,8 +220,8 @@ export default class PostgrestTransformBuilder<
     this.headers[
       'Accept'
     ] = `application/vnd.pgrst.plan+${format}; for="${forMediatype}"; options=${options};`
-    if (format === 'json') return this as PromiseLike<PostgrestResponse<Record<string, unknown>>>
-    else return this as PromiseLike<PostgrestSingleResponse<string>>
+    if (format === 'json') return this as PostgrestBuilder<Record<string, unknown>[]>
+    else return this as PostgrestBuilder<string>
   }
 
   /**

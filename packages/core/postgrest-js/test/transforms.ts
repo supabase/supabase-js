@@ -7,7 +7,44 @@ const postgrest = new PostgrestClient<Database>('http://localhost:3000')
 
 test('order', async () => {
   const res = await postgrest.from('users').select().order('username', { ascending: false })
-  expect(res).toMatchSnapshot()
+  expect(res).toMatchInlineSnapshot(`
+    Object {
+      "count": null,
+      "data": Array [
+        Object {
+          "age_range": "[1,2)",
+          "catchphrase": "'cat' 'fat'",
+          "data": null,
+          "status": "ONLINE",
+          "username": "supabot",
+        },
+        Object {
+          "age_range": "[25,35)",
+          "catchphrase": "'bat' 'cat'",
+          "data": null,
+          "status": "OFFLINE",
+          "username": "kiwicopple",
+        },
+        Object {
+          "age_range": "[20,30)",
+          "catchphrase": "'fat' 'rat'",
+          "data": null,
+          "status": "ONLINE",
+          "username": "dragarcia",
+        },
+        Object {
+          "age_range": "[25,35)",
+          "catchphrase": "'bat' 'rat'",
+          "data": null,
+          "status": "ONLINE",
+          "username": "awailas",
+        },
+      ],
+      "error": null,
+      "status": 200,
+      "statusText": "OK",
+    }
+  `)
 })
 
 test('order on multiple columns', async () => {
@@ -16,39 +53,156 @@ test('order on multiple columns', async () => {
     .select()
     .order('channel_id', { ascending: false })
     .order('username', { ascending: false })
-  expect(res).toMatchSnapshot()
+  expect(res).toMatchInlineSnapshot(`
+    Object {
+      "count": null,
+      "data": Array [
+        Object {
+          "channel_id": 2,
+          "data": null,
+          "id": 2,
+          "message": "Perfection is attained, not when there is nothing more to add, but when there is nothing left to take away.",
+          "username": "supabot",
+        },
+        Object {
+          "channel_id": 1,
+          "data": null,
+          "id": 1,
+          "message": "Hello World 👋",
+          "username": "supabot",
+        },
+      ],
+      "error": null,
+      "status": 200,
+      "statusText": "OK",
+    }
+  `)
 })
 
 test('limit', async () => {
   const res = await postgrest.from('users').select().limit(1)
-  expect(res).toMatchSnapshot()
+  expect(res).toMatchInlineSnapshot(`
+    Object {
+      "count": null,
+      "data": Array [
+        Object {
+          "age_range": "[1,2)",
+          "catchphrase": "'cat' 'fat'",
+          "data": null,
+          "status": "ONLINE",
+          "username": "supabot",
+        },
+      ],
+      "error": null,
+      "status": 200,
+      "statusText": "OK",
+    }
+  `)
 })
 
 test('range', async () => {
   const res = await postgrest.from('users').select().range(1, 3)
-  expect(res).toMatchSnapshot()
+  expect(res).toMatchInlineSnapshot(`
+    Object {
+      "count": null,
+      "data": Array [
+        Object {
+          "age_range": "[25,35)",
+          "catchphrase": "'bat' 'cat'",
+          "data": null,
+          "status": "OFFLINE",
+          "username": "kiwicopple",
+        },
+        Object {
+          "age_range": "[25,35)",
+          "catchphrase": "'bat' 'rat'",
+          "data": null,
+          "status": "ONLINE",
+          "username": "awailas",
+        },
+        Object {
+          "age_range": "[20,30)",
+          "catchphrase": "'fat' 'rat'",
+          "data": null,
+          "status": "ONLINE",
+          "username": "dragarcia",
+        },
+      ],
+      "error": null,
+      "status": 200,
+      "statusText": "OK",
+    }
+  `)
 })
 
 test('single', async () => {
   const res = await postgrest.from('users').select().limit(1).single()
-  expect(res).toMatchSnapshot()
+  expect(res).toMatchInlineSnapshot(`
+    Object {
+      "count": null,
+      "data": Object {
+        "age_range": "[1,2)",
+        "catchphrase": "'cat' 'fat'",
+        "data": null,
+        "status": "ONLINE",
+        "username": "supabot",
+      },
+      "error": null,
+      "status": 200,
+      "statusText": "OK",
+    }
+  `)
 })
 
 test('single on insert', async () => {
   const res = await postgrest.from('users').insert({ username: 'foo' }).select().single()
-  expect(res).toMatchSnapshot()
+  expect(res).toMatchInlineSnapshot(`
+    Object {
+      "count": null,
+      "data": Object {
+        "age_range": null,
+        "catchphrase": null,
+        "data": null,
+        "status": "ONLINE",
+        "username": "foo",
+      },
+      "error": null,
+      "status": 201,
+      "statusText": "Created",
+    }
+  `)
 
   await postgrest.from('users').delete().eq('username', 'foo')
 })
 
 test('maybeSingle', async () => {
   const res = await postgrest.from('users').select().eq('username', 'goldstein').maybeSingle()
-  expect(res).toMatchSnapshot()
+  expect(res).toMatchInlineSnapshot(`
+    Object {
+      "count": null,
+      "data": null,
+      "error": null,
+      "status": 200,
+      "statusText": "OK",
+    }
+  `)
 })
 
 test('select on insert', async () => {
   const res = await postgrest.from('users').insert({ username: 'foo' }).select('status')
-  expect(res).toMatchSnapshot()
+  expect(res).toMatchInlineSnapshot(`
+    Object {
+      "count": null,
+      "data": Array [
+        Object {
+          "status": "ONLINE",
+        },
+      ],
+      "error": null,
+      "status": 201,
+      "statusText": "Created",
+    }
+  `)
 
   await postgrest.from('users').delete().eq('username', 'foo')
 })
@@ -57,7 +211,19 @@ test('select on rpc', async () => {
   const res = await postgrest
     .rpc('get_username_and_status', { name_param: 'supabot' })
     .select('status')
-  expect(res).toMatchSnapshot()
+  expect(res).toMatchInlineSnapshot(`
+    Object {
+      "count": null,
+      "data": Array [
+        Object {
+          "status": "ONLINE",
+        },
+      ],
+      "error": null,
+      "status": 200,
+      "statusText": "OK",
+    }
+  `)
 })
 
 test('csv', async () => {
@@ -200,7 +366,7 @@ test('explain with options', async () => {
             "Strategy": "Plain",
             "Total Cost": 17.68,
           },
-          "Query Identifier": -8888327821402777000,
+          "Query Identifier": -6192475787150577000,
           "Settings": Object {
             "effective_cache_size": "128MB",
             "search_path": "\\"public\\", \\"extensions\\"",

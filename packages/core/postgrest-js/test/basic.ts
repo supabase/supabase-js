@@ -6,7 +6,44 @@ const postgrest = new PostgrestClient<Database>(REST_URL)
 
 test('basic select table', async () => {
   const res = await postgrest.from('users').select()
-  expect(res).toMatchSnapshot()
+  expect(res).toMatchInlineSnapshot(`
+    Object {
+      "count": null,
+      "data": Array [
+        Object {
+          "age_range": "[1,2)",
+          "catchphrase": "'cat' 'fat'",
+          "data": null,
+          "status": "ONLINE",
+          "username": "supabot",
+        },
+        Object {
+          "age_range": "[25,35)",
+          "catchphrase": "'bat' 'cat'",
+          "data": null,
+          "status": "OFFLINE",
+          "username": "kiwicopple",
+        },
+        Object {
+          "age_range": "[25,35)",
+          "catchphrase": "'bat' 'rat'",
+          "data": null,
+          "status": "ONLINE",
+          "username": "awailas",
+        },
+        Object {
+          "age_range": "[20,30)",
+          "catchphrase": "'fat' 'rat'",
+          "data": null,
+          "status": "ONLINE",
+          "username": "dragarcia",
+        },
+      ],
+      "error": null,
+      "status": 200,
+      "statusText": "OK",
+    }
+  `)
 })
 
 test('basic select view', async () => {
@@ -41,12 +78,28 @@ test('basic select view', async () => {
 
 test('rpc', async () => {
   const res = await postgrest.rpc('get_status', { name_param: 'supabot' })
-  expect(res).toMatchSnapshot()
+  expect(res).toMatchInlineSnapshot(`
+    Object {
+      "count": null,
+      "data": "ONLINE",
+      "error": null,
+      "status": 200,
+      "statusText": "OK",
+    }
+  `)
 })
 
 test('rpc returns void', async () => {
   const res = await postgrest.rpc('void_func')
-  expect(res).toMatchSnapshot()
+  expect(res).toMatchInlineSnapshot(`
+    Object {
+      "count": null,
+      "data": null,
+      "error": null,
+      "status": 204,
+      "statusText": "No Content",
+    }
+  `)
 })
 
 test('custom headers', async () => {
@@ -101,7 +154,46 @@ describe('custom prefer headers with ', () => {
 test('switch schema', async () => {
   const postgrest = new PostgrestClient<Database, 'personal'>(REST_URL, { schema: 'personal' })
   const res = await postgrest.from('users').select()
-  expect(res).toMatchSnapshot()
+  expect(res).toMatchInlineSnapshot(`
+    Object {
+      "count": null,
+      "data": Array [
+        Object {
+          "age_range": "[1,2)",
+          "data": null,
+          "status": "ONLINE",
+          "username": "supabot",
+        },
+        Object {
+          "age_range": "[25,35)",
+          "data": null,
+          "status": "OFFLINE",
+          "username": "kiwicopple",
+        },
+        Object {
+          "age_range": "[25,35)",
+          "data": null,
+          "status": "ONLINE",
+          "username": "awailas",
+        },
+        Object {
+          "age_range": "[20,30)",
+          "data": null,
+          "status": "ONLINE",
+          "username": "dragarcia",
+        },
+        Object {
+          "age_range": "[20,40)",
+          "data": null,
+          "status": "ONLINE",
+          "username": "leroyjenkins",
+        },
+      ],
+      "error": null,
+      "status": 200,
+      "statusText": "OK",
+    }
+  `)
 })
 
 test('on_conflict insert', async () => {
@@ -109,7 +201,23 @@ test('on_conflict insert', async () => {
     .from('users')
     .upsert({ username: 'dragarcia' }, { onConflict: 'username' })
     .select()
-  expect(res).toMatchSnapshot()
+  expect(res).toMatchInlineSnapshot(`
+    Object {
+      "count": null,
+      "data": Array [
+        Object {
+          "age_range": "[20,30)",
+          "catchphrase": "'fat' 'rat'",
+          "data": null,
+          "status": "ONLINE",
+          "username": "dragarcia",
+        },
+      ],
+      "error": null,
+      "status": 201,
+      "statusText": "Created",
+    }
+  `)
 })
 
 test('ignoreDuplicates upsert', async () => {
@@ -117,7 +225,15 @@ test('ignoreDuplicates upsert', async () => {
     .from('users')
     .upsert({ username: 'dragarcia' }, { onConflict: 'username', ignoreDuplicates: true })
     .select()
-  expect(res).toMatchSnapshot()
+  expect(res).toMatchInlineSnapshot(`
+    Object {
+      "count": null,
+      "data": Array [],
+      "error": null,
+      "status": 201,
+      "statusText": "Created",
+    }
+  `)
 })
 
 describe('basic insert, update, delete', () => {
@@ -126,10 +242,56 @@ describe('basic insert, update, delete', () => {
       .from('messages')
       .insert({ message: 'foo', username: 'supabot', channel_id: 1 })
       .select()
-    expect(res).toMatchSnapshot()
+    expect(res).toMatchInlineSnapshot(`
+      Object {
+        "count": null,
+        "data": Array [
+          Object {
+            "channel_id": 1,
+            "data": null,
+            "id": 3,
+            "message": "foo",
+            "username": "supabot",
+          },
+        ],
+        "error": null,
+        "status": 201,
+        "statusText": "Created",
+      }
+    `)
 
     res = await postgrest.from('messages').select()
-    expect(res).toMatchSnapshot()
+    expect(res).toMatchInlineSnapshot(`
+      Object {
+        "count": null,
+        "data": Array [
+          Object {
+            "channel_id": 1,
+            "data": null,
+            "id": 1,
+            "message": "Hello World 👋",
+            "username": "supabot",
+          },
+          Object {
+            "channel_id": 2,
+            "data": null,
+            "id": 2,
+            "message": "Perfection is attained, not when there is nothing more to add, but when there is nothing left to take away.",
+            "username": "supabot",
+          },
+          Object {
+            "channel_id": 1,
+            "data": null,
+            "id": 3,
+            "message": "foo",
+            "username": "supabot",
+          },
+        ],
+        "error": null,
+        "status": 200,
+        "statusText": "OK",
+      }
+    `)
   })
 
   test('upsert', async () => {
@@ -137,10 +299,56 @@ describe('basic insert, update, delete', () => {
       .from('messages')
       .upsert({ id: 3, message: 'foo', username: 'supabot', channel_id: 2 })
       .select()
-    expect(res).toMatchSnapshot()
+    expect(res).toMatchInlineSnapshot(`
+      Object {
+        "count": null,
+        "data": Array [
+          Object {
+            "channel_id": 2,
+            "data": null,
+            "id": 3,
+            "message": "foo",
+            "username": "supabot",
+          },
+        ],
+        "error": null,
+        "status": 201,
+        "statusText": "Created",
+      }
+    `)
 
     res = await postgrest.from('messages').select()
-    expect(res).toMatchSnapshot()
+    expect(res).toMatchInlineSnapshot(`
+      Object {
+        "count": null,
+        "data": Array [
+          Object {
+            "channel_id": 1,
+            "data": null,
+            "id": 1,
+            "message": "Hello World 👋",
+            "username": "supabot",
+          },
+          Object {
+            "channel_id": 2,
+            "data": null,
+            "id": 2,
+            "message": "Perfection is attained, not when there is nothing more to add, but when there is nothing left to take away.",
+            "username": "supabot",
+          },
+          Object {
+            "channel_id": 2,
+            "data": null,
+            "id": 3,
+            "message": "foo",
+            "username": "supabot",
+          },
+        ],
+        "error": null,
+        "status": 200,
+        "statusText": "OK",
+      }
+    `)
   })
 
   test('bulk insert', async () => {
@@ -151,10 +359,77 @@ describe('basic insert, update, delete', () => {
         { message: 'foo', username: 'supabot', channel_id: 1 },
       ])
       .select()
-    expect(res).toMatchSnapshot()
+    expect(res).toMatchInlineSnapshot(`
+      Object {
+        "count": null,
+        "data": Array [
+          Object {
+            "channel_id": 1,
+            "data": null,
+            "id": 4,
+            "message": "foo",
+            "username": "supabot",
+          },
+          Object {
+            "channel_id": 1,
+            "data": null,
+            "id": 5,
+            "message": "foo",
+            "username": "supabot",
+          },
+        ],
+        "error": null,
+        "status": 201,
+        "statusText": "Created",
+      }
+    `)
 
     res = await postgrest.from('messages').select()
-    expect(res).toMatchSnapshot()
+    expect(res).toMatchInlineSnapshot(`
+      Object {
+        "count": null,
+        "data": Array [
+          Object {
+            "channel_id": 1,
+            "data": null,
+            "id": 1,
+            "message": "Hello World 👋",
+            "username": "supabot",
+          },
+          Object {
+            "channel_id": 2,
+            "data": null,
+            "id": 2,
+            "message": "Perfection is attained, not when there is nothing more to add, but when there is nothing left to take away.",
+            "username": "supabot",
+          },
+          Object {
+            "channel_id": 2,
+            "data": null,
+            "id": 3,
+            "message": "foo",
+            "username": "supabot",
+          },
+          Object {
+            "channel_id": 1,
+            "data": null,
+            "id": 4,
+            "message": "foo",
+            "username": "supabot",
+          },
+          Object {
+            "channel_id": 1,
+            "data": null,
+            "id": 5,
+            "message": "foo",
+            "username": "supabot",
+          },
+        ],
+        "error": null,
+        "status": 200,
+        "statusText": "OK",
+      }
+    `)
   })
 
   test('basic update', async () => {
@@ -163,18 +438,145 @@ describe('basic insert, update, delete', () => {
       .update({ channel_id: 2 })
       .eq('message', 'foo')
       .select()
-    expect(res).toMatchSnapshot()
+    expect(res).toMatchInlineSnapshot(`
+      Object {
+        "count": null,
+        "data": Array [
+          Object {
+            "channel_id": 2,
+            "data": null,
+            "id": 3,
+            "message": "foo",
+            "username": "supabot",
+          },
+          Object {
+            "channel_id": 2,
+            "data": null,
+            "id": 4,
+            "message": "foo",
+            "username": "supabot",
+          },
+          Object {
+            "channel_id": 2,
+            "data": null,
+            "id": 5,
+            "message": "foo",
+            "username": "supabot",
+          },
+        ],
+        "error": null,
+        "status": 200,
+        "statusText": "OK",
+      }
+    `)
 
     res = await postgrest.from('messages').select()
-    expect(res).toMatchSnapshot()
+    expect(res).toMatchInlineSnapshot(`
+      Object {
+        "count": null,
+        "data": Array [
+          Object {
+            "channel_id": 1,
+            "data": null,
+            "id": 1,
+            "message": "Hello World 👋",
+            "username": "supabot",
+          },
+          Object {
+            "channel_id": 2,
+            "data": null,
+            "id": 2,
+            "message": "Perfection is attained, not when there is nothing more to add, but when there is nothing left to take away.",
+            "username": "supabot",
+          },
+          Object {
+            "channel_id": 2,
+            "data": null,
+            "id": 3,
+            "message": "foo",
+            "username": "supabot",
+          },
+          Object {
+            "channel_id": 2,
+            "data": null,
+            "id": 4,
+            "message": "foo",
+            "username": "supabot",
+          },
+          Object {
+            "channel_id": 2,
+            "data": null,
+            "id": 5,
+            "message": "foo",
+            "username": "supabot",
+          },
+        ],
+        "error": null,
+        "status": 200,
+        "statusText": "OK",
+      }
+    `)
   })
 
   test('basic delete', async () => {
     let res = await postgrest.from('messages').delete().eq('message', 'foo').select()
-    expect(res).toMatchSnapshot()
+    expect(res).toMatchInlineSnapshot(`
+      Object {
+        "count": null,
+        "data": Array [
+          Object {
+            "channel_id": 2,
+            "data": null,
+            "id": 3,
+            "message": "foo",
+            "username": "supabot",
+          },
+          Object {
+            "channel_id": 2,
+            "data": null,
+            "id": 4,
+            "message": "foo",
+            "username": "supabot",
+          },
+          Object {
+            "channel_id": 2,
+            "data": null,
+            "id": 5,
+            "message": "foo",
+            "username": "supabot",
+          },
+        ],
+        "error": null,
+        "status": 200,
+        "statusText": "OK",
+      }
+    `)
 
     res = await postgrest.from('messages').select()
-    expect(res).toMatchSnapshot()
+    expect(res).toMatchInlineSnapshot(`
+      Object {
+        "count": null,
+        "data": Array [
+          Object {
+            "channel_id": 1,
+            "data": null,
+            "id": 1,
+            "message": "Hello World 👋",
+            "username": "supabot",
+          },
+          Object {
+            "channel_id": 2,
+            "data": null,
+            "id": 2,
+            "message": "Perfection is attained, not when there is nothing more to add, but when there is nothing left to take away.",
+            "username": "supabot",
+          },
+        ],
+        "error": null,
+        "status": 200,
+        "statusText": "OK",
+      }
+    `)
   })
 })
 
@@ -184,7 +586,14 @@ test('throwOnError throws errors instead of returning them', async () => {
   try {
     await postgrest.from('missing_table').select().throwOnError()
   } catch (error) {
-    expect(error).toMatchSnapshot()
+    expect(error).toMatchInlineSnapshot(`
+      Object {
+        "code": "42P01",
+        "details": null,
+        "hint": null,
+        "message": "relation \\"public.missing_table\\" does not exist",
+      }
+    `)
     isErrorCaught = true
   }
 
@@ -199,7 +608,7 @@ test('throwOnError throws errors instead of returning them', async () => {
 //     // @ts-expect-error missing table
 //     await postgrest_.from('missing_table').select()
 //   } catch (error) {
-//     expect(error).toMatchSnapshot()
+//     expect(error).toMatchInlineSnapshot()
 //     isErrorCaught = true
 //   }
 
@@ -214,7 +623,7 @@ test('throwOnError throws errors instead of returning them', async () => {
 //     // @ts-expect-error missing function
 //     await postgrest_.rpc('missing_fn').select()
 //   } catch (error) {
-//     expect(error).toMatchSnapshot()
+//     expect(error).toMatchInlineSnapshot()
 //     isErrorCaught = true
 //   }
 
@@ -227,7 +636,7 @@ test('throwOnError throws errors instead of returning them', async () => {
 //   // @ts-expect-error missing table
 //   const { error } = await postgrest_.from('missing_table').select().throwOnError(false)
 
-//   expect(error).toMatchSnapshot()
+//   expect(error).toMatchInlineSnapshot()
 //   expect(isErrorCaught).toBe(false)
 // })
 
@@ -273,7 +682,7 @@ test('maybeSingle w/ throwOnError', async () => {
 test("don't mutate PostgrestClient.headers", async () => {
   await postgrest.from('users').select().limit(1).single()
   const { error } = await postgrest.from('users').select()
-  expect(error).toMatchSnapshot()
+  expect(error).toMatchInlineSnapshot(`null`)
 })
 
 test('allow ordering on JSON column', async () => {
@@ -281,48 +690,162 @@ test('allow ordering on JSON column', async () => {
     .from('users')
     .select()
     .order('data->something' as any)
-  expect(data).toMatchSnapshot()
+  expect(data).toMatchInlineSnapshot(`
+    Array [
+      Object {
+        "age_range": "[1,2)",
+        "catchphrase": "'cat' 'fat'",
+        "data": null,
+        "status": "ONLINE",
+        "username": "supabot",
+      },
+      Object {
+        "age_range": "[25,35)",
+        "catchphrase": "'bat' 'cat'",
+        "data": null,
+        "status": "OFFLINE",
+        "username": "kiwicopple",
+      },
+      Object {
+        "age_range": "[25,35)",
+        "catchphrase": "'bat' 'rat'",
+        "data": null,
+        "status": "ONLINE",
+        "username": "awailas",
+      },
+      Object {
+        "age_range": "[20,30)",
+        "catchphrase": "'fat' 'rat'",
+        "data": null,
+        "status": "ONLINE",
+        "username": "dragarcia",
+      },
+    ]
+  `)
 })
 
 test('Prefer: return=minimal', async () => {
   const { data } = await postgrest.from('users').insert({ username: 'bar' })
-  expect(data).toMatchSnapshot()
+  expect(data).toMatchInlineSnapshot(`null`)
 
   await postgrest.from('users').delete().eq('username', 'bar')
 })
 
 test('select with head:true', async () => {
   const res = await postgrest.from('users').select('*', { head: true })
-  expect(res).toMatchSnapshot()
+  expect(res).toMatchInlineSnapshot(`
+    Object {
+      "count": null,
+      "data": null,
+      "error": null,
+      "status": 200,
+      "statusText": "OK",
+    }
+  `)
 })
 
 test('select with head:true, count:exact', async () => {
   const res = await postgrest.from('users').select('*', { head: true, count: 'exact' })
-  expect(res).toMatchSnapshot()
+  expect(res).toMatchInlineSnapshot(`
+    Object {
+      "count": 4,
+      "data": null,
+      "error": null,
+      "status": 200,
+      "statusText": "OK",
+    }
+  `)
 })
 
 test('select with head:true, count:planned', async () => {
   const res = await postgrest.from('users').select('*', { head: true, count: 'planned' })
-  expect(res).toMatchSnapshot({
-    count: expect.any(Number),
-  })
+  expect(res).toMatchInlineSnapshot(
+    {
+      count: expect.any(Number),
+    },
+    `
+    Object {
+      "count": Any<Number>,
+      "data": null,
+      "error": null,
+      "status": 206,
+      "statusText": "Partial Content",
+    }
+  `
+  )
 })
 
 test('select with head:true, count:estimated', async () => {
   const res = await postgrest.from('users').select('*', { head: true, count: 'estimated' })
-  expect(res).toMatchSnapshot({
-    count: expect.any(Number),
-  })
+  expect(res).toMatchInlineSnapshot(
+    {
+      count: expect.any(Number),
+    },
+    `
+    Object {
+      "count": Any<Number>,
+      "data": null,
+      "error": null,
+      "status": 206,
+      "statusText": "Partial Content",
+    }
+  `
+  )
 })
 
 test('select with count:exact', async () => {
   const res = await postgrest.from('users').select('*', { count: 'exact' })
-  expect(res).toMatchSnapshot()
+  expect(res).toMatchInlineSnapshot(`
+    Object {
+      "count": 4,
+      "data": Array [
+        Object {
+          "age_range": "[1,2)",
+          "catchphrase": "'cat' 'fat'",
+          "data": null,
+          "status": "ONLINE",
+          "username": "supabot",
+        },
+        Object {
+          "age_range": "[25,35)",
+          "catchphrase": "'bat' 'cat'",
+          "data": null,
+          "status": "OFFLINE",
+          "username": "kiwicopple",
+        },
+        Object {
+          "age_range": "[25,35)",
+          "catchphrase": "'bat' 'rat'",
+          "data": null,
+          "status": "ONLINE",
+          "username": "awailas",
+        },
+        Object {
+          "age_range": "[20,30)",
+          "catchphrase": "'fat' 'rat'",
+          "data": null,
+          "status": "ONLINE",
+          "username": "dragarcia",
+        },
+      ],
+      "error": null,
+      "status": 200,
+      "statusText": "OK",
+    }
+  `)
 })
 
 test("rpc with count: 'exact'", async () => {
   const res = await postgrest.rpc('get_status', { name_param: 'supabot' }, { count: 'exact' })
-  expect(res).toMatchSnapshot()
+  expect(res).toMatchInlineSnapshot(`
+    Object {
+      "count": 1,
+      "data": "ONLINE",
+      "error": null,
+      "status": 200,
+      "statusText": "OK",
+    }
+  `)
 })
 
 test('rpc with head:true, count:exact', async () => {
@@ -331,7 +854,15 @@ test('rpc with head:true, count:exact', async () => {
     { name_param: 'supabot' },
     { head: true, count: 'exact' }
   )
-  expect(res).toMatchSnapshot()
+  expect(res).toMatchInlineSnapshot(`
+    Object {
+      "count": 1,
+      "data": null,
+      "error": null,
+      "status": 200,
+      "statusText": "OK",
+    }
+  `)
 })
 
 describe("insert, update, delete with count: 'exact'", () => {
@@ -340,10 +871,56 @@ describe("insert, update, delete with count: 'exact'", () => {
       .from('messages')
       .insert({ message: 'foo', username: 'supabot', channel_id: 1 }, { count: 'exact' })
       .select()
-    expect(res).toMatchSnapshot()
+    expect(res).toMatchInlineSnapshot(`
+      Object {
+        "count": 1,
+        "data": Array [
+          Object {
+            "channel_id": 1,
+            "data": null,
+            "id": 6,
+            "message": "foo",
+            "username": "supabot",
+          },
+        ],
+        "error": null,
+        "status": 201,
+        "statusText": "Created",
+      }
+    `)
 
     res = await postgrest.from('messages').select()
-    expect(res).toMatchSnapshot()
+    expect(res).toMatchInlineSnapshot(`
+      Object {
+        "count": null,
+        "data": Array [
+          Object {
+            "channel_id": 1,
+            "data": null,
+            "id": 1,
+            "message": "Hello World 👋",
+            "username": "supabot",
+          },
+          Object {
+            "channel_id": 2,
+            "data": null,
+            "id": 2,
+            "message": "Perfection is attained, not when there is nothing more to add, but when there is nothing left to take away.",
+            "username": "supabot",
+          },
+          Object {
+            "channel_id": 1,
+            "data": null,
+            "id": 6,
+            "message": "foo",
+            "username": "supabot",
+          },
+        ],
+        "error": null,
+        "status": 200,
+        "statusText": "OK",
+      }
+    `)
   })
 
   test("upsert with count: 'exact'", async () => {
@@ -351,10 +928,63 @@ describe("insert, update, delete with count: 'exact'", () => {
       .from('messages')
       .upsert({ id: 3, message: 'foo', username: 'supabot', channel_id: 2 }, { count: 'exact' })
       .select()
-    expect(res).toMatchSnapshot()
+    expect(res).toMatchInlineSnapshot(`
+      Object {
+        "count": 1,
+        "data": Array [
+          Object {
+            "channel_id": 2,
+            "data": null,
+            "id": 3,
+            "message": "foo",
+            "username": "supabot",
+          },
+        ],
+        "error": null,
+        "status": 201,
+        "statusText": "Created",
+      }
+    `)
 
     res = await postgrest.from('messages').select()
-    expect(res).toMatchSnapshot()
+    expect(res).toMatchInlineSnapshot(`
+      Object {
+        "count": null,
+        "data": Array [
+          Object {
+            "channel_id": 1,
+            "data": null,
+            "id": 1,
+            "message": "Hello World 👋",
+            "username": "supabot",
+          },
+          Object {
+            "channel_id": 2,
+            "data": null,
+            "id": 2,
+            "message": "Perfection is attained, not when there is nothing more to add, but when there is nothing left to take away.",
+            "username": "supabot",
+          },
+          Object {
+            "channel_id": 1,
+            "data": null,
+            "id": 6,
+            "message": "foo",
+            "username": "supabot",
+          },
+          Object {
+            "channel_id": 2,
+            "data": null,
+            "id": 3,
+            "message": "foo",
+            "username": "supabot",
+          },
+        ],
+        "error": null,
+        "status": 200,
+        "statusText": "OK",
+      }
+    `)
   })
 
   test("bulk insert with count: 'exact'", async () => {
@@ -368,10 +998,84 @@ describe("insert, update, delete with count: 'exact'", () => {
         { count: 'exact' }
       )
       .select()
-    expect(res).toMatchSnapshot()
+    expect(res).toMatchInlineSnapshot(`
+      Object {
+        "count": 2,
+        "data": Array [
+          Object {
+            "channel_id": 1,
+            "data": null,
+            "id": 7,
+            "message": "foo",
+            "username": "supabot",
+          },
+          Object {
+            "channel_id": 1,
+            "data": null,
+            "id": 8,
+            "message": "foo",
+            "username": "supabot",
+          },
+        ],
+        "error": null,
+        "status": 201,
+        "statusText": "Created",
+      }
+    `)
 
     res = await postgrest.from('messages').select()
-    expect(res).toMatchSnapshot()
+    expect(res).toMatchInlineSnapshot(`
+      Object {
+        "count": null,
+        "data": Array [
+          Object {
+            "channel_id": 1,
+            "data": null,
+            "id": 1,
+            "message": "Hello World 👋",
+            "username": "supabot",
+          },
+          Object {
+            "channel_id": 2,
+            "data": null,
+            "id": 2,
+            "message": "Perfection is attained, not when there is nothing more to add, but when there is nothing left to take away.",
+            "username": "supabot",
+          },
+          Object {
+            "channel_id": 1,
+            "data": null,
+            "id": 6,
+            "message": "foo",
+            "username": "supabot",
+          },
+          Object {
+            "channel_id": 2,
+            "data": null,
+            "id": 3,
+            "message": "foo",
+            "username": "supabot",
+          },
+          Object {
+            "channel_id": 1,
+            "data": null,
+            "id": 7,
+            "message": "foo",
+            "username": "supabot",
+          },
+          Object {
+            "channel_id": 1,
+            "data": null,
+            "id": 8,
+            "message": "foo",
+            "username": "supabot",
+          },
+        ],
+        "error": null,
+        "status": 200,
+        "statusText": "OK",
+      }
+    `)
   })
 
   test("update with count: 'exact'", async () => {
@@ -380,10 +1084,98 @@ describe("insert, update, delete with count: 'exact'", () => {
       .update({ channel_id: 2 }, { count: 'exact' })
       .eq('message', 'foo')
       .select()
-    expect(res).toMatchSnapshot()
+    expect(res).toMatchInlineSnapshot(`
+      Object {
+        "count": 4,
+        "data": Array [
+          Object {
+            "channel_id": 2,
+            "data": null,
+            "id": 6,
+            "message": "foo",
+            "username": "supabot",
+          },
+          Object {
+            "channel_id": 2,
+            "data": null,
+            "id": 3,
+            "message": "foo",
+            "username": "supabot",
+          },
+          Object {
+            "channel_id": 2,
+            "data": null,
+            "id": 7,
+            "message": "foo",
+            "username": "supabot",
+          },
+          Object {
+            "channel_id": 2,
+            "data": null,
+            "id": 8,
+            "message": "foo",
+            "username": "supabot",
+          },
+        ],
+        "error": null,
+        "status": 200,
+        "statusText": "OK",
+      }
+    `)
 
     res = await postgrest.from('messages').select()
-    expect(res).toMatchSnapshot()
+    expect(res).toMatchInlineSnapshot(`
+      Object {
+        "count": null,
+        "data": Array [
+          Object {
+            "channel_id": 1,
+            "data": null,
+            "id": 1,
+            "message": "Hello World 👋",
+            "username": "supabot",
+          },
+          Object {
+            "channel_id": 2,
+            "data": null,
+            "id": 2,
+            "message": "Perfection is attained, not when there is nothing more to add, but when there is nothing left to take away.",
+            "username": "supabot",
+          },
+          Object {
+            "channel_id": 2,
+            "data": null,
+            "id": 6,
+            "message": "foo",
+            "username": "supabot",
+          },
+          Object {
+            "channel_id": 2,
+            "data": null,
+            "id": 3,
+            "message": "foo",
+            "username": "supabot",
+          },
+          Object {
+            "channel_id": 2,
+            "data": null,
+            "id": 7,
+            "message": "foo",
+            "username": "supabot",
+          },
+          Object {
+            "channel_id": 2,
+            "data": null,
+            "id": 8,
+            "message": "foo",
+            "username": "supabot",
+          },
+        ],
+        "error": null,
+        "status": 200,
+        "statusText": "OK",
+      }
+    `)
   })
 
   test("basic delete count: 'exact'", async () => {
@@ -392,10 +1184,70 @@ describe("insert, update, delete with count: 'exact'", () => {
       .delete({ count: 'exact' })
       .eq('message', 'foo')
       .select()
-    expect(res).toMatchSnapshot()
+    expect(res).toMatchInlineSnapshot(`
+      Object {
+        "count": 4,
+        "data": Array [
+          Object {
+            "channel_id": 2,
+            "data": null,
+            "id": 6,
+            "message": "foo",
+            "username": "supabot",
+          },
+          Object {
+            "channel_id": 2,
+            "data": null,
+            "id": 3,
+            "message": "foo",
+            "username": "supabot",
+          },
+          Object {
+            "channel_id": 2,
+            "data": null,
+            "id": 7,
+            "message": "foo",
+            "username": "supabot",
+          },
+          Object {
+            "channel_id": 2,
+            "data": null,
+            "id": 8,
+            "message": "foo",
+            "username": "supabot",
+          },
+        ],
+        "error": null,
+        "status": 200,
+        "statusText": "OK",
+      }
+    `)
 
     res = await postgrest.from('messages').select()
-    expect(res).toMatchSnapshot()
+    expect(res).toMatchInlineSnapshot(`
+      Object {
+        "count": null,
+        "data": Array [
+          Object {
+            "channel_id": 1,
+            "data": null,
+            "id": 1,
+            "message": "Hello World 👋",
+            "username": "supabot",
+          },
+          Object {
+            "channel_id": 2,
+            "data": null,
+            "id": 2,
+            "message": "Perfection is attained, not when there is nothing more to add, but when there is nothing left to take away.",
+            "username": "supabot",
+          },
+        ],
+        "error": null,
+        "status": 200,
+        "statusText": "OK",
+      }
+    `)
   })
 })
 

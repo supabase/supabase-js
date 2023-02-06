@@ -52,7 +52,7 @@ export default class PostgrestQueryBuilder<
    * `"estimated"`: Uses exact count for low numbers and planned count for high
    * numbers.
    */
-  select<Query extends string = '*', Result = GetResult<Schema, Relation['Row'], Query>>(
+  select<Query extends string = '*', ResultOne = GetResult<Schema, Relation['Row'], Query>>(
     columns?: Query,
     {
       head = false,
@@ -61,7 +61,7 @@ export default class PostgrestQueryBuilder<
       head?: boolean
       count?: 'exact' | 'planned' | 'estimated'
     } = {}
-  ): PostgrestFilterBuilder<Schema, Relation['Row'], Result> {
+  ): PostgrestFilterBuilder<Schema, Relation['Row'], ResultOne[]> {
     const method = head ? 'HEAD' : 'GET'
     // Remove whitespaces except when quoted
     let quoted = false
@@ -89,7 +89,7 @@ export default class PostgrestQueryBuilder<
       schema: this.schema,
       fetch: this.fetch,
       allowEmpty: false,
-    } as unknown as PostgrestBuilder<Result>)
+    } as unknown as PostgrestBuilder<ResultOne[]>)
   }
 
   /**
