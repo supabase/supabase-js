@@ -21,12 +21,12 @@ interface PostgrestResponseBase {
   status: number
   statusText: string
 }
-interface PostgrestSingleResponseSuccess<T> extends PostgrestResponseBase {
+export interface PostgrestResponseSuccess<T> extends PostgrestResponseBase {
   error: null
   data: T
   count: number | null
 }
-interface PostgrestResponseFailure extends PostgrestResponseBase {
+export interface PostgrestResponseFailure extends PostgrestResponseBase {
   error: PostgrestError
   data: null
   count: null
@@ -36,7 +36,7 @@ interface PostgrestResponseFailure extends PostgrestResponseBase {
 // - remove PostgrestResponse and PostgrestMaybeSingleResponse
 // - rename PostgrestSingleResponse to PostgrestResponse
 export type PostgrestSingleResponse<T> =
-  | PostgrestSingleResponseSuccess<T>
+  | PostgrestResponseSuccess<T>
   | PostgrestResponseFailure
 export type PostgrestMaybeSingleResponse<T> = PostgrestSingleResponse<T | null>
 export type PostgrestResponse<T> = PostgrestSingleResponse<T[]>

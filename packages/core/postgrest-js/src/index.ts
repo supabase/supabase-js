@@ -5,6 +5,8 @@ export { default as PostgrestTransformBuilder } from './PostgrestTransformBuilde
 export { default as PostgrestBuilder } from './PostgrestBuilder'
 export {
   PostgrestResponse,
+  PostgrestResponseFailure,
+  PostgrestResponseSuccess,
   PostgrestSingleResponse,
   PostgrestMaybeSingleResponse,
   PostgrestError,
