@@ -34,7 +34,7 @@ export default class PostgrestQueryBuilder<
   /**
    * Perform a SELECT query on the table or view.
    *
-   * @param columns - The columns to retrieve, separated by commas. Map a column to a custom key by writing `key:column`
+   * @param columns - The columns to retrieve, separated by commas. Columns can be renamed when returned with `customName:columnName`
    *
    * @param options - Named parameters
    *
