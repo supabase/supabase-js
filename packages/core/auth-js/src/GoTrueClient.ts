@@ -36,11 +36,12 @@ import type {
   SSOResponse,
   Provider,
   Session,
+  SignInWithIdTokenCredentials,
   SignInWithOAuthCredentials,
   SignInWithPasswordCredentials,
   SignInWithPasswordlessCredentials,
-  SignInWithSSO,
   SignUpWithPasswordCredentials,
+  SignInWithSSO,
   Subscription,
   SupportedStorage,
   User,
@@ -370,6 +371,44 @@ export default class GoTrueClient {
       queryParams: credentials.options?.queryParams,
       skipBrowserRedirect: credentials.options?.skipBrowserRedirect,
     })
+  }
+
+  /**
+   * Allows signing in with an ID token issued by certain supported providers.
+   * The ID token is verified for validity and a new session is established.
+   *
+   * @experimental
+   */
+  async signInWithIdToken(credentials: SignInWithIdTokenCredentials): Promise<AuthResponse> {
+    await this._removeSession()
+
+    try {
+      const { options, provider, token, nonce } = credentials
+
+      const res = await _request(this.fetch, 'POST', `${this.url}/token?grant_type=id_token`, {
+        headers: this.headers,
+        body: {
+          provider,
+          id_token: token,
+          nonce,
+          gotrue_meta_security: { captcha_token: options?.captchaToken },
+        },
+        xform: _sessionResponse,
+      })
+
+      const { data, error } = res
+      if (error || !data) return { data: { user: null, session: null }, error }
+      if (data.session) {
+        await this._saveSession(data.session)
+        this._notifyAllSubscribers('SIGNED_IN', data.session)
+      }
+      return { data, error }
+    } catch (error) {
+      if (isAuthError(error)) {
+        return { data: { user: null, session: null }, error }
+      }
+      throw error
+    }
   }
 
   /**

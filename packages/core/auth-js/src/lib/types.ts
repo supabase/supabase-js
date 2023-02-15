@@ -446,6 +446,21 @@ export type SignInWithOAuthCredentials = {
   }
 }
 
+export type SignInWithIdTokenCredentials = {
+  /**
+   * Only Apple and Google ID tokens are supported for use from within iOS or Android applications.
+   */
+  provider: 'google' | 'apple'
+  /** ID token issued by Apple or Google. */
+  token: string
+  /** If the ID token contains a `nonce`, then the hash of this value is compared to the value in the ID token. */
+  nonce?: string
+  options?: {
+    /** Verification token received when the user completes the captcha on the site. */
+    captchaToken?: string
+  }
+}
+
 export type VerifyOtpParams = VerifyMobileOtpParams | VerifyEmailOtpParams
 export interface VerifyMobileOtpParams {
   /** The user's phone number. */
