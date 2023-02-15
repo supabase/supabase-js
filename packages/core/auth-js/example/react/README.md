@@ -4,22 +4,32 @@
 
 ### With a Supabase project
 
-You can run the example with one of your projects on [app.supabase.io](https://app.supabase.io/)
+### 1. Create new project
 
-In the [App.js](src/App.js#L5) replace the auth client (`const auth = new Client()`) with the code below:
+Sign up to Supabase - [https://app.supabase.io](https://app.supabase.io) and create a new project. Wait for your database to start.
 
-```js
-// Find these credentials under settings > API.
-const supabaseURL = 'https://your-project-id.supabase.co'
-const supabaseAnon = 'your-anon-key'
+### 2. Get the URL and Key
 
-const auth = new GoTrueClient({
-  url: `${supabaseURL}/auth/v1`,
-  headers: {
-    accept: 'json',
-    apikey: supabaseAnon,
-  },
-})
+Create a copy of `.env.local.example`:
+
+```bash
+cp .env.local.example .env.local
+```
+
+Go to the Project Settings (the cog icon), open the API tab, and find your API URL and `anon` key and set them in your newly created `.env.local` file.
+
+#### [Optional] - Set up OAuth providers
+
+You can use third-party login providers like GitHub or Google. Refer to the [docs](https://supabase.io/docs/guides/auth#third-party-logins) to learn how to configure these.
+
+### 3. Install and run
+
+```bash
+npm install
+npm run dev
+# or
+yarn
+yarn dev
 ```
 
 ### Docker

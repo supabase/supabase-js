@@ -2,10 +2,15 @@ import React, { useEffect, useState } from 'react'
 import { GoTrueClient } from '@supabase/gotrue-js'
 import './tailwind.output.css'
 
-const GOTRUE_URL_AUTOCONFIRM = 'http://localhost:9998'
+const supabaseURL = process.env.REACT_APP_SUPABASE_URL
+const supabaseAnon = process.env.REACT_APP_SUPABASE_ANON_KEY
 
 const auth = new GoTrueClient({
-  url: GOTRUE_URL_AUTOCONFIRM,
+  url: `${supabaseURL}/auth/v1`,
+  headers: {
+    accept: 'json',
+    apikey: supabaseAnon,
+  },
 })
 
 function App() {
