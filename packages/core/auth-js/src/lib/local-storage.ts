@@ -1,23 +1,23 @@
-import { isBrowser } from './helpers'
+import { supportsLocalStorage } from './helpers'
 import { SupportedStorage } from './types'
 
 const localStorageAdapter: SupportedStorage = {
   getItem: (key) => {
-    if (!isBrowser()) {
+    if (!supportsLocalStorage()) {
       return null
     }
 
     return globalThis.localStorage.getItem(key)
   },
   setItem: (key, value) => {
-    if (!isBrowser()) {
+    if (!supportsLocalStorage()) {
       return
     }
 
     globalThis.localStorage.setItem(key, value)
   },
   removeItem: (key) => {
-    if (!isBrowser()) {
+    if (!supportsLocalStorage()) {
       return
     }
 
