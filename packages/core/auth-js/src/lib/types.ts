@@ -215,6 +215,7 @@ export interface User {
   recovery_sent_at?: string
   email_change_sent_at?: string
   new_email?: string
+  new_phone?: string
   invited_at?: string
   action_link?: string
   email?: string
