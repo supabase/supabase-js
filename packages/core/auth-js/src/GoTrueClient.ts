@@ -1,11 +1,5 @@
 import GoTrueAdminApi from './GoTrueAdminApi'
-import {
-  DEFAULT_HEADERS,
-  EXPIRY_MARGIN,
-  GOTRUE_URL,
-  NETWORK_FAILURE,
-  STORAGE_KEY,
-} from './lib/constants'
+import { DEFAULT_HEADERS, EXPIRY_MARGIN, GOTRUE_URL, STORAGE_KEY } from './lib/constants'
 import {
   AuthError,
   AuthImplicitGrantRedirectError,
@@ -611,9 +605,14 @@ export default class GoTrueClient {
   }
 
   /**
-   * Updates user data, if there is a logged in user.
+   * Updates user data for a logged in user.
    */
-  async updateUser(attributes: UserAttributes): Promise<UserResponse> {
+  async updateUser(
+    attributes: UserAttributes,
+    options: {
+      emailRedirectTo?: string | undefined
+    } = {}
+  ): Promise<UserResponse> {
     try {
       const { data: sessionData, error: sessionError } = await this.getSession()
       if (sessionError) {
@@ -625,6 +624,7 @@ export default class GoTrueClient {
       const session: Session = sessionData.session
       const { data, error: userError } = await _request(this.fetch, 'PUT', `${this.url}/user`, {
         headers: this.headers,
+        redirectTo: options?.emailRedirectTo,
         body: attributes,
         jwt: session.access_token,
         xform: _userResponse,
@@ -1066,11 +1066,7 @@ export default class GoTrueClient {
     }
   }
 
-  private _notifyAllSubscribers(
-    event: AuthChangeEvent,
-    session: Session | null,
-    broadcast: boolean = true
-  ) {
+  private _notifyAllSubscribers(event: AuthChangeEvent, session: Session | null, broadcast = true) {
     if (this.broadcastChannel && broadcast) {
       this.broadcastChannel.postMessage({ event, session })
     }
@@ -1129,7 +1125,7 @@ export default class GoTrueClient {
    */
   private async _startAutoRefresh() {
     await this._stopAutoRefresh()
-    
+
     const ticker = setInterval(() => this._autoRefreshTokenTick(), AUTO_REFRESH_TICK_DURATION)
     this.autoRefreshTicker = ticker
 
@@ -1209,7 +1205,6 @@ export default class GoTrueClient {
     try {
       const {
         data: { session },
-        error,
       } = await this.getSession()
 
       if (!session || !session.refresh_token || !session.expires_at) {
