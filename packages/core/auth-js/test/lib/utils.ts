@@ -63,6 +63,6 @@ export const createNewUserWithEmail = async ({
   return await serviceRoleApiClient.createUser({
     email: newEmail,
     password: newPassword,
-    data: {},
+    user_metadata: {},
   })
 }

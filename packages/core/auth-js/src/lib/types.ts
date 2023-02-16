@@ -256,7 +256,7 @@ export interface UserAttributes {
   data?: object
 }
 
-export interface AdminUserAttributes extends UserAttributes {
+export interface AdminUserAttributes extends Omit<UserAttributes, 'data'> {
   /**
    * A custom data object to store the user's metadata. This maps to the `auth.users.user_metadata` column.
    *
