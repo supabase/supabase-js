@@ -1,6 +1,6 @@
 // Credits to @bnjmnt4n (https://www.npmjs.com/package/postgrest-query)
 
-import { GenericSchema } from './types'
+import { GenericSchema, Prettify } from './types'
 
 type Whitespace = ' ' | '\n' | '\t'
 
@@ -342,7 +342,7 @@ type GetResultHelper<
   ? GetResultHelper<Schema, Row, [], ConstructFieldDefinition<Schema, Row, R> & Acc>
   : Fields extends [infer R, ...infer Rest]
   ? GetResultHelper<Schema, Row, Rest, ConstructFieldDefinition<Schema, Row, R> & Acc>
-  : Acc
+  : Prettify<Acc>
 
 /**
  * Constructs a type definition for an object based on a given PostgREST query.
