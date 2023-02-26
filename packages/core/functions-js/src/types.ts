@@ -47,6 +47,10 @@ export type FunctionInvokeOptions = {
    * */
   headers?: { [key: string]: string }
   /**
+   * The HTTP verb of the request
+   */
+  method?: "POST"| "GET"| "PUT" | "PATCH" | "DELETE"
+  /**
    * The body of the request.
    */
   body?:
