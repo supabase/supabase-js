@@ -260,7 +260,6 @@ export interface AdminUserAttributes extends Omit<UserAttributes, 'data'> {
   /**
    * A custom data object to store the user's metadata. This maps to the `auth.users.user_metadata` column.
    *
-   * Only a service role can modify.
    *
    * The `user_metadata` should be a JSON object that includes user-specific info, such as their first and last name.
    *
