@@ -6,7 +6,7 @@ JS Client library to interact with Supabase Functions.
 
 ## Docs
 
-<https://supabase.github.io/functions-js/v2>
+<https://supabase.com/docs/reference/javascript/functions-invoke>
 
 ## testing
 
