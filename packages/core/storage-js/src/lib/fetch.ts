@@ -20,9 +20,14 @@ const handleError = async (error: unknown, reject: (reason?: any) => void) => {
   const Res = await resolveResponse()
 
   if (error instanceof Res) {
-    error.json().then((err) => {
-      reject(new StorageApiError(_getErrorMessage(err), error.status || 500))
-    })
+    error
+      .json()
+      .then((err) => {
+        reject(new StorageApiError(_getErrorMessage(err), error.status || 500))
+      })
+      .catch((err) => {
+        reject(new StorageApiError(_getErrorMessage(err), error.status || 500))
+      })
   } else {
     reject(new StorageUnknownError(_getErrorMessage(error), error))
   }
