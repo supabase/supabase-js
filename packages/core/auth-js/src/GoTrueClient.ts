@@ -210,10 +210,13 @@ export default class GoTrueClient {
         const { session, redirectType } = data
 
         await this._saveSession(session)
-        this._notifyAllSubscribers('SIGNED_IN', session)
-        if (redirectType === 'recovery') {
-          this._notifyAllSubscribers('PASSWORD_RECOVERY', session)
-        }
+
+        setTimeout(() => {
+          this._notifyAllSubscribers('SIGNED_IN', session)
+          if (redirectType === 'recovery') {
+            this._notifyAllSubscribers('PASSWORD_RECOVERY', session)
+          }
+        }, 0)
 
         return { error: null }
       }
