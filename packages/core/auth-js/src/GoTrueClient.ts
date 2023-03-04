@@ -312,7 +312,10 @@ export default class GoTrueClient {
    * Be aware that you may get back an error message that will not distingish
    * between the cases where the account does not exist or that the
    * email/phone and password combination is wrong or that the account can only
-   * be accessed via social login.
+   * be accessed via social login. Do note that you will need
+   * to configure a Whatsapp sender on Twilio if you are using phone sign in
+   * with 'whatsapp'. The whatsapp channel is not supported on other providers
+   * at this time.
    */
   async signInWithPassword(credentials: SignInWithPasswordCredentials): Promise<AuthResponse> {
     try {
@@ -338,6 +341,7 @@ export default class GoTrueClient {
             phone,
             password,
             gotrue_meta_security: { captcha_token: options?.captchaToken },
+            channel: options?.channel ?? 'sms',
           },
           xform: _sessionResponse,
         })
@@ -422,6 +426,11 @@ export default class GoTrueClient {
    * Be aware that you may get back an error message that will not distinguish
    * between the cases where the account does not exist or, that the account
    * can only be accessed via social login.
+   *
+   * Do note that you will need to configure a Whatsapp sender on Twilio
+   * if you are using phone sign in with the 'whatsapp' channel. The whatsapp
+   * channel is not supported on other providers
+   * at this time.
    */
   async signInWithOtp(credentials: SignInWithPasswordlessCredentials): Promise<AuthResponse> {
     try {
@@ -450,6 +459,7 @@ export default class GoTrueClient {
             data: options?.data ?? {},
             create_user: options?.shouldCreateUser ?? true,
             gotrue_meta_security: { captcha_token: options?.captchaToken },
+            channel: options?.channel ?? 'sms',
           },
         })
         return { data: { user: null, session: null }, error }
