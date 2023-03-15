@@ -162,8 +162,16 @@ export default class GoTrueClient {
     }
 
     if (isBrowser() && globalThis.BroadcastChannel && this.persistSession && this.storageKey) {
-      this.broadcastChannel = new globalThis.BroadcastChannel(this.storageKey)
-      this.broadcastChannel.addEventListener('message', (event) => {
+      try {
+        this.broadcastChannel = new globalThis.BroadcastChannel(this.storageKey)
+      } catch (e: any) {
+        console.error(
+          'Failed to create a new BroadcastChannel, multi-tab state changes will not be available',
+          e
+        )
+      }
+
+      this.broadcastChannel?.addEventListener('message', (event) => {
         this._notifyAllSubscribers(event.data.event, event.data.session, false) // broadcast = false so we don't get an endless loop of messages
       })
     }
