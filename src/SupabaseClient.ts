@@ -13,11 +13,11 @@ import {
 } from '@supabase/realtime-js'
 import { StorageClient as SupabaseStorageClient } from '@supabase/storage-js'
 import { DEFAULT_HEADERS } from './lib/constants'
-import { fetchWithAuth } from './lib/fetch'
+import { fetchWithAuth, getHostName } from './lib/fetch'
 import { stripTrailingSlash, applySettingDefaults } from './lib/helpers'
 import { SupabaseAuthClient } from './lib/SupabaseAuthClient'
 import { Fetch, GenericSchema, SupabaseClientOptions, SupabaseAuthClientOptions } from './lib/types'
-
+import { fetch as uniFetch } from './lib/uniFetch'
 const DEFAULT_GLOBAL_OPTIONS = {
   headers: DEFAULT_HEADERS,
 }
@@ -101,7 +101,10 @@ export default class SupabaseClient<
       this.functionsUrl = `${_supabaseUrl}/functions/v1`
     }
     // default storage key uses the supabase project ref as a namespace
-    const defaultStorageKey = `sb-${new URL(this.authUrl).hostname.split('.')[0]}-auth-token`
+    console.log(this.authUrl)
+    let hostname = getHostName(this.authUrl) ?? ''
+    const defaultStorageKey = `sb-${hostname.split('.')[0]}-auth-token`
+    //const defaultStorageKey = `sb-${new URL(this.authUrl).hostname.split('.')[0]}-auth-token`
     const DEFAULTS = {
       db: DEFAULT_DB_OPTIONS,
       realtime: DEFAULT_REALTIME_OPTIONS,
@@ -114,12 +117,8 @@ export default class SupabaseClient<
     this.storageKey = settings.auth?.storageKey ?? ''
     this.headers = settings.global?.headers ?? {}
 
-    this.auth = this._initSupabaseAuthClient(
-      settings.auth ?? {},
-      this.headers,
-      settings.global?.fetch
-    )
-    this.fetch = fetchWithAuth(supabaseKey, this._getAccessToken.bind(this), settings.global?.fetch)
+    this.auth = this._initSupabaseAuthClient(settings.auth ?? {}, this.headers, fetch)
+    this.fetch = fetchWithAuth(supabaseKey, this._getAccessToken.bind(this), fetch) as Fetch
 
     this.realtime = this._initRealtimeClient({ headers: this.headers, ...settings.realtime })
     this.rest = new PostgrestClient(`${_supabaseUrl}/rest/v1`, {

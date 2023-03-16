@@ -1,4 +1,4 @@
-import crossFetch, { Headers as CrossFetchHeaders } from 'cross-fetch'
+import { fetch } from './uniFetch'
 
 type Fetch = typeof fetch
 
@@ -7,20 +7,20 @@ export const resolveFetch = (customFetch?: Fetch): Fetch => {
   if (customFetch) {
     _fetch = customFetch
   } else if (typeof fetch === 'undefined') {
-    _fetch = crossFetch as unknown as Fetch
+    _fetch = fetch as unknown as Fetch
   } else {
     _fetch = fetch
   }
   return (...args) => _fetch(...args)
 }
 
-export const resolveHeadersConstructor = () => {
-  if (typeof Headers === 'undefined') {
-    return CrossFetchHeaders
-  }
+// export const resolveHeadersConstructor = () => {
+//   if (typeof Headers === 'undefined') {
+//     return CrossFetchHeaders
+//   }
 
-  return Headers
-}
+//   return Headers
+// }
 
 export const fetchWithAuth = (
   supabaseKey: string,
@@ -28,20 +28,25 @@ export const fetchWithAuth = (
   customFetch?: Fetch
 ): Fetch => {
   const fetch = resolveFetch(customFetch)
-  const HeadersConstructor = resolveHeadersConstructor()
-
+  console.log('fetchWithAuth---supabase----')
   return async (input, init) => {
     const accessToken = (await getAccessToken()) ?? supabaseKey
-    let headers = new HeadersConstructor(init?.headers)
+    let headers: Record<string, string> = {}
 
-    if (!headers.has('apikey')) {
-      headers.set('apikey', supabaseKey)
+    if (!headers['apikey']) {
+      headers['apikey'] = supabaseKey
     }
 
-    if (!headers.has('Authorization')) {
-      headers.set('Authorization', `Bearer ${accessToken}`)
+    if (!headers['Authorization']) {
+      headers['Authorization'] = `Bearer ${accessToken}`
     }
 
     return fetch(input, { ...init, headers })
   }
+}
+
+export const getHostName = (url: string) => {
+  const regex = /^(?:https?:\/\/)?(?:[^@\n]+@)?(?:www\.)?([^:\/\n]+\.[^:\/\n]+)/g
+  const match = regex.exec(url)
+  return match && match[1]
 }
