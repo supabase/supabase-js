@@ -57,22 +57,24 @@ export type RealtimePostgresChangesPayload<T extends { [key: string]: any }> =
   | RealtimePostgresUpdatePayload<T>
   | RealtimePostgresDeletePayload<T>
 
-export type RealtimePostgresChangesFilter<T extends `${REALTIME_POSTGRES_CHANGES_LISTEN_EVENT}`> = {
+export type RealtimePostgresChangesFilter<
+  T extends `${REALTIME_POSTGRES_CHANGES_LISTEN_EVENT}`
+> = {
   /**
-  * The type of database change to listen to.
-  */
+   * The type of database change to listen to.
+   */
   event: T
   /**
-  * The database schema to listen to.
-  */
+   * The database schema to listen to.
+   */
   schema: string
   /**
-  * The database table to listen to.
-  */
+   * The database table to listen to.
+   */
   table?: string
   /**
-  * Receive database changes when filter is matched.
-  */
+   * Receive database changes when filter is matched.
+   */
   filter?: string
 }
 
@@ -296,8 +298,10 @@ export default class RealtimeChannel {
     return this
   }
 
-  presenceState(): RealtimePresenceState {
-    return this.presence.state
+  presenceState<
+    T extends { [key: string]: any } = {}
+  >(): RealtimePresenceState<T> {
+    return this.presence.state as RealtimePresenceState<T>
   }
 
   async track(

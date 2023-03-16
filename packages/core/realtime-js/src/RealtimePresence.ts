@@ -14,7 +14,9 @@ type Presence<T extends { [key: string]: any } = {}> = {
   presence_ref: string
 } & T
 
-export type RealtimePresenceState = { [key: string]: Presence[] }
+export type RealtimePresenceState<T extends { [key: string]: any } = {}> = {
+  [key: string]: Presence<T>[]
+}
 
 export type RealtimePresenceJoinPayload<T extends { [key: string]: any }> = {
   event: `${REALTIME_PRESENCE_LISTEN_EVENTS.JOIN}`
