@@ -11,7 +11,8 @@ import {
 } from './lib/constants'
 import Timer from './lib/timer'
 import Serializer from './lib/serializer'
-import RealtimeChannel, { RealtimeChannelOptions } from './RealtimeChannel'
+import RealtimeChannel from './RealtimeChannel'
+import type { RealtimeChannelOptions } from './RealtimeChannel'
 
 export type RealtimeClientOptions = {
   transport?: WebSocket
@@ -170,27 +171,25 @@ export default class RealtimeClient {
    * Unsubscribes and removes a single channel
    * @param channel A RealtimeChannel instance
    */
-  removeChannel(
+  async removeChannel(
     channel: RealtimeChannel
   ): Promise<RealtimeRemoveChannelResponse> {
-    return channel.unsubscribe().then((status) => {
-      if (this.channels.length === 0) {
-        this.disconnect()
-      }
-      return status
-    })
+    const status = await channel.unsubscribe()
+    if (this.channels.length === 0) {
+      this.disconnect()
+    }
+    return status
   }
 
   /**
    * Unsubscribes and removes all channels
    */
-  removeAllChannels(): Promise<RealtimeRemoveChannelResponse[]> {
-    return Promise.all(
+  async removeAllChannels(): Promise<RealtimeRemoveChannelResponse[]> {
+    const values_1 = await Promise.all(
       this.channels.map((channel) => channel.unsubscribe())
-    ).then((values) => {
-      this.disconnect()
-      return values
-    })
+    )
+    this.disconnect()
+    return values_1
   }
 
   /**

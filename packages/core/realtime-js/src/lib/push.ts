@@ -1,5 +1,5 @@
 import { DEFAULT_TIMEOUT } from '../lib/constants'
-import RealtimeChannel from '../RealtimeChannel'
+import type RealtimeChannel from '../RealtimeChannel'
 
 export default class Push {
   sent: boolean = false

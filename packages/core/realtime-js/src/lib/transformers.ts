@@ -106,7 +106,7 @@ export const convertColumn = (
  * If the value of the cell is `null`, returns null.
  * Otherwise converts the string value to the correct type.
  * @param {String} type A postgres column type
- * @param {String} stringValue The cell value
+ * @param {String} value The cell value
  *
  * @example convertCell('bool', 't')
  * //=> true
