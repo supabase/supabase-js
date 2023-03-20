@@ -114,7 +114,16 @@ Your client can track and sync state that's stored in the channel.
 ```js
 // Setup...
 
-const channel = client.channel('presence-test', { presence: { key: '' } })
+const channel = client.channel(
+  'presence-test',
+  {
+    config: {
+      presence: {
+        key: ''
+      }
+    }
+  }
+)
 
 channel.on('presence', { event: 'sync' }, () => {
   console.log('Online users: ', channel.presenceState())
