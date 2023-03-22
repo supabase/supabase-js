@@ -941,7 +941,24 @@ export default class GoTrueClient {
 
     this.stateChangeEmitters.set(id, subscription)
 
+    this.emitInitialSession(id)
+
     return { data: { subscription } }
+  }
+
+  private async emitInitialSession(id: string): Promise<void> {
+    try {
+      const {
+        data: { session },
+        error,
+      } = await this.getSession()
+      if (error) throw error
+
+      this.stateChangeEmitters.get(id)?.callback('INITIAL_SESSION', session)
+    } catch (err) {
+      this.stateChangeEmitters.get(id)?.callback('INITIAL_SESSION', null)
+      console.error(err)
+    }
   }
 
   /**
