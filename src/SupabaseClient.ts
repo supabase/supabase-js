@@ -144,7 +144,19 @@ export default class SupabaseClient<
    * Supabase Storage allows you to manage user-generated content, such as photos or videos.
    */
   get storage() {
-    return new SupabaseStorageClient(this.storageUrl, this.headers, this.fetch)
+    const ssc = new SupabaseStorageClient(
+      this.storageUrl,
+      {
+        apikey: this.supabaseKey,
+        Authorization: `Bearer ${this.supabaseKey}`,
+        ...this.headers,
+      },
+      this._getAccessToken.bind(this),
+      this.fetch
+    )
+    // ssc.setAuth(this._getAccessToken())
+
+    return ssc
   }
 
   /**
@@ -288,7 +300,6 @@ export default class SupabaseClient<
     ) {
       // Token has changed
       this.realtime.setAuth(token ?? null)
-
       this.changedAccessToken = token
     } else if (event === 'SIGNED_OUT' || event === 'USER_DELETED') {
       // Token is removed
