@@ -574,6 +574,21 @@
     "@jridgewell/resolve-uri" "3.1.0"
     "@jridgewell/sourcemap-codec" "1.4.14"
 
+"@kanli8_supabase/gotrue-js@^2.16.0-1":
+  version "2.16.0-1"
+  resolved "https://registry.yarnpkg.com/@kanli8_supabase/gotrue-js/-/gotrue-js-2.16.0-1.tgz#7ef2a0eea94dd3c084fe5c306b847e9006d5c263"
+  integrity sha512-Sp/XzbAV7cGGnpdLQOTjyWhdyFV4FZdccwthmfT0CtLtuArnf3FPFEPoX2ITmTTxE27DYXTGXCuo29LHVIt7ng==
+
+"@kanli8_supabase/postgrest-js@^1.4.1-1":
+  version "1.4.1-1"
+  resolved "https://registry.yarnpkg.com/@kanli8_supabase/postgrest-js/-/postgrest-js-1.4.1-1.tgz#d8ed3c34fcff6f938d17f2623f8b0b599d50ae85"
+  integrity sha512-MfgZ5tOMjLtmoJfDHAXq6WGSi+ozo5CKcr52IBPNw1HrRjkWOHMLTD96wawSZ5cggnU/HbLrLEt98ImNeTWeMQ==
+
+"@kanli8_supabase/storage-js@^2.3.1-1":
+  version "2.3.1-1"
+  resolved "https://registry.yarnpkg.com/@kanli8_supabase/storage-js/-/storage-js-2.3.1-1.tgz#94e5a367f762c47b44b86159d7d9a19df245a9ef"
+  integrity sha512-Oe/J7oi+BNSwerPL6DiFPzomRiIpZhN31+uE6BAFzV6ex12uir7ojV980bit5b4Vip1TZyDrZaSXYnz1l6lLDA==
+
 "@sinclair/typebox@^0.24.1":
   version "0.24.51"
   resolved "https://registry.npmjs.org/@sinclair/typebox/-/typebox-0.24.51.tgz"
@@ -600,20 +615,6 @@
   dependencies:
     cross-fetch "^3.1.5"
 
-"@supabase/gotrue-js@^2.12.0":
-  version "2.14.0"
-  resolved "https://registry.yarnpkg.com/@supabase/gotrue-js/-/gotrue-js-2.14.0.tgz#4d6734cd5a0dd206d8b275248b8d6354151cd678"
-  integrity sha512-FI6q4n4iZ2zrEt1BnBYYe8HQ1k9t5CpBcDQxVXa8PeMwygXpzR0AcdfAsZ5Yba42C8YsBA132ti01f+RINS3UQ==
-  dependencies:
-    cross-fetch "^3.1.5"
-
-"@supabase/postgrest-js@^1.1.1":
-  version "1.4.1"
-  resolved "https://registry.yarnpkg.com/@supabase/postgrest-js/-/postgrest-js-1.4.1.tgz#08edf17543fc2d807ae74fa66882f42d7a2b8e66"
-  integrity sha512-aruqwV/aTggkM7OVv2JinCeXmRMKHJCZpkuS1nuoa0NgLw7g3NyILSyWOKYTBJ/PxE/zXtWsBhdxFzaaNz5uxg==
-  dependencies:
-    cross-fetch "^3.1.5"
-
 "@supabase/realtime-js@^2.4.0":
   version "2.6.0"
   resolved "https://registry.yarnpkg.com/@supabase/realtime-js/-/realtime-js-2.6.0.tgz#eff000c2fd9f5cd8d59f4adf6d76165b81ebd536"
@@ -621,13 +622,6 @@
   dependencies:
     "@types/phoenix" "^1.5.4"
     websocket "^1.0.34"
-
-"@supabase/storage-js@^2.3.1":
-  version "2.3.1"
-  resolved "https://registry.yarnpkg.com/@supabase/storage-js/-/storage-js-2.3.1.tgz#fb557c416d2eeaa2422b2c961c7f08133234d755"
-  integrity sha512-BaPIvyvjuZW1V0CnfGKUZyzpBUXnsh0XD8eqTOYd+MdiGPmIPI0vtwnT4fAoK8mipp1vpcN62EVQaqeUnWXPtQ==
-  dependencies:
-    cross-fetch "^3.1.5"
 
 "@tsconfig/node10@^1.0.7":
   version "1.0.9"

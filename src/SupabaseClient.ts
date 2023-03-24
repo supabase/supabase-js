@@ -1,23 +1,22 @@
 import { FunctionsClient } from '@supabase/functions-js'
-import { AuthChangeEvent } from '@supabase/gotrue-js'
+import { AuthChangeEvent } from '@kanli8_supabase/gotrue-js'
 import {
   PostgrestClient,
   PostgrestFilterBuilder,
   PostgrestQueryBuilder,
-} from '@supabase/postgrest-js'
+} from '@kanli8_supabase/postgrest-js'
 import {
   RealtimeChannel,
   RealtimeChannelOptions,
   RealtimeClient,
   RealtimeClientOptions,
 } from '@supabase/realtime-js'
-import { StorageClient as SupabaseStorageClient } from '@supabase/storage-js'
+import { StorageClient as SupabaseStorageClient } from '@kanli8_supabase/storage-js'
 import { DEFAULT_HEADERS } from './lib/constants'
 import { fetchWithAuth, getHostName } from './lib/fetch'
 import { stripTrailingSlash, applySettingDefaults } from './lib/helpers'
 import { SupabaseAuthClient } from './lib/SupabaseAuthClient'
 import { Fetch, GenericSchema, SupabaseClientOptions, SupabaseAuthClientOptions } from './lib/types'
-import { fetch as uniFetch } from './lib/uniFetch'
 const DEFAULT_GLOBAL_OPTIONS = {
   headers: DEFAULT_HEADERS,
 }
@@ -28,6 +27,8 @@ const DEFAULT_DB_OPTIONS = {
 
 const DEFAULT_AUTH_OPTIONS: SupabaseAuthClientOptions = {
   autoRefreshToken: true,
+  tokenRefreshType: 'WeChat',
+
   persistSession: true,
   detectSessionInUrl: true,
 }
@@ -117,7 +118,14 @@ export default class SupabaseClient<
     this.storageKey = settings.auth?.storageKey ?? ''
     this.headers = settings.global?.headers ?? {}
 
-    this.auth = this._initSupabaseAuthClient(settings.auth ?? {}, this.headers, fetch)
+    this.auth = this._initSupabaseAuthClient(
+      settings.auth ?? {
+        autoRefreshToken: true,
+        tokenRefreshType: 'WeChat',
+      },
+      this.headers,
+      fetch
+    )
     this.fetch = fetchWithAuth(supabaseKey, this._getAccessToken.bind(this), fetch) as Fetch
 
     this.realtime = this._initRealtimeClient({ headers: this.headers, ...settings.realtime })
@@ -251,6 +259,7 @@ export default class SupabaseClient<
   private _initSupabaseAuthClient(
     {
       autoRefreshToken,
+      tokenRefreshType,
       persistSession,
       detectSessionInUrl,
       storage,
@@ -263,11 +272,34 @@ export default class SupabaseClient<
       Authorization: `Bearer ${this.supabaseKey}`,
       apikey: `${this.supabaseKey}`,
     }
+
+    // export type GoTrueClientOptions = {
+    //   /* The URL of the GoTrue server. */
+    //   url?: string
+    //   /* Any additional headers to send to the GoTrue server. */
+    //   headers?: { [key: string]: string }
+    //   /* Optional key name used for storing tokens in local storage. */
+    //   storageKey?: string
+    //   /* Set to "true" if you want to automatically detects OAuth grants in the URL and signs in the user. */
+    //   detectSessionInUrl?: boolean
+    //   /* Set to "true" if you want to automatically refresh the token before expiring. */
+    //   autoRefreshToken?: boolean
+    //   /** Token refresh mode   */
+    //   tokenRefreshType: TokenRefreshType
+    //   /* Set to "true" if you want to automatically save the user session into local storage. If set to false, session will just be saved in memory. */
+    //   persistSession?: boolean
+    //   /* Provide your own local storage implementation to use instead of the browser's local storage. */
+    //   storage?: SupportedStorage
+    //   /* A custom fetch implementation. */
+    //   fetch?: Fetch
+    // }
+
     return new SupabaseAuthClient({
       url: this.authUrl,
       headers: { ...authHeaders, ...headers },
       storageKey: storageKey,
       autoRefreshToken,
+      tokenRefreshType,
       persistSession,
       detectSessionInUrl,
       storage,

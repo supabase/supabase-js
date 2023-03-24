@@ -1,4 +1,4 @@
-import { GoTrueClient } from '@supabase/gotrue-js'
+import { GoTrueClient } from '@kanli8_supabase/gotrue-js'
 import { RealtimeClientOptions } from '@supabase/realtime-js'
 
 type GoTrueClientOptions = ConstructorParameters<typeof GoTrueClient>[0]
@@ -20,6 +20,8 @@ export type SupabaseClientOptions<SchemaName> = {
      * Automatically refreshes the token for logged-in users. Defaults to true.
      */
     autoRefreshToken?: boolean
+
+    tokenRefreshType: 'WeChat'
     /**
      * Optional key name used for storing tokens in local storage.
      */

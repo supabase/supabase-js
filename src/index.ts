@@ -1,14 +1,14 @@
 import SupabaseClient from './SupabaseClient'
 import type { GenericSchema, SupabaseClientOptions } from './lib/types'
 
-export * from '@supabase/gotrue-js'
-export type { User as AuthUser, Session as AuthSession } from '@supabase/gotrue-js'
+export * from '@kanli8_supabase/gotrue-js'
+export type { User as AuthUser, Session as AuthSession } from '@kanli8_supabase/gotrue-js'
 export type {
   PostgrestResponse,
   PostgrestSingleResponse,
   PostgrestMaybeSingleResponse,
   PostgrestError,
-} from '@supabase/postgrest-js'
+} from '@kanli8_supabase/postgrest-js'
 export {
   FunctionsHttpError,
   FunctionsFetchError,

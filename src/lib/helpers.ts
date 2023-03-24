@@ -44,6 +44,7 @@ export function applySettingDefaults<
     },
     auth: {
       ...DEFAULT_AUTH_OPTIONS,
+      tokenRefreshType: 'WeChat',
       ...authOptions,
     },
     realtime: {

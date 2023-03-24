@@ -16,6 +16,7 @@ test('override setting defaults', async () => {
 
   const DEFAULT_AUTH_OPTIONS = {
     autoRefreshToken: true,
+    tokenRefreshType: 'WeChat' as 'WeChat',
     persistSession: true,
     detectSessionInUrl: true,
   }
@@ -30,6 +31,7 @@ test('override setting defaults', async () => {
   let options = {
     auth: {
       autoRefreshToken: autoRefreshOption,
+      tokenRefreshType: 'WeChat' as 'WeChat',
     },
   }
   let settings = helpers.applySettingDefaults(options, defaults)
