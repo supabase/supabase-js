@@ -429,6 +429,7 @@ export type SignInWithPasswordlessCredentials =
       }
     }
 
+export type OAuthFlowType = 'implicit' | 'pkce'
 export type SignInWithOAuthCredentials = {
   /** One of the providers supported by GoTrue. */
   provider: Provider
@@ -441,6 +442,8 @@ export type SignInWithOAuthCredentials = {
     queryParams?: { [key: string]: string }
     /** If set to true does not immediately redirect the current browser context to visit the OAuth authorization page for the provider. */
     skipBrowserRedirect?: boolean
+    /** If set to 'pkce' PKCE flow. Defaults to the 'implicit' flow otherwise */
+    flowType?: OAuthFlowType
   }
 }
 

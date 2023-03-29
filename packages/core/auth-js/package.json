@@ -36,9 +36,11 @@
     "docs:json": "typedoc --json docs/v2/spec.json --excludeExternals --excludePrivate --excludeProtected src/index.ts"
   },
   "dependencies": {
-    "cross-fetch": "^3.1.5"
+    "cross-fetch": "^3.1.5",
+    "crypto-js": "^4.1.1"
   },
   "devDependencies": {
+    "@types/crypto-js": "^4.1.1",
     "@types/faker": "^5.1.6",
     "@types/jest": "^28.1.6",
     "@types/jsonwebtoken": "^8.5.6",

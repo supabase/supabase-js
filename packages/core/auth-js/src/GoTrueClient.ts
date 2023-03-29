@@ -23,9 +23,12 @@ import {
   uuid,
   retryable,
   sleep,
+  generatePKCEVerifier,
+  generatePKCEChallenge,
 } from './lib/helpers'
 import localStorageAdapter from './lib/local-storage'
 import { polyfillGlobalThis } from './lib/polyfills'
+
 import type {
   AuthChangeEvent,
   AuthResponse,
@@ -63,6 +66,7 @@ import type {
   AuthenticatorAssuranceLevels,
   Factor,
   MFAChallengeAndVerifyParams,
+  OAuthFlowType,
 } from './lib/types'
 
 polyfillGlobalThis() // Make "globalThis" available
@@ -378,12 +382,41 @@ export default class GoTrueClient {
    */
   async signInWithOAuth(credentials: SignInWithOAuthCredentials): Promise<OAuthResponse> {
     await this._removeSession()
-    return this._handleProviderSignIn(credentials.provider, {
+
+    return await this._handleProviderSignIn(credentials.provider, {
       redirectTo: credentials.options?.redirectTo,
       scopes: credentials.options?.scopes,
       queryParams: credentials.options?.queryParams,
       skipBrowserRedirect: credentials.options?.skipBrowserRedirect,
+      flowType: credentials.options?.flowType ?? 'implicit',
     })
+  }
+
+  /**
+   * Log in an existing user via a third-party provider.
+   */
+  async exchangeCodeForSession(authCode: string): Promise<AuthResponse> {
+    const codeVerifier = await getItemAsync(this.storage, `${this.storageKey}-oauth-code-verifier`)
+    const { data, error } = await _request(
+      this.fetch,
+      'POST',
+      `${this.url}/token?grant_type=oauth_pkce`,
+      {
+        headers: this.headers,
+        body: {
+          auth_code: authCode,
+          code_verifier: codeVerifier,
+        },
+        xform: _sessionResponse,
+      }
+    )
+    await removeItemAsync(this.storage, `${this.storageKey}-oauth-code-verifier`)
+    if (error || !data) return { data: { user: null, session: null }, error }
+    if (data.session) {
+      await this._saveSession(data.session)
+      this._notifyAllSubscribers('SIGNED_IN', data.session)
+    }
+    return { data, error }
   }
 
   /**
@@ -1040,24 +1073,28 @@ export default class GoTrueClient {
     return isValidSession
   }
 
-  private _handleProviderSignIn(
+  private async _handleProviderSignIn(
     provider: Provider,
     options: {
       redirectTo?: string
       scopes?: string
       queryParams?: { [key: string]: string }
       skipBrowserRedirect?: boolean
+      flowType?: OAuthFlowType
     } = {}
   ) {
-    const url: string = this._getUrlForProvider(provider, {
+
+    const url: string = await this._getUrlForProvider(provider, {
       redirectTo: options.redirectTo,
       scopes: options.scopes,
       queryParams: options.queryParams,
+      flowType: options.flowType,
     })
     // try to open on the browser
     if (isBrowser() && !options.skipBrowserRedirect) {
       window.location.assign(url)
     }
+
     return { data: { provider, url }, error: null }
   }
 
@@ -1355,13 +1392,15 @@ export default class GoTrueClient {
    * @param options.redirectTo A URL or mobile address to send the user to after they are confirmed.
    * @param options.scopes A space-separated list of scopes granted to the OAuth application.
    * @param options.queryParams An object of key-value pairs containing query parameters granted to the OAuth application.
+   * @param options.flowType OAuth flow to use - defaults to implicit flow. PKCE is recommended for mobile and server-side applications.
    */
-  private _getUrlForProvider(
+  private async _getUrlForProvider(
     provider: Provider,
     options: {
       redirectTo?: string
       scopes?: string
       queryParams?: { [key: string]: string }
+      flowType: OAuthFlowType
     }
   ) {
     const urlParams: string[] = [`provider=${encodeURIComponent(provider)}`]
@@ -1371,10 +1410,22 @@ export default class GoTrueClient {
     if (options?.scopes) {
       urlParams.push(`scopes=${encodeURIComponent(options.scopes)}`)
     }
+    if (options?.flowType === 'pkce') {
+      const codeVerifier = await generatePKCEVerifier()
+      await setItemAsync(this.storage, `${this.storageKey}-oauth-code-verifier`, codeVerifier)
+      const codeChallenge = await generatePKCEChallenge(codeVerifier)
+      const flowParams = new URLSearchParams({
+        flow_type: `${encodeURIComponent(options.flowType)}`,
+        code_challenge: `${encodeURIComponent(codeChallenge)}`,
+        code_challenge_method: `${encodeURIComponent('s256')}`,
+      })
+      urlParams.push(flowParams.toString())
+    }
     if (options?.queryParams) {
       const query = new URLSearchParams(options.queryParams)
       urlParams.push(query.toString())
     }
+
     return `${this.url}/authorize?${urlParams.join('&')}`
   }
 
