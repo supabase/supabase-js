@@ -249,6 +249,8 @@ export async function generatePKCEVerifier() {
     for (let i = 0; i < verifierLength; i++) {
       array[i] = Math.floor(Math.random() * 256)
     }
+  } else {
+    window.crypto.getRandomValues(array)
   }
   return Array.from(array, dec2hex).join('')
 }
