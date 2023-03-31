@@ -101,6 +101,7 @@ export default class StorageFileApi {
         method,
         body: body as BodyInit,
         headers,
+        ...(options?.duplex ? { duplex: options.duplex } : {})
       })
 
       if (res.ok) {
