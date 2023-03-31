@@ -124,12 +124,39 @@ type ReadLettersHelper<Input extends string, Acc extends string> = string extend
   : [Acc, '']
 
 /**
- * Parses an identifier.
- * For now, identifiers are just sequences of more than 1 letter.
- *
- * TODO: allow for double quoted strings.
+ * Reads a consecutive sequence of more than 1 double-quoted letters,
+ * where letters are `[^"]`.
  */
-type ParseIdentifier<Input extends string> = ReadLetters<Input>
+type ReadQuotedLetters<Input extends string> = string extends Input
+  ? GenericStringError
+  : Input extends `"${infer Remainder}`
+  ? ReadQuotedLettersHelper<Remainder, ''> extends [`${infer Letters}`, `${infer Remainder}`]
+    ? Letters extends ''
+      ? ParserError<`Expected string at \`${Remainder}\``>
+      : [Letters, Remainder]
+    : ReadQuotedLettersHelper<Remainder, ''>
+  : ParserError<`Not a double-quoted string at \`${Input}\``>
+
+type ReadQuotedLettersHelper<Input extends string, Acc extends string> = string extends Input
+  ? GenericStringError
+  : Input extends `${infer L}${infer Remainder}`
+  ? L extends '"'
+    ? [Acc, Remainder]
+    : ReadQuotedLettersHelper<Remainder, `${Acc}${L}`>
+  : ParserError<`Missing closing double-quote in \`"${Acc}${Input}\``>
+
+/**
+ * Parses a (possibly double-quoted) identifier.
+ * For now, identifiers are just sequences of more than 1 letter.
+ */
+type ParseIdentifier<Input extends string> = ReadLetters<Input> extends [
+  infer Name,
+  `${infer Remainder}`
+]
+  ? [Name, `${Remainder}`]
+  : ReadQuotedLetters<Input> extends [infer Name, `${infer Remainder}`]
+  ? [Name, `${Remainder}`]
+  : ParserError<`No (possibly double-quoted) identifier at \`${Input}\``>
 
 /**
  * Parses a node.
