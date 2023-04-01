@@ -224,9 +224,10 @@ export default class GoTrueClient {
         await this._saveSession(session)
 
         setTimeout(() => {
-          this._notifyAllSubscribers('SIGNED_IN', session)
           if (redirectType === 'recovery') {
             this._notifyAllSubscribers('PASSWORD_RECOVERY', session)
+          } else {
+            this._notifyAllSubscribers('SIGNED_IN', session)
           }
         }, 0)
 
