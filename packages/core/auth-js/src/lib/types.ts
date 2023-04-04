@@ -506,23 +506,29 @@ export interface VerifyEmailOtpParams {
 export type MobileOtpType = 'sms' | 'phone_change'
 export type EmailOtpType = 'signup' | 'invite' | 'magiclink' | 'recovery' | 'email_change' | 'email'
 
-export type SignInWithSSO = {
-  options?: {
-    /** A URL to send the user to after they have signed-in. */
-    redirectTo?: string
-    /** Verification token received when the user completes the captcha on the site. */
-    captchaToken?: string
-  }
-} & (
+export type SignInWithSSO =
   | {
       /** UUID of the SSO provider to invoke single-sign on to. */
       providerId: string
+
+      options?: {
+        /** A URL to send the user to after they have signed-in. */
+        redirectTo?: string
+        /** Verification token received when the user completes the captcha on the site. */
+        captchaToken?: string
+      }
     }
   | {
       /** Domain name of the organization for which to invoke single-sign on. */
       domain: string
+
+      options?: {
+        /** A URL to send the user to after they have signed-in. */
+        redirectTo?: string
+        /** Verification token received when the user completes the captcha on the site. */
+        captchaToken?: string
+      }
     }
-)
 
 export type GenerateSignupLinkParams = {
   type: 'signup'
