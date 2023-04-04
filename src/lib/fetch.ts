@@ -31,7 +31,8 @@ export const fetchWithAuth = (
   console.log('fetchWithAuth---supabase----')
   return async (input, init) => {
     const accessToken = (await getAccessToken()) ?? supabaseKey
-    let headers: Record<string, string> = {}
+
+    let headers: any = init?.headers
 
     if (!headers['apikey']) {
       headers['apikey'] = supabaseKey
