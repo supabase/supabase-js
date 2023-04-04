@@ -572,11 +572,6 @@ export default class GoTrueClient {
    *
    * If you have built an organization-specific login page, you can use the
    * organization's SSO Identity Provider UUID directly instead.
-   *
-   * This API is experimental and availability is conditional on correct
-   * settings on the Auth service.
-   *
-   * @experimental
    */
   async signInWithSSO(params: SignInWithSSO): Promise<SSOResponse> {
     try {

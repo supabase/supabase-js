@@ -86,7 +86,13 @@ export type OAuthResponse =
 export type SSOResponse =
   | {
       data: {
-        /** URL to take the user to (in a browser) to complete SSO. */
+        /**
+         * URL to open in a browser which will complete the sign-in flow by
+         * taking the user to the identity provider's authentication flow.
+         *
+         * On browsers you can set the URL to `window.location.href` to take
+         * the user to the authentication flow.
+         */
         url: string
       }
       error: null
