@@ -504,7 +504,7 @@ export interface VerifyEmailOtpParams {
 }
 
 export type MobileOtpType = 'sms' | 'phone_change'
-export type EmailOtpType = 'signup' | 'invite' | 'magiclink' | 'recovery' | 'email_change'
+export type EmailOtpType = 'signup' | 'invite' | 'magiclink' | 'recovery' | 'email_change' | 'email'
 
 export type SignInWithSSO = {
   options?: {
