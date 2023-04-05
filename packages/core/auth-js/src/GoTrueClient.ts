@@ -538,7 +538,7 @@ export default class GoTrueClient {
       }
 
       if (!data) {
-        throw 'An error occurred on token verification.'
+        throw new Error('An error occurred on token verification.')
       }
 
       const session: Session | null = data.session
