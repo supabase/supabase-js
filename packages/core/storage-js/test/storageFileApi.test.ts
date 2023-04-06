@@ -159,6 +159,62 @@ describe('Object API', () => {
       expect(updateRes.error).toBeNull()
       expect(updateRes.data?.path).toEqual(uploadPath)
     })
+
+    test('can upload a file within the file size limit', async () => {
+      const bucketName = 'with-limit' + Date.now()
+      await storage.createBucket(bucketName, {
+        public: true,
+        fileSizeLimit: '1mb',
+      })
+
+      const res = await storage.from(bucketName).upload(uploadPath, file)
+      expect(res.error).toBeNull()
+    })
+
+    test('cannot upload a file that exceed the file size limit', async () => {
+      const bucketName = 'with-limit' + Date.now()
+      await storage.createBucket(bucketName, {
+        public: true,
+        fileSizeLimit: '1kb',
+      })
+
+      const res = await storage.from(bucketName).upload(uploadPath, file)
+      expect(res.error).toEqual({
+        error: 'Payload too large',
+        message: 'The object exceeded the maximum allowed size',
+        statusCode: '413',
+      })
+    })
+
+    test('can upload a file with a valid mime type', async () => {
+      const bucketName = 'with-limit' + Date.now()
+      await storage.createBucket(bucketName, {
+        public: true,
+        allowedMimeTypes: ['image/png'],
+      })
+
+      const res = await storage.from(bucketName).upload(uploadPath, file, {
+        contentType: 'image/png',
+      })
+      expect(res.error).toBeNull()
+    })
+
+    test('cannot upload a file an invalid mime type', async () => {
+      const bucketName = 'with-limit' + Date.now()
+      await storage.createBucket(bucketName, {
+        public: true,
+        allowedMimeTypes: ['image/png'],
+      })
+
+      const res = await storage.from(bucketName).upload(uploadPath, file, {
+        contentType: 'image/jpeg',
+      })
+      expect(res.error).toEqual({
+        error: 'invalid_mime_type',
+        message: 'mime type not supported',
+        statusCode: '422',
+      })
+    })
   })
 
   describe('File operations', () => {

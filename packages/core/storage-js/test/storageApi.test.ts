@@ -42,11 +42,35 @@ describe('bucket api', () => {
   })
 
   test('update bucket', async () => {
-    const updateRes = await storage.updateBucket(newBucketName, { public: true })
+    const newBucketName = `my-new-bucket-${Date.now()}`
+    await storage.createBucket(newBucketName)
+    const updateRes = await storage.updateBucket(newBucketName, {
+      public: true,
+      fileSizeLimit: '20mb',
+      allowedMimeTypes: ['image/jpeg'],
+    })
     expect(updateRes.error).toBeNull()
     expect(updateRes.data).toMatchSnapshot()
     const getRes = await storage.getBucket(newBucketName)
     expect(getRes.data!.public).toBe(true)
+    expect(getRes.data!.file_size_limit).toBe(20000000)
+    expect(getRes.data!.allowed_mime_types).toEqual(['image/jpeg'])
+  })
+
+  test('partially update bucket', async () => {
+    const newBucketName = `my-new-bucket-${Date.now()}`
+    await storage.createBucket(newBucketName, {
+      public: true,
+      fileSizeLimit: '20mb',
+      allowedMimeTypes: ['image/jpeg'],
+    })
+    const updateRes = await storage.updateBucket(newBucketName, { public: false })
+    expect(updateRes.error).toBeNull()
+    expect(updateRes.data).toMatchSnapshot()
+    const getRes = await storage.getBucket(newBucketName)
+    expect(getRes.data!.public).toBe(false)
+    expect(getRes.data!.file_size_limit).toBe(20000000)
+    expect(getRes.data!.allowed_mime_types).toEqual(['image/jpeg'])
   })
 
   test('empty bucket', async () => {

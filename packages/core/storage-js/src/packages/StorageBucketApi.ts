@@ -74,11 +74,15 @@ export default class StorageBucketApi {
    *
    * @param id A unique identifier for the bucket you are creating.
    * @param options.public The visibility of the bucket. Public buckets don't require an authorization token to download objects, but still require a valid token for all other operations. By default, buckets are private.
+   * @param options.fileSizeLimit specifies the file size limit that this bucket can accept during upload
+   * @param options.allowedMimeTypes specifies the allowed mime types that this bucket can accept during upload
    * @returns newly created bucket id
    */
   async createBucket(
     id: string,
-    options: { public: boolean } = { public: false }
+    options: { public: boolean; fileSizeLimit?: number | string; allowedMimeTypes?: string[] } = {
+      public: false,
+    }
   ): Promise<
     | {
         data: Pick<Bucket, 'name'>
@@ -93,7 +97,13 @@ export default class StorageBucketApi {
       const data = await post(
         this.fetch,
         `${this.url}/bucket`,
-        { id, name: id, public: options.public },
+        {
+          id,
+          name: id,
+          public: options.public,
+          file_size_limit: options.fileSizeLimit,
+          allowed_mime_types: options.allowedMimeTypes,
+        },
         { headers: this.headers }
       )
       return { data, error: null }
@@ -111,10 +121,12 @@ export default class StorageBucketApi {
    *
    * @param id A unique identifier for the bucket you are updating.
    * @param options.public The visibility of the bucket. Public buckets don't require an authorization token to download objects, but still require a valid token for all other operations.
+   * @param options.fileSizeLimit specifies the file size limit that this bucket can accept during upload
+   * @param options.allowedMimeTypes specifies the allowed mime types that this bucket can accept during upload
    */
   async updateBucket(
     id: string,
-    options: { public: boolean }
+    options: { public: boolean; fileSizeLimit?: number | string; allowedMimeTypes?: string[] }
   ): Promise<
     | {
         data: { message: string }
@@ -129,7 +141,13 @@ export default class StorageBucketApi {
       const data = await put(
         this.fetch,
         `${this.url}/bucket/${id}`,
-        { id, name: id, public: options.public },
+        {
+          id,
+          name: id,
+          public: options.public,
+          file_size_limit: options.fileSizeLimit,
+          allowed_mime_types: options.allowedMimeTypes,
+        },
         { headers: this.headers }
       )
       return { data, error: null }
