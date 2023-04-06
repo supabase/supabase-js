@@ -1,6 +1,6 @@
 import { GoTrueClient } from '@kanli8_supabase/gotrue-js'
-import { RealtimeClientOptions } from '@supabase/realtime-js'
-
+import { RealtimeClientOptions } from '@kanli8_supabase/realtime-js'
+import { fetch } from './uniFetch'
 type GoTrueClientOptions = ConstructorParameters<typeof GoTrueClient>[0]
 
 export interface SupabaseAuthClientOptions extends GoTrueClientOptions {}

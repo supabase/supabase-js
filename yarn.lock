@@ -574,20 +574,34 @@
     "@jridgewell/resolve-uri" "3.1.0"
     "@jridgewell/sourcemap-codec" "1.4.14"
 
-"@kanli8_supabase/gotrue-js@^2.16.0-1":
-  version "2.16.0-1"
-  resolved "https://registry.yarnpkg.com/@kanli8_supabase/gotrue-js/-/gotrue-js-2.16.0-1.tgz#7ef2a0eea94dd3c084fe5c306b847e9006d5c263"
-  integrity sha512-Sp/XzbAV7cGGnpdLQOTjyWhdyFV4FZdccwthmfT0CtLtuArnf3FPFEPoX2ITmTTxE27DYXTGXCuo29LHVIt7ng==
+"@kanli8_supabase/functions-js@^2.1.0-2":
+  version "2.1.0-2"
+  resolved "https://registry.yarnpkg.com/@kanli8_supabase/functions-js/-/functions-js-2.1.0-2.tgz#85e59d981bdb1405b37e420083f14346fe7d3468"
+  integrity sha512-ykVoRXGTwdSKw3be7mkHNkSub3CRGK3UHoWKXh03qLh2/w6eesKcnxpEihTjHWlIM+MyYSo+U7Lydf5jOzBeuQ==
 
-"@kanli8_supabase/postgrest-js@^1.4.1-1":
-  version "1.4.1-1"
-  resolved "https://registry.yarnpkg.com/@kanli8_supabase/postgrest-js/-/postgrest-js-1.4.1-1.tgz#d8ed3c34fcff6f938d17f2623f8b0b599d50ae85"
-  integrity sha512-MfgZ5tOMjLtmoJfDHAXq6WGSi+ozo5CKcr52IBPNw1HrRjkWOHMLTD96wawSZ5cggnU/HbLrLEt98ImNeTWeMQ==
+"@kanli8_supabase/gotrue-js@^2.16.0-2":
+  version "2.16.0-2"
+  resolved "https://registry.yarnpkg.com/@kanli8_supabase/gotrue-js/-/gotrue-js-2.16.0-2.tgz#bf8606d8965093806a046e0a65eedc817c0ba7e0"
+  integrity sha512-O4FbzFoYB5tdeQ3QNSuaGkf3lXjUcQS5B9kDU9+4srE/DSgjykqFXvjB5EDQBvgb3St2NEJctoCLJtK4hzofNg==
 
-"@kanli8_supabase/storage-js@^2.3.1-1":
-  version "2.3.1-1"
-  resolved "https://registry.yarnpkg.com/@kanli8_supabase/storage-js/-/storage-js-2.3.1-1.tgz#94e5a367f762c47b44b86159d7d9a19df245a9ef"
-  integrity sha512-Oe/J7oi+BNSwerPL6DiFPzomRiIpZhN31+uE6BAFzV6ex12uir7ojV980bit5b4Vip1TZyDrZaSXYnz1l6lLDA==
+"@kanli8_supabase/postgrest-js@^1.4.1-2":
+  version "1.4.1-2"
+  resolved "https://registry.yarnpkg.com/@kanli8_supabase/postgrest-js/-/postgrest-js-1.4.1-2.tgz#83a0d9ebd78e17512724ee01838e16be0cd43dcf"
+  integrity sha512-2P0n3dsVFR4Zuf3gnkh0C7ynX2MFU3fmR/O5YgzYnnZWPTBVOxdvvq3NDRm9pijAJcq7yIT5gkITmx0dRPRrLg==
+
+"@kanli8_supabase/realtime-js@^2.4.0-2":
+  version "2.4.0-2"
+  resolved "https://registry.yarnpkg.com/@kanli8_supabase/realtime-js/-/realtime-js-2.4.0-2.tgz#592e8b6af2032bc3b5eb9787ea62039ced7ef335"
+  integrity sha512-1cubFpP/1ZYXheOfoCIEPhInDYTY7XwUmwMwIrrUFbpWLeAACp6pOAa3abjTsfXtr7npki1gjktSI0RITeYoVQ==
+  dependencies:
+    "@types/phoenix" "^1.5.4"
+    "@types/websocket" "^1.0.3"
+    websocket "^1.0.34"
+
+"@kanli8_supabase/storage-js@^2.3.1-2":
+  version "2.3.1-2"
+  resolved "https://registry.yarnpkg.com/@kanli8_supabase/storage-js/-/storage-js-2.3.1-2.tgz#e3d290ea4a683fdace754f93a59cf884180599f9"
+  integrity sha512-yS6MlIY8otjp5PPK66+YhUElV2VRy+Cks+yteNlvWNebu3neVXdJNMaLBhdr3KeJIv3vJlLzhiVPKDc4V/zIbw==
 
 "@sinclair/typebox@^0.24.1":
   version "0.24.51"
@@ -607,21 +621,6 @@
   integrity sha512-BPS4ynJW/o92PUR4wgriz2Ud5gpST5vz6GQfMixEDK0Z8ZCUv2M7SkBLykH56T++Xs+8ln9zTGbOvNGIe02/jw==
   dependencies:
     "@sinonjs/commons" "^1.7.0"
-
-"@supabase/functions-js@^2.1.0":
-  version "2.1.0"
-  resolved "https://registry.yarnpkg.com/@supabase/functions-js/-/functions-js-2.1.0.tgz#60e304c6f56b2a56f051277e00b0c9eb5453cfcb"
-  integrity sha512-vRziB+AqRXRaGHjEFHwBo0kuNDTuAxI7VUeqU24Fe86ISoD8YEQm0dGdpleJEcqgDGWaO6pxT1tfj1BRY5PwMg==
-  dependencies:
-    cross-fetch "^3.1.5"
-
-"@supabase/realtime-js@^2.4.0":
-  version "2.6.0"
-  resolved "https://registry.yarnpkg.com/@supabase/realtime-js/-/realtime-js-2.6.0.tgz#eff000c2fd9f5cd8d59f4adf6d76165b81ebd536"
-  integrity sha512-tOVulMobhpxyDuu8VIImpL8FXmZOKsGNOSyS5ihJdj2xYmPPvYG+D2J51Ewfl+MFF65tweiB6p9N9bNIW1cDNA==
-  dependencies:
-    "@types/phoenix" "^1.5.4"
-    websocket "^1.0.34"
 
 "@tsconfig/node10@^1.0.7":
   version "1.0.9"
@@ -765,6 +764,13 @@
   version "2.0.1"
   resolved "https://registry.npmjs.org/@types/stack-utils/-/stack-utils-2.0.1.tgz"
   integrity sha512-Hl219/BT5fLAaz6NDkSuhzasy49dwQS/DSdu4MdggFB8zcXv7vflBI3xp7FEmkmdDkBUI2bPUNeMttp2knYdxw==
+
+"@types/websocket@^1.0.3":
+  version "1.0.5"
+  resolved "https://registry.yarnpkg.com/@types/websocket/-/websocket-1.0.5.tgz#3fb80ed8e07f88e51961211cd3682a3a4a81569c"
+  integrity sha512-NbsqiNX9CnEfC1Z0Vf4mE1SgAJ07JnRYcNex7AJ9zAVzmiGHmjKFEk7O4TJIsgv2B1sLEb6owKFZrACwdYngsQ==
+  dependencies:
+    "@types/node" "*"
 
 "@types/yargs-parser@*":
   version "21.0.0"
@@ -1348,13 +1354,6 @@ create-require@^1.1.0:
   version "1.1.1"
   resolved "https://registry.npmjs.org/create-require/-/create-require-1.1.1.tgz"
   integrity sha512-dcKFX3jn0MpIaXjisoRvexIJVEKzaq7z2rZKxf+MSr9TkdmHmsU4m2lcLojrj/FHl8mk5VxMmYA+ftRkP/3oKQ==
-
-cross-fetch@^3.1.5:
-  version "3.1.5"
-  resolved "https://registry.npmjs.org/cross-fetch/-/cross-fetch-3.1.5.tgz"
-  integrity sha512-lvb1SBsI0Z7GDwmuid+mU3kWVBwTVUbe7S0H52yaaAdQOXq2YktTCZdlAcNKFzE6QtRz0snpw9bNiPeOIkkQvw==
-  dependencies:
-    node-fetch "2.6.7"
 
 cross-spawn@^6.0.5:
   version "6.0.5"
@@ -2824,13 +2823,6 @@ nice-try@^1.0.4:
   resolved "https://registry.npmjs.org/nice-try/-/nice-try-1.0.5.tgz"
   integrity sha512-1nh45deeb5olNY7eX82BkPO7SSxR5SSYJiPTrTdFUVYwAl8CKMA5N9PjTYkHiRjisVcxcQ1HXdLhx2qxxJzLNQ==
 
-node-fetch@2.6.7:
-  version "2.6.7"
-  resolved "https://registry.npmjs.org/node-fetch/-/node-fetch-2.6.7.tgz"
-  integrity sha512-ZjMPFEfVx5j+y2yF35Kzx5sF7kDzxuDj6ziH4FFbOp87zKDZNx8yExJIb05OGF4Nlt9IHFIMBkRl41VdvcNdbQ==
-  dependencies:
-    whatwg-url "^5.0.0"
-
 node-gyp-build@^4.3.0:
   version "4.6.0"
   resolved "https://registry.yarnpkg.com/node-gyp-build/-/node-gyp-build-4.6.0.tgz#0c52e4cbf54bbd28b709820ef7b6a3c2d6209055"
@@ -3576,11 +3568,6 @@ to-regex-range@^5.0.1:
   dependencies:
     is-number "^7.0.0"
 
-tr46@~0.0.3:
-  version "0.0.3"
-  resolved "https://registry.npmjs.org/tr46/-/tr46-0.0.3.tgz"
-  integrity sha512-N3WMsuqV66lT30CrXNbEjx4GEwlow3v6rr4mCcv6prnfwhS01rkgyFdjPNBYd9br7LpXV1+Emh01fHnq2Gdgrw==
-
 ts-jest@^29.0.5:
   version "29.0.5"
   resolved "https://registry.npmjs.org/ts-jest/-/ts-jest-29.0.5.tgz"
@@ -3761,11 +3748,6 @@ watchpack@^2.4.0:
     glob-to-regexp "^0.4.1"
     graceful-fs "^4.1.2"
 
-webidl-conversions@^3.0.0:
-  version "3.0.1"
-  resolved "https://registry.npmjs.org/webidl-conversions/-/webidl-conversions-3.0.1.tgz"
-  integrity sha512-2JAn3z8AR6rjK8Sm8orRC0h/bcl/DqL7tRPdGZ4I1CjdF+EaMLmYxBHyXuKL849eucPFhvBoxMsflfOb8kxaeQ==
-
 webpack-cli@^4.9.2:
   version "4.10.0"
   resolved "https://registry.npmjs.org/webpack-cli/-/webpack-cli-4.10.0.tgz"
@@ -3838,14 +3820,6 @@ websocket@^1.0.34:
     typedarray-to-buffer "^3.1.5"
     utf-8-validate "^5.0.2"
     yaeti "^0.0.6"
-
-whatwg-url@^5.0.0:
-  version "5.0.0"
-  resolved "https://registry.npmjs.org/whatwg-url/-/whatwg-url-5.0.0.tgz"
-  integrity sha512-saE57nupxk6v3HY35+jzBwYa0rKSy0XR8JSxZPwgLr7ys0IBzhGviA1/TUGJLmSVqs8pb9AnvICXEuOHLprYTw==
-  dependencies:
-    tr46 "~0.0.3"
-    webidl-conversions "^3.0.0"
 
 which-boxed-primitive@^1.0.2:
   version "1.0.2"

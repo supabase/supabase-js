@@ -14,8 +14,8 @@ export {
   FunctionsFetchError,
   FunctionsRelayError,
   FunctionsError,
-} from '@supabase/functions-js'
-export * from '@supabase/realtime-js'
+} from '@kanli8_supabase/functions-js'
+export * from '@kanli8_supabase/realtime-js'
 export { default as SupabaseClient } from './SupabaseClient'
 export type { SupabaseClientOptions } from './lib/types'
 
