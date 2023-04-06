@@ -245,7 +245,9 @@ export function generatePKCEVerifier() {
   const verifierLength = 56
   const array = new Uint32Array(verifierLength)
   if (typeof window.crypto === 'undefined') {
-    throw new Error('PKCE is not supported on devices without WebCrypto API support or equivalent polyfills')
+    throw new Error(
+      'PKCE is not supported on devices without WebCrypto API support, please add polyfills'
+    )
   }
   window.crypto.getRandomValues(array)
   return Array.from(array, dec2hex).join('')
@@ -255,7 +257,9 @@ async function sha256(randomString: string) {
   const encoder = new TextEncoder()
   const encodedData = encoder.encode(randomString)
   if (typeof window.crypto === 'undefined') {
-    throw new Error('PKCE is not supported on devices without WebCrypto API support or equivalent polyfills')
+    throw new Error(
+      'PKCE is not supported on devices without WebCrypto API support, please add polyfills'
+    )
   }
   const hash = await window.crypto.subtle.digest('SHA-256', encodedData)
   const bytes = new Uint8Array(hash)
