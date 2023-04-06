@@ -37,6 +37,10 @@ export interface FileOptions {
    * When upsert is set to true, the file is overwritten if it exists. When set to false, an error is thrown if the object already exists. Defaults to false.
    */
   upsert?: boolean
+  /**
+   * The duplex option is a string parameter that enables or disables duplex streaming, allowing for both reading and writing data in the same stream. It can be passed as an option to the fetch() method.
+   */
+  duplex?: string
 }
 
 export interface SearchOptions {
