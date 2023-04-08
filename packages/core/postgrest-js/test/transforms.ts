@@ -298,7 +298,7 @@ test('explain with json/text format', async () => {
             ],
             "Startup Cost": 17.65,
             "Strategy": "Plain",
-            "Total Cost": 17.68,
+            "Total Cost": 17.67,
           },
         },
       ],
@@ -310,7 +310,7 @@ test('explain with json/text format', async () => {
 
   const res2 = await postgrest.from('users').select().explain()
   expect(res2.data).toMatch(
-    `Aggregate  (cost=17.65..17.68 rows=1 width=112)
+    `Aggregate  (cost=17.65..17.67 rows=1 width=112)
   ->  Seq Scan on users  (cost=0.00..15.10 rows=510 width=132)
 `
   )
@@ -332,7 +332,7 @@ test('explain with options', async () => {
             "Output": Array [
               "NULL::bigint",
               "count(ROW(users.username, users.data, users.age_range, users.status, users.catchphrase))",
-              "(COALESCE(json_agg(ROW(users.username, users.data, users.age_range, users.status, users.catchphrase)), '[]'::json))::character varying",
+              "COALESCE(json_agg(ROW(users.username, users.data, users.age_range, users.status, users.catchphrase)), '[]'::json)",
               "NULLIF(current_setting('response.headers'::text, true), ''::text)",
               "NULLIF(current_setting('response.status'::text, true), ''::text)",
             ],
@@ -364,9 +364,9 @@ test('explain with options', async () => {
             ],
             "Startup Cost": 17.65,
             "Strategy": "Plain",
-            "Total Cost": 17.68,
+            "Total Cost": 17.67,
           },
-          "Query Identifier": -6192475787150577000,
+          "Query Identifier": 3302819211508333000,
           "Settings": Object {
             "effective_cache_size": "128MB",
             "search_path": "\\"public\\", \\"extensions\\"",
