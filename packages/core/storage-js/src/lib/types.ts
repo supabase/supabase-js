@@ -96,14 +96,16 @@ export interface TransformOptions {
    */
   resize?: 'cover' | 'contain' | 'fill'
   /**
-   * Set the quality of the returned image, this is percentage based, default 80
+   * Set the quality of the returned image.
+   * A number from 20 to 100, with 100 being the highest quality.
+   * Defaults to 80
    */
   quality?: number
   /**
    * Specify the format of the image requested.
    *
-   * When using 'origin' we force the format to be the same as the original image,
-   * bypassing automatic browser optimisation such as webp conversion
+   * When using 'origin' we force the format to be the same as the original image.
+   * When this option is not passed in, images are optimized to modern image formats like Webp.
    */
   format?: 'origin'
 }
