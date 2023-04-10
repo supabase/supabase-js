@@ -3,6 +3,7 @@ import { DEFAULT_HEADERS, EXPIRY_MARGIN, GOTRUE_URL, STORAGE_KEY } from './lib/c
 import {
   AuthError,
   AuthImplicitGrantRedirectError,
+  AuthPKCEGrantCodeExchangeError,
   AuthInvalidCredentialsError,
   AuthRetryableFetchError,
   AuthSessionMissingError,
@@ -66,7 +67,7 @@ import type {
   AuthenticatorAssuranceLevels,
   Factor,
   MFAChallengeAndVerifyParams,
-  OAuthFlowType,
+  AuthFlowType,
 } from './lib/types'
 
 polyfillGlobalThis() // Make "globalThis" available
@@ -78,6 +79,7 @@ const DEFAULT_OPTIONS: Omit<Required<GoTrueClientOptions>, 'fetch' | 'storage'> 
   persistSession: true,
   detectSessionInUrl: true,
   headers: DEFAULT_HEADERS,
+  flowType: 'implicit',
 }
 
 /** Current session will be checked for refresh at this interval. */
@@ -107,6 +109,8 @@ export default class GoTrueClient {
    * Only used if persistSession is false.
    */
   protected inMemorySession: Session | null
+
+  protected flowType: AuthFlowType
 
   protected autoRefreshToken: boolean
   protected persistSession: boolean
@@ -154,6 +158,7 @@ export default class GoTrueClient {
     this.headers = settings.headers
     this.fetch = resolveFetch(settings.fetch)
     this.detectSessionInUrl = settings.detectSessionInUrl
+    this.flowType = settings.flowType
 
     this.mfa = {
       verify: this._verify.bind(this),
@@ -208,7 +213,7 @@ export default class GoTrueClient {
     }
 
     try {
-      if (this.detectSessionInUrl && this._isImplicitGrantFlow()) {
+      if (this.detectSessionInUrl && (this._isImplicitGrantFlow()) || this._isPKCEFlow()) {
         const { data, error } = await this._getSessionFromUrl()
 
         if (error) {
@@ -386,7 +391,7 @@ export default class GoTrueClient {
       scopes: credentials.options?.scopes,
       queryParams: credentials.options?.queryParams,
       skipBrowserRedirect: credentials.options?.skipBrowserRedirect,
-      flowType: credentials.options?.flowType ?? 'implicit',
+      flowType: this.flowType ?? 'implicit',
     })
   }
 
@@ -394,7 +399,7 @@ export default class GoTrueClient {
    * Log in an existing user via a third-party provider.
    */
   async exchangeCodeForSession(authCode: string): Promise<AuthResponse> {
-    const codeVerifier = await getItemAsync(this.storage, `${this.storageKey}-oauth-code-verifier`)
+    const codeVerifier = await getItemAsync(this.storage, `${this.storageKey}-code-verifier`)
     const { data, error } = await _request(
       this.fetch,
       'POST',
@@ -408,7 +413,7 @@ export default class GoTrueClient {
         xform: _sessionResponse,
       }
     )
-    await removeItemAsync(this.storage, `${this.storageKey}-oauth-code-verifier`)
+    await removeItemAsync(this.storage, `${this.storageKey}-code-verifier`)
     if (error || !data) return { data: { user: null, session: null }, error }
     if (data.session) {
       await this._saveSession(data.session)
@@ -854,8 +859,18 @@ export default class GoTrueClient {
   > {
     try {
       if (!isBrowser()) throw new AuthImplicitGrantRedirectError('No browser detected.')
-      if (!this._isImplicitGrantFlow()) {
+      if (this.flowType == 'implicit' && !this._isImplicitGrantFlow()) {
         throw new AuthImplicitGrantRedirectError('Not a valid implicit grant flow url.')
+      } else if (this.flowType == 'pkce' && !this._isPKCEFlow()) {
+        throw new AuthPKCEGrantCodeExchangeError('Not a valid PKCE flow url.')
+      }
+      if (await this._isPKCEFlow()) {
+        const authCode = getParameterByName('code')
+        if (!authCode) throw new AuthPKCEGrantCodeExchangeError('No code detected.')
+        const { data, error } = await this.exchangeCodeForSession(authCode)
+        if (error) throw error
+        if (!data.session) throw new AuthPKCEGrantCodeExchangeError('No session detected.')
+        return { data: { session: data.session, redirectType: null }, error: null }
       }
 
       const error_description = getParameterByName('error_description')
@@ -919,6 +934,16 @@ export default class GoTrueClient {
       (Boolean(getParameterByName('access_token')) ||
         Boolean(getParameterByName('error_description')))
     )
+  }
+  /**
+   * Checks if the current URL and backing storage contain parameters given by a PKCE flow
+   */
+  private async _isPKCEFlow(): Promise<boolean> {
+    const currentStorageContent = await getItemAsync(
+      this.storage,
+      `${this.storageKey}-code-verifier`
+    )
+    return isBrowser() && Boolean(getParameterByName('code')) && Boolean(currentStorageContent)
   }
 
   /**
@@ -1073,7 +1098,7 @@ export default class GoTrueClient {
       scopes?: string
       queryParams?: { [key: string]: string }
       skipBrowserRedirect?: boolean
-      flowType: OAuthFlowType
+      flowType: AuthFlowType
     }
   ) {
     const url: string = await this._getUrlForProvider(provider, {
@@ -1392,7 +1417,7 @@ export default class GoTrueClient {
       redirectTo?: string
       scopes?: string
       queryParams?: { [key: string]: string }
-      flowType: OAuthFlowType
+      flowType: AuthFlowType
     }
   ) {
     const urlParams: string[] = [`provider=${encodeURIComponent(provider)}`]
@@ -1404,7 +1429,7 @@ export default class GoTrueClient {
     }
     if (options?.flowType === 'pkce') {
       const codeVerifier = generatePKCEVerifier()
-      await setItemAsync(this.storage, `${this.storageKey}-oauth-code-verifier`, codeVerifier)
+      await setItemAsync(this.storage, `${this.storageKey}-code-verifier`, codeVerifier)
       const codeChallenge = await generatePKCEChallenge(codeVerifier)
       const flowParams = new URLSearchParams({
         flow_type: `${encodeURIComponent(options.flowType)}`,

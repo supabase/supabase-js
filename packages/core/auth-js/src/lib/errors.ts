@@ -92,6 +92,23 @@ export class AuthImplicitGrantRedirectError extends CustomAuthError {
   }
 }
 
+export class AuthPKCEGrantCodeExchangeError extends CustomAuthError {
+  details: { error: string; code: string } | null = null
+  constructor(message: string, details: { error: string; code: string } | null = null) {
+    super(message, 'AuthPKCEGrantCodeExchangeError', 500)
+    this.details = details
+  }
+
+  toJSON() {
+    return {
+      name: this.name,
+      message: this.message,
+      status: this.status,
+      details: this.details,
+    }
+  }
+}
+
 export class AuthRetryableFetchError extends CustomAuthError {
   constructor(message: string, status: number) {
     super(message, 'AuthRetryableFetchError', status)
