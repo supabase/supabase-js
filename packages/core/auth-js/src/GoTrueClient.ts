@@ -392,7 +392,6 @@ export default class GoTrueClient {
       scopes: credentials.options?.scopes,
       queryParams: credentials.options?.queryParams,
       skipBrowserRedirect: credentials.options?.skipBrowserRedirect,
-      flowType: this.flowType ?? 'implicit',
     })
   }
 
@@ -1099,14 +1098,12 @@ export default class GoTrueClient {
       scopes?: string
       queryParams?: { [key: string]: string }
       skipBrowserRedirect?: boolean
-      flowType: AuthFlowType
     }
   ) {
     const url: string = await this._getUrlForProvider(provider, {
       redirectTo: options.redirectTo,
       scopes: options.scopes,
       queryParams: options.queryParams,
-      flowType: options.flowType,
     })
     // try to open on the browser
     if (isBrowser() && !options.skipBrowserRedirect) {
@@ -1414,7 +1411,6 @@ export default class GoTrueClient {
    * @param options.redirectTo A URL or mobile address to send the user to after they are confirmed.
    * @param options.scopes A space-separated list of scopes granted to the OAuth application.
    * @param options.queryParams An object of key-value pairs containing query parameters granted to the OAuth application.
-   * @param options.flowType OAuth flow to use - defaults to implicit flow. PKCE is recommended for mobile and server-side applications.
    */
   private async _getUrlForProvider(
     provider: Provider,
@@ -1422,7 +1418,6 @@ export default class GoTrueClient {
       redirectTo?: string
       scopes?: string
       queryParams?: { [key: string]: string }
-      flowType: AuthFlowType
     }
   ) {
     const urlParams: string[] = [`provider=${encodeURIComponent(provider)}`]
@@ -1432,12 +1427,11 @@ export default class GoTrueClient {
     if (options?.scopes) {
       urlParams.push(`scopes=${encodeURIComponent(options.scopes)}`)
     }
-    if (options?.flowType === 'pkce') {
+    if (this.flowType === 'pkce') {
       const codeVerifier = generatePKCEVerifier()
       await setItemAsync(this.storage, `${this.storageKey}-code-verifier`, codeVerifier)
       const codeChallenge = await generatePKCEChallenge(codeVerifier)
       const flowParams = new URLSearchParams({
-        flow_type: `${encodeURIComponent(options.flowType)}`,
         code_challenge: `${encodeURIComponent(codeChallenge)}`,
         code_challenge_method: `${encodeURIComponent('s256')}`,
       })
