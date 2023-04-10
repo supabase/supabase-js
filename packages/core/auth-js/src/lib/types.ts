@@ -29,7 +29,6 @@ export type AuthChangeEvent =
   | 'SIGNED_OUT'
   | 'TOKEN_REFRESHED'
   | 'USER_UPDATED'
-  | 'USER_DELETED'
   | AuthChangeEventMFA
 
 export type GoTrueClientOptions = {

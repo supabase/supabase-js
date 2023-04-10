@@ -213,8 +213,9 @@ export default class GoTrueClient {
     }
 
     try {
-      if (this.detectSessionInUrl && (this._isImplicitGrantFlow()) || this._isPKCEFlow()) {
-        const { data, error } = await this._getSessionFromUrl()
+      const isPKCEFlow = await this._isPKCEFlow()
+      if ((this.detectSessionInUrl && this._isImplicitGrantFlow()) || isPKCEFlow) {
+        const { data, error } = await this._getSessionFromUrl(isPKCEFlow)
 
         if (error) {
           // failed login attempt via url,
@@ -328,7 +329,7 @@ export default class GoTrueClient {
   /**
    * Log in an existing user with an email and password or phone and password.
    *
-   * Be aware that you may get back an error message that will not distingish
+   * Be aware that you may get back an error message that will not distinguish
    * between the cases where the account does not exist or that the
    * email/phone and password combination is wrong or that the account can only
    * be accessed via social login.
@@ -850,7 +851,7 @@ export default class GoTrueClient {
   /**
    * Gets the session data from a URL string
    */
-  private async _getSessionFromUrl(): Promise<
+  private async _getSessionFromUrl(isPKCEFlow: boolean): Promise<
     | {
         data: { session: Session; redirectType: string | null }
         error: null
@@ -861,10 +862,10 @@ export default class GoTrueClient {
       if (!isBrowser()) throw new AuthImplicitGrantRedirectError('No browser detected.')
       if (this.flowType == 'implicit' && !this._isImplicitGrantFlow()) {
         throw new AuthImplicitGrantRedirectError('Not a valid implicit grant flow url.')
-      } else if (this.flowType == 'pkce' && !this._isPKCEFlow()) {
+      } else if (this.flowType == 'pkce' && !isPKCEFlow) {
         throw new AuthPKCEGrantCodeExchangeError('Not a valid PKCE flow url.')
       }
-      if (await this._isPKCEFlow()) {
+      if (isPKCEFlow) {
         const authCode = getParameterByName('code')
         if (!authCode) throw new AuthPKCEGrantCodeExchangeError('No code detected.')
         const { data, error } = await this.exchangeCodeForSession(authCode)
