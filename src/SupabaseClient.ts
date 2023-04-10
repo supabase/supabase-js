@@ -30,6 +30,7 @@ const DEFAULT_AUTH_OPTIONS: SupabaseAuthClientOptions = {
   autoRefreshToken: true,
   persistSession: true,
   detectSessionInUrl: true,
+  flowType: 'implicit',
 }
 
 const DEFAULT_REALTIME_OPTIONS: RealtimeClientOptions = {}
@@ -244,6 +245,7 @@ export default class SupabaseClient<
       detectSessionInUrl,
       storage,
       storageKey,
+      flowType,
     }: SupabaseAuthClientOptions,
     headers?: Record<string, string>,
     fetch?: Fetch
@@ -260,6 +262,7 @@ export default class SupabaseClient<
       persistSession,
       detectSessionInUrl,
       storage,
+      flowType,
       fetch,
     })
   }
@@ -291,7 +294,7 @@ export default class SupabaseClient<
       this.realtime.setAuth(token ?? null)
 
       this.changedAccessToken = token
-    } else if (event === 'SIGNED_OUT' || event === 'USER_DELETED') {
+    } else if (event === 'SIGNED_OUT') {
       // Token is removed
       this.realtime.setAuth(this.supabaseKey)
       if (source == 'STORAGE') this.auth.signOut()
