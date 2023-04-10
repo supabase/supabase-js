@@ -12,19 +12,6 @@ services:
     ports:
       - 8000:8000/tcp
       - 8443:8443/tcp
-  rest:
-    image: postgrest/postgrest:latest
-    ports:
-      - '3000:3000'
-    depends_on:
-      storage:
-        condition: service_healthy
-    restart: always
-    environment:
-      PGRST_DB_URI: postgres://postgres:postgres@db:5432/postgres
-      PGRST_DB_SCHEMA: public, storage
-      PGRST_DB_ANON_ROLE: postgres
-      PGRST_JWT_SECRET: super-secret-jwt-token-with-at-least-32-characters-long
   storage:
     build:
       context: ./storage
@@ -51,6 +38,7 @@ services:
       FILE_STORAGE_BACKEND_PATH: /tmp/storage
       ENABLE_IMAGE_TRANSFORMATION: "true"
       IMGPROXY_URL: http://imgproxy:8080
+      DEBUG: "knex:*"
     volumes:
       - assets-volume:/tmp/storage
     healthcheck:

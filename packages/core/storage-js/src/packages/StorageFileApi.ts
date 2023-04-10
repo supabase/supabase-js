@@ -24,6 +24,18 @@ const DEFAULT_FILE_OPTIONS: FileOptions = {
   upsert: false,
 }
 
+type FileBody =
+  | ArrayBuffer
+  | ArrayBufferView
+  | Blob
+  | Buffer
+  | File
+  | FormData
+  | NodeJS.ReadableStream
+  | ReadableStream<Uint8Array>
+  | URLSearchParams
+  | string
+
 export default class StorageFileApi {
   protected url: string
   protected headers: { [key: string]: string }
@@ -52,17 +64,7 @@ export default class StorageFileApi {
   private async uploadOrUpdate(
     method: 'POST' | 'PUT',
     path: string,
-    fileBody:
-      | ArrayBuffer
-      | ArrayBufferView
-      | Blob
-      | Buffer
-      | File
-      | FormData
-      | NodeJS.ReadableStream
-      | ReadableStream<Uint8Array>
-      | URLSearchParams
-      | string,
+    fileBody: FileBody,
     fileOptions?: FileOptions
   ): Promise<
     | {
@@ -101,7 +103,7 @@ export default class StorageFileApi {
         method,
         body: body as BodyInit,
         headers,
-        ...(options?.duplex ? { duplex: options.duplex } : {})
+        ...(options?.duplex ? { duplex: options.duplex } : {}),
       })
 
       if (res.ok) {
@@ -130,17 +132,7 @@ export default class StorageFileApi {
    */
   async upload(
     path: string,
-    fileBody:
-      | ArrayBuffer
-      | ArrayBufferView
-      | Blob
-      | Buffer
-      | File
-      | FormData
-      | NodeJS.ReadableStream
-      | ReadableStream<Uint8Array>
-      | URLSearchParams
-      | string,
+    fileBody: FileBody,
     fileOptions?: FileOptions
   ): Promise<
     | {
@@ -153,6 +145,115 @@ export default class StorageFileApi {
       }
   > {
     return this.uploadOrUpdate('POST', path, fileBody, fileOptions)
+  }
+
+  /**
+   * Upload a file with a token generated from `createUploadSignedUrl`.
+   * @param path The file path, including the file name. Should be of the format `folder/subfolder/filename.png`. The bucket must already exist before attempting to upload.
+   * @param token The token generated from `createUploadSignedUrl`
+   * @param fileBody The body of the file to be stored in the bucket.
+   */
+  async uploadToSignedUrl(
+    path: string,
+    token: string,
+    fileBody: FileBody,
+    fileOptions?: FileOptions
+  ) {
+    const cleanPath = this._removeEmptyFolders(path)
+    const _path = this._getFinalPath(cleanPath)
+
+    const url = new URL(this.url + `/object/upload/sign/${_path}`)
+    url.searchParams.set('token', token)
+
+    try {
+      let body
+      const options = { upsert: DEFAULT_FILE_OPTIONS.upsert, ...fileOptions }
+      const headers: Record<string, string> = {
+        ...this.headers,
+        ...{ 'x-upsert': String(options.upsert as boolean) },
+      }
+
+      if (typeof Blob !== 'undefined' && fileBody instanceof Blob) {
+        body = new FormData()
+        body.append('cacheControl', options.cacheControl as string)
+        body.append('', fileBody)
+      } else if (typeof FormData !== 'undefined' && fileBody instanceof FormData) {
+        body = fileBody
+        body.append('cacheControl', options.cacheControl as string)
+      } else {
+        body = fileBody
+        headers['cache-control'] = `max-age=${options.cacheControl}`
+        headers['content-type'] = options.contentType as string
+      }
+
+      const res = await this.fetch(url.toString(), {
+        method: 'PUT',
+        body: body as BodyInit,
+        headers,
+      })
+
+      if (res.ok) {
+        return {
+          data: { path: cleanPath },
+          error: null,
+        }
+      } else {
+        const error = await res.json()
+        return { data: null, error }
+      }
+    } catch (error) {
+      if (isStorageError(error)) {
+        return { data: null, error }
+      }
+
+      throw error
+    }
+  }
+
+  /**
+   * Creates a signed upload URL.
+   * Signed upload URLs can be used upload files to the bucket without further authentication.
+   * They are valid for one minute.
+   * @param path The file path, including the current file name. For example `folder/image.png`.
+   */
+  async createSignedUploadUrl(
+    path: string
+  ): Promise<
+    | {
+        data: { signedUrl: string; token: string; path: string }
+        error: null
+      }
+    | {
+        data: null
+        error: StorageError
+      }
+  > {
+    try {
+      let _path = this._getFinalPath(path)
+
+      const data = await post(
+        this.fetch,
+        `${this.url}/object/upload/sign/${_path}`,
+        {},
+        { headers: this.headers }
+      )
+
+      const url = new URL(this.url + data.url)
+
+      const token = url.searchParams.get('token')
+
+      if (!token) {
+        throw new StorageError('No token returned by API')
+      }
+
+      return { data: { signedUrl: url.toString(), path, token }, error: null }
+    } catch (error) {
+      if (isStorageError(error)) {
+        return { data: null, error }
+      }
+
+      throw error
+    }
   }
 
   /**
