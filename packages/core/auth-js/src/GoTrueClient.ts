@@ -216,7 +216,6 @@ export default class GoTrueClient {
       const isPKCEFlow = await this._isPKCEFlow()
       if ((this.detectSessionInUrl && this._isImplicitGrantFlow()) || isPKCEFlow) {
         const { data, error } = await this._getSessionFromUrl(isPKCEFlow)
-
         if (error) {
           // failed login attempt via url,
           // remove old session as in verifyOtp, signUp and signInWith*
@@ -482,6 +481,12 @@ export default class GoTrueClient {
 
       if ('email' in credentials) {
         const { email, options } = credentials
+        let codeChallenge: string | null = null
+        if (this.flowType === 'pkce') {
+          const codeVerifier = generatePKCEVerifier()
+          await setItemAsync(this.storage, `${this.storageKey}-code-verifier`, codeVerifier)
+          codeChallenge = await generatePKCEChallenge(codeVerifier)
+        }
         const { error } = await _request(this.fetch, 'POST', `${this.url}/otp`, {
           headers: this.headers,
           body: {
@@ -489,6 +494,8 @@ export default class GoTrueClient {
             data: options?.data ?? {},
             create_user: options?.shouldCreateUser ?? true,
             gotrue_meta_security: { captcha_token: options?.captchaToken },
+            code_challenge: codeChallenge,
+            code_challenge_method: codeChallenge ? 's256' : null,
           },
           redirectTo: options?.emailRedirectTo,
         })
@@ -524,7 +531,6 @@ export default class GoTrueClient {
   async verifyOtp(params: VerifyOtpParams): Promise<AuthResponse> {
     try {
       await this._removeSession()
-
       const { data, error } = await _request(this.fetch, 'POST', `${this.url}/verify`, {
         headers: this.headers,
         body: {
@@ -859,7 +865,7 @@ export default class GoTrueClient {
   > {
     try {
       if (!isBrowser()) throw new AuthImplicitGrantRedirectError('No browser detected.')
-      if (this.flowType == 'implicit' && !this._isImplicitGrantFlow()) {
+      if (this.flowType === 'implicit' && !this._isImplicitGrantFlow()) {
         throw new AuthImplicitGrantRedirectError('Not a valid implicit grant flow url.')
       } else if (this.flowType == 'pkce' && !isPKCEFlow) {
         throw new AuthPKCEGrantCodeExchangeError('Not a valid PKCE flow url.')
@@ -1031,9 +1037,20 @@ export default class GoTrueClient {
       }
     | { data: null; error: AuthError }
   > {
+    let codeChallenge = null
+    if (this.flowType === 'pkce') {
+      const codeVerifier = generatePKCEVerifier()
+      await setItemAsync(this.storage, `${this.storageKey}-code-verifier`, codeVerifier)
+      codeChallenge = await generatePKCEChallenge(codeVerifier)
+    }
     try {
       return await _request(this.fetch, 'POST', `${this.url}/recover`, {
-        body: { email, gotrue_meta_security: { captcha_token: options.captchaToken } },
+        body: {
+          email,
+          code_challenge: codeChallenge,
+          code_challenge_method: codeChallenge ? 's256' : null,
+          gotrue_meta_security: { captcha_token: options.captchaToken },
+        },
         headers: this.headers,
         redirectTo: options.redirectTo,
       })
