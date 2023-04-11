@@ -28,7 +28,7 @@ export const fetchWithAuth = (
   customFetch?: Fetch
 ): Fetch => {
   const fetch = resolveFetch(customFetch)
-  console.log('fetchWithAuth---supabase----')
+  // console.log('fetchWithAuth---supabase----')
   return async (input, init) => {
     const accessToken = (await getAccessToken()) ?? supabaseKey
 

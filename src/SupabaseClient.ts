@@ -102,7 +102,7 @@ export default class SupabaseClient<
       this.functionsUrl = `${_supabaseUrl}/functions/v1`
     }
     // default storage key uses the supabase project ref as a namespace
-    console.log(this.authUrl)
+    // console.log(this.authUrl)
     let hostname = getHostName(this.authUrl) ?? ''
     const defaultStorageKey = `sb-${hostname.split('.')[0]}-auth-token`
     //const defaultStorageKey = `sb-${new URL(this.authUrl).hostname.split('.')[0]}-auth-token`
