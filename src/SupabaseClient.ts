@@ -1,16 +1,19 @@
-import { FunctionsClient } from '@supabase/functions-js'
+import { FunctionsClient } from '@kanli8_supabase/functions-js'
 import { AuthChangeEvent } from '@kanli8_supabase/gotrue-js'
 import {
   PostgrestClient,
   PostgrestFilterBuilder,
   PostgrestQueryBuilder,
 } from '@kanli8_supabase/postgrest-js'
+
+import { fetch } from './lib/uniFetch'
+
 import {
   RealtimeChannel,
   RealtimeChannelOptions,
   RealtimeClient,
   RealtimeClientOptions,
-} from '@supabase/realtime-js'
+} from '@kanli8_supabase/realtime-js'
 import { StorageClient as SupabaseStorageClient } from '@kanli8_supabase/storage-js'
 import { DEFAULT_HEADERS } from './lib/constants'
 import { fetchWithAuth, getHostName } from './lib/fetch'
