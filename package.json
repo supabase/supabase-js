@@ -1,6 +1,6 @@
 {
   "name": "@kanli8_supabase/supabase-js",
-  "version": "2.12.1-2",
+  "version": "2.12.1-4",
   "description": "Isomorphic Javascript client for Supabase",
   "keywords": [
     "javascript",
@@ -40,7 +40,7 @@
     "@kanli8_supabase/functions-js": "^2.1.0-2",
     "@kanli8_supabase/gotrue-js": "^2.16.0-2",
     "@kanli8_supabase/postgrest-js": "^1.4.1-2",
-    "@kanli8_supabase/realtime-js": "^2.4.0-2",
+    "@kanli8_supabase/realtime-js": "^2.4.0-4",
     "@kanli8_supabase/storage-js": "^2.3.1-2"
   },
   "devDependencies": {

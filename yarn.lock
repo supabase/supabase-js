@@ -589,10 +589,10 @@
   resolved "https://registry.yarnpkg.com/@kanli8_supabase/postgrest-js/-/postgrest-js-1.4.1-2.tgz#83a0d9ebd78e17512724ee01838e16be0cd43dcf"
   integrity sha512-2P0n3dsVFR4Zuf3gnkh0C7ynX2MFU3fmR/O5YgzYnnZWPTBVOxdvvq3NDRm9pijAJcq7yIT5gkITmx0dRPRrLg==
 
-"@kanli8_supabase/realtime-js@^2.4.0-2":
-  version "2.4.0-2"
-  resolved "https://registry.yarnpkg.com/@kanli8_supabase/realtime-js/-/realtime-js-2.4.0-2.tgz#592e8b6af2032bc3b5eb9787ea62039ced7ef335"
-  integrity sha512-1cubFpP/1ZYXheOfoCIEPhInDYTY7XwUmwMwIrrUFbpWLeAACp6pOAa3abjTsfXtr7npki1gjktSI0RITeYoVQ==
+"@kanli8_supabase/realtime-js@^2.4.0-4":
+  version "2.4.0-4"
+  resolved "https://registry.yarnpkg.com/@kanli8_supabase/realtime-js/-/realtime-js-2.4.0-4.tgz#bf19762d016b04203b4b2610ac514c1ae03d355e"
+  integrity sha512-4pEylG2/0qx4w6Jtjo8b0aNZPyYgpf3osHkGTx+0us4mpEtE32gCYJBktwsBrjr9Z1ddZrK332oMIrsejS0Kmg==
   dependencies:
     "@types/phoenix" "^1.5.4"
     "@types/websocket" "^1.0.3"
