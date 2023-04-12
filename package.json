@@ -37,7 +37,7 @@
     "docs:json": "typedoc --entryPoints src/index.ts --includes src/**/*.ts --json docs/v2/spec.json --excludeExternals"
   },
   "dependencies": {
-    "@supabase/functions-js": "^2.1.0",
+    "@supabase/functions-js": "^2.1.1",
     "@supabase/gotrue-js": "^2.22.0",
     "@supabase/postgrest-js": "^1.1.1",
     "@supabase/realtime-js": "^2.7.2",
