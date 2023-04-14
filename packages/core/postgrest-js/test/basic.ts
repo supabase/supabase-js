@@ -1078,6 +1078,24 @@ describe("insert, update, delete with count: 'exact'", () => {
     `)
   })
 
+  test('bulk insert with column defaults', async () => {
+    let res = await postgrest
+      .from('channels')
+      .insert([{ id: 100 }, { slug: 'test-slug' }], { defaultToNull: false })
+      .select()
+      .rollback()
+    expect(res).toMatchInlineSnapshot()
+  })
+
+  test('bulk upsert with column defaults', async () => {
+    let res = await postgrest
+      .from('channels')
+      .upsert([{ id: 1 }, { slug: 'test-slug' }], { defaultToNull: false })
+      .select()
+      .rollback()
+    expect(res).toMatchInlineSnapshot()
+  })
+
   test("update with count: 'exact'", async () => {
     let res = await postgrest
       .from('messages')
