@@ -194,7 +194,9 @@ export default class PostgrestQueryBuilder<
    * numbers.
    *
    * @param options.defaultToNull - Make missing fields default to `null`.
-   * Otherwise, use the default value for the column.
+   * Otherwise, use the default value for the column. This only applies when
+   * inserting new rows, not when merging with existing rows under
+   * `ignoreDuplicates: false`.
    */
   upsert<Row extends Relation extends { Insert: unknown } ? Relation['Insert'] : never>(
     values: Row | Row[],
@@ -225,6 +227,14 @@ export default class PostgrestQueryBuilder<
       prefersHeaders.push('missing=default')
     }
     this.headers['Prefer'] = prefersHeaders.join(',')
+
+    if (Array.isArray(values)) {
+      const columns = values.reduce((acc, x) => acc.concat(Object.keys(x)), [] as string[])
+      if (columns.length > 0) {
+        const uniqueColumns = [...new Set(columns)].map((column) => `"${column}"`)
+        this.url.searchParams.set('columns', uniqueColumns.join(','))
+      }
+    }
 
     return new PostgrestFilterBuilder({
       method,
