@@ -482,10 +482,12 @@ export default class GoTrueClient {
       if ('email' in credentials) {
         const { email, options } = credentials
         let codeChallenge: string | null = null
+        let codeChallengeMethod: string | null = null
         if (this.flowType === 'pkce') {
           const codeVerifier = generatePKCEVerifier()
           await setItemAsync(this.storage, `${this.storageKey}-code-verifier`, codeVerifier)
           codeChallenge = await generatePKCEChallenge(codeVerifier)
+          codeChallengeMethod = codeVerifier === codeChallenge ? 'plain' : 's256'
         }
         const { error } = await _request(this.fetch, 'POST', `${this.url}/otp`, {
           headers: this.headers,
@@ -495,7 +497,7 @@ export default class GoTrueClient {
             create_user: options?.shouldCreateUser ?? true,
             gotrue_meta_security: { captcha_token: options?.captchaToken },
             code_challenge: codeChallenge,
-            code_challenge_method: codeChallenge ? 's256' : null,
+            code_challenge_method: codeChallengeMethod,
           },
           redirectTo: options?.emailRedirectTo,
         })
@@ -1038,18 +1040,20 @@ export default class GoTrueClient {
       }
     | { data: null; error: AuthError }
   > {
-    let codeChallenge = null
+    let codeChallenge: string | null = null
+    let codeChallengeMethod: string | null = null
     if (this.flowType === 'pkce') {
       const codeVerifier = generatePKCEVerifier()
       await setItemAsync(this.storage, `${this.storageKey}-code-verifier`, codeVerifier)
       codeChallenge = await generatePKCEChallenge(codeVerifier)
+      codeChallengeMethod = codeVerifier === codeChallenge ? 'plain' : 's256'
     }
     try {
       return await _request(this.fetch, 'POST', `${this.url}/recover`, {
         body: {
           email,
           code_challenge: codeChallenge,
-          code_challenge_method: codeChallenge ? 's256' : null,
+          code_challenge_method: codeChallengeMethod,
           gotrue_meta_security: { captcha_token: options.captchaToken },
         },
         headers: this.headers,
@@ -1451,9 +1455,10 @@ export default class GoTrueClient {
       const codeVerifier = generatePKCEVerifier()
       await setItemAsync(this.storage, `${this.storageKey}-code-verifier`, codeVerifier)
       const codeChallenge = await generatePKCEChallenge(codeVerifier)
+      const codeChallengeMethod = codeVerifier === codeChallenge ? 'plain' : 's256'
       const flowParams = new URLSearchParams({
         code_challenge: `${encodeURIComponent(codeChallenge)}`,
-        code_challenge_method: `${encodeURIComponent('s256')}`,
+        code_challenge_method: `${encodeURIComponent(codeChallengeMethod)}`,
       })
       urlParams.push(flowParams.toString())
     }

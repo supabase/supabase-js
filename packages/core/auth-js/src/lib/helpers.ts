@@ -245,9 +245,13 @@ export function generatePKCEVerifier() {
   const verifierLength = 56
   const array = new Uint32Array(verifierLength)
   if (typeof crypto === 'undefined') {
-    throw new Error(
-      'PKCE is not supported on devices without WebCrypto API support, please add polyfills'
-    )
+    const charSet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~'
+    const charSetLen = charSet.length
+    let verifier = ''
+    for (let i = 0; i < verifierLength; i++) {
+      verifier += charSet.charAt(Math.floor(Math.random() * charSetLen))
+    }
+    return verifier
   }
   crypto.getRandomValues(array)
   return Array.from(array, dec2hex).join('')
@@ -256,11 +260,6 @@ export function generatePKCEVerifier() {
 async function sha256(randomString: string) {
   const encoder = new TextEncoder()
   const encodedData = encoder.encode(randomString)
-  if (typeof crypto === 'undefined') {
-    throw new Error(
-      'PKCE is not supported on devices without WebCrypto API support, please add polyfills'
-    )
-  }
   const hash = await crypto.subtle.digest('SHA-256', encodedData)
   const bytes = new Uint8Array(hash)
 
@@ -274,6 +273,12 @@ function base64urlencode(str: string) {
 }
 
 export async function generatePKCEChallenge(verifier: string) {
+  if (typeof crypto === 'undefined') {
+    console.warn(
+      'WebCrypto API is not supported. Code challenge method will default to use plain instead of sha256.'
+    )
+    return verifier
+  }
   const hashed = await sha256(verifier)
   return base64urlencode(hashed)
 }
