@@ -1084,7 +1084,26 @@ describe("insert, update, delete with count: 'exact'", () => {
       .insert([{ id: 100 }, { slug: 'test-slug' }], { defaultToNull: false })
       .select()
       .rollback()
-    expect(res).toMatchInlineSnapshot()
+    expect(res).toMatchInlineSnapshot(`
+      Object {
+        "count": null,
+        "data": Array [
+          Object {
+            "data": null,
+            "id": 100,
+            "slug": null,
+          },
+          Object {
+            "data": null,
+            "id": 4,
+            "slug": "test-slug",
+          },
+        ],
+        "error": null,
+        "status": 201,
+        "statusText": "Created",
+      }
+    `)
   })
 
   test('bulk upsert with column defaults', async () => {
@@ -1093,7 +1112,26 @@ describe("insert, update, delete with count: 'exact'", () => {
       .upsert([{ id: 1 }, { slug: 'test-slug' }], { defaultToNull: false })
       .select()
       .rollback()
-    expect(res).toMatchInlineSnapshot()
+    expect(res).toMatchInlineSnapshot(`
+      Object {
+        "count": null,
+        "data": Array [
+          Object {
+            "data": null,
+            "id": 1,
+            "slug": null,
+          },
+          Object {
+            "data": null,
+            "id": 6,
+            "slug": "test-slug",
+          },
+        ],
+        "error": null,
+        "status": 201,
+        "statusText": "Created",
+      }
+    `)
   })
 
   test("update with count: 'exact'", async () => {
