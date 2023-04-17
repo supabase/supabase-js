@@ -182,6 +182,49 @@ test('like', async () => {
   `)
 })
 
+test('likeAllOf', async () => {
+  const res = await postgrest
+    .from('users')
+    .select('username')
+    .likeAllOf('username', ['%supa%', '%bot%'])
+  expect(res).toMatchInlineSnapshot(`
+    Object {
+      "count": null,
+      "data": Array [
+        Object {
+          "username": "supabot",
+        },
+      ],
+      "error": null,
+      "status": 200,
+      "statusText": "OK",
+    }
+  `)
+})
+
+test('likeAnyOf', async () => {
+  const res = await postgrest
+    .from('users')
+    .select('username')
+    .likeAnyOf('username', ['%supa%', '%kiwi%'])
+  expect(res).toMatchInlineSnapshot(`
+    Object {
+      "count": null,
+      "data": Array [
+        Object {
+          "username": "supabot",
+        },
+        Object {
+          "username": "kiwicopple",
+        },
+      ],
+      "error": null,
+      "status": 200,
+      "statusText": "OK",
+    }
+  `)
+})
+
 test('ilike', async () => {
   const res = await postgrest.from('users').select('username').ilike('username', '%SUPA%')
   expect(res).toMatchInlineSnapshot(`
@@ -190,6 +233,49 @@ test('ilike', async () => {
       "data": Array [
         Object {
           "username": "supabot",
+        },
+      ],
+      "error": null,
+      "status": 200,
+      "statusText": "OK",
+    }
+  `)
+})
+
+test('ilikeAllOf', async () => {
+  const res = await postgrest
+    .from('users')
+    .select('username')
+    .ilikeAllOf('username', ['%SUPA%', '%bot%'])
+  expect(res).toMatchInlineSnapshot(`
+    Object {
+      "count": null,
+      "data": Array [
+        Object {
+          "username": "supabot",
+        },
+      ],
+      "error": null,
+      "status": 200,
+      "statusText": "OK",
+    }
+  `)
+})
+
+test('ilikeAnyOf', async () => {
+  const res = await postgrest
+    .from('users')
+    .select('username')
+    .ilikeAnyOf('username', ['%supa%', '%KIWI%'])
+  expect(res).toMatchInlineSnapshot(`
+    Object {
+      "count": null,
+      "data": Array [
+        Object {
+          "username": "supabot",
+        },
+        Object {
+          "username": "kiwicopple",
         },
       ],
       "error": null,
