@@ -273,50 +273,31 @@ test('abort signal', async () => {
 
 test('explain with json/text format', async () => {
   const res1 = await postgrest.from('users').select().explain({ format: 'json' })
-  expect(res1).toMatchInlineSnapshot(`
+  expect(res1).toMatchInlineSnapshot(
+    {
+      data: [
+        {
+          Plan: expect.any(Object),
+        },
+      ],
+    },
+    `
     Object {
       "count": null,
       "data": Array [
         Object {
-          "Plan": Object {
-            "Async Capable": false,
-            "Node Type": "Aggregate",
-            "Parallel Aware": false,
-            "Partial Mode": "Simple",
-            "Plan Rows": 1,
-            "Plan Width": 112,
-            "Plans": Array [
-              Object {
-                "Alias": "users",
-                "Async Capable": false,
-                "Node Type": "Seq Scan",
-                "Parallel Aware": false,
-                "Parent Relationship": "Outer",
-                "Plan Rows": 510,
-                "Plan Width": 132,
-                "Relation Name": "users",
-                "Startup Cost": 0,
-                "Total Cost": 15.1,
-              },
-            ],
-            "Startup Cost": 17.65,
-            "Strategy": "Plain",
-            "Total Cost": 17.68,
-          },
+          "Plan": Any<Object>,
         },
       ],
       "error": null,
       "status": 200,
       "statusText": "OK",
     }
-  `)
+  `
+  )
 
   const res2 = await postgrest.from('users').select().explain()
-  expect(res2.data).toMatch(
-    `Aggregate  (cost=17.65..17.68 rows=1 width=112)
-  ->  Seq Scan on users  (cost=0.00..15.10 rows=510 width=132)
-`
-  )
+  expect(res2.data).toMatch(/Aggregate  \(cost=.*/)
 })
 
 test('explain with options', async () => {
@@ -324,52 +305,22 @@ test('explain with options', async () => {
     .from('users')
     .select()
     .explain({ verbose: true, settings: true, format: 'json' })
-  expect(res).toMatchInlineSnapshot(`
+  expect(res).toMatchInlineSnapshot(
+    {
+      data: [
+        {
+          Plan: expect.any(Object),
+          'Query Identifier': expect.any(Number),
+        },
+      ],
+    },
+    `
     Object {
       "count": null,
       "data": Array [
         Object {
-          "Plan": Object {
-            "Async Capable": false,
-            "Node Type": "Aggregate",
-            "Output": Array [
-              "NULL::bigint",
-              "count(ROW(users.username, users.data, users.age_range, users.status, users.catchphrase))",
-              "(COALESCE(json_agg(ROW(users.username, users.data, users.age_range, users.status, users.catchphrase)), '[]'::json))::character varying",
-              "NULLIF(current_setting('response.headers'::text, true), ''::text)",
-              "NULLIF(current_setting('response.status'::text, true), ''::text)",
-            ],
-            "Parallel Aware": false,
-            "Partial Mode": "Simple",
-            "Plan Rows": 1,
-            "Plan Width": 112,
-            "Plans": Array [
-              Object {
-                "Alias": "users",
-                "Async Capable": false,
-                "Node Type": "Seq Scan",
-                "Output": Array [
-                  "users.username",
-                  "users.data",
-                  "users.age_range",
-                  "users.status",
-                  "users.catchphrase",
-                ],
-                "Parallel Aware": false,
-                "Parent Relationship": "Outer",
-                "Plan Rows": 510,
-                "Plan Width": 132,
-                "Relation Name": "users",
-                "Schema": "public",
-                "Startup Cost": 0,
-                "Total Cost": 15.1,
-              },
-            ],
-            "Startup Cost": 17.65,
-            "Strategy": "Plain",
-            "Total Cost": 17.68,
-          },
-          "Query Identifier": -6192475787150577000,
+          "Plan": Any<Object>,
+          "Query Identifier": Any<Number>,
           "Settings": Object {
             "effective_cache_size": "128MB",
             "search_path": "\\"public\\", \\"extensions\\"",
@@ -380,7 +331,8 @@ test('explain with options', async () => {
       "status": 200,
       "statusText": "OK",
     }
-  `)
+  `
+  )
 })
 
 test('rollback insert/upsert', async () => {

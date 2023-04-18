@@ -113,24 +113,31 @@ export default class PostgrestQueryBuilder<
    *
    * `"estimated"`: Uses exact count for low numbers and planned count for high
    * numbers.
+   *
+   * @param options.defaultToNull - Make missing fields default to `null`.
+   * Otherwise, use the default value for the column.
    */
   insert<Row extends Relation extends { Insert: unknown } ? Relation['Insert'] : never>(
     values: Row | Row[],
     {
       count,
+      defaultToNull = true,
     }: {
       count?: 'exact' | 'planned' | 'estimated'
+      defaultToNull?: boolean
     } = {}
   ): PostgrestFilterBuilder<Schema, Relation['Row'], null> {
     const method = 'POST'
 
     const prefersHeaders = []
-    const body = values
+    if (this.headers['Prefer']) {
+      prefersHeaders.push(this.headers['Prefer'])
+    }
     if (count) {
       prefersHeaders.push(`count=${count}`)
     }
-    if (this.headers['Prefer']) {
-      prefersHeaders.unshift(this.headers['Prefer'])
+    if (!defaultToNull) {
+      prefersHeaders.push('missing=default')
     }
     this.headers['Prefer'] = prefersHeaders.join(',')
 
@@ -147,7 +154,7 @@ export default class PostgrestQueryBuilder<
       url: this.url,
       headers: this.headers,
       schema: this.schema,
-      body,
+      body: values,
       fetch: this.fetch,
       allowEmpty: false,
     } as unknown as PostgrestBuilder<null>)
@@ -185,6 +192,11 @@ export default class PostgrestQueryBuilder<
    *
    * `"estimated"`: Uses exact count for low numbers and planned count for high
    * numbers.
+   *
+   * @param options.defaultToNull - Make missing fields default to `null`.
+   * Otherwise, use the default value for the column. This only applies when
+   * inserting new rows, not when merging with existing rows under
+   * `ignoreDuplicates: false`.
    */
   upsert<Row extends Relation extends { Insert: unknown } ? Relation['Insert'] : never>(
     values: Row | Row[],
@@ -192,10 +204,12 @@ export default class PostgrestQueryBuilder<
       onConflict,
       ignoreDuplicates = false,
       count,
+      defaultToNull = true,
     }: {
       onConflict?: string
       ignoreDuplicates?: boolean
       count?: 'exact' | 'planned' | 'estimated'
+      defaultToNull?: boolean
     } = {}
   ): PostgrestFilterBuilder<Schema, Relation['Row'], null> {
     const method = 'POST'
@@ -203,21 +217,31 @@ export default class PostgrestQueryBuilder<
     const prefersHeaders = [`resolution=${ignoreDuplicates ? 'ignore' : 'merge'}-duplicates`]
 
     if (onConflict !== undefined) this.url.searchParams.set('on_conflict', onConflict)
-    const body = values
+    if (this.headers['Prefer']) {
+      prefersHeaders.push(this.headers['Prefer'])
+    }
     if (count) {
       prefersHeaders.push(`count=${count}`)
     }
-    if (this.headers['Prefer']) {
-      prefersHeaders.unshift(this.headers['Prefer'])
+    if (!defaultToNull) {
+      prefersHeaders.push('missing=default')
     }
     this.headers['Prefer'] = prefersHeaders.join(',')
+
+    if (Array.isArray(values)) {
+      const columns = values.reduce((acc, x) => acc.concat(Object.keys(x)), [] as string[])
+      if (columns.length > 0) {
+        const uniqueColumns = [...new Set(columns)].map((column) => `"${column}"`)
+        this.url.searchParams.set('columns', uniqueColumns.join(','))
+      }
+    }
 
     return new PostgrestFilterBuilder({
       method,
       url: this.url,
       headers: this.headers,
       schema: this.schema,
-      body,
+      body: values,
       fetch: this.fetch,
       allowEmpty: false,
     } as unknown as PostgrestBuilder<null>)
@@ -254,12 +278,11 @@ export default class PostgrestQueryBuilder<
   ): PostgrestFilterBuilder<Schema, Relation['Row'], null> {
     const method = 'PATCH'
     const prefersHeaders = []
-    const body = values
+    if (this.headers['Prefer']) {
+      prefersHeaders.push(this.headers['Prefer'])
+    }
     if (count) {
       prefersHeaders.push(`count=${count}`)
-    }
-    if (this.headers['Prefer']) {
-      prefersHeaders.unshift(this.headers['Prefer'])
     }
     this.headers['Prefer'] = prefersHeaders.join(',')
 
@@ -268,7 +291,7 @@ export default class PostgrestQueryBuilder<
       url: this.url,
       headers: this.headers,
       schema: this.schema,
-      body,
+      body: values,
       fetch: this.fetch,
       allowEmpty: false,
     } as unknown as PostgrestBuilder<null>)

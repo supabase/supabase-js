@@ -52,7 +52,7 @@ const postgrest = new PostgrestClient<Database>(REST_URL)
   if (error) {
     throw new Error(error.message)
   }
-  expectType<{ bar: Json, baz: string }>(data)
+  expectType<{ bar: Json; baz: string }>(data)
 }
 
 // rpc return type

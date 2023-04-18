@@ -123,6 +123,32 @@ export default class PostgrestFilterBuilder<
     return this
   }
 
+  likeAllOf<ColumnName extends string & keyof Row>(column: ColumnName, patterns: string[]): this
+  likeAllOf(column: string, patterns: string[]): this
+  /**
+   * Match only rows where `column` matches all of `patterns` case-sensitively.
+   *
+   * @param column - The column to filter on
+   * @param patterns - The patterns to match with
+   */
+  likeAllOf(column: string, patterns: string[]): this {
+    this.url.searchParams.append(column, `like(all).{${patterns.join(',')}}`)
+    return this
+  }
+
+  likeAnyOf<ColumnName extends string & keyof Row>(column: ColumnName, patterns: string[]): this
+  likeAnyOf(column: string, patterns: string[]): this
+  /**
+   * Match only rows where `column` matches any of `patterns` case-sensitively.
+   *
+   * @param column - The column to filter on
+   * @param patterns - The patterns to match with
+   */
+  likeAnyOf(column: string, patterns: string[]): this {
+    this.url.searchParams.append(column, `like(any).{${patterns.join(',')}}`)
+    return this
+  }
+
   ilike<ColumnName extends string & keyof Row>(column: ColumnName, pattern: string): this
   ilike(column: string, pattern: string): this
   /**
@@ -133,6 +159,32 @@ export default class PostgrestFilterBuilder<
    */
   ilike(column: string, pattern: string): this {
     this.url.searchParams.append(column, `ilike.${pattern}`)
+    return this
+  }
+
+  ilikeAllOf<ColumnName extends string & keyof Row>(column: ColumnName, patterns: string[]): this
+  ilikeAllOf(column: string, patterns: string[]): this
+  /**
+   * Match only rows where `column` matches all of `patterns` case-insensitively.
+   *
+   * @param column - The column to filter on
+   * @param patterns - The patterns to match with
+   */
+  ilikeAllOf(column: string, patterns: string[]): this {
+    this.url.searchParams.append(column, `ilike(all).{${patterns.join(',')}}`)
+    return this
+  }
+
+  ilikeAnyOf<ColumnName extends string & keyof Row>(column: ColumnName, patterns: string[]): this
+  ilikeAnyOf(column: string, patterns: string[]): this
+  /**
+   * Match only rows where `column` matches any of `patterns` case-insensitively.
+   *
+   * @param column - The column to filter on
+   * @param patterns - The patterns to match with
+   */
+  ilikeAnyOf(column: string, patterns: string[]): this {
+    this.url.searchParams.append(column, `ilike(any).{${patterns.join(',')}}`)
     return this
   }
 
