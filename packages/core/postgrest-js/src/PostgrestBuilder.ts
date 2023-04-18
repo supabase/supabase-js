@@ -150,10 +150,10 @@ export default abstract class PostgrestBuilder<Result>
     if (!this.shouldThrowOnError) {
       res = res.catch((fetchError) => ({
         error: {
-          message: `FetchError: ${fetchError.message}`,
-          details: '',
+          message: `${fetchError?.name ?? 'FetchError'}: ${fetchError?.message}`,
+          details: `${fetchError?.stack ?? ''}`,
           hint: '',
-          code: fetchError.code || '',
+          code: `${fetchError?.code ?? ''}`,
         },
         data: null,
         count: null,
