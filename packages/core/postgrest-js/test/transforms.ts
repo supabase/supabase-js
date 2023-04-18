@@ -247,20 +247,23 @@ test('abort signal', async () => {
   const ac = new AbortController() as globalThis.AbortController
   ac.abort()
   const res = await postgrest.from('users').select().abortSignal(ac.signal)
-  expect(res).toMatchInlineSnapshot(`
+  expect(res).toMatchInlineSnapshot(
+    { error: { details: expect.any(String) } },
+    `
     Object {
       "count": null,
       "data": null,
       "error": Object {
         "code": "",
-        "details": "",
+        "details": Any<String>,
         "hint": "",
-        "message": "FetchError: The user aborted a request.",
+        "message": "AbortError: The user aborted a request.",
       },
       "status": 0,
       "statusText": "",
     }
-  `)
+  `
+  )
 })
 
 // test('geojson', async () => {
