@@ -38,7 +38,7 @@
   },
   "dependencies": {
     "@supabase/functions-js": "^2.1.0",
-    "@supabase/gotrue-js": "^2.22.0",
+    "@supabase/gotrue-js": "^2.23.0",
     "@supabase/postgrest-js": "^1.1.1",
     "@supabase/realtime-js": "^2.7.2",
     "@supabase/storage-js": "^2.5.1",
