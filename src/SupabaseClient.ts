@@ -1,5 +1,5 @@
 import { FunctionsClient } from '@kanli8_supabase/functions-js'
-import { AuthChangeEvent } from '@kanli8_supabase/gotrue-js'
+import { AuthChangeEvent, TokenRefreshType } from '@kanli8_supabase/gotrue-js'
 import {
   PostgrestClient,
   PostgrestFilterBuilder,
@@ -120,11 +120,11 @@ export default class SupabaseClient<
 
     this.storageKey = settings.auth?.storageKey ?? ''
     this.headers = settings.global?.headers ?? {}
-
+    let defaultTokenRefreshType: TokenRefreshType = 'WeChat'
     this.auth = this._initSupabaseAuthClient(
       settings.auth ?? {
         autoRefreshToken: true,
-        tokenRefreshType: 'WeChat',
+        tokenRefreshType: defaultTokenRefreshType,
       },
       this.headers,
       fetch

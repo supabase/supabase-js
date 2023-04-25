@@ -1,4 +1,4 @@
-import { GoTrueClient } from '@kanli8_supabase/gotrue-js'
+import { GoTrueClient, TokenRefreshType } from '@kanli8_supabase/gotrue-js'
 import { RealtimeClientOptions } from '@kanli8_supabase/realtime-js'
 import { fetch } from './uniFetch'
 type GoTrueClientOptions = ConstructorParameters<typeof GoTrueClient>[0]
@@ -21,7 +21,11 @@ export type SupabaseClientOptions<SchemaName> = {
      */
     autoRefreshToken?: boolean
 
-    tokenRefreshType: 'WeChat'
+    /**
+     * Token refresh mode
+     */
+    tokenRefreshType: TokenRefreshType
+
     /**
      * Optional key name used for storing tokens in local storage.
      */
