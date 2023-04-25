@@ -42,6 +42,10 @@ export type SupabaseClientOptions<SchemaName> = {
      * A storage provider. Used to store the logged-in session.
      */
     storage?: SupabaseAuthClientOptions['storage']
+    /**
+     * OAuth flow to use - defaults to implicit flow. PKCE is recommended for mobile and server-side applications.
+     */
+    flowType?: SupabaseAuthClientOptions['flowType']
   }
   /**
    * Options passed to the realtime-js instance

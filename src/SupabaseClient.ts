@@ -34,6 +34,7 @@ const DEFAULT_AUTH_OPTIONS: SupabaseAuthClientOptions = {
 
   persistSession: true,
   detectSessionInUrl: true,
+  flowType: 'implicit',
 }
 
 const DEFAULT_REALTIME_OPTIONS: RealtimeClientOptions = {}
@@ -56,12 +57,12 @@ export default class SupabaseClient<
    * Supabase Auth allows you to create and manage user sessions for access to data that is secured by access policies.
    */
   auth: SupabaseAuthClient
+  realtime: RealtimeClient
 
   protected realtimeUrl: string
   protected authUrl: string
   protected storageUrl: string
   protected functionsUrl: string
-  protected realtime: RealtimeClient
   protected rest: PostgrestClient<Database, SchemaName>
   protected storageKey: string
   protected fetch?: Fetch
@@ -267,6 +268,7 @@ export default class SupabaseClient<
       detectSessionInUrl,
       storage,
       storageKey,
+      flowType,
     }: SupabaseAuthClientOptions,
     headers?: Record<string, string>,
     fetch?: Fetch
@@ -306,6 +308,7 @@ export default class SupabaseClient<
       persistSession,
       detectSessionInUrl,
       storage,
+      flowType,
       fetch,
     })
   }
@@ -336,7 +339,7 @@ export default class SupabaseClient<
       // Token has changed
       this.realtime.setAuth(token ?? null)
       this.changedAccessToken = token
-    } else if (event === 'SIGNED_OUT' || event === 'USER_DELETED') {
+    } else if (event === 'SIGNED_OUT') {
       // Token is removed
       this.realtime.setAuth(this.supabaseKey)
       if (source == 'STORAGE') this.auth.signOut()
