@@ -83,7 +83,7 @@ const DEFAULT_OPTIONS: Omit<Required<GoTrueClientOptions>, 'fetch' | 'storage'> 
 }
 
 /** Current session will be checked for refresh at this interval. */
-const AUTO_REFRESH_TICK_DURATION = 10 * 1000
+const AUTO_REFRESH_TICK_DURATION = 30 * 1000
 
 /**
  * A token refresh will be attempted this many ticks before the current session expires. */
