@@ -21,11 +21,6 @@ function App() {
   let [otp, setOtp] = useState('')
   let [rememberMe, setRememberMe] = useState(false)
 
-  // Keep the session up to date
-  auth.onAuthStateChange((_event, session) => {
-    setSession(session)
-  })
-
   useEffect(() => {
     async function session() {
       const { data, error } = await auth.getSession()
@@ -36,6 +31,23 @@ function App() {
       }
     }
     session()
+  }, [])
+
+  useEffect(() => {
+    let { data: subscription } = auth.onAuthStateChange((event, session) => {
+      console.log(event, session)
+      if (event === 'SIGNED_OUT' || event === 'SIGNED_IN') {
+        setSession(session)
+        window.location.reload()
+      }
+    })
+
+    return () => {
+      if (subscription) {
+        console.log('Subscription: ', subscription)
+        subscription.unsubscribe()
+      }
+    }
   }, [])
 
   async function handleOAuthLogin(provider) {
@@ -60,7 +72,10 @@ function App() {
     } else {
       localStorage.removeItem('email')
     }
-    let { error, data } = await auth.signInWithPassword({ email, password })
+
+    let { error, data } = password
+      ? await auth.signInWithPassword({ email, password })
+      : await auth.signInWithOtp({ email })
     if (!error && !data) alert('Check your email for the login link!')
     if (error) console.log('Error: ', error.message)
   }
