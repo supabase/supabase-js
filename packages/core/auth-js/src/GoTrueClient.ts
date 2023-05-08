@@ -67,6 +67,7 @@ import type {
   AuthenticatorAssuranceLevels,
   Factor,
   MFAChallengeAndVerifyParams,
+  ResendParams,
   AuthFlowType,
 } from './lib/types'
 
@@ -613,6 +614,47 @@ export default class GoTrueClient {
     } catch (error) {
       if (isAuthError(error)) {
         return { data: null, error }
+      }
+      throw error
+    }
+  }
+
+  /**
+   * Resends an existing signup confirmation email, email change email, SMS OTP or phone change OTP.
+   */
+  async resend(credentials: ResendParams): Promise<AuthResponse> {
+    try {
+      await this._removeSession()
+      const endpoint = `${this.url}/resend`
+      if ('email' in credentials) {
+        const { email, type, options } = credentials
+        const { error } = await _request(this.fetch, 'POST', endpoint, {
+          headers: this.headers,
+          body: {
+            email,
+            type,
+            gotrue_meta_security: { captcha_token: options?.captchaToken },
+          },
+        })
+        return { data: { user: null, session: null }, error }
+      } else if ('phone' in credentials) {
+        const { phone, type, options } = credentials
+        const { error } = await _request(this.fetch, 'POST', endpoint, {
+          headers: this.headers,
+          body: {
+            phone,
+            type,
+            gotrue_meta_security: { captcha_token: options?.captchaToken },
+          },
+        })
+        return { data: { user: null, session: null }, error }
+      }
+      throw new AuthInvalidCredentialsError(
+        'You must provide either an email or phone number and a type'
+      )
+    } catch (error) {
+      if (isAuthError(error)) {
+        return { data: { user: null, session: null }, error }
       }
       throw error
     }
