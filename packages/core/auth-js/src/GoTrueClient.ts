@@ -406,7 +406,7 @@ export default class GoTrueClient {
   }
 
   /**
-   * Log in an existing user via a third-party provider.
+   * Log in an existing user by exchanging an Auth Code issued during the PKCE flow.
    */
   async exchangeCodeForSession(authCode: string): Promise<AuthResponse> {
     const codeVerifier = await getItemAsync(this.storage, `${this.storageKey}-code-verifier`)
