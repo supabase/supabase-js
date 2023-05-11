@@ -13,7 +13,7 @@ export default abstract class PostgrestBuilder<Result>
   protected shouldThrowOnError = false
   protected signal?: AbortSignal
   protected fetch: Fetch
-  protected allowEmpty: boolean
+  protected isMaybeSingle: boolean
 
   constructor(builder: PostgrestBuilder<Result>) {
     this.method = builder.method
@@ -23,7 +23,7 @@ export default abstract class PostgrestBuilder<Result>
     this.body = builder.body
     this.shouldThrowOnError = builder.shouldThrowOnError
     this.signal = builder.signal
-    this.allowEmpty = builder.allowEmpty
+    this.isMaybeSingle = builder.isMaybeSingle
 
     if (builder.fetch) {
       this.fetch = builder.fetch
@@ -101,6 +101,28 @@ export default abstract class PostgrestBuilder<Result>
         if (countHeader && contentRange && contentRange.length > 1) {
           count = parseInt(contentRange[1])
         }
+
+        // Temporary partial fix for https://github.com/supabase/postgrest-js/issues/361
+        // Issue persists e.g. for `.insert([...]).select().maybeSingle()`
+        if (this.isMaybeSingle && this.method === 'GET' && Array.isArray(data)) {
+          if (data.length > 1) {
+            error = {
+              // https://github.com/PostgREST/postgrest/blob/a867d79c42419af16c18c3fb019eba8df992626f/src/PostgREST/Error.hs#L553
+              code: 'PGRST116',
+              details: `Results contain ${data.length} rows, application/vnd.pgrst.object+json requires 1 row`,
+              hint: null,
+              message: 'JSON object requested, multiple (or no) rows returned',
+            }
+            data = null
+            count = null
+            status = 406
+            statusText = 'Not Acceptable'
+          } else if (data.length === 1) {
+            data = data[0]
+          } else {
+            data = null
+          }
+        }
       } else {
         const body = await res.text()
 
@@ -126,7 +148,7 @@ export default abstract class PostgrestBuilder<Result>
           }
         }
 
-        if (error && this.allowEmpty && error?.details?.includes('Results contain 0 rows')) {
+        if (error && this.isMaybeSingle && error?.details?.includes('Results contain 0 rows')) {
           error = null
           status = 200
           statusText = 'OK'

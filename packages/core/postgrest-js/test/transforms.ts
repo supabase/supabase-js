@@ -188,6 +188,28 @@ test('maybeSingle', async () => {
   `)
 })
 
+test('maybeSingle', async () => {
+  const res = await postgrest
+    .from('users')
+    .insert([{ username: 'a' }, { username: 'b' }])
+    .select()
+    .maybeSingle()
+  expect(res).toMatchInlineSnapshot(`
+    Object {
+      "count": null,
+      "data": null,
+      "error": Object {
+        "code": "PGRST116",
+        "details": "Results contain 2 rows, application/vnd.pgrst.object+json requires 1 row",
+        "hint": null,
+        "message": "JSON object requested, multiple (or no) rows returned",
+      },
+      "status": 406,
+      "statusText": "Not Acceptable",
+    }
+  `)
+})
+
 test('select on insert', async () => {
   const res = await postgrest.from('users').insert({ username: 'foo' }).select('status')
   expect(res).toMatchInlineSnapshot(`

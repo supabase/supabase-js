@@ -149,8 +149,14 @@ export default class PostgrestTransformBuilder<
   maybeSingle<
     ResultOne = Result extends (infer ResultOne)[] ? ResultOne : never
   >(): PostgrestBuilder<ResultOne | null> {
-    this.headers['Accept'] = 'application/vnd.pgrst.object+json'
-    this.allowEmpty = true
+    // Temporary partial fix for https://github.com/supabase/postgrest-js/issues/361
+    // Issue persists e.g. for `.insert([...]).select().maybeSingle()`
+    if (this.method === 'GET') {
+      this.headers['Accept'] = 'application/json'
+    } else {
+      this.headers['Accept'] = 'application/vnd.pgrst.object+json'
+    }
+    this.isMaybeSingle = true
     return this as PostgrestBuilder<ResultOne | null>
   }
 
