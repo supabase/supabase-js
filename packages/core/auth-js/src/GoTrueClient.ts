@@ -930,6 +930,9 @@ export default class GoTrueClient {
         const { data, error } = await this.exchangeCodeForSession(authCode)
         if (error) throw error
         if (!data.session) throw new AuthPKCEGrantCodeExchangeError('No session detected.')
+        let url = new URL(window.location.href);
+        url.searchParams.delete('code')
+        window.history.replaceState(window.history.state, "", url.toString())
         return { data: { session: data.session, redirectType: null }, error: null }
       }
 
