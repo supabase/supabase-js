@@ -1215,8 +1215,6 @@ export default class GoTrueClient {
             console.log(error.message)
             await this._removeSession()
           }
-        } else {
-          await this._removeSession()
         }
       } else {
         if (this.persistSession) {
