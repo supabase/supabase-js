@@ -76,14 +76,16 @@ export default class GoTrueAdminApi {
   /**
    * Sends an invite link to an email address.
    * @param email The email address of the user.
-   * @param options.redirectTo A URL or mobile deeplink to send the user to after they are confirmed.
-   * @param options.data Optional user metadata
+   * @param options Additional options to be included when inviting.
    */
   async inviteUserByEmail(
     email: string,
     options: {
-      redirectTo?: string
+      /** A custom data object to store additional metadata about the user. This maps to the `auth.users.user_metadata` column. */
       data?: object
+
+      /** The URL which will be appended to the email link sent to the user's email address. Once clicked the user will end up on this URL. */
+      redirectTo?: string
     } = {}
   ): Promise<UserResponse> {
     try {
