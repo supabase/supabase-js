@@ -5,22 +5,22 @@ export interface Database {
     Tables: {
       users: {
         Row: {
-          username: string
-          data: Json | null
           age_range: unknown | null
+          data: Json | null
           status: Database['public']['Enums']['user_status'] | null
+          username: string
         }
         Insert: {
-          username: string
-          data?: Json | null
           age_range?: unknown | null
+          data?: Json | null
           status?: Database['public']['Enums']['user_status'] | null
+          username: string
         }
         Update: {
-          username?: string
-          data?: Json | null
           age_range?: unknown | null
+          data?: Json | null
           status?: Database['public']['Enums']['user_status'] | null
+          username?: string
         }
       }
     }
@@ -29,94 +29,99 @@ export interface Database {
     }
     Functions: {
       get_status: {
-        Args: { name_param: string }
+        Args: {
+          name_param: string
+        }
         Returns: Database['public']['Enums']['user_status']
       }
     }
     Enums: {
       user_status: 'ONLINE' | 'OFFLINE'
     }
+    CompositeTypes: {
+      [_ in never]: never
+    }
   }
   public: {
     Tables: {
-      shops: {
-        Row: {
-          id: number
-          address: string | null
-          shop_geom: unknown | null
-        }
-        Insert: {
-          id: number
-          address?: string | null
-          shop_geom?: unknown | null
-        }
-        Update: {
-          id?: number
-          address?: string | null
-          shop_geom?: unknown | null
-        }
-      }
-      users: {
-        Row: {
-          username: string
-          data: Json | null
-          age_range: unknown | null
-          catchphrase: unknown | null
-          status: Database['public']['Enums']['user_status'] | null
-        }
-        Insert: {
-          username: string
-          data?: Json | null
-          age_range?: unknown | null
-          catchphrase?: unknown | null
-          status?: Database['public']['Enums']['user_status'] | null
-        }
-        Update: {
-          username?: string
-          data?: Json | null
-          age_range?: unknown | null
-          catchphrase?: unknown | null
-          status?: Database['public']['Enums']['user_status'] | null
-        }
-      }
       channels: {
         Row: {
-          id: number
           data: Json | null
+          id: number
           slug: string | null
         }
         Insert: {
-          id?: number
           data?: Json | null
+          id?: number
           slug?: string | null
         }
         Update: {
-          id?: number
           data?: Json | null
+          id?: number
           slug?: string | null
         }
       }
       messages: {
         Row: {
-          id: number
+          channel_id: number
           data: Json | null
+          id: number
           message: string | null
           username: string
-          channel_id: number
         }
         Insert: {
-          id?: number
+          channel_id: number
           data?: Json | null
+          id?: number
           message?: string | null
           username: string
-          channel_id: number
         }
         Update: {
-          id?: number
+          channel_id?: number
           data?: Json | null
+          id?: number
           message?: string | null
           username?: string
-          channel_id?: number
+        }
+      }
+      shops: {
+        Row: {
+          address: string | null
+          id: number
+          shop_geom: unknown | null
+        }
+        Insert: {
+          address?: string | null
+          id: number
+          shop_geom?: unknown | null
+        }
+        Update: {
+          address?: string | null
+          id?: number
+          shop_geom?: unknown | null
+        }
+      }
+      users: {
+        Row: {
+          age_range: unknown | null
+          catchphrase: unknown | null
+          data: Json | null
+          status: Database['public']['Enums']['user_status'] | null
+          username: string
+        }
+        Insert: {
+          age_range?: unknown | null
+          catchphrase?: unknown | null
+          data?: Json | null
+          status?: Database['public']['Enums']['user_status'] | null
+          username: string
+        }
+        Update: {
+          age_range?: unknown | null
+          catchphrase?: unknown | null
+          data?: Json | null
+          status?: Database['public']['Enums']['user_status'] | null
+          username?: string
         }
       }
     }
@@ -128,30 +133,39 @@ export interface Database {
       }
       updatable_view: {
         Row: {
-          username: string | null
           non_updatable_column: number | null
+          username: string | null
         }
         Insert: {
-          username?: string | null
           non_updatable_column?: never
+          username?: string | null
         }
         Update: {
-          username?: string | null
           non_updatable_column?: never
+          username?: string | null
         }
       }
     }
     Functions: {
       get_status: {
-        Args: { name_param: string }
+        Args: {
+          name_param: string
+        }
         Returns: Database['public']['Enums']['user_status']
       }
       get_username_and_status: {
-        Args: { name_param: string }
-        Returns: Record<string, unknown>[]
+        Args: {
+          name_param: string
+        }
+        Returns: {
+          username: string
+          status: Database['public']['Enums']['user_status']
+        }[]
       }
       offline_user: {
-        Args: { name_param: string }
+        Args: {
+          name_param: string
+        }
         Returns: Database['public']['Enums']['user_status']
       }
       void_func: {
@@ -161,6 +175,9 @@ export interface Database {
     }
     Enums: {
       user_status: 'ONLINE' | 'OFFLINE'
+    }
+    CompositeTypes: {
+      [_ in never]: never
     }
   }
 }
