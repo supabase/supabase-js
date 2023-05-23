@@ -257,6 +257,13 @@ export interface UserAttributes {
   password?: string
 
   /**
+   * The nonce sent for reauthentication if the user's password is to be updated.
+   *
+   * Call reauthenticate() to obtain the nonce first.
+   */
+  nonce?: string
+
+  /**
    * A custom data object to store the user's metadata. This maps to the `auth.users.user_metadata` column.
    *
    * The `data` should be a JSON object that includes user-specific info, such as their first and last name.

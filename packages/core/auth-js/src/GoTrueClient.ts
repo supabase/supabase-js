@@ -620,6 +620,32 @@ export default class GoTrueClient {
   }
 
   /**
+   * Sends a reauthentication OTP to the user's email or phone number.
+   * Requires the user to be signed-in.
+   */
+  async reauthenticate(): Promise<AuthResponse> {
+    try {
+      const {
+        data: { session },
+        error: sessionError,
+      } = await this.getSession()
+      if (sessionError) throw sessionError
+      if (!session) throw new AuthSessionMissingError()
+
+      const { error } = await _request(this.fetch, 'GET', `${this.url}/reauthenticate`, {
+        headers: this.headers,
+        jwt: session.access_token,
+      })
+      return { data: { user: null, session: null }, error }
+    } catch (error) {
+      if (isAuthError(error)) {
+        return { data: { user: null, session: null }, error }
+      }
+      throw error
+    }
+  }
+
+  /**
    * Resends an existing signup confirmation email, email change email, SMS OTP or phone change OTP.
    */
   async resend(credentials: ResendParams): Promise<AuthResponse> {
@@ -930,9 +956,9 @@ export default class GoTrueClient {
         const { data, error } = await this.exchangeCodeForSession(authCode)
         if (error) throw error
         if (!data.session) throw new AuthPKCEGrantCodeExchangeError('No session detected.')
-        let url = new URL(window.location.href);
+        let url = new URL(window.location.href)
         url.searchParams.delete('code')
-        window.history.replaceState(window.history.state, "", url.toString())
+        window.history.replaceState(window.history.state, '', url.toString())
         return { data: { session: data.session, redirectType: null }, error: null }
       }
 
