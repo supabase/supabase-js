@@ -523,7 +523,7 @@ export type ResendParams =
       }
     }
   | {
-      type: Extract<MobileOtpType, 'sms' | 'phone'>
+      type: Extract<MobileOtpType, 'sms' | 'phone_change'>
       phone: string
       options?: {
         /** Verification token received when the user completes the captcha on the site. */
