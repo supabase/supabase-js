@@ -21,7 +21,7 @@
   "sideEffects": false,
   "repository": "supabase/supabase-js",
   "scripts": {
-    "clean": "rimraf dist docs",
+    "clean": "rimraf dist docs/v2",
     "format": "prettier --write \"{src,test}/**/*.ts\"",
     "build": "run-s clean format build:*",
     "build:main": "tsc -p tsconfig.json",
