@@ -63,3 +63,21 @@ const postgrest = new PostgrestClient<Database>(REST_URL)
   }
   expectType<'ONLINE' | 'OFFLINE'>(data)
 }
+
+// many-to-one relationship
+{
+  const { data: message, error } = await postgrest.from('messages').select('user:users(*)').single()
+  if (error) {
+    throw new Error(error.message)
+  }
+  expectType<Database['public']['Tables']['users']['Row'] | null>(message.user)
+}
+
+// one-to-many relationship
+{
+  const { data: user, error } = await postgrest.from('users').select('messages(*)').single()
+  if (error) {
+    throw new Error(error.message)
+  }
+  expectType<Database['public']['Tables']['messages']['Row'][]>(user.messages)
+}

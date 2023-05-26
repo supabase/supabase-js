@@ -5,7 +5,8 @@ import { GenericSchema } from './types'
 export default class PostgrestTransformBuilder<
   Schema extends GenericSchema,
   Row extends Record<string, unknown>,
-  Result
+  Result,
+  Relationships = unknown
 > extends PostgrestBuilder<Result> {
   /**
    * Perform a SELECT on the query result.
@@ -16,9 +17,9 @@ export default class PostgrestTransformBuilder<
    *
    * @param columns - The columns to retrieve, separated by commas
    */
-  select<Query extends string = '*', NewResultOne = GetResult<Schema, Row, Query>>(
+  select<Query extends string = '*', NewResultOne = GetResult<Schema, Row, Relationships, Query>>(
     columns?: Query
-  ): PostgrestTransformBuilder<Schema, Row, NewResultOne[]> {
+  ): PostgrestTransformBuilder<Schema, Row, NewResultOne[], Relationships> {
     // Remove whitespaces except when quoted
     let quoted = false
     const cleanedColumns = (columns ?? '*')
@@ -38,7 +39,7 @@ export default class PostgrestTransformBuilder<
       this.headers['Prefer'] += ','
     }
     this.headers['Prefer'] += 'return=representation'
-    return this as unknown as PostgrestTransformBuilder<Schema, Row, NewResultOne[]>
+    return this as unknown as PostgrestTransformBuilder<Schema, Row, NewResultOne[], Relationships>
   }
 
   order<ColumnName extends string & keyof Row>(
@@ -249,7 +250,7 @@ export default class PostgrestTransformBuilder<
    *
    * @typeParam NewResult - The new result type to override with
    */
-  returns<NewResult>(): PostgrestTransformBuilder<Schema, Row, NewResult> {
-    return this as unknown as PostgrestTransformBuilder<Schema, Row, NewResult>
+  returns<NewResult>(): PostgrestTransformBuilder<Schema, Row, NewResult, Relationships> {
+    return this as unknown as PostgrestTransformBuilder<Schema, Row, NewResult, Relationships>
   }
 }
