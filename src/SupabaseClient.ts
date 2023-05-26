@@ -149,11 +149,6 @@ export default class SupabaseClient<
     return new SupabaseStorageClient(this.storageUrl, this.headers, this.fetch)
   }
 
-  /**
-   * Perform a table operation.
-   *
-   * @param table The table name to operate on.
-   */
   from<
     TableName extends string & keyof Schema['Tables'],
     Table extends Schema['Tables'][TableName]
@@ -162,6 +157,11 @@ export default class SupabaseClient<
     relation: ViewName
   ): PostgrestQueryBuilder<Schema, View>
   from(relation: string): PostgrestQueryBuilder<Schema, any>
+  /**
+   * Perform a query on a table or a view.
+   *
+   * @param relation - The table or view name to query
+   */
   from(relation: string): PostgrestQueryBuilder<Schema, any> {
     return this.rest.from(relation)
   }
@@ -169,11 +169,23 @@ export default class SupabaseClient<
   /**
    * Perform a function call.
    *
-   * @param fn  The function name to call.
-   * @param args  The parameters to pass to the function call.
-   * @param options.head   When set to true, no data will be returned.
-   * @param options.count  Count algorithm to use to count rows in a table.
+   * @param fn - The function name to call
+   * @param args - The arguments to pass to the function call
+   * @param options - Named parameters
+   * @param options.head - When set to `true`, `data` will not be returned.
+   * Useful if you only need the count.
+   * @param options.count - Count algorithm to use to count rows returned by the
+   * function. Only applicable for [set-returning
+   * functions](https://www.postgresql.org/docs/current/functions-srf.html).
    *
+   * `"exact"`: Exact but slow count algorithm. Performs a `COUNT(*)` under the
+   * hood.
+   *
+   * `"planned"`: Approximated but fast count algorithm. Uses the Postgres
+   * statistics under the hood.
+   *
+   * `"estimated"`: Uses exact count for low numbers and planned count for high
+   * numbers.
    */
   rpc<
     FunctionName extends string & keyof Schema['Functions'],
