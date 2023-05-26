@@ -22,6 +22,7 @@ export interface Database {
           status?: Database['public']['Enums']['user_status'] | null
           username?: string
         }
+        Relationships: []
       }
     }
     Views: {
@@ -60,6 +61,7 @@ export interface Database {
           id?: number
           slug?: string | null
         }
+        Relationships: []
       }
       messages: {
         Row: {
@@ -83,6 +85,20 @@ export interface Database {
           message?: string | null
           username?: string
         }
+        Relationships: [
+          {
+            foreignKeyName: 'messages_username_fkey'
+            columns: ['username']
+            referencedRelation: 'users'
+            referencedColumns: ['username']
+          },
+          {
+            foreignKeyName: 'messages_channel_id_fkey'
+            columns: ['channel_id']
+            referencedRelation: 'channels'
+            referencedColumns: ['id']
+          }
+        ]
       }
       shops: {
         Row: {
@@ -100,6 +116,7 @@ export interface Database {
           id?: number
           shop_geom?: unknown | null
         }
+        Relationships: []
       }
       users: {
         Row: {
@@ -123,6 +140,7 @@ export interface Database {
           status?: Database['public']['Enums']['user_status'] | null
           username?: string
         }
+        Relationships: []
       }
     }
     Views: {

@@ -65,6 +65,26 @@ type EatWhitespace<Input extends string> = string extends Input
   ? EatWhitespace<Remainder>
   : Input
 
+type HasFKey<FKeyName, Relationships> = Relationships extends [infer R]
+  ? R extends { foreignKeyName: FKeyName }
+    ? true
+    : false
+  : Relationships extends [infer R, ...infer Rest]
+  ? HasFKey<FKeyName, [R]> extends true
+    ? true
+    : HasFKey<FKeyName, Rest>
+  : false
+
+type HasFKeyToFRel<FRelName, Relationships> = Relationships extends [infer R]
+  ? R extends { referencedRelation: FRelName }
+    ? true
+    : false
+  : Relationships extends [infer R, ...infer Rest]
+  ? HasFKeyToFRel<FRelName, [R]> extends true
+    ? true
+    : HasFKeyToFRel<FRelName, Rest>
+  : false
+
 /**
  * Constructs a type definition for a single field of an object.
  *
@@ -75,20 +95,44 @@ type EatWhitespace<Input extends string> = string extends Input
 type ConstructFieldDefinition<
   Schema extends GenericSchema,
   Row extends Record<string, unknown>,
+  Relationships,
   Field
-> = Field extends {
-  star: true
-}
+> = Field extends { star: true }
   ? Row
+  : Field extends { name: string; original: string; hint: string; children: unknown[] }
+  ? {
+      [_ in Field['name']]: GetResultHelper<
+        Schema,
+        (Schema['Tables'] & Schema['Views'])[Field['original']]['Row'],
+        (Schema['Tables'] & Schema['Views'])[Field['original']] extends { Relationships: infer R }
+          ? R
+          : unknown,
+        Field['children'],
+        unknown
+      > extends infer Child
+        ? Relationships extends unknown[]
+          ? HasFKey<Field['hint'], Relationships> extends true
+            ? Child | null
+            : Child[]
+          : Child[]
+        : never
+    }
   : Field extends { name: string; original: string; children: unknown[] }
   ? {
       [_ in Field['name']]: GetResultHelper<
         Schema,
         (Schema['Tables'] & Schema['Views'])[Field['original']]['Row'],
+        (Schema['Tables'] & Schema['Views'])[Field['original']] extends { Relationships: infer R }
+          ? R
+          : unknown,
         Field['children'],
         unknown
       > extends infer Child
-        ? Child | Child[] | null
+        ? Relationships extends unknown[]
+          ? HasFKeyToFRel<Field['original'], Relationships> extends true
+            ? Child | null
+            : Child[]
+          : Child[]
         : never
     }
   : Field extends { name: string; original: string }
@@ -191,14 +235,14 @@ type ParseNode<Input extends string> = Input extends ''
       ? ParseEmbeddedResource<EatWhitespace<Remainder>>
       : ParserError<'Expected embedded resource after `!inner`'>
     : EatWhitespace<Remainder> extends `!${infer Remainder}`
-    ? ParseIdentifier<EatWhitespace<Remainder>> extends [infer _Hint, `${infer Remainder}`]
+    ? ParseIdentifier<EatWhitespace<Remainder>> extends [infer Hint, `${infer Remainder}`]
       ? EatWhitespace<Remainder> extends `!inner${infer Remainder}`
         ? ParseEmbeddedResource<EatWhitespace<Remainder>> extends [
             infer Fields,
             `${infer Remainder}`
           ]
           ? // `field!hint!inner(nodes)`
-            [{ name: Name; original: Name; children: Fields }, EatWhitespace<Remainder>]
+            [{ name: Name; original: Name; hint: Hint; children: Fields }, EatWhitespace<Remainder>]
           : ParseEmbeddedResource<EatWhitespace<Remainder>> extends ParserError<string>
           ? ParseEmbeddedResource<EatWhitespace<Remainder>>
           : ParserError<'Expected embedded resource after `!inner`'>
@@ -207,7 +251,7 @@ type ParseNode<Input extends string> = Input extends ''
             `${infer Remainder}`
           ]
         ? // `field!hint(nodes)`
-          [{ name: Name; original: Name; children: Fields }, EatWhitespace<Remainder>]
+          [{ name: Name; original: Name; hint: Hint; children: Fields }, EatWhitespace<Remainder>]
         : ParseEmbeddedResource<EatWhitespace<Remainder>> extends ParserError<string>
         ? ParseEmbeddedResource<EatWhitespace<Remainder>>
         : ParserError<'Expected embedded resource after `!hint`'>
@@ -225,14 +269,17 @@ type ParseNode<Input extends string> = Input extends ''
           ? ParseEmbeddedResource<EatWhitespace<Remainder>>
           : ParserError<'Expected embedded resource after `!inner`'>
         : EatWhitespace<Remainder> extends `!${infer Remainder}`
-        ? ParseIdentifier<EatWhitespace<Remainder>> extends [infer _Hint, `${infer Remainder}`]
+        ? ParseIdentifier<EatWhitespace<Remainder>> extends [infer Hint, `${infer Remainder}`]
           ? EatWhitespace<Remainder> extends `!inner${infer Remainder}`
             ? ParseEmbeddedResource<EatWhitespace<Remainder>> extends [
                 infer Fields,
                 `${infer Remainder}`
               ]
               ? // `renamed_field:field!hint!inner(nodes)`
-                [{ name: Name; original: OriginalName; children: Fields }, EatWhitespace<Remainder>]
+                [
+                  { name: Name; original: OriginalName; hint: Hint; children: Fields },
+                  EatWhitespace<Remainder>
+                ]
               : ParseEmbeddedResource<EatWhitespace<Remainder>> extends ParserError<string>
               ? ParseEmbeddedResource<EatWhitespace<Remainder>>
               : ParserError<'Expected embedded resource after `!inner`'>
@@ -245,6 +292,7 @@ type ParseNode<Input extends string> = Input extends ''
                 {
                   name: Name
                   original: OriginalName
+                  hint: Hint
                   children: Fields
                 },
                 EatWhitespace<Remainder>
@@ -363,12 +411,25 @@ type ParseQuery<Query extends string> = string extends Query
 type GetResultHelper<
   Schema extends GenericSchema,
   Row extends Record<string, unknown>,
+  Relationships,
   Fields extends unknown[],
   Acc
 > = Fields extends [infer R]
-  ? GetResultHelper<Schema, Row, [], ConstructFieldDefinition<Schema, Row, R> & Acc>
+  ? GetResultHelper<
+      Schema,
+      Row,
+      Relationships,
+      [],
+      ConstructFieldDefinition<Schema, Row, Relationships, R> & Acc
+    >
   : Fields extends [infer R, ...infer Rest]
-  ? GetResultHelper<Schema, Row, Rest, ConstructFieldDefinition<Schema, Row, R> & Acc>
+  ? GetResultHelper<
+      Schema,
+      Row,
+      Relationships,
+      Rest,
+      ConstructFieldDefinition<Schema, Row, Relationships, R> & Acc
+    >
   : Prettify<Acc>
 
 /**
@@ -380,7 +441,8 @@ type GetResultHelper<
 export type GetResult<
   Schema extends GenericSchema,
   Row extends Record<string, unknown>,
+  Relationships,
   Query extends string
 > = ParseQuery<Query> extends unknown[]
-  ? GetResultHelper<Schema, Row, ParseQuery<Query>, unknown>
+  ? GetResultHelper<Schema, Row, Relationships, ParseQuery<Query>, unknown>
   : ParseQuery<Query>
