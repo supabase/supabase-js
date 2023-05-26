@@ -1406,7 +1406,7 @@ export default class GoTrueClient {
    * changes on your own.
    *
    * On non-browser platforms the refresh process works *continuously* in the
-   * background, which may not be desireable. You should hook into your
+   * background, which may not be desirable. You should hook into your
    * platform's foreground indication mechanism and call these methods
    * appropriately to conserve resources.
    *
