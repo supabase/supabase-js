@@ -261,6 +261,7 @@ export default class GoTrueClient {
    *
    * Be aware that if a user account exists in the system you may get back an
    * error message that attempts to hide this information from the user.
+   * This method has support for PKCE via email signups. The PKCE flow cannot be used when autoconfirm is enabled.
    *
    * @returns A logged-in session if the server has "autoconfirm" ON
    * @returns A user if the server has "autoconfirm" OFF
@@ -393,6 +394,7 @@ export default class GoTrueClient {
 
   /**
    * Log in an existing user via a third-party provider.
+   * This method supports the PKCE flow.
    */
   async signInWithOAuth(credentials: SignInWithOAuthCredentials): Promise<OAuthResponse> {
     await this._removeSession()
@@ -485,6 +487,7 @@ export default class GoTrueClient {
    * if you are using phone sign in with the 'whatsapp' channel. The whatsapp
    * channel is not supported on other providers
    * at this time.
+   * This method supports PKCE when an email is passed.
    */
   async signInWithOtp(credentials: SignInWithPasswordlessCredentials): Promise<AuthResponse> {
     try {
@@ -1104,6 +1107,7 @@ export default class GoTrueClient {
 
   /**
    * Sends a password reset request to an email address.
+   * This method supports the PKCE flow.
    * @param email The email address of the user.
    * @param options.redirectTo The URL to send the user to after they click the password reset link.
    * @param options.captchaToken Verification token received when the user completes the captcha on the site.
