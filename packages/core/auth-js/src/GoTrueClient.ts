@@ -26,6 +26,7 @@ import {
   sleep,
   generatePKCEVerifier,
   generatePKCEChallenge,
+  supportsLocalStorage,
 } from './lib/helpers'
 import localStorageAdapter from './lib/local-storage'
 import { polyfillGlobalThis } from './lib/polyfills'
@@ -169,6 +170,13 @@ export default class GoTrueClient {
       listFactors: this._listFactors.bind(this),
       challengeAndVerify: this._challengeAndVerify.bind(this),
       getAuthenticatorAssuranceLevel: this._getAuthenticatorAssuranceLevel.bind(this),
+    }
+
+    if (this.persistSession && this.storage === localStorageAdapter && !supportsLocalStorage()) {
+      console.warn(
+        `No storage option exists to persist the session, which may result in unexpected behavior when using auth.
+        If you want to set persistSession to true, please provide a storage option or you may set persistSession to false to disable this warning.`
+      )
     }
 
     if (isBrowser() && globalThis.BroadcastChannel && this.persistSession && this.storageKey) {
