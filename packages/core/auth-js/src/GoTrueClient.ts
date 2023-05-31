@@ -554,7 +554,10 @@ export default class GoTrueClient {
    */
   async verifyOtp(params: VerifyOtpParams): Promise<AuthResponse> {
     try {
-      await this._removeSession()
+      if (params.type !== 'email_change' && params.type !== 'phone_change') {
+        // we don't want to remove the authenticated session if the user is performing an email_change or phone_change verification
+        await this._removeSession()
+      }
       const { data, error } = await _request(this.fetch, 'POST', `${this.url}/verify`, {
         headers: this.headers,
         body: {
