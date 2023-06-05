@@ -7,6 +7,7 @@ import {
   AuthInvalidCredentialsError,
   AuthRetryableFetchError,
   AuthSessionMissingError,
+  AuthInvalidTokenResponseError,
   AuthUnknownError,
   isAuthApiError,
   isAuthError,
@@ -34,6 +35,7 @@ import { polyfillGlobalThis } from './lib/polyfills'
 import type {
   AuthChangeEvent,
   AuthResponse,
+  AuthTokenResponse,
   CallRefreshTokenResult,
   GoTrueClientOptions,
   InitializeResult,
@@ -353,7 +355,7 @@ export default class GoTrueClient {
    * email/phone and password combination is wrong or that the account can only
    * be accessed via social login.
    */
-  async signInWithPassword(credentials: SignInWithPasswordCredentials): Promise<AuthResponse> {
+  async signInWithPassword(credentials: SignInWithPasswordCredentials): Promise<AuthTokenResponse> {
     try {
       await this._removeSession()
 
@@ -386,12 +388,17 @@ export default class GoTrueClient {
         )
       }
       const { data, error } = res
-      if (error || !data) return { data: { user: null, session: null }, error }
+
+      if (error) {
+        return { data: { user: null, session: null }, error }
+      } else if (!data || !data.session || !data.user) {
+        return { data: { user: null, session: null }, error: new AuthInvalidTokenResponseError() }
+      }
       if (data.session) {
         await this._saveSession(data.session)
         this._notifyAllSubscribers('SIGNED_IN', data.session)
       }
-      return { data, error }
+      return { data: { user: data.user, session: data.session }, error }
     } catch (error) {
       if (isAuthError(error)) {
         return { data: { user: null, session: null }, error }
@@ -418,7 +425,7 @@ export default class GoTrueClient {
   /**
    * Log in an existing user by exchanging an Auth Code issued during the PKCE flow.
    */
-  async exchangeCodeForSession(authCode: string): Promise<AuthResponse> {
+  async exchangeCodeForSession(authCode: string): Promise<AuthTokenResponse> {
     const codeVerifier = await getItemAsync(this.storage, `${this.storageKey}-code-verifier`)
     const { data, error } = await _request(
       this.fetch,
@@ -434,7 +441,11 @@ export default class GoTrueClient {
       }
     )
     await removeItemAsync(this.storage, `${this.storageKey}-code-verifier`)
-    if (error || !data) return { data: { user: null, session: null }, error }
+    if (error) {
+      return { data: { user: null, session: null }, error }
+    } else if (!data || !data.session || !data.user) {
+      return { data: { user: null, session: null }, error: new AuthInvalidTokenResponseError() }
+    }
     if (data.session) {
       await this._saveSession(data.session)
       this._notifyAllSubscribers('SIGNED_IN', data.session)
@@ -448,7 +459,7 @@ export default class GoTrueClient {
    *
    * @experimental
    */
-  async signInWithIdToken(credentials: SignInWithIdTokenCredentials): Promise<AuthResponse> {
+  async signInWithIdToken(credentials: SignInWithIdTokenCredentials): Promise<AuthTokenResponse> {
     await this._removeSession()
 
     try {
@@ -466,7 +477,14 @@ export default class GoTrueClient {
       })
 
       const { data, error } = res
-      if (error || !data) return { data: { user: null, session: null }, error }
+      if (error) {
+        return { data: { user: null, session: null }, error }
+      } else if (!data || !data.session || !data.user) {
+        return {
+          data: { user: null, session: null },
+          error: new AuthInvalidTokenResponseError(),
+        }
+      }
       if (data.session) {
         await this._saveSession(data.session)
         this._notifyAllSubscribers('SIGNED_IN', data.session)

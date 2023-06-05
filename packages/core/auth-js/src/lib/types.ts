@@ -69,6 +69,22 @@ export type AuthResponse =
       error: AuthError
     }
 
+export type AuthTokenResponse =
+  | {
+      data: {
+        user: User
+        session: Session
+      }
+      error: null
+    }
+  | {
+      data: {
+        user: null
+        session: null
+      }
+      error: AuthError
+    }
+
 export type OAuthResponse =
   | {
       data: {
