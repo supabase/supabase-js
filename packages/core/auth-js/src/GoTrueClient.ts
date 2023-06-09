@@ -224,8 +224,8 @@ export default class GoTrueClient {
     }
 
     try {
-      const isPKCEFlow = await this._isPKCEFlow()
-      if ((this.detectSessionInUrl && this._isImplicitGrantFlow()) || isPKCEFlow) {
+      const isPKCEFlow = isBrowser() ? await this._isPKCEFlow() : false
+      if (isPKCEFlow || (this.detectSessionInUrl && this._isImplicitGrantFlow())) {
         const { data, error } = await this._getSessionFromUrl(isPKCEFlow)
         if (error) {
           // failed login attempt via url,
@@ -1064,7 +1064,7 @@ export default class GoTrueClient {
       this.storage,
       `${this.storageKey}-code-verifier`
     )
-    return isBrowser() && Boolean(getParameterByName('code')) && Boolean(currentStorageContent)
+    return Boolean(getParameterByName('code')) && Boolean(currentStorageContent)
   }
 
   /**
