@@ -18,7 +18,7 @@ export class FunctionsError extends Error {
   context: any
   constructor(message: string, name = 'FunctionsError', context?: any) {
     super(message)
-    super.name = name
+    this.name = name
     this.context = context
   }
 }
