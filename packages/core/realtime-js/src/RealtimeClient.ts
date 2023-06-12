@@ -23,7 +23,8 @@ export type RealtimeClientOptions = {
   decode?: Function
   reconnectAfterMs?: Function
   headers?: { [key: string]: string }
-  params?: { [key: string]: any }
+  params?: { [key: string]: any },
+  log_level?: 'info' | 'debug' | 'warn' | 'error'
 }
 
 export type RealtimeMessage = {
