@@ -62,7 +62,7 @@ export default class SupabaseClient<
   protected rest: PostgrestClient<Database, SchemaName>
   protected storageKey: string
   protected fetch?: Fetch
-  protected changedAccessToken: string | undefined
+  protected changedAccessToken?: string
 
   protected headers: {
     [key: string]: string
@@ -282,15 +282,15 @@ export default class SupabaseClient<
 
   private _listenForAuthEvents() {
     let data = this.auth.onAuthStateChange((event, session) => {
-      this._handleTokenChanged(event, session?.access_token, 'CLIENT')
+      this._handleTokenChanged(event, 'CLIENT', session?.access_token)
     })
     return data
   }
 
   private _handleTokenChanged(
     event: AuthChangeEvent,
-    token: string | undefined,
-    source: 'CLIENT' | 'STORAGE'
+    source: 'CLIENT' | 'STORAGE',
+    token?: string
   ) {
     if (
       (event === 'TOKEN_REFRESHED' || event === 'SIGNED_IN') &&
