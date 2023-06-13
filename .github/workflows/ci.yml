@@ -2,11 +2,21 @@ name: CI
 
 on:
   pull_request:
+    paths-ignore:
+      - 'docs/**'
+      - '**/*.md'
+      - '.prettierrc'
+      - '**/*ignore'
   push:
     branches:
       - master
       - next
       - rc
+    paths-ignore:
+      - 'docs/**'
+      - '**/*.md'
+      - '.prettierrc'
+      - '**/*ignore'
 
 jobs:
   test:
