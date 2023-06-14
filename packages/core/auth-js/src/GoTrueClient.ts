@@ -191,8 +191,8 @@ export default class GoTrueClient {
         )
       }
 
-      this.broadcastChannel?.addEventListener('message', (event) => {
-        this._notifyAllSubscribers(event.data.event, event.data.session, false) // broadcast = false so we don't get an endless loop of messages
+      this.broadcastChannel?.addEventListener('message', async (event) => {
+        await this._notifyAllSubscribers(event.data.event, event.data.session, false) // broadcast = false so we don't get an endless loop of messages
       })
     }
 
@@ -239,11 +239,11 @@ export default class GoTrueClient {
 
         await this._saveSession(session)
 
-        setTimeout(() => {
+        setTimeout(async () => {
           if (redirectType === 'recovery') {
-            this._notifyAllSubscribers('PASSWORD_RECOVERY', session)
+            await this._notifyAllSubscribers('PASSWORD_RECOVERY', session)
           } else {
-            this._notifyAllSubscribers('SIGNED_IN', session)
+            await this._notifyAllSubscribers('SIGNED_IN', session)
           }
         }, 0)
 
@@ -334,7 +334,7 @@ export default class GoTrueClient {
 
       if (data.session) {
         await this._saveSession(data.session)
-        this._notifyAllSubscribers('SIGNED_IN', session)
+        await this._notifyAllSubscribers('SIGNED_IN', session)
       }
 
       return { data: { user, session }, error: null }
@@ -396,7 +396,7 @@ export default class GoTrueClient {
       }
       if (data.session) {
         await this._saveSession(data.session)
-        this._notifyAllSubscribers('SIGNED_IN', data.session)
+        await this._notifyAllSubscribers('SIGNED_IN', data.session)
       }
       return { data: { user: data.user, session: data.session }, error }
     } catch (error) {
@@ -448,7 +448,7 @@ export default class GoTrueClient {
     }
     if (data.session) {
       await this._saveSession(data.session)
-      this._notifyAllSubscribers('SIGNED_IN', data.session)
+      await this._notifyAllSubscribers('SIGNED_IN', data.session)
     }
     return { data, error }
   }
@@ -487,7 +487,7 @@ export default class GoTrueClient {
       }
       if (data.session) {
         await this._saveSession(data.session)
-        this._notifyAllSubscribers('SIGNED_IN', data.session)
+        await this._notifyAllSubscribers('SIGNED_IN', data.session)
       }
       return { data, error }
     } catch (error) {
@@ -599,7 +599,7 @@ export default class GoTrueClient {
 
       if (session?.access_token) {
         await this._saveSession(session as Session)
-        this._notifyAllSubscribers('SIGNED_IN', session)
+        await this._notifyAllSubscribers('SIGNED_IN', session)
       }
 
       return { data: { user, session }, error: null }
@@ -839,7 +839,7 @@ export default class GoTrueClient {
       if (userError) throw userError
       session.user = data.user as User
       await this._saveSession(session)
-      this._notifyAllSubscribers('USER_UPDATED', session)
+      await this._notifyAllSubscribers('USER_UPDATED', session)
 
       return { data: { user: session.user }, error: null }
     } catch (error) {
@@ -912,7 +912,7 @@ export default class GoTrueClient {
           expires_at: expiresAt,
         }
         await this._saveSession(session)
-        this._notifyAllSubscribers('SIGNED_IN', session)
+        await this._notifyAllSubscribers('SIGNED_IN', session)
       }
 
       return { data: { user: session.user, session }, error: null }
@@ -1092,7 +1092,7 @@ export default class GoTrueClient {
     }
     await this._removeSession()
     await removeItemAsync(this.storage, `${this.storageKey}-code-verifier`)
-    this._notifyAllSubscribers('SIGNED_OUT', null)
+    await this._notifyAllSubscribers('SIGNED_OUT', null)
     return { error: null }
   }
 
@@ -1100,7 +1100,9 @@ export default class GoTrueClient {
    * Receive a notification every time an auth event happens.
    * @param callback A callback function to be invoked when an auth event happens.
    */
-  onAuthStateChange(callback: (event: AuthChangeEvent, session: Session | null) => void): {
+  onAuthStateChange(
+    callback: (event: AuthChangeEvent, session: Session | null) => void | Promise<void>
+  ): {
     data: { subscription: Subscription }
   } {
     const id: string = uuid()
@@ -1127,9 +1129,9 @@ export default class GoTrueClient {
       } = await this.getSession()
       if (error) throw error
 
-      this.stateChangeEmitters.get(id)?.callback('INITIAL_SESSION', session)
+      await this.stateChangeEmitters.get(id)?.callback('INITIAL_SESSION', session)
     } catch (err) {
-      this.stateChangeEmitters.get(id)?.callback('INITIAL_SESSION', null)
+      await this.stateChangeEmitters.get(id)?.callback('INITIAL_SESSION', null)
       console.error(err)
     }
   }
@@ -1279,7 +1281,7 @@ export default class GoTrueClient {
         if (this.persistSession) {
           await this._saveSession(currentSession)
         }
-        this._notifyAllSubscribers('SIGNED_IN', currentSession)
+        await this._notifyAllSubscribers('SIGNED_IN', currentSession)
       }
     } catch (err) {
       console.error(err)
@@ -1304,7 +1306,7 @@ export default class GoTrueClient {
       if (!data.session) throw new AuthSessionMissingError()
 
       await this._saveSession(data.session)
-      this._notifyAllSubscribers('TOKEN_REFRESHED', data.session)
+      await this._notifyAllSubscribers('TOKEN_REFRESHED', data.session)
 
       const result = { session: data.session, error: null }
 
@@ -1327,12 +1329,33 @@ export default class GoTrueClient {
     }
   }
 
-  private _notifyAllSubscribers(event: AuthChangeEvent, session: Session | null, broadcast = true) {
+  private async _notifyAllSubscribers(
+    event: AuthChangeEvent,
+    session: Session | null,
+    broadcast = true
+  ) {
     if (this.broadcastChannel && broadcast) {
       this.broadcastChannel.postMessage({ event, session })
     }
 
-    this.stateChangeEmitters.forEach((x) => x.callback(event, session))
+    const errors: any[] = []
+    const promises = Array.from(this.stateChangeEmitters.values()).map(async (x) => {
+      try {
+        await x.callback(event, session)
+      } catch (e: any) {
+        errors.push(e)
+      }
+    })
+
+    await Promise.all(promises)
+
+    if (errors.length > 0) {
+      for (let i = 0; i < errors.length; i += 1) {
+        console.error(errors[i])
+      }
+
+      throw errors[0]
+    }
   }
 
   /**
@@ -1666,7 +1689,7 @@ export default class GoTrueClient {
         expires_at: Math.round(Date.now() / 1000) + data.expires_in,
         ...data,
       })
-      this._notifyAllSubscribers('MFA_CHALLENGE_VERIFIED', data)
+      await this._notifyAllSubscribers('MFA_CHALLENGE_VERIFIED', data)
 
       return { data, error }
     } catch (error) {
