@@ -1,5 +1,6 @@
 import { expectError, expectType } from 'tsd'
-import { PostgrestClient } from '../src/index'
+import { PostgrestClient, PostgrestSingleResponse } from '../src/index'
+import { SelectQueryError } from '../src/select-query-parser'
 import { Database, Json } from './types'
 
 const REST_URL = 'http://localhost:3000'
@@ -80,4 +81,10 @@ const postgrest = new PostgrestClient<Database>(REST_URL)
     throw new Error(error.message)
   }
   expectType<Database['public']['Tables']['messages']['Row'][]>(user.messages)
+}
+
+// referencing missing column
+{
+  const res = await postgrest.from('users').select('username, dat')
+  expectType<PostgrestSingleResponse<SelectQueryError<`Referencing missing column \`dat\``>[]>>(res)
 }

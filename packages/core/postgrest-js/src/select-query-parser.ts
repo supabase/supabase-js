@@ -55,6 +55,7 @@ type Json = string | number | boolean | null | { [key: string]: Json } | Json[]
  */
 type ParserError<Message extends string> = { error: true } & Message
 type GenericStringError = ParserError<'Received a generic string'>
+export type SelectQueryError<Message extends string> = { error: true } & Message
 
 /**
  * Trims whitespace from the left of the input.
@@ -136,7 +137,9 @@ type ConstructFieldDefinition<
         : never
     }
   : Field extends { name: string; original: string }
-  ? { [K in Field['name']]: Row[Field['original']] }
+  ? Field['original'] extends keyof Row
+    ? { [K in Field['name']]: Row[Field['original']] }
+    : SelectQueryError<`Referencing missing column \`${Field['original']}\``>
   : Field extends { name: string; type: infer T }
   ? { [K in Field['name']]: T }
   : Record<string, unknown>
@@ -415,21 +418,25 @@ type GetResultHelper<
   Fields extends unknown[],
   Acc
 > = Fields extends [infer R]
-  ? GetResultHelper<
-      Schema,
-      Row,
-      Relationships,
-      [],
-      ConstructFieldDefinition<Schema, Row, Relationships, R> & Acc
-    >
+  ? ConstructFieldDefinition<Schema, Row, Relationships, R> extends SelectQueryError<infer E>
+    ? SelectQueryError<E>
+    : GetResultHelper<
+        Schema,
+        Row,
+        Relationships,
+        [],
+        ConstructFieldDefinition<Schema, Row, Relationships, R> & Acc
+      >
   : Fields extends [infer R, ...infer Rest]
-  ? GetResultHelper<
-      Schema,
-      Row,
-      Relationships,
-      Rest,
-      ConstructFieldDefinition<Schema, Row, Relationships, R> & Acc
-    >
+  ? ConstructFieldDefinition<Schema, Row, Relationships, R> extends SelectQueryError<infer E>
+    ? SelectQueryError<E>
+    : GetResultHelper<
+        Schema,
+        Row,
+        Relationships,
+        Rest,
+        ConstructFieldDefinition<Schema, Row, Relationships, R> & Acc
+      >
   : Prettify<Acc>
 
 /**
