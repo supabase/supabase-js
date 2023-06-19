@@ -63,11 +63,7 @@ export type GenericTable = {
   Update: Record<string, unknown>
 }
 
-export type GenericUpdatableView = {
-  Row: Record<string, unknown>
-  Insert: Record<string, unknown>
-  Update: Record<string, unknown>
-}
+export type GenericUpdatableView = GenericTable
 
 export type GenericNonUpdatableView = {
   Row: Record<string, unknown>

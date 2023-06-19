@@ -12,28 +12,16 @@ import {
   RealtimeClientOptions,
 } from '@supabase/realtime-js'
 import { StorageClient as SupabaseStorageClient } from '@supabase/storage-js'
-import { DEFAULT_HEADERS } from './lib/constants'
+import {
+  DEFAULT_GLOBAL_OPTIONS,
+  DEFAULT_DB_OPTIONS,
+  DEFAULT_AUTH_OPTIONS,
+  DEFAULT_REALTIME_OPTIONS,
+} from './lib/constants'
 import { fetchWithAuth } from './lib/fetch'
 import { stripTrailingSlash, applySettingDefaults } from './lib/helpers'
 import { SupabaseAuthClient } from './lib/SupabaseAuthClient'
 import { Fetch, GenericSchema, SupabaseClientOptions, SupabaseAuthClientOptions } from './lib/types'
-
-const DEFAULT_GLOBAL_OPTIONS = {
-  headers: DEFAULT_HEADERS,
-}
-
-const DEFAULT_DB_OPTIONS = {
-  schema: 'public',
-}
-
-const DEFAULT_AUTH_OPTIONS: SupabaseAuthClientOptions = {
-  autoRefreshToken: true,
-  persistSession: true,
-  detectSessionInUrl: true,
-  flowType: 'implicit',
-}
-
-const DEFAULT_REALTIME_OPTIONS: RealtimeClientOptions = {}
 
 /**
  * Supabase Client.
@@ -64,9 +52,7 @@ export default class SupabaseClient<
   protected fetch?: Fetch
   protected changedAccessToken?: string
 
-  protected headers: {
-    [key: string]: string
-  }
+  protected headers: Record<string, string>
 
   /**
    * Create a new client for use in the browser.
