@@ -36,6 +36,7 @@ import type {
   AuthChangeEvent,
   AuthResponse,
   AuthTokenResponse,
+  AuthOtpResponse,
   CallRefreshTokenResult,
   GoTrueClientOptions,
   InitializeResult,
@@ -515,7 +516,7 @@ export default class GoTrueClient {
    * at this time.
    * This method supports PKCE when an email is passed.
    */
-  async signInWithOtp(credentials: SignInWithPasswordlessCredentials): Promise<AuthResponse> {
+  async signInWithOtp(credentials: SignInWithPasswordlessCredentials): Promise<AuthOtpResponse> {
     try {
       await this._removeSession()
 
@@ -545,7 +546,7 @@ export default class GoTrueClient {
       }
       if ('phone' in credentials) {
         const { phone, options } = credentials
-        const { error } = await _request(this.fetch, 'POST', `${this.url}/otp`, {
+        const { data, error } = await _request(this.fetch, 'POST', `${this.url}/otp`, {
           headers: this.headers,
           body: {
             phone,
@@ -555,7 +556,7 @@ export default class GoTrueClient {
             channel: options?.channel ?? 'sms',
           },
         })
-        return { data: { user: null, session: null }, error }
+        return { data: { user: null, session: null, messageId: data?.message_id }, error }
       }
       throw new AuthInvalidCredentialsError('You must provide either an email or phone number.')
     } catch (error) {
@@ -680,7 +681,7 @@ export default class GoTrueClient {
   /**
    * Resends an existing signup confirmation email, email change email, SMS OTP or phone change OTP.
    */
-  async resend(credentials: ResendParams): Promise<AuthResponse> {
+  async resend(credentials: ResendParams): Promise<AuthOtpResponse> {
     try {
       await this._removeSession()
       const endpoint = `${this.url}/resend`
@@ -697,7 +698,7 @@ export default class GoTrueClient {
         return { data: { user: null, session: null }, error }
       } else if ('phone' in credentials) {
         const { phone, type, options } = credentials
-        const { error } = await _request(this.fetch, 'POST', endpoint, {
+        const { data, error } = await _request(this.fetch, 'POST', endpoint, {
           headers: this.headers,
           body: {
             phone,
@@ -705,7 +706,7 @@ export default class GoTrueClient {
             gotrue_meta_security: { captcha_token: options?.captchaToken },
           },
         })
-        return { data: { user: null, session: null }, error }
+        return { data: { user: null, session: null, messageId: data?.message_id }, error }
       }
       throw new AuthInvalidCredentialsError(
         'You must provide either an email or phone number and a type'

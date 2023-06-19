@@ -69,6 +69,21 @@ export type AuthResponse =
       error: AuthError
     }
 
+/**
+ * AuthOtpResponse is returned when OTP is used.
+ *
+ * {@see AuthRsponse}
+ */
+export type AuthOtpResponse =
+  | {
+      data: { user: null; session: null; messageId?: string | null }
+      error: null
+    }
+  | {
+      data: { user: null; session: null; messageId?: string | null }
+      error: AuthError
+    }
+
 export type AuthTokenResponse =
   | {
       data: {
