@@ -11,6 +11,7 @@ import {
   AuthUnknownError,
   isAuthApiError,
   isAuthError,
+  isAuthRetryableFetchError,
 } from './lib/errors'
 import { Fetch, _request, _sessionResponse, _userResponse, _ssoResponse } from './lib/fetch'
 import {
@@ -1274,8 +1275,11 @@ export default class GoTrueClient {
           const { error } = await this._callRefreshToken(currentSession.refresh_token)
 
           if (error) {
-            console.log(error.message)
-            await this._removeSession()
+            console.error(error)
+
+            if (!isAuthRetryableFetchError(error)) {
+              await this._removeSession()
+            }
           }
         }
       } else {

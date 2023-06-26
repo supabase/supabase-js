@@ -120,3 +120,7 @@ export class AuthRetryableFetchError extends CustomAuthError {
     super(message, 'AuthRetryableFetchError', status)
   }
 }
+
+export function isAuthRetryableFetchError(error: unknown): error is AuthRetryableFetchError {
+  return isAuthError(error) && error.name === 'AuthRetryableFetchError'
+}
