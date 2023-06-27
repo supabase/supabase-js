@@ -27,25 +27,26 @@ export type RequestMethodType = 'GET' | 'POST' | 'PUT' | 'DELETE'
 const _getErrorMessage = (err: any): string =>
   err.msg || err.message || err.error_description || err.error || JSON.stringify(err)
 
-const handleError = async (error: unknown, reject: (reason?: any) => void) => {
-  const NETWORK_ERROR_CODES = [502, 503, 504]
+const NETWORK_ERROR_CODES = [502, 503, 504]
+
+async function handleError(error: unknown) {
   if (!looksLikeFetchResponse(error)) {
-    reject(new AuthRetryableFetchError(_getErrorMessage(error), 0))
-  } else if (NETWORK_ERROR_CODES.includes(error.status)) {
-    // status in 500...599 range - server had an error, request might be retryed.
-    reject(new AuthRetryableFetchError(_getErrorMessage(error), error.status))
-  } else {
-    // got a response from server that is not in the 500...599 range - should not retry
-    error
-      .json()
-      .then((err) => {
-        reject(new AuthApiError(_getErrorMessage(err), error.status || 500))
-      })
-      .catch((e) => {
-        // not a valid json response
-        reject(new AuthUnknownError(_getErrorMessage(e), e))
-      })
+    throw new AuthRetryableFetchError(_getErrorMessage(error), 0)
   }
+
+  if (NETWORK_ERROR_CODES.includes(error.status)) {
+    // status in 500...599 range - server had an error, request might be retryed.
+    throw new AuthRetryableFetchError(_getErrorMessage(error), error.status)
+  }
+
+  let data: any
+  try {
+    data = await error.json()
+  } catch (e: any) {
+    throw new AuthUnknownError(_getErrorMessage(e), e)
+  }
+
+  throw new AuthApiError(_getErrorMessage(data), error.status || 500)
 }
 
 const _getRequestParams = (
@@ -110,16 +111,32 @@ async function _handleRequest(
   parameters?: FetchParameters,
   body?: object
 ): Promise<any> {
-  return new Promise((resolve, reject) => {
-    fetcher(url, _getRequestParams(method, options, parameters, body))
-      .then((result) => {
-        if (!result.ok) throw result
-        if (options?.noResolveJson) return result
-        return result.json()
-      })
-      .then((data) => resolve(data))
-      .catch((error) => handleError(error, reject))
-  })
+  const requestParams = _getRequestParams(method, options, parameters, body)
+
+  let result: any
+
+  try {
+    result = await fetcher(url, requestParams)
+  } catch (e) {
+    console.error(e)
+
+    // fetch failed, likely due to a network or CORS error
+    throw new AuthRetryableFetchError(_getErrorMessage(e), 0)
+  }
+
+  if (!result.ok) {
+    await handleError(result)
+  }
+
+  if (options?.noResolveJson) {
+    return result
+  }
+
+  try {
+    return await result.json()
+  } catch (e: any) {
+    await handleError(e)
+  }
 }
 
 export function _sessionResponse(data: any): AuthResponse {
