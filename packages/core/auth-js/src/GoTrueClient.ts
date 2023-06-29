@@ -496,22 +496,21 @@ export default class GoTrueClient {
   }
 
   /**
-   * Allows signing in with an ID token issued by certain supported providers.
-   * The ID token is verified for validity and a new session is established.
-   *
-   * @experimental
+   * Allows signing in with an OIDC ID token. The authentication provider used
+   * should be enabled and configured.
    */
   async signInWithIdToken(credentials: SignInWithIdTokenCredentials): Promise<AuthTokenResponse> {
     await this._removeSession()
 
     try {
-      const { options, provider, token, nonce } = credentials
+      const { options, provider, token, access_token, nonce } = credentials
 
       const res = await _request(this.fetch, 'POST', `${this.url}/token?grant_type=id_token`, {
         headers: this.headers,
         body: {
           provider,
           id_token: token,
+          access_token,
           nonce,
           gotrue_meta_security: { captcha_token: options?.captchaToken },
         },
