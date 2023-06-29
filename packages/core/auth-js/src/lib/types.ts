@@ -51,6 +51,8 @@ export type GoTrueClientOptions = {
   fetch?: Fetch
   /* If set to 'pkce' PKCE flow. Defaults to the 'implicit' flow otherwise */
   flowType?: AuthFlowType
+  /* If debug messages are emitted. Can be used to inspect the behavior of the library. */
+  debug?: boolean
 }
 
 export type AuthResponse =

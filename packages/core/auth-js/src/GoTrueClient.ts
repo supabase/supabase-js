@@ -86,6 +86,7 @@ const DEFAULT_OPTIONS: Omit<Required<GoTrueClientOptions>, 'fetch' | 'storage'> 
   detectSessionInUrl: true,
   headers: DEFAULT_HEADERS,
   flowType: 'implicit',
+  debug: false,
 }
 
 /** Current session will be checked for refresh at this interval. */
@@ -96,6 +97,10 @@ const AUTO_REFRESH_TICK_DURATION = 30 * 1000
 const AUTO_REFRESH_TICK_THRESHOLD = 3
 
 export default class GoTrueClient {
+  private static nextInstanceID = 0
+
+  private instanceID: number
+
   /**
    * Namespace for the GoTrue admin methods.
    * These methods should only be used in a trusted server-side environment.
@@ -144,11 +149,23 @@ export default class GoTrueClient {
    */
   protected broadcastChannel: BroadcastChannel | null = null
 
+  protected logDebugMessages: boolean
+
   /**
    * Create a new client for use in the browser.
    */
   constructor(options: GoTrueClientOptions) {
+    this.instanceID = GoTrueClient.nextInstanceID
+    GoTrueClient.nextInstanceID += 1
+
+    if (this.instanceID > 0 && isBrowser()) {
+      console.warn(
+        'Multiple GoTrueClient instances detected in the same browser context. It is not an error, but this should be avoided as it may produce undefined behavior when used concurrently under the same storage key.'
+      )
+    }
+
     const settings = { ...DEFAULT_OPTIONS, ...options }
+    this.logDebugMessages = settings.debug
     this.inMemorySession = null
     this.storageKey = settings.storageKey
     this.autoRefreshToken = settings.autoRefreshToken
@@ -194,11 +211,21 @@ export default class GoTrueClient {
       }
 
       this.broadcastChannel?.addEventListener('message', async (event) => {
+        this._debug('received broadcast notification from other tab or client', event)
+
         await this._notifyAllSubscribers(event.data.event, event.data.session, false) // broadcast = false so we don't get an endless loop of messages
       })
     }
 
     this.initialize()
+  }
+
+  private _debug(...args: any[]): GoTrueClient {
+    if (this.logDebugMessages) {
+      console.log(`GoTrueClient@${this.instanceID} ${new Date().toISOString()}`, ...args)
+    }
+
+    return this
   }
 
   /**
@@ -227,9 +254,13 @@ export default class GoTrueClient {
 
     try {
       const isPKCEFlow = isBrowser() ? await this._isPKCEFlow() : false
+      this._debug('#_initialize()', 'begin', 'is PKCE flow', isPKCEFlow)
+
       if (isPKCEFlow || (this.detectSessionInUrl && this._isImplicitGrantFlow())) {
         const { data, error } = await this._getSessionFromUrl(isPKCEFlow)
         if (error) {
+          this._debug('#_initialize()', 'error detecting session from URL', error)
+
           // failed login attempt via url,
           // remove old session as in verifyOtp, signUp and signInWith*
           await this._removeSession()
@@ -238,6 +269,14 @@ export default class GoTrueClient {
         }
 
         const { session, redirectType } = data
+
+        this._debug(
+          '#_initialize()',
+          'detected session in URL',
+          session,
+          'redirect type',
+          redirectType
+        )
 
         await this._saveSession(session)
 
@@ -265,6 +304,7 @@ export default class GoTrueClient {
       }
     } finally {
       await this._handleVisibilityChange()
+      this._debug('#_initialize()', 'end')
     }
   }
 
@@ -748,39 +788,57 @@ export default class GoTrueClient {
     // save to just await, as long we make sure _initialize() never throws
     await this.initializePromise
 
-    let currentSession: Session | null = null
+    this._debug('#getSession()', 'begin')
 
-    if (this.persistSession) {
-      const maybeSession = await getItemAsync(this.storage, this.storageKey)
+    try {
+      let currentSession: Session | null = null
 
-      if (maybeSession !== null) {
-        if (this._isValidSession(maybeSession)) {
-          currentSession = maybeSession
-        } else {
-          await this._removeSession()
+      if (this.persistSession) {
+        const maybeSession = await getItemAsync(this.storage, this.storageKey)
+
+        this._debug('#getSession()', 'session from storage', maybeSession)
+
+        if (maybeSession !== null) {
+          if (this._isValidSession(maybeSession)) {
+            currentSession = maybeSession
+          } else {
+            this._debug('#getSession()', 'session from storage is not valid')
+            await this._removeSession()
+          }
         }
+      } else {
+        currentSession = this.inMemorySession
+        this._debug('#getSession()', 'session from memory', currentSession)
       }
-    } else {
-      currentSession = this.inMemorySession
-    }
 
-    if (!currentSession) {
-      return { data: { session: null }, error: null }
-    }
+      if (!currentSession) {
+        return { data: { session: null }, error: null }
+      }
 
-    const hasExpired = currentSession.expires_at
-      ? currentSession.expires_at <= Date.now() / 1000
-      : false
-    if (!hasExpired) {
-      return { data: { session: currentSession }, error: null }
-    }
+      const hasExpired = currentSession.expires_at
+        ? currentSession.expires_at <= Date.now() / 1000
+        : false
 
-    const { session, error } = await this._callRefreshToken(currentSession.refresh_token)
-    if (error) {
-      return { data: { session: null }, error }
-    }
+      this._debug(
+        '#getSession()',
+        `session has${hasExpired ? '' : ' not'} expired`,
+        'expires_at',
+        currentSession.expires_at
+      )
 
-    return { data: { session }, error: null }
+      if (!hasExpired) {
+        return { data: { session: currentSession }, error: null }
+      }
+
+      const { session, error } = await this._callRefreshToken(currentSession.refresh_token)
+      if (error) {
+        return { data: { session: null }, error }
+      }
+
+      return { data: { session }, error: null }
+    } finally {
+      this._debug('#getSession()', 'end')
+    }
   }
 
   /**
@@ -1037,6 +1095,7 @@ export default class GoTrueClient {
 
       // Remove tokens from URL
       window.location.hash = ''
+      this._debug('#_getSessionFromUrl()', 'clearing window.location.hash')
 
       return { data: { session, redirectType }, error: null }
     } catch (error) {
@@ -1112,18 +1171,22 @@ export default class GoTrueClient {
       id,
       callback,
       unsubscribe: () => {
+        this._debug('#unsubscribe()', 'state change callback with id removed', id)
+
         this.stateChangeEmitters.delete(id)
       },
     }
 
+    this._debug('#onAuthStateChange()', 'registered callback with id', id)
+
     this.stateChangeEmitters.set(id, subscription)
 
-    this.emitInitialSession(id)
+    this._emitInitialSession(id)
 
     return { data: { subscription } }
   }
 
-  private async emitInitialSession(id: string): Promise<void> {
+  private async _emitInitialSession(id: string): Promise<void> {
     try {
       const {
         data: { session },
@@ -1132,8 +1195,10 @@ export default class GoTrueClient {
       if (error) throw error
 
       await this.stateChangeEmitters.get(id)?.callback('INITIAL_SESSION', session)
+      this._debug('INITIAL_SESSION', 'callback id', id, 'session', session)
     } catch (err) {
       await this.stateChangeEmitters.get(id)?.callback('INITIAL_SESSION', null)
+      this._debug('INITIAL_SESSION', 'callback id', id, 'error', err)
       console.error(err)
     }
   }
@@ -1191,6 +1256,9 @@ export default class GoTrueClient {
    * @param refreshToken A valid refresh token that was returned on login.
    */
   private async _refreshAccessToken(refreshToken: string): Promise<AuthResponse> {
+    const debugName = `#_refreshAccessToken(${refreshToken.substring(0, 5)}...)`
+    this._debug(debugName, 'begin')
+
     try {
       const startedAt = Date.now()
 
@@ -1198,6 +1266,8 @@ export default class GoTrueClient {
       return await retryable(
         async (attempt) => {
           await sleep(attempt * 200) // 0, 200, 400, 800, ...
+
+          this._debug(debugName, 'refreshing attempt', attempt)
 
           return await _request(this.fetch, 'POST', `${this.url}/token?grant_type=refresh_token`, {
             body: { refresh_token: refreshToken },
@@ -1208,15 +1278,19 @@ export default class GoTrueClient {
         (attempt, _, result) =>
           result &&
           result.error &&
-          result.error instanceof AuthRetryableFetchError &&
+          isAuthRetryableFetchError(result.error) &&
           // retryable only if the request can be sent before the backoff overflows the tick duration
           Date.now() + (attempt + 1) * 200 - startedAt < AUTO_REFRESH_TICK_DURATION
       )
     } catch (error) {
+      this._debug(debugName, 'error', error)
+
       if (isAuthError(error)) {
         return { data: { session: null, user: null }, error }
       }
       throw error
+    } finally {
+      this._debug(debugName, 'end')
     }
   }
 
@@ -1245,6 +1319,9 @@ export default class GoTrueClient {
       scopes: options.scopes,
       queryParams: options.queryParams,
     })
+
+    this._debug('#_handleProviderSignIn()', 'provider', provider, 'options', options, 'url', url)
+
     // try to open on the browser
     if (isBrowser() && !options.skipBrowserRedirect) {
       window.location.assign(url)
@@ -1258,9 +1335,15 @@ export default class GoTrueClient {
    * Note: this method is async to accommodate for AsyncStorage e.g. in React native.
    */
   private async _recoverAndRefresh() {
+    const debugName = '#_recoverAndRefresh()'
+    this._debug(debugName, 'begin')
+
     try {
       const currentSession = await getItemAsync(this.storage, this.storageKey)
+      this._debug(debugName, 'session from storage', currentSession)
+
       if (!this._isValidSession(currentSession)) {
+        this._debug(debugName, 'session is not valid')
         if (currentSession !== null) {
           await this._removeSession()
         }
@@ -1269,8 +1352,14 @@ export default class GoTrueClient {
       }
 
       const timeNow = Math.round(Date.now() / 1000)
+      const expiresWithMargin = (currentSession.expires_at ?? Infinity) < timeNow + EXPIRY_MARGIN
 
-      if ((currentSession.expires_at ?? Infinity) < timeNow + EXPIRY_MARGIN) {
+      this._debug(
+        debugName,
+        `session has${expiresWithMargin ? '' : ' not'} expired with margin of ${EXPIRY_MARGIN}s`
+      )
+
+      if (expiresWithMargin) {
         if (this.autoRefreshToken && currentSession.refresh_token) {
           const { error } = await this._callRefreshToken(currentSession.refresh_token)
 
@@ -1278,6 +1367,11 @@ export default class GoTrueClient {
             console.error(error)
 
             if (!isAuthRetryableFetchError(error)) {
+              this._debug(
+                debugName,
+                'refresh failed with a non-retryable error, removing the session',
+                error
+              )
               await this._removeSession()
             }
           }
@@ -1289,23 +1383,32 @@ export default class GoTrueClient {
         await this._notifyAllSubscribers('SIGNED_IN', currentSession)
       }
     } catch (err) {
+      this._debug(debugName, 'error', err)
+
       console.error(err)
       return
+    } finally {
+      this._debug(debugName, 'end')
     }
   }
 
   private async _callRefreshToken(refreshToken: string): Promise<CallRefreshTokenResult> {
+    if (!refreshToken) {
+      throw new AuthSessionMissingError()
+    }
+
     // refreshing is already in progress
     if (this.refreshingDeferred) {
       return this.refreshingDeferred.promise
     }
 
+    const debugName = `#_callRefreshToken(${refreshToken.substring(0, 5)}...)`
+
+    this._debug(debugName, 'begin')
+
     try {
       this.refreshingDeferred = new Deferred<CallRefreshTokenResult>()
 
-      if (!refreshToken) {
-        throw new AuthSessionMissingError()
-      }
       const { data, error } = await this._refreshAccessToken(refreshToken)
       if (error) throw error
       if (!data.session) throw new AuthSessionMissingError()
@@ -1319,6 +1422,8 @@ export default class GoTrueClient {
 
       return result
     } catch (error) {
+      this._debug(debugName, 'error', error)
+
       if (isAuthError(error)) {
         const result = { session: null, error }
 
@@ -1331,6 +1436,7 @@ export default class GoTrueClient {
       throw error
     } finally {
       this.refreshingDeferred = null
+      this._debug(debugName, 'end')
     }
   }
 
@@ -1339,27 +1445,34 @@ export default class GoTrueClient {
     session: Session | null,
     broadcast = true
   ) {
-    if (this.broadcastChannel && broadcast) {
-      this.broadcastChannel.postMessage({ event, session })
-    }
+    const debugName = `#_notifyAllSubscribers(${event})`
+    this._debug(debugName, 'begin', session, `broadcast = ${broadcast}`)
 
-    const errors: any[] = []
-    const promises = Array.from(this.stateChangeEmitters.values()).map(async (x) => {
-      try {
-        await x.callback(event, session)
-      } catch (e: any) {
-        errors.push(e)
-      }
-    })
-
-    await Promise.all(promises)
-
-    if (errors.length > 0) {
-      for (let i = 0; i < errors.length; i += 1) {
-        console.error(errors[i])
+    try {
+      if (this.broadcastChannel && broadcast) {
+        this.broadcastChannel.postMessage({ event, session })
       }
 
-      throw errors[0]
+      const errors: any[] = []
+      const promises = Array.from(this.stateChangeEmitters.values()).map(async (x) => {
+        try {
+          await x.callback(event, session)
+        } catch (e: any) {
+          errors.push(e)
+        }
+      })
+
+      await Promise.all(promises)
+
+      if (errors.length > 0) {
+        for (let i = 0; i < errors.length; i += 1) {
+          console.error(errors[i])
+        }
+
+        throw errors[0]
+      }
+    } finally {
+      this._debug(debugName, 'end')
     }
   }
 
@@ -1368,6 +1481,8 @@ export default class GoTrueClient {
    * process to _startAutoRefreshToken if possible
    */
   private async _saveSession(session: Session) {
+    this._debug('#_saveSession()', session)
+
     if (!this.persistSession) {
       this.inMemorySession = session
     }
@@ -1378,10 +1493,14 @@ export default class GoTrueClient {
   }
 
   private _persistSession(currentSession: Session) {
+    this._debug('#_persistSession()', currentSession)
+
     return setItemAsync(this.storage, this.storageKey, currentSession)
   }
 
   private async _removeSession() {
+    this._debug('#_removeSession()')
+
     if (this.persistSession) {
       await removeItemAsync(this.storage, this.storageKey)
     } else {
@@ -1396,6 +1515,8 @@ export default class GoTrueClient {
    * {@see #stopAutoRefresh}
    */
   private _removeVisibilityChangedCallback() {
+    this._debug('#_removeVisibilityChangedCallback()')
+
     const callback = this.visibilityChangedCallback
     this.visibilityChangedCallback = null
 
@@ -1414,6 +1535,8 @@ export default class GoTrueClient {
    */
   private async _startAutoRefresh() {
     await this._stopAutoRefresh()
+
+    this._debug('#_startAutoRefresh()')
 
     const ticker = setInterval(() => this._autoRefreshTokenTick(), AUTO_REFRESH_TICK_DURATION)
     this.autoRefreshTicker = ticker
@@ -1443,6 +1566,8 @@ export default class GoTrueClient {
    * within the library.
    */
   private async _stopAutoRefresh() {
+    this._debug('#_stopAutoRefresh()')
+
     const ticker = this.autoRefreshTicker
     this.autoRefreshTicker = null
 
@@ -1495,27 +1620,39 @@ export default class GoTrueClient {
    * Runs the auto refresh token tick.
    */
   private async _autoRefreshTokenTick() {
-    const now = Date.now()
+    this._debug('#_autoRefreshTokenTick()', 'begin')
 
     try {
-      const {
-        data: { session },
-      } = await this.getSession()
+      const now = Date.now()
 
-      if (!session || !session.refresh_token || !session.expires_at) {
-        return
+      try {
+        const {
+          data: { session },
+        } = await this.getSession()
+
+        if (!session || !session.refresh_token || !session.expires_at) {
+          this._debug('#_autoRefreshTokenTick()', 'no session')
+          return
+        }
+
+        // session will expire in this many ticks (or has already expired if <= 0)
+        const expiresInTicks = Math.floor(
+          (session.expires_at * 1000 - now) / AUTO_REFRESH_TICK_DURATION
+        )
+
+        this._debug(
+          '#_autoRefreshTokenTick()',
+          `access token expires in ${expiresInTicks}, a tick lasts ${AUTO_REFRESH_TICK_DURATION}ms, refresh threshold is ${AUTO_REFRESH_TICK_THRESHOLD} ticks`
+        )
+
+        if (expiresInTicks < AUTO_REFRESH_TICK_THRESHOLD) {
+          await this._callRefreshToken(session.refresh_token)
+        }
+      } catch (e: any) {
+        console.error('Auto refresh tick failed with error. This is likely a transient error.', e)
       }
-
-      // session will expire in this many ticks (or has already expired if <= 0)
-      const expiresInTicks = Math.floor(
-        (session.expires_at * 1000 - now) / AUTO_REFRESH_TICK_DURATION
-      )
-
-      if (expiresInTicks < AUTO_REFRESH_TICK_THRESHOLD) {
-        await this._callRefreshToken(session.refresh_token)
-      }
-    } catch (e: any) {
-      console.error('Auto refresh tick failed with error. This is likely a transient error.', e)
+    } finally {
+      this._debug('#_autoRefreshTokenTick()', 'end')
     }
   }
 
@@ -1525,6 +1662,8 @@ export default class GoTrueClient {
    * platforms it assumes always foreground.
    */
   private async _handleVisibilityChange() {
+    this._debug('#_handleVisibilityChange()')
+
     if (!isBrowser() || !window?.addEventListener) {
       if (this.autoRefreshToken) {
         // in non-browser environments the refresh token ticker runs always
@@ -1551,11 +1690,18 @@ export default class GoTrueClient {
    * Callback registered with `window.addEventListener('visibilitychange')`.
    */
   private async _onVisibilityChanged(isInitial: boolean) {
+    this._debug(`#_onVisibilityChanged(${isInitial})`, 'visibilityState', document.visibilityState)
+
     if (document.visibilityState === 'visible') {
       if (!isInitial) {
         // initial visibility change setup is handled in another flow under #initialize()
         await this.initializePromise
         await this._recoverAndRefresh()
+
+        this._debug(
+          '#_onVisibilityChanged()',
+          'finished waiting for initialize, _recoverAndRefresh'
+        )
       }
 
       if (this.autoRefreshToken) {
@@ -1596,6 +1742,17 @@ export default class GoTrueClient {
       await setItemAsync(this.storage, `${this.storageKey}-code-verifier`, codeVerifier)
       const codeChallenge = await generatePKCEChallenge(codeVerifier)
       const codeChallengeMethod = codeVerifier === codeChallenge ? 'plain' : 's256'
+
+      this._debug(
+        'PKCE',
+        'code verifier',
+        `${codeVerifier.substring(0, 5)}...`,
+        'code challenge',
+        codeChallenge,
+        'method',
+        codeChallengeMethod
+      )
+
       const flowParams = new URLSearchParams({
         code_challenge: `${encodeURIComponent(codeChallenge)}`,
         code_challenge_method: `${encodeURIComponent(codeChallengeMethod)}`,
