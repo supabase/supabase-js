@@ -1642,10 +1642,10 @@ export default class GoTrueClient {
 
         this._debug(
           '#_autoRefreshTokenTick()',
-          `access token expires in ${expiresInTicks}, a tick lasts ${AUTO_REFRESH_TICK_DURATION}ms, refresh threshold is ${AUTO_REFRESH_TICK_THRESHOLD} ticks`
+          `access token expires in ${expiresInTicks} ticks, a tick lasts ${AUTO_REFRESH_TICK_DURATION}ms, refresh threshold is ${AUTO_REFRESH_TICK_THRESHOLD} ticks`
         )
 
-        if (expiresInTicks < AUTO_REFRESH_TICK_THRESHOLD) {
+        if (expiresInTicks <= AUTO_REFRESH_TICK_THRESHOLD) {
           await this._callRefreshToken(session.refresh_token)
         }
       } catch (e: any) {
