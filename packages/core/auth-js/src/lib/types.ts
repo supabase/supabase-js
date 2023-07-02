@@ -11,6 +11,7 @@ export type Provider =
   | 'github'
   | 'gitlab'
   | 'google'
+  | 'kakao'
   | 'keycloak'
   | 'linkedin'
   | 'notion'
