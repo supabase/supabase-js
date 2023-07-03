@@ -55,10 +55,14 @@ export default class GoTrueAdminApi {
   /**
    * Removes a logged-in session.
    * @param jwt A valid, logged-in JWT.
+   * @param scope The logout sope.
    */
-  async signOut(jwt: string): Promise<{ data: null; error: AuthError | null }> {
+  async signOut(
+    jwt: string,
+    scope: 'global' | 'local' | 'others' = 'global'
+  ): Promise<{ data: null; error: AuthError | null }> {
     try {
-      await _request(this.fetch, 'POST', `${this.url}/logout`, {
+      await _request(this.fetch, 'POST', `${this.url}/logout?scope=${scope}`, {
         headers: this.headers,
         jwt,
         noResolveJson: true,

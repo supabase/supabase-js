@@ -51,6 +51,7 @@ import type {
   SignInWithPasswordlessCredentials,
   SignUpWithPasswordCredentials,
   SignInWithSSO,
+  SignOut,
   Subscription,
   SupportedStorage,
   User,
@@ -1133,15 +1134,17 @@ export default class GoTrueClient {
    *
    * For server-side management, you can revoke all refresh tokens for a user by passing a user's JWT through to `auth.api.signOut(JWT: string)`.
    * There is no way to revoke a user's access token jwt until it expires. It is recommended to set a shorter expiry on the jwt for this reason.
+   *
+   * If using others scope, no `SIGNED_OUT` event is fired!
    */
-  async signOut(): Promise<{ error: AuthError | null }> {
+  async signOut({ scope }: SignOut = { scope: 'global' }): Promise<{ error: AuthError | null }> {
     const { data, error: sessionError } = await this.getSession()
     if (sessionError) {
       return { error: sessionError }
     }
     const accessToken = data.session?.access_token
     if (accessToken) {
-      const { error } = await this.admin.signOut(accessToken)
+      const { error } = await this.admin.signOut(accessToken, scope)
       if (error) {
         // ignore 404s since user might not exist anymore
         // ignore 401s since an invalid or expired JWT should sign out the current session
@@ -1150,9 +1153,11 @@ export default class GoTrueClient {
         }
       }
     }
-    await this._removeSession()
-    await removeItemAsync(this.storage, `${this.storageKey}-code-verifier`)
-    await this._notifyAllSubscribers('SIGNED_OUT', null)
+    if (scope !== 'others') {
+      await this._removeSession()
+      await removeItemAsync(this.storage, `${this.storageKey}-code-verifier`)
+      await this._notifyAllSubscribers('SIGNED_OUT', null)
+    }
     return { error: null }
   }
 
