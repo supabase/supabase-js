@@ -735,6 +735,7 @@ export default class GoTrueClient {
             type,
             gotrue_meta_security: { captcha_token: options?.captchaToken },
           },
+          redirectTo: options?.emailRedirectTo,
         })
         return { data: { user: null, session: null }, error }
       } else if ('phone' in credentials) {
