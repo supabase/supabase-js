@@ -48,7 +48,7 @@ export default class PostgrestTransformBuilder<
   ): this
   order(
     column: string,
-    options?: { ascending?: boolean; nullsFirst?: boolean; foreignTable: string }
+    options?: { ascending?: boolean; nullsFirst?: boolean; foreignTable?: string }
   ): this
   /**
    * Order the query result by `column`.
