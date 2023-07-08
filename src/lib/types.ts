@@ -40,6 +40,10 @@ export type SupabaseClientOptions<SchemaName> = {
      * OAuth flow to use - defaults to implicit flow. PKCE is recommended for mobile and server-side applications.
      */
     flowType?: SupabaseAuthClientOptions['flowType']
+    /**
+     * If debug messages for authentication client are emitted. Can be used to inspect the behavior of the library.
+     */ 
+    debug?: boolean
   }
   /**
    * Options passed to the realtime-js instance
