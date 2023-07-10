@@ -724,7 +724,11 @@ export default class GoTrueClient {
    */
   async resend(credentials: ResendParams): Promise<AuthOtpResponse> {
     try {
-      await this._removeSession()
+
+      if (credentials.type != "email_change" && credentials.type != "phone_change") {
+        await this._removeSession();
+      }
+      
       const endpoint = `${this.url}/resend`
       if ('email' in credentials) {
         const { email, type, options } = credentials
