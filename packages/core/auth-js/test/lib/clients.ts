@@ -20,10 +20,27 @@ const AUTH_ADMIN_JWT = jwt.sign(
   GOTRUE_JWT_SECRET
 )
 
+class MemoryStorage {
+  private _storage: { [name: string]: string } = {}
+
+  async setItem(name: string, value: string) {
+    this._storage[name] = value
+  }
+
+  async getItem(name: string): Promise<string | null> {
+    return this._storage[name] || null
+  }
+
+  async removeItem(name: string) {
+    delete this._storage[name]
+  }
+}
+
 export const authClient = new GoTrueClient({
   url: GOTRUE_URL_SIGNUP_ENABLED_AUTO_CONFIRM_ON,
   autoRefreshToken: false,
   persistSession: true,
+  storage: new MemoryStorage(),
 })
 
 export const authClientWithSession = new GoTrueClient({
@@ -36,24 +53,28 @@ export const authSubscriptionClient = new GoTrueClient({
   url: GOTRUE_URL_SIGNUP_ENABLED_AUTO_CONFIRM_ON,
   autoRefreshToken: false,
   persistSession: true,
+  storage: new MemoryStorage(),
 })
 
 export const clientApiAutoConfirmEnabledClient = new GoTrueClient({
   url: GOTRUE_URL_SIGNUP_ENABLED_AUTO_CONFIRM_ON,
   autoRefreshToken: false,
   persistSession: true,
+  storage: new MemoryStorage(),
 })
 
 export const clientApiAutoConfirmOffSignupsEnabledClient = new GoTrueClient({
   url: GOTRUE_URL_SIGNUP_ENABLED_AUTO_CONFIRM_OFF,
   autoRefreshToken: false,
   persistSession: true,
+  storage: new MemoryStorage(),
 })
 
 export const clientApiAutoConfirmDisabledClient = new GoTrueClient({
   url: GOTRUE_URL_SIGNUP_DISABLED_AUTO_CONFIRM_OFF,
   autoRefreshToken: false,
   persistSession: true,
+  storage: new MemoryStorage(),
 })
 
 export const authAdminApiAutoConfirmEnabledClient = new GoTrueAdminApi({

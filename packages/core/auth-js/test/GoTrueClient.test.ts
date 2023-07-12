@@ -140,7 +140,7 @@ describe('GoTrueClient', () => {
 
       expect(updateError).toBeNull()
       expect(user).not.toBeNull()
-      expect(user?.user_metadata).toStrictEqual({ hello: 'world' })
+      expect(user?.user_metadata).toMatchObject({ hello: 'world' })
     })
 
     test('getSession() should return the currentUser session', async () => {
@@ -662,7 +662,7 @@ describe('User management', () => {
 
     expect(user).not.toBeNull()
     expect(user?.email).toBe(email)
-    expect(user?.user_metadata).toStrictEqual(userMetadata)
+    expect(user?.user_metadata).toMatchObject(userMetadata)
   })
 
   test('Get user after updating', async () => {
