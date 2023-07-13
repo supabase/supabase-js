@@ -29,6 +29,8 @@ import {
   generatePKCEVerifier,
   generatePKCEChallenge,
   supportsLocalStorage,
+  stackGuard,
+  isInStackGuard,
 } from './lib/helpers'
 import localStorageAdapter from './lib/local-storage'
 import { polyfillGlobalThis } from './lib/polyfills'
@@ -279,8 +281,6 @@ export default class GoTrueClient {
           redirectType
         )
 
-        await this._saveSession(session)
-
         setTimeout(async () => {
           if (redirectType === 'recovery') {
             await this._notifyAllSubscribers('PASSWORD_RECOVERY', session)
@@ -291,7 +291,6 @@ export default class GoTrueClient {
 
         return { error: null }
       }
-
       // no login attempt via callback url try to recover session from storage
       await this._recoverAndRefresh()
       return { error: null }
@@ -699,18 +698,20 @@ export default class GoTrueClient {
    */
   async reauthenticate(): Promise<AuthResponse> {
     try {
-      const {
-        data: { session },
-        error: sessionError,
-      } = await this.getSession()
-      if (sessionError) throw sessionError
-      if (!session) throw new AuthSessionMissingError()
+      return await this._useSession(async (result) => {
+        const {
+          data: { session },
+          error: sessionError,
+        } = result
+        if (sessionError) throw sessionError
+        if (!session) throw new AuthSessionMissingError()
 
-      const { error } = await _request(this.fetch, 'GET', `${this.url}/reauthenticate`, {
-        headers: this.headers,
-        jwt: session.access_token,
+        const { error } = await _request(this.fetch, 'GET', `${this.url}/reauthenticate`, {
+          headers: this.headers,
+          jwt: session.access_token,
+        })
+        return { data: { user: null, session: null }, error }
       })
-      return { data: { user: null, session: null }, error }
     } catch (error) {
       if (isAuthError(error)) {
         return { data: { user: null, session: null }, error }
@@ -768,7 +769,55 @@ export default class GoTrueClient {
    * Returns the session, refreshing it if necessary.
    * The session returned can be null if the session is not detected which can happen in the event a user is not signed-in or has logged out.
    */
-  async getSession(): Promise<
+  async getSession() {
+    return this._useSession(async (result) => {
+      return result
+    })
+  }
+
+  /**
+   * Use instead of {@link #getSession} inside the library. It is
+   * semantically usually what you want, as getting a session involves some
+   * processing afterwards that requires only one client operating on the
+   * session at once across multiple tabs or processes.
+   */
+  private async _useSession<R>(
+    fn: (
+      result:
+        | {
+            data: {
+              session: Session
+            }
+            error: null
+          }
+        | {
+            data: {
+              session: null
+            }
+            error: AuthError
+          }
+        | {
+            data: {
+              session: null
+            }
+            error: null
+          }
+    ) => Promise<R>
+  ): Promise<R> {
+    return await stackGuard('_useSession', async () => {
+      // the use of __loadSession here is the only correct use of the function!
+      const result = await this.__loadSession()
+
+      return await fn(result)
+    })
+  }
+
+  /**
+   * NEVER USE DIRECTLY!
+   *
+   * Always use {@link #_useSession}.
+   */
+  private async __loadSession(): Promise<
     | {
         data: {
           session: Session
@@ -788,11 +837,15 @@ export default class GoTrueClient {
         error: null
       }
   > {
+    if (this.logDebugMessages && !isInStackGuard('_useSession')) {
+      throw new Error('Please use #_useSession()')
+    }
+
     // make sure we've read the session from the url if there is one
     // save to just await, as long we make sure _initialize() never throws
     await this.initializePromise
 
-    this._debug('#getSession()', 'begin')
+    this._debug('#__loadSession()', 'begin')
 
     try {
       let currentSession: Session | null = null
@@ -824,7 +877,7 @@ export default class GoTrueClient {
         : false
 
       this._debug(
-        '#getSession()',
+        '#__loadSession()',
         `session has${hasExpired ? '' : ' not'} expired`,
         'expires_at',
         currentSession.expires_at
@@ -841,7 +894,7 @@ export default class GoTrueClient {
 
       return { data: { session }, error: null }
     } finally {
-      this._debug('#getSession()', 'end')
+      this._debug('#__loadSession()', 'end')
     }
   }
 
@@ -851,20 +904,22 @@ export default class GoTrueClient {
    */
   async getUser(jwt?: string): Promise<UserResponse> {
     try {
-      if (!jwt) {
-        const { data, error } = await this.getSession()
-        if (error) {
-          throw error
+      return await this._useSession(async (result) => {
+        if (!jwt) {
+          const { data, error } = result
+          if (error) {
+            throw error
+          }
+
+          // Default to Authorization header if there is no existing session
+          jwt = data.session?.access_token ?? undefined
         }
 
-        // Default to Authorization header if there is no existing session
-        jwt = data.session?.access_token ?? undefined
-      }
-
-      return await _request(this.fetch, 'GET', `${this.url}/user`, {
-        headers: this.headers,
-        jwt: jwt,
-        xform: _userResponse,
+        return await _request(this.fetch, 'GET', `${this.url}/user`, {
+          headers: this.headers,
+          jwt: jwt,
+          xform: _userResponse,
+        })
       })
     } catch (error) {
       if (isAuthError(error)) {
@@ -885,27 +940,29 @@ export default class GoTrueClient {
     } = {}
   ): Promise<UserResponse> {
     try {
-      const { data: sessionData, error: sessionError } = await this.getSession()
-      if (sessionError) {
-        throw sessionError
-      }
-      if (!sessionData.session) {
-        throw new AuthSessionMissingError()
-      }
-      const session: Session = sessionData.session
-      const { data, error: userError } = await _request(this.fetch, 'PUT', `${this.url}/user`, {
-        headers: this.headers,
-        redirectTo: options?.emailRedirectTo,
-        body: attributes,
-        jwt: session.access_token,
-        xform: _userResponse,
-      })
-      if (userError) throw userError
-      session.user = data.user as User
-      await this._saveSession(session)
-      await this._notifyAllSubscribers('USER_UPDATED', session)
+      return await this._useSession(async (result) => {
+        const { data: sessionData, error: sessionError } = result
+        if (sessionError) {
+          throw sessionError
+        }
+        if (!sessionData.session) {
+          throw new AuthSessionMissingError()
+        }
+        const session: Session = sessionData.session
+        const { data, error: userError } = await _request(this.fetch, 'PUT', `${this.url}/user`, {
+          headers: this.headers,
+          redirectTo: options?.emailRedirectTo,
+          body: attributes,
+          jwt: session.access_token,
+          xform: _userResponse,
+        })
+        if (userError) throw userError
+        session.user = data.user as User
+        await this._saveSession(session)
+        await this._notifyAllSubscribers('USER_UPDATED', session)
 
-      return { data: { user: session.user }, error: null }
+        return { data: { user: session.user }, error: null }
+      })
     } catch (error) {
       if (isAuthError(error)) {
         return { data: { user: null }, error }
@@ -997,29 +1054,31 @@ export default class GoTrueClient {
    */
   async refreshSession(currentSession?: { refresh_token: string }): Promise<AuthResponse> {
     try {
-      if (!currentSession) {
-        const { data, error } = await this.getSession()
-        if (error) {
-          throw error
+      return await this._useSession(async (result) => {
+        if (!currentSession) {
+          const { data, error } = result
+          if (error) {
+            throw error
+          }
+
+          currentSession = data.session ?? undefined
         }
 
-        currentSession = data.session ?? undefined
-      }
+        if (!currentSession?.refresh_token) {
+          throw new AuthSessionMissingError()
+        }
 
-      if (!currentSession?.refresh_token) {
-        throw new AuthSessionMissingError()
-      }
+        const { session, error } = await this._callRefreshToken(currentSession.refresh_token)
+        if (error) {
+          return { data: { user: null, session: null }, error: error }
+        }
 
-      const { session, error } = await this._callRefreshToken(currentSession.refresh_token)
-      if (error) {
-        return { data: { user: null, session: null }, error: error }
-      }
+        if (!session) {
+          return { data: { user: null, session: null }, error: null }
+        }
 
-      if (!session) {
-        return { data: { user: null, session: null }, error: null }
-      }
-
-      return { data: { user: session.user, session }, error: null }
+        return { data: { user: session.user, session }, error: null }
+      })
     } catch (error) {
       if (isAuthError(error)) {
         return { data: { user: null, session: null }, error }
@@ -1142,27 +1201,29 @@ export default class GoTrueClient {
    * If using others scope, no `SIGNED_OUT` event is fired!
    */
   async signOut({ scope }: SignOut = { scope: 'global' }): Promise<{ error: AuthError | null }> {
-    const { data, error: sessionError } = await this.getSession()
-    if (sessionError) {
-      return { error: sessionError }
-    }
-    const accessToken = data.session?.access_token
-    if (accessToken) {
-      const { error } = await this.admin.signOut(accessToken, scope)
-      if (error) {
-        // ignore 404s since user might not exist anymore
-        // ignore 401s since an invalid or expired JWT should sign out the current session
-        if (!(isAuthApiError(error) && (error.status === 404 || error.status === 401))) {
-          return { error }
+    return await this._useSession(async (result) => {
+      const { data, error: sessionError } = result
+      if (sessionError) {
+        return { error: sessionError }
+      }
+      const accessToken = data.session?.access_token
+      if (accessToken) {
+        const { error } = await this.admin.signOut(accessToken, scope)
+        if (error) {
+          // ignore 404s since user might not exist anymore
+          // ignore 401s since an invalid or expired JWT should sign out the current session
+          if (!(isAuthApiError(error) && (error.status === 404 || error.status === 401))) {
+            return { error }
+          }
         }
       }
-    }
-    if (scope !== 'others') {
-      await this._removeSession()
-      await removeItemAsync(this.storage, `${this.storageKey}-code-verifier`)
-      await this._notifyAllSubscribers('SIGNED_OUT', null)
-    }
-    return { error: null }
+      if (scope !== 'others') {
+        await this._removeSession()
+        await removeItemAsync(this.storage, `${this.storageKey}-code-verifier`)
+        await this._notifyAllSubscribers('SIGNED_OUT', null)
+      }
+      return { error: null }
+    })
   }
 
   /**
@@ -1195,20 +1256,22 @@ export default class GoTrueClient {
   }
 
   private async _emitInitialSession(id: string): Promise<void> {
-    try {
-      const {
-        data: { session },
-        error,
-      } = await this.getSession()
-      if (error) throw error
+    return await this._useSession(async (result) => {
+      try {
+        const {
+          data: { session },
+          error,
+        } = result
+        if (error) throw error
 
-      await this.stateChangeEmitters.get(id)?.callback('INITIAL_SESSION', session)
-      this._debug('INITIAL_SESSION', 'callback id', id, 'session', session)
-    } catch (err) {
-      await this.stateChangeEmitters.get(id)?.callback('INITIAL_SESSION', null)
-      this._debug('INITIAL_SESSION', 'callback id', id, 'error', err)
-      console.error(err)
-    }
+        await this.stateChangeEmitters.get(id)?.callback('INITIAL_SESSION', session)
+        this._debug('INITIAL_SESSION', 'callback id', id, 'session', session)
+      } catch (err) {
+        await this.stateChangeEmitters.get(id)?.callback('INITIAL_SESSION', null)
+        this._debug('INITIAL_SESSION', 'callback id', id, 'error', err)
+        console.error(err)
+      }
+    })
   }
 
   /**
@@ -1634,28 +1697,30 @@ export default class GoTrueClient {
       const now = Date.now()
 
       try {
-        const {
-          data: { session },
-        } = await this.getSession()
+        return await this._useSession(async (result) => {
+          const {
+            data: { session },
+          } = result
 
-        if (!session || !session.refresh_token || !session.expires_at) {
-          this._debug('#_autoRefreshTokenTick()', 'no session')
-          return
-        }
+          if (!session || !session.refresh_token || !session.expires_at) {
+            this._debug('#_autoRefreshTokenTick()', 'no session')
+            return
+          }
 
-        // session will expire in this many ticks (or has already expired if <= 0)
-        const expiresInTicks = Math.floor(
-          (session.expires_at * 1000 - now) / AUTO_REFRESH_TICK_DURATION
-        )
+          // session will expire in this many ticks (or has already expired if <= 0)
+          const expiresInTicks = Math.floor(
+            (session.expires_at * 1000 - now) / AUTO_REFRESH_TICK_DURATION
+          )
 
-        this._debug(
-          '#_autoRefreshTokenTick()',
-          `access token expires in ${expiresInTicks} ticks, a tick lasts ${AUTO_REFRESH_TICK_DURATION}ms, refresh threshold is ${AUTO_REFRESH_TICK_THRESHOLD} ticks`
-        )
+          this._debug(
+            '#_autoRefreshTokenTick()',
+            `access token expires in ${expiresInTicks} ticks, a tick lasts ${AUTO_REFRESH_TICK_DURATION}ms, refresh threshold is ${AUTO_REFRESH_TICK_THRESHOLD} ticks`
+          )
 
-        if (expiresInTicks <= AUTO_REFRESH_TICK_THRESHOLD) {
-          await this._callRefreshToken(session.refresh_token)
-        }
+          if (expiresInTicks <= AUTO_REFRESH_TICK_THRESHOLD) {
+            await this._callRefreshToken(session.refresh_token)
+          }
+        })
       } catch (e: any) {
         console.error('Auto refresh tick failed with error. This is likely a transient error.', e)
       }
@@ -1777,14 +1842,16 @@ export default class GoTrueClient {
 
   private async _unenroll(params: MFAUnenrollParams): Promise<AuthMFAUnenrollResponse> {
     try {
-      const { data: sessionData, error: sessionError } = await this.getSession()
-      if (sessionError) {
-        return { data: null, error: sessionError }
-      }
+      return await this._useSession(async (result) => {
+        const { data: sessionData, error: sessionError } = result
+        if (sessionError) {
+          return { data: null, error: sessionError }
+        }
 
-      return await _request(this.fetch, 'DELETE', `${this.url}/factors/${params.factorId}`, {
-        headers: this.headers,
-        jwt: sessionData?.session?.access_token,
+        return await _request(this.fetch, 'DELETE', `${this.url}/factors/${params.factorId}`, {
+          headers: this.headers,
+          jwt: sessionData?.session?.access_token,
+        })
       })
     } catch (error) {
       if (isAuthError(error)) {
@@ -1799,30 +1866,32 @@ export default class GoTrueClient {
    */
   private async _enroll(params: MFAEnrollParams): Promise<AuthMFAEnrollResponse> {
     try {
-      const { data: sessionData, error: sessionError } = await this.getSession()
-      if (sessionError) {
-        return { data: null, error: sessionError }
-      }
+      return await this._useSession(async (result) => {
+        const { data: sessionData, error: sessionError } = result
+        if (sessionError) {
+          return { data: null, error: sessionError }
+        }
 
-      const { data, error } = await _request(this.fetch, 'POST', `${this.url}/factors`, {
-        body: {
-          friendly_name: params.friendlyName,
-          factor_type: params.factorType,
-          issuer: params.issuer,
-        },
-        headers: this.headers,
-        jwt: sessionData?.session?.access_token,
+        const { data, error } = await _request(this.fetch, 'POST', `${this.url}/factors`, {
+          body: {
+            friendly_name: params.friendlyName,
+            factor_type: params.factorType,
+            issuer: params.issuer,
+          },
+          headers: this.headers,
+          jwt: sessionData?.session?.access_token,
+        })
+
+        if (error) {
+          return { data: null, error }
+        }
+
+        if (data?.totp?.qr_code) {
+          data.totp.qr_code = `data:image/svg+xml;utf-8,${data.totp.qr_code}`
+        }
+
+        return { data, error: null }
       })
-
-      if (error) {
-        return { data: null, error }
-      }
-
-      if (data?.totp?.qr_code) {
-        data.totp.qr_code = `data:image/svg+xml;utf-8,${data.totp.qr_code}`
-      }
-
-      return { data, error: null }
     } catch (error) {
       if (isAuthError(error)) {
         return { data: null, error }
@@ -1836,32 +1905,34 @@ export default class GoTrueClient {
    */
   private async _verify(params: MFAVerifyParams): Promise<AuthMFAVerifyResponse> {
     try {
-      const { data: sessionData, error: sessionError } = await this.getSession()
-      if (sessionError) {
-        return { data: null, error: sessionError }
-      }
-
-      const { data, error } = await _request(
-        this.fetch,
-        'POST',
-        `${this.url}/factors/${params.factorId}/verify`,
-        {
-          body: { code: params.code, challenge_id: params.challengeId },
-          headers: this.headers,
-          jwt: sessionData?.session?.access_token,
+      return await this._useSession(async (result) => {
+        const { data: sessionData, error: sessionError } = result
+        if (sessionError) {
+          return { data: null, error: sessionError }
         }
-      )
-      if (error) {
-        return { data: null, error }
-      }
 
-      await this._saveSession({
-        expires_at: Math.round(Date.now() / 1000) + data.expires_in,
-        ...data,
+        const { data, error } = await _request(
+          this.fetch,
+          'POST',
+          `${this.url}/factors/${params.factorId}/verify`,
+          {
+            body: { code: params.code, challenge_id: params.challengeId },
+            headers: this.headers,
+            jwt: sessionData?.session?.access_token,
+          }
+        )
+        if (error) {
+          return { data: null, error }
+        }
+
+        await this._saveSession({
+          expires_at: Math.round(Date.now() / 1000) + data.expires_in,
+          ...data,
+        })
+        await this._notifyAllSubscribers('MFA_CHALLENGE_VERIFIED', data)
+
+        return { data, error }
       })
-      await this._notifyAllSubscribers('MFA_CHALLENGE_VERIFIED', data)
-
-      return { data, error }
     } catch (error) {
       if (isAuthError(error)) {
         return { data: null, error }
@@ -1875,20 +1946,22 @@ export default class GoTrueClient {
    */
   private async _challenge(params: MFAChallengeParams): Promise<AuthMFAChallengeResponse> {
     try {
-      const { data: sessionData, error: sessionError } = await this.getSession()
-      if (sessionError) {
-        return { data: null, error: sessionError }
-      }
-
-      return await _request(
-        this.fetch,
-        'POST',
-        `${this.url}/factors/${params.factorId}/challenge`,
-        {
-          headers: this.headers,
-          jwt: sessionData?.session?.access_token,
+      return await this._useSession(async (result) => {
+        const { data: sessionData, error: sessionError } = result
+        if (sessionError) {
+          return { data: null, error: sessionError }
         }
-      )
+
+        return await _request(
+          this.fetch,
+          'POST',
+          `${this.url}/factors/${params.factorId}/challenge`,
+          {
+            headers: this.headers,
+            jwt: sessionData?.session?.access_token,
+          }
+        )
+      })
     } catch (error) {
       if (isAuthError(error)) {
         return { data: null, error }
@@ -1946,39 +2019,41 @@ export default class GoTrueClient {
    * {@see GoTrueMFAApi#getAuthenticatorAssuranceLevel}
    */
   private async _getAuthenticatorAssuranceLevel(): Promise<AuthMFAGetAuthenticatorAssuranceLevelResponse> {
-    const {
-      data: { session },
-      error: sessionError,
-    } = await this.getSession()
-    if (sessionError) {
-      return { data: null, error: sessionError }
-    }
-    if (!session) {
-      return {
-        data: { currentLevel: null, nextLevel: null, currentAuthenticationMethods: [] },
-        error: null,
+    return await this._useSession(async (result) => {
+      const {
+        data: { session },
+        error: sessionError,
+      } = result
+      if (sessionError) {
+        return { data: null, error: sessionError }
       }
-    }
+      if (!session) {
+        return {
+          data: { currentLevel: null, nextLevel: null, currentAuthenticationMethods: [] },
+          error: null,
+        }
+      }
 
-    const payload = this._decodeJWT(session.access_token)
+      const payload = this._decodeJWT(session.access_token)
 
-    let currentLevel: AuthenticatorAssuranceLevels | null = null
+      let currentLevel: AuthenticatorAssuranceLevels | null = null
 
-    if (payload.aal) {
-      currentLevel = payload.aal
-    }
+      if (payload.aal) {
+        currentLevel = payload.aal
+      }
 
-    let nextLevel: AuthenticatorAssuranceLevels | null = currentLevel
+      let nextLevel: AuthenticatorAssuranceLevels | null = currentLevel
 
-    const verifiedFactors =
-      session.user.factors?.filter((factor: Factor) => factor.status === 'verified') ?? []
+      const verifiedFactors =
+        session.user.factors?.filter((factor: Factor) => factor.status === 'verified') ?? []
 
-    if (verifiedFactors.length > 0) {
-      nextLevel = 'aal2'
-    }
+      if (verifiedFactors.length > 0) {
+        nextLevel = 'aal2'
+      }
 
-    const currentAuthenticationMethods = payload.amr || []
+      const currentAuthenticationMethods = payload.amr || []
 
-    return { data: { currentLevel, nextLevel, currentAuthenticationMethods }, error: null }
+      return { data: { currentLevel, nextLevel, currentAuthenticationMethods }, error: null }
+    })
   }
 }
