@@ -312,7 +312,8 @@ test('is', async () => {
 })
 
 test('in', async () => {
-  const res = await postgrest.from('users').select('status').in('status', ['ONLINE', 'OFFLINE'])
+  const statuses = ['ONLINE', 'OFFLINE'] as const
+  const res = await postgrest.from('users').select('status').in('status', statuses)
   expect(res).toMatchInlineSnapshot(`
     Object {
       "count": null,
