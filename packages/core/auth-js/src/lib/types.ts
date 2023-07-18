@@ -8,6 +8,7 @@ export type Provider =
   | 'bitbucket'
   | 'discord'
   | 'facebook'
+  | 'figma'
   | 'github'
   | 'gitlab'
   | 'google'
