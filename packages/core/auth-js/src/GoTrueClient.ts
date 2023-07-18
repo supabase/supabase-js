@@ -634,13 +634,20 @@ export default class GoTrueClient {
         // we don't want to remove the authenticated session if the user is performing an email_change or phone_change verification
         await this._removeSession()
       }
+
+      let redirectTo = undefined
+      let captchaToken = undefined
+      if ('options' in params) {
+        redirectTo = params.options?.redirectTo
+        captchaToken = params.options?.captchaToken
+      }
       const { data, error } = await _request(this.fetch, 'POST', `${this.url}/verify`, {
         headers: this.headers,
         body: {
           ...params,
-          gotrue_meta_security: { captcha_token: params.options?.captchaToken },
+          gotrue_meta_security: { captcha_token: captchaToken },
         },
-        redirectTo: params.options?.redirectTo,
+        redirectTo,
         xform: _sessionResponse,
       })
 

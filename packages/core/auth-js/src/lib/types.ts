@@ -533,7 +533,7 @@ export type SignInWithIdTokenCredentials = {
   }
 }
 
-export type VerifyOtpParams = VerifyMobileOtpParams | VerifyEmailOtpParams
+export type VerifyOtpParams = VerifyMobileOtpParams | VerifyEmailOtpParams | VerifyTokenHashParams
 export interface VerifyMobileOtpParams {
   /** The user's phone number. */
   phone: string
@@ -563,9 +563,21 @@ export interface VerifyEmailOtpParams {
   options?: {
     /** A URL to send the user to after they are confirmed. */
     redirectTo?: string
-    /** Verification token received when the user completes the captcha on the site. */
+
+    /** Verification token received when the user completes the captcha on the site.
+     *
+     * @deprecated
+     */
     captchaToken?: string
   }
+}
+
+export interface VerifyTokenHashParams {
+  /** The token hash used in an email link */
+  token_hash: string
+
+  /** The user's verification type. */
+  type: EmailOtpType
 }
 
 export type MobileOtpType = 'sms' | 'phone_change'
