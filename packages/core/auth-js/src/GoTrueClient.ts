@@ -77,11 +77,12 @@ import type {
   MFAChallengeAndVerifyParams,
   ResendParams,
   AuthFlowType,
+  LockFunc,
 } from './lib/types'
 
 polyfillGlobalThis() // Make "globalThis" available
 
-const DEFAULT_OPTIONS: Omit<Required<GoTrueClientOptions>, 'fetch' | 'storage'> = {
+const DEFAULT_OPTIONS: Omit<Required<GoTrueClientOptions>, 'fetch' | 'storage' | 'lock'> = {
   url: GOTRUE_URL,
   storageKey: STORAGE_KEY,
   autoRefreshToken: true,
@@ -98,6 +99,10 @@ const AUTO_REFRESH_TICK_DURATION = 30 * 1000
 /**
  * A token refresh will be attempted this many ticks before the current session expires. */
 const AUTO_REFRESH_TICK_THRESHOLD = 3
+
+async function lockNoOp<R>(name: string, acquireTimeout: number, fn: () => Promise<R>): Promise<R> {
+  return await fn()
+}
 
 export default class GoTrueClient {
   private static nextInstanceID = 0
@@ -146,6 +151,7 @@ export default class GoTrueClient {
     [key: string]: string
   }
   protected fetch: Fetch
+  protected lock: LockFunc
 
   /**
    * Used to broadcast state change events to other tabs listening.
@@ -183,6 +189,7 @@ export default class GoTrueClient {
     this.url = settings.url
     this.headers = settings.headers
     this.fetch = resolveFetch(settings.fetch)
+    this.lock = settings.lock || lockNoOp
     this.detectSessionInUrl = settings.detectSessionInUrl
     this.flowType = settings.flowType
 
@@ -255,61 +262,65 @@ export default class GoTrueClient {
       throw new Error('Double call of #_initialize()')
     }
 
-    this.initializePromise = stackGuard('_initialize', async () => {
-      try {
-        const isPKCEFlow = isBrowser() ? await this._isPKCEFlow() : false
-        this._debug('#_initialize()', 'begin', 'is PKCE flow', isPKCEFlow)
+    this.initializePromise = this._acquireLock(
+      -1,
+      async () =>
+        await stackGuard('_initialize', async () => {
+          try {
+            const isPKCEFlow = isBrowser() ? await this._isPKCEFlow() : false
+            this._debug('#_initialize()', 'begin', 'is PKCE flow', isPKCEFlow)
 
-        if (isPKCEFlow || (this.detectSessionInUrl && this._isImplicitGrantFlow())) {
-          const { data, error } = await this._getSessionFromUrl(isPKCEFlow)
-          if (error) {
-            this._debug('#_initialize()', 'error detecting session from URL', error)
+            if (isPKCEFlow || (this.detectSessionInUrl && this._isImplicitGrantFlow())) {
+              const { data, error } = await this._getSessionFromUrl(isPKCEFlow)
+              if (error) {
+                this._debug('#_initialize()', 'error detecting session from URL', error)
 
-            // failed login attempt via url,
-            // remove old session as in verifyOtp, signUp and signInWith*
-            await this._removeSession()
+                // failed login attempt via url,
+                // remove old session as in verifyOtp, signUp and signInWith*
+                await this._removeSession()
 
-            return { error }
-          }
+                return { error }
+              }
 
-          const { session, redirectType } = data
+              const { session, redirectType } = data
 
-          this._debug(
-            '#_initialize()',
-            'detected session in URL',
-            session,
-            'redirect type',
-            redirectType
-          )
+              this._debug(
+                '#_initialize()',
+                'detected session in URL',
+                session,
+                'redirect type',
+                redirectType
+              )
 
-          await this._saveSession(session)
+              await this._saveSession(session)
 
-          setTimeout(async () => {
-            if (redirectType === 'recovery') {
-              await this._notifyAllSubscribers('PASSWORD_RECOVERY', session)
-            } else {
-              await this._notifyAllSubscribers('SIGNED_IN', session)
+              setTimeout(async () => {
+                if (redirectType === 'recovery') {
+                  await this._notifyAllSubscribers('PASSWORD_RECOVERY', session)
+                } else {
+                  await this._notifyAllSubscribers('SIGNED_IN', session)
+                }
+              }, 0)
+
+              return { error: null }
             }
-          }, 0)
+            // no login attempt via callback url try to recover session from storage
+            await this._recoverAndRefresh()
+            return { error: null }
+          } catch (error) {
+            if (isAuthError(error)) {
+              return { error }
+            }
 
-          return { error: null }
-        }
-        // no login attempt via callback url try to recover session from storage
-        await this._recoverAndRefresh()
-        return { error: null }
-      } catch (error) {
-        if (isAuthError(error)) {
-          return { error }
-        }
-
-        return {
-          error: new AuthUnknownError('Unexpected error during initialization', error),
-        }
-      } finally {
-        await this._handleVisibilityChange()
-        this._debug('#_initialize()', 'end')
-      }
-    })
+            return {
+              error: new AuthUnknownError('Unexpected error during initialization', error),
+            }
+          } finally {
+            await this._handleVisibilityChange()
+            this._debug('#_initialize()', 'end')
+          }
+        })
+    )
 
     return await this.initializePromise
   }
@@ -782,6 +793,34 @@ export default class GoTrueClient {
   }
 
   /**
+   * Acquires a global lock based on the storage key.
+   */
+  private async _acquireLock<R>(acquireTimeout: number, fn: () => Promise<R>): Promise<R> {
+    this._debug('#_acquireLock', 'begin', acquireTimeout)
+
+    try {
+      if (isInStackGuard('_acquireLock')) {
+        this._debug('#_acquireLock', 'recursive call')
+        return await fn()
+      }
+
+      return await this.lock(`lock:${this.storageKey}`, acquireTimeout, async () => {
+        this._debug('#_acquireLock', 'lock acquired for storage key', this.storageKey)
+
+        try {
+          return await stackGuard('_acquireLock', async () => {
+            return await fn()
+          })
+        } finally {
+          this._debug('#_acquireLock', 'lock released for storage key', this.storageKey)
+        }
+      })
+    } finally {
+      this._debug('#_acquireLock', 'end')
+    }
+  }
+
+  /**
    * Use instead of {@link #getSession} inside the library. It is
    * semantically usually what you want, as getting a session involves some
    * processing afterwards that requires only one client operating on the
@@ -810,12 +849,29 @@ export default class GoTrueClient {
           }
     ) => Promise<R>
   ): Promise<R> {
-    return await stackGuard('_useSession', async () => {
-      // the use of __loadSession here is the only correct use of the function!
-      const result = await this.__loadSession()
+    this._debug('#_useSession', 'begin')
 
-      return await fn(result)
-    })
+    try {
+      if (isInStackGuard('_useSession')) {
+        this._debug('#_useSession', 'recursive call')
+
+        // the use of __loadSession here is the only correct use of the function!
+        const result = await this.__loadSession()
+
+        return await fn(result)
+      }
+
+      return await this._acquireLock(-1, async () => {
+        return await stackGuard('_useSession', async () => {
+          // the use of __loadSession here is the only correct use of the function!
+          const result = await this.__loadSession()
+
+          return await fn(result)
+        })
+      })
+    } finally {
+      this._debug('#_useSession', 'end')
+    }
   }
 
   /**

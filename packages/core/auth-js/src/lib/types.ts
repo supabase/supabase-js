@@ -34,6 +34,23 @@ export type AuthChangeEvent =
   | 'USER_UPDATED'
   | AuthChangeEventMFA
 
+/**
+ * Provide your own global lock implementation instead of the default
+ * implementation. The function should acquire a lock for the duration of the
+ * `fn` async function, such that no other client instances will be able to
+ * hold it at the same time.
+ *
+ * @experimental
+ *
+ * @param name Name of the lock to be acquired.
+ * @param acquireTimeout If negative, no timeout should occur. If positive it
+ *                       should throw an Error with an `isAcquireTimeout`
+ *                       property set to true if the operation fails to be
+ *                       acquired after this much time (ms).
+ * @param fn The operation to execute when the lock is acquired.
+ */
+export type LockFunc = <R>(name: string, acquireTimeout: number, fn: () => Promise<R>) => Promise<R>
+
 export type GoTrueClientOptions = {
   /* The URL of the GoTrue server. */
   url?: string
@@ -55,6 +72,12 @@ export type GoTrueClientOptions = {
   flowType?: AuthFlowType
   /* If debug messages are emitted. Can be used to inspect the behavior of the library. */
   debug?: boolean
+  /**
+   * Provide your own locking mechanism based on the environment. By default no locking is done at this time.
+   *
+   * @experimental
+   */
+  lock?: LockFunc
 }
 
 export type AuthResponse =
