@@ -197,8 +197,8 @@ export function decodeJWTPayload(token: string) {
 /**
  * Creates a promise that resolves to null after some time.
  */
-export function sleep(time: number): Promise<null> {
-  return new Promise((accept) => {
+export async function sleep(time: number): Promise<null> {
+  return await new Promise((accept) => {
     setTimeout(() => accept(null), time)
   })
 }
@@ -309,6 +309,8 @@ const STACK_ENTRY_REGEX = /__stack_guard__([a-zA-Z0-9_-]+)__/
 let STACK_GUARD_CHECKED = false
 let STACK_GUARD_CHECK_FN: () => Promise<void> // eslint-disable-line prefer-const
 
+let STACK_GUARDS_SUPPORTED = false
+
 /**
  * Checks if the current caller of the function is in a {@link
  * #stackGuard} of the provided `name`. Works by looking through
@@ -370,8 +372,29 @@ export async function stackGuard<R>(name: string, fn: () => Promise<R>): Promise
     [guardName]: async () => await fn(),
   }
 
+  // Safari does not log the name of a dynamically named function unless you
+  // explicitly set the displayName
+  Object.assign(guardFunc[guardName], { displayName: guardName })
+
   return await guardFunc[guardName]()
 }
+
+/**
+ * Returns if the JavaScript engine supports stack guards. If it doesn't
+ * certain features that depend on detecting recursive calls should be disabled
+ * to prevent deadlocks.
+ */
+export async function stackGuardsSupported(): Promise<boolean> {
+  if (STACK_GUARD_CHECKED) {
+    return STACK_GUARDS_SUPPORTED
+  }
+
+  await STACK_GUARD_CHECK_FN()
+
+  return STACK_GUARDS_SUPPORTED
+}
+
+let STACK_GUARD_WARNING_LOGGED = false
 
 // In certain cases, if this file is transpiled using an ES2015 target, or is
 // running in a JS engine that does not support async/await stack traces, this
@@ -381,11 +404,17 @@ STACK_GUARD_CHECK_FN = async () => {
     STACK_GUARD_CHECKED = true
 
     await stackGuard('ENV_CHECK', async () => {
-      const result = isInStackGuard('ENV_CHECK')
+      // sleeping for the next tick as Safari loses track of the async/await
+      // trace beyond this point
+      await sleep(0)
 
-      if (!result) {
+      const result = isInStackGuard('ENV_CHECK')
+      STACK_GUARDS_SUPPORTED = result
+
+      if (!result && !STACK_GUARD_WARNING_LOGGED) {
+        STACK_GUARD_WARNING_LOGGED = true
         console.warn(
-          '@supabase/gotrue-js: Stack guards not supported in this environment. Generally not an issue but may point to a very conservative transpilation environment (use ES2017 or above) that implements async/await with generators, or this is a JavaScript engine that does not support async/await stack traces.'
+          '@supabase/gotrue-js: Stack guards not supported in this environment. Generally not an issue but may point to a very conservative transpilation environment (use ES2017 or above) that implements async/await with generators, or this is a JavaScript engine that does not support async/await stack traces. Safari is known to not support stack guards.'
         )
       }
 

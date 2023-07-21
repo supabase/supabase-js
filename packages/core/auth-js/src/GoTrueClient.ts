@@ -31,6 +31,7 @@ import {
   supportsLocalStorage,
   stackGuard,
   isInStackGuard,
+  stackGuardsSupported,
 } from './lib/helpers'
 import localStorageAdapter from './lib/local-storage'
 import { polyfillGlobalThis } from './lib/polyfills'
@@ -806,6 +807,15 @@ export default class GoTrueClient {
     this._debug('#_acquireLock', 'begin', acquireTimeout)
 
     try {
+      if (!(await stackGuardsSupported())) {
+        this._debug(
+          '#_acquireLock',
+          'Stack guards not supported, so exclusive locking is not performed as it can lead to deadlocks if the lock is attempted to be recursively acquired (as the recursion cannot be detected).'
+        )
+
+        return await fn()
+      }
+
       if (isInStackGuard('_acquireLock')) {
         this._debug('#_acquireLock', 'recursive call')
         return await fn()
@@ -908,13 +918,13 @@ export default class GoTrueClient {
   > {
     this._debug('#__loadSession()', 'begin')
 
-    if (this.logDebugMessages && !isInStackGuard('_useSession')) {
+    if (this.logDebugMessages && !isInStackGuard('_useSession') && (await stackGuardsSupported())) {
       throw new Error('Please use #_useSession()')
     }
 
     // make sure we've read the session from the url if there is one
     // save to just await, as long we make sure _initialize() never throws
-    if (!isInStackGuard('_initialize')) {
+    if (!isInStackGuard('_initialize') && (await stackGuardsSupported())) {
       // only wait when not called from within #_initialize() since it's
       // waiting for itself. one such pathway is #_initialize() ->
       // #_handleVisibilityChange() -> #_onVisbilityChanged() ->
