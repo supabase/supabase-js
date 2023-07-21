@@ -96,6 +96,20 @@ export default class PostgrestQueryBuilder<
     } as unknown as PostgrestBuilder<ResultOne[]>)
   }
 
+  // TODO(v3): Make `defaultToNull` consistent for both single & bulk inserts.
+  insert<Row extends Relation extends { Insert: unknown } ? Relation['Insert'] : never>(
+    values: Row,
+    options?: {
+      count?: 'exact' | 'planned' | 'estimated'
+    }
+  ): PostgrestFilterBuilder<Schema, Relation['Row'], null, Relationships>
+  insert<Row extends Relation extends { Insert: unknown } ? Relation['Insert'] : never>(
+    values: Row[],
+    options?: {
+      count?: 'exact' | 'planned' | 'estimated'
+      defaultToNull?: boolean
+    }
+  ): PostgrestFilterBuilder<Schema, Relation['Row'], null, Relationships>
   /**
    * Perform an INSERT into the table or view.
    *
@@ -119,7 +133,8 @@ export default class PostgrestQueryBuilder<
    * numbers.
    *
    * @param options.defaultToNull - Make missing fields default to `null`.
-   * Otherwise, use the default value for the column.
+   * Otherwise, use the default value for the column. Only applies for bulk
+   * inserts.
    */
   insert<Row extends Relation extends { Insert: unknown } ? Relation['Insert'] : never>(
     values: Row | Row[],
@@ -164,6 +179,24 @@ export default class PostgrestQueryBuilder<
     } as unknown as PostgrestBuilder<null>)
   }
 
+  // TODO(v3): Make `defaultToNull` consistent for both single & bulk upserts.
+  upsert<Row extends Relation extends { Insert: unknown } ? Relation['Insert'] : never>(
+    values: Row,
+    options?: {
+      onConflict?: string
+      ignoreDuplicates?: boolean
+      count?: 'exact' | 'planned' | 'estimated'
+    }
+  ): PostgrestFilterBuilder<Schema, Relation['Row'], null, Relationships>
+  upsert<Row extends Relation extends { Insert: unknown } ? Relation['Insert'] : never>(
+    values: Row[],
+    options?: {
+      onConflict?: string
+      ignoreDuplicates?: boolean
+      count?: 'exact' | 'planned' | 'estimated'
+      defaultToNull?: boolean
+    }
+  ): PostgrestFilterBuilder<Schema, Relation['Row'], null, Relationships>
   /**
    * Perform an UPSERT on the table or view. Depending on the column(s) passed
    * to `onConflict`, `.upsert()` allows you to perform the equivalent of
@@ -200,7 +233,7 @@ export default class PostgrestQueryBuilder<
    * @param options.defaultToNull - Make missing fields default to `null`.
    * Otherwise, use the default value for the column. This only applies when
    * inserting new rows, not when merging with existing rows under
-   * `ignoreDuplicates: false`.
+   * `ignoreDuplicates: false`. This also only applies when doing bulk upserts.
    */
   upsert<Row extends Relation extends { Insert: unknown } ? Relation['Insert'] : never>(
     values: Row | Row[],
