@@ -59,15 +59,31 @@ export const supportsLocalStorage = () => {
   return localStorageWriteTests.writable
 }
 
-export function getParameterByName(name: string, url?: string) {
-  if (!url) url = window?.location?.href || ''
-  // eslint-disable-next-line no-useless-escape
-  name = name.replace(/[\[\]]/g, '\\$&')
-  const regex = new RegExp('[?&#]' + name + '(=([^&#]*)|&|#|$)'),
-    results = regex.exec(url)
-  if (!results) return null
-  if (!results[2]) return ''
-  return decodeURIComponent(results[2].replace(/\+/g, ' '))
+/**
+ * Extracts parameters encoded in the URL both in the query and fragment.
+ */
+export function parseParametersFromURL(href: string) {
+  const result: { [parameter: string]: string } = {}
+
+  const url = new URL(href)
+
+  if (url.hash && url.hash[0] === '#') {
+    try {
+      const hashSearchParams = new URLSearchParams(url.hash.substring(1))
+      hashSearchParams.forEach((value, key) => {
+        result[key] = value
+      })
+    } catch (e: any) {
+      // hash is not a query string
+    }
+  }
+
+  // search parameters take precedence over hash parameters
+  url.searchParams.forEach((value, key) => {
+    result[key] = value
+  })
+
+  return result
 }
 
 type Fetch = typeof fetch

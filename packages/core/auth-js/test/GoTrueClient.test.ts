@@ -311,12 +311,12 @@ describe('GoTrueClient', () => {
       expect(session3).toHaveProperty('access_token')
     })
 
-    test('_getSessionFromUrl() can only be called from a browser', async () => {
+    test('_getSessionFromURL() can only be called from a browser', async () => {
       const {
         error,
         data: { session },
-        // @ts-expect-error 'Allow access to private _getSessionFromUrl()'
-      } = await authWithSession._getSessionFromUrl()
+        // @ts-expect-error 'Allow access to private _getSessionFromURL()'
+      } = await authWithSession._getSessionFromURL()
 
       expect(error?.message).toEqual('No browser detected.')
       expect(session).toBeNull()

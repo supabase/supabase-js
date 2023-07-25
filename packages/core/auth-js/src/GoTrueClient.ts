@@ -18,7 +18,6 @@ import {
   decodeJWTPayload,
   Deferred,
   getItemAsync,
-  getParameterByName,
   isBrowser,
   removeItemAsync,
   resolveFetch,
@@ -32,6 +31,7 @@ import {
   stackGuard,
   isInStackGuard,
   stackGuardsSupported,
+  parseParametersFromURL,
 } from './lib/helpers'
 import localStorageAdapter from './lib/local-storage'
 import { polyfillGlobalThis } from './lib/polyfills'
@@ -272,7 +272,7 @@ export default class GoTrueClient {
             this._debug('#_initialize()', 'begin', 'is PKCE flow', isPKCEFlow)
 
             if (isPKCEFlow || (this.detectSessionInUrl && this._isImplicitGrantFlow())) {
-              const { data, error } = await this._getSessionFromUrl(isPKCEFlow)
+              const { data, error } = await this._getSessionFromURL(isPKCEFlow)
               if (error) {
                 this._debug('#_initialize()', 'error detecting session from URL', error)
 
@@ -1176,7 +1176,7 @@ export default class GoTrueClient {
   /**
    * Gets the session data from a URL string
    */
-  private async _getSessionFromUrl(isPKCEFlow: boolean): Promise<
+  private async _getSessionFromURL(isPKCEFlow: boolean): Promise<
     | {
         data: { session: Session; redirectType: string | null }
         error: null
@@ -1190,62 +1190,68 @@ export default class GoTrueClient {
       } else if (this.flowType == 'pkce' && !isPKCEFlow) {
         throw new AuthPKCEGrantCodeExchangeError('Not a valid PKCE flow url.')
       }
+
+      const params = parseParametersFromURL(window.location.href)
+
       if (isPKCEFlow) {
-        const authCode = getParameterByName('code')
-        if (!authCode) throw new AuthPKCEGrantCodeExchangeError('No code detected.')
-        const { data, error } = await this.exchangeCodeForSession(authCode)
+        if (!params.code) throw new AuthPKCEGrantCodeExchangeError('No code detected.')
+        const { data, error } = await this.exchangeCodeForSession(params.code)
         if (error) throw error
-        if (!data.session) throw new AuthPKCEGrantCodeExchangeError('No session detected.')
-        let url = new URL(window.location.href)
+
+        const url = new URL(window.location.href)
         url.searchParams.delete('code')
+
         window.history.replaceState(window.history.state, '', url.toString())
+
         return { data: { session: data.session, redirectType: null }, error: null }
       }
 
-      const error_description = getParameterByName('error_description')
-      if (error_description) {
-        const error_code = getParameterByName('error_code')
-        if (!error_code) throw new AuthImplicitGrantRedirectError('No error_code detected.')
-        const error = getParameterByName('error')
-        if (!error) throw new AuthImplicitGrantRedirectError('No error detected.')
-
-        throw new AuthImplicitGrantRedirectError(error_description, { error, code: error_code })
+      if (params.error || params.error_description || params.error_code) {
+        throw new AuthImplicitGrantRedirectError(
+          params.error_description || 'Error in URL with unspecified error_description',
+          {
+            error: params.error || 'unspecified_error',
+            code: params.error_code || 'unspecified_code',
+          }
+        )
       }
 
-      const provider_token = getParameterByName('provider_token')
-      const provider_refresh_token = getParameterByName('provider_refresh_token')
-      const access_token = getParameterByName('access_token')
-      if (!access_token) throw new AuthImplicitGrantRedirectError('No access_token detected.')
-      const expires_in = getParameterByName('expires_in')
-      if (!expires_in) throw new AuthImplicitGrantRedirectError('No expires_in detected.')
-      const refresh_token = getParameterByName('refresh_token')
-      if (!refresh_token) throw new AuthImplicitGrantRedirectError('No refresh_token detected.')
-      const token_type = getParameterByName('token_type')
-      if (!token_type) throw new AuthImplicitGrantRedirectError('No token_type detected.')
+      const {
+        provider_token,
+        provider_refresh_token,
+        access_token,
+        refresh_token,
+        expires_in,
+        token_type,
+      } = params
+
+      if (!access_token || !expires_in || !refresh_token || !token_type) {
+        throw new AuthImplicitGrantRedirectError('No session defined in URL')
+      }
 
       const timeNow = Math.round(Date.now() / 1000)
-      const expires_at = timeNow + parseInt(expires_in)
+      const expiresIn = parseInt(expires_in)
+      const expires_at = timeNow + expiresIn
 
       const { data, error } = await this.getUser(access_token)
       if (error) throw error
-      const user: User = data.user
+
       const session: Session = {
         provider_token,
         provider_refresh_token,
         access_token,
-        expires_in: parseInt(expires_in),
+        expires_in: expiresIn,
         expires_at,
         refresh_token,
         token_type,
-        user,
+        user: data.user!!,
       }
-      const redirectType = getParameterByName('type')
 
       // Remove tokens from URL
       window.location.hash = ''
-      this._debug('#_getSessionFromUrl()', 'clearing window.location.hash')
+      this._debug('#_getSessionFromURL()', 'clearing window.location.hash')
 
-      return { data: { session, redirectType }, error: null }
+      return { data: { session, redirectType: params.type }, error: null }
     } catch (error) {
       if (isAuthError(error)) {
         return { data: { session: null, redirectType: null }, error }
@@ -1259,21 +1265,22 @@ export default class GoTrueClient {
    * Checks if the current URL contains parameters given by an implicit oauth grant flow (https://www.rfc-editor.org/rfc/rfc6749.html#section-4.2)
    */
   private _isImplicitGrantFlow(): boolean {
-    return (
-      isBrowser() &&
-      (Boolean(getParameterByName('access_token')) ||
-        Boolean(getParameterByName('error_description')))
-    )
+    const params = parseParametersFromURL(window.location.href)
+
+    return !!(isBrowser() && (params.access_token || params.error_description))
   }
   /**
    * Checks if the current URL and backing storage contain parameters given by a PKCE flow
    */
   private async _isPKCEFlow(): Promise<boolean> {
+    const params = parseParametersFromURL(window.location.href)
+
     const currentStorageContent = await getItemAsync(
       this.storage,
       `${this.storageKey}-code-verifier`
     )
-    return Boolean(getParameterByName('code')) && Boolean(currentStorageContent)
+
+    return !!(params.code && currentStorageContent)
   }
 
   /**
