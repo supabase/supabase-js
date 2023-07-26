@@ -252,6 +252,7 @@ export default class SupabaseClient<
       storage,
       storageKey,
       flowType,
+      debug,
     }: SupabaseAuthClientOptions,
     headers?: Record<string, string>,
     fetch?: Fetch
@@ -269,6 +270,7 @@ export default class SupabaseClient<
       detectSessionInUrl,
       storage,
       flowType,
+      debug,
       fetch,
     })
   }
