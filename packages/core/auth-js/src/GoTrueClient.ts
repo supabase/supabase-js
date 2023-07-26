@@ -35,6 +35,7 @@ import {
 } from './lib/helpers'
 import localStorageAdapter from './lib/local-storage'
 import { polyfillGlobalThis } from './lib/polyfills'
+import { version } from './lib/version'
 
 import type {
   AuthChangeEvent,
@@ -233,7 +234,10 @@ export default class GoTrueClient {
 
   private _debug(...args: any[]): GoTrueClient {
     if (this.logDebugMessages) {
-      console.log(`GoTrueClient@${this.instanceID} ${new Date().toISOString()}`, ...args)
+      console.log(
+        `GoTrueClient@${this.instanceID} (${version}) ${new Date().toISOString()}`,
+        ...args
+      )
     }
 
     return this
@@ -922,15 +926,13 @@ export default class GoTrueClient {
       throw new Error('Please use #_useSession()')
     }
 
-    // make sure we've read the session from the url if there is one
-    // save to just await, as long we make sure _initialize() never throws
-    if (!isInStackGuard('_initialize') && (await stackGuardsSupported())) {
-      // only wait when not called from within #_initialize() since it's
-      // waiting for itself. one such pathway is #_initialize() ->
-      // #_handleVisibilityChange() -> #_onVisbilityChanged() ->
-      // #_loadSession().
-      await this.initializePromise
+    if (isInStackGuard('_initialize')) {
+      this._debug('#__loadSession', '#_initialize recursion detected', new Error().stack)
     }
+
+    // always wait for #_initialize() to finish before loading anything from
+    // storage
+    await this.initializePromise
 
     try {
       let currentSession: Session | null = null
@@ -989,20 +991,23 @@ export default class GoTrueClient {
    */
   async getUser(jwt?: string): Promise<UserResponse> {
     try {
-      return await this._useSession(async (result) => {
-        if (!jwt) {
-          const { data, error } = result
-          if (error) {
-            throw error
-          }
+      if (jwt) {
+        return await _request(this.fetch, 'GET', `${this.url}/user`, {
+          headers: this.headers,
+          jwt: jwt,
+          xform: _userResponse,
+        })
+      }
 
-          // Default to Authorization header if there is no existing session
-          jwt = data.session?.access_token ?? undefined
+      return await this._useSession(async (result) => {
+        const { data, error } = result
+        if (error) {
+          throw error
         }
 
         return await _request(this.fetch, 'GET', `${this.url}/user`, {
           headers: this.headers,
-          jwt: jwt,
+          jwt: data.session?.access_token ?? undefined,
           xform: _userResponse,
         })
       })
@@ -1720,8 +1725,13 @@ export default class GoTrueClient {
       Deno.unrefTimer(ticker)
     }
 
-    // run the tick immediately
-    await this._autoRefreshTokenTick()
+    // run the tick immediately, but in the next pass of the event loop so that
+    // #_initialize can be allowed to complete without recursively waiting on
+    // itself
+    setTimeout(async () => {
+      await this.initializePromise
+      await this._autoRefreshTokenTick()
+    }, 0)
   }
 
   /**
@@ -1858,22 +1868,26 @@ export default class GoTrueClient {
     this._debug(`#_onVisibilityChanged(${isInitial})`, 'visibilityState', document.visibilityState)
 
     if (document.visibilityState === 'visible') {
-      if (!isInitial) {
-        // initial visibility change setup is handled in another flow under #initialize()
-        await this.initializePromise
-        await this._recoverAndRefresh()
+      // to avoid recursively depending on #_initialize(), run the visibility
+      // changed callback in the next event loop tick
+      setTimeout(async () => {
+        if (!isInitial) {
+          // initial visibility change setup is handled in another flow under #initialize()
+          await this.initializePromise
+          await this._recoverAndRefresh()
 
-        this._debug(
-          '#_onVisibilityChanged()',
-          'finished waiting for initialize, _recoverAndRefresh'
-        )
-      }
+          this._debug(
+            '#_onVisibilityChanged()',
+            'finished waiting for initialize, _recoverAndRefresh'
+          )
+        }
 
-      if (this.autoRefreshToken) {
-        // in browser environments the refresh token ticker runs only on focused tabs
-        // which prevents race conditions
-        this._startAutoRefresh()
-      }
+        if (this.autoRefreshToken) {
+          // in browser environments the refresh token ticker runs only on focused tabs
+          // which prevents race conditions
+          this._startAutoRefresh()
+        }
+      }, 0)
     } else if (document.visibilityState === 'hidden') {
       if (this.autoRefreshToken) {
         this._stopAutoRefresh()
