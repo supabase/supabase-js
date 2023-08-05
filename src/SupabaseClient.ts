@@ -161,6 +161,24 @@ export default class SupabaseClient<
   }
 
   /**
+   * Perform a query on a schema distinct from the default schema supplied via
+   * the `options.db.schema` constructor parameter.
+   *
+   * The schema needs to be on the list of exposed schemas inside Supabase.
+   *
+   * @param schema - The name of the schema to query
+   */
+  schema<DynamicSchema extends string & keyof Database>(
+    schema: DynamicSchema
+  ): PostgrestClient<
+    Database,
+    DynamicSchema,
+    Database[DynamicSchema] extends GenericSchema ? Database[DynamicSchema] : any
+  > {
+    return this.rest.schema<DynamicSchema>(schema)
+  }
+
+  /**
    * Perform a function call.
    *
    * @param fn - The function name to call

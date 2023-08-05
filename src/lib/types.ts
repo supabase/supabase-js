@@ -42,7 +42,7 @@ export type SupabaseClientOptions<SchemaName> = {
     flowType?: SupabaseAuthClientOptions['flowType']
     /**
      * If debug messages for authentication client are emitted. Can be used to inspect the behavior of the library.
-     */ 
+     */
     debug?: boolean
   }
   /**
