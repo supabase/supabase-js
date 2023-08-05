@@ -196,6 +196,51 @@ test('switch schema', async () => {
   `)
 })
 
+test('dynamic schema', async () => {
+  const postgrest = new PostgrestClient<Database>(REST_URL)
+  const res = await postgrest.schema('personal').from('users').select()
+  expect(res).toMatchInlineSnapshot(`
+    Object {
+      "count": null,
+      "data": Array [
+        Object {
+          "age_range": "[1,2)",
+          "data": null,
+          "status": "ONLINE",
+          "username": "supabot",
+        },
+        Object {
+          "age_range": "[25,35)",
+          "data": null,
+          "status": "OFFLINE",
+          "username": "kiwicopple",
+        },
+        Object {
+          "age_range": "[25,35)",
+          "data": null,
+          "status": "ONLINE",
+          "username": "awailas",
+        },
+        Object {
+          "age_range": "[20,30)",
+          "data": null,
+          "status": "ONLINE",
+          "username": "dragarcia",
+        },
+        Object {
+          "age_range": "[20,40)",
+          "data": null,
+          "status": "ONLINE",
+          "username": "leroyjenkins",
+        },
+      ],
+      "error": null,
+      "status": 200,
+      "statusText": "OK",
+    }
+  `)
+})
+
 test('on_conflict insert', async () => {
   const res = await postgrest
     .from('users')
@@ -858,6 +903,19 @@ test('rpc with head:true, count:exact', async () => {
     Object {
       "count": 1,
       "data": null,
+      "error": null,
+      "status": 200,
+      "statusText": "OK",
+    }
+  `)
+})
+
+test('rpc with dynamic schema', async () => {
+  const res = await postgrest.schema('personal').rpc('get_status', { name_param: 'kiwicopple' })
+  expect(res).toMatchInlineSnapshot(`
+    Object {
+      "count": null,
+      "data": "OFFLINE",
       "error": null,
       "status": 200,
       "statusText": "OK",

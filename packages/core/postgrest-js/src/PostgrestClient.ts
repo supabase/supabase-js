@@ -25,7 +25,7 @@ export default class PostgrestClient<
 > {
   url: string
   headers: Record<string, string>
-  schema?: SchemaName
+  schemaName?: SchemaName
   fetch?: Fetch
 
   // TODO: Add back shouldThrowOnError once we figure out the typings
@@ -52,7 +52,7 @@ export default class PostgrestClient<
   ) {
     this.url = url
     this.headers = { ...DEFAULT_HEADERS, ...headers }
-    this.schema = schema
+    this.schemaName = schema
     this.fetch = fetch
   }
 
@@ -73,7 +73,32 @@ export default class PostgrestClient<
     const url = new URL(`${this.url}/${relation}`)
     return new PostgrestQueryBuilder<Schema, any>(url, {
       headers: { ...this.headers },
-      schema: this.schema,
+      schema: this.schemaName,
+      fetch: this.fetch,
+    })
+  }
+
+  /**
+   * Select a schema to query or perform an function (rpc) call.
+   *
+   * The schema needs to be on the list of exposed schemas inside Supabase.
+   *
+   * @param schema - The schema to query
+   */
+  schema<DynamicSchema extends string & keyof Database>(
+    schema: DynamicSchema
+  ): PostgrestClient<
+    Database,
+    DynamicSchema,
+    Database[DynamicSchema] extends GenericSchema ? Database[DynamicSchema] : any
+  > {
+    return new PostgrestClient<
+      Database,
+      DynamicSchema,
+      Database[DynamicSchema] extends GenericSchema ? Database[DynamicSchema] : any
+    >(this.url, {
+      headers: this.headers,
+      schema,
       fetch: this.fetch,
     })
   }
@@ -143,7 +168,7 @@ export default class PostgrestClient<
       method,
       url,
       headers,
-      schema: this.schema,
+      schema: this.schemaName,
       body,
       fetch: this.fetch,
       allowEmpty: false,
