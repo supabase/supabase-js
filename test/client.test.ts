@@ -1,4 +1,6 @@
+import { PostgrestClient } from '@supabase/postgrest-js'
 import { createClient, SupabaseClient } from '../src/index'
+import { Database } from './types'
 
 const URL = 'http://localhost:3000'
 const KEY = 'some.fake.key'
@@ -54,6 +56,14 @@ describe('Realtime url', () => {
     const realtimeUrl = client.realtimeUrl
 
     expect(realtimeUrl).toEqual('ws://localhost:3000/realtime/v1')
+  })
+})
+
+describe('Dynamic schema', () => {
+  test('should swap schemas', async () => {
+    const client = createClient<Database>('HTTP://localhost:3000', KEY)
+    expect(client.schema('personal')).toBeInstanceOf(PostgrestClient)
+    expect(client.schema('personal').from('users').schema).toBe('personal')
   })
 })
 
