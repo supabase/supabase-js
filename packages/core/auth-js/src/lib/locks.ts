@@ -1,3 +1,5 @@
+import { supportsLocalStorage } from "./helpers"
+
 /**
  * @experimental
  */
@@ -7,6 +9,7 @@ export const internals = {
    */
   debug: !!(
     globalThis &&
+    supportsLocalStorage() &&
     globalThis.localStorage &&
     globalThis.localStorage.getItem('supabase.gotrue-js.locks.debug') === 'true'
   ),
