@@ -28,9 +28,6 @@ import {
   generatePKCEVerifier,
   generatePKCEChallenge,
   supportsLocalStorage,
-  stackGuard,
-  isInStackGuard,
-  stackGuardsSupported,
   parseParametersFromURL,
 } from './lib/helpers'
 import localStorageAdapter from './lib/local-storage'
@@ -154,6 +151,8 @@ export default class GoTrueClient {
   }
   protected fetch: Fetch
   protected lock: LockFunc
+  protected lockAcquired = false
+  protected pendingInLock: Promise<any>[] = []
 
   /**
    * Used to broadcast state change events to other tabs listening.
@@ -248,12 +247,18 @@ export default class GoTrueClient {
    * This method is automatically called when instantiating the client, but should also be called
    * manually when checking for an error from an auth redirect (oauth, magiclink, password recovery, etc).
    */
-  initialize(): Promise<InitializeResult> {
+  async initialize(): Promise<InitializeResult> {
     if (this.initializePromise) {
-      return this.initializePromise
+      return await this.initializePromise
     }
 
-    return this._initialize()
+    this.initializePromise = (async () => {
+      return await this._acquireLock(-1, async () => {
+        return await this._initialize()
+      })
+    })()
+
+    return await this.initializePromise
   }
 
   /**
@@ -263,71 +268,59 @@ export default class GoTrueClient {
    *    the whole lifetime of the client
    */
   private async _initialize(): Promise<InitializeResult> {
-    if (this.initializePromise) {
-      throw new Error('Double call of #_initialize()')
-    }
+    try {
+      const isPKCEFlow = isBrowser() ? await this._isPKCEFlow() : false
+      this._debug('#_initialize()', 'begin', 'is PKCE flow', isPKCEFlow)
 
-    this.initializePromise = this._acquireLock(
-      -1,
-      async () =>
-        await stackGuard('_initialize', async () => {
-          try {
-            const isPKCEFlow = isBrowser() ? await this._isPKCEFlow() : false
-            this._debug('#_initialize()', 'begin', 'is PKCE flow', isPKCEFlow)
+      if (isPKCEFlow || (this.detectSessionInUrl && this._isImplicitGrantFlow())) {
+        const { data, error } = await this._getSessionFromURL(isPKCEFlow)
+        if (error) {
+          this._debug('#_initialize()', 'error detecting session from URL', error)
 
-            if (isPKCEFlow || (this.detectSessionInUrl && this._isImplicitGrantFlow())) {
-              const { data, error } = await this._getSessionFromURL(isPKCEFlow)
-              if (error) {
-                this._debug('#_initialize()', 'error detecting session from URL', error)
+          // failed login attempt via url,
+          // remove old session as in verifyOtp, signUp and signInWith*
+          await this._removeSession()
 
-                // failed login attempt via url,
-                // remove old session as in verifyOtp, signUp and signInWith*
-                await this._removeSession()
+          return { error }
+        }
 
-                return { error }
-              }
+        const { session, redirectType } = data
 
-              const { session, redirectType } = data
+        this._debug(
+          '#_initialize()',
+          'detected session in URL',
+          session,
+          'redirect type',
+          redirectType
+        )
 
-              this._debug(
-                '#_initialize()',
-                'detected session in URL',
-                session,
-                'redirect type',
-                redirectType
-              )
+        await this._saveSession(session)
 
-              await this._saveSession(session)
-
-              setTimeout(async () => {
-                if (redirectType === 'recovery') {
-                  await this._notifyAllSubscribers('PASSWORD_RECOVERY', session)
-                } else {
-                  await this._notifyAllSubscribers('SIGNED_IN', session)
-                }
-              }, 0)
-
-              return { error: null }
-            }
-            // no login attempt via callback url try to recover session from storage
-            await this._recoverAndRefresh()
-            return { error: null }
-          } catch (error) {
-            if (isAuthError(error)) {
-              return { error }
-            }
-
-            return {
-              error: new AuthUnknownError('Unexpected error during initialization', error),
-            }
-          } finally {
-            await this._handleVisibilityChange()
-            this._debug('#_initialize()', 'end')
+        setTimeout(async () => {
+          if (redirectType === 'recovery') {
+            await this._notifyAllSubscribers('PASSWORD_RECOVERY', session)
+          } else {
+            await this._notifyAllSubscribers('SIGNED_IN', session)
           }
-        })
-    )
+        }, 0)
 
-    return await this.initializePromise
+        return { error: null }
+      }
+      // no login attempt via callback url try to recover session from storage
+      await this._recoverAndRefresh()
+      return { error: null }
+    } catch (error) {
+      if (isAuthError(error)) {
+        return { error }
+      }
+
+      return {
+        error: new AuthUnknownError('Unexpected error during initialization', error),
+      }
+    } finally {
+      await this._handleVisibilityChange()
+      this._debug('#_initialize()', 'end')
+    }
   }
 
   /**
@@ -490,6 +483,14 @@ export default class GoTrueClient {
    * Log in an existing user by exchanging an Auth Code issued during the PKCE flow.
    */
   async exchangeCodeForSession(authCode: string): Promise<AuthTokenResponse> {
+    await this.initializePromise
+
+    return this._acquireLock(-1, async () => {
+      return this._exchangeCodeForSession(authCode)
+    })
+  }
+
+  private async _exchangeCodeForSession(authCode: string): Promise<AuthTokenResponse> {
     const codeVerifier = await getItemAsync(this.storage, `${this.storageKey}-code-verifier`)
     const { data, error } = await _request(
       this.fetch,
@@ -726,6 +727,14 @@ export default class GoTrueClient {
    * Requires the user to be signed-in.
    */
   async reauthenticate(): Promise<AuthResponse> {
+    await this.initializePromise
+
+    return await this._acquireLock(-1, async () => {
+      return await this._reauthenticate()
+    })
+  }
+
+  private async _reauthenticate(): Promise<AuthResponse> {
     try {
       return await this._useSession(async (result) => {
         const {
@@ -799,8 +808,12 @@ export default class GoTrueClient {
    * The session returned can be null if the session is not detected which can happen in the event a user is not signed-in or has logged out.
    */
   async getSession() {
-    return this._useSession(async (result) => {
-      return result
+    await this.initializePromise
+
+    return this._acquireLock(-1, async () => {
+      return this._useSession(async (result) => {
+        return result
+      })
     })
   }
 
@@ -811,29 +824,63 @@ export default class GoTrueClient {
     this._debug('#_acquireLock', 'begin', acquireTimeout)
 
     try {
-      if (!(await stackGuardsSupported())) {
-        this._debug(
-          '#_acquireLock',
-          'Stack guards not supported, so exclusive locking is not performed as it can lead to deadlocks if the lock is attempted to be recursively acquired (as the recursion cannot be detected).'
+      if (this.lockAcquired) {
+        const last = this.pendingInLock.length
+          ? this.pendingInLock[this.pendingInLock.length - 1]
+          : Promise.resolve()
+
+        const result = (async () => {
+          await last
+          return await fn()
+        })()
+
+        this.pendingInLock.push(
+          (async () => {
+            try {
+              await result
+            } catch (e: any) {
+              // we jsut care if it finished
+            }
+          })()
         )
 
-        return await fn()
-      }
-
-      if (isInStackGuard('_acquireLock')) {
-        this._debug('#_acquireLock', 'recursive call')
-        return await fn()
+        return result
       }
 
       return await this.lock(`lock:${this.storageKey}`, acquireTimeout, async () => {
         this._debug('#_acquireLock', 'lock acquired for storage key', this.storageKey)
 
         try {
-          return await stackGuard('_acquireLock', async () => {
-            return await fn()
-          })
+          this.lockAcquired = true
+
+          const result = fn()
+
+          this.pendingInLock.push(
+            (async () => {
+              try {
+                await result
+              } catch (e: any) {
+                // we just care if it finished
+              }
+            })()
+          )
+
+          await result
+
+          // keep draining the queue until there's nothing to wait on
+          while (this.pendingInLock.length) {
+            const waitOn = [...this.pendingInLock]
+
+            await Promise.all(waitOn)
+
+            this.pendingInLock.splice(0, waitOn.length)
+          }
+
+          return await result
         } finally {
           this._debug('#_acquireLock', 'lock released for storage key', this.storageKey)
+
+          this.lockAcquired = false
         }
       })
     } finally {
@@ -873,23 +920,10 @@ export default class GoTrueClient {
     this._debug('#_useSession', 'begin')
 
     try {
-      if (isInStackGuard('_useSession')) {
-        this._debug('#_useSession', 'recursive call')
+      // the use of __loadSession here is the only correct use of the function!
+      const result = await this.__loadSession()
 
-        // the use of __loadSession here is the only correct use of the function!
-        const result = await this.__loadSession()
-
-        return await fn(result)
-      }
-
-      return await this._acquireLock(-1, async () => {
-        return await stackGuard('_useSession', async () => {
-          // the use of __loadSession here is the only correct use of the function!
-          const result = await this.__loadSession()
-
-          return await fn(result)
-        })
-      })
+      return await fn(result)
     } finally {
       this._debug('#_useSession', 'end')
     }
@@ -922,17 +956,9 @@ export default class GoTrueClient {
   > {
     this._debug('#__loadSession()', 'begin')
 
-    if (this.logDebugMessages && !isInStackGuard('_useSession') && (await stackGuardsSupported())) {
-      throw new Error('Please use #_useSession()')
+    if (!this.lockAcquired) {
+      this._debug('#__loadSession()', 'used outside of an acquired lock!', new Error().stack)
     }
-
-    if (isInStackGuard('_initialize')) {
-      this._debug('#__loadSession', '#_initialize recursion detected', new Error().stack)
-    }
-
-    // always wait for #_initialize() to finish before loading anything from
-    // storage
-    await this.initializePromise
 
     try {
       let currentSession: Session | null = null
@@ -990,6 +1016,18 @@ export default class GoTrueClient {
    * @param jwt Takes in an optional access token jwt. If no jwt is provided, getUser() will attempt to get the jwt from the current session.
    */
   async getUser(jwt?: string): Promise<UserResponse> {
+    if (jwt) {
+      return await this._getUser(jwt)
+    }
+
+    await this.initializePromise
+
+    return this._acquireLock(-1, async () => {
+      return await this._getUser()
+    })
+  }
+
+  private async _getUser(jwt?: string): Promise<UserResponse> {
     try {
       if (jwt) {
         return await _request(this.fetch, 'GET', `${this.url}/user`, {
@@ -1024,6 +1062,19 @@ export default class GoTrueClient {
    * Updates user data for a logged in user.
    */
   async updateUser(
+    attributes: UserAttributes,
+    options: {
+      emailRedirectTo?: string | undefined
+    } = {}
+  ): Promise<UserResponse> {
+    await this.initializePromise
+
+    return await this._acquireLock(-1, async () => {
+      return await this._updateUser(attributes, options)
+    })
+  }
+
+  protected async _updateUser(
     attributes: UserAttributes,
     options: {
       emailRedirectTo?: string | undefined
@@ -1082,6 +1133,17 @@ export default class GoTrueClient {
     access_token: string
     refresh_token: string
   }): Promise<AuthResponse> {
+    await this.initializePromise
+
+    return await this._acquireLock(-1, async () => {
+      return await this._setSession(currentSession)
+    })
+  }
+
+  protected async _setSession(currentSession: {
+    access_token: string
+    refresh_token: string
+  }): Promise<AuthResponse> {
     try {
       if (!currentSession.access_token || !currentSession.refresh_token) {
         throw new AuthSessionMissingError()
@@ -1110,7 +1172,7 @@ export default class GoTrueClient {
         }
         session = refreshedSession
       } else {
-        const { data, error } = await this.getUser(currentSession.access_token)
+        const { data, error } = await this._getUser(currentSession.access_token)
         if (error) {
           throw error
         }
@@ -1143,6 +1205,16 @@ export default class GoTrueClient {
    * @param currentSession The current session. If passed in, it must contain a refresh token.
    */
   async refreshSession(currentSession?: { refresh_token: string }): Promise<AuthResponse> {
+    await this.initializePromise
+
+    return await this._acquireLock(-1, async () => {
+      return await this._refreshSession(currentSession)
+    })
+  }
+
+  protected async _refreshSession(currentSession?: {
+    refresh_token: string
+  }): Promise<AuthResponse> {
     try {
       return await this._useSession(async (result) => {
         if (!currentSession) {
@@ -1200,7 +1272,7 @@ export default class GoTrueClient {
 
       if (isPKCEFlow) {
         if (!params.code) throw new AuthPKCEGrantCodeExchangeError('No code detected.')
-        const { data, error } = await this.exchangeCodeForSession(params.code)
+        const { data, error } = await this._exchangeCodeForSession(params.code)
         if (error) throw error
 
         const url = new URL(window.location.href)
@@ -1238,7 +1310,7 @@ export default class GoTrueClient {
       const expiresIn = parseInt(expires_in)
       const expires_at = timeNow + expiresIn
 
-      const { data, error } = await this.getUser(access_token)
+      const { data, error } = await this._getUser(access_token)
       if (error) throw error
 
       const session: Session = {
@@ -1297,7 +1369,17 @@ export default class GoTrueClient {
    *
    * If using others scope, no `SIGNED_OUT` event is fired!
    */
-  async signOut({ scope }: SignOut = { scope: 'global' }): Promise<{ error: AuthError | null }> {
+  async signOut(options: SignOut = { scope: 'global' }): Promise<{ error: AuthError | null }> {
+    await this.initializePromise
+
+    return await this._acquireLock(-1, async () => {
+      return await this._signOut(options)
+    })
+  }
+
+  protected async _signOut(
+    { scope }: SignOut = { scope: 'global' }
+  ): Promise<{ error: AuthError | null }> {
     return await this._useSession(async (result) => {
       const { data, error: sessionError } = result
       if (sessionError) {
@@ -1346,8 +1428,13 @@ export default class GoTrueClient {
     this._debug('#onAuthStateChange()', 'registered callback with id', id)
 
     this.stateChangeEmitters.set(id, subscription)
+    ;(async () => {
+      await this.initializePromise
 
-    this._emitInitialSession(id)
+      await this._acquireLock(-1, async () => {
+        this._emitInitialSession(id)
+      })
+    })()
 
     return { data: { subscription } }
   }
@@ -1796,38 +1883,51 @@ export default class GoTrueClient {
     this._debug('#_autoRefreshTokenTick()', 'begin')
 
     try {
-      const now = Date.now()
+      await this._acquireLock(0, async () => {
+        try {
+          const now = Date.now()
 
-      try {
-        return await this._useSession(async (result) => {
-          const {
-            data: { session },
-          } = result
+          try {
+            return await this._useSession(async (result) => {
+              const {
+                data: { session },
+              } = result
 
-          if (!session || !session.refresh_token || !session.expires_at) {
-            this._debug('#_autoRefreshTokenTick()', 'no session')
-            return
+              if (!session || !session.refresh_token || !session.expires_at) {
+                this._debug('#_autoRefreshTokenTick()', 'no session')
+                return
+              }
+
+              // session will expire in this many ticks (or has already expired if <= 0)
+              const expiresInTicks = Math.floor(
+                (session.expires_at * 1000 - now) / AUTO_REFRESH_TICK_DURATION
+              )
+
+              this._debug(
+                '#_autoRefreshTokenTick()',
+                `access token expires in ${expiresInTicks} ticks, a tick lasts ${AUTO_REFRESH_TICK_DURATION}ms, refresh threshold is ${AUTO_REFRESH_TICK_THRESHOLD} ticks`
+              )
+
+              if (expiresInTicks <= AUTO_REFRESH_TICK_THRESHOLD) {
+                await this._callRefreshToken(session.refresh_token)
+              }
+            })
+          } catch (e: any) {
+            console.error(
+              'Auto refresh tick failed with error. This is likely a transient error.',
+              e
+            )
           }
-
-          // session will expire in this many ticks (or has already expired if <= 0)
-          const expiresInTicks = Math.floor(
-            (session.expires_at * 1000 - now) / AUTO_REFRESH_TICK_DURATION
-          )
-
-          this._debug(
-            '#_autoRefreshTokenTick()',
-            `access token expires in ${expiresInTicks} ticks, a tick lasts ${AUTO_REFRESH_TICK_DURATION}ms, refresh threshold is ${AUTO_REFRESH_TICK_THRESHOLD} ticks`
-          )
-
-          if (expiresInTicks <= AUTO_REFRESH_TICK_THRESHOLD) {
-            await this._callRefreshToken(session.refresh_token)
-          }
-        })
-      } catch (e: any) {
-        console.error('Auto refresh tick failed with error. This is likely a transient error.', e)
+        } finally {
+          this._debug('#_autoRefreshTokenTick()', 'end')
+        }
+      })
+    } catch (e: any) {
+      if (e.isAcquireTimeout) {
+        this._debug('auto refresh token tick lock not available')
+      } else {
+        throw e
       }
-    } finally {
-      this._debug('#_autoRefreshTokenTick()', 'end')
     }
   }
 
@@ -2102,7 +2202,7 @@ export default class GoTrueClient {
     const {
       data: { user },
       error: userError,
-    } = await this.getUser()
+    } = await this._getUser()
     if (userError) {
       return { data: null, error: userError }
     }

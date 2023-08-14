@@ -59,106 +59,50 @@ export async function navigatorLock<R>(
     console.log('@supabase/gotrue-js: navigatorLock: acquire lock', name, acquireTimeout)
   }
 
-  let beginOperation: (() => void) | null = null
-  let rejectOperation: ((error: any) => void) | null = null
-  const beginOperationPromise = new Promise<void>((accept, reject) => {
-    beginOperation = accept
-    rejectOperation = reject
-  })
-
-  // this lets us preserve stack traces over the operation, which the
-  // navigator.locks.request function does not preserve well still
-  const result = (async () => {
-    await beginOperationPromise
-
-    if (internals.debug) {
-      console.log('@supabase/gotrue-js: navigatorLock: operation start')
-    }
-
-    try {
-      return await fn()
-    } finally {
-      if (internals.debug) {
-        console.log('@supabase/gotrue-js: navigatorLock: operation end')
-      }
-    }
-  })()
-
   const abortController = new globalThis.AbortController()
 
   if (acquireTimeout > 0) {
     setTimeout(() => {
-      beginOperation = null
       abortController.abort()
-
-      if (rejectOperation) {
-        if (internals.debug) {
-          console.log('@supabase/gotrue-js: navigatorLock acquire timed out', name)
-        }
-
-        if (rejectOperation) {
-          rejectOperation(
-            new NavigatorLockAcquireTimeoutError(
-              `Acquiring an exclusive Navigator LockManager lock "${name}" timed out after ${acquireTimeout}ms`
-            )
-          )
-        }
-        beginOperation = null
-        rejectOperation = null
+      if (internals.debug) {
+        console.log('@supabase/gotrue-js: navigatorLock acquire timed out', name)
       }
     }, acquireTimeout)
   }
 
-  await globalThis.navigator.locks.request(
+  return await globalThis.navigator.locks.request(
     name,
-    {
-      mode: 'exclusive',
-      ifAvailable: acquireTimeout === 0,
-      signal: abortController.signal,
-    },
+    acquireTimeout === 0
+      ? {
+          mode: 'exclusive',
+          ifAvailable: true,
+        }
+      : {
+          mode: 'exclusive',
+          signal: abortController.signal,
+        },
     async (lock) => {
       if (lock) {
         if (internals.debug) {
-          console.log('@supabase/gotrue-js: navigatorLock acquired', name)
+          console.log('@supabase/gotrue-js: navigatorLock: acquired', name)
         }
 
         try {
-          if (beginOperation) {
-            beginOperation()
-            beginOperation = null
-            rejectOperation = null
-            await result
-          }
-        } catch (e: any) {
-          // not important to handle the error here
+          return await fn()
         } finally {
           if (internals.debug) {
-            console.log('@supabase/gotrue-js: navigatorLock released', name)
+            console.log('@supabase/gotrue-js: navigatorLock: released', name)
           }
         }
       } else {
         if (internals.debug) {
-          console.log('@supabase/gotrue-js: navigatorLock not immediately available', name)
+          console.log('@supabase/gotrue-js: navigatorLock: not immediately available', name)
         }
 
-        // no lock was available because acquireTimeout === 0
-        const timeout: any = new Error(
+        throw new NavigatorLockAcquireTimeoutError(
           `Acquiring an exclusive Navigator LockManager lock "${name}" immediately failed`
         )
-        timeout.isAcquireTimeout = true
-
-        if (rejectOperation) {
-          rejectOperation(
-            new NavigatorLockAcquireTimeoutError(
-              `Acquiring an exclusive Navigator LockManager lock "${name}" immediately failed`
-            )
-          )
-        }
-        beginOperation = null
-        rejectOperation = null
       }
     }
   )
-
-  return await result
 }
