@@ -23,7 +23,7 @@ export type RealtimeClientOptions = {
   decode?: Function
   reconnectAfterMs?: Function
   headers?: { [key: string]: string }
-  params?: { [key: string]: any },
+  params?: { [key: string]: any }
   log_level?: 'info' | 'debug' | 'warn' | 'error'
 }
 
@@ -101,6 +101,9 @@ export default class RealtimeClient {
     const eventsPerSecond = options?.params?.eventsPerSecond
     if (eventsPerSecond)
       this.eventsPerSecondLimitMs = Math.floor(1000 / eventsPerSecond)
+
+    const accessToken = options?.params?.apikey
+    if (accessToken) this.accessToken = accessToken
 
     this.reconnectAfterMs = options?.reconnectAfterMs
       ? options.reconnectAfterMs
