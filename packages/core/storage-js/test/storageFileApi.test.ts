@@ -4,7 +4,8 @@ import * as fs from 'fs'
 import * as path from 'path'
 import FormData from 'form-data'
 import assert from 'assert'
-import fetch from 'cross-fetch'
+// @ts-ignore
+import fetch from '@supabase/node-fetch'
 
 // TODO: need to setup storage-api server for this test
 const URL = 'http://localhost:8000/storage/v1'
