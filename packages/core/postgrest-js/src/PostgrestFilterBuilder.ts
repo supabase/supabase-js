@@ -31,8 +31,11 @@ export default class PostgrestFilterBuilder<
   Result,
   Relationships = unknown
 > extends PostgrestTransformBuilder<Schema, Row, Result, Relationships> {
-  eq<ColumnName extends string & keyof Row>(column: ColumnName, value: Row[ColumnName]): this
-  eq(column: string, value: unknown): this
+  eq<ColumnName extends string & keyof Row>(
+    column: ColumnName,
+    value: NonNullable<Row[ColumnName]>
+  ): this
+  eq<Value extends unknown>(column: string, value: NonNullable<Value>): this
   /**
    * Match only rows where `column` is equal to `value`.
    *

@@ -11,6 +11,15 @@ const postgrest = new PostgrestClient<Database>(REST_URL)
   expectError(postgrest.from(42))
 }
 
+// test filters
+{
+  postgrest.from('users').select().eq('username', 'foo')
+  expectError(postgrest.from('users').select().eq('username', null))
+
+  const nullableVar = 'foo' as string | null
+  expectError(postgrest.from('users').select().eq('username', nullableVar))
+}
+
 // can override result type
 {
   const { data, error } = await postgrest
