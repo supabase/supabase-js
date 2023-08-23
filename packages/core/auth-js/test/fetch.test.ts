@@ -1,5 +1,6 @@
 import { MockServer } from 'jest-mock-server'
-import fetch from 'cross-fetch'
+// @ts-ignore
+import fetch from '@supabase/node-fetch'
 import { AuthUnknownError, AuthApiError, AuthRetryableFetchError } from '../src/lib/errors'
 import { _request } from '../src/lib/fetch'
 
