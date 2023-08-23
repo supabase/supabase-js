@@ -1,6 +1,7 @@
 import * as fs from 'fs'
 import { nanoid } from 'nanoid'
-import crossFetch from 'cross-fetch'
+// @ts-ignore
+import nodeFetch from '@supabase/node-fetch'
 import { sign } from 'jsonwebtoken'
 import { GenericContainer, Network, StartedTestContainer, Wait } from 'testcontainers'
 import { ExecResult } from 'testcontainers/dist/docker/types'
@@ -87,7 +88,7 @@ export async function runRelay(
   log(`check function is healthy: ${slug + '-' + id}`)
   for (let ctr = 0; ctr < 30; ctr++) {
     try {
-      const healthCheck = await crossFetch(
+      const healthCheck = await nodeFetch(
         `http://localhost:${startedRelay.getMappedPort(8081)}/${slug}`,
         {
           method: 'POST',

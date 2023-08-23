@@ -1,4 +1,5 @@
-import crossFetch from 'cross-fetch'
+// @ts-ignore
+import nodeFetch from '@supabase/node-fetch'
 
 /**
  * It returns a crossFetch function that uses overridden input: RequestInfo and init?: RequestInit for
@@ -11,5 +12,5 @@ export function getCustomFetch(
   reqInfo: RequestInfo | URL,
   reqInit?: RequestInit | undefined
 ): (input: RequestInfo | URL, init?: RequestInit | undefined) => Promise<Response> {
-  return (input, init) => crossFetch(reqInfo, reqInit)
+  return (input, init) => nodeFetch(reqInfo, reqInit)
 }
