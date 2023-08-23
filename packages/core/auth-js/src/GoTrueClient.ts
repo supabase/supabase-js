@@ -1964,30 +1964,39 @@ export default class GoTrueClient {
   /**
    * Callback registered with `window.addEventListener('visibilitychange')`.
    */
-  private async _onVisibilityChanged(isInitial: boolean) {
-    this._debug(`#_onVisibilityChanged(${isInitial})`, 'visibilityState', document.visibilityState)
+  private async _onVisibilityChanged(calledFromInitialize: boolean) {
+    const methodName = `#_onVisibilityChanged(${calledFromInitialize})`
+    this._debug(methodName, 'visibilityState', document.visibilityState)
 
     if (document.visibilityState === 'visible') {
-      // to avoid recursively depending on #_initialize(), run the visibility
-      // changed callback in the next event loop tick
-      setTimeout(async () => {
-        if (!isInitial) {
-          // initial visibility change setup is handled in another flow under #initialize()
-          await this.initializePromise
+      if (this.autoRefreshToken) {
+        // in browser environments the refresh token ticker runs only on focused tabs
+        // which prevents race conditions
+        this._startAutoRefresh()
+      }
+
+      if (!calledFromInitialize) {
+        // called when the visibility has changed, i.e. the browser
+        // transitioned from hidden -> visible so we need to see if the session
+        // should be recovered immediately... but to do that we need to acquire
+        // the lock first asynchronously
+        await this.initializePromise
+
+        await this._acquireLock(-1, async () => {
+          if (document.visibilityState !== 'visible') {
+            this._debug(
+              methodName,
+              'acquired the lock to recover the session, but the browser visibilityState is no longer visible, aborting'
+            )
+
+            // visibility has changed while waiting for the lock, abort
+            return
+          }
+
+          // recover the session
           await this._recoverAndRefresh()
-
-          this._debug(
-            '#_onVisibilityChanged()',
-            'finished waiting for initialize, _recoverAndRefresh'
-          )
-        }
-
-        if (this.autoRefreshToken) {
-          // in browser environments the refresh token ticker runs only on focused tabs
-          // which prevents race conditions
-          this._startAutoRefresh()
-        }
-      }, 0)
+        })
+      }
     } else if (document.visibilityState === 'hidden') {
       if (this.autoRefreshToken) {
         this._stopAutoRefresh()
