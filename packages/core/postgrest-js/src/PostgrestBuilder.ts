@@ -1,5 +1,4 @@
-// @ts-ignore
-import nodeFetch from '@supabase/node-fetch'
+import crossFetch from 'cross-fetch'
 
 import type { Fetch, PostgrestSingleResponse } from './types'
 
@@ -29,7 +28,7 @@ export default abstract class PostgrestBuilder<Result>
     if (builder.fetch) {
       this.fetch = builder.fetch
     } else if (typeof fetch === 'undefined') {
-      this.fetch = nodeFetch
+      this.fetch = crossFetch
     } else {
       this.fetch = fetch
     }
