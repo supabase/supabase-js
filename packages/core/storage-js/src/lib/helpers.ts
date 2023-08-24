@@ -5,18 +5,16 @@ export const resolveFetch = (customFetch?: Fetch): Fetch => {
   if (customFetch) {
     _fetch = customFetch
   } else if (typeof fetch === 'undefined') {
-    _fetch = (...args) =>
-      import('@supabase/node-fetch' as any).then(({ default: fetch }) => fetch(...args))
+    _fetch = async (...args) => await (await import('cross-fetch')).fetch(...args)
   } else {
     _fetch = fetch
   }
   return (...args) => _fetch(...args)
 }
 
-export const resolveResponse = async (): Promise<typeof Response> => {
+export const resolveResponse = async () => {
   if (typeof Response === 'undefined') {
-    // @ts-ignore
-    return (await import('@supabase/node-fetch' as any)).Response
+    return (await import('cross-fetch')).Response
   }
 
   return Response
