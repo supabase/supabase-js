@@ -49,7 +49,7 @@ export type FunctionInvokeOptions = {
   /**
    * The HTTP verb of the request
    */
-  method?: 'POST' | 'GET' | 'PUT' | 'PATCH' | 'DELETE'
+  method?: "POST"| "GET"| "PUT" | "PATCH" | "DELETE"
   /**
    * The body of the request.
    */
