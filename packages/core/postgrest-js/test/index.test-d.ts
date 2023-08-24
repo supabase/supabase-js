@@ -11,7 +11,7 @@ const postgrest = new PostgrestClient<Database>(REST_URL)
   expectError(postgrest.from(42))
 }
 
-// test filters
+// `null` can't be used with `.eq()`
 {
   postgrest.from('users').select().eq('username', 'foo')
   expectError(postgrest.from('users').select().eq('username', null))
