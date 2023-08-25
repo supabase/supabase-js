@@ -1,4 +1,4 @@
-import { supportsLocalStorage } from './helpers'
+import { supportsLocalStorage } from "./helpers"
 
 /**
  * @experimental
