@@ -36,7 +36,7 @@
     "docs:json": "typedoc --json docs/v2/spec.json --entryPoints src/index.ts --entryPoints src/packages/* --excludePrivate --excludeExternals --excludeProtected"
   },
   "dependencies": {
-    "@supabase/node-fetch": "^2.6.13"
+    "cross-fetch": "^3.1.5"
   },
   "devDependencies": {
     "@types/jest": "^26.0.13",
