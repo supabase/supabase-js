@@ -1,4 +1,3 @@
-```markdown
 # `supabase-js`
 
 [![Coverage Status](https://coveralls.io/repos/github/supabase/supabase-js/badge.svg?branch=master)](https://coveralls.io/github/supabase/supabase-js?branch=master)
