@@ -1090,10 +1090,23 @@ export default class GoTrueClient {
           throw new AuthSessionMissingError()
         }
         const session: Session = sessionData.session
+        let codeChallenge: string | null = null
+        let codeChallengeMethod: string | null = null
+        if (this.flowType === 'pkce' && attributes.email != null) {
+          const codeVerifier = generatePKCEVerifier()
+          await setItemAsync(this.storage, `${this.storageKey}-code-verifier`, codeVerifier)
+          codeChallenge = await generatePKCEChallenge(codeVerifier)
+          codeChallengeMethod = codeVerifier === codeChallenge ? 'plain' : 's256'
+        }
+
         const { data, error: userError } = await _request(this.fetch, 'PUT', `${this.url}/user`, {
           headers: this.headers,
           redirectTo: options?.emailRedirectTo,
-          body: attributes,
+          body: {
+            ...attributes,
+            code_challenge: codeChallenge,
+            code_challenge_method: codeChallengeMethod,
+          },
           jwt: session.access_token,
           xform: _userResponse,
         })
@@ -1101,7 +1114,6 @@ export default class GoTrueClient {
         session.user = data.user as User
         await this._saveSession(session)
         await this._notifyAllSubscribers('USER_UPDATED', session)
-
         return { data: { user: session.user }, error: null }
       })
     } catch (error) {
