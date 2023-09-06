@@ -632,7 +632,7 @@ export default class GoTrueClient {
   }
 
   /**
-   * Log in a user given a User supplied OTP received via mobile.
+   * Log in a user given a User supplied OTP or TokenHash received through mobile or email.
    */
   async verifyOtp(params: VerifyOtpParams): Promise<AuthResponse> {
     try {
