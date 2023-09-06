@@ -15,13 +15,15 @@ export const internals = {
   ),
 }
 
-export class NavigatorLockAcquireTimeoutError extends Error {
+export abstract class LockAcquireTimeoutError extends Error {
   public readonly isAcquireTimeout = true
 
   constructor(message: string) {
     super(message)
   }
 }
+
+export class NavigatorLockAcquireTimeoutError extends LockAcquireTimeoutError {}
 
 /**
  * Implements a global exclusive lock using the Navigator LockManager API. It
@@ -70,6 +72,8 @@ export async function navigatorLock<R>(
     }, acquireTimeout)
   }
 
+  // MDN article: https://developer.mozilla.org/en-US/docs/Web/API/LockManager/request
+
   return await globalThis.navigator.locks.request(
     name,
     acquireTimeout === 0
@@ -84,24 +88,52 @@ export async function navigatorLock<R>(
     async (lock) => {
       if (lock) {
         if (internals.debug) {
-          console.log('@supabase/gotrue-js: navigatorLock: acquired', name)
+          console.log('@supabase/gotrue-js: navigatorLock: acquired', name, lock.name)
         }
 
         try {
           return await fn()
         } finally {
           if (internals.debug) {
-            console.log('@supabase/gotrue-js: navigatorLock: released', name)
+            console.log('@supabase/gotrue-js: navigatorLock: released', name, lock.name)
           }
         }
       } else {
-        if (internals.debug) {
-          console.log('@supabase/gotrue-js: navigatorLock: not immediately available', name)
-        }
+        if (acquireTimeout === 0) {
+          if (internals.debug) {
+            console.log('@supabase/gotrue-js: navigatorLock: not immediately available', name)
+          }
 
-        throw new NavigatorLockAcquireTimeoutError(
-          `Acquiring an exclusive Navigator LockManager lock "${name}" immediately failed`
-        )
+          throw new NavigatorLockAcquireTimeoutError(
+            `Acquiring an exclusive Navigator LockManager lock "${name}" immediately failed`
+          )
+        } else {
+          if (internals.debug) {
+            try {
+              const result = await globalThis.navigator.locks.query()
+
+              console.log(
+                '@supabase/gotrue-js: Navigator LockManager state',
+                JSON.stringify(result, null, '  ')
+              )
+            } catch (e: any) {
+              console.warn(
+                '@supabase/gotrue-js: Error when querying Navigator LockManager state',
+                e
+              )
+            }
+          }
+
+          // Browser is not following the Navigator LockManager spec, it
+          // returned a null lock when we didn't use ifAvailable. So we can
+          // pretend the lock is acquired in the name of backward compatibility
+          // and user experience and just run the function.
+          console.warn(
+            '@supabase/gotrue-js: Navigator LockManager returned a null lock when using #request without ifAvailable set to true, it appears this browser is not following the LockManager spec https://developer.mozilla.org/en-US/docs/Web/API/LockManager/request'
+          )
+
+          return await fn()
+        }
       }
     }
   )

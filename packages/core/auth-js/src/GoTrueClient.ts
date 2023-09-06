@@ -33,6 +33,7 @@ import {
 import localStorageAdapter from './lib/local-storage'
 import { polyfillGlobalThis } from './lib/polyfills'
 import { version } from './lib/version'
+import { LockAcquireTimeoutError } from './lib/locks'
 
 import type {
   AuthChangeEvent,
@@ -1935,7 +1936,7 @@ export default class GoTrueClient {
         }
       })
     } catch (e: any) {
-      if (e.isAcquireTimeout) {
+      if (e.isAcquireTimeout || e instanceof LockAcquireTimeoutError) {
         this._debug('auto refresh token tick lock not available')
       } else {
         throw e
