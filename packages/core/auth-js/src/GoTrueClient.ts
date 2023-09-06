@@ -1312,6 +1312,7 @@ export default class GoTrueClient {
         access_token,
         refresh_token,
         expires_in,
+        expires_at,
         token_type,
       } = params
 
@@ -1321,7 +1322,35 @@ export default class GoTrueClient {
 
       const timeNow = Math.round(Date.now() / 1000)
       const expiresIn = parseInt(expires_in)
-      const expires_at = timeNow + expiresIn
+      let expiresAt = timeNow + expiresIn
+
+      if (expires_at) {
+        expiresAt = parseInt(expires_at)
+      }
+
+      const actuallyExpiresIn = expiresAt - timeNow
+      if (actuallyExpiresIn * 1000 <= AUTO_REFRESH_TICK_DURATION) {
+        console.warn(
+          `@supabase/gotrue-js: Session as retrieved from URL expires in ${actuallyExpiresIn}s, should have been closer to ${expiresIn}s`
+        )
+      }
+
+      const issuedAt = expiresAt - expiresIn
+      if (timeNow - issuedAt >= 120) {
+        console.warn(
+          '@supabase/gotrue-js: Session as retrieved from URL was issued over 120s ago, URL could be stale',
+          issuedAt,
+          expiresAt,
+          timeNow
+        )
+      } else if (timeNow - issuedAt < 0) {
+        console.warn(
+          '@supabase/gotrue-js: Session as retrieved from URL was issued in the future? Check the device clok for skew',
+          issuedAt,
+          expiresAt,
+          timeNow
+        )
+      }
 
       const { data, error } = await this._getUser(access_token)
       if (error) throw error
@@ -1331,7 +1360,7 @@ export default class GoTrueClient {
         provider_refresh_token,
         access_token,
         expires_in: expiresIn,
-        expires_at,
+        expires_at: expiresAt,
         refresh_token,
         token_type,
         user: data.user!!,
@@ -1359,6 +1388,7 @@ export default class GoTrueClient {
 
     return !!(isBrowser() && (params.access_token || params.error_description))
   }
+
   /**
    * Checks if the current URL and backing storage contain parameters given by a PKCE flow
    */

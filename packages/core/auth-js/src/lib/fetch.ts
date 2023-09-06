@@ -143,8 +143,12 @@ export function _sessionResponse(data: any): AuthResponse {
   let session = null
   if (hasSession(data)) {
     session = { ...data }
-    session.expires_at = expiresAt(data.expires_in)
+
+    if (!data.expires_at) {
+      session.expires_at = expiresAt(data.expires_in)
+    }
   }
+
   const user: User = data.user ?? (data as User)
   return { data: { session, user }, error: null }
 }
