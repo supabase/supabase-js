@@ -1,4 +1,5 @@
-import crossFetch, { Headers as CrossFetchHeaders } from 'cross-fetch'
+// @ts-ignore
+import nodeFetch, { Headers as NodeFetchHeaders } from '@supabase/node-fetch'
 
 type Fetch = typeof fetch
 
@@ -7,7 +8,7 @@ export const resolveFetch = (customFetch?: Fetch): Fetch => {
   if (customFetch) {
     _fetch = customFetch
   } else if (typeof fetch === 'undefined') {
-    _fetch = crossFetch as unknown as Fetch
+    _fetch = nodeFetch as unknown as Fetch
   } else {
     _fetch = fetch
   }
@@ -16,7 +17,7 @@ export const resolveFetch = (customFetch?: Fetch): Fetch => {
 
 export const resolveHeadersConstructor = () => {
   if (typeof Headers === 'undefined') {
-    return CrossFetchHeaders
+    return NodeFetchHeaders
   }
 
   return Headers
