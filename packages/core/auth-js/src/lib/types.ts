@@ -70,8 +70,8 @@ export type GoTrueClientOptions = {
   fetch?: Fetch
   /* If set to 'pkce' PKCE flow. Defaults to the 'implicit' flow otherwise */
   flowType?: AuthFlowType
-  /* If debug messages are emitted. Can be used to inspect the behavior of the library. */
-  debug?: boolean
+  /* If debug messages are emitted. Can be used to inspect the behavior of the library. If set to a function, the provided function will be used instead of `console.log()` to perform the logging. */
+  debug?: boolean | ((message: string, ...args: any[]) => void)
   /**
    * Provide your own locking mechanism based on the environment. By default no locking is done at this time.
    *

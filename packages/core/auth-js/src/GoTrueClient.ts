@@ -161,6 +161,7 @@ export default class GoTrueClient {
   protected broadcastChannel: BroadcastChannel | null = null
 
   protected logDebugMessages: boolean
+  protected logger: (message: string, ...args: any[]) => void = console.log
 
   /**
    * Create a new client for use in the browser.
@@ -176,7 +177,12 @@ export default class GoTrueClient {
     }
 
     const settings = { ...DEFAULT_OPTIONS, ...options }
-    this.logDebugMessages = settings.debug
+
+    this.logDebugMessages = !!settings.debug
+    if (typeof settings.debug === 'function') {
+      this.logger = settings.debug
+    }
+
     this.inMemorySession = null
     this.storageKey = settings.storageKey
     this.autoRefreshToken = settings.autoRefreshToken
@@ -234,7 +240,7 @@ export default class GoTrueClient {
 
   private _debug(...args: any[]): GoTrueClient {
     if (this.logDebugMessages) {
-      console.log(
+      this.logger(
         `GoTrueClient@${this.instanceID} (${version}) ${new Date().toISOString()}`,
         ...args
       )
