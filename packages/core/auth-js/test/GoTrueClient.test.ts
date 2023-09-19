@@ -177,12 +177,19 @@ describe('GoTrueClient', () => {
       expired.setMinutes(expired.getMinutes() - 1)
       const expiredSeconds = Math.floor(expired.getTime() / 1000)
 
-      // @ts-expect-error 'Allow access to protected inMemorySession'
-      authWithSession.inMemorySession = {
-        // @ts-expect-error 'Allow access to protected inMemorySession'
-        ...authWithSession.inMemorySession,
-        expires_at: expiredSeconds,
-      }
+      // @ts-expect-error 'Allow access to protected storage'
+      const storage = authWithSession.storage
+
+      // @ts-expect-error 'Allow access to protected storageKey'
+      const storageKey = authWithSession.storageKey
+
+      await storage.setItem(
+        storageKey,
+        JSON.stringify({
+          ...JSON.parse((await storage.getItem(storageKey)) || 'null'),
+          expires_at: expiredSeconds,
+        })
+      )
 
       // wait 1 seconds before calling getSession()
       await new Promise((r) => setTimeout(r, 1000))

@@ -30,7 +30,7 @@ import {
   supportsLocalStorage,
   parseParametersFromURL,
 } from './lib/helpers'
-import localStorageAdapter from './lib/local-storage'
+import { localStorageAdapter, memoryLocalStorageAdapter } from './lib/local-storage'
 import { polyfillGlobalThis } from './lib/polyfills'
 import { version } from './lib/version'
 import { LockAcquireTimeoutError } from './lib/locks'
@@ -123,17 +123,12 @@ export default class GoTrueClient {
    */
   protected storageKey: string
 
-  /**
-   * The session object for the currently logged in user. If null, it means there isn't a logged-in user.
-   * Only used if persistSession is false.
-   */
-  protected inMemorySession: Session | null
-
   protected flowType: AuthFlowType
 
   protected autoRefreshToken: boolean
   protected persistSession: boolean
   protected storage: SupportedStorage
+  protected memoryStorage: { [key: string]: string } | null = null
   protected stateChangeEmitters: Map<string, Subscription> = new Map()
   protected autoRefreshTicker: ReturnType<typeof setInterval> | null = null
   protected visibilityChangedCallback: (() => Promise<any>) | null = null
@@ -183,11 +178,9 @@ export default class GoTrueClient {
       this.logger = settings.debug
     }
 
-    this.inMemorySession = null
+    this.persistSession = settings.persistSession
     this.storageKey = settings.storageKey
     this.autoRefreshToken = settings.autoRefreshToken
-    this.persistSession = settings.persistSession
-    this.storage = settings.storage || localStorageAdapter
     this.admin = new GoTrueAdminApi({
       url: settings.url,
       headers: settings.headers,
@@ -211,11 +204,20 @@ export default class GoTrueClient {
       getAuthenticatorAssuranceLevel: this._getAuthenticatorAssuranceLevel.bind(this),
     }
 
-    if (this.persistSession && this.storage === localStorageAdapter && !supportsLocalStorage()) {
-      console.warn(
-        `No storage option exists to persist the session, which may result in unexpected behavior when using auth.
-        If you want to set persistSession to true, please provide a storage option or you may set persistSession to false to disable this warning.`
-      )
+    if (this.persistSession) {
+      if (settings.storage) {
+        this.storage = settings.storage
+      } else {
+        if (supportsLocalStorage()) {
+          this.storage = localStorageAdapter
+        } else {
+          this.memoryStorage = {}
+          this.storage = memoryLocalStorageAdapter(this.memoryStorage)
+        }
+      }
+    } else {
+      this.memoryStorage = {}
+      this.storage = memoryLocalStorageAdapter(this.memoryStorage)
     }
 
     if (isBrowser() && globalThis.BroadcastChannel && this.persistSession && this.storageKey) {
@@ -970,22 +972,17 @@ export default class GoTrueClient {
     try {
       let currentSession: Session | null = null
 
-      if (this.persistSession) {
-        const maybeSession = await getItemAsync(this.storage, this.storageKey)
+      const maybeSession = await getItemAsync(this.storage, this.storageKey)
 
-        this._debug('#getSession()', 'session from storage', maybeSession)
+      this._debug('#getSession()', 'session from storage', maybeSession)
 
-        if (maybeSession !== null) {
-          if (this._isValidSession(maybeSession)) {
-            currentSession = maybeSession
-          } else {
-            this._debug('#getSession()', 'session from storage is not valid')
-            await this._removeSession()
-          }
+      if (maybeSession !== null) {
+        if (this._isValidSession(maybeSession)) {
+          currentSession = maybeSession
+        } else {
+          this._debug('#getSession()', 'session from storage is not valid')
+          await this._removeSession()
         }
-      } else {
-        currentSession = this.inMemorySession
-        this._debug('#getSession()', 'session from memory', currentSession)
       }
 
       if (!currentSession) {
@@ -1787,13 +1784,7 @@ export default class GoTrueClient {
   private async _saveSession(session: Session) {
     this._debug('#_saveSession()', session)
 
-    if (!this.persistSession) {
-      this.inMemorySession = session
-    }
-
-    if (this.persistSession && session.expires_at) {
-      await this._persistSession(session)
-    }
+    await this._persistSession(session)
   }
 
   private _persistSession(currentSession: Session) {
@@ -1805,11 +1796,7 @@ export default class GoTrueClient {
   private async _removeSession() {
     this._debug('#_removeSession()')
 
-    if (this.persistSession) {
-      await removeItemAsync(this.storage, this.storageKey)
-    } else {
-      this.inMemorySession = null
-    }
+    await removeItemAsync(this.storage, this.storageKey)
   }
 
   /**

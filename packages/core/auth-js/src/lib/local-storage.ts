@@ -1,7 +1,10 @@
 import { supportsLocalStorage } from './helpers'
 import { SupportedStorage } from './types'
 
-const localStorageAdapter: SupportedStorage = {
+/**
+ * Provides safe access to the globalThis.localStorage property.
+ */
+export const localStorageAdapter: SupportedStorage = {
   getItem: (key) => {
     if (!supportsLocalStorage()) {
       return null
@@ -25,4 +28,22 @@ const localStorageAdapter: SupportedStorage = {
   },
 }
 
-export default localStorageAdapter
+/**
+ * Returns a localStorage-like object that stores the key-value pairs in
+ * memory.
+ */
+export function memoryLocalStorageAdapter(store: { [key: string]: string } = {}): SupportedStorage {
+  return {
+    getItem: (key) => {
+      return store[key] || null
+    },
+
+    setItem: (key, value) => {
+      store[key] = value
+    },
+
+    removeItem: (key) => {
+      delete store[key]
+    },
+  }
+}

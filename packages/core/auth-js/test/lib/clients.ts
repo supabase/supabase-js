@@ -46,7 +46,8 @@ export const authClient = new GoTrueClient({
 export const authClientWithSession = new GoTrueClient({
   url: GOTRUE_URL_SIGNUP_ENABLED_AUTO_CONFIRM_ON,
   autoRefreshToken: false,
-  persistSession: false,
+  persistSession: true,
+  storage: new MemoryStorage(),
 })
 
 export const authSubscriptionClient = new GoTrueClient({
