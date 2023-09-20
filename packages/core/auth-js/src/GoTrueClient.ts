@@ -2155,70 +2155,74 @@ export default class GoTrueClient {
    * {@see GoTrueMFAApi#verify}
    */
   private async _verify(params: MFAVerifyParams): Promise<AuthMFAVerifyResponse> {
-    try {
-      return await this._useSession(async (result) => {
-        const { data: sessionData, error: sessionError } = result
-        if (sessionError) {
-          return { data: null, error: sessionError }
-        }
-
-        const { data, error } = await _request(
-          this.fetch,
-          'POST',
-          `${this.url}/factors/${params.factorId}/verify`,
-          {
-            body: { code: params.code, challenge_id: params.challengeId },
-            headers: this.headers,
-            jwt: sessionData?.session?.access_token,
+    return this._acquireLock(-1, async () => {
+      try {
+        return await this._useSession(async (result) => {
+          const { data: sessionData, error: sessionError } = result
+          if (sessionError) {
+            return { data: null, error: sessionError }
           }
-        )
-        if (error) {
+
+          const { data, error } = await _request(
+            this.fetch,
+            'POST',
+            `${this.url}/factors/${params.factorId}/verify`,
+            {
+              body: { code: params.code, challenge_id: params.challengeId },
+              headers: this.headers,
+              jwt: sessionData?.session?.access_token,
+            }
+          )
+          if (error) {
+            return { data: null, error }
+          }
+
+          await this._saveSession({
+            expires_at: Math.round(Date.now() / 1000) + data.expires_in,
+            ...data,
+          })
+          await this._notifyAllSubscribers('MFA_CHALLENGE_VERIFIED', data)
+
+          return { data, error }
+        })
+      } catch (error) {
+        if (isAuthError(error)) {
           return { data: null, error }
         }
-
-        await this._saveSession({
-          expires_at: Math.round(Date.now() / 1000) + data.expires_in,
-          ...data,
-        })
-        await this._notifyAllSubscribers('MFA_CHALLENGE_VERIFIED', data)
-
-        return { data, error }
-      })
-    } catch (error) {
-      if (isAuthError(error)) {
-        return { data: null, error }
+        throw error
       }
-      throw error
-    }
+    })
   }
 
   /**
    * {@see GoTrueMFAApi#challenge}
    */
   private async _challenge(params: MFAChallengeParams): Promise<AuthMFAChallengeResponse> {
-    try {
-      return await this._useSession(async (result) => {
-        const { data: sessionData, error: sessionError } = result
-        if (sessionError) {
-          return { data: null, error: sessionError }
-        }
-
-        return await _request(
-          this.fetch,
-          'POST',
-          `${this.url}/factors/${params.factorId}/challenge`,
-          {
-            headers: this.headers,
-            jwt: sessionData?.session?.access_token,
+    return this._acquireLock(-1, async () => {
+      try {
+        return await this._useSession(async (result) => {
+          const { data: sessionData, error: sessionError } = result
+          if (sessionError) {
+            return { data: null, error: sessionError }
           }
-        )
-      })
-    } catch (error) {
-      if (isAuthError(error)) {
-        return { data: null, error }
+
+          return await _request(
+            this.fetch,
+            'POST',
+            `${this.url}/factors/${params.factorId}/challenge`,
+            {
+              headers: this.headers,
+              jwt: sessionData?.session?.access_token,
+            }
+          )
+        })
+      } catch (error) {
+        if (isAuthError(error)) {
+          return { data: null, error }
+        }
+        throw error
       }
-      throw error
-    }
+    })
   }
 
   /**
@@ -2227,12 +2231,16 @@ export default class GoTrueClient {
   private async _challengeAndVerify(
     params: MFAChallengeAndVerifyParams
   ): Promise<AuthMFAVerifyResponse> {
+    // both _challenge and _verify independently acquire the lock, so no need
+    // to acquire it here
+
     const { data: challengeData, error: challengeError } = await this._challenge({
       factorId: params.factorId,
     })
     if (challengeError) {
       return { data: null, error: challengeError }
     }
+
     return await this._verify({
       factorId: params.factorId,
       challengeId: challengeData.id,
@@ -2244,10 +2252,11 @@ export default class GoTrueClient {
    * {@see GoTrueMFAApi#listFactors}
    */
   private async _listFactors(): Promise<AuthMFAListFactorsResponse> {
+    // use #getUser instead of #_getUser as the former acquires a lock
     const {
       data: { user },
       error: userError,
-    } = await this._getUser()
+    } = await this.getUser()
     if (userError) {
       return { data: null, error: userError }
     }
@@ -2270,41 +2279,43 @@ export default class GoTrueClient {
    * {@see GoTrueMFAApi#getAuthenticatorAssuranceLevel}
    */
   private async _getAuthenticatorAssuranceLevel(): Promise<AuthMFAGetAuthenticatorAssuranceLevelResponse> {
-    return await this._useSession(async (result) => {
-      const {
-        data: { session },
-        error: sessionError,
-      } = result
-      if (sessionError) {
-        return { data: null, error: sessionError }
-      }
-      if (!session) {
-        return {
-          data: { currentLevel: null, nextLevel: null, currentAuthenticationMethods: [] },
-          error: null,
+    return this._acquireLock(-1, async () => {
+      return await this._useSession(async (result) => {
+        const {
+          data: { session },
+          error: sessionError,
+        } = result
+        if (sessionError) {
+          return { data: null, error: sessionError }
         }
-      }
+        if (!session) {
+          return {
+            data: { currentLevel: null, nextLevel: null, currentAuthenticationMethods: [] },
+            error: null,
+          }
+        }
 
-      const payload = this._decodeJWT(session.access_token)
+        const payload = this._decodeJWT(session.access_token)
 
-      let currentLevel: AuthenticatorAssuranceLevels | null = null
+        let currentLevel: AuthenticatorAssuranceLevels | null = null
 
-      if (payload.aal) {
-        currentLevel = payload.aal
-      }
+        if (payload.aal) {
+          currentLevel = payload.aal
+        }
 
-      let nextLevel: AuthenticatorAssuranceLevels | null = currentLevel
+        let nextLevel: AuthenticatorAssuranceLevels | null = currentLevel
 
-      const verifiedFactors =
-        session.user.factors?.filter((factor: Factor) => factor.status === 'verified') ?? []
+        const verifiedFactors =
+          session.user.factors?.filter((factor: Factor) => factor.status === 'verified') ?? []
 
-      if (verifiedFactors.length > 0) {
-        nextLevel = 'aal2'
-      }
+        if (verifiedFactors.length > 0) {
+          nextLevel = 'aal2'
+        }
 
-      const currentAuthenticationMethods = payload.amr || []
+        const currentAuthenticationMethods = payload.amr || []
 
-      return { data: { currentLevel, nextLevel, currentAuthenticationMethods }, error: null }
+        return { data: { currentLevel, nextLevel, currentAuthenticationMethods }, error: null }
+      })
     })
   }
 }
