@@ -80,7 +80,11 @@ export type RealtimePostgresChangesFilter<
   filter?: string
 }
 
-export type RealtimeChannelSendResponse = 'ok' | 'timed out' | 'rate limited'
+export type RealtimeChannelSendResponse =
+  | 'ok'
+  | 'timed out'
+  | 'rate limited'
+  | 'error'
 
 export enum REALTIME_POSTGRES_CHANGES_LISTEN_EVENT {
   ALL = '*',
@@ -126,6 +130,8 @@ export default class RealtimeChannel {
   rejoinTimer: Timer
   pushBuffer: Push[] = []
   presence: RealtimePresence
+  broadcastEndpointURL: string
+  subTopic: string
 
   constructor(
     /** Topic name can be any string. */
@@ -133,6 +139,8 @@ export default class RealtimeChannel {
     public params: RealtimeChannelOptions = { config: {} },
     public socket: RealtimeClient
   ) {
+    this.subTopic = topic.replace(/^realtime:/i, '')
+
     this.params.config = {
       ...{
         broadcast: { ack: false, self: false },
@@ -184,6 +192,8 @@ export default class RealtimeChannel {
     })
 
     this.presence = new RealtimePresence(this)
+
+    this.broadcastEndpointURL = this._broadcastEndpointURL()
   }
 
   /** Subscribe registers your client with the server */
@@ -191,6 +201,10 @@ export default class RealtimeChannel {
     callback?: (status: `${REALTIME_SUBSCRIBE_STATES}`, err?: Error) => void,
     timeout = this.timeout
   ): RealtimeChannel {
+    if (!this.socket.isConnected()) {
+      this.socket.connect()
+    }
+
     if (this.joinedOnce) {
       throw `tried to subscribe multiple times. 'subscribe' can only be called a single time per channel instance`
     } else {
@@ -393,31 +407,67 @@ export default class RealtimeChannel {
     return this._on(type, filter, callback)
   }
 
-  send(
+  async send(
     payload: { type: string; [key: string]: any },
     opts: { [key: string]: any } = {}
   ): Promise<RealtimeChannelSendResponse> {
-    return new Promise((resolve) => {
-      const push = this._push(
-        payload.type,
-        payload,
-        opts.timeout || this.timeout
-      )
-
-      if (push.rateLimited) {
-        resolve('rate limited')
+    if (!this._canPush() && payload.type === 'broadcast') {
+      const { event, payload: endpoint_payload } = payload
+      const options = {
+        method: 'POST',
+        headers: {
+          apikey: this.socket.accessToken ?? '',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          messages: [
+            { topic: this.subTopic, event, payload: endpoint_payload },
+          ],
+        }),
       }
 
-      if (
-        payload.type === 'broadcast' &&
-        !this.params?.config?.broadcast?.ack
-      ) {
-        resolve('ok')
-      }
+      try {
+        const response = await this._fetchWithTimeout(
+          this.broadcastEndpointURL,
+          options,
+          opts.timeout ?? this.timeout
+        )
 
-      push.receive('ok', () => resolve('ok'))
-      push.receive('timeout', () => resolve('timed out'))
-    })
+        if (response.ok) {
+          return 'ok'
+        } else {
+          return 'error'
+        }
+      } catch (error: any) {
+        if (error.name === 'AbortError') {
+          return 'timed out'
+        } else {
+          return 'error'
+        }
+      }
+    } else {
+      return new Promise((resolve) => {
+        const push = this._push(
+          payload.type,
+          payload,
+          opts.timeout || this.timeout
+        )
+
+        if (push.rateLimited) {
+          resolve('rate limited')
+        }
+
+        if (
+          payload.type === 'broadcast' &&
+          !this.params?.config?.broadcast?.ack
+        ) {
+          resolve('ok')
+        }
+
+        push.receive('ok', () => resolve('ok'))
+        push.receive('timeout', () => resolve('timed out'))
+      })
+    }
   }
 
   updateJoinPayload(payload: { [key: string]: any }): void {
@@ -466,6 +516,32 @@ export default class RealtimeChannel {
         leavePush.trigger('ok', {})
       }
     })
+  }
+
+  /** @internal */
+  _broadcastEndpointURL(): string {
+    let url = this.socket.endPoint
+    url = url.replace(/^ws/i, 'http')
+    url = url.replace(/(\/socket\/websocket|\/socket|\/websocket)\/?$/i, '')
+    return url.replace(/\/+$/, '') + '/api/broadcast'
+  }
+
+  async _fetchWithTimeout(
+    url: string,
+    options: { [key: string]: any },
+    timeout: number
+  ) {
+    const controller = new AbortController()
+    const id = setTimeout(() => controller.abort(), timeout)
+
+    const response = await this.socket.fetch(url, {
+      ...options,
+      signal: controller.signal,
+    })
+
+    clearTimeout(id)
+
+    return response
   }
 
   /** @internal */

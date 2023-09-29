@@ -1074,38 +1074,68 @@ describe('send', () => {
   let pushStub
 
   beforeEach(() => {
+    socket = new RealtimeClient('ws://localhost:4000/socket', { params: { apikey: 'abc123' } })
     channel = socket.channel('topic', { one: 'two' })
   })
 
-  it("sends message", async () => {
-    pushStub = sinon.stub(channel, '_push')
-    pushStub.returns({ rateLimited: false, receive: (status, cb) => {
-      if (status === 'ok') cb()
-    }})
+  afterEach(() => {
+    socket.disconnect()
+    channel.unsubscribe()
+  })
 
-    const res = await channel.send({ type: 'broadcast', id: 'u123' })
+  it("sends message via ws conn when subscribed to channel", () => {
+    channel.subscribe(async status => {
+      if (status === "SUBSCRIBED") {
+        pushStub = sinon.stub(channel, '_push')
+        pushStub.returns({
+          rateLimited: false, receive: (status, cb) => {
+            if (status === 'ok') cb()
+          }
+        })
+
+        const res = await channel.send({ type: 'broadcast', id: 'u123' })
+
+        assert.equal(res, 'ok')
+      }
+    })
+  })
+
+  it("tries to send message via ws conn when subscribed to channel but is rate limited", async () => {
+    channel.subscribe(async status => {
+      if (status === "SUBSCRIBED") {
+        pushStub = sinon.stub(channel, '_push')
+        pushStub.returns({ rateLimited: true })
+
+        const res = await channel.send({ type: 'test', id: 'u123' })
+
+        assert.equal(res, 'rate limited')
+      }
+    })
+  })
+
+  it("tries to send message via ws conn when subscribed to channel but times out", async () => {
+    channel.subscribe(async status => {
+      if (status === "SUBSCRIBED") {
+        pushStub = sinon.stub(channel, '_push')
+        pushStub.returns({ rateLimited: false, receive: (status, cb) => {
+          if (status === 'timeout') cb()
+        }})
+
+        const res = await channel.send({ type: 'test', id: 'u123' })
+
+        assert.equal(res, 'timed out')
+      }
+    })
+  })
+
+  it("sends message via http request to Broadcast endpoint when not subscribed to channel", async () => {
+    pushStub = sinon.stub(channel, '_fetchWithTimeout')
+    pushStub.returns(new Response())
+
+    const res = await channel.send({ type: 'broadcast', event: 'test', id: 'u123' })
 
     assert.equal(res, 'ok')
-  })
-
-  it("sends message but is rate limited", async () => {
-    pushStub = sinon.stub(channel, '_push')
-    pushStub.returns({ rateLimited: true })
-
-    const res = await channel.send({ type: 'test', id: 'u123' })
-
-    assert.equal(res, 'rate limited')
-  })
-
-  it("sends message but times out", async () => {
-    pushStub = sinon.stub(channel, '_push')
-    pushStub.returns({ rateLimited: false, receive: (status, cb) => {
-      if (status === 'timeout') cb()
-    }})
-
-    const res = await channel.send({ type: 'test', id: 'u123' })
-
-    assert.equal(res, 'timed out')
+    assert.ok(pushStub.calledOnceWith('http://localhost:4000/api/broadcast'))
   })
 })
 

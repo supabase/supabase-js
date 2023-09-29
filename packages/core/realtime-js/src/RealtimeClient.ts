@@ -14,6 +14,8 @@ import Serializer from './lib/serializer'
 import RealtimeChannel from './RealtimeChannel'
 import type { RealtimeChannelOptions } from './RealtimeChannel'
 
+type Fetch = typeof fetch
+
 export type RealtimeClientOptions = {
   transport?: WebSocket
   timeout?: number
@@ -25,6 +27,7 @@ export type RealtimeClientOptions = {
   headers?: { [key: string]: string }
   params?: { [key: string]: any }
   log_level?: 'info' | 'debug' | 'warn' | 'error'
+  fetch?: Fetch
 }
 
 export type RealtimeMessage = {
@@ -72,6 +75,7 @@ export default class RealtimeClient {
   }
   eventsPerSecondLimitMs: number = 100
   inThrottle: boolean = false
+  fetch: Fetch
 
   /**
    * Initializes the Socket.
@@ -122,6 +126,8 @@ export default class RealtimeClient {
       this.disconnect()
       this.connect()
     }, this.reconnectAfterMs)
+
+    this.fetch = this._resolveFetch(options?.fetch)
   }
 
   /**
@@ -232,10 +238,6 @@ export default class RealtimeClient {
     topic: string,
     params: RealtimeChannelOptions = { config: {} }
   ): RealtimeChannel {
-    if (!this.isConnected()) {
-      this.connect()
-    }
-
     const chan = new RealtimeChannel(`realtime:${topic}`, params, this)
     this.channels.push(chan)
     return chan
@@ -283,6 +285,26 @@ export default class RealtimeClient {
         channel._push(CHANNEL_EVENTS.access_token, { access_token: token })
       }
     })
+  }
+
+  /**
+   * Use either custom fetch, if provided, or default fetch to make HTTP requests
+   *
+   * @internal
+   */
+  _resolveFetch = (customFetch?: Fetch): Fetch => {
+    let _fetch: Fetch
+    if (customFetch) {
+      _fetch = customFetch
+    } else if (typeof fetch === 'undefined') {
+      _fetch = (...args) =>
+        import('@supabase/node-fetch' as any).then(({ default: fetch }) =>
+          fetch(...args)
+        )
+    } else {
+      _fetch = fetch
+    }
+    return (...args) => _fetch(...args)
   }
 
   /**

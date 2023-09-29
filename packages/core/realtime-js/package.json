@@ -35,6 +35,7 @@
     "docs:json": "typedoc --json docs/v2/spec.json --excludeExternals src/index.ts"
   },
   "dependencies": {
+    "@supabase/node-fetch": "^2.6.14",
     "@types/phoenix": "^1.5.4",
     "@types/websocket": "^1.0.3",
     "websocket": "^1.0.34"
