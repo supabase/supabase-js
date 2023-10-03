@@ -848,7 +848,7 @@ export default class GoTrueClient {
             try {
               await result
             } catch (e: any) {
-              // we jsut care if it finished
+              // we just care if it finished
             }
           })()
         )
