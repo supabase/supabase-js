@@ -22,6 +22,7 @@ export type Provider =
   | 'twitter'
   | 'workos'
   | 'zoom'
+  | 'fly'
 
 export type AuthChangeEventMFA = 'MFA_CHALLENGE_VERIFIED'
 
