@@ -378,6 +378,15 @@ export interface AdminUserAttributes extends Omit<UserAttributes, 'data'> {
    * Setting the ban duration to 'none' lifts the ban on the user.
    */
   ban_duration?: string | 'none'
+
+  /**
+   * The `role` claim set in the user's access token JWT.
+   *
+   * When a user signs up, this role is set to `authenticated` by default. You should only modify the `role` if you need to provision several levels of admin access that have different permissions on individual columns in your database.
+   *
+   * Setting this role to `service_role` is not recommended as it grants the user admin privileges.
+   */
+  role?: string
 }
 
 export interface Subscription {
