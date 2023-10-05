@@ -290,7 +290,9 @@ function base64urlencode(str: string) {
 }
 
 export async function generatePKCEChallenge(verifier: string) {
-  if (typeof crypto === 'undefined') {
+  const hasCryptoSupport = typeof crypto !== 'undefined' && typeof crypto.subtle !== 'undefined' && typeof TextEncoder !== 'undefined';
+  
+  if (!hasCryptoSupport) {
     console.warn(
       'WebCrypto API is not supported. Code challenge method will default to use plain instead of sha256.'
     )
