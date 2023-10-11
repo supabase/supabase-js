@@ -113,7 +113,7 @@ export enum REALTIME_SUBSCRIBE_STATES {
  * and narrows the scope of data flow to subscribed clients.
  * You can think of a channel as a chatroom where participants are able to see who's online
  * and send and receive messages.
- **/
+ */
 export default class RealtimeChannel {
   bindings: {
     [key: string]: {
@@ -406,13 +406,26 @@ export default class RealtimeChannel {
   ): RealtimeChannel {
     return this._on(type, filter, callback)
   }
-
+  /**
+   * Sends a message into the channel.
+   *
+   * @param args Arguments to send to channel
+   * @param args.type The type of event to send
+   * @param args.event The name of the event being sent
+   * @param args.payload Payload to be sent
+   * @param opts Options to be used during the send process
+   */
   async send(
-    payload: { type: string; [key: string]: any },
+    args: {
+      type: 'broadcast' | 'presence' | 'postgres_changes'
+      event: string
+      payload?: any
+      [key: string]: any
+    },
     opts: { [key: string]: any } = {}
   ): Promise<RealtimeChannelSendResponse> {
-    if (!this._canPush() && payload.type === 'broadcast') {
-      const { event, payload: endpoint_payload } = payload
+    if (!this._canPush() && args.type === 'broadcast') {
+      const { event, payload: endpoint_payload } = args
       const options = {
         method: 'POST',
         headers: {
@@ -447,20 +460,13 @@ export default class RealtimeChannel {
       }
     } else {
       return new Promise((resolve) => {
-        const push = this._push(
-          payload.type,
-          payload,
-          opts.timeout || this.timeout
-        )
+        const push = this._push(args.type, args, opts.timeout || this.timeout)
 
         if (push.rateLimited) {
           resolve('rate limited')
         }
 
-        if (
-          payload.type === 'broadcast' &&
-          !this.params?.config?.broadcast?.ack
-        ) {
+        if (args.type === 'broadcast' && !this.params?.config?.broadcast?.ack) {
           resolve('ok')
         }
 
