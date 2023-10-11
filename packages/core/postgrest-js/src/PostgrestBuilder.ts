@@ -149,7 +149,7 @@ export default abstract class PostgrestBuilder<Result>
           }
         }
 
-        if (error && this.isMaybeSingle && error?.details?.includes('Results contain 0 rows')) {
+        if (error && this.isMaybeSingle && error?.details?.includes('0 rows')) {
           error = null
           status = 200
           statusText = 'OK'
