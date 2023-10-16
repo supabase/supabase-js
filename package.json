@@ -41,7 +41,7 @@
     "@supabase/gotrue-js": "^2.54.2",
     "@supabase/node-fetch": "^2.6.14",
     "@supabase/postgrest-js": "^1.8.5",
-    "@supabase/realtime-js": "^2.8.0",
+    "@supabase/realtime-js": "^2.8.1",
     "@supabase/storage-js": "^2.5.4"
   },
   "devDependencies": {
