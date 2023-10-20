@@ -709,6 +709,14 @@ export default class GoTrueClient {
   async signInWithSSO(params: SignInWithSSO): Promise<SSOResponse> {
     try {
       await this._removeSession()
+      let codeChallenge: string | null = null
+      let codeChallengeMethod: string | null = null
+      if (this.flowType === 'pkce') {
+        const codeVerifier = generatePKCEVerifier()
+        await setItemAsync(this.storage, `${this.storageKey}-code-verifier`, codeVerifier)
+        codeChallenge = await generatePKCEChallenge(codeVerifier)
+        codeChallengeMethod = codeVerifier === codeChallenge ? 'plain' : 's256'
+      }
 
       return await _request(this.fetch, 'POST', `${this.url}/sso`, {
         body: {
@@ -719,6 +727,8 @@ export default class GoTrueClient {
             ? { gotrue_meta_security: { captcha_token: params.options.captchaToken } }
             : null),
           skip_http_redirect: true, // fetch does not handle redirects
+          code_challenge: codeChallenge,
+          code_challenge_method: codeChallengeMethod,
         },
         headers: this.headers,
         xform: _ssoResponse,
