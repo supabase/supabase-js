@@ -14,7 +14,6 @@ export default class Push {
     callback: Function
   }[] = []
   refEvent: string | null = null
-  rateLimited: boolean = false
 
   /**
    * Initializes the Push
@@ -47,16 +46,13 @@ export default class Push {
     }
     this.startTimeout()
     this.sent = true
-    const status = this.channel.socket.push({
+    this.channel.socket.push({
       topic: this.channel.topic,
       event: this.event,
       payload: this.payload,
       ref: this.ref,
       join_ref: this.channel._joinRef(),
     })
-    if (status === 'rate limited') {
-      this.rateLimited = true
-    }
   }
 
   updatePayload(payload: { [key: string]: any }): void {

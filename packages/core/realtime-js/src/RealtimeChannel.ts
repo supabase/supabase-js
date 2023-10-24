@@ -80,11 +80,7 @@ export type RealtimePostgresChangesFilter<
   filter?: string
 }
 
-export type RealtimeChannelSendResponse =
-  | 'ok'
-  | 'timed out'
-  | 'rate limited'
-  | 'error'
+export type RealtimeChannelSendResponse = 'ok' | 'timed out' | 'error'
 
 export enum REALTIME_POSTGRES_CHANGES_LISTEN_EVENT {
   ALL = '*',
@@ -461,10 +457,6 @@ export default class RealtimeChannel {
     } else {
       return new Promise((resolve) => {
         const push = this._push(args.type, args, opts.timeout || this.timeout)
-
-        if (push.rateLimited) {
-          resolve('rate limited')
-        }
 
         if (args.type === 'broadcast' && !this.params?.config?.broadcast?.ack) {
           resolve('ok')

@@ -44,8 +44,7 @@ import { RealtimeClient } from '@supabase/realtime-js'
 
 const client = new RealtimeClient(REALTIME_URL, {
   params: {
-    apikey: API_KEY,
-    eventsPerSecond: 10,
+    apikey: API_KEY
   },
 })
 
@@ -75,7 +74,6 @@ channel.subscribe((status, err) => {
 - `REALTIME_URL` is `'ws://localhost:4000/socket'` when developing locally and `'wss://<project_ref>.supabase.co/realtime/v1'` when connecting to your Supabase project.
 - `API_KEY` is a JWT whose claims must contain `exp` and `role` (existing database role).
 - Channel name can be any `string`.
-- `eventsPerSecond`, or client-side rate limiting, enforces the number of events sent to the Realtime server uniformly spread across a second. The default is 10, which means that the client can send one event, whether that's **Broadcast**/**Presence**/**Postgres CDC**, every 100 milliseconds. You may change this as you see fit, and choose to disable by passing in a negative number, but note that the server's rate limiting will need to be updated accordingly. You can learn more about Realtime's rate limits here: https://supabase.com/docs/guides/realtime/rate-limits.
 
 ## Broadcast
 

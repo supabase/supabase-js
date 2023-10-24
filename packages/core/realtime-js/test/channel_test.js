@@ -1088,7 +1088,7 @@ describe('send', () => {
       if (status === "SUBSCRIBED") {
         pushStub = sinon.stub(channel, '_push')
         pushStub.returns({
-          rateLimited: false, receive: (status, cb) => {
+          receive: (status, cb) => {
             if (status === 'ok') cb()
           }
         })
@@ -1100,24 +1100,11 @@ describe('send', () => {
     })
   })
 
-  it("tries to send message via ws conn when subscribed to channel but is rate limited", async () => {
-    channel.subscribe(async status => {
-      if (status === "SUBSCRIBED") {
-        pushStub = sinon.stub(channel, '_push')
-        pushStub.returns({ rateLimited: true })
-
-        const res = await channel.send({ type: 'test', id: 'u123' })
-
-        assert.equal(res, 'rate limited')
-      }
-    })
-  })
-
   it("tries to send message via ws conn when subscribed to channel but times out", async () => {
     channel.subscribe(async status => {
       if (status === "SUBSCRIBED") {
         pushStub = sinon.stub(channel, '_push')
-        pushStub.returns({ rateLimited: false, receive: (status, cb) => {
+        pushStub.returns({ receive: (status, cb) => {
           if (status === 'timeout') cb()
         }})
 
