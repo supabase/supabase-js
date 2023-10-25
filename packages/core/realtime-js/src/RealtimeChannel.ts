@@ -105,6 +105,8 @@ export enum REALTIME_SUBSCRIBE_STATES {
   CHANNEL_ERROR = 'CHANNEL_ERROR',
 }
 
+export const REALTIME_CHANNEL_STATES = CHANNEL_STATES
+
 /** A channel is the basic building block of Realtime
  * and narrows the scope of data flow to subscribed clients.
  * You can think of a channel as a chatroom where participants are able to see who's online
