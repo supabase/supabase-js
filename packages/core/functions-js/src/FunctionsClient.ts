@@ -104,6 +104,8 @@ export class FunctionsClient {
         data = await response.json()
       } else if (responseType === 'application/octet-stream') {
         data = await response.blob()
+      } else if (responseType === 'text/event-stream') {
+        data = response
       } else if (responseType === 'multipart/form-data') {
         data = await response.formData()
       } else {
