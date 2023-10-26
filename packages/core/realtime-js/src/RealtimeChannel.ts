@@ -397,6 +397,15 @@ export default class RealtimeChannel {
       [key: string]: any
     }) => void
   ): RealtimeChannel
+  on<T extends { [key: string]: any }>(
+    type: `${REALTIME_LISTEN_TYPES.BROADCAST}`,
+    filter: { event: string },
+    callback: (payload: {
+      type: `${REALTIME_LISTEN_TYPES.BROADCAST}`
+      event: string
+      payload: T
+    }) => void
+  ): RealtimeChannel
   on(
     type: `${REALTIME_LISTEN_TYPES}`,
     filter: { event: string; [key: string]: string },
