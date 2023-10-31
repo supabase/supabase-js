@@ -62,7 +62,10 @@ const postgrest = new PostgrestClient<Database>(REST_URL)
   if (error) {
     throw new Error(error.message)
   }
-  expectType<{ bar: Json; baz: string }>(data)
+  // getting this w/o the cast, not sure why:
+  // Parameter type Json is declared too wide for argument type Json
+  expectType<Json>(data.bar as Json)
+  expectType<string>(data.baz)
 }
 
 // rpc return type

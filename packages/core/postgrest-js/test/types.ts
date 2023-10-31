@@ -1,4 +1,4 @@
-export type Json = string | number | boolean | null | { [key: string]: Json } | Json[]
+export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[]
 
 export interface Database {
   personal: {
@@ -45,6 +45,29 @@ export interface Database {
   }
   public: {
     Tables: {
+      channel_details: {
+        Row: {
+          details: string | null
+          id: number
+        }
+        Insert: {
+          details?: string | null
+          id: number
+        }
+        Update: {
+          details?: string | null
+          id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'channel_details_id_fkey'
+            columns: ['id']
+            isOneToOne: true
+            referencedRelation: 'channels'
+            referencedColumns: ['id']
+          }
+        ]
+      }
       channels: {
         Row: {
           data: Json | null
@@ -87,16 +110,28 @@ export interface Database {
         }
         Relationships: [
           {
+            foreignKeyName: 'messages_channel_id_fkey'
+            columns: ['channel_id']
+            referencedRelation: 'channels'
+            referencedColumns: ['id']
+          },
+          {
             foreignKeyName: 'messages_username_fkey'
             columns: ['username']
             referencedRelation: 'users'
             referencedColumns: ['username']
           },
           {
-            foreignKeyName: 'messages_channel_id_fkey'
-            columns: ['channel_id']
-            referencedRelation: 'channels'
-            referencedColumns: ['id']
+            foreignKeyName: 'messages_username_fkey'
+            columns: ['username']
+            referencedRelation: 'non_updatable_view'
+            referencedColumns: ['username']
+          },
+          {
+            foreignKeyName: 'messages_username_fkey'
+            columns: ['username']
+            referencedRelation: 'updatable_view'
+            referencedColumns: ['username']
           }
         ]
       }
@@ -148,6 +183,7 @@ export interface Database {
         Row: {
           username: string | null
         }
+        Relationships: []
       }
       updatable_view: {
         Row: {
@@ -162,6 +198,7 @@ export interface Database {
           non_updatable_column?: never
           username?: string | null
         }
+        Relationships: []
       }
     }
     Functions: {
