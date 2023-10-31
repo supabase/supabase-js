@@ -1,10 +1,6 @@
 import { FunctionsClient } from '@supabase/functions-js'
 import { AuthChangeEvent } from '@supabase/gotrue-js'
-import {
-  PostgrestClient,
-  PostgrestFilterBuilder,
-  PostgrestQueryBuilder,
-} from '@supabase/postgrest-js'
+import { PostgrestClient } from '@supabase/postgrest-js'
 import {
   RealtimeChannel,
   RealtimeChannelOptions,
@@ -143,20 +139,12 @@ export default class SupabaseClient<
     return new SupabaseStorageClient(this.storageUrl, this.headers, this.fetch)
   }
 
-  from<
-    TableName extends string & keyof Schema['Tables'],
-    Table extends Schema['Tables'][TableName]
-  >(relation: TableName): PostgrestQueryBuilder<Schema, Table>
-  from<ViewName extends string & keyof Schema['Views'], View extends Schema['Views'][ViewName]>(
-    relation: ViewName
-  ): PostgrestQueryBuilder<Schema, View>
-  from(relation: string): PostgrestQueryBuilder<Schema, any>
   /**
    * Perform a query on a table or a view.
    *
    * @param relation - The table or view name to query
    */
-  from(relation: string): PostgrestQueryBuilder<Schema, any> {
+  from: PostgrestClient<Database, SchemaName>['from'] = (relation: string) => {
     return this.rest.from(relation)
   }
 
@@ -168,13 +156,11 @@ export default class SupabaseClient<
    *
    * @param schema - The name of the schema to query
    */
-  schema<DynamicSchema extends string & keyof Database>(
+  schema: PostgrestClient<Database, SchemaName>['schema'] = <
+    DynamicSchema extends string & keyof Database
+  >(
     schema: DynamicSchema
-  ): PostgrestClient<
-    Database,
-    DynamicSchema,
-    Database[DynamicSchema] extends GenericSchema ? Database[DynamicSchema] : any
-  > {
+  ) => {
     return this.rest.schema<DynamicSchema>(schema)
   }
 
@@ -199,7 +185,7 @@ export default class SupabaseClient<
    * `"estimated"`: Uses exact count for low numbers and planned count for high
    * numbers.
    */
-  rpc<
+  rpc: PostgrestClient<Database, SchemaName>['rpc'] = <
     FunctionName extends string & keyof Schema['Functions'],
     Function_ extends Schema['Functions'][FunctionName]
   >(
@@ -209,15 +195,7 @@ export default class SupabaseClient<
       head?: boolean
       count?: 'exact' | 'planned' | 'estimated'
     }
-  ): PostgrestFilterBuilder<
-    Schema,
-    Function_['Returns'] extends any[]
-      ? Function_['Returns'][number] extends Record<string, unknown>
-        ? Function_['Returns'][number]
-        : never
-      : never,
-    Function_['Returns']
-  > {
+  ) => {
     return this.rest.rpc(fn, args, options)
   }
 
