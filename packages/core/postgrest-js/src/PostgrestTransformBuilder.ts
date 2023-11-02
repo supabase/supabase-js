@@ -44,8 +44,22 @@ export default class PostgrestTransformBuilder<
 
   order<ColumnName extends string & keyof Row>(
     column: ColumnName,
+    options?: { ascending?: boolean; nullsFirst?: boolean; referencedTable?: undefined }
+  ): this
+  order(
+    column: string,
+    options?: { ascending?: boolean; nullsFirst?: boolean; referencedTable?: string }
+  ): this
+  /**
+   * @deprecated Use `options.referencedTable` instead of `options.foreignTable`
+   */
+  order<ColumnName extends string & keyof Row>(
+    column: ColumnName,
     options?: { ascending?: boolean; nullsFirst?: boolean; foreignTable?: undefined }
   ): this
+  /**
+   * @deprecated Use `options.referencedTable` instead of `options.foreignTable`
+   */
   order(
     column: string,
     options?: { ascending?: boolean; nullsFirst?: boolean; foreignTable?: string }
@@ -55,16 +69,18 @@ export default class PostgrestTransformBuilder<
    *
    * You can call this method multiple times to order by multiple columns.
    *
-   * You can order foreign tables, but it doesn't affect the ordering of the
-   * current table.
+   * You can order referenced tables, but it only affects the ordering of the
+   * parent table if you use `!inner` in the query.
    *
    * @param column - The column to order by
    * @param options - Named parameters
    * @param options.ascending - If `true`, the result will be in ascending order
    * @param options.nullsFirst - If `true`, `null`s appear first. If `false`,
    * `null`s appear last.
-   * @param options.foreignTable - Set this to order a foreign table by foreign
-   * columns
+   * @param options.referencedTable - Set this to order a referenced table by
+   * its columns
+   * @param options.foreignTable - Deprecated, use `options.referencedTable`
+   * instead
    */
   order(
     column: string,
@@ -72,9 +88,15 @@ export default class PostgrestTransformBuilder<
       ascending = true,
       nullsFirst,
       foreignTable,
-    }: { ascending?: boolean; nullsFirst?: boolean; foreignTable?: string } = {}
+      referencedTable = foreignTable,
+    }: {
+      ascending?: boolean
+      nullsFirst?: boolean
+      foreignTable?: string
+      referencedTable?: string
+    } = {}
   ): this {
-    const key = foreignTable ? `${foreignTable}.order` : 'order'
+    const key = referencedTable ? `${referencedTable}.order` : 'order'
     const existingOrder = this.url.searchParams.get(key)
 
     this.url.searchParams.set(
@@ -91,11 +113,19 @@ export default class PostgrestTransformBuilder<
    *
    * @param count - The maximum number of rows to return
    * @param options - Named parameters
-   * @param options.foreignTable - Set this to limit rows of foreign tables
-   * instead of the current table
+   * @param options.referencedTable - Set this to limit rows of referenced
+   * tables instead of the parent table
+   * @param options.foreignTable - Deprecated, use `options.referencedTable`
+   * instead
    */
-  limit(count: number, { foreignTable }: { foreignTable?: string } = {}): this {
-    const key = typeof foreignTable === 'undefined' ? 'limit' : `${foreignTable}.limit`
+  limit(
+    count: number,
+    {
+      foreignTable,
+      referencedTable = foreignTable,
+    }: { foreignTable?: string; referencedTable?: string } = {}
+  ): this {
+    const key = typeof referencedTable === 'undefined' ? 'limit' : `${referencedTable}.limit`
     this.url.searchParams.set(key, `${count}`)
     return this
   }
@@ -110,12 +140,22 @@ export default class PostgrestTransformBuilder<
    * @param from - The starting index from which to limit the result
    * @param to - The last index to which to limit the result
    * @param options - Named parameters
-   * @param options.foreignTable - Set this to limit rows of foreign tables
-   * instead of the current table
+   * @param options.referencedTable - Set this to limit rows of referenced
+   * tables instead of the parent table
+   * @param options.foreignTable - Deprecated, use `options.referencedTable`
+   * instead
    */
-  range(from: number, to: number, { foreignTable }: { foreignTable?: string } = {}): this {
-    const keyOffset = typeof foreignTable === 'undefined' ? 'offset' : `${foreignTable}.offset`
-    const keyLimit = typeof foreignTable === 'undefined' ? 'limit' : `${foreignTable}.limit`
+  range(
+    from: number,
+    to: number,
+    {
+      foreignTable,
+      referencedTable = foreignTable,
+    }: { foreignTable?: string; referencedTable?: string } = {}
+  ): this {
+    const keyOffset =
+      typeof referencedTable === 'undefined' ? 'offset' : `${referencedTable}.offset`
+    const keyLimit = typeof referencedTable === 'undefined' ? 'limit' : `${referencedTable}.limit`
     this.url.searchParams.set(keyOffset, `${from}`)
     // Range is inclusive, so add 1
     this.url.searchParams.set(keyLimit, `${to - from + 1}`)

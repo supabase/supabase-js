@@ -40,16 +40,6 @@ type Letter = Alphabet | Digit | '_'
 
 type Json = string | number | boolean | null | { [key: string]: Json } | Json[]
 
-// /**
-//  * Parsed node types.
-//  * Currently only `*` and all other fields.
-//  */
-// type ParsedNode =
-//   | { star: true }
-//   | { name: string; original: string }
-//   | { name: string; foreignTable: true }
-//   | { name: string; type: T };
-
 /**
  * Parser errors.
  */

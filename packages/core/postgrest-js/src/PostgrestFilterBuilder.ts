@@ -487,11 +487,19 @@ export default class PostgrestFilterBuilder<
    * It's currently not possible to do an `.or()` filter across multiple tables.
    *
    * @param filters - The filters to use, following PostgREST syntax
-   * @param foreignTable - Set this to filter on foreign tables instead of the
-   * current table
+   * @param options - Named parameters
+   * @param options.referencedTable - Set this to filter on referenced tables
+   * instead of the parent table
+   * @param options.foreignTable - Deprecated, use `referencedTable` instead
    */
-  or(filters: string, { foreignTable }: { foreignTable?: string } = {}): this {
-    const key = foreignTable ? `${foreignTable}.or` : 'or'
+  or(
+    filters: string,
+    {
+      foreignTable,
+      referencedTable = foreignTable,
+    }: { foreignTable?: string; referencedTable?: string } = {}
+  ): this {
+    const key = referencedTable ? `${referencedTable}.or` : 'or'
     this.url.searchParams.append(key, `(${filters})`)
     return this
   }
