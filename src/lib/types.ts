@@ -43,7 +43,7 @@ export type SupabaseClientOptions<SchemaName> = {
     /**
      * If debug messages for authentication client are emitted. Can be used to inspect the behavior of the library.
      */
-    debug?: boolean
+    debug?: SupabaseAuthClientOptions['debug']
     /**
      * Provide your own locking mechanism based on the environment. By default no locking is done at this time.
      *
