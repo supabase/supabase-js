@@ -68,7 +68,7 @@ export default class StorageFileApi {
     fileOptions?: FileOptions
   ): Promise<
     | {
-        data: { path: string }
+        data: { id: string, path: string, fullPath: string }
         error: null
       }
     | {
@@ -106,13 +106,15 @@ export default class StorageFileApi {
         ...(options?.duplex ? { duplex: options.duplex } : {}),
       })
 
+      const data = await res.json()
+
       if (res.ok) {
         return {
-          data: { path: cleanPath },
+          data: { path: cleanPath, id: data.Id, fullPath: data.Key },
           error: null,
         }
       } else {
-        const error = await res.json()
+        const error = data
         return { data: null, error }
       }
     } catch (error) {
@@ -192,13 +194,15 @@ export default class StorageFileApi {
         headers,
       })
 
+      const data = await res.json()
+
       if (res.ok) {
         return {
-          data: { path: cleanPath },
+          data: { path: cleanPath, fullPath: data.Key },
           error: null,
         }
       } else {
-        const error = await res.json()
+        const error = data
         return { data: null, error }
       }
     } catch (error) {
