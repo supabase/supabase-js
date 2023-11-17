@@ -200,7 +200,7 @@ test('maybeSingle', async () => {
       "data": null,
       "error": Object {
         "code": "PGRST116",
-        "details": "Results contain 2 rows, application/vnd.pgrst.object+json requires 1 row",
+        "details": "The result contains 2 rows",
         "hint": null,
         "message": "JSON object requested, multiple (or no) rows returned",
       },
