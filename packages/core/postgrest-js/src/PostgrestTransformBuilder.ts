@@ -267,7 +267,7 @@ export default class PostgrestTransformBuilder<
       .filter(Boolean)
       .join('|')
     // An Accept header can carry multiple media types but postgrest-js always sends one
-    const forMediatype = this.headers['Accept']
+    const forMediatype = this.headers['Accept'] ?? 'application/json'
     this.headers[
       'Accept'
     ] = `application/vnd.pgrst.plan+${format}; for="${forMediatype}"; options=${options};`
