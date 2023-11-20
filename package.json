@@ -40,7 +40,7 @@
     "@supabase/functions-js": "^2.1.5",
     "@supabase/gotrue-js": "^2.56.0",
     "@supabase/node-fetch": "^2.6.14",
-    "@supabase/postgrest-js": "^1.8.5",
+    "@supabase/postgrest-js": "^1.8.6",
     "@supabase/realtime-js": "^2.8.4",
     "@supabase/storage-js": "^2.5.4"
   },
