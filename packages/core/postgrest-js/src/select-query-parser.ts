@@ -66,6 +66,16 @@ type HasFKey<FKeyName, Relationships> = Relationships extends [infer R]
     : HasFKey<FKeyName, Rest>
   : false
 
+type HasUniqueFKey<FKeyName, Relationships> = Relationships extends [infer R]
+  ? R extends { foreignKeyName: FKeyName; isOneToOne: true }
+    ? true
+    : false
+  : Relationships extends [infer R, ...infer Rest]
+  ? HasUniqueFKey<FKeyName, [R]> extends true
+    ? true
+    : HasUniqueFKey<FKeyName, Rest>
+  : false
+
 type HasFKeyToFRel<FRelName, Relationships> = Relationships extends [infer R]
   ? R extends { referencedRelation: FRelName }
     ? true
@@ -74,6 +84,16 @@ type HasFKeyToFRel<FRelName, Relationships> = Relationships extends [infer R]
   ? HasFKeyToFRel<FRelName, [R]> extends true
     ? true
     : HasFKeyToFRel<FRelName, Rest>
+  : false
+
+type HasUniqueFKeyToFRel<FRelName, Relationships> = Relationships extends [infer R]
+  ? R extends { referencedRelation: FRelName; isOneToOne: true }
+    ? true
+    : false
+  : Relationships extends [infer R, ...infer Rest]
+  ? HasUniqueFKeyToFRel<FRelName, [R]> extends true
+    ? true
+    : HasUniqueFKeyToFRel<FRelName, Rest>
   : false
 
 /**
@@ -86,6 +106,7 @@ type HasFKeyToFRel<FRelName, Relationships> = Relationships extends [infer R]
 type ConstructFieldDefinition<
   Schema extends GenericSchema,
   Row extends Record<string, unknown>,
+  RelationName,
   Relationships,
   Field
 > = Field extends { star: true }
@@ -95,13 +116,24 @@ type ConstructFieldDefinition<
       [_ in Field['name']]: GetResultHelper<
         Schema,
         (Schema['Tables'] & Schema['Views'])[Field['original']]['Row'],
+        Field['original'],
         (Schema['Tables'] & Schema['Views'])[Field['original']] extends { Relationships: infer R }
           ? R
           : unknown,
         Field['children'],
         unknown
       > extends infer Child
-        ? Relationships extends unknown[]
+        ? // One-to-one relationship - referencing column(s) has unique/pkey constraint.
+          HasUniqueFKey<
+            Field['hint'],
+            (Schema['Tables'] & Schema['Views'])[Field['original']] extends {
+              Relationships: infer R
+            }
+              ? R
+              : unknown
+          > extends true
+          ? Child | null
+          : Relationships extends unknown[]
           ? HasFKey<Field['hint'], Relationships> extends true
             ? Child | null
             : Child[]
@@ -113,13 +145,24 @@ type ConstructFieldDefinition<
       [_ in Field['name']]: GetResultHelper<
         Schema,
         (Schema['Tables'] & Schema['Views'])[Field['original']]['Row'],
+        Field['original'],
         (Schema['Tables'] & Schema['Views'])[Field['original']] extends { Relationships: infer R }
           ? R
           : unknown,
         Field['children'],
         unknown
       > extends infer Child
-        ? Relationships extends unknown[]
+        ? // One-to-one relationship - referencing column(s) has unique/pkey constraint.
+          HasUniqueFKeyToFRel<
+            RelationName,
+            (Schema['Tables'] & Schema['Views'])[Field['original']] extends {
+              Relationships: infer R
+            }
+              ? R
+              : unknown
+          > extends true
+          ? Child | null
+          : Relationships extends unknown[]
           ? HasFKeyToFRel<Field['original'], Relationships> extends true
             ? Child | null
             : Child[]
@@ -404,28 +447,35 @@ type ParseQuery<Query extends string> = string extends Query
 type GetResultHelper<
   Schema extends GenericSchema,
   Row extends Record<string, unknown>,
+  RelationName,
   Relationships,
   Fields extends unknown[],
   Acc
 > = Fields extends [infer R]
-  ? ConstructFieldDefinition<Schema, Row, Relationships, R> extends SelectQueryError<infer E>
+  ? ConstructFieldDefinition<Schema, Row, RelationName, Relationships, R> extends SelectQueryError<
+      infer E
+    >
     ? SelectQueryError<E>
     : GetResultHelper<
         Schema,
         Row,
+        RelationName,
         Relationships,
         [],
-        ConstructFieldDefinition<Schema, Row, Relationships, R> & Acc
+        ConstructFieldDefinition<Schema, Row, RelationName, Relationships, R> & Acc
       >
   : Fields extends [infer R, ...infer Rest]
-  ? ConstructFieldDefinition<Schema, Row, Relationships, R> extends SelectQueryError<infer E>
+  ? ConstructFieldDefinition<Schema, Row, RelationName, Relationships, R> extends SelectQueryError<
+      infer E
+    >
     ? SelectQueryError<E>
     : GetResultHelper<
         Schema,
         Row,
+        RelationName,
         Relationships,
         Rest,
-        ConstructFieldDefinition<Schema, Row, Relationships, R> & Acc
+        ConstructFieldDefinition<Schema, Row, RelationName, Relationships, R> & Acc
       >
   : Prettify<Acc>
 
@@ -438,8 +488,9 @@ type GetResultHelper<
 export type GetResult<
   Schema extends GenericSchema,
   Row extends Record<string, unknown>,
+  RelationName,
   Relationships,
   Query extends string
 > = ParseQuery<Query> extends unknown[]
-  ? GetResultHelper<Schema, Row, Relationships, ParseQuery<Query>, unknown>
+  ? GetResultHelper<Schema, Row, RelationName, Relationships, ParseQuery<Query>, unknown>
   : ParseQuery<Query>

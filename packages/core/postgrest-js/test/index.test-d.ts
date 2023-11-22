@@ -100,3 +100,17 @@ const postgrest = new PostgrestClient<Database>(REST_URL)
   const res = await postgrest.from('users').select('username, dat')
   expectType<PostgrestSingleResponse<SelectQueryError<`Referencing missing column \`dat\``>[]>>(res)
 }
+
+// one-to-one relationship
+{
+  const { data: channels, error } = await postgrest
+    .from('channels')
+    .select('channel_details(*)')
+    .single()
+  if (error) {
+    throw new Error(error.message)
+  }
+  expectType<Database['public']['Tables']['channel_details']['Row'] | null>(
+    channels.channel_details
+  )
+}

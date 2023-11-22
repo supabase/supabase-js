@@ -59,19 +59,19 @@ export default class PostgrestClient<
   from<
     TableName extends string & keyof Schema['Tables'],
     Table extends Schema['Tables'][TableName]
-  >(relation: TableName): PostgrestQueryBuilder<Schema, Table>
+  >(relation: TableName): PostgrestQueryBuilder<Schema, Table, TableName>
   from<ViewName extends string & keyof Schema['Views'], View extends Schema['Views'][ViewName]>(
     relation: ViewName
-  ): PostgrestQueryBuilder<Schema, View>
-  from(relation: string): PostgrestQueryBuilder<Schema, any>
+  ): PostgrestQueryBuilder<Schema, View, ViewName>
+  from(relation: string): PostgrestQueryBuilder<Schema, any, any>
   /**
    * Perform a query on a table or a view.
    *
    * @param relation - The table or view name to query
    */
-  from(relation: string): PostgrestQueryBuilder<Schema, any> {
+  from(relation: string): PostgrestQueryBuilder<Schema, any, any> {
     const url = new URL(`${this.url}/${relation}`)
-    return new PostgrestQueryBuilder<Schema, any>(url, {
+    return new PostgrestQueryBuilder(url, {
       headers: { ...this.headers },
       schema: this.schemaName,
       fetch: this.fetch,
@@ -92,11 +92,7 @@ export default class PostgrestClient<
     DynamicSchema,
     Database[DynamicSchema] extends GenericSchema ? Database[DynamicSchema] : any
   > {
-    return new PostgrestClient<
-      Database,
-      DynamicSchema,
-      Database[DynamicSchema] extends GenericSchema ? Database[DynamicSchema] : any
-    >(this.url, {
+    return new PostgrestClient(this.url, {
       headers: this.headers,
       schema,
       fetch: this.fetch,
