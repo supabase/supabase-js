@@ -17,7 +17,12 @@ export {
 } from '@supabase/functions-js'
 export * from '@supabase/realtime-js'
 export { default as SupabaseClient } from './SupabaseClient'
-export type { SupabaseClientOptions } from './lib/types'
+export type {
+  SupabaseClientOptions,
+  QueryResult,
+  QueryResultData,
+  QueryResultError,
+} from './lib/types'
 
 /**
  * Creates a new Supabase Client.
