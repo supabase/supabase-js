@@ -101,5 +101,5 @@ export type GenericSchema = {
  * Helper types for query results.
  */
 export type QueryResult<T> = T extends PromiseLike<infer U> ? U : never
-export type QueryResultData<T> = T extends PromiseLike<{ data: infer U }> ? Exclude<U, null> : never
-export type QueryResultError = PostgrestError
+export type QueryData<T> = T extends PromiseLike<{ data: infer U }> ? Exclude<U, null> : never
+export type QueryError = PostgrestError
