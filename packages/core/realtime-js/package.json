@@ -38,10 +38,11 @@
     "@supabase/node-fetch": "^2.6.14",
     "@types/phoenix": "^1.5.4",
     "@types/websocket": "^1.0.3",
-    "websocket": "^1.0.34"
+    "ws": "^8.14.2"
   },
   "devDependencies": {
     "@babel/runtime": "^7.9.2",
+    "@types/ws": "^8.5.8",
     "babel-preset-env": "^1.7.0",
     "babel-register": "^6.26.0",
     "eslint": "^7.0.0",
