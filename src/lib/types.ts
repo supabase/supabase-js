@@ -1,5 +1,6 @@
 import { GoTrueClient } from '@supabase/gotrue-js'
 import { RealtimeClientOptions } from '@supabase/realtime-js'
+import { PostgrestError } from '@supabase/postgrest-js'
 
 type GoTrueClientOptions = ConstructorParameters<typeof GoTrueClient>[0]
 
@@ -95,3 +96,10 @@ export type GenericSchema = {
   Views: Record<string, GenericView>
   Functions: Record<string, GenericFunction>
 }
+
+/**
+ * Helper types for query results.
+ */
+export type QueryResult<T> = T extends PromiseLike<infer U> ? U : never
+export type QueryData<T> = T extends PromiseLike<{ data: infer U }> ? Exclude<U, null> : never
+export type QueryError = PostgrestError
