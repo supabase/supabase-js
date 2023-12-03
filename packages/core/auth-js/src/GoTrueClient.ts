@@ -1753,6 +1753,11 @@ export default class GoTrueClient {
       if (isAuthError(error)) {
         const result = { session: null, error }
 
+        if (!isAuthRetryableFetchError(error)) {
+          await this._removeSession()
+          await this._notifyAllSubscribers('SIGNED_OUT', null)
+        }
+
         this.refreshingDeferred?.resolve(result)
 
         return result
