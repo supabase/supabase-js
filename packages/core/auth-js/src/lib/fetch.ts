@@ -7,7 +7,12 @@ import {
   User,
   UserResponse,
 } from './types'
-import { AuthApiError, AuthRetryableFetchError, AuthUnknownError } from './errors'
+import {
+  AuthApiError,
+  AuthRetryableFetchError,
+  AuthWeakPasswordError,
+  AuthUnknownError,
+} from './errors'
 
 export type Fetch = typeof fetch
 
@@ -44,6 +49,22 @@ async function handleError(error: unknown) {
     data = await error.json()
   } catch (e: any) {
     throw new AuthUnknownError(_getErrorMessage(e), e)
+  }
+
+  if (
+    typeof data === 'object' &&
+    data &&
+    typeof data.weak_password === 'object' &&
+    data.weak_password &&
+    Array.isArray(data.weak_password.reasons) &&
+    data.weak_password.reasons.length &&
+    data.weak_password.reduce((a: boolean, i: any) => a && typeof i === 'string', true)
+  ) {
+    throw new AuthWeakPasswordError(
+      _getErrorMessage(data),
+      error.status,
+      data.weak_password.reasons
+    )
   }
 
   throw new AuthApiError(_getErrorMessage(data), error.status || 500)

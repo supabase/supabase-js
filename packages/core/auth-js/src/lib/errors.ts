@@ -124,3 +124,25 @@ export class AuthRetryableFetchError extends CustomAuthError {
 export function isAuthRetryableFetchError(error: unknown): error is AuthRetryableFetchError {
   return isAuthError(error) && error.name === 'AuthRetryableFetchError'
 }
+
+/**
+ * This error is thrown on certain methods when the password used is deemed
+ * weak. Inspect the reasons to identify what password strength rules are
+ * inadequate.
+ */
+export class AuthWeakPasswordError extends CustomAuthError {
+  /**
+   * Reasons why the password is deemed weak.
+   */
+  reasons: ('length' | 'characters' | 'pwned' | string)[]
+
+  constructor(message: string, status: number, reasons: string[]) {
+    super(message, 'AuthWeakPasswordError', status)
+
+    this.reasons = reasons
+  }
+}
+
+export function isAuthWeakPasswordError(error: unknown): error is AuthWeakPasswordError {
+  return isAuthError(error) && error.name === 'AuthWeakPasswordError'
+}
