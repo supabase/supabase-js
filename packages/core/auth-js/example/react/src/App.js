@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { GoTrueClient } from '@supabase/gotrue-js'
 import './tailwind.output.css'
 
@@ -21,16 +21,19 @@ function App() {
   let [otp, setOtp] = useState('')
   let [rememberMe, setRememberMe] = useState(false)
 
-  useEffect(() => {
-    async function session() {
-      const { data, error } = await auth.getSession()
-      if (error | !data) {
-        setSession('')
-      } else {
-        setSession(data.session)
-      }
+  const modalRef = useRef(null)
+  let [showModal, setShowModal] = useState(false)
+
+  async function getSession() {
+    const { data, error } = await auth.getSession()
+    if (error | !data) {
+      setSession('')
+    } else {
+      setSession(data.session)
     }
-    session()
+  }
+  useEffect(() => {
+    getSession()
   }, [])
 
   useEffect(() => {
@@ -54,7 +57,7 @@ function App() {
     let { error } = await auth.signInWithOAuth({
       provider,
       options: {
-        redirectTo: 'http://localhost:3000/welcome',
+        redirectTo: 'http://localhost:3001/welcome',
       },
     })
     if (error) console.log('Error: ', error.message)
@@ -83,7 +86,7 @@ function App() {
     let { error } = await auth.signUp({
       email,
       password,
-      options: { emailRedirectTo: 'http://localhost:3000/welcome' },
+      options: { emailRedirectTo: 'http://localhost:3001/welcome' },
     })
     if (error) console.log('Error: ', error.message)
   }
@@ -102,6 +105,91 @@ function App() {
       } else {
         alert('Password recovery email has been sent.')
       }
+    }
+  }
+
+  const showIdentities = () => {
+    return session?.user?.identities?.map((identity) => {
+      return (
+        <div
+          key={identity.identity_id}
+          className="flex flex-row p-2 my-2 bg-gray-200 max-h-100 rounded"
+        >
+          <div className="basis-1/4 p-2">
+            {identity.provider[0].toUpperCase() + identity.provider.slice(1)}
+          </div>
+          <div className="w-full basis-1/2 p-2">{identity?.identity_data?.email}</div>
+          <div>
+            <button
+              className="w-full basis-1/4 p-2 font-medium rounded-md text-white bg-gray-600 hover:bg-gray-500 focus:outline-none focus:border-gray-700 focus:shadow-outline-gray active:bg-gray-700 transition duration-150 ease-in-out"
+              onClick={() => handleUnlinkIdentity(identity)}
+              type="button"
+            >
+              Unlink
+            </button>
+          </div>
+        </div>
+      )
+    })
+  }
+
+  const showLinkingOptions = () => {
+    setShowModal(!showModal)
+    if (showModal && !modalRef.current?.open) {
+      modalRef.current?.showModal()
+    } else {
+      modalRef.current?.close()
+    }
+  }
+
+  const linkingOptionsModal = () => {
+    return (
+      <dialog className="bg-white shadow sm:rounded-lg" ref={modalRef}>
+        <p className="block text-sm font-medium leading-5 text-gray-700">Continue linking with:</p>
+        <div className="mt-6">
+          <div className="m-2">
+            <span className="block w-full rounded-md shadow-sm">
+              <button
+                onClick={() => auth.linkIdentity({ provider: 'github' })}
+                type="button"
+                className="w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-500 focus:outline-none focus:border-indigo-700 focus:shadow-outline-indigo active:bg-indigo-700 transition duration-150 ease-in-out"
+              >
+                GitHub
+              </button>
+            </span>
+          </div>
+          <div className="m-2">
+            <span className="block w-full rounded-md shadow-sm">
+              <button
+                onClick={() => auth.linkIdentity({ provider: 'google' })}
+                type="button"
+                className="w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-500 focus:outline-none focus:border-indigo-700 focus:shadow-outline-indigo active:bg-indigo-700 transition duration-150 ease-in-out"
+              >
+                Google
+              </button>
+            </span>
+          </div>
+        </div>
+        <button
+          className="text-sm font-medium leading-5 text-gray-700"
+          type="button"
+          onClick={showLinkingOptions}
+        >
+          Close
+        </button>
+      </dialog>
+    )
+  }
+
+  async function handleUnlinkIdentity(identity) {
+    let { error } = await auth.unlinkIdentity(identity)
+    if (error) {
+      alert(error.message)
+    } else {
+      alert(`successfully unlinked ${identity.provider} identity`)
+      const { data, error: refreshSessionError } = await auth.refreshSession()
+      if (refreshSessionError) alert(refreshSessionError.message)
+      setSession(data.session)
     }
   }
   return (
@@ -128,6 +216,19 @@ function App() {
               </span>
             </div>
           )}
+        </div>
+
+        <div className="bg-white p-4 shadow sm:rounded-lg  mb-10">
+          <p className="block text-sm font-medium leading-5 text-gray-700">Identities</p>
+          {showIdentities()}
+          <button
+            className="w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-gray-600 hover:bg-gray-500 focus:outline-none focus:border-gray-700 focus:shadow-outline-gray active:bg-gray-700 transition duration-150 ease-in-out"
+            type="button"
+            onClick={showLinkingOptions}
+          >
+            Link Identity
+          </button>
+          {linkingOptionsModal()}
         </div>
 
         <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">

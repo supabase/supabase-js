@@ -5,7 +5,6 @@ import {
   AuthImplicitGrantRedirectError,
   AuthPKCEGrantCodeExchangeError,
   AuthInvalidCredentialsError,
-  AuthRetryableFetchError,
   AuthSessionMissingError,
   AuthInvalidTokenResponseError,
   AuthUnknownError,
@@ -78,6 +77,7 @@ import type {
   ResendParams,
   AuthFlowType,
   LockFunc,
+  UserIdentity,
 } from './lib/types'
 
 polyfillGlobalThis() // Make "globalThis" available
@@ -285,6 +285,15 @@ export default class GoTrueClient {
         const { data, error } = await this._getSessionFromURL(isPKCEFlow)
         if (error) {
           this._debug('#_initialize()', 'error detecting session from URL', error)
+
+          // hacky workaround to keep the existing session if there's an error returned from identity linking
+          // TODO: once error codes are ready, we should match against it instead of the message
+          if (
+            error?.message === 'Identity is already linked' ||
+            error?.message === 'Identity is already linked to another user'
+          ) {
+            return { error }
+          }
 
           // failed login attempt via url,
           // remove old session as in verifyOtp, signUp and signInWith*
@@ -1387,7 +1396,7 @@ export default class GoTrueClient {
         expires_at: expiresAt,
         refresh_token,
         token_type,
-        user: data.user!!,
+        user: data.user,
       }
 
       // Remove tokens from URL
@@ -1578,6 +1587,100 @@ export default class GoTrueClient {
   }
 
   /**
+   * Gets all the identities linked to a user.
+   */
+  async getUserIdentities(): Promise<
+    | {
+        data: {
+          identities: UserIdentity[]
+        }
+        error: null
+      }
+    | { data: null; error: AuthError }
+  > {
+    try {
+      const { data, error } = await this.getUser()
+      if (error) throw error
+      return { data: { identities: data.user.identities ?? [] }, error: null }
+    } catch (error) {
+      if (isAuthError(error)) {
+        return { data: null, error }
+      }
+      throw error
+    }
+  }
+  /**
+   * Links an oauth identity to an existing user.
+   * This method supports the PKCE flow.
+   */
+  async linkIdentity(credentials: SignInWithOAuthCredentials): Promise<OAuthResponse> {
+    try {
+      const { data, error } = await this._useSession(async (result) => {
+        const { data, error } = result
+        if (error) throw error
+        const url: string = await this._getUrlForProvider(
+          `${this.url}/user/identities/authorize`,
+          credentials.provider,
+          {
+            redirectTo: credentials.options?.redirectTo,
+            scopes: credentials.options?.scopes,
+            queryParams: credentials.options?.queryParams,
+            skipBrowserRedirect: true,
+          }
+        )
+        return await _request(this.fetch, 'GET', url, {
+          headers: this.headers,
+          jwt: data.session?.access_token ?? undefined,
+        })
+      })
+      if (error) throw error
+      if (isBrowser() && !credentials.options?.skipBrowserRedirect) {
+        window.location.assign(data?.url)
+      }
+      return { data: { provider: credentials.provider, url: data?.url }, error: null }
+    } catch (error) {
+      if (isAuthError(error)) {
+        return { data: { provider: credentials.provider, url: null }, error }
+      }
+      throw error
+    }
+  }
+
+  /**
+   * Unlinks an identity from a user by deleting it. The user will no longer be able to sign in with that identity once it's unlinked.
+   */
+  async unlinkIdentity(identity: UserIdentity): Promise<
+    | {
+        data: {}
+        error: null
+      }
+    | { data: null; error: AuthError }
+  > {
+    try {
+      return await this._useSession(async (result) => {
+        const { data, error } = result
+        if (error) {
+          throw error
+        }
+        return await _request(
+          this.fetch,
+          'DELETE',
+          `${this.url}/user/identities/${identity.identity_id}`,
+          {
+            headers: this.headers,
+            jwt: data.session?.access_token ?? undefined,
+          }
+        )
+      })
+    } catch (error) {
+      if (isAuthError(error)) {
+        return { data: null, error }
+      }
+      throw error
+    }
+  }
+
+  /**
    * Generates a new JWT.
    * @param refreshToken A valid refresh token that was returned on login.
    */
@@ -1640,7 +1743,7 @@ export default class GoTrueClient {
       skipBrowserRedirect?: boolean
     }
   ) {
-    const url: string = await this._getUrlForProvider(provider, {
+    const url: string = await this._getUrlForProvider(`${this.url}/authorize`, provider, {
       redirectTo: options.redirectTo,
       scopes: options.scopes,
       queryParams: options.queryParams,
@@ -1814,13 +1917,7 @@ export default class GoTrueClient {
   private async _saveSession(session: Session) {
     this._debug('#_saveSession()', session)
 
-    await this._persistSession(session)
-  }
-
-  private _persistSession(currentSession: Session) {
-    this._debug('#_persistSession()', currentSession)
-
-    return setItemAsync(this.storage, this.storageKey, currentSession)
+    await setItemAsync(this.storage, this.storageKey, session)
   }
 
   private async _removeSession() {
@@ -2077,11 +2174,13 @@ export default class GoTrueClient {
    * @param options.queryParams An object of key-value pairs containing query parameters granted to the OAuth application.
    */
   private async _getUrlForProvider(
+    url: string,
     provider: Provider,
     options: {
       redirectTo?: string
       scopes?: string
       queryParams?: { [key: string]: string }
+      skipBrowserRedirect?: boolean
     }
   ) {
     const urlParams: string[] = [`provider=${encodeURIComponent(provider)}`]
@@ -2117,8 +2216,11 @@ export default class GoTrueClient {
       const query = new URLSearchParams(options.queryParams)
       urlParams.push(query.toString())
     }
+    if (options?.skipBrowserRedirect) {
+      urlParams.push(`skip_http_redirect=${options.skipBrowserRedirect}`)
+    }
 
-    return `${this.url}/authorize?${urlParams.join('&')}`
+    return `${url}?${urlParams.join('&')}`
   }
 
   private async _unenroll(params: MFAUnenrollParams): Promise<AuthMFAUnenrollResponse> {
