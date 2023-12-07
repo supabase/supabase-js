@@ -58,7 +58,7 @@ async function handleError(error: unknown) {
     data.weak_password &&
     Array.isArray(data.weak_password.reasons) &&
     data.weak_password.reasons.length &&
-    data.weak_password.reduce((a: boolean, i: any) => a && typeof i === 'string', true)
+    data.weak_password.reasons.reduce((a: boolean, i: any) => a && typeof i === 'string', true)
   ) {
     throw new AuthWeakPasswordError(
       _getErrorMessage(data),
