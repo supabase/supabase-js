@@ -1437,13 +1437,12 @@ export default class GoTrueClient {
   }
 
   /**
-   * Inside a browser context, `signOut()` will remove the logged in user from the browser session
-   * and log them out - removing all items from localstorage and then trigger a `"SIGNED_OUT"` event.
+   * Inside a browser context, `signOut()` will remove the logged in user from the browser session and log them out - removing all items from localstorage and then trigger a `"SIGNED_OUT"` event.
    *
    * For server-side management, you can revoke all refresh tokens for a user by passing a user's JWT through to `auth.api.signOut(JWT: string)`.
    * There is no way to revoke a user's access token jwt until it expires. It is recommended to set a shorter expiry on the jwt for this reason.
    *
-   * If using others scope, no `SIGNED_OUT` event is fired!
+   * If using `others` scope, no `SIGNED_OUT` event is fired!
    */
   async signOut(options: SignOut = { scope: 'global' }): Promise<{ error: AuthError | null }> {
     await this.initializePromise
@@ -1535,8 +1534,8 @@ export default class GoTrueClient {
   }
 
   /**
-   * Sends a password reset request to an email address.
-   * This method supports the PKCE flow.
+   * Sends a password reset request to an email address. This method supports the PKCE flow.
+   *
    * @param email The email address of the user.
    * @param options.redirectTo The URL to send the user to after they click the password reset link.
    * @param options.captchaToken Verification token received when the user completes the captcha on the site.
