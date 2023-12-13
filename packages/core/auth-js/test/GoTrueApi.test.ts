@@ -384,7 +384,7 @@ describe('GoTrueAdminApi', () => {
       test('signOut() with an invalid access token', async () => {
         const { error } = await serviceRoleApiClient.signOut('this-is-a-bad-token')
 
-        expect(error?.message).toMatch(/^Invalid token/)
+        expect(error?.message).toMatch(/^invalid JWT/)
       })
     })
   })
@@ -420,7 +420,7 @@ describe('GoTrueAdminApi', () => {
         })
 
         expect(user).toBeNull()
-        expect(error?.message).toEqual('Invalid phone number format')
+        expect(error?.message).toEqual('Invalid phone number format (E.164 required)')
       })
     })
   })

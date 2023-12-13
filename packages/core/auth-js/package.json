@@ -1,15 +1,15 @@
 {
-  "name": "@supabase/gotrue-js",
+  "name": "@supabase/auth-js",
   "version": "0.0.0",
-  "description": "Isomorphic GoTrue client",
+  "description": "Official client library for Supabase Auth",
   "keywords": [
-    "gotrue",
+    "auth",
     "supabase",
     "auth",
     "authentication"
   ],
-  "homepage": "https://github.com/supabase/gotrue-js",
-  "bugs": "https://github.com/supabase/gotrue-js/issues",
+  "homepage": "https://github.com/supabase/auth-js",
+  "bugs": "https://github.com/supabase/auth-js/issues",
   "license": "MIT",
   "author": "Supabase",
   "files": [
@@ -19,7 +19,7 @@
   "main": "dist/main/index.js",
   "module": "dist/module/index.js",
   "types": "dist/module/index.d.ts",
-  "repository": "supabase/gotrue-js",
+  "repository": "supabase/auth-js",
   "scripts": {
     "clean": "rimraf dist docs",
     "coverage": "echo \"run npm test\"",

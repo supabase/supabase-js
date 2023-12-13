@@ -1,11 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react'
-import { GoTrueClient } from '@supabase/gotrue-js'
+import { AuthClient } from '@supabase/auth-js'
 import './tailwind.output.css'
 
 const supabaseURL = process.env.REACT_APP_SUPABASE_URL
 const supabaseAnon = process.env.REACT_APP_SUPABASE_ANON_KEY
 
-const auth = new GoTrueClient({
+const auth = new AuthClient({
   url: `${supabaseURL}/auth/v1`,
   headers: {
     accept: 'json',

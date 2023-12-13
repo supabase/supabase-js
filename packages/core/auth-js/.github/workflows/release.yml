@@ -29,8 +29,20 @@ jobs:
           npm ci
           npm run build
 
-      - name: Create a release
+      - name: Create a release for @supabase/auth-js
         run: npx semantic-release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Create a release for @supabase/gotrue-js
+        run: |
+          for f in package.json package-lock.json
+          do
+            sed -i '' 's|\(["/]\)auth-js|\1gotrue-js|g' "$f"
+          done
+
+          npx semantic-release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}

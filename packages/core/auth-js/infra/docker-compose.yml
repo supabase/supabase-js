@@ -2,7 +2,7 @@
 version: '3'
 services:
   gotrue: # Signup enabled, autoconfirm off
-    image: supabase/gotrue:latest
+    image: supabase/auth:v2.129.0
     ports:
       - '9999:9999'
     environment:
@@ -42,7 +42,7 @@ services:
       - db
     restart: on-failure
   autoconfirm: # Signup enabled, autoconfirm on
-    image: supabase/gotrue:latest
+    image: supabase/auth:v2.129.0
     ports:
       - '9998:9998'
     environment:
@@ -71,7 +71,7 @@ services:
       - db
     restart: on-failure
   disabled: # Signup disabled
-    image: supabase/gotrue:latest
+    image: supabase/auth:v2.129.0
     ports:
       - '9997:9997'
     environment:

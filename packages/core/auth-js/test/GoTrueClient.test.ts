@@ -360,7 +360,7 @@ describe('GoTrueClient', () => {
       expect(data.session).toBeNull()
       expect(data.user).toBeNull()
 
-      expect(error?.message).toEqual('Error sending confirmation sms: Missing Twilio account SID')
+      expect(error?.message).toEqual('Error sending confirmation sms: missing Twilio account SID')
     })
 
     test('signUp() with phone', async () => {

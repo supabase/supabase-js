@@ -1,28 +1,28 @@
-# `gotrue-js`
+# `auth-js`
 
-An isomorphic JavaScript client library for the [GoTrue](https://github.com/supabase/gotrue) API.
+An isomorphic JavaScript client library for the [Supabase Auth](https://github.com/supabase/auth) API.
 
 ## Docs
 
-- Using `gotrue-js`: https://supabase.com/docs/reference/javascript/auth-signup
-- TypeDoc: https://supabase.github.io/gotrue-js/v2
+- Using `auth-js`: https://supabase.com/docs/reference/javascript/auth-signup
+- TypeDoc: https://supabase.github.io/auth-js/v2
 
 ## Quick start
 
 Install
 
 ```bash
-npm install --save @supabase/gotrue-js
+npm install --save @supabase/auth-js
 ```
 
 Usage
 
 ```js
-import { GoTrueClient } from '@supabase/gotrue-js'
+import { AuthClient } from '@supabase/auth-js'
 
 const GOTRUE_URL = 'http://localhost:9999'
 
-const auth = new GoTrueClient({ url: GOTRUE_URL })
+const auth = new AuthClient({ url: GOTRUE_URL })
 ```
 
 - `signUp()`: https://supabase.io/docs/reference/javascript/auth-signup
@@ -31,14 +31,14 @@ const auth = new GoTrueClient({ url: GOTRUE_URL })
 
 ### Custom `fetch` implementation
 
-`gotrue-js` uses the [`cross-fetch`](https://www.npmjs.com/package/cross-fetch) library to make HTTP requests, but an alternative `fetch` implementation can be provided as an option. This is most useful in environments where `cross-fetch` is not compatible, for instance Cloudflare Workers:
+`auth-js` uses the [`cross-fetch`](https://www.npmjs.com/package/cross-fetch) library to make HTTP requests, but an alternative `fetch` implementation can be provided as an option. This is most useful in environments where `cross-fetch` is not compatible, for instance Cloudflare Workers:
 
 ```js
-import { GoTrueClient } from '@supabase/gotrue-js'
+import { AuthClient } from '@supabase/auth-js'
 
-const GOTRUE_URL = 'http://localhost:9999'
+const AUTH_URL = 'http://localhost:9999'
 
-const auth = new GoTrueClient({ url: GOTRUE_URL, fetch: fetch })
+const auth = new AuthClient({ url: AUTH_URL, fetch: fetch })
 ```
 
 ## Sponsors
