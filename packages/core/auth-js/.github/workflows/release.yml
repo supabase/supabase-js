@@ -30,7 +30,7 @@ jobs:
           npm run build
 
       - name: Create a release for @supabase/auth-js
-        run: npx semantic-release
+        run: npx semantic-release -r 'https://github.com/supabase/gotrue-js.git'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
@@ -42,7 +42,7 @@ jobs:
             sed -i '' 's|\(["/]\)auth-js|\1gotrue-js|g' "$f"
           done
 
-          npx semantic-release
+          npx semantic-release -r 'https://github.com/supabase/gotrue-js.git'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
