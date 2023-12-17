@@ -515,9 +515,8 @@ export default class GoTrueClient {
       }
     | { data: { session: null; user: null; redirectType: null }; error: AuthError }
   > {
-    const [codeVerifier, redirectType] = (
-      (await getItemAsync(this.storage, `${this.storageKey}-code-verifier`)) as string
-    ).split('/')
+    const storageItem = await getItemAsync(this.storage, `${this.storageKey}-code-verifier`)
+    const [codeVerifier, redirectType] = ((storageItem ?? '') as string).split('/')
     const { data, error } = await _request(
       this.fetch,
       'POST',
