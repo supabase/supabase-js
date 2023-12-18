@@ -1,6 +1,7 @@
 import { expiresAt, looksLikeFetchResponse } from './helpers'
 import {
   AuthResponse,
+  AuthResponsePassword,
   SSOResponse,
   GenerateLinkProperties,
   GenerateLinkResponse,
@@ -172,6 +173,25 @@ export function _sessionResponse(data: any): AuthResponse {
 
   const user: User = data.user ?? (data as User)
   return { data: { session, user }, error: null }
+}
+
+export function _sessionResponsePassword(data: any): AuthResponsePassword {
+  const response = _sessionResponse(data) as AuthResponsePassword
+
+  if (
+    !response.error &&
+    data.weak_password &&
+    typeof data.weak_password === 'object' &&
+    Array.isArray(data.weak_password.reasons) &&
+    data.weak_password.reasons.length &&
+    data.weak_password.message &&
+    typeof data.weak_password.message === 'string' &&
+    data.weak_password.reasons.reduce((a: boolean, i: any) => a && typeof i === 'string', true)
+  ) {
+    response.data.weak_password = data.weak_password
+  }
+
+  return response
 }
 
 export function _userResponse(data: any): UserResponse {

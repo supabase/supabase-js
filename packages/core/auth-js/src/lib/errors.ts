@@ -1,3 +1,5 @@
+import { WeakPasswordReasons } from './types'
+
 export class AuthError extends Error {
   status: number | undefined
   protected __isAuthError = true
@@ -134,7 +136,7 @@ export class AuthWeakPasswordError extends CustomAuthError {
   /**
    * Reasons why the password is deemed weak.
    */
-  reasons: ('length' | 'characters' | 'pwned' | string)[]
+  reasons: WeakPasswordReasons[]
 
   constructor(message: string, status: number, reasons: string[]) {
     super(message, 'AuthWeakPasswordError', status)

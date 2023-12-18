@@ -12,7 +12,14 @@ import {
   isAuthError,
   isAuthRetryableFetchError,
 } from './lib/errors'
-import { Fetch, _request, _sessionResponse, _userResponse, _ssoResponse } from './lib/fetch'
+import {
+  Fetch,
+  _request,
+  _sessionResponse,
+  _sessionResponsePassword,
+  _userResponse,
+  _ssoResponse,
+} from './lib/fetch'
 import {
   decodeJWTPayload,
   Deferred,
@@ -37,7 +44,9 @@ import { LockAcquireTimeoutError } from './lib/locks'
 import type {
   AuthChangeEvent,
   AuthResponse,
+  AuthResponsePassword,
   AuthTokenResponse,
+  AuthTokenResponsePassword,
   AuthOtpResponse,
   CallRefreshTokenResult,
   GoTrueClientOptions,
@@ -78,6 +87,7 @@ import type {
   AuthFlowType,
   LockFunc,
   UserIdentity,
+  WeakPassword,
 } from './lib/types'
 
 polyfillGlobalThis() // Make "globalThis" available
@@ -430,11 +440,13 @@ export default class GoTrueClient {
    * email/phone and password combination is wrong or that the account can only
    * be accessed via social login.
    */
-  async signInWithPassword(credentials: SignInWithPasswordCredentials): Promise<AuthTokenResponse> {
+  async signInWithPassword(
+    credentials: SignInWithPasswordCredentials
+  ): Promise<AuthTokenResponsePassword> {
     try {
       await this._removeSession()
 
-      let res: AuthResponse
+      let res: AuthResponsePassword
       if ('email' in credentials) {
         const { email, password, options } = credentials
         res = await _request(this.fetch, 'POST', `${this.url}/token?grant_type=password`, {
@@ -444,7 +456,7 @@ export default class GoTrueClient {
             password,
             gotrue_meta_security: { captcha_token: options?.captchaToken },
           },
-          xform: _sessionResponse,
+          xform: _sessionResponsePassword,
         })
       } else if ('phone' in credentials) {
         const { phone, password, options } = credentials
@@ -455,7 +467,7 @@ export default class GoTrueClient {
             password,
             gotrue_meta_security: { captcha_token: options?.captchaToken },
           },
-          xform: _sessionResponse,
+          xform: _sessionResponsePassword,
         })
       } else {
         throw new AuthInvalidCredentialsError(
@@ -473,7 +485,14 @@ export default class GoTrueClient {
         await this._saveSession(data.session)
         await this._notifyAllSubscribers('SIGNED_IN', data.session)
       }
-      return { data: { user: data.user, session: data.session }, error }
+      return {
+        data: {
+          user: data.user,
+          session: data.session,
+          ...(data.weak_password ? { weakPassword: data.weak_password } : null),
+        },
+        error,
+      }
     } catch (error) {
       if (isAuthError(error)) {
         return { data: { user: null, session: null }, error }

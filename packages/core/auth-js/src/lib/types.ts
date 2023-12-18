@@ -82,11 +82,34 @@ export type GoTrueClientOptions = {
   lock?: LockFunc
 }
 
+export type WeakPasswordReasons = 'length' | 'characters' | 'pwned' | string
+export type WeakPassword = {
+  reasons: WeakPasswordReasons[]
+  message: string
+}
+
 export type AuthResponse =
   | {
       data: {
         user: User | null
         session: Session | null
+      }
+      error: null
+    }
+  | {
+      data: {
+        user: null
+        session: null
+      }
+      error: AuthError
+    }
+
+export type AuthResponsePassword =
+  | {
+      data: {
+        user: User | null
+        session: Session | null
+        weak_password?: WeakPassword | null
       }
       error: null
     }
@@ -125,6 +148,24 @@ export type AuthTokenResponse =
       data: {
         user: null
         session: null
+      }
+      error: AuthError
+    }
+
+export type AuthTokenResponsePassword =
+  | {
+      data: {
+        user: User
+        session: Session
+        weakPassword?: WeakPassword
+      }
+      error: null
+    }
+  | {
+      data: {
+        user: null
+        session: null
+        weakPassword?: null
       }
       error: AuthError
     }
