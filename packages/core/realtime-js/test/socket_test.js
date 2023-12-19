@@ -1,9 +1,8 @@
 import assert from 'assert'
 import { Server as WebSocketServer, WebSocket } from 'mock-socket'
 import sinon from 'sinon'
-import { WebSocket as W3CWebSocket } from 'ws'
+import { WebSocket as WSWebSocket } from 'ws'
 import { RealtimeClient } from '../dist/main'
-import { CONNECTION_STATE } from '../dist/main/lib/constants'
 
 let socket
 
@@ -33,7 +32,7 @@ describe('constructor', () => {
             error: [],
             message: [],
         })
-        assert.equal(socket.transport, W3CWebSocket)
+        assert.equal(socket.transport, null)
         assert.equal(socket.timeout, 10000)
         assert.equal(socket.heartbeatIntervalMs, 30000)
         assert.equal(typeof socket.logger, 'function')
@@ -82,7 +81,7 @@ describe('constructor', () => {
 
         it('defaults to Websocket transport if available', () => {
             socket = new RealtimeClient('wss://example.com/socket')
-            assert.equal(socket.transport, W3CWebSocket)
+            assert.equal(socket.transport, null)
         })
     })
 })
@@ -145,7 +144,6 @@ describe('connect with WebSocket', () => {
         socket.connect()
 
         let conn = socket.conn
-        assert.ok(conn instanceof W3CWebSocket)
         assert.equal(conn.url, socket._endPointURL())
     })
 
@@ -227,7 +225,7 @@ describe('connectionState', () => {
         assert.equal(socket.connectionState(), 'closed')
     })
 
-    // TODO: fix for W3CWebSocket
+    // TODO: fix for WSWebSocket
     it.skip('returns closed if readyState unrecognized', () => {
         socket.connect()
 
@@ -235,7 +233,7 @@ describe('connectionState', () => {
         assert.equal(socket.connectionState(), 'closed')
     })
 
-    // TODO: fix for W3CWebSocket
+    // TODO: fix for WSWebSocket
     it.skip('returns connecting', () => {
         socket.connect()
 
@@ -244,7 +242,7 @@ describe('connectionState', () => {
         assert.ok(!socket.isConnected(), 'is not connected')
     })
 
-    // TODO: fix for W3CWebSocket
+    // TODO: fix for WSWebSocket
     it.skip('returns open', () => {
         socket.connect()
 
@@ -253,7 +251,7 @@ describe('connectionState', () => {
         assert.ok(socket.isConnected(), 'is connected')
     })
 
-    // TODO: fix for W3CWebSocket
+    // TODO: fix for WSWebSocket
     it.skip('returns closing', () => {
         socket.connect()
 
@@ -262,7 +260,7 @@ describe('connectionState', () => {
         assert.ok(!socket.isConnected(), 'is not connected')
     })
 
-    // TODO: fix for W3CWebSocket
+    // TODO: fix for WSWebSocket
     it.skip('returns closed', () => {
         socket.connect()
 
@@ -417,7 +415,7 @@ describe('push', () => {
         socket.disconnect()
     })
 
-    // TODO: fix for W3CWebSocket
+    // TODO: fix for WSWebSocket
     it.skip('sends data to connection when connected', () => {
         socket.connect()
         socket.conn.readyState = 1 // open
@@ -429,7 +427,7 @@ describe('push', () => {
         assert.ok(spy.calledWith(json))
     })
 
-    // TODO: fix for W3CWebSocket
+    // TODO: fix for WSWebSocket
     it.skip('buffers data when not connected', () => {
         socket.connect()
         socket.conn.readyState = 0 // connecting
@@ -539,7 +537,7 @@ describe('sendHeartbeat', () => {
         socket.disconnect()
     })
 
-    // TODO: fix for W3CWebSocket
+    // TODO: fix for WSWebSocket
     it.skip("closes socket when heartbeat is not ack'd within heartbeat window", () => {
         let closed = false
         socket.conn.readyState = 1 // open
@@ -551,7 +549,7 @@ describe('sendHeartbeat', () => {
         assert.equal(closed, true)
     })
 
-    // TODO: fix for W3CWebSocket
+    // TODO: fix for WSWebSocket
     it.skip('pushes heartbeat data when connected', () => {
         socket.conn.readyState = 1 // open
 
@@ -563,7 +561,7 @@ describe('sendHeartbeat', () => {
         assert.ok(spy.calledWith(data))
     })
 
-    // TODO: fix for W3CWebSocket
+    // TODO: fix for WSWebSocket
     it.skip('no ops when not connected', () => {
         socket.conn.readyState = 0 // connecting
 
@@ -594,7 +592,7 @@ describe('flushSendBuffer', () => {
         socket.disconnect()
     })
 
-    // TODO: fix for W3CWebSocket
+    // TODO: fix for WSWebSocket
     it.skip('calls callbacks in buffer when connected', () => {
         socket.conn.readyState = 1 // open
         const spy1 = sinon.spy()
@@ -610,7 +608,7 @@ describe('flushSendBuffer', () => {
         assert.equal(spy3.callCount, 0)
     })
 
-    // TODO: fix for W3CWebSocket
+    // TODO: fix for WSWebSocket
     it.skip('empties sendBuffer', () => {
         socket.conn.readyState = 1 // open
         socket.sendBuffer.push(() => { })
@@ -646,7 +644,7 @@ describe('_onConnOpen', () => {
         socket.disconnect()
     })
 
-    // TODO: fix for W3CWebSocket
+    // TODO: fix for WSWebSocket
 
     it.skip('flushes the send buffer', () => {
         socket.conn.readyState = 1 // open

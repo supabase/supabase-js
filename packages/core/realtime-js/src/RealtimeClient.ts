@@ -51,7 +51,7 @@ interface WebSocketLikeConstructor {
   ): WebSocketLike
 }
 
-type WebSocketLike = WebSocket | WSWebSocket
+type WebSocketLike = WebSocket | WSWebSocket | WSWebSocketDummy
 
 interface WebSocketLikeError {
   error: any
@@ -61,10 +61,6 @@ interface WebSocketLikeError {
 
 const NATIVE_WEBSOCKET_AVAILABLE = typeof WebSocket !== 'undefined'
 
-const WebSocketVariant: WebSocketLikeConstructor = NATIVE_WEBSOCKET_AVAILABLE
-  ? WebSocket
-  : require('ws')
-
 export default class RealtimeClient {
   accessToken: string | null = null
   channels: RealtimeChannel[] = []
@@ -72,7 +68,7 @@ export default class RealtimeClient {
   headers?: { [key: string]: string } = DEFAULT_HEADERS
   params?: { [key: string]: string } = {}
   timeout: number = DEFAULT_TIMEOUT
-  transport: WebSocketLikeConstructor = WebSocketVariant
+  transport: WebSocketLikeConstructor | null
   heartbeatIntervalMs: number = 30000
   heartbeatTimer: ReturnType<typeof setInterval> | undefined = undefined
   pendingHeartbeatRef: string | null = null
@@ -115,11 +111,15 @@ export default class RealtimeClient {
   constructor(endPoint: string, options?: RealtimeClientOptions) {
     this.endPoint = `${endPoint}/${TRANSPORTS.websocket}`
 
+    if (options?.transport) {
+      this.transport = options.transport
+    } else {
+      this.transport = null
+    }
     if (options?.params) this.params = options.params
     if (options?.headers) this.headers = { ...this.headers, ...options.headers }
     if (options?.timeout) this.timeout = options.timeout
     if (options?.logger) this.logger = options.logger
-    if (options?.transport) this.transport = options.transport
     if (options?.heartbeatIntervalMs)
       this.heartbeatIntervalMs = options.heartbeatIntervalMs
 
@@ -155,22 +155,31 @@ export default class RealtimeClient {
       return
     }
 
-    if (NATIVE_WEBSOCKET_AVAILABLE) {
-      this.conn = new this.transport(this._endPointURL())
-    } else {
+    if (this.transport) {
       this.conn = new this.transport(this._endPointURL(), undefined, {
         headers: this.headers,
       })
+      return
     }
 
-    if (this.conn) {
-      this.conn.binaryType = 'arraybuffer'
-      this.conn.onopen = () => this._onConnOpen()
-      this.conn.onerror = (error: WebSocketLikeError) =>
-        this._onConnError(error as WebSocketLikeError)
-      this.conn.onmessage = (event: any) => this._onConnMessage(event)
-      this.conn.onclose = (event: any) => this._onConnClose(event)
+    if (NATIVE_WEBSOCKET_AVAILABLE) {
+      this.conn = new WebSocket(this._endPointURL())
+      this.setupConnection()
+      return
     }
+
+    this.conn = new WSWebSocketDummy(this._endPointURL(), undefined, {
+      close: () => {
+        this.conn = null
+      },
+    })
+
+    import('ws').then(({ default: WS }) => {
+      this.conn = new WS(this._endPointURL(), undefined, {
+        headers: this.headers,
+      })
+      this.setupConnection()
+    })
   }
 
   /**
@@ -369,6 +378,22 @@ export default class RealtimeClient {
   }
 
   /**
+   * Sets up connection handlers.
+   *
+   * @internal
+   */
+  private setupConnection(): void {
+    if (this.conn) {
+      this.conn.binaryType = 'arraybuffer'
+      this.conn.onopen = () => this._onConnOpen()
+      this.conn.onerror = (error: WebSocketLikeError) =>
+        this._onConnError(error as WebSocketLikeError)
+      this.conn.onmessage = (event: any) => this._onConnMessage(event)
+      this.conn.onclose = (event: any) => this._onConnClose(event)
+    }
+  }
+
+  /**
    * Returns the URL of the websocket.
    *
    * @internal
@@ -487,5 +512,26 @@ export default class RealtimeClient {
       ref: this.pendingHeartbeatRef,
     })
     this.setAuth(this.accessToken)
+  }
+}
+
+class WSWebSocketDummy {
+  binaryType: string = 'arraybuffer'
+  close: Function
+  onclose: Function = () => {}
+  onerror: Function = () => {}
+  onmessage: Function = () => {}
+  onopen: Function = () => {}
+  readyState: number = SOCKET_STATES.connecting
+  send: Function = () => {}
+  url: string | URL | null = null
+
+  constructor(
+    address: string,
+    _protocols: undefined,
+    options: { close: Function }
+  ) {
+    this.url = address
+    this.close = options.close
   }
 }
