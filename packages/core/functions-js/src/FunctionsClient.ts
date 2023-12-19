@@ -11,6 +11,7 @@ import {
 export class FunctionsClient {
   protected url: string
   protected headers: Record<string, string>
+  protected region: string
   protected fetch: Fetch
 
   constructor(
@@ -25,6 +26,7 @@ export class FunctionsClient {
   ) {
     this.url = url
     this.headers = headers
+    this.region = 'any'
     this.fetch = resolveFetch(customFetch)
   }
 
@@ -47,8 +49,10 @@ export class FunctionsClient {
   ): Promise<FunctionsResponse<T>> {
     try {
       const { headers, method, body: functionArgs } = options
-
       let _headers: Record<string, string> = {}
+      if (this.region !== 'any') {
+        _headers['x-region'] = this.region
+      }
       let body: any
       if (
         functionArgs &&
