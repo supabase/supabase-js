@@ -138,7 +138,7 @@ export default class StorageFileApi {
     fileOptions?: FileOptions
   ): Promise<
     | {
-        data: { path: string }
+        data: { id: string, path: string, fullPath: string }
         error: null
       }
     | {
@@ -282,7 +282,7 @@ export default class StorageFileApi {
     fileOptions?: FileOptions
   ): Promise<
     | {
-        data: { path: string }
+        data: { id: string, path: string, fullPath: string }
         error: null
       }
     | {
