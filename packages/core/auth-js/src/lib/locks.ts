@@ -15,6 +15,11 @@ export const internals = {
   ),
 }
 
+/**
+ * An error thrown when a lock cannot be acquired after some amount of time.
+ *
+ * Use the {@link #isAcquireTimeout} property instead of checking with `instanceof`.
+ */
 export abstract class LockAcquireTimeoutError extends Error {
   public readonly isAcquireTimeout = true
 
@@ -42,8 +47,6 @@ export class NavigatorLockAcquireTimeoutError extends LockAcquireTimeoutError {}
  * lock releases a previously started promise to run the operation in the `fn`
  * function. The lock waits for that promise to finish (with or without error),
  * while the function will finally wait for the result anyway.
- *
- * @experimental
  *
  * @param name Name of the lock to be acquired.
  * @param acquireTimeout If negative, no timeout. If 0 an error is thrown if

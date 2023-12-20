@@ -39,7 +39,7 @@ import {
 import { localStorageAdapter, memoryLocalStorageAdapter } from './lib/local-storage'
 import { polyfillGlobalThis } from './lib/polyfills'
 import { version } from './lib/version'
-import { LockAcquireTimeoutError } from './lib/locks'
+import { LockAcquireTimeoutError, navigatorLock } from './lib/locks'
 
 import type {
   AuthChangeEvent,
@@ -203,6 +203,14 @@ export default class GoTrueClient {
     this.lock = settings.lock || lockNoOp
     this.detectSessionInUrl = settings.detectSessionInUrl
     this.flowType = settings.flowType
+
+    if (settings.lock) {
+      this.lock = settings.lock
+    } else if (isBrowser() && globalThis?.navigator?.locks) {
+      this.lock = navigatorLock
+    } else {
+      this.lock = lockNoOp
+    }
 
     this.mfa = {
       verify: this._verify.bind(this),
