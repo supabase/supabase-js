@@ -35,14 +35,15 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
 
-      - name: Create a release for @supabase/gotrue-js
+      - name: Publish @supabase/gotrue-js
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
+          echo '//registry.npmjs.org/:_authToken=${NPM_TOKEN}' > ~/.npmrc
+
           for f in package.json package-lock.json
           do
             sed -i 's|\(["/]\)auth-js|\1gotrue-js|g' "$f"
           done
 
-          npx semantic-release -r 'https://github.com/supabase/gotrue-js.git'
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+          npm publish --tag latest
