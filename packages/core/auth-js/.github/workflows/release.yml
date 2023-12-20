@@ -39,11 +39,15 @@ jobs:
         env:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
-          echo '//registry.npmjs.org/:_authToken=${NPM_TOKEN}' > ~/.npmrc
+          if [ "0.0.0" -neq $(jq -r '.version' package.json) ]
+          then
+            echo '//registry.npmjs.org/:_authToken=${NPM_TOKEN}' > ~/.npmrc
 
-          for f in package.json package-lock.json
-          do
-            sed -i 's|\(["/]\)auth-js|\1gotrue-js|g' "$f"
-          done
+            for f in package.json package-lock.json
+            do
+              sed -i 's|\(["/]\)auth-js|\1gotrue-js|g' "$f"
+            done
 
-          npm publish --tag latest
+            npm publish --tag latest
+          fi
+
