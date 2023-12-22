@@ -1,5 +1,5 @@
 import { FunctionsClient } from '@supabase/functions-js'
-import { AuthChangeEvent } from '@supabase/gotrue-js'
+import { AuthChangeEvent } from '@supabase/auth-js'
 import {
   PostgrestClient,
   PostgrestFilterBuilder,

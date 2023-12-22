@@ -1,10 +1,10 @@
-import { GoTrueClient } from '@supabase/gotrue-js'
+import { AuthClient } from '@supabase/auth-js'
 import { RealtimeClientOptions } from '@supabase/realtime-js'
 import { PostgrestError } from '@supabase/postgrest-js'
 
-type GoTrueClientOptions = ConstructorParameters<typeof GoTrueClient>[0]
+type AuthClientOptions = ConstructorParameters<typeof AuthClient>[0]
 
-export interface SupabaseAuthClientOptions extends GoTrueClientOptions {}
+export interface SupabaseAuthClientOptions extends AuthClientOptions {}
 
 export type Fetch = typeof fetch
 
