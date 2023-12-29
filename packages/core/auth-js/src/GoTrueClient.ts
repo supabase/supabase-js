@@ -725,7 +725,10 @@ export default class GoTrueClient {
 
       if (session?.access_token) {
         await this._saveSession(session as Session)
-        await this._notifyAllSubscribers('SIGNED_IN', session)
+        await this._notifyAllSubscribers(
+          params.type == 'recovery' ? 'PASSWORD_RECOVERY' : 'SIGNED_IN',
+          session
+        )
       }
 
       return { data: { user, session }, error: null }
