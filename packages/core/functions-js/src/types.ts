@@ -40,6 +40,24 @@ export class FunctionsHttpError extends FunctionsError {
     super('Edge Function returned a non-2xx status code', 'FunctionsHttpError', context)
   }
 }
+// Define the enum for the 'region' property
+export enum FunctionRegion {
+  Any = 'any',
+  ApNortheast1 = 'ap-northeast-1',
+  ApNortheast2 = 'ap-northeast-2',
+  ApSouth1 = 'ap-south-1',
+  ApSoutheast1 = 'ap-southeast-1',
+  ApSoutheast2 = 'ap-southeast-2',
+  CaCentral1 = 'ca-central-1',
+  EuCentral1 = 'eu-central-1',
+  EuWest1 = 'eu-west-1',
+  EuWest2 = 'eu-west-2',
+  EuWest3 = 'eu-west-3',
+  SaEast1 = 'sa-east-1',
+  UsEast1 = 'us-east-1',
+  UsWest1 = 'us-west-1',
+  UsWest2 = 'us-west-2',
+}
 
 export type FunctionInvokeOptions = {
   /**
@@ -53,22 +71,7 @@ export type FunctionInvokeOptions = {
   /**
    * The Region to invoke the function in.
    */
-  region?:
-    | 'any'
-    | 'ap-northeast-1'
-    | 'ap-northeast-2'
-    | 'ap-south-1'
-    | 'ap-southeast-1'
-    | 'ap-southeast-2'
-    | 'ca-central-1'
-    | 'eu-central-1'
-    | 'eu-west-1'
-    | 'eu-west-2'
-    | 'eu-west-3'
-    | 'sa-east-1'
-    | 'us-east-1'
-    | 'us-west-1'
-    | 'us-west-2'
+  region?: FunctionRegion;
   /**
    * The body of the request.
    */
