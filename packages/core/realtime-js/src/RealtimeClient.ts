@@ -63,6 +63,7 @@ const NATIVE_WEBSOCKET_AVAILABLE = typeof WebSocket !== 'undefined'
 
 export default class RealtimeClient {
   accessToken: string | null = null
+  apiKey: string | null = null
   channels: RealtimeChannel[] = []
   endPoint: string = ''
   headers?: { [key: string]: string } = DEFAULT_HEADERS
@@ -124,7 +125,10 @@ export default class RealtimeClient {
       this.heartbeatIntervalMs = options.heartbeatIntervalMs
 
     const accessToken = options?.params?.apikey
-    if (accessToken) this.accessToken = accessToken
+    if (accessToken) {
+      this.accessToken = accessToken
+      this.apiKey = accessToken
+    }
 
     this.reconnectAfterMs = options?.reconnectAfterMs
       ? options.reconnectAfterMs

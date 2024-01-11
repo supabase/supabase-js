@@ -436,7 +436,7 @@ export default class RealtimeChannel {
       const options = {
         method: 'POST',
         headers: {
-          apikey: this.socket.accessToken ?? '',
+          apikey: this.socket.apiKey ?? '',
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
