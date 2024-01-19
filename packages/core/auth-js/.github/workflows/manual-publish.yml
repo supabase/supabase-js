@@ -24,7 +24,10 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - run: echo ${{ toJSON(inputs) }}
+      - run: |
+          echo 'Package: ${{ inputs.package }}'
+          echo 'Version: ${{ inputs.version }}'
+          echo 'Reason:  ${{ inputs.reason  }}'
 
       - uses: actions/checkout@v4
         with:
