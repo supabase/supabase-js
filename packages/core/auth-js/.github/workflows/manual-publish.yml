@@ -39,7 +39,7 @@ jobs:
           npm ci
           npm run build
 
-      - name: Publish @supabase/${{ input.package }} @v${{ input.version }}
+      - name: Publish @supabase/${{ inputs.package }} @v${{ inputs.version }}
         env:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
