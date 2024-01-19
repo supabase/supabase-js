@@ -14,7 +14,6 @@ on:
         type: string
         required: true
 
-
 jobs:
   release:
     name: Release / Node ${{ matrix.node }}
@@ -25,6 +24,9 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - if: ${{ inputs.ref != 'master' }}
+        run: Input ref is ${{ inputs.ref }}
+
       - uses: actions/checkout@v4
         with:
           ref: ${{ inputs.ref || 'master' }}
