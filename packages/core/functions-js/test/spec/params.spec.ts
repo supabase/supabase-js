@@ -7,7 +7,7 @@ import { sign } from 'jsonwebtoken'
 import { ContentType } from 'allure-js-commons'
 
 import { FunctionsClient } from '../../src/index'
-
+import { FunctionRegion } from '../../src/types'
 import { Relay, runRelay } from '../relay/container'
 import { attach, log } from '../utils/jest-custom-reporter'
 import { str2ab } from '../utils/binaries'
@@ -144,6 +144,29 @@ describe('params reached to function', () => {
         ([k, v]) => k === 'custom-header' && v === customHeader
       ).length > 0
     ).toBe(true)
+  })
+
+  test('invoke mirror with invoke header and valid region', async () => {
+    /**
+     * @feature headers
+     */
+    log('create FunctionsClient')
+    const fclient = new FunctionsClient(`http://localhost:${relay.container.getMappedPort(8081)}`)
+
+    log('invoke mirror')
+    const customHeader = nanoid();
+    const validRegion = FunctionRegion.ApNortheast1;
+
+    const { data, error } = await fclient.invoke<MirrorResponse>('mirror', {
+      headers: {
+        'custom-header': customHeader,
+        Authorization: `Bearer ${apiKey}`,
+      },
+      region: validRegion
+    })
+
+    log('assert no error')
+    expect(data).not.toBeNull()
   })
 
   test('invoke mirror with body formData', async () => {
