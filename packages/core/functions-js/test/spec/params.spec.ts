@@ -169,6 +169,29 @@ describe('params reached to function', () => {
     expect(data).not.toBeNull()
   })
 
+  test('invoke mirror with invoke header and valid region', async () => {
+    /**
+     * @feature headers
+     */
+    log('create FunctionsClient')
+    const fclient = new FunctionsClient(`http://localhost:${relay.container.getMappedPort(8081)}`)
+
+    log('invoke mirror')
+    const customHeader = nanoid();
+    const validRegion = FunctionRegion.Any
+
+    const { data, error } = await fclient.invoke<MirrorResponse>('mirror', {
+      headers: {
+        'custom-header': customHeader,
+        Authorization: `Bearer ${apiKey}`,
+        'x-region': validRegion
+      }
+    })
+
+    log('assert no error')
+    expect(data).not.toBeNull()
+  })
+
   test('invoke mirror with body formData', async () => {
     /**
      * @feature body
