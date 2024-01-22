@@ -178,7 +178,7 @@ describe('params reached to function', () => {
 
     log('invoke mirror')
     const customHeader = nanoid();
-    const validRegion = FunctionRegion.Any
+    const validRegion = FunctionRegion.EuWest1;
 
     const { data, error } = await fclient.invoke<MirrorResponse>('mirror', {
       headers: {
