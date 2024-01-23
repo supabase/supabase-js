@@ -35,5 +35,5 @@ export const createClient = <
   supabaseKey: string,
   options?: SupabaseClientOptions<SchemaName>
 ): SupabaseClient<Database, SchemaName, Schema> => {
-  return new SupabaseClient(supabaseUrl, supabaseKey, options)
+  return new SupabaseClient<Database, SchemaName, Schema>(supabaseUrl, supabaseKey, options)
 }
