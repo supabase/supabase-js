@@ -34,7 +34,8 @@
     "test:watch": "jest --watch --verbose false --silent false",
     "test:clean": "cd infra/db && docker-compose down",
     "docs": "typedoc --entryPoints src/index.ts --out docs/v2 --includes src/**/*.ts",
-    "docs:json": "typedoc --entryPoints src/index.ts --includes src/**/*.ts --json docs/v2/spec.json --excludeExternals"
+    "docs:json": "typedoc --entryPoints src/index.ts --includes src/**/*.ts --json docs/v2/spec.json --excludeExternals",
+    "serve:coverage": "npm run test:coverage && serve test/coverage"
   },
   "dependencies": {
     "@supabase/functions-js": "2.1.5",
@@ -53,6 +54,7 @@
     "pretty-quick": "^3.1.3",
     "rimraf": "^3.0.2",
     "semantic-release-plugin-update-version-in-files": "^1.1.0",
+    "serve": "^14.2.1",
     "ts-jest": "^29.0.5",
     "ts-loader": "^8.0.11",
     "ts-node": "^10.9.1",
