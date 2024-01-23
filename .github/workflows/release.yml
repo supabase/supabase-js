@@ -13,7 +13,7 @@ jobs:
     name: Release / Node ${{ matrix.node }}
     strategy:
       matrix:
-        node: ['18']
+        node: ['20']
 
     runs-on: ubuntu-latest
 
