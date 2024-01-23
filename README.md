@@ -25,13 +25,13 @@ const supabase = createClient('https://xyzcompany.supabase.co', 'public-anon-key
 You can now use plain `<script>`s to import supabase-js from CDNs, like:
 
 ```html
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 ```
 
 or even:
 
 ```html
-<script src="https://unpkg.com/@supabase/supabase-js"></script>
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 ```
 
 Then you can use it from a global `supabase` variable:
