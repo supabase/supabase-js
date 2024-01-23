@@ -22,7 +22,7 @@ const supabase = createClient('https://xyzcompany.supabase.co', 'public-anon-key
 
 ### UMD
 
-You can now use plain `<script>`s to import supabase-js from CDNs, like:
+You can use plain `<script>`s to import supabase-js from CDNs, like:
 
 ```html
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -48,7 +48,7 @@ Then you can use it from a global `supabase` variable:
 
 ### ESM
 
-You can now use type="module" `<script>`s to import supabase-js from CDNs, like:
+You can use `<script type="module">` to import supabase-js from CDNs, like:
 
 ```html
 <script type="module">
@@ -58,6 +58,15 @@ You can now use type="module" `<script>`s to import supabase-js from CDNs, like:
   console.log('Supabase Instance: ', supabase)
   // ...
 </script>
+```
+
+
+### Deno
+
+You can use supabase-js in the Deno runtime via esm.sh:
+
+```js
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 ```
 
 ### Custom `fetch` implementation
