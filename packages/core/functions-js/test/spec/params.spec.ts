@@ -272,7 +272,6 @@ describe('params reached to function', () => {
     ).toBe(true)
   })
 
-  // todo: update test to check for the correct header value
   test('invoke mirror with invoke header and valid region', async () => {
     /**
      * @feature headers
@@ -293,7 +292,10 @@ describe('params reached to function', () => {
     })
 
     log('assert no error')
-    expect(data).not.toBeNull()
+    expect(
+      (data?.headers as [Array<string>]).filter(([k, v]) => k === 'x-region' && v === FunctionRegion.EuWest1)
+        .length > 0
+    ).toBe(true)
   })
 
   test('invoke mirror with body formData', async () => {
