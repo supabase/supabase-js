@@ -146,7 +146,7 @@ describe('params reached to function', () => {
     ).toBe(true)
   })
 
-  test('invoke mirror with invoke header and valid region', async () => {
+  test('invoke mirror set valid region on request', async () => {
     /**
      * @feature headers
      */
@@ -230,7 +230,7 @@ describe('params reached to function', () => {
     ).toBe(true)
   })
 
-  test('invoke with region overrides region in the client', async () => {
+  test('starts client with default region, invoke reverts to any (no x-region header)', async () => {
     /**
      * @feature headers
      */
@@ -248,6 +248,7 @@ describe('params reached to function', () => {
         'custom-header': customHeader,
         Authorization: `Bearer ${apiKey}`,
       },
+      region: FunctionRegion.Any
     })
 
     log('assert no error')
@@ -268,32 +269,31 @@ describe('params reached to function', () => {
     console.log(data?.headers)
     expect(
       (data?.headers as [Array<string>]).filter(([k, v]) => k === 'x-region' && v === validRegion)
-        .length > 0
+        .length == 0
     ).toBe(true)
   })
 
-  test('invoke mirror with invoke header and valid region', async () => {
+  test('invoke region set only on the constructor', async () => {
     /**
      * @feature headers
      */
     log('create FunctionsClient')
-    const fclient = new FunctionsClient(`http://localhost:${relay.container.getMappedPort(8081)}`)
+    const fclient = new FunctionsClient(`http://localhost:${relay.container.getMappedPort(8081)}`,{region: FunctionRegion.ApNortheast1})
 
     log('invoke mirror')
     const customHeader = nanoid()
-    const validRegion = FunctionRegion.EuWest1
+  
 
     const { data, error } = await fclient.invoke<MirrorResponse>('mirror', {
       headers: {
         'custom-header': customHeader,
-        Authorization: `Bearer ${apiKey}`,
-        'x-region': validRegion,
+        Authorization: `Bearer ${apiKey}`
       },
     })
 
     log('assert no error')
     expect(
-      (data?.headers as [Array<string>]).filter(([k, v]) => k === 'x-region' && v === FunctionRegion.EuWest1)
+      (data?.headers as [Array<string>]).filter(([k, v]) => k === 'x-region' && v === FunctionRegion.ApNortheast1)
         .length > 0
     ).toBe(true)
   })
