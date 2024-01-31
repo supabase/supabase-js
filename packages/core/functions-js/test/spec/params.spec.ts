@@ -7,7 +7,7 @@ import { sign } from 'jsonwebtoken'
 import { ContentType } from 'allure-js-commons'
 
 import { FunctionsClient } from '../../src/index'
-
+import { FunctionRegion } from '../../src/types'
 import { Relay, runRelay } from '../relay/container'
 import { attach, log } from '../utils/jest-custom-reporter'
 import { str2ab } from '../utils/binaries'
@@ -143,6 +143,158 @@ describe('params reached to function', () => {
       (data?.headers as [Array<string>]).filter(
         ([k, v]) => k === 'custom-header' && v === customHeader
       ).length > 0
+    ).toBe(true)
+  })
+
+  test('invoke mirror set valid region on request', async () => {
+    /**
+     * @feature headers
+     */
+    log('create FunctionsClient')
+    const fclient = new FunctionsClient(`http://localhost:${relay.container.getMappedPort(8081)}`)
+
+    log('invoke mirror')
+    const customHeader = nanoid()
+    const validRegion = FunctionRegion.ApNortheast1
+
+    const { data, error } = await fclient.invoke<MirrorResponse>('mirror', {
+      headers: {
+        'custom-header': customHeader,
+        Authorization: `Bearer ${apiKey}`,
+      },
+      region: validRegion,
+    })
+
+    log('assert no error')
+    const expected = {
+      url: 'http://localhost:8000/mirror',
+      method: 'POST',
+      headers: data?.headers ?? [],
+      body: '',
+    }
+    expect(data).toEqual(expected)
+    attach(
+      'check headers from function',
+      `expected to include: ${['custom-header', customHeader]}\n actual: ${JSON.stringify(
+        data?.headers
+      )}`,
+      ContentType.TEXT
+    )
+    console.log(data?.headers)
+    expect(
+      (data?.headers as [Array<string>]).filter(([k, v]) => k === 'x-region' && v === validRegion)
+        .length > 0
+    ).toBe(true)
+  })
+
+  test('invoke with region overrides region in the client', async () => {
+    /**
+     * @feature headers
+     */
+    log('create FunctionsClient')
+    const fclient = new FunctionsClient(`http://localhost:${relay.container.getMappedPort(8081)}`, {
+      region: FunctionRegion.ApNortheast1,
+    })
+
+    log('invoke mirror')
+    const customHeader = nanoid()
+    const validRegion = FunctionRegion.ApSoutheast1
+
+    const { data, error } = await fclient.invoke<MirrorResponse>('mirror', {
+      headers: {
+        'custom-header': customHeader,
+        Authorization: `Bearer ${apiKey}`,
+      },
+      region: validRegion,
+    })
+
+    log('assert no error')
+    const expected = {
+      url: 'http://localhost:8000/mirror',
+      method: 'POST',
+      headers: data?.headers ?? [],
+      body: '',
+    }
+    expect(data).toEqual(expected)
+    attach(
+      'check headers from function',
+      `expected to include: ${['custom-header', customHeader]}\n actual: ${JSON.stringify(
+        data?.headers
+      )}`,
+      ContentType.TEXT
+    )
+    console.log(data?.headers)
+    expect(
+      (data?.headers as [Array<string>]).filter(([k, v]) => k === 'x-region' && v === validRegion)
+        .length > 0
+    ).toBe(true)
+  })
+
+  test('starts client with default region, invoke reverts to any (no x-region header)', async () => {
+    /**
+     * @feature headers
+     */
+    log('create FunctionsClient')
+    const validRegion = FunctionRegion.ApSoutheast1
+    const fclient = new FunctionsClient(`http://localhost:${relay.container.getMappedPort(8081)}`, {
+      region: validRegion,
+    })
+
+    log('invoke mirror')
+    const customHeader = nanoid()
+
+    const { data, error } = await fclient.invoke<MirrorResponse>('mirror', {
+      headers: {
+        'custom-header': customHeader,
+        Authorization: `Bearer ${apiKey}`,
+      },
+      region: FunctionRegion.Any
+    })
+
+    log('assert no error')
+    const expected = {
+      url: 'http://localhost:8000/mirror',
+      method: 'POST',
+      headers: data?.headers ?? [],
+      body: '',
+    }
+    expect(data).toEqual(expected)
+    attach(
+      'check headers from function',
+      `expected to include: ${['custom-header', customHeader]}\n actual: ${JSON.stringify(
+        data?.headers
+      )}`,
+      ContentType.TEXT
+    )
+    console.log(data?.headers)
+    expect(
+      (data?.headers as [Array<string>]).filter(([k, v]) => k === 'x-region' && v === validRegion)
+        .length == 0
+    ).toBe(true)
+  })
+
+  test('invoke region set only on the constructor', async () => {
+    /**
+     * @feature headers
+     */
+    log('create FunctionsClient')
+    const fclient = new FunctionsClient(`http://localhost:${relay.container.getMappedPort(8081)}`,{region: FunctionRegion.ApNortheast1})
+
+    log('invoke mirror')
+    const customHeader = nanoid()
+  
+
+    const { data, error } = await fclient.invoke<MirrorResponse>('mirror', {
+      headers: {
+        'custom-header': customHeader,
+        Authorization: `Bearer ${apiKey}`
+      },
+    })
+
+    log('assert no error')
+    expect(
+      (data?.headers as [Array<string>]).filter(([k, v]) => k === 'x-region' && v === FunctionRegion.ApNortheast1)
+        .length > 0
     ).toBe(true)
   })
 

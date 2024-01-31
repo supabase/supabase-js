@@ -6,11 +6,13 @@ import {
   FunctionsRelayError,
   FunctionsResponse,
   FunctionInvokeOptions,
+  FunctionRegion,
 } from './types'
 
 export class FunctionsClient {
   protected url: string
   protected headers: Record<string, string>
+  protected region: FunctionRegion
   protected fetch: Fetch
 
   constructor(
@@ -18,13 +20,16 @@ export class FunctionsClient {
     {
       headers = {},
       customFetch,
+      region = FunctionRegion.Any,
     }: {
       headers?: Record<string, string>
       customFetch?: Fetch
+      region?: FunctionRegion
     } = {}
   ) {
     this.url = url
     this.headers = headers
+    this.region = region
     this.fetch = resolveFetch(customFetch)
   }
 
@@ -47,8 +52,14 @@ export class FunctionsClient {
   ): Promise<FunctionsResponse<T>> {
     try {
       const { headers, method, body: functionArgs } = options
-
       let _headers: Record<string, string> = {}
+      let { region } = options
+      if (!region) {
+        region = this.region
+      }
+      if (region && region !== 'any') {
+        _headers['x-region'] = region
+      }
       let body: any
       if (
         functionArgs &&
