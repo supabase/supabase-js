@@ -6,4 +6,5 @@ export {
   FunctionsHttpError,
   FunctionsRelayError,
   FunctionsResponse,
+  FunctionRegion
 } from './types'
