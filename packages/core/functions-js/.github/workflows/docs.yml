@@ -14,15 +14,15 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest]
-        node: ['18']
+        node: ['20']
 
     runs-on: ${{ matrix.os }}
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Set up Node
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node }}
 
