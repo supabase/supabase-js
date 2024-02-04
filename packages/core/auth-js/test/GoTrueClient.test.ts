@@ -1,4 +1,7 @@
 import { AuthError } from '../src/lib/errors'
+import { STORAGE_KEY } from '../src/lib/constants'
+import { memoryLocalStorageAdapter } from '../src/lib/local-storage'
+import GoTrueClient from '../src/GoTrueClient'
 import {
   authClient as auth,
   authClientWithSession as authWithSession,
@@ -904,5 +907,98 @@ describe('User management', () => {
     expect(error).toBeNull()
     expect(user).not.toBeNull()
     expect(user?.email).toEqual(email)
+  })
+})
+
+describe('GoTrueClient with storageisServer = true', () => {
+  const originalWarn = console.warn
+  let warnings: any[][] = []
+
+  beforeEach(() => {
+    console.warn = (...args: any[]) => {
+      console.log('WARN', ...args)
+
+      warnings.push(args)
+    }
+  })
+
+  afterEach(() => {
+    console.warn = originalWarn
+    warnings = []
+  })
+
+  test('getSession() emits two insecure warnings', async () => {
+    const storage = memoryLocalStorageAdapter({
+      [STORAGE_KEY]: JSON.stringify({
+        access_token: 'jwt.accesstoken.signature',
+        refresh_token: 'refresh-token',
+        token_type: 'bearer',
+        expires_in: 1000,
+        expires_at: Date.now() / 1000 + 1000,
+        user: {
+          id: 'random-user-id',
+        },
+      }),
+    })
+    storage.isServer = true
+
+    const client = new GoTrueClient({
+      storage,
+    })
+
+    const {
+      data: { session },
+    } = await client.getSession()
+
+    console.log('User is ', session!.user!.id)
+
+    const firstWarning = warnings[0]
+    const lastWarning = warnings[warnings.length - 1]
+
+    expect(
+      firstWarning[0].startsWith(
+        'Using supabase.auth.getSession() is potentially insecure as it loads data directly from the storage medium (typically cookies) which may not be authentic'
+      )
+    ).toEqual(true)
+    expect(
+      lastWarning[0].startsWith(
+        'Using the user object as returned from supabase.auth.getSession() '
+      )
+    ).toEqual(true)
+  })
+
+  test('getSession() emits one insecure warning', async () => {
+    const storage = memoryLocalStorageAdapter({
+      [STORAGE_KEY]: JSON.stringify({
+        access_token: 'jwt.accesstoken.signature',
+        refresh_token: 'refresh-token',
+        token_type: 'bearer',
+        expires_in: 1000,
+        expires_at: Date.now() / 1000 + 1000,
+        user: {
+          id: 'random-user-id',
+        },
+      }),
+    })
+    storage.isServer = true
+
+    const client = new GoTrueClient({
+      storage,
+    })
+
+    await client.getUser() // should suppress the first warning
+
+    const {
+      data: { session },
+    } = await client.getSession()
+
+    console.log('User is ', session!.user!.id)
+
+    expect(warnings.length).toEqual(1)
+    expect(
+      warnings[0][0].startsWith(
+        'Using the user object as returned from supabase.auth.getSession() '
+      )
+    ).toEqual(true)
   })
 })

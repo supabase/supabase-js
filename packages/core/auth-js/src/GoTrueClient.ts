@@ -168,6 +168,8 @@ export default class GoTrueClient {
   protected logDebugMessages: boolean
   protected logger: (message: string, ...args: any[]) => void = console.log
 
+  protected insecureGetSessionWarningShown = false
+
   /**
    * Create a new client for use in the browser.
    */
@@ -873,16 +875,34 @@ export default class GoTrueClient {
 
   /**
    * Returns the session, refreshing it if necessary.
+   *
    * The session returned can be null if the session is not detected which can happen in the event a user is not signed-in or has logged out.
+   *
+   * **IMPORTANT:** This method loads values directly from the storage attached
+   * to the client. If that storage is based on request cookies for example,
+   * the values in it may not be authentic and therefore it's strongly advised
+   * against using this method and its results in such circumstances. A warning
+   * will be emitted if this is detected. Use {@link #getUser()} instead.
    */
   async getSession() {
     await this.initializePromise
 
-    return this._acquireLock(-1, async () => {
+    const result = await this._acquireLock(-1, async () => {
       return this._useSession(async (result) => {
         return result
       })
     })
+
+    if (result.data && this.storage.isServer) {
+      if (!this.insecureGetSessionWarningShown) {
+        console.warn(
+          'Using supabase.auth.getSession() is potentially insecure as it loads data directly from the storage medium (typically cookies) which may not be authentic. Prefer using supabase.auth.getUser() instead. To suppress this warning call supabase.auth.getUser() before you call supabase.auth.getSession().'
+        )
+        this.insecureGetSessionWarningShown = true
+      }
+    }
+
+    return result
   }
 
   /**
@@ -1060,6 +1080,29 @@ export default class GoTrueClient {
       )
 
       if (!hasExpired) {
+        if (this.storage.isServer) {
+          let user = currentSession.user
+
+          delete (currentSession as any).user
+
+          Object.defineProperty(currentSession, 'user', {
+            enumerable: true,
+            get: () => {
+              if (!(currentSession as any).__suppressUserWarning) {
+                // do not suppress this warning if insecureGetSessionWarningShown is true, as the data is still not authenticated
+                console.warn(
+                  'Using the user object as returned from supabase.auth.getSession() or from some supabase.auth.onAuthStateChange() events could be insecure! This value comes directly from the storage medium (usually cookies on the server) and many not be authentic. Use supabase.auth.getUser() instead which authenticates the data by contacting the Supabase Auth server.'
+                )
+              }
+
+              return user
+            },
+            set: (value) => {
+              user = value
+            },
+          })
+        }
+
         return { data: { session: currentSession }, error: null }
       }
 
@@ -1075,8 +1118,11 @@ export default class GoTrueClient {
   }
 
   /**
-   * Gets the current user details if there is an existing session.
-   * @param jwt Takes in an optional access token jwt. If no jwt is provided, getUser() will attempt to get the jwt from the current session.
+   * Gets the current user details if there is an existing session. This method
+   * performs a network request to the Supabase Auth server, so the returned
+   * value is authentic and can be used to base authorization rules on.
+   *
+   * @param jwt Takes in an optional access token JWT. If no JWT is provided, the JWT from the current session is used.
    */
   async getUser(jwt?: string): Promise<UserResponse> {
     if (jwt) {
@@ -1085,9 +1131,16 @@ export default class GoTrueClient {
 
     await this.initializePromise
 
-    return this._acquireLock(-1, async () => {
+    const result = await this._acquireLock(-1, async () => {
       return await this._getUser()
     })
+
+    if (result.data && this.storage.isServer) {
+      // no longer emit the insecure warning for getSession() as the access_token is now authenticated
+      this.insecureGetSessionWarningShown = true
+    }
+
+    return result
   }
 
   private async _getUser(jwt?: string): Promise<UserResponse> {
