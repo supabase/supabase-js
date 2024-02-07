@@ -40,6 +40,68 @@ type Letter = Alphabet | Digit | '_'
 
 type Json = string | number | boolean | null | { [key: string]: Json } | Json[]
 
+type SingleValuePostgreSQLTypes =
+  | 'bool'
+  | 'int2'
+  | 'int4'
+  | 'int8'
+  | 'float4'
+  | 'float8'
+  | 'numeric'
+  | 'bytea'
+  | 'bpchar'
+  | 'varchar'
+  | 'date'
+  | 'text'
+  | 'citext'
+  | 'time'
+  | 'timetz'
+  | 'timestamp'
+  | 'timestamptz'
+  | 'uuid'
+  | 'vector'
+  | 'json'
+  | 'jsonb'
+  | 'void'
+  | 'record'
+  | string
+
+type ArrayPostgreSQLTypes = `_${SingleValuePostgreSQLTypes}`
+
+type PostgreSQLTypes = SingleValuePostgreSQLTypes | ArrayPostgreSQLTypes
+
+type TypeScriptSingleValueTypes<T extends SingleValuePostgreSQLTypes> = T extends 'bool'
+  ? boolean
+  : T extends 'int2' | 'int4' | 'int8' | 'float4' | 'float8' | 'numeric'
+  ? number
+  : T extends
+      | 'bytea'
+      | 'bpchar'
+      | 'varchar'
+      | 'date'
+      | 'text'
+      | 'citext'
+      | 'time'
+      | 'timetz'
+      | 'timestamp'
+      | 'timestamptz'
+      | 'uuid'
+      | 'vector'
+  ? string
+  : T extends 'json' | 'jsonb'
+  ? Json
+  : T extends 'void'
+  ? undefined
+  : T extends 'record'
+  ? Record<string, unknown>
+  : unknown
+
+type StripUnderscore<T extends string> = T extends `_${infer U}` ? U : T
+
+type TypeScriptTypes<T extends PostgreSQLTypes> = T extends ArrayPostgreSQLTypes
+  ? TypeScriptSingleValueTypes<StripUnderscore<Extract<T, SingleValuePostgreSQLTypes>>>[]
+  : TypeScriptSingleValueTypes<T>
+
 /**
  * Parser errors.
  */
@@ -243,19 +305,21 @@ type ParseIdentifier<Input extends string> = ReadLetters<Input> extends [
  * A node is one of the following:
  * - `*`
  * - `field`
+ * - `field::type`
  * - `field->json...`
  * - `field(nodes)`
  * - `field!hint(nodes)`
  * - `field!inner(nodes)`
  * - `field!hint!inner(nodes)`
  * - `renamed_field:field`
+ * - `renamed_field:field::type`
  * - `renamed_field:field->json...`
  * - `renamed_field:field(nodes)`
  * - `renamed_field:field!hint(nodes)`
  * - `renamed_field:field!inner(nodes)`
  * - `renamed_field:field!hint!inner(nodes)`
  *
- * TODO: casting operators `::text`, more support for JSON operators `->`, `->>`.
+ * TODO: more support for JSON operators `->`, `->>`.
  */
 type ParseNode<Input extends string> = Input extends ''
   ? ParserError<'Empty string'>
@@ -263,7 +327,14 @@ type ParseNode<Input extends string> = Input extends ''
   Input extends `*${infer Remainder}`
   ? [{ star: true }, EatWhitespace<Remainder>]
   : ParseIdentifier<Input> extends [infer Name, `${infer Remainder}`]
-  ? EatWhitespace<Remainder> extends `!inner${infer Remainder}`
+  ? EatWhitespace<Remainder> extends `::${infer Remainder}`
+    ? ParseIdentifier<Remainder> extends [infer CastType, `${infer Remainder}`]
+      ? // `field::type`
+        CastType extends PostgreSQLTypes
+        ? [{ name: Name; type: TypeScriptTypes<CastType> }, EatWhitespace<Remainder>]
+        : never
+      : ParserError<`Unexpected type cast at \`${Input}\``>
+    : EatWhitespace<Remainder> extends `!inner${infer Remainder}`
     ? ParseEmbeddedResource<EatWhitespace<Remainder>> extends [infer Fields, `${infer Remainder}`]
       ? // `field!inner(nodes)`
         [{ name: Name; original: Name; children: Fields }, EatWhitespace<Remainder>]
@@ -294,7 +365,14 @@ type ParseNode<Input extends string> = Input extends ''
       : ParserError<'Expected identifier after `!`'>
     : EatWhitespace<Remainder> extends `:${infer Remainder}`
     ? ParseIdentifier<EatWhitespace<Remainder>> extends [infer OriginalName, `${infer Remainder}`]
-      ? EatWhitespace<Remainder> extends `!inner${infer Remainder}`
+      ? EatWhitespace<Remainder> extends `::${infer Remainder}`
+        ? ParseIdentifier<Remainder> extends [infer CastType, `${infer Remainder}`]
+          ? // `renamed_field:field::type`
+            CastType extends PostgreSQLTypes
+            ? [{ name: Name; type: TypeScriptTypes<CastType> }, EatWhitespace<Remainder>]
+            : never
+          : ParserError<`Unexpected type cast at \`${Input}\``>
+        : EatWhitespace<Remainder> extends `!inner${infer Remainder}`
         ? ParseEmbeddedResource<EatWhitespace<Remainder>> extends [
             infer Fields,
             `${infer Remainder}`
