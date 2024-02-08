@@ -191,6 +191,17 @@ type ConstructFieldDefinition<
   Field
 > = Field extends { star: true }
   ? Row
+  : Field extends { spread: true; original: string; children: unknown[] }
+  ? GetResultHelper<
+      Schema,
+      (Schema['Tables'] & Schema['Views'])[Field['original']]['Row'],
+      Field['original'],
+      (Schema['Tables'] & Schema['Views'])[Field['original']] extends { Relationships: infer R }
+        ? R
+        : unknown,
+      Field['children'],
+      unknown
+    >
   : Field extends { name: string; original: string; hint: string; children: unknown[] }
   ? {
       [_ in Field['name']]: GetResultHelper<
@@ -394,12 +405,20 @@ type ParseField<Input extends string> = Input extends ''
  * - `*`
  * - a field, as defined above
  * - a renamed field, `renamed_field:field`
+ * - a spread field, `...field`
  */
 type ParseNode<Input extends string> = Input extends ''
   ? ParserError<'Empty string'>
   : // `*`
   Input extends `*${infer Remainder}`
   ? [{ star: true }, EatWhitespace<Remainder>]
+  : // `...field`
+  Input extends `...${infer Remainder}`
+  ? ParseField<EatWhitespace<Remainder>> extends [infer Field, `${infer Remainder}`]
+    ? Field extends { children: unknown[] }
+      ? [Prettify<{ spread: true } & Field>, EatWhitespace<Remainder>]
+      : ParserError<'Unable to parse spread resource'>
+    : ParserError<'Unable to parse spread resource'>
   : ParseIdentifier<Input> extends [infer Name, `${infer Remainder}`]
   ? EatWhitespace<Remainder> extends `::${infer _Remainder}`
     ? // `field::`
