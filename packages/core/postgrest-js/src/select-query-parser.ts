@@ -110,6 +110,13 @@ type GenericStringError = ParserError<'Received a generic string'>
 export type SelectQueryError<Message extends string> = { error: true } & Message
 
 /**
+ * Creates a new {@link ParserError} if the given input is not already a parser error.
+ */
+type CreateParserErrorIfRequired<Input, Message extends string> = Input extends ParserError<string>
+  ? Input
+  : ParserError<Message>
+
+/**
  * Trims whitespace from the left of the input.
  */
 type EatWhitespace<Input extends string> = string extends Input
@@ -118,6 +125,9 @@ type EatWhitespace<Input extends string> = string extends Input
   ? EatWhitespace<Remainder>
   : Input
 
+/**
+ * Returns a boolean representing whether there is a foreign key with the given name.
+ */
 type HasFKey<FKeyName, Relationships> = Relationships extends [infer R]
   ? R extends { foreignKeyName: FKeyName }
     ? true
@@ -128,6 +138,9 @@ type HasFKey<FKeyName, Relationships> = Relationships extends [infer R]
     : HasFKey<FKeyName, Rest>
   : false
 
+/**
+ * Returns a boolean representing whether there the foreign key has a unique constraint.
+ */
 type HasUniqueFKey<FKeyName, Relationships> = Relationships extends [infer R]
   ? R extends { foreignKeyName: FKeyName; isOneToOne: true }
     ? true
@@ -138,6 +151,10 @@ type HasUniqueFKey<FKeyName, Relationships> = Relationships extends [infer R]
     : HasUniqueFKey<FKeyName, Rest>
   : false
 
+/**
+ * Returns a boolean representing whether there is a foreign key referencing
+ * a given relation.
+ */
 type HasFKeyToFRel<FRelName, Relationships> = Relationships extends [infer R]
   ? R extends { referencedRelation: FRelName }
     ? true
@@ -161,8 +178,9 @@ type HasUniqueFKeyToFRel<FRelName, Relationships> = Relationships extends [infer
 /**
  * Constructs a type definition for a single field of an object.
  *
- * @param Definitions Record of definitions, possibly generated from PostgREST's OpenAPI spec.
- * @param Name Name of the table being queried.
+ * @param Schema Database schema.
+ * @param Row Type of a row in the given table.
+ * @param Relationships Relationships between different tables in the database.
  * @param Field Single field parsed by `ParseQuery`.
  */
 type ConstructFieldDefinition<
@@ -231,12 +249,12 @@ type ConstructFieldDefinition<
           : Child[]
         : never
     }
+  : Field extends { name: string; type: infer T }
+  ? { [K in Field['name']]: T }
   : Field extends { name: string; original: string }
   ? Field['original'] extends keyof Row
     ? { [K in Field['name']]: Row[Field['original']] }
     : SelectQueryError<`Referencing missing column \`${Field['original']}\``>
-  : Field extends { name: string; type: infer T }
-  ? { [K in Field['name']]: T }
   : Record<string, unknown>
 
 /**
@@ -246,8 +264,7 @@ type ConstructFieldDefinition<
  */
 
 /**
- * Reads a consecutive sequence of more than 1 letter,
- * where letters are `[0-9a-zA-Z_]`.
+ * Reads a consecutive sequence of 1 or more letter, where letters are `[0-9a-zA-Z_]`.
  */
 type ReadLetters<Input extends string> = string extends Input
   ? GenericStringError
@@ -266,7 +283,7 @@ type ReadLettersHelper<Input extends string, Acc extends string> = string extend
   : [Acc, '']
 
 /**
- * Reads a consecutive sequence of more than 1 double-quoted letters,
+ * Reads a consecutive sequence of 1 or more double-quoted letters,
  * where letters are `[^"]`.
  */
 type ReadQuotedLetters<Input extends string> = string extends Input
@@ -289,7 +306,7 @@ type ReadQuotedLettersHelper<Input extends string, Acc extends string> = string 
 
 /**
  * Parses a (possibly double-quoted) identifier.
- * For now, identifiers are just sequences of more than 1 letter.
+ * Identifiers are sequences of 1 or more letters.
  */
 type ParseIdentifier<Input extends string> = ReadLetters<Input> extends [
   infer Name,
@@ -301,9 +318,8 @@ type ParseIdentifier<Input extends string> = ReadLetters<Input> extends [
   : ParserError<`No (possibly double-quoted) identifier at \`${Input}\``>
 
 /**
- * Parses a node.
- * A node is one of the following:
- * - `*`
+ * Parses a field without preceding field renaming.
+ * A field is one of the following:
  * - `field`
  * - `field::type`
  * - `field->json...`
@@ -311,36 +327,20 @@ type ParseIdentifier<Input extends string> = ReadLetters<Input> extends [
  * - `field!hint(nodes)`
  * - `field!inner(nodes)`
  * - `field!hint!inner(nodes)`
- * - `renamed_field:field`
- * - `renamed_field:field::type`
- * - `renamed_field:field->json...`
- * - `renamed_field:field(nodes)`
- * - `renamed_field:field!hint(nodes)`
- * - `renamed_field:field!inner(nodes)`
- * - `renamed_field:field!hint!inner(nodes)`
  *
- * TODO: more support for JSON operators `->`, `->>`.
+ * TODO: support type casting of JSON operators `a->b::type`, `a->>b::type`.
  */
-type ParseNode<Input extends string> = Input extends ''
+type ParseField<Input extends string> = Input extends ''
   ? ParserError<'Empty string'>
-  : // `*`
-  Input extends `*${infer Remainder}`
-  ? [{ star: true }, EatWhitespace<Remainder>]
   : ParseIdentifier<Input> extends [infer Name, `${infer Remainder}`]
-  ? EatWhitespace<Remainder> extends `::${infer Remainder}`
-    ? ParseIdentifier<Remainder> extends [infer CastType, `${infer Remainder}`]
-      ? // `field::type`
-        CastType extends PostgreSQLTypes
-        ? [{ name: Name; type: TypeScriptTypes<CastType> }, EatWhitespace<Remainder>]
-        : never
-      : ParserError<`Unexpected type cast at \`${Input}\``>
-    : EatWhitespace<Remainder> extends `!inner${infer Remainder}`
+  ? EatWhitespace<Remainder> extends `!inner${infer Remainder}`
     ? ParseEmbeddedResource<EatWhitespace<Remainder>> extends [infer Fields, `${infer Remainder}`]
       ? // `field!inner(nodes)`
         [{ name: Name; original: Name; children: Fields }, EatWhitespace<Remainder>]
-      : ParseEmbeddedResource<EatWhitespace<Remainder>> extends ParserError<string>
-      ? ParseEmbeddedResource<EatWhitespace<Remainder>>
-      : ParserError<'Expected embedded resource after `!inner`'>
+      : CreateParserErrorIfRequired<
+          ParseEmbeddedResource<EatWhitespace<Remainder>>,
+          'Expected embedded resource after `!inner`'
+        >
     : EatWhitespace<Remainder> extends `!${infer Remainder}`
     ? ParseIdentifier<EatWhitespace<Remainder>> extends [infer Hint, `${infer Remainder}`]
       ? EatWhitespace<Remainder> extends `!inner${infer Remainder}`
@@ -350,89 +350,21 @@ type ParseNode<Input extends string> = Input extends ''
           ]
           ? // `field!hint!inner(nodes)`
             [{ name: Name; original: Name; hint: Hint; children: Fields }, EatWhitespace<Remainder>]
-          : ParseEmbeddedResource<EatWhitespace<Remainder>> extends ParserError<string>
-          ? ParseEmbeddedResource<EatWhitespace<Remainder>>
-          : ParserError<'Expected embedded resource after `!inner`'>
+          : CreateParserErrorIfRequired<
+              ParseEmbeddedResource<EatWhitespace<Remainder>>,
+              'Expected embedded resource after `!inner`'
+            >
         : ParseEmbeddedResource<EatWhitespace<Remainder>> extends [
             infer Fields,
             `${infer Remainder}`
           ]
         ? // `field!hint(nodes)`
           [{ name: Name; original: Name; hint: Hint; children: Fields }, EatWhitespace<Remainder>]
-        : ParseEmbeddedResource<EatWhitespace<Remainder>> extends ParserError<string>
-        ? ParseEmbeddedResource<EatWhitespace<Remainder>>
-        : ParserError<'Expected embedded resource after `!hint`'>
+        : CreateParserErrorIfRequired<
+            ParseEmbeddedResource<EatWhitespace<Remainder>>,
+            'Expected embedded resource after `!hint`'
+          >
       : ParserError<'Expected identifier after `!`'>
-    : EatWhitespace<Remainder> extends `:${infer Remainder}`
-    ? ParseIdentifier<EatWhitespace<Remainder>> extends [infer OriginalName, `${infer Remainder}`]
-      ? EatWhitespace<Remainder> extends `::${infer Remainder}`
-        ? ParseIdentifier<Remainder> extends [infer CastType, `${infer Remainder}`]
-          ? // `renamed_field:field::type`
-            CastType extends PostgreSQLTypes
-            ? [{ name: Name; type: TypeScriptTypes<CastType> }, EatWhitespace<Remainder>]
-            : never
-          : ParserError<`Unexpected type cast at \`${Input}\``>
-        : EatWhitespace<Remainder> extends `!inner${infer Remainder}`
-        ? ParseEmbeddedResource<EatWhitespace<Remainder>> extends [
-            infer Fields,
-            `${infer Remainder}`
-          ]
-          ? // `renamed_field:field!inner(nodes)`
-            [{ name: Name; original: OriginalName; children: Fields }, EatWhitespace<Remainder>]
-          : ParseEmbeddedResource<EatWhitespace<Remainder>> extends ParserError<string>
-          ? ParseEmbeddedResource<EatWhitespace<Remainder>>
-          : ParserError<'Expected embedded resource after `!inner`'>
-        : EatWhitespace<Remainder> extends `!${infer Remainder}`
-        ? ParseIdentifier<EatWhitespace<Remainder>> extends [infer Hint, `${infer Remainder}`]
-          ? EatWhitespace<Remainder> extends `!inner${infer Remainder}`
-            ? ParseEmbeddedResource<EatWhitespace<Remainder>> extends [
-                infer Fields,
-                `${infer Remainder}`
-              ]
-              ? // `renamed_field:field!hint!inner(nodes)`
-                [
-                  { name: Name; original: OriginalName; hint: Hint; children: Fields },
-                  EatWhitespace<Remainder>
-                ]
-              : ParseEmbeddedResource<EatWhitespace<Remainder>> extends ParserError<string>
-              ? ParseEmbeddedResource<EatWhitespace<Remainder>>
-              : ParserError<'Expected embedded resource after `!inner`'>
-            : ParseEmbeddedResource<EatWhitespace<Remainder>> extends [
-                infer Fields,
-                `${infer Remainder}`
-              ]
-            ? // `renamed_field:field!hint(nodes)`
-              [
-                {
-                  name: Name
-                  original: OriginalName
-                  hint: Hint
-                  children: Fields
-                },
-                EatWhitespace<Remainder>
-              ]
-            : ParseEmbeddedResource<EatWhitespace<Remainder>> extends ParserError<string>
-            ? ParseEmbeddedResource<EatWhitespace<Remainder>>
-            : ParserError<'Expected embedded resource after `!hint`'>
-          : ParserError<'Expected identifier after `!`'>
-        : ParseEmbeddedResource<EatWhitespace<Remainder>> extends [
-            infer Fields,
-            `${infer Remainder}`
-          ]
-        ? // `renamed_field:field(nodes)`
-          [{ name: Name; original: OriginalName; children: Fields }, EatWhitespace<Remainder>]
-        : ParseJsonAccessor<EatWhitespace<Remainder>> extends [
-            infer _PropertyName,
-            infer PropertyType,
-            `${infer Remainder}`
-          ]
-        ? // `renamed_field:field->json...`
-          [{ name: Name; type: PropertyType }, EatWhitespace<Remainder>]
-        : ParseEmbeddedResource<EatWhitespace<Remainder>> extends ParserError<string>
-        ? ParseEmbeddedResource<EatWhitespace<Remainder>>
-        : // `renamed_field:field`
-          [{ name: Name; original: OriginalName }, EatWhitespace<Remainder>]
-      : ParseIdentifier<EatWhitespace<Remainder>>
     : ParseEmbeddedResource<EatWhitespace<Remainder>> extends [infer Fields, `${infer Remainder}`]
     ? // `field(nodes)`
       [{ name: Name; original: Name; children: Fields }, EatWhitespace<Remainder>]
@@ -442,11 +374,46 @@ type ParseNode<Input extends string> = Input extends ''
         `${infer Remainder}`
       ]
     ? // `field->json...`
-      [{ name: PropertyName; type: PropertyType }, EatWhitespace<Remainder>]
+      [{ name: PropertyName; original: PropertyName; type: PropertyType }, EatWhitespace<Remainder>]
     : ParseEmbeddedResource<EatWhitespace<Remainder>> extends ParserError<string>
     ? ParseEmbeddedResource<EatWhitespace<Remainder>>
+    : EatWhitespace<Remainder> extends `::${infer Remainder}`
+    ? ParseIdentifier<Remainder> extends [`${infer CastType}`, `${infer Remainder}`]
+      ? // `field::type`
+        CastType extends PostgreSQLTypes
+        ? [{ name: Name; type: TypeScriptTypes<CastType> }, EatWhitespace<Remainder>]
+        : ParserError<`Invalid type for \`::\` operator \`${CastType}\``>
+      : ParserError<`Invalid type for \`::\` operator at \`${Remainder}\``>
     : // `field`
       [{ name: Name; original: Name }, EatWhitespace<Remainder>]
+  : ParserError<`Expected identifier at \`${Input}\``>
+
+/**
+ * Parses a node.
+ * A node is one of the following:
+ * - `*`
+ * - a field, as defined above
+ * - a renamed field, `renamed_field:field`
+ */
+type ParseNode<Input extends string> = Input extends ''
+  ? ParserError<'Empty string'>
+  : // `*`
+  Input extends `*${infer Remainder}`
+  ? [{ star: true }, EatWhitespace<Remainder>]
+  : ParseIdentifier<Input> extends [infer Name, `${infer Remainder}`]
+  ? EatWhitespace<Remainder> extends `::${infer _Remainder}`
+    ? // `field::`
+      // Special case to detect type-casting before renaming.
+      ParseField<Input>
+    : EatWhitespace<Remainder> extends `:${infer Remainder}`
+    ? // `renamed_field:`
+      ParseField<EatWhitespace<Remainder>> extends [infer Field, `${infer Remainder}`]
+      ? Field extends { name: string }
+        ? [Prettify<Omit<Field, 'name'> & { name: Name }>, EatWhitespace<Remainder>]
+        : ParserError<`Unable to parse renamed field`>
+      : ParserError<`Unable to parse renamed field`>
+    : // Otherwise, just parse it as a field without renaming.
+      ParseField<Input>
   : ParserError<`Expected identifier at \`${Input}\``>
 
 /**
@@ -560,7 +527,9 @@ type GetResultHelper<
 /**
  * Constructs a type definition for an object based on a given PostgREST query.
  *
- * @param Row Record<string, unknown>.
+ * @param Schema Database schema.
+ * @param Row Type of a row in the given table.
+ * @param Relationships Relationships between different tables in the database.
  * @param Query Select query string literal to parse.
  */
 export type GetResult<
