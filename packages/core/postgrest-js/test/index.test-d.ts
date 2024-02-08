@@ -79,6 +79,15 @@ const postgrest = new PostgrestClient<Database>(REST_URL)
   )
 }
 
+// embedded resource with no fields
+{
+  const { data, error } = await postgrest.from('messages').select('message, users()').single()
+  if (error) {
+    throw new Error(error.message)
+  }
+  expectType<{ message: string | null }>(data)
+}
+
 // json accessor in select query
 {
   const { data, error } = await postgrest

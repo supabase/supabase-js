@@ -202,6 +202,8 @@ type ConstructFieldDefinition<
       Field['children'],
       unknown
     >
+  : Field extends { children: [] }
+  ? {}
   : Field extends { name: string; original: string; hint: string; children: unknown[] }
   ? {
       [_ in Field['name']]: GetResultHelper<
@@ -460,7 +462,7 @@ type ParseJsonAccessor<Input extends string> = Input extends `->${infer Remainde
 
 /**
  * Parses an embedded resource, which is an opening `(`, followed by a sequence of
- * nodes, separated by `,`, then a closing `)`.
+ * 0 or more nodes separated by `,`, then a closing `)`.
  *
  * Returns a tuple of ["Parsed fields", "Remainder of text"], an error,
  * or the original string input indicating that no opening `(` was found.
@@ -468,11 +470,14 @@ type ParseJsonAccessor<Input extends string> = Input extends `->${infer Remainde
 type ParseEmbeddedResource<Input extends string> = Input extends `(${infer Remainder}`
   ? ParseNodes<EatWhitespace<Remainder>> extends [infer Fields, `${infer Remainder}`]
     ? EatWhitespace<Remainder> extends `)${infer Remainder}`
-      ? Fields extends []
-        ? ParserError<'Expected fields after `(`'>
-        : [Fields, EatWhitespace<Remainder>]
+      ? [Fields, EatWhitespace<Remainder>]
       : ParserError<`Expected ")"`>
-    : ParseNodes<EatWhitespace<Remainder>>
+    : // If no nodes were detected, check for `)` for empty embedded resources `()`.
+    ParseNodes<EatWhitespace<Remainder>> extends ParserError<string>
+    ? EatWhitespace<Remainder> extends `)${infer Remainder}`
+      ? [[], EatWhitespace<Remainder>]
+      : ParseNodes<EatWhitespace<Remainder>>
+    : ParserError<'Expected embedded resource fields or `)`'>
   : Input
 
 /**
