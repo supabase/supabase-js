@@ -130,7 +130,7 @@ export default class SupabaseClient<
    *
    * @param relation - The table or view name to query
    */
-  from: PostgrestClient<Database, SchemaName>['from'] = (relation: string) => {
+  from(relation: string) {
     return this.rest.from(relation)
   }
 
@@ -142,11 +142,7 @@ export default class SupabaseClient<
    *
    * @param schema - The name of the schema to query
    */
-  schema: PostgrestClient<Database, SchemaName>['schema'] = <
-    DynamicSchema extends string & keyof Database
-  >(
-    schema: DynamicSchema
-  ) => {
+  schema<DynamicSchema extends string & keyof Database>(schema: DynamicSchema) {
     return this.rest.schema<DynamicSchema>(schema)
   }
 
@@ -171,17 +167,14 @@ export default class SupabaseClient<
    * `"estimated"`: Uses exact count for low numbers and planned count for high
    * numbers.
    */
-  rpc: PostgrestClient<Database, SchemaName>['rpc'] = <
-    FunctionName extends string & keyof Schema['Functions'],
-    Function_ extends Schema['Functions'][FunctionName]
-  >(
-    fn: FunctionName,
-    args: Function_['Args'] = {},
+  rpc<FnName extends string & keyof Schema['Functions'], Fn extends Schema['Functions'][FnName]>(
+    fn: FnName,
+    args: Fn['Args'] = {},
     options?: {
       head?: boolean
       count?: 'exact' | 'planned' | 'estimated'
     }
-  ) => {
+  ) {
     return this.rest.rpc(fn, args, options)
   }
 
