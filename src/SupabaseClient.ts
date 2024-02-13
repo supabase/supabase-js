@@ -130,7 +130,7 @@ export default class SupabaseClient<
    *
    * @param relation - The table or view name to query
    */
-  from(relation: string) {
+  from(relation: string): ReturnType<PostgrestClient<Database, SchemaName>['from']> {
     return this.rest.from(relation)
   }
 
@@ -142,7 +142,9 @@ export default class SupabaseClient<
    *
    * @param schema - The name of the schema to query
    */
-  schema<DynamicSchema extends string & keyof Database>(schema: DynamicSchema) {
+  schema<DynamicSchema extends string & keyof Database>(
+    schema: DynamicSchema
+  ): ReturnType<PostgrestClient<Database, SchemaName>['schema']> {
     return this.rest.schema<DynamicSchema>(schema)
   }
 
@@ -174,7 +176,7 @@ export default class SupabaseClient<
       head?: boolean
       count?: 'exact' | 'planned' | 'estimated'
     }
-  ) {
+  ): ReturnType<PostgrestClient<Database, SchemaName>['rpc']> {
     return this.rest.rpc(fn, args, options)
   }
 
