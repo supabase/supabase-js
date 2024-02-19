@@ -1,6 +1,10 @@
 import { FunctionsClient } from '@supabase/functions-js'
 import { AuthChangeEvent } from '@supabase/gotrue-js'
-import { PostgrestClient } from '@supabase/postgrest-js'
+import {
+  PostgrestClient,
+  PostgrestFilterBuilder,
+  PostgrestQueryBuilder,
+} from '@supabase/postgrest-js'
 import {
   RealtimeChannel,
   RealtimeChannelOptions,
@@ -125,31 +129,43 @@ export default class SupabaseClient<
     return new SupabaseStorageClient(this.storageUrl, this.headers, this.fetch)
   }
 
+  // NOTE: signatures must be kept in sync with PostgrestClient.from
+  from<
+    TableName extends string & keyof Schema['Tables'],
+    Table extends Schema['Tables'][TableName]
+  >(relation: TableName): PostgrestQueryBuilder<Schema, Table, TableName>
+  from<ViewName extends string & keyof Schema['Views'], View extends Schema['Views'][ViewName]>(
+    relation: ViewName
+  ): PostgrestQueryBuilder<Schema, View, ViewName>
+  from(relation: string): PostgrestQueryBuilder<Schema, any, any>
   /**
    * Perform a query on a table or a view.
    *
    * @param relation - The table or view name to query
    */
-  from: PostgrestClient<Database, SchemaName>['from'] = (relation: string) => {
+  from(relation: string): PostgrestQueryBuilder<Schema, any, any> {
     return this.rest.from(relation)
   }
 
+  // NOTE: signatures must be kept in sync with PostgrestClient.schema
   /**
-   * Perform a query on a schema distinct from the default schema supplied via
-   * the `options.db.schema` constructor parameter.
+   * Select a schema to query or perform an function (rpc) call.
    *
    * The schema needs to be on the list of exposed schemas inside Supabase.
    *
-   * @param schema - The name of the schema to query
+   * @param schema - The schema to query
    */
-  schema: PostgrestClient<Database, SchemaName>['schema'] = <
-    DynamicSchema extends string & keyof Database
-  >(
+  schema<DynamicSchema extends string & keyof Database>(
     schema: DynamicSchema
-  ) => {
+  ): PostgrestClient<
+    Database,
+    DynamicSchema,
+    Database[DynamicSchema] extends GenericSchema ? Database[DynamicSchema] : any
+  > {
     return this.rest.schema<DynamicSchema>(schema)
   }
 
+  // NOTE: signatures must be kept in sync with PostgrestClient.rpc
   /**
    * Perform a function call.
    *
@@ -171,17 +187,22 @@ export default class SupabaseClient<
    * `"estimated"`: Uses exact count for low numbers and planned count for high
    * numbers.
    */
-  rpc: PostgrestClient<Database, SchemaName>['rpc'] = <
-    FunctionName extends string & keyof Schema['Functions'],
-    Function_ extends Schema['Functions'][FunctionName]
-  >(
-    fn: FunctionName,
-    args: Function_['Args'] = {},
-    options?: {
+  rpc<FnName extends string & keyof Schema['Functions'], Fn extends Schema['Functions'][FnName]>(
+    fn: FnName,
+    args: Fn['Args'] = {},
+    options: {
       head?: boolean
       count?: 'exact' | 'planned' | 'estimated'
-    }
-  ) => {
+    } = {}
+  ): PostgrestFilterBuilder<
+    Schema,
+    Fn['Returns'] extends any[]
+      ? Fn['Returns'][number] extends Record<string, unknown>
+        ? Fn['Returns'][number]
+        : never
+      : never,
+    Fn['Returns']
+  > {
     return this.rest.rpc(fn, args, options)
   }
 
