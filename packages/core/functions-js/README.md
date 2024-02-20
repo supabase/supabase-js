@@ -10,7 +10,7 @@ JS Client library to interact with Supabase Functions.
 
 ## testing
 
-To run tests you will need Node 18+.
+To run tests you will need Node 20+.
 
 You are going to need docker daemon running to execute tests.
 
