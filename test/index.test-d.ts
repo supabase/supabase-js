@@ -9,6 +9,7 @@ const supabase = createClient<Database>(URL, KEY)
 // table invalid type
 {
   expectError(supabase.from(42))
+  expectError(supabase.from('some_table_that_does_not_exist'))
 }
 
 // `null` can't be used with `.eq()`
