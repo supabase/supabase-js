@@ -88,6 +88,15 @@ const postgrest = new PostgrestClient<Database>(REST_URL)
   expectType<{ message: string | null }>(data)
 }
 
+// `count` in embedded resource
+{
+  const { data, error } = await postgrest.from('messages').select('message, users(count)').single()
+  if (error) {
+    throw new Error(error.message)
+  }
+  expectType<{ message: string | null; users: { count: number } | null }>(data)
+}
+
 // json accessor in select query
 {
   const { data, error } = await postgrest

@@ -267,6 +267,8 @@ type ConstructFieldDefinition<
   : Field extends { name: string; original: string }
   ? Field['original'] extends keyof Row
     ? { [K in Field['name']]: Row[Field['original']] }
+    : Field['original'] extends 'count'
+    ? { count: number }
     : SelectQueryError<`Referencing missing column \`${Field['original']}\``>
   : Record<string, unknown>
 
