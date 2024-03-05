@@ -1,4 +1,5 @@
 // Credits to @bnjmnt4n (https://www.npmjs.com/package/postgrest-query)
+// See https://github.com/PostgREST/postgrest/blob/2f91853cb1de18944a4556df09e52450b881cfb3/src/PostgREST/ApiRequest/QueryParams.hs#L282-L284
 
 import { GenericSchema, Prettify } from './types'
 
@@ -335,15 +336,12 @@ type ParseIdentifier<Input extends string> = ReadLetters<Input> extends [
 /**
  * Parses a field without preceding field renaming.
  * A field is one of the following:
- * - `field`
- * - `field::type`
- * - `field->json...`
- * - `field(nodes)`
- * - `field!hint(nodes)`
- * - `field!inner(nodes)`
- * - `field!hint!inner(nodes)`
- *
- * TODO: support type casting of JSON operators `a->b::type`, `a->>b::type`.
+ * - a field with an embedded resource
+ *   - `field(nodes)`
+ *   - `field!hint(nodes)`
+ *   - `field!inner(nodes)`
+ *   - `field!hint!inner(nodes)`
+ * - a field without an embedded resource (see {@link ParseFieldWithoutEmbeddedResource})
  */
 type ParseField<Input extends string> = Input extends ''
   ? ParserError<'Empty string'>
@@ -383,15 +381,32 @@ type ParseField<Input extends string> = Input extends ''
     : ParseEmbeddedResource<EatWhitespace<Remainder>> extends [infer Fields, `${infer Remainder}`]
     ? // `field(nodes)`
       [{ name: Name; original: Name; children: Fields }, EatWhitespace<Remainder>]
-    : ParseJsonAccessor<EatWhitespace<Remainder>> extends [
-        infer PropertyName,
-        infer PropertyType,
-        `${infer Remainder}`
-      ]
+    : ParseEmbeddedResource<EatWhitespace<Remainder>> extends ParserError<string>
+    ? // Return error if start of embedded resource was detected but not found.
+      ParseEmbeddedResource<EatWhitespace<Remainder>>
+    : // Otherwise try to match a field without embedded resource.
+      ParseFieldWithoutEmbeddedResource<Input>
+  : ParserError<`Expected identifier at \`${Input}\``>
+
+/**
+ * Parses a field excluding embedded resources, without preceding field renaming.
+ * This is one of the following:
+ * - `field`
+ * - `field::type`
+ * - `field->json...`
+ *
+ * TODO: support type casting of JSON operators `a->b::type`, `a->>b::type`.
+ */
+type ParseFieldWithoutEmbeddedResource<Input extends string> = Input extends ''
+  ? ParserError<'Empty string'>
+  : ParseIdentifier<Input> extends [infer Name, `${infer Remainder}`]
+  ? ParseJsonAccessor<EatWhitespace<Remainder>> extends [
+      infer PropertyName,
+      infer PropertyType,
+      `${infer Remainder}`
+    ]
     ? // `field->json...`
       [{ name: PropertyName; original: PropertyName; type: PropertyType }, EatWhitespace<Remainder>]
-    : ParseEmbeddedResource<EatWhitespace<Remainder>> extends ParserError<string>
-    ? ParseEmbeddedResource<EatWhitespace<Remainder>>
     : EatWhitespace<Remainder> extends `::${infer Remainder}`
     ? ParseIdentifier<Remainder> extends [`${infer CastType}`, `${infer Remainder}`]
       ? // `field::type`
