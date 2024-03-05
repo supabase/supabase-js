@@ -97,6 +97,8 @@ type TypeScriptSingleValueTypes<T extends SingleValuePostgreSQLTypes> = T extend
   ? Record<string, unknown>
   : unknown
 
+type AggregateFunctions = 'count' | 'sum' | 'avg' | 'min' | 'max'
+
 type StripUnderscore<T extends string> = T extends `_${infer U}` ? U : T
 
 type TypeScriptTypes<T extends PostgreSQLTypes> = T extends ArrayPostgreSQLTypes
@@ -392,21 +394,74 @@ type ParseField<Input extends string> = Input extends ''
  * Parses a field excluding embedded resources, without preceding field renaming.
  * This is one of the following:
  * - `field`
+ * - `field.aggregate()`
+ * - `field.aggregate()::type`
+ * - `field::type`
+ * - `field::type.aggregate()`
+ * - `field::type.aggregate()::type`
+ * - `field->json...`
+ * - `field->json.aggregate()`
+ * - `field->json.aggregate()::type`
+ * - `field->json::type`
+ * - `field->json::type.aggregate()`
+ * - `field->json::type.aggregate()::type`
+ */
+type ParseFieldWithoutEmbeddedResource<Input extends string> =
+  ParseFieldWithoutEmbeddedResourceAndAggregation<Input> extends [infer Field, `${infer Remainder}`]
+    ? ParseFieldAggregation<EatWhitespace<Remainder>> extends [
+        `${infer AggregateFunction}`,
+        `${infer Remainder}`
+      ]
+      ? ParseFieldTypeCast<EatWhitespace<Remainder>> extends [infer Type, `${infer Remainder}`]
+        ? // `field.aggregate()::type`
+          [
+            Omit<Field, 'name' | 'original' | 'type'> & {
+              name: AggregateFunction
+              original: AggregateFunction
+              type: Type
+            },
+            EatWhitespace<Remainder>
+          ]
+        : ParseFieldTypeCast<EatWhitespace<Remainder>> extends ParserError<string>
+        ? ParseFieldTypeCast<EatWhitespace<Remainder>>
+        : // `field.aggregate()`
+          [
+            Omit<Field, 'name' | 'original'> & {
+              name: AggregateFunction
+              original: AggregateFunction
+            },
+            EatWhitespace<Remainder>
+          ]
+      : ParseFieldAggregation<EatWhitespace<Remainder>> extends ParserError<string>
+      ? ParseFieldAggregation<EatWhitespace<Remainder>>
+      : // `field`
+        [Field, EatWhitespace<Remainder>]
+    : CreateParserErrorIfRequired<
+        ParseFieldWithoutEmbeddedResourceAndAggregation<Input>,
+        `Expected field at \`${Input}\``
+      >
+
+/**
+ * Parses a field excluding embedded resources or aggregation, without preceding field renaming.
+ * This is one of the following:
+ * - `field`
  * - `field::type`
  * - `field->json...`
  * - `field->json...::type`
  */
-type ParseFieldWithoutEmbeddedResource<Input extends string> = Input extends ''
-  ? ParserError<'Empty string'>
-  : ParseFieldWithoutEmbeddedResourceAndTypeCast<Input> extends [infer Field, `${infer Remainder}`]
-  ? ParseFieldTypeCast<EatWhitespace<Remainder>> extends [infer Type, `${infer Remainder}`]
-    ? // `field::type`
-      [Field & { type: Type }, EatWhitespace<Remainder>]
-    : ParseFieldTypeCast<EatWhitespace<Remainder>> extends ParserError<string>
-    ? ParseFieldTypeCast<EatWhitespace<Remainder>>
-    : // `field`
-      [Field, EatWhitespace<Remainder>]
-  : ParserError<`Expected identifier at \`${Input}\``>
+type ParseFieldWithoutEmbeddedResourceAndAggregation<Input extends string> =
+  ParseFieldWithoutEmbeddedResourceAndTypeCast<Input> extends [infer Field, `${infer Remainder}`]
+    ? ParseFieldTypeCast<EatWhitespace<Remainder>> extends [infer Type, `${infer Remainder}`]
+      ? // `field::type` or `field->json...::type`
+        [Omit<Field, 'type'> & { type: Type }, EatWhitespace<Remainder>]
+      : ParseFieldTypeCast<EatWhitespace<Remainder>> extends ParserError<string>
+      ? ParseFieldTypeCast<EatWhitespace<Remainder>>
+      : // `field` or `field->json...`
+        [Field, EatWhitespace<Remainder>]
+    : CreateParserErrorIfRequired<
+        ParseFieldWithoutEmbeddedResourceAndTypeCast<Input>,
+        `Expected field at \`${Input}\``
+      >
 
 /**
  * Parses a field excluding embedded resources or typecasting, without preceding field renaming.
@@ -442,6 +497,25 @@ type ParseFieldTypeCast<Input extends string> = EatWhitespace<Input> extends `::
       : ParserError<`Invalid type for \`::\` operator \`${CastType}\``>
     : ParserError<`Invalid type for \`::\` operator at \`${Remainder}\``>
   : Input
+
+/**
+ * Parses a field aggregation (`.max()`), returning a tuple of ["Aggregate function", "Remainder of text"]
+ * or the original string input indicating that no aggregation was found.
+ */
+type ParseFieldAggregation<Input extends string> =
+  EatWhitespace<Input> extends `.${infer Remainder}`
+    ? ParseIdentifier<EatWhitespace<Remainder>> extends [
+        `${infer FunctionName}`,
+        `${infer Remainder}`
+      ]
+      ? // Ensure that aggregation function is valid.
+        FunctionName extends AggregateFunctions
+        ? EatWhitespace<Remainder> extends `()${infer Remainder}`
+          ? [FunctionName, EatWhitespace<Remainder>]
+          : ParserError<`Expected \`()\` after \`.\` operator \`${FunctionName}\``>
+        : ParserError<`Invalid type for \`.\` operator \`${FunctionName}\``>
+      : ParserError<`Invalid type for \`.\` operator at \`${Remainder}\``>
+    : Input
 
 /**
  * Parses a node.
