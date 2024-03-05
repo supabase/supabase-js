@@ -394,29 +394,54 @@ type ParseField<Input extends string> = Input extends ''
  * - `field`
  * - `field::type`
  * - `field->json...`
- *
- * TODO: support type casting of JSON operators `a->b::type`, `a->>b::type`.
+ * - `field->json...::type`
  */
 type ParseFieldWithoutEmbeddedResource<Input extends string> = Input extends ''
   ? ParserError<'Empty string'>
-  : ParseIdentifier<Input> extends [infer Name, `${infer Remainder}`]
-  ? ParseJsonAccessor<EatWhitespace<Remainder>> extends [
-      infer PropertyName,
-      infer PropertyType,
-      `${infer Remainder}`
-    ]
-    ? // `field->json...`
-      [{ name: PropertyName; original: PropertyName; type: PropertyType }, EatWhitespace<Remainder>]
-    : EatWhitespace<Remainder> extends `::${infer Remainder}`
-    ? ParseIdentifier<Remainder> extends [`${infer CastType}`, `${infer Remainder}`]
-      ? // `field::type`
-        CastType extends PostgreSQLTypes
-        ? [{ name: Name; type: TypeScriptTypes<CastType> }, EatWhitespace<Remainder>]
-        : ParserError<`Invalid type for \`::\` operator \`${CastType}\``>
-      : ParserError<`Invalid type for \`::\` operator at \`${Remainder}\``>
+  : ParseFieldWithoutEmbeddedResourceAndTypeCast<Input> extends [infer Field, `${infer Remainder}`]
+  ? ParseFieldTypeCast<EatWhitespace<Remainder>> extends [infer Type, `${infer Remainder}`]
+    ? // `field::type`
+      [Field & { type: Type }, EatWhitespace<Remainder>]
+    : ParseFieldTypeCast<EatWhitespace<Remainder>> extends ParserError<string>
+    ? ParseFieldTypeCast<EatWhitespace<Remainder>>
     : // `field`
-      [{ name: Name; original: Name }, EatWhitespace<Remainder>]
+      [Field, EatWhitespace<Remainder>]
   : ParserError<`Expected identifier at \`${Input}\``>
+
+/**
+ * Parses a field excluding embedded resources or typecasting, without preceding field renaming.
+ * This is one of the following:
+ * - `field`
+ * - `field->json...`
+ */
+type ParseFieldWithoutEmbeddedResourceAndTypeCast<Input extends string> =
+  ParseIdentifier<Input> extends [infer Name, `${infer Remainder}`]
+    ? ParseJsonAccessor<EatWhitespace<Remainder>> extends [
+        infer PropertyName,
+        infer PropertyType,
+        `${infer Remainder}`
+      ]
+      ? // `field->json...`
+        [
+          { name: PropertyName; original: PropertyName; type: PropertyType },
+          EatWhitespace<Remainder>
+        ]
+      : // `field`
+        [{ name: Name; original: Name }, EatWhitespace<Remainder>]
+    : ParserError<`Expected field at \`${Input}\``>
+
+/**
+ * Parses a field typecast (`::type`), returning a tuple of ["Type", "Remainder of text"]
+ * or the original string input indicating that no typecast was found.
+ */
+type ParseFieldTypeCast<Input extends string> = EatWhitespace<Input> extends `::${infer Remainder}`
+  ? ParseIdentifier<EatWhitespace<Remainder>> extends [`${infer CastType}`, `${infer Remainder}`]
+    ? // Ensure that `CastType` is a valid type.
+      CastType extends PostgreSQLTypes
+      ? [TypeScriptTypes<CastType>, EatWhitespace<Remainder>]
+      : ParserError<`Invalid type for \`::\` operator \`${CastType}\``>
+    : ParserError<`Invalid type for \`::\` operator at \`${Remainder}\``>
+  : Input
 
 /**
  * Parses a node.
