@@ -12,6 +12,9 @@
     "react-scripts": "5.0.1",
     "tailwindcss": "^1.8.10"
   },
+  "devDependencies": {
+    "@babel/plugin-proposal-private-property-in-object": "^7.21.11"
+  },
   "scripts": {
     "build:tailwind": "tailwindcss build src/App.css -o src/tailwind.output.css",
     "prestart": "npm run build:tailwind",

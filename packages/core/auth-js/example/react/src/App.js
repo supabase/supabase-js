@@ -41,13 +41,11 @@ function App() {
       console.log(event, session)
       if (event === 'SIGNED_OUT' || event === 'SIGNED_IN') {
         setSession(session)
-        window.location.reload()
       }
     })
 
     return () => {
-      if (subscription) {
-        console.log('Subscription: ', subscription)
+      if (subscription.subscription) {
         subscription.unsubscribe()
       }
     }
@@ -93,6 +91,10 @@ function App() {
   async function handleSignOut() {
     let { error } = await auth.signOut()
     if (error) console.log('Error: ', error)
+  }
+  async function handleSignInAnonymously(data) {
+    let { error } = await auth.signInAnonymously({ options: { data } })
+    if (error) alert(error.message)
   }
   async function forgotPassword() {
     var email = prompt('Please enter your email:')
@@ -390,6 +392,17 @@ function App() {
                     className="w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-500 focus:outline-none focus:border-indigo-700 focus:shadow-outline-indigo active:bg-indigo-700 transition duration-150 ease-in-out"
                   >
                     Google
+                  </button>
+                </span>
+              </div>
+              <div className="mt-6">
+                <span className="block w-full rounded-md shadow-sm">
+                  <button
+                    onClick={() => handleSignInAnonymously({ color: 'blue' })}
+                    type="button"
+                    className="w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-500 focus:outline-none focus:border-indigo-700 focus:shadow-outline-indigo active:bg-indigo-700 transition duration-150 ease-in-out"
+                  >
+                    Sign In Anonymously
                   </button>
                 </span>
               </div>

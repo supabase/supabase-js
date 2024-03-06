@@ -87,7 +87,7 @@ import type {
   AuthFlowType,
   LockFunc,
   UserIdentity,
-  WeakPassword,
+  SignInAnonymouslyCredentials,
 } from './lib/types'
 
 polyfillGlobalThis() // Make "globalThis" available
@@ -358,6 +358,41 @@ export default class GoTrueClient {
     } finally {
       await this._handleVisibilityChange()
       this._debug('#_initialize()', 'end')
+    }
+  }
+
+  async signInAnonymously(credentials?: SignInAnonymouslyCredentials): Promise<AuthResponse> {
+    try {
+      await this._removeSession()
+
+      const res = await _request(this.fetch, 'POST', `${this.url}/signup`, {
+        headers: this.headers,
+        body: {
+          data: credentials?.options?.data ?? {},
+          gotrue_meta_security: { captcha_token: credentials?.options?.captchaToken },
+        },
+        xform: _sessionResponse,
+      })
+      const { data, error } = res
+
+      if (error || !data) {
+        return { data: { user: null, session: null }, error: error }
+      }
+      const session: Session | null = data.session
+      const user: User | null = data.user
+
+      if (data.session) {
+        await this._saveSession(data.session)
+        await this._notifyAllSubscribers('SIGNED_IN', session)
+      }
+
+      return { data: { user, session }, error: null }
+    } catch (error) {
+      if (isAuthError(error)) {
+        return { data: { user: null, session: null }, error }
+      }
+
+      throw error
     }
   }
 
