@@ -304,3 +304,19 @@ export async function generatePKCEChallenge(verifier: string) {
   const hashed = await sha256(verifier)
   return base64urlencode(hashed)
 }
+
+export async function getCodeChallengeAndMethod(
+  storage: SupportedStorage,
+  storageKey: string,
+  isPasswordRecovery = false
+) {
+  const codeVerifier = generatePKCEVerifier()
+  let storedCodeVerifier = codeVerifier
+  if (isPasswordRecovery) {
+    storedCodeVerifier += '/PASSWORD_RECOVERY'
+  }
+  await setItemAsync(storage, `${storageKey}-code-verifier`, storedCodeVerifier)
+  const codeChallenge = await generatePKCEChallenge(codeVerifier)
+  const codeChallengeMethod = codeVerifier === codeChallenge ? 'plain' : 's256'
+  return [codeChallenge, codeChallengeMethod]
+}
