@@ -231,7 +231,9 @@ type ConstructFieldDefinition<
           ? Child | null
           : Relationships extends unknown[]
           ? HasFKey<Field['hint'], Relationships> extends true
-            ? Child | null
+            ? Field extends { inner: true }
+              ? Child
+              : Child | null
             : Child[]
           : Child[]
         : never
@@ -260,7 +262,9 @@ type ConstructFieldDefinition<
           ? Child | null
           : Relationships extends unknown[]
           ? HasFKeyToFRel<Field['original'], Relationships> extends true
-            ? Child | null
+            ? Field extends { inner: true }
+              ? Child
+              : Child | null
             : Child[]
           : Child[]
         : never
@@ -351,7 +355,7 @@ type ParseField<Input extends string> = Input extends ''
   ? EatWhitespace<Remainder> extends `!inner${infer Remainder}`
     ? ParseEmbeddedResource<EatWhitespace<Remainder>> extends [infer Fields, `${infer Remainder}`]
       ? // `field!inner(nodes)`
-        [{ name: Name; original: Name; children: Fields }, EatWhitespace<Remainder>]
+        [{ name: Name; original: Name; children: Fields; inner: true }, EatWhitespace<Remainder>]
       : CreateParserErrorIfRequired<
           ParseEmbeddedResource<EatWhitespace<Remainder>>,
           'Expected embedded resource after `!inner`'
@@ -364,7 +368,10 @@ type ParseField<Input extends string> = Input extends ''
             `${infer Remainder}`
           ]
           ? // `field!hint!inner(nodes)`
-            [{ name: Name; original: Name; hint: Hint; children: Fields }, EatWhitespace<Remainder>]
+            [
+              { name: Name; original: Name; hint: Hint; children: Fields; inner: true },
+              EatWhitespace<Remainder>
+            ]
           : CreateParserErrorIfRequired<
               ParseEmbeddedResource<EatWhitespace<Remainder>>,
               'Expected embedded resource after `!inner`'
