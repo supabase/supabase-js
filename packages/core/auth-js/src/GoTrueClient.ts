@@ -360,6 +360,11 @@ export default class GoTrueClient {
     }
   }
 
+  /**
+   * Creates a new anonymous user.
+   *
+   * @returns A session where the is_anonymous claim in the access token JWT set to true
+   */
   async signInAnonymously(credentials?: SignInAnonymouslyCredentials): Promise<AuthResponse> {
     try {
       await this._removeSession()
@@ -415,7 +420,7 @@ export default class GoTrueClient {
         let codeChallenge: string | null = null
         let codeChallengeMethod: string | null = null
         if (this.flowType === 'pkce') {
-          [codeChallenge, codeChallengeMethod] = await getCodeChallengeAndMethod(
+          ;[codeChallenge, codeChallengeMethod] = await getCodeChallengeAndMethod(
             this.storage,
             this.storageKey
           )
@@ -679,7 +684,7 @@ export default class GoTrueClient {
         let codeChallenge: string | null = null
         let codeChallengeMethod: string | null = null
         if (this.flowType === 'pkce') {
-          [codeChallenge, codeChallengeMethod] = await getCodeChallengeAndMethod(
+          ;[codeChallenge, codeChallengeMethod] = await getCodeChallengeAndMethod(
             this.storage,
             this.storageKey
           )
@@ -797,7 +802,7 @@ export default class GoTrueClient {
       let codeChallenge: string | null = null
       let codeChallengeMethod: string | null = null
       if (this.flowType === 'pkce') {
-        [codeChallenge, codeChallengeMethod] = await getCodeChallengeAndMethod(
+        ;[codeChallenge, codeChallengeMethod] = await getCodeChallengeAndMethod(
           this.storage,
           this.storageKey
         )
@@ -1243,7 +1248,7 @@ export default class GoTrueClient {
         let codeChallenge: string | null = null
         let codeChallengeMethod: string | null = null
         if (this.flowType === 'pkce' && attributes.email != null) {
-          [codeChallenge, codeChallengeMethod] = await getCodeChallengeAndMethod(
+          ;[codeChallenge, codeChallengeMethod] = await getCodeChallengeAndMethod(
             this.storage,
             this.storageKey
           )
@@ -1673,7 +1678,7 @@ export default class GoTrueClient {
     let codeChallengeMethod: string | null = null
 
     if (this.flowType === 'pkce') {
-      [codeChallenge, codeChallengeMethod] = await getCodeChallengeAndMethod(
+      ;[codeChallenge, codeChallengeMethod] = await getCodeChallengeAndMethod(
         this.storage,
         this.storageKey,
         true // isPasswordRecovery
