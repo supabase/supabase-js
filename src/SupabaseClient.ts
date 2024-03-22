@@ -130,10 +130,11 @@ export default class SupabaseClient<
   }
 
   // NOTE: signatures must be kept in sync with PostgrestClient.from
-  from<TableName extends keyof Schema['Tables'], Table extends Schema['Tables'][TableName]>(
-    relation: TableName
-  ): PostgrestQueryBuilder<Schema, Table, TableName>
-  from<ViewName extends keyof Schema['Views'], View extends Schema['Views'][ViewName]>(
+  from<
+    TableName extends string & keyof Schema['Tables'],
+    Table extends Schema['Tables'][TableName]
+  >(relation: TableName): PostgrestQueryBuilder<Schema, Table, TableName>
+  from<ViewName extends string & keyof Schema['Views'], View extends Schema['Views'][ViewName]>(
     relation: ViewName
   ): PostgrestQueryBuilder<Schema, View, ViewName>
   /**
