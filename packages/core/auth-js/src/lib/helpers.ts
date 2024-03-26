@@ -1,4 +1,6 @@
+import { API_VERSION_HEADER_NAME } from './constants'
 import { SupportedStorage } from './types'
+
 export function expiresAt(expiresIn: number) {
   const timeNow = Math.round(Date.now() / 1000)
   return timeNow + expiresIn
@@ -319,4 +321,26 @@ export async function getCodeChallengeAndMethod(
   const codeChallenge = await generatePKCEChallenge(codeVerifier)
   const codeChallengeMethod = codeVerifier === codeChallenge ? 'plain' : 's256'
   return [codeChallenge, codeChallengeMethod]
+}
+
+/** Parses the API version which is 2YYY-MM-DD. */
+const API_VERSION_REGEX = /^2[0-9]{3}-(0[1-9]|1[0-2])-(0[1-9]|1[0-9]|2[0-9]|3[0-1])$/i
+
+export function parseResponseAPIVersion(response: Response) {
+  const apiVersion = response.headers.get(API_VERSION_HEADER_NAME)
+
+  if (!apiVersion) {
+    return null
+  }
+
+  if (!apiVersion.match(API_VERSION_REGEX)) {
+    return null
+  }
+
+  try {
+    const date = new Date(`${apiVersion}T00:00:00.0Z`)
+    return date
+  } catch (e: any) {
+    return null
+  }
 }

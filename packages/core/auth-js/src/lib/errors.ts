@@ -1,13 +1,25 @@
 import { WeakPasswordReasons } from './types'
+import { ErrorCode } from './error-codes'
 
 export class AuthError extends Error {
+  /**
+   * Error code associated with the error. Most errors coming from
+   * HTTP responses will have a code, though some errors that occur
+   * before a response is received will not have one present. In that
+   * case {@link #status} will also be undefined.
+   */
+  code: ErrorCode | string | undefined
+
+  /** HTTP status code that caused the error. */
   status: number | undefined
+
   protected __isAuthError = true
 
-  constructor(message: string, status?: number) {
+  constructor(message: string, status?: number, code?: string) {
     super(message)
     this.name = 'AuthError'
     this.status = status
+    this.code = code
   }
 }
 
@@ -18,18 +30,11 @@ export function isAuthError(error: unknown): error is AuthError {
 export class AuthApiError extends AuthError {
   status: number
 
-  constructor(message: string, status: number) {
-    super(message, status)
+  constructor(message: string, status: number, code: string | undefined) {
+    super(message, status, code)
     this.name = 'AuthApiError'
     this.status = status
-  }
-
-  toJSON() {
-    return {
-      name: this.name,
-      message: this.message,
-      status: this.status,
-    }
+    this.code = code
   }
 }
 
@@ -50,43 +55,36 @@ export class AuthUnknownError extends AuthError {
 export class CustomAuthError extends AuthError {
   name: string
   status: number
-  constructor(message: string, name: string, status: number) {
-    super(message)
+
+  constructor(message: string, name: string, status: number, code: string | undefined) {
+    super(message, status, code)
     this.name = name
     this.status = status
-  }
-
-  toJSON() {
-    return {
-      name: this.name,
-      message: this.message,
-      status: this.status,
-    }
   }
 }
 
 export class AuthSessionMissingError extends CustomAuthError {
   constructor() {
-    super('Auth session missing!', 'AuthSessionMissingError', 400)
+    super('Auth session missing!', 'AuthSessionMissingError', 400, undefined)
   }
 }
 
 export class AuthInvalidTokenResponseError extends CustomAuthError {
   constructor() {
-    super('Auth session or user missing', 'AuthInvalidTokenResponseError', 500)
+    super('Auth session or user missing', 'AuthInvalidTokenResponseError', 500, undefined)
   }
 }
 
 export class AuthInvalidCredentialsError extends CustomAuthError {
   constructor(message: string) {
-    super(message, 'AuthInvalidCredentialsError', 400)
+    super(message, 'AuthInvalidCredentialsError', 400, undefined)
   }
 }
 
 export class AuthImplicitGrantRedirectError extends CustomAuthError {
   details: { error: string; code: string } | null = null
   constructor(message: string, details: { error: string; code: string } | null = null) {
-    super(message, 'AuthImplicitGrantRedirectError', 500)
+    super(message, 'AuthImplicitGrantRedirectError', 500, undefined)
     this.details = details
   }
 
@@ -102,8 +100,9 @@ export class AuthImplicitGrantRedirectError extends CustomAuthError {
 
 export class AuthPKCEGrantCodeExchangeError extends CustomAuthError {
   details: { error: string; code: string } | null = null
+
   constructor(message: string, details: { error: string; code: string } | null = null) {
-    super(message, 'AuthPKCEGrantCodeExchangeError', 500)
+    super(message, 'AuthPKCEGrantCodeExchangeError', 500, undefined)
     this.details = details
   }
 
@@ -119,7 +118,7 @@ export class AuthPKCEGrantCodeExchangeError extends CustomAuthError {
 
 export class AuthRetryableFetchError extends CustomAuthError {
   constructor(message: string, status: number) {
-    super(message, 'AuthRetryableFetchError', status)
+    super(message, 'AuthRetryableFetchError', status, undefined)
   }
 }
 
@@ -139,7 +138,7 @@ export class AuthWeakPasswordError extends CustomAuthError {
   reasons: WeakPasswordReasons[]
 
   constructor(message: string, status: number, reasons: string[]) {
-    super(message, 'AuthWeakPasswordError', status)
+    super(message, 'AuthWeakPasswordError', status, 'weak_password')
 
     this.reasons = reasons
   }

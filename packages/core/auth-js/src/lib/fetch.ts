@@ -1,4 +1,5 @@
-import { expiresAt, looksLikeFetchResponse } from './helpers'
+import { API_VERSIONS, API_VERSION_HEADER_NAME } from './constants'
+import { expiresAt, looksLikeFetchResponse, parseResponseAPIVersion } from './helpers'
 import {
   AuthResponse,
   AuthResponsePassword,
@@ -35,7 +36,7 @@ const _getErrorMessage = (err: any): string =>
 
 const NETWORK_ERROR_CODES = [502, 503, 504]
 
-async function handleError(error: unknown) {
+export async function handleError(error: unknown) {
   if (!looksLikeFetchResponse(error)) {
     throw new AuthRetryableFetchError(_getErrorMessage(error), 0)
   }
@@ -52,23 +53,47 @@ async function handleError(error: unknown) {
     throw new AuthUnknownError(_getErrorMessage(e), e)
   }
 
+  let errorCode: string | undefined = undefined
+
+  const responseAPIVersion = parseResponseAPIVersion(error)
   if (
+    responseAPIVersion &&
+    responseAPIVersion.getTime() >= API_VERSIONS['2024-01-01'].timestamp &&
     typeof data === 'object' &&
     data &&
-    typeof data.weak_password === 'object' &&
-    data.weak_password &&
-    Array.isArray(data.weak_password.reasons) &&
-    data.weak_password.reasons.length &&
-    data.weak_password.reasons.reduce((a: boolean, i: any) => a && typeof i === 'string', true)
+    typeof data.code === 'string'
   ) {
+    errorCode = data.code
+  } else if (typeof data === 'object' && data && typeof data.error_code === 'string') {
+    errorCode = data.error_code
+  }
+
+  if (!errorCode) {
+    // Legacy support for weak password errors, when there were no error codes
+    if (
+      typeof data === 'object' &&
+      data &&
+      typeof data.weak_password === 'object' &&
+      data.weak_password &&
+      Array.isArray(data.weak_password.reasons) &&
+      data.weak_password.reasons.length &&
+      data.weak_password.reasons.reduce((a: boolean, i: any) => a && typeof i === 'string', true)
+    ) {
+      throw new AuthWeakPasswordError(
+        _getErrorMessage(data),
+        error.status,
+        data.weak_password.reasons
+      )
+    }
+  } else if (errorCode === 'weak_password') {
     throw new AuthWeakPasswordError(
       _getErrorMessage(data),
       error.status,
-      data.weak_password.reasons
+      data.weak_password?.reasons || []
     )
   }
 
-  throw new AuthApiError(_getErrorMessage(data), error.status || 500)
+  throw new AuthApiError(_getErrorMessage(data), error.status || 500, errorCode)
 }
 
 const _getRequestParams = (
@@ -105,14 +130,23 @@ export async function _request(
   url: string,
   options?: GotrueRequestOptions
 ) {
-  const headers = { ...options?.headers }
+  const headers = {
+    ...options?.headers,
+  }
+
+  if (!headers[API_VERSION_HEADER_NAME]) {
+    headers[API_VERSION_HEADER_NAME] = API_VERSIONS['2024-01-01'].name
+  }
+
   if (options?.jwt) {
     headers['Authorization'] = `Bearer ${options.jwt}`
   }
+
   const qs = options?.query ?? {}
   if (options?.redirectTo) {
     qs['redirect_to'] = options.redirectTo
   }
+
   const queryString = Object.keys(qs).length ? '?' + new URLSearchParams(qs).toString() : ''
   const data = await _handleRequest(
     fetcher,

@@ -1,4 +1,4 @@
-import { parseParametersFromURL } from '../src/lib/helpers'
+import { parseParametersFromURL, parseResponseAPIVersion } from '../src/lib/helpers'
 
 describe('parseParametersFromURL', () => {
   it('should parse parameters from a URL with query params only', () => {
@@ -40,6 +40,34 @@ describe('parseParametersFromURL', () => {
       b: 'c',
       d: 'e',
       x: 'z', // search params take precedence
+    })
+  })
+})
+
+describe('parseResponseAPIVersion', () => {
+  it('should parse valid dates', () => {
+    expect(
+      parseResponseAPIVersion({
+        headers: {
+          get: () => {
+            return '2024-01-01'
+          },
+        },
+      } as any)
+    ).toEqual(new Date('2024-01-01T00:00:00.0Z'))
+  })
+
+  it('should return null on invalid dates', () => {
+    ;['2024-01-32', '', 'notadate', 'Sat Feb 24 2024 17:59:17 GMT+0100'].forEach((example) => {
+      expect(
+        parseResponseAPIVersion({
+          headers: {
+            get: () => {
+              return example
+            },
+          },
+        } as any)
+      ).toBeNull()
     })
   })
 })
