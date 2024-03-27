@@ -38,7 +38,7 @@
     "serve:coverage": "npm run test:coverage && serve test/coverage"
   },
   "dependencies": {
-    "@supabase/functions-js": "2.2.0",
+    "@supabase/functions-js": "2.2.2",
     "@supabase/gotrue-js": "2.62.2",
     "@supabase/node-fetch": "2.6.15",
     "@supabase/postgrest-js": "1.9.2",
