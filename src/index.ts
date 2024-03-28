@@ -14,6 +14,8 @@ export {
   FunctionsFetchError,
   FunctionsRelayError,
   FunctionsError,
+  FunctionInvokeOptions,
+  FunctionRegion,
 } from '@supabase/functions-js'
 export * from '@supabase/realtime-js'
 export { default as SupabaseClient } from './SupabaseClient'
