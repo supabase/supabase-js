@@ -63,7 +63,6 @@ export default class PostgrestClient<
   from<ViewName extends string & keyof Schema['Views'], View extends Schema['Views'][ViewName]>(
     relation: ViewName
   ): PostgrestQueryBuilder<Schema, View, ViewName>
-  from(relation: string): PostgrestQueryBuilder<Schema, any, any>
   /**
    * Perform a query on a table or a view.
    *

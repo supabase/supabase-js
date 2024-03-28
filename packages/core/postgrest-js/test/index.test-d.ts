@@ -10,6 +10,7 @@ const postgrest = new PostgrestClient<Database>(REST_URL)
 // table invalid type
 {
   expectError(postgrest.from(42))
+  expectError(postgrest.from('nonexistent_table'))
 }
 
 // `null` can't be used with `.eq()`

@@ -629,6 +629,7 @@ test('throwOnError throws errors instead of returning them', async () => {
   let isErrorCaught = false
 
   try {
+    // @ts-expect-error: nonexistent table
     await postgrest.from('missing_table').select().throwOnError()
   } catch (error) {
     expect(error).toMatchInlineSnapshot(
@@ -642,6 +643,7 @@ test('throwOnError throws errors instead of returning them', async () => {
 
 test('throwOnError throws errors which include stack', async () => {
   try {
+    // @ts-expect-error: nonexistent table
     await postgrest.from('does_not_exist').select().throwOnError()
   } catch (err) {
     expect(err instanceof Error).toBe(true)
