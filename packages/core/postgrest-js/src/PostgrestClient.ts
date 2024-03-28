@@ -106,6 +106,8 @@ export default class PostgrestClient<
    * @param options - Named parameters
    * @param options.head - When set to `true`, `data` will not be returned.
    * Useful if you only need the count.
+   * @param options.get - When set to `true`, the function will be called with
+   * read-only access mode.
    * @param options.count - Count algorithm to use to count rows returned by the
    * function. Only applicable for [set-returning
    * functions](https://www.postgresql.org/docs/current/functions-srf.html).
@@ -127,9 +129,11 @@ export default class PostgrestClient<
     args: Function_['Args'] = {},
     {
       head = false,
+      get = false,
       count,
     }: {
       head?: boolean
+      get?: boolean
       count?: 'exact' | 'planned' | 'estimated'
     } = {}
   ): PostgrestFilterBuilder<
@@ -141,11 +145,16 @@ export default class PostgrestClient<
       : never,
     Function_['Returns']
   > {
-    let method: 'HEAD' | 'POST'
+    let method: 'HEAD' | 'GET' | 'POST'
     const url = new URL(`${this.url}/rpc/${fn}`)
     let body: unknown | undefined
     if (head) {
       method = 'HEAD'
+      Object.entries(args).forEach(([name, value]) => {
+        url.searchParams.append(name, `${value}`)
+      })
+    } else if (get) {
+      method = 'GET'
       Object.entries(args).forEach(([name, value]) => {
         url.searchParams.append(name, `${value}`)
       })

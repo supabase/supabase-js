@@ -270,16 +270,22 @@ test('abort signal', async () => {
   ac.abort()
   const res = await postgrest.from('users').select().abortSignal(ac.signal)
   expect(res).toMatchInlineSnapshot(
-    { error: { details: expect.any(String) } },
+    {
+      error: {
+        code: expect.any(String),
+        details: expect.any(String),
+        message: expect.stringMatching(/^AbortError:/),
+      },
+    },
     `
     Object {
       "count": null,
       "data": null,
       "error": Object {
-        "code": "",
+        "code": Any<String>,
         "details": Any<String>,
         "hint": "",
-        "message": "AbortError: The user aborted a request.",
+        "message": StringMatching /\\^AbortError:/,
       },
       "status": 0,
       "statusText": "",

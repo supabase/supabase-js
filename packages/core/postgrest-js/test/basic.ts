@@ -916,6 +916,23 @@ test('rpc with head:true, count:exact', async () => {
   `)
 })
 
+test('rpc with get:true, count:exact', async () => {
+  const res = await postgrest.rpc(
+    'get_status',
+    { name_param: 'supabot' },
+    { get: true, count: 'exact' }
+  )
+  expect(res).toMatchInlineSnapshot(`
+    Object {
+      "count": 1,
+      "data": "ONLINE",
+      "error": null,
+      "status": 200,
+      "statusText": "OK",
+    }
+  `)
+})
+
 test('rpc with dynamic schema', async () => {
   const res = await postgrest.schema('personal').rpc('get_status', { name_param: 'kiwicopple' })
   expect(res).toMatchInlineSnapshot(`
