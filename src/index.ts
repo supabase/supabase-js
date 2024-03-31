@@ -1,8 +1,8 @@
 import SupabaseClient from './SupabaseClient'
 import type { GenericSchema, SupabaseClientOptions } from './lib/types'
 
-export * from '@supabase/gotrue-js'
-export type { User as AuthUser, Session as AuthSession } from '@supabase/gotrue-js'
+export * from '@supabase/auth-js'
+export type { User as AuthUser, Session as AuthSession } from '@supabase/auth-js'
 export type {
   PostgrestResponse,
   PostgrestSingleResponse,
@@ -14,6 +14,8 @@ export {
   FunctionsFetchError,
   FunctionsRelayError,
   FunctionsError,
+  FunctionInvokeOptions,
+  FunctionRegion,
 } from '@supabase/functions-js'
 export * from '@supabase/realtime-js'
 export { default as SupabaseClient } from './SupabaseClient'
