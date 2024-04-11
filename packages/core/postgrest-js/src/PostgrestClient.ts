@@ -145,19 +145,16 @@ export default class PostgrestClient<
     let method: 'HEAD' | 'GET' | 'POST'
     const url = new URL(`${this.url}/rpc/${fn}`)
     let body: unknown | undefined
-    if (head) {
-      method = 'HEAD'
+    if (head || get) {
+      method = head ? 'HEAD' : 'GET'
       Object.entries(args)
+        // params with undefined value needs to be filtered out, otherwise it'll
+        // show up as `?param=undefined`
         .filter(([_, value]) => value !== undefined)
+        // array values need special syntax
+        .map(([name, value]) => [name, Array.isArray(value) ? `{${value.join(',')}}` : `${value}`])
         .forEach(([name, value]) => {
-          url.searchParams.append(name, `${value}`)
-        })
-    } else if (get) {
-      method = 'GET'
-      Object.entries(args)
-        .filter(([_, value]) => value !== undefined)
-        .forEach(([name, value]) => {
-          url.searchParams.append(name, `${value}`)
+          url.searchParams.append(name, value)
         })
     } else {
       method = 'POST'

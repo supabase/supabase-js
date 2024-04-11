@@ -206,6 +206,12 @@ export type Database = {
       }
     }
     Functions: {
+      function_with_array_param: {
+        Args: {
+          param: string[]
+        }
+        Returns: undefined
+      }
       function_with_optional_param: {
         Args: {
           param?: string

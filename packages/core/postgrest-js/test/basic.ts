@@ -950,6 +950,23 @@ test('rpc with get:true, optional param', async () => {
   `)
 })
 
+test('rpc with get:true, array param', async () => {
+  const res = await postgrest.rpc(
+    'function_with_array_param',
+    { param: ['00000000-0000-0000-0000-000000000000'] },
+    { get: true }
+  )
+  expect(res).toMatchInlineSnapshot(`
+    Object {
+      "count": null,
+      "data": null,
+      "error": null,
+      "status": 204,
+      "statusText": "No Content",
+    }
+  `)
+})
+
 test('rpc with dynamic schema', async () => {
   const res = await postgrest.schema('personal').rpc('get_status', { name_param: 'kiwicopple' })
   expect(res).toMatchInlineSnapshot(`
