@@ -150,14 +150,18 @@ export default class PostgrestClient<
     let body: unknown | undefined
     if (head) {
       method = 'HEAD'
-      Object.entries(args).forEach(([name, value]) => {
-        url.searchParams.append(name, `${value}`)
-      })
+      Object.entries(args)
+        .filter(([_, value]) => value !== undefined)
+        .forEach(([name, value]) => {
+          url.searchParams.append(name, `${value}`)
+        })
     } else if (get) {
       method = 'GET'
-      Object.entries(args).forEach(([name, value]) => {
-        url.searchParams.append(name, `${value}`)
-      })
+      Object.entries(args)
+        .filter(([_, value]) => value !== undefined)
+        .forEach(([name, value]) => {
+          url.searchParams.append(name, `${value}`)
+        })
     } else {
       method = 'POST'
       body = args
