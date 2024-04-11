@@ -474,6 +474,7 @@ export default class RealtimeChannel {
         }
 
         push.receive('ok', () => resolve('ok'))
+        push.receive('error', () => resolve('error'))
         push.receive('timeout', () => resolve('timed out'))
       })
     }
