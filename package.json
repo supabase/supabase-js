@@ -41,7 +41,7 @@
   },
   "dependencies": {
     "@supabase/auth-js": "2.63.0",
-    "@supabase/functions-js": "2.2.2",
+    "@supabase/functions-js": "2.3.0",
     "@supabase/node-fetch": "2.6.15",
     "@supabase/postgrest-js": "1.15.2",
     "@supabase/realtime-js": "2.9.4",
