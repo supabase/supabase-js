@@ -927,7 +927,7 @@ describe('GoTrueClient with storageisServer = true', () => {
     warnings = []
   })
 
-  test('getSession() emits two insecure warnings', async () => {
+  test('getSession() emits no warnings', async () => {
     const storage = memoryLocalStorageAdapter({
       [STORAGE_KEY]: JSON.stringify({
         access_token: 'jwt.accesstoken.signature',
@@ -945,26 +945,9 @@ describe('GoTrueClient with storageisServer = true', () => {
     const client = new GoTrueClient({
       storage,
     })
+    await client.getSession()
 
-    const {
-      data: { session },
-    } = await client.getSession()
-
-    console.log('User is ', session!.user!.id)
-
-    const firstWarning = warnings[0]
-    const lastWarning = warnings[warnings.length - 1]
-
-    expect(
-      firstWarning[0].startsWith(
-        'Using supabase.auth.getSession() is potentially insecure as it loads data directly from the storage medium (typically cookies) which may not be authentic'
-      )
-    ).toEqual(true)
-    expect(
-      lastWarning[0].startsWith(
-        'Using the user object as returned from supabase.auth.getSession() '
-      )
-    ).toEqual(true)
+    expect(warnings.length).toEqual(0)
   })
 
   test('getSession() emits one insecure warning', async () => {
