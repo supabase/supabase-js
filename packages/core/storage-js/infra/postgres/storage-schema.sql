@@ -28,7 +28,6 @@ CREATE TABLE "storage"."objects" (
     "last_accessed_at" timestamptz DEFAULT now(),
     "metadata" jsonb,
     CONSTRAINT "objects_bucketId_fkey" FOREIGN KEY ("bucket_id") REFERENCES "storage"."buckets"("id"),
-    CONSTRAINT "objects_owner_fkey" FOREIGN KEY ("owner") REFERENCES "auth"."users"("id"),
     PRIMARY KEY ("id")
 );
 CREATE UNIQUE INDEX "bucketid_objname" ON "storage"."objects" USING BTREE ("bucket_id","name");
@@ -86,7 +85,7 @@ CREATE OR REPLACE FUNCTION storage.search(prefix text, bucketname text, limits i
  LANGUAGE plpgsql
 AS $function$
 BEGIN
-	return query 
+	return query
 		with files_folders as (
 			select ((string_to_array(objects.name, '/'))[levels]) as folder
 			from objects
@@ -95,8 +94,8 @@ BEGIN
 			GROUP by folder
 			limit limits
 			offset offsets
-		) 
-		select files_folders.folder as name, objects.id, objects.updated_at, objects.created_at, objects.last_accessed_at, objects.metadata from files_folders 
+		)
+		select files_folders.folder as name, objects.id, objects.updated_at, objects.created_at, objects.last_accessed_at, objects.metadata from files_folders
 		left join objects
 		on prefix || files_folders.folder = objects.name and objects.bucket_id=bucketname;
 END

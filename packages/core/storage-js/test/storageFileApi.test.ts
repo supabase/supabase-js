@@ -10,7 +10,7 @@ import fetch from '@supabase/node-fetch'
 // TODO: need to setup storage-api server for this test
 const URL = 'http://localhost:8000/storage/v1'
 const KEY =
-  'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJPbmxpbmUgSldUIEJ1aWxkZXIiLCJpYXQiOjE2ODA5NjcxMTUsImV4cCI6MTcxMjUwMzI1MywiYXVkIjoiIiwic3ViIjoiMzE3ZWFkY2UtNjMxYS00NDI5LWEwYmItZjE5YTdhNTE3YjRhIiwicm9sZSI6ImF1dGhlbnRpY2F0ZWQifQ.NNzc54y9cZ2QLUHVSrCPOcGE2E0i8ouldc-AaWLsI08'
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYXV0aGVudGljYXRlZCIsInN1YiI6IjMxN2VhZGNlLTYzMWEtNDQyOS1hMGJiLWYxOWE3YTUxN2I0YSIsImlhdCI6MTcxMzQzMzgwMCwiZXhwIjoyMDI5MDA5ODAwfQ.jVFIR-MB7rNfUuJaUH-_CyDFZEHezzXiqcRcdrGd29o'
 
 const storage = new StorageClient(URL, { Authorization: `Bearer ${KEY}` })
 
@@ -214,8 +214,8 @@ describe('Object API', () => {
       })
       expect(res.error).toEqual({
         error: 'invalid_mime_type',
-        message: 'mime type not supported',
-        statusCode: '422',
+        message: 'mime type image/jpeg is not supported',
+        statusCode: '415',
       })
     })
 
@@ -288,6 +288,23 @@ describe('Object API', () => {
       expect(res.data?.message).toEqual(`Successfully moved`)
     })
 
+    test('move object across buckets in different path', async () => {
+      const newBucketName = 'bucket-move'
+
+      const newPath = `testpath/file-to-move-${Date.now()}.txt`
+      const upload = await storage.from(bucketName).upload(uploadPath, file)
+
+      const res = await storage.from(bucketName).move(uploadPath, newPath, {
+        destinationBucket: newBucketName,
+      })
+
+      expect(res.error).toBeNull()
+      expect(res.data?.message).toEqual(`Successfully moved`)
+
+      const { error } = await storage.from(newBucketName).download(newPath)
+      expect(error).toBeNull()
+    })
+
     test('copy object to different path', async () => {
       const newPath = `testpath/file-copied-${Date.now()}.txt`
       await storage.from(bucketName).upload(uploadPath, file)
@@ -295,6 +312,18 @@ describe('Object API', () => {
 
       expect(res.error).toBeNull()
       expect(res.data?.path).toEqual(`${bucketName}/${newPath}`)
+    })
+
+    test('copy object across buckets to different path', async () => {
+      const newBucketName = 'bucket-move'
+      const newPath = `testpath/file-copied-${Date.now()}.txt`
+      await storage.from(bucketName).upload(uploadPath, file)
+      const res = await storage.from(bucketName).copy(uploadPath, newPath, {
+        destinationBucket: newBucketName,
+      })
+
+      expect(res.error).toBeNull()
+      expect(res.data?.path).toEqual(`${newBucketName}/${newPath}`)
     })
 
     test('downloads an object', async () => {

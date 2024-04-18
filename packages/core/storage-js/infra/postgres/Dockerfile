@@ -3,7 +3,6 @@ FROM supabase/postgres:0.13.0
 COPY 00-initial-schema.sql /docker-entrypoint-initdb.d/00-initial-schema.sql
 COPY auth-schema.sql /docker-entrypoint-initdb.d/01-auth-schema.sql
 COPY storage-schema.sql /docker-entrypoint-initdb.d/02-storage-schema.sql
-COPY dummy-data.sql /docker-entrypoint-initdb.d/03-dummy-data.sql
 
 # Build time defaults
 ARG build_POSTGRES_DB=postgres

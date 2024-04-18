@@ -45,6 +45,10 @@ export interface FileOptions {
   duplex?: string
 }
 
+export interface DestinationOptions {
+  destinationBucket?: string
+}
+
 export interface SearchOptions {
   /**
    *  The number of files you want to be returned.

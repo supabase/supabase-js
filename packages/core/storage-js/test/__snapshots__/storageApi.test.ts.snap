@@ -4,7 +4,7 @@ exports[`bucket api Get bucket by id 1`] = `
 {
   "allowed_mime_types": null,
   "created_at": "2021-02-17T04:43:32.770Z",
-  "file_size_limit": 0,
+  "file_size_limit": null,
   "id": "bucket2",
   "name": "bucket2",
   "owner": "4d56e902-f0a0-4662-8448-a4d9e643c142",

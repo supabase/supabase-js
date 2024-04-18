@@ -43,6 +43,7 @@ services:
       - assets-volume:/tmp/storage
     healthcheck:
       test: ['CMD-SHELL', 'curl -f -LI http://localhost:5000/status']
+      interval: 2s
   db:
     build:
       context: ./postgres
@@ -62,6 +63,20 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+
+  dummy_data:
+    build:
+      context: ./postgres
+    depends_on:
+      storage:
+        condition: service_healthy
+    volumes:
+      - ./postgres:/sql
+    command:
+      - psql
+      - "postgresql://postgres:postgres@db:5432/postgres"
+      - -f
+      - /sql/dummy-data.sql
 
   imgproxy:
     image: darthsim/imgproxy

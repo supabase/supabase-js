@@ -7,6 +7,7 @@ import {
   SearchOptions,
   FetchParameters,
   TransformOptions,
+  DestinationOptions,
 } from '../lib/types'
 
 const DEFAULT_SEARCH_OPTIONS = {
@@ -68,7 +69,7 @@ export default class StorageFileApi {
     fileOptions?: FileOptions
   ): Promise<
     | {
-        data: { id: string, path: string, fullPath: string }
+        data: { id: string; path: string; fullPath: string }
         error: null
       }
     | {
@@ -138,7 +139,7 @@ export default class StorageFileApi {
     fileOptions?: FileOptions
   ): Promise<
     | {
-        data: { id: string, path: string, fullPath: string }
+        data: { id: string; path: string; fullPath: string }
         error: null
       }
     | {
@@ -282,7 +283,7 @@ export default class StorageFileApi {
     fileOptions?: FileOptions
   ): Promise<
     | {
-        data: { id: string, path: string, fullPath: string }
+        data: { id: string; path: string; fullPath: string }
         error: null
       }
     | {
@@ -298,10 +299,12 @@ export default class StorageFileApi {
    *
    * @param fromPath The original file path, including the current file name. For example `folder/image.png`.
    * @param toPath The new file path, including the new file name. For example `folder/image-new.png`.
+   * @param options The destination options.
    */
   async move(
     fromPath: string,
-    toPath: string
+    toPath: string,
+    options?: DestinationOptions
   ): Promise<
     | {
         data: { message: string }
@@ -316,7 +319,12 @@ export default class StorageFileApi {
       const data = await post(
         this.fetch,
         `${this.url}/object/move`,
-        { bucketId: this.bucketId, sourceKey: fromPath, destinationKey: toPath },
+        {
+          bucketId: this.bucketId,
+          sourceKey: fromPath,
+          destinationKey: toPath,
+          destinationBucket: options?.destinationBucket,
+        },
         { headers: this.headers }
       )
       return { data, error: null }
@@ -334,10 +342,12 @@ export default class StorageFileApi {
    *
    * @param fromPath The original file path, including the current file name. For example `folder/image.png`.
    * @param toPath The new file path, including the new file name. For example `folder/image-copy.png`.
+   * @param options The destination options.
    */
   async copy(
     fromPath: string,
-    toPath: string
+    toPath: string,
+    options?: DestinationOptions
   ): Promise<
     | {
         data: { path: string }
@@ -352,7 +362,12 @@ export default class StorageFileApi {
       const data = await post(
         this.fetch,
         `${this.url}/object/copy`,
-        { bucketId: this.bucketId, sourceKey: fromPath, destinationKey: toPath },
+        {
+          bucketId: this.bucketId,
+          sourceKey: fromPath,
+          destinationKey: toPath,
+          destinationBucket: options?.destinationBucket,
+        },
         { headers: this.headers }
       )
       return { data: { path: data.Key }, error: null }
