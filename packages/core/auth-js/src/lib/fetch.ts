@@ -177,9 +177,6 @@ async function _handleRequest(
   try {
     result = await fetcher(url, {
       ...requestParams,
-      // UNDER NO CIRCUMSTANCE SHOULD THIS OPTION BE REMOVED, YOU MAY BE OPENING UP A SECURITY HOLE IN NEXT.JS APPS
-      // https://nextjs.org/docs/app/building-your-application/caching#opting-out-1
-      cache: 'no-store',
     })
   } catch (e) {
     console.error(e)
