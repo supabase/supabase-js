@@ -1174,11 +1174,6 @@ export default class GoTrueClient {
           throw error
         }
 
-        if (!data.session?.access_token) {
-          // if there's no access token, the user can't be fetched
-          return { data: { user: null }, error: new AuthSessionMissingError() }
-        }
-
         return await _request(this.fetch, 'GET', `${this.url}/user`, {
           headers: this.headers,
           jwt: data.session?.access_token ?? undefined,
