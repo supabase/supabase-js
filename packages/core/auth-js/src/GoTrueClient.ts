@@ -1174,8 +1174,7 @@ export default class GoTrueClient {
           throw error
         }
 
-        const hasAccessToken = data.session?.access_token || this.headers['Authorization']
-        if (!hasAccessToken) {
+        if (!data.session?.access_token) {
           // if there's no access token, the user can't be fetched
           return { data: { user: null }, error: new AuthSessionMissingError() }
         }
