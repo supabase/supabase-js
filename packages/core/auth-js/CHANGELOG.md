@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.64.1](https://github.com/supabase/auth-js/compare/v2.64.0...v2.64.1) (2024-04-25)
+
+
+### Bug Fixes
+
+* return error if missing session or missing custom auth header ([#891](https://github.com/supabase/auth-js/issues/891)) ([8d16578](https://github.com/supabase/auth-js/commit/8d165787ec46929cba68d18c35161463240f61e3))
+
 ## [2.64.0](https://github.com/supabase/auth-js/compare/v2.63.2...v2.64.0) (2024-04-25)
 
 
