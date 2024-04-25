@@ -100,6 +100,7 @@ const DEFAULT_OPTIONS: Omit<Required<GoTrueClientOptions>, 'fetch' | 'storage' |
   headers: DEFAULT_HEADERS,
   flowType: 'implicit',
   debug: false,
+  hasCustomAuthorizationHeader: false,
 }
 
 /** Current session will be checked for refresh at this interval. */
@@ -154,6 +155,7 @@ export default class GoTrueClient {
   protected headers: {
     [key: string]: string
   }
+  protected hasCustomAuthorizationHeader = false
   protected fetch: Fetch
   protected lock: LockFunc
   protected lockAcquired = false
@@ -202,6 +204,7 @@ export default class GoTrueClient {
     this.lock = settings.lock || lockNoOp
     this.detectSessionInUrl = settings.detectSessionInUrl
     this.flowType = settings.flowType
+    this.hasCustomAuthorizationHeader = settings.hasCustomAuthorizationHeader
 
     if (settings.lock) {
       this.lock = settings.lock
@@ -1172,6 +1175,11 @@ export default class GoTrueClient {
         const { data, error } = result
         if (error) {
           throw error
+        }
+
+        // returns an error if there is no access_token or custom authorization header
+        if (!data.session?.access_token && !this.hasCustomAuthorizationHeader) {
+          return { data: { user: null }, error: new AuthSessionMissingError() }
         }
 
         return await _request(this.fetch, 'GET', `${this.url}/user`, {

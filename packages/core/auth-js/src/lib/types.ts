@@ -80,6 +80,11 @@ export type GoTrueClientOptions = {
    * @experimental
    */
   lock?: LockFunc
+  /**
+   * Set to "true" if there is a custom authorization header set globally.
+   * @experimental
+   */
+  hasCustomAuthorizationHeader?: boolean
 }
 
 export type WeakPasswordReasons = 'length' | 'characters' | 'pwned' | string
