@@ -41,9 +41,6 @@
     "ws": "^8.14.2"
   },
   "devDependencies": {
-    "@babel/runtime": "^7.9.2",
-    "babel-preset-env": "^1.7.0",
-    "babel-register": "^6.26.0",
     "eslint": "^7.0.0",
     "esm": "^3.2.25",
     "jsdom": "^16.7.0",
