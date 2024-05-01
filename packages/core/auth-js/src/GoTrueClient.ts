@@ -1571,7 +1571,12 @@ export default class GoTrueClient {
         if (error) {
           // ignore 404s since user might not exist anymore
           // ignore 401s since an invalid or expired JWT should sign out the current session
-          if (!(isAuthApiError(error) && (error.status === 404 || error.status === 401))) {
+          if (
+            !(
+              isAuthApiError(error) &&
+              (error.status === 404 || error.status === 401 || error.status === 403)
+            )
+          ) {
             return { error }
           }
         }

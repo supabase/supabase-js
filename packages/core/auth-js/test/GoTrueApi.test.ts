@@ -404,7 +404,8 @@ describe('GoTrueAdminApi', () => {
         })
 
         expect(user).toBeNull()
-        expect(error?.message).toEqual('User not found')
+        expect(error?.message).toEqual('Token has expired or is invalid')
+        expect(error?.status).toEqual(403)
       })
 
       test('verifyOTP() with invalid phone number', async () => {

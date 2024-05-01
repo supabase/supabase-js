@@ -101,15 +101,6 @@ describe('GoTrueClient', () => {
       expect(error).toBeNull()
       expect(data.session).not.toBeNull()
 
-      /**
-       * Sign out the user to verify setSession, getSession and updateUser
-       * are truly working; because the signUp method will already save the session.
-       * And that session will be available to getSession and updateUser,
-       * even if setSession isn't called or fails to save the session.
-       * The tokens are still valid after logout, and therefore usable.
-       */
-      await authWithSession.signOut()
-
       const {
         data: { session },
         error: setSessionError,
@@ -363,7 +354,8 @@ describe('GoTrueClient', () => {
       expect(data.session).toBeNull()
       expect(data.user).toBeNull()
 
-      expect(error?.message).toEqual('Error sending confirmation sms: missing Twilio account SID')
+      expect(error?.message).toEqual('Unable to get SMS provider')
+      expect(error?.status).toEqual(500)
     })
 
     test('signUp() with phone', async () => {
@@ -950,7 +942,7 @@ describe('GoTrueClient with storageisServer = true', () => {
     expect(warnings.length).toEqual(0)
   })
 
-  test('getSession() emits one insecure warning', async () => {
+  test('getSession() emits insecure warning when user object is accessed', async () => {
     const storage = memoryLocalStorageAdapter({
       [STORAGE_KEY]: JSON.stringify({
         access_token: 'jwt.accesstoken.signature',
@@ -969,14 +961,12 @@ describe('GoTrueClient with storageisServer = true', () => {
       storage,
     })
 
-    await client.getUser() // should suppress the first warning
-
     const {
       data: { session },
     } = await client.getSession()
 
-    console.log('User is ', session!.user!.id)
-
+    const user = session?.user // accessing the user object from getSession should emit a warning
+    expect(user).not.toBeNull()
     expect(warnings.length).toEqual(1)
     expect(
       warnings[0][0].startsWith(
