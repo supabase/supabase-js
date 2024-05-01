@@ -10,6 +10,7 @@ import {
   clientApiAutoConfirmDisabledClient as signUpDisabledClient,
   clientApiAutoConfirmEnabledClient as signUpEnabledClient,
   authAdminApiAutoConfirmEnabledClient,
+  GOTRUE_URL_SIGNUP_ENABLED_AUTO_CONFIRM_ON,
 } from './lib/clients'
 import { mockUserCredentials } from './lib/utils'
 
@@ -973,5 +974,34 @@ describe('GoTrueClient with storageisServer = true', () => {
         'Using the user object as returned from supabase.auth.getSession() '
       )
     ).toEqual(true)
+  })
+
+  test('getSession emits no warnings if getUser is called prior', async () => {
+    const client = new GoTrueClient({
+      url: GOTRUE_URL_SIGNUP_ENABLED_AUTO_CONFIRM_ON,
+      autoRefreshToken: false,
+      persistSession: true,
+      storage: {
+        ...memoryLocalStorageAdapter(),
+        isServer: true,
+      },
+    })
+    const { email, password } = mockUserCredentials()
+    await client.signUp({ email, password })
+
+    const {
+      data: { user },
+      error,
+    } = await client.getUser() // should suppress any warnings
+    expect(error).toBeNull()
+    expect(user).not.toBeNull()
+
+    const {
+      data: { session },
+    } = await client.getSession()
+
+    const sessionUser = session?.user // accessing the user object from getSession shouldn't emit a warning
+    expect(sessionUser).not.toBeNull()
+    expect(warnings.length).toEqual(0)
   })
 })

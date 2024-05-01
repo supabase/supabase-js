@@ -156,6 +156,7 @@ export default class GoTrueClient {
     [key: string]: string
   }
   protected hasCustomAuthorizationHeader = false
+  protected suppressGetSessionWarning = false
   protected fetch: Fetch
   protected lock: LockFunc
   protected lockAcquired = false
@@ -1112,9 +1113,10 @@ export default class GoTrueClient {
 
       if (!hasExpired) {
         if (this.storage.isServer) {
+          const suppressWarning = this.suppressGetSessionWarning
           const proxySession: Session = new Proxy(currentSession, {
             get(target: any, prop: string, receiver: any) {
-              if (prop === 'user') {
+              if (!suppressWarning && prop === 'user') {
                 // only show warning when the user object is being accessed from the server
                 console.warn(
                   'Using the user object as returned from supabase.auth.getSession() or from some supabase.auth.onAuthStateChange() events could be insecure! This value comes directly from the storage medium (usually cookies on the server) and many not be authentic. Use supabase.auth.getUser() instead which authenticates the data by contacting the Supabase Auth server.'
@@ -2028,7 +2030,9 @@ export default class GoTrueClient {
    */
   private async _saveSession(session: Session) {
     this._debug('#_saveSession()', session)
-
+    // _saveSession is always called whenever a new session has been acquired
+    // so we can safely suppress the warning returned by future getSession calls
+    this.suppressGetSessionWarning = true
     await setItemAsync(this.storage, this.storageKey, session)
   }
 
