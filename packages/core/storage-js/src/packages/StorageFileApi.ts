@@ -220,9 +220,11 @@ export default class StorageFileApi {
    * Signed upload URLs can be used to upload files to the bucket without further authentication.
    * They are valid for 2 hours.
    * @param path The file path, including the current file name. For example `folder/image.png`.
+   * @param options.upsert If set to true, allows the file to be overwritten if it already exists.
    */
   async createSignedUploadUrl(
-    path: string
+    path: string,
+    options?: { upsert: boolean }
   ): Promise<
     | {
         data: { signedUrl: string; token: string; path: string }
@@ -236,11 +238,17 @@ export default class StorageFileApi {
     try {
       let _path = this._getFinalPath(path)
 
+      const headers = { ...this.headers }
+
+      if (options?.upsert) {
+        headers['x-upsert'] = 'true'
+      }
+
       const data = await post(
         this.fetch,
         `${this.url}/object/upload/sign/${_path}`,
         {},
-        { headers: this.headers }
+        { headers }
       )
 
       const url = new URL(this.url + data.url)

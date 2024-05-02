@@ -242,6 +242,26 @@ describe('Object API', () => {
       expect(uploadRes.data?.path).toEqual(uploadPath)
     })
 
+    test('can upload overwriting files with a signed url', async () => {
+      const { error: uploadErr } = await storage.from(bucketName).upload(uploadPath, file)
+
+      expect(uploadErr).toBeNull()
+
+      const { data, error } = await storage.from(bucketName).createSignedUploadUrl(uploadPath, {
+        upsert: true,
+      })
+
+      expect(error).toBeNull()
+      assert(data?.path)
+
+      const uploadRes = await storage
+        .from(bucketName)
+        .uploadToSignedUrl(data.path, data.token, file)
+
+      expect(uploadRes.error).toBeNull()
+      expect(uploadRes.data?.path).toEqual(uploadPath)
+    })
+
     test('cannot upload to a signed url twice', async () => {
       const { data, error } = await storage.from(bucketName).createSignedUploadUrl(uploadPath)
 
@@ -258,6 +278,7 @@ describe('Object API', () => {
       const uploadRes2 = await storage
         .from(bucketName)
         .uploadToSignedUrl(data.path, data.token, file)
+
       expect(uploadRes2.error).toEqual({
         error: 'Duplicate',
         message: 'The resource already exists',
