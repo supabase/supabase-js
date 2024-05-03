@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.64.2](https://github.com/supabase/auth-js/compare/v2.64.1...v2.64.2) (2024-05-03)
+
+
+### Bug Fixes
+
+* signOut should ignore 403s ([#894](https://github.com/supabase/auth-js/issues/894)) ([eeb77ce](https://github.com/supabase/auth-js/commit/eeb77ce2a1ddee94c38f17533c9b748bf2950f67))
+* suppress getSession warning whenever _saveSession is called ([#895](https://github.com/supabase/auth-js/issues/895)) ([59ec9af](https://github.com/supabase/auth-js/commit/59ec9affa01c780fb18f668291fa7167a65c391d))
+
 ## [2.64.1](https://github.com/supabase/auth-js/compare/v2.64.0...v2.64.1) (2024-04-25)
 
 
