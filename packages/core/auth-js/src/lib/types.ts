@@ -129,7 +129,7 @@ export type AuthResponsePassword =
 /**
  * AuthOtpResponse is returned when OTP is used.
  *
- * {@see AuthRsponse}
+ * {@see AuthResponse}
  */
 export type AuthOtpResponse =
   | {
