@@ -1113,14 +1113,16 @@ export default class GoTrueClient {
 
       if (!hasExpired) {
         if (this.storage.isServer) {
-          const suppressWarning = this.suppressGetSessionWarning
+          let suppressWarning = this.suppressGetSessionWarning
           const proxySession: Session = new Proxy(currentSession, {
-            get(target: any, prop: string, receiver: any) {
+            get: (target: any, prop: string, receiver: any) => {
               if (!suppressWarning && prop === 'user') {
                 // only show warning when the user object is being accessed from the server
                 console.warn(
                   'Using the user object as returned from supabase.auth.getSession() or from some supabase.auth.onAuthStateChange() events could be insecure! This value comes directly from the storage medium (usually cookies on the server) and many not be authentic. Use supabase.auth.getUser() instead which authenticates the data by contacting the Supabase Auth server.'
                 )
+                suppressWarning = true // keeps this proxy instance from logging additional warnings
+                this.suppressGetSessionWarning = true // keeps this client's future proxy instances from warning
               }
               return Reflect.get(target, prop, receiver)
             },
