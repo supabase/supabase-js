@@ -248,7 +248,7 @@ describe('params reached to function', () => {
         'custom-header': customHeader,
         Authorization: `Bearer ${apiKey}`,
       },
-      region: FunctionRegion.Any
+      region: FunctionRegion.Any,
     })
 
     log('assert no error')
@@ -278,23 +278,25 @@ describe('params reached to function', () => {
      * @feature headers
      */
     log('create FunctionsClient')
-    const fclient = new FunctionsClient(`http://localhost:${relay.container.getMappedPort(8081)}`,{region: FunctionRegion.ApNortheast1})
+    const fclient = new FunctionsClient(`http://localhost:${relay.container.getMappedPort(8081)}`, {
+      region: FunctionRegion.ApNortheast1,
+    })
 
     log('invoke mirror')
     const customHeader = nanoid()
-  
 
     const { data, error } = await fclient.invoke<MirrorResponse>('mirror', {
       headers: {
         'custom-header': customHeader,
-        Authorization: `Bearer ${apiKey}`
+        Authorization: `Bearer ${apiKey}`,
       },
     })
 
     log('assert no error')
     expect(
-      (data?.headers as [Array<string>]).filter(([k, v]) => k === 'x-region' && v === FunctionRegion.ApNortheast1)
-        .length > 0
+      (data?.headers as [Array<string>]).filter(
+        ([k, v]) => k === 'x-region' && v === FunctionRegion.ApNortheast1
+      ).length > 0
     ).toBe(true)
   })
 

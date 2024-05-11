@@ -71,7 +71,7 @@ export type FunctionInvokeOptions = {
   /**
    * The Region to invoke the function in.
    */
-  region?: FunctionRegion;
+  region?: FunctionRegion
   /**
    * The body of the request.
    */
