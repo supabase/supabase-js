@@ -19,6 +19,7 @@ jobs:
 
     permissions:
       contents: write
+      issues: write
       id-token: write
 
     steps:
