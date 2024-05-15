@@ -23,7 +23,7 @@ export function applySettingDefaults<
 >(
   options: SupabaseClientOptions<SchemaName>,
   defaults: SupabaseClientOptions<any>
-): SupabaseClientOptions<SchemaName> {
+): Required<SupabaseClientOptions<SchemaName>> {
   const {
     db: dbOptions,
     auth: authOptions,
