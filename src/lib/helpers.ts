@@ -29,12 +29,14 @@ export function applySettingDefaults<
     auth: authOptions,
     realtime: realtimeOptions,
     global: globalOptions,
+    postgrest: postgrestOptions,
   } = options
   const {
     db: DEFAULT_DB_OPTIONS,
     auth: DEFAULT_AUTH_OPTIONS,
     realtime: DEFAULT_REALTIME_OPTIONS,
     global: DEFAULT_GLOBAL_OPTIONS,
+    postgrest: DEFAULT_POSTGREST_OPTIONS,
   } = defaults
 
   return {
@@ -53,6 +55,10 @@ export function applySettingDefaults<
     global: {
       ...DEFAULT_GLOBAL_OPTIONS,
       ...globalOptions,
+    },
+    postgrest: {
+      ...DEFAULT_POSTGREST_OPTIONS,
+      ...postgrestOptions,
     },
   }
 }

@@ -17,6 +17,7 @@ import {
   DEFAULT_DB_OPTIONS,
   DEFAULT_AUTH_OPTIONS,
   DEFAULT_REALTIME_OPTIONS,
+  DEFAULT_POSTGREST_OPTIONS,
 } from './lib/constants'
 import { fetchWithAuth } from './lib/fetch'
 import { stripTrailingSlash, applySettingDefaults } from './lib/helpers'
@@ -88,6 +89,7 @@ export default class SupabaseClient<
       realtime: DEFAULT_REALTIME_OPTIONS,
       auth: { ...DEFAULT_AUTH_OPTIONS, storageKey: defaultStorageKey },
       global: DEFAULT_GLOBAL_OPTIONS,
+      postgrest: DEFAULT_POSTGREST_OPTIONS,
     }
 
     const settings = applySettingDefaults(options ?? {}, DEFAULTS)
@@ -103,7 +105,7 @@ export default class SupabaseClient<
     this.fetch = fetchWithAuth(supabaseKey, this._getAccessToken.bind(this), settings.global?.fetch)
 
     this.realtime = this._initRealtimeClient({ headers: this.headers, ...settings.realtime })
-    this.rest = new PostgrestClient(`${_supabaseUrl}/rest/v1`, {
+    this.rest = new PostgrestClient(`${_supabaseUrl}${settings.postgrest?.routePrefix}`, {
       headers: this.headers,
       schema: settings.db?.schema,
       fetch: this.fetch,

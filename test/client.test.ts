@@ -67,6 +67,28 @@ describe('Dynamic schema', () => {
   })
 })
 
+describe('PostgREST prefix', () => {
+  test('is /rest/v1 by default', async () => {
+    const client = createClient<Database>('HTTP://localhost:3000', KEY)
+
+    // @ts-ignore
+    const restUrl = client.rest.url
+
+    expect(restUrl).toEqual('HTTP://localhost:3000/rest/v1')
+  })
+
+  test('is set to custom value when provided', async () => {
+    const client = createClient<Database>('HTTP://localhost:3000', KEY, {
+      postgrest: { routePrefix: '/custom' },
+    })
+
+    // @ts-ignore
+    const restUrl = client.rest.url
+
+    expect(restUrl).toEqual('HTTP://localhost:3000/custom')
+  })
+})
+
 // Socket should close when there are no open connections
 // https://github.com/supabase/supabase-js/issues/44
 

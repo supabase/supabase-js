@@ -66,6 +66,12 @@ export type SupabaseClientOptions<SchemaName> = {
      */
     headers?: Record<string, string>
   }
+  postgrest?: {
+    /**
+     * The route prefix for your PostgREST endpoint. Defaults to `/rest/v1`.
+     */
+    routePrefix?: string
+  }
 }
 
 export type GenericTable = {
