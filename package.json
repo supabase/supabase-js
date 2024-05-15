@@ -19,10 +19,7 @@
   "module": "dist/module/index.js",
   "types": "dist/module/index.d.ts",
   "sideEffects": false,
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/supabase/supabase-js.git"
-  },
+  "repository": "supabase/supabase-js",
   "scripts": {
     "clean": "rimraf dist docs/v2",
     "format": "prettier --write \"{src,test}/**/*.ts\"",
