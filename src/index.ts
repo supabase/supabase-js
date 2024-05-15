@@ -14,7 +14,7 @@ export {
   FunctionsFetchError,
   FunctionsRelayError,
   FunctionsError,
-  FunctionInvokeOptions,
+  type FunctionInvokeOptions,
   FunctionRegion,
 } from '@supabase/functions-js'
 export * from '@supabase/realtime-js'

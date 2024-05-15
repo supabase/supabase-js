@@ -13,6 +13,7 @@
 
     "esModuleInterop": true,
     "moduleResolution": "Node",
+    "isolatedModules": true,
 
     "forceConsistentCasingInFileNames": true,
     "stripInternal": true,
