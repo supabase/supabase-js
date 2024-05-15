@@ -115,7 +115,7 @@ export default class SupabaseClient<
   /**
    * Supabase Functions allows you to deploy and invoke edge functions.
    */
-  get functions() {
+  get functions(): FunctionsClient {
     return new FunctionsClient(this.functionsUrl, {
       headers: this.headers,
       customFetch: this.fetch,
@@ -125,7 +125,7 @@ export default class SupabaseClient<
   /**
    * Supabase Storage allows you to manage user-generated content, such as photos or videos.
    */
-  get storage() {
+  get storage(): SupabaseStorageClient {
     return new SupabaseStorageClient(this.storageUrl, this.headers, this.fetch)
   }
 
