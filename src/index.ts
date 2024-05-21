@@ -1,3 +1,5 @@
+// Always update wrapper.mjs when updating this file.
+
 import SupabaseClient from './SupabaseClient'
 import type { GenericSchema, SupabaseClientOptions } from './lib/types'
 
