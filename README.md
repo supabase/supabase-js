@@ -60,7 +60,6 @@ You can use `<script type="module">` to import supabase-js from CDNs, like:
 </script>
 ```
 
-
 ### Deno
 
 You can use supabase-js in the Deno runtime via esm.sh:
