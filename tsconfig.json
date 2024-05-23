@@ -5,7 +5,7 @@
     "declaration": true,
     "declarationMap": true,
     "module": "CommonJS",
-    "outDir": "dist/cjs",
+    "outDir": "dist/main",
     "sourceMap": true,
     "target": "ES2015",
 
