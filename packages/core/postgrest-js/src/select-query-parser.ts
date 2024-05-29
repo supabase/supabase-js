@@ -228,7 +228,9 @@ type ConstructFieldDefinition<
               ? R
               : unknown
           > extends true
-          ? Child | null
+          ? Field extends { inner: true }
+            ? Child
+            : Child | null
           : Relationships extends unknown[]
           ? HasFKey<Field['hint'], Relationships> extends true
             ? Field extends { inner: true }
@@ -259,7 +261,9 @@ type ConstructFieldDefinition<
               ? R
               : unknown
           > extends true
-          ? Child | null
+          ? Field extends { inner: true }
+            ? Child
+            : Child | null
           : Relationships extends unknown[]
           ? HasFKeyToFRel<Field['original'], Relationships> extends true
             ? Field extends { inner: true }

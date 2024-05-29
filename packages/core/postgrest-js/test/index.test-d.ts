@@ -154,12 +154,18 @@ const postgrest = new PostgrestClient<Database>(REST_URL)
 {
   const { data: message, error } = await postgrest
     .from('messages')
-    .select('user:users!inner(*)')
+    .select('channels!inner(*, channel_details!inner(*))')
     .single()
   if (error) {
     throw new Error(error.message)
   }
-  expectType<Database['public']['Tables']['users']['Row']>(message.user)
+  type ExpectedType = Prettify<
+    Database['public']['Tables']['channels']['Row'] & {
+      channel_details: Database['public']['Tables']['channel_details']['Row']
+    }
+  >
+
+  expectType<ExpectedType>(message.channels)
 }
 
 // one-to-many relationship
