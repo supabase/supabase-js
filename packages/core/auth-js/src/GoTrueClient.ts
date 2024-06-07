@@ -369,8 +369,6 @@ export default class GoTrueClient {
    */
   async signInAnonymously(credentials?: SignInAnonymouslyCredentials): Promise<AuthResponse> {
     try {
-      await this._removeSession()
-
       const res = await _request(this.fetch, 'POST', `${this.url}/signup`, {
         headers: this.headers,
         body: {
@@ -414,8 +412,6 @@ export default class GoTrueClient {
    */
   async signUp(credentials: SignUpWithPasswordCredentials): Promise<AuthResponse> {
     try {
-      await this._removeSession()
-
       let res: AuthResponse
       if ('email' in credentials) {
         const { email, password, options } = credentials
@@ -495,8 +491,6 @@ export default class GoTrueClient {
     credentials: SignInWithPasswordCredentials
   ): Promise<AuthTokenResponsePassword> {
     try {
-      await this._removeSession()
-
       let res: AuthResponsePassword
       if ('email' in credentials) {
         const { email, password, options } = credentials
@@ -557,8 +551,6 @@ export default class GoTrueClient {
    * This method supports the PKCE flow.
    */
   async signInWithOAuth(credentials: SignInWithOAuthCredentials): Promise<OAuthResponse> {
-    await this._removeSession()
-
     return await this._handleProviderSignIn(credentials.provider, {
       redirectTo: credentials.options?.redirectTo,
       scopes: credentials.options?.scopes,
@@ -621,8 +613,6 @@ export default class GoTrueClient {
    * should be enabled and configured.
    */
   async signInWithIdToken(credentials: SignInWithIdTokenCredentials): Promise<AuthTokenResponse> {
-    await this._removeSession()
-
     try {
       const { options, provider, token, access_token, nonce } = credentials
 
@@ -679,8 +669,6 @@ export default class GoTrueClient {
    */
   async signInWithOtp(credentials: SignInWithPasswordlessCredentials): Promise<AuthOtpResponse> {
     try {
-      await this._removeSession()
-
       if ('email' in credentials) {
         const { email, options } = credentials
         let codeChallenge: string | null = null
@@ -734,11 +722,6 @@ export default class GoTrueClient {
    */
   async verifyOtp(params: VerifyOtpParams): Promise<AuthResponse> {
     try {
-      if (params.type !== 'email_change' && params.type !== 'phone_change') {
-        // we don't want to remove the authenticated session if the user is performing an email_change or phone_change verification
-        await this._removeSession()
-      }
-
       let redirectTo = undefined
       let captchaToken = undefined
       if ('options' in params) {
@@ -800,7 +783,6 @@ export default class GoTrueClient {
    */
   async signInWithSSO(params: SignInWithSSO): Promise<SSOResponse> {
     try {
-      await this._removeSession()
       let codeChallenge: string | null = null
       let codeChallengeMethod: string | null = null
       if (this.flowType === 'pkce') {
@@ -874,10 +856,6 @@ export default class GoTrueClient {
    */
   async resend(credentials: ResendParams): Promise<AuthOtpResponse> {
     try {
-      if (credentials.type != 'email_change' && credentials.type != 'phone_change') {
-        await this._removeSession()
-      }
-
       const endpoint = `${this.url}/resend`
       if ('email' in credentials) {
         const { email, type, options } = credentials

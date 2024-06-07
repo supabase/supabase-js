@@ -13,6 +13,7 @@ import {
   GOTRUE_URL_SIGNUP_ENABLED_AUTO_CONFIRM_ON,
 } from './lib/clients'
 import { mockUserCredentials } from './lib/utils'
+import { Session } from '../src'
 
 describe('GoTrueClient', () => {
   // @ts-expect-error 'Allow access to private _refreshAccessToken'
@@ -1015,5 +1016,53 @@ describe('GoTrueClient with storageisServer = true', () => {
     const sessionUser = session?.user // accessing the user object from getSession shouldn't emit a warning
     expect(sessionUser).not.toBeNull()
     expect(warnings.length).toEqual(0)
+  })
+
+  test('saveSession should overwrite the existing session', async () => {
+    const store = memoryLocalStorageAdapter()
+    const client = new GoTrueClient({
+      url: GOTRUE_URL_SIGNUP_ENABLED_AUTO_CONFIRM_ON,
+      storageKey: 'test-storage-key',
+      autoRefreshToken: false,
+      persistSession: true,
+      storage: {
+        ...store,
+      },
+    })
+    const initialSession: Session = {
+      access_token: 'test-access-token',
+      refresh_token: 'test-refresh-token',
+      expires_in: 3600,
+      token_type: 'bearer',
+      user: {
+        id: 'test-user-id',
+        aud: 'test-audience',
+        user_metadata: {},
+        app_metadata: {},
+        created_at: new Date().toISOString(),
+      },
+    }
+
+    // @ts-ignore 'Allow access to private _saveSession'
+    await client._saveSession(initialSession)
+    expect(store.getItem('test-storage-key')).toEqual(JSON.stringify(initialSession))
+
+    const newSession: Session = {
+      access_token: 'test-new-access-token',
+      refresh_token: 'test-new-refresh-token',
+      expires_in: 3600,
+      token_type: 'bearer',
+      user: {
+        id: 'test-user-id',
+        aud: 'test-audience',
+        user_metadata: {},
+        app_metadata: {},
+        created_at: new Date().toISOString(),
+      },
+    }
+
+    // @ts-ignore 'Allow access to private _saveSession'
+    await client._saveSession(newSession)
+    expect(store.getItem('test-storage-key')).toEqual(JSON.stringify(newSession))
   })
 })
