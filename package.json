@@ -45,7 +45,7 @@
     "@supabase/node-fetch": "2.6.15",
     "@supabase/postgrest-js": "1.15.2",
     "@supabase/realtime-js": "2.9.5",
-    "@supabase/storage-js": "2.5.5"
+    "@supabase/storage-js": "2.6.0"
   },
   "devDependencies": {
     "@sebbo2002/semantic-release-jsr": "^1.0.0",
