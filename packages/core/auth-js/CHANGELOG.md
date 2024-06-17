@@ -1,5 +1,15 @@
 # Changelog
 
+## [2.64.3](https://github.com/supabase/auth-js/compare/v2.64.2...v2.64.3) (2024-06-17)
+
+
+### Bug Fixes
+
+* don't call removeSession prematurely  ([#915](https://github.com/supabase/auth-js/issues/915)) ([e0dc518](https://github.com/supabase/auth-js/commit/e0dc51849680fa8f1900de786c4a7e77eab8760e))
+* limit proxy session warning to once per client instance ([#900](https://github.com/supabase/auth-js/issues/900)) ([4ecfdda](https://github.com/supabase/auth-js/commit/4ecfdda65188b71322753e57622be8eafe97ed6b))
+* patch release workflow ([#922](https://github.com/supabase/auth-js/issues/922)) ([f84fb50](https://github.com/supabase/auth-js/commit/f84fb50a4357af49acac6ca151057d2af74d63c9))
+* type errors in verifyOtp ([#918](https://github.com/supabase/auth-js/issues/918)) ([dcd0b9b](https://github.com/supabase/auth-js/commit/dcd0b9b682412a2f1d2deaab26eb8094e50b67fd))
+
 ## [2.64.2](https://github.com/supabase/auth-js/compare/v2.64.1...v2.64.2) (2024-05-03)
 
 
