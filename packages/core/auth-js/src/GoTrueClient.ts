@@ -722,8 +722,8 @@ export default class GoTrueClient {
    */
   async verifyOtp(params: VerifyOtpParams): Promise<AuthResponse> {
     try {
-      let redirectTo = undefined
-      let captchaToken = undefined
+      let redirectTo: string | undefined = undefined
+      let captchaToken: string | undefined = undefined
       if ('options' in params) {
         redirectTo = params.options?.redirectTo
         captchaToken = params.options?.captchaToken
