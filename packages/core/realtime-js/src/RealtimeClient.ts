@@ -1,21 +1,30 @@
+import type { WebSocket as WSWebSocket } from 'ws'
+
 import {
-  VSN,
   CHANNEL_EVENTS,
-  TRANSPORTS,
-  SOCKET_STATES,
-  DEFAULT_TIMEOUT,
-  WS_CLOSE_NORMAL,
-  DEFAULT_HEADERS,
   CONNECTION_STATE,
+  DEFAULT_HEADERS,
+  DEFAULT_TIMEOUT,
+  SOCKET_STATES,
+  TRANSPORTS,
+  VSN,
+  WS_CLOSE_NORMAL,
 } from './lib/constants'
-import Timer from './lib/timer'
 import Serializer from './lib/serializer'
+import Timer from './lib/timer'
+
+import { httpEndpointURL } from './lib/transformers'
 import RealtimeChannel from './RealtimeChannel'
 import type { RealtimeChannelOptions } from './RealtimeChannel'
 
-import type { WebSocket as WSWebSocket } from 'ws'
-
 type Fetch = typeof fetch
+
+export type Channel = {
+  name: string
+  inserted_at: string
+  updated_at: string
+  id: number
+}
 
 export type RealtimeClientOptions = {
   transport?: WebSocketLikeConstructor
@@ -66,6 +75,7 @@ export default class RealtimeClient {
   apiKey: string | null = null
   channels: RealtimeChannel[] = []
   endPoint: string = ''
+  httpEndpoint: string = ''
   headers?: { [key: string]: string } = DEFAULT_HEADERS
   params?: { [key: string]: string } = {}
   timeout: number = DEFAULT_TIMEOUT
@@ -99,6 +109,7 @@ export default class RealtimeClient {
    * Initializes the Socket.
    *
    * @param endPoint The string WebSocket endpoint, ie, "ws://example.com/socket", "wss://example.com", "/socket" (inherited host & protocol)
+   * @param httpEndpoint The string HTTP endpoint, ie, "https://example.com", "/" (inherited host & protocol)
    * @param options.transport The Websocket Transport, for example WebSocket.
    * @param options.timeout The default timeout in milliseconds to trigger push timeouts.
    * @param options.params The optional params to pass when connecting.
@@ -111,7 +122,7 @@ export default class RealtimeClient {
    */
   constructor(endPoint: string, options?: RealtimeClientOptions) {
     this.endPoint = `${endPoint}/${TRANSPORTS.websocket}`
-
+    this.httpEndpoint = httpEndpointURL(endPoint)
     if (options?.transport) {
       this.transport = options.transport
     } else {

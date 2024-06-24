@@ -245,3 +245,10 @@ export const toTimestampString = (value: RecordValue): RecordValue => {
 
   return value
 }
+
+export const httpEndpointURL = (socketUrl: string): string => {
+  let url = socketUrl
+  url = url.replace(/^ws/i, 'http')
+  url = url.replace(/(\/socket\/websocket|\/socket|\/websocket)\/?$/i, '')
+  return url.replace(/\/+$/, '')
+}

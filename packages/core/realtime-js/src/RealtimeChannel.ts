@@ -11,6 +11,7 @@ import type {
   RealtimePresenceState,
 } from './RealtimePresence'
 import * as Transformers from './lib/transformers'
+import { httpEndpointURL } from './lib/transformers'
 
 export type RealtimeChannelOptions = {
   config: {
@@ -23,6 +24,10 @@ export type RealtimeChannelOptions = {
      * key option is used to track presence payload across clients
      */
     presence?: { key?: string }
+    /**
+     * defines if the channel is private or not and if RLS policies will be used to check data
+     */
+    private?: boolean
   }
 }
 
@@ -138,11 +143,11 @@ export default class RealtimeChannel {
     public socket: RealtimeClient
   ) {
     this.subTopic = topic.replace(/^realtime:/i, '')
-
     this.params.config = {
       ...{
         broadcast: { ack: false, self: false },
         presence: { key: '' },
+        private: false,
       },
       ...params.config,
     }
@@ -191,7 +196,8 @@ export default class RealtimeChannel {
 
     this.presence = new RealtimePresence(this)
 
-    this.broadcastEndpointURL = this._broadcastEndpointURL()
+    this.broadcastEndpointURL =
+      httpEndpointURL(this.socket.endPoint) + '/api/broadcast'
   }
 
   /** Subscribe registers your client with the server */
@@ -207,7 +213,7 @@ export default class RealtimeChannel {
       throw `tried to subscribe multiple times. 'subscribe' can only be called a single time per channel instance`
     } else {
       const {
-        config: { broadcast, presence },
+        config: { broadcast, presence, private: isPrivate },
       } = this.params
       this._onError((e: Error) => callback && callback('CHANNEL_ERROR', e))
       this._onClose(() => callback && callback('CLOSED'))
@@ -218,6 +224,7 @@ export default class RealtimeChannel {
         presence,
         postgres_changes:
           this.bindings.postgres_changes?.map((r) => r.filter) ?? [],
+        private: isPrivate,
       }
 
       if (this.socket.accessToken) {
@@ -436,7 +443,10 @@ export default class RealtimeChannel {
       const options = {
         method: 'POST',
         headers: {
-          apikey: this.socket.apiKey ?? '',
+          Authorization: this.socket.accessToken
+            ? `Bearer ${this.socket.accessToken}`
+            : '',
+          apikey: this.socket.apiKey ? this.socket.apiKey : '',
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
@@ -529,12 +539,6 @@ export default class RealtimeChannel {
   }
 
   /** @internal */
-  _broadcastEndpointURL(): string {
-    let url = this.socket.endPoint
-    url = url.replace(/^ws/i, 'http')
-    url = url.replace(/(\/socket\/websocket|\/socket|\/websocket)\/?$/i, '')
-    return url.replace(/\/+$/, '') + '/api/broadcast'
-  }
 
   async _fetchWithTimeout(
     url: string,
