@@ -34,8 +34,9 @@ jobs:
           npm ci
           npm run build
 
-      - name: Create a release
-        run: npx semantic-release
+      - uses: cycjimmy/semantic-release-action@v4
+        with:
+          semantic_version: 19
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
