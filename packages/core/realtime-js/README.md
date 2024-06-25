@@ -104,6 +104,7 @@ channel.subscribe(async (status) => {
 
 - Setting `ack` to `true` means that the `channel.send` promise will resolve once server replies with acknowledgement that it received the broadcast message request.
 - Setting `self` to `true` means that the client will receive the broadcast message it sent out.
+- Setting `private` to `true` means that the client will use RLS to determine if the user can connect or not to a given channel.
 
 ## Presence
 
