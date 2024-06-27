@@ -100,7 +100,7 @@ export default class SupabaseClient<
       this.headers,
       settings.global.fetch
     )
-    this.fetch = fetchWithAuth(supabaseKey, this._getAccessToken.bind(this), settings.global.fetch)
+    this.fetch = fetchWithAuth(supabaseKey, this._getAccessToken.bind(this))
 
     this.realtime = this._initRealtimeClient({ headers: this.headers, ...settings.realtime })
     this.rest = new PostgrestClient(`${_supabaseUrl}/rest/v1`, {
