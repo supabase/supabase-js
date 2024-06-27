@@ -17,10 +17,16 @@
   "main": "dist/cjs/index.js",
   "module": "dist/esm/wrapper.mjs",
   "exports": {
-    "import": "./dist/esm/wrapper.mjs",
-    "require": "./dist/cjs/index.js"
+    "import": {
+      "types": "./dist/cjs/index.d.ts",
+      "default": "./dist/esm/wrapper.mjs"
+    },
+    "require": {
+      "types": "./dist/cjs/index.d.ts",
+      "default": "./dist/cjs/index.js"
+    }
   },
-  "types": "dist/cjs/index.d.ts",
+  "types": "./dist/cjs/index.d.ts",
   "repository": "supabase/postgrest-js",
   "scripts": {
     "clean": "rimraf dist docs/v2",
