@@ -2,9 +2,11 @@ type Fetch = typeof fetch
 
 export const fetchWithAuth = (
   supabaseKey: string,
-  getAccessToken: () => Promise<string | null>
+  getAccessToken: () => Promise<string | null>,
+  customFetch?: Fetch
 ): Fetch => {
   return async (input, init) => {
+    const fetch_ = customFetch ?? fetch
     const accessToken = (await getAccessToken()) ?? supabaseKey
     let headers = new Headers(init?.headers)
 
@@ -16,6 +18,6 @@ export const fetchWithAuth = (
       headers.set('Authorization', `Bearer ${accessToken}`)
     }
 
-    return fetch(input, { ...init, headers })
+    return fetch_(input, { ...init, headers })
   }
 }
