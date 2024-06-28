@@ -463,11 +463,8 @@ export default class RealtimeChannel {
           opts.timeout ?? this.timeout
         )
 
-        if (response.ok) {
-          return 'ok'
-        } else {
-          return 'error'
-        }
+        await response.body?.cancel()
+        return response.ok ? 'ok' : 'error'
       } catch (error: any) {
         if (error.name === 'AbortError') {
           return 'timed out'
