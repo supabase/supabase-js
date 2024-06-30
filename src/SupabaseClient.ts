@@ -51,6 +51,7 @@ export default class SupabaseClient<
   protected storageKey: string
   protected fetch?: Fetch
   protected changedAccessToken?: string
+  protected accessToken?: () => Promise<string>
 
   protected headers: Record<string, string>
 
@@ -95,11 +96,24 @@ export default class SupabaseClient<
     this.storageKey = settings.auth.storageKey ?? ''
     this.headers = settings.global.headers ?? {}
 
-    this.auth = this._initSupabaseAuthClient(
-      settings.auth ?? {},
-      this.headers,
-      settings.global.fetch
-    )
+    if (!settings.accessToken) {
+      this.auth = this._initSupabaseAuthClient(
+        settings.auth ?? {},
+        this.headers,
+        settings.global.fetch
+      )
+    } else {
+      this.accessToken = settings.accessToken
+
+      this.auth = new Proxy<SupabaseAuthClient>({} as any, {
+        get: (prop) => {
+          throw new Error(
+            `@supabase/supabase-js: Supabase Client is configured with the accessToken option, accessing supabase.auth.${prop} is not possible`
+          )
+        },
+      })
+    }
+
     this.fetch = fetchWithAuth(supabaseKey, this._getAccessToken.bind(this), settings.global.fetch)
 
     this.realtime = this._initRealtimeClient({ headers: this.headers, ...settings.realtime })
@@ -109,7 +123,9 @@ export default class SupabaseClient<
       fetch: this.fetch,
     })
 
-    this._listenForAuthEvents()
+    if (!settings.accessToken) {
+      this._listenForAuthEvents()
+    }
   }
 
   /**
@@ -244,6 +260,10 @@ export default class SupabaseClient<
   }
 
   private async _getAccessToken() {
+    if (this.accessToken) {
+      return await this.accessToken()
+    }
+
     const { data } = await this.auth.getSession()
 
     return data.session?.access_token ?? null

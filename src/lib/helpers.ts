@@ -54,5 +54,6 @@ export function applySettingDefaults<
       ...DEFAULT_GLOBAL_OPTIONS,
       ...globalOptions,
     },
+    accessToken: options.accessToken ?? undefined,
   }
 }

@@ -7,6 +7,18 @@ const KEY = 'some.fake.key'
 
 const supabase = createClient(URL, KEY)
 
+test('it should create a client with third-party auth accessToken', async () => {
+  const client = createClient(URL, KEY, {
+    accessToken: async () => {
+      return 'jwt'
+    },
+  })
+
+  expect(() => client.auth.getUser()).toThrowError(
+    '@supabase/supabase-js: Supabase Client is configured with the accessToken option, accessing supabase.auth.getUser is not possible'
+  )
+})
+
 test('it should create the client connection', async () => {
   expect(supabase).toBeDefined()
   expect(supabase).toBeInstanceOf(SupabaseClient)
