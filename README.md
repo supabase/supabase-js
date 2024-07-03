@@ -63,10 +63,10 @@ You can use `<script type="module">` to import supabase-js from CDNs, like:
 
 ### Deno
 
-You can use supabase-js in the Deno runtime via esm.sh:
+You can use supabase-js in the Deno runtime via [JSR](https://jsr.io/@supabase/supabase-js):
 
 ```js
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { createClient } from 'jsr:@supabase/supabase-js@2'
 ```
 
 ### Custom `fetch` implementation
