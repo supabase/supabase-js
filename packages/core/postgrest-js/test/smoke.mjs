@@ -12,4 +12,4 @@ assert(typeof postgrestjs.default.PostgrestClient === 'function');
 assert(typeof postgrestjs.default.PostgrestQueryBuilder === 'function');
 assert(typeof postgrestjs.default.PostgrestFilterBuilder === 'function');
 assert(typeof postgrestjs.default.PostgrestTransformBuilder === 'function');
-assert(typeof postgrestjs.default.PostgrestBuilder === 'function')
+assert(typeof postgrestjs.default.PostgrestBuilder === 'function');
