@@ -135,6 +135,7 @@ export default class RealtimeChannel {
   presence: RealtimePresence
   broadcastEndpointURL: string
   subTopic: string
+  private: boolean
 
   constructor(
     /** Topic name can be any string. */
@@ -198,6 +199,7 @@ export default class RealtimeChannel {
 
     this.broadcastEndpointURL =
       httpEndpointURL(this.socket.endPoint) + '/api/broadcast'
+    this.private = this.params.config.private || false
   }
 
   /** Subscribe registers your client with the server */
@@ -451,7 +453,12 @@ export default class RealtimeChannel {
         },
         body: JSON.stringify({
           messages: [
-            { topic: this.subTopic, event, payload: endpoint_payload },
+            {
+              topic: this.subTopic,
+              event,
+              payload: endpoint_payload,
+              private: this.private,
+            },
           ],
         }),
       }

@@ -24,7 +24,11 @@ describe('constructor', () => {
     assert.equal(channel.state, 'closed')
     assert.equal(channel.topic, 'topic')
     assert.deepEqual(channel.params, {
-      config: { broadcast: { ack: false, self: false }, presence: { key: '' }, private: false },
+      config: {
+        broadcast: { ack: false, self: false },
+        presence: { key: '' },
+        private: false,
+      },
       one: 'two',
     })
     assert.deepEqual(channel.socket, socket)
@@ -40,7 +44,11 @@ describe('constructor', () => {
 
     assert.deepEqual(joinPush.channel, channel)
     assert.deepEqual(joinPush.payload, {
-      config: { broadcast: { ack: false, self: false }, presence: { key: '' }, private: false },
+      config: {
+        broadcast: { ack: false, self: false },
+        presence: { key: '' },
+        private: false,
+      },
       one: 'two',
     })
     assert.equal(joinPush.event, 'phx_join')
@@ -1232,7 +1240,7 @@ describe('send', () => {
     socket = new RealtimeClient('ws://localhost:4000/socket', {
       params: { apikey: 'abc123' },
     })
-    channel = socket.channel('topic', { one: 'two' })
+    channel = socket.channel('topic', { one: 'two', config: { private: true } })
   })
 
   afterEach(() => {
@@ -1275,6 +1283,16 @@ describe('send', () => {
   })
 
   it('sends message via http request to Broadcast endpoint when not subscribed to channel', async () => {
+    const expectedBody = {
+      method: 'POST',
+      headers: {
+        Authorization: 'Bearer abc123',
+        apikey: 'abc123',
+        'Content-Type': 'application/json',
+      },
+      body: '{"messages":[{"topic":"topic","event":"test","private":true}]}',
+    }
+
     pushStub = sinon.stub(channel, '_fetchWithTimeout')
     pushStub.returns(new Response())
 
@@ -1285,7 +1303,12 @@ describe('send', () => {
     })
 
     assert.equal(res, 'ok')
-    assert.ok(pushStub.calledOnceWith('http://localhost:4000/api/broadcast'))
+    assert.ok(
+      pushStub.calledOnceWith(
+        'http://localhost:4000/api/broadcast',
+        expectedBody
+      )
+    )
   })
 })
 
