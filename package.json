@@ -43,7 +43,7 @@
     "@supabase/auth-js": "2.64.2",
     "@supabase/functions-js": "2.4.1",
     "@supabase/node-fetch": "2.6.15",
-    "@supabase/postgrest-js": "1.15.7",
+    "@supabase/postgrest-js": "1.15.8",
     "@supabase/realtime-js": "2.10.2",
     "@supabase/storage-js": "2.6.0"
   },
