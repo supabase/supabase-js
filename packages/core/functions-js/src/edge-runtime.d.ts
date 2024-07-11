@@ -1,3 +1,5 @@
+import OpenAI from 'openai'
+
 declare namespace Supabase {
   export interface ModelOptions {
     /**
@@ -19,6 +21,12 @@ declare namespace Supabase {
      * Automatically abort the request to the model after specified time (in seconds). Applies only for LLMs like `mistral` (default: 60)
      */
     timeout?: number
+
+    /**
+     * Mode for the inference API host. (default: 'ollama')
+     */
+    mode?: 'ollama' | 'openaicompatible',
+    signal?: AbortSignal
   }
 
   export class Session {
@@ -30,7 +38,10 @@ declare namespace Supabase {
     /**
      * Execute the given prompt in model session
      */
-    run(prompt: string, modelOptions?: ModelOptions): unknown
+    run(
+      prompt: string | Omit<OpenAI.Chat.ChatCompletionCreateParams, 'model' | 'stream'>,
+      modelOptions?: ModelOptions
+    ): unknown
   }
 
   /**
