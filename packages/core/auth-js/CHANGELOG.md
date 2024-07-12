@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.64.4](https://github.com/supabase/auth-js/compare/v2.64.3...v2.64.4) (2024-07-12)
+
+
+### Bug Fixes
+
+* update types  ([#930](https://github.com/supabase/auth-js/issues/930)) ([dbc5962](https://github.com/supabase/auth-js/commit/dbc5962d609cc0470b5b03160f4cd8b9e7d03ce3))
+
 ## [2.64.3](https://github.com/supabase/auth-js/compare/v2.64.2...v2.64.3) (2024-06-17)
 
 
