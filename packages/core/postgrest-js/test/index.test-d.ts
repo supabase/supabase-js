@@ -196,3 +196,12 @@ const postgrest = new PostgrestClient<Database>(REST_URL)
     channels.channel_details
   )
 }
+
+// PostgrestBuilder's children retains class when using inherited methods
+{
+  const x = postgrest.from('channels').select()
+  const y = x.throwOnError()
+  const z = x.setHeader('', '')
+  expectType<typeof x>(y)
+  expectType<typeof x>(z)
+}

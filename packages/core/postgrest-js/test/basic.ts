@@ -107,6 +107,15 @@ test('custom headers', async () => {
   expect((postgrest.from('users').select() as any).headers['apikey']).toEqual('foo')
 })
 
+test('custom headers on a per-call basis', async () => {
+  const postgrest1 = new PostgrestClient<Database>(REST_URL, { headers: { apikey: 'foo' } })
+  const postgrest2 = postgrest1.rpc('void_func').setHeader('apikey', 'bar')
+  // Original client object isn't affected
+  expect((postgrest1.from('users').select() as any).headers['apikey']).toEqual('foo')
+  // Derived client object uses new header value
+  expect((postgrest2 as any).headers['apikey']).toEqual('bar')
+})
+
 describe('custom prefer headers with ', () => {
   test('insert', async () => {
     const postgrest = new PostgrestClient<Database>(REST_URL, {
