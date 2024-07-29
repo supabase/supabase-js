@@ -1,5 +1,3 @@
-import OpenAI from 'openai'
-
 declare namespace Supabase {
   export interface ModelOptions {
     /**
@@ -25,7 +23,7 @@ declare namespace Supabase {
     /**
      * Mode for the inference API host. (default: 'ollama')
      */
-    mode?: 'ollama' | 'openaicompatible',
+    mode?: 'ollama' | 'openaicompatible'
     signal?: AbortSignal
   }
 
@@ -39,7 +37,9 @@ declare namespace Supabase {
      * Execute the given prompt in model session
      */
     run(
-      prompt: string | Omit<OpenAI.Chat.ChatCompletionCreateParams, 'model' | 'stream'>,
+      prompt:
+        | string
+        | Omit<import('openai').OpenAI.Chat.ChatCompletionCreateParams, 'model' | 'stream'>,
       modelOptions?: ModelOptions
     ): unknown
   }
