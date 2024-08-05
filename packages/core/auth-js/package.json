@@ -31,8 +31,8 @@
     "lint": "eslint ./src/**/* test/**/*.test.ts",
     "test": "run-s test:clean test:infra test:suite test:clean",
     "test:suite": "jest --runInBand",
-    "test:infra": "cd infra && docker-compose down && docker-compose pull && docker-compose up -d && sleep 30",
-    "test:clean": "cd infra && docker-compose down",
+    "test:infra": "cd infra && docker compose down && docker compose pull && docker compose up -d && sleep 30",
+    "test:clean": "cd infra && docker compose down",
     "docs": "typedoc src/index.ts --out docs/v2 --excludePrivate --excludeProtected",
     "docs:json": "typedoc --json docs/v2/spec.json --excludeExternals --excludePrivate --excludeProtected src/index.ts"
   },
