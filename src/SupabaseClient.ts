@@ -279,6 +279,7 @@ export default class SupabaseClient<
       storage,
       storageKey,
       flowType,
+      lock,
       debug,
     }: SupabaseAuthClientOptions,
     headers?: Record<string, string>,
@@ -297,6 +298,7 @@ export default class SupabaseClient<
       detectSessionInUrl,
       storage,
       flowType,
+      lock,
       debug,
       fetch,
       // auth checks if there is a custom authorizaiton header using this flag
