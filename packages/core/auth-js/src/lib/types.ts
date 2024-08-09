@@ -302,10 +302,9 @@ export interface Factor {
   friendly_name?: string
 
   /**
-   * Type of factor. Only `totp` supported with this version but may change in
-   * future versions.
+   * Type of factor. `totp` and `phone` supported with this version
    */
-  factor_type: 'totp' | string
+  factor_type: 'totp' | 'phone' | string
 
   /** Factor's status. */
   status: 'verified' | 'unverified'
@@ -469,10 +468,6 @@ export interface Subscription {
    * Call this to remove the listener.
    */
   unsubscribe: () => void
-}
-
-export interface UpdatableFactorAttributes {
-  friendlyName: string
 }
 
 export type SignInAnonymouslyCredentials = {
@@ -805,14 +800,23 @@ export type GenerateLinkType =
   | 'email_change_current'
   | 'email_change_new'
 
-export type MFAEnrollParams = {
-  /** The type of factor being enrolled. */
-  factorType: 'totp'
-  /** Domain which the user is enrolled with. */
-  issuer?: string
-  /** Human readable name assigned to the factor. */
-  friendlyName?: string
-}
+export type MFAEnrollParams =
+  | {
+      /** The type of factor being enrolled. */
+      factorType: 'totp'
+      /** Domain which the user is enrolled with. */
+      issuer?: string
+      /** Human readable name assigned to the factor. */
+      friendlyName?: string
+    }
+  | {
+      /** The type of factor being enrolled. */
+      factorType: 'phone'
+      /** Human readable name assigned to the factor. */
+      friendlyName?: string
+      /** Phone number associated with a factor. Number should conform to E.164 format */
+      phone: string
+    }
 
 export type MFAUnenrollParams = {
   /** ID of the factor being unenrolled. */
@@ -833,6 +837,8 @@ export type MFAVerifyParams = {
 export type MFAChallengeParams = {
   /** ID of the factor to be challenged. Returned in enroll(). */
   factorId: string
+  /** Messaging channel to use (e.g. whatsapp or sms). Only relevant for phone factors */
+  channel?: 'sms' | 'whatsapp'
 }
 
 export type MFAChallengeAndVerifyParams = {
@@ -873,7 +879,7 @@ export type AuthMFAEnrollResponse =
         /** ID of the factor that was just enrolled (in an unverified state). */
         id: string
 
-        /** Type of MFA factor. Only `totp` supported for now. */
+        /** Type of MFA factor.*/
         type: 'totp'
 
         /** TOTP enrollment information. */
@@ -898,6 +904,22 @@ export type AuthMFAEnrollResponse =
       error: null
     }
   | {
+      data: {
+        /** ID of the factor that was just enrolled (in an unverified state). */
+        id: string
+
+        /** Type of MFA factor. */
+        type: 'phone'
+
+        /** Friendly name of the factor, useful for distinguishing between factors **/
+        friendly_name?: string
+
+        /** Phone number of the MFA factor in E.164 format. Used to send messages  */
+       phone: string
+      }
+      error: null
+    }
+  | {
       data: null
       error: AuthError
     }
@@ -918,6 +940,9 @@ export type AuthMFAChallengeResponse =
         /** ID of the newly created challenge. */
         id: string
 
+        /** Factor Type which generated the challenge */
+        type: 'totp' | 'phone'
+
         /** Timestamp in UNIX seconds when this challenge will no longer be usable. */
         expires_at: number
       }
@@ -933,6 +958,8 @@ export type AuthMFAListFactorsResponse =
 
         /** Only verified TOTP factors. (A subset of `all`.) */
         totp: Factor[]
+        /** Only verified Phone factors. (A subset of `all`.) */
+        phone: Factor[]
       }
       error: null
     }
