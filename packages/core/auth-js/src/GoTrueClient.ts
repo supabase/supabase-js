@@ -1465,7 +1465,7 @@ export default class GoTrueClient {
         )
       } else if (timeNow - issuedAt < 0) {
         console.warn(
-          '@supabase/gotrue-js: Session as retrieved from URL was issued in the future? Check the device clok for skew',
+          '@supabase/gotrue-js: Session as retrieved from URL was issued in the future? Check the device clock for skew',
           issuedAt,
           expiresAt,
           timeNow
