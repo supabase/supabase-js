@@ -11,6 +11,7 @@ import {
   isAuthApiError,
   isAuthError,
   isAuthRetryableFetchError,
+  isAuthSessionMissingError,
 } from './lib/errors'
 import {
   Fetch,
@@ -1172,6 +1173,15 @@ export default class GoTrueClient {
       })
     } catch (error) {
       if (isAuthError(error)) {
+        if (isAuthSessionMissingError(error)) {
+          // JWT contains a `session_id` which does not correspond to an active
+          // session in the database, indicating the user is signed out.
+
+          await this._removeSession()
+          await removeItemAsync(this.storage, `${this.storageKey}-code-verifier`)
+          await this._notifyAllSubscribers('SIGNED_OUT', null)
+        }
+
         return { data: { user: null }, error }
       }
 

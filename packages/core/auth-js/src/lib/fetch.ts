@@ -14,6 +14,7 @@ import {
   AuthRetryableFetchError,
   AuthWeakPasswordError,
   AuthUnknownError,
+  AuthSessionMissingError,
 } from './errors'
 
 export type Fetch = typeof fetch
@@ -91,6 +92,11 @@ export async function handleError(error: unknown) {
       error.status,
       data.weak_password?.reasons || []
     )
+  } else if (errorCode === 'session_not_found') {
+    // The `session_id` inside the JWT does not correspond to a row in the
+    // `sessions` table. This usually means the user has signed out, has been
+    // deleted, or their session has somehow been terminated.
+    throw new AuthSessionMissingError()
   }
 
   throw new AuthApiError(_getErrorMessage(data), error.status || 500, errorCode)
