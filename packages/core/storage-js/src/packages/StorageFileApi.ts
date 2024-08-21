@@ -1,6 +1,6 @@
-import { isStorageError, StorageError } from '../lib/errors'
-import { Fetch, get, post, remove } from '../lib/fetch'
-import { resolveFetch } from '../lib/helpers'
+import { isStorageError, StorageError, StorageUnknownError } from '../lib/errors'
+import { Fetch, get, head, post, remove } from '../lib/fetch'
+import { recursiveToCamel, resolveFetch } from '../lib/helpers'
 import {
   FileObject,
   FileOptions,
@@ -8,6 +8,8 @@ import {
   FetchParameters,
   TransformOptions,
   DestinationOptions,
+  FileObjectV2,
+  Camelize,
 } from '../lib/types'
 
 const DEFAULT_SEARCH_OPTIONS = {
@@ -80,22 +82,39 @@ export default class StorageFileApi {
     try {
       let body
       const options = { ...DEFAULT_FILE_OPTIONS, ...fileOptions }
-      const headers: Record<string, string> = {
+      let headers: Record<string, string> = {
         ...this.headers,
         ...(method === 'POST' && { 'x-upsert': String(options.upsert as boolean) }),
       }
+
+      const metadata = options.metadata
 
       if (typeof Blob !== 'undefined' && fileBody instanceof Blob) {
         body = new FormData()
         body.append('cacheControl', options.cacheControl as string)
         body.append('', fileBody)
+
+        if (metadata) {
+          body.append('metadata', this.encodeMetadata(metadata))
+        }
       } else if (typeof FormData !== 'undefined' && fileBody instanceof FormData) {
         body = fileBody
         body.append('cacheControl', options.cacheControl as string)
+        if (metadata) {
+          body.append('metadata', this.encodeMetadata(metadata))
+        }
       } else {
         body = fileBody
         headers['cache-control'] = `max-age=${options.cacheControl}`
         headers['content-type'] = options.contentType as string
+
+        if (metadata) {
+          headers['x-metadata'] = this.toBase64(this.encodeMetadata(metadata))
+        }
+      }
+
+      if (fileOptions?.headers) {
+        headers = { ...headers, ...fileOptions.headers }
       }
 
       const cleanPath = this._removeEmptyFolders(path)
@@ -526,6 +545,76 @@ export default class StorageFileApi {
   }
 
   /**
+   * Retrieves the details of an existing file.
+   * @param path
+   */
+  async info(
+    path: string
+  ): Promise<
+    | {
+        data: Camelize<FileObjectV2>
+        error: null
+      }
+    | {
+        data: null
+        error: StorageError
+      }
+  > {
+    const _path = this._getFinalPath(path)
+
+    try {
+      const data = await get(this.fetch, `${this.url}/object/info/${_path}`, {
+        headers: this.headers,
+      })
+
+      return { data: recursiveToCamel(data) as Camelize<FileObjectV2>, error: null }
+    } catch (error) {
+      if (isStorageError(error)) {
+        return { data: null, error }
+      }
+
+      throw error
+    }
+  }
+
+  /**
+   * Checks the existence of a file.
+   * @param path
+   */
+  async exists(
+    path: string
+  ): Promise<
+    | {
+        data: boolean
+        error: null
+      }
+    | {
+        data: boolean
+        error: StorageError
+      }
+  > {
+    const _path = this._getFinalPath(path)
+
+    try {
+      await head(this.fetch, `${this.url}/object/${_path}`, {
+        headers: this.headers,
+      })
+
+      return { data: true, error: null }
+    } catch (error) {
+      if (isStorageError(error) && error instanceof StorageUnknownError) {
+        const originalError = (error.originalError as unknown) as { status: number }
+
+        if ([400, 404].includes(originalError?.status)) {
+          return { data: false, error }
+        }
+      }
+
+      throw error
+    }
+  }
+
+  /**
    * A simple convenience function to get the URL for an asset in a public bucket. If you do not want to use this function, you can construct the public URL by concatenating the bucket URL with the path to the asset.
    * This function does not verify if the bucket is public. If a public URL is created for a bucket which is not public, you will not be able to download the asset.
    *
@@ -698,6 +787,17 @@ export default class StorageFileApi {
 
       throw error
     }
+  }
+
+  protected encodeMetadata(metadata: Record<string, any>) {
+    return JSON.stringify(metadata)
+  }
+
+  toBase64(data: string) {
+    if (typeof Buffer !== 'undefined') {
+      return Buffer.from(data).toString('base64')
+    }
+    return btoa(data)
   }
 
   private _getFinalPath(path: string) {

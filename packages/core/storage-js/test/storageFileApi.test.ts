@@ -163,6 +163,25 @@ describe('Object API', () => {
       expect(updateRes.data?.path).toEqual(uploadPath)
     })
 
+    test('can upload with custom metadata', async () => {
+      const res = await storage.from(bucketName).upload(uploadPath, file, {
+        metadata: {
+          custom: 'metadata',
+          second: 'second',
+          third: 'third',
+        },
+      })
+      expect(res.error).toBeNull()
+
+      const updateRes = await storage.from(bucketName).info(uploadPath)
+      expect(updateRes.error).toBeNull()
+      expect(updateRes.data?.metadata).toEqual({
+        custom: 'metadata',
+        second: 'second',
+        third: 'third',
+      })
+    })
+
     test('can upload a file within the file size limit', async () => {
       const bucketName = 'with-limit' + Date.now()
       await storage.createBucket(bucketName, {
@@ -367,6 +386,38 @@ describe('Object API', () => {
           name: uploadPath,
         }),
       ])
+    })
+
+    test('get object info', async () => {
+      await storage.from(bucketName).upload(uploadPath, file)
+      const res = await storage.from(bucketName).info(uploadPath)
+
+      expect(res.error).toBeNull()
+      expect(res.data).toEqual(
+        expect.objectContaining({
+          id: expect.any(String),
+          name: expect.any(String),
+          createdAt: expect.any(String),
+          cacheControl: expect.any(String),
+          size: expect.any(Number),
+          etag: expect.any(String),
+          lastModified: expect.any(String),
+          contentType: expect.any(String),
+          metadata: {},
+          version: expect.any(String),
+        })
+      )
+    })
+
+    test('check if object exists', async () => {
+      await storage.from(bucketName).upload(uploadPath, file)
+      const res = await storage.from(bucketName).exists(uploadPath)
+
+      expect(res.error).toBeNull()
+      expect(res.data).toEqual(true)
+
+      const resNotExists = await storage.from(bucketName).exists('do-not-exists')
+      expect(resNotExists.data).toEqual(false)
     })
   })
 

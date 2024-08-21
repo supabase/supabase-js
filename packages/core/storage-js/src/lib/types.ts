@@ -21,6 +21,22 @@ export interface FileObject {
   buckets: Bucket
 }
 
+export interface FileObjectV2 {
+  id: string
+  version: string
+  name: string
+  bucket_id: string
+  updated_at: string
+  created_at: string
+  last_accessed_at: string
+  size?: number
+  cache_control?: string
+  content_type?: string
+  etag?: string
+  last_modified?: string
+  metadata?: Record<string, any>
+}
+
 export interface SortBy {
   column?: string
   order?: string
@@ -43,6 +59,16 @@ export interface FileOptions {
    * The duplex option is a string parameter that enables or disables duplex streaming, allowing for both reading and writing data in the same stream. It can be passed as an option to the fetch() method.
    */
   duplex?: string
+
+  /**
+   * The metadata option is an object that allows you to store additional information about the file. This information can be used to filter and search for files. The metadata object can contain any key-value pairs you want to store.
+   */
+  metadata?: Record<string, any>
+
+  /**
+   * Optionally add extra headers
+   */
+  headers?: Record<string, string>
 }
 
 export interface DestinationOptions {
@@ -112,4 +138,12 @@ export interface TransformOptions {
    * When this option is not passed in, images are optimized to modern image formats like Webp.
    */
   format?: 'origin'
+}
+
+type CamelCase<S extends string> = S extends `${infer P1}_${infer P2}${infer P3}`
+  ? `${Lowercase<P1>}${Uppercase<P2>}${CamelCase<P3>}`
+  : S
+
+export type Camelize<T> = {
+  [K in keyof T as CamelCase<Extract<K, string>>]: T[K]
 }

@@ -11,15 +11,19 @@ export interface FetchOptions {
   noResolveJson?: boolean
 }
 
-export type RequestMethodType = 'GET' | 'POST' | 'PUT' | 'DELETE'
+export type RequestMethodType = 'GET' | 'POST' | 'PUT' | 'DELETE' | 'HEAD'
 
 const _getErrorMessage = (err: any): string =>
   err.msg || err.message || err.error_description || err.error || JSON.stringify(err)
 
-const handleError = async (error: unknown, reject: (reason?: any) => void) => {
+const handleError = async (
+  error: unknown,
+  reject: (reason?: any) => void,
+  options?: FetchOptions
+) => {
   const Res = await resolveResponse()
 
-  if (error instanceof Res) {
+  if (error instanceof Res && !options?.noResolveJson) {
     error
       .json()
       .then((err) => {
@@ -46,7 +50,10 @@ const _getRequestParams = (
   }
 
   params.headers = { 'Content-Type': 'application/json', ...options?.headers }
-  params.body = JSON.stringify(body)
+
+  if (body) {
+    params.body = JSON.stringify(body)
+  }
   return { ...params, ...parameters }
 }
 
@@ -66,7 +73,7 @@ async function _handleRequest(
         return result.json()
       })
       .then((data) => resolve(data))
-      .catch((error) => handleError(error, reject))
+      .catch((error) => handleError(error, reject, options))
   })
 }
 
@@ -97,6 +104,24 @@ export async function put(
   parameters?: FetchParameters
 ): Promise<any> {
   return _handleRequest(fetcher, 'PUT', url, options, parameters, body)
+}
+
+export async function head(
+  fetcher: Fetch,
+  url: string,
+  options?: FetchOptions,
+  parameters?: FetchParameters
+): Promise<any> {
+  return _handleRequest(
+    fetcher,
+    'HEAD',
+    url,
+    {
+      ...options,
+      noResolveJson: true,
+    },
+    parameters
+  )
 }
 
 export async function remove(

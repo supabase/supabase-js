@@ -21,3 +21,19 @@ export const resolveResponse = async (): Promise<typeof Response> => {
 
   return Response
 }
+
+export const recursiveToCamel = (item: Record<string, any>): unknown => {
+  if (Array.isArray(item)) {
+    return item.map((el) => recursiveToCamel(el))
+  } else if (typeof item === 'function' || item !== Object(item)) {
+    return item
+  }
+
+  const result: Record<string, any> = {}
+  Object.entries(item).forEach(([key, value]) => {
+    const newKey = key.replace(/([-_][a-z])/gi, (c) => c.toUpperCase().replace(/[-_]/g, ''))
+    result[newKey] = recursiveToCamel(value)
+  })
+
+  return result
+}
