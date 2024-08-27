@@ -580,33 +580,43 @@ export default class GoTrueClient {
   > {
     const storageItem = await getItemAsync(this.storage, `${this.storageKey}-code-verifier`)
     const [codeVerifier, redirectType] = ((storageItem ?? '') as string).split('/')
-    const { data, error } = await _request(
-      this.fetch,
-      'POST',
-      `${this.url}/token?grant_type=pkce`,
-      {
-        headers: this.headers,
-        body: {
-          auth_code: authCode,
-          code_verifier: codeVerifier,
-        },
-        xform: _sessionResponse,
+
+    try {
+      const { data, error } = await _request(
+        this.fetch,
+        'POST',
+        `${this.url}/token?grant_type=pkce`,
+        {
+          headers: this.headers,
+          body: {
+            auth_code: authCode,
+            code_verifier: codeVerifier,
+          },
+          xform: _sessionResponse,
+        }
+      )
+      await removeItemAsync(this.storage, `${this.storageKey}-code-verifier`)
+      if (error) {
+        throw error
       }
-    )
-    await removeItemAsync(this.storage, `${this.storageKey}-code-verifier`)
-    if (error) {
-      return { data: { user: null, session: null, redirectType: null }, error }
-    } else if (!data || !data.session || !data.user) {
-      return {
-        data: { user: null, session: null, redirectType: null },
-        error: new AuthInvalidTokenResponseError(),
+      if (!data || !data.session || !data.user) {
+        return {
+          data: { user: null, session: null, redirectType: null },
+          error: new AuthInvalidTokenResponseError(),
+        }
       }
+      if (data.session) {
+        await this._saveSession(data.session)
+        await this._notifyAllSubscribers('SIGNED_IN', data.session)
+      }
+      return { data: { ...data, redirectType: redirectType ?? null }, error }
+    } catch (error) {
+      if (isAuthError(error)) {
+        return { data: { user: null, session: null, redirectType: null }, error }
+      }
+
+      throw error
     }
-    if (data.session) {
-      await this._saveSession(data.session)
-      await this._notifyAllSubscribers('SIGNED_IN', data.session)
-    }
-    return { data: { ...data, redirectType: redirectType ?? null }, error }
   }
 
   /**
