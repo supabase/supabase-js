@@ -1,4 +1,5 @@
 import assert from 'assert'
+import { describe, test } from 'vitest'
 
 import {
   convertCell,
@@ -6,10 +7,10 @@ import {
   convertColumn,
   toArray,
   toTimestampString,
-} from '../dist/main/lib/transformers.js'
+} from '../src/lib/transformers'
 
 describe('transformers', () => {
-  it('convertChangeData', () => {
+  test('convertChangeData', () => {
     assert.deepEqual(
       convertChangeData(
         [
@@ -47,7 +48,7 @@ describe('transformers', () => {
     )
   })
 
-  it('convertColumn', () => {
+  test('convertColumn', () => {
     assert.strictEqual(
       convertColumn(
         'age',
@@ -74,7 +75,7 @@ describe('transformers', () => {
     )
   })
 
-  it('convertCell', () => {
+  test('convertCell', () => {
     assert.strictEqual(convertCell('bool', 't'), true)
     assert.strictEqual(convertCell('bool', true), true)
 
@@ -93,7 +94,7 @@ describe('transformers', () => {
     assert.deepEqual(convertCell('_int4', '{1,2,3,4}'), [1, 2, 3, 4])
   })
 
-  it('toArray', () => {
+  test('toArray', () => {
     assert.deepEqual(toArray('{}', 'int4'), [])
     assert.deepEqual(toArray('{1,2,3,4}', 'int4'), [1, 2, 3, 4])
     assert.deepEqual(
@@ -110,7 +111,7 @@ describe('transformers', () => {
     )
   })
 
-  it('toTimestampString', () => {
+  test('toTimestampString', () => {
     assert.deepEqual(
       toTimestampString('2019-09-10 00:00:00'),
       '2019-09-10T00:00:00'

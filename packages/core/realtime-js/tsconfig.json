@@ -8,13 +8,11 @@
     "rootDir": "src",
     "sourceMap": true,
     "target": "ES2017",
-
     "strict": true,
-
     "esModuleInterop": true,
     "moduleResolution": "Node",
-
     "forceConsistentCasingInFileNames": true,
-    "stripInternal": true
+    "stripInternal": true,
+    "types": ["vitest/globals"]
   }
 }

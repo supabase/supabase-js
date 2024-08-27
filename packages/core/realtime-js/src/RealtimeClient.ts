@@ -176,7 +176,6 @@ export default class RealtimeClient {
       })
       return
     }
-
     if (NATIVE_WEBSOCKET_AVAILABLE) {
       this.conn = new WebSocket(this._endPointURL())
       this.setupConnection()

@@ -23,14 +23,16 @@
   "repository": "https://github.com/supabase/realtime-js",
   "author": "Supabase",
   "license": "MIT",
+  "type": "module",
   "scripts": {
     "clean": "rimraf dist docs/v2",
     "format": "prettier --write \"{src,test}/**/*.ts\"",
     "build": "run-s clean format build:*",
     "build:main": "tsc -p tsconfig.json",
     "build:module": "tsc -p tsconfig.module.json",
-    "mocha": "node -r esm node_modules/.bin/mocha ./test/**/*.js -r jsdom-global/register",
-    "test": "run-s clean build mocha",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "coverage": "vitest run --coverage",
     "docs": "typedoc src/index.ts --out docs/v2",
     "docs:json": "typedoc --json docs/v2/spec.json --excludeExternals src/index.ts"
   },
@@ -41,11 +43,11 @@
     "ws": "^8.14.2"
   },
   "devDependencies": {
+    "@vitest/coverage-v8": "^2.0.5",
     "eslint": "^7.0.0",
     "esm": "^3.2.25",
     "jsdom": "^16.7.0",
     "jsdom-global": "3.0.0",
-    "mocha": "^8.0.1",
     "mock-socket": "^9.0.3",
     "npm-run-all": "^4.1.5",
     "nyc": "^15.1.0",
@@ -53,6 +55,7 @@
     "semantic-release-plugin-update-version-in-files": "^1.1.0",
     "sinon": "^9.0.2",
     "typedoc": "^0.22.16",
-    "typescript": "^4.0.3"
+    "typescript": "^4.0.3",
+    "vitest": "^2.0.5"
   }
 }

@@ -1,6 +1,9 @@
 import assert from 'assert'
-import { RealtimeChannel, RealtimeClient } from '../dist/main'
-import Push from '../dist/main/lib/push'
+import { describe, beforeEach, afterEach, test } from 'vitest'
+
+import RealtimeClient from '../src/RealtimeClient'
+import RealtimeChannel from '../src/RealtimeChannel'
+import Push from '../src/lib/push'
 
 let socket, channel, push
 
@@ -14,7 +17,7 @@ describe('constructor', () => {
     socket.disconnect()
   })
 
-  it('sets defaults', () => {
+  test('sets defaults', () => {
     channel = new RealtimeChannel('test_topic', {}, socket)
     push = new Push(channel, 'test_event')
 
@@ -35,7 +38,7 @@ describe('updatePayload', () => {
     socket.disconnect()
   })
 
-  it('updates push payload', () => {
+  test('updates push payload', () => {
     channel = new RealtimeChannel('test_topic', {}, socket)
     push = new Push(channel, 'test_event', { test: 'test' })
 
