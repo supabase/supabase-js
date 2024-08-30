@@ -1,5 +1,21 @@
 # Changelog
 
+## [2.65.0](https://github.com/supabase/auth-js/compare/v2.64.4...v2.65.0) (2024-08-27)
+
+
+### Features
+
+* add bindings for Multi-Factor Authentication (Phone) ([#932](https://github.com/supabase/auth-js/issues/932)) ([b957c30](https://github.com/supabase/auth-js/commit/b957c30782065e4cc421a526c62c101d35c443d4))
+* add kakao to sign in with ID token ([#845](https://github.com/supabase/auth-js/issues/845)) ([e2337ba](https://github.com/supabase/auth-js/commit/e2337bad535598d9f751505de52a18c59f1505c3))
+* remove session, emit `SIGNED_OUT` when JWT `session_id` is invalid ([#905](https://github.com/supabase/auth-js/issues/905)) ([db41710](https://github.com/supabase/auth-js/commit/db41710b1a35ef559158a936d0a95acc0b1fca96))
+
+
+### Bug Fixes
+
+* Correct typo in GoTrueClient warning message ([#938](https://github.com/supabase/auth-js/issues/938)) ([8222ee1](https://github.com/supabase/auth-js/commit/8222ee198a0ab10570e8b4c31ffb2aeafef86392))
+* don't throw error in exchangeCodeForSession ([#946](https://github.com/supabase/auth-js/issues/946)) ([6e161ec](https://github.com/supabase/auth-js/commit/6e161ece3f8cd0d115857e2ed4346533840769f0))
+* move docker compose to v2 ([#940](https://github.com/supabase/auth-js/issues/940)) ([38eef89](https://github.com/supabase/auth-js/commit/38eef89ff61b49eb65ee26b7d2201148d1fc3b77))
+
 ## [2.64.4](https://github.com/supabase/auth-js/compare/v2.64.3...v2.64.4) (2024-07-12)
 
 
