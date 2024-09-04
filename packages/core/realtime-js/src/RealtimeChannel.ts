@@ -97,10 +97,8 @@ export enum REALTIME_POSTGRES_CHANGES_LISTEN_EVENT {
 export enum REALTIME_LISTEN_TYPES {
   BROADCAST = 'broadcast',
   PRESENCE = 'presence',
-  /**
-   * listen to Postgres changes.
-   */
   POSTGRES_CHANGES = 'postgres_changes',
+  SYSTEM = 'system',
 }
 
 export enum REALTIME_SUBSCRIBE_STATES {
@@ -414,6 +412,11 @@ export default class RealtimeChannel {
       event: string
       payload: T
     }) => void
+  ): RealtimeChannel
+  on<T extends { [key: string]: any }>(
+    type: `${REALTIME_LISTEN_TYPES.SYSTEM}`,
+    filter: {},
+    callback: (payload: any) => void
   ): RealtimeChannel
   on(
     type: `${REALTIME_LISTEN_TYPES}`,
