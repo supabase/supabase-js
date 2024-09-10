@@ -45,6 +45,77 @@ export type Database = {
   }
   public: {
     Tables: {
+      best_friends: {
+        Row: {
+          first_user: string
+          id: number
+          second_user: string
+          third_wheel: string | null
+        }
+        Insert: {
+          first_user: string
+          id?: number
+          second_user: string
+          third_wheel?: string | null
+        }
+        Update: {
+          first_user?: string
+          id?: number
+          second_user?: string
+          third_wheel?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'best_friends_first_user_fkey'
+            columns: ['first_user']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['username']
+          },
+          {
+            foreignKeyName: 'best_friends_second_user_fkey'
+            columns: ['second_user']
+            isOneToOne: false
+            referencedRelation: 'non_updatable_view'
+            referencedColumns: ['username']
+          },
+          {
+            foreignKeyName: 'best_friends_second_user_fkey'
+            columns: ['second_user']
+            isOneToOne: false
+            referencedRelation: 'updatable_view'
+            referencedColumns: ['username']
+          },
+          {
+            foreignKeyName: 'best_friends_second_user_fkey'
+            columns: ['second_user']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['username']
+          },
+          {
+            foreignKeyName: 'best_friends_third_wheel_fkey'
+            columns: ['third_wheel']
+            isOneToOne: false
+            referencedRelation: 'non_updatable_view'
+            referencedColumns: ['username']
+          },
+          {
+            foreignKeyName: 'best_friends_third_wheel_fkey'
+            columns: ['third_wheel']
+            isOneToOne: false
+            referencedRelation: 'updatable_view'
+            referencedColumns: ['username']
+          },
+          {
+            foreignKeyName: 'best_friends_third_wheel_fkey'
+            columns: ['third_wheel']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['username']
+          }
+        ]
+      }
       channel_details: {
         Row: {
           details: string | null
@@ -180,6 +251,43 @@ export type Database = {
           username?: string
         }
         Relationships: []
+      }
+      user_profiles: {
+        Row: {
+          id: number
+          username: string | null
+        }
+        Insert: {
+          id?: number
+          username?: string | null
+        }
+        Update: {
+          id?: number
+          username?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'user_profiles_username_fkey'
+            columns: ['username']
+            isOneToOne: false
+            referencedRelation: 'non_updatable_view'
+            referencedColumns: ['username']
+          },
+          {
+            foreignKeyName: 'user_profiles_username_fkey'
+            columns: ['username']
+            isOneToOne: false
+            referencedRelation: 'updatable_view'
+            referencedColumns: ['username']
+          },
+          {
+            foreignKeyName: 'user_profiles_username_fkey'
+            columns: ['username']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['username']
+          }
+        ]
       }
     }
     Views: {

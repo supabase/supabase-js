@@ -41,8 +41,8 @@
     "test:run": "jest --runInBand",
     "test:update": "run-s db:clean db:run && jest --runInBand --updateSnapshot && run-s db:clean",
     "test:types": "run-s build && tsd --files test/*.test-d.ts",
-    "db:clean": "cd test/db && docker-compose down --volumes",
-    "db:run": "cd test/db && docker-compose up --detach && wait-for-localhost 3000"
+    "db:clean": "cd test/db && docker compose down --volumes",
+    "db:run": "cd test/db && docker compose up --detach && wait-for-localhost 3000"
   },
   "dependencies": {
     "@supabase/node-fetch": "^2.6.14"

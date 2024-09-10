@@ -30,3 +30,18 @@ VALUES
 INSERT INTO shops(id, address, shop_geom)
 VALUES
   (1, '1369 Cambridge St', 'SRID=4326;POINT(-71.10044 42.373695)');
+
+INSERT INTO public.channel_details (id, details)
+VALUES
+    (1, 'Details for public channel'),
+    (2, 'Details for random channel');
+
+INSERT INTO user_profiles (id, username)
+VALUES
+  (1, 'supabot'),
+  (2, NULL);
+
+INSERT INTO best_friends(id, first_user, second_user, third_wheel)
+VALUES
+  (1, 'supabot', 'kiwicopple', 'awailas'),
+  (2, 'supabot', 'awailas', NULL);

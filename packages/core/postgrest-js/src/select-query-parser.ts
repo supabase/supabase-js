@@ -268,6 +268,9 @@ type ConstructFieldDefinition<
           ? HasFKeyToFRel<Field['original'], Relationships> extends true
             ? Field extends { inner: true }
               ? Child
+              : Field extends { left: true }
+              ? // TODO: This should return null only if the column is actually nullable
+                Child | null
               : Child | null
             : Child[]
           : Child[]
@@ -350,6 +353,7 @@ type ParseIdentifier<Input extends string> = ReadLetters<Input> extends [
  *   - `field(nodes)`
  *   - `field!hint(nodes)`
  *   - `field!inner(nodes)`
+ *   - `field!left(nodes)`
  *   - `field!hint!inner(nodes)`
  * - a field without an embedded resource (see {@link ParseFieldWithoutEmbeddedResource})
  */
@@ -363,6 +367,14 @@ type ParseField<Input extends string> = Input extends ''
       : CreateParserErrorIfRequired<
           ParseEmbeddedResource<EatWhitespace<Remainder>>,
           'Expected embedded resource after `!inner`'
+        >
+    : EatWhitespace<Remainder> extends `!left${infer Remainder}`
+    ? ParseEmbeddedResource<EatWhitespace<Remainder>> extends [infer Fields, `${infer Remainder}`]
+      ? // `field!left(nodes)`
+        [{ name: Name; original: Name; children: Fields; left: true }, EatWhitespace<Remainder>]
+      : CreateParserErrorIfRequired<
+          ParseEmbeddedResource<EatWhitespace<Remainder>>,
+          'Expected embedded resource after `!left`'
         >
     : EatWhitespace<Remainder> extends `!${infer Remainder}`
     ? ParseIdentifier<EatWhitespace<Remainder>> extends [infer Hint, `${infer Remainder}`]

@@ -205,3 +205,83 @@ const postgrest = new PostgrestClient<Database>(REST_URL)
   expectType<typeof x>(y)
   expectType<typeof x>(z)
 }
+
+// !left oneToOne
+{
+  const { data: oneToOne, error } = await postgrest
+    .from('channel_details')
+    .select('channels!left(*)')
+    .single()
+
+  if (error) {
+    throw new Error(error.message)
+  }
+
+  // TODO: this should never be nullable
+  expectType<Database['public']['Tables']['channels']['Row'] | null>(oneToOne.channels)
+}
+
+// !left oneToMany
+{
+  const { data: oneToMany, error } = await postgrest
+    .from('users')
+    .select('messages!left(*)')
+    .single()
+
+  if (error) {
+    throw new Error(error.message)
+  }
+
+  expectType<Array<Database['public']['Tables']['messages']['Row']>>(oneToMany.messages)
+}
+
+// !left zeroToOne
+{
+  const { data: zeroToOne, error } = await postgrest
+    .from('user_profiles')
+    .select('users!left(*)')
+    .single()
+
+  if (error) {
+    throw new Error(error.message)
+  }
+
+  expectType<Database['public']['Tables']['users']['Row'] | null>(zeroToOne.users)
+}
+
+// join over a 1-1 relation with both nullables and non-nullables fields
+{
+  const { data: bestFriends, error } = await postgrest
+    .from('best_friends')
+    .select(
+      'first_user:users!best_friends_first_user_fkey(*), second_user:users!best_friends_second_user_fkey(*), third_wheel:users!best_friends_third_wheel_fkey(*)'
+    )
+    .single()
+
+  if (error) {
+    throw new Error(error.message)
+  }
+
+  // TODO: Those two fields shouldn't be nullables
+  expectType<Database['public']['Tables']['users']['Row'] | null>(bestFriends.first_user)
+  expectType<Database['public']['Tables']['users']['Row'] | null>(bestFriends.second_user)
+  // The third wheel should be nullable
+  expectType<Database['public']['Tables']['users']['Row'] | null>(bestFriends.third_wheel)
+}
+// join over a 1-M relation with both nullables and non-nullables fields
+{
+  const { data: users, error } = await postgrest
+    .from('users')
+    .select(
+      `first_friend_of:best_friends_first_user_fkey(*),
+      second_friend_of:best_friends_second_user_fkey(*),
+      third_wheel_of:best_friends_third_wheel_fkey(*)`
+    )
+    .single()
+
+  if (error) {
+    throw new Error(error.message)
+  }
+  // TODO: type properly the result for this kind of queries
+  expectType<Array<{}>>(users.first_friend_of)
+}
