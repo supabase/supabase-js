@@ -1302,11 +1302,9 @@ describe('send', () => {
     })
 
     assert.equal(res, 'ok')
+    assert.ok(pushStub.calledOnce)
     assert.ok(
-      pushStub.calledOnceWith(
-        'http://localhost:4000/api/broadcast',
-        expectedBody
-      )
+      pushStub.calledWith('http://localhost:4000/api/broadcast', expectedBody)
     )
   })
 })

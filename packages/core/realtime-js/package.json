@@ -23,7 +23,6 @@
   "repository": "https://github.com/supabase/realtime-js",
   "author": "Supabase",
   "license": "MIT",
-  "type": "module",
   "scripts": {
     "clean": "rimraf dist docs/v2",
     "format": "prettier --write \"{src,test}/**/*.ts\"",
@@ -34,7 +33,9 @@
     "test:watch": "vitest",
     "coverage": "vitest run --coverage",
     "docs": "typedoc src/index.ts --out docs/v2",
-    "docs:json": "typedoc --json docs/v2/spec.json --excludeExternals src/index.ts"
+    "docs:json": "typedoc --json docs/v2/spec.json --excludeExternals src/index.ts",
+    "check-exports": "attw --pack .",
+    "ci": "run-s test coverage"
   },
   "dependencies": {
     "@supabase/node-fetch": "^2.6.14",
@@ -43,6 +44,8 @@
     "ws": "^8.14.2"
   },
   "devDependencies": {
+    "@arethetypeswrong/cli": "^0.16.2",
+    "@types/sinon": "^17.0.3",
     "@vitest/coverage-v8": "^2.0.5",
     "eslint": "^7.0.0",
     "esm": "^3.2.25",
@@ -53,7 +56,7 @@
     "nyc": "^15.1.0",
     "prettier": "^2.1.2",
     "semantic-release-plugin-update-version-in-files": "^1.1.0",
-    "sinon": "^9.0.2",
+    "sinon": "^18.0.0",
     "typedoc": "^0.22.16",
     "typescript": "^4.0.3",
     "vitest": "^2.0.5"

@@ -1,6 +1,11 @@
 name: CI
 
 on:
+  pull_request:
+    branches:
+      - master
+      - next
+      - rc
   push:
     branches:
       - master
@@ -25,8 +30,7 @@ jobs:
         uses: actions/setup-node@v2
         with:
           node-version: ${{ matrix.node }}
-
-      - name: Run tests
+      - name: Run CI steps
         run: |
           npm ci
-          npm t
+          npm run ci
