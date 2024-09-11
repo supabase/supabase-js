@@ -6,24 +6,27 @@ const postgrest = new PostgrestClient<Database>('http://localhost:3000')
 test('not', async () => {
   const res = await postgrest.from('users').select('status').not('status', 'eq', 'OFFLINE')
   expect(res).toMatchInlineSnapshot(`
+Object {
+  "count": null,
+  "data": Array [
     Object {
-      "count": null,
-      "data": Array [
-        Object {
-          "status": "ONLINE",
-        },
-        Object {
-          "status": "ONLINE",
-        },
-        Object {
-          "status": "ONLINE",
-        },
-      ],
-      "error": null,
-      "status": 200,
-      "statusText": "OK",
-    }
-  `)
+      "status": "ONLINE",
+    },
+    Object {
+      "status": "ONLINE",
+    },
+    Object {
+      "status": "ONLINE",
+    },
+    Object {
+      "status": "ONLINE",
+    },
+  ],
+  "error": null,
+  "status": 200,
+  "statusText": "OK",
+}
+`)
 })
 
 test('or', async () => {
@@ -71,24 +74,27 @@ test('eq', async () => {
 test('neq', async () => {
   const res = await postgrest.from('users').select('username').neq('username', 'supabot')
   expect(res).toMatchInlineSnapshot(`
+Object {
+  "count": null,
+  "data": Array [
     Object {
-      "count": null,
-      "data": Array [
-        Object {
-          "username": "kiwicopple",
-        },
-        Object {
-          "username": "awailas",
-        },
-        Object {
-          "username": "dragarcia",
-        },
-      ],
-      "error": null,
-      "status": 200,
-      "statusText": "OK",
-    }
-  `)
+      "username": "kiwicopple",
+    },
+    Object {
+      "username": "awailas",
+    },
+    Object {
+      "username": "jsonuser",
+    },
+    Object {
+      "username": "dragarcia",
+    },
+  ],
+  "error": null,
+  "status": 200,
+  "statusText": "OK",
+}
+`)
 })
 
 test('gt', async () => {
@@ -99,6 +105,9 @@ test('gt', async () => {
       "data": Array [
         Object {
           "id": 2,
+        },
+        Object {
+          "id": 4,
         },
       ],
       "error": null,
@@ -119,6 +128,9 @@ test('gte', async () => {
         },
         Object {
           "id": 2,
+        },
+        Object {
+          "id": 4,
         },
       ],
       "error": null,
@@ -315,27 +327,30 @@ test('in', async () => {
   const statuses = ['ONLINE', 'OFFLINE'] as const
   const res = await postgrest.from('users').select('status').in('status', statuses)
   expect(res).toMatchInlineSnapshot(`
+Object {
+  "count": null,
+  "data": Array [
     Object {
-      "count": null,
-      "data": Array [
-        Object {
-          "status": "ONLINE",
-        },
-        Object {
-          "status": "OFFLINE",
-        },
-        Object {
-          "status": "ONLINE",
-        },
-        Object {
-          "status": "ONLINE",
-        },
-      ],
-      "error": null,
-      "status": 200,
-      "statusText": "OK",
-    }
-  `)
+      "status": "ONLINE",
+    },
+    Object {
+      "status": "OFFLINE",
+    },
+    Object {
+      "status": "ONLINE",
+    },
+    Object {
+      "status": "ONLINE",
+    },
+    Object {
+      "status": "ONLINE",
+    },
+  ],
+  "error": null,
+  "status": 200,
+  "statusText": "OK",
+}
+`)
 })
 
 test('contains', async () => {
@@ -412,24 +427,27 @@ test('rangeGt', async () => {
 test('rangeGte', async () => {
   const res = await postgrest.from('users').select('age_range').rangeGte('age_range', '[2,25)')
   expect(res).toMatchInlineSnapshot(`
+Object {
+  "count": null,
+  "data": Array [
     Object {
-      "count": null,
-      "data": Array [
-        Object {
-          "age_range": "[25,35)",
-        },
-        Object {
-          "age_range": "[25,35)",
-        },
-        Object {
-          "age_range": "[20,30)",
-        },
-      ],
-      "error": null,
-      "status": 200,
-      "statusText": "OK",
-    }
-  `)
+      "age_range": "[25,35)",
+    },
+    Object {
+      "age_range": "[25,35)",
+    },
+    Object {
+      "age_range": "[20,30)",
+    },
+    Object {
+      "age_range": "[20,30)",
+    },
+  ],
+  "error": null,
+  "status": 200,
+  "statusText": "OK",
+}
+`)
 })
 
 test('rangeLte', async () => {
@@ -475,18 +493,21 @@ test('rangeAdjacent', async () => {
 test('overlaps', async () => {
   const res = await postgrest.from('users').select('age_range').overlaps('age_range', '[2,25)')
   expect(res).toMatchInlineSnapshot(`
+Object {
+  "count": null,
+  "data": Array [
     Object {
-      "count": null,
-      "data": Array [
-        Object {
-          "age_range": "[20,30)",
-        },
-      ],
-      "error": null,
-      "status": 200,
-      "statusText": "OK",
-    }
-  `)
+      "age_range": "[20,30)",
+    },
+    Object {
+      "age_range": "[20,30)",
+    },
+  ],
+  "error": null,
+  "status": 200,
+  "statusText": "OK",
+}
+`)
 })
 
 test('textSearch', async () => {

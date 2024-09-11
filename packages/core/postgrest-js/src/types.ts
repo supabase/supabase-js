@@ -39,20 +39,31 @@ export type PostgrestSingleResponse<T> = PostgrestResponseSuccess<T> | Postgrest
 export type PostgrestMaybeSingleResponse<T> = PostgrestSingleResponse<T | null>
 export type PostgrestResponse<T> = PostgrestSingleResponse<T[]>
 
+export type GenericRelationship = {
+  foreignKeyName: string
+  columns: string[]
+  isOneToOne: boolean
+  referencedRelation: string
+  referencedColumns: string[]
+}
+
 export type GenericTable = {
   Row: Record<string, unknown>
   Insert: Record<string, unknown>
   Update: Record<string, unknown>
+  Relationships: GenericRelationship[]
 }
 
 export type GenericUpdatableView = {
   Row: Record<string, unknown>
   Insert: Record<string, unknown>
   Update: Record<string, unknown>
+  Relationships: GenericRelationship[]
 }
 
 export type GenericNonUpdatableView = {
   Row: Record<string, unknown>
+  Relationships: GenericRelationship[]
 }
 
 export type GenericView = GenericUpdatableView | GenericNonUpdatableView

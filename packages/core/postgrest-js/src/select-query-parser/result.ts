@@ -1,0 +1,249 @@
+import { GenericTable } from '../types'
+import { ContainsNull, GenericRelationship, PostgreSQLTypes } from './types'
+import { FieldNode, Node, SpreadNode, StarNode } from './parser/ast'
+import { ParseQuery } from './parser/parser'
+import {
+  AggregateFunctions,
+  ExtractFirstProperty,
+  GenericSchema,
+  IsNonEmptyArray,
+  Prettify,
+  TablesAndViews,
+  TypeScriptTypes,
+} from './types'
+import {
+  CheckDuplicateEmbededReference,
+  GetFieldNodeResultName,
+  IsRelationNullable,
+  ResolveRelationship,
+  SelectQueryError,
+} from './utils'
+
+/**
+ * Main entry point for constructing the result type of a PostgREST query.
+ *
+ * @param Schema - Database schema.
+ * @param Row - The type of a row in the current table.
+ * @param RelationName - The name of the current table or view.
+ * @param Relationships - Relationships of the current table.
+ * @param Query - The select query string literal to parse.
+ */
+export type GetResult<
+  Schema extends GenericSchema,
+  Row extends Record<string, unknown>,
+  RelationName,
+  Relationships,
+  Query extends string
+> = ParseQuery<Query> extends infer ParsedQuery
+  ? ParsedQuery extends Node[]
+    ? RelationName extends string
+      ? Relationships extends GenericRelationship[]
+        ? ProcessNodes<Schema, Row, RelationName, Relationships, ParsedQuery>
+        : SelectQueryError<'Invalid Relationships cannot infer result type'>
+      : SelectQueryError<'Invalid RelationName cannot infer restult type'>
+    : ParsedQuery
+  : never
+
+/**
+ * Recursively processes an array of Nodes and accumulates the resulting TypeScript type.
+ *
+ * @param Schema - Database schema.
+ * @param Row - The type of a row in the current table.
+ * @param RelationName - The name of the current table or view.
+ * @param Relationships - Relationships of the current table.
+ * @param Nodes - An array of AST nodes to process.
+ * @param Acc - Accumulator for the constructed type.
+ */
+export type ProcessNodes<
+  Schema extends GenericSchema,
+  Row extends Record<string, unknown>,
+  RelationName extends string,
+  Relationships extends GenericRelationship[],
+  Nodes extends Node[],
+  Acc extends Record<string, unknown> = {} // Acc is now an object
+> = CheckDuplicateEmbededReference<Schema, RelationName, Relationships, Nodes> extends false
+  ? Nodes extends [infer FirstNode extends Node, ...infer RestNodes extends Node[]]
+    ? ProcessNode<Schema, Row, RelationName, Relationships, FirstNode> extends infer FieldResult
+      ? FieldResult extends Record<string, unknown>
+        ? ProcessNodes<Schema, Row, RelationName, Relationships, RestNodes, Acc & FieldResult>
+        : FieldResult extends SelectQueryError<infer E>
+        ? SelectQueryError<E>
+        : SelectQueryError<'Could not retrieve a valid record or error value'>
+      : SelectQueryError<'Processing node failed.'>
+    : Prettify<Acc>
+  : Prettify<CheckDuplicateEmbededReference<Schema, RelationName, Relationships, Nodes>>
+
+/**
+ * Processes a single Node and returns the resulting TypeScript type.
+ *
+ * @param Schema - Database schema.
+ * @param Row - The type of a row in the current table.
+ * @param RelationName - The name of the current table or view.
+ * @param Relationships - Relationships of the current table.
+ * @param NodeType - The Node to process.
+ */
+export type ProcessNode<
+  Schema extends GenericSchema,
+  Row extends Record<string, unknown>,
+  RelationName extends string,
+  Relationships extends GenericRelationship[],
+  NodeType extends Node
+> = NodeType extends StarNode // If the selection is *
+  ? Row
+  : NodeType extends SpreadNode // If the selection is a ...spread
+  ? ProcessSpreadNode<Schema, Row, RelationName, Relationships, NodeType>
+  : NodeType extends FieldNode
+  ? ProcessFieldNode<Schema, Row, RelationName, Relationships, NodeType>
+  : SelectQueryError<'Unsupported node type.'>
+
+/**
+ * Processes a FieldNode and returns the resulting TypeScript type.
+ *
+ * @param Schema - Database schema.
+ * @param Row - The type of a row in the current table.
+ * @param RelationName - The name of the current table or view.
+ * @param Relationships - Relationships of the current table.
+ * @param Field - The FieldNode to process.
+ */
+export type ProcessFieldNode<
+  Schema extends GenericSchema,
+  Row extends Record<string, unknown>,
+  RelationName extends string,
+  Relationships extends GenericRelationship[],
+  Field extends FieldNode
+> = Field['children'] extends []
+  ? {}
+  : IsNonEmptyArray<Field['children']> extends true // Has embedded resource?
+  ? ProcessEmbeddedResource<Schema, Relationships, Field, RelationName>
+  : ProcessSimpleField<Row, RelationName, Field>
+
+/**
+ * Processes a simple field (without embedded resources).
+ *
+ * @param Row - The type of a row in the current table.
+ * @param RelationName - The name of the current table or view.
+ * @param Field - The FieldNode to process.
+ */
+export type ProcessSimpleField<
+  Row extends Record<string, unknown>,
+  RelationName extends string,
+  Field extends FieldNode
+> = Field['aggregateFunction'] extends AggregateFunctions
+  ? {
+      // An aggregate function will always override the column name id.sum() will become sum
+      // except if it has been aliased
+      [K in GetFieldNodeResultName<Field>]: Field['castType'] extends PostgreSQLTypes
+        ? TypeScriptTypes<Field['castType']>
+        : number
+    }
+  : [Field['name']] extends [keyof Row]
+  ? {
+      // Aliases override the property name in the result
+      [K in GetFieldNodeResultName<Field>]: Field['castType'] extends PostgreSQLTypes // We apply the detected casted as the result type
+        ? TypeScriptTypes<Field['castType']>
+        : Row[Field['name']]
+    }
+  : SelectQueryError<`column '${Field['name']}' does not exist on '${RelationName}'.`>
+
+/**
+ * Processes an embedded resource (relation).
+ *
+ * @param Schema - Database schema.
+ * @param Row - The type of a row in the current table.
+ * @param RelationName - The name of the current table or view.
+ * @param Relationships - Relationships of the current table.
+ * @param Field - The FieldNode to process.
+ */
+export type ProcessEmbeddedResource<
+  Schema extends GenericSchema,
+  Relationships extends GenericRelationship[],
+  Field extends FieldNode,
+  CurrentTableOrView extends keyof TablesAndViews<Schema>
+> = ResolveRelationship<Schema, Relationships, Field, CurrentTableOrView> extends infer Resolved
+  ? Resolved extends {
+      referencedTable: GenericTable
+      relation: GenericRelationship
+      direction: string
+    }
+    ? ProcessEmbeddedResourceResult<Schema, Resolved, Field, CurrentTableOrView>
+    : { [K in GetFieldNodeResultName<Field>]: Resolved & string }
+  : {
+      [K in GetFieldNodeResultName<Field>]: SelectQueryError<'Failed to resolve relationship.'> &
+        string
+    }
+
+/**
+ * Helper type to process the result of an embedded resource.
+ */
+type ProcessEmbeddedResourceResult<
+  Schema extends GenericSchema,
+  Resolved extends {
+    referencedTable: GenericTable
+    relation: GenericRelationship
+    direction: string
+  },
+  Field extends FieldNode,
+  CurrentTableOrView extends keyof TablesAndViews<Schema>
+> = ProcessNodes<
+  Schema,
+  Resolved['referencedTable']['Row'],
+  Field['name'],
+  Resolved['referencedTable']['Relationships'],
+  Field['children'] extends undefined
+    ? []
+    : Exclude<Field['children'], undefined> extends Node[]
+    ? Exclude<Field['children'], undefined>
+    : []
+> extends infer ProcessedChildren
+  ? {
+      [K in GetFieldNodeResultName<Field>]: Resolved['direction'] extends 'forward'
+        ? Field extends { inner: true }
+          ? ProcessedChildren
+          : Resolved['relation']['isOneToOne'] extends true
+          ? ProcessedChildren | null
+          : ProcessedChildren[]
+        : IsRelationNullable<
+            TablesAndViews<Schema>[CurrentTableOrView],
+            Resolved['relation']
+          > extends true
+        ? ProcessedChildren | null
+        : ProcessedChildren
+    }
+  : {
+      [K in GetFieldNodeResultName<Field>]: SelectQueryError<'Failed to process embedded resource nodes.'> &
+        string
+    }
+
+/**
+ * Processes a SpreadNode by processing its target node.
+ *
+ * @param Schema - Database schema.
+ * @param Row - The type of a row in the current table.
+ * @param RelationName - The name of the current table or view.
+ * @param Relationships - Relationships of the current table.
+ * @param Spread - The SpreadNode to process.
+ */
+export type ProcessSpreadNode<
+  Schema extends GenericSchema,
+  Row extends Record<string, unknown>,
+  RelationName extends string,
+  Relationships extends GenericRelationship[],
+  Spread extends SpreadNode
+> = ProcessNode<Schema, Row, RelationName, Relationships, Spread['target']> extends infer Result
+  ? Result extends SelectQueryError<infer E>
+    ? SelectQueryError<E>
+    : ExtractFirstProperty<Result> extends unknown[]
+    ? {
+        [K in Spread['target']['name']]: SelectQueryError<`"${RelationName}" and "${Spread['target']['name']}" do not form a many-to-one or one-to-one relationship spread not possible`>
+      }
+    : ProcessSpreadNodeResult<Result>
+  : never
+
+/**
+ * Helper type to process the result of a spread node.
+ */
+type ProcessSpreadNodeResult<Result> = ExtractFirstProperty<Result> extends infer SpreadedObject
+  ? ContainsNull<SpreadedObject> extends true
+    ? Exclude<{ [K in keyof SpreadedObject]: SpreadedObject[K] | null }, null>
+    : Exclude<{ [K in keyof SpreadedObject]: SpreadedObject[K] }, null>
+  : SelectQueryError<'An error occurred spreading the object'>

@@ -1,5 +1,5 @@
 import PostgrestBuilder from './PostgrestBuilder'
-import { GetResult } from './select-query-parser'
+import { GetResult } from './select-query-parser/result'
 import { GenericSchema } from './types'
 
 export default class PostgrestTransformBuilder<
