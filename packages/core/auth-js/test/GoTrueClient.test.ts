@@ -904,6 +904,20 @@ describe('User management', () => {
   })
 })
 
+describe('MFA', () => {
+  test('enroll({factorType: "totp"}) returns totp', async () => {
+    const { data, error } = await authWithSession.mfa.enroll({
+      factorType: 'totp',
+    })
+
+    if (error) {
+      throw error
+    }
+
+    expect(data.totp.qr_code).not.toBeNull()
+  })
+})
+
 describe('GoTrueClient with storageisServer = true', () => {
   const originalWarn = console.warn
   let warnings: any[][] = []

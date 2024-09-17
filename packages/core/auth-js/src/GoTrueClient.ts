@@ -88,6 +88,11 @@ import type {
   LockFunc,
   UserIdentity,
   SignInAnonymouslyCredentials,
+  MFAEnrollTOTPParams,
+  AuthMFAEnrollTOTPResponse,
+  AuthMFAEnrollErrorResponse,
+  MFAEnrollPhoneParams,
+  AuthMFAEnrollPhoneResponse,
 } from './lib/types'
 
 polyfillGlobalThis() // Make "globalThis" available
@@ -2353,6 +2358,12 @@ export default class GoTrueClient {
   /**
    * {@see GoTrueMFAApi#enroll}
    */
+  private async _enroll(
+    params: MFAEnrollTOTPParams
+  ): Promise<AuthMFAEnrollTOTPResponse | AuthMFAEnrollErrorResponse>
+  private async _enroll(
+    params: MFAEnrollPhoneParams
+  ): Promise<AuthMFAEnrollPhoneResponse | AuthMFAEnrollErrorResponse>
   private async _enroll(params: MFAEnrollParams): Promise<AuthMFAEnrollResponse> {
     try {
       return await this._useSession(async (result) => {
