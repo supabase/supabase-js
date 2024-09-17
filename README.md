@@ -1,6 +1,6 @@
 # `supabase-js` - Isomorphic JavaScript Client for Supabase.
 
-- **Documentation:** https://supabase.com/docs/reference
+- **Documentation:** https://supabase.com/docs/reference/javascript/start
 - TypeDoc: https://supabase.github.io/supabase-js/v2/
 
 ## Usage
