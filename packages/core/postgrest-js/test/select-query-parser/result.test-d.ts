@@ -44,7 +44,6 @@ type SelectQueryFromTableResult<
   expectType<TypeEqual<typeof result, typeof expected>>(true)
 }
 
-
 // embed resource with no fields
 {
   const { from, select } = selectParams.selectEmbedRessourceWithNoFields

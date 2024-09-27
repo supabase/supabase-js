@@ -64,7 +64,7 @@ const postgrest = new PostgrestClient<Database>(REST_URL)
     throw new Error(error.message)
   }
   expectType<{ message: string | null; status: Database['public']['Enums']['user_status'] | null }>(
-    data,
+    data
   )
 }
 
@@ -75,7 +75,7 @@ const postgrest = new PostgrestClient<Database>(REST_URL)
     throw new Error(error.message)
   }
   expectType<Prettify<{ message: string | null } & Database['public']['Tables']['users']['Row']>>(
-    data,
+    data
   )
 }
 
@@ -85,7 +85,7 @@ const postgrest = new PostgrestClient<Database>(REST_URL)
   if (error) {
     throw new Error(error.message)
   }
-  expectType<{ message: string | null; users: { count: number } | null }>(data)
+  expectType<{ message: string | null; users: { count: number } }>(data)
 }
 
 // json accessor in select query

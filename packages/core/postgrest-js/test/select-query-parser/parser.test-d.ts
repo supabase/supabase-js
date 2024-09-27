@@ -480,16 +480,16 @@ import { selectParams } from '../relationships'
 // select JSON accessor
 {
   expect<ParseQuery<typeof selectParams.selectJsonAccessor.select>>([
-    { type: "Field", name: "data", alias: "bar", castType: "json" },
-    { type: "Field", name: "data", alias: "baz", castType: "text" }
+    { type: 'Field', name: 'data', alias: 'bar', castType: 'json' },
+    { type: 'Field', name: 'data', alias: 'baz', castType: 'text' },
   ])
 }
 
 // embed resource with no fields
 {
   expect<ParseQuery<typeof selectParams.selectEmbedRessourceWithNoFields.select>>([
-    { type: "Field", name: "message" },
-    { type: "Field", name: "users", children: [] }
+    { type: 'Field', name: 'message' },
+    { type: 'Field', name: 'users', children: [] },
   ])
 }
 
