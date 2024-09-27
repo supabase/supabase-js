@@ -5,7 +5,6 @@ const REST_URL = 'http://localhost:3000'
 const postgrest = new PostgrestClient<Database, 'public', Database['public'], 'next'>(REST_URL)
 
 const userColumn: 'catchphrase' | 'username' = 'username'
-let other: 'col1' | 'col2' = 'col1'
 
 export const selectParams = {
   manyToOne: { from: 'messages', select: 'user:users(*)' },
