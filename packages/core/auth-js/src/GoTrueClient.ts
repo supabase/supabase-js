@@ -313,11 +313,8 @@ export default class GoTrueClient {
         if (error) {
           this._debug('#_initialize()', 'error detecting session from URL', error)
 
-          // hacky workaround to keep the existing session if there's an error returned from identity linking
-          // TODO: once error codes are ready, we should match against it instead of the message
           if (
-            error?.message === 'Identity is already linked' ||
-            error?.message === 'Identity is already linked to another user'
+            error?.code === 'identity_already_exists'
           ) {
             return { error }
           }
@@ -2386,11 +2383,6 @@ export default class GoTrueClient {
 
         if (error) {
           return { data: null, error }
-        }
-
-        // TODO: Remove once: https://github.com/supabase/auth/pull/1717 is deployed
-        if (params.factorType === 'phone') {
-          delete data.totp
         }
 
         if (params.factorType === 'totp' && data?.totp?.qr_code) {
