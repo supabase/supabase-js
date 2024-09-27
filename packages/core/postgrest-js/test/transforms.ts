@@ -27,6 +27,20 @@ test('order', async () => {
         },
         Object {
           "age_range": "[20,30)",
+          "catchphrase": "'json' 'test'",
+          "data": Object {
+            "foo": Object {
+              "bar": Object {
+                "nested": "value",
+              },
+              "baz": "string value",
+            },
+          },
+          "status": "ONLINE",
+          "username": "jsonuser",
+        },
+        Object {
+          "age_range": "[20,30)",
           "catchphrase": "'fat' 'rat'",
           "data": null,
           "status": "ONLINE",
@@ -57,6 +71,13 @@ test('order on multiple columns', async () => {
     Object {
       "count": null,
       "data": Array [
+        Object {
+          "channel_id": 3,
+          "data": null,
+          "id": 4,
+          "message": "Some message on channel wihtout details",
+          "username": "supabot",
+        },
         Object {
           "channel_id": 2,
           "data": null,
@@ -122,10 +143,17 @@ test('range', async () => {
         },
         Object {
           "age_range": "[20,30)",
-          "catchphrase": "'fat' 'rat'",
-          "data": null,
+          "catchphrase": "'json' 'test'",
+          "data": Object {
+            "foo": Object {
+              "bar": Object {
+                "nested": "value",
+              },
+              "baz": "string value",
+            },
+          },
           "status": "ONLINE",
-          "username": "dragarcia",
+          "username": "jsonuser",
         },
       ],
       "error": null,
@@ -257,6 +285,7 @@ test('csv', async () => {
     supabot,,\\"[1,2)\\",ONLINE,\\"'cat' 'fat'\\"
     kiwicopple,,\\"[25,35)\\",OFFLINE,\\"'bat' 'cat'\\"
     awailas,,\\"[25,35)\\",ONLINE,\\"'bat' 'rat'\\"
+    jsonuser,\\"{\\"\\"foo\\"\\": {\\"\\"bar\\"\\": {\\"\\"nested\\"\\": \\"\\"value\\"\\"}, \\"\\"baz\\"\\": \\"\\"string value\\"\\"}}\\",\\"[20,30)\\",ONLINE,\\"'json' 'test'\\"
     dragarcia,,\\"[20,30)\\",ONLINE,\\"'fat' 'rat'\\"",
       "error": null,
       "status": 200,
