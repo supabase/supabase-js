@@ -1,5 +1,6 @@
 import PostgrestBuilder from './PostgrestBuilder'
-import { GetResult } from './select-query-parser/result'
+import { GetResult as GetResultV2 } from './select-query-parser/result'
+import { GetResult } from './select-query-parser'
 import { GenericSchema } from './types'
 
 export default class PostgrestTransformBuilder<
@@ -7,7 +8,8 @@ export default class PostgrestTransformBuilder<
   Row extends Record<string, unknown>,
   Result,
   RelationName = unknown,
-  Relationships = unknown
+  Relationships = unknown,
+  TypesVersion = unknown
 > extends PostgrestBuilder<Result> {
   /**
    * Perform a SELECT on the query result.
@@ -20,7 +22,9 @@ export default class PostgrestTransformBuilder<
    */
   select<
     Query extends string = '*',
-    NewResultOne = GetResult<Schema, Row, RelationName, Relationships, Query>
+    NewResultOne = TypesVersion extends "next"
+    ? GetResultV2<Schema, Row, RelationName, Relationships, Query>
+    : GetResult<Schema, Row, RelationName, Relationships, Query>
   >(
     columns?: Query
   ): PostgrestTransformBuilder<Schema, Row, NewResultOne[], RelationName, Relationships> {

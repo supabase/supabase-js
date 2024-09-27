@@ -2,7 +2,7 @@ import { PostgrestClient } from '../src/index'
 import { Database } from './types'
 
 const REST_URL = 'http://localhost:3000'
-const postgrest = new PostgrestClient<Database>(REST_URL)
+const postgrest = new PostgrestClient<Database, "public", Database['public'], "next">(REST_URL)
 
 const userColumn: 'catchphrase' | 'username' = 'username'
 
@@ -1048,7 +1048,6 @@ test('!left join on zero to one with valid relation', async () => {
     .limit(1)
     .single()
   expect(Array.isArray(res.data?.users)).toBe(false)
-  // TODO: This should be nullable indeed
   expect(res.data?.users?.status).not.toBeNull()
 
   expect(res).toMatchInlineSnapshot(`

@@ -7,46 +7,15 @@ const postgrest = new PostgrestClient<Database>(REST_URL)
 test('basic select table', async () => {
   const res = await postgrest.from('users').select()
   expect(res).toMatchInlineSnapshot(`
-Object {
-  "count": null,
-  "data": Array [
     Object {
-      "age_range": "[1,2)",
-      "catchphrase": "'cat' 'fat'",
-      "data": null,
-      "status": "ONLINE",
-      "username": "supabot",
-    },
-    Object {
-      "age_range": "[25,35)",
-      "catchphrase": "'bat' 'cat'",
-      "data": null,
-      "status": "OFFLINE",
-      "username": "kiwicopple",
-    },
-    Object {
-      "age_range": "[25,35)",
-      "catchphrase": "'bat' 'rat'",
-      "data": null,
-      "status": "ONLINE",
-      "username": "awailas",
-    },
-    Object {
-      "age_range": "[20,30)",
-      "catchphrase": "'fat' 'rat'",
-      "data": null,
-      "status": "ONLINE",
-      "username": "dragarcia",
-    },
-    Object {
-      "age_range": "[20,30)",
-      "catchphrase": "'json' 'test'",
-      "data": Object {
-        "foo": Object {
-          "bar": Object {
-            "nested": "value",
-          },
-          "baz": "string value",
+      "count": null,
+      "data": Array [
+        Object {
+          "age_range": "[1,2)",
+          "catchphrase": "'cat' 'fat'",
+          "data": null,
+          "status": "ONLINE",
+          "username": "supabot",
         },
         Object {
           "age_range": "[25,35)",
@@ -94,9 +63,6 @@ Object {
 test('basic select view', async () => {
   const res = await postgrest.from('updatable_view').select()
   expect(res).toMatchInlineSnapshot(`
-Object {
-  "count": null,
-  "data": Array [
     Object {
       "count": null,
       "data": Array [
@@ -880,37 +846,13 @@ test('allow ordering on JSON column', async () => {
     .select()
     .order('data->something' as any)
   expect(data).toMatchInlineSnapshot(`
-Array [
-  Object {
-    "age_range": "[1,2)",
-    "catchphrase": "'cat' 'fat'",
-    "data": null,
-    "status": "ONLINE",
-    "username": "supabot",
-  },
-  Object {
-    "age_range": "[25,35)",
-    "catchphrase": "'bat' 'cat'",
-    "data": null,
-    "status": "OFFLINE",
-    "username": "kiwicopple",
-  },
-  Object {
-    "age_range": "[25,35)",
-    "catchphrase": "'bat' 'rat'",
-    "data": null,
-    "status": "ONLINE",
-    "username": "awailas",
-  },
-  Object {
-    "age_range": "[20,30)",
-    "catchphrase": "'json' 'test'",
-    "data": Object {
-      "foo": Object {
-        "bar": Object {
-          "nested": "value",
-        },
-        "baz": "string value",
+    Array [
+      Object {
+        "age_range": "[1,2)",
+        "catchphrase": "'cat' 'fat'",
+        "data": null,
+        "status": "ONLINE",
+        "username": "supabot",
       },
       Object {
         "age_range": "[25,35)",
@@ -1023,9 +965,6 @@ test('select with head:true, count:estimated', async () => {
 test('select with count:exact', async () => {
   const res = await postgrest.from('users').select('*', { count: 'exact' })
   expect(res).toMatchInlineSnapshot(`
-Object {
-  "count": 5,
-  "data": Array [
     Object {
       "count": 5,
       "data": Array [
