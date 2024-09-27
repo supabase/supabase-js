@@ -22,9 +22,9 @@ export default class PostgrestTransformBuilder<
    */
   select<
     Query extends string = '*',
-    NewResultOne = TypesVersion extends "next"
-    ? GetResultV2<Schema, Row, RelationName, Relationships, Query>
-    : GetResult<Schema, Row, RelationName, Relationships, Query>
+    NewResultOne = TypesVersion extends 'next'
+      ? GetResultV2<Schema, Row, RelationName, Relationships, Query>
+      : GetResult<Schema, Row, RelationName, Relationships, Query>
   >(
     columns?: Query
   ): PostgrestTransformBuilder<Schema, Row, NewResultOne[], RelationName, Relationships> {

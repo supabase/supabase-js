@@ -31,8 +31,15 @@ export default class PostgrestFilterBuilder<
   Result,
   TypesVersion,
   RelationName = unknown,
-  Relationships = unknown,
-> extends PostgrestTransformBuilder<Schema, Row, Result, RelationName, Relationships, TypesVersion> {
+  Relationships = unknown
+> extends PostgrestTransformBuilder<
+  Schema,
+  Row,
+  Result,
+  RelationName,
+  Relationships,
+  TypesVersion
+> {
   eq<ColumnName extends string & keyof Row>(
     column: ColumnName,
     value: NonNullable<Row[ColumnName]>

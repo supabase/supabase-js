@@ -22,7 +22,7 @@ export default class PostgrestClient<
   Schema extends GenericSchema = Database[SchemaName] extends GenericSchema
     ? Database[SchemaName]
     : any,
-  TypesVersion extends "next" | undefined = undefined
+  TypesVersion extends 'next' | undefined = undefined
 > {
   url: string
   headers: Record<string, string>
