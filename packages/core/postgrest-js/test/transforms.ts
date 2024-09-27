@@ -35,30 +35,47 @@ Object {
           },
           "baz": "string value",
         },
-      },
-      "status": "ONLINE",
-      "username": "jsonuser",
-    },
-    Object {
-      "age_range": "[20,30)",
-      "catchphrase": "'fat' 'rat'",
-      "data": null,
-      "status": "ONLINE",
-      "username": "dragarcia",
-    },
-    Object {
-      "age_range": "[25,35)",
-      "catchphrase": "'bat' 'rat'",
-      "data": null,
-      "status": "ONLINE",
-      "username": "awailas",
-    },
-  ],
-  "error": null,
-  "status": 200,
-  "statusText": "OK",
-}
-`)
+        Object {
+          "age_range": "[25,35)",
+          "catchphrase": "'bat' 'cat'",
+          "data": null,
+          "status": "OFFLINE",
+          "username": "kiwicopple",
+        },
+        Object {
+          "age_range": "[20,30)",
+          "catchphrase": "'json' 'test'",
+          "data": Object {
+            "foo": Object {
+              "bar": Object {
+                "nested": "value",
+              },
+              "baz": "string value",
+            },
+          },
+          "status": "ONLINE",
+          "username": "jsonuser",
+        },
+        Object {
+          "age_range": "[20,30)",
+          "catchphrase": "'fat' 'rat'",
+          "data": null,
+          "status": "ONLINE",
+          "username": "dragarcia",
+        },
+        Object {
+          "age_range": "[25,35)",
+          "catchphrase": "'bat' 'rat'",
+          "data": null,
+          "status": "ONLINE",
+          "username": "awailas",
+        },
+      ],
+      "error": null,
+      "status": 200,
+      "statusText": "OK",
+    }
+  `)
 })
 
 test('order on multiple columns', async () => {
@@ -151,16 +168,33 @@ Object {
           },
           "baz": "string value",
         },
-      },
-      "status": "ONLINE",
-      "username": "jsonuser",
-    },
-  ],
-  "error": null,
-  "status": 200,
-  "statusText": "OK",
-}
-`)
+        Object {
+          "age_range": "[25,35)",
+          "catchphrase": "'bat' 'rat'",
+          "data": null,
+          "status": "ONLINE",
+          "username": "awailas",
+        },
+        Object {
+          "age_range": "[20,30)",
+          "catchphrase": "'json' 'test'",
+          "data": Object {
+            "foo": Object {
+              "bar": Object {
+                "nested": "value",
+              },
+              "baz": "string value",
+            },
+          },
+          "status": "ONLINE",
+          "username": "jsonuser",
+        },
+      ],
+      "error": null,
+      "status": 200,
+      "statusText": "OK",
+    }
+  `)
 })
 
 test('single', async () => {
@@ -279,19 +313,19 @@ test('select on rpc', async () => {
 test('csv', async () => {
   const res = await postgrest.from('users').select().csv()
   expect(res).toMatchInlineSnapshot(`
-Object {
-  "count": null,
-  "data": "username,data,age_range,status,catchphrase
-supabot,,\\"[1,2)\\",ONLINE,\\"'cat' 'fat'\\"
-kiwicopple,,\\"[25,35)\\",OFFLINE,\\"'bat' 'cat'\\"
-awailas,,\\"[25,35)\\",ONLINE,\\"'bat' 'rat'\\"
-jsonuser,\\"{\\"\\"foo\\"\\": {\\"\\"bar\\"\\": {\\"\\"nested\\"\\": \\"\\"value\\"\\"}, \\"\\"baz\\"\\": \\"\\"string value\\"\\"}}\\",\\"[20,30)\\",ONLINE,\\"'json' 'test'\\"
-dragarcia,,\\"[20,30)\\",ONLINE,\\"'fat' 'rat'\\"",
-  "error": null,
-  "status": 200,
-  "statusText": "OK",
-}
-`)
+    Object {
+      "count": null,
+      "data": "username,data,age_range,status,catchphrase
+    supabot,,\\"[1,2)\\",ONLINE,\\"'cat' 'fat'\\"
+    kiwicopple,,\\"[25,35)\\",OFFLINE,\\"'bat' 'cat'\\"
+    awailas,,\\"[25,35)\\",ONLINE,\\"'bat' 'rat'\\"
+    jsonuser,\\"{\\"\\"foo\\"\\": {\\"\\"bar\\"\\": {\\"\\"nested\\"\\": \\"\\"value\\"\\"}, \\"\\"baz\\"\\": \\"\\"string value\\"\\"}}\\",\\"[20,30)\\",ONLINE,\\"'json' 'test'\\"
+    dragarcia,,\\"[20,30)\\",ONLINE,\\"'fat' 'rat'\\"",
+      "error": null,
+      "status": 200,
+      "statusText": "OK",
+    }
+  `)
 })
 
 test('abort signal', async () => {

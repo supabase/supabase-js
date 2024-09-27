@@ -10,23 +10,26 @@ Object {
   "count": null,
   "data": Array [
     Object {
-      "status": "ONLINE",
-    },
-    Object {
-      "status": "ONLINE",
-    },
-    Object {
-      "status": "ONLINE",
-    },
-    Object {
-      "status": "ONLINE",
-    },
-  ],
-  "error": null,
-  "status": 200,
-  "statusText": "OK",
-}
-`)
+      "count": null,
+      "data": Array [
+        Object {
+          "status": "ONLINE",
+        },
+        Object {
+          "status": "ONLINE",
+        },
+        Object {
+          "status": "ONLINE",
+        },
+        Object {
+          "status": "ONLINE",
+        },
+      ],
+      "error": null,
+      "status": 200,
+      "statusText": "OK",
+    }
+  `)
 })
 
 test('or', async () => {
@@ -78,23 +81,26 @@ Object {
   "count": null,
   "data": Array [
     Object {
-      "username": "kiwicopple",
-    },
-    Object {
-      "username": "awailas",
-    },
-    Object {
-      "username": "jsonuser",
-    },
-    Object {
-      "username": "dragarcia",
-    },
-  ],
-  "error": null,
-  "status": 200,
-  "statusText": "OK",
-}
-`)
+      "count": null,
+      "data": Array [
+        Object {
+          "username": "kiwicopple",
+        },
+        Object {
+          "username": "awailas",
+        },
+        Object {
+          "username": "jsonuser",
+        },
+        Object {
+          "username": "dragarcia",
+        },
+      ],
+      "error": null,
+      "status": 200,
+      "statusText": "OK",
+    }
+  `)
 })
 
 test('gt', async () => {
@@ -331,26 +337,29 @@ Object {
   "count": null,
   "data": Array [
     Object {
-      "status": "ONLINE",
-    },
-    Object {
-      "status": "OFFLINE",
-    },
-    Object {
-      "status": "ONLINE",
-    },
-    Object {
-      "status": "ONLINE",
-    },
-    Object {
-      "status": "ONLINE",
-    },
-  ],
-  "error": null,
-  "status": 200,
-  "statusText": "OK",
-}
-`)
+      "count": null,
+      "data": Array [
+        Object {
+          "status": "ONLINE",
+        },
+        Object {
+          "status": "OFFLINE",
+        },
+        Object {
+          "status": "ONLINE",
+        },
+        Object {
+          "status": "ONLINE",
+        },
+        Object {
+          "status": "ONLINE",
+        },
+      ],
+      "error": null,
+      "status": 200,
+      "statusText": "OK",
+    }
+  `)
 })
 
 test('contains', async () => {
@@ -431,23 +440,26 @@ Object {
   "count": null,
   "data": Array [
     Object {
-      "age_range": "[25,35)",
-    },
-    Object {
-      "age_range": "[25,35)",
-    },
-    Object {
-      "age_range": "[20,30)",
-    },
-    Object {
-      "age_range": "[20,30)",
-    },
-  ],
-  "error": null,
-  "status": 200,
-  "statusText": "OK",
-}
-`)
+      "count": null,
+      "data": Array [
+        Object {
+          "age_range": "[25,35)",
+        },
+        Object {
+          "age_range": "[25,35)",
+        },
+        Object {
+          "age_range": "[20,30)",
+        },
+        Object {
+          "age_range": "[20,30)",
+        },
+      ],
+      "error": null,
+      "status": 200,
+      "statusText": "OK",
+    }
+  `)
 })
 
 test('rangeLte', async () => {
@@ -497,17 +509,20 @@ Object {
   "count": null,
   "data": Array [
     Object {
-      "age_range": "[20,30)",
-    },
-    Object {
-      "age_range": "[20,30)",
-    },
-  ],
-  "error": null,
-  "status": 200,
-  "statusText": "OK",
-}
-`)
+      "count": null,
+      "data": Array [
+        Object {
+          "age_range": "[20,30)",
+        },
+        Object {
+          "age_range": "[20,30)",
+        },
+      ],
+      "error": null,
+      "status": 200,
+      "statusText": "OK",
+    }
+  `)
 })
 
 test('textSearch', async () => {
