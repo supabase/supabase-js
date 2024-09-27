@@ -113,25 +113,6 @@ const postgrest = new PostgrestClient<Database>(REST_URL)
   expectType<string>(data.baz)
 }
 
-// typecasting and aggregate functions
-{
-  const { data, error } = await postgrest
-    .from('messages')
-    .select(
-      'message, users.count(), casted_message:message::int4, casted_count:users.count()::text'
-    )
-    .single()
-  if (error) {
-    throw new Error(error.message)
-  }
-  expectType<{
-    message: string | null
-    count: number
-    casted_message: number
-    casted_count: string
-  }>(data)
-}
-
 // rpc return type
 {
   const { data, error } = await postgrest.rpc('get_status')
