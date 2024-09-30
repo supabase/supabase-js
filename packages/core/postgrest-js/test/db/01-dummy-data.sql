@@ -1,22 +1,26 @@
 INSERT INTO
-    public.users (username, status, age_range, catchphrase)
+    public.users (username, status, age_range, catchphrase, data)
 VALUES
-    ('supabot', 'ONLINE', '[1,2)'::int4range, 'fat cat'::tsvector),
-    ('kiwicopple', 'OFFLINE', '[25,35)'::int4range, 'cat bat'::tsvector),
-    ('awailas', 'ONLINE', '[25,35)'::int4range, 'bat rat'::tsvector),
-    ('dragarcia', 'ONLINE', '[20,30)'::int4range, 'rat fat'::tsvector);
+    ('supabot', 'ONLINE', '[1,2)'::int4range, 'fat cat'::tsvector, NULL),
+    ('kiwicopple', 'OFFLINE', '[25,35)'::int4range, 'cat bat'::tsvector, NUlL),
+    ('awailas', 'ONLINE', '[25,35)'::int4range, 'bat rat'::tsvector, NULL),
+    ('dragarcia', 'ONLINE', '[20,30)'::int4range, 'rat fat'::tsvector, NULL),
+    ('jsonuser', 'ONLINE', '[20,30)'::int4range, 'json test'::tsvector, '{"foo": {"bar": {"nested": "value"}, "baz": "string value"}}'::jsonb);
 
 INSERT INTO
     public.channels (slug)
 VALUES
     ('public'),
-    ('random');
+    ('random'),
+    ('other');
 
 INSERT INTO
     public.messages (message, channel_id, username)
 VALUES
     ('Hello World 👋', 1, 'supabot'),
-    ('Perfection is attained, not when there is nothing more to add, but when there is nothing left to take away.', 2, 'supabot');
+    ('Perfection is attained, not when there is nothing more to add, but when there is nothing left to take away.', 2, 'supabot'),
+    ('Some message on channel wihtout details', 3, 'supabot'),
+    ('Some message on channel wihtout details', 3, 'supabot');
 
 INSERT INTO
     personal.users (username, status, age_range)

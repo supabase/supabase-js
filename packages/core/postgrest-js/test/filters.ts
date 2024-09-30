@@ -18,6 +18,9 @@ test('not', async () => {
         Object {
           "status": "ONLINE",
         },
+        Object {
+          "status": "ONLINE",
+        },
       ],
       "error": null,
       "status": 200,
@@ -81,6 +84,9 @@ test('neq', async () => {
           "username": "awailas",
         },
         Object {
+          "username": "jsonuser",
+        },
+        Object {
           "username": "dragarcia",
         },
       ],
@@ -99,6 +105,9 @@ test('gt', async () => {
       "data": Array [
         Object {
           "id": 2,
+        },
+        Object {
+          "id": 4,
         },
       ],
       "error": null,
@@ -119,6 +128,9 @@ test('gte', async () => {
         },
         Object {
           "id": 2,
+        },
+        Object {
+          "id": 4,
         },
       ],
       "error": null,
@@ -330,6 +342,9 @@ test('in', async () => {
         Object {
           "status": "ONLINE",
         },
+        Object {
+          "status": "ONLINE",
+        },
       ],
       "error": null,
       "status": 200,
@@ -424,6 +439,9 @@ test('rangeGte', async () => {
         Object {
           "age_range": "[20,30)",
         },
+        Object {
+          "age_range": "[20,30)",
+        },
       ],
       "error": null,
       "status": 200,
@@ -478,6 +496,9 @@ test('overlaps', async () => {
     Object {
       "count": null,
       "data": Array [
+        Object {
+          "age_range": "[20,30)",
+        },
         Object {
           "age_range": "[20,30)",
         },
