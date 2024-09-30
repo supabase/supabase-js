@@ -1355,15 +1355,21 @@ describe("insert, update, delete with count: 'exact'", () => {
     expect(res).toMatchInlineSnapshot(`
       Object {
         "count": null,
-        "data": null,
-        "error": Object {
-          "code": "23505",
-          "details": "Key (id)=(2) already exists.",
-          "hint": null,
-          "message": "duplicate key value violates unique constraint \\"channels_pkey\\"",
-        },
-        "status": 409,
-        "statusText": "Conflict",
+        "data": Array [
+          Object {
+            "data": null,
+            "id": 100,
+            "slug": null,
+          },
+          Object {
+            "data": null,
+            "id": 5,
+            "slug": "test-slug",
+          },
+        ],
+        "error": null,
+        "status": 201,
+        "statusText": "Created",
       }
     `)
   })
@@ -1385,7 +1391,7 @@ describe("insert, update, delete with count: 'exact'", () => {
           },
           Object {
             "data": null,
-            "id": 4,
+            "id": 7,
             "slug": "test-slug",
           },
         ],

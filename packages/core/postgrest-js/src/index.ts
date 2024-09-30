@@ -4,6 +4,7 @@ import PostgrestQueryBuilder from './PostgrestQueryBuilder'
 import PostgrestFilterBuilder from './PostgrestFilterBuilder'
 import PostgrestTransformBuilder from './PostgrestTransformBuilder'
 import PostgrestBuilder from './PostgrestBuilder'
+import PostgrestError from './PostgrestError'
 
 export {
   PostgrestClient,
@@ -11,6 +12,7 @@ export {
   PostgrestFilterBuilder,
   PostgrestTransformBuilder,
   PostgrestBuilder,
+  PostgrestError,
 }
 export default {
   PostgrestClient,
@@ -18,6 +20,7 @@ export default {
   PostgrestFilterBuilder,
   PostgrestTransformBuilder,
   PostgrestBuilder,
+  PostgrestError,
 }
 export type {
   PostgrestResponse,
@@ -25,5 +28,4 @@ export type {
   PostgrestResponseSuccess,
   PostgrestSingleResponse,
   PostgrestMaybeSingleResponse,
-  PostgrestError,
 } from './types'
