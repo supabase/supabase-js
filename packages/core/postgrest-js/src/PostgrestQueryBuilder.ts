@@ -1,13 +1,11 @@
 import PostgrestBuilder from './PostgrestBuilder'
 import PostgrestFilterBuilder from './PostgrestFilterBuilder'
-import { GetResult as GetResultV2 } from './select-query-parser/result'
-import { GetResult } from './select-query-parser'
+import { GetResult } from './select-query-parser/result'
 import { Fetch, GenericSchema, GenericTable, GenericView } from './types'
 
 export default class PostgrestQueryBuilder<
   Schema extends GenericSchema,
   Relation extends GenericTable | GenericView,
-  TypesVersion,
   RelationName = unknown,
   Relationships = Relation extends { Relationships: infer R } ? R : unknown
 > {
@@ -58,9 +56,7 @@ export default class PostgrestQueryBuilder<
    */
   select<
     Query extends string = '*',
-    ResultOne = TypesVersion extends 'next'
-      ? GetResultV2<Schema, Relation['Row'], RelationName, Relationships, Query>
-      : GetResult<Schema, Relation['Row'], RelationName, Relationships, Query>
+    ResultOne = GetResult<Schema, Relation['Row'], RelationName, Relationships, Query>
   >(
     columns?: Query,
     {
@@ -70,14 +66,7 @@ export default class PostgrestQueryBuilder<
       head?: boolean
       count?: 'exact' | 'planned' | 'estimated'
     } = {}
-  ): PostgrestFilterBuilder<
-    Schema,
-    Relation['Row'],
-    ResultOne[],
-    RelationName,
-    Relationships,
-    TypesVersion
-  > {
+  ): PostgrestFilterBuilder<Schema, Relation['Row'], ResultOne[], RelationName, Relationships> {
     const method = head ? 'HEAD' : 'GET'
     // Remove whitespaces except when quoted
     let quoted = false
@@ -114,28 +103,14 @@ export default class PostgrestQueryBuilder<
     options?: {
       count?: 'exact' | 'planned' | 'estimated'
     }
-  ): PostgrestFilterBuilder<
-    Schema,
-    Relation['Row'],
-    null,
-    RelationName,
-    Relationships,
-    TypesVersion
-  >
+  ): PostgrestFilterBuilder<Schema, Relation['Row'], null, RelationName, Relationships>
   insert<Row extends Relation extends { Insert: unknown } ? Relation['Insert'] : never>(
     values: Row[],
     options?: {
       count?: 'exact' | 'planned' | 'estimated'
       defaultToNull?: boolean
     }
-  ): PostgrestFilterBuilder<
-    Schema,
-    Relation['Row'],
-    null,
-    RelationName,
-    Relationships,
-    TypesVersion
-  >
+  ): PostgrestFilterBuilder<Schema, Relation['Row'], null, RelationName, Relationships>
   /**
    * Perform an INSERT into the table or view.
    *

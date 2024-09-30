@@ -21,8 +21,7 @@ export default class PostgrestClient<
     : string & keyof Database,
   Schema extends GenericSchema = Database[SchemaName] extends GenericSchema
     ? Database[SchemaName]
-    : any,
-  TypesVersion extends 'next' | undefined = undefined
+    : any
 > {
   url: string
   headers: Record<string, string>
@@ -60,16 +59,16 @@ export default class PostgrestClient<
   from<
     TableName extends string & keyof Schema['Tables'],
     Table extends Schema['Tables'][TableName]
-  >(relation: TableName): PostgrestQueryBuilder<Schema, Table, TypesVersion, TableName>
+  >(relation: TableName): PostgrestQueryBuilder<Schema, Table, TableName>
   from<ViewName extends string & keyof Schema['Views'], View extends Schema['Views'][ViewName]>(
     relation: ViewName
-  ): PostgrestQueryBuilder<Schema, View, TypesVersion, ViewName>
+  ): PostgrestQueryBuilder<Schema, View, ViewName>
   /**
    * Perform a query on a table or a view.
    *
    * @param relation - The table or view name to query
    */
-  from(relation: string): PostgrestQueryBuilder<Schema, any, TypesVersion, any> {
+  from(relation: string): PostgrestQueryBuilder<Schema, any, any> {
     const url = new URL(`${this.url}/${relation}`)
     return new PostgrestQueryBuilder(url, {
       headers: { ...this.headers },
@@ -141,8 +140,7 @@ export default class PostgrestClient<
         ? Fn['Returns'][number]
         : never
       : never,
-    Fn['Returns'],
-    TypesVersion
+    Fn['Returns']
   > {
     let method: 'HEAD' | 'GET' | 'POST'
     const url = new URL(`${this.url}/rpc/${fn}`)

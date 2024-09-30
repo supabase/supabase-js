@@ -6,9 +6,11 @@ const postgrest = new PostgrestClient<Database>('http://localhost:3000')
 test('embedded select', async () => {
   const res = await postgrest.from('users').select('messages(*)')
   expect(res).toMatchInlineSnapshot(`
+Object {
+  "count": null,
+  "data": Array [
     Object {
-      "count": null,
-      "data": Array [
+      "messages": Array [
         Object {
           "messages": Array [
             Object {
@@ -35,23 +37,42 @@ test('embedded select', async () => {
           ],
         },
         Object {
-          "messages": Array [],
+          "channel_id": 2,
+          "data": null,
+          "id": 2,
+          "message": "Perfection is attained, not when there is nothing more to add, but when there is nothing left to take away.",
+          "username": "supabot",
         },
         Object {
-          "messages": Array [],
-        },
-        Object {
-          "messages": Array [],
+          "channel_id": 3,
+          "data": null,
+          "id": 4,
+          "message": "Some message on channel wihtout details",
+          "username": "supabot",
         },
         Object {
           "messages": Array [],
         },
       ],
-      "error": null,
-      "status": 200,
-      "statusText": "OK",
-    }
-  `)
+    },
+    Object {
+      "messages": Array [],
+    },
+    Object {
+      "messages": Array [],
+    },
+    Object {
+      "messages": Array [],
+    },
+    Object {
+      "messages": Array [],
+    },
+  ],
+  "error": null,
+  "status": 200,
+  "statusText": "OK",
+}
+`)
 })
 
 describe('embedded filters', () => {

@@ -6,6 +6,9 @@ const postgrest = new PostgrestClient<Database>('http://localhost:3000')
 test('not', async () => {
   const res = await postgrest.from('users').select('status').not('status', 'eq', 'OFFLINE')
   expect(res).toMatchInlineSnapshot(`
+Object {
+  "count": null,
+  "data": Array [
     Object {
       "count": null,
       "data": Array [
@@ -74,6 +77,9 @@ test('eq', async () => {
 test('neq', async () => {
   const res = await postgrest.from('users').select('username').neq('username', 'supabot')
   expect(res).toMatchInlineSnapshot(`
+Object {
+  "count": null,
+  "data": Array [
     Object {
       "count": null,
       "data": Array [
@@ -327,6 +333,9 @@ test('in', async () => {
   const statuses = ['ONLINE', 'OFFLINE'] as const
   const res = await postgrest.from('users').select('status').in('status', statuses)
   expect(res).toMatchInlineSnapshot(`
+Object {
+  "count": null,
+  "data": Array [
     Object {
       "count": null,
       "data": Array [
@@ -427,6 +436,9 @@ test('rangeGt', async () => {
 test('rangeGte', async () => {
   const res = await postgrest.from('users').select('age_range').rangeGte('age_range', '[2,25)')
   expect(res).toMatchInlineSnapshot(`
+Object {
+  "count": null,
+  "data": Array [
     Object {
       "count": null,
       "data": Array [
@@ -493,6 +505,9 @@ test('rangeAdjacent', async () => {
 test('overlaps', async () => {
   const res = await postgrest.from('users').select('age_range').overlaps('age_range', '[2,25)')
   expect(res).toMatchInlineSnapshot(`
+Object {
+  "count": null,
+  "data": Array [
     Object {
       "count": null,
       "data": Array [

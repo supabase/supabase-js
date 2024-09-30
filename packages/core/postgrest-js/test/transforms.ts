@@ -8,15 +8,32 @@ const postgrest = new PostgrestClient<Database>('http://localhost:3000')
 test('order', async () => {
   const res = await postgrest.from('users').select().order('username', { ascending: false })
   expect(res).toMatchInlineSnapshot(`
+Object {
+  "count": null,
+  "data": Array [
     Object {
-      "count": null,
-      "data": Array [
-        Object {
-          "age_range": "[1,2)",
-          "catchphrase": "'cat' 'fat'",
-          "data": null,
-          "status": "ONLINE",
-          "username": "supabot",
+      "age_range": "[1,2)",
+      "catchphrase": "'cat' 'fat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "supabot",
+    },
+    Object {
+      "age_range": "[25,35)",
+      "catchphrase": "'bat' 'cat'",
+      "data": null,
+      "status": "OFFLINE",
+      "username": "kiwicopple",
+    },
+    Object {
+      "age_range": "[20,30)",
+      "catchphrase": "'json' 'test'",
+      "data": Object {
+        "foo": Object {
+          "bar": Object {
+            "nested": "value",
+          },
+          "baz": "string value",
         },
         Object {
           "age_range": "[25,35)",
@@ -124,15 +141,32 @@ test('limit', async () => {
 test('range', async () => {
   const res = await postgrest.from('users').select().range(1, 3)
   expect(res).toMatchInlineSnapshot(`
+Object {
+  "count": null,
+  "data": Array [
     Object {
-      "count": null,
-      "data": Array [
-        Object {
-          "age_range": "[25,35)",
-          "catchphrase": "'bat' 'cat'",
-          "data": null,
-          "status": "OFFLINE",
-          "username": "kiwicopple",
+      "age_range": "[25,35)",
+      "catchphrase": "'bat' 'cat'",
+      "data": null,
+      "status": "OFFLINE",
+      "username": "kiwicopple",
+    },
+    Object {
+      "age_range": "[25,35)",
+      "catchphrase": "'bat' 'rat'",
+      "data": null,
+      "status": "ONLINE",
+      "username": "awailas",
+    },
+    Object {
+      "age_range": "[20,30)",
+      "catchphrase": "'json' 'test'",
+      "data": Object {
+        "foo": Object {
+          "bar": Object {
+            "nested": "value",
+          },
+          "baz": "string value",
         },
         Object {
           "age_range": "[25,35)",
