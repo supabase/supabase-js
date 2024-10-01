@@ -8,11 +8,11 @@ VALUES
     ('jsonuser', 'ONLINE', '[20,30)'::int4range, 'json test'::tsvector, '{"foo": {"bar": {"nested": "value"}, "baz": "string value"}}'::jsonb);
 
 INSERT INTO
-    public.channels (id, slug)
+    public.channels (slug)
 VALUES
-    (1, 'public'),
-    (2, 'random'),
-    (3, 'other');
+    ('public'),
+    ('random'),
+    ('other');
 
 INSERT INTO
     public.messages (message, channel_id, username)
