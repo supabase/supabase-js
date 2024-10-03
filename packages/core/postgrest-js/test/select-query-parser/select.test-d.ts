@@ -687,3 +687,17 @@ type Schema = Database['public']
   let expected: SelectQueryError<`column 'users' does not exist on 'messages'.`>
   expectType<TypeEqual<typeof result, typeof expected>>(true)
 }
+
+// inner join on many relation
+{
+  const { data } = await selectQueries.innerJoinOnManyRelation.limit(1).single()
+  let result: Exclude<typeof data, null>
+  let expected: {
+    id: number
+    messages: {
+      id: number
+      username: string
+    }[]
+  }
+  expectType<TypeEqual<typeof result, typeof expected>>(true)
+}

@@ -34,9 +34,7 @@ export type GetResult<
   RelationName,
   Relationships,
   Query extends string
-  // For .rpc calls the passed relationships will be null
-  // in that case, the result will always be the function return type
-> = Relationships extends null
+> = Relationships extends null // For .rpc calls the passed relationships will be null in that case, the result will always be the function return type
   ? Row
   : ParseQuery<Query> extends infer ParsedQuery
   ? ParsedQuery extends Node[]
@@ -203,7 +201,9 @@ type ProcessEmbeddedResourceResult<
   ? {
       [K in GetFieldNodeResultName<Field>]: Resolved['direction'] extends 'forward'
         ? Field extends { inner: true }
-          ? ProcessedChildren
+          ? Resolved['relation']['isOneToOne'] extends true
+            ? ProcessedChildren
+            : ProcessedChildren[]
           : Resolved['relation']['isOneToOne'] extends true
           ? ProcessedChildren | null
           : ProcessedChildren[]

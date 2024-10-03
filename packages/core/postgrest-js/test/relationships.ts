@@ -165,6 +165,10 @@ export const selectParams = {
     select:
       'message, users.count(), casted_message:message::int4, casted_count:users.count()::text',
   },
+  innerJoinOnManyRelation: {
+    from: 'channels',
+    select: 'id, messages!channel_id!inner(id, username)',
+  },
 } as const
 
 export const selectQueries = {
@@ -328,6 +332,9 @@ export const selectQueries = {
   typecastingAndAggregate: postgrest
     .from(selectParams.typecastingAndAggregate.from)
     .select(selectParams.typecastingAndAggregate.select),
+  innerJoinOnManyRelation: postgrest
+    .from(selectParams.innerJoinOnManyRelation.from)
+    .select(selectParams.innerJoinOnManyRelation.select),
 } as const
 
 test('nested query with selective fields', async () => {
@@ -1713,4 +1720,25 @@ test('typecasting and aggregate', async () => {
       "statusText": "Bad Request",
     }
 `)
+})
+
+test('inner join on many relation', async () => {
+  const res = await selectQueries.innerJoinOnManyRelation.limit(1).single()
+  expect(res).toMatchInlineSnapshot(`
+    Object {
+      "count": null,
+      "data": Object {
+        "id": 1,
+        "messages": Array [
+          Object {
+            "id": 1,
+            "username": "supabot",
+          },
+        ],
+      },
+      "error": null,
+      "status": 200,
+      "statusText": "OK",
+    }
+  `)
 })
