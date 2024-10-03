@@ -30,8 +30,8 @@
     "types-generate": "dts-gen -m '@supabase/storage-js' -s",
     "test": "run-s test:clean test:infra test:suite test:clean",
     "test:suite": "jest --runInBand",
-    "test:infra": "cd infra && docker-compose down && docker-compose up -d --build && sleep 10",
-    "test:clean": "cd infra && docker-compose down --remove-orphans",
+    "test:infra": "cd infra && docker compose down && docker compose up -d --build && sleep 10",
+    "test:clean": "cd infra && docker compose down --remove-orphans",
     "docs": "typedoc --entryPoints src/index.ts --out docs/v2 --entryPoints src/packages/* --excludePrivate --excludeProtected",
     "docs:json": "typedoc --json docs/v2/spec.json --entryPoints src/index.ts --entryPoints src/packages/* --excludePrivate --excludeExternals --excludeProtected"
   },

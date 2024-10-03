@@ -92,11 +92,10 @@ export default class StorageFileApi {
       if (typeof Blob !== 'undefined' && fileBody instanceof Blob) {
         body = new FormData()
         body.append('cacheControl', options.cacheControl as string)
-        body.append('', fileBody)
-
         if (metadata) {
           body.append('metadata', this.encodeMetadata(metadata))
         }
+        body.append('', fileBody)
       } else if (typeof FormData !== 'undefined' && fileBody instanceof FormData) {
         body = fileBody
         body.append('cacheControl', options.cacheControl as string)
