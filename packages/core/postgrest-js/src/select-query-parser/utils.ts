@@ -37,7 +37,7 @@ type FilterRelationNodes<Nodes extends Node[]> = UnionToArray<
   }[number]
 >
 
-type ResolveRelationships<
+export type ResolveRelationships<
   Schema extends GenericSchema,
   RelationName extends string,
   Relationships extends GenericRelationship[],
@@ -301,6 +301,44 @@ export type FindMatchingViewRelationships<
     : false
   : false
 
+export type FindMatchingHintTableRelationships<
+  Schema extends GenericSchema,
+  Relationships extends GenericRelationship[],
+  hint extends string,
+  name extends string
+> = Relationships extends [infer R, ...infer Rest extends GenericRelationship[]]
+  ? R extends { referencedRelation: infer ReferencedRelation }
+    ? ReferencedRelation extends name
+      ? R extends { foreignKeyName: hint }
+        ? R & { match: 'fkname' }
+        : R extends { referencedRelation: hint }
+        ? R & { match: 'refrel' }
+        : R extends { columns: [hint] }
+        ? R & { match: 'col' }
+        : FindMatchingHintTableRelationships<Schema, Rest, hint, name>
+      : FindMatchingHintTableRelationships<Schema, Rest, hint, name>
+    : false
+  : false
+
+export type FindMatchingHintViewRelationships<
+  Schema extends GenericSchema,
+  Relationships extends GenericRelationship[],
+  hint extends string,
+  name extends string
+> = Relationships extends [infer R, ...infer Rest extends GenericRelationship[]]
+  ? R extends { referencedRelation: infer ReferencedRelation }
+    ? ReferencedRelation extends name
+      ? R extends { foreignKeyName: hint }
+        ? R & { match: 'fkname' }
+        : R extends { referencedRelation: hint }
+        ? R & { match: 'refrel' }
+        : R extends { columns: [hint] }
+        ? R & { match: 'col' }
+        : FindMatchingHintViewRelationships<Schema, Rest, hint, name>
+      : FindMatchingHintViewRelationships<Schema, Rest, hint, name>
+    : false
+  : false
+
 type IsColumnsNullable<
   Table extends Pick<GenericTable, 'Row'>,
   Columns extends (keyof Table['Row'])[]
@@ -393,19 +431,21 @@ export type FindFieldMatchingRelationships<
   Relationships extends GenericRelationship[],
   Field extends FieldNode
 > = Field extends { hint?: infer Hint extends string }
-  ? FindMatchingTableRelationships<
+  ? FindMatchingHintTableRelationships<
       Schema,
       Relationships,
-      Hint
+      Hint,
+      Field['name']
     > extends infer TableRelationViaHint extends GenericRelationship
     ? TableRelationViaHint & {
         branch: 'found-in-table-via-hint'
         hint: Field['hint']
       }
-    : FindMatchingViewRelationships<
+    : FindMatchingHintViewRelationships<
         Schema,
         Relationships,
-        Hint
+        Hint,
+        Field['name']
       > extends infer TableViewViaHint extends GenericRelationship
     ? TableViewViaHint & {
         branch: 'found-in-view-via-hint'
