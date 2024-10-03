@@ -34,13 +34,17 @@ export type GetResult<
   RelationName,
   Relationships,
   Query extends string
-> = ParseQuery<Query> extends infer ParsedQuery
+  // For .rpc calls the passed relationships will be null
+  // in that case, the result will always be the function return type
+> = Relationships extends null
+  ? Row
+  : ParseQuery<Query> extends infer ParsedQuery
   ? ParsedQuery extends Node[]
     ? RelationName extends string
       ? Relationships extends GenericRelationship[]
         ? ProcessNodes<Schema, Row, RelationName, Relationships, ParsedQuery>
         : SelectQueryError<'Invalid Relationships cannot infer result type'>
-      : SelectQueryError<'Invalid RelationName cannot infer restult type'>
+      : SelectQueryError<'Invalid RelationName cannot infer result type'>
     : ParsedQuery
   : never
 
@@ -166,8 +170,8 @@ export type ProcessEmbeddedResource<
       direction: string
     }
     ? ProcessEmbeddedResourceResult<Schema, Resolved, Field, CurrentTableOrView>
-    // Otherwise the Resolved is a SelectQueryError return it
-    : { [K in GetFieldNodeResultName<Field>]: Resolved }
+    : // Otherwise the Resolved is a SelectQueryError return it
+      { [K in GetFieldNodeResultName<Field>]: Resolved }
   : {
       [K in GetFieldNodeResultName<Field>]: SelectQueryError<'Failed to resolve relationship.'> &
         string

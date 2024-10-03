@@ -140,7 +140,9 @@ export default class PostgrestClient<
         ? Fn['Returns'][number]
         : never
       : never,
-    Fn['Returns']
+    Fn['Returns'],
+    null,
+    null
   > {
     let method: 'HEAD' | 'GET' | 'POST'
     const url = new URL(`${this.url}/rpc/${fn}`)

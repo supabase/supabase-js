@@ -2,7 +2,7 @@ import { PostgrestClient } from '../src/index'
 import { Database } from './types'
 
 const REST_URL = 'http://localhost:3000'
-const postgrest = new PostgrestClient<Database>(REST_URL)
+export const postgrest = new PostgrestClient<Database>(REST_URL)
 
 const userColumn: 'catchphrase' | 'username' = 'username'
 
