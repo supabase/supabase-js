@@ -161,12 +161,13 @@ export type ProcessEmbeddedResource<
   CurrentTableOrView extends keyof TablesAndViews<Schema>
 > = ResolveRelationship<Schema, Relationships, Field, CurrentTableOrView> extends infer Resolved
   ? Resolved extends {
-      referencedTable: GenericTable
+      referencedTable: Pick<GenericTable, 'Row' | 'Relationships'>
       relation: GenericRelationship
       direction: string
     }
     ? ProcessEmbeddedResourceResult<Schema, Resolved, Field, CurrentTableOrView>
-    : { [K in GetFieldNodeResultName<Field>]: Resolved & string }
+    // Otherwise the Resolved is a SelectQueryError return it
+    : { [K in GetFieldNodeResultName<Field>]: Resolved }
   : {
       [K in GetFieldNodeResultName<Field>]: SelectQueryError<'Failed to resolve relationship.'> &
         string
@@ -178,7 +179,7 @@ export type ProcessEmbeddedResource<
 type ProcessEmbeddedResourceResult<
   Schema extends GenericSchema,
   Resolved extends {
-    referencedTable: GenericTable
+    referencedTable: Pick<GenericTable, 'Row' | 'Relationships'>
     relation: GenericRelationship
     direction: string
   },
