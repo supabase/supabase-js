@@ -42,7 +42,7 @@ export type PostgrestResponse<T> = PostgrestSingleResponse<T[]>
 export type GenericRelationship = {
   foreignKeyName: string
   columns: string[]
-  isOneToOne: boolean
+  isOneToOne?: boolean
   referencedRelation: string
   referencedColumns: string[]
 }
