@@ -1,10 +1,19 @@
 import assert from 'assert'
 import sinon from 'sinon'
-import { describe, beforeEach, afterEach, test } from 'vitest'
+import {
+  describe,
+  beforeEach,
+  afterEach,
+  test,
+  beforeAll,
+  afterAll,
+} from 'vitest'
 
 import RealtimeClient from '../src/RealtimeClient'
 import RealtimeChannel from '../src/RealtimeChannel'
 import { Response } from '@supabase/node-fetch'
+import { WebSocketServer } from 'ws'
+import Worker from 'web-worker'
 
 let channel, socket
 const defaultRef = '1'
@@ -1414,5 +1423,36 @@ describe('trigger', () => {
       params: { apikey: '123' },
     })
     assert.equal(client.accessToken, '123')
+  })
+})
+
+describe('worker', () => {
+  let client
+  let mockServer
+
+  beforeAll(() => {
+    window.Worker = Worker
+    mockServer = new WebSocketServer({ port: 8080 })
+  })
+
+  afterAll(() => {
+    window.Worker = undefined
+    mockServer.close()
+  })
+
+  beforeEach(() => {
+    client = new RealtimeClient('ws://localhost:8080/socket', {
+      worker: true,
+      workerUrl: 'https://realtime.supabase.com/worker.js',
+      heartbeatIntervalMs: 10,
+    })
+  })
+
+  test('sets worker flag', () => {
+    assert.ok(client.worker)
+  })
+
+  test('sets worker URL', () => {
+    assert.equal(client.workerUrl, 'https://realtime.supabase.com/worker.js')
   })
 })

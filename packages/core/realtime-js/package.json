@@ -59,6 +59,7 @@
     "sinon": "^18.0.0",
     "typedoc": "^0.22.16",
     "typescript": "^4.0.3",
-    "vitest": "^2.0.5"
+    "vitest": "^2.0.5",
+    "web-worker": "1.2.0"
   }
 }

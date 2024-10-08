@@ -38,6 +38,8 @@ export type RealtimeClientOptions = {
   params?: { [key: string]: any }
   log_level?: 'info' | 'debug' | 'warn' | 'error'
   fetch?: Fetch
+  worker?: boolean
+  workerUrl?: string
 }
 
 export type RealtimeMessage = {
@@ -69,7 +71,12 @@ interface WebSocketLikeError {
 }
 
 const NATIVE_WEBSOCKET_AVAILABLE = typeof WebSocket !== 'undefined'
-
+const WORKER_SCRIPT = `
+  addEventListener("message", (e) => {
+    if (e.data.event === "start") {
+      setInterval(() => postMessage({ event: "keepAlive" }), e.data.interval);
+    }
+  });`
 export default class RealtimeClient {
   accessToken: string | null = null
   apiKey: string | null = null
@@ -104,6 +111,9 @@ export default class RealtimeClient {
     message: [],
   }
   fetch: Fetch
+  worker?: boolean
+  workerUrl?: string
+  workerRef?: Worker
 
   /**
    * Initializes the Socket.
@@ -119,6 +129,8 @@ export default class RealtimeClient {
    * @param options.encode The function to encode outgoing messages. Defaults to JSON: (payload, callback) => callback(JSON.stringify(payload))
    * @param options.decode The function to decode incoming messages. Defaults to Serializer's decode.
    * @param options.reconnectAfterMs he optional function that returns the millsec reconnect interval. Defaults to stepped backoff off.
+   * @param options.worker Use Web Worker to set a side flow. Defaults to false.
+   * @param options.workerUrl The URL of the worker script. Defaults to https://realtime.supabase.com/worker.js that includes a heartbeat event call to keep the connection alive.
    */
   constructor(endPoint: string, options?: RealtimeClientOptions) {
     this.endPoint = `${endPoint}/${TRANSPORTS.websocket}`
@@ -160,6 +172,13 @@ export default class RealtimeClient {
     }, this.reconnectAfterMs)
 
     this.fetch = this._resolveFetch(options?.fetch)
+    if (options?.worker) {
+      if (typeof window !== 'undefined' && !window.Worker) {
+        throw new Error('Web Worker is not supported')
+      }
+      this.worker = options?.worker || false
+      this.workerUrl = options?.workerUrl
+    }
   }
 
   /**
@@ -448,19 +467,45 @@ export default class RealtimeClient {
   }
 
   /** @internal */
-  private _onConnOpen() {
+  private async _onConnOpen() {
     this.log('transport', `connected to ${this._endPointURL()}`)
     this._flushSendBuffer()
     this.reconnectTimer.reset()
-    this.heartbeatTimer && clearInterval(this.heartbeatTimer)
-    this.heartbeatTimer = setInterval(
-      () => this._sendHeartbeat(),
-      this.heartbeatIntervalMs
-    )
+    if (!this.worker) {
+      this.heartbeatTimer && clearInterval(this.heartbeatTimer)
+      this.heartbeatTimer = setInterval(
+        () => this._sendHeartbeat(),
+        this.heartbeatIntervalMs
+      )
+    } else {
+      if (this.workerUrl) {
+        this.log('worker', `starting worker for from ${this.workerUrl}`)
+      } else {
+        this.log('worker', `starting default worker`)
+      }
+
+      const objectUrl = this._workerObjectUrl(this.workerUrl!)
+      this.workerRef = new Worker(objectUrl)
+      this.workerRef.onerror = (error) => {
+        this.log('worker', 'worker error', error.message)
+        this.workerRef!.terminate()
+      }
+      this.workerRef.onmessage = (event) => {
+        if (event.data.event === 'keepAlive') {
+          this._sendHeartbeat()
+        }
+      }
+      this.workerRef.postMessage({
+        event: 'start',
+        interval: this.heartbeatIntervalMs,
+      })
+    }
+
     this.stateChangeCallbacks.open.forEach((callback) => callback())!
   }
 
   /** @internal */
+
   private _onConnClose(event: any) {
     this.log('transport', 'close', event)
     this._triggerChanError()
@@ -526,6 +571,17 @@ export default class RealtimeClient {
       ref: this.pendingHeartbeatRef,
     })
     this.setAuth(this.accessToken)
+  }
+
+  private _workerObjectUrl(url: string | undefined): string {
+    let result_url: string
+    if (url) {
+      result_url = url
+    } else {
+      const blob = new Blob([WORKER_SCRIPT], { type: 'application/javascript' })
+      result_url = URL.createObjectURL(blob)
+    }
+    return result_url
   }
 }
 
