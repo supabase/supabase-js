@@ -8,7 +8,6 @@ import {
 import { expectType } from 'tsd'
 import { TypeEqual } from 'ts-expect'
 import {
-  DeduplicateRelationships,
   FindMatchingRelationships,
   FindMatchingTableRelationships,
   IsRelationNullable,
@@ -178,57 +177,4 @@ import { ParseQuery } from '../../src/select-query-parser/parser/parser'
   expectType<r1>(expected!)
   type r2 = ProcessNodes<Schema, Row, RelationName, Relationships, ParsedQuery>
   expectType<r2>(expected!)
-}
-
-// Deduplicate exact sames relationships
-{
-  type rels = [
-    {
-      foreignKeyName: 'test_fkey'
-      columns: ['project_id']
-      referencedRelation: 'project_subscriptions'
-      referencedColumns: ['project_id']
-    },
-    {
-      foreignKeyName: 'test_fkey'
-      columns: ['project_id']
-      referencedRelation: 'projects'
-      referencedColumns: ['id']
-    },
-    {
-      foreignKeyName: 'test_fkey'
-      columns: ['project_id']
-      referencedRelation: 'projects'
-      referencedColumns: ['id']
-    },
-    {
-      foreignKeyName: 'test_fkey'
-      columns: ['project_id']
-      referencedRelation: 'sls_physical_backups_monitoring'
-      referencedColumns: ['project_id']
-    }
-  ]
-  type expected = [
-    {
-      foreignKeyName: 'test_fkey'
-      columns: ['project_id']
-      referencedRelation: 'project_subscriptions'
-      referencedColumns: ['project_id']
-    },
-    {
-      foreignKeyName: 'test_fkey'
-      columns: ['project_id']
-      referencedRelation: 'projects'
-      referencedColumns: ['id']
-    },
-    {
-      foreignKeyName: 'test_fkey'
-      columns: ['project_id']
-      referencedRelation: 'sls_physical_backups_monitoring'
-      referencedColumns: ['project_id']
-    }
-  ]
-
-  type result = DeduplicateRelationships<rels>
-  expectType<TypeEqual<result, expected>>(true)
 }

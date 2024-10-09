@@ -37,22 +37,6 @@ type FilterRelationNodes<Nodes extends Node[]> = UnionToArray<
   }[number]
 >
 
-/*
- ** Because of pg-meta types generation there is some cases where a same relationship can be duplicated
- ** if the relation is across schemas and views this ensure that we dedup those relations and treat them
- ** as postgrest would.
- ** TODO: This is necessary to allow the check for required desambiguation but shouldn't if the
- ** generated relationships were correct pointing out that each realation is actually toward a different schema
- */
-export type DeduplicateRelationships<T extends readonly unknown[]> = T extends readonly [
-  infer First,
-  ...infer Rest
-]
-  ? First extends Rest[number]
-    ? DeduplicateRelationships<Rest extends readonly unknown[] ? Rest : []>
-    : [First, ...DeduplicateRelationships<Rest extends readonly unknown[] ? Rest : []>]
-  : T
-
 export type ResolveRelationships<
   Schema extends GenericSchema,
   RelationName extends string,
@@ -126,7 +110,7 @@ export type CheckDuplicateEmbededReference<
       RelationsNodes
     > extends infer ResolvedRels
     ? ResolvedRels extends unknown[]
-      ? FindDuplicates<DeduplicateRelationships<ResolvedRels>> extends infer Duplicates
+      ? FindDuplicates<ResolvedRels> extends infer Duplicates
         ? Duplicates extends never
           ? false
           : Duplicates extends { fieldName: infer FieldName extends string }
@@ -143,7 +127,7 @@ export type CheckDuplicateEmbededReference<
  * Returns a boolean representing whether there is a foreign key referencing
  * a given relation.
  */
-export type HasFKeyToFRel<FRelName, Relationships> = Relationships extends [infer R]
+type HasFKeyToFRel<FRelName, Relationships> = Relationships extends [infer R]
   ? R extends { referencedRelation: FRelName }
     ? true
     : false
@@ -155,7 +139,7 @@ export type HasFKeyToFRel<FRelName, Relationships> = Relationships extends [infe
 /**
  * Checks if there is more than one relation to a given foreign relation name in the Relationships.
  */
-export type HasMultipleFKeysToFRel<FRelName, Relationships> = Relationships extends [
+type HasMultipleFKeysToFRel<FRelName, Relationships> = Relationships extends [
   infer R,
   ...infer Rest
 ]
@@ -182,10 +166,7 @@ type CheckRelationshipError<
       direction: 'reverse'
     }
   ? // We check if there is possible confusion with other relations with this table
-    HasMultipleFKeysToFRel<
-      RelatedRelationName,
-      DeduplicateRelationships<Relationships>
-    > extends true
+    HasMultipleFKeysToFRel<RelatedRelationName, Relationships> extends true
     ? // If there is, postgrest will fail at runtime, and require desambiguation via hinting
       RequireHintingSelectQueryError<
         RelatedRelationName,
@@ -203,7 +184,7 @@ type CheckRelationshipError<
     }
   ? HasMultipleFKeysToFRel<
       RelatedRelationName,
-      DeduplicateRelationships<TablesAndViews<Schema>[From]['Relationships']>
+      TablesAndViews<Schema>[From]['Relationships']
     > extends true
     ? RequireHintingSelectQueryError<From extends string ? From : 'unknown', RelatedRelationName>
     : FoundRelation
@@ -255,10 +236,7 @@ type ResolveReverseRelationship<
             from: CurrentTableOrView
           }
         : // If the relation was found via implicit relation naming, we must ensure there is no conflicting matches
-        HasMultipleFKeysToFRel<
-            RelatedRelationName,
-            DeduplicateRelationships<Relationships>
-          > extends true
+        HasMultipleFKeysToFRel<RelatedRelationName, Relationships> extends true
         ? RequireHintingSelectQueryError<
             RelatedRelationName,
             CurrentTableOrView extends string ? CurrentTableOrView : 'unknown'
