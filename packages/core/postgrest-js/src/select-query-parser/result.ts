@@ -164,7 +164,7 @@ export type ProcessEmbeddedResource<
 > = ResolveRelationship<Schema, Relationships, Field, CurrentTableOrView> extends infer Resolved
   ? Resolved extends {
       referencedTable: Pick<GenericTable, 'Row' | 'Relationships'>
-      relation: GenericRelationship
+      relation: GenericRelationship & { match: 'refrel' | 'col' | 'fkname' }
       direction: string
     }
     ? ProcessEmbeddedResourceResult<Schema, Resolved, Field, CurrentTableOrView>
@@ -182,7 +182,7 @@ type ProcessEmbeddedResourceResult<
   Schema extends GenericSchema,
   Resolved extends {
     referencedTable: Pick<GenericTable, 'Row' | 'Relationships'>
-    relation: GenericRelationship
+    relation: GenericRelationship & { match: 'refrel' | 'col' | 'fkname' }
     direction: string
   },
   Field extends FieldNode,
@@ -207,7 +207,22 @@ type ProcessEmbeddedResourceResult<
           : Resolved['relation']['isOneToOne'] extends true
           ? ProcessedChildren | null
           : ProcessedChildren[]
-        : IsRelationNullable<
+        : // If the relation is a self-reference it'll always be considered as reverse relationship
+        Resolved['relation']['referencedRelation'] extends CurrentTableOrView
+        ? // It can either be a reverse reference via a column inclusion (eg: parent_id(*))
+          // in such case the result will be a single object
+          Resolved['relation']['match'] extends 'col'
+          ? IsRelationNullable<
+              TablesAndViews<Schema>[CurrentTableOrView],
+              Resolved['relation']
+            > extends true
+            ? ProcessedChildren | null
+            : ProcessedChildren
+          : // Or it can be a reference via the reference relation (eg: collections(*))
+            // in such case, the result will be an array of all the values (all collection with parent_id being the current id)
+            ProcessedChildren[]
+        : // Otherwise if it's a non self-reference reverse relationship it's a single object
+        IsRelationNullable<
             TablesAndViews<Schema>[CurrentTableOrView],
             Resolved['relation']
           > extends true

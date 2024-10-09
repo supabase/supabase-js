@@ -251,20 +251,6 @@ type ResolveReverseRelationship<
     : false
   : false
 
-// Utility type to find embeded relationships by all their possibles references
-export type FindMatchingRelationships<
-  value extends string,
-  Relationships extends GenericRelationship[]
-> = Relationships extends [infer R, ...infer Rest extends GenericRelationship[]]
-  ? R extends { foreignKeyName: value }
-    ? R
-    : R extends { referencedRelation: value }
-    ? R
-    : R extends { columns: [value] }
-    ? R
-    : FindMatchingRelationships<value, Rest>
-  : false
-
 export type FindMatchingTableRelationships<
   Schema extends GenericSchema,
   Relationships extends GenericRelationship[],

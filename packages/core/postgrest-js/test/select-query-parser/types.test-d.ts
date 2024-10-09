@@ -8,7 +8,6 @@ import {
 import { expectType } from 'tsd'
 import { TypeEqual } from 'ts-expect'
 import {
-  FindMatchingRelationships,
   FindMatchingTableRelationships,
   IsRelationNullable,
 } from '../../src/select-query-parser/utils'
@@ -17,20 +16,13 @@ import { ParseQuery } from '../../src/select-query-parser/parser/parser'
 
 // This test file is here to ensure some of our helpers behave as expected for ease of development
 // and debugging purposes
-// Searching for an non-existing relationship should return never
-{
-  let result: FindMatchingRelationships<
-    'test',
-    Database['public']['Tables']['best_friends']['Relationships']
-  >
-  let expected: false
-  expectType<TypeEqual<typeof result, typeof expected>>(true)
-}
+
 // Searching for a relationship by direct foreignkey name
 {
-  let result: FindMatchingRelationships<
-    'best_friends_first_user_fkey',
-    Database['public']['Tables']['best_friends']['Relationships']
+  let result: FindMatchingTableRelationships<
+    Database['public'],
+    Database['public']['Tables']['best_friends']['Relationships'],
+    'best_friends_first_user_fkey'
   >
   let expected: {
     foreignKeyName: 'best_friends_first_user_fkey'
@@ -38,14 +30,15 @@ import { ParseQuery } from '../../src/select-query-parser/parser/parser'
     isOneToOne: false
     referencedRelation: 'users'
     referencedColumns: ['username']
-  }
+  } & { match: 'fkname' }
   expectType<TypeEqual<typeof result, typeof expected>>(true)
 }
 // Searching for a relationship by column hoding the value reference
 {
-  let result: FindMatchingRelationships<
-    'first_user',
-    Database['public']['Tables']['best_friends']['Relationships']
+  let result: FindMatchingTableRelationships<
+    Database['public'],
+    Database['public']['Tables']['best_friends']['Relationships'],
+    'first_user'
   >
   let expected: {
     foreignKeyName: 'best_friends_first_user_fkey'
@@ -53,22 +46,7 @@ import { ParseQuery } from '../../src/select-query-parser/parser/parser'
     isOneToOne: false
     referencedRelation: 'users'
     referencedColumns: ['username']
-  }
-  expectType<TypeEqual<typeof result, typeof expected>>(true)
-}
-// Will find the first matching relationship
-{
-  let result: FindMatchingRelationships<
-    'username',
-    Database['public']['Tables']['user_profiles']['Relationships']
-  >
-  let expected: {
-    foreignKeyName: 'user_profiles_username_fkey'
-    columns: ['username']
-    isOneToOne: false
-    referencedRelation: 'non_updatable_view'
-    referencedColumns: ['username']
-  }
+  } & { match: 'col' }
   expectType<TypeEqual<typeof result, typeof expected>>(true)
 }
 // should return the relation matching the "Tables" references
@@ -89,9 +67,10 @@ import { ParseQuery } from '../../src/select-query-parser/parser/parser'
 }
 // Searching for a relationship by referenced table name
 {
-  let result: FindMatchingRelationships<
-    'users',
-    Database['public']['Tables']['messages']['Relationships']
+  let result: FindMatchingTableRelationships<
+    Database['public'],
+    Database['public']['Tables']['messages']['Relationships'],
+    'users'
   >
   let expected: {
     foreignKeyName: 'messages_username_fkey'
@@ -99,13 +78,14 @@ import { ParseQuery } from '../../src/select-query-parser/parser/parser'
     isOneToOne: false
     referencedRelation: 'users'
     referencedColumns: ['username']
-  }
+  } & { match: 'refrel' }
   expectType<TypeEqual<typeof result, typeof expected>>(true)
 }
 {
-  let result: FindMatchingRelationships<
-    'channels',
-    Database['public']['Tables']['messages']['Relationships']
+  let result: FindMatchingTableRelationships<
+    Database['public'],
+    Database['public']['Tables']['messages']['Relationships'],
+    'channels'
   >
   let expected: {
     foreignKeyName: 'messages_channel_id_fkey'
@@ -113,20 +93,22 @@ import { ParseQuery } from '../../src/select-query-parser/parser/parser'
     isOneToOne: false
     referencedRelation: 'channels'
     referencedColumns: ['id']
-  }
+  } & { match: 'refrel' }
   expectType<TypeEqual<typeof result, typeof expected>>(true)
 }
 
 // IsRelationNullable
 {
   type BestFriendsTable = Database['public']['Tables']['best_friends']
-  type NonNullableRelation = FindMatchingRelationships<
-    'best_friends_first_user_fkey',
-    BestFriendsTable['Relationships']
+  type NonNullableRelation = FindMatchingTableRelationships<
+    Database['public'],
+    BestFriendsTable['Relationships'],
+    'best_friends_first_user_fkey'
   >
-  type NullableRelation = FindMatchingRelationships<
-    'best_friends_third_wheel_fkey',
-    BestFriendsTable['Relationships']
+  type NullableRelation = FindMatchingTableRelationships<
+    Database['public'],
+    BestFriendsTable['Relationships'],
+    'best_friends_third_wheel_fkey'
   >
   let nonNullableResult: IsRelationNullable<BestFriendsTable, NonNullableRelation>
   let nullableResult: IsRelationNullable<BestFriendsTable, NullableRelation>

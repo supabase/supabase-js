@@ -49,3 +49,12 @@ INSERT INTO best_friends(id, first_user, second_user, third_wheel)
 VALUES
   (1, 'supabot', 'kiwicopple', 'awailas'),
   (2, 'supabot', 'awailas', NULL);
+
+INSERT INTO public.collections (id, description, parent_id)
+VALUES
+  (1, 'Root Collection', NULL),
+  (2, 'Child of Root', 1),
+  (3, 'Another Child of Root', 1),
+  (4, 'Grandchild', 2),
+  (5, 'Sibling of Grandchild', 2),
+  (6, 'Child of Another Root', 3);

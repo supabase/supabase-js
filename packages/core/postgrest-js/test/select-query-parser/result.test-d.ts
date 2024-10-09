@@ -53,3 +53,20 @@ type SelectQueryFromTableResult<
   }
   expectType<TypeEqual<typeof result, typeof expected>>(true)
 }
+
+// Self referencing relation
+{
+  const { from, select } = selectParams.selfReferenceRelation
+  let result: SelectQueryFromTableResult<typeof from, typeof select>
+  let expected: {
+    id: number
+    description: string | null
+    parent_id: number | null
+    collections: {
+      id: number
+      description: string | null
+      parent_id: number | null
+    }[]
+  }
+  expectType<TypeEqual<typeof result, typeof expected>>(true)
+}

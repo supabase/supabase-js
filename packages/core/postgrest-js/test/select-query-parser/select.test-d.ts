@@ -701,3 +701,38 @@ type Schema = Database['public']
   }
   expectType<TypeEqual<typeof result, typeof expected>>(true)
 }
+
+// self reference relation
+{
+  const { data } = await selectQueries.selfReferenceRelation.limit(1).single()
+  let result: Exclude<typeof data, null>
+  let expected: {
+    id: number
+    description: string | null
+    parent_id: number | null
+    collections: {
+      id: number
+      description: string | null
+      parent_id: number | null
+    }[]
+  }
+  expectType<TypeEqual<typeof result, typeof expected>>(true)
+}
+
+// self reference relation via column
+{
+  const { data } = await selectQueries.selfReferenceRelationViaColumn.limit(1).single()
+  let result: Exclude<typeof data, null>
+  let expected: {
+    description: string | null
+    id: number
+    parent_id:
+      | (number & {
+          description: string | null
+          id: number
+          parent_id: number | null
+        })
+      | null
+  }
+  expectType<TypeEqual<typeof result, typeof expected>>(true)
+}

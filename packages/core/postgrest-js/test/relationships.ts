@@ -169,6 +169,14 @@ export const selectParams = {
     from: 'channels',
     select: 'id, messages!channel_id!inner(id, username)',
   },
+  selfReferenceRelation: {
+    from: 'collections',
+    select: '*, collections(*)',
+  },
+  selfReferenceRelationViaColumn: {
+    from: 'collections',
+    select: '*, parent_id(*)',
+  },
 } as const
 
 export const selectQueries = {
@@ -335,6 +343,12 @@ export const selectQueries = {
   innerJoinOnManyRelation: postgrest
     .from(selectParams.innerJoinOnManyRelation.from)
     .select(selectParams.innerJoinOnManyRelation.select),
+  selfReferenceRelation: postgrest
+    .from(selectParams.selfReferenceRelation.from)
+    .select(selectParams.selfReferenceRelation.select),
+  selfReferenceRelationViaColumn: postgrest
+    .from(selectParams.selfReferenceRelationViaColumn.from)
+    .select(selectParams.selfReferenceRelationViaColumn.select),
 } as const
 
 test('nested query with selective fields', async () => {
@@ -1735,6 +1749,56 @@ test('inner join on many relation', async () => {
             "username": "supabot",
           },
         ],
+      },
+      "error": null,
+      "status": 200,
+      "statusText": "OK",
+    }
+  `)
+})
+
+test('self reference relation', async () => {
+  const res = await selectQueries.selfReferenceRelation.limit(1).single()
+  expect(res).toMatchInlineSnapshot(`
+    Object {
+      "count": null,
+      "data": Object {
+        "collections": Array [
+          Object {
+            "description": "Child of Root",
+            "id": 2,
+            "parent_id": 1,
+          },
+          Object {
+            "description": "Another Child of Root",
+            "id": 3,
+            "parent_id": 1,
+          },
+        ],
+        "description": "Root Collection",
+        "id": 1,
+        "parent_id": null,
+      },
+      "error": null,
+      "status": 200,
+      "statusText": "OK",
+    }
+  `)
+})
+
+test('self reference relation via column', async () => {
+  const res = await selectQueries.selfReferenceRelationViaColumn.eq('id', 2).limit(1).single()
+  expect(res).toMatchInlineSnapshot(`
+    Object {
+      "count": null,
+      "data": Object {
+        "description": "Child of Root",
+        "id": 2,
+        "parent_id": Object {
+          "description": "Root Collection",
+          "id": 1,
+          "parent_id": null,
+        },
       },
       "error": null,
       "status": 200,
