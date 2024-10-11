@@ -12,7 +12,7 @@ import {
   IsRelationNullable,
 } from '../../src/select-query-parser/utils'
 import { Json } from '../../src/select-query-parser/types'
-import { ParseQuery } from '../../src/select-query-parser/parser/parser'
+import { ParseQuery } from '../../src/select-query-parser/parser'
 
 // This test file is here to ensure some of our helpers behave as expected for ease of development
 // and debugging purposes

@@ -1,4 +1,4 @@
-import { FieldNode, Node, SpreadNode } from './parser/ast'
+import { Ast } from './parser'
 import {
   AggregateFunctions,
   ContainsNull,
@@ -12,24 +12,22 @@ import {
 
 export type SelectQueryError<Message extends string> = { error: true } & Message
 
-export type ProcessedNodeResult = Record<string, unknown> | SelectQueryError<string>
-
 type RequireHintingSelectQueryError<
   DistantName extends string,
   RelationName extends string
 > = SelectQueryError<`Could not embed because more than one relationship was found for '${DistantName}' and '${RelationName}' you need to hint the column with ${DistantName}!<columnName> ?`>
 
-export type GetFieldNodeResultName<Field extends FieldNode> = Field['alias'] extends string
+export type GetFieldNodeResultName<Field extends Ast.FieldNode> = Field['alias'] extends string
   ? Field['alias']
   : Field['aggregateFunction'] extends AggregateFunctions
   ? Field['aggregateFunction']
   : Field['name']
 
-type FilterRelationNodes<Nodes extends Node[]> = UnionToArray<
+type FilterRelationNodes<Nodes extends Ast.Node[]> = UnionToArray<
   {
-    [K in keyof Nodes]: Nodes[K] extends SpreadNode
+    [K in keyof Nodes]: Nodes[K] extends Ast.SpreadNode
       ? Nodes[K]['target']
-      : Nodes[K] extends FieldNode
+      : Nodes[K] extends Ast.FieldNode
       ? IsNonEmptyArray<Nodes[K]['children']> extends true
         ? Nodes[K]
         : never
@@ -37,11 +35,11 @@ type FilterRelationNodes<Nodes extends Node[]> = UnionToArray<
   }[number]
 >
 
-export type ResolveRelationships<
+type ResolveRelationships<
   Schema extends GenericSchema,
   RelationName extends string,
   Relationships extends GenericRelationship[],
-  Nodes extends FieldNode[]
+  Nodes extends Ast.FieldNode[]
 > = UnionToArray<{
   [K in keyof Nodes]: ResolveRelationship<
     Schema,
@@ -101,8 +99,8 @@ export type CheckDuplicateEmbededReference<
   Schema extends GenericSchema,
   RelationName extends string,
   Relationships extends GenericRelationship[],
-  Nodes extends Node[]
-> = FilterRelationNodes<Nodes> extends infer RelationsNodes extends FieldNode[]
+  Nodes extends Ast.Node[]
+> = FilterRelationNodes<Nodes> extends infer RelationsNodes extends Ast.FieldNode[]
   ? ResolveRelationships<
       Schema,
       RelationName,
@@ -196,7 +194,7 @@ type CheckRelationshipError<
 export type ResolveRelationship<
   Schema extends GenericSchema,
   Relationships extends GenericRelationship[],
-  Field extends FieldNode,
+  Field extends Ast.FieldNode,
   CurrentTableOrView extends keyof TablesAndViews<Schema>
 > = ResolveReverseRelationship<
   Schema,
@@ -220,7 +218,7 @@ export type ResolveRelationship<
 type ResolveReverseRelationship<
   Schema extends GenericSchema,
   Relationships extends GenericRelationship[],
-  Field extends FieldNode,
+  Field extends Ast.FieldNode,
   CurrentTableOrView extends keyof TablesAndViews<Schema>
 > = FindFieldMatchingRelationships<Schema, Relationships, Field> extends infer FoundRelation
   ? FoundRelation extends never
@@ -376,12 +374,12 @@ type FilterRelationships<R, TName, From> = R extends readonly (infer Rel)[]
 // Find a relationship from the parent to the childrens
 type ResolveForwardRelationship<
   Schema extends GenericSchema,
-  Field extends FieldNode,
+  Field extends Ast.FieldNode,
   CurrentTableOrView extends keyof TablesAndViews<Schema>
 > = FindFieldMatchingRelationships<
   Schema,
   TablesAndViews<Schema>[Field['name']]['Relationships'],
-  FieldNode & { name: CurrentTableOrView; hint: Field['hint'] }
+  Ast.FieldNode & { name: CurrentTableOrView; hint: Field['hint'] }
 > extends infer FoundByName extends GenericRelationship
   ? {
       referencedTable: TablesAndViews<Schema>[Field['name']]
@@ -415,7 +413,7 @@ type ResolveForwardRelationship<
 export type FindFieldMatchingRelationships<
   Schema extends GenericSchema,
   Relationships extends GenericRelationship[],
-  Field extends FieldNode
+  Field extends Ast.FieldNode
 > = Field extends { hint?: infer Hint extends string }
   ? FindMatchingHintTableRelationships<
       Schema,
