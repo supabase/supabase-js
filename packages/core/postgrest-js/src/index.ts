@@ -29,3 +29,6 @@ export type {
   PostgrestSingleResponse,
   PostgrestMaybeSingleResponse,
 } from './types'
+// https://github.com/supabase/postgrest-js/issues/551
+// To be replaced with a helper type that only uses public types
+export type { GetResult as UnstableGetResult } from './select-query-parser/result'
