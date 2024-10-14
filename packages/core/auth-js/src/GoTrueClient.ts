@@ -1190,7 +1190,6 @@ export default class GoTrueClient {
 
           await this._removeSession()
           await removeItemAsync(this.storage, `${this.storageKey}-code-verifier`)
-          await this._notifyAllSubscribers('SIGNED_OUT', null)
         }
 
         return { data: { user: null }, error }
@@ -1587,7 +1586,6 @@ export default class GoTrueClient {
       if (scope !== 'others') {
         await this._removeSession()
         await removeItemAsync(this.storage, `${this.storageKey}-code-verifier`)
-        await this._notifyAllSubscribers('SIGNED_OUT', null)
       }
       return { error: null }
     })
@@ -1875,7 +1873,7 @@ export default class GoTrueClient {
   }
 
   /**
-   * Recovers the session from LocalStorage and refreshes
+   * Recovers the session from LocalStorage and refreshes the token
    * Note: this method is async to accommodate for AsyncStorage e.g. in React native.
    */
   private async _recoverAndRefresh() {
@@ -1973,7 +1971,6 @@ export default class GoTrueClient {
 
         if (!isAuthRetryableFetchError(error)) {
           await this._removeSession()
-          await this._notifyAllSubscribers('SIGNED_OUT', null)
         }
 
         this.refreshingDeferred?.resolve(result)
@@ -2041,6 +2038,7 @@ export default class GoTrueClient {
     this._debug('#_removeSession()')
 
     await removeItemAsync(this.storage, this.storageKey)
+    await this._notifyAllSubscribers('SIGNED_OUT', null)
   }
 
   /**
@@ -2084,11 +2082,11 @@ export default class GoTrueClient {
       // finished and tests run endlessly. This can be prevented by calling
       // `unref()` on the returned object.
       ticker.unref()
-      // @ts-ignore
+      // @ts-expect-error TS has no context of Deno
     } else if (typeof Deno !== 'undefined' && typeof Deno.unrefTimer === 'function') {
       // similar like for NodeJS, but with the Deno API
       // https://deno.land/api@latest?unstable&s=Deno.unrefTimer
-      // @ts-ignore
+      // @ts-expect-error TS has no context of Deno
       Deno.unrefTimer(ticker)
     }
 
