@@ -16,7 +16,7 @@ const ALLOWED_CONVENTIONAL_COMMIT_PREFIXES = [
 ];
 
 const object = process.argv[2];
-const payload = JSON.parse(fs.readFileSync(process.stdin.fd, "utf-8"));
+const payload = JSON.parse(fs.readFileSync(process.argv[3], "utf-8"));
 
 let validate = [];
 
