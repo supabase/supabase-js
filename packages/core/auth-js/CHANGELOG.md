@@ -1,5 +1,15 @@
 # Changelog
 
+## [2.65.1](https://github.com/supabase/auth-js/compare/v2.65.0...v2.65.1) (2024-10-14)
+
+
+### Bug Fixes
+
+* Call `SIGNED_OUT` event where session is removed ([#854](https://github.com/supabase/auth-js/issues/854)) ([436fd9f](https://github.com/supabase/auth-js/commit/436fd9f967ad6d515b8eca179d06032619a1b071))
+* improve `mfa.enroll` return types ([#956](https://github.com/supabase/auth-js/issues/956)) ([8a1ec06](https://github.com/supabase/auth-js/commit/8a1ec0602792191bd235d51fd45c0ec2cabdf216))
+* move MFA sub types to internal file ([#964](https://github.com/supabase/auth-js/issues/964)) ([4b7455c](https://github.com/supabase/auth-js/commit/4b7455c2631ca4e00f01275c7342eb37756ede23))
+* remove phone mfa deletion, match on error codes ([#963](https://github.com/supabase/auth-js/issues/963)) ([ef3911c](https://github.com/supabase/auth-js/commit/ef3911cd1a082a6825ce25fe326081e096bd55f5))
+
 ## [2.65.0](https://github.com/supabase/auth-js/compare/v2.64.4...v2.65.0) (2024-08-27)
 
 
