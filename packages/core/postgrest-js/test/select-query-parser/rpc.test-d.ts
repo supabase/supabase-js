@@ -10,3 +10,10 @@ import { TypeEqual } from 'ts-expect'
   let expected: Database['public']['Functions']['get_username_and_status']['Returns'][number]
   expectType<TypeEqual<typeof result, typeof expected>>(true)
 }
+
+// select on an rpc call
+{
+  const { data, error } = await postgrest.rpc('get_username_and_status').select('username')
+  if (error) throw error
+  expectType<{ username: string }[]>(data)
+}
