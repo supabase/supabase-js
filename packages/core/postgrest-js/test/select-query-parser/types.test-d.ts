@@ -154,7 +154,7 @@ import { ParseQuery } from '../../src/select-query-parser/parser'
       data: Json | null
       status: Database['public']['Enums']['user_status'] | null
       username: string
-    }
+    } | null
   }
   expectType<r1>(expected!)
   type r2 = ProcessNodes<Schema, Row, RelationName, Relationships, ParsedQuery>
