@@ -141,7 +141,7 @@ export default class PostgrestClient<
         : never
       : never,
     Fn['Returns'],
-    null,
+    FnName,
     null
   > {
     let method: 'HEAD' | 'GET' | 'POST'

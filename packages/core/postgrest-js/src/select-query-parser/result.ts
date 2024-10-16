@@ -34,7 +34,9 @@ export type GetResult<
   Relationships,
   Query extends string
 > = Relationships extends null // For .rpc calls the passed relationships will be null in that case, the result will always be the function return type
-  ? Row
+  ? ParseQuery<Query> extends infer ParsedQuery extends Ast.Node[]
+    ? RPCCallNodes<ParsedQuery, RelationName extends string ? RelationName : 'rpc_call', Row>
+    : Row
   : ParseQuery<Query> extends infer ParsedQuery
   ? ParsedQuery extends Ast.Node[]
     ? RelationName extends string
@@ -44,6 +46,40 @@ export type GetResult<
       : SelectQueryError<'Invalid RelationName cannot infer result type'>
     : ParsedQuery
   : never
+
+/**
+ * Processes a single Node from a select chained after a rpc call
+ *
+ * @param Row - The type of a row in the current table.
+ * @param RelationName - The name of the current rpc function
+ * @param NodeType - The Node to process.
+ */
+export type ProcessRPCNode<
+  Row extends Record<string, unknown>,
+  RelationName extends string,
+  NodeType extends Ast.Node
+> = NodeType extends Ast.StarNode // If the selection is *
+  ? Row
+  : NodeType extends Ast.FieldNode
+  ? ProcessSimpleField<Row, RelationName, NodeType>
+  : SelectQueryError<'Unsupported node type.'>
+/**
+ * Process select call that can be chained after an rpc call
+ */
+export type RPCCallNodes<
+  Nodes extends Ast.Node[],
+  RelationName extends string,
+  Row extends Record<string, unknown>,
+  Acc extends Record<string, unknown> = {} // Acc is now an object
+> = Nodes extends [infer FirstNode extends Ast.Node, ...infer RestNodes extends Ast.Node[]]
+  ? ProcessRPCNode<Row, RelationName, FirstNode> extends infer FieldResult
+    ? FieldResult extends Record<string, unknown>
+      ? RPCCallNodes<RestNodes, RelationName, Row, Acc & FieldResult>
+      : FieldResult extends SelectQueryError<infer E>
+      ? SelectQueryError<E>
+      : SelectQueryError<'Could not retrieve a valid record or error value'>
+    : SelectQueryError<'Processing node failed.'>
+  : Prettify<Acc>
 
 /**
  * Recursively processes an array of Nodes and accumulates the resulting TypeScript type.
