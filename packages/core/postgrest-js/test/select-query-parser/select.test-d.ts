@@ -736,3 +736,10 @@ type Schema = Database['public']
   }
   expectType<TypeEqual<typeof result, typeof expected>>(true)
 }
+
+// aggregate on missing column with alias
+{
+  const { data, error } = await selectQueries.aggregateOnMissingColumnWithAlias.limit(1).single()
+  if (error) throw error
+  expectType<SelectQueryError<`column 'missing_column' does not exist on 'users'.`>>(data)
+}

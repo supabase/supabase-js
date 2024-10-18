@@ -165,21 +165,21 @@ type ProcessSimpleField<
   Row extends Record<string, unknown>,
   RelationName extends string,
   Field extends Ast.FieldNode
-> = Field['aggregateFunction'] extends AggregateFunctions
-  ? {
-      // An aggregate function will always override the column name id.sum() will become sum
-      // except if it has been aliased
-      [K in GetFieldNodeResultName<Field>]: Field['castType'] extends PostgreSQLTypes
-        ? TypeScriptTypes<Field['castType']>
-        : number
-    }
-  : [Field['name']] extends [keyof Row]
-  ? {
-      // Aliases override the property name in the result
-      [K in GetFieldNodeResultName<Field>]: Field['castType'] extends PostgreSQLTypes // We apply the detected casted as the result type
-        ? TypeScriptTypes<Field['castType']>
-        : Row[Field['name']]
-    }
+> = Field['name'] extends keyof Row | 'count'
+  ? Field['aggregateFunction'] extends AggregateFunctions
+    ? {
+        // An aggregate function will always override the column name id.sum() will become sum
+        // except if it has been aliased
+        [K in GetFieldNodeResultName<Field>]: Field['castType'] extends PostgreSQLTypes
+          ? TypeScriptTypes<Field['castType']>
+          : number
+      }
+    : {
+        // Aliases override the property name in the result
+        [K in GetFieldNodeResultName<Field>]: Field['castType'] extends PostgreSQLTypes // We apply the detected casted as the result type
+          ? TypeScriptTypes<Field['castType']>
+          : Row[Field['name']]
+      }
   : SelectQueryError<`column '${Field['name']}' does not exist on '${RelationName}'.`>
 
 /**

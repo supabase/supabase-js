@@ -177,6 +177,10 @@ export const selectParams = {
     from: 'collections',
     select: '*, parent_id(*)',
   },
+  aggregateOnMissingColumnWithAlias: {
+    from: 'users',
+    select: 'alias:missing_column.count()',
+  },
 } as const
 
 export const selectQueries = {
@@ -349,6 +353,9 @@ export const selectQueries = {
   selfReferenceRelationViaColumn: postgrest
     .from(selectParams.selfReferenceRelationViaColumn.from)
     .select(selectParams.selfReferenceRelationViaColumn.select),
+  aggregateOnMissingColumnWithAlias: postgrest
+    .from(selectParams.aggregateOnMissingColumnWithAlias.from)
+    .select(selectParams.aggregateOnMissingColumnWithAlias.select),
 } as const
 
 test('nested query with selective fields', async () => {
@@ -1803,6 +1810,24 @@ test('self reference relation via column', async () => {
       "error": null,
       "status": 200,
       "statusText": "OK",
+    }
+  `)
+})
+
+test('aggregate on missing column with alias', async () => {
+  const res = await selectQueries.aggregateOnMissingColumnWithAlias.eq('id', 1).limit(1).single()
+  expect(res).toMatchInlineSnapshot(`
+    Object {
+      "count": null,
+      "data": null,
+      "error": Object {
+        "code": "42703",
+        "details": null,
+        "hint": null,
+        "message": "column users.missing_column does not exist",
+      },
+      "status": 400,
+      "statusText": "Bad Request",
     }
   `)
 })
