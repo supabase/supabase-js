@@ -1,9 +1,11 @@
-import crossFetch from 'cross-fetch'
+// @ts-ignore
+import nodeFetch from '@supabase/node-fetch'
 
-import type { Fetch, PostgrestResponse } from './types'
+import type { Fetch, PostgrestSingleResponse } from './types'
+import PostgrestError from './PostgrestError'
 
 export default abstract class PostgrestBuilder<Result>
-  implements PromiseLike<PostgrestResponse<Result>>
+  implements PromiseLike<PostgrestSingleResponse<Result>>
 {
   protected method: 'GET' | 'HEAD' | 'POST' | 'PATCH' | 'DELETE'
   protected url: URL
@@ -13,7 +15,7 @@ export default abstract class PostgrestBuilder<Result>
   protected shouldThrowOnError = false
   protected signal?: AbortSignal
   protected fetch: Fetch
-  protected allowEmpty: boolean
+  protected isMaybeSingle: boolean
 
   constructor(builder: PostgrestBuilder<Result>) {
     this.method = builder.method
@@ -23,12 +25,12 @@ export default abstract class PostgrestBuilder<Result>
     this.body = builder.body
     this.shouldThrowOnError = builder.shouldThrowOnError
     this.signal = builder.signal
-    this.allowEmpty = builder.allowEmpty
+    this.isMaybeSingle = builder.isMaybeSingle
 
     if (builder.fetch) {
       this.fetch = builder.fetch
     } else if (typeof fetch === 'undefined') {
-      this.fetch = crossFetch
+      this.fetch = nodeFetch
     } else {
       this.fetch = fetch
     }
@@ -45,9 +47,18 @@ export default abstract class PostgrestBuilder<Result>
     return this
   }
 
-  then<TResult1 = PostgrestResponse<Result>, TResult2 = never>(
+  /**
+   * Set an HTTP header for the request.
+   */
+  setHeader(name: string, value: string): this {
+    this.headers = { ...this.headers }
+    this.headers[name] = value
+    return this
+  }
+
+  then<TResult1 = PostgrestSingleResponse<Result>, TResult2 = never>(
     onfulfilled?:
-      | ((value: PostgrestResponse<Result>) => TResult1 | PromiseLike<TResult1>)
+      | ((value: PostgrestSingleResponse<Result>) => TResult1 | PromiseLike<TResult1>)
       | undefined
       | null,
     onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null
@@ -82,7 +93,7 @@ export default abstract class PostgrestBuilder<Result>
       if (res.ok) {
         if (this.method !== 'HEAD') {
           const body = await res.text()
-          if (body === "") {
+          if (body === '') {
             // Prefer: return=minimal
           } else if (this.headers['Accept'] === 'text/csv') {
             data = body
@@ -101,25 +112,61 @@ export default abstract class PostgrestBuilder<Result>
         if (countHeader && contentRange && contentRange.length > 1) {
           count = parseInt(contentRange[1])
         }
+
+        // Temporary partial fix for https://github.com/supabase/postgrest-js/issues/361
+        // Issue persists e.g. for `.insert([...]).select().maybeSingle()`
+        if (this.isMaybeSingle && this.method === 'GET' && Array.isArray(data)) {
+          if (data.length > 1) {
+            error = {
+              // https://github.com/PostgREST/postgrest/blob/a867d79c42419af16c18c3fb019eba8df992626f/src/PostgREST/Error.hs#L553
+              code: 'PGRST116',
+              details: `Results contain ${data.length} rows, application/vnd.pgrst.object+json requires 1 row`,
+              hint: null,
+              message: 'JSON object requested, multiple (or no) rows returned',
+            }
+            data = null
+            count = null
+            status = 406
+            statusText = 'Not Acceptable'
+          } else if (data.length === 1) {
+            data = data[0]
+          } else {
+            data = null
+          }
+        }
       } else {
         const body = await res.text()
 
         try {
           error = JSON.parse(body)
+
+          // Workaround for https://github.com/supabase/postgrest-js/issues/295
+          if (Array.isArray(error) && res.status === 404) {
+            data = []
+            error = null
+            status = 200
+            statusText = 'OK'
+          }
         } catch {
-          error = {
-            message: body,
+          // Workaround for https://github.com/supabase/postgrest-js/issues/295
+          if (res.status === 404 && body === '') {
+            status = 204
+            statusText = 'No Content'
+          } else {
+            error = {
+              message: body,
+            }
           }
         }
 
-        if (error && this.allowEmpty && error?.details?.includes('Results contain 0 rows')) {
+        if (error && this.isMaybeSingle && error?.details?.includes('0 rows')) {
           error = null
           status = 200
           statusText = 'OK'
         }
 
         if (error && this.shouldThrowOnError) {
-          throw error
+          throw new PostgrestError(error)
         }
       }
 
@@ -136,10 +183,10 @@ export default abstract class PostgrestBuilder<Result>
     if (!this.shouldThrowOnError) {
       res = res.catch((fetchError) => ({
         error: {
-          message: `FetchError: ${fetchError.message}`,
-          details: '',
+          message: `${fetchError?.name ?? 'FetchError'}: ${fetchError?.message}`,
+          details: `${fetchError?.stack ?? ''}`,
           hint: '',
-          code: fetchError.code || '',
+          code: `${fetchError?.code ?? ''}`,
         },
         data: null,
         count: null,

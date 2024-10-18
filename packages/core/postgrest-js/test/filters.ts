@@ -18,6 +18,9 @@ test('not', async () => {
         Object {
           "status": "ONLINE",
         },
+        Object {
+          "status": "ONLINE",
+        },
       ],
       "error": null,
       "status": 200,
@@ -81,6 +84,9 @@ test('neq', async () => {
           "username": "awailas",
         },
         Object {
+          "username": "jsonuser",
+        },
+        Object {
           "username": "dragarcia",
         },
       ],
@@ -99,6 +105,9 @@ test('gt', async () => {
       "data": Array [
         Object {
           "id": 2,
+        },
+        Object {
+          "id": 4,
         },
       ],
       "error": null,
@@ -119,6 +128,9 @@ test('gte', async () => {
         },
         Object {
           "id": 2,
+        },
+        Object {
+          "id": 4,
         },
       ],
       "error": null,
@@ -182,6 +194,49 @@ test('like', async () => {
   `)
 })
 
+test('likeAllOf', async () => {
+  const res = await postgrest
+    .from('users')
+    .select('username')
+    .likeAllOf('username', ['%supa%', '%bot%'])
+  expect(res).toMatchInlineSnapshot(`
+    Object {
+      "count": null,
+      "data": Array [
+        Object {
+          "username": "supabot",
+        },
+      ],
+      "error": null,
+      "status": 200,
+      "statusText": "OK",
+    }
+  `)
+})
+
+test('likeAnyOf', async () => {
+  const res = await postgrest
+    .from('users')
+    .select('username')
+    .likeAnyOf('username', ['%supa%', '%kiwi%'])
+  expect(res).toMatchInlineSnapshot(`
+    Object {
+      "count": null,
+      "data": Array [
+        Object {
+          "username": "supabot",
+        },
+        Object {
+          "username": "kiwicopple",
+        },
+      ],
+      "error": null,
+      "status": 200,
+      "statusText": "OK",
+    }
+  `)
+})
+
 test('ilike', async () => {
   const res = await postgrest.from('users').select('username').ilike('username', '%SUPA%')
   expect(res).toMatchInlineSnapshot(`
@@ -190,6 +245,49 @@ test('ilike', async () => {
       "data": Array [
         Object {
           "username": "supabot",
+        },
+      ],
+      "error": null,
+      "status": 200,
+      "statusText": "OK",
+    }
+  `)
+})
+
+test('ilikeAllOf', async () => {
+  const res = await postgrest
+    .from('users')
+    .select('username')
+    .ilikeAllOf('username', ['%SUPA%', '%bot%'])
+  expect(res).toMatchInlineSnapshot(`
+    Object {
+      "count": null,
+      "data": Array [
+        Object {
+          "username": "supabot",
+        },
+      ],
+      "error": null,
+      "status": 200,
+      "statusText": "OK",
+    }
+  `)
+})
+
+test('ilikeAnyOf', async () => {
+  const res = await postgrest
+    .from('users')
+    .select('username')
+    .ilikeAnyOf('username', ['%supa%', '%KIWI%'])
+  expect(res).toMatchInlineSnapshot(`
+    Object {
+      "count": null,
+      "data": Array [
+        Object {
+          "username": "supabot",
+        },
+        Object {
+          "username": "kiwicopple",
         },
       ],
       "error": null,
@@ -226,7 +324,8 @@ test('is', async () => {
 })
 
 test('in', async () => {
-  const res = await postgrest.from('users').select('status').in('status', ['ONLINE', 'OFFLINE'])
+  const statuses = ['ONLINE', 'OFFLINE'] as const
+  const res = await postgrest.from('users').select('status').in('status', statuses)
   expect(res).toMatchInlineSnapshot(`
     Object {
       "count": null,
@@ -236,6 +335,9 @@ test('in', async () => {
         },
         Object {
           "status": "OFFLINE",
+        },
+        Object {
+          "status": "ONLINE",
         },
         Object {
           "status": "ONLINE",
@@ -337,6 +439,9 @@ test('rangeGte', async () => {
         Object {
           "age_range": "[20,30)",
         },
+        Object {
+          "age_range": "[20,30)",
+        },
       ],
       "error": null,
       "status": 200,
@@ -391,6 +496,9 @@ test('overlaps', async () => {
     Object {
       "count": null,
       "data": Array [
+        Object {
+          "age_range": "[20,30)",
+        },
         Object {
           "age_range": "[20,30)",
         },

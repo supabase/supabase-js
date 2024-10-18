@@ -4,10 +4,9 @@
     "declaration": true,
     "declarationMap": true,
     "module": "CommonJS",
-    "outDir": "dist/main",
-    "rootDir": "src",
+    "outDir": "dist/cjs",
     "sourceMap": true,
-    "target": "ES2015",
+    "target": "ES2017",
 
     "strict": true,
 

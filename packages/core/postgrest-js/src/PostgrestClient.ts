@@ -25,7 +25,7 @@ export default class PostgrestClient<
 > {
   url: string
   headers: Record<string, string>
-  schema?: SchemaName
+  schemaName?: SchemaName
   fetch?: Fetch
 
   // TODO: Add back shouldThrowOnError once we figure out the typings
@@ -52,28 +52,48 @@ export default class PostgrestClient<
   ) {
     this.url = url
     this.headers = { ...DEFAULT_HEADERS, ...headers }
-    this.schema = schema
+    this.schemaName = schema
     this.fetch = fetch
   }
 
+  from<
+    TableName extends string & keyof Schema['Tables'],
+    Table extends Schema['Tables'][TableName]
+  >(relation: TableName): PostgrestQueryBuilder<Schema, Table, TableName>
+  from<ViewName extends string & keyof Schema['Views'], View extends Schema['Views'][ViewName]>(
+    relation: ViewName
+  ): PostgrestQueryBuilder<Schema, View, ViewName>
   /**
    * Perform a query on a table or a view.
    *
    * @param relation - The table or view name to query
    */
-  from<
-    TableName extends string & keyof Schema['Tables'],
-    Table extends Schema['Tables'][TableName]
-  >(relation: TableName): PostgrestQueryBuilder<Table>
-  from<ViewName extends string & keyof Schema['Views'], View extends Schema['Views'][ViewName]>(
-    relation: ViewName
-  ): PostgrestQueryBuilder<View>
-  from(relation: string): PostgrestQueryBuilder<any>
-  from(relation: string): PostgrestQueryBuilder<any> {
+  from(relation: string): PostgrestQueryBuilder<Schema, any, any> {
     const url = new URL(`${this.url}/${relation}`)
-    return new PostgrestQueryBuilder<any>(url, {
+    return new PostgrestQueryBuilder(url, {
       headers: { ...this.headers },
-      schema: this.schema,
+      schema: this.schemaName,
+      fetch: this.fetch,
+    })
+  }
+
+  /**
+   * Select a schema to query or perform an function (rpc) call.
+   *
+   * The schema needs to be on the list of exposed schemas inside Supabase.
+   *
+   * @param schema - The schema to query
+   */
+  schema<DynamicSchema extends string & keyof Database>(
+    schema: DynamicSchema
+  ): PostgrestClient<
+    Database,
+    DynamicSchema,
+    Database[DynamicSchema] extends GenericSchema ? Database[DynamicSchema] : any
+  > {
+    return new PostgrestClient(this.url, {
+      headers: this.headers,
+      schema,
       fetch: this.fetch,
     })
   }
@@ -86,6 +106,8 @@ export default class PostgrestClient<
    * @param options - Named parameters
    * @param options.head - When set to `true`, `data` will not be returned.
    * Useful if you only need the count.
+   * @param options.get - When set to `true`, the function will be called with
+   * read-only access mode.
    * @param options.count - Count algorithm to use to count rows returned by the
    * function. Only applicable for [set-returning
    * functions](https://www.postgresql.org/docs/current/functions-srf.html).
@@ -99,35 +121,43 @@ export default class PostgrestClient<
    * `"estimated"`: Uses exact count for low numbers and planned count for high
    * numbers.
    */
-  rpc<
-    FunctionName extends string & keyof Schema['Functions'],
-    Function_ extends Schema['Functions'][FunctionName]
-  >(
-    fn: FunctionName,
-    args: Function_['Args'] = {},
+  rpc<FnName extends string & keyof Schema['Functions'], Fn extends Schema['Functions'][FnName]>(
+    fn: FnName,
+    args: Fn['Args'] = {},
     {
       head = false,
+      get = false,
       count,
     }: {
       head?: boolean
+      get?: boolean
       count?: 'exact' | 'planned' | 'estimated'
     } = {}
   ): PostgrestFilterBuilder<
-    Function_['Returns'] extends any[]
-      ? Function_['Returns'][number] extends Record<string, unknown>
-        ? Function_['Returns'][number]
+    Schema,
+    Fn['Returns'] extends any[]
+      ? Fn['Returns'][number] extends Record<string, unknown>
+        ? Fn['Returns'][number]
         : never
       : never,
-    Function_['Returns']
+    Fn['Returns'],
+    FnName,
+    null
   > {
-    let method: 'HEAD' | 'POST'
+    let method: 'HEAD' | 'GET' | 'POST'
     const url = new URL(`${this.url}/rpc/${fn}`)
     let body: unknown | undefined
-    if (head) {
-      method = 'HEAD'
-      Object.entries(args).forEach(([name, value]) => {
-        url.searchParams.append(name, `${value}`)
-      })
+    if (head || get) {
+      method = head ? 'HEAD' : 'GET'
+      Object.entries(args)
+        // params with undefined value needs to be filtered out, otherwise it'll
+        // show up as `?param=undefined`
+        .filter(([_, value]) => value !== undefined)
+        // array values need special syntax
+        .map(([name, value]) => [name, Array.isArray(value) ? `{${value.join(',')}}` : `${value}`])
+        .forEach(([name, value]) => {
+          url.searchParams.append(name, value)
+        })
     } else {
       method = 'POST'
       body = args
@@ -142,10 +172,10 @@ export default class PostgrestClient<
       method,
       url,
       headers,
-      schema: this.schema,
+      schema: this.schemaName,
       body,
       fetch: this.fetch,
       allowEmpty: false,
-    } as unknown as PostgrestBuilder<Function_['Returns']>)
+    } as unknown as PostgrestBuilder<Fn['Returns']>)
   }
 }
