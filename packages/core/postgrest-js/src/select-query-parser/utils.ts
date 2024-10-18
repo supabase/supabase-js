@@ -226,7 +226,7 @@ type ResolveReverseRelationship<
     : FoundRelation extends { referencedRelation: infer RelatedRelationName extends string }
     ? RelatedRelationName extends keyof TablesAndViews<Schema>
       ? // If the relation was found via hinting we just return it without any more checks
-        FoundRelation extends { hint?: string }
+        FoundRelation extends { hint: string }
         ? {
             referencedTable: TablesAndViews<Schema>[RelatedRelationName]
             relation: FoundRelation
@@ -414,7 +414,7 @@ export type FindFieldMatchingRelationships<
   Schema extends GenericSchema,
   Relationships extends GenericRelationship[],
   Field extends Ast.FieldNode
-> = Field extends { hint?: infer Hint extends string }
+> = Field extends { hint: infer Hint extends string }
   ? FindMatchingHintTableRelationships<
       Schema,
       Relationships,
