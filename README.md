@@ -1,9 +1,7 @@
-# `supabase-js`
+# `supabase-js` - Isomorphic JavaScript Client for Supabase.
 
-An isomorphic JavaScript client for Supabase.
-
-- **Documentation:** https://supabase.com/docs/client/supabase-client
-- TypeDoc: https://supabase.github.io/supabase-js
+- **Documentation:** https://supabase.com/docs/reference/javascript/start
+- TypeDoc: https://supabase.github.io/supabase-js/v2/
 
 ## Usage
 
@@ -24,16 +22,16 @@ const supabase = createClient('https://xyzcompany.supabase.co', 'public-anon-key
 
 ### UMD
 
-You can now use plain `<script>`s to import supabase-js from CDNs, like:
+You can use plain `<script>`s to import supabase-js from CDNs, like:
 
 ```html
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 ```
 
 or even:
 
 ```html
-<script src="https://unpkg.com/@supabase/supabase-js"></script>
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 ```
 
 Then you can use it from a global `supabase` variable:
@@ -50,7 +48,7 @@ Then you can use it from a global `supabase` variable:
 
 ### ESM
 
-You can now use type="module" `<script>`s to import supabase-js from CDNs, like:
+You can use `<script type="module">` to import supabase-js from CDNs, like:
 
 ```html
 <script type="module">
@@ -62,6 +60,14 @@ You can now use type="module" `<script>`s to import supabase-js from CDNs, like:
 </script>
 ```
 
+### Deno
+
+You can use supabase-js in the Deno runtime via [JSR](https://jsr.io/@supabase/supabase-js):
+
+```js
+import { createClient } from 'jsr:@supabase/supabase-js@2'
+```
+
 ### Custom `fetch` implementation
 
 `supabase-js` uses the [`cross-fetch`](https://www.npmjs.com/package/cross-fetch) library to make HTTP requests, but an alternative `fetch` implementation can be provided as an option. This is most useful in environments where `cross-fetch` is not compatible, for instance Cloudflare Workers:
@@ -71,7 +77,9 @@ import { createClient } from '@supabase/supabase-js'
 
 // Provide a custom `fetch` implementation as an option
 const supabase = createClient('https://xyzcompany.supabase.co', 'public-anon-key', {
-  fetch: (...args) => fetch(...args),
+  global: {
+    fetch: (...args) => fetch(...args),
+  },
 })
 ```
 
@@ -80,3 +88,7 @@ const supabase = createClient('https://xyzcompany.supabase.co', 'public-anon-key
 We are building the features of Firebase using enterprise-grade, open source products. We support existing communities wherever possible, and if the products don’t exist we build them and open source them ourselves. Thanks to these sponsors who are making the OSS ecosystem better for everyone.
 
 [![New Sponsor](https://user-images.githubusercontent.com/10214025/90518111-e74bbb00-e198-11ea-8f88-c9e3c1aa4b5b.png)](https://github.com/sponsors/supabase)
+
+## Badges
+
+[![Coverage Status](https://coveralls.io/repos/github/supabase/supabase-js/badge.svg?branch=master)](https://coveralls.io/github/supabase/supabase-js?branch=master)

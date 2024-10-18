@@ -23,7 +23,7 @@ export function applySettingDefaults<
 >(
   options: SupabaseClientOptions<SchemaName>,
   defaults: SupabaseClientOptions<any>
-): SupabaseClientOptions<SchemaName> {
+): Required<SupabaseClientOptions<SchemaName>> {
   const {
     db: dbOptions,
     auth: authOptions,
@@ -37,7 +37,7 @@ export function applySettingDefaults<
     global: DEFAULT_GLOBAL_OPTIONS,
   } = defaults
 
-  return {
+  const result: Required<SupabaseClientOptions<SchemaName>> = {
     db: {
       ...DEFAULT_DB_OPTIONS,
       ...dbOptions,
@@ -54,5 +54,15 @@ export function applySettingDefaults<
       ...DEFAULT_GLOBAL_OPTIONS,
       ...globalOptions,
     },
+    accessToken: async () => '',
   }
+
+  if (options.accessToken) {
+    result.accessToken = options.accessToken
+  } else {
+    // hack around Required<>
+    delete (result as any).accessToken
+  }
+
+  return result
 }

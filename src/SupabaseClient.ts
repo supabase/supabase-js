@@ -1,5 +1,5 @@
 import { FunctionsClient } from '@supabase/functions-js'
-import { AuthChangeEvent } from '@supabase/gotrue-js'
+import { AuthChangeEvent } from '@supabase/auth-js'
 import {
   PostgrestClient,
   PostgrestFilterBuilder,
@@ -12,27 +12,16 @@ import {
   RealtimeClientOptions,
 } from '@supabase/realtime-js'
 import { StorageClient as SupabaseStorageClient } from '@supabase/storage-js'
-import { DEFAULT_HEADERS } from './lib/constants'
+import {
+  DEFAULT_GLOBAL_OPTIONS,
+  DEFAULT_DB_OPTIONS,
+  DEFAULT_AUTH_OPTIONS,
+  DEFAULT_REALTIME_OPTIONS,
+} from './lib/constants'
 import { fetchWithAuth } from './lib/fetch'
 import { stripTrailingSlash, applySettingDefaults } from './lib/helpers'
 import { SupabaseAuthClient } from './lib/SupabaseAuthClient'
 import { Fetch, GenericSchema, SupabaseClientOptions, SupabaseAuthClientOptions } from './lib/types'
-
-const DEFAULT_GLOBAL_OPTIONS = {
-  headers: DEFAULT_HEADERS,
-}
-
-const DEFAULT_DB_OPTIONS = {
-  schema: 'public',
-}
-
-const DEFAULT_AUTH_OPTIONS: SupabaseAuthClientOptions = {
-  autoRefreshToken: true,
-  persistSession: true,
-  detectSessionInUrl: true,
-}
-
-const DEFAULT_REALTIME_OPTIONS: RealtimeClientOptions = {}
 
 /**
  * Supabase Client.
@@ -52,20 +41,19 @@ export default class SupabaseClient<
    * Supabase Auth allows you to create and manage user sessions for access to data that is secured by access policies.
    */
   auth: SupabaseAuthClient
+  realtime: RealtimeClient
 
   protected realtimeUrl: string
   protected authUrl: string
   protected storageUrl: string
   protected functionsUrl: string
-  protected realtime: RealtimeClient
   protected rest: PostgrestClient<Database, SchemaName>
   protected storageKey: string
   protected fetch?: Fetch
-  protected changedAccessToken: string | undefined
+  protected changedAccessToken?: string
+  protected accessToken?: () => Promise<string>
 
-  protected headers: {
-    [key: string]: string
-  }
+  protected headers: Record<string, string>
 
   /**
    * Create a new client for use in the browser.
@@ -92,14 +80,8 @@ export default class SupabaseClient<
     this.realtimeUrl = `${_supabaseUrl}/realtime/v1`.replace(/^http/i, 'ws')
     this.authUrl = `${_supabaseUrl}/auth/v1`
     this.storageUrl = `${_supabaseUrl}/storage/v1`
+    this.functionsUrl = `${_supabaseUrl}/functions/v1`
 
-    const isPlatform = _supabaseUrl.match(/(supabase\.co)|(supabase\.in)/)
-    if (isPlatform) {
-      const urlParts = _supabaseUrl.split('.')
-      this.functionsUrl = `${urlParts[0]}.functions.${urlParts[1]}.${urlParts[2]}`
-    } else {
-      this.functionsUrl = `${_supabaseUrl}/functions/v1`
-    }
     // default storage key uses the supabase project ref as a namespace
     const defaultStorageKey = `sb-${new URL(this.authUrl).hostname.split('.')[0]}-auth-token`
     const DEFAULTS = {
@@ -111,30 +93,47 @@ export default class SupabaseClient<
 
     const settings = applySettingDefaults(options ?? {}, DEFAULTS)
 
-    this.storageKey = settings.auth?.storageKey ?? ''
-    this.headers = settings.global?.headers ?? {}
+    this.storageKey = settings.auth.storageKey ?? ''
+    this.headers = settings.global.headers ?? {}
 
-    this.auth = this._initSupabaseAuthClient(
-      settings.auth ?? {},
-      this.headers,
-      settings.global?.fetch
-    )
-    this.fetch = fetchWithAuth(supabaseKey, this._getAccessToken.bind(this), settings.global?.fetch)
+    if (!settings.accessToken) {
+      this.auth = this._initSupabaseAuthClient(
+        settings.auth ?? {},
+        this.headers,
+        settings.global.fetch
+      )
+    } else {
+      this.accessToken = settings.accessToken
+
+      this.auth = new Proxy<SupabaseAuthClient>({} as any, {
+        get: (_, prop) => {
+          throw new Error(
+            `@supabase/supabase-js: Supabase Client is configured with the accessToken option, accessing supabase.auth.${String(
+              prop
+            )} is not possible`
+          )
+        },
+      })
+    }
+
+    this.fetch = fetchWithAuth(supabaseKey, this._getAccessToken.bind(this), settings.global.fetch)
 
     this.realtime = this._initRealtimeClient({ headers: this.headers, ...settings.realtime })
     this.rest = new PostgrestClient(`${_supabaseUrl}/rest/v1`, {
       headers: this.headers,
-      schema: settings.db?.schema,
+      schema: settings.db.schema,
       fetch: this.fetch,
     })
 
-    this._listenForAuthEvents()
+    if (!settings.accessToken) {
+      this._listenForAuthEvents()
+    }
   }
 
   /**
    * Supabase Functions allows you to deploy and invoke edge functions.
    */
-  get functions() {
+  get functions(): FunctionsClient {
     return new FunctionsClient(this.functionsUrl, {
       headers: this.headers,
       customFetch: this.fetch,
@@ -144,53 +143,85 @@ export default class SupabaseClient<
   /**
    * Supabase Storage allows you to manage user-generated content, such as photos or videos.
    */
-  get storage() {
+  get storage(): SupabaseStorageClient {
     return new SupabaseStorageClient(this.storageUrl, this.headers, this.fetch)
   }
 
-  /**
-   * Perform a table operation.
-   *
-   * @param table The table name to operate on.
-   */
+  // NOTE: signatures must be kept in sync with PostgrestClient.from
   from<
     TableName extends string & keyof Schema['Tables'],
     Table extends Schema['Tables'][TableName]
-  >(relation: TableName): PostgrestQueryBuilder<Table>
+  >(relation: TableName): PostgrestQueryBuilder<Schema, Table, TableName>
   from<ViewName extends string & keyof Schema['Views'], View extends Schema['Views'][ViewName]>(
     relation: ViewName
-  ): PostgrestQueryBuilder<View>
-  from(relation: string): PostgrestQueryBuilder<any>
-  from(relation: string): PostgrestQueryBuilder<any> {
+  ): PostgrestQueryBuilder<Schema, View, ViewName>
+  /**
+   * Perform a query on a table or a view.
+   *
+   * @param relation - The table or view name to query
+   */
+  from(relation: string): PostgrestQueryBuilder<Schema, any, any> {
     return this.rest.from(relation)
   }
 
+  // NOTE: signatures must be kept in sync with PostgrestClient.schema
+  /**
+   * Select a schema to query or perform an function (rpc) call.
+   *
+   * The schema needs to be on the list of exposed schemas inside Supabase.
+   *
+   * @param schema - The schema to query
+   */
+  schema<DynamicSchema extends string & keyof Database>(
+    schema: DynamicSchema
+  ): PostgrestClient<
+    Database,
+    DynamicSchema,
+    Database[DynamicSchema] extends GenericSchema ? Database[DynamicSchema] : any
+  > {
+    return this.rest.schema<DynamicSchema>(schema)
+  }
+
+  // NOTE: signatures must be kept in sync with PostgrestClient.rpc
   /**
    * Perform a function call.
    *
-   * @param fn  The function name to call.
-   * @param args  The parameters to pass to the function call.
-   * @param options.head   When set to true, no data will be returned.
-   * @param options.count  Count algorithm to use to count rows in a table.
+   * @param fn - The function name to call
+   * @param args - The arguments to pass to the function call
+   * @param options - Named parameters
+   * @param options.head - When set to `true`, `data` will not be returned.
+   * Useful if you only need the count.
+   * @param options.get - When set to `true`, the function will be called with
+   * read-only access mode.
+   * @param options.count - Count algorithm to use to count rows returned by the
+   * function. Only applicable for [set-returning
+   * functions](https://www.postgresql.org/docs/current/functions-srf.html).
    *
+   * `"exact"`: Exact but slow count algorithm. Performs a `COUNT(*)` under the
+   * hood.
+   *
+   * `"planned"`: Approximated but fast count algorithm. Uses the Postgres
+   * statistics under the hood.
+   *
+   * `"estimated"`: Uses exact count for low numbers and planned count for high
+   * numbers.
    */
-  rpc<
-    FunctionName extends string & keyof Schema['Functions'],
-    Function_ extends Schema['Functions'][FunctionName]
-  >(
-    fn: FunctionName,
-    args: Function_['Args'] = {},
-    options?: {
+  rpc<FnName extends string & keyof Schema['Functions'], Fn extends Schema['Functions'][FnName]>(
+    fn: FnName,
+    args: Fn['Args'] = {},
+    options: {
       head?: boolean
+      get?: boolean
       count?: 'exact' | 'planned' | 'estimated'
-    }
+    } = {}
   ): PostgrestFilterBuilder<
-    Function_['Returns'] extends any[]
-      ? Function_['Returns'][number] extends Record<string, unknown>
-        ? Function_['Returns'][number]
+    Schema,
+    Fn['Returns'] extends any[]
+      ? Fn['Returns'][number] extends Record<string, unknown>
+        ? Fn['Returns'][number]
         : never
       : never,
-    Function_['Returns']
+    Fn['Returns']
   > {
     return this.rest.rpc(fn, args, options)
   }
@@ -231,6 +262,10 @@ export default class SupabaseClient<
   }
 
   private async _getAccessToken() {
+    if (this.accessToken) {
+      return await this.accessToken()
+    }
+
     const { data } = await this.auth.getSession()
 
     return data.session?.access_token ?? null
@@ -243,6 +278,9 @@ export default class SupabaseClient<
       detectSessionInUrl,
       storage,
       storageKey,
+      flowType,
+      lock,
+      debug,
     }: SupabaseAuthClientOptions,
     headers?: Record<string, string>,
     fetch?: Fetch
@@ -259,7 +297,13 @@ export default class SupabaseClient<
       persistSession,
       detectSessionInUrl,
       storage,
+      flowType,
+      lock,
+      debug,
       fetch,
+      // auth checks if there is a custom authorizaiton header using this flag
+      // so it knows whether to return an error when getUser is called with no session
+      hasCustomAuthorizationHeader: 'Authorization' in this.headers ?? false,
     })
   }
 
@@ -272,15 +316,15 @@ export default class SupabaseClient<
 
   private _listenForAuthEvents() {
     let data = this.auth.onAuthStateChange((event, session) => {
-      this._handleTokenChanged(event, session?.access_token, 'CLIENT')
+      this._handleTokenChanged(event, 'CLIENT', session?.access_token)
     })
     return data
   }
 
   private _handleTokenChanged(
     event: AuthChangeEvent,
-    token: string | undefined,
-    source: 'CLIENT' | 'STORAGE'
+    source: 'CLIENT' | 'STORAGE',
+    token?: string
   ) {
     if (
       (event === 'TOKEN_REFRESHED' || event === 'SIGNED_IN') &&
@@ -290,10 +334,11 @@ export default class SupabaseClient<
       this.realtime.setAuth(token ?? null)
 
       this.changedAccessToken = token
-    } else if (event === 'SIGNED_OUT' || event === 'USER_DELETED') {
+    } else if (event === 'SIGNED_OUT') {
       // Token is removed
       this.realtime.setAuth(this.supabaseKey)
       if (source == 'STORAGE') this.auth.signOut()
+      this.changedAccessToken = undefined
     }
   }
 }

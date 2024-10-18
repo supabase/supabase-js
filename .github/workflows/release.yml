@@ -13,15 +13,20 @@ jobs:
     name: Release / Node ${{ matrix.node }}
     strategy:
       matrix:
-        node: ['14']
+        node: ['20']
 
     runs-on: ubuntu-latest
 
+    permissions:
+      contents: write
+      issues: write
+      id-token: write
+
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
 
       - name: Set up Node
-        uses: actions/setup-node@v2
+        uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node }}
 
@@ -29,8 +34,9 @@ jobs:
           npm ci
           npm run build
 
-      - name: Create a release
-        run: npx semantic-release@^18.0.0
+      - uses: cycjimmy/semantic-release-action@v4
+        with:
+          semantic_version: 19
         env:
           GITHUB_TOKEN: ${{ secrets.GH_ACCESS_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}

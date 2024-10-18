@@ -33,10 +33,10 @@ test('override setting defaults', async () => {
     },
   }
   let settings = helpers.applySettingDefaults(options, defaults)
-  expect(settings?.auth?.autoRefreshToken).toBe(autoRefreshOption)
+  expect(settings.auth.autoRefreshToken).toBe(autoRefreshOption)
   // Existing default properties should not be overwritten
-  expect(settings?.auth?.persistSession).not.toBeNull()
-  expect(settings?.global?.headers).toBe(DEFAULT_HEADERS)
+  expect(settings.auth.persistSession).not.toBeNull()
+  expect(settings.global.headers).toBe(DEFAULT_HEADERS)
   // Existing property values should remain constant
-  expect(settings?.db?.schema).toBe(defaults.db.schema)
+  expect(settings.db.schema).toBe(defaults.db.schema)
 })

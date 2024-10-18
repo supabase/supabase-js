@@ -6,7 +6,6 @@
     "declarationMap": true,
     "module": "CommonJS",
     "outDir": "dist/main",
-    "rootDir": "src",
     "sourceMap": true,
     "target": "ES2015",
 
@@ -14,6 +13,7 @@
 
     "esModuleInterop": true,
     "moduleResolution": "Node",
+    "isolatedModules": true,
 
     "forceConsistentCasingInFileNames": true,
     "stripInternal": true,

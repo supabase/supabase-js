@@ -1,6 +1,22 @@
 name: CI
 
-on: [push]
+on:
+  pull_request:
+    paths-ignore:
+      - 'docs/**'
+      - '**/*.md'
+      - '.prettierrc'
+      - '**/*ignore'
+  push:
+    branches:
+      - master
+      - next
+      - rc
+    paths-ignore:
+      - 'docs/**'
+      - '**/*.md'
+      - '.prettierrc'
+      - '**/*ignore'
 
 jobs:
   test:
@@ -8,28 +24,25 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest]
-        node: ['14']
+        node: ['20']
 
     runs-on: ${{ matrix.os }}
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
 
       - name: Set up Node
-        uses: actions/setup-node@v2
+        uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node }}
 
       - name: Run tests
         run: |
-          npm ci
-          npm t
+          npm clean-install
+          npm run test:coverage
 
-      - name: Test & publish code coverage
-        uses: paambaati/codeclimate-action@v3.0.0
-        env:
-          CC_TEST_REPORTER_ID: ${{secrets.CC_TEST_REPORTER_ID}}
+      - name: Upload coverage results to Coveralls
+        uses: coverallsapp/github-action@master
         with:
-          coverageCommand: yarn run coverage
-          coverageLocations: |
-            ${{github.workspace}}/test/coverage/lcov.info:lcov
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path-to-lcov: ./test/coverage/lcov.info
