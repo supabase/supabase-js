@@ -1,16 +1,6 @@
-export type Fetch = typeof fetch
+import PostgrestError from './PostgrestError'
 
-/**
- * Error format
- *
- * {@link https://postgrest.org/en/stable/api.html?highlight=options#errors-and-http-status-codes}
- */
-export type PostgrestError = {
-  message: string
-  details: string
-  hint: string
-  code: string
-}
+export type Fetch = typeof fetch
 
 /**
  * Response format
