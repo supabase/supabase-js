@@ -493,6 +493,56 @@ import { selectParams } from '../relationships'
   ])
 }
 
+// many-to-one join
+{
+  expectType<ParseQuery<'message, channels (slug)'>>([
+    { type: 'field', name: 'message' },
+    {
+      type: 'field',
+      name: 'channels',
+      children: [{ type: 'field', name: 'slug' }],
+    },
+  ])
+}
+
+// many-to-one join with inner
+{
+  expectType<ParseQuery<'message, channels!inner (slug)'>>([
+    { type: 'field', name: 'message' },
+    {
+      type: 'field',
+      name: 'channels',
+      innerJoin: true,
+      children: [{ type: 'field', name: 'slug' }],
+    },
+  ])
+}
+
+// many-to-one join with not null
+{
+  expectType<ParseQuery<'message, channels (slug)'>>([
+    { type: 'field', name: 'message' },
+    {
+      type: 'field',
+      name: 'channels',
+      children: [{ type: 'field', name: 'slug' }],
+    },
+  ])
+}
+
+// many-to-one join with inner and not null
+{
+  expectType<ParseQuery<'message, channels!inner (slug)'>>([
+    { type: 'field', name: 'message' },
+    {
+      type: 'field',
+      name: 'channels',
+      innerJoin: true,
+      children: [{ type: 'field', name: 'slug' }],
+    },
+  ])
+}
+
 // ParserError test cases
 // Empty string
 {

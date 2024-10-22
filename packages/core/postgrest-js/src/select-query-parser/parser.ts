@@ -98,14 +98,14 @@ type ParseField<Input extends string> = Input extends ''
   ? Name extends 'count'
     ? ParseCountField<Input>
     : Remainder extends `!inner${infer Remainder}`
-    ? ParseEmbeddedResource<Remainder> extends [
+    ? ParseEmbeddedResource<EatWhitespace<Remainder>> extends [
         infer Children extends Ast.Node[],
         `${infer Remainder}`
       ]
       ? // `field!inner(nodes)`
         [{ type: 'field'; name: Name; innerJoin: true; children: Children }, Remainder]
       : CreateParserErrorIfRequired<
-          ParseEmbeddedResource<Remainder>,
+          ParseEmbeddedResource<EatWhitespace<Remainder>>,
           `Expected embedded resource after "!inner" at \`${Remainder}\``
         >
     : EatWhitespace<Remainder> extends `!left${infer Remainder}`
