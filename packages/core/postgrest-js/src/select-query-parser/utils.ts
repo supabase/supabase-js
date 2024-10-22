@@ -10,18 +10,22 @@ import {
   UnionToArray,
 } from './types'
 
-export type UnwrapErrorMessages<T> = T extends SelectQueryError<infer M>
-  ? M
-  : T extends Record<string, unknown>
-  ? { [K in keyof T]: UnwrapErrorMessages<T[K]> }
-  : T
-
 export type SelectQueryError<Message extends string> = { error: true } & Message
 
 type RequireHintingSelectQueryError<
   DistantName extends string,
   RelationName extends string
 > = SelectQueryError<`Could not embed because more than one relationship was found for '${DistantName}' and '${RelationName}' you need to hint the column with ${DistantName}!<columnName> ?`>
+
+export type UnwrapErrorMessages<T> = T extends SelectQueryError<infer M>
+  ? M
+  : T extends SelectQueryError<infer M>[]
+  ? M[]
+  : T extends (infer U)[]
+  ? UnwrapErrorMessages<U>[]
+  : T extends Record<string, unknown>
+  ? { [K in keyof T]: UnwrapErrorMessages<T[K]> }
+  : T
 
 export type GetFieldNodeResultName<Field extends Ast.FieldNode> = Field['alias'] extends string
   ? Field['alias']

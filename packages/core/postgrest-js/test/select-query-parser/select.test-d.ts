@@ -1,7 +1,6 @@
 import { expectType } from 'tsd'
 import { TypeEqual } from 'ts-expect'
 import { Json } from '../../src/select-query-parser/types'
-import { SelectQueryError } from '../../src/select-query-parser/utils'
 import { Prettify } from '../../src/types'
 import { Database } from '../types'
 import { selectQueries } from '../relationships'
@@ -271,7 +270,7 @@ type Schema = Database['public']
       id: number
       second_user: string
       third_wheel: string | null
-      first_user: SelectQueryError<"Could not embed because more than one relationship was found for 'users' and 'best_friends' you need to hint the column with users!<columnName> ?">
+      first_user: "Could not embed because more than one relationship was found for 'users' and 'best_friends' you need to hint the column with users!<columnName> ?"
     }>
     second_friend_of: Array<Database['public']['Tables']['best_friends']['Row']>
     third_wheel_of: Array<Database['public']['Tables']['best_friends']['Row']>
@@ -440,7 +439,7 @@ type Schema = Database['public']
   let result: Exclude<typeof data, null>
   let expected: {
     username: string
-    messages: SelectQueryError<"column 'sum' does not exist on 'messages'.">[]
+    messages: "column 'sum' does not exist on 'messages'."[]
   }
   expectType<TypeEqual<typeof result, typeof expected>>(true)
 }
