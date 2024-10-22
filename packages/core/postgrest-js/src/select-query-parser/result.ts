@@ -16,6 +16,7 @@ import {
   IsRelationNullable,
   ResolveRelationship,
   SelectQueryError,
+  UnwrapErrorMessages,
 } from './utils'
 
 /**
@@ -35,16 +36,18 @@ export type GetResult<
   Query extends string
 > = Relationships extends null // For .rpc calls the passed relationships will be null in that case, the result will always be the function return type
   ? ParseQuery<Query> extends infer ParsedQuery extends Ast.Node[]
-    ? RPCCallNodes<ParsedQuery, RelationName extends string ? RelationName : 'rpc_call', Row>
+    ? UnwrapErrorMessages<
+        RPCCallNodes<ParsedQuery, RelationName extends string ? RelationName : 'rpc_call', Row>
+      >
     : Row
   : ParseQuery<Query> extends infer ParsedQuery
   ? ParsedQuery extends Ast.Node[]
     ? RelationName extends string
       ? Relationships extends GenericRelationship[]
-        ? ProcessNodes<Schema, Row, RelationName, Relationships, ParsedQuery>
-        : SelectQueryError<'Invalid Relationships cannot infer result type'>
-      : SelectQueryError<'Invalid RelationName cannot infer result type'>
-    : ParsedQuery
+        ? UnwrapErrorMessages<ProcessNodes<Schema, Row, RelationName, Relationships, ParsedQuery>>
+        : UnwrapErrorMessages<SelectQueryError<'Invalid Relationships cannot infer result type'>>
+      : UnwrapErrorMessages<SelectQueryError<'Invalid RelationName cannot infer result type'>>
+    : UnwrapErrorMessages<ParsedQuery>
   : never
 
 /**

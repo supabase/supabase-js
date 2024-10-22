@@ -10,6 +10,12 @@ import {
   UnionToArray,
 } from './types'
 
+export type UnwrapErrorMessages<T> = T extends SelectQueryError<infer M>
+  ? M
+  : T extends Record<string, unknown>
+  ? { [K in keyof T]: UnwrapErrorMessages<T[K]> }
+  : T
+
 export type SelectQueryError<Message extends string> = { error: true } & Message
 
 type RequireHintingSelectQueryError<
