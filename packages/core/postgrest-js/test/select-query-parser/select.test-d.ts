@@ -742,3 +742,21 @@ type Schema = Database['public']
   if (error) throw error
   expectType<`column 'missing_column' does not exist on 'users'.`>(data)
 }
+
+// many-to-many with join table
+{
+  const { data } = await selectQueries.manyToManyWithJoinTable.limit(1).single()
+  let result: Exclude<typeof data, null>
+  let expected: {
+    id: number
+    name: string
+    description: string | null
+    price: number
+    categories: {
+      id: number
+      name: string
+      description: string | null
+    }[]
+  }
+  expectType<TypeEqual<typeof result, typeof expected>>(true)
+}

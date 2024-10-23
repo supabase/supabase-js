@@ -12,6 +12,8 @@ import {
 
 export type SelectQueryError<Message extends string> = { error: true } & Message
 
+type AsString<T> = T extends string ? T : ''
+
 type RequireHintingSelectQueryError<
   DistantName extends string,
   RelationName extends string
@@ -413,9 +415,58 @@ type ResolveForwardRelationship<
       relation: FoundByMatch
       direction: 'forward'
       from: CurrentTableOrView
-      type: 'found-my-match'
+      type: 'found-by-match'
     }
-  : SelectQueryError<'could not find the relation'>
+  : // Forward relations can also alias other tables via tables joins relationships
+  // in such cases we crawl all the tables looking for a join table between our current table
+  // and the Field['name'] desired desitnation
+  FindJoinTableRelationship<
+      Schema,
+      CurrentTableOrView,
+      Field['name']
+    > extends infer FoundByJoinTable extends GenericRelationship
+  ? {
+      referencedTable: TablesAndViews<Schema>[FoundByJoinTable['referencedRelation']]
+      relation: FoundByJoinTable & { match: 'refrel' }
+      direction: 'forward'
+      from: CurrentTableOrView
+      type: 'found-by-join-table'
+    }
+  : SelectQueryError<`could not find the relation between ${AsString<CurrentTableOrView>} and ${Field['name']}`>
+
+/**
+ * Given a CurrentTableOrView, finds all join tables to this relation.
+ * For example, if products and categories are linked via product_categories table:
+ *
+ * @example
+ * Given:
+ * - CurrentTableView = 'products'
+ * - FieldName = "categories"
+ *
+ * It should return this relationship from product_categories:
+ * {
+ *   foreignKeyName: "product_categories_category_id_fkey",
+ *   columns: ["category_id"],
+ *   isOneToOne: false,
+ *   referencedRelation: "categories",
+ *   referencedColumns: ["id"]
+ * }
+ */
+export type FindJoinTableRelationship<
+  Schema extends GenericSchema,
+  CurrentTableOrView extends keyof TablesAndViews<Schema>,
+  FieldName extends string
+> = {
+  [TableName in keyof TablesAndViews<Schema>]: TablesAndViews<Schema>[TableName]['Relationships'] extends readonly (infer Rel)[]
+    ? Rel extends { referencedRelation: CurrentTableOrView }
+      ? TablesAndViews<Schema>[TableName]['Relationships'] extends readonly (infer OtherRel)[]
+        ? OtherRel extends { referencedRelation: FieldName }
+          ? OtherRel
+          : never
+        : never
+      : never
+    : never
+}[keyof TablesAndViews<Schema>]
 
 /**
  * Finds a matching relationship based on the FieldNode's name and optional hint.
