@@ -19,7 +19,12 @@ import {
   DEFAULT_REALTIME_OPTIONS,
 } from './lib/constants'
 import { fetchWithAuth } from './lib/fetch'
-import { stripTrailingSlash, applySettingDefaults } from './lib/helpers'
+import {
+  stripTrailingSlash,
+  applySettingDefaults,
+  isJWT,
+  checkAuthorizationHeader,
+} from './lib/helpers'
 import { SupabaseAuthClient } from './lib/SupabaseAuthClient'
 import { Fetch, GenericSchema, SupabaseClientOptions, SupabaseAuthClientOptions } from './lib/types'
 
@@ -95,6 +100,8 @@ export default class SupabaseClient<
 
     this.storageKey = settings.auth.storageKey ?? ''
     this.headers = settings.global.headers ?? {}
+
+    checkAuthorizationHeader(this.headers)
 
     if (!settings.accessToken) {
       this.auth = this._initSupabaseAuthClient(
@@ -285,10 +292,14 @@ export default class SupabaseClient<
     headers?: Record<string, string>,
     fetch?: Fetch
   ) {
-    const authHeaders = {
-      Authorization: `Bearer ${this.supabaseKey}`,
+    const authHeaders: { [header: string]: string } = {
       apikey: `${this.supabaseKey}`,
     }
+
+    if (isJWT(this.supabaseKey)) {
+      authHeaders.Authorization = `Bearer ${this.supabaseKey}`
+    }
+
     return new SupabaseAuthClient({
       url: this.authUrl,
       headers: { ...authHeaders, ...headers },
