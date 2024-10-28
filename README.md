@@ -1,94 +1,80 @@
-# `supabase-js` - Isomorphic JavaScript Client for Supabase.
+# `supabase-js` - Isomorphic JavaScript client for Supabase, [Wechat Miniprogram](https://developers.weixin.qq.com/miniprogram/dev/framework/) compatible
 
-- **Documentation:** https://supabase.com/docs/reference/javascript/start
-- TypeDoc: https://supabase.github.io/supabase-js/v2/
+Forked from supabase/supabase-js, the origional documentation can be found [here](https://supabase.github.io/supabase/supabase-js).
+
+## Changes
+
+Changes are made on top of <https://github.com/supabase/supabase-js/commit/ce1e2f0729068a2bcd794cc3937da07d5d38677e>
+
+- feat: add submodule `supbase-wx/auth-js` as a workspace package
+  - ci: remove workflows
+  - ci: ignore generated `lib/version` file on build, remove actions
+  - feat: update `node-fetch` dependency, mute navigator lock
+- feat: add submodule `supabase-wx/node-fetch` as a workspace package
+  - ci: remove workflows
+  - fix(browser.js): remove wx incompatible node fetch binding
+- feat: dd submodule `supabase-wx/postgrest-js` as a workspace package
+  - ci: remove workflows
+  - feat: update node-fetch dependency
+- feat: add wx fetch implementation
+- ci: update release workflow
 
 ## Usage
 
-First of all, you need to install the library:
+```ts
+/* wx-app/path/to/supabase-client */
 
-```sh
-npm install @supabase/supabase-js
-```
+import { createClient } from '@supabase-wechat/supabase-js'
 
-Then you're able to import the library and establish the connection with the database:
-
-```js
-import { createClient } from '@supabase/supabase-js'
-
-// Create a single supabase client for interacting with your database
-const supabase = createClient('https://xyzcompany.supabase.co', 'public-anon-key')
-```
-
-### UMD
-
-You can use plain `<script>`s to import supabase-js from CDNs, like:
-
-```html
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-```
-
-or even:
-
-```html
-<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
-```
-
-Then you can use it from a global `supabase` variable:
-
-```html
-<script>
-  const { createClient } = supabase
-  const _supabase = createClient('https://xyzcompany.supabase.co', 'public-anon-key')
-
-  console.log('Supabase Instance: ', _supabase)
-  // ...
-</script>
-```
-
-### ESM
-
-You can use `<script type="module">` to import supabase-js from CDNs, like:
-
-```html
-<script type="module">
-  import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
-  const supabase = createClient('https://xyzcompany.supabase.co', 'public-anon-key')
-
-  console.log('Supabase Instance: ', supabase)
-  // ...
-</script>
-```
-
-### Deno
-
-You can use supabase-js in the Deno runtime via [JSR](https://jsr.io/@supabase/supabase-js):
-
-```js
-import { createClient } from 'jsr:@supabase/supabase-js@2'
-```
-
-### Custom `fetch` implementation
-
-`supabase-js` uses the [`cross-fetch`](https://www.npmjs.com/package/cross-fetch) library to make HTTP requests, but an alternative `fetch` implementation can be provided as an option. This is most useful in environments where `cross-fetch` is not compatible, for instance Cloudflare Workers:
-
-```js
-import { createClient } from '@supabase/supabase-js'
-
-// Provide a custom `fetch` implementation as an option
-const supabase = createClient('https://xyzcompany.supabase.co', 'public-anon-key', {
-  global: {
-    fetch: (...args) => fetch(...args),
+export const supabaseClient = createClient<Database>(api_url, anon_key, {
+  auth: {
+    // wx storage implementation
+    storage: {
+      getItem: (key: string) => wx.getStorageSync(key),
+      setItem: (key: string, value: string) => {
+        wx.setStorage({ key, data: value })
+      },
+      removeItem: (key: string) => {
+        wx.removeStorage({ key })
+      },
+    },
   },
+  // Directly send api request from wx client
+  wxFetch: { type: 'wx' },
+  // OR
+  // Use wx cloud as a a proxy (This way, 备案 is required)
+  wxFetch: { type: 'wxCloud', wxCloudFnName: 'supabase-proxy' },
 })
 ```
 
-## Sponsors
+The wxcloud function
 
-We are building the features of Firebase using enterprise-grade, open source products. We support existing communities wherever possible, and if the products don’t exist we build them and open source them ourselves. Thanks to these sponsors who are making the OSS ecosystem better for everyone.
+```js
+/* wxcloudfunctions/supabase-proxy/index.js */
 
-[![New Sponsor](https://user-images.githubusercontent.com/10214025/90518111-e74bbb00-e198-11ea-8f88-c9e3c1aa4b5b.png)](https://github.com/sponsors/supabase)
+const cloud = require('wx-server-sdk')
+const axios = require('axios')
 
-## Badges
+cloud.init({
+  env: cloud.DYNAMIC_CURRENT_ENV,
+})
 
-[![Coverage Status](https://coveralls.io/repos/github/supabase/supabase-js/badge.svg?branch=master)](https://coveralls.io/github/supabase/supabase-js?branch=master)
+exports.main = async (event) => {
+  const { url, method, data, headers, responseType } = event.reqeustOptions
+
+  const response = await axios({
+    url: url,
+    method,
+    data,
+    responseType,
+    headers,
+  })
+  return {
+    headers: response.headers,
+    data: response.data,
+    status: response.status,
+    statusText: response.statusText,
+    headers: response.headers,
+  }
+}
+```

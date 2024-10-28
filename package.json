@@ -1,14 +1,13 @@
 {
-  "name": "@supabase/supabase-js",
+  "name": "@supabase-wechat/supabase-js",
   "version": "0.0.0-automated",
-  "description": "Isomorphic Javascript client for Supabase",
+  "description": "Isomorphic Javascript client for Supabase, Wechat MiniProgram compatible",
   "keywords": [
     "javascript",
     "typescript",
     "supabase"
   ],
-  "homepage": "https://github.com/supabase/supabase-js",
-  "bugs": "https://github.com/supabase/supabase-js/issues",
+  "homepage": "https://github.com/supabase-wechat/supabase-js",
   "license": "MIT",
   "author": "Supabase",
   "files": [
@@ -19,7 +18,10 @@
   "module": "dist/module/index.js",
   "types": "dist/module/index.d.ts",
   "sideEffects": false,
-  "repository": "supabase/supabase-js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/supabase-wechat/supabase-js.git"
+  },
   "scripts": {
     "clean": "rimraf dist docs/v2",
     "format": "prettier --write \"{src,test}/**/*.ts\"",
@@ -27,7 +29,7 @@
     "build:main": "tsc -p tsconfig.json",
     "build:module": "tsc -p tsconfig.module.json",
     "build:umd": "webpack",
-    "types-generate": "dts-gen -m '@supabase/supabase-js' -s",
+    "types-generate": "dts-gen -m '@supabase-wechat/supabase-js' -s",
     "test": "run-s test:types test:run",
     "test:run": "jest --runInBand",
     "test:coverage": "jest --runInBand --coverage",
@@ -40,12 +42,14 @@
     "serve:coverage": "npm run test:coverage && serve test/coverage"
   },
   "dependencies": {
-    "@supabase/auth-js": "2.65.1",
+    "@supabase-wechat/auth-js": "workspace:*",
+    "@supabase-wechat/node-fetch": "workspace:*",
+    "@supabase-wechat/postgrest-js": "workspace:*",
     "@supabase/functions-js": "2.4.3",
-    "@supabase/node-fetch": "2.6.15",
-    "@supabase/postgrest-js": "1.16.3",
     "@supabase/realtime-js": "2.10.7",
-    "@supabase/storage-js": "2.7.1"
+    "@supabase/storage-js": "2.7.1",
+    "abortcontroller-polyfill": "^1.7.5",
+    "headers-polyfill": "^4.0.3"
   },
   "devDependencies": {
     "@sebbo2002/semantic-release-jsr": "^1.0.0",
@@ -63,7 +67,7 @@
     "ts-node": "^10.9.1",
     "tsd": "^0.30.4",
     "typedoc": "^0.22.16",
-    "typescript": "^4.5.5",
+    "typescript": "^5.2.0",
     "webpack": "^5.69.1",
     "webpack-cli": "^4.9.2"
   },
@@ -73,5 +77,15 @@
     }
   },
   "jsdelivr": "dist/umd/supabase.js",
-  "unpkg": "dist/umd/supabase.js"
+  "unpkg": "dist/umd/supabase.js",
+  "workspaces": [
+    "packages/*"
+  ],
+  "resolutions": {
+    "typescript": "^5.2.0"
+  },
+  "publishConfig": {
+    "@supabase-wechat:registry": "https://npm.pkg.github.com"
+  },
+  "packageManager": "yarn@4.5.1"
 }

@@ -1,14 +1,17 @@
+import { wxFetchSb } from './wx/fetch'
+import { createWxCloudFetchSb } from './wx/wxcloud-fetch'
+
 import SupabaseClient from './SupabaseClient'
 import type { GenericSchema, SupabaseClientOptions } from './lib/types'
 
-export * from '@supabase/auth-js'
-export type { User as AuthUser, Session as AuthSession } from '@supabase/auth-js'
+export * from '@supabase-wechat/auth-js'
+export type { User as AuthUser, Session as AuthSession } from '@supabase-wechat/auth-js'
 export type {
   PostgrestResponse,
   PostgrestSingleResponse,
   PostgrestMaybeSingleResponse,
   PostgrestError,
-} from '@supabase/postgrest-js'
+} from '@supabase-wechat/postgrest-js'
 export {
   FunctionsHttpError,
   FunctionsFetchError,
@@ -35,7 +38,31 @@ export const createClient = <
 >(
   supabaseUrl: string,
   supabaseKey: string,
-  options?: SupabaseClientOptions<SchemaName>
+  options = {} as {
+    wxFetch?:
+      | {
+          type: 'wx'
+        }
+      | {
+          type: 'wxCloud'
+          wxCloudFnName: string
+        }
+    global?: {
+      headers?: Record<string, string>
+    }
+  } & Omit<SupabaseClientOptions<SchemaName>, 'global'>
 ): SupabaseClient<Database, SchemaName, Schema> => {
-  return new SupabaseClient<Database, SchemaName, Schema>(supabaseUrl, supabaseKey, options)
+  const { wxFetch, ...optionsWithoutFetch } = options
+
+  let fetch = undefined
+  if (wxFetch?.type === 'wx') {
+    fetch = wxFetchSb
+  }
+  if (wxFetch?.type === 'wxCloud') {
+    fetch = createWxCloudFetchSb(wxFetch.wxCloudFnName)
+  }
+  return new SupabaseClient<Database, SchemaName, Schema>(supabaseUrl, supabaseKey, {
+    ...optionsWithoutFetch,
+    global: { ...(optionsWithoutFetch.global ?? {}), fetch },
+  })
 }
