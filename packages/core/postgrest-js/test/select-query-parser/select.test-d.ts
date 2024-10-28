@@ -1,6 +1,7 @@
 import { expectType } from 'tsd'
 import { TypeEqual } from 'ts-expect'
 import { Json } from '../../src/select-query-parser/types'
+import { SelectQueryError } from '../../src/select-query-parser/utils'
 import { Prettify } from '../../src/types'
 import { Database } from '../types'
 import { selectQueries } from '../relationships'
@@ -197,9 +198,9 @@ type Schema = Database['public']
   const { data } = await selectQueries.joinOneToOneWithNullablesNoHint.limit(1).single()
   let result: Exclude<typeof data, null>
   let expected: {
-    first_user: "Could not embed because more than one relationship was found for 'users' and 'best_friends' you need to hint the column with users!<columnName> ?"
-    second_user: "Could not embed because more than one relationship was found for 'users' and 'best_friends' you need to hint the column with users!<columnName> ?"
-    third_wheel: "Could not embed because more than one relationship was found for 'users' and 'best_friends' you need to hint the column with users!<columnName> ?"
+    first_user: SelectQueryError<"Could not embed because more than one relationship was found for 'users' and 'best_friends' you need to hint the column with users!<columnName> ?">
+    second_user: SelectQueryError<"Could not embed because more than one relationship was found for 'users' and 'best_friends' you need to hint the column with users!<columnName> ?">
+    third_wheel: SelectQueryError<"Could not embed because more than one relationship was found for 'users' and 'best_friends' you need to hint the column with users!<columnName> ?">
   }
   expectType<TypeEqual<typeof result, typeof expected>>(true)
 }
@@ -221,9 +222,9 @@ type Schema = Database['public']
   const { data } = await selectQueries.joinOneToManyWithNullablesNoHint.limit(1).single()
   let result: Exclude<typeof data, null>
   let expected: {
-    first_friend_of: "Could not embed because more than one relationship was found for 'best_friends' and 'users' you need to hint the column with best_friends!<columnName> ?"
-    second_friend_of: "Could not embed because more than one relationship was found for 'best_friends' and 'users' you need to hint the column with best_friends!<columnName> ?"
-    third_wheel_of: "Could not embed because more than one relationship was found for 'best_friends' and 'users' you need to hint the column with best_friends!<columnName> ?"
+    first_friend_of: SelectQueryError<"Could not embed because more than one relationship was found for 'best_friends' and 'users' you need to hint the column with best_friends!<columnName> ?">
+    second_friend_of: SelectQueryError<"Could not embed because more than one relationship was found for 'best_friends' and 'users' you need to hint the column with best_friends!<columnName> ?">
+    third_wheel_of: SelectQueryError<"Could not embed because more than one relationship was found for 'best_friends' and 'users' you need to hint the column with best_friends!<columnName> ?">
   }
   expectType<TypeEqual<typeof result, typeof expected>>(true)
 }
@@ -270,7 +271,7 @@ type Schema = Database['public']
       id: number
       second_user: string
       third_wheel: string | null
-      first_user: "Could not embed because more than one relationship was found for 'users' and 'best_friends' you need to hint the column with users!<columnName> ?"
+      first_user: SelectQueryError<"Could not embed because more than one relationship was found for 'users' and 'best_friends' you need to hint the column with users!<columnName> ?">
     }>
     second_friend_of: Array<Database['public']['Tables']['best_friends']['Row']>
     third_wheel_of: Array<Database['public']['Tables']['best_friends']['Row']>
@@ -439,7 +440,7 @@ type Schema = Database['public']
   let result: Exclude<typeof data, null>
   let expected: {
     username: string
-    messages: "column 'sum' does not exist on 'messages'."[]
+    messages: SelectQueryError<"column 'sum' does not exist on 'messages'.">[]
   }
   expectType<TypeEqual<typeof result, typeof expected>>(true)
 }
@@ -629,7 +630,7 @@ type Schema = Database['public']
   const { data } = await selectQueries.joinSelectViaColumnHintTwice.limit(1).single()
   let result: Exclude<typeof data, null>
   let expected: {
-    users: 'table "best_friends" specified more than once use hinting for desambiguation'
+    users: SelectQueryError<'table "best_friends" specified more than once use hinting for desambiguation'>
   }
   expectType<TypeEqual<typeof result, typeof expected>>(true)
 }
@@ -640,7 +641,7 @@ type Schema = Database['public']
   let result: Exclude<typeof data, null>
   let expected: {
     id: number
-    messages: '"channels" and "messages" do not form a many-to-one or one-to-one relationship spread not possible'
+    messages: SelectQueryError<'"channels" and "messages" do not form a many-to-one or one-to-one relationship spread not possible'>
   }
   expectType<TypeEqual<typeof result, typeof expected>>(true)
 }
@@ -683,7 +684,7 @@ type Schema = Database['public']
 {
   const { data } = await selectQueries.typecastingAndAggregate.limit(1).single()
   let result: Exclude<typeof data, null>
-  let expected: `column 'users' does not exist on 'messages'.`
+  let expected: SelectQueryError<`column 'users' does not exist on 'messages'.`>
   expectType<TypeEqual<typeof result, typeof expected>>(true)
 }
 
@@ -740,7 +741,7 @@ type Schema = Database['public']
 {
   const { data, error } = await selectQueries.aggregateOnMissingColumnWithAlias.limit(1).single()
   if (error) throw error
-  expectType<`column 'missing_column' does not exist on 'users'.`>(data)
+  expectType<SelectQueryError<`column 'missing_column' does not exist on 'users'.`>>(data)
 }
 
 // many-to-many with join table

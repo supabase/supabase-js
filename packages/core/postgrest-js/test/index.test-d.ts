@@ -99,7 +99,7 @@ const postgrest = new PostgrestClient<Database>(REST_URL)
   }
   // getting this w/o the cast, not sure why:
   // Parameter type Json is declared too wide for argument type Json
-  expectType<Json>(data.bar as Json)
+  expectType<Json>(data.bar)
   expectType<string>(data.baz)
 }
 

@@ -12,21 +12,6 @@ import {
 
 export type SelectQueryError<Message extends string> = { error: true } & Message
 
-type RequireHintingSelectQueryError<
-  DistantName extends string,
-  RelationName extends string
-> = SelectQueryError<`Could not embed because more than one relationship was found for '${DistantName}' and '${RelationName}' you need to hint the column with ${DistantName}!<columnName> ?`>
-
-export type UnwrapErrorMessages<T> = T extends SelectQueryError<infer M>
-  ? M
-  : T extends SelectQueryError<infer M>[]
-  ? M[]
-  : T extends (infer U)[]
-  ? UnwrapErrorMessages<U>[]
-  : T extends Record<string, unknown>
-  ? { [K in keyof T]: UnwrapErrorMessages<T[K]> }
-  : T
-
 export type GetFieldNodeResultName<Field extends Ast.FieldNode> = Field['alias'] extends string
   ? Field['alias']
   : Field['aggregateFunction'] extends AggregateFunctions
@@ -161,7 +146,7 @@ type HasMultipleFKeysToFRel<FRelName, Relationships> = Relationships extends [
 type CheckRelationshipError<
   Schema extends GenericSchema,
   Relationships extends GenericRelationship[],
-  CurrentTableOrView extends keyof TablesAndViews<Schema>,
+  CurrentTableOrView extends keyof TablesAndViews<Schema> & string,
   FoundRelation
 > = FoundRelation extends SelectQueryError<string>
   ? FoundRelation
@@ -176,10 +161,7 @@ type CheckRelationshipError<
   ? // We check if there is possible confusion with other relations with this table
     HasMultipleFKeysToFRel<RelatedRelationName, Relationships> extends true
     ? // If there is, postgrest will fail at runtime, and require desambiguation via hinting
-      RequireHintingSelectQueryError<
-        RelatedRelationName,
-        CurrentTableOrView extends string ? CurrentTableOrView : 'unknown'
-      >
+      SelectQueryError<`Could not embed because more than one relationship was found for '${RelatedRelationName}' and '${CurrentTableOrView}' you need to hint the column with ${RelatedRelationName}!<columnName> ?`>
     : FoundRelation
   : // Same check for forward relationships, but we must gather the relationships from the found relation
   FoundRelation extends {
@@ -188,13 +170,13 @@ type CheckRelationshipError<
         name: string
       }
       direction: 'forward'
-      from: infer From extends keyof TablesAndViews<Schema>
+      from: infer From extends keyof TablesAndViews<Schema> & string
     }
   ? HasMultipleFKeysToFRel<
       RelatedRelationName,
       TablesAndViews<Schema>[From]['Relationships']
     > extends true
-    ? RequireHintingSelectQueryError<From extends string ? From : 'unknown', RelatedRelationName>
+    ? SelectQueryError<`Could not embed because more than one relationship was found for '${From}' and '${RelatedRelationName}' you need to hint the column with ${From}!<columnName> ?`>
     : FoundRelation
   : FoundRelation
 
@@ -229,7 +211,7 @@ type ResolveReverseRelationship<
   Schema extends GenericSchema,
   Relationships extends GenericRelationship[],
   Field extends Ast.FieldNode,
-  CurrentTableOrView extends keyof TablesAndViews<Schema>
+  CurrentTableOrView extends keyof TablesAndViews<Schema> & string
 > = FindFieldMatchingRelationships<Schema, Relationships, Field> extends infer FoundRelation
   ? FoundRelation extends never
     ? false
@@ -245,10 +227,7 @@ type ResolveReverseRelationship<
           }
         : // If the relation was found via implicit relation naming, we must ensure there is no conflicting matches
         HasMultipleFKeysToFRel<RelatedRelationName, Relationships> extends true
-        ? RequireHintingSelectQueryError<
-            RelatedRelationName,
-            CurrentTableOrView extends string ? CurrentTableOrView : 'unknown'
-          >
+        ? SelectQueryError<`Could not embed because more than one relationship was found for '${RelatedRelationName}' and '${CurrentTableOrView}' you need to hint the column with ${RelatedRelationName}!<columnName> ?`>
         : {
             referencedTable: TablesAndViews<Schema>[RelatedRelationName]
             relation: FoundRelation
