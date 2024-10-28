@@ -49,3 +49,35 @@ INSERT INTO best_friends(id, first_user, second_user, third_wheel)
 VALUES
   (1, 'supabot', 'kiwicopple', 'awailas'),
   (2, 'supabot', 'awailas', NULL);
+
+INSERT INTO public.collections (id, description, parent_id)
+VALUES
+  (1, 'Root Collection', NULL),
+  (2, 'Child of Root', 1),
+  (3, 'Another Child of Root', 1),
+  (4, 'Grandchild', 2),
+  (5, 'Sibling of Grandchild', 2),
+  (6, 'Child of Another Root', 3);
+
+-- Insert sample products
+INSERT INTO public.products (id, name, description, price)
+VALUES
+  (1, 'Laptop', 'High-performance laptop', 999.99),
+  (2, 'Smartphone', 'Latest model smartphone', 699.99),
+  (3, 'Headphones', 'Noise-cancelling headphones', 199.99);
+
+-- Insert sample categories
+INSERT INTO public.categories (id, name, description)
+VALUES
+  (1, 'Electronics', 'Electronic devices and gadgets'),
+  (2, 'Computers', 'Computer and computer accessories'),
+  (3, 'Audio', 'Audio equipment');
+
+-- Insert product-category relationships
+INSERT INTO public.product_categories (product_id, category_id)
+VALUES
+  (1, 1), -- Laptop is in Electronics
+  (1, 2), -- Laptop is also in Computers
+  (2, 1), -- Smartphone is in Electronics
+  (3, 1), -- Headphones are in Electronics
+  (3, 3); -- Headphones are also in Audio

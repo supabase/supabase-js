@@ -69,6 +69,20 @@ export type Database = {
             foreignKeyName: 'best_friends_first_user_fkey'
             columns: ['first_user']
             isOneToOne: false
+            referencedRelation: 'non_updatable_view'
+            referencedColumns: ['username']
+          },
+          {
+            foreignKeyName: 'best_friends_first_user_fkey'
+            columns: ['first_user']
+            isOneToOne: false
+            referencedRelation: 'updatable_view'
+            referencedColumns: ['username']
+          },
+          {
+            foreignKeyName: 'best_friends_first_user_fkey'
+            columns: ['first_user']
+            isOneToOne: false
             referencedRelation: 'users'
             referencedColumns: ['username']
           },
@@ -157,6 +171,32 @@ export type Database = {
         }
         Relationships: []
       }
+      collections: {
+        Row: {
+          description: string | null
+          id: number
+          parent_id: number | null
+        }
+        Insert: {
+          description?: string | null
+          id?: number
+          parent_id?: number | null
+        }
+        Update: {
+          description?: string | null
+          id?: number
+          parent_id?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'collections_parent_id_fkey'
+            columns: ['parent_id']
+            isOneToOne: false
+            referencedRelation: 'collections'
+            referencedColumns: ['id']
+          }
+        ]
+      }
       messages: {
         Row: {
           channel_id: number
@@ -209,6 +249,75 @@ export type Database = {
             referencedColumns: ['username']
           }
         ]
+      }
+      product_categories: {
+        Row: {
+          category_id: number
+          product_id: number
+        }
+        Insert: {
+          category_id: number
+          product_id: number
+        }
+        Update: {
+          category_id?: number
+          product_id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'product_categories_category_id_fkey'
+            columns: ['category_id']
+            isOneToOne: false
+            referencedRelation: 'categories'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'product_categories_product_id_fkey'
+            columns: ['product_id']
+            isOneToOne: false
+            referencedRelation: 'products'
+            referencedColumns: ['id']
+          }
+        ]
+      }
+      products: {
+        Row: {
+          description: string | null
+          id: number
+          name: string
+          price: number
+        }
+        Insert: {
+          description?: string | null
+          id?: number
+          name: string
+          price: number
+        }
+        Update: {
+          description?: string | null
+          id?: number
+          name?: string
+          price?: number
+        }
+        Relationships: []
+      }
+      categories: {
+        Row: {
+          description: string | null
+          id: number
+          name: string
+        }
+        Insert: {
+          description?: string | null
+          id?: number
+          name: string
+        }
+        Update: {
+          description?: string | null
+          id?: number
+          name?: string
+        }
+        Relationships: []
       }
       shops: {
         Row: {
