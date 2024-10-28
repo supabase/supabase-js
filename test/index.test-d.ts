@@ -84,7 +84,7 @@ const supabase = createClient<Database>(URL, KEY)
   if (error) {
     throw new Error(error.message)
   }
-  expectType<Database['public']['Tables']['users']['Row'] | null>(message.user)
+  expectType<Database['public']['Tables']['users']['Row']>(message.user)
 }
 
 // one-to-many relationship
@@ -98,9 +98,8 @@ const supabase = createClient<Database>(URL, KEY)
 
 // referencing missing column
 {
-  type SelectQueryError<Message extends string> = { error: true } & Message
   const res = await supabase.from('users').select('username, dat')
-  expectType<PostgrestSingleResponse<SelectQueryError<`Referencing missing column \`dat\``>[]>>(res)
+  expectType<PostgrestSingleResponse<"column 'dat' does not exist on 'users'."[]>>(res)
 }
 
 // one-to-one relationship
