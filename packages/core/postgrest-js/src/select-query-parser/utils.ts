@@ -12,8 +12,6 @@ import {
 
 export type SelectQueryError<Message extends string> = { error: true } & Message
 
-type AsString<T> = T extends string ? T : ''
-
 type RequireHintingSelectQueryError<
   DistantName extends string,
   RelationName extends string
@@ -207,7 +205,7 @@ export type ResolveRelationship<
   Schema extends GenericSchema,
   Relationships extends GenericRelationship[],
   Field extends Ast.FieldNode,
-  CurrentTableOrView extends keyof TablesAndViews<Schema>
+  CurrentTableOrView extends keyof TablesAndViews<Schema> & string
 > = ResolveReverseRelationship<
   Schema,
   Relationships,
@@ -387,7 +385,7 @@ type FilterRelationships<R, TName, From> = R extends readonly (infer Rel)[]
 type ResolveForwardRelationship<
   Schema extends GenericSchema,
   Field extends Ast.FieldNode,
-  CurrentTableOrView extends keyof TablesAndViews<Schema>
+  CurrentTableOrView extends keyof TablesAndViews<Schema> & string
 > = FindFieldMatchingRelationships<
   Schema,
   TablesAndViews<Schema>[Field['name']]['Relationships'],
@@ -432,7 +430,7 @@ type ResolveForwardRelationship<
       from: CurrentTableOrView
       type: 'found-by-join-table'
     }
-  : SelectQueryError<`could not find the relation between ${AsString<CurrentTableOrView>} and ${Field['name']}`>
+  : SelectQueryError<`could not find the relation between ${CurrentTableOrView} and ${Field['name']}`>
 
 /**
  * Given a CurrentTableOrView, finds all join tables to this relation.
@@ -454,7 +452,7 @@ type ResolveForwardRelationship<
  */
 export type FindJoinTableRelationship<
   Schema extends GenericSchema,
-  CurrentTableOrView extends keyof TablesAndViews<Schema>,
+  CurrentTableOrView extends keyof TablesAndViews<Schema> & string,
   FieldName extends string
 > = {
   [TableName in keyof TablesAndViews<Schema>]: TablesAndViews<Schema>[TableName]['Relationships'] extends readonly (infer Rel)[]
