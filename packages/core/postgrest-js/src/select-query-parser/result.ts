@@ -198,7 +198,7 @@ export type ProcessEmbeddedResource<
   Schema extends GenericSchema,
   Relationships extends GenericRelationship[],
   Field extends Ast.FieldNode,
-  CurrentTableOrView extends keyof TablesAndViews<Schema>
+  CurrentTableOrView extends keyof TablesAndViews<Schema> & string
 > = ResolveRelationship<Schema, Relationships, Field, CurrentTableOrView> extends infer Resolved
   ? Resolved extends {
       referencedTable: Pick<GenericTable, 'Row' | 'Relationships'>

@@ -10,6 +10,7 @@ import { TypeEqual } from 'ts-expect'
 import {
   FindMatchingTableRelationships,
   IsRelationNullable,
+  FindJoinTableRelationship,
 } from '../../src/select-query-parser/utils'
 import { Json } from '../../src/select-query-parser/types'
 import { ParseQuery } from '../../src/select-query-parser/parser'
@@ -124,11 +125,8 @@ import { ParseQuery } from '../../src/select-query-parser/parser'
   type Row = Schema['Tables'][RelationName]['Row']
   type Relationships = Schema['Tables'][RelationName]['Relationships']
   type ParsedQuery = ParseQuery<typeof select>
-  // First field of the query is username and is properly parsed
-  type f1 = ParsedQuery[0]
   type r1 = ProcessNode<Schema, Row, RelationName, Relationships, ParsedQuery[0]>
   expectType<TypeEqual<r1, { username: string }>>(true)
-  type f2 = ParsedQuery[1]
   type r2 = ProcessNodes<Schema, Row, RelationName, Relationships, ParsedQuery>
   // fail because result for messages is ({id: string} | {message: string | null })[]
   expectType<
@@ -159,4 +157,43 @@ import { ParseQuery } from '../../src/select-query-parser/parser'
   expectType<r1>(expected!)
   type r2 = ProcessNodes<Schema, Row, RelationName, Relationships, ParsedQuery>
   expectType<r2>(expected!)
+}
+
+{
+  type Schema = Database['public']
+  type CurrentTableOrView = 'products'
+  type FieldName = 'categories'
+  type R = FindJoinTableRelationship<Schema, CurrentTableOrView, FieldName>
+  let expected: {
+    foreignKeyName: 'product_categories_category_id_fkey'
+    columns: ['category_id']
+    isOneToOne: false
+    referencedRelation: 'categories'
+    referencedColumns: ['id']
+  }
+  expectType<R>(expected!)
+}
+
+{
+  type Schema = Database['public']
+  type CurrentTableOrView = 'categories'
+  type FieldName = 'products'
+  type R = FindJoinTableRelationship<Schema, CurrentTableOrView, FieldName>
+  let expected: {
+    foreignKeyName: 'product_categories_product_id_fkey'
+    columns: ['product_id']
+    isOneToOne: false
+    referencedRelation: 'products'
+    referencedColumns: ['id']
+  }
+  expectType<R>(expected!)
+}
+
+{
+  type Schema = Database['public']
+  type CurrentTableOrView = 'categories'
+  type FieldName = 'missing'
+  type R = FindJoinTableRelationship<Schema, CurrentTableOrView, FieldName>
+  let expected: never
+  expectType<R>(expected!)
 }

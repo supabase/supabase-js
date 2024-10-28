@@ -181,6 +181,10 @@ export const selectParams = {
     from: 'users',
     select: 'alias:missing_column.count()',
   },
+  manyToManyWithJoinTable: {
+    from: 'products',
+    select: '*, categories(*)',
+  },
 } as const
 
 export const selectQueries = {
@@ -356,6 +360,9 @@ export const selectQueries = {
   aggregateOnMissingColumnWithAlias: postgrest
     .from(selectParams.aggregateOnMissingColumnWithAlias.from)
     .select(selectParams.aggregateOnMissingColumnWithAlias.select),
+  manyToManyWithJoinTable: postgrest
+    .from(selectParams.manyToManyWithJoinTable.from)
+    .select(selectParams.manyToManyWithJoinTable.select),
 } as const
 
 test('nested query with selective fields', async () => {
@@ -1828,6 +1835,36 @@ test('aggregate on missing column with alias', async () => {
       },
       "status": 400,
       "statusText": "Bad Request",
+    }
+  `)
+})
+
+test('many-to-many with join table', async () => {
+  const res = await selectQueries.manyToManyWithJoinTable.eq('id', 1).single()
+  expect(res).toMatchInlineSnapshot(`
+    Object {
+      "count": null,
+      "data": Object {
+        "categories": Array [
+          Object {
+            "description": "Electronic devices and gadgets",
+            "id": 1,
+            "name": "Electronics",
+          },
+          Object {
+            "description": "Computer and computer accessories",
+            "id": 2,
+            "name": "Computers",
+          },
+        ],
+        "description": "High-performance laptop",
+        "id": 1,
+        "name": "Laptop",
+        "price": 999.99,
+      },
+      "error": null,
+      "status": 200,
+      "statusText": "OK",
     }
   `)
 })
