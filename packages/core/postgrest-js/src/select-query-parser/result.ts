@@ -130,11 +130,11 @@ export type ProcessRPCNode<
   Row extends Record<string, unknown>,
   RelationName extends string,
   NodeType extends Ast.Node
-> = NodeType extends Ast.StarNode // If the selection is *
+> = NodeType['type'] extends Ast.StarNode['type'] // If the selection is *
   ? Row
-  : NodeType extends Ast.FieldNode
-  ? ProcessSimpleField<Row, RelationName, NodeType>
-  : SelectQueryError<'Unsupported node type.'>
+  : NodeType['type'] extends Ast.FieldNode['type']
+  ? ProcessSimpleField<Row, RelationName, Extract<NodeType, Ast.FieldNode>>
+  : SelectQueryError<'RPC Unsupported node type.'>
 /**
  * Process select call that can be chained after an rpc call
  */
@@ -197,12 +197,12 @@ export type ProcessNode<
   RelationName extends string,
   Relationships extends GenericRelationship[],
   NodeType extends Ast.Node
-> = NodeType extends Ast.StarNode // If the selection is *
+> = NodeType['type'] extends Ast.StarNode['type'] // If the selection is *
   ? Row
-  : NodeType extends Ast.SpreadNode // If the selection is a ...spread
-  ? ProcessSpreadNode<Schema, Row, RelationName, Relationships, NodeType>
-  : NodeType extends Ast.FieldNode
-  ? ProcessFieldNode<Schema, Row, RelationName, Relationships, NodeType>
+  : NodeType['type'] extends Ast.SpreadNode['type'] // If the selection is a ...spread
+  ? ProcessSpreadNode<Schema, Row, RelationName, Relationships, Extract<NodeType, Ast.SpreadNode>>
+  : NodeType['type'] extends Ast.FieldNode['type']
+  ? ProcessFieldNode<Schema, Row, RelationName, Relationships, Extract<NodeType, Ast.FieldNode>>
   : SelectQueryError<'Unsupported node type.'>
 
 /**
@@ -369,7 +369,9 @@ type ProcessSpreadNode<
 /**
  * Helper type to process the result of a spread node.
  */
-type ProcessSpreadNodeResult<Result> = ExtractFirstProperty<Result> extends infer SpreadedObject
+type ProcessSpreadNodeResult<Result> = Result extends Record<string, SelectQueryError<string>>
+  ? Result
+  : ExtractFirstProperty<Result> extends infer SpreadedObject
   ? ContainsNull<SpreadedObject> extends true
     ? Exclude<{ [K in keyof SpreadedObject]: SpreadedObject[K] | null }, null>
     : Exclude<{ [K in keyof SpreadedObject]: SpreadedObject[K] }, null>

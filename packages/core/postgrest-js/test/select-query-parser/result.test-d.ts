@@ -3,6 +3,7 @@ import { selectParams } from '../relationships'
 import { GetResult } from '../../src/select-query-parser/result'
 import { expectType } from 'tsd'
 import { TypeEqual } from 'ts-expect'
+import { SelectQueryError } from '../../src/select-query-parser/utils'
 
 type SelectQueryFromTableResult<
   TableName extends keyof Database['public']['Tables'],
@@ -66,6 +67,21 @@ type SelectQueryFromTableResult<
       id: number
       description: string | null
       parent_id: number | null
+    }[]
+  }
+  expectType<TypeEqual<typeof result, typeof expected>>(true)
+}
+
+// nested query with selective fields
+{
+  let result: SelectQueryFromTableResult<
+    'users',
+    `msgs:messages(id, ...message_details(created_at, channel!inner(id, slug, owner:users(*))))`
+  >
+  let expected: {
+    msgs: {
+      id: number
+      message_details: SelectQueryError<`Could not embed because more than one relationship was found for 'messages' and '${string}' you need to hint the column with messages!<columnName> ?`>
     }[]
   }
   expectType<TypeEqual<typeof result, typeof expected>>(true)
