@@ -86,3 +86,35 @@ type SelectQueryFromTableResult<
   }
   expectType<TypeEqual<typeof result, typeof expected>>(true)
 }
+
+{
+  let result: SelectQueryFromTableResult<
+    'users',
+    `msgs:messages(id, ...channels(id, ...channel_details(id, missing_col)))`
+  >
+  let expected: {
+    msgs: {
+      id: number
+      channel_details: SelectQueryError<"column 'missing_col' does not exist on 'channel_details'."> | null
+    }[]
+  }
+  expectType<TypeEqual<typeof result, typeof expected>>(true)
+}
+
+{
+  let result1: SelectQueryFromTableResult<
+    'users',
+    `msgs:messages(...channels(slug, channel_details!inner(id, details, channel:channels(*))))`
+  >
+  let result2: SelectQueryFromTableResult<
+    'users',
+    `msgs:messages(...channels(slug, channel_details!inner(channel:channels(*), id, details)))`
+  >
+  let result3: SelectQueryFromTableResult<
+    'users',
+    `msgs:messages(...channels!inner(slug, channel_details!inner(id, details, channel:channels(*))))`
+  >
+  // All variations should not change the result
+  expectType<typeof result1>(result2!)
+  expectType<typeof result2>(result3!)
+}

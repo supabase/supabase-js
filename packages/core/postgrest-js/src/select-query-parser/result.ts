@@ -197,13 +197,13 @@ export type ProcessNode<
   RelationName extends string,
   Relationships extends GenericRelationship[],
   NodeType extends Ast.Node
-> = NodeType['type'] extends Ast.StarNode['type'] // If the selection is *
+> = NodeType extends Ast.StarNode // If the selection is *
   ? Row
-  : NodeType['type'] extends Ast.SpreadNode['type'] // If the selection is a ...spread
-  ? ProcessSpreadNode<Schema, Row, RelationName, Relationships, Extract<NodeType, Ast.SpreadNode>>
-  : NodeType['type'] extends Ast.FieldNode['type']
-  ? ProcessFieldNode<Schema, Row, RelationName, Relationships, Extract<NodeType, Ast.FieldNode>>
-  : SelectQueryError<'Unsupported node type.'>
+  : NodeType extends Ast.SpreadNode // If the selection is a ...spread
+  ? ProcessSpreadNode<Schema, Row, RelationName, Relationships, NodeType>
+  : NodeType extends Ast.FieldNode
+  ? ProcessFieldNode<Schema, Row, RelationName, Relationships, NodeType>
+  : SelectQueryError<'Unsupported node type.' & { nodeType: NodeType }>
 
 /**
  * Processes a FieldNode and returns the resulting TypeScript type.
@@ -369,7 +369,10 @@ type ProcessSpreadNode<
 /**
  * Helper type to process the result of a spread node.
  */
-type ProcessSpreadNodeResult<Result> = Result extends Record<string, SelectQueryError<string>>
+type ProcessSpreadNodeResult<Result> = Result extends Record<
+  string,
+  SelectQueryError<string> | null
+>
   ? Result
   : ExtractFirstProperty<Result> extends infer SpreadedObject
   ? ContainsNull<SpreadedObject> extends true
