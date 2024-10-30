@@ -135,6 +135,7 @@ export type ProcessRPCNode<
   : NodeType['type'] extends Ast.FieldNode['type']
   ? ProcessSimpleField<Row, RelationName, Extract<NodeType, Ast.FieldNode>>
   : SelectQueryError<'RPC Unsupported node type.'>
+
 /**
  * Process select call that can be chained after an rpc call
  */
@@ -197,13 +198,13 @@ export type ProcessNode<
   RelationName extends string,
   Relationships extends GenericRelationship[],
   NodeType extends Ast.Node
-> = NodeType extends Ast.StarNode // If the selection is *
+> = NodeType['type'] extends Ast.StarNode['type'] // If the selection is *
   ? Row
-  : NodeType extends Ast.SpreadNode // If the selection is a ...spread
-  ? ProcessSpreadNode<Schema, Row, RelationName, Relationships, NodeType>
-  : NodeType extends Ast.FieldNode
-  ? ProcessFieldNode<Schema, Row, RelationName, Relationships, NodeType>
-  : SelectQueryError<'Unsupported node type.' & { nodeType: NodeType }>
+  : NodeType['type'] extends Ast.SpreadNode['type'] // If the selection is a ...spread
+  ? ProcessSpreadNode<Schema, Row, RelationName, Relationships, Extract<NodeType, Ast.SpreadNode>>
+  : NodeType['type'] extends Ast.FieldNode['type']
+  ? ProcessFieldNode<Schema, Row, RelationName, Relationships, Extract<NodeType, Ast.FieldNode>>
+  : SelectQueryError<'Unsupported node type.'>
 
 /**
  * Processes a FieldNode and returns the resulting TypeScript type.
