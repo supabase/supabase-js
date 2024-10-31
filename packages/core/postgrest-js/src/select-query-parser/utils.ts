@@ -10,6 +10,8 @@ import {
   UnionToArray,
 } from './types'
 
+export type IsAny<T> = 0 extends 1 & T ? true : false
+
 export type SelectQueryError<Message extends string> = { error: true } & Message
 
 export type GetFieldNodeResultName<Field extends Ast.FieldNode> = Field['alias'] extends string
