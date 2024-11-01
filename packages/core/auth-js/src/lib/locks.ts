@@ -29,6 +29,7 @@ export abstract class LockAcquireTimeoutError extends Error {
 }
 
 export class NavigatorLockAcquireTimeoutError extends LockAcquireTimeoutError {}
+export class ProcessLockAcquireTimeoutError extends LockAcquireTimeoutError {}
 
 /**
  * Implements a global exclusive lock using the Navigator LockManager API. It
@@ -140,4 +141,76 @@ export async function navigatorLock<R>(
       }
     }
   )
+}
+
+const PROCESS_LOCKS: { [name: string]: Promise<any> } = {}
+
+/**
+ * Implements a global exclusive lock that works only in the current process.
+ * Useful for environments like React Native or other non-browser
+ * single-process (i.e. no concept of "tabs") environments.
+ *
+ * Use {@link #navigatorLock} in browser environments.
+ *
+ * @param name Name of the lock to be acquired.
+ * @param acquireTimeout If negative, no timeout. If 0 an error is thrown if
+ *                       the lock can't be acquired without waiting. If positive, the lock acquire
+ *                       will time out after so many milliseconds. An error is
+ *                       a timeout if it has `isAcquireTimeout` set to true.
+ * @param fn The operation to run once the lock is acquired.
+ */
+export async function processLock<R>(
+  name: string,
+  acquireTimeout: number,
+  fn: () => Promise<R>
+): Promise<R> {
+  const previousOperation = PROCESS_LOCKS[name] ?? Promise.resolve()
+
+  const currentOperation = Promise.race(
+    [
+      previousOperation.catch((e: any) => {
+        // ignore error of previous operation that we're waiting to finish
+        return null
+      }),
+      acquireTimeout >= 0
+        ? new Promise((_, reject) => {
+            setTimeout(() => {
+              reject(
+                new ProcessLockAcquireTimeoutError(
+                  `Acquring process lock with name "${name}" timed out`
+                )
+              )
+            }, acquireTimeout)
+          })
+        : null,
+    ].filter((x) => x)
+  )
+    .catch((e: any) => {
+      if (e && e.isAcquireTimeout) {
+        throw e
+      }
+
+      return null
+    })
+    .then(async () => {
+      // previous operations finished and we didn't get a race on the acquire
+      // timeout, so the current operation can finally start
+      return await fn()
+    })
+
+  PROCESS_LOCKS[name] = currentOperation.catch(async (e: any) => {
+    if (e && e.isAcquireTimeout) {
+      // if the current operation timed out, it doesn't mean that the previous
+      // operation finished, so we need contnue waiting for it to finish
+      await previousOperation
+
+      return null
+    }
+
+    throw e
+  })
+
+  // finally wait for the current operation to finish successfully, with an
+  // error or with an acquire timeout error
+  return await currentOperation
 }
