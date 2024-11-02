@@ -1,5 +1,5 @@
 // constants.ts
-import { RealtimeClientOptions } from '@supabase/realtime-js'
+import { RealtimeClientOptions } from '@supabase-wechat/realtime-js'
 import { SupabaseAuthClientOptions } from './types'
 import { version } from './version'
 

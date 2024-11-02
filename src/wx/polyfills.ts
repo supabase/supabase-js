@@ -1,8 +1,5 @@
 // @ts-nocheck
 
-if (!window.AbortController) {
-  window.AbortController = require('abortcontroller-polyfill/dist/cjs-ponyfill').AbortController
-}
 if (!globalThis.AbortController) {
   globalThis.AbortController = require('abortcontroller-polyfill/dist/cjs-ponyfill').AbortController
 }
@@ -17,6 +14,6 @@ globalThis.localStorage = {
   },
 }
 
-if (!window.Headers) {
-  window.Headers = require('headers-polyfill').Headers
+if (!globalThis.Headers) {
+  globalThis.Headers = require('headers-polyfill').Headers
 }

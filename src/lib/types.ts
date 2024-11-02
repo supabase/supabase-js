@@ -1,5 +1,5 @@
 import { AuthClient } from '@supabase-wechat/auth-js'
-import { RealtimeClientOptions } from '@supabase/realtime-js'
+import { RealtimeClientOptions } from '@supabase-wechat/realtime-js'
 import { PostgrestError } from '@supabase-wechat/postgrest-js'
 
 type AuthClientOptions = ConstructorParameters<typeof AuthClient>[0]

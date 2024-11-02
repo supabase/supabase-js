@@ -45,8 +45,8 @@
     "@supabase-wechat/auth-js": "workspace:*",
     "@supabase-wechat/node-fetch": "workspace:*",
     "@supabase-wechat/postgrest-js": "workspace:*",
+    "@supabase-wechat/realtime-js": "workspace:*",
     "@supabase/functions-js": "2.4.3",
-    "@supabase/realtime-js": "2.10.7",
     "@supabase/storage-js": "2.7.1",
     "abortcontroller-polyfill": "^1.7.5",
     "headers-polyfill": "^4.0.3"

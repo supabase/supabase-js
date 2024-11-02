@@ -27,18 +27,6 @@ Changes are made on top of <https://github.com/supabase/supabase-js/commit/ce1e2
 import { createClient } from '@supabase-wechat/supabase-js'
 
 export const supabaseClient = createClient<Database>(api_url, anon_key, {
-  auth: {
-    // wx storage implementation
-    storage: {
-      getItem: (key: string) => wx.getStorageSync(key),
-      setItem: (key: string, value: string) => {
-        wx.setStorage({ key, data: value })
-      },
-      removeItem: (key: string) => {
-        wx.removeStorage({ key })
-      },
-    },
-  },
   // Directly send api request from wx client
   wxFetch: { type: 'wx' },
   // OR

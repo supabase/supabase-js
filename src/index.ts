@@ -20,7 +20,7 @@ export {
   type FunctionInvokeOptions,
   FunctionRegion,
 } from '@supabase/functions-js'
-export * from '@supabase/realtime-js'
+export * from '@supabase-wechat/realtime-js'
 export { default as SupabaseClient } from './SupabaseClient'
 export type { SupabaseClientOptions, QueryResult, QueryData, QueryError } from './lib/types'
 
@@ -55,6 +55,7 @@ export const createClient = <
   const { wxFetch, ...optionsWithoutFetch } = options
 
   let fetch = undefined
+  require('./wx/polyfills')
   if (wxFetch?.type === 'wx') {
     fetch = wxFetchSb
   }

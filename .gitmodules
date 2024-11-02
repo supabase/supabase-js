@@ -7,3 +7,6 @@
 [submodule "packages/node-fetch"]
 	path = packages/node-fetch
 	url = https://github.com/supabase-wechat/node-fetch
+[submodule "packages/realtime-js"]
+	path = packages/realtime-js
+	url = https://github.com/supabase-wechat/realtime-js
