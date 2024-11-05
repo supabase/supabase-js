@@ -5,6 +5,11 @@ import { TypeEqual } from 'ts-expect'
 const REST_URL = 'http://localhost:3000'
 
 // Check for PostgrestClient without types provided to the client
+{
+  const postgrest = new PostgrestClient(REST_URL)
+  const { data } = await postgrest.from('user_profile').select()
+  expectType<TypeEqual<typeof data, any[] | null>>(true)
+}
 // basic embeding
 {
   const postgrest = new PostgrestClient(REST_URL)
