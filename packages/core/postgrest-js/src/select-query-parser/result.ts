@@ -198,13 +198,15 @@ export type ProcessNode<
   RelationName extends string,
   Relationships extends GenericRelationship[],
   NodeType extends Ast.Node
-> = NodeType['type'] extends Ast.StarNode['type'] // If the selection is *
-  ? Row
-  : NodeType['type'] extends Ast.SpreadNode['type'] // If the selection is a ...spread
-  ? ProcessSpreadNode<Schema, Row, RelationName, Relationships, Extract<NodeType, Ast.SpreadNode>>
-  : NodeType['type'] extends Ast.FieldNode['type']
-  ? ProcessFieldNode<Schema, Row, RelationName, Relationships, Extract<NodeType, Ast.FieldNode>>
-  : SelectQueryError<'Unsupported node type.'>
+> =
+  // TODO: figure out why comparing the `type` property is necessary vs. `NodeType extends Ast.StarNode`
+  NodeType['type'] extends Ast.StarNode['type'] // If the selection is *
+    ? Row
+    : NodeType['type'] extends Ast.SpreadNode['type'] // If the selection is a ...spread
+    ? ProcessSpreadNode<Schema, Row, RelationName, Relationships, Extract<NodeType, Ast.SpreadNode>>
+    : NodeType['type'] extends Ast.FieldNode['type']
+    ? ProcessFieldNode<Schema, Row, RelationName, Relationships, Extract<NodeType, Ast.FieldNode>>
+    : SelectQueryError<'Unsupported node type.'>
 
 /**
  * Processes a FieldNode and returns the resulting TypeScript type.
