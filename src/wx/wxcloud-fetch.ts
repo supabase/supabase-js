@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { lowercasedJSONKey } from './utils'
 
 export function createWxCloudFetchSb(wxClousFnName: string) {
@@ -10,7 +11,6 @@ export function createWxCloudFetchSb(wxClousFnName: string) {
     }
 
     return new Promise((resolve, reject) => {
-      // @ts-ignore
       wx.cloud.callFunction({
         name: wxClousFnName,
         data: {
@@ -21,8 +21,7 @@ export function createWxCloudFetchSb(wxClousFnName: string) {
             responseType: 'text',
             headers:
               Object.prototype.toString.call(headers) == '[object Headers]'
-                ? // @ts-ignore
-                  Object.fromEntries(headers!.entries())
+                ? Object.fromEntries(headers!.entries())
                 : headers,
           },
         },
@@ -47,7 +46,6 @@ export function createWxCloudFetchSb(wxClousFnName: string) {
                     : responseData
                 )
               }),
-            // @ts-ignore
             headers: new Map(Object.entries(lowercasedJSONKey(response.headers))),
             status: response.status,
           })

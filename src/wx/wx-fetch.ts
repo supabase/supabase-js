@@ -1,4 +1,6 @@
-export const wxFetchSb: typeof fetch = (input, { headers, body, method } = {}) => {
+// @ts-nocheck
+
+export const wxFetchSb: typeof fetch = (input, { headers, body, method, signal } = {}) => {
   let url: string
   if (typeof input !== 'string') {
     url = (input as Request).url ?? (input as URL).toString()
@@ -7,8 +9,7 @@ export const wxFetchSb: typeof fetch = (input, { headers, body, method } = {}) =
   }
 
   return new Promise((resolve, reject) => {
-    // @ts-ignore
-    wx.request<R>({
+    const requestTask = wx.request({
       url: url,
       method: method as any,
       dataType: 'json',
@@ -50,5 +51,13 @@ export const wxFetchSb: typeof fetch = (input, { headers, body, method } = {}) =
         reject(error)
       },
     })
+
+    if (signal) {
+      signal.addEventListener('abort', () => {
+        console.log('abort')
+        requestTask.abort()
+        reject(new Error('Request aborted'))
+      })
+    }
   })
 }

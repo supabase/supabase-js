@@ -42,10 +42,6 @@ jobs:
       - name: Build `auth-js`
         run: npm run build
         working-directory: ./packages/auth-js
- 
-      - name: Build `realtime-js`
-        run: npm run build
-        working-directory: ./packages/realtime-js
 
       - name: Build `supabase-js`
         run: npm run build

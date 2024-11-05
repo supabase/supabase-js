@@ -1,5 +1,6 @@
-import { wxFetchSb } from './wx/fetch'
+import { wxFetchSb } from './wx/wx-fetch'
 import { createWxCloudFetchSb } from './wx/wxcloud-fetch'
+import { WxSocketTask } from './wx/socket-task'
 
 import SupabaseClient from './SupabaseClient'
 import type { GenericSchema, SupabaseClientOptions } from './lib/types'
@@ -20,7 +21,7 @@ export {
   type FunctionInvokeOptions,
   FunctionRegion,
 } from '@supabase/functions-js'
-export * from '@supabase-wechat/realtime-js'
+export * from '@supabase/realtime-js'
 export { default as SupabaseClient } from './SupabaseClient'
 export type { SupabaseClientOptions, QueryResult, QueryData, QueryError } from './lib/types'
 
@@ -47,23 +48,36 @@ export const createClient = <
           type: 'wxCloud'
           wxCloudFnName: string
         }
-    global?: {
-      headers?: Record<string, string>
-    }
-  } & Omit<SupabaseClientOptions<SchemaName>, 'global'>
+  } & SupabaseClientOptions<SchemaName>
 ): SupabaseClient<Database, SchemaName, Schema> => {
   const { wxFetch, ...optionsWithoutFetch } = options
 
-  let fetch = undefined
   require('./wx/polyfills')
-  if (wxFetch?.type === 'wx') {
-    fetch = wxFetchSb
+
+  let customFetch = options.global?.fetch
+  if (!customFetch) {
+    if (wxFetch?.type === 'wx') {
+      customFetch = wxFetchSb
+    }
+    if (wxFetch?.type === 'wxCloud') {
+      customFetch = createWxCloudFetchSb(wxFetch.wxCloudFnName)
+    }
   }
-  if (wxFetch?.type === 'wxCloud') {
-    fetch = createWxCloudFetchSb(wxFetch.wxCloudFnName)
+
+  let customSocketTask = options.realtime?.transport
+  if (!customSocketTask) {
+    customSocketTask = WxSocketTask
   }
+
   return new SupabaseClient<Database, SchemaName, Schema>(supabaseUrl, supabaseKey, {
     ...optionsWithoutFetch,
-    global: { ...(optionsWithoutFetch.global ?? {}), fetch },
+    realtime: {
+      ...(optionsWithoutFetch.realtime ?? {}),
+      transport: customSocketTask,
+    },
+    global: {
+      ...(optionsWithoutFetch.global ?? {}),
+      fetch: customFetch,
+    },
   })
 }

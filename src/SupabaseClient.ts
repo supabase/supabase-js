@@ -10,7 +10,7 @@ import {
   RealtimeChannelOptions,
   RealtimeClient,
   RealtimeClientOptions,
-} from '@supabase-wechat/realtime-js'
+} from '@supabase/realtime-js'
 import { StorageClient as SupabaseStorageClient } from '@supabase/storage-js'
 import {
   DEFAULT_GLOBAL_OPTIONS,
