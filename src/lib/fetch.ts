@@ -1,5 +1,5 @@
 // @ts-ignore
-import nodeFetch, { Headers as NodeFetchHeaders } from '@supabase-wechat/node-fetch'
+import nodeFetch, { Headers as NodeFetchHeaders } from '@supabase/node-fetch'
 
 type Fetch = typeof fetch
 

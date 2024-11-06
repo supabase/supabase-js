@@ -1,10 +1,10 @@
 import { FunctionsClient } from '@supabase/functions-js'
-import { AuthChangeEvent } from '@supabase-wechat/auth-js'
+import { AuthChangeEvent } from '@supabase/auth-js'
 import {
   PostgrestClient,
   PostgrestFilterBuilder,
   PostgrestQueryBuilder,
-} from '@supabase-wechat/postgrest-js'
+} from '@supabase/postgrest-js'
 import {
   RealtimeChannel,
   RealtimeChannelOptions,

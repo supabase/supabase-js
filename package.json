@@ -42,10 +42,10 @@
     "serve:coverage": "npm run test:coverage && serve test/coverage"
   },
   "dependencies": {
-    "@supabase-wechat/auth-js": "workspace:*",
-    "@supabase-wechat/node-fetch": "workspace:*",
-    "@supabase-wechat/postgrest-js": "workspace:*",
+    "@supabase/auth-js": "2.65.1",
     "@supabase/functions-js": "2.4.3",
+    "@supabase/node-fetch": "2.6.15",
+    "@supabase/postgrest-js": "1.16.3",
     "@supabase/realtime-js": "2.10.7",
     "@supabase/storage-js": "2.7.1",
     "headers-polyfill": "^4.0.3"
@@ -81,9 +81,6 @@
   "workspaces": [
     "packages/*"
   ],
-  "resolutions": {
-    "typescript": "^5.2.0"
-  },
   "publishConfig": {
     "@supabase-wechat:registry": "https://npm.pkg.github.com"
   },

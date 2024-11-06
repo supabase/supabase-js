@@ -1,18 +1,20 @@
-import { wxFetchSb } from './wx/wx-fetch'
-import { createWxCloudFetchSb } from './wx/wxcloud-fetch'
+import { wxFetchSb } from './wx/fetch'
+import { createWxCloudFetchSb } from './wx/fetch-cloud'
 import { WxSocketTask } from './wx/socket-task'
+import { navigatorLockNoOp } from './wx/navigator-lock'
+import { wxLocalStorage } from './wx/local-storage'
 
 import SupabaseClient from './SupabaseClient'
 import type { GenericSchema, SupabaseClientOptions } from './lib/types'
 
-export * from '@supabase-wechat/auth-js'
-export type { User as AuthUser, Session as AuthSession } from '@supabase-wechat/auth-js'
+export * from '@supabase/auth-js'
+export type { User as AuthUser, Session as AuthSession } from '@supabase/auth-js'
 export type {
   PostgrestResponse,
   PostgrestSingleResponse,
   PostgrestMaybeSingleResponse,
   PostgrestError,
-} from '@supabase-wechat/postgrest-js'
+} from '@supabase/postgrest-js'
 export {
   FunctionsHttpError,
   FunctionsFetchError,
@@ -50,34 +52,32 @@ export const createClient = <
         }
   } & SupabaseClientOptions<SchemaName>
 ): SupabaseClient<Database, SchemaName, Schema> => {
-  const { wxFetch, ...optionsWithoutFetch } = options
+  const { wxFetch, ...extraOptions } = options
 
   require('./wx/polyfills')
 
-  let customFetch = options.global?.fetch
-  if (!customFetch) {
-    if (wxFetch?.type === 'wx') {
-      customFetch = wxFetchSb
-    }
-    if (wxFetch?.type === 'wxCloud') {
-      customFetch = createWxCloudFetchSb(wxFetch.wxCloudFnName)
-    }
+  let customFetch: typeof fetch | undefined = undefined
+  if (wxFetch?.type === 'wx') {
+    customFetch = wxFetchSb
   }
-
-  let customSocketTask = options.realtime?.transport
-  if (!customSocketTask) {
-    customSocketTask = WxSocketTask
+  if (wxFetch?.type === 'wxCloud') {
+    customFetch = createWxCloudFetchSb(wxFetch.wxCloudFnName)
   }
 
   return new SupabaseClient<Database, SchemaName, Schema>(supabaseUrl, supabaseKey, {
-    ...optionsWithoutFetch,
+    ...extraOptions,
     realtime: {
-      ...(optionsWithoutFetch.realtime ?? {}),
-      transport: customSocketTask,
+      transport: WxSocketTask,
+      ...(extraOptions.realtime ?? {}),
+    },
+    auth: {
+      storage: wxLocalStorage,
+      ...(extraOptions.auth ?? {}),
+      lock: navigatorLockNoOp,
     },
     global: {
-      ...(optionsWithoutFetch.global ?? {}),
       fetch: customFetch,
+      ...(extraOptions.global ?? {}),
     },
   })
 }
