@@ -1,5 +1,18 @@
 # Changelog
 
+## [2.66.0](https://github.com/supabase/auth-js/compare/v2.65.1...v2.66.0) (2024-11-01)
+
+
+### Features
+
+* add process lock for optional use in non-browser environments (React Native) ([#977](https://github.com/supabase/auth-js/issues/977)) ([8af88b6](https://github.com/supabase/auth-js/commit/8af88b6f4e41872b73e84c40f71793dab6c62126))
+
+
+### Bug Fixes
+
+* typo in warning message ([#975](https://github.com/supabase/auth-js/issues/975)) ([4f21f93](https://github.com/supabase/auth-js/commit/4f21f9324b2c3d55630b8d0a6759a264b0472dd8))
+* update soft-deletion docs ([#973](https://github.com/supabase/auth-js/issues/973)) ([cb052a9](https://github.com/supabase/auth-js/commit/cb052a9b0846048feef18080d830cc36a9ed7282))
+
 ## [2.65.1](https://github.com/supabase/auth-js/compare/v2.65.0...v2.65.1) (2024-10-14)
 
 
