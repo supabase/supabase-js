@@ -5,9 +5,7 @@ import { TypeEqual } from 'ts-expect'
 
 // RPC call with no params
 {
-  const { data } = await postgrest
-    .rpc(RPC_NAME, { name_param: 'supabot' })
-    .select(selectParams.noParams)
+  const { data } = await postgrest.rpc(RPC_NAME, { name_param: 'supabot' }).select()
   let result: Exclude<typeof data, null>
   let expected: Database['public']['Functions'][typeof RPC_NAME]['Returns']
   expectType<TypeEqual<typeof result, typeof expected>>(true)

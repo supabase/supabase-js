@@ -12,10 +12,12 @@ import { SimplifyDeep } from '../types'
  */
 export type ParseQuery<Query extends string> = string extends Query
   ? GenericStringError
-  : ParseNodes<EatWhitespace<Query>> extends [infer Nodes extends Ast.Node[], `${infer Remainder}`]
-  ? EatWhitespace<Remainder> extends ''
-    ? SimplifyDeep<Nodes>
-    : ParserError<`Unexpected input: ${Remainder}`>
+  : ParseNodes<EatWhitespace<Query>> extends [infer Nodes, `${infer Remainder}`]
+  ? Nodes extends Ast.Node[]
+    ? EatWhitespace<Remainder> extends ''
+      ? SimplifyDeep<Nodes>
+      : ParserError<`Unexpected input: ${Remainder}`>
+    : ParserError<'Invalid nodes array structure'>
   : ParseNodes<EatWhitespace<Query>>
 
 /**
@@ -34,14 +36,15 @@ type ParseNodes<Input extends string> = string extends Input
   : ParseNodesHelper<Input, []>
 
 type ParseNodesHelper<Input extends string, Nodes extends Ast.Node[]> = ParseNode<Input> extends [
-  infer Node extends Ast.Node,
+  infer Node,
   `${infer Remainder}`
 ]
-  ? EatWhitespace<Remainder> extends `,${infer Remainder}`
-    ? ParseNodesHelper<EatWhitespace<Remainder>, [...Nodes, Node]>
-    : [[...Nodes, Node], EatWhitespace<Remainder>]
+  ? Node extends Ast.Node
+    ? EatWhitespace<Remainder> extends `,${infer Remainder}`
+      ? ParseNodesHelper<EatWhitespace<Remainder>, [...Nodes, Node]>
+      : [[...Nodes, Node], EatWhitespace<Remainder>]
+    : ParserError<'Invalid node type in nodes helper'>
   : ParseNode<Input>
-
 /**
  * Parses a node.
  * A node is one of the following:
@@ -57,11 +60,10 @@ type ParseNode<Input extends string> = Input extends ''
   ? [Ast.StarNode, EatWhitespace<Remainder>]
   : // `...field`
   Input extends `...${infer Remainder}`
-  ? ParseField<EatWhitespace<Remainder>> extends [
-      infer TargetField extends Ast.FieldNode,
-      `${infer Remainder}`
-    ]
-    ? [{ type: 'spread'; target: TargetField }, EatWhitespace<Remainder>]
+  ? ParseField<EatWhitespace<Remainder>> extends [infer TargetField, `${infer Remainder}`]
+    ? TargetField extends Ast.FieldNode
+      ? [{ type: 'spread'; target: TargetField }, EatWhitespace<Remainder>]
+      : ParserError<'Invalid target field type in spread'>
     : ParserError<`Unable to parse spread resource at \`${Input}\``>
   : ParseIdentifier<Input> extends [infer NameOrAlias, `${infer Remainder}`]
   ? EatWhitespace<Remainder> extends `::${infer _}`
@@ -69,11 +71,10 @@ type ParseNode<Input extends string> = Input extends ''
       ParseField<Input>
     : EatWhitespace<Remainder> extends `:${infer Remainder}`
     ? // `alias:`
-      ParseField<EatWhitespace<Remainder>> extends [
-        infer Field extends Ast.FieldNode,
-        `${infer Remainder}`
-      ]
-      ? [Omit<Field, 'alias'> & { alias: NameOrAlias }, EatWhitespace<Remainder>]
+      ParseField<EatWhitespace<Remainder>> extends [infer Field, `${infer Remainder}`]
+      ? Field extends Ast.FieldNode
+        ? [Omit<Field, 'alias'> & { alias: NameOrAlias }, EatWhitespace<Remainder>]
+        : ParserError<'Invalid field type in alias parsing'>
       : ParserError<`Unable to parse renamed field at \`${Input}\``>
     : // Otherwise, just parse it as a field without alias.
       ParseField<Input>
@@ -98,24 +99,22 @@ type ParseField<Input extends string> = Input extends ''
   ? Name extends 'count'
     ? ParseCountField<Input>
     : Remainder extends `!inner${infer Remainder}`
-    ? ParseEmbeddedResource<EatWhitespace<Remainder>> extends [
-        infer Children extends Ast.Node[],
-        `${infer Remainder}`
-      ]
-      ? // `field!inner(nodes)`
-        [{ type: 'field'; name: Name; innerJoin: true; children: Children }, Remainder]
+    ? ParseEmbeddedResource<EatWhitespace<Remainder>> extends [infer Children, `${infer Remainder}`]
+      ? Children extends Ast.Node[]
+        ? // `field!inner(nodes)`
+          [{ type: 'field'; name: Name; innerJoin: true; children: Children }, Remainder]
+        : ParserError<'Invalid children array in inner join'>
       : CreateParserErrorIfRequired<
           ParseEmbeddedResource<EatWhitespace<Remainder>>,
           `Expected embedded resource after "!inner" at \`${Remainder}\``
         >
     : EatWhitespace<Remainder> extends `!left${infer Remainder}`
-    ? ParseEmbeddedResource<EatWhitespace<Remainder>> extends [
-        infer Children extends Ast.Node[],
-        `${infer Remainder}`
-      ]
-      ? // `field!left(nodes)`
-        // !left is a noise word - treat it the same way as a non-`!inner`.
-        [{ type: 'field'; name: Name; children: Children }, EatWhitespace<Remainder>]
+    ? ParseEmbeddedResource<EatWhitespace<Remainder>> extends [infer Children, `${infer Remainder}`]
+      ? Children extends Ast.Node[]
+        ? // `field!left(nodes)`
+          // !left is a noise word - treat it the same way as a non-`!inner`.
+          [{ type: 'field'; name: Name; children: Children }, EatWhitespace<Remainder>]
+        : ParserError<'Invalid children array in left join'>
       : CreateParserErrorIfRequired<
           ParseEmbeddedResource<EatWhitespace<Remainder>>,
           `Expected embedded resource after "!left" at \`${EatWhitespace<Remainder>}\``
@@ -124,30 +123,36 @@ type ParseField<Input extends string> = Input extends ''
     ? ParseIdentifier<EatWhitespace<Remainder>> extends [infer Hint, `${infer Remainder}`]
       ? EatWhitespace<Remainder> extends `!inner${infer Remainder}`
         ? ParseEmbeddedResource<EatWhitespace<Remainder>> extends [
-            infer Children extends Ast.Node[],
+            infer Children,
             `${infer Remainder}`
           ]
-          ? // `field!hint!inner(nodes)`
-            [
-              { type: 'field'; name: Name; hint: Hint; innerJoin: true; children: Children },
-              EatWhitespace<Remainder>
-            ]
+          ? Children extends Ast.Node[]
+            ? // `field!hint!inner(nodes)`
+              [
+                { type: 'field'; name: Name; hint: Hint; innerJoin: true; children: Children },
+                EatWhitespace<Remainder>
+              ]
+            : ParserError<'Invalid children array in hint inner join'>
           : ParseEmbeddedResource<EatWhitespace<Remainder>>
         : ParseEmbeddedResource<EatWhitespace<Remainder>> extends [
-            infer Children extends Ast.Node[],
+            infer Children,
             `${infer Remainder}`
           ]
-        ? // `field!hint(nodes)`
-          [{ type: 'field'; name: Name; hint: Hint; children: Children }, EatWhitespace<Remainder>]
+        ? Children extends Ast.Node[]
+          ? // `field!hint(nodes)`
+            [
+              { type: 'field'; name: Name; hint: Hint; children: Children },
+              EatWhitespace<Remainder>
+            ]
+          : ParserError<'Invalid children array in hint'>
         : ParseEmbeddedResource<EatWhitespace<Remainder>>
       : ParserError<`Expected identifier after "!" at \`${EatWhitespace<Remainder>}\``>
     : EatWhitespace<Remainder> extends `(${infer _}`
-    ? ParseEmbeddedResource<EatWhitespace<Remainder>> extends [
-        infer Children extends Ast.Node[],
-        `${infer Remainder}`
-      ]
-      ? // `field(nodes)`
-        [{ type: 'field'; name: Name; children: Children }, EatWhitespace<Remainder>]
+    ? ParseEmbeddedResource<EatWhitespace<Remainder>> extends [infer Children, `${infer Remainder}`]
+      ? Children extends Ast.Node[]
+        ? // `field(nodes)`
+          [{ type: 'field'; name: Name; children: Children }, EatWhitespace<Remainder>]
+        : ParserError<'Invalid children array in field'>
       : // Return error if start of embedded resource was detected but not found.
         ParseEmbeddedResource<EatWhitespace<Remainder>>
     : // Otherwise it's a non-embedded resource field.
@@ -184,13 +189,12 @@ type ParseCountField<Input extends string> = ParseIdentifier<Input> extends [
 type ParseEmbeddedResource<Input extends string> = Input extends `(${infer Remainder}`
   ? EatWhitespace<Remainder> extends `)${infer Remainder}`
     ? [[], EatWhitespace<Remainder>]
-    : ParseNodes<EatWhitespace<Remainder>> extends [
-        infer Nodes extends Ast.Node[],
-        `${infer Remainder}`
-      ]
-    ? EatWhitespace<Remainder> extends `)${infer Remainder}`
-      ? [Nodes, EatWhitespace<Remainder>]
-      : ParserError<`Expected ")" at \`${EatWhitespace<Remainder>}\``>
+    : ParseNodes<EatWhitespace<Remainder>> extends [infer Nodes, `${infer Remainder}`]
+    ? Nodes extends Ast.Node[]
+      ? EatWhitespace<Remainder> extends `)${infer Remainder}`
+        ? [Nodes, EatWhitespace<Remainder>]
+        : ParserError<`Expected ")" at \`${EatWhitespace<Remainder>}\``>
+      : ParserError<'Invalid nodes array in embedded resource'>
     : ParseNodes<EatWhitespace<Remainder>>
   : ParserError<`Expected "(" at \`${Input}\``>
 

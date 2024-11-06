@@ -185,6 +185,11 @@ export const selectParams = {
     from: 'products',
     select: '*, categories(*)',
   },
+  nestedQueryWithSelectiveFieldsAndInnerJoin: {
+    from: 'users',
+    select:
+      'msgs:messages(id, ...message_details(created_at, channel!inner(id, slug, owner:users(*))))',
+  },
 } as const
 
 export const selectQueries = {
@@ -363,6 +368,9 @@ export const selectQueries = {
   manyToManyWithJoinTable: postgrest
     .from(selectParams.manyToManyWithJoinTable.from)
     .select(selectParams.manyToManyWithJoinTable.select),
+  nestedQueryWithSelectiveFieldsAndInnerJoin: postgrest
+    .from(selectParams.nestedQueryWithSelectiveFieldsAndInnerJoin.from)
+    .select(selectParams.nestedQueryWithSelectiveFieldsAndInnerJoin.select),
 } as const
 
 test('nested query with selective fields', async () => {
@@ -1865,6 +1873,24 @@ test('many-to-many with join table', async () => {
       "error": null,
       "status": 200,
       "statusText": "OK",
+    }
+  `)
+})
+
+test('nested query with selective fields and inner join should error on non existing relation', async () => {
+  const res = await selectQueries.nestedQueryWithSelectiveFieldsAndInnerJoin.limit(1).single()
+  expect(res).toMatchInlineSnapshot(`
+    Object {
+      "count": null,
+      "data": null,
+      "error": Object {
+        "code": "PGRST200",
+        "details": "Searched for a foreign key relationship between 'messages' and 'message_details' in the schema 'public', but no matches were found.",
+        "hint": null,
+        "message": "Could not find a relationship between 'messages' and 'message_details' in the schema cache",
+      },
+      "status": 400,
+      "statusText": "Bad Request",
     }
   `)
 })

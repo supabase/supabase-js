@@ -72,7 +72,7 @@ type SelectQueryFromTableResult<
   expectType<TypeEqual<typeof result, typeof expected>>(true)
 }
 
-// nested query with selective fields
+// nested query with selective fields and inner join should error on non existing relation
 {
   let result: SelectQueryFromTableResult<
     'users',
@@ -81,7 +81,7 @@ type SelectQueryFromTableResult<
   let expected: {
     msgs: {
       id: number
-      message_details: SelectQueryError<`Could not embed because more than one relationship was found for 'messages' and '${string}' you need to hint the column with messages!<columnName> ?`>
+      message_details: SelectQueryError<'could not find the relation between messages and message_details'>
     }[]
   }
   expectType<TypeEqual<typeof result, typeof expected>>(true)

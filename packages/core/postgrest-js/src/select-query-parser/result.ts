@@ -35,14 +35,18 @@ export type GetResult<
   Relationships,
   Query extends string
 > = IsAny<Schema> extends true
-  ? ParseQuery<Query> extends infer ParsedQuery extends Ast.Node[]
-    ? RelationName extends string
-      ? ProcessNodesWithoutSchema<ParsedQuery>
-      : any
+  ? ParseQuery<Query> extends infer ParsedQuery
+    ? ParsedQuery extends Ast.Node[]
+      ? RelationName extends string
+        ? ProcessNodesWithoutSchema<ParsedQuery>
+        : any
+      : ParsedQuery
     : any
   : Relationships extends null // For .rpc calls the passed relationships will be null in that case, the result will always be the function return type
-  ? ParseQuery<Query> extends infer ParsedQuery extends Ast.Node[]
-    ? RPCCallNodes<ParsedQuery, RelationName extends string ? RelationName : 'rpc_call', Row>
+  ? ParseQuery<Query> extends infer ParsedQuery
+    ? ParsedQuery extends Ast.Node[]
+      ? RPCCallNodes<ParsedQuery, RelationName extends string ? RelationName : 'rpc_call', Row>
+      : ParsedQuery
     : Row
   : ParseQuery<Query> extends infer ParsedQuery
   ? ParsedQuery extends Ast.Node[]
@@ -111,11 +115,15 @@ type ProcessNodeWithoutSchema<Node extends Ast.Node> = Node extends Ast.StarNode
 type ProcessNodesWithoutSchema<
   Nodes extends Ast.Node[],
   Acc extends Record<string, unknown> = {}
-> = Nodes extends [infer FirstNode extends Ast.Node, ...infer RestNodes extends Ast.Node[]]
-  ? ProcessNodeWithoutSchema<FirstNode> extends infer FieldResult
-    ? FieldResult extends Record<string, unknown>
-      ? ProcessNodesWithoutSchema<RestNodes, Acc & FieldResult>
-      : FieldResult
+> = Nodes extends [infer FirstNode, ...infer RestNodes]
+  ? FirstNode extends Ast.Node
+    ? RestNodes extends Ast.Node[]
+      ? ProcessNodeWithoutSchema<FirstNode> extends infer FieldResult
+        ? FieldResult extends Record<string, unknown>
+          ? ProcessNodesWithoutSchema<RestNodes, Acc & FieldResult>
+          : FieldResult
+        : any
+      : any
     : any
   : Prettify<Acc>
 
@@ -144,14 +152,18 @@ export type RPCCallNodes<
   RelationName extends string,
   Row extends Record<string, unknown>,
   Acc extends Record<string, unknown> = {} // Acc is now an object
-> = Nodes extends [infer FirstNode extends Ast.Node, ...infer RestNodes extends Ast.Node[]]
-  ? ProcessRPCNode<Row, RelationName, FirstNode> extends infer FieldResult
-    ? FieldResult extends Record<string, unknown>
-      ? RPCCallNodes<RestNodes, RelationName, Row, Acc & FieldResult>
-      : FieldResult extends SelectQueryError<infer E>
-      ? SelectQueryError<E>
-      : SelectQueryError<'Could not retrieve a valid record or error value'>
-    : SelectQueryError<'Processing node failed.'>
+> = Nodes extends [infer FirstNode, ...infer RestNodes]
+  ? FirstNode extends Ast.Node
+    ? RestNodes extends Ast.Node[]
+      ? ProcessRPCNode<Row, RelationName, FirstNode> extends infer FieldResult
+        ? FieldResult extends Record<string, unknown>
+          ? RPCCallNodes<RestNodes, RelationName, Row, Acc & FieldResult>
+          : FieldResult extends SelectQueryError<infer E>
+          ? SelectQueryError<E>
+          : SelectQueryError<'Could not retrieve a valid record or error value'>
+        : SelectQueryError<'Processing node failed.'>
+      : SelectQueryError<'Invalid rest nodes array in RPC call'>
+    : SelectQueryError<'Invalid first node in RPC call'>
   : Prettify<Acc>
 
 /**
@@ -172,14 +184,18 @@ export type ProcessNodes<
   Nodes extends Ast.Node[],
   Acc extends Record<string, unknown> = {} // Acc is now an object
 > = CheckDuplicateEmbededReference<Schema, RelationName, Relationships, Nodes> extends false
-  ? Nodes extends [infer FirstNode extends Ast.Node, ...infer RestNodes extends Ast.Node[]]
-    ? ProcessNode<Schema, Row, RelationName, Relationships, FirstNode> extends infer FieldResult
-      ? FieldResult extends Record<string, unknown>
-        ? ProcessNodes<Schema, Row, RelationName, Relationships, RestNodes, Acc & FieldResult>
-        : FieldResult extends SelectQueryError<infer E>
-        ? SelectQueryError<E>
-        : SelectQueryError<'Could not retrieve a valid record or error value'>
-      : SelectQueryError<'Processing node failed.'>
+  ? Nodes extends [infer FirstNode, ...infer RestNodes]
+    ? FirstNode extends Ast.Node
+      ? RestNodes extends Ast.Node[]
+        ? ProcessNode<Schema, Row, RelationName, Relationships, FirstNode> extends infer FieldResult
+          ? FieldResult extends Record<string, unknown>
+            ? ProcessNodes<Schema, Row, RelationName, Relationships, RestNodes, Acc & FieldResult>
+            : FieldResult extends SelectQueryError<infer E>
+            ? SelectQueryError<E>
+            : SelectQueryError<'Could not retrieve a valid record or error value'>
+          : SelectQueryError<'Processing node failed.'>
+        : SelectQueryError<'Invalid rest nodes array type in ProcessNodes'>
+      : SelectQueryError<'Invalid first node type in ProcessNodes'>
     : Prettify<Acc>
   : Prettify<CheckDuplicateEmbededReference<Schema, RelationName, Relationships, Nodes>>
 

@@ -741,7 +741,7 @@ type Schema = Database['public']
 {
   const { data, error } = await selectQueries.aggregateOnMissingColumnWithAlias.limit(1).single()
   if (error) throw error
-  expectType<SelectQueryError<`column 'missing_column' does not exist on 'users'.`>>(data)
+  expectType<SelectQueryError<`column 'missing_column' does not exist on 'users'.`>>(data!)
 }
 
 // many-to-many with join table
