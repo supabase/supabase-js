@@ -14,6 +14,23 @@ export type IsAny<T> = 0 extends 1 & T ? true : false
 
 export type SelectQueryError<Message extends string> = { error: true } & Message
 
+/*
+ ** Because of pg-meta types generation there is some cases where a same relationship can be duplicated
+ ** if the relation is across schemas and views this ensure that we dedup those relations and treat them
+ ** as postgrest would.
+ ** This is no longer the case and has been patched here: https://github.com/supabase/postgres-meta/pull/809
+ ** But we still need this for retro-compatibilty with older generated types
+ ** TODO: Remove this in next major version
+ */
+export type DeduplicateRelationships<T extends readonly unknown[]> = T extends readonly [
+  infer First,
+  ...infer Rest
+]
+  ? First extends Rest[number]
+    ? DeduplicateRelationships<Rest extends readonly unknown[] ? Rest : []>
+    : [First, ...DeduplicateRelationships<Rest extends readonly unknown[] ? Rest : []>]
+  : T
+
 export type GetFieldNodeResultName<Field extends Ast.FieldNode> = Field['alias'] extends string
   ? Field['alias']
   : Field['aggregateFunction'] extends AggregateFunctions
@@ -87,9 +104,13 @@ type CheckDuplicates<Arr extends any[], Current> = Arr extends [infer Head, ...i
 /**
  * Iterates over the elements of the array to find duplicates
  */
-type FindDuplicates<Arr extends any[]> = Arr extends [infer Head, ...infer Tail]
-  ? CheckDuplicates<Tail, Head> | FindDuplicates<Tail>
+type FindDuplicatesWithinDeduplicated<Arr extends any[]> = Arr extends [infer Head, ...infer Tail]
+  ? CheckDuplicates<Tail, Head> | FindDuplicatesWithinDeduplicated<Tail>
   : never
+
+type FindDuplicates<Arr extends any[]> = FindDuplicatesWithinDeduplicated<
+  DeduplicateRelationships<Arr>
+>
 
 export type CheckDuplicateEmbededReference<
   Schema extends GenericSchema,
@@ -137,16 +158,21 @@ type HasFKeyToFRel<FRelName, Relationships> = Relationships extends [infer R]
 /**
  * Checks if there is more than one relation to a given foreign relation name in the Relationships.
  */
-type HasMultipleFKeysToFRel<FRelName, Relationships> = Relationships extends [
+type HasMultipleFKeysToFRelDeduplicated<FRelName, Relationships> = Relationships extends [
   infer R,
   ...infer Rest
 ]
   ? R extends { referencedRelation: FRelName }
     ? HasFKeyToFRel<FRelName, Rest> extends true
       ? true
-      : HasMultipleFKeysToFRel<FRelName, Rest>
-    : HasMultipleFKeysToFRel<FRelName, Rest>
+      : HasMultipleFKeysToFRelDeduplicated<FRelName, Rest>
+    : HasMultipleFKeysToFRelDeduplicated<FRelName, Rest>
   : false
+
+type HasMultipleFKeysToFRel<
+  FRelName,
+  Relationships extends unknown[]
+> = HasMultipleFKeysToFRelDeduplicated<FRelName, DeduplicateRelationships<Relationships>>
 
 type CheckRelationshipError<
   Schema extends GenericSchema,
@@ -454,9 +480,13 @@ type ResolveJoinTableRelationship<
   CurrentTableOrView extends keyof TablesAndViews<Schema> & string,
   FieldName extends string
 > = {
-  [TableName in keyof TablesAndViews<Schema>]: TablesAndViews<Schema>[TableName]['Relationships'] extends readonly (infer Rel)[]
+  [TableName in keyof TablesAndViews<Schema>]: DeduplicateRelationships<
+    TablesAndViews<Schema>[TableName]['Relationships']
+  > extends readonly (infer Rel)[]
     ? Rel extends { referencedRelation: CurrentTableOrView }
-      ? TablesAndViews<Schema>[TableName]['Relationships'] extends readonly (infer OtherRel)[]
+      ? DeduplicateRelationships<
+          TablesAndViews<Schema>[TableName]['Relationships']
+        > extends readonly (infer OtherRel)[]
         ? OtherRel extends { referencedRelation: FieldName }
           ? OtherRel
           : never
