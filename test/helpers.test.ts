@@ -40,3 +40,75 @@ test('override setting defaults', async () => {
   // Existing property values should remain constant
   expect(settings.db.schema).toBe(defaults.db.schema)
 })
+
+describe('resolveFetch', () => {
+  const TEST_URL = 'https://example.com'
+  const TEST_OPTIONS = { method: 'GET' }
+
+  beforeEach(() => {
+    // Reset any mocks between tests
+    jest.resetModules()
+    jest.clearAllMocks()
+  })
+
+  test('should use custom fetch if provided', async () => {
+    const customFetch = jest.fn()
+    const resolvedFetch = helpers.resolveFetch(customFetch)
+
+    await resolvedFetch(TEST_URL, TEST_OPTIONS)
+
+    expect(customFetch).toHaveBeenCalledTimes(1)
+    expect(customFetch).toHaveBeenCalledWith(TEST_URL, TEST_OPTIONS)
+  })
+
+  test('should use global fetch if no custom fetch is provided', async () => {
+    const globalFetch = jest.fn()
+    global.fetch = globalFetch
+    const resolvedFetch = helpers.resolveFetch()
+
+    await resolvedFetch(TEST_URL, TEST_OPTIONS)
+
+    expect(globalFetch).toHaveBeenCalledTimes(1)
+    expect(globalFetch).toHaveBeenCalledWith(TEST_URL, TEST_OPTIONS)
+  })
+
+  test('should use node-fetch if global fetch is not available', async () => {
+    const nodeFetch = jest.fn()
+    jest.mock('@supabase/node-fetch', () => nodeFetch)
+
+    global.fetch = undefined as any
+    const resolvedFetch = helpers.resolveFetch()
+
+    await resolvedFetch(TEST_URL, TEST_OPTIONS)
+
+    expect(nodeFetch).toHaveBeenCalledTimes(1)
+    expect(nodeFetch).toHaveBeenCalledWith(TEST_URL, TEST_OPTIONS)
+  })
+})
+
+describe('resolveHeadersConstructor', () => {
+  beforeEach(() => {
+    // Reset any mocks between tests
+    jest.resetModules()
+    jest.clearAllMocks()
+  })
+
+  test('should use Headers if available', async () => {
+    const resolvedHeadersConstructor = await helpers.resolveHeadersConstructor()
+    expect(resolvedHeadersConstructor).toBe(Headers)
+  })
+
+  test('should use node-fetch Headers if global Headers is not available', async () => {
+    const MockHeaders = jest.fn()
+    jest.mock('@supabase/node-fetch', () => ({
+      Headers: MockHeaders,
+    }))
+
+    // Cannot assign read-only property, delete is available
+    // @ts-ignore
+    delete global.Headers
+
+    const resolvedHeadersConstructor = await helpers.resolveHeadersConstructor()
+    expect(resolvedHeadersConstructor).toBe(MockHeaders)
+  })
+})
