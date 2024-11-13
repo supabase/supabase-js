@@ -35,6 +35,22 @@ const REST_URL = 'http://localhost:3000'
   }
   expectType<TypeEqual<typeof result, typeof expected>>(true)
 }
+// embeding renaming
+{
+  const postgrest = new PostgrestClient(REST_URL)
+  const { data } = await postgrest
+    .from('projects')
+    .select('status,service:services(service_api_keys(*))')
+    .single()
+  let result: Exclude<typeof data, null>
+  let expected: {
+    status: any
+    service: {
+      service_api_keys: any[]
+    }[]
+  }
+  expectType<TypeEqual<typeof result, typeof expected>>(true)
+}
 // spread operator with stars should return any
 {
   const postgrest = new PostgrestClient(REST_URL)

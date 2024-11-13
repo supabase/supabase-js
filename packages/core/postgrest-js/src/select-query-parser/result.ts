@@ -78,15 +78,9 @@ type ProcessFieldNodeWithoutSchema<Node extends Ast.FieldNode> = IsNonEmptyArray
   Node['children']
 > extends true
   ? {
-      [K in Node['name']]: Node['children'] extends Ast.StarNode[]
-        ? any[]
-        : Node['children'] extends Ast.FieldNode[]
-        ? {
-            [P in Node['children'][number] as GetFieldNodeResultName<P>]: P['castType'] extends PostgreSQLTypes
-              ? TypeScriptTypes<P['castType']>
-              : any
-          }[]
-        : any[]
+      [K in GetFieldNodeResultName<Node>]: Node['children'] extends Ast.Node[]
+        ? ProcessNodesWithoutSchema<Node['children']>[]
+        : ProcessSimpleFieldWithoutSchema<Node>
     }
   : ProcessSimpleFieldWithoutSchema<Node>
 
