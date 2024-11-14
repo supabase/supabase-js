@@ -8,7 +8,7 @@ export class AuthError extends Error {
    * before a response is received will not have one present. In that
    * case {@link #status} will also be undefined.
    */
-  code: ErrorCode | string | undefined
+  code: ErrorCode | (string & {}) | undefined
 
   /** HTTP status code that caused the error. */
   status: number | undefined

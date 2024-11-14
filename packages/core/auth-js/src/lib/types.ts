@@ -94,7 +94,7 @@ export type GoTrueClientOptions = {
   hasCustomAuthorizationHeader?: boolean
 }
 
-export type WeakPasswordReasons = 'length' | 'characters' | 'pwned' | string
+export type WeakPasswordReasons = 'length' | 'characters' | 'pwned' | (string & {})
 export type WeakPassword = {
   reasons: WeakPasswordReasons[]
   message: string
@@ -271,7 +271,7 @@ export interface Session {
  */
 export interface AMREntry {
   /** Authentication method name. */
-  method: 'password' | 'otp' | 'oauth' | 'mfa/totp' | string
+  method: 'password' | 'otp' | 'oauth' | 'mfa/totp' | (string & {})
 
   /**
    * Timestamp when the method was successfully used. Represents number of
@@ -310,7 +310,7 @@ export interface Factor {
   /**
    * Type of factor. `totp` and `phone` supported with this version
    */
-  factor_type: 'totp' | 'phone' | string
+  factor_type: 'totp' | 'phone' | (string & {})
 
   /** Factor's status. */
   status: 'verified' | 'unverified'
@@ -604,7 +604,7 @@ export type SignInWithOAuthCredentials = {
 
 export type SignInWithIdTokenCredentials = {
   /** Provider name or OIDC `iss` value identifying which provider should be used to verify the provided token. Supported names: `google`, `apple`, `azure`, `facebook`, `kakao`, `keycloak` (deprecated). */
-  provider: 'google' | 'apple' | 'azure' | 'facebook' | 'kakao' | string
+  provider: 'google' | 'apple' | 'azure' | 'facebook' | 'kakao' | (string & {})
   /** OIDC ID token issued by the specified provider. The `iss` claim in the ID token must match the supplied provider. Some ID tokens contain an `at_hash` which require that you provide an `access_token` value to be accepted properly. If the token contains a `nonce` claim you must supply the nonce used to obtain the ID token. */
   token: string
   /** If the ID token contains an `at_hash` claim, then the hash of this value is compared to the value in the ID token. */
