@@ -5,6 +5,7 @@ const {
   PostgrestFilterBuilder,
   PostgrestTransformBuilder,
   PostgrestBuilder,
+  PostgrestError,
 } = index
 
 export {
@@ -13,6 +14,7 @@ export {
   PostgrestFilterBuilder,
   PostgrestQueryBuilder,
   PostgrestTransformBuilder,
+  PostgrestError,
 }
 
 // compatibility with CJS output
@@ -22,4 +24,5 @@ export default {
   PostgrestFilterBuilder,
   PostgrestTransformBuilder,
   PostgrestBuilder,
+  PostgrestError,
 }
