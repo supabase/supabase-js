@@ -346,7 +346,7 @@ export default class RealtimeClient {
         if (!valid) {
           this.log(
             'auth',
-            `provided token has expired, not sending it to realtime`
+            `InvalidJWTToken: Invalid value for JWT claim "exp" with value ${parsed.exp}`
           )
           return
         }
