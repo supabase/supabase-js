@@ -335,6 +335,24 @@ export default class RealtimeClient {
    * @param token A JWT string.
    */
   setAuth(token: string | null): void {
+    if (token) {
+      let parsed = null
+      try {
+        parsed = JSON.parse(atob(token.split('.')[1]))
+      } catch (_error) {}
+      if (parsed && parsed.exp) {
+        let now = Math.floor(Date.now() / 1000)
+        let valid = now - parsed.exp < 0
+        if (!valid) {
+          this.log(
+            'auth',
+            `provided token has expired, not sending it to realtime`
+          )
+          return
+        }
+      }
+    }
+
     this.accessToken = token
 
     this.channels.forEach((channel) => {
