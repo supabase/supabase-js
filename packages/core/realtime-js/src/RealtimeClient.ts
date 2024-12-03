@@ -40,6 +40,7 @@ export type RealtimeClientOptions = {
   fetch?: Fetch
   worker?: boolean
   workerUrl?: string
+  accessToken?: () => Promise<string>
 }
 
 export type RealtimeMessage = {
@@ -54,7 +55,7 @@ export type RealtimeRemoveChannelResponse = 'ok' | 'timed out' | 'error'
 
 const noop = () => {}
 
-interface WebSocketLikeConstructor {
+export interface WebSocketLikeConstructor {
   new (
     address: string | URL,
     _ignored?: any,
@@ -62,9 +63,9 @@ interface WebSocketLikeConstructor {
   ): WebSocketLike
 }
 
-type WebSocketLike = WebSocket | WSWebSocket | WSWebSocketDummy
+export type WebSocketLike = WebSocket | WSWebSocket | WSWebSocketDummy
 
-interface WebSocketLikeError {
+export interface WebSocketLikeError {
   error: any
   message: string
   type: string
@@ -78,7 +79,7 @@ const WORKER_SCRIPT = `
     }
   });`
 export default class RealtimeClient {
-  accessToken: string | null = null
+  accessTokenValue: string | null = null
   apiKey: string | null = null
   channels: RealtimeChannel[] = []
   endPoint: string = ''
@@ -111,6 +112,7 @@ export default class RealtimeClient {
     message: [],
   }
   fetch: Fetch
+  accessToken: (() => Promise<string>) | null = null
   worker?: boolean
   workerUrl?: string
   workerRef?: Worker
@@ -147,10 +149,10 @@ export default class RealtimeClient {
     if (options?.heartbeatIntervalMs)
       this.heartbeatIntervalMs = options.heartbeatIntervalMs
 
-    const accessToken = options?.params?.apikey
-    if (accessToken) {
-      this.accessToken = accessToken
-      this.apiKey = accessToken
+    const accessTokenValue = options?.params?.apikey
+    if (accessTokenValue) {
+      this.accessTokenValue = accessTokenValue
+      this.apiKey = accessTokenValue
     }
 
     this.reconnectAfterMs = options?.reconnectAfterMs
@@ -179,6 +181,7 @@ export default class RealtimeClient {
       this.worker = options?.worker || false
       this.workerUrl = options?.workerUrl
     }
+    this.accessToken = options?.accessToken || null
   }
 
   /**
@@ -190,29 +193,41 @@ export default class RealtimeClient {
     }
 
     if (this.transport) {
-      this.conn = new this.transport(this._endPointURL(), undefined, {
+      this.conn = new this.transport(this.endpointURL(), undefined, {
         headers: this.headers,
       })
       return
     }
+
     if (NATIVE_WEBSOCKET_AVAILABLE) {
-      this.conn = new WebSocket(this._endPointURL())
+      this.conn = new WebSocket(this.endpointURL())
       this.setupConnection()
       return
     }
 
-    this.conn = new WSWebSocketDummy(this._endPointURL(), undefined, {
+    this.conn = new WSWebSocketDummy(this.endpointURL(), undefined, {
       close: () => {
         this.conn = null
       },
     })
 
     import('ws').then(({ default: WS }) => {
-      this.conn = new WS(this._endPointURL(), undefined, {
+      this.conn = new WS(this.endpointURL(), undefined, {
         headers: this.headers,
       })
       this.setupConnection()
     })
+  }
+
+  /**
+   * Returns the URL of the websocket.
+   * @returns string The URL of the websocket.
+   */
+  endpointURL(): string {
+    return this._appendParams(
+      this.endPoint,
+      Object.assign({}, this.params, { vsn: VSN })
+    )
   }
 
   /**
@@ -332,13 +347,22 @@ export default class RealtimeClient {
   /**
    * Sets the JWT access token used for channel subscription authorization and Realtime RLS.
    *
-   * @param token A JWT string.
+   * If param is null it will use the `accessToken` callback function or the token set on the client.
+   *
+   * On callback used, it will set the value of the token internal to the client.
+   *
+   * @param token A JWT string to override the token set on the client.
    */
-  setAuth(token: string | null): void {
-    if (token) {
+  async setAuth(token: string | null = null): Promise<void> {
+    let tokenToSend =
+      token ||
+      (this.accessToken && (await this.accessToken())) ||
+      this.accessTokenValue
+
+    if (tokenToSend) {
       let parsed = null
       try {
-        parsed = JSON.parse(atob(token.split('.')[1]))
+        parsed = JSON.parse(atob(tokenToSend.split('.')[1]))
       } catch (_error) {}
       if (parsed && parsed.exp) {
         let now = Math.floor(Date.now() / 1000)
@@ -348,20 +372,58 @@ export default class RealtimeClient {
             'auth',
             `InvalidJWTToken: Invalid value for JWT claim "exp" with value ${parsed.exp}`
           )
-          return
+          return Promise.reject(
+            `InvalidJWTToken: Invalid value for JWT claim "exp" with value ${parsed.exp}`
+          )
         }
       }
+
+      this.accessTokenValue = tokenToSend
+      this.channels.forEach((channel) => {
+        tokenToSend && channel.updateJoinPayload({ access_token: tokenToSend })
+
+        if (channel.joinedOnce && channel._isJoined()) {
+          channel._push(CHANNEL_EVENTS.access_token, {
+            access_token: tokenToSend,
+          })
+        }
+      })
     }
-
-    this.accessToken = token
-
-    this.channels.forEach((channel) => {
-      token && channel.updateJoinPayload({ access_token: token })
-
-      if (channel.joinedOnce && channel._isJoined()) {
-        channel._push(CHANNEL_EVENTS.access_token, { access_token: token })
-      }
+  }
+  /**
+   * Sends a heartbeat message if the socket is connected.
+   */
+  async sendHeartbeat() {
+    if (!this.isConnected()) {
+      return
+    }
+    if (this.pendingHeartbeatRef) {
+      this.pendingHeartbeatRef = null
+      this.log(
+        'transport',
+        'heartbeat timeout. Attempting to re-establish connection'
+      )
+      this.conn?.close(WS_CLOSE_NORMAL, 'hearbeat timeout')
+      return
+    }
+    this.pendingHeartbeatRef = this._makeRef()
+    this.push({
+      topic: 'phoenix',
+      event: 'heartbeat',
+      payload: {},
+      ref: this.pendingHeartbeatRef,
     })
+    this.setAuth()
+  }
+
+  /**
+   * Flushes send buffer
+   */
+  flushSendBuffer() {
+    if (this.isConnected() && this.sendBuffer.length > 0) {
+      this.sendBuffer.forEach((callback) => callback())
+      this.sendBuffer = []
+    }
   }
 
   /**
@@ -444,27 +506,12 @@ export default class RealtimeClient {
     }
   }
 
-  /**
-   * Returns the URL of the websocket.
-   *
-   * @internal
-   */
-  private _endPointURL(): string {
-    return this._appendParams(
-      this.endPoint,
-      Object.assign({}, this.params, { vsn: VSN })
-    )
-  }
-
   /** @internal */
   private _onConnMessage(rawMessage: { data: any }) {
     this.decode(rawMessage.data, (msg: RealtimeMessage) => {
       let { topic, event, payload, ref } = msg
 
-      if (
-        (ref && ref === this.pendingHeartbeatRef) ||
-        event === payload?.type
-      ) {
+      if (ref && ref === this.pendingHeartbeatRef) {
         this.pendingHeartbeatRef = null
       }
 
@@ -486,13 +533,13 @@ export default class RealtimeClient {
 
   /** @internal */
   private async _onConnOpen() {
-    this.log('transport', `connected to ${this._endPointURL()}`)
-    this._flushSendBuffer()
+    this.log('transport', `connected to ${this.endpointURL()}`)
+    this.flushSendBuffer()
     this.reconnectTimer.reset()
     if (!this.worker) {
       this.heartbeatTimer && clearInterval(this.heartbeatTimer)
       this.heartbeatTimer = setInterval(
-        () => this._sendHeartbeat(),
+        () => this.sendHeartbeat(),
         this.heartbeatIntervalMs
       )
     } else {
@@ -510,7 +557,7 @@ export default class RealtimeClient {
       }
       this.workerRef.onmessage = (event) => {
         if (event.data.event === 'keepAlive') {
-          this._sendHeartbeat()
+          this.sendHeartbeat()
         }
       }
       this.workerRef.postMessage({
@@ -558,37 +605,6 @@ export default class RealtimeClient {
     const query = new URLSearchParams(params)
 
     return `${url}${prefix}${query}`
-  }
-
-  /** @internal */
-  private _flushSendBuffer() {
-    if (this.isConnected() && this.sendBuffer.length > 0) {
-      this.sendBuffer.forEach((callback) => callback())
-      this.sendBuffer = []
-    }
-  }
-  /** @internal */
-  private _sendHeartbeat() {
-    if (!this.isConnected()) {
-      return
-    }
-    if (this.pendingHeartbeatRef) {
-      this.pendingHeartbeatRef = null
-      this.log(
-        'transport',
-        'heartbeat timeout. Attempting to re-establish connection'
-      )
-      this.conn?.close(WS_CLOSE_NORMAL, 'hearbeat timeout')
-      return
-    }
-    this.pendingHeartbeatRef = this._makeRef()
-    this.push({
-      topic: 'phoenix',
-      event: 'heartbeat',
-      payload: {},
-      ref: this.pendingHeartbeatRef,
-    })
-    this.setAuth(this.accessToken)
   }
 
   private _workerObjectUrl(url: string | undefined): string {
