@@ -1,5 +1,14 @@
 # Changelog
 
+## [2.66.1](https://github.com/supabase/auth-js/compare/v2.66.0...v2.66.1) (2024-12-04)
+
+
+### Bug Fixes
+
+* add loose auto complete to string literals where applicable ([#966](https://github.com/supabase/auth-js/issues/966)) ([fd9248d](https://github.com/supabase/auth-js/commit/fd9248d7aecd0bd00381dff162969d8014a3359a))
+* add new error codes ([#979](https://github.com/supabase/auth-js/issues/979)) ([dfb40d2](https://github.com/supabase/auth-js/commit/dfb40d24188f7e8b0d34e51ded15582086250c51))
+* don't remove session for identity linking errors ([#987](https://github.com/supabase/auth-js/issues/987)) ([e68ebe6](https://github.com/supabase/auth-js/commit/e68ebe604d15d881b23678d180cccb7115f16f4e))
+
 ## [2.66.0](https://github.com/supabase/auth-js/compare/v2.65.1...v2.66.0) (2024-11-01)
 
 
