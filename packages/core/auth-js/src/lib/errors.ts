@@ -102,6 +102,12 @@ export class AuthImplicitGrantRedirectError extends CustomAuthError {
   }
 }
 
+export function isAuthImplicitGrantRedirectError(
+  error: any
+): error is AuthImplicitGrantRedirectError {
+  return isAuthError(error) && error.name === 'AuthImplicitGrantRedirectError'
+}
+
 export class AuthPKCEGrantCodeExchangeError extends CustomAuthError {
   details: { error: string; code: string } | null = null
 

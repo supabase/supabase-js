@@ -12,6 +12,7 @@ import {
   isAuthError,
   isAuthRetryableFetchError,
   isAuthSessionMissingError,
+  isAuthImplicitGrantRedirectError,
 } from './lib/errors'
 import {
   Fetch,
@@ -314,8 +315,15 @@ export default class GoTrueClient {
         if (error) {
           this._debug('#_initialize()', 'error detecting session from URL', error)
 
-          if (error?.code === 'identity_already_exists') {
-            return { error }
+          if (isAuthImplicitGrantRedirectError(error)) {
+            const errorCode = error.details?.code
+            if (
+              errorCode === 'identity_already_exists' ||
+              errorCode === 'identity_not_found' ||
+              errorCode === 'single_identity_not_deletable'
+            ) {
+              return { error }
+            }
           }
 
           // failed login attempt via url,

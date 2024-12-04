@@ -168,7 +168,7 @@ export async function processLock<R>(
 
   const currentOperation = Promise.race(
     [
-      previousOperation.catch((e: any) => {
+      previousOperation.catch(() => {
         // ignore error of previous operation that we're waiting to finish
         return null
       }),
