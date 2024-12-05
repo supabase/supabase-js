@@ -118,11 +118,7 @@ export default class SupabaseClient<
 
     this.fetch = fetchWithAuth(supabaseKey, this._getAccessToken.bind(this), settings.global.fetch)
 
-    this.realtime = this._initRealtimeClient({
-      headers: this.headers,
-      accessToken: this._getAccessToken,
-      ...settings.realtime,
-    })
+    this.realtime = this._initRealtimeClient({ headers: this.headers, ...settings.realtime })
     this.rest = new PostgrestClient(`${_supabaseUrl}/rest/v1`, {
       headers: this.headers,
       schema: settings.db.schema,
@@ -334,6 +330,9 @@ export default class SupabaseClient<
       (event === 'TOKEN_REFRESHED' || event === 'SIGNED_IN') &&
       this.changedAccessToken !== token
     ) {
+      // Token has changed
+      this.realtime.setAuth(token ?? null)
+
       this.changedAccessToken = token
     } else if (event === 'SIGNED_OUT') {
       // Token is removed
