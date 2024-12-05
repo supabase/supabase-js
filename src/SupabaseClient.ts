@@ -120,7 +120,7 @@ export default class SupabaseClient<
 
     this.realtime = this._initRealtimeClient({
       headers: this.headers,
-      accessToken: this.accessToken,
+      accessToken: this._getAccessToken,
       ...settings.realtime,
     })
     this.rest = new PostgrestClient(`${_supabaseUrl}/rest/v1`, {

@@ -44,7 +44,7 @@
     "@supabase/functions-js": "2.4.3",
     "@supabase/node-fetch": "2.6.15",
     "@supabase/postgrest-js": "1.16.3",
-    "@supabase/realtime-js": "2.11.0",
+    "@supabase/realtime-js": "2.11.2",
     "@supabase/storage-js": "2.7.1"
   },
   "devDependencies": {
