@@ -1203,7 +1203,6 @@ describe('send', () => {
     const pushStub = sinon.stub(new_channel, '_push')
 
     new_channel.subscribe(async (status) => {
-      console.log(status)
       if (status === 'SUBSCRIBED') {
         subscribed = true
         await new_channel.send({ type: 'broadcast', event: 'test' })
@@ -1232,7 +1231,6 @@ describe('send', () => {
     const pushStub = sinon.stub(new_channel, '_push')
 
     new_channel.subscribe(async (status) => {
-      console.log(status)
       if (status === 'TIMED_OUT') {
         timed_out = true
       }

@@ -112,7 +112,7 @@ export default class RealtimeClient {
     message: [],
   }
   fetch: Fetch
-  accessToken: (() => Promise<string>) | null = null
+  accessToken: (() => Promise<string | null>) | null = null
   worker?: boolean
   workerUrl?: string
   workerRef?: Worker
