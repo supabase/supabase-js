@@ -40,7 +40,7 @@ export type RealtimeClientOptions = {
   fetch?: Fetch
   worker?: boolean
   workerUrl?: string
-  accessToken?: () => Promise<string>
+  accessToken?: () => Promise<string | null>
 }
 
 export type RealtimeMessage = {
