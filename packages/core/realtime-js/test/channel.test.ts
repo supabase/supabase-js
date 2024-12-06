@@ -646,8 +646,7 @@ describe('joinPush', () => {
 
     test('does not set channel state to joined', () => {
       helpers.receiveError()
-
-      assert.equal(channel.state, 'joining')
+      assert.equal(channel.state, 'errored')
     })
 
     test("does not trigger channel's buffered pushEvents", () => {
