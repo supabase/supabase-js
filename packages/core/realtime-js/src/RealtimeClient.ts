@@ -196,6 +196,7 @@ export default class RealtimeClient {
       this.conn = new this.transport(this.endpointURL(), undefined, {
         headers: this.headers,
       })
+      this.setupConnection()
       return
     }
 
