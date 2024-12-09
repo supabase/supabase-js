@@ -40,11 +40,11 @@
     "serve:coverage": "npm run test:coverage && serve test/coverage"
   },
   "dependencies": {
-    "@supabase/auth-js": "2.65.1",
+    "@supabase/auth-js": "2.66.1",
     "@supabase/functions-js": "2.4.3",
     "@supabase/node-fetch": "2.6.15",
-    "@supabase/postgrest-js": "1.17.5",
-    "@supabase/realtime-js": "2.10.7",
+    "@supabase/postgrest-js": "1.17.7",
+    "@supabase/realtime-js": "2.11.2",
     "@supabase/storage-js": "2.7.1"
   },
   "devDependencies": {
