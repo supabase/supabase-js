@@ -329,13 +329,13 @@ export default class SupabaseClient<
     source: 'CLIENT' | 'STORAGE',
     token?: string
   ) {
+    this.realtime.setAuth()
     if (
       (event === 'TOKEN_REFRESHED' || event === 'SIGNED_IN') &&
       this.changedAccessToken !== token
     ) {
       this.changedAccessToken = token
     } else if (event === 'SIGNED_OUT') {
-      this.realtime.setAuth()
       if (source == 'STORAGE') this.auth.signOut()
       this.changedAccessToken = undefined
     }
