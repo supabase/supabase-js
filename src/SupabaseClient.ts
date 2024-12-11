@@ -318,26 +318,24 @@ export default class SupabaseClient<
   }
 
   private _listenForAuthEvents() {
-    let data = this.auth.onAuthStateChange(async (event, session) => {
-      await this._handleTokenChanged(event, 'CLIENT', session?.access_token)
+    let data = this.auth.onAuthStateChange((event, session) => {
+      this._handleTokenChanged(event, 'CLIENT', session?.access_token)
     })
     return data
   }
 
-  private async _handleTokenChanged(
+  private _handleTokenChanged(
     event: AuthChangeEvent,
     source: 'CLIENT' | 'STORAGE',
     token?: string
   ) {
-// On token change, call Realtime's `setAuth` to sync auth and connections.
-// Realtime handles token retrieval internally which may involve customizations, so we don't pass the token directly.
-    await this.realtime.setAuth()
     if (
       (event === 'TOKEN_REFRESHED' || event === 'SIGNED_IN') &&
       this.changedAccessToken !== token
     ) {
       this.changedAccessToken = token
     } else if (event === 'SIGNED_OUT') {
+      this.realtime.setAuth()
       if (source == 'STORAGE') this.auth.signOut()
       this.changedAccessToken = undefined
     }
