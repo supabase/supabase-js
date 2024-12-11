@@ -329,7 +329,8 @@ export default class SupabaseClient<
     source: 'CLIENT' | 'STORAGE',
     token?: string
   ) {
-    // On any token change we call the realtime setAuth function that it's by itself a callback and lets Realtime run the flow needed by it.
+// On token change, call Realtime's `setAuth` to sync auth and connections.
+// Realtime handles token retrieval internally which may involve customizations, so we don't pass the token directly.
     await this.realtime.setAuth()
     if (
       (event === 'TOKEN_REFRESHED' || event === 'SIGNED_IN') &&
