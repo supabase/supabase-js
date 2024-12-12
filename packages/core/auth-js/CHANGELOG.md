@@ -1,5 +1,18 @@
 # Changelog
 
+## [2.67.0](https://github.com/supabase/auth-js/compare/v2.66.1...v2.67.0) (2024-12-12)
+
+
+### Features
+
+* wrap navigator.locks.request with plain promise to help zone.js ([#989](https://github.com/supabase/auth-js/issues/989)) ([2e6e07c](https://github.com/supabase/auth-js/commit/2e6e07c21a561ca13d5e74b69609c2cc93f104f4)), closes [#830](https://github.com/supabase/auth-js/issues/830)
+
+
+### Bug Fixes
+
+* add email_address_invalid error code ([#994](https://github.com/supabase/auth-js/issues/994)) ([232f133](https://github.com/supabase/auth-js/commit/232f133b1a84b4c667e994f472098aa5cde2088d))
+* return error early for redirects ([#992](https://github.com/supabase/auth-js/issues/992)) ([9f32d30](https://github.com/supabase/auth-js/commit/9f32d30e17954c5d4320b374a108617cda5ab357))
+
 ## [2.66.1](https://github.com/supabase/auth-js/compare/v2.66.0...v2.66.1) (2024-12-04)
 
 
