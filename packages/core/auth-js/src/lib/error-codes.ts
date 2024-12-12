@@ -87,3 +87,4 @@ export type ErrorCode =
   | 'mfa_verified_factor_exists'
   | 'invalid_credentials'
   | 'email_address_not_authorized'
+  | 'email_address_invalid'
