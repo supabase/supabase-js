@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.67.1](https://github.com/supabase/auth-js/compare/v2.67.0...v2.67.1) (2024-12-13)
+
+
+### Bug Fixes
+
+* revert [#992](https://github.com/supabase/auth-js/issues/992) and [#993](https://github.com/supabase/auth-js/issues/993) ([#999](https://github.com/supabase/auth-js/issues/999)) ([12b2848](https://github.com/supabase/auth-js/commit/12b2848237854f3d70b9989920ad50e2c4186fff))
+
 ## [2.67.0](https://github.com/supabase/auth-js/compare/v2.66.1...v2.67.0) (2024-12-12)
 
 
