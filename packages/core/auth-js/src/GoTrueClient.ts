@@ -307,8 +307,11 @@ export default class GoTrueClient {
    */
   private async _initialize(): Promise<InitializeResult> {
     try {
-      if (isBrowser() && this.detectSessionInUrl) {
-        const { data, error } = await this._getSessionFromURL()
+      const isPKCEFlow = isBrowser() ? await this._isPKCEFlow() : false
+      this._debug('#_initialize()', 'begin', 'is PKCE flow', isPKCEFlow)
+
+      if (isPKCEFlow || (this.detectSessionInUrl && this._isImplicitGrantFlow())) {
+        const { data, error } = await this._getSessionFromURL(isPKCEFlow)
         if (error) {
           this._debug('#_initialize()', 'error detecting session from URL', error)
 
@@ -1411,7 +1414,7 @@ export default class GoTrueClient {
   /**
    * Gets the session data from a URL string
    */
-  private async _getSessionFromURL(): Promise<
+  private async _getSessionFromURL(isPKCEFlow: boolean): Promise<
     | {
         data: { session: Session; redirectType: string | null }
         error: null
@@ -1420,39 +1423,15 @@ export default class GoTrueClient {
   > {
     try {
       if (!isBrowser()) throw new AuthImplicitGrantRedirectError('No browser detected.')
+      if (this.flowType === 'implicit' && !this._isImplicitGrantFlow()) {
+        throw new AuthImplicitGrantRedirectError('Not a valid implicit grant flow url.')
+      } else if (this.flowType == 'pkce' && !isPKCEFlow) {
+        throw new AuthPKCEGrantCodeExchangeError('Not a valid PKCE flow url.')
+      }
 
       const params = parseParametersFromURL(window.location.href)
 
-      // If there's an error in the URL, it doesn't matter what flow it is, we just return the error.
-      if (params.error || params.error_description || params.error_code) {
-        // The error class returned implies that the redirect is from an implicit grant flow
-        // but it could also be from a redirect error from a PKCE flow.
-        throw new AuthImplicitGrantRedirectError(
-          params.error_description || 'Error in URL with unspecified error_description',
-          {
-            error: params.error || 'unspecified_error',
-            code: params.error_code || 'unspecified_code',
-          }
-        )
-      }
-
-      const isRedirectFromImplicitGrantFlow = this._isImplicitGrantFlow(params)
-      const isRedirectFromPKCEFlow = await this._isPKCEFlow(params)
-
-      // Checks for mismatches between the flowType initialised in the client and the URL parameters
-      if (!isRedirectFromImplicitGrantFlow && !isRedirectFromPKCEFlow) {
-        if (this.flowType === 'implicit') {
-          throw new AuthImplicitGrantRedirectError('Not a valid implicit grant flow url.')
-        } else if (this.flowType === 'pkce') {
-          throw new AuthPKCEGrantCodeExchangeError('Not a valid PKCE flow url.')
-        } else {
-          throw new AuthError('Invalid flow type.')
-        }
-      }
-
-      // Since this is a redirect for PKCE, we attempt to retrieve the code from the URL for the code exchange
-      if (isRedirectFromPKCEFlow) {
-        this._debug('#_initialize()', 'begin', 'is PKCE flow', isRedirectFromPKCEFlow)
+      if (isPKCEFlow) {
         if (!params.code) throw new AuthPKCEGrantCodeExchangeError('No code detected.')
         const { data, error } = await this._exchangeCodeForSession(params.code)
         if (error) throw error
@@ -1463,6 +1442,16 @@ export default class GoTrueClient {
         window.history.replaceState(window.history.state, '', url.toString())
 
         return { data: { session: data.session, redirectType: null }, error: null }
+      }
+
+      if (params.error || params.error_description || params.error_code) {
+        throw new AuthImplicitGrantRedirectError(
+          params.error_description || 'Error in URL with unspecified error_description',
+          {
+            error: params.error || 'unspecified_error',
+            code: params.error_code || 'unspecified_code',
+          }
+        )
       }
 
       const {
@@ -1542,20 +1531,24 @@ export default class GoTrueClient {
   /**
    * Checks if the current URL contains parameters given by an implicit oauth grant flow (https://www.rfc-editor.org/rfc/rfc6749.html#section-4.2)
    */
-  private _isImplicitGrantFlow(params: { [parameter: string]: string }): boolean {
-    return !!((params.access_token || params.error_description) && this.flowType === 'implicit')
+  private _isImplicitGrantFlow(): boolean {
+    const params = parseParametersFromURL(window.location.href)
+
+    return !!(isBrowser() && (params.access_token || params.error_description))
   }
 
   /**
    * Checks if the current URL and backing storage contain parameters given by a PKCE flow
    */
-  private async _isPKCEFlow(params: { [parameter: string]: string }): Promise<boolean> {
+  private async _isPKCEFlow(): Promise<boolean> {
+    const params = parseParametersFromURL(window.location.href)
+
     const currentStorageContent = await getItemAsync(
       this.storage,
       `${this.storageKey}-code-verifier`
     )
 
-    return !!(params.code && currentStorageContent && this.flowType === 'pkce')
+    return !!(params.code && currentStorageContent)
   }
 
   /**
