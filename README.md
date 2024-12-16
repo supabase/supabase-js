@@ -11,6 +11,7 @@ First of all, you need to install the library:
 npm install @supabase/supabase-js
 ```
 
+
 Then you're able to import the library and establish the connection with the database:
 
 ```js

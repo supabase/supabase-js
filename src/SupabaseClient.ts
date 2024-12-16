@@ -224,7 +224,9 @@ export default class SupabaseClient<
         ? Fn['Returns'][number]
         : never
       : never,
-    Fn['Returns']
+    Fn['Returns'],
+    FnName,
+    null
   > {
     return this.rest.rpc(fn, args, options)
   }
