@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.67.2](https://github.com/supabase/auth-js/compare/v2.67.1...v2.67.2) (2024-12-16)
+
+
+### Bug Fixes
+
+* `isBrowser()` to include check on `window` ([#982](https://github.com/supabase/auth-js/issues/982)) ([645f224](https://github.com/supabase/auth-js/commit/645f22447e68ba13e43e359d1524e95fe025d771))
+
 ## [2.67.1](https://github.com/supabase/auth-js/compare/v2.67.0...v2.67.1) (2024-12-13)
 
 
