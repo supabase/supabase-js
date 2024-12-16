@@ -56,3 +56,7 @@ declare namespace Supabase {
    */
   export const ai: Ai
 }
+
+declare namespace EdgeRuntime {
+  export function waitUntil<T>(promise: Promise<T>): Promise<T>;
+}
