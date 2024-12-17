@@ -11,6 +11,7 @@ export default defineConfig({
         './example/*',
         './docs/*',
       ],
+      reporter: ['lcov']
     },
     environment: 'jsdom',
   },
