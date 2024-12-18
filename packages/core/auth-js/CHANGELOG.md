@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.67.3](https://github.com/supabase/auth-js/compare/v2.67.2...v2.67.3) (2024-12-17)
+
+
+### Bug Fixes
+
+* return redirect errors early  ([#1003](https://github.com/supabase/auth-js/issues/1003)) ([9751b80](https://github.com/supabase/auth-js/commit/9751b8029b4235a63dcb525e7ce7cc942c85daf5))
+
 ## [2.67.2](https://github.com/supabase/auth-js/compare/v2.67.1...v2.67.2) (2024-12-16)
 
 
