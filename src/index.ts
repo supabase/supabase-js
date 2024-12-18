@@ -77,8 +77,7 @@ export const createClient = <
 ): SupabaseClient<Database, SchemaName, Schema> => {
   if (isServiceKey(supabaseKey)) {
     throw new Error(
-      'Service role API keys should only be used with createAdminClient(). ' +
-        'Use createClient() with an anon key when authenticating users.'
+      'createClient() requires an public API key. You are using an admin key. Admin keys should only be used with createAdminClient().'
     )
   }
   return new SupabaseClient<Database, SchemaName, Schema>(supabaseUrl, supabaseKey, options)
@@ -102,10 +101,7 @@ export const createAdminClient = <
   options?: SupabaseClientOptions<SchemaName>
 ): SupabaseClient<Database, SchemaName, Schema> => {
   if (!isServiceKey(supabaseKey)) {
-    throw new Error(
-      'createAdminClient() requires a service role API key. ' +
-        'Use createClient() for non-admin operations.'
-    )
+    throw new Error('createAdminClient() requires an admin API key.')
   }
   return new SupabaseClient<Database, SchemaName, Schema>(supabaseUrl, supabaseKey, options)
 }
