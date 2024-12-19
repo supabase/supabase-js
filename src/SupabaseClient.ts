@@ -51,7 +51,7 @@ export default class SupabaseClient<
   protected storageKey: string
   protected fetch?: Fetch
   protected changedAccessToken?: string
-  protected accessToken?: () => Promise<string>
+  protected accessToken?: () => Promise<string | null>
 
   protected headers: Record<string, string>
 
