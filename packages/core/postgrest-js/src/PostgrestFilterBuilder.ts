@@ -32,11 +32,6 @@ export default class PostgrestFilterBuilder<
   RelationName = unknown,
   Relationships = unknown
 > extends PostgrestTransformBuilder<Schema, Row, Result, RelationName, Relationships> {
-  eq<ColumnName extends string & keyof Row>(
-    column: ColumnName,
-    value: NonNullable<Row[ColumnName]>
-  ): this
-  eq<Value extends unknown>(column: string, value: NonNullable<Value>): this
   /**
    * Match only rows where `column` is equal to `value`.
    *
@@ -45,20 +40,24 @@ export default class PostgrestFilterBuilder<
    * @param column - The column to filter on
    * @param value - The value to filter with
    */
-  eq(column: string, value: unknown): this {
+  eq<ColumnName extends string>(
+    column: ColumnName,
+    value: ColumnName extends keyof Row ? NonNullable<Row[ColumnName]> : NonNullable<unknown>
+  ): this {
     this.url.searchParams.append(column, `eq.${value}`)
     return this
   }
 
-  neq<ColumnName extends string & keyof Row>(column: ColumnName, value: Row[ColumnName]): this
-  neq(column: string, value: unknown): this
   /**
    * Match only rows where `column` is not equal to `value`.
    *
    * @param column - The column to filter on
    * @param value - The value to filter with
    */
-  neq(column: string, value: unknown): this {
+  neq<ColumnName extends string>(
+    column: ColumnName,
+    value: ColumnName extends keyof Row ? Row[ColumnName] : unknown
+  ): this {
     this.url.searchParams.append(column, `neq.${value}`)
     return this
   }
@@ -227,18 +226,16 @@ export default class PostgrestFilterBuilder<
     return this
   }
 
-  in<ColumnName extends string & keyof Row>(
-    column: ColumnName,
-    values: ReadonlyArray<Row[ColumnName]>
-  ): this
-  in(column: string, values: readonly unknown[]): this
   /**
    * Match only rows where `column` is included in the `values` array.
    *
    * @param column - The column to filter on
    * @param values - The values array to filter with
    */
-  in(column: string, values: readonly unknown[]): this {
+  in<ColumnName extends string>(
+    column: ColumnName,
+    values: ColumnName extends keyof Row ? ReadonlyArray<Row[ColumnName]> : unknown[]
+  ): this {
     const cleanedValues = Array.from(new Set(values))
       .map((s) => {
         // handle postgrest reserved characters

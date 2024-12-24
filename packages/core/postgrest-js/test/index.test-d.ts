@@ -21,6 +21,40 @@ const postgrest = new PostgrestClient<Database>(REST_URL)
   expectError(postgrest.from('users').select().eq('username', nullableVar))
 }
 
+// `.eq()`, '.neq()' and `.in()` validate value when column is an enum
+{
+  expectError(postgrest.from('users').select().eq('status', 'invalid'))
+  expectError(postgrest.from('users').select().neq('status', 'invalid'))
+  expectError(postgrest.from('users').select().in('status', ['invalid']))
+
+  {
+    const { data, error } = await postgrest.from('users').select('status').eq('status', 'ONLINE')
+    if (error) {
+      throw new Error(error.message)
+    }
+    expectType<{ status: Database['public']['Enums']['user_status'] | null }[]>(data)
+  }
+
+  {
+    const { data, error } = await postgrest.from('users').select('status').neq('status', 'ONLINE')
+    if (error) {
+      throw new Error(error.message)
+    }
+    expectType<{ status: Database['public']['Enums']['user_status'] | null }[]>(data)
+  }
+
+  {
+    const { data, error } = await postgrest
+      .from('users')
+      .select('status')
+      .in('status', ['ONLINE', 'OFFLINE'])
+    if (error) {
+      throw new Error(error.message)
+    }
+    expectType<{ status: Database['public']['Enums']['user_status'] | null }[]>(data)
+  }
+}
+
 // can override result type
 {
   const { data, error } = await postgrest
