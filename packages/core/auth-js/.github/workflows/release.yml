@@ -10,6 +10,7 @@ jobs:
   release_please:
     runs-on: ubuntu-latest
     permissions:
+      id-token: write
       contents: write
       pull-requests: write
     steps:
@@ -102,16 +103,17 @@ jobs:
 
           echo "Publishing auth-js now..."
 
-          npm publish --tag "$DIST_TAG"
+          npm publish --provenance --tag "$DIST_TAG"
 
           echo "Publishing gotrue-js now..."
 
           for f in package.json package-lock.json
           do
-            sed -i 's|\(["/]\)auth-js|\1gotrue-js|g' "$f"
+            # only replace name not repository, homepage, etc.
+            sed -i 's|\("name":[[:space:]]*"@supabase/\)auth-js|\1gotrue-js|g' "$f"
           done
 
-          npm publish --tag "$DIST_TAG"
+          npm publish --provenance --tag "$DIST_TAG"
 
       - name: Create GitHub release and branches
         if: ${{ steps.release.outputs.release_created == 'true' || steps.release.outputs.prs_created == 'true' }}
