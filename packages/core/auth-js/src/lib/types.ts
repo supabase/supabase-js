@@ -449,7 +449,7 @@ export interface AdminUserAttributes extends Omit<UserAttributes, 'data'> {
    *
    * Allows you to specify a password hash for the user. This is useful for migrating a user's password hash from another service.
    *
-   * Supports bcrypt and argon2 password hashes.
+   * Supports bcrypt, scrypt (firebase), and argon2 password hashes.
    */
   password_hash?: string
 
