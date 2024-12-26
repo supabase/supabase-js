@@ -89,13 +89,11 @@ import type {
   LockFunc,
   UserIdentity,
   SignInAnonymouslyCredentials,
-} from './lib/types'
-import {
   MFAEnrollTOTPParams,
   MFAEnrollPhoneParams,
   AuthMFAEnrollTOTPResponse,
   AuthMFAEnrollPhoneResponse,
-} from './lib/internal-types'
+} from './lib/types'
 
 polyfillGlobalThis() // Make "globalThis" available
 
