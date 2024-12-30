@@ -1,12 +1,12 @@
 import { resolveFetch } from './helper'
 import {
   Fetch,
+  FunctionInvokeOptions,
+  FunctionRegion,
   FunctionsFetchError,
   FunctionsHttpError,
   FunctionsRelayError,
   FunctionsResponse,
-  FunctionInvokeOptions,
-  FunctionRegion,
 } from './types'
 
 export class FunctionsClient {
@@ -51,7 +51,7 @@ export class FunctionsClient {
     options: FunctionInvokeOptions = {}
   ): Promise<FunctionsResponse<T>> {
     try {
-      const { headers, method, body: functionArgs } = options
+      const { headers, method, body: functionArgs, signal } = options
       let _headers: Record<string, string> = {}
       let { region } = options
       if (!region) {
@@ -96,7 +96,11 @@ export class FunctionsClient {
         // 3. default Content-Type header
         headers: { ..._headers, ...this.headers, ...headers },
         body,
+        signal,
       }).catch((fetchError) => {
+        if (fetchError.name === 'AbortError') {
+          throw fetchError;
+        }
         throw new FunctionsFetchError(fetchError)
       })
 
@@ -126,6 +130,9 @@ export class FunctionsClient {
 
       return { data, error: null }
     } catch (error) {
+      if (error instanceof Error && error.name === 'AbortError') {
+        return { data: null, error: new FunctionsFetchError(error) }
+      }
       return { data: null, error }
     }
   }

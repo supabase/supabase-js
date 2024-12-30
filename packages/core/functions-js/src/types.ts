@@ -83,4 +83,8 @@ export type FunctionInvokeOptions = {
     | ReadableStream<Uint8Array>
     | Record<string, any>
     | string
+  /**
+   * The AbortSignal to use for the request.
+   * */
+  signal?: AbortSignal
 }
