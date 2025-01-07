@@ -1,5 +1,5 @@
 import PostgrestTransformBuilder from './PostgrestTransformBuilder'
-import { GenericSchema, GenericTable } from './types'
+import { GenericSchema } from './types'
 
 type FilterOperator =
   | 'eq'
@@ -31,28 +31,30 @@ type FilterOperator =
 // assume that all tables have valid relationships to each other, despite
 // nonexistent foreign keys.
 type ResolveFilterValue<
-  Tables extends Record<string, GenericTable>,
+  Schema extends GenericSchema,
   Row extends Record<string, unknown>,
   ColumnName extends string
 > = ColumnName extends `${infer RelationshipTable}.${infer Remainder}`
   ? Remainder extends `${infer _}.${infer _}`
-    ? ResolveFilterValue<Tables, Row, Remainder>
-    : ResolveFilterRelationshipValue<Tables, RelationshipTable, Remainder>
+    ? ResolveFilterValue<Schema, Row, Remainder>
+    : ResolveFilterRelationshipValue<Schema, RelationshipTable, Remainder>
   : ColumnName extends keyof Row
   ? Row[ColumnName]
   : never
 
 type ResolveFilterRelationshipValue<
-  Tables extends Record<string, GenericTable>,
+  Schema extends GenericSchema,
   RelationshipTable extends string,
   RelationshipColumn extends string
-> = RelationshipTable extends keyof Tables
-  ? 'Row' extends keyof Tables[RelationshipTable]
-    ? RelationshipColumn extends keyof Tables[RelationshipTable]['Row']
-      ? Tables[RelationshipTable]['Row'][RelationshipColumn]
+> = Schema['Tables'] & Schema['Views'] extends infer TablesAndViews
+  ? RelationshipTable extends keyof TablesAndViews
+    ? 'Row' extends keyof TablesAndViews[RelationshipTable]
+      ? RelationshipColumn extends keyof TablesAndViews[RelationshipTable]['Row']
+        ? TablesAndViews[RelationshipTable]['Row'][RelationshipColumn]
+        : unknown
       : unknown
     : unknown
-  : unknown
+  : never
 
 export default class PostgrestFilterBuilder<
   Schema extends GenericSchema,
@@ -71,9 +73,9 @@ export default class PostgrestFilterBuilder<
    */
   eq<ColumnName extends string>(
     column: ColumnName,
-    value: ResolveFilterValue<Schema['Tables'], Row, ColumnName> extends never
+    value: ResolveFilterValue<Schema, Row, ColumnName> extends never
       ? NonNullable<unknown>
-      : NonNullable<ResolveFilterValue<Schema['Tables'], Row, ColumnName>>
+      : NonNullable<ResolveFilterValue<Schema, Row, ColumnName>>
   ): this {
     this.url.searchParams.append(column, `eq.${value}`)
     return this
@@ -87,9 +89,9 @@ export default class PostgrestFilterBuilder<
    */
   neq<ColumnName extends string>(
     column: ColumnName,
-    value: ResolveFilterValue<Schema['Tables'], Row, ColumnName> extends never
+    value: ResolveFilterValue<Schema, Row, ColumnName> extends never
       ? unknown
-      : ResolveFilterValue<Schema['Tables'], Row, ColumnName>
+      : ResolveFilterValue<Schema, Row, ColumnName>
   ): this {
     this.url.searchParams.append(column, `neq.${value}`)
     return this
@@ -267,9 +269,9 @@ export default class PostgrestFilterBuilder<
    */
   in<ColumnName extends string>(
     column: ColumnName,
-    values: ResolveFilterValue<Schema['Tables'], Row, ColumnName> extends never
+    values: ResolveFilterValue<Schema, Row, ColumnName> extends never
       ? unknown[]
-      : ReadonlyArray<ResolveFilterValue<Schema['Tables'], Row, ColumnName>>
+      : ReadonlyArray<ResolveFilterValue<Schema, Row, ColumnName>>
   ): this {
     const cleanedValues = Array.from(new Set(values))
       .map((s) => {
