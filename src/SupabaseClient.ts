@@ -47,7 +47,7 @@ export default class SupabaseClient<
   protected authUrl: string
   protected storageUrl: string
   protected functionsUrl: string
-  protected rest: PostgrestClient<Database, SchemaName>
+  protected rest: PostgrestClient<Database, SchemaName, Schema>
   protected storageKey: string
   protected fetch?: Fetch
   protected changedAccessToken?: string
