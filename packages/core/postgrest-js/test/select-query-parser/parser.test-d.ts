@@ -103,6 +103,31 @@ import { selectParams } from '../relationships'
     },
   ])
 }
+{
+  expectType<ParseQuery<'data->preferences->>theme, data->>some, data->foo->bar->>biz'>>([
+    {
+      type: 'field',
+      name: 'data',
+      alias: 'theme',
+      castType: 'text',
+      jsonPath: 'preferences.theme',
+    },
+    {
+      type: 'field',
+      name: 'data',
+      alias: 'some',
+      castType: 'text',
+      jsonPath: 'some',
+    },
+    {
+      type: 'field',
+      name: 'data',
+      alias: 'biz',
+      castType: 'text',
+      jsonPath: 'foo.bar.biz',
+    },
+  ])
+}
 // Select with spread
 {
   expectType<ParseQuery<'username, ...posts(id, title)'>>([

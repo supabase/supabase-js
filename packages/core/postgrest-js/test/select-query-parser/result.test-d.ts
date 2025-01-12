@@ -118,3 +118,34 @@ type SelectQueryFromTableResult<
   expectType<typeof result1>(result2!)
   expectType<typeof result2>(result3!)
 }
+
+{
+  type SelectQueryFromTableResult<
+    TableName extends keyof Database['personal']['Tables'],
+    Q extends string
+  > = GetResult<
+    Database['personal'],
+    Database['personal']['Tables'][TableName]['Row'],
+    TableName,
+    Database['personal']['Tables'][TableName]['Relationships'],
+    Q
+  >
+
+  let result: SelectQueryFromTableResult<'users', `data->bar->baz, data->en, data->bar`>
+  let expected: {
+    baz: number
+    en: 'ONE' | 'TWO' | 'THREE'
+    bar: {
+      baz: number
+    }
+  }
+  expectType<TypeEqual<typeof result, typeof expected>>(true)
+
+  let result2: SelectQueryFromTableResult<'users', `data->bar->>baz, data->>en, data->>bar`>
+  let expected2: {
+    baz: string
+    en: 'ONE' | 'TWO' | 'THREE'
+    bar: string
+  }
+  expectType<TypeEqual<typeof result2, typeof expected2>>(true)
+}

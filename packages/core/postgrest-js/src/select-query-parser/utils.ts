@@ -546,9 +546,33 @@ export type FindFieldMatchingRelationships<
   : SelectQueryError<'Failed to find matching relation via name'>
 
 export type JsonPathToAccessor<Path extends string> = Path extends `${infer P1}->${infer P2}`
-  ? P2 extends `>${infer Rest}` // Check if P2 starts with > (from ->>)
+  ? P2 extends `>${infer Rest}` // Handle ->> operator
     ? JsonPathToAccessor<`${P1}.${Rest}`>
-    : JsonPathToAccessor<`${P1}.${P2}`>
+    : P2 extends string // Handle -> operator
+    ? JsonPathToAccessor<`${P1}.${P2}`>
+    : Path
+  : Path extends `>${infer Rest}` // Clean up any remaining > characters
+  ? JsonPathToAccessor<Rest>
   : Path extends `${infer P1}::${infer _}` // Handle type casting
-  ? JsonPathToAccessor<P1> // Process the path without the cast type
+  ? JsonPathToAccessor<P1>
   : Path
+
+export type JsonPathToType<T, Path extends string> = Path extends ''
+  ? T
+  : ContainsNull<T> extends true
+  ? JsonPathToType<Exclude<T, null>, Path>
+  : Path extends `${infer Key}.${infer Rest}`
+  ? Key extends keyof T
+    ? JsonPathToType<T[Key], Rest>
+    : never
+  : Path extends keyof T
+  ? T[Path]
+  : never
+
+export type IsStringUnion<T> = string extends T
+  ? false
+  : T extends string
+  ? [T] extends [never]
+    ? false
+    : true
+  : false

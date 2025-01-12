@@ -214,11 +214,37 @@ const postgrest = new PostgrestClient<Database>(REST_URL)
 
 // Json Accessor with custom types overrides
 {
-  const { error } = await postgrest
+  const { data, error } = await postgrest
     .schema('personal')
     .from('users')
-    .select('data->foo->bar, data->foo->>baz')
+    .select('data->bar->baz, data->en, data->bar')
   if (error) {
     throw new Error(error.message)
   }
+  expectType<
+    {
+      baz: number
+      en: 'ONE' | 'TWO' | 'THREE'
+      bar: {
+        baz: number
+      }
+    }[]
+  >(data)
+}
+// Json string Accessor with custom types overrides
+{
+  const { data, error } = await postgrest
+    .schema('personal')
+    .from('users')
+    .select('data->bar->>baz, data->>en, data->>bar')
+  if (error) {
+    throw new Error(error.message)
+  }
+  expectType<
+    {
+      baz: string
+      en: 'ONE' | 'TWO' | 'THREE'
+      bar: string
+    }[]
+  >(data)
 }
