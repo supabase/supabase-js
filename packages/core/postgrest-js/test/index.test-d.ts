@@ -211,3 +211,14 @@ const postgrest = new PostgrestClient<Database>(REST_URL)
   expectType<typeof x>(y)
   expectType<typeof x>(z)
 }
+
+// Json Accessor with custom types overrides
+{
+  const { error } = await postgrest
+    .schema('personal')
+    .from('users')
+    .select('data->foo->bar, data->foo->>baz')
+  if (error) {
+    throw new Error(error.message)
+  }
+}

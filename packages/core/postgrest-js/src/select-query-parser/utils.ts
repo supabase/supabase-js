@@ -544,3 +544,11 @@ export type FindFieldMatchingRelationships<
       name: Field['name']
     }
   : SelectQueryError<'Failed to find matching relation via name'>
+
+export type JsonPathToAccessor<Path extends string> = Path extends `${infer P1}->${infer P2}`
+  ? P2 extends `>${infer Rest}` // Check if P2 starts with > (from ->>)
+    ? JsonPathToAccessor<`${P1}.${Rest}`>
+    : JsonPathToAccessor<`${P1}.${P2}`>
+  : Path extends `${infer P1}::${infer _}` // Handle type casting
+  ? JsonPathToAccessor<P1> // Process the path without the cast type
+  : Path
