@@ -120,7 +120,7 @@ type SelectQueryFromTableResult<
 }
 
 {
-  type SelectQueryFromTableResult<
+  type SelectQueryFromPersonalTableResult<
     TableName extends keyof Database['personal']['Tables'],
     Q extends string
   > = GetResult<
@@ -130,22 +130,38 @@ type SelectQueryFromTableResult<
     Database['personal']['Tables'][TableName]['Relationships'],
     Q
   >
-
-  let result: SelectQueryFromTableResult<'users', `data->bar->baz, data->en, data->bar`>
-  let expected: {
-    baz: number
-    en: 'ONE' | 'TWO' | 'THREE'
-    bar: {
+  // Should work with Json object accessor
+  {
+    let result: SelectQueryFromPersonalTableResult<'users', `data->bar->baz, data->en, data->bar`>
+    let expected: {
       baz: number
+      en: 'ONE' | 'TWO' | 'THREE'
+      bar: {
+        baz: number
+      }
     }
+    expectType<TypeEqual<typeof result, typeof expected>>(true)
   }
-  expectType<TypeEqual<typeof result, typeof expected>>(true)
-
-  let result2: SelectQueryFromTableResult<'users', `data->bar->>baz, data->>en, data->>bar`>
-  let expected2: {
-    baz: string
-    en: 'ONE' | 'TWO' | 'THREE'
-    bar: string
+  // Should work with Json string accessor
+  {
+    let result: SelectQueryFromPersonalTableResult<
+      'users',
+      `data->bar->>baz, data->>en, data->>bar`
+    >
+    let expected: {
+      baz: string
+      en: 'ONE' | 'TWO' | 'THREE'
+      bar: string
+    }
+    expectType<TypeEqual<typeof result, typeof expected>>(true)
   }
-  expectType<TypeEqual<typeof result2, typeof expected2>>(true)
+  // Should fallback to defaults if unknown properties are mentionned
+  {
+    let result: SelectQueryFromPersonalTableResult<'users', `data->bar->>nope, data->neither`>
+    let expected: {
+      nope: string
+      neither: Json
+    }
+    expectType<TypeEqual<typeof result, typeof expected>>(true)
+  }
 }
