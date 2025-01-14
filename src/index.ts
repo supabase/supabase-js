@@ -3,10 +3,10 @@ import type { GenericSchema, SupabaseClientOptions } from './lib/types'
 
 export * from '@supabase/auth-js'
 export type { User as AuthUser, Session as AuthSession } from '@supabase/auth-js'
-export type {
-  PostgrestResponse,
-  PostgrestSingleResponse,
-  PostgrestMaybeSingleResponse,
+export {
+  type PostgrestResponse,
+  type PostgrestSingleResponse,
+  type PostgrestMaybeSingleResponse,
   PostgrestError,
 } from '@supabase/postgrest-js'
 export {
