@@ -1,5 +1,6 @@
+import { TypeEqual } from 'ts-expect'
 import { expectError, expectType } from 'tsd'
-import { PostgrestClient } from '../src/index'
+import { PostgrestClient, PostgrestError } from '../src/index'
 import { Prettify } from '../src/types'
 import { Database, Json } from './types'
 
@@ -208,6 +209,70 @@ const postgrest = new PostgrestClient<Database>(REST_URL)
   const x = postgrest.from('channels').select()
   const y = x.throwOnError()
   const z = x.setHeader('', '')
-  expectType<typeof x>(y)
-  expectType<typeof x>(z)
+  expectType<typeof y extends typeof x ? true : false>(true)
+  expectType<typeof z extends typeof x ? true : false>(true)
+}
+
+// Should have nullable data and error field
+{
+  const result = await postgrest.from('users').select('username, messages(id, message)').limit(1)
+  let expected:
+    | {
+        username: string
+        messages: {
+          id: number
+          message: string | null
+        }[]
+      }[]
+    | null
+  const { data } = result
+  const { error } = result
+  expectType<TypeEqual<typeof data, typeof expected>>(true)
+  let err: PostgrestError | null
+  expectType<TypeEqual<typeof error, typeof err>>(true)
+}
+
+// Should have non nullable data and no error fields if throwOnError is added
+{
+  const result = await postgrest
+    .from('users')
+    .select('username, messages(id, message)')
+    .limit(1)
+    .throwOnError()
+  const { data } = result
+  const { error } = result
+  let expected:
+    | {
+        username: string
+        messages: {
+          id: number
+          message: string | null
+        }[]
+      }[]
+  expectType<TypeEqual<typeof data, typeof expected>>(true)
+  expectType<TypeEqual<typeof error, null>>(true)
+  error
+}
+
+// Should work with throwOnError middle of the chaining
+{
+  const result = await postgrest
+    .from('users')
+    .select('username, messages(id, message)')
+    .throwOnError()
+    .eq('username', 'test')
+    .limit(1)
+  const { data } = result
+  const { error } = result
+  let expected:
+    | {
+        username: string
+        messages: {
+          id: number
+          message: string | null
+        }[]
+      }[]
+  expectType<TypeEqual<typeof data, typeof expected>>(true)
+  expectType<TypeEqual<typeof error, null>>(true)
+  error
 }
