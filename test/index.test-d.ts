@@ -119,3 +119,20 @@ const supabase = createClient<Database>(URL, KEY)
     channels.channel_details
   )
 }
+
+// throwOnError in chaining
+{
+  const { data: channels, error } = await supabase
+    .from('channels')
+    .select('channel_details(*)')
+    .throwOnError()
+  expectType<typeof error>(null)
+  expectType<
+    {
+      channel_details: {
+        details: string | null
+        id: number
+      } | null
+    }[]
+  >(channels)
+}
