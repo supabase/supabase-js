@@ -77,7 +77,7 @@ export type SupabaseClientOptions<SchemaName> = {
    * Create another client if you wish to use Supabase Auth and third-party
    * authentications concurrently in the same application.
    */
-  accessToken?: () => Promise<string>
+  accessToken?: () => Promise<string | null>
 }
 
 export type GenericRelationship = {
