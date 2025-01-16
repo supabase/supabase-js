@@ -400,6 +400,24 @@ export type Database = {
         }
         Relationships: []
       }
+      cornercase: {
+        Row: {
+          'column whitespace': string | null
+          array_column: unknown | null
+          id: number
+        }
+        Insert: {
+          'column whitespace'?: string | null
+          array_column?: unknown | null
+          id: number
+        }
+        Update: {
+          'column whitespace'?: string | null
+          array_column?: unknown | null
+          id?: number
+        }
+        Relationships: []
+      }
       users: {
         Row: {
           age_range: unknown | null
