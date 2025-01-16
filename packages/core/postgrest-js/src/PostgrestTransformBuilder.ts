@@ -192,7 +192,7 @@ export default class PostgrestTransformBuilder<
     ResultOne = Result extends (infer ResultOne)[] ? ResultOne : never
   >(): PostgrestBuilder<ResultOne> {
     this.headers['Accept'] = 'application/vnd.pgrst.object+json'
-    return this as PostgrestBuilder<ResultOne>
+    return this as unknown as PostgrestBuilder<ResultOne>
   }
 
   /**
@@ -212,7 +212,7 @@ export default class PostgrestTransformBuilder<
       this.headers['Accept'] = 'application/vnd.pgrst.object+json'
     }
     this.isMaybeSingle = true
-    return this as PostgrestBuilder<ResultOne | null>
+    return this as unknown as PostgrestBuilder<ResultOne | null>
   }
 
   /**
@@ -220,7 +220,7 @@ export default class PostgrestTransformBuilder<
    */
   csv(): PostgrestBuilder<string> {
     this.headers['Accept'] = 'text/csv'
-    return this as PostgrestBuilder<string>
+    return this as unknown as PostgrestBuilder<string>
   }
 
   /**
@@ -228,7 +228,7 @@ export default class PostgrestTransformBuilder<
    */
   geojson(): PostgrestBuilder<Record<string, unknown>> {
     this.headers['Accept'] = 'application/geo+json'
-    return this as PostgrestBuilder<Record<string, unknown>>
+    return this as unknown as PostgrestBuilder<Record<string, unknown>>
   }
 
   /**
@@ -285,8 +285,8 @@ export default class PostgrestTransformBuilder<
     this.headers[
       'Accept'
     ] = `application/vnd.pgrst.plan+${format}; for="${forMediatype}"; options=${options};`
-    if (format === 'json') return this as PostgrestBuilder<Record<string, unknown>[]>
-    else return this as PostgrestBuilder<string>
+    if (format === 'json') return this as unknown as PostgrestBuilder<Record<string, unknown>[]>
+    else return this as unknown as PostgrestBuilder<string>
   }
 
   /**
