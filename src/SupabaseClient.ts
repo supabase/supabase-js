@@ -308,7 +308,7 @@ export default class SupabaseClient<
       fetch,
       // auth checks if there is a custom authorizaiton header using this flag
       // so it knows whether to return an error when getUser is called with no session
-      hasCustomAuthorizationHeader: 'Authorization' in this.headers ?? false,
+      hasCustomAuthorizationHeader: 'Authorization' in this.headers,
     })
   }
 
