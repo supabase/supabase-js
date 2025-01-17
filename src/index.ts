@@ -5,8 +5,15 @@ export * from '@supabase/auth-js'
 export type { User as AuthUser, Session as AuthSession } from '@supabase/auth-js'
 export {
   type PostgrestResponse,
+  type PostgrestResponseFailure,
+  type PostgrestResponseSuccess,
   type PostgrestSingleResponse,
   type PostgrestMaybeSingleResponse,
+  type PostgrestClient,
+  type PostgrestQueryBuilder,
+  type PostgrestFilterBuilder,
+  type PostgrestTransformBuilder,
+  type PostgrestBuilder,
   PostgrestError,
 } from '@supabase/postgrest-js'
 export {
