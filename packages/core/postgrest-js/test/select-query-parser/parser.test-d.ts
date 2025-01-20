@@ -662,3 +662,36 @@ import { selectParams } from '../relationships'
     0 as any as ParserError<'Unexpected input: ->->theme'>
   )
 }
+
+// JSON accessor within embedded tables
+{
+  expectType<ParseQuery<'users(data->bar->>baz, data->>en, data->bar)'>>([
+    {
+      type: 'field',
+      name: 'users',
+      children: [
+        {
+          type: 'field',
+          name: 'data',
+          alias: 'baz',
+          castType: 'text',
+          jsonPath: 'bar.baz',
+        },
+        {
+          type: 'field',
+          name: 'data',
+          alias: 'en',
+          castType: 'text',
+          jsonPath: 'en',
+        },
+        {
+          type: 'field',
+          name: 'data',
+          alias: 'bar',
+          castType: 'json',
+          jsonPath: 'bar',
+        },
+      ],
+    },
+  ])
+}

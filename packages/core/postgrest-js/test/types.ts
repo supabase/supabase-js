@@ -1,6 +1,6 @@
 export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[]
 
-type CustomUserDataType = {
+export type CustomUserDataType = {
   foo: string
   bar: {
     baz: number
@@ -412,21 +412,21 @@ export type Database = {
         Row: {
           age_range: unknown | null
           catchphrase: unknown | null
-          data: Json | null
+          data: CustomUserDataType | null
           status: Database['public']['Enums']['user_status'] | null
           username: string
         }
         Insert: {
           age_range?: unknown | null
           catchphrase?: unknown | null
-          data?: Json | null
+          data?: CustomUserDataType | null
           status?: Database['public']['Enums']['user_status'] | null
           username: string
         }
         Update: {
           age_range?: unknown | null
           catchphrase?: unknown | null
-          data?: Json | null
+          data?: CustomUserDataType | null
           status?: Database['public']['Enums']['user_status'] | null
           username?: string
         }

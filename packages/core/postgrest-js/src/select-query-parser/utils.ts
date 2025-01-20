@@ -555,6 +555,8 @@ export type JsonPathToAccessor<Path extends string> = Path extends `${infer P1}-
   ? JsonPathToAccessor<Rest>
   : Path extends `${infer P1}::${infer _}` // Handle type casting
   ? JsonPathToAccessor<P1>
+  : Path extends `${infer P1}${')' | ','}${infer _}` // Handle closing parenthesis and comma
+  ? P1
   : Path
 
 export type JsonPathToType<T, Path extends string> = Path extends ''

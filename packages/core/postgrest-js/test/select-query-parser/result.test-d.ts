@@ -164,4 +164,33 @@ type SelectQueryFromTableResult<
     }
     expectType<TypeEqual<typeof result, typeof expected>>(true)
   }
+  // Should work with embeded Json object accessor
+  {
+    let result: SelectQueryFromTableResult<'messages', `users(data->bar->baz, data->en, data->bar)`>
+    let expected: {
+      users: {
+        baz: number
+        en: 'ONE' | 'TWO' | 'THREE'
+        bar: {
+          baz: number
+        }
+      }
+    }
+    expectType<TypeEqual<typeof result, typeof expected>>(true)
+  }
+  // Should work with embeded Json string accessor
+  {
+    let result: SelectQueryFromTableResult<
+      'messages',
+      `users(data->bar->>baz, data->>en, data->>bar)`
+    >
+    let expected: {
+      users: {
+        baz: string
+        en: 'ONE' | 'TWO' | 'THREE'
+        bar: string
+      }
+    }
+    expectType<TypeEqual<typeof result, typeof expected>>(true)
+  }
 }

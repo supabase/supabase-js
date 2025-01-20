@@ -1,5 +1,5 @@
 import { PostgrestClient } from '../src/index'
-import { Database } from './types'
+import { CustomUserDataType, Database } from './types'
 
 const REST_URL = 'http://localhost:3000'
 const postgrest = new PostgrestClient<Database>(REST_URL)
@@ -1615,7 +1615,10 @@ test('select with no match', async () => {
 })
 
 test('update with no match - return=minimal', async () => {
-  const res = await postgrest.from('users').update({ data: '' }).eq('username', 'missing')
+  const res = await postgrest
+    .from('users')
+    .update({ data: '' as unknown as CustomUserDataType })
+    .eq('username', 'missing')
   expect(res).toMatchInlineSnapshot(`
     Object {
       "count": null,
@@ -1628,7 +1631,11 @@ test('update with no match - return=minimal', async () => {
 })
 
 test('update with no match - return=representation', async () => {
-  const res = await postgrest.from('users').update({ data: '' }).eq('username', 'missing').select()
+  const res = await postgrest
+    .from('users')
+    .update({ data: '' as unknown as CustomUserDataType })
+    .eq('username', 'missing')
+    .select()
   expect(res).toMatchInlineSnapshot(`
     Object {
       "count": null,
