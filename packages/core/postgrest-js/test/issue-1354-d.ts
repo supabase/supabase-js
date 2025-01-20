@@ -10,27 +10,27 @@ export type Database = {
       foo: {
         Row: {
           created_at: string | null
-          bar: Json
+          bar: Custom
           id: string
-          baz: Json
+          baz: Custom
           game_id: string
           updated_at: string | null
           user_id: string | null
         }
         Insert: {
           created_at?: string | null
-          bar: Json
+          bar: Custom
           id?: string
-          baz: Json
+          baz: Custom
           game_id: string
           updated_at?: string | null
           user_id?: string | null
         }
         Update: {
           created_at?: string | null
-          bar?: Json
+          bar?: Custom
           id?: string
-          baz?: Json
+          baz?: Custom
           game_id?: string
           updated_at?: string | null
           user_id?: string | null
