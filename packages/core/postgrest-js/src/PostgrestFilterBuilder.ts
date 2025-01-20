@@ -75,9 +75,9 @@ export default class PostgrestFilterBuilder<
     column: ColumnName,
     value: ResolveFilterValue<Schema, Row, ColumnName> extends infer ResolvedFilterValue
       ? ResolvedFilterValue extends never
-        ? NonNullable<unknown>
+        ? unknown
         : NonNullable<ResolvedFilterValue>
-      : never
+      : unknown
   ): this {
     this.url.searchParams.append(column, `eq.${value}`)
     return this
@@ -95,7 +95,7 @@ export default class PostgrestFilterBuilder<
       ? ResolvedFilterValue extends never
         ? unknown
         : NonNullable<ResolvedFilterValue>
-      : never
+      : unknown
   ): this {
     this.url.searchParams.append(column, `neq.${value}`)
     return this

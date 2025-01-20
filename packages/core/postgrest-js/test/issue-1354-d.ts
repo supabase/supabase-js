@@ -212,4 +212,17 @@ const postgrestOverrideTypes = new PostgrestClient<DatabaseOverride>('http://loc
     })
     .eq('id', res.data.id)
   expectType<null>(result.data)
+  const resIn = await postgrestOverrideTypes
+    .from('foo')
+    .select('id, bar, baz')
+    .in('bar', [
+      { version: 1, events: [] },
+      { version: 2, events: [] },
+    ])
+    .single()
+
+  if (resIn.error) {
+    throw new Error(resIn.error.message)
+  }
+  expectType<{ id: string; bar: Custom; baz: Custom }>(resIn.data)
 }
