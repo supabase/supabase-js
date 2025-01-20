@@ -81,3 +81,9 @@ VALUES
   (2, 1), -- Smartphone is in Electronics
   (3, 1), -- Headphones are in Electronics
   (3, 3); -- Headphones are also in Audio
+
+INSERT INTO public.cornercase (id, array_column)
+VALUES
+  (1, ARRAY['test', 'one']),
+  (2, ARRAY['another']),
+  (3, ARRAY['test2']);

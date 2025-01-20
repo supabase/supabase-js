@@ -60,6 +60,62 @@ test('basic select table', async () => {
   `)
 })
 
+test('basic select returns types override', async () => {
+  const res = await postgrest.from('users').select().returns<{ status: 'ONLINE' | 'OFFLINE' }>()
+  expect(res).toMatchInlineSnapshot(`
+    Object {
+      "count": null,
+      "data": Array [
+        Object {
+          "age_range": "[1,2)",
+          "catchphrase": "'cat' 'fat'",
+          "data": null,
+          "status": "ONLINE",
+          "username": "supabot",
+        },
+        Object {
+          "age_range": "[25,35)",
+          "catchphrase": "'bat' 'cat'",
+          "data": null,
+          "status": "OFFLINE",
+          "username": "kiwicopple",
+        },
+        Object {
+          "age_range": "[25,35)",
+          "catchphrase": "'bat' 'rat'",
+          "data": null,
+          "status": "ONLINE",
+          "username": "awailas",
+        },
+        Object {
+          "age_range": "[20,30)",
+          "catchphrase": "'fat' 'rat'",
+          "data": null,
+          "status": "ONLINE",
+          "username": "dragarcia",
+        },
+        Object {
+          "age_range": "[20,30)",
+          "catchphrase": "'json' 'test'",
+          "data": Object {
+            "foo": Object {
+              "bar": Object {
+                "nested": "value",
+              },
+              "baz": "string value",
+            },
+          },
+          "status": "ONLINE",
+          "username": "jsonuser",
+        },
+      ],
+      "error": null,
+      "status": 200,
+      "statusText": "OK",
+    }
+  `)
+})
+
 test('basic select view', async () => {
   const res = await postgrest.from('updatable_view').select()
   expect(res).toMatchInlineSnapshot(`
@@ -542,6 +598,28 @@ describe('basic insert, update, delete', () => {
         "error": null,
         "status": 200,
         "statusText": "OK",
+      }
+    `)
+  })
+
+  test('insert quoted column', async () => {
+    let res = await postgrest
+      .from('cornercase')
+      .insert([{ 'column whitespace': 'foo', id: 1 }])
+      .select('"column whitespace", id ')
+
+    expect(res).toMatchInlineSnapshot(`
+      Object {
+        "count": null,
+        "data": null,
+        "error": Object {
+          "code": "23505",
+          "details": "Key (id)=(1) already exists.",
+          "hint": null,
+          "message": "duplicate key value violates unique constraint \\"cornercase_pkey\\"",
+        },
+        "status": 409,
+        "statusText": "Conflict",
       }
     `)
   })

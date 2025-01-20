@@ -294,6 +294,37 @@ test('csv', async () => {
   `)
 })
 
+test('geojson', async () => {
+  const res = await postgrest.from('shops').select().geojson()
+  expect(res).toMatchInlineSnapshot(`
+    Object {
+      "count": null,
+      "data": Object {
+        "features": Array [
+          Object {
+            "geometry": Object {
+              "coordinates": Array [
+                -71.10044,
+                42.373695,
+              ],
+              "type": "Point",
+            },
+            "properties": Object {
+              "address": "1369 Cambridge St",
+              "id": 1,
+            },
+            "type": "Feature",
+          },
+        ],
+        "type": "FeatureCollection",
+      },
+      "error": null,
+      "status": 200,
+      "statusText": "OK",
+    }
+  `)
+})
+
 test('abort signal', async () => {
   const ac = new AbortController() as globalThis.AbortController
   ac.abort()

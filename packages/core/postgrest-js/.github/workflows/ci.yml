@@ -23,3 +23,6 @@ jobs:
       - run: |
           npm clean-install
           npm run test
+
+      - name: Coveralls
+        uses: coverallsapp/github-action@v2
