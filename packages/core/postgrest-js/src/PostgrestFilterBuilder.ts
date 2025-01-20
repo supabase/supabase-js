@@ -273,11 +273,13 @@ export default class PostgrestFilterBuilder<
    */
   in<ColumnName extends string>(
     column: ColumnName,
-    values: ResolveFilterValue<Schema, Row, ColumnName> extends infer ResolvedFilterValue
-      ? ResolvedFilterValue extends never
-        ? unknown[]
-        : ReadonlyArray<ResolvedFilterValue>
-      : never
+    values: ReadonlyArray<
+      ResolveFilterValue<Schema, Row, ColumnName> extends infer ResolvedFilterValue
+        ? ResolvedFilterValue extends never
+          ? unknown[]
+          : ResolvedFilterValue
+        : never
+    >
   ): this {
     const cleanedValues = Array.from(new Set(values))
       .map((s) => {
