@@ -2,6 +2,7 @@
 // See https://github.com/PostgREST/postgrest/blob/2f91853cb1de18944a4556df09e52450b881cfb3/src/PostgREST/ApiRequest/QueryParams.hs#L282-L284
 
 import { SimplifyDeep } from '../types'
+import { JsonPathToAccessor } from './utils'
 
 /**
  * Parses a query.
@@ -220,13 +221,24 @@ type ParseNonEmbeddedResourceField<Input extends string> = ParseIdentifier<Input
 ]
   ? // Parse optional JSON path.
     (
-      Remainder extends `->${infer _}`
+      Remainder extends `->${infer PathAndRest}`
         ? ParseJsonAccessor<Remainder> extends [
             infer PropertyName,
             infer PropertyType,
             `${infer Remainder}`
           ]
-          ? [{ type: 'field'; name: Name; alias: PropertyName; castType: PropertyType }, Remainder]
+          ? [
+              {
+                type: 'field'
+                name: Name
+                alias: PropertyName
+                castType: PropertyType
+                jsonPath: JsonPathToAccessor<
+                  PathAndRest extends `${infer Path},${string}` ? Path : PathAndRest
+                >
+              },
+              Remainder
+            ]
           : ParseJsonAccessor<Remainder>
         : [{ type: 'field'; name: Name }, Remainder]
     ) extends infer Parsed
@@ -401,6 +413,7 @@ export namespace Ast {
     hint?: string
     innerJoin?: true
     castType?: string
+    jsonPath?: string
     aggregateFunction?: Token.AggregateFunction
     children?: Node[]
   }

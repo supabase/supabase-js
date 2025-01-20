@@ -81,17 +81,53 @@ import { selectParams } from '../relationships'
 // Select with JSON accessor
 {
   expectType<ParseQuery<'data->preferences->theme'>>([
-    { type: 'field', name: 'data', alias: 'theme', castType: 'json' },
+    {
+      type: 'field',
+      name: 'data',
+      alias: 'theme',
+      castType: 'json',
+      jsonPath: 'preferences.theme',
+    },
   ])
 }
 
 // Select with JSON accessor and text conversion
 {
   expectType<ParseQuery<'data->preferences->>theme'>>([
-    { type: 'field', name: 'data', alias: 'theme', castType: 'text' },
+    {
+      type: 'field',
+      name: 'data',
+      alias: 'theme',
+      castType: 'text',
+      jsonPath: 'preferences.theme',
+    },
   ])
 }
-
+{
+  expectType<ParseQuery<'data->preferences->>theme, data->>some, data->foo->bar->>biz'>>([
+    {
+      type: 'field',
+      name: 'data',
+      alias: 'theme',
+      castType: 'text',
+      jsonPath: 'preferences.theme',
+    },
+    {
+      type: 'field',
+      name: 'data',
+      alias: 'some',
+      castType: 'text',
+      jsonPath: 'some',
+    },
+    {
+      type: 'field',
+      name: 'data',
+      alias: 'biz',
+      castType: 'text',
+      jsonPath: 'foo.bar.biz',
+    },
+  ])
+}
 // Select with spread
 {
   expectType<ParseQuery<'username, ...posts(id, title)'>>([
@@ -196,7 +232,13 @@ import { selectParams } from '../relationships'
         },
       ],
     },
-    { type: 'field', name: 'profile', alias: 'theme', castType: 'text' },
+    {
+      type: 'field',
+      name: 'profile',
+      alias: 'theme',
+      castType: 'text',
+      jsonPath: 'settings.theme',
+    },
   ])
 }
 {
@@ -327,7 +369,13 @@ import { selectParams } from '../relationships'
 // Select with nested JSON accessors
 {
   expectType<ParseQuery<'data->preferences->theme->color'>>([
-    { type: 'field', name: 'data', alias: 'color', castType: 'json' },
+    {
+      type: 'field',
+      name: 'data',
+      alias: 'color',
+      castType: 'json',
+      jsonPath: 'preferences.theme.color',
+    },
   ])
 }
 
@@ -464,7 +512,7 @@ import { selectParams } from '../relationships'
   expectType<ParseQuery<'id::text, created_at::date, data->age::int'>>([
     { type: 'field', name: 'id', castType: 'text' },
     { type: 'field', name: 'created_at', castType: 'date' },
-    { type: 'field', name: 'data', alias: 'age', castType: 'int' },
+    { type: 'field', name: 'data', alias: 'age', castType: 'int', jsonPath: 'age' },
   ])
 }
 
@@ -480,8 +528,8 @@ import { selectParams } from '../relationships'
 // select JSON accessor
 {
   expect<ParseQuery<typeof selectParams.selectJsonAccessor.select>>([
-    { type: 'field', name: 'data', alias: 'bar', castType: 'json' },
-    { type: 'field', name: 'data', alias: 'baz', castType: 'text' },
+    { type: 'field', name: 'data', alias: 'bar', castType: 'json', jsonPath: 'foo.bar' },
+    { type: 'field', name: 'data', alias: 'baz', castType: 'text', jsonPath: 'foo.baz' },
   ])
 }
 
@@ -613,4 +661,37 @@ import { selectParams } from '../relationships'
   expectType<ParseQuery<'data->preferences->->theme'>>(
     0 as any as ParserError<'Unexpected input: ->->theme'>
   )
+}
+
+// JSON accessor within embedded tables
+{
+  expectType<ParseQuery<'users(data->bar->>baz, data->>en, data->bar)'>>([
+    {
+      type: 'field',
+      name: 'users',
+      children: [
+        {
+          type: 'field',
+          name: 'data',
+          alias: 'baz',
+          castType: 'text',
+          jsonPath: 'bar.baz',
+        },
+        {
+          type: 'field',
+          name: 'data',
+          alias: 'en',
+          castType: 'text',
+          jsonPath: 'en',
+        },
+        {
+          type: 'field',
+          name: 'data',
+          alias: 'bar',
+          castType: 'json',
+          jsonPath: 'bar',
+        },
+      ],
+    },
+  ])
 }

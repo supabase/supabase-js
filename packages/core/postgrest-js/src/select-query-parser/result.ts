@@ -15,6 +15,8 @@ import {
   GetFieldNodeResultName,
   IsAny,
   IsRelationNullable,
+  IsStringUnion,
+  JsonPathToType,
   ResolveRelationship,
   SelectQueryError,
 } from './utils'
@@ -239,6 +241,30 @@ type ProcessFieldNode<
   ? ProcessEmbeddedResource<Schema, Relationships, Field, RelationName>
   : ProcessSimpleField<Row, RelationName, Field>
 
+type ResolveJsonPathType<
+  Value,
+  Path extends string | undefined,
+  CastType extends PostgreSQLTypes
+> = Path extends string
+  ? JsonPathToType<Value, Path> extends never
+    ? // Always fallback if JsonPathToType returns never
+      TypeScriptTypes<CastType>
+    : JsonPathToType<Value, Path> extends infer PathResult
+    ? PathResult extends string
+      ? // Use the result if it's a string as we know that even with the string accessor ->> it's a valid type
+        PathResult
+      : IsStringUnion<PathResult> extends true
+      ? // Use the result if it's a union of strings
+        PathResult
+      : CastType extends 'json'
+      ? // If the type is not a string, ensure it was accessed with json accessor ->
+        PathResult
+      : // Otherwise it means non-string value accessed with string accessor ->> use the TypeScriptTypes result
+        TypeScriptTypes<CastType>
+    : TypeScriptTypes<CastType>
+  : // No json path, use regular type casting
+    TypeScriptTypes<CastType>
+
 /**
  * Processes a simple field (without embedded resources).
  *
@@ -261,8 +287,8 @@ type ProcessSimpleField<
       }
     : {
         // Aliases override the property name in the result
-        [K in GetFieldNodeResultName<Field>]: Field['castType'] extends PostgreSQLTypes // We apply the detected casted as the result type
-          ? TypeScriptTypes<Field['castType']>
+        [K in GetFieldNodeResultName<Field>]: Field['castType'] extends PostgreSQLTypes
+          ? ResolveJsonPathType<Row[Field['name']], Field['jsonPath'], Field['castType']>
           : Row[Field['name']]
       }
   : SelectQueryError<`column '${Field['name']}' does not exist on '${RelationName}'.`>

@@ -1,24 +1,32 @@
 export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[]
 
+export type CustomUserDataType = {
+  foo: string
+  bar: {
+    baz: number
+  }
+  en: 'ONE' | 'TWO' | 'THREE'
+}
+
 export type Database = {
   personal: {
     Tables: {
       users: {
         Row: {
           age_range: unknown | null
-          data: Json | null
+          data: CustomUserDataType | null
           status: Database['public']['Enums']['user_status'] | null
           username: string
         }
         Insert: {
           age_range?: unknown | null
-          data?: Json | null
+          data?: CustomUserDataType | null
           status?: Database['public']['Enums']['user_status'] | null
           username: string
         }
         Update: {
           age_range?: unknown | null
-          data?: Json | null
+          data?: CustomUserDataType | null
           status?: Database['public']['Enums']['user_status'] | null
           username?: string
         }
@@ -422,21 +430,21 @@ export type Database = {
         Row: {
           age_range: unknown | null
           catchphrase: unknown | null
-          data: Json | null
+          data: CustomUserDataType | null
           status: Database['public']['Enums']['user_status'] | null
           username: string
         }
         Insert: {
           age_range?: unknown | null
           catchphrase?: unknown | null
-          data?: Json | null
+          data?: CustomUserDataType | null
           status?: Database['public']['Enums']['user_status'] | null
           username: string
         }
         Update: {
           age_range?: unknown | null
           catchphrase?: unknown | null
-          data?: Json | null
+          data?: CustomUserDataType | null
           status?: Database['public']['Enums']['user_status'] | null
           username?: string
         }
