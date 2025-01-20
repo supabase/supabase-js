@@ -73,9 +73,11 @@ export default class PostgrestFilterBuilder<
    */
   eq<ColumnName extends string>(
     column: ColumnName,
-    value: ResolveFilterValue<Schema, Row, ColumnName> extends never
-      ? NonNullable<unknown>
-      : NonNullable<ResolveFilterValue<Schema, Row, ColumnName>>
+    value: ResolveFilterValue<Schema, Row, ColumnName> extends infer ResolvedFilterValue
+      ? ResolvedFilterValue extends never
+        ? NonNullable<unknown>
+        : NonNullable<ResolvedFilterValue>
+      : never
   ): this {
     this.url.searchParams.append(column, `eq.${value}`)
     return this
@@ -89,9 +91,11 @@ export default class PostgrestFilterBuilder<
    */
   neq<ColumnName extends string>(
     column: ColumnName,
-    value: ResolveFilterValue<Schema, Row, ColumnName> extends never
-      ? unknown
-      : ResolveFilterValue<Schema, Row, ColumnName>
+    value: ResolveFilterValue<Schema, Row, ColumnName> extends infer ResolvedFilterValue
+      ? ResolvedFilterValue extends never
+        ? unknown
+        : NonNullable<ResolvedFilterValue>
+      : never
   ): this {
     this.url.searchParams.append(column, `neq.${value}`)
     return this
@@ -269,9 +273,11 @@ export default class PostgrestFilterBuilder<
    */
   in<ColumnName extends string>(
     column: ColumnName,
-    values: ResolveFilterValue<Schema, Row, ColumnName> extends never
-      ? unknown[]
-      : ReadonlyArray<ResolveFilterValue<Schema, Row, ColumnName>>
+    values: ResolveFilterValue<Schema, Row, ColumnName> extends infer ResolvedFilterValue
+      ? ResolvedFilterValue extends never
+        ? unknown[]
+        : ReadonlyArray<ResolvedFilterValue>
+      : never
   ): this {
     const cleanedValues = Array.from(new Set(values))
       .map((s) => {
