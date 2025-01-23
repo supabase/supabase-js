@@ -26,6 +26,10 @@ type FilterOperator =
   | 'phfts'
   | 'wfts'
 
+export type IsStringOperator<Path extends string> = Path extends `${string}->>${string}`
+  ? true
+  : false
+
 // Match relationship filters with `table.column` syntax and resolve underlying
 // column value. If not matched, fallback to generic type.
 // TODO: Validate the relationship itself ala select-query-parser. Currently we
@@ -41,9 +45,11 @@ type ResolveFilterValue<
     : ResolveFilterRelationshipValue<Schema, RelationshipTable, Remainder>
   : ColumnName extends keyof Row
   ? Row[ColumnName]
-  : // If the column selection is a jsonpath like `data->value` we attempt to match
+  : // If the column selection is a jsonpath like `data->value` or `data->>value` we attempt to match
   // the expected type with the parsed custom json type
-  JsonPathToType<Row, JsonPathToAccessor<ColumnName>> extends infer JsonPathValue
+  IsStringOperator<ColumnName> extends true
+  ? string
+  : JsonPathToType<Row, JsonPathToAccessor<ColumnName>> extends infer JsonPathValue
   ? JsonPathValue extends never
     ? never
     : JsonPathValue

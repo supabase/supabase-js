@@ -280,7 +280,13 @@ const postgrestOverrideTypes = new PostgrestClient<DatabaseOverride>('http://loc
   const resIn = await postgrestOverrideTypes
     .from('foo')
     .select('id, bar, baz')
-    .in('bar->version', [1, 32])
+    .in('bar->version', [31])
+    .single()
+  await postgrestOverrideTypes
+    .from('foo')
+    .select('id, bar, baz')
+    // the type become a string when using the string json accessor operator
+    .in('bar->>version', ['something'])
     .single()
 
   if (resIn.error) {
