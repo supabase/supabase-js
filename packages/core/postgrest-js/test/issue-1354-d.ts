@@ -191,6 +191,35 @@ const postgrestOverrideTypes = new PostgrestClient<DatabaseOverride>('http://loc
   expectType<null>(result.data)
 }
 
+// basic types with postgres jsonpath selector
+{
+  const res = await postgrest.from('foo').select('id, bar, baz').eq('bar->version', 31).single()
+
+  const bar = {} as Json
+  const baz = {} as Json
+  if (res.error) {
+    throw new Error(res.error.message)
+  }
+  const result = await postgrest
+    .from('foo')
+    .update({
+      bar,
+      baz,
+    })
+    .eq('bar->version', 31)
+  expectType<null>(result.data)
+  const resIn = await postgrest
+    .from('foo')
+    .select('id, bar, baz')
+    .in('bar->version', [1, 2])
+    .single()
+
+  if (resIn.error) {
+    throw new Error(resIn.error.message)
+  }
+  expectType<{ id: string; bar: Json; baz: Json }>(resIn.data)
+}
+
 // extended types
 {
   const res = await postgrestOverrideTypes
@@ -219,6 +248,39 @@ const postgrestOverrideTypes = new PostgrestClient<DatabaseOverride>('http://loc
       { version: 1, events: [] },
       { version: 2, events: [] },
     ])
+    .single()
+
+  if (resIn.error) {
+    throw new Error(resIn.error.message)
+  }
+  expectType<{ id: string; bar: Custom; baz: Custom }>(resIn.data)
+}
+
+// extended types with postgres jsonpath selector
+{
+  const res = await postgrestOverrideTypes
+    .from('foo')
+    .select('id, bar, baz')
+    .eq('bar->version', 31)
+    .single()
+
+  const bar = {} as Custom
+  const baz = {} as Custom
+  if (res.error) {
+    throw new Error(res.error.message)
+  }
+  const result = await postgrestOverrideTypes
+    .from('foo')
+    .update({
+      bar,
+      baz,
+    })
+    .eq('bar->version', res.data.bar.version)
+  expectType<null>(result.data)
+  const resIn = await postgrestOverrideTypes
+    .from('foo')
+    .select('id, bar, baz')
+    .in('bar->version', [1, 32])
     .single()
 
   if (resIn.error) {

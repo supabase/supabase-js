@@ -1830,12 +1830,7 @@ test('self reference relation via column', async () => {
 })
 
 test('aggregate on missing column with alias', async () => {
-  const res = await selectQueries.aggregateOnMissingColumnWithAlias
-    // @ts-expect-error should not be able to eq 'id' since the column does not
-    // exist
-    .eq('id', 2)
-    .limit(1)
-    .single()
+  const res = await selectQueries.aggregateOnMissingColumnWithAlias.eq('id', 2).limit(1).single()
   expect(res).toMatchInlineSnapshot(`
     Object {
       "count": null,

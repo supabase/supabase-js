@@ -1,4 +1,5 @@
 import PostgrestTransformBuilder from './PostgrestTransformBuilder'
+import { JsonPathToAccessor, JsonPathToType } from './select-query-parser/utils'
 import { GenericSchema } from './types'
 
 type FilterOperator =
@@ -40,6 +41,12 @@ type ResolveFilterValue<
     : ResolveFilterRelationshipValue<Schema, RelationshipTable, Remainder>
   : ColumnName extends keyof Row
   ? Row[ColumnName]
+  : // If the column selection is a jsonpath like `data->value` we attempt to match
+  // the expected type with the parsed custom json type
+  JsonPathToType<Row, JsonPathToAccessor<ColumnName>> extends infer JsonPathValue
+  ? JsonPathValue extends never
+    ? never
+    : JsonPathValue
   : never
 
 type ResolveFilterRelationshipValue<
@@ -73,11 +80,14 @@ export default class PostgrestFilterBuilder<
    */
   eq<ColumnName extends string>(
     column: ColumnName,
-    value: ResolveFilterValue<Schema, Row, ColumnName> extends infer ResolvedFilterValue
-      ? ResolvedFilterValue extends never
-        ? unknown
-        : NonNullable<ResolvedFilterValue>
-      : unknown
+    value: ResolveFilterValue<Schema, Row, ColumnName> extends never
+      ? NonNullable<unknown>
+      : // We want to infer the type before wrapping it into a `NonNullable` to avoid too deep
+      // type resolution error
+      ResolveFilterValue<Schema, Row, ColumnName> extends infer ResolvedFilterValue
+      ? NonNullable<ResolvedFilterValue>
+      : // We should never enter this case as all the branches are covered above
+        never
   ): this {
     this.url.searchParams.append(column, `eq.${value}`)
     return this
@@ -91,11 +101,11 @@ export default class PostgrestFilterBuilder<
    */
   neq<ColumnName extends string>(
     column: ColumnName,
-    value: ResolveFilterValue<Schema, Row, ColumnName> extends infer ResolvedFilterValue
-      ? ResolvedFilterValue extends never
-        ? unknown
-        : NonNullable<ResolvedFilterValue>
-      : unknown
+    value: ResolveFilterValue<Schema, Row, ColumnName> extends never
+      ? unknown
+      : ResolveFilterValue<Schema, Row, ColumnName> extends infer ResolvedFilterValue
+      ? ResolvedFilterValue
+      : never
   ): this {
     this.url.searchParams.append(column, `neq.${value}`)
     return this
@@ -274,11 +284,14 @@ export default class PostgrestFilterBuilder<
   in<ColumnName extends string>(
     column: ColumnName,
     values: ReadonlyArray<
-      ResolveFilterValue<Schema, Row, ColumnName> extends infer ResolvedFilterValue
-        ? ResolvedFilterValue extends never
-          ? unknown[]
-          : ResolvedFilterValue
-        : never
+      ResolveFilterValue<Schema, Row, ColumnName> extends never
+        ? unknown
+        : // We want to infer the type before wrapping it into a `NonNullable` to avoid too deep
+        // type resolution error
+        ResolveFilterValue<Schema, Row, ColumnName> extends infer ResolvedFilterValue
+        ? ResolvedFilterValue
+        : // We should never enter this case as all the branches are covered above
+          never
     >
   ): this {
     const cleanedValues = Array.from(new Set(values))
