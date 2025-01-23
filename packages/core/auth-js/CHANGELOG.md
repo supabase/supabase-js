@@ -1,5 +1,18 @@
 # Changelog
 
+## [2.68.0](https://github.com/supabase/auth-js/compare/v2.67.3...v2.68.0) (2025-01-21)
+
+
+### Features
+
+* consider session expired with margin on getSession() without auto refresh ([#1027](https://github.com/supabase/auth-js/issues/1027)) ([80f88e4](https://github.com/supabase/auth-js/commit/80f88e4bd2809db765a8d103954e827d8473b7db))
+
+
+### Bug Fixes
+
+* remove `internal-types.ts` ([#1014](https://github.com/supabase/auth-js/issues/1014)) ([28ead89](https://github.com/supabase/auth-js/commit/28ead89af47bcdaccc6cc2f2c7f013bed8cf3d50))
+* update docs to add scrypt ([#1012](https://github.com/supabase/auth-js/issues/1012)) ([1225239](https://github.com/supabase/auth-js/commit/1225239e239bde1b25037a88867d4c484caf8301))
+
 ## [2.67.3](https://github.com/supabase/auth-js/compare/v2.67.2...v2.67.3) (2024-12-17)
 
 
