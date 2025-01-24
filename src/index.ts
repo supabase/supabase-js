@@ -16,6 +16,7 @@ export {
   FunctionsError,
   type FunctionInvokeOptions,
   FunctionRegion,
+  type FunctionsResponse,
 } from '@supabase/functions-js'
 export * from '@supabase/realtime-js'
 export { default as SupabaseClient } from './SupabaseClient'
