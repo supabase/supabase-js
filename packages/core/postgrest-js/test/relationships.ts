@@ -1830,7 +1830,7 @@ test('self reference relation via column', async () => {
 })
 
 test('aggregate on missing column with alias', async () => {
-  const res = await selectQueries.aggregateOnMissingColumnWithAlias.eq('id', 1).limit(1).single()
+  const res = await selectQueries.aggregateOnMissingColumnWithAlias.eq('id', 2).limit(1).single()
   expect(res).toMatchInlineSnapshot(`
     Object {
       "count": null,

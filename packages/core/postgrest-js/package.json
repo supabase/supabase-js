@@ -59,8 +59,9 @@
     "ts-expect": "^1.3.0",
     "ts-jest": "^28.0.3",
     "tsd": "^0.31.2",
+    "type-fest": "^4.32.0",
     "typedoc": "^0.22.16",
-    "typescript": "4.5.5",
+    "typescript": "^4.5.5",
     "wait-for-localhost-cli": "^3.0.0"
   }
 }
