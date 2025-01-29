@@ -205,11 +205,11 @@ export function decodeJWTPayload(token: string) {
     throw new Error('JWT is not valid: not a JWT structure')
   }
 
-  if (!base64UrlRegex.test(parts[1])) {
+  if (!base64UrlRegex.test(parts[1] as string)) {
     throw new Error('JWT is not valid: payload is not in base64url format')
   }
 
-  const base64Url = parts[1]
+  const base64Url = parts[1] as string
   return JSON.parse(decodeBase64URL(base64Url))
 }
 
