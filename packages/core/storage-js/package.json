@@ -29,7 +29,7 @@
     "build:umd": "webpack",
     "types-generate": "dts-gen -m '@supabase/storage-js' -s",
     "test": "run-s test:clean test:infra test:suite test:clean",
-    "test:suite": "jest --runInBand",
+    "test:suite": "jest --runInBand --coverage",
     "test:infra": "cd infra && docker compose down && docker compose up -d --build && sleep 10",
     "test:clean": "cd infra && docker compose down --remove-orphans",
     "docs": "typedoc --entryPoints src/index.ts --out docs/v2 --entryPoints src/packages/* --excludePrivate --excludeProtected",
