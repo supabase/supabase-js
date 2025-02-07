@@ -7,6 +7,7 @@ import {
   DEFAULT_TIMEOUT,
   SOCKET_STATES,
   TRANSPORTS,
+  VERSION,
   VSN,
   WS_CLOSE_NORMAL,
 } from './lib/constants'
@@ -360,28 +361,14 @@ export default class RealtimeClient {
       (this.accessToken && (await this.accessToken())) ||
       this.accessTokenValue
 
-    if (tokenToSend) {
-      let parsed = null
-      try {
-        parsed = JSON.parse(atob(tokenToSend.split('.')[1]))
-      } catch (_error) {}
-      if (parsed && parsed.exp) {
-        let now = Math.floor(Date.now() / 1000)
-        let valid = now - parsed.exp < 0
-        if (!valid) {
-          this.log(
-            'auth',
-            `InvalidJWTToken: Invalid value for JWT claim "exp" with value ${parsed.exp}`
-          )
-          return Promise.reject(
-            `InvalidJWTToken: Invalid value for JWT claim "exp" with value ${parsed.exp}`
-          )
-        }
-      }
-
+    if (this.accessTokenValue != tokenToSend) {
       this.accessTokenValue = tokenToSend
       this.channels.forEach((channel) => {
-        tokenToSend && channel.updateJoinPayload({ access_token: tokenToSend })
+        tokenToSend &&
+          channel.updateJoinPayload({
+            access_token: tokenToSend,
+            version: VERSION,
+          })
 
         if (channel.joinedOnce && channel._isJoined()) {
           channel._push(CHANNEL_EVENTS.access_token, {
@@ -414,7 +401,7 @@ export default class RealtimeClient {
       payload: {},
       ref: this.pendingHeartbeatRef,
     })
-    this.setAuth()
+    await this.setAuth()
   }
 
   /**

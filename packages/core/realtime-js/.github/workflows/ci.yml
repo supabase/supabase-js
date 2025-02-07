@@ -19,21 +19,24 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest]
-        node: ["18"]
+        node: ['20']
 
     runs-on: ${{ matrix.os }}
 
     steps:
       - uses: actions/checkout@v2
-
       - name: Set up Node
         uses: actions/setup-node@v2
         with:
           node-version: ${{ matrix.node }}
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
       - name: Run CI steps
         run: |
-          npm ci
-          npm run ci
+          pnpm install
+          pnpm run ci
       - name: Upload coverage results to Coveralls
         uses: coverallsapp/github-action@master
         with:

@@ -402,45 +402,49 @@ describe('setAuth', () => {
     assert.ok(pushStub1.calledWith('access_token', { access_token: token }))
     assert.ok(!pushStub2.calledWith('access_token', { access_token: token }))
     assert.ok(pushStub3.calledWith('access_token', { access_token: token }))
-    assert.ok(payloadStub1.calledWith({ access_token: token }))
-    assert.ok(payloadStub2.calledWith({ access_token: token }))
-    assert.ok(payloadStub3.calledWith({ access_token: token }))
+    assert.ok(
+      payloadStub1.calledWith({
+        access_token: token,
+        version: '0.0.0-automated',
+      })
+    )
+    assert.ok(
+      payloadStub2.calledWith({
+        access_token: token,
+        version: '0.0.0-automated',
+      })
+    )
+    assert.ok(
+      payloadStub3.calledWith({
+        access_token: token,
+        version: '0.0.0-automated',
+      })
+    )
   })
 
-  test('does not set access token if exp is invalid and warns the user', () => {
+  test("does not send message if token hasn't changed", async () => {
     const channel1 = socket.channel('test-topic')
-    const channel2 = socket.channel('test-topic')
-    const channel3 = socket.channel('test-topic')
 
     channel1.state = CHANNEL_STATES.joined
-    channel2.state = CHANNEL_STATES.closed
-    channel3.state = CHANNEL_STATES.joined
 
     channel1.joinedOnce = true
-    channel2.joinedOnce = false
-    channel3.joinedOnce = true
 
     const pushStub1 = sinon.stub(channel1, '_push')
-    const pushStub2 = sinon.stub(channel2, '_push')
-    const pushStub3 = sinon.stub(channel3, '_push')
 
     const payloadStub1 = sinon.stub(channel1, 'updateJoinPayload')
-    const payloadStub2 = sinon.stub(channel2, 'updateJoinPayload')
-    const payloadStub3 = sinon.stub(channel3, 'updateJoinPayload')
+    const token = generateJWT('1h')
 
-    const token = generateJWT('0s')
+    await socket.setAuth(token)
+    await socket.setAuth(token)
 
-    expect(socket.setAuth(token)).rejects.toThrowError(
-      'InvalidJWTToken: Invalid value for JWT claim "exp" with value'
+    assert.strictEqual(socket.accessTokenValue, token)
+
+    assert.ok(
+      payloadStub1.calledOnceWith({
+        access_token: token,
+        version: '0.0.0-automated',
+      })
     )
-
-    assert.notEqual(socket.accessTokenValue, token)
-    assert.equal(pushStub1.notCalled, true)
-    assert.equal(pushStub2.notCalled, true)
-    assert.equal(pushStub3.notCalled, true)
-    assert.equal(payloadStub1.notCalled, true)
-    assert.equal(payloadStub2.notCalled, true)
-    assert.equal(payloadStub3.notCalled, true)
   })
 
   test("sets access token, updates channels' join payload, and pushes token to channels if is not a jwt", async () => {
@@ -473,9 +477,24 @@ describe('setAuth', () => {
       !pushStub2.calledWith('access_token', { access_token: new_token })
     )
     assert.ok(pushStub3.calledWith('access_token', { access_token: new_token }))
-    assert.ok(payloadStub1.calledWith({ access_token: new_token }))
-    assert.ok(payloadStub2.calledWith({ access_token: new_token }))
-    assert.ok(payloadStub3.calledWith({ access_token: new_token }))
+    assert.ok(
+      payloadStub1.calledWith({
+        access_token: new_token,
+        version: '0.0.0-automated',
+      })
+    )
+    assert.ok(
+      payloadStub2.calledWith({
+        access_token: new_token,
+        version: '0.0.0-automated',
+      })
+    )
+    assert.ok(
+      payloadStub3.calledWith({
+        access_token: new_token,
+        version: '0.0.0-automated',
+      })
+    )
   })
 
   test("sets access token using callback, updates channels' join payload, and pushes token to channels", async () => {
@@ -513,9 +532,24 @@ describe('setAuth', () => {
       !pushStub2.calledWith('access_token', { access_token: new_token })
     )
     assert.ok(pushStub3.calledWith('access_token', { access_token: new_token }))
-    assert.ok(payloadStub1.calledWith({ access_token: new_token }))
-    assert.ok(payloadStub2.calledWith({ access_token: new_token }))
-    assert.ok(payloadStub3.calledWith({ access_token: new_token }))
+    assert.ok(
+      payloadStub1.calledWith({
+        access_token: new_token,
+        version: '0.0.0-automated',
+      })
+    )
+    assert.ok(
+      payloadStub2.calledWith({
+        access_token: new_token,
+        version: '0.0.0-automated',
+      })
+    )
+    assert.ok(
+      payloadStub3.calledWith({
+        access_token: new_token,
+        version: '0.0.0-automated',
+      })
+    )
   })
 
   test("overrides access token, updates channels' join payload, and pushes token to channels", () => {
@@ -547,9 +581,24 @@ describe('setAuth', () => {
       !pushStub2.calledWith('access_token', { access_token: new_token })
     )
     assert.ok(pushStub3.calledWith('access_token', { access_token: new_token }))
-    assert.ok(payloadStub1.calledWith({ access_token: new_token }))
-    assert.ok(payloadStub2.calledWith({ access_token: new_token }))
-    assert.ok(payloadStub3.calledWith({ access_token: new_token }))
+    assert.ok(
+      payloadStub1.calledWith({
+        access_token: new_token,
+        version: '0.0.0-automated',
+      })
+    )
+    assert.ok(
+      payloadStub2.calledWith({
+        access_token: new_token,
+        version: '0.0.0-automated',
+      })
+    )
+    assert.ok(
+      payloadStub3.calledWith({
+        access_token: new_token,
+        version: '0.0.0-automated',
+      })
+    )
   })
 })
 
@@ -587,6 +636,24 @@ describe('sendHeartbeat', () => {
 
     socket.sendHeartbeat()
     assert.ok(spy.neverCalledWith(data))
+  })
+
+  test('sends heartbeat and updates auth token', async () => {
+    const token = generateJWT('1h')
+    const setAuthSpy = vi.spyOn(socket, 'setAuth')
+    const sendSpy = vi.spyOn(socket.conn as WebSocket, 'send')
+
+    vi.spyOn(socket.conn!, 'readyState', 'get').mockReturnValue(1)
+    vi.spyOn(socket, 'accessTokenValue', 'get').mockReturnValue(token)
+
+    const heartbeatData =
+      '{"topic":"phoenix","event":"heartbeat","payload":{},"ref":"1"}'
+
+    await socket.sendHeartbeat()
+
+    expect(sendSpy).toHaveBeenCalledWith(heartbeatData)
+    expect(setAuthSpy).toHaveBeenCalled()
+    expect(setAuthSpy).toHaveBeenCalledTimes(1)
   })
 })
 

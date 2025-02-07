@@ -4,6 +4,8 @@ export const DEFAULT_HEADERS = { 'X-Client-Info': `realtime-js/${version}` }
 
 export const VSN: string = '1.0.0'
 
+export const VERSION = version
+
 export const DEFAULT_TIMEOUT = 10000
 
 export const WS_CLOSE_NORMAL = 1000
