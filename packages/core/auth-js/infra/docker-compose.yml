@@ -32,12 +32,12 @@ services:
       GOTRUE_SMTP_ADMIN_EMAIL: admin@email.com
       GOTRUE_MAILER_SUBJECTS_CONFIRMATION: 'Please confirm'
       GOTRUE_EXTERNAL_PHONE_ENABLED: 'true'
-      GOTRUE_SMS_PROVIDER: "twilio"
-      GOTRUE_SMS_TWILIO_ACCOUNT_SID: "${GOTRUE_SMS_TWILIO_ACCOUNT_SID}"
-      GOTRUE_SMS_TWILIO_AUTH_TOKEN: "${GOTRUE_SMS_TWILIO_AUTH_TOKEN}"
-      GOTRUE_SMS_TWILIO_MESSAGE_SERVICE_SID: "${GOTRUE_SMS_TWILIO_MESSAGE_SERVICE_SID}"
+      GOTRUE_SMS_PROVIDER: 'twilio'
+      GOTRUE_SMS_TWILIO_ACCOUNT_SID: '${GOTRUE_SMS_TWILIO_ACCOUNT_SID}'
+      GOTRUE_SMS_TWILIO_AUTH_TOKEN: '${GOTRUE_SMS_TWILIO_AUTH_TOKEN}'
+      GOTRUE_SMS_TWILIO_MESSAGE_SERVICE_SID: '${GOTRUE_SMS_TWILIO_MESSAGE_SERVICE_SID}'
       GOTRUE_SMS_AUTOCONFIRM: 'false'
-      GOTRUE_COOKIE_KEY: "sb"
+      GOTRUE_COOKIE_KEY: 'sb'
     depends_on:
       - db
     restart: on-failure
@@ -47,6 +47,7 @@ services:
       - '9998:9998'
     environment:
       GOTRUE_JWT_SECRET: '37c304f8-51aa-419a-a1af-06154e63707a'
+      GOTRUE_JWT_KEYS: '[{"kty":"oct","k":"Z7-AyPyChGNcQsX16cPBV-pPBo4q-zckDxkq1VZjATo","kid":"12580317-221c-49b6-894a-f4473b8afe39","key_ops":["sign", "verify"],"alg":"HS256"},{"kty":"RSA","n":"y3KQnIXK6wkPQ5m0XWp7z54BNZzXJk4IxXy81zFophdBBqz6u5OCMqWkC6i3WB7rlax4xjmxxyGyYRODooqCQTGahmpXryAAKc3g-gDIAq2MqVwlpmvXDavCVRK4hK7DZ6wK4MHrliSNHCuCkwIH3ofxTxgUwpSkOT58iU1ZOua5E1Y6R_Ozt3gLHha0Xa7a4V23pkP7n0xBvJPzIqiS3MZ4CQ_pz-buXYRgCPQkUJvXFFcuxmyqoYzorwQ1YVBOmH2XMx26RrCIxgj7geo9eVQ9u5qCPpQCGV5biqYMC4_m1kurOGf62URGRzXtmVzrW1PZJAeGoqMz5Fcfr8hiwQ","e":"AQAB","d":"C4XxquvpEmbw9mM-VAwz9w58Aw1fIkxJMuZdy9KAmue2RyqFCRrRxQycvgxQVi1qKpAaRx_9ccn20IjKa-psdkTY-8QKM2EcoUGH_KEOsxghX3ZYq5RwGdYgq7DjwqAjcTvNYe2Z6mcnlvDf9HOo_nG0uUYj5uGEa7meVCiNZUiSVdNGs-vOTUD8yB5pbZ4ute8ebuUzCWGQ3YwSNoWLa-dbECSO7jeobCapdB52MjEwE3_Ii8BWoySeDP-DEFX_5RTM2Zeh81zXAgmOxpZYTkjMsrznyxxBbXn7CdT8WMEXrreGZwIt3Mu6XpsLF5mwmTQ_ZyoM6tJpn5LeAhnCAQ","p":"6xy1skrnlrGUWtZFSHixn_eRA_O3GXKNBE4wziWodGZaFYsmFijZHbuQT0WFqc0epvLHNdNPvubFrVfV-U7ZIarfSSq6qBwBzDrDQS060MvjJIjrI16pKlx2X727FR1ZuwxT27dNg-wRTgKcZqXEalkvFOTEYBlCtw2-vzI0aRs","q":"3YWwOAs4GRZ9eq_fqNujACWJFyUO9QgEDPDOMg0EZhY7WkAlehTxxVXg65spWnfx_0GSc72I5N5qdbY-yDh2Dl7zIxvwnqZaKMJn4PEFkeAfyg62XlJlkHIwOVSj6vLNUDdDmG7bO2k6MyQ59jeuAemIljf9WhALNy8c9R0K3VM","dp":"KJ4LHcQnAjeng5Hk4kJHnXUtjls6VKEfj5DaiaKj2YgdI_-oEsf3ylUu9yLxloYjN4BVvgzFiBtiJzI3exyOEmzsqj1Bhe1guiGkvcvMj2nJ0fP9e1zNKM5UfPHQMjOh3tigXCLst0-_JZT55BnbNuw1YAytiFSU2_755xoLR-U","dq":"dCP7V-bJ6p1X_FLpOGau9wy262OKi_0_4mj-Mk-Q1tUhGRg4jeEdQRDdc6lN7Rilz-ZZGkVs2FGkD0MVd3PisXYmk2m6pfMhoe0K-WxkNy8Ce7Vq99jLVwgHMIenyS6zZjMTRYAZgPSShu2fVe-rU2VVLyz7r5RpzOzuibRIVfE","qi":"i7ND2teiVLkbaAs6rHfo5DiD1nlsORNYnn8Y_FjF6utb5OUljZ6-5WyEDJN9oIUX8o_Il9E6js-z7nhvPfFZHQN7ZWuYI0rO5qmsCDS9jWJ4GR61SgzZuLT7Jpp_KtwjW70x5wZ1Y-GugOP1Wct1YZWHn5YyLhvO6X_vttSmcS0","kid":"638c54b8-28c2-4b12-9598-ba12ef610a29","key_ops":["verify"],"alg":"RS256"}]'
       GOTRUE_JWT_EXP: 3600
       GOTRUE_DB_DRIVER: postgres
       DB_NAMESPACE: auth
@@ -66,7 +67,37 @@ services:
       GOTRUE_SMTP_USER: GOTRUE_SMTP_USER
       GOTRUE_SMTP_PASS: GOTRUE_SMTP_PASS
       GOTRUE_SMTP_ADMIN_EMAIL: admin@email.com
-      GOTRUE_COOKIE_KEY: "sb"
+      GOTRUE_COOKIE_KEY: 'sb'
+    depends_on:
+      - db
+    restart: on-failure
+  autoconfirm_with_asymmetric_keys: # Signup enabled, autoconfirm on
+    image: supabase/auth:v2.169.0
+    ports:
+      - '9996:9996'
+    environment:
+      GOTRUE_JWT_SECRET: 'Z7-AyPyChGNcQsX16cPBV-pPBo4q-zckDxkq1VZjATo'
+      GOTRUE_JWT_KEYS: '[{"kty":"oct","k":"Z7-AyPyChGNcQsX16cPBV-pPBo4q-zckDxkq1VZjATo","kid":"12580317-221c-49b6-894a-f4473b8afe39","key_ops":["verify"],"alg":"HS256"},{"kty":"RSA","n":"y3KQnIXK6wkPQ5m0XWp7z54BNZzXJk4IxXy81zFophdBBqz6u5OCMqWkC6i3WB7rlax4xjmxxyGyYRODooqCQTGahmpXryAAKc3g-gDIAq2MqVwlpmvXDavCVRK4hK7DZ6wK4MHrliSNHCuCkwIH3ofxTxgUwpSkOT58iU1ZOua5E1Y6R_Ozt3gLHha0Xa7a4V23pkP7n0xBvJPzIqiS3MZ4CQ_pz-buXYRgCPQkUJvXFFcuxmyqoYzorwQ1YVBOmH2XMx26RrCIxgj7geo9eVQ9u5qCPpQCGV5biqYMC4_m1kurOGf62URGRzXtmVzrW1PZJAeGoqMz5Fcfr8hiwQ","e":"AQAB","d":"C4XxquvpEmbw9mM-VAwz9w58Aw1fIkxJMuZdy9KAmue2RyqFCRrRxQycvgxQVi1qKpAaRx_9ccn20IjKa-psdkTY-8QKM2EcoUGH_KEOsxghX3ZYq5RwGdYgq7DjwqAjcTvNYe2Z6mcnlvDf9HOo_nG0uUYj5uGEa7meVCiNZUiSVdNGs-vOTUD8yB5pbZ4ute8ebuUzCWGQ3YwSNoWLa-dbECSO7jeobCapdB52MjEwE3_Ii8BWoySeDP-DEFX_5RTM2Zeh81zXAgmOxpZYTkjMsrznyxxBbXn7CdT8WMEXrreGZwIt3Mu6XpsLF5mwmTQ_ZyoM6tJpn5LeAhnCAQ","p":"6xy1skrnlrGUWtZFSHixn_eRA_O3GXKNBE4wziWodGZaFYsmFijZHbuQT0WFqc0epvLHNdNPvubFrVfV-U7ZIarfSSq6qBwBzDrDQS060MvjJIjrI16pKlx2X727FR1ZuwxT27dNg-wRTgKcZqXEalkvFOTEYBlCtw2-vzI0aRs","q":"3YWwOAs4GRZ9eq_fqNujACWJFyUO9QgEDPDOMg0EZhY7WkAlehTxxVXg65spWnfx_0GSc72I5N5qdbY-yDh2Dl7zIxvwnqZaKMJn4PEFkeAfyg62XlJlkHIwOVSj6vLNUDdDmG7bO2k6MyQ59jeuAemIljf9WhALNy8c9R0K3VM","dp":"KJ4LHcQnAjeng5Hk4kJHnXUtjls6VKEfj5DaiaKj2YgdI_-oEsf3ylUu9yLxloYjN4BVvgzFiBtiJzI3exyOEmzsqj1Bhe1guiGkvcvMj2nJ0fP9e1zNKM5UfPHQMjOh3tigXCLst0-_JZT55BnbNuw1YAytiFSU2_755xoLR-U","dq":"dCP7V-bJ6p1X_FLpOGau9wy262OKi_0_4mj-Mk-Q1tUhGRg4jeEdQRDdc6lN7Rilz-ZZGkVs2FGkD0MVd3PisXYmk2m6pfMhoe0K-WxkNy8Ce7Vq99jLVwgHMIenyS6zZjMTRYAZgPSShu2fVe-rU2VVLyz7r5RpzOzuibRIVfE","qi":"i7ND2teiVLkbaAs6rHfo5DiD1nlsORNYnn8Y_FjF6utb5OUljZ6-5WyEDJN9oIUX8o_Il9E6js-z7nhvPfFZHQN7ZWuYI0rO5qmsCDS9jWJ4GR61SgzZuLT7Jpp_KtwjW70x5wZ1Y-GugOP1Wct1YZWHn5YyLhvO6X_vttSmcS0","kid":"638c54b8-28c2-4b12-9598-ba12ef610a29","key_ops":["sign","verify"],"alg":"RS256"}]'
+      GOTRUE_JWT_EXP: 3600
+      GOTRUE_DB_DRIVER: postgres
+      DB_NAMESPACE: auth
+      GOTRUE_API_HOST: 0.0.0.0
+      PORT: 9996
+      GOTRUE_DISABLE_SIGNUP: 'false'
+      API_EXTERNAL_URL: http://localhost:9996
+      GOTRUE_SITE_URL: http://localhost:9996
+      GOTRUE_MAILER_AUTOCONFIRM: 'true'
+      GOTRUE_SMS_AUTOCONFIRM: 'true'
+      GOTRUE_LOG_LEVEL: DEBUG
+      GOTRUE_OPERATOR_TOKEN: super-secret-operator-token
+      DATABASE_URL: 'postgres://postgres:postgres@db:5432/postgres?sslmode=disable'
+      GOTRUE_EXTERNAL_PHONE_ENABLED: 'true'
+      GOTRUE_SMTP_HOST: mail
+      GOTRUE_SMTP_PORT: 2500
+      GOTRUE_SMTP_USER: GOTRUE_SMTP_USER
+      GOTRUE_SMTP_PASS: GOTRUE_SMTP_PASS
+      GOTRUE_SMTP_ADMIN_EMAIL: admin@email.com
+      GOTRUE_COOKIE_KEY: 'sb'
     depends_on:
       - db
     restart: on-failure
@@ -95,7 +126,7 @@ services:
       GOTRUE_SMTP_USER: GOTRUE_SMTP_USER
       GOTRUE_SMTP_PASS: GOTRUE_SMTP_PASS
       GOTRUE_SMTP_ADMIN_EMAIL: admin@email.com
-      GOTRUE_COOKIE_KEY: "sb"
+      GOTRUE_COOKIE_KEY: 'sb'
     depends_on:
       - db
     restart: on-failure

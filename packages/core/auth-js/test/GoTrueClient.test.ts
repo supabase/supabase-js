@@ -5,12 +5,16 @@ import GoTrueClient from '../src/GoTrueClient'
 import {
   authClient as auth,
   authClientWithSession as authWithSession,
+  authClientWithAsymmetricSession as authWithAsymmetricSession,
   authSubscriptionClient,
   clientApiAutoConfirmOffSignupsEnabledClient as phoneClient,
   clientApiAutoConfirmDisabledClient as signUpDisabledClient,
   clientApiAutoConfirmEnabledClient as signUpEnabledClient,
   authAdminApiAutoConfirmEnabledClient,
   GOTRUE_URL_SIGNUP_ENABLED_AUTO_CONFIRM_ON,
+  authClient,
+  authClientWithAsymmetricSession,
+  GOTRUE_URL_SIGNUP_ENABLED_ASYMMETRIC_AUTO_CONFIRM_ON,
 } from './lib/clients'
 import { mockUserCredentials } from './lib/utils'
 import { Session } from '../src'
@@ -915,6 +919,71 @@ describe('MFA', () => {
     }
 
     expect(data.totp.qr_code).not.toBeNull()
+  })
+})
+
+describe('getClaims', () => {
+  test('getClaims returns nothing if there is no session present', async () => {
+    const { data, error } = await authClient.getClaims()
+    expect(data).toBeNull()
+    expect(error).toBeNull()
+  })
+
+  test('getClaims calls getUser if symmetric jwt is present', async () => {
+    const { email, password } = mockUserCredentials()
+    jest.spyOn(authWithSession, 'getUser')
+    const {
+      data: { user },
+      error: initialError,
+    } = await authWithSession.signUp({
+      email,
+      password,
+    })
+    expect(initialError).toBeNull()
+    expect(user).not.toBeNull()
+
+    const { data, error } = await authWithSession.getClaims()
+    expect(error).toBeNull()
+    expect(data?.claims.email).toEqual(user?.email)
+    expect(authWithSession.getUser).toHaveBeenCalled()
+  })
+
+  test('getClaims fetches JWKS to verify asymmetric jwt', async () => {
+    const fetchedUrls: any[] = []
+    const fetchedResponse: any[] = []
+
+    // override fetch to inspect fetchJwk called within getClaims
+    authWithAsymmetricSession['fetch'] = async (url: RequestInfo | URL, options = {}) => {
+      fetchedUrls.push(url)
+      const response = await globalThis.fetch(url, options)
+      const clonedResponse = response.clone()
+      fetchedResponse.push(await clonedResponse.json())
+      return response
+    }
+    const { email, password } = mockUserCredentials()
+    const {
+      data: { user },
+      error: initialError,
+    } = await authWithAsymmetricSession.signUp({
+      email,
+      password,
+    })
+    expect(initialError).toBeNull()
+    expect(user).not.toBeNull()
+
+    const { data, error } = await authWithAsymmetricSession.getClaims()
+    expect(error).toBeNull()
+    expect(data?.claims.email).toEqual(user?.email)
+
+    // node 18 doesn't support crypto.subtle API by default unless built with the experimental-global-webcrypto flag
+    if (parseInt(process.version.slice(1).split('.')[0]) === 20) {
+      expect(fetchedUrls).toContain(
+        GOTRUE_URL_SIGNUP_ENABLED_ASYMMETRIC_AUTO_CONFIRM_ON + '/.well-known/jwks.json'
+      )
+    }
+
+    // contains the response for getSession and fetchJwk
+    expect(fetchedResponse).toHaveLength(2)
   })
 })
 

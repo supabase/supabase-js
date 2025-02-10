@@ -1,5 +1,7 @@
-import { API_VERSION_HEADER_NAME } from './constants'
-import { SupportedStorage } from './types'
+import { API_VERSION_HEADER_NAME, BASE64URL_REGEX } from './constants'
+import { AuthInvalidJwtError } from './errors'
+import { base64UrlToUint8Array, stringFromBase64URL, stringToBase64URL } from './base64url'
+import { JwtHeader, JwtPayload, SupportedStorage } from './types'
 
 export function expiresAt(expiresIn: number) {
   const timeNow = Math.round(Date.now() / 1000)
@@ -141,34 +143,6 @@ export const removeItemAsync = async (storage: SupportedStorage, key: string): P
   await storage.removeItem(key)
 }
 
-export function decodeBase64URL(value: string): string {
-  const key = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/='
-  let base64 = ''
-  let chr1, chr2, chr3
-  let enc1, enc2, enc3, enc4
-  let i = 0
-  value = value.replace('-', '+').replace('_', '/')
-
-  while (i < value.length) {
-    enc1 = key.indexOf(value.charAt(i++))
-    enc2 = key.indexOf(value.charAt(i++))
-    enc3 = key.indexOf(value.charAt(i++))
-    enc4 = key.indexOf(value.charAt(i++))
-    chr1 = (enc1 << 2) | (enc2 >> 4)
-    chr2 = ((enc2 & 15) << 4) | (enc3 >> 2)
-    chr3 = ((enc3 & 3) << 6) | enc4
-    base64 = base64 + String.fromCharCode(chr1)
-
-    if (enc3 != 64 && chr2 != 0) {
-      base64 = base64 + String.fromCharCode(chr2)
-    }
-    if (enc4 != 64 && chr3 != 0) {
-      base64 = base64 + String.fromCharCode(chr3)
-    }
-  }
-  return base64
-}
-
 /**
  * A deferred represents some asynchronous work that is not yet finished, which
  * may or may not culminate in a value.
@@ -194,23 +168,38 @@ export class Deferred<T = any> {
   }
 }
 
-// Taken from: https://stackoverflow.com/questions/38552003/how-to-decode-jwt-token-in-javascript-without-using-a-library
-export function decodeJWTPayload(token: string) {
-  // Regex checks for base64url format
-  const base64UrlRegex = /^([a-z0-9_-]{4})*($|[a-z0-9_-]{3}=?$|[a-z0-9_-]{2}(==)?$)$/i
-
+export function decodeJWT(token: string): {
+  header: JwtHeader
+  payload: JwtPayload
+  signature: Uint8Array
+  raw: {
+    header: string
+    payload: string
+  }
+} {
   const parts = token.split('.')
 
   if (parts.length !== 3) {
-    throw new Error('JWT is not valid: not a JWT structure')
+    throw new AuthInvalidJwtError('Invalid JWT structure')
   }
 
-  if (!base64UrlRegex.test(parts[1] as string)) {
-    throw new Error('JWT is not valid: payload is not in base64url format')
+  // Regex checks for base64url format
+  for (let i = 0; i < parts.length; i++) {
+    if (!BASE64URL_REGEX.test(parts[i] as string)) {
+      throw new AuthInvalidJwtError('JWT not in base64url format')
+    }
   }
-
-  const base64Url = parts[1] as string
-  return JSON.parse(decodeBase64URL(base64Url))
+  const data = {
+    // using base64url lib
+    header: JSON.parse(stringFromBase64URL(parts[0])),
+    payload: JSON.parse(stringFromBase64URL(parts[1])),
+    signature: base64UrlToUint8Array(parts[2]),
+    raw: {
+      header: parts[0],
+      payload: parts[1],
+    },
+  }
+  return data
 }
 
 /**
@@ -287,10 +276,6 @@ async function sha256(randomString: string) {
     .join('')
 }
 
-function base64urlencode(str: string) {
-  return btoa(str).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
-}
-
 export async function generatePKCEChallenge(verifier: string) {
   const hasCryptoSupport =
     typeof crypto !== 'undefined' &&
@@ -304,7 +289,7 @@ export async function generatePKCEChallenge(verifier: string) {
     return verifier
   }
   const hashed = await sha256(verifier)
-  return base64urlencode(hashed)
+  return stringToBase64URL(hashed)
 }
 
 export async function getCodeChallengeAndMethod(
@@ -342,5 +327,33 @@ export function parseResponseAPIVersion(response: Response) {
     return date
   } catch (e: any) {
     return null
+  }
+}
+
+export function validateExp(exp: number) {
+  if (!exp) {
+    throw new Error('Missing exp claim')
+  }
+  const timeNow = Math.floor(Date.now() / 1000)
+  if (exp <= timeNow) {
+    throw new Error('JWT has expired')
+  }
+}
+
+export function getAlgorithm(alg: 'RS256' | 'ES256'): RsaHashedImportParams | EcKeyImportParams {
+  switch (alg) {
+    case 'RS256':
+      return {
+        name: 'RSASSA-PKCS1-v1_5',
+        hash: { name: 'SHA-256' },
+      }
+    case 'ES256':
+      return {
+        name: 'ECDSA',
+        namedCurve: 'P-256',
+        hash: { name: 'SHA-256' },
+      }
+    default:
+      throw new Error('Invalid alg claim')
   }
 }

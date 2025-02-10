@@ -28,3 +28,5 @@ export const API_VERSIONS = {
     name: '2024-01-01',
   },
 }
+
+export const BASE64URL_REGEX = /^([a-z0-9_-]{4})*($|[a-z0-9_-]{3}$|[a-z0-9_-]{2}$)$/i

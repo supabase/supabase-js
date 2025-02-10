@@ -157,3 +157,9 @@ export class AuthWeakPasswordError extends CustomAuthError {
 export function isAuthWeakPasswordError(error: unknown): error is AuthWeakPasswordError {
   return isAuthError(error) && error.name === 'AuthWeakPasswordError'
 }
+
+export class AuthInvalidJwtError extends CustomAuthError {
+  constructor(message: string) {
+    super(message, 'AuthInvalidJwtError', 400, 'invalid_jwt')
+  }
+}

@@ -20,6 +20,7 @@ import {
   isAuthRetryableFetchError,
   isAuthSessionMissingError,
   isAuthImplicitGrantRedirectError,
+  AuthInvalidJwtError,
 } from './lib/errors'
 import {
   Fetch,
@@ -30,7 +31,6 @@ import {
   _ssoResponse,
 } from './lib/fetch'
 import {
-  decodeJWTPayload,
   Deferred,
   getItemAsync,
   isBrowser,
@@ -43,6 +43,9 @@ import {
   supportsLocalStorage,
   parseParametersFromURL,
   getCodeChallengeAndMethod,
+  getAlgorithm,
+  validateExp,
+  decodeJWT,
 } from './lib/helpers'
 import { localStorageAdapter, memoryLocalStorageAdapter } from './lib/local-storage'
 import { polyfillGlobalThis } from './lib/polyfills'
@@ -86,7 +89,6 @@ import type {
   MFAVerifyParams,
   AuthMFAVerifyResponse,
   AuthMFAListFactorsResponse,
-  AMREntry,
   AuthMFAGetAuthenticatorAssuranceLevelResponse,
   AuthenticatorAssuranceLevels,
   Factor,
@@ -100,7 +102,11 @@ import type {
   MFAEnrollPhoneParams,
   AuthMFAEnrollTOTPResponse,
   AuthMFAEnrollPhoneResponse,
+  JWK,
+  JwtPayload,
+  JwtHeader,
 } from './lib/types'
+import { stringToUint8Array } from './lib/base64url'
 
 polyfillGlobalThis() // Make "globalThis" available
 
@@ -140,7 +146,10 @@ export default class GoTrueClient {
   protected storageKey: string
 
   protected flowType: AuthFlowType
-
+  /**
+   * The JWKS used for verifying asymmetric JWTs
+   */
+  protected jwks: { keys: JWK[] }
   protected autoRefreshToken: boolean
   protected persistSession: boolean
   protected storage: SupportedStorage
@@ -220,7 +229,7 @@ export default class GoTrueClient {
     } else {
       this.lock = lockNoOp
     }
-
+    this.jwks = { keys: [] }
     this.mfa = {
       verify: this._verify.bind(this),
       enroll: this._enroll.bind(this),
@@ -1289,17 +1298,6 @@ export default class GoTrueClient {
   }
 
   /**
-   * Decodes a JWT (without performing any validation).
-   */
-  private _decodeJWT(jwt: string): {
-    exp?: number
-    aal?: AuthenticatorAssuranceLevels | null
-    amr?: AMREntry[] | null
-  } {
-    return decodeJWTPayload(jwt)
-  }
-
-  /**
    * Sets the session data from the current session. If the current session is expired, setSession will take care of refreshing it to obtain a new session.
    * If the refresh token or access token in the current session is invalid, an error will be thrown.
    * @param currentSession The current session that minimally contains an access token and refresh token.
@@ -1328,7 +1326,7 @@ export default class GoTrueClient {
       let expiresAt = timeNow
       let hasExpired = true
       let session: Session | null = null
-      const payload = decodeJWTPayload(currentSession.access_token)
+      const { payload } = decodeJWT(currentSession.access_token)
       if (payload.exp) {
         expiresAt = payload.exp
         hasExpired = expiresAt <= timeNow
@@ -2576,7 +2574,7 @@ export default class GoTrueClient {
           }
         }
 
-        const payload = this._decodeJWT(session.access_token)
+        const { payload } = decodeJWT(session.access_token)
 
         let currentLevel: AuthenticatorAssuranceLevels | null = null
 
@@ -2598,5 +2596,129 @@ export default class GoTrueClient {
         return { data: { currentLevel, nextLevel, currentAuthenticationMethods }, error: null }
       })
     })
+  }
+
+  private async fetchJwk(kid: string, jwks: { keys: JWK[] } = { keys: [] }): Promise<JWK> {
+    // try fetching from the supplied jwks
+    let jwk = jwks.keys.find((key) => key.kid === kid)
+    if (jwk) {
+      return jwk
+    }
+
+    // try fetching from cache
+    jwk = this.jwks.keys.find((key) => key.kid === kid)
+    if (jwk) {
+      return jwk
+    }
+    // jwk isn't cached in memory so we need to fetch it from the well-known endpoint
+    const { data, error } = await _request(this.fetch, 'GET', `${this.url}/.well-known/jwks.json`, {
+      headers: this.headers,
+    })
+    if (error) {
+      throw error
+    }
+    if (!data.keys || data.keys.length === 0) {
+      throw new AuthInvalidJwtError('JWKS is empty')
+    }
+    this.jwks = data
+    // Find the signing key
+    jwk = data.keys.find((key: any) => key.kid === kid)
+    if (!jwk) {
+      throw new AuthInvalidJwtError('No matching signing key found in JWKS')
+    }
+    return jwk
+  }
+
+  /**
+   * @experimental This method may change in future versions.
+   * @description Gets the claims from a JWT. If the JWT is symmetric JWTs, it will call getUser() to verify against the server. If the JWT is asymmetric, it will be verified against the JWKS using the WebCrypto API.
+   */
+  async getClaims(
+    jwt?: string,
+    jwks: { keys: JWK[] } = { keys: [] }
+  ): Promise<
+    | {
+        data: { claims: JwtPayload; header: JwtHeader; signature: Uint8Array }
+        error: null
+      }
+    | { data: null; error: AuthError }
+    | { data: null; error: null }
+  > {
+    try {
+      let token = jwt
+      if (!token) {
+        const { data, error } = await this.getSession()
+        if (error || !data.session) {
+          return { data: null, error }
+        }
+        token = data.session.access_token
+      }
+
+      const {
+        header,
+        payload,
+        signature,
+        raw: { header: rawHeader, payload: rawPayload },
+      } = decodeJWT(token)
+
+      // Reject expired JWTs
+      validateExp(payload.exp)
+
+      // If symmetric algorithm or WebCrypto API is unavailable, fallback to getUser()
+      if (
+        !header.kid ||
+        header.alg === 'HS256' ||
+        !('crypto' in globalThis && 'subtle' in globalThis.crypto)
+      ) {
+        const { error } = await this.getUser(token)
+        if (error) {
+          throw error
+        }
+        // getUser succeeds so the claims in the JWT can be trusted
+        return {
+          data: {
+            claims: payload,
+            header,
+            signature,
+          },
+          error: null,
+        }
+      }
+
+      const algorithm = getAlgorithm(header.alg)
+      const signingKey = await this.fetchJwk(header.kid, jwks)
+
+      // Convert JWK to CryptoKey
+      const publicKey = await crypto.subtle.importKey('jwk', signingKey, algorithm, true, [
+        'verify',
+      ])
+
+      // Verify the signature
+      const isValid = await crypto.subtle.verify(
+        algorithm,
+        publicKey,
+        signature,
+        stringToUint8Array(`${rawHeader}.${rawPayload}`)
+      )
+
+      if (!isValid) {
+        throw new AuthInvalidJwtError('Invalid JWT signature')
+      }
+
+      // If verification succeeds, decode and return claims
+      return {
+        data: {
+          claims: payload,
+          header,
+          signature,
+        },
+        error: null,
+      }
+    } catch (error) {
+      if (isAuthError(error)) {
+        return { data: null, error }
+      }
+      throw error
+    }
   }
 }

@@ -5,9 +5,11 @@ export const SIGNUP_ENABLED_AUTO_CONFIRM_OFF_PORT = 9999
 
 export const SIGNUP_ENABLED_AUTO_CONFIRM_ON_PORT = 9998
 export const SIGNUP_DISABLED_AUTO_CONFIRM_OFF_PORT = 9997
+export const SIGNUP_ENABLED_ASYMMETRIC_AUTO_CONFIRM_ON_PORT = 9996
 
 export const GOTRUE_URL_SIGNUP_ENABLED_AUTO_CONFIRM_OFF = `http://localhost:${SIGNUP_ENABLED_AUTO_CONFIRM_OFF_PORT}`
 export const GOTRUE_URL_SIGNUP_ENABLED_AUTO_CONFIRM_ON = `http://localhost:${SIGNUP_ENABLED_AUTO_CONFIRM_ON_PORT}`
+export const GOTRUE_URL_SIGNUP_ENABLED_ASYMMETRIC_AUTO_CONFIRM_ON = `http://localhost:${SIGNUP_ENABLED_ASYMMETRIC_AUTO_CONFIRM_ON_PORT}`
 export const GOTRUE_URL_SIGNUP_DISABLED_AUTO_CONFIRM_OFF = `http://localhost:${SIGNUP_DISABLED_AUTO_CONFIRM_OFF_PORT}`
 
 export const GOTRUE_JWT_SECRET = '37c304f8-51aa-419a-a1af-06154e63707a'
@@ -45,6 +47,13 @@ export const authClient = new GoTrueClient({
 
 export const authClientWithSession = new GoTrueClient({
   url: GOTRUE_URL_SIGNUP_ENABLED_AUTO_CONFIRM_ON,
+  autoRefreshToken: false,
+  persistSession: true,
+  storage: new MemoryStorage(),
+})
+
+export const authClientWithAsymmetricSession = new GoTrueClient({
+  url: GOTRUE_URL_SIGNUP_ENABLED_ASYMMETRIC_AUTO_CONFIRM_ON,
   autoRefreshToken: false,
   persistSession: true,
   storage: new MemoryStorage(),
