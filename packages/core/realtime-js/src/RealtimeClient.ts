@@ -367,7 +367,7 @@ export default class RealtimeClient {
         tokenToSend &&
           channel.updateJoinPayload({
             access_token: tokenToSend,
-            version: VERSION,
+            version: this.headers && this.headers['X-Client-Info'],
           })
 
         if (channel.joinedOnce && channel._isJoined()) {
