@@ -1,7 +1,12 @@
 // @ts-ignore
 import nodeFetch from '@supabase/node-fetch'
 
-import type { Fetch, PostgrestSingleResponse, PostgrestResponseSuccess } from './types'
+import type {
+  Fetch,
+  PostgrestSingleResponse,
+  PostgrestResponseSuccess,
+  CheckMatchingArrayTypes,
+} from './types'
 import PostgrestError from './PostgrestError'
 
 export default abstract class PostgrestBuilder<Result, ThrowOnError extends boolean = false>
@@ -208,5 +213,18 @@ export default abstract class PostgrestBuilder<Result, ThrowOnError extends bool
     }
 
     return res.then(onfulfilled, onrejected)
+  }
+
+  /**
+   * Override the type of the returned `data`.
+   *
+   * @typeParam NewResult - The new result type to override with
+   * @deprecated Use overrideTypes<yourType, { partial: false }>() method at the end of your call chain instead
+   */
+  returns<NewResult>(): PostgrestBuilder<CheckMatchingArrayTypes<Result, NewResult>, ThrowOnError> {
+    return this as unknown as PostgrestBuilder<
+      CheckMatchingArrayTypes<Result, NewResult>,
+      ThrowOnError
+    >
   }
 }

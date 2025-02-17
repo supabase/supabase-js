@@ -1,4 +1,5 @@
 import PostgrestError from './PostgrestError'
+import { SelectQueryError } from './select-query-parser/utils'
 
 export type Fetch = typeof fetch
 
@@ -89,3 +90,24 @@ type ConditionalSimplifyDeep<
 type NonRecursiveType = BuiltIns | Function | (new (...arguments_: any[]) => unknown)
 type BuiltIns = Primitive | void | Date | RegExp
 type Primitive = null | undefined | string | number | boolean | symbol | bigint
+
+/**
+ * Utility type to check if array types match between Result and NewResult.
+ * Returns either the valid NewResult type or an error message type.
+ */
+export type CheckMatchingArrayTypes<Result, NewResult> =
+  // If the result is a QueryError we allow the user to override anyway
+  Result extends SelectQueryError<string>
+    ? NewResult
+    : // Otherwise, we check basic type matching (array should be override by array, object by object)
+    Result extends any[]
+    ? NewResult extends any[]
+      ? NewResult // Both are arrays - valid
+      : {
+          Error: 'Type mismatch: Cannot cast array result to a single object. Use .returns<Array<YourType>> for array results or .single() to convert the result to a single object'
+        }
+    : NewResult extends any[]
+    ? {
+        Error: 'Type mismatch: Cannot cast single object to array type. Remove Array wrapper from return type or make sure you are not using .single() up in the calling chain'
+      }
+    : NewResult // Neither are arrays - valid
