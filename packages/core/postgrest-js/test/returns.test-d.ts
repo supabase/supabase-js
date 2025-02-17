@@ -35,12 +35,15 @@ const postgrest = new PostgrestClient<Database>(REST_URL)
   expectType<TypeEqual<typeof maybeSingleResultType, typeof maybeSingleExpected>>(true)
 
   // Test array to non-array type casting error
-  const invalidCastArray = (await postgrest.from('users').select().returns<{ username: string }>())
-    .data
-  expectType<typeof invalidCastArray>({
-    Error:
-      'Type mismatch: Cannot cast array result to a single object. Use .returns<Array<YourType>> for array results or .single() to convert the result to a single object',
-  })
+  const invalidCastArray = await postgrest.from('users').select().returns<{ username: string }>()
+  if (invalidCastArray.error) {
+    throw new Error(invalidCastArray.error.message)
+  }
+  let resultType: typeof invalidCastArray.data
+  let resultExpected: {
+    Error: 'Type mismatch: Cannot cast array result to a single object. Use .returns<Array<YourType>> for array results or .single() to convert the result to a single object'
+  }
+  expectType<TypeEqual<typeof resultType, typeof resultExpected>>(true)
 
   // Test non-array to array type casting error
   const invalidCastSingle = postgrest
