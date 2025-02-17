@@ -145,7 +145,7 @@ type MergeDeep<New, Row> = {
 // Helper to check if a type is a plain object (not an array)
 type IsPlainObject<T> = T extends any[] ? false : T extends object ? true : false
 
-// Merge the new result with the original (Result) when partial is true.
+// Merge the new result with the original (Result) when merge option is true.
 // If NewResult is an array, merge each element.
 export type MergePartialResult<NewResult, Result, Options> = Options extends { merge: true }
   ? Result extends any[]
