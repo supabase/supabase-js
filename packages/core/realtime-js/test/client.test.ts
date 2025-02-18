@@ -7,7 +7,7 @@ import crypto from 'crypto'
 
 import RealtimeClient from '../src/RealtimeClient'
 import jwt from 'jsonwebtoken'
-import { CHANNEL_STATES } from '../src/lib/constants'
+import { CHANNEL_STATES, LOG_LEVEL } from '../src/lib/constants'
 
 function generateJWT(exp: string): string {
   return jwt.sign({}, 'your-256-bit-secret', {
@@ -55,7 +55,7 @@ describe('constructor', () => {
     })
     assert.equal(socket.transport, null)
     assert.equal(socket.timeout, 10000)
-    assert.equal(socket.heartbeatIntervalMs, 30000)
+    assert.equal(socket.heartbeatIntervalMs, 25000)
     assert.equal(typeof socket.logger, 'function')
     assert.equal(typeof socket.reconnectAfterMs, 'function')
   })
@@ -747,5 +747,36 @@ describe('custom encoder and decoder', () => {
     socket.decode('...esoteric format...', (decoded) => {
       assert.deepStrictEqual(decoded, 'decode works')
     })
+  })
+})
+
+describe('log operations', () => {
+  test('calls the logger with the correct arguments', () => {
+    const mockLogger = vi.fn()
+    socket = new RealtimeClient(url, { logger: mockLogger })
+
+    socket.log('testKind', 'testMessage', { testData: 'test' })
+
+    expect(mockLogger).toHaveBeenCalledWith('testKind', 'testMessage', {
+      testData: 'test',
+    })
+  })
+  test('changing log_level sends proper params in URL', () => {
+    socket = new RealtimeClient(url, { log_level: LOG_LEVEL.Warn })
+
+    assert.equal(socket.logLevel, LOG_LEVEL.Warn)
+    assert.equal(
+      socket.endpointURL(),
+      `${url}/websocket?log_level=warn&vsn=1.0.0`
+    )
+  })
+  test('changing logLevel sends proper params in URL', () => {
+    socket = new RealtimeClient(url, { logLevel: LOG_LEVEL.Warn })
+
+    assert.equal(socket.logLevel, LOG_LEVEL.Warn)
+    assert.equal(
+      socket.endpointURL(),
+      `${url}/websocket?log_level=warn&vsn=1.0.0`
+    )
   })
 })

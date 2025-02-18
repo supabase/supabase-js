@@ -7,10 +7,11 @@ import {
   DEFAULT_TIMEOUT,
   SOCKET_STATES,
   TRANSPORTS,
-  VERSION,
   VSN,
   WS_CLOSE_NORMAL,
+  LOG_LEVEL,
 } from './lib/constants'
+
 import Serializer from './lib/serializer'
 import Timer from './lib/timer'
 
@@ -26,23 +27,7 @@ export type Channel = {
   updated_at: string
   id: number
 }
-
-export type RealtimeClientOptions = {
-  transport?: WebSocketLikeConstructor
-  timeout?: number
-  heartbeatIntervalMs?: number
-  logger?: Function
-  encode?: Function
-  decode?: Function
-  reconnectAfterMs?: Function
-  headers?: { [key: string]: string }
-  params?: { [key: string]: any }
-  log_level?: 'info' | 'debug' | 'warn' | 'error'
-  fetch?: Fetch
-  worker?: boolean
-  workerUrl?: string
-  accessToken?: () => Promise<string | null>
-}
+export type LogLevel = LOG_LEVEL
 
 export type RealtimeMessage = {
   topic: string
@@ -72,6 +57,25 @@ export interface WebSocketLikeError {
   type: string
 }
 
+export type RealtimeClientOptions = {
+  transport?: WebSocketLikeConstructor
+  timeout?: number
+  heartbeatIntervalMs?: number
+  logger?: Function
+  encode?: Function
+  decode?: Function
+  reconnectAfterMs?: Function
+  headers?: { [key: string]: string }
+  params?: { [key: string]: any }
+  //Deprecated: Use it in favour of correct casing `logLevel`
+  log_level?: LogLevel
+  logLevel?: LogLevel
+  fetch?: Fetch
+  worker?: boolean
+  workerUrl?: string
+  accessToken?: () => Promise<string | null>
+}
+
 const NATIVE_WEBSOCKET_AVAILABLE = typeof WebSocket !== 'undefined'
 const WORKER_SCRIPT = `
   addEventListener("message", (e) => {
@@ -89,12 +93,13 @@ export default class RealtimeClient {
   params?: { [key: string]: string } = {}
   timeout: number = DEFAULT_TIMEOUT
   transport: WebSocketLikeConstructor | null
-  heartbeatIntervalMs: number = 30000
+  heartbeatIntervalMs: number = 25000
   heartbeatTimer: ReturnType<typeof setInterval> | undefined = undefined
   pendingHeartbeatRef: string | null = null
   ref: number = 0
   reconnectTimer: Timer
   logger: Function = noop
+  logLevel?: LogLevel
   encode: Function
   decode: Function
   reconnectAfterMs: Function
@@ -129,6 +134,7 @@ export default class RealtimeClient {
    * @param options.headers The optional headers to pass when connecting.
    * @param options.heartbeatIntervalMs The millisec interval to send a heartbeat message.
    * @param options.logger The optional function for specialized logging, ie: logger: (kind, msg, data) => { console.log(`${kind}: ${msg}`, data) }
+   * @param options.logLevel Sets the log level for Realtime
    * @param options.encode The function to encode outgoing messages. Defaults to JSON: (payload, callback) => callback(JSON.stringify(payload))
    * @param options.decode The function to decode incoming messages. Defaults to Serializer's decode.
    * @param options.reconnectAfterMs he optional function that returns the millsec reconnect interval. Defaults to stepped backoff off.
@@ -147,6 +153,11 @@ export default class RealtimeClient {
     if (options?.headers) this.headers = { ...this.headers, ...options.headers }
     if (options?.timeout) this.timeout = options.timeout
     if (options?.logger) this.logger = options.logger
+    if (options?.logLevel || options?.log_level) {
+      this.logLevel = options.logLevel || options.log_level
+      this.params = { ...this.params, log_level: this.logLevel as string }
+    }
+
     if (options?.heartbeatIntervalMs)
       this.heartbeatIntervalMs = options.heartbeatIntervalMs
 
