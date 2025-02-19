@@ -219,7 +219,7 @@ export default abstract class PostgrestBuilder<Result, ThrowOnError extends bool
    * Override the type of the returned `data`.
    *
    * @typeParam NewResult - The new result type to override with
-   * @deprecated Use overrideTypes<yourType, { partial: false }>() method at the end of your call chain instead
+   * @deprecated Use overrideTypes<yourType, { merge: false }>() method at the end of your call chain instead
    */
   returns<NewResult>(): PostgrestBuilder<CheckMatchingArrayTypes<Result, NewResult>, ThrowOnError> {
     return this as unknown as PostgrestBuilder<

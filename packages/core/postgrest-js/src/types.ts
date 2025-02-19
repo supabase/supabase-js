@@ -1,4 +1,5 @@
 import PostgrestError from './PostgrestError'
+import { ContainsNull } from './select-query-parser/types'
 import { SelectQueryError } from './select-query-parser/utils'
 
 export type Fetch = typeof fetch
@@ -110,4 +111,8 @@ export type CheckMatchingArrayTypes<Result, NewResult> =
     ? {
         Error: 'Type mismatch: Cannot cast single object to array type. Remove Array wrapper from return type or make sure you are not using .single() up in the calling chain'
       }
-    : NewResult // Neither are arrays - valid
+    : // Neither are arrays - valid
+    // Preserve the optionality of the result if the overriden type is an object (case of chaining with `maybeSingle`)
+    ContainsNull<Result> extends true
+    ? NewResult | null
+    : NewResult

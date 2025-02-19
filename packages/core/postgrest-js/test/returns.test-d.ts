@@ -31,7 +31,7 @@ const postgrest = new PostgrestClient<Database>(REST_URL)
     throw new Error(maybeSingleResult.error.message)
   }
   let maybeSingleResultType: typeof maybeSingleResult.data
-  let maybeSingleExpected: { username: string }
+  let maybeSingleExpected: { username: string } | null
   expectType<TypeEqual<typeof maybeSingleResultType, typeof maybeSingleExpected>>(true)
 
   // Test array to non-array type casting error
