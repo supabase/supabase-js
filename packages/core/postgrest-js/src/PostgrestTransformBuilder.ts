@@ -307,7 +307,7 @@ export default class PostgrestTransformBuilder<
    * Override the type of the returned `data`.
    *
    * @typeParam NewResult - The new result type to override with
-   * @deprecated Use overrideTypes<yourType, { partial: false }>() method at the end of your call chain instead
+   * @deprecated Use overrideTypes<yourType, { merge: false }>() method at the end of your call chain instead
    */
   returns<NewResult>(): PostgrestTransformBuilder<
     Schema,

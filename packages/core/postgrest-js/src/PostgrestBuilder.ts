@@ -224,6 +224,7 @@ export default abstract class PostgrestBuilder<Result, ThrowOnError extends bool
    * @deprecated Use overrideTypes<yourType, { merge: false }>() method at the end of your call chain instead
    */
   returns<NewResult>(): PostgrestBuilder<CheckMatchingArrayTypes<Result, NewResult>, ThrowOnError> {
+    /* istanbul ignore next */
     return this as unknown as PostgrestBuilder<
       CheckMatchingArrayTypes<Result, NewResult>,
       ThrowOnError
