@@ -116,6 +116,30 @@ test('basic select returns types override', async () => {
   `)
 })
 
+test('basic select returns from builder', async () => {
+  const res = await postgrest
+    .from('users')
+    .select()
+    .eq('username', 'supabot')
+    .single()
+    .returns<{ status: 'ONLINE' | 'OFFLINE' }>()
+  expect(res).toMatchInlineSnapshot(`
+    Object {
+      "count": null,
+      "data": Object {
+        "age_range": "[1,2)",
+        "catchphrase": "'cat' 'fat'",
+        "data": null,
+        "status": "ONLINE",
+        "username": "supabot",
+      },
+      "error": null,
+      "status": 200,
+      "statusText": "OK",
+    }
+  `)
+})
+
 test('basic select view', async () => {
   const res = await postgrest.from('updatable_view').select()
   expect(res).toMatchInlineSnapshot(`
