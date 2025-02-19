@@ -140,6 +140,42 @@ test('basic select returns from builder', async () => {
   `)
 })
 
+test('basic select with maybeSingle yielding more than one result', async () => {
+  const res = await postgrest.from('users').select().maybeSingle()
+  expect(res).toMatchInlineSnapshot(`
+    Object {
+      "count": null,
+      "data": null,
+      "error": Object {
+        "code": "PGRST116",
+        "details": "Results contain 5 rows, application/vnd.pgrst.object+json requires 1 row",
+        "hint": null,
+        "message": "JSON object requested, multiple (or no) rows returned",
+      },
+      "status": 406,
+      "statusText": "Not Acceptable",
+    }
+  `)
+})
+
+test('basic select with single yielding more than one result', async () => {
+  const res = await postgrest.from('users').select().single()
+  expect(res).toMatchInlineSnapshot(`
+    Object {
+      "count": null,
+      "data": null,
+      "error": Object {
+        "code": "PGRST116",
+        "details": "The result contains 5 rows",
+        "hint": null,
+        "message": "JSON object requested, multiple (or no) rows returned",
+      },
+      "status": 406,
+      "statusText": "Not Acceptable",
+    }
+  `)
+})
+
 test('basic select view', async () => {
   const res = await postgrest.from('updatable_view').select()
   expect(res).toMatchInlineSnapshot(`
