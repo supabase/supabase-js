@@ -161,7 +161,7 @@ test('basic select overrideTypes from builder', async () => {
       "status": 200,
       "statusText": "OK",
     }
-  `);
+  `)
 })
 
 test('basic select with maybeSingle yielding more than one result', async () => {
