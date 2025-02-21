@@ -131,7 +131,9 @@ type Simplify<T> = T extends object ? { [K in keyof T]: T[K] } : T
 type MergeDeep<New, Row> = {
   [K in keyof New | keyof Row]: K extends keyof New
     ? K extends keyof Row
-      ? // Check if the override is on a embeded relation (array)
+      ? Row[K] extends SelectQueryError<string>
+        ? New[K]
+        : // Check if the override is on a embeded relation (array)
         New[K] extends any[]
         ? Row[K] extends any[]
           ? Array<Simplify<MergeDeep<NonNullable<New[K][number]>, NonNullable<Row[K][number]>>>>

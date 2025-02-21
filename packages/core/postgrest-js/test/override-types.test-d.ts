@@ -435,3 +435,55 @@ const postgrest = new PostgrestClient<Database>(REST_URL)
     >
   >(true)
 }
+
+// Test overrideTypes single object with error embeded relation
+{
+  const result = await postgrest.from('users').select('*, somerelation(*)').overrideTypes<
+    {
+      somerelation: { created_at: Date; data: string }
+    }[]
+  >()
+  if (result.error) {
+    throw new Error(result.error.message)
+  }
+  let data: typeof result.data
+  expectType<
+    TypeEqual<
+      typeof data,
+      {
+        username: string
+        data: CustomUserDataType | null
+        age_range: unknown
+        catchphrase: unknown
+        status: 'ONLINE' | 'OFFLINE' | null
+        somerelation: { created_at: Date; data: string }
+      }[]
+    >
+  >(true)
+}
+
+// Test overrideTypes array object with error embeded relation
+{
+  const result = await postgrest.from('users').select('*, somerelation(*)').overrideTypes<
+    {
+      somerelation: { created_at: Date; data: string }[]
+    }[]
+  >()
+  if (result.error) {
+    throw new Error(result.error.message)
+  }
+  let data: typeof result.data
+  expectType<
+    TypeEqual<
+      typeof data,
+      {
+        username: string
+        data: CustomUserDataType | null
+        age_range: unknown
+        catchphrase: unknown
+        status: 'ONLINE' | 'OFFLINE' | null
+        somerelation: { created_at: Date; data: string }[]
+      }[]
+    >
+  >(true)
+}
