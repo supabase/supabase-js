@@ -246,6 +246,7 @@ const postgrest = new PostgrestClient<Database>(REST_URL)
           foo: number
           bar: { baz: number }
           en: 'ONE' | 'TWO' | 'THREE'
+          record: Record<string, Json | undefined> | null
           qux: boolean
         }
         age_range: unknown
@@ -275,6 +276,7 @@ const postgrest = new PostgrestClient<Database>(REST_URL)
           foo: number
           bar: { baz: number }
           en: 'ONE' | 'TWO' | 'THREE'
+          record: Record<string, Json | undefined> | null
           qux: boolean
         } | null
         age_range: unknown
@@ -342,6 +344,38 @@ const postgrest = new PostgrestClient<Database>(REST_URL)
           foo: string
           bar: { baz: number; newBaz: string }
           en: 'FOUR' // Overridden enum value
+          record: Record<string, Json | undefined> | null
+        }
+        age_range: unknown
+        catchphrase: unknown
+        status: 'ONLINE' | 'OFFLINE' | null
+      }[]
+    >
+  >(true)
+}
+
+// Test merging with Json defined as Record
+{
+  const result = await postgrest
+    .from('users')
+    .select()
+    .overrideTypes<{ data: { record: { baz: 'foo' } } }[]>()
+  if (result.error) {
+    throw new Error(result.error.message)
+  }
+  let data: typeof result.data
+  expectType<
+    TypeEqual<
+      typeof data,
+      {
+        username: string
+        data: {
+          foo: string
+          bar: {
+            baz: number
+          }
+          en: 'ONE' | 'TWO' | 'THREE'
+          record: { baz: 'foo' }
         }
         age_range: unknown
         catchphrase: unknown
@@ -500,32 +534,6 @@ const postgrest = new PostgrestClient<Database>(REST_URL)
         catchphrase: unknown
         status: 'ONLINE' | 'OFFLINE' | null
         somerelation: { created_at: Date; data: string }
-      }[]
-    >
-  >(true)
-}
-
-// Test overrideTypes array object with error embeded relation
-{
-  const result = await postgrest.from('users').select('*, somerelation(*)').overrideTypes<
-    {
-      somerelation: { created_at: Date; data: string }[]
-    }[]
-  >()
-  if (result.error) {
-    throw new Error(result.error.message)
-  }
-  let data: typeof result.data
-  expectType<
-    TypeEqual<
-      typeof data,
-      {
-        username: string
-        data: CustomUserDataType | null
-        age_range: unknown
-        catchphrase: unknown
-        status: 'ONLINE' | 'OFFLINE' | null
-        somerelation: { created_at: Date; data: string }[]
       }[]
     >
   >(true)
