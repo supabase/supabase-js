@@ -1,6 +1,6 @@
 import PostgrestBuilder from './PostgrestBuilder'
 import { GetResult } from './select-query-parser/result'
-import { GenericSchema } from './types'
+import { GenericSchema, CheckMatchingArrayTypes } from './types'
 
 export default class PostgrestTransformBuilder<
   Schema extends GenericSchema,
@@ -307,18 +307,19 @@ export default class PostgrestTransformBuilder<
    * Override the type of the returned `data`.
    *
    * @typeParam NewResult - The new result type to override with
+   * @deprecated Use overrideTypes<yourType, { merge: false }>() method at the end of your call chain instead
    */
   returns<NewResult>(): PostgrestTransformBuilder<
     Schema,
     Row,
-    NewResult,
+    CheckMatchingArrayTypes<Result, NewResult>,
     RelationName,
     Relationships
   > {
     return this as unknown as PostgrestTransformBuilder<
       Schema,
       Row,
-      NewResult,
+      CheckMatchingArrayTypes<Result, NewResult>,
       RelationName,
       Relationships
     >

@@ -1,4 +1,6 @@
 import PostgrestError from './PostgrestError'
+import { ContainsNull } from './select-query-parser/types'
+import { SelectQueryError } from './select-query-parser/utils'
 
 export type Fetch = typeof fetch
 
@@ -89,3 +91,66 @@ type ConditionalSimplifyDeep<
 type NonRecursiveType = BuiltIns | Function | (new (...arguments_: any[]) => unknown)
 type BuiltIns = Primitive | void | Date | RegExp
 type Primitive = null | undefined | string | number | boolean | symbol | bigint
+
+export type IsValidResultOverride<Result, NewResult, Ok, ErrorResult, ErrorNewResult> =
+  Result extends any[]
+    ? NewResult extends any[]
+      ? // Both are arrays - valid
+        Ok
+      : ErrorResult
+    : NewResult extends any[]
+    ? ErrorNewResult
+    : // Neither are arrays - valid
+    // Preserve the optionality of the result if the overriden type is an object (case of chaining with `maybeSingle`)
+    ContainsNull<Result> extends true
+    ? Ok | null
+    : Ok
+
+/**
+ * Utility type to check if array types match between Result and NewResult.
+ * Returns either the valid NewResult type or an error message type.
+ */
+export type CheckMatchingArrayTypes<Result, NewResult> =
+  // If the result is a QueryError we allow the user to override anyway
+  Result extends SelectQueryError<string>
+    ? NewResult
+    : IsValidResultOverride<
+        Result,
+        NewResult,
+        NewResult,
+        {
+          Error: 'Type mismatch: Cannot cast array result to a single object. Use .returns<Array<YourType>> for array results or .single() to convert the result to a single object'
+        },
+        {
+          Error: 'Type mismatch: Cannot cast single object to array type. Remove Array wrapper from return type or make sure you are not using .single() up in the calling chain'
+        }
+      >
+
+type Simplify<T> = T extends object ? { [K in keyof T]: T[K] } : T
+
+type MergeDeep<New, Row> = {
+  [K in keyof New | keyof Row]: K extends keyof Row
+    ? K extends keyof New
+      ? IsPlainObject<New[K]> extends true
+        ? IsPlainObject<Row[K]> extends true
+          ? MergeDeep<New[K], Row[K]>
+          : Row[K]
+        : Row[K]
+      : Row[K]
+    : K extends keyof New
+    ? New[K]
+    : never
+}
+
+// Helper to check if a type is a plain object (not an array)
+type IsPlainObject<T> = T extends any[] ? false : T extends object ? true : false
+
+// Merge the new result with the original (Result) when merge option is true.
+// If NewResult is an array, merge each element.
+export type MergePartialResult<NewResult, Result, Options> = Options extends { merge: true }
+  ? Result extends any[]
+    ? NewResult extends any[]
+      ? Array<Simplify<MergeDeep<NewResult[number], Result[number]>>>
+      : never
+    : Simplify<MergeDeep<NewResult, Result>>
+  : NewResult

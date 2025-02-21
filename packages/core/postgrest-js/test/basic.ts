@@ -116,6 +116,90 @@ test('basic select returns types override', async () => {
   `)
 })
 
+test('basic select returns from builder', async () => {
+  const res = await postgrest
+    .from('users')
+    .select()
+    .eq('username', 'supabot')
+    .single()
+    .returns<{ status: 'ONLINE' | 'OFFLINE' }>()
+  expect(res).toMatchInlineSnapshot(`
+    Object {
+      "count": null,
+      "data": Object {
+        "age_range": "[1,2)",
+        "catchphrase": "'cat' 'fat'",
+        "data": null,
+        "status": "ONLINE",
+        "username": "supabot",
+      },
+      "error": null,
+      "status": 200,
+      "statusText": "OK",
+    }
+  `)
+})
+
+test('basic select overrideTypes from builder', async () => {
+  const res = await postgrest
+    .from('users')
+    .select()
+    .eq('username', 'supabot')
+    .single()
+    .overrideTypes<{ status: 'ONLINE' | 'OFFLINE' }>()
+  expect(res).toMatchInlineSnapshot(`
+    Object {
+      "count": null,
+      "data": Object {
+        "age_range": "[1,2)",
+        "catchphrase": "'cat' 'fat'",
+        "data": null,
+        "status": "ONLINE",
+        "username": "supabot",
+      },
+      "error": null,
+      "status": 200,
+      "statusText": "OK",
+    }
+  `)
+})
+
+test('basic select with maybeSingle yielding more than one result', async () => {
+  const res = await postgrest.from('users').select().maybeSingle()
+  expect(res).toMatchInlineSnapshot(`
+    Object {
+      "count": null,
+      "data": null,
+      "error": Object {
+        "code": "PGRST116",
+        "details": "Results contain 5 rows, application/vnd.pgrst.object+json requires 1 row",
+        "hint": null,
+        "message": "JSON object requested, multiple (or no) rows returned",
+      },
+      "status": 406,
+      "statusText": "Not Acceptable",
+    }
+  `)
+})
+
+test('basic select with single yielding more than one result', async () => {
+  const res = await postgrest.from('users').select().single()
+  expect(res).toMatchInlineSnapshot(`
+    Object {
+      "count": null,
+      "data": null,
+      "error": Object {
+        "code": "PGRST116",
+        "details": "The result contains 5 rows",
+        "hint": null,
+        "message": "JSON object requested, multiple (or no) rows returned",
+      },
+      "status": 406,
+      "statusText": "Not Acceptable",
+    }
+  `)
+})
+
 test('basic select view', async () => {
   const res = await postgrest.from('updatable_view').select()
   expect(res).toMatchInlineSnapshot(`
@@ -1957,6 +2041,190 @@ test('join on 1-1 relation with nullables', async () => {
           "username": "awailas",
         },
       },
+      "error": null,
+      "status": 200,
+      "statusText": "OK",
+    }
+  `)
+})
+
+test('custom fetch function', async () => {
+  const customFetch = jest.fn().mockImplementation(() =>
+    Promise.resolve({
+      ok: true,
+      status: 200,
+      statusText: 'OK',
+      text: () => Promise.resolve('[]'),
+    })
+  )
+
+  const postgrestWithCustomFetch = new PostgrestClient<Database>(REST_URL, {
+    fetch: customFetch,
+  })
+
+  await postgrestWithCustomFetch.from('users').select()
+
+  expect(customFetch).toHaveBeenCalledWith(
+    expect.stringContaining(REST_URL),
+    expect.objectContaining({
+      method: 'GET',
+      headers: expect.any(Object),
+    })
+  )
+})
+
+test('handles undefined global fetch', async () => {
+  // Store original fetch
+  const originalFetch = globalThis.fetch
+  // Delete global fetch to simulate environments where it's undefined
+  delete (globalThis as any).fetch
+
+  try {
+    const postgrestClient = new PostgrestClient<Database>(REST_URL)
+    const result = await postgrestClient.from('users').select()
+    expect(result).toMatchInlineSnapshot(`
+          Object {
+            "count": null,
+            "data": Array [
+              Object {
+                "age_range": "[1,2)",
+                "catchphrase": "'cat' 'fat'",
+                "data": null,
+                "status": "ONLINE",
+                "username": "supabot",
+              },
+              Object {
+                "age_range": "[25,35)",
+                "catchphrase": "'bat' 'cat'",
+                "data": null,
+                "status": "OFFLINE",
+                "username": "kiwicopple",
+              },
+              Object {
+                "age_range": "[25,35)",
+                "catchphrase": "'bat' 'rat'",
+                "data": null,
+                "status": "ONLINE",
+                "username": "awailas",
+              },
+              Object {
+                "age_range": "[20,30)",
+                "catchphrase": "'json' 'test'",
+                "data": Object {
+                  "foo": Object {
+                    "bar": Object {
+                      "nested": "value",
+                    },
+                    "baz": "string value",
+                  },
+                },
+                "status": "ONLINE",
+                "username": "jsonuser",
+              },
+              Object {
+                "age_range": "[20,30)",
+                "catchphrase": "'fat' 'rat'",
+                "data": null,
+                "status": "ONLINE",
+                "username": "dragarcia",
+              },
+            ],
+            "error": null,
+            "status": 200,
+            "statusText": "OK",
+          }
+      `)
+    // Test passes if we reach here without errors, as it means nodeFetch was used
+  } finally {
+    // Restore original fetch
+    globalThis.fetch = originalFetch
+  }
+})
+
+test('handles array error with 404 status', async () => {
+  // Mock the fetch response to return an array error with 404
+  const customFetch = jest.fn().mockImplementation(() =>
+    Promise.resolve({
+      ok: false,
+      status: 404,
+      statusText: 'Not Found',
+      text: () => Promise.resolve('[]'),
+    })
+  )
+
+  const postgrestWithCustomFetch = new PostgrestClient<Database>(REST_URL, {
+    fetch: customFetch,
+  })
+
+  const res = await postgrestWithCustomFetch.from('users').select()
+
+  expect(res).toMatchInlineSnapshot(`
+      Object {
+        "count": null,
+        "data": Array [],
+        "error": null,
+        "status": 200,
+        "statusText": "OK",
+      }
+    `)
+})
+
+test('handles empty body with 404 status', async () => {
+  // Mock the fetch response to return an empty body with 404
+  const customFetch = jest.fn().mockImplementation(() =>
+    Promise.resolve({
+      ok: false,
+      status: 404,
+      statusText: 'Not Found',
+      text: () => Promise.resolve(''),
+    })
+  )
+
+  const postgrestWithCustomFetch = new PostgrestClient<Database>(REST_URL, {
+    fetch: customFetch,
+  })
+
+  const res = await postgrestWithCustomFetch.from('users').select()
+
+  expect(res).toMatchInlineSnapshot(`
+      Object {
+        "count": null,
+        "data": null,
+        "error": null,
+        "status": 204,
+        "statusText": "No Content",
+      }
+    `)
+})
+
+test('maybeSingle handles zero rows error', async () => {
+  const customFetch = jest.fn().mockImplementation(() =>
+    Promise.resolve({
+      ok: false,
+      status: 406,
+      statusText: 'Not Acceptable',
+      text: () =>
+        Promise.resolve(
+          JSON.stringify({
+            code: 'PGRST116',
+            details: '0 rows',
+            hint: null,
+            message: 'JSON object requested, multiple (or no) rows returned',
+          })
+        ),
+    })
+  )
+
+  const postgrestWithCustomFetch = new PostgrestClient<Database>(REST_URL, {
+    fetch: customFetch,
+  })
+
+  const res = await postgrestWithCustomFetch.from('users').select().maybeSingle()
+
+  expect(res).toMatchInlineSnapshot(`
+    Object {
+      "count": null,
+      "data": null,
       "error": null,
       "status": 200,
       "statusText": "OK",
