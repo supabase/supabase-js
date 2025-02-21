@@ -140,6 +140,30 @@ test('basic select returns from builder', async () => {
   `)
 })
 
+test('basic select overrideTypes from builder', async () => {
+  const res = await postgrest
+    .from('users')
+    .select()
+    .eq('username', 'supabot')
+    .single()
+    .overrideTypes<{ status: 'ONLINE' | 'OFFLINE' }>()
+  expect(res).toMatchInlineSnapshot(`
+    Object {
+      "count": null,
+      "data": Object {
+        "age_range": "[1,2)",
+        "catchphrase": "'cat' 'fat'",
+        "data": null,
+        "status": "ONLINE",
+        "username": "supabot",
+      },
+      "error": null,
+      "status": 200,
+      "statusText": "OK",
+    }
+  `)
+})
+
 test('basic select with maybeSingle yielding more than one result', async () => {
   const res = await postgrest.from('users').select().maybeSingle()
   expect(res).toMatchInlineSnapshot(`

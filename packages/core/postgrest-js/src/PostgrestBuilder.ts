@@ -6,6 +6,8 @@ import type {
   PostgrestSingleResponse,
   PostgrestResponseSuccess,
   CheckMatchingArrayTypes,
+  MergePartialResult,
+  IsValidResultOverride,
 } from './types'
 import PostgrestError from './PostgrestError'
 
@@ -225,6 +227,45 @@ export default abstract class PostgrestBuilder<Result, ThrowOnError extends bool
     /* istanbul ignore next */
     return this as unknown as PostgrestBuilder<
       CheckMatchingArrayTypes<Result, NewResult>,
+      ThrowOnError
+    >
+  }
+
+  /**
+   * Override the type of the returned `data` field in the response.
+   *
+   * @typeParam NewResult - The new type to cast the response data to
+   * @typeParam Options - Optional type configuration (defaults to { merge: true })
+   * @typeParam Options.merge - When true, merges the new type with existing return type. When false, replaces the existing types entirely (defaults to true)
+   * @example
+   * ```typescript
+   * // Merge with existing types (default behavior)
+   * const query = supabase
+   *   .from('users')
+   *   .select()
+   *   .overrideTypes<{ custom_field: string }>()
+   *
+   * // Replace existing types completely
+   * const replaceQuery = supabase
+   *   .from('users')
+   *   .select()
+   *   .overrideTypes<{ id: number; name: string }, { merge: false }>()
+   * ```
+   * @returns A PostgrestBuilder instance with the new type
+   */
+  overrideTypes<
+    NewResult,
+    Options extends { merge?: boolean } = { merge: true }
+  >(): PostgrestBuilder<
+    IsValidResultOverride<Result, NewResult, true, false, false> extends true
+      ? MergePartialResult<NewResult, Result, Options>
+      : CheckMatchingArrayTypes<Result, NewResult>,
+    ThrowOnError
+  > {
+    return this as unknown as PostgrestBuilder<
+      IsValidResultOverride<Result, NewResult, true, false, false> extends true
+        ? MergePartialResult<NewResult, Result, Options>
+        : CheckMatchingArrayTypes<Result, NewResult>,
       ThrowOnError
     >
   }
