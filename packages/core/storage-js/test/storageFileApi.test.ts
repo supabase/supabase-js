@@ -378,6 +378,22 @@ describe('Object API', () => {
       ])
     })
 
+    test('list objects V2', async () => {
+      await storage.from(bucketName).upload(uploadPath, file)
+      const res = await storage.from(bucketName).listV2({
+        prefix: 'testpath',
+      })
+
+      expect(res.error).toBeNull()
+      expect(res.data).toEqual(
+        expect.objectContaining({
+          hasNext: false,
+          folders: [],
+          objects: expect.arrayContaining([expect.objectContaining({ name: uploadPath })]),
+        })
+      )
+    })
+
     test('move object to different path', async () => {
       const newPath = `testpath/file-moved-${Date.now()}.txt`
       await storage.from(bucketName).upload(uploadPath, file)

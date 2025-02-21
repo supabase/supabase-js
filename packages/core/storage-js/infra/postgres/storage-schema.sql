@@ -5,7 +5,6 @@ alter default privileges in schema storage grant all on tables to postgres, anon
 alter default privileges in schema storage grant all on functions to postgres, anon, authenticated, service_role;
 alter default privileges in schema storage grant all on sequences to postgres, anon, authenticated, service_role;
 
-DROP TABLE IF EXISTS "storage"."buckets";
 CREATE TABLE "storage"."buckets" (
     "id" text not NULL,
     "name" text NOT NULL,
@@ -17,7 +16,6 @@ CREATE TABLE "storage"."buckets" (
 );
 CREATE UNIQUE INDEX "bname" ON "storage"."buckets" USING BTREE ("name");
 
-DROP TABLE IF EXISTS "storage"."objects";
 CREATE TABLE "storage"."objects" (
     "id" uuid NOT NULL DEFAULT extensions.uuid_generate_v4(),
     "bucket_id" text,
