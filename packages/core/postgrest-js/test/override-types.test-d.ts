@@ -395,3 +395,43 @@ const postgrest = new PostgrestClient<Database>(REST_URL)
     >
   >(true)
 }
+
+// Test overrideTypes deep nesting with embedded inner relation
+{
+  const result = await postgrest
+    .from('users')
+    .select('*, messages(*, channels!inner(*))')
+    .overrideTypes<
+      {
+        messages: { channels: { data: string } }[]
+      }[]
+    >()
+  if (result.error) {
+    throw new Error(result.error.message)
+  }
+  let data: typeof result.data
+  expectType<
+    TypeEqual<
+      typeof data,
+      {
+        age_range: unknown
+        catchphrase: unknown
+        data: CustomUserDataType | null
+        status: 'ONLINE' | 'OFFLINE' | null
+        username: string
+        messages: {
+          id: number
+          username: string
+          channels: {
+            id: number
+            data: string
+            slug: string | null
+          }
+          data: Json
+          channel_id: number
+          message: string | null
+        }[]
+      }[]
+    >
+  >(true)
+}
