@@ -10,6 +10,7 @@ import type {
   IsValidResultOverride,
 } from './types'
 import PostgrestError from './PostgrestError'
+import { ContainsNull } from './select-query-parser/types'
 
 export default abstract class PostgrestBuilder<Result, ThrowOnError extends boolean = false>
   implements
@@ -257,14 +258,20 @@ export default abstract class PostgrestBuilder<Result, ThrowOnError extends bool
     NewResult,
     Options extends { merge?: boolean } = { merge: true }
   >(): PostgrestBuilder<
-    IsValidResultOverride<Result, NewResult, true, false, false> extends true
-      ? MergePartialResult<NewResult, Result, Options>
+    IsValidResultOverride<Result, NewResult, false, false> extends true
+      ? // Preserve the optionality of the result if the overriden type is an object (case of chaining with `maybeSingle`)
+        ContainsNull<Result> extends true
+        ? MergePartialResult<NewResult, NonNullable<Result>, Options> | null
+        : MergePartialResult<NewResult, Result, Options>
       : CheckMatchingArrayTypes<Result, NewResult>,
     ThrowOnError
   > {
     return this as unknown as PostgrestBuilder<
-      IsValidResultOverride<Result, NewResult, true, false, false> extends true
-        ? MergePartialResult<NewResult, Result, Options>
+      IsValidResultOverride<Result, NewResult, false, false> extends true
+        ? // Preserve the optionality of the result if the overriden type is an object (case of chaining with `maybeSingle`)
+          ContainsNull<Result> extends true
+          ? MergePartialResult<NewResult, NonNullable<Result>, Options> | null
+          : MergePartialResult<NewResult, Result, Options>
         : CheckMatchingArrayTypes<Result, NewResult>,
       ThrowOnError
     >

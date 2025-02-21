@@ -60,7 +60,7 @@ const postgrest = new PostgrestClient<Database>(REST_URL)
   let result: typeof singleResult.data
   expectType<TypeEqual<(typeof result)['custom_field'], string>>(true)
 }
-// Test with maybeSingle()
+// Test with maybeSingle() merging with new field
 {
   const maybeSingleResult = await postgrest
     .from('users')
@@ -71,7 +71,50 @@ const postgrest = new PostgrestClient<Database>(REST_URL)
     throw new Error(maybeSingleResult.error.message)
   }
   let maybeSingleResultType: typeof maybeSingleResult.data
-  let expectedType: { custom_field: string } | null
+  let expectedType: {
+    age_range: unknown
+    catchphrase: unknown
+    data: CustomUserDataType | null
+    status: 'ONLINE' | 'OFFLINE' | null
+    username: string
+    custom_field: string
+  } | null
+  expectType<TypeEqual<typeof maybeSingleResultType, typeof expectedType>>(true)
+}
+// Test with maybeSingle() merging with override field
+{
+  const maybeSingleResult = await postgrest
+    .from('users')
+    .select()
+    .maybeSingle()
+    .overrideTypes<{ catchphrase: string }>()
+  if (maybeSingleResult.error) {
+    throw new Error(maybeSingleResult.error.message)
+  }
+  let maybeSingleResultType: typeof maybeSingleResult.data
+  let expectedType: {
+    age_range: unknown
+    catchphrase: string
+    data: CustomUserDataType | null
+    status: 'ONLINE' | 'OFFLINE' | null
+    username: string
+  } | null
+  expectType<TypeEqual<typeof maybeSingleResultType, typeof expectedType>>(true)
+}
+// Test with maybeSingle() replace with override field
+{
+  const maybeSingleResult = await postgrest
+    .from('users')
+    .select()
+    .maybeSingle()
+    .overrideTypes<{ catchphrase: string }, { merge: false }>()
+  if (maybeSingleResult.error) {
+    throw new Error(maybeSingleResult.error.message)
+  }
+  let maybeSingleResultType: typeof maybeSingleResult.data
+  let expectedType: {
+    catchphrase: string
+  } | null
   expectType<TypeEqual<typeof maybeSingleResultType, typeof expectedType>>(true)
 }
 // Test replacing behavior

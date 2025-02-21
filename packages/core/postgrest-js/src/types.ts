@@ -92,20 +92,16 @@ type NonRecursiveType = BuiltIns | Function | (new (...arguments_: any[]) => unk
 type BuiltIns = Primitive | void | Date | RegExp
 type Primitive = null | undefined | string | number | boolean | symbol | bigint
 
-export type IsValidResultOverride<Result, NewResult, Ok, ErrorResult, ErrorNewResult> =
+export type IsValidResultOverride<Result, NewResult, ErrorResult, ErrorNewResult> =
   Result extends any[]
     ? NewResult extends any[]
       ? // Both are arrays - valid
-        Ok
+        true
       : ErrorResult
     : NewResult extends any[]
     ? ErrorNewResult
     : // Neither are arrays - valid
-    // Preserve the optionality of the result if the overriden type is an object (case of chaining with `maybeSingle`)
-    ContainsNull<Result> extends true
-    ? Ok | null
-    : Ok
-
+      true
 /**
  * Utility type to check if array types match between Result and NewResult.
  * Returns either the valid NewResult type or an error message type.
@@ -117,14 +113,21 @@ export type CheckMatchingArrayTypes<Result, NewResult> =
     : IsValidResultOverride<
         Result,
         NewResult,
-        NewResult,
         {
           Error: 'Type mismatch: Cannot cast array result to a single object. Use .returns<Array<YourType>> for array results or .single() to convert the result to a single object'
         },
         {
           Error: 'Type mismatch: Cannot cast single object to array type. Remove Array wrapper from return type or make sure you are not using .single() up in the calling chain'
         }
-      >
+      > extends infer ValidationResult
+    ? ValidationResult extends true
+      ? // Preserve the optionality of the result if the overriden type is an object (case of chaining with `maybeSingle`)
+        ContainsNull<Result> extends true
+        ? NewResult | null
+        : NewResult
+      : // contains the error
+        ValidationResult
+    : never
 
 type Simplify<T> = T extends object ? { [K in keyof T]: T[K] } : T
 
