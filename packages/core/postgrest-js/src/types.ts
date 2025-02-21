@@ -129,16 +129,27 @@ export type CheckMatchingArrayTypes<Result, NewResult> =
 type Simplify<T> = T extends object ? { [K in keyof T]: T[K] } : T
 
 type MergeDeep<New, Row> = {
-  [K in keyof New | keyof Row]: K extends keyof Row
-    ? K extends keyof New
-      ? IsPlainObject<New[K]> extends true
-        ? IsPlainObject<Row[K]> extends true
-          ? MergeDeep<New[K], Row[K]>
-          : Row[K]
-        : Row[K]
-      : Row[K]
-    : K extends keyof New
-    ? New[K]
+  [K in keyof New | keyof Row]: K extends keyof New
+    ? K extends keyof Row
+      ? // Check if the override is on a embeded relation (array)
+        New[K] extends any[]
+        ? Row[K] extends any[]
+          ? Array<Simplify<MergeDeep<NonNullable<New[K][number]>, NonNullable<Row[K][number]>>>>
+          : New[K]
+        : // Check if both properties are objects omiting a potential null union
+        IsPlainObject<NonNullable<New[K]>> extends true
+        ? IsPlainObject<NonNullable<Row[K]>> extends true
+          ? // If they are, use the new override as source of truth for the optionality
+            ContainsNull<New[K]> extends true
+            ? // If the override want to preserve optionality
+              Simplify<MergeDeep<NonNullable<New[K]>, NonNullable<Row[K]>>> | null
+            : // If the override want to enforce non-null result
+              Simplify<MergeDeep<New[K], NonNullable<Row[K]>>>
+          : New[K] // Override with New type if Row isn't an object
+        : New[K] // Override primitives with New type
+      : New[K] // Add new properties from New
+    : K extends keyof Row
+    ? Row[K] // Keep existing properties not in New
     : never
 }
 
