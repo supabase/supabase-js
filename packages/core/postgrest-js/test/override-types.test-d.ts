@@ -1,7 +1,7 @@
 import { expectType } from 'tsd'
 import { TypeEqual } from 'ts-expect'
 import { PostgrestClient } from '../src'
-import { CustomUserDataType, Database } from './types'
+import { CustomUserDataType, Database, Json } from './types'
 
 const REST_URL = 'http://localhost:54321'
 const postgrest = new PostgrestClient<Database>(REST_URL)
@@ -123,4 +123,315 @@ const postgrest = new PostgrestClient<Database>(REST_URL)
   }
   let result: typeof singleResult.data
   expectType<TypeEqual<typeof result, { custom_field: string }[]>>(true)
+}
+
+// Test overriding existing field types in array results
+{
+  const result = await postgrest
+    .from('users')
+    .select()
+    .overrideTypes<{ username: number }[], { merge: false }>()
+  if (result.error) {
+    throw new Error(result.error.message)
+  }
+  let data: typeof result.data
+  expectType<TypeEqual<typeof data, { username: number }[]>>(true)
+}
+
+// Test merging and replacing existing field types in array results
+{
+  const result = await postgrest.from('users').select().overrideTypes<{ username: number }[]>()
+  if (result.error) {
+    throw new Error(result.error.message)
+  }
+  let data: typeof result.data
+  expectType<
+    TypeEqual<
+      typeof data,
+      {
+        username: number
+        data: CustomUserDataType | null
+        age_range: unknown
+        catchphrase: unknown
+        status: 'ONLINE' | 'OFFLINE' | null
+      }[]
+    >
+  >(true)
+}
+
+// Test merging and replacing existing field types in object result
+{
+  const result = await postgrest
+    .from('users')
+    .select()
+    .single()
+    .overrideTypes<{ username: number }>()
+  if (result.error) {
+    throw new Error(result.error.message)
+  }
+  let data: typeof result.data
+  expectType<
+    TypeEqual<
+      typeof data,
+      {
+        username: number
+        data: CustomUserDataType | null
+        age_range: unknown
+        catchphrase: unknown
+        status: 'ONLINE' | 'OFFLINE' | null
+      }
+    >
+  >(true)
+}
+
+// Test merging nested object fields remove optionality via override
+{
+  const result = await postgrest
+    .from('users')
+    .select()
+    .overrideTypes<{ data: { foo: number; qux: boolean } }[]>()
+  if (result.error) {
+    throw new Error(result.error.message)
+  }
+  let data: typeof result.data
+  expectType<
+    TypeEqual<
+      typeof data,
+      {
+        username: string
+        data: {
+          foo: number
+          bar: { baz: number }
+          en: 'ONE' | 'TWO' | 'THREE'
+          qux: boolean
+        }
+        age_range: unknown
+        catchphrase: unknown
+        status: 'ONLINE' | 'OFFLINE' | null
+      }[]
+    >
+  >(true)
+}
+// Test merging nested object fields preserve optionality via the override
+{
+  const result = await postgrest
+    .from('users')
+    .select()
+    .single()
+    .overrideTypes<{ data: { foo: number; qux: boolean } | null }>()
+  if (result.error) {
+    throw new Error(result.error.message)
+  }
+  let data: typeof result.data
+  expectType<
+    TypeEqual<
+      typeof data,
+      {
+        username: string
+        data: {
+          foo: number
+          bar: { baz: number }
+          en: 'ONE' | 'TWO' | 'THREE'
+          qux: boolean
+        } | null
+        age_range: unknown
+        catchphrase: unknown
+        status: 'ONLINE' | 'OFFLINE' | null
+      }
+    >
+  >(true)
+}
+
+// Test replacing nested object structure
+{
+  const result = await postgrest
+    .from('users')
+    .select()
+    .overrideTypes<{ data: { newField: string } }[], { merge: false }>()
+  if (result.error) {
+    throw new Error(result.error.message)
+  }
+  let data: typeof result.data
+  expectType<TypeEqual<typeof data, { data: { newField: string } }[]>>(true)
+}
+
+// Test deep nested merge with array fields
+{
+  const result = await postgrest
+    .from('users')
+    .select()
+    .overrideTypes<{ nested: { arr: { newElement: boolean }[] } }[]>()
+  if (result.error) {
+    throw new Error(result.error.message)
+  }
+  let data: typeof result.data
+  expectType<
+    TypeEqual<
+      typeof data,
+      {
+        username: string
+        data: CustomUserDataType | null
+        age_range: unknown
+        catchphrase: unknown
+        status: 'ONLINE' | 'OFFLINE' | null
+        nested: { arr: { newElement: boolean }[] }
+      }[]
+    >
+  >(true)
+}
+
+// Test merging at multiple nested levels
+{
+  const result = await postgrest
+    .from('users')
+    .select()
+    .overrideTypes<{ data: { bar: { newBaz: string }; en: 'FOUR' } }[]>()
+  if (result.error) {
+    throw new Error(result.error.message)
+  }
+  let data: typeof result.data
+  expectType<
+    TypeEqual<
+      typeof data,
+      {
+        username: string
+        data: {
+          foo: string
+          bar: { baz: number; newBaz: string }
+          en: 'FOUR' // Overridden enum value
+        }
+        age_range: unknown
+        catchphrase: unknown
+        status: 'ONLINE' | 'OFFLINE' | null
+      }[]
+    >
+  >(true)
+}
+
+// Test overrideTypes with embedded relations
+{
+  const result = await postgrest.from('users').select('*, messages(*)').overrideTypes<
+    {
+      messages: { created_at: Date; data: string }[]
+    }[]
+  >()
+  if (result.error) {
+    throw new Error(result.error.message)
+  }
+  let data: typeof result.data
+  expectType<
+    TypeEqual<
+      typeof data,
+      {
+        username: string
+        data: CustomUserDataType | null
+        age_range: unknown
+        catchphrase: unknown
+        status: 'ONLINE' | 'OFFLINE' | null
+        messages: {
+          channel_id: number
+          data: string
+          id: number
+          message: string | null
+          username: string
+          created_at: Date
+        }[]
+      }[]
+    >
+  >(true)
+}
+
+// Test overrideTypes with embedded relations and merge: false
+{
+  const result = await postgrest.from('users').select('*, messages(*)').overrideTypes<
+    {
+      messages: { content: string }[]
+    }[],
+    { merge: false }
+  >()
+  if (result.error) {
+    throw new Error(result.error.message)
+  }
+  let data: typeof result.data
+  expectType<
+    TypeEqual<
+      typeof data,
+      {
+        messages: { content: string }[]
+      }[]
+    >
+  >(true)
+}
+
+// Test overrideTypes with a new array field
+{
+  const result = await postgrest.from('users').select('*, messages(*)').overrideTypes<
+    {
+      test: { created_at: Date; data: string }[]
+    }[]
+  >()
+  if (result.error) {
+    throw new Error(result.error.message)
+  }
+  let data: typeof result.data
+  expectType<
+    TypeEqual<
+      typeof data,
+      {
+        username: string
+        data: CustomUserDataType | null
+        age_range: unknown
+        catchphrase: unknown
+        status: 'ONLINE' | 'OFFLINE' | null
+        messages: {
+          channel_id: number
+          data: Json
+          id: number
+          message: string | null
+          username: string
+        }[]
+        test: { created_at: Date; data: string }[]
+      }[]
+    >
+  >(true)
+}
+
+// Test overrideTypes deep nesting with embedded inner relation
+{
+  const result = await postgrest
+    .from('users')
+    .select('*, messages(*, channels!inner(*))')
+    .overrideTypes<
+      {
+        messages: { channels: { data: string } }[]
+      }[]
+    >()
+  if (result.error) {
+    throw new Error(result.error.message)
+  }
+  let data: typeof result.data
+  expectType<
+    TypeEqual<
+      typeof data,
+      {
+        age_range: unknown
+        catchphrase: unknown
+        data: CustomUserDataType | null
+        status: 'ONLINE' | 'OFFLINE' | null
+        username: string
+        messages: {
+          id: number
+          username: string
+          channels: {
+            id: number
+            data: string
+            slug: string | null
+          }
+          data: Json
+          channel_id: number
+          message: string | null
+        }[]
+      }[]
+    >
+  >(true)
 }
