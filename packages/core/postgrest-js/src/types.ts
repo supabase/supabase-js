@@ -131,24 +131,31 @@ export type CheckMatchingArrayTypes<Result, NewResult> =
 
 type Simplify<T> = T extends object ? { [K in keyof T]: T[K] } : T
 
-type MergeDeep<New, Row> = {
-  [K in keyof New | keyof Row]: K extends keyof New
+// Extract only explicit (non-index-signature) keys.
+type ExplicitKeys<T> = {
+  [K in keyof T]: string extends K ? never : K
+}[keyof T]
+
+type MergeExplicit<New, Row> = {
+  // We merge all the explicit keys which allows merge and override of types like
+  // { [key: string]: unknown } and { someSpecificKey: boolean }
+  [K in ExplicitKeys<New> | ExplicitKeys<Row>]: K extends keyof New
     ? K extends keyof Row
       ? Row[K] extends SelectQueryError<string>
         ? New[K]
-        : // Check if the override is on a embeded relation (array)
+        : // Check if the override is on a embedded relation (array)
         New[K] extends any[]
         ? Row[K] extends any[]
           ? Array<Simplify<MergeDeep<NonNullable<New[K][number]>, NonNullable<Row[K][number]>>>>
           : New[K]
-        : // Check if both properties are objects omiting a potential null union
+        : // Check if both properties are objects omitting a potential null union
         IsPlainObject<NonNullable<New[K]>> extends true
         ? IsPlainObject<NonNullable<Row[K]>> extends true
           ? // If they are, use the new override as source of truth for the optionality
             ContainsNull<New[K]> extends true
-            ? // If the override want to preserve optionality
+            ? // If the override wants to preserve optionality
               Simplify<MergeDeep<NonNullable<New[K]>, NonNullable<Row[K]>>> | null
-            : // If the override want to enforce non-null result
+            : // If the override wants to enforce non-null result
               Simplify<MergeDeep<New[K], NonNullable<Row[K]>>>
           : New[K] // Override with New type if Row isn't an object
         : New[K] // Override primitives with New type
@@ -157,6 +164,15 @@ type MergeDeep<New, Row> = {
     ? Row[K] // Keep existing properties not in New
     : never
 }
+
+type MergeDeep<New, Row> = Simplify<
+  MergeExplicit<New, Row> &
+    // Intersection here is to restore dynamic keys into the merging result
+    // eg:
+    // {[key: number]: string}
+    // or Record<string, number | null>
+    (string extends keyof Row ? { [K: string]: Row[string] } : {})
+>
 
 // Helper to check if a type is a plain object (not an array)
 type IsPlainObject<T> = T extends any[] ? false : T extends object ? true : false

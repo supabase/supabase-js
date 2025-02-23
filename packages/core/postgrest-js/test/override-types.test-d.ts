@@ -247,6 +247,7 @@ const postgrest = new PostgrestClient<Database>(REST_URL)
           bar: { baz: number }
           en: 'ONE' | 'TWO' | 'THREE'
           record: Record<string, Json | undefined> | null
+          recordNumber: Record<number, Json | undefined> | null
           qux: boolean
         }
         age_range: unknown
@@ -277,6 +278,7 @@ const postgrest = new PostgrestClient<Database>(REST_URL)
           bar: { baz: number }
           en: 'ONE' | 'TWO' | 'THREE'
           record: Record<string, Json | undefined> | null
+          recordNumber: Record<number, Json | undefined> | null
           qux: boolean
         } | null
         age_range: unknown
@@ -345,6 +347,7 @@ const postgrest = new PostgrestClient<Database>(REST_URL)
           bar: { baz: number; newBaz: string }
           en: 'FOUR' // Overridden enum value
           record: Record<string, Json | undefined> | null
+          recordNumber: Record<number, Json | undefined> | null
         }
         age_range: unknown
         catchphrase: unknown
@@ -359,7 +362,7 @@ const postgrest = new PostgrestClient<Database>(REST_URL)
   const result = await postgrest
     .from('users')
     .select()
-    .overrideTypes<{ data: { record: { baz: 'foo' } } }[]>()
+    .overrideTypes<{ data: { record: { baz: 'foo' }; recordNumber: { bar: 'foo' } } }[]>()
   if (result.error) {
     throw new Error(result.error.message)
   }
@@ -375,7 +378,14 @@ const postgrest = new PostgrestClient<Database>(REST_URL)
             baz: number
           }
           en: 'ONE' | 'TWO' | 'THREE'
-          record: { baz: 'foo' }
+          record: {
+            [x: string]: Json | undefined
+            baz: 'foo'
+          }
+          recordNumber: {
+            [x: number]: Json | undefined
+            bar: 'foo'
+          }
         }
         age_range: unknown
         catchphrase: unknown

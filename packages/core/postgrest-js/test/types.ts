@@ -7,6 +7,7 @@ export type CustomUserDataType = {
   }
   en: 'ONE' | 'TWO' | 'THREE'
   record: Record<string, Json | undefined> | null
+  recordNumber: Record<number, Json | undefined> | null
 }
 
 export type Database = {
