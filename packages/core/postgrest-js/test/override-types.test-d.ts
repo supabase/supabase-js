@@ -60,7 +60,7 @@ const postgrest = new PostgrestClient<Database>(REST_URL)
   let result: typeof singleResult.data
   expectType<TypeEqual<(typeof result)['custom_field'], string>>(true)
 }
-// Test with maybeSingle()
+// Test with maybeSingle() merging with new field
 {
   const maybeSingleResult = await postgrest
     .from('users')
@@ -71,7 +71,50 @@ const postgrest = new PostgrestClient<Database>(REST_URL)
     throw new Error(maybeSingleResult.error.message)
   }
   let maybeSingleResultType: typeof maybeSingleResult.data
-  let expectedType: { custom_field: string } | null
+  let expectedType: {
+    age_range: unknown
+    catchphrase: unknown
+    data: CustomUserDataType | null
+    status: 'ONLINE' | 'OFFLINE' | null
+    username: string
+    custom_field: string
+  } | null
+  expectType<TypeEqual<typeof maybeSingleResultType, typeof expectedType>>(true)
+}
+// Test with maybeSingle() merging with override field
+{
+  const maybeSingleResult = await postgrest
+    .from('users')
+    .select()
+    .maybeSingle()
+    .overrideTypes<{ catchphrase: string }>()
+  if (maybeSingleResult.error) {
+    throw new Error(maybeSingleResult.error.message)
+  }
+  let maybeSingleResultType: typeof maybeSingleResult.data
+  let expectedType: {
+    age_range: unknown
+    catchphrase: string
+    data: CustomUserDataType | null
+    status: 'ONLINE' | 'OFFLINE' | null
+    username: string
+  } | null
+  expectType<TypeEqual<typeof maybeSingleResultType, typeof expectedType>>(true)
+}
+// Test with maybeSingle() replace with override field
+{
+  const maybeSingleResult = await postgrest
+    .from('users')
+    .select()
+    .maybeSingle()
+    .overrideTypes<{ catchphrase: string }, { merge: false }>()
+  if (maybeSingleResult.error) {
+    throw new Error(maybeSingleResult.error.message)
+  }
+  let maybeSingleResultType: typeof maybeSingleResult.data
+  let expectedType: {
+    catchphrase: string
+  } | null
   expectType<TypeEqual<typeof maybeSingleResultType, typeof expectedType>>(true)
 }
 // Test replacing behavior
@@ -203,6 +246,8 @@ const postgrest = new PostgrestClient<Database>(REST_URL)
           foo: number
           bar: { baz: number }
           en: 'ONE' | 'TWO' | 'THREE'
+          record: Record<string, Json | undefined> | null
+          recordNumber: Record<number, Json | undefined> | null
           qux: boolean
         }
         age_range: unknown
@@ -232,6 +277,8 @@ const postgrest = new PostgrestClient<Database>(REST_URL)
           foo: number
           bar: { baz: number }
           en: 'ONE' | 'TWO' | 'THREE'
+          record: Record<string, Json | undefined> | null
+          recordNumber: Record<number, Json | undefined> | null
           qux: boolean
         } | null
         age_range: unknown
@@ -299,6 +346,46 @@ const postgrest = new PostgrestClient<Database>(REST_URL)
           foo: string
           bar: { baz: number; newBaz: string }
           en: 'FOUR' // Overridden enum value
+          record: Record<string, Json | undefined> | null
+          recordNumber: Record<number, Json | undefined> | null
+        }
+        age_range: unknown
+        catchphrase: unknown
+        status: 'ONLINE' | 'OFFLINE' | null
+      }[]
+    >
+  >(true)
+}
+
+// Test merging with Json defined as Record
+{
+  const result = await postgrest
+    .from('users')
+    .select()
+    .overrideTypes<{ data: { record: { baz: 'foo' }; recordNumber: { bar: 'foo' } } }[]>()
+  if (result.error) {
+    throw new Error(result.error.message)
+  }
+  let data: typeof result.data
+  expectType<
+    TypeEqual<
+      typeof data,
+      {
+        username: string
+        data: {
+          foo: string
+          bar: {
+            baz: number
+          }
+          en: 'ONE' | 'TWO' | 'THREE'
+          record: {
+            [x: string]: Json | undefined
+            baz: 'foo'
+          }
+          recordNumber: {
+            [x: number]: Json | undefined
+            bar: 'foo'
+          }
         }
         age_range: unknown
         catchphrase: unknown
@@ -431,6 +518,32 @@ const postgrest = new PostgrestClient<Database>(REST_URL)
           channel_id: number
           message: string | null
         }[]
+      }[]
+    >
+  >(true)
+}
+
+// Test overrideTypes single object with error embeded relation
+{
+  const result = await postgrest.from('users').select('*, somerelation(*)').overrideTypes<
+    {
+      somerelation: { created_at: Date; data: string }
+    }[]
+  >()
+  if (result.error) {
+    throw new Error(result.error.message)
+  }
+  let data: typeof result.data
+  expectType<
+    TypeEqual<
+      typeof data,
+      {
+        username: string
+        data: CustomUserDataType | null
+        age_range: unknown
+        catchphrase: unknown
+        status: 'ONLINE' | 'OFFLINE' | null
+        somerelation: { created_at: Date; data: string }
       }[]
     >
   >(true)

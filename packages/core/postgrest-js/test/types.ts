@@ -6,6 +6,8 @@ export type CustomUserDataType = {
     baz: number
   }
   en: 'ONE' | 'TWO' | 'THREE'
+  record: Record<string, Json | undefined> | null
+  recordNumber: Record<number, Json | undefined> | null
 }
 
 export type Database = {
