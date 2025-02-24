@@ -1,5 +1,6 @@
 // @ts-ignore
 import nodeFetch, { Headers as NodeFetchHeaders } from '@supabase/node-fetch'
+import { isJWT } from './helpers'
 
 type Fetch = typeof fetch
 
@@ -31,15 +32,17 @@ export const fetchWithAuth = (
   const fetch = resolveFetch(customFetch)
   const HeadersConstructor = resolveHeadersConstructor()
 
+  const defaultAccessToken = isJWT(supabaseKey) ? supabaseKey : null
+
   return async (input, init) => {
-    const accessToken = (await getAccessToken()) ?? supabaseKey
+    const accessToken = (await getAccessToken()) ?? defaultAccessToken
     let headers = new HeadersConstructor(init?.headers)
 
     if (!headers.has('apikey')) {
       headers.set('apikey', supabaseKey)
     }
 
-    if (!headers.has('Authorization')) {
+    if (!headers.has('Authorization') && accessToken) {
       headers.set('Authorization', `Bearer ${accessToken}`)
     }
 
