@@ -41,7 +41,7 @@ const postgrest = new PostgrestClient<Database>(REST_URL)
   }
   let resultType: typeof invalidCastArray.data
   let resultExpected: {
-    Error: 'Type mismatch: Cannot cast array result to a single object. Use .returns<Array<YourType>> for array results or .single() to convert the result to a single object'
+    Error: 'Type mismatch: Cannot cast array result to a single object. Use .overrideTypes<Array<YourType>> or .returns<Array<YourType>> (deprecated) for array results or .single() to convert the result to a single object'
   }
   expectType<TypeEqual<typeof resultType, typeof resultExpected>>(true)
 

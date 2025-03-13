@@ -20,7 +20,7 @@ const postgrest = new PostgrestClient<Database>(REST_URL)
     TypeEqual<
       typeof result,
       {
-        Error: 'Type mismatch: Cannot cast array result to a single object. Use .returns<Array<YourType>> for array results or .single() to convert the result to a single object'
+        Error: 'Type mismatch: Cannot cast array result to a single object. Use .overrideTypes<Array<YourType>> or .returns<Array<YourType>> (deprecated) for array results or .single() to convert the result to a single object'
       }
     >
   >(true)
