@@ -1,28 +1,3 @@
-// @ts-ignore
-import nodeFetch, { Headers as NodeFetchHeaders } from '@supabase/node-fetch'
-
-type Fetch = typeof fetch
-
-export const resolveFetch = (customFetch?: Fetch): Fetch => {
-  let _fetch: Fetch
-  if (customFetch) {
-    _fetch = customFetch
-  } else if (typeof fetch === 'undefined') {
-    _fetch = nodeFetch as unknown as Fetch
-  } else {
-    _fetch = fetch
-  }
-  return (...args: Parameters<Fetch>) => _fetch(...args)
-}
-
-export const resolveHeadersConstructor = () => {
-  if (typeof Headers === 'undefined') {
-    return NodeFetchHeaders
-  }
-
-  return Headers
-}
-
 export const fetchWithAuth = (
   supabaseKey: string,
   getAccessToken: () => Promise<string | null>,
@@ -32,7 +7,14 @@ export const fetchWithAuth = (
   const HeadersConstructor = resolveHeadersConstructor()
 
   return async (input, init) => {
-    const accessToken = (await getAccessToken()) ?? supabaseKey
+    let accessToken: string | null
+    try {
+      accessToken = (await getAccessToken()) ?? supabaseKey
+    } catch (error) {
+      console.error("Error retrieving access token:", error)
+      accessToken = supabaseKey
+    }
+
     let headers = new HeadersConstructor(init?.headers)
 
     if (!headers.has('apikey')) {
