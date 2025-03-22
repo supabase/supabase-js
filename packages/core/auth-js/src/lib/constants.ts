@@ -30,3 +30,5 @@ export const API_VERSIONS = {
 }
 
 export const BASE64URL_REGEX = /^([a-z0-9_-]{4})*($|[a-z0-9_-]{3}$|[a-z0-9_-]{2}$)$/i
+
+export const JWKS_TTL = 600000 // 10 minutes

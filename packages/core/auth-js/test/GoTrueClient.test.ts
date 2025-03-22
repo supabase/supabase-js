@@ -13,11 +13,10 @@ import {
   authAdminApiAutoConfirmEnabledClient,
   GOTRUE_URL_SIGNUP_ENABLED_AUTO_CONFIRM_ON,
   authClient,
-  authClientWithAsymmetricSession,
   GOTRUE_URL_SIGNUP_ENABLED_ASYMMETRIC_AUTO_CONFIRM_ON,
 } from './lib/clients'
 import { mockUserCredentials } from './lib/utils'
-import { Session } from '../src'
+import { JWK, Session } from '../src'
 
 describe('GoTrueClient', () => {
   // @ts-expect-error 'Allow access to private _refreshAccessToken'
@@ -1147,5 +1146,57 @@ describe('GoTrueClient with storageisServer = true', () => {
     // @ts-ignore 'Allow access to private _saveSession'
     await client._saveSession(newSession)
     expect(store.getItem('test-storage-key')).toEqual(JSON.stringify(newSession))
+  })
+})
+
+describe('fetchJwk', () => {
+  let fetchedUrls: any[] = []
+
+  const cases = [
+    {
+      desc: 'jwk exists but cache is stale',
+      jwks: { keys: [{ kid: '123', kty: 'RSA', key_ops: ['verify'] }] },
+      jwksCachedAt: Number.MIN_SAFE_INTEGER,
+      fetchedUrlsLength: 1,
+    },
+    {
+      desc: 'jwk does not exist and cache is stale',
+      jwks: { keys: [{ kid: '234', kty: 'RSA', key_ops: ['verify'] }] },
+      jwksCachedAt: Number.MIN_SAFE_INTEGER,
+      fetchedUrlsLength: 1,
+    },
+    {
+      desc: 'jwk exists in cache',
+      jwks: { keys: [{ kid: '123', kty: 'RSA', key_ops: ['verify'] }] },
+      jwksCachedAt: Number.MAX_SAFE_INTEGER,
+      fetchedUrlsLength: 0,
+    },
+    {
+      desc: 'jwk does not exist in cache',
+      jwks: { keys: [{ kid: '234', kty: 'RSA', key_ops: ['verify'] }] },
+      jwksCachedAt: Number.MAX_SAFE_INTEGER,
+      fetchedUrlsLength: 1,
+    },
+  ]
+
+  beforeEach(() => {
+    fetchedUrls = []
+  })
+
+  cases.forEach((c) => {
+    test(`${c.desc}`, async () => {
+      // override fetch to return a hard-coded JWKS
+      authWithAsymmetricSession['fetch'] = async (url: RequestInfo | URL, _options = {}) => {
+        fetchedUrls.push(url)
+        return new Response(
+          JSON.stringify({ keys: [{ kid: '123', kty: 'RSA', key_ops: ['verify'] }] })
+        )
+      }
+      authWithAsymmetricSession['jwks'] = c.jwks as { keys: JWK[] }
+      authWithAsymmetricSession['jwks_cached_at'] = c.jwksCachedAt
+      // @ts-ignore 'Allow access to private fetchJwk'
+      await authWithAsymmetricSession.fetchJwk('123')
+      expect(fetchedUrls).toHaveLength(c.fetchedUrlsLength)
+    })
   })
 })

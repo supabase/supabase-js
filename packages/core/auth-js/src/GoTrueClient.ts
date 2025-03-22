@@ -6,6 +6,7 @@ import {
   AUTO_REFRESH_TICK_THRESHOLD,
   GOTRUE_URL,
   STORAGE_KEY,
+  JWKS_TTL,
 } from './lib/constants'
 import {
   AuthError,
@@ -150,6 +151,7 @@ export default class GoTrueClient {
    * The JWKS used for verifying asymmetric JWTs
    */
   protected jwks: { keys: JWK[] }
+  protected jwks_cached_at: number
   protected autoRefreshToken: boolean
   protected persistSession: boolean
   protected storage: SupportedStorage
@@ -230,6 +232,7 @@ export default class GoTrueClient {
       this.lock = lockNoOp
     }
     this.jwks = { keys: [] }
+    this.jwks_cached_at = Number.MIN_SAFE_INTEGER
     this.mfa = {
       verify: this._verify.bind(this),
       enroll: this._enroll.bind(this),
@@ -2607,7 +2610,9 @@ export default class GoTrueClient {
 
     // try fetching from cache
     jwk = this.jwks.keys.find((key) => key.kid === kid)
-    if (jwk) {
+
+    // jwk exists and jwks isn't stale
+    if (jwk && this.jwks_cached_at + JWKS_TTL > Date.now()) {
       return jwk
     }
     // jwk isn't cached in memory so we need to fetch it from the well-known endpoint
@@ -2621,6 +2626,7 @@ export default class GoTrueClient {
       throw new AuthInvalidJwtError('JWKS is empty')
     }
     this.jwks = data
+    this.jwks_cached_at = Date.now()
     // Find the signing key
     jwk = data.keys.find((key: any) => key.kid === kid)
     if (!jwk) {

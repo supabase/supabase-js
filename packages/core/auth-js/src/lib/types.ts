@@ -345,6 +345,7 @@ export interface User {
   updated_at?: string
   identities?: UserIdentity[]
   is_anonymous?: boolean
+  is_sso_user?: boolean
   factors?: Factor[]
 }
 
