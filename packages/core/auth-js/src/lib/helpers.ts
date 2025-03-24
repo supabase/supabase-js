@@ -289,7 +289,7 @@ export async function generatePKCEChallenge(verifier: string) {
     return verifier
   }
   const hashed = await sha256(verifier)
-  return stringToBase64URL(hashed)
+  return btoa(hashed).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
 }
 
 export async function getCodeChallengeAndMethod(
