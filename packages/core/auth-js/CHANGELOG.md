@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.69.1](https://github.com/supabase/auth-js/compare/v2.69.0...v2.69.1) (2025-03-24)
+
+
+### Bug Fixes
+
+* `generatePKCEChallenge` should use btoa ([#1044](https://github.com/supabase/auth-js/issues/1044)) ([c06fafb](https://github.com/supabase/auth-js/commit/c06fafbc61fa1dec62ba0183530b6b566a135b75))
+
 ## [2.69.0](https://github.com/supabase/auth-js/compare/v2.68.0...v2.69.0) (2025-03-22)
 
 
