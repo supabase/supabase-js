@@ -496,6 +496,44 @@ export type Database = {
           }
         ]
       }
+      booking: {
+        Row: {
+          hotel_id: number | null
+          id: number
+        }
+        Insert: {
+          hotel_id?: number | null
+          id?: number
+        }
+        Update: {
+          hotel_id?: number | null
+          id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'booking_hotel_id_fkey'
+            columns: ['hotel_id']
+            isOneToOne: false
+            referencedRelation: 'hotel'
+            referencedColumns: ['id']
+          }
+        ]
+      }
+      hotel: {
+        Row: {
+          id: number
+          name: string | null
+        }
+        Insert: {
+          id?: number
+          name?: string | null
+        }
+        Update: {
+          id?: number
+          name?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       non_updatable_view: {
