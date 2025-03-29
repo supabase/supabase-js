@@ -1,4 +1,4 @@
-import { Database, Json } from '../types'
+import { Database, Json } from '../types.override'
 import { selectParams } from '../relationships'
 import { GetResult } from '../../src/select-query-parser/result'
 import { expectType } from 'tsd'

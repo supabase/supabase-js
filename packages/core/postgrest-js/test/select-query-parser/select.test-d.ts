@@ -3,7 +3,7 @@ import { TypeEqual } from 'ts-expect'
 import { Json } from '../../src/select-query-parser/types'
 import { SelectQueryError } from '../../src/select-query-parser/utils'
 import { Prettify } from '../../src/types'
-import { CustomUserDataType, Database } from '../types'
+import { CustomUserDataType, Database } from '../types.override'
 import { selectQueries } from '../relationships'
 
 // This test file is here to ensure that for a query against a specfic datatabase
@@ -622,6 +622,7 @@ type Schema = Database['public']
       username: string
     }
   }
+  //@ts-expect-error this should work once we use unknown instead of Json type definition
   expectType<TypeEqual<typeof result, typeof expected>>(true)
 }
 
