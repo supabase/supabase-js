@@ -1,5 +1,5 @@
 import { PostgrestClient } from '../src/index'
-import { CustomUserDataType, Database } from './types'
+import { CustomUserDataType, Database } from './types.override'
 
 const REST_URL = 'http://localhost:3000'
 const postgrest = new PostgrestClient<Database>(REST_URL)

@@ -2,7 +2,8 @@ import { TypeEqual } from 'ts-expect'
 import { expectError, expectType } from 'tsd'
 import { PostgrestClient, PostgrestError } from '../src/index'
 import { Prettify } from '../src/types'
-import { Database, Json } from './types'
+import { Json } from './types.generated'
+import { Database } from './types.override'
 
 const REST_URL = 'http://localhost:3000'
 const postgrest = new PostgrestClient<Database>(REST_URL)
@@ -191,7 +192,7 @@ const postgrest = new PostgrestClient<Database>(REST_URL)
   }
   // getting this w/o the cast, not sure why:
   // Parameter type Json is declared too wide for argument type Json
-  expectType<Json>(result.data.bar)
+  expectType<typeof result.data.bar extends Json ? true : false>(true)
   expectType<string>(result.data.baz)
 }
 

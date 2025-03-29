@@ -1,4 +1,4 @@
-import type { Database as GeneratedDatabase, Json as OriginalJson } from './types.generated'
+import type { Database as GeneratedDatabase } from './types.generated'
 import { MergeDeep } from 'type-fest'
 
 export type CustomUserDataType = {
@@ -7,8 +7,8 @@ export type CustomUserDataType = {
     baz: number
   }
   en: 'ONE' | 'TWO' | 'THREE'
-  record: Record<string, OriginalJson | undefined> | null
-  recordNumber: Record<number, OriginalJson | undefined> | null
+  record: Record<string, unknown> | null
+  recordNumber: Record<number, unknown> | null
 }
 
 export type Database = MergeDeep<
@@ -46,7 +46,6 @@ export type Database = MergeDeep<
     }
   }
 >
-export type Json = OriginalJson
 
 type DefaultSchema = Database[Extract<keyof Database, 'public'>]
 

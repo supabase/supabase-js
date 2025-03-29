@@ -1,5 +1,5 @@
 import { PostgrestClient } from '../src/index'
-import { Database } from './types'
+import { Database } from './types.override'
 
 import { AbortController } from 'node-abort-controller'
 

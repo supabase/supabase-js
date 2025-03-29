@@ -1,5 +1,5 @@
 import { PostgrestClient } from '../src/index'
-import { Database } from './types'
+import { Database } from './types.override'
 
 const postgrest = new PostgrestClient<Database>('http://localhost:3000')
 

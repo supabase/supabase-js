@@ -1,4 +1,4 @@
-export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[]
+export type Json = unknown
 
 export type Database = {
   personal: {
@@ -6,7 +6,7 @@ export type Database = {
       users: {
         Row: {
           age_range: unknown | null
-          data: Json
+          data: Json | null
           status: Database['public']['Enums']['user_status'] | null
           username: string
         }
@@ -173,7 +173,7 @@ export type Database = {
       }
       channels: {
         Row: {
-          data: Json
+          data: Json | null
           id: number
           slug: string | null
         }
@@ -236,7 +236,7 @@ export type Database = {
       messages: {
         Row: {
           channel_id: number
-          data: Json
+          data: Json | null
           id: number
           message: string | null
           username: string
@@ -396,7 +396,7 @@ export type Database = {
         Row: {
           age_range: unknown | null
           catchphrase: unknown | null
-          data: Json
+          data: Json | null
           status: Database['public']['Enums']['user_status'] | null
           username: string
         }

@@ -622,7 +622,6 @@ type Schema = Database['public']
       username: string
     }
   }
-  //@ts-expect-error this should work once we use unknown instead of Json type definition
   expectType<TypeEqual<typeof result, typeof expected>>(true)
 }
 
