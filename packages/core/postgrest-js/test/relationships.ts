@@ -190,6 +190,10 @@ export const selectParams = {
     select:
       'msgs:messages(id, ...message_details(created_at, channel!inner(id, slug, owner:users(*))))',
   },
+  innerJoinOnNullableRelationship: {
+    from: 'booking',
+    select: 'id, hotel!inner(id, name)',
+  },
 } as const
 
 export const selectQueries = {
@@ -371,6 +375,9 @@ export const selectQueries = {
   nestedQueryWithSelectiveFieldsAndInnerJoin: postgrest
     .from(selectParams.nestedQueryWithSelectiveFieldsAndInnerJoin.from)
     .select(selectParams.nestedQueryWithSelectiveFieldsAndInnerJoin.select),
+  innerJoinOnNullableRelationship: postgrest
+    .from(selectParams.innerJoinOnNullableRelationship.from)
+    .select(selectParams.innerJoinOnNullableRelationship.select),
 } as const
 
 test('nested query with selective fields', async () => {
@@ -511,6 +518,62 @@ test('!inner relationship', async () => {
           "slug": "public",
         },
       },
+      "error": null,
+      "status": 200,
+      "statusText": "OK",
+    }
+  `)
+})
+
+test('!inner relationship on nullable relation', async () => {
+  const res = await selectQueries.innerJoinOnNullableRelationship
+  expect(res).toMatchInlineSnapshot(`
+    Object {
+      "count": null,
+      "data": Array [
+        Object {
+          "hotel": Object {
+            "id": 1,
+            "name": "Sunset Resort",
+          },
+          "id": 1,
+        },
+        Object {
+          "hotel": Object {
+            "id": 1,
+            "name": "Sunset Resort",
+          },
+          "id": 2,
+        },
+        Object {
+          "hotel": Object {
+            "id": 2,
+            "name": "Mountain View Hotel",
+          },
+          "id": 3,
+        },
+        Object {
+          "hotel": Object {
+            "id": 3,
+            "name": "Beachfront Inn",
+          },
+          "id": 5,
+        },
+        Object {
+          "hotel": Object {
+            "id": 1,
+            "name": "Sunset Resort",
+          },
+          "id": 6,
+        },
+        Object {
+          "hotel": Object {
+            "id": 4,
+            "name": null,
+          },
+          "id": 8,
+        },
+      ],
       "error": null,
       "status": 200,
       "statusText": "OK",

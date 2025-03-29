@@ -372,7 +372,9 @@ type ProcessEmbeddedResourceResult<
             TablesAndViews<Schema>[CurrentTableOrView],
             Resolved['relation']
           > extends true
-        ? ProcessedChildren | null
+        ? Field extends { innerJoin: true }
+          ? ProcessedChildren
+          : ProcessedChildren | null
         : ProcessedChildren
     }
   : {

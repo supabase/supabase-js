@@ -85,6 +85,20 @@ type Schema = Database['public']
   expectType<TypeEqual<typeof result, typeof expected>>(true)
 }
 
+// !inner relationship on nullable relation
+{
+  const { data } = await selectQueries.innerJoinOnNullableRelationship
+  let result: Exclude<typeof data, null>
+  let expected: Array<{
+    id: number
+    hotel: {
+      id: number
+      name: string | null
+    }
+  }>
+  expectType<TypeEqual<typeof result, typeof expected>>(true)
+}
+
 // one-to-many relationship
 {
   const { data } = await selectQueries.oneToMany.limit(1).single()
