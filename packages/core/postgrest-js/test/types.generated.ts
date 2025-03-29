@@ -130,6 +130,29 @@ export type Database = {
           }
         ]
       }
+      booking: {
+        Row: {
+          hotel_id: number | null
+          id: number
+        }
+        Insert: {
+          hotel_id?: number | null
+          id?: number
+        }
+        Update: {
+          hotel_id?: number | null
+          id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'booking_hotel_id_fkey'
+            columns: ['hotel_id']
+            isOneToOne: false
+            referencedRelation: 'hotel'
+            referencedColumns: ['id']
+          }
+        ]
+      }
       categories: {
         Row: {
           description: string | null
@@ -230,6 +253,21 @@ export type Database = {
           array_column?: string[] | null
           'column whitespace'?: string | null
           id?: number
+        }
+        Relationships: []
+      }
+      hotel: {
+        Row: {
+          id: number
+          name: string | null
+        }
+        Insert: {
+          id?: number
+          name?: string | null
+        }
+        Update: {
+          id?: number
+          name?: string | null
         }
         Relationships: []
       }
