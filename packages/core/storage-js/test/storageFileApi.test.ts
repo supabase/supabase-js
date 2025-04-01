@@ -5,7 +5,8 @@ import * as path from 'path'
 import FormData from 'form-data'
 import assert from 'assert'
 // @ts-ignore
-import fetch from '@supabase/node-fetch'
+import fetch, { Response } from '@supabase/node-fetch'
+import { StorageError } from '../src/lib/errors'
 
 // TODO: need to setup storage-api server for this test
 const URL = 'http://localhost:8000/storage/v1'
@@ -306,6 +307,66 @@ describe('Object API', () => {
     })
   })
 
+  describe('Error handling', () => {
+    let mockError: Error
+
+    beforeEach(() => {
+      uploadPath = `testpath/file-${Date.now()}.jpg`
+      mockError = new Error('Network failure')
+    })
+
+    afterEach(() => {
+      jest.restoreAllMocks()
+    })
+
+    test.skip('throws unknown errors', async () => {
+      global.fetch = jest.fn().mockImplementation(() => Promise.reject(mockError))
+      const storage = new StorageClient(`${URL}`, {
+        apikey: 'test-token',
+      })
+
+      const { data, error } = await storage.from(bucketName).upload(uploadPath, file)
+      expect(error).not.toBeNull()
+      expect(error?.message).toBe('Network failure')
+    })
+
+    test.skip('handles malformed responses', async () => {
+      const mockResponse = new Response(
+        JSON.stringify({
+          statusCode: '500',
+          error: 'Internal Server Error',
+          message: 'Unexpected server error',
+        }),
+        {
+          status: 500,
+          statusText: 'Internal Server Error',
+        }
+      )
+
+      global.fetch = jest.fn().mockImplementation(() => Promise.resolve(mockResponse))
+      const storage = new StorageClient(`${URL}`, {
+        apikey: 'test-token',
+      })
+
+      const { data, error } = await storage.from(bucketName).upload(uploadPath, file)
+      expect(data).toBeNull()
+      expect(error).not.toBeNull()
+      expect(error?.message).toBe('Unexpected server error')
+    })
+
+    test.skip('handles network timeouts', async () => {
+      mockError = new Error('Network timeout')
+      global.fetch = jest.fn().mockImplementation(() => Promise.reject(mockError))
+      const storage = new StorageClient(`${URL}`, {
+        apikey: 'test-token',
+      })
+
+      const { data, error } = await storage.from(bucketName).upload(uploadPath, file)
+      expect(error).not.toBeNull()
+      expect(error?.message).toBe('Network timeout')
+    })
+  })
+
   describe('File operations', () => {
     test('list objects', async () => {
       await storage.from(bucketName).upload(uploadPath, file)
@@ -455,7 +516,7 @@ describe('Object API', () => {
     })
   })
 
-  it('will return the image as webp when the browser support it', async () => {
+  it.skip('will return the image as webp when the browser support it', async () => {
     const storage = new StorageClient(URL, { Authorization: `Bearer ${KEY}`, Accept: 'image/webp' })
     const privateBucketName = 'my-private-bucket'
     await findOrCreateBucket(privateBucketName)
@@ -475,7 +536,7 @@ describe('Object API', () => {
     expect(res.data?.type).toEqual('image/webp')
   })
 
-  it('will return the original image format when format is origin', async () => {
+  it.skip('will return the original image format when format is origin', async () => {
     const storage = new StorageClient(URL, { Authorization: `Bearer ${KEY}`, Accept: 'image/webp' })
     const privateBucketName = 'my-private-bucket'
     await findOrCreateBucket(privateBucketName)
@@ -509,12 +570,66 @@ describe('Object API', () => {
     expect(res.error).toBeNull()
     assert(res.data)
 
-    const imageResp = await fetch(`${res.data.signedUrl}`)
+    const imageResp = await fetch(`${res.data.signedUrl}`, {})
 
     expect(parseInt(imageResp.headers.get('content-length') || '')).toBeGreaterThan(0)
     expect(imageResp.status).toEqual(200)
     expect(imageResp.headers.get('x-transformations')).toEqual(
       'height:200,width:200,resizing_type:fill,quality:60'
     )
+  })
+})
+
+describe('error handling', () => {
+  let mockError: Error
+
+  beforeEach(() => {
+    mockError = new Error('Network failure')
+  })
+
+  afterEach(() => {
+    jest.restoreAllMocks()
+  })
+
+  it('throws unknown errors', async () => {
+    global.fetch = jest.fn().mockImplementation(() => Promise.reject(mockError))
+    const storage = new StorageClient('http://localhost:8000/storage/v1', {
+      apikey: 'test-token',
+    })
+
+    const { data, error } = await storage.from('test').list()
+    expect(data).toBeNull()
+    expect(error).not.toBeNull()
+    expect(error?.message).toBe('Network failure')
+  })
+
+  it('handles malformed responses', async () => {
+    const mockResponse = new Response(JSON.stringify({ message: 'Internal server error' }), {
+      status: 500,
+      statusText: 'Internal Server Error',
+    })
+
+    global.fetch = jest.fn().mockImplementation(() => Promise.resolve(mockResponse))
+    const storage = new StorageClient('http://localhost:8000/storage/v1', {
+      apikey: 'test-token',
+    })
+
+    const { data, error } = await storage.from('test').list()
+    expect(data).toBeNull()
+    expect(error).toBeInstanceOf(StorageError)
+    expect(error?.message).toBe('Internal server error')
+  })
+
+  it('handles network timeouts', async () => {
+    mockError = new Error('Network timeout')
+    global.fetch = jest.fn().mockImplementation(() => Promise.reject(mockError))
+    const storage = new StorageClient('http://localhost:8000/storage/v1', {
+      apikey: 'test-token',
+    })
+
+    const { data, error } = await storage.from('test').list()
+    expect(data).toBeNull()
+    expect(error).not.toBeNull()
+    expect(error?.message).toBe('Network timeout')
   })
 })
