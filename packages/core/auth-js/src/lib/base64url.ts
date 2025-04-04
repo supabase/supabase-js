@@ -288,3 +288,19 @@ export function stringToUint8Array(str: string): Uint8Array {
   stringToUTF8(str, (byte: number) => result.push(byte))
   return new Uint8Array(result)
 }
+
+export function bytesToBase64URL(bytes: Uint8Array) {
+  const result: string[] = []
+  const state = { queue: 0, queuedBits: 0 }
+
+  const onChar = (char: string) => {
+    result.push(char)
+  }
+
+  bytes.forEach((byte) => byteToBase64URL(byte, state, onChar))
+
+  // always call with `null` after processing all bytes
+  byteToBase64URL(null, state, onChar)
+
+  return result.join('')
+}

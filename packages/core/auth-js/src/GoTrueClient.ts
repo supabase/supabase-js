@@ -106,8 +106,11 @@ import type {
   JWK,
   JwtPayload,
   JwtHeader,
+  SolanaWeb3Credentials,
+  SolanaWallet,
+  Web3Credentials,
 } from './lib/types'
-import { stringToUint8Array } from './lib/base64url'
+import { stringToUint8Array, bytesToBase64URL } from './lib/base64url'
 
 polyfillGlobalThis() // Make "globalThis" available
 
@@ -599,6 +602,214 @@ export default class GoTrueClient {
     return this._acquireLock(-1, async () => {
       return this._exchangeCodeForSession(authCode)
     })
+  }
+
+  /**
+   * Signs in a user by verifying a message signed by the user's private key.
+   * Only Solana supported at this time, using the Sign in with Solana standard.
+   */
+  async signInWithWeb3(credentials: Web3Credentials): Promise<
+    | {
+        data: { session: Session; user: User }
+        error: null
+      }
+    | { data: { session: null; user: null }; error: AuthError }
+  > {
+    const { chain } = credentials
+
+    if (chain === 'solana') {
+      return await this.signInWithSolana(credentials)
+    }
+
+    throw new Error(`@supabase/auth-js: Unsupported chain "${chain}"`)
+  }
+
+  private async signInWithSolana(credentials: SolanaWeb3Credentials) {
+    let message: string
+    let signature: Uint8Array
+
+    if ('message' in credentials) {
+      message = credentials.message
+      signature = credentials.signature
+    } else {
+      const { chain, wallet, statement, options } = credentials
+
+      let resolvedWallet: SolanaWallet
+
+      if (!isBrowser()) {
+        if (typeof wallet !== 'object' || !options?.url) {
+          throw new Error(
+            '@supabase/auth-js: Both wallet and url must be specified in non-browser environments.'
+          )
+        }
+
+        resolvedWallet = wallet
+      } else if (typeof wallet === 'object') {
+        resolvedWallet = wallet
+      } else {
+        const windowAny = window as any
+
+        if (
+          'solana' in windowAny &&
+          typeof windowAny.solana === 'object' &&
+          (('signIn' in windowAny.solana && typeof windowAny.solana.signIn === 'function') ||
+            ('signMessage' in windowAny.solana &&
+              typeof windowAny.solana.signMessage === 'function'))
+        ) {
+          resolvedWallet = windowAny.solana
+        } else {
+          throw new Error(
+            `@supabase/auth-js: No compatible Solana wallet interface on the window object (window.solana) detected. Make sure the user already has a wallet installed and connected for this app. Prefer passing the wallet interface object directly to signInWithWeb3({ chain: 'solana', wallet: resolvedUserWallet }) instead.`
+          )
+        }
+      }
+
+      const url = new URL(options?.url ?? window.location.href)
+
+      if ('signIn' in resolvedWallet && resolvedWallet.signIn) {
+        const output = await resolvedWallet.signIn({
+          issuedAt: new Date().toISOString(),
+
+          ...options?.signInWithSolana,
+
+          // non-overridable properties
+          version: '1',
+          domain: url.host,
+          uri: url.href,
+
+          ...(statement ? { statement } : null),
+        })
+
+        let outputToProcess: any
+
+        if (Array.isArray(output) && output[0] && typeof output[0] === 'object') {
+          outputToProcess = output[0]
+        } else if (
+          output &&
+          typeof output === 'object' &&
+          'signedMessage' in output &&
+          'signature' in output
+        ) {
+          outputToProcess = output
+        } else {
+          throw new Error('@supabase/auth-js: Wallet method signIn() returned unrecognized value')
+        }
+
+        if (
+          'signedMessage' in outputToProcess &&
+          'signature' in outputToProcess &&
+          (typeof outputToProcess.signedMessage === 'string' ||
+            outputToProcess.signedMessage instanceof Uint8Array) &&
+          outputToProcess.signature instanceof Uint8Array
+        ) {
+          message =
+            typeof outputToProcess.signedMessage === 'string'
+              ? outputToProcess.signedMessage
+              : new TextDecoder().decode(outputToProcess.signedMessage)
+          signature = outputToProcess.signature
+        } else {
+          throw new Error(
+            '@supabase/auth-js: Wallet method signIn() API returned object without signedMessage and signature fields'
+          )
+        }
+      } else {
+        if (
+          !('signMessage' in resolvedWallet) ||
+          typeof resolvedWallet.signMessage !== 'function' ||
+          !('publicKey' in resolvedWallet) ||
+          typeof resolvedWallet !== 'object' ||
+          !resolvedWallet.publicKey ||
+          !('toBase58' in resolvedWallet.publicKey) ||
+          typeof resolvedWallet.publicKey.toBase58 !== 'function'
+        ) {
+          throw new Error(
+            '@supabase/auth-js: Wallet does not have a compatible signMessage() and publicKey.toBase58() API'
+          )
+        }
+
+        message = [
+          `${url.host} wants you to sign in with your Solana account:`,
+          resolvedWallet.publicKey.toBase58(),
+          ...(statement ? ['', statement, ''] : ['']),
+          'Version: 1',
+          `URI: ${url.href}`,
+          `Issued At: ${options?.signInWithSolana?.issuedAt ?? new Date().toISOString()}`,
+          ...(options?.signInWithSolana?.notBefore
+            ? [`Not Before: ${options.signInWithSolana.notBefore}`]
+            : []),
+          ...(options?.signInWithSolana?.expirationTime
+            ? [`Expiration Time: ${options.signInWithSolana.expirationTime}`]
+            : []),
+          ...(options?.signInWithSolana?.chainId
+            ? [`Chain ID: ${options.signInWithSolana.chainId}`]
+            : []),
+          ...(options?.signInWithSolana?.nonce ? [`Nonce: ${options.signInWithSolana.nonce}`] : []),
+          ...(options?.signInWithSolana?.requestId
+            ? [`Request ID: ${options.signInWithSolana.requestId}`]
+            : []),
+          ...(options?.signInWithSolana?.resources?.length
+            ? [
+                'Resources',
+                ...options.signInWithSolana.resources.map((resource) => `- ${resource}`),
+              ]
+            : []),
+        ].join('\n')
+
+        const maybeSignature = await resolvedWallet.signMessage(
+          new TextEncoder().encode(message),
+          'utf8'
+        )
+
+        if (!maybeSignature || !(maybeSignature instanceof Uint8Array)) {
+          throw new Error(
+            '@supabase/auth-js: Wallet signMessage() API returned an recognized value'
+          )
+        }
+
+        signature = maybeSignature
+      }
+    }
+
+    try {
+      const { data, error } = await _request(
+        this.fetch,
+        'POST',
+        `${this.url}/token?grant_type=web3`,
+        {
+          headers: this.headers,
+          body: {
+            chain: 'solana',
+            message,
+            signature: bytesToBase64URL(signature),
+
+            ...(credentials.options?.captchaToken
+              ? { gotrue_meta_security: { captcha_token: credentials.options?.captchaToken } }
+              : null),
+          },
+          xform: _sessionResponse,
+        }
+      )
+      if (error) {
+        throw error
+      }
+      if (!data || !data.session || !data.user) {
+        return {
+          data: { user: null, session: null },
+          error: new AuthInvalidTokenResponseError(),
+        }
+      }
+      if (data.session) {
+        await this._saveSession(data.session)
+        await this._notifyAllSubscribers('SIGNED_IN', data.session)
+      }
+      return { data: { ...data }, error }
+    } catch (error) {
+      if (isAuthError(error)) {
+        return { data: { user: null, session: null }, error }
+      }
+
+      throw error
+    }
   }
 
   private async _exchangeCodeForSession(authCode: string): Promise<

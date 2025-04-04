@@ -1,5 +1,6 @@
 import { AuthError } from './errors'
 import { Fetch } from './fetch'
+import type { SolanaSignInInput, SolanaSignInOutput } from '@solana/wallet-standard-features'
 
 /** One of the providers supported by GoTrue. */
 export type Provider =
@@ -521,6 +522,7 @@ export type SignUpWithPasswordCredentials =
         channel?: 'sms' | 'whatsapp'
       }
     }
+
 export type SignInWithPasswordCredentials =
   | {
       /** The user's email address. */
@@ -611,6 +613,54 @@ export type SignInWithIdTokenCredentials = {
     captchaToken?: string
   }
 }
+
+export type SolanaWallet = {
+  signIn?: (...inputs: SolanaSignInInput[]) => Promise<SolanaSignInOutput | SolanaSignInOutput[]>
+  publicKey?: {
+    toBase58: () => string
+  } | null
+
+  signMessage?: (message: Uint8Array, encoding?: 'utf8' | string) => Promise<Uint8Array> | undefined
+}
+
+export type SolanaWeb3Credentials =
+  | {
+      chain: 'solana'
+
+      /** Wallet interface to use. If not specified will default to `window.solana`. */
+      wallet?: SolanaWallet
+
+      /** Optional statement to include in the Sign in with Solana message. Must not include new line characters. Most wallets like Phantom **require specifying a statement!** */
+      statement?: string
+
+      options?: {
+        /** URL to use with the wallet interface. Some wallets do not allow signing a message for URLs different from the current page. */
+        url?: string
+
+        /** Verification token received when the user completes the captcha on the site. */
+        captchaToken?: string
+
+        signInWithSolana?: Partial<
+          Omit<SolanaSignInInput, 'version' | 'chain' | 'domain' | 'uri' | 'statement'>
+        >
+      }
+    }
+  | {
+      chain: 'solana'
+
+      /** Sign in with Solana compatible message. Must include `Issued At`, `URI` and `Version`. */
+      message: string
+
+      /** Ed25519 signature of the message. */
+      signature: Uint8Array
+
+      options?: {
+        /** Verification token received when the user completes the captcha on the site. */
+        captchaToken?: string
+      }
+    }
+
+export type Web3Credentials = SolanaWeb3Credentials
 
 export type VerifyOtpParams = VerifyMobileOtpParams | VerifyEmailOtpParams | VerifyTokenHashParams
 export interface VerifyMobileOtpParams {
