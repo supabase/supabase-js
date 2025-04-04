@@ -1,9 +1,11 @@
-import { Database, Json } from '../types'
+import { Database } from '../types.override'
 import { selectParams } from '../relationships'
 import { GetResult } from '../../src/select-query-parser/result'
 import { expectType } from 'tsd'
 import { TypeEqual } from 'ts-expect'
 import { SelectQueryError } from '../../src/select-query-parser/utils'
+// TODO: should change this type in favor of unknown instead of the current one
+import type { Json } from '../../src/select-query-parser/types'
 
 type SelectQueryFromTableResult<
   TableName extends keyof Database['public']['Tables'],
