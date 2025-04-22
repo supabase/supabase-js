@@ -9,6 +9,7 @@ import {
   beforeAll,
   afterAll,
   vi,
+  it,
 } from 'vitest'
 
 import RealtimeClient from '../src/RealtimeClient'
@@ -814,12 +815,12 @@ describe('onClose', () => {
   })
 
   test('removes channel from socket', () => {
-    assert.equal(socket.channels.length, 1)
-    assert.deepEqual(socket.channels[0], channel)
+    assert.equal(socket.getChannels().length, 1)
+    assert.deepEqual(socket.getChannels()[0], channel)
 
     channel._trigger('phx_close')
 
-    assert.equal(socket.channels.length, 0)
+    assert.equal(socket.getChannels().length, 0)
   })
 })
 
@@ -1113,13 +1114,13 @@ describe('leave', () => {
 
   test("closes channel on 'ok' from server", () => {
     const anotherChannel = socket.channel('another', { three: 'four' })
-    assert.equal(socket.channels.length, 2)
+    assert.equal(socket.getChannels().length, 2)
 
     channel.unsubscribe()
     channel.joinPush.trigger('ok', {})
 
-    assert.equal(socket.channels.length, 1)
-    assert.deepEqual(socket.channels[0], anotherChannel)
+    assert.equal(socket.getChannels().length, 1)
+    assert.deepEqual(socket.getChannels()[0], anotherChannel)
   })
 
   test("sets state to closed on 'ok' event", () => {

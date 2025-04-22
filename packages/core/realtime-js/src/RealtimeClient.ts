@@ -38,6 +38,12 @@ export type RealtimeMessage = {
 }
 
 export type RealtimeRemoveChannelResponse = 'ok' | 'timed out' | 'error'
+export type HeartbeatStatus =
+  | 'sent'
+  | 'ok'
+  | 'error'
+  | 'timeout'
+  | 'disconnected'
 
 const noop = () => {}
 
@@ -86,7 +92,7 @@ const WORKER_SCRIPT = `
 export default class RealtimeClient {
   accessTokenValue: string | null = null
   apiKey: string | null = null
-  channels: RealtimeChannel[] = []
+  channels: Set<RealtimeChannel> = new Set()
   endPoint: string = ''
   httpEndpoint: string = ''
   headers?: { [key: string]: string } = DEFAULT_HEADERS
@@ -96,6 +102,7 @@ export default class RealtimeClient {
   heartbeatIntervalMs: number = 25000
   heartbeatTimer: ReturnType<typeof setInterval> | undefined = undefined
   pendingHeartbeatRef: string | null = null
+  heartbeatCallback: (status: HeartbeatStatus) => void = noop
   ref: number = 0
   reconnectTimer: Timer
   logger: Function = noop
@@ -268,7 +275,7 @@ export default class RealtimeClient {
    * Returns all created channels
    */
   getChannels(): RealtimeChannel[] {
-    return this.channels
+    return Array.from(this.channels)
   }
 
   /**
@@ -279,7 +286,7 @@ export default class RealtimeClient {
     channel: RealtimeChannel
   ): Promise<RealtimeRemoveChannelResponse> {
     const status = await channel.unsubscribe()
-    if (this.channels.length === 0) {
+    if (this.channels.size === 0) {
       this.disconnect()
     }
     return status
@@ -290,9 +297,13 @@ export default class RealtimeClient {
    */
   async removeAllChannels(): Promise<RealtimeRemoveChannelResponse[]> {
     const values_1 = await Promise.all(
-      this.channels.map((channel) => channel.unsubscribe())
+      Array.from(this.channels).map((channel) => {
+        this.channels.delete(channel)
+        return channel.unsubscribe()
+      })
     )
     this.disconnect()
+
     return values_1
   }
 
@@ -332,9 +343,18 @@ export default class RealtimeClient {
     topic: string,
     params: RealtimeChannelOptions = { config: {} }
   ): RealtimeChannel {
-    const chan = new RealtimeChannel(`realtime:${topic}`, params, this)
-    this.channels.push(chan)
-    return chan
+    const realtimeTopic = `realtime:${topic}`
+    const exists = this.getChannels().find(
+      (c: RealtimeChannel) => c.topic === realtimeTopic
+    )
+
+    if (!exists) {
+      const chan = new RealtimeChannel(`realtime:${topic}`, params, this)
+      this.channels.add(chan)
+      return chan
+    } else {
+      return exists
+    }
   }
 
   /**
@@ -394,6 +414,7 @@ export default class RealtimeClient {
    */
   async sendHeartbeat() {
     if (!this.isConnected()) {
+      this.heartbeatCallback('disconnected')
       return
     }
     if (this.pendingHeartbeatRef) {
@@ -402,6 +423,7 @@ export default class RealtimeClient {
         'transport',
         'heartbeat timeout. Attempting to re-establish connection'
       )
+      this.heartbeatCallback('timeout')
       this.conn?.close(WS_CLOSE_NORMAL, 'hearbeat timeout')
       return
     }
@@ -412,9 +434,13 @@ export default class RealtimeClient {
       payload: {},
       ref: this.pendingHeartbeatRef,
     })
+    this.heartbeatCallback('sent')
     await this.setAuth()
   }
 
+  onHeartbeat(callback: (status: HeartbeatStatus) => void): void {
+    this.heartbeatCallback = callback
+  }
   /**
    * Flushes send buffer
    */
@@ -467,7 +493,7 @@ export default class RealtimeClient {
    * @internal
    */
   _leaveOpenTopic(topic: string): void {
-    let dupChannel = this.channels.find(
+    let dupChannel = Array.from(this.channels).find(
       (c) => c.topic === topic && (c._isJoined() || c._isJoining())
     )
     if (dupChannel) {
@@ -484,9 +510,7 @@ export default class RealtimeClient {
    * @internal
    */
   _remove(channel: RealtimeChannel) {
-    this.channels = this.channels.filter(
-      (c: RealtimeChannel) => c._joinRef() !== channel._joinRef()
-    )
+    this.channels.delete(channel)
   }
 
   /**
@@ -510,6 +534,10 @@ export default class RealtimeClient {
     this.decode(rawMessage.data, (msg: RealtimeMessage) => {
       let { topic, event, payload, ref } = msg
 
+      if (topic === 'phoenix' && event === 'phx_reply') {
+        this.heartbeatCallback(msg.payload.status == 'ok' ? 'ok' : 'error')
+      }
+
       if (ref && ref === this.pendingHeartbeatRef) {
         this.pendingHeartbeatRef = null
       }
@@ -521,11 +549,13 @@ export default class RealtimeClient {
         }`,
         payload
       )
-      this.channels
+
+      Array.from(this.channels)
         .filter((channel: RealtimeChannel) => channel._isMember(topic))
         .forEach((channel: RealtimeChannel) =>
           channel._trigger(event, payload, ref)
         )
+
       this.stateChangeCallbacks.message.forEach((callback) => callback(msg))
     })
   }
