@@ -1,5 +1,5 @@
 import { isStorageError, StorageError, StorageUnknownError } from '../lib/errors'
-import { Fetch, get, head, post, remove } from '../lib/fetch'
+import { Fetch, get, head, post, put, remove } from '../lib/fetch'
 import { recursiveToCamel, resolveFetch } from '../lib/helpers'
 import {
   FileObject,
@@ -118,23 +118,16 @@ export default class StorageFileApi {
 
       const cleanPath = this._removeEmptyFolders(path)
       const _path = this._getFinalPath(cleanPath)
-      const res = await this.fetch(`${this.url}/object/${_path}`, {
-        method,
-        body: body as BodyInit,
-        headers,
-        ...(options?.duplex ? { duplex: options.duplex } : {}),
-      })
+      const data = await (method == 'PUT' ? put : post)(
+        this.fetch,
+        `${this.url}/object/${_path}`,
+        body as object,
+        { headers, ...(options?.duplex ? { duplex: options.duplex } : {}) }
+      )
 
-      const data = await res.json()
-
-      if (res.ok) {
-        return {
-          data: { path: cleanPath, id: data.Id, fullPath: data.Key },
-          error: null,
-        }
-      } else {
-        const error = data
-        return { data: null, error }
+      return {
+        data: { path: cleanPath, id: data.Id, fullPath: data.Key },
+        error: null,
       }
     } catch (error) {
       if (isStorageError(error)) {
@@ -207,22 +200,16 @@ export default class StorageFileApi {
         headers['content-type'] = options.contentType as string
       }
 
-      const res = await this.fetch(url.toString(), {
-        method: 'PUT',
-        body: body as BodyInit,
-        headers,
-      })
+      const data = await put(
+        this.fetch,
+        url.toString(),
+        body as object,
+        { headers }
+      )
 
-      const data = await res.json()
-
-      if (res.ok) {
-        return {
-          data: { path: cleanPath, fullPath: data.Key },
-          error: null,
-        }
-      } else {
-        const error = data
-        return { data: null, error }
+      return {
+        data: { path: cleanPath, fullPath: data.Key },
+        error: null,
       }
     } catch (error) {
       if (isStorageError(error)) {

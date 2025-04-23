@@ -45,15 +45,17 @@ const _getRequestParams = (
 ) => {
   const params: { [k: string]: any } = { method, headers: options?.headers || {} }
 
-  if (method === 'GET') {
+  if (method === 'GET' || !body) {
     return params
   }
 
-  params.headers = { 'Content-Type': 'application/json', ...options?.headers }
-
-  if (body) {
+  if (body instanceof FormData) {
+    params.body = body
+  } else {
+    params.headers = { 'Content-Type': 'application/json', ...options?.headers }
     params.body = JSON.stringify(body)
   }
+
   return { ...params, ...parameters }
 }
 
