@@ -9,7 +9,6 @@ import {
   TRANSPORTS,
   VSN,
   WS_CLOSE_NORMAL,
-  LOG_LEVEL,
 } from './lib/constants'
 
 import Serializer from './lib/serializer'
@@ -27,7 +26,7 @@ export type Channel = {
   updated_at: string
   id: number
 }
-export type LogLevel = LOG_LEVEL
+export type LogLevel = 'info' | 'warn' | 'error'
 
 export type RealtimeMessage = {
   topic: string

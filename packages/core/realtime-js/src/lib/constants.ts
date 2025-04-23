@@ -44,9 +44,3 @@ export enum CONNECTION_STATE {
   Closing = 'closing',
   Closed = 'closed',
 }
-
-export enum LOG_LEVEL {
-  Info = 'info',
-  Warn = 'warn',
-  Error = 'error',
-}

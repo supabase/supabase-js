@@ -10,7 +10,7 @@ import RealtimeClient, {
   RealtimeMessage,
 } from '../src/RealtimeClient'
 import jwt from 'jsonwebtoken'
-import { CHANNEL_STATES, LOG_LEVEL } from '../src/lib/constants'
+import { CHANNEL_STATES } from '../src/lib/constants'
 
 function generateJWT(exp: string): string {
   return jwt.sign({}, 'your-256-bit-secret', {
@@ -817,18 +817,18 @@ describe('log operations', () => {
     })
   })
   test('changing log_level sends proper params in URL', () => {
-    socket = new RealtimeClient(url, { log_level: LOG_LEVEL.Warn })
+    socket = new RealtimeClient(url, { log_level: 'warn' })
 
-    assert.equal(socket.logLevel, LOG_LEVEL.Warn)
+    assert.equal(socket.logLevel, 'warn')
     assert.equal(
       socket.endpointURL(),
       `${url}/websocket?log_level=warn&vsn=1.0.0`
     )
   })
   test('changing logLevel sends proper params in URL', () => {
-    socket = new RealtimeClient(url, { logLevel: LOG_LEVEL.Warn })
+    socket = new RealtimeClient(url, { logLevel: 'warn' })
 
-    assert.equal(socket.logLevel, LOG_LEVEL.Warn)
+    assert.equal(socket.logLevel, 'warn')
     assert.equal(
       socket.endpointURL(),
       `${url}/websocket?log_level=warn&vsn=1.0.0`
