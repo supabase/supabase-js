@@ -206,6 +206,7 @@ describe('Object API', () => {
       const outError = res.error as StorageApiError
       expect(outError).toBeInstanceOf(StorageApiError)
       expect(outError.message).toBe('The object exceeded the maximum allowed size')
+      expect(outError.statusCode).toBe('413')
     })
 
     test('can upload a file with a valid mime type', async () => {
@@ -234,6 +235,7 @@ describe('Object API', () => {
       const outError = res.error as StorageApiError
       expect(outError).toBeInstanceOf(StorageApiError)
       expect(outError.message).toBe('mime type image/jpeg is not supported')
+      expect(outError.statusCode).toBe('415')
     })
 
     test('sign url for upload', async () => {
@@ -299,6 +301,7 @@ describe('Object API', () => {
       const outError = uploadRes2.error as StorageApiError
       expect(outError).toBeInstanceOf(StorageApiError)
       expect(outError.message).toBe('The resource already exists')
+      expect(outError.statusCode).toBe('409')
     })
   })
 
