@@ -1,5 +1,5 @@
 import { StorageApiError, StorageUnknownError } from './errors'
-import { resolveResponse } from './helpers'
+import { isPlainObject, resolveResponse } from './helpers'
 import { FetchParameters } from './types'
 
 export type Fetch = typeof fetch
@@ -49,11 +49,11 @@ const _getRequestParams = (
     return params
   }
 
-  if (body instanceof FormData) {
-    params.body = body
-  } else {
+  if (isPlainObject(body)) {
     params.headers = { 'Content-Type': 'application/json', ...options?.headers }
     params.body = JSON.stringify(body)
+  } else {
+    params.body = body
   }
 
   return { ...params, ...parameters }

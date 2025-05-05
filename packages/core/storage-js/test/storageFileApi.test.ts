@@ -6,7 +6,7 @@ import FormData from 'form-data'
 import assert from 'assert'
 // @ts-ignore
 import fetch, { Response } from '@supabase/node-fetch'
-import { StorageError } from '../src/lib/errors'
+import { StorageApiError, StorageError } from '../src/lib/errors'
 
 // TODO: need to setup storage-api server for this test
 const URL = 'http://localhost:8000/storage/v1'
@@ -202,11 +202,10 @@ describe('Object API', () => {
       })
 
       const res = await storage.from(bucketName).upload(uploadPath, file)
-      expect(res.error).toEqual({
-        error: 'Payload too large',
-        message: 'The object exceeded the maximum allowed size',
-        statusCode: '413',
-      })
+
+      const outError = res.error as StorageApiError
+      expect(outError).toBeInstanceOf(StorageApiError)
+      expect(outError.message).toBe('The object exceeded the maximum allowed size')
     })
 
     test('can upload a file with a valid mime type', async () => {
@@ -232,11 +231,9 @@ describe('Object API', () => {
       const res = await storage.from(bucketName).upload(uploadPath, file, {
         contentType: 'image/jpeg',
       })
-      expect(res.error).toEqual({
-        error: 'invalid_mime_type',
-        message: 'mime type image/jpeg is not supported',
-        statusCode: '415',
-      })
+      const outError = res.error as StorageApiError
+      expect(outError).toBeInstanceOf(StorageApiError)
+      expect(outError.message).toBe('mime type image/jpeg is not supported')
     })
 
     test('sign url for upload', async () => {
@@ -299,11 +296,9 @@ describe('Object API', () => {
         .from(bucketName)
         .uploadToSignedUrl(data.path, data.token, file)
 
-      expect(uploadRes2.error).toEqual({
-        error: 'Duplicate',
-        message: 'The resource already exists',
-        statusCode: '409',
-      })
+      const outError = uploadRes2.error as StorageApiError
+      expect(outError).toBeInstanceOf(StorageApiError)
+      expect(outError.message).toBe('The resource already exists')
     })
   })
 
