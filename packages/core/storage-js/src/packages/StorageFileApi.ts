@@ -200,12 +200,7 @@ export default class StorageFileApi {
         headers['content-type'] = options.contentType as string
       }
 
-      const data = await put(
-        this.fetch,
-        url.toString(),
-        body as object,
-        { headers }
-      )
+      const data = await put(this.fetch, url.toString(), body as object, { headers })
 
       return {
         data: { path: cleanPath, fullPath: data.Key },

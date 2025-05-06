@@ -1,5 +1,5 @@
 import { StorageApiError, StorageUnknownError } from './errors'
-import { resolveResponse } from './helpers'
+import { isPlainObject, resolveResponse } from './helpers'
 import { FetchParameters } from './types'
 
 export type Fetch = typeof fetch
@@ -27,7 +27,9 @@ const handleError = async (
     error
       .json()
       .then((err) => {
-        reject(new StorageApiError(_getErrorMessage(err), error.status || 500))
+        const status = error.status || 500
+        const statusCode = err?.statusCode || status + ''
+        reject(new StorageApiError(_getErrorMessage(err), status, statusCode))
       })
       .catch((err) => {
         reject(new StorageUnknownError(_getErrorMessage(err), err))
@@ -49,11 +51,11 @@ const _getRequestParams = (
     return params
   }
 
-  if (body instanceof FormData) {
-    params.body = body
-  } else {
+  if (isPlainObject(body)) {
     params.headers = { 'Content-Type': 'application/json', ...options?.headers }
     params.body = JSON.stringify(body)
+  } else {
+    params.body = body
   }
 
   return { ...params, ...parameters }
