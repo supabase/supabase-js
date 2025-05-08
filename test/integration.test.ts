@@ -103,27 +103,33 @@ describe('Supabase Integration Tests', () => {
       const testMessage = { message: 'test' }
       let receivedMessage: any
       let subscribed = false
+      let attempts = 0
 
       channel
         .on('broadcast', { event: '*' }, (payload) => (receivedMessage = payload))
-        .subscribe((status, error) => {
+        .subscribe((status) => {
           if (status == 'SUBSCRIBED') subscribed = true
-          console.log('Channel status:', { status, error })
         })
 
       // Wait for subscription
       while (!subscribed) {
+        if (attempts > 50) throw new Error('Timeout waiting for subscription')
         await new Promise((resolve) => setTimeout(resolve, 100))
+        attempts++
       }
+
+      attempts = 0
 
       channel.send({ type: 'broadcast', event: 'test-event', payload: testMessage })
 
       // Wait on message
       while (!receivedMessage) {
+        if (attempts > 50) throw new Error('Timeout waiting for message')
         await new Promise((resolve) => setTimeout(resolve, 100))
+        attempts++
       }
       expect(receivedMessage).toBeDefined()
       expect(supabase.realtime.channels.size).toBe(1)
-    }, 15000)
+    }, 10000)
   })
 })

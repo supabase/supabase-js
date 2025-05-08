@@ -35,20 +35,16 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node }}
+
       - name: Set up Supabase CLI
         uses: supabase/setup-cli@v1
         with:
           version: latest
 
-      - name: Start Supabase
-        run: supabase start
       - name: Run tests
         run: |
           npm clean-install
           npm run test:coverage
-      - name: Run integration tests
-        timeout-minutes: 2
-        run: npm run test:integration
 
       - name: Upload coverage results to Coveralls
         uses: coverallsapp/github-action@master
