@@ -129,7 +129,7 @@ describe('Supabase Integration Tests', () => {
         attempts++
       }
       expect(receivedMessage).toBeDefined()
-      expect(supabase.realtime.channels.size).toBe(1)
+      expect(supabase.realtime.getChannels().length).toBe(1)
     }, 10000)
   })
 })
