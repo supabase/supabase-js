@@ -36,6 +36,11 @@ jobs:
         with:
           node-version: ${{ matrix.node }}
 
+      - name: Set up Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
       - name: Run tests
         run: |
           npm clean-install
