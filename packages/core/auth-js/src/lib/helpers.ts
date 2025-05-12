@@ -1,6 +1,6 @@
 import { API_VERSION_HEADER_NAME, BASE64URL_REGEX } from './constants'
 import { AuthInvalidJwtError } from './errors'
-import { base64UrlToUint8Array, stringFromBase64URL, stringToBase64URL } from './base64url'
+import { base64UrlToUint8Array, stringFromBase64URL } from './base64url'
 import { JwtHeader, JwtPayload, SupportedStorage } from './types'
 
 export function expiresAt(expiresIn: number) {
@@ -355,5 +355,13 @@ export function getAlgorithm(alg: 'RS256' | 'ES256'): RsaHashedImportParams | Ec
       }
     default:
       throw new Error('Invalid alg claim')
+  }
+}
+
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
+
+export function validateUUID(str: string) {
+  if (!UUID_REGEX.test(str)) {
+    throw new Error('@supabase/auth-js: Expected parameter to be UUID but is not')
   }
 }

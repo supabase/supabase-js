@@ -1279,3 +1279,6 @@ export interface JWK {
   kid?: string
   [key: string]: any
 }
+
+export const SIGN_OUT_SCOPES = ['global', 'local', 'others'] as const
+export type SignOutScope = typeof SIGN_OUT_SCOPES[number]

@@ -16,7 +16,7 @@ import {
 import type { GenerateLinkProperties, User } from '../src/lib/types'
 
 const INVALID_EMAIL = 'xx:;x@x.x'
-const INVALID_USER_ID = 'invalid-uuid'
+const NON_EXISTANT_USER_ID = '83fd9e20-7a80-46e4-bf29-a86e3d6bbf66'
 
 describe('GoTrueAdminApi', () => {
   describe('User creation', () => {
@@ -152,7 +152,7 @@ describe('GoTrueAdminApi', () => {
     })
 
     test('getUserById() returns AuthError when user id is invalid', async () => {
-      const { error, data } = await serviceRoleApiClient.getUserById(INVALID_USER_ID)
+      const { error, data } = await serviceRoleApiClient.getUserById(NON_EXISTANT_USER_ID)
 
       expect(error).not.toBeNull()
       expect(data.user).toBeNull()
@@ -283,7 +283,7 @@ describe('GoTrueAdminApi', () => {
     })
 
     test('deleteUser() returns AuthError when user id is invalid', async () => {
-      const { error, data } = await serviceRoleApiClient.deleteUser(INVALID_USER_ID)
+      const { error, data } = await serviceRoleApiClient.deleteUser(NON_EXISTANT_USER_ID)
 
       expect(error).not.toBeNull()
       expect(data.user).toBeNull()
@@ -479,7 +479,7 @@ describe('GoTrueAdminApi', () => {
     test('listUsers() returns AuthError when page is invalid', async () => {
       const { error, data } = await serviceRoleApiClient.listUsers({
         page: -1,
-        perPage: 10
+        perPage: 10,
       })
 
       expect(error).not.toBeNull()
@@ -489,8 +489,8 @@ describe('GoTrueAdminApi', () => {
 
   describe('Update User', () => {
     test('updateUserById() returns AuthError when user id is invalid', async () => {
-      const { error, data } = await serviceRoleApiClient.updateUserById(INVALID_USER_ID, {
-        email: 'new@email.com'
+      const { error, data } = await serviceRoleApiClient.updateUserById(NON_EXISTANT_USER_ID, {
+        email: 'new@email.com',
       })
 
       expect(error).not.toBeNull()
@@ -513,7 +513,7 @@ describe('GoTrueAdminApi', () => {
       expect(uid).toBeTruthy()
 
       const { error: enrollError } = await authClientWithSession.mfa.enroll({
-        factorType: 'totp'
+        factorType: 'totp',
       })
       expect(enrollError).toBeNull()
 
@@ -526,35 +526,41 @@ describe('GoTrueAdminApi', () => {
 
       const factorId = data?.factors[0].id
       expect(factorId).toBeDefined()
-      const { data: deletedData, error: deletedError } = await serviceRoleApiClient.mfa.deleteFactor({ 
-        userId: uid,
-        id: factorId!
-      })
+      const { data: deletedData, error: deletedError } =
+        await serviceRoleApiClient.mfa.deleteFactor({
+          userId: uid,
+          id: factorId!,
+        })
       expect(deletedError).toBeNull()
       expect(deletedData).not.toBeNull()
       const deletedId = (deletedData as any)?.data?.id
       console.log('deletedId:', deletedId)
       expect(deletedId).toEqual(factorId)
 
-      const { data: latestData, error: latestError } = await serviceRoleApiClient.mfa.listFactors({ userId: uid })
+      const { data: latestData, error: latestError } = await serviceRoleApiClient.mfa.listFactors({
+        userId: uid,
+      })
       expect(latestError).toBeNull()
       expect(latestData).not.toBeNull()
       expect(Array.isArray(latestData?.factors)).toBe(true)
       expect(latestData?.factors.length).toEqual(0)
     })
 
-
     test('mfa.listFactors returns AuthError for invalid user', async () => {
-      const { data, error } = await serviceRoleApiClient.mfa.listFactors({ userId: INVALID_USER_ID })
+      const { data, error } = await serviceRoleApiClient.mfa.listFactors({
+        userId: NON_EXISTANT_USER_ID,
+      })
       expect(data).toBeNull()
       expect(error).not.toBeNull()
     })
 
     test('mfa.deleteFactors returns AuthError for invalid user', async () => {
-      const { data, error } = await serviceRoleApiClient.mfa.deleteFactor({ userId: INVALID_USER_ID , id: '1' })
+      const { data, error } = await serviceRoleApiClient.mfa.deleteFactor({
+        userId: NON_EXISTANT_USER_ID,
+        id: NON_EXISTANT_USER_ID,
+      })
       expect(data).toBeNull()
       expect(error).not.toBeNull()
     })
-
   })
 })
