@@ -118,11 +118,13 @@ export default class SupabaseClient<
     }
 
     this.fetch = fetchWithAuth(supabaseKey, this._getAccessToken.bind(this), settings.global.fetch)
+
     this.realtime = this._initRealtimeClient({
       headers: this.headers,
       accessToken: this._getAccessToken.bind(this),
       ...settings.realtime,
     })
+
     this.rest = new PostgrestClient(`${_supabaseUrl}/rest/v1`, {
       headers: this.headers,
       schema: settings.db.schema,
@@ -320,14 +322,13 @@ export default class SupabaseClient<
     })
   }
 
-  private _listenForAuthEvents() {
-    let data = this.auth.onAuthStateChange((event, session) => {
-      this._handleTokenChanged(event, 'CLIENT', session?.access_token)
+  private async _listenForAuthEvents() {
+    return await this.auth.onAuthStateChange(async (event, session) => {
+      await this._handleTokenChanged(event, 'CLIENT', session?.access_token)
     })
-    return data
   }
 
-  private _handleTokenChanged(
+  private async _handleTokenChanged(
     event: AuthChangeEvent,
     source: 'CLIENT' | 'STORAGE',
     token?: string
@@ -338,7 +339,7 @@ export default class SupabaseClient<
     ) {
       this.changedAccessToken = token
     } else if (event === 'SIGNED_OUT') {
-      this.realtime.setAuth()
+      await this.realtime.setAuth()
       if (source == 'STORAGE') this.auth.signOut()
       this.changedAccessToken = undefined
     }
