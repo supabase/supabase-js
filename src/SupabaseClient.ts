@@ -323,8 +323,11 @@ export default class SupabaseClient<
   }
 
   private async _listenForAuthEvents() {
-    return await this.auth.onAuthStateChange(async (event, session) => {
-      await this._handleTokenChanged(event, 'CLIENT', session?.access_token)
+    return await this.auth.onAuthStateChange((event, session) => {
+      setTimeout(
+        async () => await this._handleTokenChanged(event, 'CLIENT', session?.access_token),
+        0
+      )
     })
   }
 
