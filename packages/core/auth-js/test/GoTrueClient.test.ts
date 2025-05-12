@@ -14,9 +14,13 @@ import {
   GOTRUE_URL_SIGNUP_ENABLED_AUTO_CONFIRM_ON,
   authClient,
   GOTRUE_URL_SIGNUP_ENABLED_ASYMMETRIC_AUTO_CONFIRM_ON,
+  authClientWithSession,
+  pkceClient,
 } from './lib/clients'
 import { mockUserCredentials } from './lib/utils'
 import { JWK, Session } from '../src'
+
+const TEST_USER_DATA = { info: 'some info' }
 
 describe('GoTrueClient', () => {
   // @ts-expect-error 'Allow access to private _refreshAccessToken'
@@ -327,6 +331,13 @@ describe('GoTrueClient', () => {
       expect(error?.message).toEqual('No browser detected.')
       expect(session).toBeNull()
     })
+
+    test('exchangeCodeForSession() should fail with invalid authCode', async () => {
+      const { error } = await pkceClient.exchangeCodeForSession('mock_code')
+      
+      expect(error).not.toBeNull()
+      expect(error?.status).toEqual(400)
+    })
   })
 
   describe('Email Auth', () => {
@@ -343,6 +354,61 @@ describe('GoTrueClient', () => {
       expect(data.user).not.toBeNull()
 
       expect(data.user?.email).toEqual(email)
+    })
+
+    test('signUp() with email and PKCE flowType', async () => {
+      const { email, password } = mockUserCredentials()
+
+      const { error, data } = await pkceClient.signUp({email, password})
+
+      expect(error).toBeNull()
+      expect(data.session).not.toBeNull()
+      expect(data.user).not.toBeNull()
+      expect(data.user?.email).toEqual(email)
+    })
+
+    test('signUp() with email and options', async () => {
+      const { email, password } = mockUserCredentials()
+
+      const { error, data } = await auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: email,
+          data: { ...TEST_USER_DATA }
+        }
+      })
+
+      expect(error).toBeNull()
+      expect(data.session).not.toBeNull()
+      expect(data.user).not.toBeNull()
+
+      expect(data.user?.email).toEqual(email)
+      expect(data?.user?.user_metadata).toMatchObject(TEST_USER_DATA)
+    })
+
+    test('fail to signUp() with invalid password', async () => {
+      const { error, data } = await auth.signUp({ email: 'asd@a.aa', password: '123'})
+
+      expect(data?.session).toBeNull()
+      expect(error).not.toBeNull()
+      expect(error?.message).toContain("Password should be at least 6 characters")
+    })
+
+    test('fail to signUp() with invalid email', async () => {
+      const { error, data } = await auth.signUp({ email: 'a', password: '123456'})
+
+      expect(data?.session).toBeNull()
+      expect(error).not.toBeNull()
+      expect(error?.message).toContain("Unable to validate email address: invalid format")
+    })
+
+    test('resend() with email', async () => {
+      const { email } = mockUserCredentials()
+
+      const { error } = await auth.resend({ email, type: 'signup'})
+
+      expect(error).toBeNull()
     })
   })
 
@@ -363,19 +429,6 @@ describe('GoTrueClient', () => {
       expect(error?.status).toEqual(500)
     })
 
-    test('signUp() with phone', async () => {
-      const { phone, password } = mockUserCredentials()
-
-      const { error, data } = await phoneClient.signUp({
-        phone,
-        password,
-      })
-
-      expect(error).not.toBeNull()
-      expect(data.session).toBeNull()
-      expect(data.user).toBeNull()
-    })
-
     test('signInWithOtp() with phone', async () => {
       const { phone } = mockUserCredentials()
 
@@ -385,6 +438,32 @@ describe('GoTrueClient', () => {
       expect(error).not.toBeNull()
       expect(data.session).toBeNull()
       expect(data.user).toBeNull()
+    })
+
+    test('signUp() with phone and options', async () => {
+      const { phone, password } = mockUserCredentials()
+
+      const { error, data } = await phoneClient.signUp({
+        phone,
+        password,
+        options: {
+          data: { ...TEST_USER_DATA },
+          channel: 'whatsapp',
+          captchaToken: 'some_token'
+        }
+      })
+
+      expect(error).not.toBeNull()
+      expect(data.session).toBeNull()
+      expect(data.user).toBeNull()
+    })
+
+    test('resend() with phone', async () => {
+      const { phone } = mockUserCredentials()
+
+      const { error } = await auth.resend({ phone, type: 'phone_change'})
+
+      expect(error).toBeNull()
     })
 
     test('verifyOTP()', async () => {
@@ -908,16 +987,139 @@ describe('User management', () => {
 })
 
 describe('MFA', () => {
+  const setupUserWithMFA = async () => {
+    const { email, password } = mockUserCredentials()
+    const { data: signUpData, error: signUpError } = await authWithSession.signUp({
+      email,
+      password,
+    })
+    expect(signUpError).toBeNull()
+    expect(signUpData.session).not.toBeNull()
+    
+    await authWithSession.initialize()
+    
+    const { error: signInError } = await authWithSession.signInWithPassword({
+      email,
+      password,
+    })
+    expect(signInError).toBeNull()
+    
+    return { email, password }
+  }
+
+  const setupUserWithMFAAndTOTP = async () => {
+    const credentials = await setupUserWithMFA()
+    
+    // Add the common TOTP enrollment part
+    const { data: enrollData, error: enrollError } = await authWithSession.mfa.enroll({
+      factorType: 'totp',
+    })
+    expect(enrollError).toBeNull()
+    expect(enrollData!.totp).not.toBeNull()
+    
+    return {
+      ...credentials,
+      factorId: enrollData!.id,
+      totp: enrollData!.totp
+    }
+  }
+
+  beforeEach(async () => {
+    await authWithSession.signOut()
+  })
+
   test('enroll({factorType: "totp"}) returns totp', async () => {
+    await setupUserWithMFA()
     const { data, error } = await authWithSession.mfa.enroll({
       factorType: 'totp',
     })
 
-    if (error) {
-      throw error
-    }
+    expect(error).toBeNull()
+    expect(data!.totp.qr_code).not.toBeNull()
+  })
 
-    expect(data.totp.qr_code).not.toBeNull()
+  test('enroll({factorType: "totp"}) should fail without session', async () => {
+    await authWithSession.signOut()
+    const { data, error } = await authWithSession.mfa.enroll({
+      factorType: 'totp',
+    })
+
+    expect(error).not.toBeNull()
+    expect(error?.message).toContain('Bearer token')
+    expect(data).toBeNull()
+  })
+
+  test('challenge should create MFA challenge', async () => {
+    const { factorId } = await setupUserWithMFAAndTOTP()
+
+    const { data: challengeData, error: challengeError } = await authWithSession.mfa.challenge({
+      factorId
+    })
+
+    expect(challengeError).toBeNull()
+    expect(challengeData!.id).not.toBeNull()
+    expect(challengeData!.expires_at).not.toBeNull()
+  })
+
+  test('verify should verify MFA challenge', async () => {
+    const { factorId } = await setupUserWithMFAAndTOTP()
+
+    const { data: challengeData, error: challengeError } = await authWithSession.mfa.challenge({
+      factorId
+    })
+    expect(challengeError).toBeNull()
+
+    const { data: verifyData, error: verifyError } = await authWithSession.mfa.verify({
+      factorId,
+      challengeId: challengeData!.id,
+      code: '123456'
+    })
+
+    expect(verifyError).not.toBeNull()
+    expect(verifyError?.message).toContain('Invalid TOTP code')
+    expect(verifyData).toBeNull()
+  })
+
+  test('challengeAndVerify should handle MFA challenge and verification in one call', async () => {
+    const { factorId } = await setupUserWithMFAAndTOTP()
+
+    const { data: verifyData, error: verifyError } = await authWithSession.mfa.challengeAndVerify({
+      factorId,
+      code: '123456'
+    })
+
+    expect(verifyError).not.toBeNull()
+    expect(verifyError?.message).toContain('Invalid TOTP code')
+    expect(verifyData).toBeNull()
+  })
+
+  test('unenroll should remove MFA factor', async () => {
+    const { factorId } = await setupUserWithMFAAndTOTP()
+
+    const { error: unenrollError } = await authWithSession.mfa.unenroll({
+      factorId
+    })
+
+    expect(unenrollError).toBeNull()
+
+    // Wait for unenrollment to be processed
+    await new Promise((resolve) => setTimeout(resolve, 1000))
+
+    // Verify factor was removed
+    const { data: factorsData } = await authWithSession.mfa.listFactors()
+    expect(factorsData!.all).toHaveLength(0)
+    expect(factorsData!.totp).toHaveLength(0)
+  })
+
+  test('getAuthenticatorAssuranceLevel should return current AAL', async () => {
+    const { factorId } = await setupUserWithMFAAndTOTP()
+
+    const { data: aalData, error: aalError } = await authWithSession.mfa.getAuthenticatorAssuranceLevel()
+
+    expect(aalError).toBeNull()
+    expect(aalData!.currentLevel).toBeDefined()
+    expect(aalData!.nextLevel).toBeDefined()
+    expect(aalData!.currentAuthenticationMethods).toBeDefined()
   })
 })
 
@@ -1198,5 +1400,36 @@ describe('fetchJwk', () => {
       await authWithAsymmetricSession.fetchJwk('123')
       expect(fetchedUrls).toHaveLength(c.fetchedUrlsLength)
     })
+  })
+})
+
+describe('signInAnonymously', () => {
+  test('should successfully sign in anonymously', async () => {
+    const { data, error } = await authClientWithSession.signInAnonymously()
+    
+    expect(error).toBeNull()
+    expect(data).not.toBeNull()
+    expect(data.session).not.toBeNull()
+    expect(data.user).not.toBeNull()
+    expect(data.user?.is_anonymous).toBe(true)
+
+    const { data: savedSession } = await authClientWithSession.getSession()
+    expect(savedSession.session).not.toBeNull()
+  })
+
+  test('should sign in anonymously with user data', async () => {
+    const { data, error } = await authClient.signInAnonymously({ options: { data: TEST_USER_DATA } })
+    
+    expect(error).toBeNull()
+    expect(data).not.toBeNull()
+    expect(data?.user?.user_metadata).toEqual(TEST_USER_DATA)
+  })
+  
+  test('fail to sign in anonymously when it is disabled on the server', async () => {
+    const { data, error } = await phoneClient.signInAnonymously()
+    
+    expect(data?.session).toBeNull()
+    expect(error).not.toBeNull()
+    expect(error?.message).toContain("Anonymous sign-ins are disabled")
   })
 })

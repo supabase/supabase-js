@@ -15,6 +15,9 @@ import {
 
 import type { GenerateLinkProperties, User } from '../src/lib/types'
 
+const INVALID_EMAIL = 'xx:;x@x.x'
+const INVALID_USER_ID = 'invalid-uuid'
+
 describe('GoTrueAdminApi', () => {
   describe('User creation', () => {
     test('createUser() should create a new user', async () => {
@@ -78,6 +81,17 @@ describe('GoTrueAdminApi', () => {
       expect(data.user?.app_metadata).toHaveProperty('provider')
       expect(data.user?.app_metadata).toHaveProperty('providers')
     })
+
+    test('createUser() returns AuthError when email is invalid', async () => {
+      const { error, data } = await serviceRoleApiClient.createUser({
+        email: INVALID_EMAIL,
+        password: 'password123',
+      })
+
+      expect(error).not.toBeNull()
+      expect(error?.message).toMatch('Unable to validate email address: invalid format')
+      expect(data.user).toBeNull()
+    })
   })
 
   describe('User fetch', () => {
@@ -135,6 +149,13 @@ describe('GoTrueAdminApi', () => {
       expect(foundError).toBeNull()
       expect(foundUser).not.toBeUndefined()
       expect(foundUser.user?.email).toEqual(email)
+    })
+
+    test('getUserById() returns AuthError when user id is invalid', async () => {
+      const { error, data } = await serviceRoleApiClient.getUserById(INVALID_USER_ID)
+
+      expect(error).not.toBeNull()
+      expect(data.user).toBeNull()
     })
   })
 
@@ -260,6 +281,13 @@ describe('GoTrueAdminApi', () => {
       expect(emails.length).toBeGreaterThan(0)
       expect(emails).not.toContain(email)
     })
+
+    test('deleteUser() returns AuthError when user id is invalid', async () => {
+      const { error, data } = await serviceRoleApiClient.deleteUser(INVALID_USER_ID)
+
+      expect(error).not.toBeNull()
+      expect(data.user).toBeNull()
+    })
   })
 
   describe('User registration', () => {
@@ -362,6 +390,27 @@ describe('GoTrueAdminApi', () => {
       expect(data.user).toHaveProperty('invited_at')
       expect(data.user?.invited_at).toBeDefined()
     })
+
+    test('inviteUserByEmail() returns AuthError when email is invalid', async () => {
+      const { error, data } = await serviceRoleApiClient.inviteUserByEmail(INVALID_EMAIL)
+
+      expect(error).not.toBeNull()
+      expect(error?.message).toMatch('Unable to validate email address: invalid format')
+      expect(data.user).toBeNull()
+    })
+
+    test('generateLink() returns AuthError when email is invalid', async () => {
+      const { error, data } = await serviceRoleApiClient.generateLink({
+        type: 'signup',
+        email: INVALID_EMAIL,
+        password: 'password123',
+      })
+
+      expect(error).not.toBeNull()
+      expect(error?.message).toMatch('Unable to validate email address: invalid format')
+      expect(data.user).toBeNull()
+      expect(data.properties).toBeNull()
+    })
   })
 
   describe('User authentication', () => {
@@ -424,5 +473,88 @@ describe('GoTrueAdminApi', () => {
         expect(error?.message).toEqual('Invalid phone number format (E.164 required)')
       })
     })
+  })
+
+  describe('List Users', () => {
+    test('listUsers() returns AuthError when page is invalid', async () => {
+      const { error, data } = await serviceRoleApiClient.listUsers({
+        page: -1,
+        perPage: 10
+      })
+
+      expect(error).not.toBeNull()
+      expect(data.users).toEqual([])
+    })
+  })
+
+  describe('Update User', () => {
+    test('updateUserById() returns AuthError when user id is invalid', async () => {
+      const { error, data } = await serviceRoleApiClient.updateUserById(INVALID_USER_ID, {
+        email: 'new@email.com'
+      })
+
+      expect(error).not.toBeNull()
+      expect(data.user).toBeNull()
+    })
+  })
+
+  describe('MFA Admin', () => {
+    test('mfa factor management: add, list and delete', async () => {
+      const { email, password } = mockUserCredentials()
+
+      const { error: signUpError, data: signUpData } = await authClientWithSession.signUp({
+        email,
+        password,
+      })
+      expect(signUpError).toBeNull()
+      expect(signUpData.session).not.toBeNull()
+
+      const uid = signUpData.user?.id || ''
+      expect(uid).toBeTruthy()
+
+      const { error: enrollError } = await authClientWithSession.mfa.enroll({
+        factorType: 'totp'
+      })
+      expect(enrollError).toBeNull()
+
+      const { data, error } = await serviceRoleApiClient.mfa.listFactors({ userId: uid })
+
+      expect(error).toBeNull()
+      expect(data).not.toBeNull()
+      expect(Array.isArray(data?.factors)).toBe(true)
+      expect(data?.factors.length).toBeGreaterThan(0)
+
+      const factorId = data?.factors[0].id
+      expect(factorId).toBeDefined()
+      const { data: deletedData, error: deletedError } = await serviceRoleApiClient.mfa.deleteFactor({ 
+        userId: uid,
+        id: factorId!
+      })
+      expect(deletedError).toBeNull()
+      expect(deletedData).not.toBeNull()
+      const deletedId = (deletedData as any)?.data?.id
+      console.log('deletedId:', deletedId)
+      expect(deletedId).toEqual(factorId)
+
+      const { data: latestData, error: latestError } = await serviceRoleApiClient.mfa.listFactors({ userId: uid })
+      expect(latestError).toBeNull()
+      expect(latestData).not.toBeNull()
+      expect(Array.isArray(latestData?.factors)).toBe(true)
+      expect(latestData?.factors.length).toEqual(0)
+    })
+
+
+    test('mfa.listFactors returns AuthError for invalid user', async () => {
+      const { data, error } = await serviceRoleApiClient.mfa.listFactors({ userId: INVALID_USER_ID })
+      expect(data).toBeNull()
+      expect(error).not.toBeNull()
+    })
+
+    test('mfa.deleteFactors returns AuthError for invalid user', async () => {
+      const { data, error } = await serviceRoleApiClient.mfa.deleteFactor({ userId: INVALID_USER_ID , id: '1' })
+      expect(data).toBeNull()
+      expect(error).not.toBeNull()
+    })
+
   })
 })

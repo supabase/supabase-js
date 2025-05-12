@@ -87,6 +87,15 @@ export const clientApiAutoConfirmDisabledClient = new GoTrueClient({
   storage: new MemoryStorage(),
 })
 
+export const pkceClient = new GoTrueClient({
+  url: GOTRUE_URL_SIGNUP_ENABLED_AUTO_CONFIRM_ON,
+  autoRefreshToken: false,
+  persistSession: true,
+  storage: new MemoryStorage(),
+  flowType: 'pkce',
+})
+
+
 export const authAdminApiAutoConfirmEnabledClient = new GoTrueAdminApi({
   url: GOTRUE_URL_SIGNUP_ENABLED_AUTO_CONFIRM_ON,
   headers: {
@@ -104,6 +113,9 @@ export const authAdminApiAutoConfirmDisabledClient = new GoTrueAdminApi({
 const SERVICE_ROLE_JWT = jwt.sign(
   {
     role: 'service_role',
+    // Set issued at to 1 minute ago to fix flacky tests because of 
+    // invalid JWT: unable to parse or verify signature, Token used before issued
+    iat: Math.floor(Date.now() / 1000) - 60
   },
   GOTRUE_JWT_SECRET
 )
