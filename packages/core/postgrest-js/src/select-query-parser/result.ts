@@ -401,11 +401,25 @@ type ProcessSpreadNode<
   ? Result extends SelectQueryError<infer E>
     ? SelectQueryError<E>
     : ExtractFirstProperty<Result> extends unknown[]
-    ? {
-        [K in Spread['target']['name']]: SelectQueryError<`"${RelationName}" and "${Spread['target']['name']}" do not form a many-to-one or one-to-one relationship spread not possible`>
-      }
+    ? // Spread over an many-to-many relationship, turn all the result fields into arrays
+      ProcessManyToManySpreadNodeResult<Result>
     : ProcessSpreadNodeResult<Result>
   : never
+
+/**
+ * Helper type to process the result of a many-to-many spread node.
+ * Converts all fields in the spread object into arrays.
+ */
+type ProcessManyToManySpreadNodeResult<Result> = Result extends Record<
+  string,
+  SelectQueryError<string> | null
+>
+  ? Result
+  : ExtractFirstProperty<Result> extends infer SpreadedObject
+  ? SpreadedObject extends Array<Record<string, unknown>>
+    ? { [K in keyof SpreadedObject[number]]: Array<SpreadedObject[number][K]> }
+    : SelectQueryError<'An error occurred spreading the many-to-many object'>
+  : SelectQueryError<'An error occurred spreading the many-to-many object'>
 
 /**
  * Helper type to process the result of a spread node.

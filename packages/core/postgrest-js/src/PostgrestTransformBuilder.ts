@@ -7,7 +7,8 @@ export default class PostgrestTransformBuilder<
   Row extends Record<string, unknown>,
   Result,
   RelationName = unknown,
-  Relationships = unknown
+  Relationships = unknown,
+  Method = unknown
 > extends PostgrestBuilder<Result> {
   /**
    * Perform a SELECT on the query result.
@@ -23,7 +24,7 @@ export default class PostgrestTransformBuilder<
     NewResultOne = GetResult<Schema, Row, RelationName, Relationships, Query>
   >(
     columns?: Query
-  ): PostgrestTransformBuilder<Schema, Row, NewResultOne[], RelationName, Relationships> {
+  ): PostgrestTransformBuilder<Schema, Row, NewResultOne[], RelationName, Relationships, Method> {
     // Remove whitespaces except when quoted
     let quoted = false
     const cleanedColumns = (columns ?? '*')
@@ -48,7 +49,8 @@ export default class PostgrestTransformBuilder<
       Row,
       NewResultOne[],
       RelationName,
-      Relationships
+      Relationships,
+      Method
     >
   }
 
@@ -314,14 +316,16 @@ export default class PostgrestTransformBuilder<
     Row,
     CheckMatchingArrayTypes<Result, NewResult>,
     RelationName,
-    Relationships
+    Relationships,
+    Method
   > {
     return this as unknown as PostgrestTransformBuilder<
       Schema,
       Row,
       CheckMatchingArrayTypes<Result, NewResult>,
       RelationName,
-      Relationships
+      Relationships,
+      Method
     >
   }
 }

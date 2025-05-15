@@ -654,8 +654,9 @@ type Schema = Database['public']
   const { data } = await selectQueries.selectSpreadOnManyRelation.limit(1).single()
   let result: Exclude<typeof data, null>
   let expected: {
-    id: number
-    messages: SelectQueryError<'"channels" and "messages" do not form a many-to-one or one-to-one relationship spread not possible'>
+    channel_id: number
+    id: Array<number>
+    message: Array<string | null>
   }
   expectType<TypeEqual<typeof result, typeof expected>>(true)
 }

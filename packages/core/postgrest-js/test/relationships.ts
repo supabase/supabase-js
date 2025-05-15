@@ -146,7 +146,7 @@ export const selectParams = {
   },
   selectSpreadOnManyRelation: {
     from: 'channels',
-    select: 'id, ...messages(id, message)',
+    select: 'channel_id:id, ...messages(id, message)',
   },
   selectWithDuplicatesFields: {
     from: 'channels',
@@ -1734,7 +1734,7 @@ test('join with same dest twice column hinting', async () => {
   `)
 })
 
-test('join with same dest twice column hinting', async () => {
+test('select spread on many relation', async () => {
   const res = await selectQueries.selectSpreadOnManyRelation.limit(1).single()
   expect(res).toMatchInlineSnapshot(`
     Object {
