@@ -348,6 +348,7 @@ export interface User {
   is_anonymous?: boolean
   is_sso_user?: boolean
   factors?: Factor[]
+  deleted_at?: string
 }
 
 export interface UserAttributes {
