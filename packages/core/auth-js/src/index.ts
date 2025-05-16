@@ -9,4 +9,5 @@ export {
   navigatorLock,
   NavigatorLockAcquireTimeoutError,
   internals as lockInternals,
+  processLock,
 } from './lib/locks'
