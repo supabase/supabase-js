@@ -71,6 +71,11 @@ export type GenericSchema = {
   Functions: Record<string, GenericFunction>
 }
 
+export type PostgRESTVersion = 12 | 13
+export type ClientServerOptions = {
+  postgrestVersion: PostgRESTVersion
+}
+
 // https://twitter.com/mattpocockuk/status/1622730173446557697
 export type Prettify<T> = { [K in keyof T]: T[K] } & {}
 // https://github.com/sindresorhus/type-fest

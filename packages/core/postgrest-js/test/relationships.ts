@@ -3,6 +3,8 @@ import { Database } from './types.override'
 
 const REST_URL = 'http://localhost:3000'
 export const postgrest = new PostgrestClient<Database>(REST_URL)
+const REST_URL_13 = 'http://localhost:3001'
+const postgrest13 = new PostgrestClient<Database, { postgrestVersion: 13 }>(REST_URL_13)
 
 const userColumn: 'catchphrase' | 'username' = 'username'
 
@@ -343,6 +345,9 @@ export const selectQueries = {
     .from(selectParams.selectWithSpreadOnNestedRelation.from)
     .select(selectParams.selectWithSpreadOnNestedRelation.select),
   selectSpreadOnManyRelation: postgrest
+    .from(selectParams.selectSpreadOnManyRelation.from)
+    .select(selectParams.selectSpreadOnManyRelation.select),
+  selectSpreadOnManyRelation13: postgrest13
     .from(selectParams.selectSpreadOnManyRelation.from)
     .select(selectParams.selectSpreadOnManyRelation.select),
   selectWithDuplicatesFields: postgrest
@@ -1736,6 +1741,24 @@ test('join with same dest twice column hinting', async () => {
 
 test('select spread on many relation', async () => {
   const res = await selectQueries.selectSpreadOnManyRelation.limit(1).single()
+  expect(res).toMatchInlineSnapshot(`
+    Object {
+      "count": null,
+      "data": null,
+      "error": Object {
+        "code": "PGRST119",
+        "details": "'channels' and 'messages' do not form a many-to-one or one-to-one relationship",
+        "hint": null,
+        "message": "A spread operation on 'messages' is not possible",
+      },
+      "status": 400,
+      "statusText": "Bad Request",
+    }
+  `)
+})
+
+test('select spread on many relation postgrest13', async () => {
+  const res = await selectQueries.selectSpreadOnManyRelation13.limit(1).single()
   expect(res).toMatchInlineSnapshot(`
     Object {
       "count": null,

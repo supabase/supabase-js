@@ -2,7 +2,7 @@ import PostgrestQueryBuilder from './PostgrestQueryBuilder'
 import PostgrestFilterBuilder from './PostgrestFilterBuilder'
 import PostgrestBuilder from './PostgrestBuilder'
 import { DEFAULT_HEADERS } from './constants'
-import { Fetch, GenericSchema } from './types'
+import { Fetch, GenericSchema, ClientServerOptions } from './types'
 
 /**
  * PostgREST client.
@@ -16,6 +16,7 @@ import { Fetch, GenericSchema } from './types'
  */
 export default class PostgrestClient<
   Database = any,
+  ClientOptions extends ClientServerOptions = { postgrestVersion: 12 },
   SchemaName extends string & keyof Database = 'public' extends keyof Database
     ? 'public'
     : string & keyof Database,
@@ -59,16 +60,16 @@ export default class PostgrestClient<
   from<
     TableName extends string & keyof Schema['Tables'],
     Table extends Schema['Tables'][TableName]
-  >(relation: TableName): PostgrestQueryBuilder<Schema, Table, TableName>
+  >(relation: TableName): PostgrestQueryBuilder<ClientOptions, Schema, Table, TableName>
   from<ViewName extends string & keyof Schema['Views'], View extends Schema['Views'][ViewName]>(
     relation: ViewName
-  ): PostgrestQueryBuilder<Schema, View, ViewName>
+  ): PostgrestQueryBuilder<ClientOptions, Schema, View, ViewName>
   /**
    * Perform a query on a table or a view.
    *
    * @param relation - The table or view name to query
    */
-  from(relation: string): PostgrestQueryBuilder<Schema, any, any> {
+  from(relation: string): PostgrestQueryBuilder<ClientOptions, Schema, any, any> {
     const url = new URL(`${this.url}/${relation}`)
     return new PostgrestQueryBuilder(url, {
       headers: { ...this.headers },
@@ -88,6 +89,7 @@ export default class PostgrestClient<
     schema: DynamicSchema
   ): PostgrestClient<
     Database,
+    ClientOptions,
     DynamicSchema,
     Database[DynamicSchema] extends GenericSchema ? Database[DynamicSchema] : any
   > {
@@ -134,6 +136,7 @@ export default class PostgrestClient<
       count?: 'exact' | 'planned' | 'estimated'
     } = {}
   ): PostgrestFilterBuilder<
+    ClientOptions,
     Schema,
     Fn['Returns'] extends any[]
       ? Fn['Returns'][number] extends Record<string, unknown>
@@ -176,6 +179,6 @@ export default class PostgrestClient<
       body,
       fetch: this.fetch,
       allowEmpty: false,
-    } as unknown as PostgrestBuilder<Fn['Returns']>)
+    } as unknown as PostgrestBuilder<ClientOptions, Fn['Returns']>)
   }
 }

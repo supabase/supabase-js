@@ -3,28 +3,28 @@ import { Database } from './types.override'
 import { expectType } from 'tsd'
 import { InvalidMethodError } from '../src/PostgrestFilterBuilder'
 
-const REST_URL = 'http://localhost:3000'
-const postgrest = new PostgrestClient<Database>(REST_URL)
+const REST_URL_13 = 'http://localhost:3001'
+const postgrest13 = new PostgrestClient<Database>(REST_URL_13)
 
 describe('maxAffected', () => {
   // Type checking tests
   test('maxAffected should show warning on non update / delete', async () => {
-    const resSelect = await postgrest.from('messages').select('*').maxAffected(10)
-    const resInsert = await postgrest
+    const resSelect = await postgrest13.from('messages').select('*').maxAffected(10)
+    const resInsert = await postgrest13
       .from('messages')
       .insert({ message: 'foo', username: 'supabot', channel_id: 1 })
       .maxAffected(10)
-    const resUpsert = await postgrest
+    const resUpsert = await postgrest13
       .from('messages')
       .upsert({ id: 3, message: 'foo', username: 'supabot', channel_id: 2 })
       .maxAffected(10)
-    const resUpdate = await postgrest
+    const resUpdate = await postgrest13
       .from('messages')
       .update({ channel_id: 2 })
       .eq('message', 'foo')
       .maxAffected(1)
       .select()
-    const resDelete = await postgrest
+    const resDelete = await postgrest13
       .from('messages')
       .delete()
       .eq('message', 'foo')
@@ -52,14 +52,14 @@ describe('maxAffected', () => {
   // Runtime behavior tests
   test('update should fail when maxAffected is exceeded', async () => {
     // First create multiple rows
-    await postgrest.from('messages').insert([
+    await postgrest13.from('messages').insert([
       { message: 'test1', username: 'supabot', channel_id: 1 },
       { message: 'test1', username: 'supabot', channel_id: 1 },
       { message: 'test1', username: 'supabot', channel_id: 1 },
     ])
 
     // Try to update all rows with maxAffected=2
-    const result = await postgrest
+    const result = await postgrest13
       .from('messages')
       .update({ message: 'updated' })
       .eq('message', 'test1')
@@ -71,12 +71,12 @@ describe('maxAffected', () => {
 
   test('update should succeed when within maxAffected limit', async () => {
     // First create a single row
-    await postgrest
+    await postgrest13
       .from('messages')
       .insert([{ message: 'test2', username: 'supabot', channel_id: 1 }])
 
     // Try to update with maxAffected=2
-    const { data, error } = await postgrest
+    const { data, error } = await postgrest13
       .from('messages')
       .update({ message: 'updated' })
       .eq('message', 'test2')
@@ -90,14 +90,14 @@ describe('maxAffected', () => {
 
   test('delete should fail when maxAffected is exceeded', async () => {
     // First create multiple rows
-    await postgrest.from('messages').insert([
+    await postgrest13.from('messages').insert([
       { message: 'test3', username: 'supabot', channel_id: 1 },
       { message: 'test3', username: 'supabot', channel_id: 1 },
       { message: 'test3', username: 'supabot', channel_id: 1 },
     ])
 
     // Try to delete all rows with maxAffected=2
-    const { error } = await postgrest
+    const { error } = await postgrest13
       .from('messages')
       .delete()
       .eq('message', 'test3')
@@ -110,12 +110,12 @@ describe('maxAffected', () => {
 
   test('delete should succeed when within maxAffected limit', async () => {
     // First create a single row
-    await postgrest
+    await postgrest13
       .from('messages')
       .insert([{ message: 'test4', username: 'supabot', channel_id: 1 }])
 
     // Try to delete with maxAffected=2
-    const { data, error } = await postgrest
+    const { data, error } = await postgrest13
       .from('messages')
       .delete()
       .eq('message', 'test4')

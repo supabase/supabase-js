@@ -649,9 +649,20 @@ type Schema = Database['public']
   expectType<TypeEqual<typeof result, typeof expected>>(true)
 }
 
-// join with same dest twice column hinting
+// spread over a many relation with postgrest12
 {
   const { data } = await selectQueries.selectSpreadOnManyRelation.limit(1).single()
+  let result: Exclude<typeof data, null>
+  let expected: {
+    channel_id: number
+    messages: SelectQueryError<'"channels" and "messages" do not form a many-to-one or one-to-one relationship spread not possible'>
+  }
+  expectType<TypeEqual<typeof result, typeof expected>>(true)
+}
+
+// spread over a many relation with postgrest13
+{
+  const { data } = await selectQueries.selectSpreadOnManyRelation13.limit(1).single()
   let result: Exclude<typeof data, null>
   let expected: {
     channel_id: number

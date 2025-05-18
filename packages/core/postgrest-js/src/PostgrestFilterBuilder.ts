@@ -1,6 +1,6 @@
 import PostgrestTransformBuilder from './PostgrestTransformBuilder'
 import { JsonPathToAccessor, JsonPathToType } from './select-query-parser/utils'
-import { GenericSchema } from './types'
+import { ClientServerOptions, GenericSchema } from './types'
 import { HeaderManager } from './utils'
 
 type FilterOperator =
@@ -73,13 +73,22 @@ type ResolveFilterRelationshipValue<
 export type InvalidMethodError<S extends string> = { Error: S }
 
 export default class PostgrestFilterBuilder<
+  ClientOptions extends ClientServerOptions,
   Schema extends GenericSchema,
   Row extends Record<string, unknown>,
   Result,
   RelationName = unknown,
   Relationships = unknown,
   Method = unknown
-> extends PostgrestTransformBuilder<Schema, Row, Result, RelationName, Relationships, Method> {
+> extends PostgrestTransformBuilder<
+  ClientOptions,
+  Schema,
+  Row,
+  Result,
+  RelationName,
+  Relationships,
+  Method
+> {
   maxAffected(
     value: number
   ): Method extends 'PATCH' | 'DELETE'
