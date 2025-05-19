@@ -139,7 +139,7 @@ export default class SupabaseClient<
    * Supabase Functions allows you to deploy and invoke edge functions.
    */
   get functions(): FunctionsClient {
-    return new FunctionsClient(this.functionsUrl.toString(), {
+    return new FunctionsClient(this.functionsUrl.href, {
       headers: this.headers,
       customFetch: this.fetch,
     })
@@ -149,7 +149,7 @@ export default class SupabaseClient<
    * Supabase Storage allows you to manage user-generated content, such as photos or videos.
    */
   get storage(): SupabaseStorageClient {
-    return new SupabaseStorageClient(this.storageUrl.toString(), this.headers, this.fetch)
+    return new SupabaseStorageClient(this.storageUrl.href, this.headers, this.fetch)
   }
 
   // NOTE: signatures must be kept in sync with PostgrestClient.from
@@ -297,7 +297,7 @@ export default class SupabaseClient<
       apikey: `${this.supabaseKey}`,
     }
     return new SupabaseAuthClient({
-      url: this.authUrl.toString(),
+      url: this.authUrl.href,
       headers: { ...authHeaders, ...headers },
       storageKey: storageKey,
       autoRefreshToken,
@@ -315,7 +315,7 @@ export default class SupabaseClient<
   }
 
   private _initRealtimeClient(options: RealtimeClientOptions) {
-    return new RealtimeClient(this.realtimeUrl.toString(), {
+    return new RealtimeClient(this.realtimeUrl.href, {
       ...options,
       params: { ...{ apikey: this.supabaseKey }, ...options?.params },
     })
