@@ -1762,15 +1762,18 @@ test('select spread on many relation postgrest13', async () => {
   expect(res).toMatchInlineSnapshot(`
     Object {
       "count": null,
-      "data": null,
-      "error": Object {
-        "code": "PGRST119",
-        "details": "'channels' and 'messages' do not form a many-to-one or one-to-one relationship",
-        "hint": null,
-        "message": "A spread operation on 'messages' is not possible",
+      "data": Object {
+        "channel_id": 1,
+        "id": Array [
+          1,
+        ],
+        "message": Array [
+          "Hello World 👋",
+        ],
       },
-      "status": 400,
-      "statusText": "Bad Request",
+      "error": null,
+      "status": 200,
+      "statusText": "OK",
     }
   `)
 })

@@ -89,19 +89,6 @@ export default class PostgrestFilterBuilder<
   Relationships,
   Method
 > {
-  maxAffected(
-    value: number
-  ): Method extends 'PATCH' | 'DELETE'
-    ? this
-    : InvalidMethodError<'maxAffected method only available on update or delete'> {
-    const preferHeaderManager = new HeaderManager('Prefer', this.headers['Prefer'])
-    preferHeaderManager.add('handling=strict')
-    preferHeaderManager.add(`max-affected=${value}`)
-    this.headers['Prefer'] = preferHeaderManager.get()
-    return this as unknown as Method extends 'PATCH' | 'DELETE'
-      ? this
-      : InvalidMethodError<'maxAffected method only available on update or delete'>
-  }
   /**
    * Match only rows where `column` is equal to `value`.
    *
@@ -614,5 +601,29 @@ export default class PostgrestFilterBuilder<
   filter(column: string, operator: string, value: unknown): this {
     this.url.searchParams.append(column, `${operator}.${value}`)
     return this
+  }
+
+  /**
+   * Set the maximum number of rows that can be affected by the query.
+   * Only available in PostgREST v13+ and only works with PATCH and DELETE methods.
+   *
+   * @param value - The maximum number of rows that can be affected
+   */
+  maxAffected(
+    value: number
+  ): ClientOptions['postgrestVersion'] extends 13
+    ? Method extends 'PATCH' | 'DELETE'
+      ? this
+      : InvalidMethodError<'maxAffected method only available on update or delete'>
+    : InvalidMethodError<'maxAffected method only available on postgrest 13+'> {
+    const preferHeaderManager = new HeaderManager('Prefer', this.headers['Prefer'])
+    preferHeaderManager.add('handling=strict')
+    preferHeaderManager.add(`max-affected=${value}`)
+    this.headers['Prefer'] = preferHeaderManager.get()
+    return this as unknown as ClientOptions['postgrestVersion'] extends 13
+      ? Method extends 'PATCH' | 'DELETE'
+        ? this
+        : InvalidMethodError<'maxAffected method only available on update or delete'>
+      : InvalidMethodError<'maxAffected method only available on postgrest 13+'>
   }
 }

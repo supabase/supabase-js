@@ -4,11 +4,20 @@ import { expectType } from 'tsd'
 import { InvalidMethodError } from '../src/PostgrestFilterBuilder'
 
 const REST_URL_13 = 'http://localhost:3001'
-const postgrest13 = new PostgrestClient<Database>(REST_URL_13)
+const postgrest13 = new PostgrestClient<Database, { postgrestVersion: 13 }>(REST_URL_13)
+const postgrest12 = new PostgrestClient<Database>(REST_URL_13)
 
 describe('maxAffected', () => {
   // Type checking tests
-  test('maxAffected should show warning on non update / delete', async () => {
+  test('maxAffected should show type warning on postgrest 12 clients', async () => {
+    const resUpdate = await postgrest12
+      .from('messages')
+      .update({ channel_id: 2 })
+      .eq('message', 'foo')
+      .maxAffected(1)
+    expectType<InvalidMethodError<'maxAffected method only available on postgrest 13+'>>(resUpdate)
+  })
+  test('maxAffected should show type warning on non update / delete', async () => {
     const resSelect = await postgrest13.from('messages').select('*').maxAffected(10)
     const resInsert = await postgrest13
       .from('messages')
