@@ -73,7 +73,7 @@ export type GenericSchema = {
 
 export type PostgRESTVersion = 12 | 13
 export type ClientServerOptions = {
-  postgrestVersion: PostgRESTVersion
+  postgrestVersion?: PostgRESTVersion
 }
 
 // https://twitter.com/mattpocockuk/status/1622730173446557697
