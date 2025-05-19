@@ -79,6 +79,15 @@ describe('Dynamic schema', () => {
   })
 })
 
+describe('Postgrest 13 client', () => {
+  test('should be able to declare specific postgrestVersion ', async () => {
+    createClient<Database, { postgrestVersion: 13 }>('HTTP://localhost:3000', KEY)
+    createClient<Database, { postgrestVersion: 12 }>('HTTP://localhost:3000', KEY)
+    // @ts-expect-error should raise error if provinding invalid version
+    createClient<Database, { postgrestVersion: 42 }>('HTTP://localhost:3000', KEY)
+  })
+})
+
 // Socket should close when there are no open connections
 // https://github.com/supabase/supabase-js/issues/44
 
