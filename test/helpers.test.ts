@@ -36,7 +36,7 @@ test('override setting defaults', async () => {
   expect(settings.auth.autoRefreshToken).toBe(autoRefreshOption)
   // Existing default properties should not be overwritten
   expect(settings.auth.persistSession).not.toBeNull()
-  expect(settings.global.headers).toBe(DEFAULT_HEADERS)
+  expect(settings.global.headers).toStrictEqual(DEFAULT_HEADERS)
   // Existing property values should remain constant
   expect(settings.db.schema).toBe(defaults.db.schema)
 })

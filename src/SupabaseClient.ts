@@ -43,10 +43,10 @@ export default class SupabaseClient<
   auth: SupabaseAuthClient
   realtime: RealtimeClient
 
-  protected realtimeUrl: string
-  protected authUrl: string
-  protected storageUrl: string
-  protected functionsUrl: string
+  protected realtimeUrl: URL
+  protected authUrl: URL
+  protected storageUrl: URL
+  protected functionsUrl: URL
   protected rest: PostgrestClient<Database, SchemaName, Schema>
   protected storageKey: string
   protected fetch?: Fetch
@@ -76,14 +76,16 @@ export default class SupabaseClient<
     if (!supabaseKey) throw new Error('supabaseKey is required.')
 
     const _supabaseUrl = stripTrailingSlash(supabaseUrl)
+    const baseUrl = new URL(_supabaseUrl)
 
-    this.realtimeUrl = `${_supabaseUrl}/realtime/v1`.replace(/^http/i, 'ws')
-    this.authUrl = `${_supabaseUrl}/auth/v1`
-    this.storageUrl = `${_supabaseUrl}/storage/v1`
-    this.functionsUrl = `${_supabaseUrl}/functions/v1`
+    this.realtimeUrl = new URL('/realtime/v1', baseUrl)
+    this.realtimeUrl.protocol = this.realtimeUrl.protocol.replace('http', 'ws')
+    this.authUrl = new URL('/auth/v1', baseUrl)
+    this.storageUrl = new URL('/storage/v1', baseUrl)
+    this.functionsUrl = new URL('/functions/v1', baseUrl)
 
     // default storage key uses the supabase project ref as a namespace
-    const defaultStorageKey = `sb-${new URL(this.authUrl).hostname.split('.')[0]}-auth-token`
+    const defaultStorageKey = `sb-${baseUrl.hostname.split('.')[0]}-auth-token`
     const DEFAULTS = {
       db: DEFAULT_DB_OPTIONS,
       realtime: DEFAULT_REALTIME_OPTIONS,
@@ -137,7 +139,7 @@ export default class SupabaseClient<
    * Supabase Functions allows you to deploy and invoke edge functions.
    */
   get functions(): FunctionsClient {
-    return new FunctionsClient(this.functionsUrl, {
+    return new FunctionsClient(this.functionsUrl.href, {
       headers: this.headers,
       customFetch: this.fetch,
     })
@@ -147,7 +149,7 @@ export default class SupabaseClient<
    * Supabase Storage allows you to manage user-generated content, such as photos or videos.
    */
   get storage(): SupabaseStorageClient {
-    return new SupabaseStorageClient(this.storageUrl, this.headers, this.fetch)
+    return new SupabaseStorageClient(this.storageUrl.href, this.headers, this.fetch)
   }
 
   // NOTE: signatures must be kept in sync with PostgrestClient.from
@@ -295,7 +297,7 @@ export default class SupabaseClient<
       apikey: `${this.supabaseKey}`,
     }
     return new SupabaseAuthClient({
-      url: this.authUrl,
+      url: this.authUrl.href,
       headers: { ...authHeaders, ...headers },
       storageKey: storageKey,
       autoRefreshToken,
@@ -313,7 +315,7 @@ export default class SupabaseClient<
   }
 
   private _initRealtimeClient(options: RealtimeClientOptions) {
-    return new RealtimeClient(this.realtimeUrl, {
+    return new RealtimeClient(this.realtimeUrl.href, {
       ...options,
       params: { ...{ apikey: this.supabaseKey }, ...options?.params },
     })

@@ -53,6 +53,10 @@ export function applySettingDefaults<
     global: {
       ...DEFAULT_GLOBAL_OPTIONS,
       ...globalOptions,
+      headers: {
+        ...(DEFAULT_GLOBAL_OPTIONS?.headers ?? {}),
+        ...(globalOptions?.headers ?? {}),
+      },
     },
     accessToken: async () => '',
   }
