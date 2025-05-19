@@ -80,8 +80,7 @@ export default class PostgrestQueryBuilder<
     Relation['Row'],
     ResultOne[],
     RelationName,
-    Relationships,
-    'GET'
+    Relationships
   > {
     const method = head ? 'HEAD' : 'GET'
     // Remove whitespaces except when quoted
@@ -125,8 +124,7 @@ export default class PostgrestQueryBuilder<
     Relation['Row'],
     null,
     RelationName,
-    Relationships,
-    'POST'
+    Relationships
   >
   insert<Row extends Relation extends { Insert: unknown } ? Relation['Insert'] : never>(
     values: Row[],
@@ -140,8 +138,7 @@ export default class PostgrestQueryBuilder<
     Relation['Row'],
     null,
     RelationName,
-    Relationships,
-    'POST'
+    Relationships
   >
   /**
    * Perform an INSERT into the table or view.
@@ -184,8 +181,7 @@ export default class PostgrestQueryBuilder<
     Relation['Row'],
     null,
     RelationName,
-    Relationships,
-    'POST'
+    Relationships
   > {
     const method = 'POST'
 
@@ -234,8 +230,7 @@ export default class PostgrestQueryBuilder<
     Relation['Row'],
     null,
     RelationName,
-    Relationships,
-    'POST'
+    Relationships
   >
   upsert<Row extends Relation extends { Insert: unknown } ? Relation['Insert'] : never>(
     values: Row[],
@@ -251,8 +246,7 @@ export default class PostgrestQueryBuilder<
     Relation['Row'],
     null,
     RelationName,
-    Relationships,
-    'POST'
+    Relationships
   >
   /**
    * Perform an UPSERT on the table or view. Depending on the column(s) passed
@@ -311,8 +305,7 @@ export default class PostgrestQueryBuilder<
     Relation['Row'],
     null,
     RelationName,
-    Relationships,
-    'POST'
+    Relationships
   > {
     const method = 'POST'
 
@@ -383,8 +376,7 @@ export default class PostgrestQueryBuilder<
     Relation['Row'],
     null,
     RelationName,
-    Relationships,
-    'PATCH'
+    Relationships
   > {
     const method = 'PATCH'
     const prefersHeaders = []
@@ -436,8 +428,7 @@ export default class PostgrestQueryBuilder<
     Relation['Row'],
     null,
     RelationName,
-    Relationships,
-    'DELETE'
+    Relationships
   > {
     const method = 'DELETE'
     const prefersHeaders = []

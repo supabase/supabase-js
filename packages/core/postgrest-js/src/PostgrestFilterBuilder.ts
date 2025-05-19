@@ -1,7 +1,6 @@
 import PostgrestTransformBuilder from './PostgrestTransformBuilder'
 import { JsonPathToAccessor, JsonPathToType } from './select-query-parser/utils'
 import { ClientServerOptions, GenericSchema } from './types'
-import { HeaderManager } from './utils'
 
 type FilterOperator =
   | 'eq'
@@ -78,30 +77,15 @@ export default class PostgrestFilterBuilder<
   Row extends Record<string, unknown>,
   Result,
   RelationName = unknown,
-  Relationships = unknown,
-  Method = unknown
+  Relationships = unknown
 > extends PostgrestTransformBuilder<
   ClientOptions,
   Schema,
   Row,
   Result,
   RelationName,
-  Relationships,
-  Method
+  Relationships
 > {
-  maxAffected(
-    value: number
-  ): Method extends 'PATCH' | 'DELETE'
-    ? this
-    : InvalidMethodError<'maxAffected method only available on update or delete'> {
-    const preferHeaderManager = new HeaderManager('Prefer', this.headers['Prefer'])
-    preferHeaderManager.add('handling=strict')
-    preferHeaderManager.add(`max-affected=${value}`)
-    this.headers['Prefer'] = preferHeaderManager.get()
-    return this as unknown as Method extends 'PATCH' | 'DELETE'
-      ? this
-      : InvalidMethodError<'maxAffected method only available on update or delete'>
-  }
   /**
    * Match only rows where `column` is equal to `value`.
    *
