@@ -81,6 +81,8 @@ describe('Dynamic schema', () => {
 
 describe('Postgrest 13 client', () => {
   test('should be able to declare specific postgrestVersion ', async () => {
+    // Note: The template argument properties (postgrestVersion) will not be autocompleted
+    // due to a Typescript bug tracked here: https://github.com/microsoft/TypeScript/issues/56299
     createClient<Database, { postgrestVersion: 13 }>('HTTP://localhost:3000', KEY)
     createClient<Database, { postgrestVersion: 12 }>('HTTP://localhost:3000', KEY)
     // @ts-expect-error should raise error if provinding invalid version
