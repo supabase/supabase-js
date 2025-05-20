@@ -19,7 +19,7 @@ import {
   DEFAULT_REALTIME_OPTIONS,
 } from './lib/constants'
 import { fetchWithAuth } from './lib/fetch'
-import { stripTrailingSlash, applySettingDefaults } from './lib/helpers'
+import { cleanUrl, applySettingDefaults } from './lib/helpers'
 import { SupabaseAuthClient } from './lib/SupabaseAuthClient'
 import { Fetch, GenericSchema, SupabaseClientOptions, SupabaseAuthClientOptions } from './lib/types'
 
@@ -75,7 +75,7 @@ export default class SupabaseClient<
     if (!supabaseUrl) throw new Error('supabaseUrl is required.')
     if (!supabaseKey) throw new Error('supabaseKey is required.')
 
-    const _supabaseUrl = stripTrailingSlash(supabaseUrl)
+    const _supabaseUrl = cleanUrl(supabaseUrl)
     const baseUrl = new URL(_supabaseUrl)
 
     this.realtimeUrl = new URL('/realtime/v1', baseUrl)
@@ -119,11 +119,13 @@ export default class SupabaseClient<
     }
 
     this.fetch = fetchWithAuth(supabaseKey, this._getAccessToken.bind(this), settings.global.fetch)
+
     this.realtime = this._initRealtimeClient({
       headers: this.headers,
       accessToken: this._getAccessToken.bind(this),
       ...settings.realtime,
     })
+
     this.rest = new PostgrestClient(`${_supabaseUrl}/rest/v1`, {
       headers: this.headers,
       schema: settings.db.schema,
@@ -321,14 +323,16 @@ export default class SupabaseClient<
     })
   }
 
-  private _listenForAuthEvents() {
-    let data = this.auth.onAuthStateChange((event, session) => {
-      this._handleTokenChanged(event, 'CLIENT', session?.access_token)
+  private async _listenForAuthEvents() {
+    return await this.auth.onAuthStateChange((event, session) => {
+      setTimeout(
+        async () => await this._handleTokenChanged(event, 'CLIENT', session?.access_token),
+        0
+      )
     })
-    return data
   }
 
-  private _handleTokenChanged(
+  private async _handleTokenChanged(
     event: AuthChangeEvent,
     source: 'CLIENT' | 'STORAGE',
     token?: string
@@ -339,7 +343,7 @@ export default class SupabaseClient<
     ) {
       this.changedAccessToken = token
     } else if (event === 'SIGNED_OUT') {
-      this.realtime.setAuth()
+      await this.realtime.setAuth()
       if (source == 'STORAGE') this.auth.signOut()
       this.changedAccessToken = undefined
     }
