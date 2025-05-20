@@ -62,5 +62,15 @@
     "typescript": "^5.7.3",
     "vitest": "^2.1.9",
     "web-worker": "1.2.0"
+  },
+  "exports": {
+    ".": {
+      "import": "./dist/module/index.js",
+      "require": "./dist/main/index.js"
+    },
+    "./websocket": {
+      "node": "./src/node.js",
+      "default": "./src/native.js"
+    }
   }
 }

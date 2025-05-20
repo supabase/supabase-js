@@ -1,4 +1,4 @@
-import type { WebSocket as WSWebSocket } from 'ws'
+import WebSocket from './WebSocket'
 
 import {
   CHANNEL_EVENTS,
@@ -17,6 +17,7 @@ import Timer from './lib/timer'
 import { httpEndpointURL } from './lib/transformers'
 import RealtimeChannel from './RealtimeChannel'
 import type { RealtimeChannelOptions } from './RealtimeChannel'
+import Push from './lib/push'
 
 type Fetch = typeof fetch
 
@@ -54,7 +55,7 @@ export interface WebSocketLikeConstructor {
   ): WebSocketLike
 }
 
-export type WebSocketLike = WebSocket | WSWebSocket | WSWebSocketDummy
+export type WebSocketLike = WebSocket | WSWebSocketDummy
 
 export interface WebSocketLikeError {
   error: any
@@ -81,17 +82,17 @@ export type RealtimeClientOptions = {
   accessToken?: () => Promise<string | null>
 }
 
-const NATIVE_WEBSOCKET_AVAILABLE = typeof WebSocket !== 'undefined'
 const WORKER_SCRIPT = `
   addEventListener("message", (e) => {
     if (e.data.event === "start") {
       setInterval(() => postMessage({ event: "keepAlive" }), e.data.interval);
     }
   });`
+
 export default class RealtimeClient {
   accessTokenValue: string | null = null
   apiKey: string | null = null
-  channels: Set<RealtimeChannel> = new Set()
+  channels: RealtimeChannel[] = new Array()
   endPoint: string = ''
   httpEndpoint: string = ''
   headers?: { [key: string]: string } = DEFAULT_HEADERS
@@ -209,7 +210,9 @@ export default class RealtimeClient {
     if (this.conn) {
       return
     }
-
+    if (!this.transport) {
+      this.transport = WebSocket
+    }
     if (this.transport) {
       this.conn = new this.transport(this.endpointURL(), undefined, {
         headers: this.headers,
@@ -217,24 +220,10 @@ export default class RealtimeClient {
       this.setupConnection()
       return
     }
-
-    if (NATIVE_WEBSOCKET_AVAILABLE) {
-      this.conn = new WebSocket(this.endpointURL())
-      this.setupConnection()
-      return
-    }
-
     this.conn = new WSWebSocketDummy(this.endpointURL(), undefined, {
       close: () => {
         this.conn = null
       },
-    })
-
-    import('ws').then(({ default: WS }) => {
-      this.conn = new WS(this.endpointURL(), undefined, {
-        headers: this.headers,
-      })
-      this.setupConnection()
     })
   }
 
@@ -264,9 +253,11 @@ export default class RealtimeClient {
         this.conn.close()
       }
       this.conn = null
+
       // remove open handles
       this.heartbeatTimer && clearInterval(this.heartbeatTimer)
       this.reconnectTimer.reset()
+      this.channels.forEach((channel) => channel.teardown())
     }
   }
 
@@ -274,7 +265,7 @@ export default class RealtimeClient {
    * Returns all created channels
    */
   getChannels(): RealtimeChannel[] {
-    return Array.from(this.channels)
+    return this.channels
   }
 
   /**
@@ -285,9 +276,12 @@ export default class RealtimeClient {
     channel: RealtimeChannel
   ): Promise<RealtimeRemoveChannelResponse> {
     const status = await channel.unsubscribe()
-    if (this.channels.size === 0) {
+    this.channels = this.channels.filter((c) => c._joinRef !== channel._joinRef)
+
+    if (this.channels.length === 0) {
       this.disconnect()
     }
+
     return status
   }
 
@@ -296,13 +290,10 @@ export default class RealtimeClient {
    */
   async removeAllChannels(): Promise<RealtimeRemoveChannelResponse[]> {
     const values_1 = await Promise.all(
-      Array.from(this.channels).map((channel) => {
-        this.channels.delete(channel)
-        return channel.unsubscribe()
-      })
+      this.channels.map((channel) => channel.unsubscribe())
     )
+    this.channels = []
     this.disconnect()
-
     return values_1
   }
 
@@ -349,7 +340,8 @@ export default class RealtimeClient {
 
     if (!exists) {
       const chan = new RealtimeChannel(`realtime:${topic}`, params, this)
-      this.channels.add(chan)
+      this.channels.push(chan)
+
       return chan
     } else {
       return exists
@@ -492,7 +484,7 @@ export default class RealtimeClient {
    * @internal
    */
   _leaveOpenTopic(topic: string): void {
-    let dupChannel = Array.from(this.channels).find(
+    let dupChannel = this.channels.find(
       (c) => c.topic === topic && (c._isJoined() || c._isJoining())
     )
     if (dupChannel) {
@@ -509,7 +501,7 @@ export default class RealtimeClient {
    * @internal
    */
   _remove(channel: RealtimeChannel) {
-    this.channels.delete(channel)
+    this.channels = this.channels.filter((c) => c.topic !== channel.topic)
   }
 
   /**
@@ -560,7 +552,7 @@ export default class RealtimeClient {
   }
 
   /** @internal */
-  private async _onConnOpen() {
+  private _onConnOpen() {
     this.log('transport', `connected to ${this.endpointURL()}`)
     this.flushSendBuffer()
     this.reconnectTimer.reset()
@@ -576,11 +568,10 @@ export default class RealtimeClient {
       } else {
         this.log('worker', `starting default worker`)
       }
-
       const objectUrl = this._workerObjectUrl(this.workerUrl!)
       this.workerRef = new Worker(objectUrl)
       this.workerRef.onerror = (error) => {
-        this.log('worker', 'worker error', error.message)
+        this.log('worker', 'worker error', (error as ErrorEvent).message)
         this.workerRef!.terminate()
       }
       this.workerRef.onmessage = (event) => {
@@ -593,12 +584,10 @@ export default class RealtimeClient {
         interval: this.heartbeatIntervalMs,
       })
     }
-
-    this.stateChangeCallbacks.open.forEach((callback) => callback())!
+    this.stateChangeCallbacks.open.forEach((callback) => callback())
   }
 
   /** @internal */
-
   private _onConnClose(event: any) {
     this.log('transport', 'close', event)
     this._triggerChanError()
@@ -631,7 +620,6 @@ export default class RealtimeClient {
     }
     const prefix = url.match(/\?/) ? '&' : '?'
     const query = new URLSearchParams(params)
-
     return `${url}${prefix}${query}`
   }
 

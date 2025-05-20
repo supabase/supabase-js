@@ -279,6 +279,8 @@ export default class RealtimeChannel {
                 })
               } else {
                 this.unsubscribe()
+                this.state = CHANNEL_STATES.errored
+
                 callback?.(
                   REALTIME_SUBSCRIBE_STATES.CHANNEL_ERROR,
                   new Error(
@@ -296,6 +298,7 @@ export default class RealtimeChannel {
           }
         })
         .receive('error', (error: { [key: string]: any }) => {
+          this.state = CHANNEL_STATES.errored
           callback?.(
             REALTIME_SUBSCRIBE_STATES.CHANNEL_ERROR,
             new Error(
@@ -511,8 +514,6 @@ export default class RealtimeChannel {
       this._trigger(CHANNEL_EVENTS.close, 'leave', this._joinRef())
     }
 
-    this.rejoinTimer.reset()
-    // Destroy joinPush to avoid connection timeouts during unscription phase
     this.joinPush.destroy()
 
     return new Promise((resolve) => {
@@ -535,6 +536,16 @@ export default class RealtimeChannel {
         leavePush.trigger('ok', {})
       }
     })
+  }
+  /**
+   * Teardown the channel.
+   *
+   * Destroys and stops related timers.
+   */
+  teardown() {
+    this.pushBuffer.forEach((push: Push) => push.destroy())
+    this.rejoinTimer && clearTimeout(this.rejoinTimer.timer)
+    this.joinPush.destroy()
   }
 
   /** @internal */
