@@ -76,6 +76,7 @@ export default class SupabaseClient<
     if (!supabaseKey) throw new Error('supabaseKey is required.')
 
     const _supabaseUrl = cleanUrl(supabaseUrl)
+    const baseUrl = new URL(_supabaseUrl)
 
     this.realtimeUrl = new URL('/realtime/v1', baseUrl)
     this.realtimeUrl.protocol = this.realtimeUrl.protocol.replace('http', 'ws')
