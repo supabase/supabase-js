@@ -1,7 +1,6 @@
 import PostgrestTransformBuilder from './PostgrestTransformBuilder'
 import { JsonPathToAccessor, JsonPathToType } from './select-query-parser/utils'
 import { ClientServerOptions, GenericSchema } from './types'
-import { HeaderManager } from './utils'
 
 type FilterOperator =
   | 'eq'
@@ -616,10 +615,8 @@ export default class PostgrestFilterBuilder<
       ? this
       : InvalidMethodError<'maxAffected method only available on update or delete'>
     : InvalidMethodError<'maxAffected method only available on postgrest 13+'> {
-    const preferHeaderManager = new HeaderManager('Prefer', this.headers['Prefer'])
-    preferHeaderManager.add('handling=strict')
-    preferHeaderManager.add(`max-affected=${value}`)
-    this.headers['Prefer'] = preferHeaderManager.get()
+    this.headers.append('Prefer', 'handling=strict')
+    this.headers.append('Prefer', `max-affected=${value}`)
     return this as unknown as ClientOptions['postgrestVersion'] extends 13
       ? Method extends 'PATCH' | 'DELETE'
         ? this

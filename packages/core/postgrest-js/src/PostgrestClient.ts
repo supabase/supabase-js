@@ -1,7 +1,5 @@
 import PostgrestQueryBuilder from './PostgrestQueryBuilder'
 import PostgrestFilterBuilder from './PostgrestFilterBuilder'
-import PostgrestBuilder from './PostgrestBuilder'
-import { DEFAULT_HEADERS } from './constants'
 import { Fetch, GenericSchema, ClientServerOptions, GetGenericDatabaseWithOptions } from './types'
 
 /**
@@ -29,7 +27,7 @@ export default class PostgrestClient<
     : any
 > {
   url: string
-  headers: Record<string, string>
+  headers: Headers
   schemaName?: SchemaName
   fetch?: Fetch
 
@@ -50,17 +48,16 @@ export default class PostgrestClient<
       schema,
       fetch,
     }: {
-      headers?: Record<string, string>
+      headers?: HeadersInit
       schema?: SchemaName
       fetch?: Fetch
     } = {}
   ) {
     this.url = url
-    this.headers = { ...DEFAULT_HEADERS, ...headers }
+    this.headers = new Headers(headers)
     this.schemaName = schema
     this.fetch = fetch
   }
-
   from<
     TableName extends string & keyof Schema['Tables'],
     Table extends Schema['Tables'][TableName]
@@ -76,7 +73,7 @@ export default class PostgrestClient<
   from(relation: string): PostgrestQueryBuilder<ClientOptions, Schema, any, any> {
     const url = new URL(`${this.url}/${relation}`)
     return new PostgrestQueryBuilder(url, {
-      headers: { ...this.headers },
+      headers: new Headers(this.headers),
       schema: this.schemaName,
       fetch: this.fetch,
     })
@@ -170,9 +167,9 @@ export default class PostgrestClient<
       body = args
     }
 
-    const headers = { ...this.headers }
+    const headers = new Headers(this.headers)
     if (count) {
-      headers['Prefer'] = `count=${count}`
+      headers.set('Prefer', `count=${count}`)
     }
 
     return new PostgrestFilterBuilder({
@@ -181,8 +178,7 @@ export default class PostgrestClient<
       headers,
       schema: this.schemaName,
       body,
-      fetch: this.fetch,
-      allowEmpty: false,
-    } as unknown as PostgrestBuilder<ClientOptions, Fn['Returns']>)
+      fetch: this.fetch ?? fetch,
+    })
   }
 }
