@@ -1,13 +1,25 @@
-import { stripTrailingSlash } from '../src/lib/helpers'
+import { ensureTrailingSlash } from '../src/lib/helpers'
 
-test('Strip trailing slash from URL', () => {
-  const URL = 'http://localhost:3000/'
-  const expectedURL = URL.slice(0, -1)
-  expect(stripTrailingSlash(URL)).toBe(expectedURL)
+test('Adds trailing slash to URL if missing', () => {
+  const input = 'http://localhost:3000'
+  const expected = 'http://localhost:3000/'
+  expect(ensureTrailingSlash(input)).toBe(expected)
 })
 
-test('Return the original URL if there is no slash at the end', () => {
-  const URL = 'http://localhost:3000'
-  const expectedURL = URL
-  expect(stripTrailingSlash(URL)).toBe(expectedURL)
+test('Keeps trailing slash of URL if already present', () => {
+  const input = 'http://localhost:3000/'
+  const expected = 'http://localhost:3000/'
+  expect(ensureTrailingSlash(input)).toBe(expected)
+})
+
+test('Adds trailing slash to URL with path if missing', () => {
+  const input = 'http://localhost:3000/path/to/supabase'
+  const expected = 'http://localhost:3000/path/to/supabase/'
+  expect(ensureTrailingSlash(input)).toBe(expected)
+})
+
+test('Keeps trailing slash of URL with path if already present', () => {
+  const input = 'http://localhost:3000/path/to/supabase/'
+  const expected = 'http://localhost:3000/path/to/supabase/'
+  expect(ensureTrailingSlash(input)).toBe(expected)
 })

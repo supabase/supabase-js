@@ -19,7 +19,7 @@ import {
   DEFAULT_REALTIME_OPTIONS,
 } from './lib/constants'
 import { fetchWithAuth } from './lib/fetch'
-import { stripTrailingSlash, applySettingDefaults } from './lib/helpers'
+import { ensureTrailingSlash, applySettingDefaults } from './lib/helpers'
 import { SupabaseAuthClient } from './lib/SupabaseAuthClient'
 import { Fetch, GenericSchema, SupabaseClientOptions, SupabaseAuthClientOptions } from './lib/types'
 
@@ -75,14 +75,14 @@ export default class SupabaseClient<
     if (!supabaseUrl) throw new Error('supabaseUrl is required.')
     if (!supabaseKey) throw new Error('supabaseKey is required.')
 
-    const _supabaseUrl = stripTrailingSlash(supabaseUrl)
+    const _supabaseUrl = ensureTrailingSlash(supabaseUrl)
     const baseUrl = new URL(_supabaseUrl)
 
-    this.realtimeUrl = new URL('/realtime/v1', baseUrl)
+    this.realtimeUrl = new URL('realtime/v1', baseUrl)
     this.realtimeUrl.protocol = this.realtimeUrl.protocol.replace('http', 'ws')
-    this.authUrl = new URL('/auth/v1', baseUrl)
-    this.storageUrl = new URL('/storage/v1', baseUrl)
-    this.functionsUrl = new URL('/functions/v1', baseUrl)
+    this.authUrl = new URL('auth/v1', baseUrl)
+    this.storageUrl = new URL('storage/v1', baseUrl)
+    this.functionsUrl = new URL('functions/v1', baseUrl)
 
     // default storage key uses the supabase project ref as a namespace
     const defaultStorageKey = `sb-${baseUrl.hostname.split('.')[0]}-auth-token`
@@ -124,7 +124,7 @@ export default class SupabaseClient<
       accessToken: this._getAccessToken.bind(this),
       ...settings.realtime,
     })
-    this.rest = new PostgrestClient(`${_supabaseUrl}/rest/v1`, {
+    this.rest = new PostgrestClient(new URL('rest/v1', baseUrl).href, {
       headers: this.headers,
       schema: settings.db.schema,
       fetch: this.fetch,
