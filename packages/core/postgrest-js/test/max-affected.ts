@@ -1,10 +1,11 @@
 import { PostgrestClient } from '../src/index'
 import { Database } from './types.override'
+import { Database as DatabasePostgrest13 } from './types.override-with-options-postgrest13'
 import { expectType } from 'tsd'
 import { InvalidMethodError } from '../src/PostgrestFilterBuilder'
 
 const REST_URL_13 = 'http://localhost:3001'
-const postgrest13 = new PostgrestClient<Database, { postgrestVersion: 13 }>(REST_URL_13)
+const postgrest13 = new PostgrestClient<DatabasePostgrest13>(REST_URL_13)
 const postgrest12 = new PostgrestClient<Database>(REST_URL_13)
 
 describe('maxAffected', () => {
@@ -75,7 +76,7 @@ describe('maxAffected', () => {
       .maxAffected(2)
     const { error } = result
     expect(error).toBeDefined()
-    expect(error?.message).toBe('Query result exceeds max-affected preference constraint')
+    expect(error?.code).toBe('PGRST124')
   })
 
   test('update should succeed when within maxAffected limit', async () => {
@@ -114,7 +115,7 @@ describe('maxAffected', () => {
       .select()
 
     expect(error).toBeDefined()
-    expect(error?.message).toBe('Query result exceeds max-affected preference constraint')
+    expect(error?.code).toBe('PGRST124')
   })
 
   test('delete should succeed when within maxAffected limit', async () => {
