@@ -89,10 +89,12 @@ export type GetGenericDatabaseWithOptions<
 > = IsAny<Database> extends true
   ? DatabaseWithOptions<Database, Opts>
   : typeof INTERNAL_SUPABASE_OPTIONS extends keyof Database
-  ? DatabaseWithOptions<
-      Omit<Database, typeof INTERNAL_SUPABASE_OPTIONS>,
-      Database[typeof INTERNAL_SUPABASE_OPTIONS]
-    >
+  ? Database[typeof INTERNAL_SUPABASE_OPTIONS] extends ClientServerOptions
+    ? DatabaseWithOptions<
+        Omit<Database, typeof INTERNAL_SUPABASE_OPTIONS>,
+        Database[typeof INTERNAL_SUPABASE_OPTIONS]
+      >
+    : DatabaseWithOptions<Omit<Database, typeof INTERNAL_SUPABASE_OPTIONS>, Opts>
   : DatabaseWithOptions<Database, Opts>
 
 // https://twitter.com/mattpocockuk/status/1622730173446557697
