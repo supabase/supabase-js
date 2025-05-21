@@ -1,4 +1,5 @@
 import PostgrestBuilder from './PostgrestBuilder'
+import { InvalidMethodError } from './PostgrestFilterBuilder'
 import { GetResult } from './select-query-parser/result'
 import { GenericSchema, CheckMatchingArrayTypes, ClientServerOptions } from './types'
 
@@ -337,5 +338,27 @@ export default class PostgrestTransformBuilder<
       Relationships,
       Method
     >
+  }
+
+  /**
+   * Set the maximum number of rows that can be affected by the query.
+   * Only available in PostgREST v13+ and only works with PATCH and DELETE methods.
+   *
+   * @param value - The maximum number of rows that can be affected
+   */
+  maxAffected(
+    value: number
+  ): ClientOptions['postgrestVersion'] extends 13
+    ? Method extends 'PATCH' | 'DELETE'
+      ? this
+      : InvalidMethodError<'maxAffected method only available on update or delete'>
+    : InvalidMethodError<'maxAffected method only available on postgrest 13+'> {
+    this.headers.append('Prefer', 'handling=strict')
+    this.headers.append('Prefer', `max-affected=${value}`)
+    return this as unknown as ClientOptions['postgrestVersion'] extends 13
+      ? Method extends 'PATCH' | 'DELETE'
+        ? this
+        : InvalidMethodError<'maxAffected method only available on update or delete'>
+      : InvalidMethodError<'maxAffected method only available on postgrest 13+'>
   }
 }
