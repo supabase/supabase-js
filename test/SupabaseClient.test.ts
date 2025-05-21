@@ -46,7 +46,7 @@ describe('SupabaseClient', () => {
     })
 
     test('should preserve paths in supabaseUrl', () => {
-      const baseUrlWithPath = 'http://localhost:3000/custom/base/'
+      const baseUrlWithPath = 'http://localhost:3000/custom/base'
       const client = createClient(baseUrlWithPath, KEY)
 
       // @ts-ignore
