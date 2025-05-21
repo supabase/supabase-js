@@ -445,7 +445,7 @@ type ProcessSpreadNode<
   ? Result extends SelectQueryError<infer E>
     ? SelectQueryError<E>
     : ExtractFirstProperty<Result> extends unknown[]
-    ? ClientOptions['postgrestVersion'] extends 13 // Spread over an many-to-many relationship, turn all the result fields into arrays
+    ? ClientOptions['postgrestVersion'] extends 13 // Spread over an many-to-many relationship, turn all the result fields into correlated arrays
       ? ProcessManyToManySpreadNodeResult<Result>
       : {
           [K in Spread['target']['name']]: SelectQueryError<`"${RelationName}" and "${Spread['target']['name']}" do not form a many-to-one or one-to-one relationship spread not possible`>
