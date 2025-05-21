@@ -1,10 +1,12 @@
 import { PostgrestClient } from '../src/index'
 import { Database } from './types.override'
+import { Database as DatabaseWithOptions13 } from './types.override-with-options-postgrest13'
 
 const REST_URL = 'http://localhost:3000'
 export const postgrest = new PostgrestClient<Database>(REST_URL)
 const REST_URL_13 = 'http://localhost:3001'
 const postgrest13 = new PostgrestClient<Database, { postgrestVersion: 13 }>(REST_URL_13)
+const postgrest13FromDatabaseTypes = new PostgrestClient<DatabaseWithOptions13>(REST_URL_13)
 
 const userColumn: 'catchphrase' | 'username' = 'username'
 
@@ -348,6 +350,9 @@ export const selectQueries = {
     .from(selectParams.selectSpreadOnManyRelation.from)
     .select(selectParams.selectSpreadOnManyRelation.select),
   selectSpreadOnManyRelation13: postgrest13
+    .from(selectParams.selectSpreadOnManyRelation.from)
+    .select(selectParams.selectSpreadOnManyRelation.select),
+  selectSpreadOnManyRelation13FromDatabaseType: postgrest13FromDatabaseTypes
     .from(selectParams.selectSpreadOnManyRelation.from)
     .select(selectParams.selectSpreadOnManyRelation.select),
   selectWithDuplicatesFields: postgrest
@@ -1759,6 +1764,27 @@ test('select spread on many relation', async () => {
 
 test('select spread on many relation postgrest13', async () => {
   const res = await selectQueries.selectSpreadOnManyRelation13.limit(1).single()
+  expect(res).toMatchInlineSnapshot(`
+    Object {
+      "count": null,
+      "data": Object {
+        "channel_id": 1,
+        "id": Array [
+          1,
+        ],
+        "message": Array [
+          "Hello World 👋",
+        ],
+      },
+      "error": null,
+      "status": 200,
+      "statusText": "OK",
+    }
+  `)
+})
+
+test('select spread on many relation postgrest13FromDatabaseTypes', async () => {
+  const res = await selectQueries.selectSpreadOnManyRelation13FromDatabaseType.limit(1).single()
   expect(res).toMatchInlineSnapshot(`
     Object {
       "count": null,

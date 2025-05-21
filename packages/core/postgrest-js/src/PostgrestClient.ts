@@ -2,7 +2,7 @@ import PostgrestQueryBuilder from './PostgrestQueryBuilder'
 import PostgrestFilterBuilder from './PostgrestFilterBuilder'
 import PostgrestBuilder from './PostgrestBuilder'
 import { DEFAULT_HEADERS } from './constants'
-import { Fetch, GenericSchema, ClientServerOptions } from './types'
+import { Fetch, GenericSchema, ClientServerOptions, GetGenericDatabaseWithOptions } from './types'
 
 /**
  * PostgREST client.
@@ -16,12 +16,13 @@ import { Fetch, GenericSchema, ClientServerOptions } from './types'
  */
 export default class PostgrestClient<
   Database = any,
-  ClientOptions extends ClientServerOptions = { postgrestVersion: 12 },
-  SchemaName extends string & keyof Database = 'public' extends keyof Database
+  ClientOptions extends ClientServerOptions = GetGenericDatabaseWithOptions<Database>['options'],
+  SchemaName extends string &
+    keyof GetGenericDatabaseWithOptions<Database>['db'] = 'public' extends keyof GetGenericDatabaseWithOptions<Database>['db']
     ? 'public'
-    : string & keyof Database,
-  Schema extends GenericSchema = Database[SchemaName] extends GenericSchema
-    ? Database[SchemaName]
+    : string & keyof GetGenericDatabaseWithOptions<Database>['db'],
+  Schema extends GenericSchema = GetGenericDatabaseWithOptions<Database>['db'][SchemaName] extends GenericSchema
+    ? GetGenericDatabaseWithOptions<Database>['db'][SchemaName]
     : any
 > {
   url: string
@@ -85,7 +86,7 @@ export default class PostgrestClient<
    *
    * @param schema - The schema to query
    */
-  schema<DynamicSchema extends string & keyof Database>(
+  schema<DynamicSchema extends string & keyof GetGenericDatabaseWithOptions<Database>['db']>(
     schema: DynamicSchema
   ): PostgrestClient<
     Database,

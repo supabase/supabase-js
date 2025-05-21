@@ -672,6 +672,20 @@ type Schema = Database['public']
   expectType<TypeEqual<typeof result, typeof expected>>(true)
 }
 
+// spread over a many relation with postgrest13 passed within the Database type
+{
+  const { data } = await selectQueries.selectSpreadOnManyRelation13FromDatabaseType
+    .limit(1)
+    .single()
+  let result: Exclude<typeof data, null>
+  let expected: {
+    channel_id: number
+    id: Array<number>
+    message: Array<string | null>
+  }
+  expectType<TypeEqual<typeof result, typeof expected>>(true)
+}
+
 // multiple times the same column in selection
 {
   const { data } = await selectQueries.selectWithDuplicatesFields.limit(1).single()
