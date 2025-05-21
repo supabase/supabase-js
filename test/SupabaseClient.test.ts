@@ -45,6 +45,24 @@ describe('SupabaseClient', () => {
       expect(client.rest.url).toEqual('http://localhost:3000/rest/v1')
     })
 
+    test('should preserve paths in supabaseUrl', () => {
+      const baseUrlWithPath = 'http://localhost:3000/custom/base/'
+      const client = createClient(baseUrlWithPath, KEY)
+
+      // @ts-ignore
+      expect(client.authUrl.toString()).toEqual('http://localhost:3000/custom/base/auth/v1')
+      // @ts-ignore
+      expect(client.realtimeUrl.toString()).toEqual('ws://localhost:3000/custom/base/realtime/v1')
+      // @ts-ignore
+      expect(client.storageUrl.toString()).toEqual('http://localhost:3000/custom/base/storage/v1')
+      // @ts-ignore
+      expect(client.functionsUrl.toString()).toEqual(
+        'http://localhost:3000/custom/base/functions/v1'
+      )
+      // @ts-ignore
+      expect(client.rest.url).toEqual('http://localhost:3000/custom/base/rest/v1')
+    })
+
     test('should handle HTTPS URLs correctly', () => {
       const client = createClient('https://localhost:3000', KEY)
       // @ts-ignore
@@ -161,4 +179,4 @@ describe('SupabaseClient', () => {
       expect(rpcCall).toBeDefined()
     })
   })
-}) 
+})
