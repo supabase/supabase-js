@@ -1,5 +1,19 @@
 # Changelog
 
+## [2.70.0](https://github.com/supabase/auth-js/compare/v2.69.1...v2.70.0) (2025-05-16)
+
+
+### Features
+
+* add `signInWithWeb3` with solana ([#1037](https://github.com/supabase/auth-js/issues/1037)) ([cff5bcb](https://github.com/supabase/auth-js/commit/cff5bcb8399a46b293cfa8688d89882924e7edab))
+* validate uuid and sign out scope parameters to functions ([#1063](https://github.com/supabase/auth-js/issues/1063)) ([1bcb76e](https://github.com/supabase/auth-js/commit/1bcb76e479e51cd9bca2d7732d0bf3199e07a693))
+
+
+### Bug Fixes
+
+* add missing `deleted_at` property to `User` interface ([#1059](https://github.com/supabase/auth-js/issues/1059)) ([96da194](https://github.com/supabase/auth-js/commit/96da194b9ffb88643caa1547084fcee4dbe560f3))
+* export `processLock` from toplevel ([#1057](https://github.com/supabase/auth-js/issues/1057)) ([d99695a](https://github.com/supabase/auth-js/commit/d99695af9e632178be94502255c75496cda191ad))
+
 ## [2.69.1](https://github.com/supabase/auth-js/compare/v2.69.0...v2.69.1) (2025-03-24)
 
 
