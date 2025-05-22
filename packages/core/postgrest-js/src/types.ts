@@ -71,9 +71,9 @@ export type GenericSchema = {
   Functions: Record<string, GenericFunction>
 }
 
-export type PostgRESTVersion = 12 | 13
+type PostgRESTMajorVersion = number
 export type ClientServerOptions = {
-  postgrestVersion?: PostgRESTVersion
+  postgrestVersion?: PostgRESTMajorVersion
 }
 
 export type DatabaseWithOptions<Database, Options extends ClientServerOptions> = {
