@@ -4,7 +4,7 @@ export type Database = {
   // This is a dummy non existent schema to allow automatically passing down options
   // to the instanciated client at type levels from the introspected database
   __internal_supabase: {
-    postgrestVersion: 13
+    postgrestVersion: '13.0.12'
     // We make this still abide to `GenericSchema` to allow types helpers bellow to work the same
     Tables: {
       [_ in never]: never

@@ -18,7 +18,7 @@ export default class PostgrestClient<
   Database = any,
   ClientOptions extends ClientServerOptions = GetGenericDatabaseWithOptions<
     Database,
-    { postgrestVersion: 12 }
+    { postgrestVersion: '12' }
   >['options'],
   SchemaName extends string &
     keyof GetGenericDatabaseWithOptions<Database>['db'] = 'public' extends keyof GetGenericDatabaseWithOptions<Database>['db']

@@ -21,8 +21,8 @@ import {
   SelectQueryError,
 } from './utils'
 
-export type SpreadOnManyEnabled<postgrestVersion extends number | undefined> =
-  postgrestVersion extends 13 ? true : false
+export type SpreadOnManyEnabled<postgrestVersion extends string | undefined> =
+  postgrestVersion extends `13${string}` ? true : false
 
 /**
  * Main entry point for constructing the result type of a PostgREST query.
