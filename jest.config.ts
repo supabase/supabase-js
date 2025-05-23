@@ -14,5 +14,6 @@ const config: Config.InitialOptions = {
     '!**/vendor/**',
     '!**/vendor/**',
   ],
+  testPathIgnorePatterns: ['test/integration.browser.test.ts'],
 }
 export default config
