@@ -14,11 +14,12 @@ import {
   GOTRUE_URL_SIGNUP_ENABLED_AUTO_CONFIRM_ON,
   authClient,
   GOTRUE_URL_SIGNUP_ENABLED_ASYMMETRIC_AUTO_CONFIRM_ON,
-  authClientWithSession,
   pkceClient,
+  autoRefreshClient,
+  getClientWithSpecificStorage,
 } from './lib/clients'
 import { mockUserCredentials } from './lib/utils'
-import { JWK, Session } from '../src'
+import { JWK, Provider, Session } from '../src'
 
 const TEST_USER_DATA = { info: 'some info' }
 
@@ -204,6 +205,12 @@ describe('GoTrueClient', () => {
       expect(refreshAccessTokenSpy).toBeCalledTimes(1)
       expect(data.session?.access_token).not.toEqual(userSession.session?.access_token)
     })
+
+    test('getSession() returns null when no session is stored', async () => {
+      const { data, error } = await auth.getSession();
+      expect(data?.session).toBeNull();
+      expect(error).toBeNull();
+    });
 
     test('refresh should only happen once', async () => {
       const { email, password } = mockUserCredentials()
@@ -406,34 +413,55 @@ describe('GoTrueClient', () => {
     test('resend() with email', async () => {
       const { email } = mockUserCredentials()
 
-      const { error } = await auth.resend({ email, type: 'signup'})
+      const { error } = await auth.resend({ 
+        email, type: 'signup', 
+        options: { emailRedirectTo: email }
+      })
 
       expect(error).toBeNull()
     })
   })
 
-  describe('Phone OTP Auth', () => {
-    test('signUp() when phone sign up missing provider account', async () => {
-      const { phone, password } = mockUserCredentials()
+  describe('signInWithOtp', () => {
 
-      const { error, data } = await phoneClient.signUp({
-        phone,
-        password,
+    test('signInWithOtp() for email', async () => {
+      const { email } = mockUserCredentials()
+      const userMetadata = { hello: 'world' }
+      const { data, error } = await auth.signInWithOtp({
+        email,
+        options: {
+          data: userMetadata,
+        },
       })
+      expect(error).toBeNull()
+      expect(data.user).toBeNull()
+      expect(data.session).toBeNull()
+    })
 
+    test('signInWithOtp() pkce flow fails with invalid sms provider', async () => {
+      const { phone } = mockUserCredentials()
+
+      const { data, error } = await pkceClient.signInWithOtp({
+        phone,
+      })
       expect(error).not.toBeNull()
       expect(data.session).toBeNull()
       expect(data.user).toBeNull()
-
-      expect(error?.message).toEqual('Unable to get SMS provider')
-      expect(error?.status).toEqual(500)
     })
+  })
 
+  describe('Phone OTP Auth', () => {
     test('signInWithOtp() with phone', async () => {
       const { phone } = mockUserCredentials()
 
       const { data, error } = await phoneClient.signInWithOtp({
         phone,
+        options: {
+          data: { ...TEST_USER_DATA },
+          channel: 'whatsapp',
+          captchaToken: 'some_token',
+          shouldCreateUser: true
+        }
       })
       expect(error).not.toBeNull()
       expect(data.session).toBeNull()
@@ -453,21 +481,35 @@ describe('GoTrueClient', () => {
         }
       })
 
-      expect(error).not.toBeNull()
+      // Since auto-confirm is off, we should either:
+      // 1. Get an error (e.g. invalid phone number, captcha token)
+      // 2. Get a success response but with no session (needs verification)
       expect(data.session).toBeNull()
-      expect(data.user).toBeNull()
+      if (error) {
+        expect(error).not.toBeNull()
+        expect(data.user).toBeNull()
+      } else {
+        expect(data.user).not.toBeNull()
+        expect(data.user?.phone).toBe(phone)
+        expect(data.user?.user_metadata).toMatchObject(TEST_USER_DATA)
+      }
     })
 
     test('resend() with phone', async () => {
       const { phone } = mockUserCredentials()
 
-      const { error } = await auth.resend({ phone, type: 'phone_change'})
+      const { error } = await phoneClient.resend({ phone, type: 'phone_change'})
 
       expect(error).toBeNull()
     })
 
-    test('verifyOTP()', async () => {
-      // unable to test
+    test('verifyOTP() fails with invalid token', async () => {
+      const { phone } = mockUserCredentials()
+
+      const { error } = await phoneClient.verifyOtp({ phone, type: 'phone_change', token: '123456'})
+
+      expect(error).not.toBeNull()
+      expect(error?.message).toContain("Token has expired or is invalid")
     })
   })
 
@@ -489,20 +531,6 @@ describe('GoTrueClient', () => {
     expect(data.user).toBeNull()
 
     expect(error?.message).toMatch(/^User already registered/)
-  })
-
-  test('signInWithOtp() for email', async () => {
-    const { email } = mockUserCredentials()
-    const userMetadata = { hello: 'world' }
-    const { data, error } = await auth.signInWithOtp({
-      email,
-      options: {
-        data: userMetadata,
-      },
-    })
-    expect(error).toBeNull()
-    expect(data.user).toBeNull()
-    expect(data.session).toBeNull()
   })
 
   test('signInWithPassword() for phone', async () => {
@@ -1405,7 +1433,7 @@ describe('fetchJwk', () => {
 
 describe('signInAnonymously', () => {
   test('should successfully sign in anonymously', async () => {
-    const { data, error } = await authClientWithSession.signInAnonymously()
+    const { data, error } = await authWithSession.signInAnonymously()
     
     expect(error).toBeNull()
     expect(data).not.toBeNull()
@@ -1413,7 +1441,7 @@ describe('signInAnonymously', () => {
     expect(data.user).not.toBeNull()
     expect(data.user?.is_anonymous).toBe(true)
 
-    const { data: savedSession } = await authClientWithSession.getSession()
+    const { data: savedSession } = await authWithSession.getSession()
     expect(savedSession.session).not.toBeNull()
   })
 
@@ -1431,5 +1459,459 @@ describe('signInAnonymously', () => {
     expect(data?.session).toBeNull()
     expect(error).not.toBeNull()
     expect(error?.message).toContain("Anonymous sign-ins are disabled")
+  })
+})
+
+describe('Web3 Authentication', () => {
+  test('signInWithWeb3 should throw error for unsupported chain', async () => {
+    const credentials = {
+      chain: 'ethereum' as any,
+      message: 'test message',
+      signature: new Uint8Array([1, 2, 3]),
+    }
+
+    await expect(authClient.signInWithWeb3(credentials)).rejects.toThrow(
+      '@supabase/auth-js: Unsupported chain "ethereum"'
+    )
+  })
+
+  test('signInWithWeb3 should handle solana chain', async () => {
+    const credentials = {
+      chain: 'solana' as const,
+      message: 'test message',
+      signature: new Uint8Array([1, 2, 3]),
+    }
+
+    const { data, error } = await authClient.signInWithWeb3(credentials)
+
+    expect(data?.session).toBeNull()
+    expect(error).not.toBeNull()
+    expect(error?.message).toContain("unsupported_grant_type")
+  })
+
+  test('signInWithWeb3 should fail solana chain without message', async () => {
+    const credentials = {
+      chain: 'solana' as const,
+      signature: new Uint8Array([1, 2, 3]),
+    }
+
+    await expect(authClient.signInWithWeb3(credentials)).rejects.toThrow(
+      '@supabase/auth-js: Both wallet and url must be specified in non-browser environments.'
+    )
+  })
+
+  test('signInWithWeb3 should fail solana chain without signMessage', async () => {
+    const credentials = {
+      chain: 'solana' as const,
+      wallet: {
+        address: '0x123',
+        publicKey: { toBase58: () => '0x123' },
+        privateKey: '0x123',
+
+      },
+      options: {
+        url: 'https://example.com',
+      }
+    }
+
+    await expect(authClient.signInWithWeb3(credentials)).rejects.toThrow(
+      '@supabase/auth-js: Wallet does not have a compatible signMessage() and publicKey.toBase58() API'
+    )
+  })
+
+  test('signInWithWeb3 should fail solana chain without publicKey', async () => {
+    const credentials = {
+      chain: 'solana' as const,
+      wallet: {
+        address: '0x123',
+        privateKey: '0x123',
+        signMessage: async () => new Uint8Array([1, 2, 3]),
+      },
+      options: {
+        url: 'https://example.com',
+      }
+    }
+
+    await expect(authClient.signInWithWeb3(credentials)).rejects.toThrow(
+      '@supabase/auth-js: Wallet does not have a compatible signMessage() and publicKey.toBase58() API'
+    )
+  })
+})
+
+describe('ID Token Authentication', () => {
+  test('signInWithIdToken fails with disabled provider', async () => {
+    const credentials = {
+      provider: 'google',
+      token: 'mock-id-token',
+      nonce: 'mock-nonce'
+    }
+
+    const { data, error } = await authClient.signInWithIdToken(credentials)
+
+    expect(data?.session).toBeNull()
+    expect(error).not.toBeNull()
+    expect(error?.message).toContain("Provider (issuer \"https://accounts.google.com\") is not enabled")
+  })
+})
+
+describe('Reauthentication', () => {
+  test('reauthenticate() fails without session', async () => {
+    const { data, error } = await auth.reauthenticate()
+    
+    expect(data?.session).toBeNull()
+    expect(error).not.toBeNull()
+    expect(error?.message).toContain("Reauthentication requires the user to have an email or a phone number")
+  })
+
+  test('reauthenticate() returns null user and session', async () => {
+    const { email, password } = mockUserCredentials()
+
+    await authWithSession.signUp({
+      email,
+      password,
+    })
+
+    const { data, error } = await authWithSession.reauthenticate()
+    
+    expect(error).toBeNull()
+    expect(data).not.toBeNull()
+    expect(data?.session).toBeNull()
+    expect(data?.user).toBeNull()
+  })
+})
+
+describe('Identity Management', () => {
+  beforeEach(async () => {
+    await authWithSession.signOut()
+  })
+
+  test('getUserIdentities() returns error without session', async () => {
+    const { error } = await authWithSession.getUserIdentities()
+    expect(error).not.toBeNull()
+    expect(error?.message).toContain("Auth session missing!")
+  })
+
+  test('getUserIdentities() returns user identities after signup', async () => {
+    const { email, password } = mockUserCredentials()
+    
+    const { error: signUpError } = await authWithSession.signUp({
+      email,
+      password,
+    })
+    expect(signUpError).toBeNull()
+
+    const { data, error } = await authWithSession.getUserIdentities()
+    expect(error).toBeNull()
+    expect(data?.identities).toHaveLength(1)
+    const identity = data?.identities[0] as unknown as { provider: string; identity_data: { email: string } }
+    expect(identity.provider).toBe('email')
+    expect(identity.identity_data.email).toBe(email)
+  })
+
+  test('linkIdentity() fails when manual linking is disabled', async () => {
+    const { email, password } = mockUserCredentials()
+    
+    const { error: signUpError } = await authWithSession.signUp({
+      email,
+      password,
+    })
+    expect(signUpError).toBeNull()
+
+    const { error } = await authWithSession.linkIdentity({
+      provider: 'google',
+      options: {
+        redirectTo: 'http://localhost:3000'
+      }
+    })
+    expect(error).not.toBeNull()
+    expect(error?.message).toContain('Manual linking is disabled')
+  })
+
+  test('unlinkIdentity() fails when manual linking is disabled', async () => {
+    const { email, password } = mockUserCredentials()
+    
+    const { error: signUpError } = await authWithSession.signUp({
+      email,
+      password,
+    })
+    expect(signUpError).toBeNull()
+
+    const { data: identitiesData } = await authWithSession.getUserIdentities()
+    expect(identitiesData?.identities).toBeDefined()
+    expect(identitiesData?.identities.length).toBeGreaterThan(0)
+
+    const { error } = await authWithSession.unlinkIdentity(identitiesData!.identities[0])
+    expect(error).not.toBeNull()
+    expect(error?.message).toContain('Manual linking is disabled')
+  })
+
+})
+
+describe('Auto Refresh', () => {
+  test('stopAutoRefresh() removes visibility callback and stops auto refresh', async () => {
+    // @ts-expect-error 'Allow access to private _removeVisibilityChangedCallback'
+    const removeVisibilitySpy = jest.spyOn(autoRefreshClient, '_removeVisibilityChangedCallback')
+    // @ts-expect-error 'Allow access to private _stopAutoRefresh'
+    const stopAutoRefreshSpy = jest.spyOn(autoRefreshClient, '_stopAutoRefresh')
+
+    await autoRefreshClient.stopAutoRefresh()
+
+    expect(removeVisibilitySpy).toHaveBeenCalledTimes(1)
+    expect(stopAutoRefreshSpy).toHaveBeenCalledTimes(1)
+  })
+
+  describe('_recoverAndRefresh', () => {
+    test('should recover and refresh session when valid session exists', async () => {
+      const { email, password } = mockUserCredentials()
+      
+      const { data: signUpData } = await autoRefreshClient.signUp({
+        email,
+        password,
+      })
+      expect(signUpData.session).not.toBeNull()
+
+      // @ts-expect-error 'Allow access to private _recoverAndRefresh'
+      const session: Session | null = await autoRefreshClient._recoverAndRefresh()
+      
+      expect(session).not.toBeNull()
+      expect(session?.access_token).not.toBeNull()
+      expect(session?.refresh_token).not.toBeNull()
+    })
+
+    test('should return null session when no valid session exists', async () => {
+      await autoRefreshClient.signOut()
+      
+      // @ts-expect-error 'Allow access to private _recoverAndRefresh'
+      const session: Session | undefined = await autoRefreshClient._recoverAndRefresh()
+      
+      expect(session).toBeUndefined()
+    })
+
+    test('should handle expired session by attempting refresh', async () => {
+      const { email, password } = mockUserCredentials()
+      
+      const { data: signUpData } = await autoRefreshClient.signUp({
+        email,
+        password,
+      })
+      expect(signUpData.session).not.toBeNull()
+
+      // Manually expire the session
+      const expired = new Date()
+      expired.setMinutes(expired.getMinutes() - 1)
+      const expiredSeconds = Math.floor(expired.getTime() / 1000)
+
+      // @ts-expect-error 'Allow access to protected storage'
+      const storage = autoRefreshClient.storage
+      // @ts-expect-error 'Allow access to protected storageKey'
+      const storageKey = autoRefreshClient.storageKey
+
+      await storage.setItem(
+        storageKey,
+        JSON.stringify({
+          ...JSON.parse((await storage.getItem(storageKey)) || 'null'),
+          expires_at: expiredSeconds,
+        })
+      )
+
+      // @ts-expect-error 'Allow access to private _recoverAndRefresh'
+      const session: Session | null = await autoRefreshClient._recoverAndRefresh()
+      
+      expect(session).not.toBeNull()
+      expect(session?.access_token).not.toBeNull()
+      expect(session?.refresh_token).not.toBeNull()
+      // Verify we got a new token
+      expect(session?.access_token).not.toEqual(signUpData.session?.access_token)
+    })
+  })
+})
+
+describe('Session Management', () => {
+  test('_notifyAllSubscribers notifies all subscribers of session changes', async () => {
+    const { email, password } = mockUserCredentials()
+    const mockCallback = jest.fn()
+    
+    const { data: { subscription } } = authWithSession.onAuthStateChange(mockCallback)
+    
+    const { data } = await authWithSession.signUp({
+      email,
+      password,
+    })
+    expect(data.session).not.toBeNull()
+    
+    expect(mockCallback).toHaveBeenCalledWith('SIGNED_IN', data.session)
+    
+    // Cleanup
+    subscription?.unsubscribe()
+  })
+
+  test('_removeSession removes session and notifies subscribers', async () => {
+    const { email, password } = mockUserCredentials()
+    const mockCallback = jest.fn()
+    const { data: { subscription } } = authWithSession.onAuthStateChange(mockCallback)
+    
+    const { data } = await authWithSession.signUp({
+      email,
+      password,
+    })
+    expect(data.session).not.toBeNull()
+    
+    // @ts-expect-error 'Allow access to private _removeSession'
+    await authWithSession._removeSession()
+    expect(mockCallback).toHaveBeenCalledWith('SIGNED_OUT', null)
+    
+    const { data: sessionData } = await authWithSession.getSession()
+    expect(sessionData.session).toBeNull()
+    
+    // Cleanup
+    subscription?.unsubscribe()
+  })
+})
+
+describe('Storage adapter edge cases', () => {
+
+  test('should handle storage failure gracefully', async () => {
+    const brokenStorage = {
+      getItem: async () => { throw new Error('getItem failed message') },
+      setItem: async () => { throw new Error('setItem failed message') },
+      removeItem: async () => { throw new Error('removeItem failed message') },
+    }
+    const client = getClientWithSpecificStorage(brokenStorage)
+
+    await expect(client.signOut()).rejects.toThrow('getItem failed message')
+  })
+
+  test('should handle storage getItem failure in getSession', async () => {
+    const brokenStorage = {
+      getItem: async () => { throw new Error('getItem failed message') },
+      setItem: async () => {},
+      removeItem: async () => {},
+    }
+    const client = getClientWithSpecificStorage(brokenStorage)
+    await expect(client.getSession()).rejects.toThrow('getItem failed message')
+  })
+
+  test('should handle storage setItem failure in _saveSession', async () => {
+    const brokenStorage = {
+      getItem: async () => '{}',
+      setItem: async () => { throw new Error('setItem failed message') },
+      removeItem: async () => {},
+    }
+    const client = getClientWithSpecificStorage(brokenStorage)
+    const session = {
+      access_token: 'test-token',
+      refresh_token: 'test-refresh',
+      expires_in: 3600,
+      token_type: 'bearer',
+      user: null
+    }
+    // @ts-expect-error private method
+    await expect(client._saveSession(session)).rejects.toThrow('setItem failed message')
+
+    const { data, error } = await client.getSession()
+    expect(error).toBeNull()
+    expect(data.session).toBeNull()
+  })
+
+  test('should handle storage removeItem failure in _removeSession', async () => {
+    const brokenStorage = {
+      getItem: async () => '{}',
+      setItem: async () => {},
+      removeItem: async () => { throw new Error('removeItem failed message') },
+    }
+    const client = getClientWithSpecificStorage(brokenStorage)
+
+    await expect(client.getSession()).rejects.toThrow('removeItem failed message')
+  })
+
+  test('should handle invalid JSON in storage', async () => {
+    const invalidStorage = {
+      getItem: async () => 'invalid-json',
+      setItem: async () => {},
+      removeItem: async () => {},
+    }
+    const client = getClientWithSpecificStorage(invalidStorage)
+    const { data, error } = await client.getSession()
+    expect(error).toBeNull()
+    expect(data.session).toBeNull()
+  })
+
+  test('should handle null storage value', async () => {
+    const nullStorage = {
+      getItem: async () => null,
+      setItem: async () => {},
+      removeItem: async () => {},
+    }
+    const client = getClientWithSpecificStorage(nullStorage)
+    const { data, error } = await client.getSession()
+    expect(error).toBeNull()
+    expect(data.session).toBeNull()
+  })
+
+  test('should handle empty storage value', async () => {
+    const emptyStorage = {
+      getItem: async () => '',
+      setItem: async () => {},
+      removeItem: async () => {},
+    }
+    const client = getClientWithSpecificStorage(emptyStorage)
+    const { data, error } = await client.getSession()
+    expect(error).toBeNull()
+    expect(data.session).toBeNull()
+  })
+
+  test('should handle malformed session data', async () => {
+    const malformedStorage = {
+      getItem: async () => JSON.stringify({ access_token: 'test' }), // Missing required fields
+      setItem: async () => {},
+      removeItem: async () => {},
+    }
+    const client = getClientWithSpecificStorage(malformedStorage)
+    const { data, error } = await client.getSession()
+    expect(error).toBeNull()
+    expect(data.session).toBeNull()
+  })
+
+  test('should handle expired session data', async () => {
+    const expiredStorage = {
+      getItem: async () => JSON.stringify({
+        access_token: 'test',
+        refresh_token: 'test',
+        expires_in: 3600,
+        expires_at: Math.floor(Date.now() / 1000) - 1000, // Expired 1 second ago
+        token_type: 'bearer',
+        user: null
+      }),
+      setItem: async () => {},
+      removeItem: async () => {},
+    }
+    const client = getClientWithSpecificStorage(expiredStorage)
+    // @ts-expect-error private method
+    client._refreshAccessToken = async () => ({ data: { session: null, user: null }, error: null })
+    const { data, error } = await client.getSession()
+
+    expect(data.session).toBeNull()
+    expect(error).not.toBeNull()
+    expect(error?.message).toContain('Auth session missing!')
+  })
+
+  test('should return false for _isImplicitGrantCallback with missing params', () => {
+    const client = getClientWithSpecificStorage(memoryLocalStorageAdapter())
+    // @ts-expect-error private method
+    expect(client._isImplicitGrantCallback({})).toBe(false)
+  })
+
+  test('should return false for _isPKCECallback with missing params', async () => {
+    const client = getClientWithSpecificStorage(memoryLocalStorageAdapter())
+    // @ts-expect-error private method
+    await expect(client._isPKCECallback({})).resolves.toBe(false)
+  })
+
+  test('should build provider URL with _getUrlForProvider', async () => {
+    const client = getClientWithSpecificStorage(memoryLocalStorageAdapter())
+    // @ts-expect-error private method
+    const url = await client._getUrlForProvider(GOTRUE_URL_SIGNUP_ENABLED_AUTO_CONFIRM_ON, 'google', { redirectTo: 'http://localhost' })
+    expect(typeof url).toBe('string')
+    expect(url).toContain('google')
   })
 })

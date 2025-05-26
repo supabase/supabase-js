@@ -1,5 +1,6 @@
 import jwt from 'jsonwebtoken'
 import { GoTrueAdminApi, GoTrueClient } from '../../src/index'
+import { SupportedStorage } from '../../src/lib/types'
 
 export const SIGNUP_ENABLED_AUTO_CONFIRM_OFF_PORT = 9999
 
@@ -95,6 +96,11 @@ export const pkceClient = new GoTrueClient({
   flowType: 'pkce',
 })
 
+export const autoRefreshClient = new GoTrueClient({
+  url: GOTRUE_URL_SIGNUP_ENABLED_AUTO_CONFIRM_ON,
+  autoRefreshToken: true,
+  persistSession: true,
+})
 
 export const authAdminApiAutoConfirmEnabledClient = new GoTrueAdminApi({
   url: GOTRUE_URL_SIGNUP_ENABLED_AUTO_CONFIRM_ON,
@@ -140,3 +146,13 @@ export const serviceRoleApiClientNoSms = new GoTrueAdminApi({
     Authorization: `Bearer ${SERVICE_ROLE_JWT}`,
   },
 })
+
+export function getClientWithSpecificStorage(storage: SupportedStorage) {
+  return new GoTrueClient({
+    url: GOTRUE_URL_SIGNUP_ENABLED_AUTO_CONFIRM_ON,
+    storageKey: 'test-specific-storage',
+    autoRefreshToken: false,
+    persistSession: true,
+    storage,
+  })
+}

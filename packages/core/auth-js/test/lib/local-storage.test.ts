@@ -22,25 +22,72 @@ describe('memoryLocalStorageAdapter', () => {
 })
 
 describe('localStorageAdapter', () => {
-    beforeEach(() => {
-      Object.defineProperty(globalThis, 'localStorage', {
-        value: {
-          getItem: jest.fn(() => 'value'),
-          setItem: jest.fn(),
-          removeItem: jest.fn(),
-        },
-        configurable: true,
-      })
-    })
-  
-    it('calls localStorage.getItem when supported', () => {
-      jest.spyOn(helpers, 'supportsLocalStorage').mockReturnValue(true)
-      expect(localStorageAdapter.getItem('key')).toBe('value')
-      expect(globalThis.localStorage.getItem).toHaveBeenCalledWith('key')
-    })
-  
-    it('does nothing if localStorage is not supported', () => {
-      jest.spyOn(helpers, 'supportsLocalStorage').mockReturnValue(false)
-      expect(localStorageAdapter.getItem('key')).toBeNull()
+  const mockLocalStorage = {
+    getItem: jest.fn(() => 'value'),
+    setItem: jest.fn(),
+    removeItem: jest.fn(),
+  }
+
+  beforeEach(() => {
+    jest.clearAllMocks()
+    Object.defineProperty(globalThis, 'localStorage', {
+      value: mockLocalStorage,
+      configurable: true,
     })
   })
+
+  it('calls localStorage.getItem when supported', () => {
+    jest.spyOn(helpers, 'supportsLocalStorage').mockReturnValue(true)
+    expect(localStorageAdapter.getItem('key')).toBe('value')
+    expect(globalThis.localStorage.getItem).toHaveBeenCalledWith('key')
+  })
+
+  it('does nothing if localStorage is not supported', () => {
+    jest.spyOn(helpers, 'supportsLocalStorage').mockReturnValue(false)
+    expect(localStorageAdapter.getItem('key')).toBeNull()
+  })
+
+  describe('setItem', () => {
+    it('calls localStorage.setItem when supported', () => {
+      jest.spyOn(helpers, 'supportsLocalStorage').mockReturnValue(true)
+      const key = 'test-key'
+      const value = 'test-value'
+
+      localStorageAdapter.setItem(key, value)
+
+      expect(mockLocalStorage.setItem).toHaveBeenCalledWith(key, value)
+      expect(mockLocalStorage.setItem).toHaveBeenCalledTimes(1)
+    })
+
+    it('does nothing if localStorage is not supported', () => {
+      jest.spyOn(helpers, 'supportsLocalStorage').mockReturnValue(false)
+      const key = 'test-key'
+      const value = 'test-value'
+
+      localStorageAdapter.setItem(key, value)
+
+      expect(mockLocalStorage.setItem).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('removeItem', () => {
+    it('calls localStorage.removeItem when supported', () => {
+      jest.spyOn(helpers, 'supportsLocalStorage').mockReturnValue(true)
+      const key = 'test-key'
+
+      localStorageAdapter.removeItem(key)
+
+      expect(mockLocalStorage.removeItem).toHaveBeenCalledWith(key)
+      expect(mockLocalStorage.removeItem).toHaveBeenCalledTimes(1)
+    })
+
+    it('does nothing if localStorage is not supported', () => {
+      jest.spyOn(helpers, 'supportsLocalStorage').mockReturnValue(false)
+      const key = 'test-key'
+
+      localStorageAdapter.removeItem(key)
+
+      expect(mockLocalStorage.removeItem).not.toHaveBeenCalled()
+    })
+  })
+})
