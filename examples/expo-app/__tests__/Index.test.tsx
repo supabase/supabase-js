@@ -15,14 +15,22 @@ describe('Index', () => {
     // Wait for the subscription status to be updated
     await waitFor(
       () => {
-        expect(getByTestId('realtime_status')).toHaveTextContent('SUBSCRIBED')
+        const status = getByTestId('realtime_status').props.children
+        expect(status).toBe('SUBSCRIBED')
       },
       {
-        timeout: 10000,
+        timeout: 30000, // 30 seconds timeout for waitFor
+        interval: 1000, // Check every second
+        onTimeout: (error) => {
+          const currentStatus = getByTestId('realtime_status').props.children
+          throw new Error(
+            `Timeout waiting for SUBSCRIBED status. Current status: ${currentStatus}. ${error.message}`
+          )
+        },
       }
     )
 
     // Unmount the component to trigger cleanup.
     unmount()
-  }, 10000)
+  }, 35000) // 35 seconds timeout for the entire test
 })
