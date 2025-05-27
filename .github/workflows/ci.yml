@@ -82,7 +82,7 @@ jobs:
         run: |
           npm clean-install
           npm run test:integration || npm run test:integration
-          npm run test:integration:browser || npm run test:integration:browser
+          npm run test:integration:browser
 
       - name: Stop Supabase
         run: |
