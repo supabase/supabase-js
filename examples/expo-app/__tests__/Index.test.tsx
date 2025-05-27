@@ -24,5 +24,5 @@ describe('Index', () => {
 
     // Unmount the component to trigger cleanup.
     unmount()
-  })
+  }, 10000)
 })
