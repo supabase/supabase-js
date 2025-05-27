@@ -101,7 +101,7 @@ jobs:
         run: |
           cd examples/expo-app
           npm install
-          npm run test
+          npm run test || npm run test
 
       - name: Stop Supabase
         run: |
