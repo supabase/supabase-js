@@ -5,7 +5,7 @@ import { Database as DatabaseWithOptions13 } from './types.override-with-options
 const REST_URL = 'http://localhost:3000'
 export const postgrest = new PostgrestClient<Database>(REST_URL)
 const REST_URL_13 = 'http://localhost:3001'
-const postgrest13 = new PostgrestClient<Database, { postgrestVersion: 13 }>(REST_URL_13)
+const postgrest13 = new PostgrestClient<Database, { postgrestVersion: '13' }>(REST_URL_13)
 const postgrest13FromDatabaseTypes = new PostgrestClient<DatabaseWithOptions13>(REST_URL_13)
 
 const userColumn: 'catchphrase' | 'username' = 'username'
