@@ -7,10 +7,15 @@ on:
       - next
       - rc
       - next-rc-1
+  workflow_run:
+    workflows: ['CI']
+    types:
+      - completed
   workflow_dispatch:
 
 jobs:
   release:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     name: Release / Node ${{ matrix.node }}
     strategy:
       matrix:
