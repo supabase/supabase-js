@@ -1,7 +1,12 @@
 import PostgrestBuilder from './PostgrestBuilder'
 import { InvalidMethodError } from './PostgrestFilterBuilder'
 import { GetResult } from './select-query-parser/result'
-import { GenericSchema, CheckMatchingArrayTypes, ClientServerOptions } from './types'
+import {
+  GenericSchema,
+  CheckMatchingArrayTypes,
+  ClientServerOptions,
+  MaxAffectedEnabled,
+} from './types'
 
 export default class PostgrestTransformBuilder<
   ClientOptions extends ClientServerOptions,
@@ -346,7 +351,7 @@ export default class PostgrestTransformBuilder<
    *
    * @param value - The maximum number of rows that can be affected
    */
-  maxAffected(value: number): ClientOptions['postgrestVersion'] extends 13
+  maxAffected(value: number): MaxAffectedEnabled<ClientOptions['postgrestVersion']> extends true
     ? // TODO: update the RPC case to only work on RPC that returns SETOF rows
       Method extends 'PATCH' | 'DELETE' | 'RPC'
       ? this
@@ -354,7 +359,7 @@ export default class PostgrestTransformBuilder<
     : InvalidMethodError<'maxAffected method only available on postgrest 13+'> {
     this.headers.append('Prefer', 'handling=strict')
     this.headers.append('Prefer', `max-affected=${value}`)
-    return this as unknown as ClientOptions['postgrestVersion'] extends 13
+    return this as unknown as MaxAffectedEnabled<ClientOptions['postgrestVersion']> extends true
       ? Method extends 'PATCH' | 'DELETE' | 'RPC'
         ? this
         : InvalidMethodError<'maxAffected method only available on update or delete'>

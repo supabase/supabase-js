@@ -96,6 +96,9 @@ export type GetGenericDatabaseWithOptions<
     : DatabaseWithOptions<Omit<Database, typeof INTERNAL_SUPABASE_OPTIONS>, Opts>
   : DatabaseWithOptions<Database, Opts>
 
+export type MaxAffectedEnabled<postgrestVersion extends string | undefined> =
+  postgrestVersion extends `13${string}` ? true : false
+
 // https://twitter.com/mattpocockuk/status/1622730173446557697
 export type Prettify<T> = { [K in keyof T]: T[K] } & {}
 
