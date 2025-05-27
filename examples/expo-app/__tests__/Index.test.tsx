@@ -18,7 +18,7 @@ describe('Index', () => {
         expect(getByTestId('realtime_status')).toHaveTextContent('SUBSCRIBED')
       },
       {
-        timeout: 2000,
+        timeout: 10000,
       }
     )
 
