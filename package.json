@@ -26,7 +26,7 @@
     "build": "run-s clean format build:*",
     "build:main": "tsc -p tsconfig.json",
     "build:module": "tsc -p tsconfig.module.json",
-    "build:umd": "webpack",
+    "build:umd": "webpack --env mode=production",
     "types-generate": "dts-gen -m '@supabase/supabase-js' -s",
     "test": "run-s test:types test:run",
     "test:all": "run-s test:types test:run test:integration test:integration:browser",
