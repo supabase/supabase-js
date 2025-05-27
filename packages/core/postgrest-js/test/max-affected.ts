@@ -136,4 +136,45 @@ describe('maxAffected', () => {
     expect(data).toHaveLength(1)
     expect(data?.[0].message).toBe('test4')
   })
+
+  test('should be able to use .maxAffected with setof records returning rpc', async () => {
+    // First create a user that will be returned by the RPC
+    await postgrest13.from('users').insert([{ username: 'testuser', status: 'ONLINE' }])
+    // Call the RPC function that returns a set of records
+    const { data, error } = await postgrest13
+      .rpc('set_users_offline', { name_param: 'testuser' })
+      .maxAffected(1)
+      .select()
+
+    expect(error).toBeNull()
+    expect(data).toHaveLength(1)
+    expect(data).toEqual([
+      {
+        username: 'testuser',
+        data: null,
+        age_range: null,
+        status: 'OFFLINE',
+        catchphrase: null,
+      },
+    ])
+  })
+
+  test('should fail when rpc returns more results than maxAffected', async () => {
+    // First create multiple users that will be returned by the RPC
+    await postgrest13.from('users').insert([
+      { username: 'testuser1', status: 'ONLINE' },
+      { username: 'testuser2', status: 'ONLINE' },
+      { username: 'testuser3', status: 'ONLINE' },
+    ])
+
+    // Call the RPC function that returns a set of records
+    const { data, error } = await postgrest13
+      .rpc('set_users_offline', { name_param: 'testuser%' })
+      .maxAffected(1)
+      .select()
+
+    expect(error).toBeDefined()
+    expect(error?.code).toBe('PGRST124')
+    expect(data).toBeNull()
+  })
 })

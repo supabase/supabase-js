@@ -533,6 +533,18 @@ export type Database = {
         }
         Returns: Database['public']['Enums']['user_status']
       }
+      set_users_offline: {
+        Args: {
+          name_param: string
+        }
+        Returns: {
+          age_range: unknown | null
+          catchphrase: unknown | null
+          data: Json | null
+          status: Database['public']['Enums']['user_status'] | null
+          username: string
+        }[]
+      }
       void_func: {
         Args: Record<PropertyKey, never>
         Returns: undefined
