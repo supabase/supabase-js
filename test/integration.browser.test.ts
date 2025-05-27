@@ -45,8 +45,11 @@ const content = `<html>
 
 beforeAll(async () => {
   await new Deno.Command('supabase', { args: ['start'], stderr }).output()
-  await new Deno.Command('pnpm', { args: ['install'], stderr }).output()
-  await new Deno.Command('pnpm', { args: ['build:umd', '--mode', 'production'], stderr }).output()
+  await new Deno.Command('npm', { args: ['install'], stderr }).output()
+  await new Deno.Command('npm', {
+    args: ['run', 'build:umd', '--', '--mode', 'production'],
+    stderr,
+  }).output()
 
   await new Deno.Command('npx', {
     args: ['puppeteer', 'browsers', 'install', 'chrome'],
@@ -82,7 +85,9 @@ afterAll(async () => {
 
 describe('Realtime integration test', () => {
   beforeAll(async () => {
-    browser = await launch()
+    browser = await launch({
+      args: ['--no-sandbox', '--disable-setuid-sandbox'],
+    })
     page = await browser.newPage()
   })
 
