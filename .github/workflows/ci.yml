@@ -46,3 +46,39 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           path-to-lcov: ./test/coverage/lcov.info
+
+  integration:
+    name: Integration
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        node: ['20']
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+
+      - name: Setup Supabase
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Start Supabase
+        run: |
+          supabase start
+
+      - name: Run tests
+        run: |
+          npm clean-install
+          npm run test:integration
+          npm run test:integration:browser
+
+      - name: Stop Supabase
+        run: |
+          supabase stop
