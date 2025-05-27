@@ -82,7 +82,9 @@ afterAll(async () => {
 
 describe('Realtime integration test', () => {
   beforeAll(async () => {
-    browser = await launch()
+    browser = await launch({
+      args: ['--no-sandbox', '--disable-setuid-sandbox'],
+    })
     page = await browser.newPage()
   })
 
