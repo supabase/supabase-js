@@ -82,10 +82,11 @@ jobs:
         run: |
           npm clean-install
           npm run build
+          npm pack
 
       - name: Run integration tests
         run: |
-          npm run test:integration || npm run test:integration:browser
+          npm run test:integration || npm run test:integration
 
       - name: Run browser integration tests
         run: |
