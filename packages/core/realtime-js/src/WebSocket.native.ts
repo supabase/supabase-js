@@ -1,4 +1,4 @@
-// Native/browser WebSocket entry point
-const NativeWebSocket = typeof WebSocket !== 'undefined' ? WebSocket : undefined
+// React Native/Expo WebSocket implementation
+const WebSocketImpl = global.WebSocket
 
-export default NativeWebSocket
+export default WebSocketImpl

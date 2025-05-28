@@ -17,7 +17,6 @@ import Timer from './lib/timer'
 import { httpEndpointURL } from './lib/transformers'
 import RealtimeChannel from './RealtimeChannel'
 import type { RealtimeChannelOptions } from './RealtimeChannel'
-import Push from './lib/push'
 
 type Fetch = typeof fetch
 
@@ -214,9 +213,16 @@ export default class RealtimeClient {
       this.transport = WebSocket
     }
     if (this.transport) {
-      this.conn = new this.transport(this.endpointURL(), undefined, {
-        headers: this.headers,
-      })
+      // Detect if using the native browser WebSocket
+      const isBrowser =
+        typeof window !== 'undefined' && this.transport === window.WebSocket
+      if (isBrowser) {
+        this.conn = new this.transport(this.endpointURL())
+      } else {
+        this.conn = new this.transport(this.endpointURL(), undefined, {
+          headers: this.headers,
+        })
+      }
       this.setupConnection()
       return
     }
