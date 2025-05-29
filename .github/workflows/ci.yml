@@ -46,3 +46,44 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           path-to-lcov: ./test/coverage/lcov.info
+
+  integration:
+    name: Integration / OS ${{ matrix.os }} / Node ${{ matrix.node }} / Deno ${{ matrix.deno }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        node: ['20']
+        deno: ['2.x']
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: ${{ matrix.deno }}
+
+      - name: Setup Supabase
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Start Supabase
+        run: |
+          supabase start
+
+      - name: Run tests
+        run: |
+          npm clean-install
+          npm run test:integration || npm run test:integration
+          npm run test:integration:browser
+
+      - name: Stop Supabase
+        run: |
+          supabase stop
