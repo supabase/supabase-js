@@ -86,6 +86,21 @@ const supabase = createClient('https://xyzcompany.supabase.co', 'public-anon-key
 })
 ```
 
+## Testing
+
+### Unit Testing
+
+```bash
+pnpm test
+```
+
+### Integration Testing
+
+```bash
+supabase start
+pnpm run test:integration
+```
+
 ## Badges
 
 [![Coverage Status](https://coveralls.io/repos/github/supabase/supabase-js/badge.svg?branch=master)](https://coveralls.io/github/supabase/supabase-js?branch=master)

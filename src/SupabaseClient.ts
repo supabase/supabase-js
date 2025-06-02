@@ -321,14 +321,16 @@ export default class SupabaseClient<
     })
   }
 
-  private _listenForAuthEvents() {
-    let data = this.auth.onAuthStateChange((event, session) => {
-      this._handleTokenChanged(event, 'CLIENT', session?.access_token)
+  private async _listenForAuthEvents() {
+    return await this.auth.onAuthStateChange((event, session) => {
+      setTimeout(
+        async () => await this._handleTokenChanged(event, 'CLIENT', session?.access_token),
+        0
+      )
     })
-    return data
   }
 
-  private _handleTokenChanged(
+  private async _handleTokenChanged(
     event: AuthChangeEvent,
     source: 'CLIENT' | 'STORAGE',
     token?: string
@@ -339,7 +341,8 @@ export default class SupabaseClient<
     ) {
       this.changedAccessToken = token
     } else if (event === 'SIGNED_OUT') {
-      this.realtime.setAuth()
+      await this.realtime.setAuth()
+
       if (source == 'STORAGE') this.auth.signOut()
       this.changedAccessToken = undefined
     }
