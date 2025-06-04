@@ -70,6 +70,14 @@ export type GoTrueClientOptions = {
   persistSession?: boolean
   /* Provide your own local storage implementation to use instead of the browser's local storage. */
   storage?: SupportedStorage
+  /**
+   * Stores the user object in a separate storage location from the rest of the session data. When non-null, `storage` will only store a JSON object containing the access and refresh token and some adjacent metadata, while `userStorage` will only contain the user object under the key `storageKey + '-user'`.
+   *
+   * When this option is set and cookie storage is used, `getSession()` and other functions that load a session from the cookie store might not return back a user. It's very important to always use `getUser()` to fetch a user object in those scenarios.
+   *
+   * @experimental
+   */
+  userStorage?: SupportedStorage
   /* A custom fetch implementation. */
   fetch?: Fetch
   /* If set to 'pkce' PKCE flow. Defaults to the 'implicit' flow otherwise */
@@ -253,6 +261,10 @@ export interface Session {
    */
   expires_at?: number
   token_type: string
+
+  /**
+   * When using a separate user storage, accessing properties of this object will throw an error.
+   */
   user: User
 }
 

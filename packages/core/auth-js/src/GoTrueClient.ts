@@ -41,14 +41,15 @@ import {
   uuid,
   retryable,
   sleep,
-  supportsLocalStorage,
   parseParametersFromURL,
   getCodeChallengeAndMethod,
   getAlgorithm,
   validateExp,
   decodeJWT,
+  userNotAvailableProxy,
+  supportsLocalStorage,
 } from './lib/helpers'
-import { localStorageAdapter, memoryLocalStorageAdapter } from './lib/local-storage'
+import { memoryLocalStorageAdapter } from './lib/local-storage'
 import { polyfillGlobalThis } from './lib/polyfills'
 import { version } from './lib/version'
 import { LockAcquireTimeoutError, navigatorLock } from './lib/locks'
@@ -114,7 +115,10 @@ import { stringToUint8Array, bytesToBase64URL } from './lib/base64url'
 
 polyfillGlobalThis() // Make "globalThis" available
 
-const DEFAULT_OPTIONS: Omit<Required<GoTrueClientOptions>, 'fetch' | 'storage' | 'lock'> = {
+const DEFAULT_OPTIONS: Omit<
+  Required<GoTrueClientOptions>,
+  'fetch' | 'storage' | 'userStorage' | 'lock'
+> = {
   url: GOTRUE_URL,
   storageKey: STORAGE_KEY,
   autoRefreshToken: true,
@@ -158,6 +162,10 @@ export default class GoTrueClient {
   protected autoRefreshToken: boolean
   protected persistSession: boolean
   protected storage: SupportedStorage
+  /**
+   * @experimental
+   */
+  protected userStorage: SupportedStorage | null = null
   protected memoryStorage: { [key: string]: string } | null = null
   protected stateChangeEmitters: Map<string, Subscription> = new Map()
   protected autoRefreshTicker: ReturnType<typeof setInterval> | null = null
@@ -251,11 +259,15 @@ export default class GoTrueClient {
         this.storage = settings.storage
       } else {
         if (supportsLocalStorage()) {
-          this.storage = localStorageAdapter
+          this.storage = globalThis.localStorage
         } else {
           this.memoryStorage = {}
           this.storage = memoryLocalStorageAdapter(this.memoryStorage)
         }
+      }
+
+      if (settings.userStorage) {
+        this.userStorage = settings.userStorage
       }
     } else {
       this.memoryStorage = {}
@@ -1347,7 +1359,20 @@ export default class GoTrueClient {
       )
 
       if (!hasExpired) {
-        if (this.storage.isServer) {
+        if (this.userStorage) {
+          const maybeUser: { user?: User | null } | null = (await getItemAsync(
+            this.userStorage,
+            this.storageKey + '-user'
+          )) as any
+
+          if (maybeUser?.user) {
+            currentSession.user = maybeUser.user
+          } else {
+            currentSession.user = userNotAvailableProxy()
+          }
+        }
+
+        if (this.storage.isServer && currentSession.user) {
           let suppressWarning = this.suppressGetSessionWarning
           const proxySession: Session = new Proxy(currentSession, {
             get: (target: any, prop: string, receiver: any) => {
@@ -2128,7 +2153,47 @@ export default class GoTrueClient {
     this._debug(debugName, 'begin')
 
     try {
-      const currentSession = await getItemAsync(this.storage, this.storageKey)
+      const currentSession: Session = (await getItemAsync(this.storage, this.storageKey)) as any
+
+      if (this.userStorage) {
+        let maybeUser: { user: User | null } | null = (await getItemAsync(
+          this.userStorage,
+          this.storageKey + '-user'
+        )) as any
+
+        if (!this.storage.isServer && Object.is(this.storage, this.userStorage) && !maybeUser) {
+          // storage and userStorage are the same storage medium, for example
+          // window.localStorage if userStorage does not have the user from
+          // storage stored, store it first thereby migrating the user object
+          // from storage -> userStorage
+
+          maybeUser = { user: currentSession.user }
+          await setItemAsync(this.userStorage, this.storageKey + '-user', maybeUser)
+        }
+
+        currentSession.user = maybeUser?.user ?? userNotAvailableProxy()
+      } else if (currentSession && !currentSession.user) {
+        // user storage is not set, let's check if it was previously enabled so
+        // we bring back the storage as it should be
+
+        if (!currentSession.user) {
+          // test if userStorage was previously enabled and the storage medium was the same, to move the user back under the same key
+          const separateUser: { user: User | null } | null = (await getItemAsync(
+            this.storage,
+            this.storageKey + '-user'
+          )) as any
+
+          if (separateUser && separateUser?.user) {
+            currentSession.user = separateUser.user
+
+            await removeItemAsync(this.storage, this.storageKey + '-user')
+            await setItemAsync(this.storage, this.storageKey, currentSession)
+          } else {
+            currentSession.user = userNotAvailableProxy()
+          }
+        }
+      }
+
       this._debug(debugName, 'session from storage', currentSession)
 
       if (!this._isValidSession(currentSession)) {
@@ -2164,6 +2229,29 @@ export default class GoTrueClient {
               await this._removeSession()
             }
           }
+        }
+      } else if (
+        currentSession.user &&
+        (currentSession.user as any).__isUserNotAvailableProxy === true
+      ) {
+        // If we have a proxy user, try to get the real user data
+        try {
+          const { data, error: userError } = await this._getUser(currentSession.access_token)
+
+          if (!userError && data?.user) {
+            currentSession.user = data.user
+            await this._saveSession(currentSession)
+            await this._notifyAllSubscribers('SIGNED_IN', currentSession)
+          } else {
+            this._debug(debugName, 'could not get user data, skipping SIGNED_IN notification')
+          }
+        } catch (getUserError) {
+          console.error('Error getting user data:', getUserError)
+          this._debug(
+            debugName,
+            'error getting user data, skipping SIGNED_IN notification',
+            getUserError
+          )
         }
       } else {
         // no need to persist currentSession again, as we just loaded it from
@@ -2278,13 +2366,52 @@ export default class GoTrueClient {
     // _saveSession is always called whenever a new session has been acquired
     // so we can safely suppress the warning returned by future getSession calls
     this.suppressGetSessionWarning = true
-    await setItemAsync(this.storage, this.storageKey, session)
+
+    // Create a shallow copy to work with, to avoid mutating the original session object if it's used elsewhere
+    const sessionToProcess = { ...session }
+
+    const userIsProxy =
+      sessionToProcess.user && (sessionToProcess.user as any).__isUserNotAvailableProxy === true
+    if (this.userStorage) {
+      if (!userIsProxy && sessionToProcess.user) {
+        // If it's a real user object, save it to userStorage.
+        await setItemAsync(this.userStorage, this.storageKey + '-user', {
+          user: sessionToProcess.user,
+        })
+      } else if (userIsProxy) {
+        // If it's the proxy, it means user was not found in userStorage.
+        // We should ensure no stale user data for this key exists in userStorage if we were to save null,
+        // or simply not save the proxy. For now, we don't save the proxy here.
+        // If there's a need to clear userStorage if user becomes proxy, that logic would go here.
+      }
+
+      // Prepare the main session data for primary storage: remove the user property before cloning
+      // This is important because the original session.user might be the proxy
+      const mainSessionData: Omit<Session, 'user'> & { user?: User } = { ...sessionToProcess }
+      delete mainSessionData.user // Remove user (real or proxy) before cloning for main storage
+
+      const clonedMainSessionData = structuredClone(mainSessionData)
+      await setItemAsync(this.storage, this.storageKey, clonedMainSessionData)
+    } else {
+      // No userStorage is configured.
+      // In this case, session.user should ideally not be a proxy.
+      // If it were, structuredClone would fail. This implies an issue elsewhere if user is a proxy here
+      const clonedSession = structuredClone(sessionToProcess) // sessionToProcess still has its original user property
+      await setItemAsync(this.storage, this.storageKey, clonedSession)
+    }
   }
 
   private async _removeSession() {
     this._debug('#_removeSession()')
 
     await removeItemAsync(this.storage, this.storageKey)
+    await removeItemAsync(this.storage, this.storageKey + '-code-verifier')
+    await removeItemAsync(this.storage, this.storageKey + '-user')
+
+    if (this.userStorage) {
+      await removeItemAsync(this.userStorage, this.storageKey + '-user')
+    }
+
     await this._notifyAllSubscribers('SIGNED_OUT', null)
   }
 

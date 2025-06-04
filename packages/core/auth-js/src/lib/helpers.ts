@@ -1,7 +1,7 @@
 import { API_VERSION_HEADER_NAME, BASE64URL_REGEX } from './constants'
 import { AuthInvalidJwtError } from './errors'
 import { base64UrlToUint8Array, stringFromBase64URL } from './base64url'
-import { JwtHeader, JwtPayload, SupportedStorage } from './types'
+import { JwtHeader, JwtPayload, SupportedStorage, User } from './types'
 
 export function expiresAt(expiresIn: number) {
   const timeNow = Math.round(Date.now() / 1000)
@@ -364,4 +364,42 @@ export function validateUUID(str: string) {
   if (!UUID_REGEX.test(str)) {
     throw new Error('@supabase/auth-js: Expected parameter to be UUID but is not')
   }
+}
+
+export function userNotAvailableProxy(): User {
+  const proxyTarget = {} as User
+
+  return new Proxy(proxyTarget, {
+    get: (target: any, prop: string) => {
+      if (prop === '__isUserNotAvailableProxy') {
+        return true
+      }
+      // Preventative check for common problematic symbols during cloning/inspection
+      // These symbols might be accessed by structuredClone or other internal mechanisms.
+      if (typeof prop === 'symbol') {
+        const sProp = (prop as symbol).toString()
+        if (
+          sProp === 'Symbol(Symbol.toPrimitive)' ||
+          sProp === 'Symbol(Symbol.toStringTag)' ||
+          sProp === 'Symbol(util.inspect.custom)'
+        ) {
+          // Node.js util.inspect
+          return undefined
+        }
+      }
+      throw new Error(
+        `@supabase/auth-js: client was created with userStorage option and there was no user stored in the user storage. Accessing the "${prop}" property of the session object is not supported. Please use getUser() instead.`
+      )
+    },
+    set: (_target: any, prop: string) => {
+      throw new Error(
+        `@supabase/auth-js: client was created with userStorage option and there was no user stored in the user storage. Setting the "${prop}" property of the session object is not supported. Please use getUser() to fetch a user object you can manipulate.`
+      )
+    },
+    deleteProperty: (_target: any, prop: string) => {
+      throw new Error(
+        `@supabase/auth-js: client was created with userStorage option and there was no user stored in the user storage. Deleting the "${prop}" property of the session object is not supported. Please use getUser() to fetch a user object you can manipulate.`
+      )
+    },
+  })
 }
