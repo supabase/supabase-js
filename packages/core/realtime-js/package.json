@@ -65,8 +65,9 @@
   },
   "exports": {
     ".": {
-      "import": "./dist/module/index.js",
-      "require": "./dist/main/index.js"
+      "node":"./dist/main/index.js",
+      "browser": "./dist/module/index.js",
+      "default": "./dist/main/index.js"
     },
     "./websocket": {
       "node": "./dist/WebSocket.js",
