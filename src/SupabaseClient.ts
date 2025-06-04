@@ -340,6 +340,7 @@ export default class SupabaseClient<
       this.changedAccessToken = token
     } else if (event === 'SIGNED_OUT') {
       this.realtime.setAuth()
+
       if (source == 'STORAGE') this.auth.signOut()
       this.changedAccessToken = undefined
     }
