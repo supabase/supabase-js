@@ -104,6 +104,8 @@ jobs:
         run: |
           cd examples/expo-app
           npm install
+          # make sure we're using the version that was just packed above
+          npm update @supabase/supabase-js
           npm run test || npm run test
 
       - name: Stop Supabase
