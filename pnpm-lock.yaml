@@ -8,22 +8,22 @@ importers:
   .:
     dependencies:
       '@supabase/auth-js':
-        specifier: 2.69.1
+        specifier: ^2.69.1
         version: 2.69.1
       '@supabase/functions-js':
-        specifier: 2.4.4
+        specifier: ^2.4.4
         version: 2.4.4
       '@supabase/node-fetch':
-        specifier: 2.6.15
+        specifier: ^2.6.15
         version: 2.6.15
       '@supabase/postgrest-js':
-        specifier: 1.19.4
+        specifier: ^1.19.4
         version: 1.19.4
       '@supabase/realtime-js':
-        specifier: 2.11.10
+        specifier: ^2.11.10
         version: 2.11.10
       '@supabase/storage-js':
-        specifier: 2.7.1
+        specifier: ^2.7.1
         version: 2.7.1
     devDependencies:
       '@sebbo2002/semantic-release-jsr':
