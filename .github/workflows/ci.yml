@@ -53,7 +53,7 @@ jobs:
       matrix:
         os: [ubuntu-latest]
         node: ['20']
-        deno: ['2.x']
+        deno: ['1.x', '2.x']
 
     runs-on: ${{ matrix.os }}
 
@@ -78,11 +78,16 @@ jobs:
         run: |
           supabase start
 
-      - name: Run tests
+      - name: Run Node.js tests
         run: |
           npm clean-install
-          npm run test:integration || npm run test:integration
+          npm run test:integration
           npm run test:integration:browser
+
+      - name: Run Deno tests
+        run: |
+          cd test/deno
+          deno task test
 
       - name: Stop Supabase
         run: |

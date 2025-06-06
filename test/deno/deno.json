@@ -1,0 +1,14 @@
+{
+  "compilerOptions": {
+    "lib": ["deno.window"],
+    "strict": true
+  },
+  "imports": {
+    "@supabase/supabase-js": "../../src/index.ts",
+    "../../src/SupabaseClient": "../../src/SupabaseClient.ts",
+    "../../src/lib/types": "../../src/lib/types.ts"
+  },
+  "tasks": {
+    "test": "deno test --allow-net --allow-env --unstable-sloppy-imports integration.test.ts"
+  }
+}

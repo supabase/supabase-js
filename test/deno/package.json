@@ -1,0 +1,12 @@
+{
+  "name": "@supabase/supabase-js-deno-tests",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "deno task test"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "workspace:*"
+  }
+}
