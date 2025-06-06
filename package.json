@@ -31,7 +31,7 @@
     "test": "run-s test:types test:run",
     "test:all": "run-s test:types test:run test:integration test:integration:browser",
     "test:run": "jest --runInBand --detectOpenHandles",
-    "test:coverage": "jest --runInBand --coverage --testPathIgnorePatterns=\"test/integration.*\"",
+    "test:coverage": "jest --runInBand --coverage --testPathIgnorePatterns=\"test/integration.*|test/deno.*\"",
     "test:integration": "jest --runInBand --detectOpenHandles test/integration.test.ts",
     "test:integration:browser": "deno test --allow-all test/integration.browser.test.ts",
     "test:db": "cd infra/db && docker-compose down && docker-compose up -d && sleep 5",
@@ -47,7 +47,7 @@
     "@supabase/functions-js": "2.4.4",
     "@supabase/node-fetch": "2.6.15",
     "@supabase/postgrest-js": "1.19.4",
-    "@supabase/realtime-js": "2.11.10",
+    "@supabase/realtime-js": "next",
     "@supabase/storage-js": "2.7.1"
   },
   "devDependencies": {
