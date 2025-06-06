@@ -19,9 +19,13 @@ import {
   getClientWithSpecificStorage,
 } from './lib/clients'
 import { mockUserCredentials } from './lib/utils'
-import { JWK, Provider, Session } from '../src'
+import { JWK, Session } from '../src'
 
 const TEST_USER_DATA = { info: 'some info' }
+
+const expiredAccessToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJhdXRoZW50aWNhdGVkIiwiZXhwIjoxNzQ4MTA3MDc0LCJpYXQiOjE3NDgxMDM0NzQsImlzcyI6Imh0dHBzOi8vZXhhbXBsZS5jb20iLCJzdWIiOiIxMjM0NTY3ODkwIiwidXNlcl9tZXRhZGF0YSI6e30sInJvbGUiOiJhdXRoZW50aWNhdGVkIn0.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c'
+
+const isNodeHigherThan18 = parseInt(process.version.slice(1).split('.')[0]) > 18;
 
 describe('GoTrueClient', () => {
   // @ts-expect-error 'Allow access to private _refreshAccessToken'
@@ -147,6 +151,76 @@ describe('GoTrueClient', () => {
       expect(user?.user_metadata).toMatchObject({ hello: 'world' })
     })
 
+    test('setSession should fail with invalid access token', async () => {
+      const { email, password } = mockUserCredentials()
+
+      const { error, data } = await authWithSession.signUp({
+        email,
+        password,
+      })
+      expect(error).toBeNull()
+      expect(data.session).not.toBeNull()
+
+      const {
+        data: { session },
+        error: setSessionError,
+      } = await authWithSession.setSession({
+        access_token: 'invalid-access-token',
+        // @ts-expect-error 'data.session should not be null because of the assertion above'
+        refresh_token: data.session.refresh_token,
+      })
+      expect(setSessionError).not.toBeNull()
+      expect(setSessionError?.message).toContain('Invalid JWT structure')
+      expect(session).toBeNull()
+    })
+
+    test('setSession should fail with invalid refresh token', async () => {
+      const { email, password } = mockUserCredentials()
+
+      const { error, data } = await authWithSession.signUp({
+        email,
+        password,
+      })
+      expect(error).toBeNull()
+      expect(data.session).not.toBeNull()
+
+      const {
+        data: { session },
+        error: setSessionError,
+      } = await authWithSession.setSession({
+        access_token: expiredAccessToken,
+        refresh_token: 'invalid-refresh-token',
+      })
+
+      expect(setSessionError).not.toBeNull()
+      expect(setSessionError?.message).toContain('Invalid Refresh Token: Refresh Token Not Found')
+      expect(session).toBeNull()
+    })
+
+    test('setSession should fail without refresh_token', async () => {
+      const {
+        data: { session },
+        error: setSessionError,
+      } = await authWithSession.setSession({
+        access_token: 'valid-access-token',
+      } as any)
+      expect(setSessionError).not.toBeNull()
+      expect(setSessionError?.message).toContain('Auth session missing!')
+      expect(session).toBeNull()
+    })
+
+    test('setSession should fail without access_token', async () => {
+      const {
+        data: { session },
+        error: setSessionError,
+      } = await authWithSession.setSession({
+        refresh_token: 'valid-refresh-token',
+      } as any)
+      expect(setSessionError).not.toBeNull()
+      expect(setSessionError?.message).toContain('Auth session missing!')
+      expect(session).toBeNull()
+    })
+
     test('getSession() should return the currentUser session', async () => {
       const { email, password } = mockUserCredentials()
 
@@ -205,6 +279,12 @@ describe('GoTrueClient', () => {
       expect(refreshAccessTokenSpy).toBeCalledTimes(1)
       expect(data.session?.access_token).not.toEqual(userSession.session?.access_token)
     })
+
+    test('getSession() returns null when no session is stored', async () => {
+      const { data, error } = await auth.getSession();
+      expect(data?.session).toBeNull();
+      expect(error).toBeNull();
+    });
 
     test('getSession() returns null when no session is stored', async () => {
       const { data, error } = await auth.getSession();
@@ -341,7 +421,7 @@ describe('GoTrueClient', () => {
 
     test('exchangeCodeForSession() should fail with invalid authCode', async () => {
       const { error } = await pkceClient.exchangeCodeForSession('mock_code')
-      
+
       expect(error).not.toBeNull()
       expect(error?.status).toEqual(400)
     })
@@ -366,7 +446,7 @@ describe('GoTrueClient', () => {
     test('signUp() with email and PKCE flowType', async () => {
       const { email, password } = mockUserCredentials()
 
-      const { error, data } = await pkceClient.signUp({email, password})
+      const { error, data } = await pkceClient.signUp({ email, password })
 
       expect(error).toBeNull()
       expect(data.session).not.toBeNull()
@@ -395,7 +475,7 @@ describe('GoTrueClient', () => {
     })
 
     test('fail to signUp() with invalid password', async () => {
-      const { error, data } = await auth.signUp({ email: 'asd@a.aa', password: '123'})
+      const { error, data } = await auth.signUp({ email: 'asd@a.aa', password: '123' })
 
       expect(data?.session).toBeNull()
       expect(error).not.toBeNull()
@@ -403,7 +483,7 @@ describe('GoTrueClient', () => {
     })
 
     test('fail to signUp() with invalid email', async () => {
-      const { error, data } = await auth.signUp({ email: 'a', password: '123456'})
+      const { error, data } = await auth.signUp({ email: 'a', password: '123456' })
 
       expect(data?.session).toBeNull()
       expect(error).not.toBeNull()
@@ -413,17 +493,34 @@ describe('GoTrueClient', () => {
     test('resend() with email', async () => {
       const { email } = mockUserCredentials()
 
-      const { error } = await auth.resend({ 
-        email, type: 'signup', 
+      const { error } = await auth.resend({
+        email, type: 'signup',
         options: { emailRedirectTo: email }
       })
 
       expect(error).toBeNull()
     })
+
+    test('resend() fails without email or phone', async () => {
+      const { error } = await auth.resend({} as any)
+
+      expect(error).not.toBeNull()
+      expect(error?.message).toContain('You must provide either an email or phone number')
+    })
+
+    test('signUp() should fail when both email and phone are missing', async () => {
+      const { data, error } = await auth.signUp({
+        password: 'password123'
+      } as any)
+
+      expect(error).not.toBeNull()
+      expect(error?.message).toContain('You must provide either an email or phone number and a password')
+      expect(data.session).toBeNull()
+      expect(data.user).toBeNull()
+    })
   })
 
   describe('signInWithOtp', () => {
-
     test('signInWithOtp() for email', async () => {
       const { email } = mockUserCredentials()
       const userMetadata = { hello: 'world' }
@@ -448,6 +545,35 @@ describe('GoTrueClient', () => {
       expect(data.session).toBeNull()
       expect(data.user).toBeNull()
     })
+
+    test('signInWithOtp() should fail when both email and phone are missing', async () => {
+      const { data, error } = await auth.signInWithOtp({
+        options: {
+          data: { hello: 'world' }
+        }
+      } as any)
+
+      expect(error).not.toBeNull()
+      expect(error?.message).toContain('You must provide either an email or phone number')
+      expect(data.session).toBeNull()
+      expect(data.user).toBeNull()
+    })
+
+    test('signInWithOtp() with PKCE flow should return error', async () => {
+      const { email } = mockUserCredentials()
+      const { data, error } = await pkceClient.signInWithOtp({
+        email,
+        options: {
+          shouldCreateUser: false,
+          captchaToken: 'some_token',
+          emailRedirectTo: email,
+        }
+      })
+
+      expect(error).not.toBeNull()
+      expect(data.session).toBeNull()
+      expect(data.user).toBeNull()
+    })
   })
 
   describe('Phone OTP Auth', () => {
@@ -457,10 +583,10 @@ describe('GoTrueClient', () => {
       const { data, error } = await phoneClient.signInWithOtp({
         phone,
         options: {
+          shouldCreateUser: true,
           data: { ...TEST_USER_DATA },
           channel: 'whatsapp',
-          captchaToken: 'some_token',
-          shouldCreateUser: true
+          captchaToken: 'some_token'
         }
       })
       expect(error).not.toBeNull()
@@ -493,12 +619,25 @@ describe('GoTrueClient', () => {
         expect(data.user?.phone).toBe(phone)
         expect(data.user?.user_metadata).toMatchObject(TEST_USER_DATA)
       }
+      if (error) {
+        expect(error).not.toBeNull()
+        expect(data.user).toBeNull()
+      } else {
+        expect(data.user).not.toBeNull()
+        expect(data.user?.phone).toBe(phone)
+        expect(data.user?.user_metadata).toMatchObject(TEST_USER_DATA)
+      }
     })
 
     test('resend() with phone', async () => {
       const { phone } = mockUserCredentials()
 
-      const { error } = await phoneClient.resend({ phone, type: 'phone_change'})
+      const { error } = await phoneClient.resend({
+        phone, type: 'phone_change',
+        options: {
+          captchaToken: 'some_token',
+        }
+      })
 
       expect(error).toBeNull()
     })
@@ -506,7 +645,14 @@ describe('GoTrueClient', () => {
     test('verifyOTP() fails with invalid token', async () => {
       const { phone } = mockUserCredentials()
 
-      const { error } = await phoneClient.verifyOtp({ phone, type: 'phone_change', token: '123456'})
+      const { error } = await phoneClient.verifyOtp({
+        phone, type: 'phone_change',
+        token: '123456',
+        options: {
+          redirectTo: 'http://localhost:3000/callback',
+          captchaToken: 'some_token',
+        }
+      })
 
       expect(error).not.toBeNull()
       expect(error?.message).toContain("Token has expired or is invalid")
@@ -836,12 +982,42 @@ describe('User management', () => {
     const { error, data } = await auth.signInWithPassword({
       email,
       password: password + '-wrong',
+      options: {
+        captchaToken: 'some_token',
+      }
     })
 
     expect(error).not.toBeNull()
     expect(error?.message).not.toBeNull()
     expect(data.session).toBeNull()
   })
+
+  test('signIn() with the wrong phone', async () => {
+    const { password } = mockUserCredentials()
+
+    const { error, data } = await auth.signInWithPassword({
+      phone: '+34123',
+      password: password,
+      options: {
+        captchaToken: 'some_token',
+      }
+    })
+
+    expect(error).not.toBeNull()
+    expect(error?.message).not.toBeNull()
+    expect(data.session).toBeNull()
+  })
+})
+
+test('signInWithPassword() should fail when both email and phone are missing', async () => {
+  const { data, error } = await auth.signInWithPassword({
+    password: 'password123'
+  } as any)
+
+  expect(error).not.toBeNull()
+  expect(error?.message).toContain('You must provide either an email or phone number and a password')
+  expect(data.session).toBeNull()
+  expect(data.user).toBeNull()
 })
 
 describe('The auth client can signin with third-party oAuth providers', () => {
@@ -960,6 +1136,11 @@ describe('The auth client can signin with third-party oAuth providers', () => {
 })
 
 describe('User management', () => {
+
+  beforeEach(async () => {
+    await authWithSession.signOut()
+  })
+
   test('resetPasswordForEmail() sends an email for password recovery', async () => {
     const { email, password } = mockUserCredentials()
 
@@ -981,10 +1162,11 @@ describe('User management', () => {
 
   test('resetPasswordForEmail() if user does not exist, user details are not exposed', async () => {
     const redirectTo = 'http://localhost:9999/welcome'
-    const { error, data } = await authWithSession.resetPasswordForEmail(
+    const { error, data } = await phoneClient.resetPasswordForEmail(
       'this_user@does-not-exist.com',
       {
         redirectTo,
+        captchaToken: 'some_token',
       }
     )
     expect(data).toEqual({})
@@ -1023,38 +1205,34 @@ describe('MFA', () => {
     })
     expect(signUpError).toBeNull()
     expect(signUpData.session).not.toBeNull()
-    
+
     await authWithSession.initialize()
-    
+
     const { error: signInError } = await authWithSession.signInWithPassword({
       email,
       password,
     })
     expect(signInError).toBeNull()
-    
+
     return { email, password }
   }
 
   const setupUserWithMFAAndTOTP = async () => {
     const credentials = await setupUserWithMFA()
-    
+
     // Add the common TOTP enrollment part
     const { data: enrollData, error: enrollError } = await authWithSession.mfa.enroll({
       factorType: 'totp',
     })
     expect(enrollError).toBeNull()
     expect(enrollData!.totp).not.toBeNull()
-    
+
     return {
       ...credentials,
       factorId: enrollData!.id,
       totp: enrollData!.totp
     }
   }
-
-  beforeEach(async () => {
-    await authWithSession.signOut()
-  })
 
   test('enroll({factorType: "totp"}) returns totp', async () => {
     await setupUserWithMFA()
@@ -1149,6 +1327,34 @@ describe('MFA', () => {
     expect(aalData!.nextLevel).toBeDefined()
     expect(aalData!.currentAuthenticationMethods).toBeDefined()
   })
+
+  test('_listFactors returns correct factor lists', async () => {
+    // Mock getUser
+    pkceClient.getUser = jest.fn().mockResolvedValue({
+      data: {
+        user: {
+          id: 'test-user',
+          factors: [
+            { factor_type: 'totp', status: 'verified' },
+            { factor_type: 'totp', status: 'unverified' },
+            { factor_type: 'phone', status: 'verified' },
+            { factor_type: 'phone', status: 'unverified' }
+          ]
+        }
+      },
+      error: null
+    })
+
+    const result = await pkceClient['_listFactors']()
+
+    expect(result.error).toBeNull()
+    expect(result.data).not.toBeNull()
+    if (result.data) {
+      expect(result.data.all).toHaveLength(4)
+      expect(result.data.totp).toHaveLength(1)
+      expect(result.data.phone).toHaveLength(1)
+    }
+  })
 })
 
 describe('getClaims', () => {
@@ -1205,7 +1411,7 @@ describe('getClaims', () => {
     expect(data?.claims.email).toEqual(user?.email)
 
     // node 18 doesn't support crypto.subtle API by default unless built with the experimental-global-webcrypto flag
-    if (parseInt(process.version.slice(1).split('.')[0]) === 20) {
+    if (isNodeHigherThan18) {
       expect(fetchedUrls).toContain(
         GOTRUE_URL_SIGNUP_ENABLED_ASYMMETRIC_AUTO_CONFIRM_ON + '/.well-known/jwks.json'
       )
@@ -1213,6 +1419,163 @@ describe('getClaims', () => {
 
     // contains the response for getSession and fetchJwk
     expect(fetchedResponse).toHaveLength(2)
+  })
+
+  test('getClaims should return error for expired JWT format', async () => {
+    const { email, password } = mockUserCredentials()
+
+    const { data: signUpData, error: signUpError } = await authWithSession.signUp({
+      email,
+      password,
+    })
+
+    expect(signUpError).toBeNull()
+    expect(signUpData.session).not.toBeNull()
+
+    // @ts-expect-error 'Allow access to protected storage'
+    const storage = authWithSession.storage
+    // @ts-expect-error 'Allow access to protected storageKey'
+    const storageKey = authWithSession.storageKey
+
+    const invalidSession = {
+      ...signUpData.session,
+      access_token: expiredAccessToken,
+      refresh_token: 'invalid-refresh-token',
+    }
+
+    await storage.setItem(storageKey, JSON.stringify(invalidSession))
+
+    await expect(authWithSession.getClaims()).rejects.toThrow('JWT has expired')
+  })
+
+  test('getClaims should return error for Invalid JWT signature', async () => {
+    // node 18 doesn't support crypto.subtle API by default unless built with the experimental-global-webcrypto flag
+    if (!isNodeHigherThan18) {
+      console.warn('Skipping test due to Node version <= 18');
+      return;
+    }
+
+    const { email, password } = mockUserCredentials()
+    const { data: signUpData, error: signUpError } = await authWithAsymmetricSession.signUp({
+      email,
+      password,
+    })
+    expect(signUpError).toBeNull()
+    expect(signUpData.session).not.toBeNull()
+
+    const verifySpy = jest.spyOn(crypto.subtle, 'verify').mockImplementation(async () => false)
+
+    const { data, error } = await authWithAsymmetricSession.getClaims()
+
+    verifySpy.mockRestore()
+    expect(error).not.toBeNull()
+    expect(error?.message).toContain('Invalid JWT signature')
+    expect(data).toBeNull()
+  })
+
+  test('getClaims should return error for Invalid JWT signature', async () => {
+    const { email, password } = mockUserCredentials()
+
+    const { data: signUpData, error: signUpError } = await authWithAsymmetricSession.signUp({
+      email,
+      password,
+    })
+
+    expect(signUpError).toBeNull()
+    expect(signUpData.session).not.toBeNull()
+
+    const header = Buffer.from(JSON.stringify({ alg: 'HS256', typ: 'JWT' })).toString('base64url')
+    const payload = Buffer.from(JSON.stringify({
+      aud: 'authenticated',
+      exp: Math.floor(Date.now() / 1000) + 3600,
+      iat: Math.floor(Date.now() / 1000),
+      iss: 'https://example.com',
+      sub: '1234567890',
+      user_metadata: {},
+      role: 'authenticated'
+    })).toString('base64url')
+    const invalidSignature = 'invalid_signature_that_is_not_base64url_encoded'
+    const invalidJWT = `${header}.${payload}.${invalidSignature}`
+
+    // @ts-expect-error 'Allow access to protected storage'
+    const storage = authWithAsymmetricSession.storage
+    // @ts-expect-error 'Allow access to protected storageKey'
+    const storageKey = authWithAsymmetricSession.storageKey
+
+    await storage.setItem(
+      storageKey,
+      JSON.stringify({
+        ...signUpData.session,
+        access_token: invalidJWT,
+      })
+    )
+
+    const { data, error } = await authWithAsymmetricSession.getClaims()
+
+    expect(error).not.toBeNull()
+    expect(error?.message).toContain('unable to parse or verify signature')
+    expect(data).toBeNull()
+  })
+
+  test('getClaims should return error for invalid base64url encoded access_token', async () => {
+    const { email, password } = mockUserCredentials()
+
+    await authWithSession.signUp({
+      email,
+      password,
+    })
+
+    // @ts-expect-error 'Allow access to protected storage'
+    const storage = authWithSession.storage
+    // @ts-expect-error 'Allow access to protected storageKey'
+    const storageKey = authWithSession.storageKey
+
+    const invalidSession = {
+      access_token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJhdXRoZW50aWNhdGVkIiwiZXhwIjoxNzEwODg5NjAwLCJpYXQiOjE3MTA4ODYwMDAsImlzcyI6Imh0dHBzOi8vZXhhbXBsZS5jb20iLCJzdWIiOiIxMjM0NTY3ODkwIiwidXNlcl9tZXRhZGF0YSI6e30sInJvbGUiOiJhdXRoZW50aWNhdGVkIn0.invalid_signature',
+      refresh_token: 'invalid-refresh-token',
+      expires_in: 3600,
+      expires_at: Math.floor(Date.now() / 1000) + 3600,
+      token_type: 'bearer',
+      user: null
+    }
+
+    await storage.setItem(storageKey, JSON.stringify(invalidSession))
+
+    const { data, error } = await authWithSession.getClaims()
+
+    expect(error).not.toBeNull()
+    expect(error?.message).toContain('JWT not in base64url format')
+    expect(data).toBeNull()
+  })
+
+  test('getClaims should refresh expired JWT token', async () => {
+    const { email, password } = mockUserCredentials()
+
+    const { data: signUpData, error: signUpError } = await authWithSession.signUp({
+      email,
+      password,
+    })
+
+    expect(signUpError).toBeNull()
+    expect(signUpData.session).not.toBeNull()
+
+    // @ts-expect-error 'Allow access to protected storage'
+    const storage = authWithSession.storage
+    // @ts-expect-error 'Allow access to protected storageKey'
+    const storageKey = authWithSession.storageKey
+
+    const expiredSession = {
+      ...signUpData.session,
+      expires_at: Math.floor(Date.now() / 1000) - 3600,
+    }
+
+    await storage.setItem(storageKey, JSON.stringify(expiredSession))
+
+    const { data, error } = await authWithSession.getClaims()
+
+    expect(error).toBeNull()
+    expect(data).not.toBeNull()
+    expect(data?.claims.email).toEqual(signUpData?.session?.user?.email)
   })
 })
 
@@ -1434,28 +1797,28 @@ describe('fetchJwk', () => {
 describe('signInAnonymously', () => {
   test('should successfully sign in anonymously', async () => {
     const { data, error } = await authWithSession.signInAnonymously()
-    
+
     expect(error).toBeNull()
     expect(data).not.toBeNull()
     expect(data.session).not.toBeNull()
     expect(data.user).not.toBeNull()
     expect(data.user?.is_anonymous).toBe(true)
 
-    const { data: savedSession } = await authWithSession.getSession()
-    expect(savedSession.session).not.toBeNull()
+    const { data: sessionData } = await authWithSession.getSession()
+    expect(sessionData.session).not.toBeNull()
   })
 
   test('should sign in anonymously with user data', async () => {
     const { data, error } = await authClient.signInAnonymously({ options: { data: TEST_USER_DATA } })
-    
+
     expect(error).toBeNull()
     expect(data).not.toBeNull()
     expect(data?.user?.user_metadata).toEqual(TEST_USER_DATA)
   })
-  
+
   test('fail to sign in anonymously when it is disabled on the server', async () => {
     const { data, error } = await phoneClient.signInAnonymously()
-    
+
     expect(data?.session).toBeNull()
     expect(error).not.toBeNull()
     expect(error?.message).toContain("Anonymous sign-ins are disabled")
@@ -1543,7 +1906,10 @@ describe('ID Token Authentication', () => {
     const credentials = {
       provider: 'google',
       token: 'mock-id-token',
-      nonce: 'mock-nonce'
+      nonce: 'mock-nonce',
+      options: {
+        captchaToken: 'some_token',
+      }
     }
 
     const { data, error } = await authClient.signInWithIdToken(credentials)
@@ -1557,7 +1923,7 @@ describe('ID Token Authentication', () => {
 describe('Reauthentication', () => {
   test('reauthenticate() fails without session', async () => {
     const { data, error } = await auth.reauthenticate()
-    
+
     expect(data?.session).toBeNull()
     expect(error).not.toBeNull()
     expect(error?.message).toContain("Reauthentication requires the user to have an email or a phone number")
@@ -1572,7 +1938,7 @@ describe('Reauthentication', () => {
     })
 
     const { data, error } = await authWithSession.reauthenticate()
-    
+
     expect(error).toBeNull()
     expect(data).not.toBeNull()
     expect(data?.session).toBeNull()
@@ -1593,7 +1959,7 @@ describe('Identity Management', () => {
 
   test('getUserIdentities() returns user identities after signup', async () => {
     const { email, password } = mockUserCredentials()
-    
+
     const { error: signUpError } = await authWithSession.signUp({
       email,
       password,
@@ -1610,7 +1976,7 @@ describe('Identity Management', () => {
 
   test('linkIdentity() fails when manual linking is disabled', async () => {
     const { email, password } = mockUserCredentials()
-    
+
     const { error: signUpError } = await authWithSession.signUp({
       email,
       password,
@@ -1620,7 +1986,11 @@ describe('Identity Management', () => {
     const { error } = await authWithSession.linkIdentity({
       provider: 'google',
       options: {
-        redirectTo: 'http://localhost:3000'
+        redirectTo: 'http://localhost:3000',
+        scopes: 'openid profile email',
+        queryParams: {
+          prompt: 'select_account',
+        },
       }
     })
     expect(error).not.toBeNull()
@@ -1629,7 +1999,7 @@ describe('Identity Management', () => {
 
   test('unlinkIdentity() fails when manual linking is disabled', async () => {
     const { email, password } = mockUserCredentials()
-    
+
     const { error: signUpError } = await authWithSession.signUp({
       email,
       password,
@@ -1663,7 +2033,7 @@ describe('Auto Refresh', () => {
   describe('_recoverAndRefresh', () => {
     test('should recover and refresh session when valid session exists', async () => {
       const { email, password } = mockUserCredentials()
-      
+
       const { data: signUpData } = await autoRefreshClient.signUp({
         email,
         password,
@@ -1672,7 +2042,7 @@ describe('Auto Refresh', () => {
 
       // @ts-expect-error 'Allow access to private _recoverAndRefresh'
       const session: Session | null = await autoRefreshClient._recoverAndRefresh()
-      
+
       expect(session).not.toBeNull()
       expect(session?.access_token).not.toBeNull()
       expect(session?.refresh_token).not.toBeNull()
@@ -1680,16 +2050,16 @@ describe('Auto Refresh', () => {
 
     test('should return null session when no valid session exists', async () => {
       await autoRefreshClient.signOut()
-      
+
       // @ts-expect-error 'Allow access to private _recoverAndRefresh'
       const session: Session | undefined = await autoRefreshClient._recoverAndRefresh()
-      
+
       expect(session).toBeUndefined()
     })
 
     test('should handle expired session by attempting refresh', async () => {
       const { email, password } = mockUserCredentials()
-      
+
       const { data: signUpData } = await autoRefreshClient.signUp({
         email,
         password,
@@ -1716,7 +2086,7 @@ describe('Auto Refresh', () => {
 
       // @ts-expect-error 'Allow access to private _recoverAndRefresh'
       const session: Session | null = await autoRefreshClient._recoverAndRefresh()
-      
+
       expect(session).not.toBeNull()
       expect(session?.access_token).not.toBeNull()
       expect(session?.refresh_token).not.toBeNull()
@@ -1730,17 +2100,17 @@ describe('Session Management', () => {
   test('_notifyAllSubscribers notifies all subscribers of session changes', async () => {
     const { email, password } = mockUserCredentials()
     const mockCallback = jest.fn()
-    
+
     const { data: { subscription } } = authWithSession.onAuthStateChange(mockCallback)
-    
+
     const { data } = await authWithSession.signUp({
       email,
       password,
     })
     expect(data.session).not.toBeNull()
-    
+
     expect(mockCallback).toHaveBeenCalledWith('SIGNED_IN', data.session)
-    
+
     // Cleanup
     subscription?.unsubscribe()
   })
@@ -1749,27 +2119,98 @@ describe('Session Management', () => {
     const { email, password } = mockUserCredentials()
     const mockCallback = jest.fn()
     const { data: { subscription } } = authWithSession.onAuthStateChange(mockCallback)
-    
+
     const { data } = await authWithSession.signUp({
       email,
       password,
     })
     expect(data.session).not.toBeNull()
-    
+
     // @ts-expect-error 'Allow access to private _removeSession'
     await authWithSession._removeSession()
     expect(mockCallback).toHaveBeenCalledWith('SIGNED_OUT', null)
-    
+
     const { data: sessionData } = await authWithSession.getSession()
     expect(sessionData.session).toBeNull()
-    
+
     // Cleanup
     subscription?.unsubscribe()
   })
 })
 
-describe('Storage adapter edge cases', () => {
+describe('Session Management Edge Cases', () => {
+  test('getSession() with invalid refreshToken should return session with invalid tokens', async () => {
+    const { email, password } = mockUserCredentials()
 
+    await authWithSession.signUp({
+      email,
+      password,
+    })
+
+    // Set an invalid refresh token in storage
+    // @ts-expect-error 'Allow access to protected storage'
+    const storage = authWithSession.storage
+    // @ts-expect-error 'Allow access to protected storageKey'
+    const storageKey = authWithSession.storageKey
+
+    const invalidSession = {
+      access_token: 'invalid-token',
+      refresh_token: 'invalid-refresh-token',
+      expires_in: 3600,
+      expires_at: Math.floor(Date.now() / 1000) + 3600,
+      token_type: 'bearer',
+      user: null
+    }
+
+    await storage.setItem(storageKey, JSON.stringify(invalidSession))
+
+    const { data, error } = await authWithSession.getSession()
+
+    expect(error).toBeNull()
+    expect(data.session).not.toBeNull()
+    expect(data.session).toEqual(invalidSession)
+  })
+
+  test('getSession() with expired refreshToken should return error for invalid token', async () => {
+    const { email, password } = mockUserCredentials()
+
+    const { data: signUpData } = await authWithSession.signUp({
+      email,
+      password,
+    })
+
+    // Manually expire the refresh token by setting it to a timestamp in the past
+    const expiredSeconds = Math.floor(Date.now() / 1000) - 3600 // 1 hour in the past
+
+    // @ts-expect-error 'Allow access to protected storage'
+    const storage = authWithSession.storage
+    // @ts-expect-error 'Allow access to protected storageKey'
+    const storageKey = authWithSession.storageKey
+
+    // Get the current session and modify it to be expired
+    const currentSession = JSON.parse((await storage.getItem(storageKey)) || 'null')
+    const expiredSession = {
+      ...currentSession,
+      expires_at: expiredSeconds,
+      access_token: 'expired-token',
+      refresh_token: 'expired-refresh-token'
+    }
+
+    await storage.setItem(storageKey, JSON.stringify(expiredSession))
+
+    // Verify the session was properly stored
+    const storedSession = JSON.parse((await storage.getItem(storageKey)) || 'null')
+    expect(storedSession.expires_at).toBe(expiredSeconds)
+
+    const { data, error } = await authWithSession.getSession()
+
+    expect(error).not.toBeNull()
+    expect(error?.message).toContain('Invalid Refresh Token')
+    expect(data.session).toBeNull()
+  })
+})
+
+describe('Storage adapter edge cases', () => {
   test('should handle storage failure gracefully', async () => {
     const brokenStorage = {
       getItem: async () => { throw new Error('getItem failed message') },
@@ -1784,8 +2225,8 @@ describe('Storage adapter edge cases', () => {
   test('should handle storage getItem failure in getSession', async () => {
     const brokenStorage = {
       getItem: async () => { throw new Error('getItem failed message') },
-      setItem: async () => {},
-      removeItem: async () => {},
+      setItem: async () => { },
+      removeItem: async () => { },
     }
     const client = getClientWithSpecificStorage(brokenStorage)
     await expect(client.getSession()).rejects.toThrow('getItem failed message')
@@ -1795,7 +2236,7 @@ describe('Storage adapter edge cases', () => {
     const brokenStorage = {
       getItem: async () => '{}',
       setItem: async () => { throw new Error('setItem failed message') },
-      removeItem: async () => {},
+      removeItem: async () => { },
     }
     const client = getClientWithSpecificStorage(brokenStorage)
     const session = {
@@ -1816,7 +2257,7 @@ describe('Storage adapter edge cases', () => {
   test('should handle storage removeItem failure in _removeSession', async () => {
     const brokenStorage = {
       getItem: async () => '{}',
-      setItem: async () => {},
+      setItem: async () => { },
       removeItem: async () => { throw new Error('removeItem failed message') },
     }
     const client = getClientWithSpecificStorage(brokenStorage)
@@ -1827,8 +2268,8 @@ describe('Storage adapter edge cases', () => {
   test('should handle invalid JSON in storage', async () => {
     const invalidStorage = {
       getItem: async () => 'invalid-json',
-      setItem: async () => {},
-      removeItem: async () => {},
+      setItem: async () => { },
+      removeItem: async () => { },
     }
     const client = getClientWithSpecificStorage(invalidStorage)
     const { data, error } = await client.getSession()
@@ -1839,8 +2280,8 @@ describe('Storage adapter edge cases', () => {
   test('should handle null storage value', async () => {
     const nullStorage = {
       getItem: async () => null,
-      setItem: async () => {},
-      removeItem: async () => {},
+      setItem: async () => { },
+      removeItem: async () => { },
     }
     const client = getClientWithSpecificStorage(nullStorage)
     const { data, error } = await client.getSession()
@@ -1851,8 +2292,8 @@ describe('Storage adapter edge cases', () => {
   test('should handle empty storage value', async () => {
     const emptyStorage = {
       getItem: async () => '',
-      setItem: async () => {},
-      removeItem: async () => {},
+      setItem: async () => { },
+      removeItem: async () => { },
     }
     const client = getClientWithSpecificStorage(emptyStorage)
     const { data, error } = await client.getSession()
@@ -1863,8 +2304,8 @@ describe('Storage adapter edge cases', () => {
   test('should handle malformed session data', async () => {
     const malformedStorage = {
       getItem: async () => JSON.stringify({ access_token: 'test' }), // Missing required fields
-      setItem: async () => {},
-      removeItem: async () => {},
+      setItem: async () => { },
+      removeItem: async () => { },
     }
     const client = getClientWithSpecificStorage(malformedStorage)
     const { data, error } = await client.getSession()
@@ -1882,8 +2323,8 @@ describe('Storage adapter edge cases', () => {
         token_type: 'bearer',
         user: null
       }),
-      setItem: async () => {},
-      removeItem: async () => {},
+      setItem: async () => { },
+      removeItem: async () => { },
     }
     const client = getClientWithSpecificStorage(expiredStorage)
     // @ts-expect-error private method
@@ -1913,5 +2354,75 @@ describe('Storage adapter edge cases', () => {
     const url = await client._getUrlForProvider(GOTRUE_URL_SIGNUP_ENABLED_AUTO_CONFIRM_ON, 'google', { redirectTo: 'http://localhost' })
     expect(typeof url).toBe('string')
     expect(url).toContain('google')
+  })
+
+  test('_getUrlForProvider builds correct URL with PKCE flow', async () => {
+    const client = new GoTrueClient({
+      url: 'https://example.com',
+      autoRefreshToken: false,
+      persistSession: false,
+      flowType: 'pkce'
+    })
+
+    const url = await client['_getUrlForProvider']('https://example.com/authorize', 'github', {
+      redirectTo: 'http://localhost:3000/callback'
+    })
+
+    expect(url).toContain('provider=github')
+    expect(url).toContain('code_challenge=')
+    expect(url).toContain('code_challenge_method=')
+  })
+})
+
+describe('SSO Authentication', () => {
+  test('signInWithSSO with PKCE return error when SAML is disabled', async () => {
+    const { data, error } = await pkceClient.signInWithSSO({
+      providerId: 'valid-provider-id',
+      options: {
+        redirectTo: 'http://localhost:3000/callback'
+      }
+    })
+
+    expect(error).not.toBeNull()
+    expect(error?.message).toContain('SAML 2.0 is disabled')
+    expect(data).toBeNull()
+  })
+})
+
+describe('Lock functionality', () => {
+  test('_acquireLock should execute function when lock is acquired', async () => {
+    const mockFn = jest.fn().mockResolvedValue('success')
+    // @ts-expect-error 'Allow access to private _acquireLock'
+    const result = await authWithSession._acquireLock(1000, mockFn)
+    expect(result).toBe('success')
+    expect(mockFn).toHaveBeenCalled()
+  })
+
+  test('_acquireLock should throw error when lock acquisition times out', async () => {
+    let shouldFail = false
+    const mockLock = jest.fn().mockImplementation(async (name, timeout, fn) => {
+      if (shouldFail) {
+        throw new Error('Lock acquisition timeout')
+      }
+      return fn()
+    })
+
+    const client = new GoTrueClient({
+      url: GOTRUE_URL_SIGNUP_ENABLED_AUTO_CONFIRM_ON,
+      lock: mockLock,
+      autoRefreshToken: false,
+      persistSession: false
+    })
+
+    // Wait for initialization to complete
+    await new Promise(resolve => setTimeout(resolve, 100))
+
+    // Now make the lock fail
+    shouldFail = true
+
+    const mockFn = jest.fn()
+    // @ts-expect-error 'Allow access to private _acquireLock'
+    await expect(client._acquireLock(1000, mockFn)).rejects.toThrow('Lock acquisition timeout')
+    expect(mockFn).not.toHaveBeenCalled()
   })
 })

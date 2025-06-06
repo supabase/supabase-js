@@ -4,6 +4,8 @@ import {
   getAlgorithm,
   parseParametersFromURL,
   parseResponseAPIVersion,
+  getCodeChallengeAndMethod,
+  validateUUID,
 } from '../src/lib/helpers'
 
 describe('parseParametersFromURL', () => {
@@ -223,5 +225,76 @@ describe('getAlgorithm', () => {
   })
   it('should throw if invalid alg claim', () => {
     expect(() => getAlgorithm('EdDSA' as any)).toThrowError(new Error('Invalid alg claim'))
+  })
+})
+
+describe('getCodeChallengeAndMethod', () => {
+  const testCases = [
+    {
+      name: 'should append /PASSWORD_RECOVERY to stored code_verifier',
+      isPasswordRecovery: true,
+    },
+    {
+      name: 'should not append /PASSWORD_RECOVERY for other flows',
+      isPasswordRecovery: false,
+    }
+  ]
+
+  test.each(testCases)('$name', async ({ isPasswordRecovery }) => {
+    const mockStorage = {
+      getItem: jest.fn(),
+      setItem: jest.fn(),
+      removeItem: jest.fn()
+    }
+
+    const [codeChallenge, codeChallengeMethod] = await getCodeChallengeAndMethod(
+      mockStorage,
+      'test-storage-key',
+      isPasswordRecovery
+    )
+
+    const setItemCall = mockStorage.setItem.mock.calls[0]
+    expect(setItemCall[0]).toBe('test-storage-key-code-verifier')
+    const storedValue = JSON.parse(setItemCall[1])
+    if (isPasswordRecovery) {
+      expect(storedValue).toContain('/PASSWORD_RECOVERY')
+    } else {
+      expect(storedValue).not.toContain('/PASSWORD_RECOVERY')
+    }
+    expect(codeChallenge).toBeDefined()
+    expect(codeChallengeMethod).toBeDefined()
+  })
+})
+
+describe('validateUUID', () => {
+  const testCases = [
+    {
+      name: 'should accept valid UUID',
+      input: '123e4567-e89b-12d3-a456-426614174000',
+      shouldThrow: false
+    },
+    {
+      name: 'should reject invalid UUID format',
+      input: 'not-a-uuid',
+      shouldThrow: true
+    },
+    {
+      name: 'should reject UUID with wrong length',
+      input: '123e4567-e89b-12d3-a456',
+      shouldThrow: true
+    },
+    {
+      name: 'should reject UUID with invalid characters',
+      input: '123e4567-e89b-12d3-a456-42661417400g',
+      shouldThrow: true
+    }
+  ]
+
+  test.each(testCases)('$name', ({ input, shouldThrow }) => {
+    if (shouldThrow) {
+      expect(() => validateUUID(input)).toThrow('@supabase/auth-js: Expected parameter to be UUID but is not')
+    } else {
+      expect(() => validateUUID(input)).not.toThrow()
+    }
   })
 })
