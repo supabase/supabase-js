@@ -2153,9 +2153,9 @@ export default class GoTrueClient {
     this._debug(debugName, 'begin')
 
     try {
-      const currentSession: Session = (await getItemAsync(this.storage, this.storageKey)) as any
+      const currentSession = (await getItemAsync(this.storage, this.storageKey)) as Session | null
 
-      if (this.userStorage) {
+      if (currentSession && this.userStorage) {
         let maybeUser: { user: User | null } | null = (await getItemAsync(
           this.userStorage,
           this.storageKey + '-user'
