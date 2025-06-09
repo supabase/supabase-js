@@ -1,6 +1,6 @@
 import { assertEquals, assertExists } from 'https://deno.land/std@0.220.1/assert/mod.ts'
-import { createClient, SupabaseClient } from 'jsr:@supabase/supabase-js@2.49.9'
-import type { RealtimeChannel } from 'jsr:@supabase/supabase-js@2.49.9'
+import { createClient, SupabaseClient } from 'jsr:@supabase/supabase-js@2'
+import type { RealtimeChannel } from 'jsr:@supabase/supabase-js@2'
 
 // These tests assume that a local Supabase server is already running
 // Start a local Supabase instance with 'supabase start' before running these tests
