@@ -2,28 +2,15 @@
   "version": "3",
   "packages": {
     "specifiers": {
-      "jsr:@supabase/supabase-js@2": "jsr:@supabase/supabase-js@2.50.0",
       "jsr:@supabase/supabase-js@2.50.1-next.3": "jsr:@supabase/supabase-js@2.50.1-next.3",
       "npm:@supabase/auth-js@2.70.0": "npm:@supabase/auth-js@2.70.0",
       "npm:@supabase/functions-js@2.4.4": "npm:@supabase/functions-js@2.4.4",
       "npm:@supabase/node-fetch@2.6.15": "npm:@supabase/node-fetch@2.6.15",
       "npm:@supabase/postgrest-js@1.19.4": "npm:@supabase/postgrest-js@1.19.4",
-      "npm:@supabase/realtime-js@2.11.10": "npm:@supabase/realtime-js@2.11.10",
       "npm:@supabase/realtime-js@next": "npm:@supabase/realtime-js@2.11.10-next.1",
       "npm:@supabase/storage-js@2.7.1": "npm:@supabase/storage-js@2.7.1"
     },
     "jsr": {
-      "@supabase/supabase-js@2.50.0": {
-        "integrity": "d583ced1777f6bda163de3aca49f9b00b62c48633c5d129492531a11b3542457",
-        "dependencies": [
-          "npm:@supabase/auth-js@2.70.0",
-          "npm:@supabase/functions-js@2.4.4",
-          "npm:@supabase/node-fetch@2.6.15",
-          "npm:@supabase/postgrest-js@1.19.4",
-          "npm:@supabase/realtime-js@2.11.10",
-          "npm:@supabase/storage-js@2.7.1"
-        ]
-      },
       "@supabase/supabase-js@2.50.1-next.3": {
         "integrity": "f3231f5b0c2ce558ed4fdd06ef289de53fd21841174d28f80851855eebc717af",
         "dependencies": [
@@ -59,15 +46,6 @@
         "integrity": "sha512-O4soKqKtZIW3olqmbXXbKugUtByD2jPa8kL2m2c1oozAO11uCcGrRhkZL0kVxjBLrXHE0mdSkFsMj7jDSfyNpw==",
         "dependencies": {
           "@supabase/node-fetch": "@supabase/node-fetch@2.6.15"
-        }
-      },
-      "@supabase/realtime-js@2.11.10": {
-        "integrity": "sha512-SJKVa7EejnuyfImrbzx+HaD9i6T784khuw1zP+MBD7BmJYChegGxYigPzkKX8CK8nGuDntmeSD3fvriaH0EGZA==",
-        "dependencies": {
-          "@supabase/node-fetch": "@supabase/node-fetch@2.6.15",
-          "@types/phoenix": "@types/phoenix@1.6.6",
-          "@types/ws": "@types/ws@8.18.1",
-          "ws": "ws@8.18.2"
         }
       },
       "@supabase/realtime-js@2.11.10-next.1": {
