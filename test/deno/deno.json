@@ -1,0 +1,5 @@
+{
+  "tasks": {
+    "test": "deno test --allow-net --allow-env --allow-read integration.test.ts"
+  }
+}

@@ -87,8 +87,8 @@ jobs:
 
       - name: Run Deno tests
         run: |
-          cd examples/deno
-          deno task start
+          cd test/deno
+          deno task test
 
       - name: Stop Supabase
         run: |
