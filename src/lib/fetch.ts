@@ -1,5 +1,6 @@
 // @ts-ignore
 import nodeFetch, { Headers as NodeFetchHeaders } from '@supabase/node-fetch'
+import { withSpan } from './telemetry'
 
 type Fetch = typeof fetch
 
@@ -32,17 +33,19 @@ export const fetchWithAuth = (
   const HeadersConstructor = resolveHeadersConstructor()
 
   return async (input, init) => {
-    const accessToken = (await getAccessToken()) ?? supabaseKey
-    let headers = new HeadersConstructor(init?.headers)
+    return withSpan('fetch', async (ctx, span) => {
+      const accessToken = (await getAccessToken()) ?? supabaseKey
+      let headers = new HeadersConstructor(init?.headers)
 
-    if (!headers.has('apikey')) {
-      headers.set('apikey', supabaseKey)
-    }
+      if (!headers.has('apikey')) {
+        headers.set('apikey', supabaseKey)
+      }
 
-    if (!headers.has('Authorization')) {
-      headers.set('Authorization', `Bearer ${accessToken}`)
-    }
+      if (!headers.has('Authorization')) {
+        headers.set('Authorization', `Bearer ${accessToken}`)
+      }
 
-    return fetch(input, { ...init, headers })
+      return fetch(input, { ...init, headers })
+    })
   }
 }

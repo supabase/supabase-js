@@ -22,6 +22,8 @@ import { fetchWithAuth } from './lib/fetch'
 import { ensureTrailingSlash, applySettingDefaults } from './lib/helpers'
 import { SupabaseAuthClient } from './lib/SupabaseAuthClient'
 import { Fetch, GenericSchema, SupabaseClientOptions, SupabaseAuthClientOptions } from './lib/types'
+import { tracer } from './lib/telemetry'
+import { context, SpanStatusCode } from '@opentelemetry/api'
 
 /**
  * Supabase Client.
@@ -72,66 +74,85 @@ export default class SupabaseClient<
     protected supabaseKey: string,
     options?: SupabaseClientOptions<SchemaName>
   ) {
-    if (!supabaseUrl) throw new Error('supabaseUrl is required.')
-    if (!supabaseKey) throw new Error('supabaseKey is required.')
+    const span = tracer.startSpan('initialization', undefined, context.active())
+    span.setAttributes({
+      'supabase.url': supabaseUrl,
+      'supabase.key': supabaseKey,
+      'supabase.options': JSON.stringify(options),
+    })
 
-    const _supabaseUrl = ensureTrailingSlash(supabaseUrl)
-    const baseUrl = new URL(_supabaseUrl)
+    try {
+      if (!supabaseUrl) throw new Error('supabaseUrl is required.')
+      if (!supabaseKey) throw new Error('supabaseKey is required.')
 
-    this.realtimeUrl = new URL('realtime/v1', baseUrl)
-    this.realtimeUrl.protocol = this.realtimeUrl.protocol.replace('http', 'ws')
-    this.authUrl = new URL('auth/v1', baseUrl)
-    this.storageUrl = new URL('storage/v1', baseUrl)
-    this.functionsUrl = new URL('functions/v1', baseUrl)
+      const _supabaseUrl = ensureTrailingSlash(supabaseUrl)
+      const baseUrl = new URL(_supabaseUrl)
 
-    // default storage key uses the supabase project ref as a namespace
-    const defaultStorageKey = `sb-${baseUrl.hostname.split('.')[0]}-auth-token`
-    const DEFAULTS = {
-      db: DEFAULT_DB_OPTIONS,
-      realtime: DEFAULT_REALTIME_OPTIONS,
-      auth: { ...DEFAULT_AUTH_OPTIONS, storageKey: defaultStorageKey },
-      global: DEFAULT_GLOBAL_OPTIONS,
-    }
+      this.realtimeUrl = new URL('realtime/v1', baseUrl)
+      this.realtimeUrl.protocol = this.realtimeUrl.protocol.replace('http', 'ws')
+      this.authUrl = new URL('auth/v1', baseUrl)
+      this.storageUrl = new URL('storage/v1', baseUrl)
+      this.functionsUrl = new URL('functions/v1', baseUrl)
 
-    const settings = applySettingDefaults(options ?? {}, DEFAULTS)
+      // default storage key uses the supabase project ref as a namespace
+      const defaultStorageKey = `sb-${baseUrl.hostname.split('.')[0]}-auth-token`
+      const DEFAULTS = {
+        db: DEFAULT_DB_OPTIONS,
+        realtime: DEFAULT_REALTIME_OPTIONS,
+        auth: { ...DEFAULT_AUTH_OPTIONS, storageKey: defaultStorageKey },
+        global: DEFAULT_GLOBAL_OPTIONS,
+      }
 
-    this.storageKey = settings.auth.storageKey ?? ''
-    this.headers = settings.global.headers ?? {}
+      const settings = applySettingDefaults(options ?? {}, DEFAULTS)
 
-    if (!settings.accessToken) {
-      this.auth = this._initSupabaseAuthClient(
-        settings.auth ?? {},
-        this.headers,
+      this.storageKey = settings.auth.storageKey ?? ''
+      this.headers = settings.global.headers ?? {}
+
+      if (!settings.accessToken) {
+        this.auth = this._initSupabaseAuthClient(
+          settings.auth ?? {},
+          this.headers,
+          settings.global.fetch
+        )
+      } else {
+        this.accessToken = settings.accessToken
+
+        this.auth = new Proxy<SupabaseAuthClient>({} as any, {
+          get: (_, prop) => {
+            throw new Error(
+              `@supabase/supabase-js: Supabase Client is configured with the accessToken option, accessing supabase.auth.${String(
+                prop
+              )} is not possible`
+            )
+          },
+        })
+      }
+
+      this.fetch = fetchWithAuth(
+        supabaseKey,
+        this._getAccessToken.bind(this),
         settings.global.fetch
       )
-    } else {
-      this.accessToken = settings.accessToken
-
-      this.auth = new Proxy<SupabaseAuthClient>({} as any, {
-        get: (_, prop) => {
-          throw new Error(
-            `@supabase/supabase-js: Supabase Client is configured with the accessToken option, accessing supabase.auth.${String(
-              prop
-            )} is not possible`
-          )
-        },
+      this.realtime = this._initRealtimeClient({
+        headers: this.headers,
+        accessToken: this._getAccessToken.bind(this),
+        ...settings.realtime,
       })
-    }
+      this.rest = new PostgrestClient(new URL('rest/v1', baseUrl).href, {
+        headers: this.headers,
+        schema: settings.db.schema,
+        fetch: this.fetch,
+      })
 
-    this.fetch = fetchWithAuth(supabaseKey, this._getAccessToken.bind(this), settings.global.fetch)
-    this.realtime = this._initRealtimeClient({
-      headers: this.headers,
-      accessToken: this._getAccessToken.bind(this),
-      ...settings.realtime,
-    })
-    this.rest = new PostgrestClient(new URL('rest/v1', baseUrl).href, {
-      headers: this.headers,
-      schema: settings.db.schema,
-      fetch: this.fetch,
-    })
-
-    if (!settings.accessToken) {
-      this._listenForAuthEvents()
+      if (!settings.accessToken) {
+        this._listenForAuthEvents()
+      }
+    } catch (err: any) {
+      span.recordException(err)
+      span.setStatus({ code: SpanStatusCode.ERROR, message: err.message })
+      throw err
+    } finally {
+      span.end()
     }
   }
 
