@@ -80,12 +80,11 @@ jobs:
 
       - name: Build
         run: |
-          npm run build
+          npm clean-install
 
       - name: Run Node.js tests
         if: ${{ matrix.deno == '2.x' }}
         run: |
-          npm clean-install
           npm run test:integration || npm run test:integration
           npm run test:integration:browser
 
