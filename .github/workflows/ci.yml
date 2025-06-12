@@ -78,6 +78,10 @@ jobs:
         run: |
           supabase start
 
+      - name: Build
+        run: |
+          npm run build
+
       - name: Run Node.js tests
         if: ${{ matrix.deno == '2.x' }}
         run: |
@@ -87,8 +91,7 @@ jobs:
 
       - name: Run Deno tests
         run: |
-          cd test/deno
-          deno task test
+          cd test/deno && npm test
 
       - name: Stop Supabase
         run: |
