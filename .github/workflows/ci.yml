@@ -81,6 +81,7 @@ jobs:
       - name: Build
         run: |
           npm clean-install
+          npm run build
 
       - name: Run Node.js tests
         if: ${{ matrix.deno == '2.x' }}
