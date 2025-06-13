@@ -84,6 +84,12 @@ jobs:
           npm run test:integration || npm run test:integration
           npm run test:integration:browser
 
+      - name: Next.js Integration Tests
+        run: |
+          cd test/integration/next
+          pnpm install
+          pnpm run test
+
       - name: Stop Supabase
         run: |
           supabase stop
