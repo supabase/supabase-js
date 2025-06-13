@@ -84,6 +84,13 @@ jobs:
           npm run test:integration || npm run test:integration
           npm run test:integration:browser
 
+      - name: Next.js Integration Tests
+        run: |
+          cd test/integration/next
+          npm install
+          npx playwright install
+          npm run test
+
       - name: Stop Supabase
         run: |
           supabase stop
