@@ -94,6 +94,12 @@ jobs:
           cd test/deno
           npm test || npm test
 
+      - name: Next.js Integration Tests
+        run: |
+          cd test/integration/next
+          pnpm install
+          pnpm run test
+
       - name: Stop Supabase
         run: |
           supabase stop
