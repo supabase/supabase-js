@@ -1,0 +1,10 @@
+{
+  "name": "test-deno",
+  "private": true,
+  "scripts": {
+    "test": "deno test --allow-all --unstable-sloppy-imports integration.test.ts"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "file:../../"
+  }
+}
