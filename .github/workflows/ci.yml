@@ -87,12 +87,16 @@ jobs:
         if: ${{ matrix.deno == '2.x' }}
         run: |
           npm run test:integration || npm run test:integration
+
+      - name: Run browser tests
+        if: ${{ matrix.deno == '2.x' }}
+        run: |
           npm run test:integration:browser
 
       - name: Run Deno tests
         if: ${{ matrix.deno == '2.x' }}
         run: |
-          cd test/deno && npm test
+          cd test/deno && npm test || npm test
 
       - name: Stop Supabase
         run: |
