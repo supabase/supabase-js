@@ -95,7 +95,9 @@ jobs:
 
       - name: Run Deno tests
         run: |
-          cd test/deno && npm test || npm test
+          cd test/deno
+          npm run setup-deps
+          npm test || npm test
 
       - name: Stop Supabase
         run: |
