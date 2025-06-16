@@ -2,7 +2,7 @@
 version: '3'
 services:
   gotrue: # Signup enabled, autoconfirm off
-    image: supabase/auth:v2.151.0
+    image: supabase/auth:v2.176.0
     ports:
       - '9999:9999'
     environment:
@@ -42,7 +42,7 @@ services:
       - db
     restart: on-failure
   autoconfirm: # Signup enabled, autoconfirm on
-    image: supabase/auth:v2.151.0
+    image: supabase/auth:v2.176.0
     ports:
       - '9998:9998'
     environment:
@@ -73,7 +73,7 @@ services:
       - db
     restart: on-failure
   autoconfirm_with_asymmetric_keys: # Signup enabled, autoconfirm on
-    image: supabase/auth:v2.169.0
+    image: supabase/auth:v2.176.0
     ports:
       - '9996:9996'
     environment:
@@ -103,7 +103,7 @@ services:
       - db
     restart: on-failure
   disabled: # Signup disabled
-    image: supabase/auth:v2.151.0
+    image: supabase/auth:v2.176.0
     ports:
       - '9997:9997'
     environment:
@@ -138,7 +138,7 @@ services:
       - '9000:9000' # web interface
       - '1100:1100' # POP3
   db:
-    image: supabase/postgres:15.1.1.46
+    image: supabase/postgres:15.8.1.100
     ports:
       - '5432:5432'
     command: postgres -c config_file=/etc/postgresql/postgresql.conf

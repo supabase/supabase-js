@@ -16,21 +16,25 @@ describe('navigatorLock', () => {
 
   it('should acquire and release lock successfully', async () => {
     const mockLock = { name: 'test-lock' }
-    ;(globalThis.navigator.locks.request as jest.Mock).mockImplementation((_, __, callback) => 
-      Promise.resolve(callback(mockLock))
-    )
-    
+      ; (globalThis.navigator.locks.request as jest.Mock).mockImplementation((_, __, callback) =>
+        Promise.resolve(callback(mockLock))
+      )
+
     const result = await navigatorLock('test', -1, async () => 'success')
     expect(result).toBe('success')
     expect(globalThis.navigator.locks.request).toHaveBeenCalled()
   })
 
   it('should handle immediate acquisition failure', async () => {
-    ;(globalThis.navigator.locks.request as jest.Mock).mockImplementation((_, __, callback) => 
+    ; (globalThis.navigator.locks.request as jest.Mock).mockImplementation((_, __, callback) =>
       Promise.resolve(callback(null))
     )
-    
+
     await expect(navigatorLock('test', 0, async () => 'success')).rejects.toThrow()
+  })
+
+  it('should not throw if browser is not following the Navigator LockManager spec', async () => {
+    await expect(navigatorLock('test-lock', 1, async () => 'success')).resolves.toBe('success')
   })
 })
 
@@ -103,7 +107,7 @@ describe('processLock', () => {
 
     // Try to acquire same lock with timeout
     const operation2 = processLock('timeout-test', 100, async () => 'should timeout')
-    
+
     await expect(operation2).rejects.toThrow()
     await expect(operation1).resolves.toBe('success')
   })

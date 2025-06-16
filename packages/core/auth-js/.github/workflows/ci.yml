@@ -34,6 +34,7 @@ jobs:
 
       - name: Run tests
         run: |
+          cd test && npm ci && cd ..
           npm t
 
       - name: Upload coverage results to Coveralls
@@ -41,3 +42,4 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           path-to-lcov: ./test/coverage/lcov.info
+          base-path: ./src

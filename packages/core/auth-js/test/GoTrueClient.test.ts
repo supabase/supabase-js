@@ -20,6 +20,7 @@ import {
 } from './lib/clients'
 import { mockUserCredentials } from './lib/utils'
 import { JWK, Session } from '../src'
+import { setItemAsync } from '../src/lib/helpers'
 
 const TEST_USER_DATA = { info: 'some info' }
 
@@ -1849,7 +1850,7 @@ describe('Web3 Authentication', () => {
 
     expect(data?.session).toBeNull()
     expect(error).not.toBeNull()
-    expect(error?.message).toContain("unsupported_grant_type")
+    expect(error?.message).toContain("Web3 provider is disabled")
   })
 
   test('signInWithWeb3 should fail solana chain without message', async () => {
@@ -2424,5 +2425,32 @@ describe('Lock functionality', () => {
     // @ts-expect-error 'Allow access to private _acquireLock'
     await expect(client._acquireLock(1000, mockFn)).rejects.toThrow('Lock acquisition timeout')
     expect(mockFn).not.toHaveBeenCalled()
+  })
+})
+
+describe('userNotAvailableProxy behavior', () => {
+  test('should return proxy user when userStorage is set but user is not found', async () => {
+    const storage = memoryLocalStorageAdapter()
+    const userStorage = memoryLocalStorageAdapter()
+
+    const client = new GoTrueClient({
+      storage,
+      userStorage
+    })
+
+    await setItemAsync(storage, STORAGE_KEY, {
+      access_token: 'jwt.accesstoken.signature',
+      refresh_token: 'refresh-token',
+      token_type: 'bearer',
+      expires_in: 1000,
+      expires_at: Date.now() / 1000 + 1000
+    })
+
+    const { data: { session } } = await client.getSession()
+
+    expect(session?.user).toBeDefined()
+    expect((session?.user as any).__isUserNotAvailableProxy).toBe(true)
+
+    expect(() => session?.user?.id).toThrow('@supabase/auth-js: client was created with userStorage option')
   })
 })
