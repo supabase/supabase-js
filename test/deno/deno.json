@@ -1,3 +1,11 @@
 {
-  "lock": false
+  "lock": false,
+  "imports": {
+    "@supabase/realtime-js": "npm:@supabase/realtime-js",
+    "@supabase/functions-js": "npm:@supabase/functions-js",
+    "@supabase/postgrest-js": "npm:@supabase/postgrest-js",
+    "@supabase/auth-js": "npm:@supabase/auth-js",
+    "@supabase/storage-js": "npm:@supabase/storage-js",
+    "@supabase/node-fetch": "npm:@supabase/node-fetch"
+  }
 }
