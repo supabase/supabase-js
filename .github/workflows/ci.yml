@@ -94,7 +94,6 @@ jobs:
           npm run test:integration:browser || npm run test:integration:browser
 
       - name: Run Deno tests
-        if: ${{ matrix.deno == '2.x' }}
         run: |
           cd test/deno && npm test || npm test
 
