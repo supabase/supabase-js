@@ -83,15 +83,11 @@ jobs:
           npm clean-install
           npm run build
 
-      - name: Run Node.js tests
+      - name: Run tests
         if: ${{ matrix.deno == '2.x' }}
         run: |
           npm run test:integration || npm run test:integration
-
-      - name: Run browser tests
-        if: ${{ matrix.deno == '2.x' }}
-        run: |
-          npm run test:integration:browser || npm run test:integration:browser
+          npm run test:integration:browser
 
       - name: Run Deno tests
         run: |
