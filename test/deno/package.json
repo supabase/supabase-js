@@ -2,7 +2,7 @@
   "name": "test-deno",
   "private": true,
   "scripts": {
-    "test": "deno test --allow-all --unstable-sloppy-imports integration.test.ts",
+    "test": "npm run setup-deps && deno test --allow-all --unstable-sloppy-imports integration.test.ts",
     "setup-deps": "node setup-deps.js"
   },
   "dependencies": {
