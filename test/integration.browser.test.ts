@@ -27,8 +27,10 @@ const content = `<html>
             const [realtimeStatus, setRealtimeStatus] = React.useState(null)
             const channel = supabase.channel('realtime:public:todos')
             React.useEffect(() => {
-                if (channel.state === 'closed') {
-                    channel.subscribe((status) => { if (status === 'SUBSCRIBED') setRealtimeStatus(status) })
+                channel.subscribe((status) => { if (status === 'SUBSCRIBED') setRealtimeStatus(status) })
+
+                return () => {
+                    channel.unsubscribe()
                 }
             }, [])
             if (realtimeStatus) {
