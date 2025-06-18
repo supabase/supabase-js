@@ -32,14 +32,14 @@ export const fetchWithAuth = (
   const HeadersConstructor = resolveHeadersConstructor()
 
   return async (input, init) => {
-    const accessToken = (await getAccessToken()) ?? supabaseKey
+    const accessToken = await getAccessToken()
     let headers = new HeadersConstructor(init?.headers)
 
     if (!headers.has('apikey')) {
       headers.set('apikey', supabaseKey)
     }
 
-    if (!headers.has('Authorization')) {
+    if (accessToken && !headers.has('Authorization')) {
       headers.set('Authorization', `Bearer ${accessToken}`)
     }
 
