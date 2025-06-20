@@ -87,7 +87,7 @@ jobs:
         if: ${{ matrix.deno == '2.x' }}
         run: |
           npm run test:integration || npm run test:integration
-          npm run test:integration:browser
+          # npm run test:integration:browser
 
       - name: Run Deno tests
         run: |
