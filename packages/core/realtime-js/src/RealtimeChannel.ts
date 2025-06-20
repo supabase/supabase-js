@@ -134,7 +134,7 @@ export default class RealtimeChannel {
     }[]
   } = {}
   timeout: number
-  state = CHANNEL_STATES.closed
+  state: CHANNEL_STATES = CHANNEL_STATES.closed
   joinedOnce = false
   joinPush: Push
   rejoinTimer: Timer
@@ -217,9 +217,7 @@ export default class RealtimeChannel {
     if (!this.socket.isConnected()) {
       this.socket.connect()
     }
-    if (this.joinedOnce) {
-      throw `tried to subscribe multiple times. 'subscribe' can only be called a single time per channel instance`
-    } else {
+    if (this.state == CHANNEL_STATES.closed) {
       const {
         config: { broadcast, presence, private: isPrivate },
       } = this.params

@@ -283,6 +283,24 @@ describe('channel', () => {
     assert.ok(disconnectStub.called)
   })
 
+  test('does not remove other channels when removing one', async () => {
+    const connectStub = sinon.stub(socket, 'connect')
+    const disconnectStub = sinon.stub(socket, 'disconnect')
+    const channel1 = socket.channel('chan1').subscribe()
+    const channel2 = socket.channel('chan2').subscribe()
+
+    channel1.subscribe()
+    channel2.subscribe()
+    assert.equal(socket.getChannels().length, 2)
+    assert.ok(connectStub.called)
+
+    await socket.removeChannel(channel1)
+
+    assert.equal(socket.getChannels().length, 1)
+    assert.ok(!disconnectStub.called)
+    assert.deepStrictEqual(socket.getChannels()[0], channel2)
+  })
+
   test('removes all channels', async () => {
     const disconnectStub = sinon.stub(socket, 'disconnect')
 

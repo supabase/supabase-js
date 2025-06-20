@@ -138,15 +138,27 @@ describe('subscribe', () => {
     assert.ok(channel.joinedOnce)
   })
 
-  test('throws if attempting to join multiple times', () => {
+  test('if attempting to join multiple times, ignores calls', () => {
+    channel.subscribe()
+    while (channel.state == CHANNEL_STATES.closed) clock.tick(100)
+    const state = channel.state
+
+    for (let i = 0; i < 10; i++) channel.subscribe()
+
+    assert.equal(channel.state, state)
+  })
+  test('if subscription closed and then subscribe, it will rejoin', () => {
+    channel.subscribe()
+    while (channel.state == CHANNEL_STATES.closed) clock.tick(100)
+
+    channel.unsubscribe()
+    while ((channel.state as CHANNEL_STATES) !== CHANNEL_STATES.closed) {
+      clock.tick(100)
+    }
     channel.subscribe()
 
-    assert.throws(
-      () => channel.subscribe(),
-      /tried to subscribe multiple times/
-    )
+    assert.equal(channel.state, CHANNEL_STATES.joining)
   })
-
   test('updates join push payload access token', () => {
     socket.accessTokenValue = 'token123'
 
