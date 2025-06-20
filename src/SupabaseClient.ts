@@ -47,16 +47,66 @@ export default class SupabaseClient<
   protected authUrl: URL
   protected storageUrl: URL
   protected functionsUrl: URL
-  protected rest: PostgrestClient<Database, SchemaName, Schema>
+  rest!: PostgrestClient<Database, SchemaName, Schema>
+  protected _rest?: PostgrestClient<Database, SchemaName, Schema>
   protected storageKey: string
-  protected fetch?: Fetch
+  protected _fetch?: Fetch
+
+  /**
+   * Get the fetch implementation using lib/fetch.ts
+   * Uses the modernized cross-platform fetch implementation with full security features.
+   *
+   * SYNC COMPATIBILITY: Creates a sync-compatible wrapper around async fetchWithAuth
+   */
+  get fetch(): Fetch {
+    if (!this._fetch) {
+      // Create a sync-compatible fetch that handles async initialization internally
+      this._fetch = this._createSyncFetchWrapper()
+    }
+    return this._fetch
+  }
+
+  /**
+   * Creates a synchronous fetch wrapper that handles async initialization internally
+   * This maintains compatibility while using the modernized fetch implementation
+   */
+  private _createSyncFetchWrapper(): Fetch {
+    let fetchPromise: Promise<Fetch> | null = null
+    let resolvedFetch: Fetch | null = null
+
+    return async (input, init = {}) => {
+      // If we already have the resolved fetch, use it directly
+      if (resolvedFetch) {
+        return resolvedFetch(input, init)
+      }
+
+      // If we haven't started initializing, start now
+      if (!fetchPromise) {
+        fetchPromise = fetchWithAuth(
+          this.supabaseKey,
+          this._getAccessToken.bind(this),
+          this._customFetch
+        ).then((authenticatedFetch) => {
+          resolvedFetch = authenticatedFetch
+          return authenticatedFetch
+        })
+      }
+
+      // Wait for initialization and then make the request
+      const authenticatedFetch = await fetchPromise
+      return authenticatedFetch(input, init)
+    }
+  }
+
+  protected _customFetch?: Fetch
+
   protected changedAccessToken?: string
   protected accessToken?: () => Promise<string | null>
 
   protected headers: Record<string, string>
 
   /**
-   * Create a new client for use in the browser.
+   * Create a new client for cross-platform use (Node.js, Deno, Bun, browsers, workers).
    * @param supabaseUrl The unique Supabase URL which is supplied when you create a new project in your project dashboard.
    * @param supabaseKey The unique Supabase Key which is supplied when you create a new project in your project dashboard.
    * @param options.db.schema You can switch in between schemas. The schema needs to be on the list of exposed schemas inside Supabase.
@@ -97,6 +147,7 @@ export default class SupabaseClient<
 
     this.storageKey = settings.auth.storageKey ?? ''
     this.headers = settings.global.headers ?? {}
+    this._customFetch = settings.global.fetch
 
     if (!settings.accessToken) {
       this.auth = this._initSupabaseAuthClient(
@@ -118,16 +169,40 @@ export default class SupabaseClient<
       })
     }
 
-    this.fetch = fetchWithAuth(supabaseKey, this._getAccessToken.bind(this), settings.global.fetch)
+    // Fetch will be initialized lazily using fetchWithAuth from lib/fetch.ts
+
     this.realtime = this._initRealtimeClient({
       headers: this.headers,
-      accessToken: this._getAccessToken.bind(this),
+      accessToken: async () => {
+        try {
+          const token = await this._getAccessToken()
+          return token || ''
+        } catch (error) {
+          // Log but don't throw to avoid breaking realtime connection
+          console.warn(
+            'Failed to get access token for realtime:',
+            error instanceof Error ? error.message : String(error)
+          )
+          return ''
+        }
+      },
       ...settings.realtime,
     })
-    this.rest = new PostgrestClient(new URL('rest/v1', baseUrl).href, {
-      headers: this.headers,
-      schema: settings.db.schema,
-      fetch: this.fetch,
+
+    // Defer PostgrestClient initialization to avoid circular dependency
+    // This will be initialized lazily when first accessed
+    Object.defineProperty(this, 'rest', {
+      get: () => {
+        if (!this._rest) {
+          this._rest = new PostgrestClient(new URL('rest/v1', baseUrl).href, {
+            headers: this.headers,
+            schema: settings.db.schema,
+            fetch: this.fetch,
+          })
+        }
+        return this._rest
+      },
+      configurable: true,
     })
 
     if (!settings.accessToken) {
@@ -269,13 +344,26 @@ export default class SupabaseClient<
   }
 
   private async _getAccessToken() {
-    if (this.accessToken) {
-      return await this.accessToken()
+    try {
+      if (this.accessToken) {
+        return await this.accessToken()
+      }
+
+      const { data, error } = await this.auth.getSession()
+
+      if (error) {
+        console.warn('Failed to get session:', error.message)
+        return null
+      }
+
+      return data.session?.access_token ?? null
+    } catch (error) {
+      console.warn(
+        'Error getting access token:',
+        error instanceof Error ? error.message : String(error)
+      )
+      return null
     }
-
-    const { data } = await this.auth.getSession()
-
-    return data.session?.access_token ?? null
   }
 
   private _initSupabaseAuthClient(
@@ -308,7 +396,7 @@ export default class SupabaseClient<
       lock,
       debug,
       fetch,
-      // auth checks if there is a custom authorizaiton header using this flag
+      // auth checks if there is a custom authorization header using this flag
       // so it knows whether to return an error when getUser is called with no session
       hasCustomAuthorizationHeader: 'Authorization' in this.headers,
     })
