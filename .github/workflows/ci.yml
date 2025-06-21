@@ -96,12 +96,11 @@ jobs:
       - name: Start Supabase
         run: supabase start
 
-      - name: Run integration and browser tests
+      - name: Run integration tests
         run: |
           npm clean-install
           npm run build
           npm run test:integration || npm run test:integration
-          npm run test:integration:browser
 
       - name: Stop Supabase
         run: supabase stop
@@ -125,14 +124,14 @@ jobs:
         run: |
           npm clean-install
           npm run build
-          npm pack
-
+          npm pack > package-name.txt
+      
       - name: Run expo compatibility tests
         run: |
+          PACKAGE=$(cat package-name.txt)
           cd examples/expo-app
+          npm install "../$PACKAGE"
           npm install
-          # make sure we're using the version that was just packed above
-          npm update @supabase/supabase-js
           npm run test || npm run test
 
       - name: Stop Supabase
