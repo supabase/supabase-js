@@ -59,11 +59,14 @@ jobs:
       - uses: supabase/setup-cli@v1
         with:
           version: latest
+
       - name: Start Supabase
         run: supabase start
 
       - name: Run Deno Tests
         run: |
+          npm clean-install
+          npm run build
           cd test/deno
           npm install
           npm test || npm test
@@ -88,12 +91,16 @@ jobs:
       - uses: supabase/setup-cli@v1
         with:
           version: latest
+
       - name: Start Supabase
         run: supabase start
-      - run: |
+
+      - name: Run integration tests
+        run: |
           npm clean-install
           npm run build
           npm run test:integration || npm run test:integration
+
       - name: Stop Supabase
         run: supabase stop
         
@@ -108,12 +115,19 @@ jobs:
       - uses: supabase/setup-cli@v1
         with:
           version: latest
+
       - name: Start Supabase
         run: supabase start
-      - run: |
+
+      - name: Install Playwright browsers and dependencies
+        run: npx playwright install --with-deps
+
+      - name: Run integration tests
+        run: |
           cd test/integration/next
           npm install
           npx playwright install
-          npm run test
+          npm run test 
+
       - name: Stop Supabase
         run: supabase stop
