@@ -1,4 +1,4 @@
-import { ensureTrailingSlash } from '../src/lib/helpers'
+import { ensureTrailingSlash } from '../../src/lib/helpers'
 
 test('Adds trailing slash to URL if missing', () => {
   const input = 'http://localhost:3000'

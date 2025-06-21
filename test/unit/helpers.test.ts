@@ -1,5 +1,5 @@
-import * as helpers from '../src/lib/helpers'
-import { DEFAULT_HEADERS } from '../src/lib/constants'
+import * as helpers from '../../src/lib/helpers'
+import { DEFAULT_HEADERS } from '../../src/lib/constants'
 
 test('uuid', async () => {
   expect(helpers.uuid()).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/)

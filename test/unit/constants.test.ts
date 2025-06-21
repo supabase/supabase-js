@@ -1,5 +1,5 @@
-import { DEFAULT_HEADERS } from '../src/lib/constants'
-import { version } from '../src/lib/version'
+import { DEFAULT_HEADERS } from '../../src/lib/constants'
+import { version } from '../../src/lib/version'
 
 test('it has the correct type of returning with the correct value', () => {
   let JS_ENV = ''
