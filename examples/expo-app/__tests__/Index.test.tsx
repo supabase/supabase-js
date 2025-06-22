@@ -8,6 +8,10 @@ describe('Index', () => {
 
   it('should display SUBSCRIBED status when realtime connection is established', async () => {
     console.log('Starting realtime connection test...')
+    console.log('Environment variables:')
+    console.log('- SUPABASE_URL:', process.env.SUPABASE_URL || 'not set')
+    console.log('- SUPABASE_ANON_KEY:', process.env.SUPABASE_ANON_KEY ? 'set' : 'not set')
+
     const { getByTestId, unmount } = render(<Index />)
 
     // Initially, the text should be empty
@@ -26,6 +30,12 @@ describe('Index', () => {
         onTimeout: (error) => {
           const currentStatus = getByTestId('realtime_status').props.children
           console.error('Test timeout. Current status:', currentStatus)
+          console.error('Environment check:')
+          console.error('- SUPABASE_URL:', process.env.SUPABASE_URL)
+          console.error(
+            '- SUPABASE_ANON_KEY:',
+            process.env.SUPABASE_ANON_KEY ? 'present' : 'missing'
+          )
           throw new Error(
             `Timeout waiting for SUBSCRIBED status. Current status: ${currentStatus}. ${error.message}`
           )

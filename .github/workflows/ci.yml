@@ -123,18 +123,21 @@ jobs:
 
       - name: Debug Supabase connectivity
         run: |
-          echo "Checking HTTP endpoint with curl..."
+          echo "Checking HTTP endpoint with curl"
           curl -v http://127.0.0.1:54321 || echo "curl failed"
 
-          echo "Testing WebSocket connection to supabase realtime..."
-          # Test WebSocket connection using curl (which supports WebSocket)
-          curl -i -N -H "Connection: Upgrade" -H "Upgrade: websocket" -H "Sec-WebSocket-Version: 13" -H "Sec-WebSocket-Key: x3JJHMbDL1EzLkh9GBhXDw==" http://127.0.0.1:54321/realtime/v1/websocket || echo "WS connection failed"
+          echo "Testing WebSocket connection to supabase realtime with auth"
+          # Test WebSocket connection with proper authentication parameters
+          curl -i -N -H "Connection: Upgrade" -H "Upgrade: websocket" -H "Sec-WebSocket-Version: 13" -H "Sec-WebSocket-Key: x3JJHMbDL1EzLkh9GBhXDw==" "http://127.0.0.1:54321/realtime/v1/websocket?apikey=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0&vsn=1.0.0" || echo "WS connection failed"
 
-          echo "Testing realtime endpoint directly..."
+          echo "Testing realtime endpoint directly"
           curl -v http://127.0.0.1:54321/realtime/v1/ || echo "Realtime endpoint failed"
 
-          echo "Testing realtime health check..."
+          echo "Testing realtime health check"
           curl -v http://127.0.0.1:54321/realtime/v1/api/ping || echo "Realtime ping failed"
+
+          echo "Testing realtime health check with auth"
+          curl -v -H "apikey: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0" http://127.0.0.1:54321/realtime/v1/api/ping || echo "Realtime ping with auth failed"
 
           docker ps --format '{{.Names}}'
 
@@ -147,7 +150,13 @@ jobs:
           echo "Checking realtime container specifically..."
           docker logs supabase_realtime_supabase-js --tail 50 || echo "No realtime logs"
 
+          echo "Checking Kong logs for WebSocket requests..."
+          docker logs supabase_kong_supabase-js --tail 20 || echo "No Kong logs"
+
       - name: Build and test expo
+        env:
+          SUPABASE_URL: http://127.0.0.1:54321
+          SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0
         run: |
           npm clean-install
           npm run build
