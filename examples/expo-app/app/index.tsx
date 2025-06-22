@@ -12,19 +12,17 @@ export default function Index() {
   const [realtimeStatus, setRealtimeStatus] = useState<string | null>(null)
 
   useEffect(() => {
+    console.log('Setting up realtime connection...')
     const channel = supabase.channel('realtime:public:todos')
-    
-    channel.on('error', (error) => {
-      console.error('Realtime channel error:', error)
-    })
-    
+
     channel.subscribe((status) => {
       console.log('Realtime status:', status)
-      if (status === 'SUBSCRIBED') {
-        setRealtimeStatus(status)
-      }
+      // Show all statuses, not just SUBSCRIBED
+      setRealtimeStatus(status)
     })
+
     return () => {
+      console.log('Cleaning up realtime connection...')
       channel.unsubscribe()
       supabase.realtime.disconnect()
     }

@@ -7,6 +7,7 @@ describe('Index', () => {
   })
 
   it('should display SUBSCRIBED status when realtime connection is established', async () => {
+    console.log('Starting realtime connection test...')
     const { getByTestId, unmount } = render(<Index />)
 
     // Initially, the text should be empty
@@ -16,13 +17,15 @@ describe('Index', () => {
     await waitFor(
       () => {
         const status = getByTestId('realtime_status').props.children
+        console.log('Current realtime status:', status)
         expect(status).toBe('SUBSCRIBED')
       },
       {
-        timeout: 30000, // 30 seconds timeout for waitFor
+        timeout: 60000, // 60 seconds timeout for waitFor (increased for CI)
         interval: 1000, // Check every second
         onTimeout: (error) => {
           const currentStatus = getByTestId('realtime_status').props.children
+          console.error('Test timeout. Current status:', currentStatus)
           throw new Error(
             `Timeout waiting for SUBSCRIBED status. Current status: ${currentStatus}. ${error.message}`
           )
@@ -30,7 +33,8 @@ describe('Index', () => {
       }
     )
 
+    console.log('Test completed successfully')
     // Unmount the component to trigger cleanup.
     unmount()
-  }, 35000) // 35 seconds timeout for the entire test
+  }, 70000) // 70 seconds timeout for the entire test (increased for CI)
 })

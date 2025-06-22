@@ -125,12 +125,17 @@ jobs:
         run: |
           echo "Checking HTTP endpoint with curl..."
           curl -v http://127.0.0.1:54321 || echo "curl failed"
-    
-          npm install -g wscat
-    
+
           echo "Testing WebSocket connection to supabase realtime..."
-          timeout 5 wscat -c ws://127.0.0.1:54321/realtime/v1/websocket || echo "WS connection failed or timed out"
-    
+          # Test WebSocket connection using curl (which supports WebSocket)
+          curl -i -N -H "Connection: Upgrade" -H "Upgrade: websocket" -H "Sec-WebSocket-Version: 13" -H "Sec-WebSocket-Key: x3JJHMbDL1EzLkh9GBhXDw==" http://127.0.0.1:54321/realtime/v1/websocket || echo "WS connection failed"
+
+          echo "Testing realtime endpoint directly..."
+          curl -v http://127.0.0.1:54321/realtime/v1/ || echo "Realtime endpoint failed"
+
+          echo "Testing realtime health check..."
+          curl -v http://127.0.0.1:54321/realtime/v1/api/ping || echo "Realtime ping failed"
+
           docker ps --format '{{.Names}}'
 
           echo "docker logs"
@@ -138,6 +143,9 @@ jobs:
             echo "Logs for $name:"
             docker logs --tail 20 $name || echo "No logs for $name"
           done
+
+          echo "Checking realtime container specifically..."
+          docker logs supabase_realtime_supabase-js --tail 50 || echo "No realtime logs"
 
       - name: Build and test expo
         run: |
