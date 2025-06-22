@@ -49,6 +49,12 @@ export default function Index() {
       console.log('Channel state after status:', channel.state)
       console.log('Channel topic:', channel.topic)
 
+      // Add more detailed debugging for WebSocket state
+      if (supabase.realtime.conn) {
+        console.log('WebSocket readyState:', supabase.realtime.conn.readyState)
+        console.log('WebSocket URL:', supabase.realtime.conn.url)
+      }
+
       // Show all statuses, not just SUBSCRIBED
       setRealtimeStatus(status)
     })
@@ -61,11 +67,28 @@ export default function Index() {
       console.log('Timeout check - Channel state:', channel.state)
       console.log('Timeout check - Channel topic:', channel.topic)
 
+      // Check WebSocket connection state
+      if (supabase.realtime.conn) {
+        console.log('Timeout check - WebSocket readyState:', supabase.realtime.conn.readyState)
+        console.log('Timeout check - WebSocket URL:', supabase.realtime.conn.url)
+      }
+
+      // Check if join push was sent
+      if (channel.joinPush) {
+        console.log('Timeout check - Join push sent:', channel.joinPush.sent)
+        console.log('Timeout check - Join push ref:', channel.joinPush.ref)
+        console.log('Timeout check - Join push receivedResp:', channel.joinPush.receivedResp)
+      }
+
       // Try to manually check the connection
       try {
         console.log('Attempting to check realtime connection manually...')
         // This might help us understand what's happening
         console.log('All channels:', supabase.getChannels())
+
+        // Check connection state
+        console.log('Realtime connection state:', supabase.realtime.connectionState())
+        console.log('Realtime is connected:', supabase.realtime.isConnected())
       } catch (error) {
         console.log('Error checking channels:', error)
       }
