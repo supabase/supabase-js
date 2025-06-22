@@ -162,15 +162,25 @@ jobs:
             const joinMessage = JSON.stringify({
               topic: 'realtime:test-channel',
               event: 'phx_join',
-              payload: { config: { broadcast: { self: false }, presence: { key: '' }, private: false } },
+              payload: { 
+                config: { broadcast: { self: false }, presence: { key: '' }, private: false },
+                access_token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0'
+              },
               ref: '1'
             });
-            console.log('Sending join message:', joinMessage);
+            console.log('Sending join message with full payload:');
+            console.log(JSON.stringify(JSON.parse(joinMessage), null, 2));
             ws.send(joinMessage);
           });
 
           ws.on('message', (data) => {
             console.log('Received message:', data.toString());
+            try {
+              const parsed = JSON.parse(data.toString());
+              console.log('Parsed message:', JSON.stringify(parsed, null, 2));
+            } catch (e) {
+              console.log('Could not parse message as JSON');
+            }
           });
 
           ws.on('error', (error) => {
@@ -186,6 +196,22 @@ jobs:
             ws.close();
           }, 5000);
           " || echo "Node.js WebSocket test failed"
+
+          echo "Testing JWT token validation"
+          node -e "
+          const jwt = require('jsonwebtoken');
+
+          const token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0';
+          const secret = 'super-secret-jwt-token-with-at-least-32-characters-long';
+
+          try {
+            const decoded = jwt.verify(token, secret);
+            console.log('JWT token is valid');
+            console.log('Decoded payload:', JSON.stringify(decoded, null, 2));
+          } catch (error) {
+            console.log('JWT token validation failed:', error.message);
+          }
+          " || echo "JWT validation test failed"
 
           docker ps --format '{{.Names}}'
 
