@@ -120,19 +120,15 @@ jobs:
       - name: Start Supabase
         run: supabase start
 
-      - name: Build and pack supabase-js
+      - name: Build and test expo
         run: |
           npm clean-install
           npm run build
-          npm pack > package-name.txt
-      
-      - name: Run expo compatibility tests
-        run: |
-          PACKAGE=$(cat package-name.txt)
+          PKG=$(npm pack)
           cd examples/expo-app
-          npm install "../$PACKAGE"
+          npm install "../$PKG"
           npm install
-          npm run test || npm run test
+          npm test || npm test
 
       - name: Stop Supabase
         run: supabase stop
