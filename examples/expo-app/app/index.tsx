@@ -10,15 +10,17 @@ const supabase = createClient(SUPABASE_URL, ANON_KEY)
 
 export default function Index() {
   const [realtimeStatus, setRealtimeStatus] = useState<string | null>(null)
-  const channel = supabase.channel('realtime:public:todos')
 
   useEffect(() => {
-    if (channel.state === 'closed') {
-      channel.subscribe((status) => {
-        if (status === 'SUBSCRIBED') setRealtimeStatus(status)
-      })
-    }
-
+    const channel = supabase.channel('realtime:public:todos')
+    
+    // Subscribe to the channel
+    channel.subscribe((status) => {
+      console.log('Realtime status:', status)
+      if (status === 'SUBSCRIBED') {
+        setRealtimeStatus(status)
+      }
+    })
     return () => {
       channel.unsubscribe()
       supabase.realtime.disconnect()
