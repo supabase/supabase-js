@@ -129,10 +129,11 @@ jobs:
           npm install -g wscat
     
           echo "Testing WebSocket connection to supabase realtime..."
-          wscat -c ws://127.0.0.1:54321/realtime/v1/websocket -t 5 || echo "WebSocket connection failed"
+          timeout 5 wscat -c ws://127.0.0.1:54321/realtime/v1/websocket || echo "WebSocket connection failed"
     
           echo "Displaying Supabase logs..."
-          supabase logs --since 1m || echo "No logs or failed to fetch logs"
+          docker logs supabase_db || echo "No logs or failed to fetch logs"
+          docker logs supabase_api || echo "No logs or failed to fetch logs"
 
       - name: Build and test expo
         run: |
