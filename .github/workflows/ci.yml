@@ -120,6 +120,11 @@ jobs:
       - name: Start Supabase
         run: supabase start
 
+      - name: Check listening ports
+        run: |
+          ss -tlnp
+          curl http://127.0.0.1:54321/health || echo "Supabase realtime not reachable"
+
       - name: Build and test expo
         run: |
           npm clean-install
