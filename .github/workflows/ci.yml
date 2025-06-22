@@ -120,7 +120,23 @@ jobs:
       - name: Start Supabase
         run: |
           supabase start
-          sleep 5
+
+      - name: Debug Supabase connectivity
+        run: |
+          echo "Checking HTTP endpoint with curl..."
+          curl -v http://127.0.0.1:54321 || echo "curl failed"
+    
+          echo "Checking host.docker.internal resolution..."
+          ping -c 3 host.docker.internal || echo "host.docker.internal not reachable"
+    
+          echo "Installing websocat for WebSocket test..."
+          sudo apt-get update && sudo apt-get install -y websocat
+    
+          echo "Testing WebSocket connection to supabase realtime..."
+          websocat -t ws://127.0.0.1:54321/realtime/v1/websocket || echo "WebSocket connection failed"
+    
+          echo "Displaying Supabase logs..."
+          supabase logs --since 1m || echo "No logs or failed to fetch logs"
 
       - name: Build and test expo
         run: |
