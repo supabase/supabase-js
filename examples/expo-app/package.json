@@ -54,7 +54,7 @@
   },
   "private": true,
   "jest": {
-    "preset": "jest-expo/universal",
+    "preset": "jest-expo",
     "setupFiles": [
       "./jest.setup.js"
     ]
