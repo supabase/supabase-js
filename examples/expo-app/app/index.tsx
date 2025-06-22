@@ -25,17 +25,55 @@ export default function Index() {
   useEffect(() => {
     console.log('Setting up realtime connection...')
     console.log('Realtime URL:', supabase.realtime.endPoint)
+    console.log('Realtime client:', supabase.realtime)
 
-    const channel = supabase.channel('realtime:public:todos')
+    // Check if we can access the WebSocket connection
+    try {
+      console.log('Realtime client properties:', Object.keys(supabase.realtime))
+      console.log(
+        'Realtime client methods:',
+        Object.getOwnPropertyNames(Object.getPrototypeOf(supabase.realtime))
+      )
+    } catch (error) {
+      console.log('Error accessing realtime client properties:', error)
+    }
 
-    channel.subscribe((status) => {
-      console.log('Realtime status:', status)
+    // Use a simpler channel name for testing
+    const channel = supabase.channel('test-channel')
+
+    console.log('Created channel:', channel)
+    console.log('Channel state:', channel.state)
+
+    const subscription = channel.subscribe((status) => {
+      console.log('Realtime status callback received:', status)
+      console.log('Channel state after status:', channel.state)
+      console.log('Channel topic:', channel.topic)
+
       // Show all statuses, not just SUBSCRIBED
       setRealtimeStatus(status)
     })
 
+    console.log('Subscription result:', subscription)
+
+    // Add a timeout to check if we're stuck
+    const timeoutId = setTimeout(() => {
+      console.log('Timeout check - Current realtime status:', realtimeStatus)
+      console.log('Timeout check - Channel state:', channel.state)
+      console.log('Timeout check - Channel topic:', channel.topic)
+
+      // Try to manually check the connection
+      try {
+        console.log('Attempting to check realtime connection manually...')
+        // This might help us understand what's happening
+        console.log('All channels:', supabase.getChannels())
+      } catch (error) {
+        console.log('Error checking channels:', error)
+      }
+    }, 5000)
+
     return () => {
       console.log('Cleaning up realtime connection...')
+      clearTimeout(timeoutId)
       channel.unsubscribe()
       supabase.realtime.disconnect()
     }

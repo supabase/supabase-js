@@ -139,6 +139,9 @@ jobs:
           echo "Testing realtime health check with auth"
           curl -v -H "apikey: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0" http://127.0.0.1:54321/realtime/v1/api/ping || echo "Realtime ping with auth failed"
 
+          echo "Testing realtime subscription endpoint"
+          curl -v -X POST -H "Content-Type: application/json" -H "apikey: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0" -d '{"channel":"test-channel","type":"broadcast"}' http://127.0.0.1:54321/realtime/v1/api/broadcast || echo "Realtime broadcast failed"
+
           docker ps --format '{{.Names}}'
 
           echo "docker logs"
@@ -147,17 +150,23 @@ jobs:
             docker logs --tail 20 $name || echo "No logs for $name"
           done
 
-          echo "Checking realtime container specifically..."
+          echo "Checking realtime container specifically"
           docker logs supabase_realtime_supabase-js --tail 50 || echo "No realtime logs"
 
-          echo "Checking Kong logs for WebSocket requests..."
+          echo "Checking Kong logs for WebSocket requests"
           docker logs supabase_kong_supabase-js --tail 20 || echo "No Kong logs"
+
+          echo "Checking if realtime service is properly configured"
+          docker exec supabase_realtime_supabase-js env | grep -E "(REALTIME|POSTGRES|JWT)" || echo "No realtime env vars found"
 
       - name: Build and test expo
         env:
           SUPABASE_URL: http://127.0.0.1:54321
           SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0
         run: |
+          echo "Waiting for Supabase services to be fully ready"
+          sleep 10
+
           npm clean-install
           npm run build
           PKG=$(npm pack)

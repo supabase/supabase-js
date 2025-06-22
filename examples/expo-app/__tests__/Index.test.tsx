@@ -17,11 +17,26 @@ describe('Index', () => {
     // Initially, the text should be empty
     expect(getByTestId('realtime_status')).toHaveTextContent('')
 
+    // Add some initial debugging
+    console.log('Component rendered, waiting for realtime status')
+
     // Wait for the subscription status to be updated
     await waitFor(
       () => {
         const status = getByTestId('realtime_status').props.children
         console.log('Current realtime status:', status)
+
+        // Add more debugging for CI
+        if (status === 'TIMED_OUT') {
+          console.log('Status is TIMED_OUT - this indicates a connection issue')
+        } else if (status === 'CHANNEL_ERROR') {
+          console.log('Status is CHANNEL_ERROR - this indicates a channel subscription issue')
+        } else if (status === 'CLOSED') {
+          console.log('Status is CLOSED')
+        } else if (!status) {
+          console.log('Status is empty')
+        }
+
         expect(status).toBe('SUBSCRIBED')
       },
       {
@@ -36,6 +51,7 @@ describe('Index', () => {
             '- SUPABASE_ANON_KEY:',
             process.env.SUPABASE_ANON_KEY ? 'present' : 'missing'
           )
+          console.error('the realtime connection failed')
           throw new Error(
             `Timeout waiting for SUBSCRIBED status. Current status: ${currentStatus}. ${error.message}`
           )
