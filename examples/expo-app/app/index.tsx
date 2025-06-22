@@ -14,7 +14,10 @@ export default function Index() {
   useEffect(() => {
     const channel = supabase.channel('realtime:public:todos')
     
-    // Subscribe to the channel
+    channel.on('error', (error) => {
+      console.error('Realtime channel error:', error)
+    })
+    
     channel.subscribe((status) => {
       console.log('Realtime status:', status)
       if (status === 'SUBSCRIBED') {
