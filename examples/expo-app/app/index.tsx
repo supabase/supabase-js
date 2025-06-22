@@ -92,7 +92,7 @@ export default function Index() {
       } catch (error) {
         console.log('Error checking channels:', error)
       }
-    }, 5000)
+    }, 10000) // Increased timeout to 10 seconds
 
     return () => {
       console.log('Cleaning up realtime connection...')

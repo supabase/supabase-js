@@ -235,9 +235,21 @@ jobs:
           SUPABASE_URL: http://127.0.0.1:54321
           SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0
         run: |
-          echo "Waiting for Supabase services to be fully ready"
-          sleep 10
+          echo "Waiting for realtime service to be fully initialized"
+          sleep 30
 
+          echo "Checking realtime service health..."
+          for i in {1..10}; do
+            if curl -s http://127.0.0.1:54321/realtime/v1/api/ping | grep -q "Success"; then
+              echo "Realtime service is healthy"
+              break
+            else
+              echo "Waiting for realtime service to be ready... (attempt $i/10)"
+              sleep 5
+            fi
+          done
+
+          echo "Running Expo app test with environment variables"
           npm clean-install
           npm run build
           PKG=$(npm pack)

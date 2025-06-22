@@ -40,7 +40,7 @@ describe('Index', () => {
         expect(status).toBe('SUBSCRIBED')
       },
       {
-        timeout: 60000, // 60 seconds timeout for waitFor (increased for CI)
+        timeout: 90000, // 90 seconds timeout for waitFor (increased for CI)
         interval: 1000, // Check every second
         onTimeout: (error) => {
           const currentStatus = getByTestId('realtime_status').props.children
@@ -62,5 +62,5 @@ describe('Index', () => {
     console.log('Test completed successfully')
     // Unmount the component to trigger cleanup.
     unmount()
-  }, 70000) // 70 seconds timeout for the entire test (increased for CI)
+  }, 100000) // 100 seconds timeout for the entire test (increased for CI)
 })
