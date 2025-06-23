@@ -74,7 +74,6 @@ jobs:
       - name: Run integration and browser tests on Deno 2.x only
         if: ${{ matrix.deno == '2.x' }}
         run: |
-          supabase start
           npm run test:integration:browser
 
       - name: Stop Supabase
