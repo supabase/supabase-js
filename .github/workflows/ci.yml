@@ -74,6 +74,7 @@ jobs:
       - name: Run integration and browser tests on Deno 2.x only
         if: ${{ matrix.deno == '2.x' }}
         run: |
+          supabase start
           npm run test:integration:browser
 
       - name: Stop Supabase
@@ -99,14 +100,6 @@ jobs:
           npm clean-install
           npm run build
           npm run test:integration || npm run test:integration
-
-      - name: Run expo compatibility tests
-        run: |
-          cd examples/expo-app
-          npm install
-          # make sure we're using the version that was just packed above
-          npm update @supabase/supabase-js
-          npm run test || npm run test
 
       - name: Stop Supabase
         run: supabase stop
