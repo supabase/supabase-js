@@ -32,7 +32,7 @@ jobs:
           node-version: ${{ matrix.node }}
 
       - run: npm clean-install
-      
+
       - name: Type Check
         run: npm run test:types
 
@@ -74,7 +74,6 @@ jobs:
       - name: Run integration and browser tests on Deno 2.x only
         if: ${{ matrix.deno == '2.x' }}
         run: |
-          npm run test:integration || npm run test:integration
           npm run test:integration:browser
 
       - name: Stop Supabase
@@ -103,7 +102,7 @@ jobs:
 
       - name: Stop Supabase
         run: supabase stop
-        
+
   next-integration:
     name: Next.js Integration
     runs-on: ubuntu-latest
@@ -127,7 +126,37 @@ jobs:
           cd test/integration/next
           npm install
           npx playwright install
-          npm run test 
+          npm run test
+
+      - name: Stop Supabase
+        run: supabase stop
+
+  expo-tests:
+    name: Expo Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Start Supabase
+        run: |
+          supabase start
+
+      - name: Build and test expo
+        run: |
+          npm clean-install
+          npm run build
+          PKG=$(npm pack)
+          echo "Packed: $PKG"
+          cd test/integration/expo
+          npm install "../../../$PKG"
+          npm install
+          npm test || npm test
 
       - name: Stop Supabase
         run: supabase stop
