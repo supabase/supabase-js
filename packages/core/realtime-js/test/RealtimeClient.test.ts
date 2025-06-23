@@ -1,16 +1,22 @@
 import assert from 'assert'
-import { describe, beforeEach, afterEach, test, vi, expect } from 'vitest'
+import {
+  afterAll,
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  test,
+  vi,
+} from 'vitest'
 import { Server, WebSocket as MockWebSocket } from 'mock-socket'
 import WebSocket from 'ws'
 import sinon from 'sinon'
 import crypto from 'crypto'
-
-import RealtimeClient, {
-  HeartbeatStatus,
-  RealtimeMessage,
-} from '../src/RealtimeClient'
+import RealtimeClient, { HeartbeatStatus } from '../src/RealtimeClient'
 import jwt from 'jsonwebtoken'
 import { CHANNEL_STATES } from '../src/lib/constants'
+import path from 'path'
 
 function generateJWT(exp: string): string {
   return jwt.sign({}, 'your-256-bit-secret', {
@@ -18,6 +24,7 @@ function generateJWT(exp: string): string {
     expiresIn: exp || '1h',
   })
 }
+import Worker from 'web-worker'
 
 let socket: RealtimeClient
 let randomProjectRef = () => crypto.randomUUID()
@@ -851,5 +858,46 @@ describe('log operations', () => {
       socket.endpointURL(),
       `${url}/websocket?log_level=warn&vsn=1.0.0`
     )
+  })
+})
+
+describe('worker', () => {
+  let mockServer: Server
+  let client: RealtimeClient
+  const workerPath = path.join(__dirname, 'test_worker.js')
+  beforeAll(() => {
+    window.Worker = Worker
+    projectRef = randomProjectRef()
+    url = `wss://${projectRef}/socket`
+    mockServer = new Server(url)
+  })
+
+  afterAll(() => {
+    // @ts-ignore - Deliberately removing Worker to clean up test environment
+    window.Worker = undefined
+    mockServer.close()
+  })
+
+  beforeEach(() => {
+    client = new RealtimeClient('ws://localhost:8080/socket', {
+      worker: true,
+      workerUrl: workerPath,
+      heartbeatIntervalMs: 10,
+    })
+  })
+  test('sets worker flag', () => {
+    assert.ok(client.worker)
+  })
+
+  test('sets worker URL', () => {
+    assert.equal(client.workerUrl, workerPath)
+  })
+
+  test('ensures single worker ref is started even with multiple connect calls', () => {
+    client._onConnOpen()
+    let ref = client.workerRef
+
+    client._onConnOpen()
+    assert.ok(ref === client.workerRef)
   })
 })

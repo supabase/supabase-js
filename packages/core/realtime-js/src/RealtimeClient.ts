@@ -562,36 +562,47 @@ export default class RealtimeClient {
     this.flushSendBuffer()
     this.reconnectTimer.reset()
     if (!this.worker) {
-      this.heartbeatTimer && clearInterval(this.heartbeatTimer)
-      this.heartbeatTimer = setInterval(
-        () => this.sendHeartbeat(),
-        this.heartbeatIntervalMs
-      )
+      this._startHeartbeat()
     } else {
-      if (this.workerUrl) {
-        this.log('worker', `starting worker for from ${this.workerUrl}`)
-      } else {
-        this.log('worker', `starting default worker`)
+      if (!this.workerRef) {
+        this._startWorkerHeartbeat()
       }
-      const objectUrl = this._workerObjectUrl(this.workerUrl!)
-      this.workerRef = new Worker(objectUrl)
-      this.workerRef.onerror = (error) => {
-        this.log('worker', 'worker error', (error as ErrorEvent).message)
-        this.workerRef!.terminate()
-      }
-      this.workerRef.onmessage = (event) => {
-        if (event.data.event === 'keepAlive') {
-          this.sendHeartbeat()
-        }
-      }
-      this.workerRef.postMessage({
-        event: 'start',
-        interval: this.heartbeatIntervalMs,
-      })
     }
+
     this.stateChangeCallbacks.open.forEach((callback) => callback())
   }
+  /** @internal */
+  private _startHeartbeat() {
+    this.heartbeatTimer && clearInterval(this.heartbeatTimer)
+    this.heartbeatTimer = setInterval(
+      () => this.sendHeartbeat(),
+      this.heartbeatIntervalMs
+    )
+  }
 
+  /** @internal */
+  private _startWorkerHeartbeat() {
+    if (this.workerUrl) {
+      this.log('worker', `starting worker for from ${this.workerUrl}`)
+    } else {
+      this.log('worker', `starting default worker`)
+    }
+    const objectUrl = this._workerObjectUrl(this.workerUrl!)
+    this.workerRef = new Worker(objectUrl)
+    this.workerRef.onerror = (error) => {
+      this.log('worker', 'worker error', (error as ErrorEvent).message)
+      this.workerRef!.terminate()
+    }
+    this.workerRef.onmessage = (event) => {
+      if (event.data.event === 'keepAlive') {
+        this.sendHeartbeat()
+      }
+    }
+    this.workerRef.postMessage({
+      event: 'start',
+      interval: this.heartbeatIntervalMs,
+    })
+  }
   /** @internal */
   private _onConnClose(event: any) {
     this.log('transport', 'close', event)

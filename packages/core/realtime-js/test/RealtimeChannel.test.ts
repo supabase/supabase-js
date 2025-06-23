@@ -1,21 +1,11 @@
 import assert from 'assert'
 import sinon from 'sinon'
 import crypto from 'crypto'
-import {
-  describe,
-  beforeEach,
-  afterEach,
-  test,
-  beforeAll,
-  afterAll,
-  vi,
-  it,
-} from 'vitest'
+import { describe, beforeEach, afterEach, test, vi } from 'vitest'
 
 import RealtimeClient from '../src/RealtimeClient'
 import RealtimeChannel from '../src/RealtimeChannel'
 import { Response } from '@supabase/node-fetch'
-import Worker from 'web-worker'
 import { Server, WebSocket } from 'mock-socket'
 import { CHANNEL_STATES } from '../src/lib/constants'
 import Push from '../src/lib/push'
@@ -1414,39 +1404,5 @@ describe('trigger', () => {
       params: { apikey: '123' },
     })
     assert.equal(client.accessTokenValue, '123')
-  })
-})
-
-describe('worker', () => {
-  let client: RealtimeClient
-  let mockServer: Server
-
-  beforeAll(() => {
-    window.Worker = Worker
-    projectRef = randomProjectRef()
-    url = `wss://${projectRef}/socket`
-    mockServer = new Server(url)
-  })
-
-  afterAll(() => {
-    // @ts-ignore - Deliberately removing Worker to clean up test environment
-    window.Worker = undefined
-    mockServer.close()
-  })
-
-  beforeEach(() => {
-    client = new RealtimeClient('ws://localhost:8080/socket', {
-      worker: true,
-      workerUrl: 'https://realtime.supabase.com/worker.js',
-      heartbeatIntervalMs: 10,
-    })
-  })
-
-  test('sets worker flag', () => {
-    assert.ok(client.worker)
-  })
-
-  test('sets worker URL', () => {
-    assert.equal(client.workerUrl, 'https://realtime.supabase.com/worker.js')
   })
 })
