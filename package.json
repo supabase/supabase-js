@@ -32,7 +32,7 @@
     "test:all": "run-s test:types test:run test:integration test:integration:browser",
     "test:run": "jest --runInBand --detectOpenHandles",
     "test:unit": "jest --runInBand --detectOpenHandles test/unit",
-    "test:coverage": "jest --runInBand --coverage --testPathIgnorePatterns=\"test/integration.*|test/deno.*\"",
+    "test:coverage": "jest --runInBand --coverage --testPathIgnorePatterns=\"test/integration.*|test/deno.*|examples\"",
     "test:integration": "jest --runInBand --detectOpenHandles test/integration.test.ts",
     "test:integration:browser": "deno test --allow-all test/integration.browser.test.ts",
     "test:watch": "jest --watch --verbose false --silent false",
