@@ -1,5 +1,5 @@
-import { render, waitFor, cleanup } from '@testing-library/react-native'
-import Index from '../app/index.js'
+import { cleanup, render, waitFor } from '@testing-library/react-native'
+import Index from '../app/index.tsx'
 
 describe('Index', () => {
   afterEach(() => {
