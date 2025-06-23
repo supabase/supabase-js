@@ -154,7 +154,7 @@ jobs:
           PKG=$(npm pack)
           echo "Packed: $PKG"
           cd test/integration/expo
-          npm install "../../$PKG"
+          npm install "../../../$PKG"
           npm install
           npm test || npm test
 
