@@ -1,7 +1,8 @@
 const webpack = require('webpack')
 const path = require('path')
 
-module.exports = {
+module.exports = (env) => ({
+  mode: env?.mode || 'production',
   entry: './src/index.ts',
   output: {
     path: path.resolve(__dirname, 'dist/umd'),
@@ -30,4 +31,4 @@ module.exports = {
       process: 'process/browser',
     }),
   ],
-}
+})

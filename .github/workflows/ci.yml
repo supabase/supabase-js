@@ -20,26 +20,24 @@ on:
 
 jobs:
   test:
-    name: Test / OS ${{ matrix.os }} / Node ${{ matrix.node }}
+    name: Unit + Type Check / Node.js ${{ matrix.node }}
+    runs-on: ubuntu-latest
     strategy:
       matrix:
-        os: [ubuntu-latest]
-        node: ['20']
-
-    runs-on: ${{ matrix.os }}
-
+        node: [20]
     steps:
       - uses: actions/checkout@v4
-
-      - name: Set up Node
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node }}
 
-      - name: Run tests
-        run: |
-          npm clean-install
-          npm run test:coverage
+      - run: npm clean-install
+
+      - name: Type Check
+        run: npm run test:types
+
+      - name: Run Unit Tests + Coverage
+        run: npm run test:coverage
 
       - name: Upload coverage results to Coveralls
         uses: coverallsapp/github-action@master
@@ -47,30 +45,101 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           path-to-lcov: ./test/coverage/lcov.info
 
-  integration:
-    name: Integration / OS ${{ matrix.os }} / Node ${{ matrix.node }} / Deno ${{ matrix.deno }}
+  deno-tests:
+    name: Deno Tests / ${{ matrix.deno }}
+    runs-on: ubuntu-latest
     strategy:
       matrix:
-        os: [ubuntu-latest]
-        node: ['20']
         deno: ['1.x', '2.x']
-
-    runs-on: ${{ matrix.os }}
-
     steps:
       - uses: actions/checkout@v4
-
-      - name: Set up Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ matrix.node }}
-
       - uses: denoland/setup-deno@v2
         with:
           deno-version: ${{ matrix.deno }}
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
 
-      - name: Setup Supabase
-        uses: supabase/setup-cli@v1
+      - name: Start Supabase
+        run: supabase start
+
+      - name: Run Deno Tests
+        run: |
+          npm clean-install
+          npm run build
+          cd test/deno
+          npm install
+          npm test || npm test
+
+      - name: Run integration and browser tests on Deno 2.x only
+        if: ${{ matrix.deno == '2.x' }}
+        run: |
+          npm run test:integration:browser
+
+      - name: Stop Supabase
+        run: supabase stop
+
+  node-integration:
+    name: Node Integration
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Start Supabase
+        run: supabase start
+
+      - name: Run integration tests
+        run: |
+          npm clean-install
+          npm run build
+          npm run test:integration || npm run test:integration
+
+      - name: Stop Supabase
+        run: supabase stop
+
+  next-integration:
+    name: Next.js Integration
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Start Supabase
+        run: supabase start
+
+      - name: Install Playwright browsers and dependencies
+        run: npx playwright install --with-deps
+
+      - name: Run integration tests
+        run: |
+          cd test/integration/next
+          npm install
+          npx playwright install
+          npm run test
+
+      - name: Stop Supabase
+        run: supabase stop
+
+  expo-tests:
+    name: Expo Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - uses: supabase/setup-cli@v1
         with:
           version: latest
 
@@ -78,22 +147,16 @@ jobs:
         run: |
           supabase start
 
-      - name: Build
+      - name: Build and test expo
         run: |
           npm clean-install
           npm run build
-
-      - name: Run tests
-        if: ${{ matrix.deno == '2.x' }}
-        run: |
-          npm run test:integration || npm run test:integration
-          # npm run test:integration:browser
-
-      - name: Run Deno tests
-        run: |
-          cd test/deno
+          PKG=$(npm pack)
+          echo "Packed: $PKG"
+          cd test/integration/expo
+          npm install "../../../$PKG"
+          npm install
           npm test || npm test
 
       - name: Stop Supabase
-        run: |
-          supabase stop
+        run: supabase stop
