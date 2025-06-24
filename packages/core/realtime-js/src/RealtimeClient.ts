@@ -51,8 +51,10 @@ export interface WebSocketLikeConstructor {
     address: string | URL,
     _ignored?: any,
     options?: { headers: Object | undefined }
-  ): WebSocket
+  ): WebSocketLike
 }
+
+export type WebSocketLike = WebSocket
 
 export interface WebSocketLikeError {
   error: any
@@ -107,7 +109,7 @@ export default class RealtimeClient {
   encode: Function
   decode: Function
   reconnectAfterMs: Function
-  conn: WebSocket | null = null
+  conn: WebSocketLike | null = null
   sendBuffer: Function[] = []
   serializer: Serializer = new Serializer()
   stateChangeCallbacks: {
@@ -213,7 +215,7 @@ export default class RealtimeClient {
 
     this.conn = new this.transport(this.endpointURL(), undefined, {
       headers: this.headers,
-    }) as WebSocket
+    }) as WebSocketLike
     this.setupConnection()
   }
 
