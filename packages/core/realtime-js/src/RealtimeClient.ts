@@ -1,4 +1,4 @@
-import WebSocket from './WebSocket'
+import { WebSocket } from 'isows'
 
 import {
   CHANNEL_EVENTS,
@@ -44,17 +44,15 @@ export type HeartbeatStatus =
   | 'timeout'
   | 'disconnected'
 
-const noop = () => {}
+const noop = () => { }
 
 export interface WebSocketLikeConstructor {
-  new (
+  new(
     address: string | URL,
     _ignored?: any,
     options?: { headers: Object | undefined }
-  ): WebSocketLike
+  ): WebSocket
 }
-
-export type WebSocketLike = WebSocket | WSWebSocketDummy
 
 export interface WebSocketLikeError {
   error: any
@@ -109,7 +107,7 @@ export default class RealtimeClient {
   encode: Function
   decode: Function
   reconnectAfterMs: Function
-  conn: WebSocketLike | null = null
+  conn: WebSocket | null = null
   sendBuffer: Function[] = []
   serializer: Serializer = new Serializer()
   stateChangeCallbacks: {
@@ -118,11 +116,11 @@ export default class RealtimeClient {
     error: Function[]
     message: Function[]
   } = {
-    open: [],
-    close: [],
-    error: [],
-    message: [],
-  }
+      open: [],
+      close: [],
+      error: [],
+      message: [],
+    }
   fetch: Fetch
   accessToken: (() => Promise<string | null>) | null = null
   worker?: boolean
@@ -176,13 +174,13 @@ export default class RealtimeClient {
     this.reconnectAfterMs = options?.reconnectAfterMs
       ? options.reconnectAfterMs
       : (tries: number) => {
-          return [1000, 2000, 5000, 10000][tries - 1] || 10000
-        }
+        return [1000, 2000, 5000, 10000][tries - 1] || 10000
+      }
     this.encode = options?.encode
       ? options.encode
       : (payload: JSON, callback: Function) => {
-          return callback(JSON.stringify(payload))
-        }
+        return callback(JSON.stringify(payload))
+      }
     this.decode = options?.decode
       ? options.decode
       : this.serializer.decode.bind(this.serializer)
@@ -212,25 +210,11 @@ export default class RealtimeClient {
     if (!this.transport) {
       this.transport = WebSocket
     }
-    if (this.transport) {
-      // Detect if using the native browser WebSocket
-      const isBrowser =
-        typeof window !== 'undefined' && this.transport === window.WebSocket
-      if (isBrowser) {
-        this.conn = new this.transport(this.endpointURL())
-      } else {
-        this.conn = new this.transport(this.endpointURL(), undefined, {
-          headers: this.headers,
-        })
-      }
-      this.setupConnection()
-      return
-    }
-    this.conn = new WSWebSocketDummy(this.endpointURL(), undefined, {
-      close: () => {
-        this.conn = null
-      },
-    })
+
+    this.conn = new this.transport(this.endpointURL(), undefined, {
+      headers: this.headers,
+    }) as WebSocket
+    this.setupConnection()
   }
 
   /**
@@ -252,7 +236,7 @@ export default class RealtimeClient {
    */
   disconnect(code?: number, reason?: string): void {
     if (this.conn) {
-      this.conn.onclose = function () {} // noop
+      this.conn.onclose = function () { } // noop
       if (code) {
         this.conn.close(code, reason ?? '')
       } else {
@@ -518,8 +502,7 @@ export default class RealtimeClient {
     if (this.conn) {
       this.conn.binaryType = 'arraybuffer'
       this.conn.onopen = () => this._onConnOpen()
-      this.conn.onerror = (error: WebSocketLikeError) =>
-        this._onConnError(error as WebSocketLikeError)
+      this.conn.onerror = (error: Event) => this._onConnError(error)
       this.conn.onmessage = (event: any) => this._onConnMessage(event)
       this.conn.onclose = (event: any) => this._onConnClose(event)
     }
@@ -540,8 +523,7 @@ export default class RealtimeClient {
 
       this.log(
         'receive',
-        `${payload.status || ''} ${topic} ${event} ${
-          (ref && '(' + ref + ')') || ''
+        `${payload.status || ''} ${topic} ${event} ${(ref && '(' + ref + ')') || ''
         }`,
         payload
       )
@@ -613,8 +595,8 @@ export default class RealtimeClient {
   }
 
   /** @internal */
-  private _onConnError(error: WebSocketLikeError) {
-    this.log('transport', error.message)
+  private _onConnError(error: Event) {
+    this.log('transport', `${error}`)
     this._triggerChanError()
     this.stateChangeCallbacks.error.forEach((callback) => callback(error))
   }
@@ -648,26 +630,5 @@ export default class RealtimeClient {
       result_url = URL.createObjectURL(blob)
     }
     return result_url
-  }
-}
-
-class WSWebSocketDummy {
-  binaryType: string = 'arraybuffer'
-  close: Function
-  onclose: Function = () => {}
-  onerror: Function = () => {}
-  onmessage: Function = () => {}
-  onopen: Function = () => {}
-  readyState: number = SOCKET_STATES.connecting
-  send: Function = () => {}
-  url: string | URL | null = null
-
-  constructor(
-    address: string,
-    _protocols: undefined,
-    options: { close: Function }
-  ) {
-    this.url = address
-    this.close = options.close
   }
 }

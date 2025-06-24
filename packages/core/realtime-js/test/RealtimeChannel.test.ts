@@ -206,7 +206,7 @@ describe('subscribe', () => {
     sinon.stub(socket, '_makeRef').callsFake(() => defaultRef)
     const spy = sinon.spy(socket, 'push')
     const cbSpy = sinon.spy()
-    const func = () => {}
+    const func = () => { }
 
     channel.bindings.postgres_changes = [
       {
@@ -308,7 +308,7 @@ describe('subscribe', () => {
   test('unsubscribes to channel with incorrect server postgres_changes resp', () => {
     const unsubscribeSpy = sinon.spy(channel, 'unsubscribe')
     const callbackSpy = sinon.spy()
-    const dummyCallback = () => {}
+    const dummyCallback = () => { }
 
     channel.bindings.postgres_changes = [
       {
@@ -359,7 +359,7 @@ describe('subscribe', () => {
 
     assert.equal(joinPush.timeout, defaultTimeout)
 
-    channel.subscribe(() => {}, newTimeout)
+    channel.subscribe(() => { }, newTimeout)
 
     assert.equal(joinPush.timeout, newTimeout)
   })
@@ -502,7 +502,7 @@ describe('joinPush', () => {
     })
 
     test("sends and empties channel's buffered pushEvents", () => {
-      const pushEvent: any = { send() {} }
+      const pushEvent: any = { send() { } }
       const spy = sinon.spy(pushEvent, 'send')
       channel.pushBuffer.push(pushEvent)
       helpers.receiveOk()
@@ -656,7 +656,7 @@ describe('joinPush', () => {
 
     test("does not trigger channel's buffered pushEvents", () => {
       // @ts-ignore - we're only testing the pushBuffer
-      const pushEvent: Push = { send: () => {} }
+      const pushEvent: Push = { send: () => { } }
       const spy = sinon.spy(pushEvent, 'send')
 
       channel.pushBuffer.push(pushEvent)
@@ -1404,5 +1404,63 @@ describe('trigger', () => {
       params: { apikey: '123' },
     })
     assert.equal(client.accessTokenValue, '123')
+  })
+})
+
+describe('unsubscribe', () => {
+  let destroySpy: sinon.SinonSpy
+
+  beforeEach(() => {
+    channel = socket.channel('topic')
+    channel.subscribe()
+    destroySpy = sinon.spy(Push.prototype, 'destroy')
+  })
+
+  afterEach(() => {
+    destroySpy.restore()
+  })
+
+  test('cleans up leavePush on successful unsubscribe', async () => {
+    await channel.unsubscribe()
+    
+    assert.ok(destroySpy.calledTwice) // Once for joinPush, once for leavePush
+    assert.equal(channel.state, CHANNEL_STATES.closed)
+  })
+
+  test('cleans up leavePush on timeout', async () => {
+    sinon.stub(socket, 'push').callsFake(() => {
+      // Simulate timeout by not responding
+      clock.tick(defaultTimeout + 1)
+    })
+    
+    const result = await channel.unsubscribe()
+    
+    assert.ok(destroySpy.calledTwice) // Once for joinPush, once for leavePush
+    assert.equal(result, 'timed out')
+    assert.equal(channel.state, CHANNEL_STATES.closed)
+  })
+
+  // TODO: Fix this test
+  // test('cleans up leavePush on error', async () => {
+  //   sinon.stub(socket, 'push').callsFake(() => {
+  //     // Simulate error by triggering error response
+  //     const leavePush = channel['joinPush']
+  //     leavePush.trigger('error', {})
+  //   })
+    
+  //   const result = await channel.unsubscribe()
+    
+  //   assert.ok(destroySpy.calledTwice) // Once for joinPush, once for leavePush
+  //   assert.equal(result, 'error')
+  //   assert.equal(channel.state, CHANNEL_STATES.closed)
+  // })
+
+  test('cleans up leavePush even if socket is not connected', async () => {
+    sinon.stub(socket, 'isConnected').returns(false)
+    
+    await channel.unsubscribe()
+    
+    assert.ok(destroySpy.calledTwice) // Once for joinPush, once for leavePush
+    assert.equal(channel.state, CHANNEL_STATES.closed)
   })
 })

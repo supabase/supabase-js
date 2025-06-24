@@ -10,7 +10,7 @@ import {
   vi,
 } from 'vitest'
 import { Server, WebSocket as MockWebSocket } from 'mock-socket'
-import WebSocket from 'ws'
+import { WebSocket } from 'isows'
 import sinon from 'sinon'
 import crypto from 'crypto'
 import RealtimeClient, { HeartbeatStatus } from '../src/RealtimeClient'
@@ -71,8 +71,8 @@ describe('constructor', () => {
   })
 
   test('overrides some defaults with options', () => {
-    const customLogger = function logger() {}
-    const customReconnect = function reconnect() {}
+    const customLogger = function logger() { }
+    const customReconnect = function reconnect() { }
 
     socket = new RealtimeClient(`wss://${projectRef}/socket`, {
       timeout: 40000,
@@ -667,7 +667,7 @@ describe('flushSendBuffer', () => {
 
   test('empties sendBuffer', () => {
     vi.spyOn(socket.conn!, 'readyState', 'get').mockReturnValue(1) // open
-    socket.sendBuffer.push(() => {})
+    socket.sendBuffer.push(() => { })
 
     socket.flushSendBuffer()
 

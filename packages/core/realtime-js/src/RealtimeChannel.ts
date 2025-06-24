@@ -414,7 +414,7 @@ export default class RealtimeChannel {
   ): RealtimeChannel
   on(
     type: `${REALTIME_LISTEN_TYPES}`,
-    filter: { event: string; [key: string]: string },
+    filter: { event: string;[key: string]: string },
     callback: (payload: any) => void
   ): RealtimeChannel {
     return this._on(type, filter, callback)
@@ -514,8 +514,10 @@ export default class RealtimeChannel {
 
     this.joinPush.destroy()
 
-    return new Promise((resolve) => {
-      const leavePush = new Push(this, CHANNEL_EVENTS.leave, {}, timeout)
+    let leavePush: Push | null = null
+
+    return new Promise<RealtimeChannelSendResponse>((resolve) => {
+      leavePush = new Push(this, CHANNEL_EVENTS.leave, {}, timeout)
       leavePush
         .receive('ok', () => {
           onClose()
@@ -534,6 +536,9 @@ export default class RealtimeChannel {
         leavePush.trigger('ok', {})
       }
     })
+      .finally(() => {
+        leavePush?.destroy()
+      })
   }
   /**
    * Teardown the channel.
@@ -644,7 +649,7 @@ export default class RealtimeChannel {
                 payload.ids?.includes(bindId) &&
                 (bindEvent === '*' ||
                   bindEvent?.toLocaleLowerCase() ===
-                    payload.data?.type.toLocaleLowerCase())
+                  payload.data?.type.toLocaleLowerCase())
               )
             } else {
               const bindEvent = bind?.filter?.event?.toLocaleLowerCase()
