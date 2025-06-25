@@ -15,7 +15,7 @@ import sinon from 'sinon'
 import crypto from 'crypto'
 import RealtimeClient, { HeartbeatStatus } from '../src/RealtimeClient'
 import jwt from 'jsonwebtoken'
-import { CHANNEL_STATES } from '../src/lib/constants'
+import { CHANNEL_STATES, DEFAULT_VERSION } from '../src/lib/constants'
 import path from 'path'
 
 function generateJWT(exp: string): string {
@@ -31,17 +31,12 @@ let randomProjectRef = () => crypto.randomUUID()
 let mockServer: Server
 let projectRef: string
 let url: string
-const version = crypto.randomUUID()
+
 beforeEach(() => {
   projectRef = randomProjectRef()
   url = `wss://${projectRef}/socket`
   mockServer = new Server(url)
-  socket = new RealtimeClient(url, {
-    transport: MockWebSocket,
-    headers: {
-      'X-Client-Info': version,
-    },
-  })
+  socket = new RealtimeClient(url, { transport: MockWebSocket })
 })
 
 afterEach(() => {
@@ -71,8 +66,8 @@ describe('constructor', () => {
   })
 
   test('overrides some defaults with options', () => {
-    const customLogger = function logger() { }
-    const customReconnect = function reconnect() { }
+    const customLogger = function logger() {}
+    const customReconnect = function reconnect() {}
 
     socket = new RealtimeClient(`wss://${projectRef}/socket`, {
       timeout: 40000,
@@ -456,9 +451,15 @@ describe('setAuth', () => {
     assert.ok(!pushStub2.calledWith('access_token', { access_token: token }))
     assert.ok(pushStub3.calledWith('access_token', { access_token: token }))
 
-    assert.ok(payloadStub1.calledWith({ access_token: token, version }))
-    assert.ok(payloadStub2.calledWith({ access_token: token, version }))
-    assert.ok(payloadStub3.calledWith({ access_token: token, version }))
+    assert.ok(
+      payloadStub1.calledWith({ access_token: token, version: DEFAULT_VERSION })
+    )
+    assert.ok(
+      payloadStub2.calledWith({ access_token: token, version: DEFAULT_VERSION })
+    )
+    assert.ok(
+      payloadStub3.calledWith({ access_token: token, version: DEFAULT_VERSION })
+    )
   })
 
   test("does not send message if token hasn't changed", async () => {
@@ -477,7 +478,12 @@ describe('setAuth', () => {
     await socket.setAuth(token)
 
     assert.strictEqual(socket.accessTokenValue, token)
-    assert.ok(payloadStub1.calledOnceWith({ access_token: token, version }))
+    assert.ok(
+      payloadStub1.calledOnceWith({
+        access_token: token,
+        version: DEFAULT_VERSION,
+      })
+    )
   })
 
   test("sets access token, updates channels' join payload, and pushes token to channels if is not a jwt", async () => {
@@ -510,16 +516,30 @@ describe('setAuth', () => {
       !pushStub2.calledWith('access_token', { access_token: new_token })
     )
     assert.ok(pushStub3.calledWith('access_token', { access_token: new_token }))
-    assert.ok(payloadStub1.calledWith({ access_token: new_token, version }))
-    assert.ok(payloadStub2.calledWith({ access_token: new_token, version }))
-    assert.ok(payloadStub3.calledWith({ access_token: new_token, version }))
+    assert.ok(
+      payloadStub1.calledWith({
+        access_token: new_token,
+        version: DEFAULT_VERSION,
+      })
+    )
+    assert.ok(
+      payloadStub2.calledWith({
+        access_token: new_token,
+        version: DEFAULT_VERSION,
+      })
+    )
+    assert.ok(
+      payloadStub3.calledWith({
+        access_token: new_token,
+        version: DEFAULT_VERSION,
+      })
+    )
   })
 
   test("sets access token using callback, updates channels' join payload, and pushes token to channels", async () => {
     let new_token = generateJWT('1h')
     let new_socket = new RealtimeClient(url, {
       transport: MockWebSocket,
-      headers: { 'X-Client-Info': version },
       accessToken: () => Promise.resolve(token),
     })
 
@@ -551,9 +571,24 @@ describe('setAuth', () => {
       !pushStub2.calledWith('access_token', { access_token: new_token })
     )
     assert.ok(pushStub3.calledWith('access_token', { access_token: new_token }))
-    assert.ok(payloadStub1.calledWith({ access_token: new_token, version }))
-    assert.ok(payloadStub2.calledWith({ access_token: new_token, version }))
-    assert.ok(payloadStub3.calledWith({ access_token: new_token, version }))
+    assert.ok(
+      payloadStub1.calledWith({
+        access_token: new_token,
+        version: DEFAULT_VERSION,
+      })
+    )
+    assert.ok(
+      payloadStub2.calledWith({
+        access_token: new_token,
+        version: DEFAULT_VERSION,
+      })
+    )
+    assert.ok(
+      payloadStub3.calledWith({
+        access_token: new_token,
+        version: DEFAULT_VERSION,
+      })
+    )
   })
 
   test("overrides access token, updates channels' join payload, and pushes token to channels", () => {
@@ -585,9 +620,24 @@ describe('setAuth', () => {
       !pushStub2.calledWith('access_token', { access_token: new_token })
     )
     assert.ok(pushStub3.calledWith('access_token', { access_token: new_token }))
-    assert.ok(payloadStub1.calledWith({ access_token: new_token, version }))
-    assert.ok(payloadStub2.calledWith({ access_token: new_token, version }))
-    assert.ok(payloadStub3.calledWith({ access_token: new_token, version }))
+    assert.ok(
+      payloadStub1.calledWith({
+        access_token: new_token,
+        version: DEFAULT_VERSION,
+      })
+    )
+    assert.ok(
+      payloadStub2.calledWith({
+        access_token: new_token,
+        version: DEFAULT_VERSION,
+      })
+    )
+    assert.ok(
+      payloadStub3.calledWith({
+        access_token: new_token,
+        version: DEFAULT_VERSION,
+      })
+    )
   })
 })
 
@@ -667,7 +717,7 @@ describe('flushSendBuffer', () => {
 
   test('empties sendBuffer', () => {
     vi.spyOn(socket.conn!, 'readyState', 'get').mockReturnValue(1) // open
-    socket.sendBuffer.push(() => { })
+    socket.sendBuffer.push(() => {})
 
     socket.flushSendBuffer()
 

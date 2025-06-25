@@ -1,7 +1,6 @@
 import { version } from './version'
 
-export const DEFAULT_HEADERS = { 'X-Client-Info': `realtime-js/${version}` }
-
+export const DEFAULT_VERSION = `realtime-js/${version}`
 export const VSN: string = '1.0.0'
 
 export const VERSION = version

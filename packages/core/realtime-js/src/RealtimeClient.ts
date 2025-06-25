@@ -3,7 +3,7 @@ import { WebSocket } from 'isows'
 import {
   CHANNEL_EVENTS,
   CONNECTION_STATE,
-  DEFAULT_HEADERS,
+  DEFAULT_VERSION,
   DEFAULT_TIMEOUT,
   SOCKET_STATES,
   TRANSPORTS,
@@ -44,13 +44,12 @@ export type HeartbeatStatus =
   | 'timeout'
   | 'disconnected'
 
-const noop = () => { }
+const noop = () => {}
 
 export interface WebSocketLikeConstructor {
-  new(
+  new (
     address: string | URL,
-    _ignored?: any,
-    options?: { headers: Object | undefined }
+    subprotocols?: string | string[] | undefined
   ): WebSocketLike
 }
 
@@ -94,7 +93,8 @@ export default class RealtimeClient {
   channels: RealtimeChannel[] = new Array()
   endPoint: string = ''
   httpEndpoint: string = ''
-  headers?: { [key: string]: string } = DEFAULT_HEADERS
+  /** @deprecated headers cannot be set on websocket connections */
+  headers?: { [key: string]: string } = {}
   params?: { [key: string]: string } = {}
   timeout: number = DEFAULT_TIMEOUT
   transport: WebSocketLikeConstructor | null
@@ -118,11 +118,11 @@ export default class RealtimeClient {
     error: Function[]
     message: Function[]
   } = {
-      open: [],
-      close: [],
-      error: [],
-      message: [],
-    }
+    open: [],
+    close: [],
+    error: [],
+    message: [],
+  }
   fetch: Fetch
   accessToken: (() => Promise<string | null>) | null = null
   worker?: boolean
@@ -137,7 +137,7 @@ export default class RealtimeClient {
    * @param options.transport The Websocket Transport, for example WebSocket. This can be a custom implementation
    * @param options.timeout The default timeout in milliseconds to trigger push timeouts.
    * @param options.params The optional params to pass when connecting.
-   * @param options.headers The optional headers to pass when connecting.
+   * @param options.headers Deprecated: headers cannot be set on websocket connections and this option will be removed in the future.
    * @param options.heartbeatIntervalMs The millisec interval to send a heartbeat message.
    * @param options.logger The optional function for specialized logging, ie: logger: (kind, msg, data) => { console.log(`${kind}: ${msg}`, data) }
    * @param options.logLevel Sets the log level for Realtime
@@ -156,7 +156,6 @@ export default class RealtimeClient {
       this.transport = null
     }
     if (options?.params) this.params = options.params
-    if (options?.headers) this.headers = { ...this.headers, ...options.headers }
     if (options?.timeout) this.timeout = options.timeout
     if (options?.logger) this.logger = options.logger
     if (options?.logLevel || options?.log_level) {
@@ -176,13 +175,13 @@ export default class RealtimeClient {
     this.reconnectAfterMs = options?.reconnectAfterMs
       ? options.reconnectAfterMs
       : (tries: number) => {
-        return [1000, 2000, 5000, 10000][tries - 1] || 10000
-      }
+          return [1000, 2000, 5000, 10000][tries - 1] || 10000
+        }
     this.encode = options?.encode
       ? options.encode
       : (payload: JSON, callback: Function) => {
-        return callback(JSON.stringify(payload))
-      }
+          return callback(JSON.stringify(payload))
+        }
     this.decode = options?.decode
       ? options.decode
       : this.serializer.decode.bind(this.serializer)
@@ -212,10 +211,10 @@ export default class RealtimeClient {
     if (!this.transport) {
       this.transport = WebSocket
     }
-
-    this.conn = new this.transport(this.endpointURL(), undefined, {
-      headers: this.headers,
-    }) as WebSocketLike
+    if (!this.transport) {
+      throw new Error('No transport provided')
+    }
+    this.conn = new this.transport(this.endpointURL()) as WebSocketLike
     this.setupConnection()
   }
 
@@ -238,7 +237,7 @@ export default class RealtimeClient {
    */
   disconnect(code?: number, reason?: string): void {
     if (this.conn) {
-      this.conn.onclose = function () { } // noop
+      this.conn.onclose = function () {} // noop
       if (code) {
         this.conn.close(code, reason ?? '')
       } else {
@@ -377,11 +376,12 @@ export default class RealtimeClient {
     if (this.accessTokenValue != tokenToSend) {
       this.accessTokenValue = tokenToSend
       this.channels.forEach((channel) => {
-        tokenToSend &&
-          channel.updateJoinPayload({
-            access_token: tokenToSend,
-            version: this.headers && this.headers['X-Client-Info'],
-          })
+        const payload = {
+          access_token: tokenToSend,
+          version: DEFAULT_VERSION,
+        }
+
+        tokenToSend && channel.updateJoinPayload(payload)
 
         if (channel.joinedOnce && channel._isJoined()) {
           channel._push(CHANNEL_EVENTS.access_token, {
@@ -525,7 +525,8 @@ export default class RealtimeClient {
 
       this.log(
         'receive',
-        `${payload.status || ''} ${topic} ${event} ${(ref && '(' + ref + ')') || ''
+        `${payload.status || ''} ${topic} ${event} ${
+          (ref && '(' + ref + ')') || ''
         }`,
         payload
       )
