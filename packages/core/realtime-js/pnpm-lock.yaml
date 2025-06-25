@@ -14,9 +14,15 @@ importers:
       '@types/phoenix':
         specifier: ^1.6.6
         version: 1.6.6
+      '@types/ws':
+        specifier: ^8.18.1
+        version: 8.18.1
       isows:
         specifier: ^1.0.7
         version: 1.0.7(ws@8.18.2)
+      ws:
+        specifier: ^8.18.2
+        version: 8.18.2
     devDependencies:
       '@arethetypeswrong/cli':
         specifier: ^0.16.4
@@ -554,6 +560,9 @@ packages:
 
   '@types/unist@3.0.3':
     resolution: {integrity: sha512-ko/gIFJRv177XgZsZcBwnqJN5x/Gien8qNOn0D5bQU/zAzVf9Zt3BlcUiLqhV9y4ARk0GbT3tnUiPNgnTXzc/Q==}
+
+  '@types/ws@8.18.1':
+    resolution: {integrity: sha512-ThVF6DCVhA8kUGy+aazFQ4kXQ7E1Ty7A3ypFOe0IcJV8O/M511G99AW24irKrW56Wt44yG9+ij8FaqoBGkuBXg==}
 
   '@vitest/coverage-v8@3.1.4':
     resolution: {integrity: sha512-G4p6OtioySL+hPV7Y6JHlhpsODbJzt1ndwHAFkyk6vVjpK03PFsKnauZIzcd0PrK4zAbc5lc+jeZ+eNGiMA+iw==}
@@ -2858,7 +2867,6 @@ snapshots:
   '@types/node@22.15.21':
     dependencies:
       undici-types: 6.21.0
-    optional: true
 
   '@types/phoenix@1.6.6': {}
 
@@ -2869,6 +2877,10 @@ snapshots:
   '@types/sinonjs__fake-timers@8.1.5': {}
 
   '@types/unist@3.0.3': {}
+
+  '@types/ws@8.18.1':
+    dependencies:
+      '@types/node': 22.15.21
 
   '@vitest/coverage-v8@3.1.4(vitest@3.1.4(@types/node@22.15.21)(jsdom@16.7.0))':
     dependencies:
@@ -4735,8 +4747,7 @@ snapshots:
       has-symbols: 1.1.0
       which-boxed-primitive: 1.1.1
 
-  undici-types@6.21.0:
-    optional: true
+  undici-types@6.21.0: {}
 
   unicode-emoji-modifier-base@1.0.0: {}
 

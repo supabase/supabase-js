@@ -40,7 +40,9 @@
   "dependencies": {
     "@supabase/node-fetch": "^2.6.13",
     "@types/phoenix": "^1.6.6",
-    "isows": "^1.0.7"
+    "isows": "^1.0.7",
+    "@types/ws": "^8.18.1",
+    "ws": "^8.18.2"
   },
   "devDependencies": {
     "@arethetypeswrong/cli": "^0.16.4",
