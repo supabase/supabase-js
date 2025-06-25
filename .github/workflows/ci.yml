@@ -218,14 +218,17 @@ jobs:
       - name: Start Supabase
         run: supabase start
 
-      - name: Build and test expo
+      - name: Install dependencies and build
         run: |
           npm ci
           npm run build
+
+      - name: Build and test expo
+        run: |
           PKG=$(npm pack)
           echo "Packed: $PKG"
           cd test/integration/expo
-          npm ci
+          npm install
           npm install "../../../$PKG"
           npm test || npm test
 
