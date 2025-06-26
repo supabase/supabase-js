@@ -17,21 +17,32 @@ on:
       - '**/*.md'
       - '.prettierrc'
       - '**/*ignore'
+  workflow_call:
+
+env:
+  NODE_VERSION: '20'
 
 jobs:
   test:
-    name: Unit + Type Check / Node.js ${{ matrix.node }}
-    runs-on: ubuntu-latest
+    name: Unit + Type Check / Node.js ${{ matrix.node }} / OS ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         node: [20]
+        os: [ubuntu-latest, macos-latest, windows-latest]
+      fail-fast: false
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node }}
+          cache: 'npm'
 
-      - run: npm clean-install
+      - name: Install dependencies
+        run: npm ci
 
       - name: Type Check
         run: npm run test:types
@@ -40,7 +51,7 @@ jobs:
         run: npm run test:coverage
 
       - name: Upload coverage results to Coveralls
-        uses: coverallsapp/github-action@master
+        uses: coverallsapp/github-action@v2
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           path-to-lcov: ./test/coverage/lcov.info
@@ -51,24 +62,39 @@ jobs:
     strategy:
       matrix:
         deno: ['1.x', '2.x']
+      fail-fast: false
     steps:
-      - uses: actions/checkout@v4
-      - uses: denoland/setup-deno@v2
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Deno
+        uses: denoland/setup-deno@v2
         with:
           deno-version: ${{ matrix.deno }}
-      - uses: supabase/setup-cli@v1
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
         with:
           version: latest
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
 
       - name: Start Supabase
         run: supabase start
 
+      - name: Install dependencies and build
+        run: |
+          npm ci
+          npm run build
+
       - name: Run Deno Tests
         run: |
-          npm clean-install
-          npm run build
           cd test/deno
-          npm install
+          npm ci
           npm test || npm test
 
       # - name: Run integration and browser tests on Deno 2.x only
@@ -77,41 +103,57 @@ jobs:
       #     npm run test:integration:browser
 
       - name: Stop Supabase
+        if: always()
         run: supabase stop
 
   node-integration:
     name: Node Integration
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          node-version: 20
-      - uses: supabase/setup-cli@v1
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
         with:
           version: latest
 
       - name: Start Supabase
         run: supabase start
 
-      - name: Run integration tests
+      - name: Install dependencies and build
         run: |
-          npm clean-install
+          npm ci
           npm run build
-          npm run test:integration || npm run test:integration
+
+      - name: Run integration tests
+        run: npm run test:integration || npm run test:integration
 
       - name: Stop Supabase
+        if: always()
         run: supabase stop
 
   next-integration:
     name: Next.js Integration
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          node-version: 20
-      - uses: supabase/setup-cli@v1
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
         with:
           version: latest
 
@@ -124,39 +166,49 @@ jobs:
       - name: Run integration tests
         run: |
           cd test/integration/next
-          npm install
+          npm ci
           npx playwright install
           npm run test
 
       - name: Stop Supabase
+        if: always()
         run: supabase stop
 
   expo-tests:
     name: Expo Tests
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          node-version: 20
-      - uses: supabase/setup-cli@v1
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
         with:
           version: latest
 
       - name: Start Supabase
+        run: supabase start
+
+      - name: Install dependencies and build
         run: |
-          supabase start
+          npm ci
+          npm run build
 
       - name: Build and test expo
         run: |
-          npm clean-install
-          npm run build
           PKG=$(npm pack)
           echo "Packed: $PKG"
           cd test/integration/expo
-          npm install "../../../$PKG"
           npm install
+          npm install "../../../$PKG"
           npm test || npm test
 
       - name: Stop Supabase
+        if: always()
         run: supabase stop

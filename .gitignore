@@ -105,3 +105,5 @@ dist
 .tern-port
 
 docs/v2
+
+.cursor/
