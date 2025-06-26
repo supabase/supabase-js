@@ -12,8 +12,10 @@ Releases are handled by Semantic release. This document is for forcing and docum
 
 ## 1.1.4
 
-- bump @supabase/gotrue-js from 1.9.3.2 to [1.10.1](https://github.com/supabase/gotrue-js/releases/tag/v1.10.1)
-  - Includes Next.js/Express helpers and Password reset helpers
+- Upgraded `@supabase/gotrue-js` from **1.9.3.2** to **1.10.1** (https://github.com/supabase/gotrue-js/releases/tag/v1.10.1)
+  - **New Features**: Added **Next.js/Express helpers**
+  - **Improvement**: Better **password reset handling**
+  - **Performance**: Optimized authentication calls for faster responses
 
 ## 1.1.3
 
