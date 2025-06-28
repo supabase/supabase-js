@@ -97,10 +97,10 @@ jobs:
           npm ci
           npm test || npm test
 
-      # - name: Run integration and browser tests on Deno 2.x only
-      #   if: ${{ matrix.deno == '2.x' }}
-      #   run: |
-      #     npm run test:integration:browser
+      - name: Run integration and browser tests on Deno 2.x only
+        if: ${{ matrix.deno == '2.x' }}
+        run: |
+          npm run test:integration:browser
 
       - name: Stop Supabase
         if: always()
