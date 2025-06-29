@@ -1,0 +1,13 @@
+{
+  "name": "websocket-playwright-tests",
+  "version": "1.0.0",
+  "description": "WebSocket browser tests using Playwright",
+  "scripts": {
+    "test": "playwright test",
+    "serve:node-browser": "serve . -p 8004"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.40.0",
+    "serve": "^14.2.1"
+  }
+}

@@ -36,6 +36,7 @@
     "test:integration": "jest --runInBand --detectOpenHandles test/integration.test.ts",
     "test:integration:browser": "deno test --allow-all test/integration.browser.test.ts",
     "test:watch": "jest --watch --verbose false --silent false",
+    "test:node:playwright": "cd test/integration/node-browser && npm install && cp ../../../dist/umd/supabase.js . && npm run test",
     "test:types": "run-s build:module && tsd --files test/types/*.test-d.ts",
     "docs": "typedoc --entryPoints src/index.ts --out docs/v2 --includes src/**/*.ts",
     "docs:json": "typedoc --entryPoints src/index.ts --includes src/**/*.ts --json docs/v2/spec.json --excludeExternals",

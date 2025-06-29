@@ -23,6 +23,43 @@ env:
   NODE_VERSION: '20'
 
 jobs:
+  build-package:
+    name: Build supabase-js package
+    runs-on: ubuntu-latest
+    outputs:
+      tgz-name: ${{ steps.pack.outputs.filename }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Install dependencies and build
+        run: |
+          npm ci
+          npm run build
+          npm run build:umd
+
+      - name: Pack npm module
+        id: pack
+        run: |
+          PKG=$(npm pack)
+          echo "filename=$PKG" >> "$GITHUB_OUTPUT"
+
+      - name: Upload .tgz package
+        uses: actions/upload-artifact@v4
+        with:
+          name: supabase-tgz
+          path: ${{ steps.pack.outputs.filename }}
+
+      - name: Upload UMD build
+        uses: actions/upload-artifact@v4
+        with:
+          name: supabase-umd
+          path: dist/umd/supabase.js
+
   test:
     name: Unit + Type Check / Node.js ${{ matrix.node }} / OS ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
@@ -97,10 +134,9 @@ jobs:
           npm ci
           npm test || npm test
 
-      # - name: Run integration and browser tests on Deno 2.x only
-      #   if: ${{ matrix.deno == '2.x' }}
-      #   run: |
-      #     npm run test:integration:browser
+      - name: Run integration and browser tests on Deno 2.x only
+        if: ${{ matrix.deno == '2.x' }}
+        run: npm run test:integration:browser
 
       - name: Stop Supabase
         if: always()
@@ -109,6 +145,7 @@ jobs:
   node-integration:
     name: Node Integration
     runs-on: ubuntu-latest
+    needs: build-package
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -142,6 +179,7 @@ jobs:
   next-integration:
     name: Next.js Integration
     runs-on: ubuntu-latest
+    needs: build-package
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -177,6 +215,7 @@ jobs:
   expo-tests:
     name: Expo Tests
     runs-on: ubuntu-latest
+    needs: build-package
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -192,22 +231,62 @@ jobs:
         with:
           version: latest
 
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: supabase-tgz
+          path: ./supabase-pkg
+
       - name: Start Supabase
         run: supabase start
 
-      - name: Install dependencies and build
+      - name: Install dependencies and run tests
         run: |
-          npm ci
-          npm run build
-
-      - name: Build and test expo
-        run: |
-          PKG=$(npm pack)
-          echo "Packed: $PKG"
           cd test/integration/expo
+          cp ../../../supabase-pkg/supabase-supabase-js-0.0.0-automated.tgz .
           npm install
-          npm install "../../../$PKG"
           npm test || npm test
+
+      - name: Stop Supabase
+        if: always()
+        run: supabase stop
+
+  websocket-browser-tests:
+    name: WebSocket Browser Tests
+    runs-on: ubuntu-latest
+    needs: build-package
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: supabase-umd
+          path: ./dist/umd
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Install Playwright browsers and dependencies
+        run: npx playwright install --with-deps
+
+      - name: Start Supabase
+        run: supabase start
+
+      - name: Run WebSocket tests
+        run: |
+          cd test/integration/node-browser
+          npm install
+          cp ../../../dist/umd/supabase.js .
+          npm run test
 
       - name: Stop Supabase
         if: always()
