@@ -81,8 +81,15 @@ export default class SupabaseClient<
     this.realtimeUrl = new URL('realtime/v1', baseUrl)
     this.realtimeUrl.protocol = this.realtimeUrl.protocol.replace('http', 'ws')
     this.authUrl = new URL('auth/v1', baseUrl)
-    this.storageUrl = new URL('storage/v1', baseUrl)
     this.functionsUrl = new URL('functions/v1', baseUrl)
+
+    const isPlatform = /supabase\.(co|in|red)$/.test(baseUrl.hostname)
+    if (isPlatform) {
+      this.storageUrl = new URL('v1', baseUrl)
+      this.storageUrl.hostname = baseUrl.hostname.replace('supabase.', 'storage.supabase.')
+    } else {
+      this.storageUrl = new URL('storage/v1', baseUrl)
+    }
 
     // default storage key uses the supabase project ref as a namespace
     const defaultStorageKey = `sb-${baseUrl.hostname.split('.')[0]}-auth-token`

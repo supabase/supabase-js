@@ -68,6 +68,21 @@ describe('SupabaseClient', () => {
       // @ts-ignore
       expect(client.realtimeUrl.toString()).toEqual('wss://localhost:3000/realtime/v1')
     })
+
+    test('should use storage zone for platform hosts', () => {
+      const client = createClient('https://blah.supabase.co', KEY)
+
+      // @ts-ignore
+      expect(client.authUrl.toString()).toEqual('https://blah.supabase.co/auth/v1')
+      // @ts-ignore
+      expect(client.realtimeUrl.toString()).toEqual('wss://blah.supabase.co/realtime/v1')
+      // @ts-ignore
+      expect(client.storageUrl.toString()).toEqual('https://blah.storage.supabase.co/v1')
+      // @ts-ignore
+      expect(client.functionsUrl.toString()).toEqual('https://blah.supabase.co/functions/v1')
+      // @ts-ignore
+      expect(client.rest.url).toEqual('https://blah.supabase.co/rest/v1')
+    })
   })
 
   describe('Custom Headers', () => {
