@@ -166,13 +166,17 @@ describe('params reached to function', () => {
     })
 
     log('assert no error')
-    const expected = {
-      url: 'http://localhost:8000/mirror',
-      method: 'POST',
-      headers: data?.headers ?? [],
-      body: '',
-    }
-    expect(data).toEqual(expected)
+    expect(error).toBeNull()
+
+    // Check that x-region header is present
+    expect(
+      (data?.headers as [Array<string>]).filter(([k, v]) => k === 'x-region' && v === validRegion)
+        .length > 0
+    ).toBe(true)
+
+    // Check that the URL contains the forceFunctionRegion query parameter
+    expect(data?.url).toContain(`forceFunctionRegion=${validRegion}`)
+
     attach(
       'check headers from function',
       `expected to include: ${['custom-header', customHeader]}\n actual: ${JSON.stringify(
@@ -180,11 +184,6 @@ describe('params reached to function', () => {
       )}`,
       ContentType.TEXT
     )
-    console.log(data?.headers)
-    expect(
-      (data?.headers as [Array<string>]).filter(([k, v]) => k === 'x-region' && v === validRegion)
-        .length > 0
-    ).toBe(true)
   })
 
   test('invoke with region overrides region in the client', async () => {
@@ -210,7 +209,7 @@ describe('params reached to function', () => {
 
     log('assert no error')
     const expected = {
-      url: 'http://localhost:8000/mirror',
+      url: `http://localhost:8000/mirror?forceFunctionRegion=${FunctionRegion.ApSoutheast1}`,
       method: 'POST',
       headers: data?.headers ?? [],
       body: '',
