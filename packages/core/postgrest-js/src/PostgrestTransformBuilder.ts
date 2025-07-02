@@ -1,14 +1,16 @@
 import PostgrestBuilder from './PostgrestBuilder'
 import { GetResult } from './select-query-parser/result'
-import { GenericSchema, CheckMatchingArrayTypes } from './types'
+import { GenericSchema, CheckMatchingArrayTypes, ClientServerOptions } from './types'
 
 export default class PostgrestTransformBuilder<
+  ClientOptions extends ClientServerOptions,
   Schema extends GenericSchema,
   Row extends Record<string, unknown>,
   Result,
   RelationName = unknown,
-  Relationships = unknown
-> extends PostgrestBuilder<Result> {
+  Relationships = unknown,
+  Method = unknown
+> extends PostgrestBuilder<ClientOptions, Result> {
   /**
    * Perform a SELECT on the query result.
    *
@@ -20,10 +22,18 @@ export default class PostgrestTransformBuilder<
    */
   select<
     Query extends string = '*',
-    NewResultOne = GetResult<Schema, Row, RelationName, Relationships, Query>
+    NewResultOne = GetResult<Schema, Row, RelationName, Relationships, Query, ClientOptions>
   >(
     columns?: Query
-  ): PostgrestTransformBuilder<Schema, Row, NewResultOne[], RelationName, Relationships> {
+  ): PostgrestTransformBuilder<
+    ClientOptions,
+    Schema,
+    Row,
+    NewResultOne[],
+    RelationName,
+    Relationships,
+    Method
+  > {
     // Remove whitespaces except when quoted
     let quoted = false
     const cleanedColumns = (columns ?? '*')
@@ -44,11 +54,13 @@ export default class PostgrestTransformBuilder<
     }
     this.headers['Prefer'] += 'return=representation'
     return this as unknown as PostgrestTransformBuilder<
+      ClientOptions,
       Schema,
       Row,
       NewResultOne[],
       RelationName,
-      Relationships
+      Relationships,
+      Method
     >
   }
 
@@ -188,11 +200,12 @@ export default class PostgrestTransformBuilder<
    * Query result must be one row (e.g. using `.limit(1)`), otherwise this
    * returns an error.
    */
-  single<
-    ResultOne = Result extends (infer ResultOne)[] ? ResultOne : never
-  >(): PostgrestBuilder<ResultOne> {
+  single<ResultOne = Result extends (infer ResultOne)[] ? ResultOne : never>(): PostgrestBuilder<
+    ClientOptions,
+    ResultOne
+  > {
     this.headers['Accept'] = 'application/vnd.pgrst.object+json'
-    return this as unknown as PostgrestBuilder<ResultOne>
+    return this as unknown as PostgrestBuilder<ClientOptions, ResultOne>
   }
 
   /**
@@ -203,7 +216,7 @@ export default class PostgrestTransformBuilder<
    */
   maybeSingle<
     ResultOne = Result extends (infer ResultOne)[] ? ResultOne : never
-  >(): PostgrestBuilder<ResultOne | null> {
+  >(): PostgrestBuilder<ClientOptions, ResultOne | null> {
     // Temporary partial fix for https://github.com/supabase/postgrest-js/issues/361
     // Issue persists e.g. for `.insert([...]).select().maybeSingle()`
     if (this.method === 'GET') {
@@ -212,23 +225,23 @@ export default class PostgrestTransformBuilder<
       this.headers['Accept'] = 'application/vnd.pgrst.object+json'
     }
     this.isMaybeSingle = true
-    return this as unknown as PostgrestBuilder<ResultOne | null>
+    return this as unknown as PostgrestBuilder<ClientOptions, ResultOne | null>
   }
 
   /**
    * Return `data` as a string in CSV format.
    */
-  csv(): PostgrestBuilder<string> {
+  csv(): PostgrestBuilder<ClientOptions, string> {
     this.headers['Accept'] = 'text/csv'
-    return this as unknown as PostgrestBuilder<string>
+    return this as unknown as PostgrestBuilder<ClientOptions, string>
   }
 
   /**
    * Return `data` as an object in [GeoJSON](https://geojson.org) format.
    */
-  geojson(): PostgrestBuilder<Record<string, unknown>> {
+  geojson(): PostgrestBuilder<ClientOptions, Record<string, unknown>> {
     this.headers['Accept'] = 'application/geo+json'
-    return this as unknown as PostgrestBuilder<Record<string, unknown>>
+    return this as unknown as PostgrestBuilder<ClientOptions, Record<string, unknown>>
   }
 
   /**
@@ -270,7 +283,9 @@ export default class PostgrestTransformBuilder<
     buffers?: boolean
     wal?: boolean
     format?: 'json' | 'text'
-  } = {}): PostgrestBuilder<Record<string, unknown>[]> | PostgrestBuilder<string> {
+  } = {}):
+    | PostgrestBuilder<ClientOptions, Record<string, unknown>[]>
+    | PostgrestBuilder<ClientOptions, string> {
     const options = [
       analyze ? 'analyze' : null,
       verbose ? 'verbose' : null,
@@ -285,8 +300,9 @@ export default class PostgrestTransformBuilder<
     this.headers[
       'Accept'
     ] = `application/vnd.pgrst.plan+${format}; for="${forMediatype}"; options=${options};`
-    if (format === 'json') return this as unknown as PostgrestBuilder<Record<string, unknown>[]>
-    else return this as unknown as PostgrestBuilder<string>
+    if (format === 'json')
+      return this as unknown as PostgrestBuilder<ClientOptions, Record<string, unknown>[]>
+    else return this as unknown as PostgrestBuilder<ClientOptions, string>
   }
 
   /**
@@ -310,18 +326,22 @@ export default class PostgrestTransformBuilder<
    * @deprecated Use overrideTypes<yourType, { merge: false }>() method at the end of your call chain instead
    */
   returns<NewResult>(): PostgrestTransformBuilder<
+    ClientOptions,
     Schema,
     Row,
     CheckMatchingArrayTypes<Result, NewResult>,
     RelationName,
-    Relationships
+    Relationships,
+    Method
   > {
     return this as unknown as PostgrestTransformBuilder<
+      ClientOptions,
       Schema,
       Row,
       CheckMatchingArrayTypes<Result, NewResult>,
       RelationName,
-      Relationships
+      Relationships,
+      Method
     >
   }
 }

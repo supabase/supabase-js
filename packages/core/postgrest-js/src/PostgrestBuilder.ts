@@ -8,12 +8,16 @@ import type {
   CheckMatchingArrayTypes,
   MergePartialResult,
   IsValidResultOverride,
+  ClientServerOptions,
 } from './types'
 import PostgrestError from './PostgrestError'
 import { ContainsNull } from './select-query-parser/types'
 
-export default abstract class PostgrestBuilder<Result, ThrowOnError extends boolean = false>
-  implements
+export default abstract class PostgrestBuilder<
+  ClientOptions extends ClientServerOptions,
+  Result,
+  ThrowOnError extends boolean = false
+> implements
     PromiseLike<
       ThrowOnError extends true ? PostgrestResponseSuccess<Result> : PostgrestSingleResponse<Result>
     >
@@ -28,7 +32,7 @@ export default abstract class PostgrestBuilder<Result, ThrowOnError extends bool
   protected fetch: Fetch
   protected isMaybeSingle: boolean
 
-  constructor(builder: PostgrestBuilder<Result>) {
+  constructor(builder: PostgrestBuilder<ClientOptions, Result>) {
     this.method = builder.method
     this.url = builder.url
     this.headers = builder.headers
@@ -53,9 +57,9 @@ export default abstract class PostgrestBuilder<Result, ThrowOnError extends bool
    *
    * {@link https://github.com/supabase/supabase-js/issues/92}
    */
-  throwOnError(): this & PostgrestBuilder<Result, true> {
+  throwOnError(): this & PostgrestBuilder<ClientOptions, Result, true> {
     this.shouldThrowOnError = true
-    return this as this & PostgrestBuilder<Result, true>
+    return this as this & PostgrestBuilder<ClientOptions, Result, true>
   }
 
   /**
@@ -224,9 +228,14 @@ export default abstract class PostgrestBuilder<Result, ThrowOnError extends bool
    * @typeParam NewResult - The new result type to override with
    * @deprecated Use overrideTypes<yourType, { merge: false }>() method at the end of your call chain instead
    */
-  returns<NewResult>(): PostgrestBuilder<CheckMatchingArrayTypes<Result, NewResult>, ThrowOnError> {
+  returns<NewResult>(): PostgrestBuilder<
+    ClientOptions,
+    CheckMatchingArrayTypes<Result, NewResult>,
+    ThrowOnError
+  > {
     /* istanbul ignore next */
     return this as unknown as PostgrestBuilder<
+      ClientOptions,
       CheckMatchingArrayTypes<Result, NewResult>,
       ThrowOnError
     >
@@ -258,6 +267,7 @@ export default abstract class PostgrestBuilder<Result, ThrowOnError extends bool
     NewResult,
     Options extends { merge?: boolean } = { merge: true }
   >(): PostgrestBuilder<
+    ClientOptions,
     IsValidResultOverride<Result, NewResult, false, false> extends true
       ? // Preserve the optionality of the result if the overriden type is an object (case of chaining with `maybeSingle`)
         ContainsNull<Result> extends true
@@ -267,6 +277,7 @@ export default abstract class PostgrestBuilder<Result, ThrowOnError extends bool
     ThrowOnError
   > {
     return this as unknown as PostgrestBuilder<
+      ClientOptions,
       IsValidResultOverride<Result, NewResult, false, false> extends true
         ? // Preserve the optionality of the result if the overriden type is an object (case of chaining with `maybeSingle`)
           ContainsNull<Result> extends true

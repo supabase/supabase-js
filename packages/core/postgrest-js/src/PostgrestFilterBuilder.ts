@@ -1,6 +1,6 @@
 import PostgrestTransformBuilder from './PostgrestTransformBuilder'
 import { JsonPathToAccessor, JsonPathToType } from './select-query-parser/utils'
-import { GenericSchema } from './types'
+import { ClientServerOptions, GenericSchema } from './types'
 
 type FilterOperator =
   | 'eq'
@@ -69,13 +69,23 @@ type ResolveFilterRelationshipValue<
     : unknown
   : never
 
+export type InvalidMethodError<S extends string> = { Error: S }
+
 export default class PostgrestFilterBuilder<
+  ClientOptions extends ClientServerOptions,
   Schema extends GenericSchema,
   Row extends Record<string, unknown>,
   Result,
   RelationName = unknown,
   Relationships = unknown
-> extends PostgrestTransformBuilder<Schema, Row, Result, RelationName, Relationships> {
+> extends PostgrestTransformBuilder<
+  ClientOptions,
+  Schema,
+  Row,
+  Result,
+  RelationName,
+  Relationships
+> {
   /**
    * Match only rows where `column` is equal to `value`.
    *

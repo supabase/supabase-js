@@ -319,7 +319,12 @@ describe('custom prefer headers with ', () => {
 })
 
 test('switch schema', async () => {
-  const postgrest = new PostgrestClient<Database, 'personal'>(REST_URL, { schema: 'personal' })
+  const postgrest = new PostgrestClient<Database, { PostgrestVersion: '12' }, 'personal'>(
+    REST_URL,
+    {
+      schema: 'personal',
+    }
+  )
   const res = await postgrest.from('users').select()
   expect(res).toMatchInlineSnapshot(`
     Object {

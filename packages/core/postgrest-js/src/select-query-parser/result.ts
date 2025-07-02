@@ -1,4 +1,4 @@
-import { GenericTable } from '../types'
+import { ClientServerOptions, GenericTable } from '../types'
 import { ContainsNull, GenericRelationship, PostgreSQLTypes } from './types'
 import { Ast, ParseQuery } from './parser'
 import {
@@ -21,6 +21,9 @@ import {
   SelectQueryError,
 } from './utils'
 
+export type SpreadOnManyEnabled<PostgrestVersion extends string | undefined> =
+  PostgrestVersion extends `13${string}` ? true : false
+
 /**
  * Main entry point for constructing the result type of a PostgREST query.
  *
@@ -35,7 +38,8 @@ export type GetResult<
   Row extends Record<string, unknown>,
   RelationName,
   Relationships,
-  Query extends string
+  Query extends string,
+  ClientOptions extends ClientServerOptions
 > = IsAny<Schema> extends true
   ? ParseQuery<Query> extends infer ParsedQuery
     ? ParsedQuery extends Ast.Node[]
@@ -54,7 +58,7 @@ export type GetResult<
   ? ParsedQuery extends Ast.Node[]
     ? RelationName extends string
       ? Relationships extends GenericRelationship[]
-        ? ProcessNodes<Schema, Row, RelationName, Relationships, ParsedQuery>
+        ? ProcessNodes<ClientOptions, Schema, Row, RelationName, Relationships, ParsedQuery>
         : SelectQueryError<'Invalid Relationships cannot infer result type'>
       : SelectQueryError<'Invalid RelationName cannot infer result type'>
     : ParsedQuery
@@ -173,6 +177,7 @@ export type RPCCallNodes<
  * @param Acc - Accumulator for the constructed type.
  */
 export type ProcessNodes<
+  ClientOptions extends ClientServerOptions,
   Schema extends GenericSchema,
   Row extends Record<string, unknown>,
   RelationName extends string,
@@ -183,9 +188,24 @@ export type ProcessNodes<
   ? Nodes extends [infer FirstNode, ...infer RestNodes]
     ? FirstNode extends Ast.Node
       ? RestNodes extends Ast.Node[]
-        ? ProcessNode<Schema, Row, RelationName, Relationships, FirstNode> extends infer FieldResult
+        ? ProcessNode<
+            ClientOptions,
+            Schema,
+            Row,
+            RelationName,
+            Relationships,
+            FirstNode
+          > extends infer FieldResult
           ? FieldResult extends Record<string, unknown>
-            ? ProcessNodes<Schema, Row, RelationName, Relationships, RestNodes, Acc & FieldResult>
+            ? ProcessNodes<
+                ClientOptions,
+                Schema,
+                Row,
+                RelationName,
+                Relationships,
+                RestNodes,
+                Acc & FieldResult
+              >
             : FieldResult extends SelectQueryError<infer E>
             ? SelectQueryError<E>
             : SelectQueryError<'Could not retrieve a valid record or error value'>
@@ -205,6 +225,7 @@ export type ProcessNodes<
  * @param NodeType - The Node to process.
  */
 export type ProcessNode<
+  ClientOptions extends ClientServerOptions,
   Schema extends GenericSchema,
   Row extends Record<string, unknown>,
   RelationName extends string,
@@ -215,9 +236,23 @@ export type ProcessNode<
   NodeType['type'] extends Ast.StarNode['type'] // If the selection is *
     ? Row
     : NodeType['type'] extends Ast.SpreadNode['type'] // If the selection is a ...spread
-    ? ProcessSpreadNode<Schema, Row, RelationName, Relationships, Extract<NodeType, Ast.SpreadNode>>
+    ? ProcessSpreadNode<
+        ClientOptions,
+        Schema,
+        Row,
+        RelationName,
+        Relationships,
+        Extract<NodeType, Ast.SpreadNode>
+      >
     : NodeType['type'] extends Ast.FieldNode['type']
-    ? ProcessFieldNode<Schema, Row, RelationName, Relationships, Extract<NodeType, Ast.FieldNode>>
+    ? ProcessFieldNode<
+        ClientOptions,
+        Schema,
+        Row,
+        RelationName,
+        Relationships,
+        Extract<NodeType, Ast.FieldNode>
+      >
     : SelectQueryError<'Unsupported node type.'>
 
 /**
@@ -230,6 +265,7 @@ export type ProcessNode<
  * @param Field - The FieldNode to process.
  */
 type ProcessFieldNode<
+  ClientOptions extends ClientServerOptions,
   Schema extends GenericSchema,
   Row extends Record<string, unknown>,
   RelationName extends string,
@@ -238,7 +274,7 @@ type ProcessFieldNode<
 > = Field['children'] extends []
   ? {}
   : IsNonEmptyArray<Field['children']> extends true // Has embedded resource?
-  ? ProcessEmbeddedResource<Schema, Relationships, Field, RelationName>
+  ? ProcessEmbeddedResource<ClientOptions, Schema, Relationships, Field, RelationName>
   : ProcessSimpleField<Row, RelationName, Field>
 
 type ResolveJsonPathType<
@@ -303,6 +339,7 @@ type ProcessSimpleField<
  * @param Field - The FieldNode to process.
  */
 export type ProcessEmbeddedResource<
+  ClientOptions extends ClientServerOptions,
   Schema extends GenericSchema,
   Relationships extends GenericRelationship[],
   Field extends Ast.FieldNode,
@@ -313,7 +350,7 @@ export type ProcessEmbeddedResource<
       relation: GenericRelationship & { match: 'refrel' | 'col' | 'fkname' }
       direction: string
     }
-    ? ProcessEmbeddedResourceResult<Schema, Resolved, Field, CurrentTableOrView>
+    ? ProcessEmbeddedResourceResult<ClientOptions, Schema, Resolved, Field, CurrentTableOrView>
     : // Otherwise the Resolved is a SelectQueryError return it
       { [K in GetFieldNodeResultName<Field>]: Resolved }
   : {
@@ -325,6 +362,7 @@ export type ProcessEmbeddedResource<
  * Helper type to process the result of an embedded resource.
  */
 type ProcessEmbeddedResourceResult<
+  ClientOptions extends ClientServerOptions,
   Schema extends GenericSchema,
   Resolved extends {
     referencedTable: Pick<GenericTable, 'Row' | 'Relationships'>
@@ -334,6 +372,7 @@ type ProcessEmbeddedResourceResult<
   Field extends Ast.FieldNode,
   CurrentTableOrView extends keyof TablesAndViews<Schema>
 > = ProcessNodes<
+  ClientOptions,
   Schema,
   Resolved['referencedTable']['Row'],
   Field['name'],
@@ -392,20 +431,45 @@ type ProcessEmbeddedResourceResult<
  * @param Spread - The SpreadNode to process.
  */
 type ProcessSpreadNode<
+  ClientOptions extends ClientServerOptions,
   Schema extends GenericSchema,
   Row extends Record<string, unknown>,
   RelationName extends string,
   Relationships extends GenericRelationship[],
   Spread extends Ast.SpreadNode
-> = ProcessNode<Schema, Row, RelationName, Relationships, Spread['target']> extends infer Result
+> = ProcessNode<
+  ClientOptions,
+  Schema,
+  Row,
+  RelationName,
+  Relationships,
+  Spread['target']
+> extends infer Result
   ? Result extends SelectQueryError<infer E>
     ? SelectQueryError<E>
     : ExtractFirstProperty<Result> extends unknown[]
-    ? {
-        [K in Spread['target']['name']]: SelectQueryError<`"${RelationName}" and "${Spread['target']['name']}" do not form a many-to-one or one-to-one relationship spread not possible`>
-      }
+    ? SpreadOnManyEnabled<ClientOptions['PostgrestVersion']> extends true // Spread over an many-to-many relationship, turn all the result fields into correlated arrays
+      ? ProcessManyToManySpreadNodeResult<Result>
+      : {
+          [K in Spread['target']['name']]: SelectQueryError<`"${RelationName}" and "${Spread['target']['name']}" do not form a many-to-one or one-to-one relationship spread not possible`>
+        }
     : ProcessSpreadNodeResult<Result>
   : never
+
+/**
+ * Helper type to process the result of a many-to-many spread node.
+ * Converts all fields in the spread object into arrays.
+ */
+type ProcessManyToManySpreadNodeResult<Result> = Result extends Record<
+  string,
+  SelectQueryError<string> | null
+>
+  ? Result
+  : ExtractFirstProperty<Result> extends infer SpreadedObject
+  ? SpreadedObject extends Array<Record<string, unknown>>
+    ? { [K in keyof SpreadedObject[number]]: Array<SpreadedObject[number][K]> }
+    : SelectQueryError<'An error occurred spreading the many-to-many object'>
+  : SelectQueryError<'An error occurred spreading the many-to-many object'>
 
 /**
  * Helper type to process the result of a spread node.

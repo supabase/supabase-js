@@ -53,6 +53,7 @@ const postgrest = new PostgrestClient<Database>(REST_URL)
     .returns<{ username: string }[]>()
   expectType<
     PostgrestBuilder<
+      { PostgrestVersion: '12' },
       {
         Error: 'Type mismatch: Cannot cast single object to array type. Remove Array wrapper from return type or make sure you are not using .single() up in the calling chain'
       },

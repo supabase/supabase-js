@@ -15,7 +15,8 @@ type SelectQueryFromTableResult<
   Database['public']['Tables'][TableName]['Row'],
   TableName,
   Database['public']['Tables'][TableName]['Relationships'],
-  Q
+  Q,
+  { PostgrestVersion: '12' }
 >
 
 // This test file is here to help develop, debug and maintain the GetResult
@@ -130,7 +131,8 @@ type SelectQueryFromTableResult<
     Database['personal']['Tables'][TableName]['Row'],
     TableName,
     Database['personal']['Tables'][TableName]['Relationships'],
-    Q
+    Q,
+    { PostgrestVersion: '12' }
   >
   // Should work with Json object accessor
   {

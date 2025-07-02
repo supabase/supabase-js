@@ -1,6 +1,6 @@
 import PostgrestError from './PostgrestError'
 import { ContainsNull } from './select-query-parser/types'
-import { SelectQueryError } from './select-query-parser/utils'
+import { IsAny, SelectQueryError } from './select-query-parser/utils'
 
 export type Fetch = typeof fetch
 
@@ -71,8 +71,34 @@ export type GenericSchema = {
   Functions: Record<string, GenericFunction>
 }
 
+export type ClientServerOptions = {
+  PostgrestVersion?: string
+}
+
+export type DatabaseWithOptions<Database, Options extends ClientServerOptions> = {
+  db: Database
+  options: Options
+}
+
+const INTERNAL_SUPABASE_OPTIONS = '__InternalSupabase'
+
+export type GetGenericDatabaseWithOptions<
+  Database,
+  Opts extends ClientServerOptions = { PostgrestVersion: '12' }
+> = IsAny<Database> extends true
+  ? DatabaseWithOptions<Database, Opts>
+  : typeof INTERNAL_SUPABASE_OPTIONS extends keyof Database
+  ? Database[typeof INTERNAL_SUPABASE_OPTIONS] extends ClientServerOptions
+    ? DatabaseWithOptions<
+        Omit<Database, typeof INTERNAL_SUPABASE_OPTIONS>,
+        Database[typeof INTERNAL_SUPABASE_OPTIONS]
+      >
+    : DatabaseWithOptions<Omit<Database, typeof INTERNAL_SUPABASE_OPTIONS>, Opts>
+  : DatabaseWithOptions<Database, Opts>
+
 // https://twitter.com/mattpocockuk/status/1622730173446557697
 export type Prettify<T> = { [K in keyof T]: T[K] } & {}
+
 // https://github.com/sindresorhus/type-fest
 export type SimplifyDeep<Type, ExcludeType = never> = ConditionalSimplifyDeep<
   Type,
