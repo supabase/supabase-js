@@ -21,8 +21,8 @@ import {
   SelectQueryError,
 } from './utils'
 
-export type SpreadOnManyEnabled<postgrestVersion extends string | undefined> =
-  postgrestVersion extends `13${string}` ? true : false
+export type SpreadOnManyEnabled<PostgrestVersion extends string | undefined> =
+  PostgrestVersion extends `13${string}` ? true : false
 
 /**
  * Main entry point for constructing the result type of a PostgREST query.
@@ -448,7 +448,7 @@ type ProcessSpreadNode<
   ? Result extends SelectQueryError<infer E>
     ? SelectQueryError<E>
     : ExtractFirstProperty<Result> extends unknown[]
-    ? SpreadOnManyEnabled<ClientOptions['postgrestVersion']> extends true // Spread over an many-to-many relationship, turn all the result fields into correlated arrays
+    ? SpreadOnManyEnabled<ClientOptions['PostgrestVersion']> extends true // Spread over an many-to-many relationship, turn all the result fields into correlated arrays
       ? ProcessManyToManySpreadNodeResult<Result>
       : {
           [K in Spread['target']['name']]: SelectQueryError<`"${RelationName}" and "${Spread['target']['name']}" do not form a many-to-one or one-to-one relationship spread not possible`>

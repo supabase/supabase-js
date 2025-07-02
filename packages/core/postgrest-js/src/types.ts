@@ -72,7 +72,7 @@ export type GenericSchema = {
 }
 
 export type ClientServerOptions = {
-  postgrestVersion?: string
+  PostgrestVersion?: string
 }
 
 export type DatabaseWithOptions<Database, Options extends ClientServerOptions> = {
@@ -80,11 +80,11 @@ export type DatabaseWithOptions<Database, Options extends ClientServerOptions> =
   options: Options
 }
 
-const INTERNAL_SUPABASE_OPTIONS = '__internal_supabase'
+const INTERNAL_SUPABASE_OPTIONS = '__InternalSupabase'
 
 export type GetGenericDatabaseWithOptions<
   Database,
-  Opts extends ClientServerOptions = { postgrestVersion: '12' }
+  Opts extends ClientServerOptions = { PostgrestVersion: '12' }
 > = IsAny<Database> extends true
   ? DatabaseWithOptions<Database, Opts>
   : typeof INTERNAL_SUPABASE_OPTIONS extends keyof Database
