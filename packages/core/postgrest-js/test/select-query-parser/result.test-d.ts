@@ -16,7 +16,7 @@ type SelectQueryFromTableResult<
   TableName,
   Database['public']['Tables'][TableName]['Relationships'],
   Q,
-  { postgrestVersion: '12' }
+  { PostgrestVersion: '12' }
 >
 
 // This test file is here to help develop, debug and maintain the GetResult
@@ -132,7 +132,7 @@ type SelectQueryFromTableResult<
     TableName,
     Database['personal']['Tables'][TableName]['Relationships'],
     Q,
-    { postgrestVersion: '12' }
+    { PostgrestVersion: '12' }
   >
   // Should work with Json object accessor
   {

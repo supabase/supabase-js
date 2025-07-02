@@ -297,9 +297,9 @@ const postgrestWithOptions = new PostgrestClient<DatabaseWithOptions>(REST_URL)
     }[]
   >(result.data)
 }
-// Check that client options __internal_supabase isn't considered like the other schemas
+// Check that client options __InternalSupabase isn't considered like the other schemas
 {
   await postgrestWithOptions
     // @ts-expect-error supabase internal shouldn't be available as one of the selectable schema
-    .schema('__internal_supabase')
+    .schema('__InternalSupabase')
 }
