@@ -127,9 +127,9 @@ export class FunctionsClient {
         data = await response.text()
       }
 
-      return { data, error: null }
+      return { data, error: null, response }
     } catch (error) {
-      return { data: null, error }
+      return { data: null, error, response: error instanceof FunctionsHttpError || error instanceof FunctionsRelayError ? error.context : undefined }
     }
   }
 }
