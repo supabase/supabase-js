@@ -10,7 +10,22 @@ export default class StorageBucketApi {
   protected fetch: Fetch
 
   constructor(url: string, headers: { [key: string]: string } = {}, fetch?: Fetch) {
-    this.url = url
+    const baseUrl = new URL(url)
+
+    // if legacy uri is used, replace with new storage host (disables request buffering to allow > 50GB uploads)
+    // "project-ref.supabase.co/storage/v1" becomes "project-ref.storage.supabase.co/v1"
+    const isSupabaseHost = /supabase\.(co|in|red)$/.test(baseUrl.hostname)
+    const legacyStoragePrefix = '/storage'
+    if (
+      isSupabaseHost &&
+      !baseUrl.hostname.includes('storage.supabase.') &&
+      baseUrl.pathname.startsWith(legacyStoragePrefix)
+    ) {
+      baseUrl.pathname = baseUrl.pathname.substring(legacyStoragePrefix.length)
+      baseUrl.hostname = baseUrl.hostname.replace('supabase.', 'storage.supabase.')
+    }
+
+    this.url = baseUrl.href
     this.headers = { ...DEFAULT_HEADERS, ...headers }
     this.fetch = resolveFetch(fetch)
   }

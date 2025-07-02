@@ -33,6 +33,43 @@ describe('Bucket API Error Handling', () => {
     jest.restoreAllMocks()
   })
 
+  describe('URL Construction', () => {
+    const urlTestCases = [
+      [
+        'https://blah.supabase.co/storage/v1',
+        'https://blah.storage.supabase.co/v1',
+        'update legacy prod host to new host',
+      ],
+      [
+        'https://blah.supabase.red/storage/v1',
+        'https://blah.storage.supabase.red/v1',
+        'update legacy staging host to new host',
+      ],
+      [
+        'https://blah.storage.supabase.co/v1',
+        'https://blah.storage.supabase.co/v1',
+        'accept new host without modification',
+      ],
+      [
+        'https://blah.supabase.co.example.com/storage/v1',
+        'https://blah.supabase.co.example.com/storage/v1',
+        'not modify non-platform hosts',
+      ],
+      [
+        'http://localhost:1234/storage/v1',
+        'http://localhost:1234/storage/v1',
+        'support local host with port without modification',
+      ],
+    ]
+
+    urlTestCases.forEach(([inputUrl, expectUrl, description]) => {
+      it('should ' + description, () => {
+        const storage = new StorageClient(inputUrl, { apikey: KEY })
+        expect(storage['url']).toBe(expectUrl)
+      })
+    })
+  })
+
   describe('listBuckets', () => {
     it('handles network errors', async () => {
       const mockError = new Error('Network failure')
