@@ -64,6 +64,7 @@ export default class RealtimePresence {
   state: RealtimePresenceState = {}
   pendingDiffs: RawPresenceDiff[] = []
   joinRef: string | null = null
+  enabled: boolean = false
   caller: {
     onJoin: PresenceOnJoinCallback
     onLeave: PresenceOnLeaveCallback

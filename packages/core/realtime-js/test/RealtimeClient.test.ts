@@ -217,7 +217,7 @@ describe('channel', () => {
     assert.deepEqual(channel.params, {
       config: {
         broadcast: { ack: false, self: false },
-        presence: { key: '' },
+        presence: { key: '', enabled: false },
         private: false,
       },
       one: 'two',
@@ -232,7 +232,7 @@ describe('channel', () => {
     assert.deepEqual(channel.params, {
       config: {
         broadcast: { ack: false, self: false },
-        presence: { key: '' },
+        presence: { key: '', enabled: false },
         private: true,
       },
       one: 'two',

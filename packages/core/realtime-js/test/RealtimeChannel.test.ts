@@ -52,7 +52,7 @@ describe('constructor', () => {
     assert.deepEqual(channel.params, {
       config: {
         broadcast: { ack: false, self: false },
-        presence: { key: '' },
+        presence: { key: '', enabled: false },
         private: false,
       },
     })
@@ -76,13 +76,14 @@ describe('constructor', () => {
     assert.deepEqual(joinPush.payload, {
       config: {
         broadcast: { ack: false, self: false },
-        presence: { key: '' },
+        presence: { key: '', enabled: false },
         private: false,
       },
     })
     assert.equal(joinPush.event, 'phx_join')
     assert.equal(joinPush.timeout, 1234)
   })
+
   test('sets up joinPush object with private defined', () => {
     const socket = new RealtimeClient(url, {
       transport: WebSocket,
@@ -99,7 +100,65 @@ describe('constructor', () => {
     assert.deepEqual(joinPush.payload, {
       config: {
         broadcast: { ack: false, self: false },
-        presence: { key: '' },
+        presence: { key: '', enabled: false },
+        private: true,
+      },
+    })
+    assert.equal(joinPush.event, 'phx_join')
+    assert.equal(joinPush.timeout, 1234)
+  })
+
+  test('sets up joinPush object with presence disabled if no on with type presence is defined', () => {
+    const socket = new RealtimeClient(url, {
+      transport: WebSocket,
+      timeout: 1234,
+    })
+
+    channel = new RealtimeChannel(
+      'topic',
+      { config: { private: true } },
+      socket
+    )
+    channel.subscribe()
+
+    const joinPush = channel.joinPush
+
+    assert.deepEqual(joinPush.channel, channel)
+    assert.deepEqual(joinPush.payload, {
+      config: {
+        broadcast: { ack: false, self: false },
+        presence: { key: '', enabled: false },
+        postgres_changes: [],
+        private: true,
+      },
+    })
+
+    assert.equal(joinPush.event, 'phx_join')
+    assert.equal(joinPush.timeout, 1234)
+  })
+
+  test('sets up joinPush object with presence enabled if on with type presence is defined', () => {
+    const socket = new RealtimeClient(url, {
+      transport: WebSocket,
+      timeout: 1234,
+    })
+
+    channel = new RealtimeChannel(
+      'topic',
+      { config: { private: true } },
+      socket
+    )
+
+    channel.on('presence', { event: 'join' }, ({}) => {})
+    channel.subscribe()
+    const joinPush = channel.joinPush
+
+    assert.deepEqual(joinPush.channel, channel)
+    assert.deepEqual(joinPush.payload, {
+      config: {
+        broadcast: { ack: false, self: false },
+        presence: { key: '', enabled: true },
+        postgres_changes: [],
         private: true,
       },
     })
@@ -157,13 +216,8 @@ describe('subscribe', () => {
     assert.deepEqual(channel.joinPush.payload, {
       access_token: 'token123',
       config: {
-        broadcast: {
-          ack: false,
-          self: false,
-        },
-        presence: {
-          key: '',
-        },
+        broadcast: { ack: false, self: false },
+        presence: { key: '', enabled: false },
         postgres_changes: [],
         private: false,
       },
@@ -189,7 +243,7 @@ describe('subscribe', () => {
         payload: {
           config: {
             broadcast: { ack: false, self: false },
-            presence: { key: '' },
+            presence: { key: '', enabled: false },
             postgres_changes: [],
             private: false,
           },
@@ -206,7 +260,7 @@ describe('subscribe', () => {
     sinon.stub(socket, '_makeRef').callsFake(() => defaultRef)
     const spy = sinon.spy(socket, 'push')
     const cbSpy = sinon.spy()
-    const func = () => { }
+    const func = () => {}
 
     channel.bindings.postgres_changes = [
       {
@@ -258,7 +312,7 @@ describe('subscribe', () => {
         payload: {
           config: {
             broadcast: { ack: false, self: false },
-            presence: { key: '' },
+            presence: { key: '', enabled: false },
             postgres_changes: [
               { event: '*', schema: '*' },
               { event: 'INSERT', schema: 'public', table: 'test' },
@@ -308,7 +362,7 @@ describe('subscribe', () => {
   test('unsubscribes to channel with incorrect server postgres_changes resp', () => {
     const unsubscribeSpy = sinon.spy(channel, 'unsubscribe')
     const callbackSpy = sinon.spy()
-    const dummyCallback = () => { }
+    const dummyCallback = () => {}
 
     channel.bindings.postgres_changes = [
       {
@@ -359,7 +413,7 @@ describe('subscribe', () => {
 
     assert.equal(joinPush.timeout, defaultTimeout)
 
-    channel.subscribe(() => { }, newTimeout)
+    channel.subscribe(() => {}, newTimeout)
 
     assert.equal(joinPush.timeout, newTimeout)
   })
@@ -502,7 +556,7 @@ describe('joinPush', () => {
     })
 
     test("sends and empties channel's buffered pushEvents", () => {
-      const pushEvent: any = { send() { } }
+      const pushEvent: any = { send() {} }
       const spy = sinon.spy(pushEvent, 'send')
       channel.pushBuffer.push(pushEvent)
       helpers.receiveOk()
@@ -656,7 +710,7 @@ describe('joinPush', () => {
 
     test("does not trigger channel's buffered pushEvents", () => {
       // @ts-ignore - we're only testing the pushBuffer
-      const pushEvent: Push = { send: () => { } }
+      const pushEvent: Push = { send: () => {} }
       const spy = sinon.spy(pushEvent, 'send')
 
       channel.pushBuffer.push(pushEvent)
@@ -895,22 +949,23 @@ describe('on', () => {
     socket = new RealtimeClient('ws://example.com/socket')
     sinon.stub(socket, '_makeRef').callsFake(() => defaultRef)
     channel = socket.channel('topic')
+    clock.restore()
   })
 
   afterEach(() => {
     socket.disconnect()
     channel.unsubscribe()
+    clock = sinon.useFakeTimers()
   })
 
-  test('sets up callback for event', () => {
+  test('sets up callback for broadcast', () => {
     const spy = sinon.spy()
 
-    channel._trigger('event', {}, defaultRef)
+    channel._trigger('broadcast', '*', defaultRef)
     assert.ok(!spy.called)
-    //@ts-ignore - we're aware that we're a non supported event, needs improvements to our testing methodology
-    channel.on('event', {}, spy)
+    channel.on('broadcast', { event: '*' }, spy)
 
-    channel._trigger('event', {}, defaultRef)
+    channel._trigger('broadcast', { event: '*' }, defaultRef)
 
     assert.ok(spy.called)
   })
@@ -919,16 +974,13 @@ describe('on', () => {
     const spy = sinon.spy()
     const ignoredSpy = sinon.spy()
 
-    channel._trigger('event', {}, defaultRef)
+    channel._trigger('broadcast', { event: 'test' }, defaultRef)
 
     assert.ok(!ignoredSpy.called)
-    //@ts-ignore - we're aware that we're a non supported event, needs improvements to our testing methodology
-    channel.on('event', {}, spy)
+    channel.on('broadcast', { event: 'test' }, spy)
+    channel.on('broadcast', { event: 'ignore' }, ignoredSpy)
 
-    //@ts-ignore - we're aware that we're a non supported event, needs improvements to our testing methodology
-    channel.on('otherEvent', {}, ignoredSpy)
-
-    channel._trigger('event', {}, defaultRef)
+    channel._trigger('broadcast', { event: 'test' }, defaultRef)
 
     assert.ok(!ignoredSpy.called)
   })
@@ -939,10 +991,48 @@ describe('on', () => {
     channel._trigger('realtime', { event: 'INSERT' }, defaultRef)
     assert.ok(!spy.called)
 
-    //@ts-ignore - we're aware that we're a non supported event, needs improvements to our testing methodology
-    channel.on('realtime', { event: 'INSERT' }, spy)
-    channel._trigger('realtime', { event: 'INSERT' }, defaultRef)
+    channel.on('broadcast', { event: 'INSERT' }, spy)
+    channel._trigger('broadcast', { event: 'INSERT' }, defaultRef)
     assert.ok(spy.called)
+  })
+
+  test('when we bind a new callback on an already joined channel we resubscribe with new join payload', async () => {
+    channel.on('broadcast', { event: 'test' }, sinon.spy())
+    channel.subscribe()
+    channel.joinPush.trigger('ok', {})
+    assert.deepEqual(channel.joinPush.payload, {
+      config: {
+        broadcast: {
+          ack: false,
+          self: false,
+        },
+        postgres_changes: [],
+        presence: {
+          enabled: false,
+          key: '',
+        },
+        private: false,
+      },
+    })
+
+    channel.on('presence', { event: 'join' }, sinon.spy())
+
+    await new Promise((resolve) => setTimeout(resolve, 3000))
+
+    assert.deepEqual(channel.joinPush.payload, {
+      config: {
+        broadcast: {
+          ack: false,
+          self: false,
+        },
+        postgres_changes: [],
+        presence: {
+          enabled: true,
+          key: '',
+        },
+        private: false,
+      },
+    })
   })
 })
 
@@ -961,22 +1051,18 @@ describe('off', () => {
     const spy2 = sinon.spy()
     const spy3 = sinon.spy()
 
-    //@ts-ignore - we're aware that we're a non supported event, needs improvements to our testing methodology
-    channel.on('event', {}, spy1)
+    channel.on('broadcast', { event: 'test1' }, spy1)
+    channel.on('broadcast', { event: 'test2' }, spy2)
+    channel.on('broadcast', { event: 'test3' }, spy3)
 
-    //@ts-ignore - we're aware that we're a non supported event, needs improvements to our testing methodology
-    channel.on('event', {}, spy2)
+    channel._off('broadcast', { event: 'test1' })
 
-    //@ts-ignore - we're aware that we're a non supported event, needs improvements to our testing methodology
-    channel.on('other', {}, spy3)
-
-    channel._off('event', {})
-
-    channel._trigger('event', {}, defaultRef)
-    channel._trigger('other', {}, defaultRef)
+    channel._trigger('broadcast', { event: 'test1' }, defaultRef)
+    channel._trigger('broadcast', { event: 'test2' }, defaultRef)
+    channel._trigger('broadcast', { event: 'test3' }, defaultRef)
 
     assert.ok(!spy1.called)
-    assert.ok(!spy2.called)
+    assert.ok(spy2.called)
     assert.ok(spy3.called)
   })
 })
@@ -1422,7 +1508,7 @@ describe('unsubscribe', () => {
 
   test('cleans up leavePush on successful unsubscribe', async () => {
     await channel.unsubscribe()
-    
+
     assert.ok(destroySpy.calledTwice) // Once for joinPush, once for leavePush
     assert.equal(channel.state, CHANNEL_STATES.closed)
   })
@@ -1432,9 +1518,9 @@ describe('unsubscribe', () => {
       // Simulate timeout by not responding
       clock.tick(defaultTimeout + 1)
     })
-    
+
     const result = await channel.unsubscribe()
-    
+
     assert.ok(destroySpy.calledTwice) // Once for joinPush, once for leavePush
     assert.equal(result, 'timed out')
     assert.equal(channel.state, CHANNEL_STATES.closed)
@@ -1447,9 +1533,9 @@ describe('unsubscribe', () => {
   //     const leavePush = channel['joinPush']
   //     leavePush.trigger('error', {})
   //   })
-    
+
   //   const result = await channel.unsubscribe()
-    
+
   //   assert.ok(destroySpy.calledTwice) // Once for joinPush, once for leavePush
   //   assert.equal(result, 'error')
   //   assert.equal(channel.state, CHANNEL_STATES.closed)
@@ -1457,9 +1543,9 @@ describe('unsubscribe', () => {
 
   test('cleans up leavePush even if socket is not connected', async () => {
     sinon.stub(socket, 'isConnected').returns(false)
-    
+
     await channel.unsubscribe()
-    
+
     assert.ok(destroySpy.calledTwice) // Once for joinPush, once for leavePush
     assert.equal(channel.state, CHANNEL_STATES.closed)
   })
