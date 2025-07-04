@@ -5,6 +5,7 @@ import {
   PostgrestFilterBuilder,
   PostgrestQueryBuilder,
   ClientServerOptions as PostgrestClientServerOption,
+  GetGenericDatabaseWithOptions,
 } from '@supabase/postgrest-js'
 import {
   RealtimeChannel,
@@ -34,12 +35,13 @@ export type ServicesOptions = PostgrestClientServerOption & {}
 
 export default class SupabaseClient<
   Database = any,
-  ClientOptions extends ServicesOptions = { postgrestVersion: 12 },
-  SchemaName extends string & keyof Database = 'public' extends keyof Database
+  ClientOptions extends ServicesOptions = { PostgrestVersion: '12' },
+  SchemaName extends string &
+    keyof GetGenericDatabaseWithOptions<Database>['db'] = 'public' extends keyof GetGenericDatabaseWithOptions<Database>['db']
     ? 'public'
-    : string & keyof Database,
-  Schema extends GenericSchema = Database[SchemaName] extends GenericSchema
-    ? Database[SchemaName]
+    : string & keyof GetGenericDatabaseWithOptions<Database>['db'],
+  Schema extends GenericSchema = GetGenericDatabaseWithOptions<Database>['db'][SchemaName] extends GenericSchema
+    ? GetGenericDatabaseWithOptions<Database>['db'][SchemaName]
     : any
 > {
   /**
@@ -180,7 +182,7 @@ export default class SupabaseClient<
    *
    * @param schema - The schema to query
    */
-  schema<DynamicSchema extends string & keyof Database>(
+  schema<DynamicSchema extends string & keyof GetGenericDatabaseWithOptions<Database>['db']>(
     schema: DynamicSchema
   ): PostgrestClient<
     Database,
@@ -233,7 +235,8 @@ export default class SupabaseClient<
       : never,
     Fn['Returns'],
     FnName,
-    null
+    null,
+    'RPC'
   > {
     return this.rest.rpc(fn, args, options)
   }

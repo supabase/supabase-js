@@ -1,6 +1,7 @@
 import SupabaseClient from './SupabaseClient'
 import type { GenericSchema, SupabaseClientOptions } from './lib/types'
 import type { ServicesOptions } from './SupabaseClient'
+import type { GetGenericDatabaseWithOptions } from '@supabase/postgrest-js'
 
 export * from '@supabase/auth-js'
 export type { User as AuthUser, Session as AuthSession } from '@supabase/auth-js'
@@ -27,12 +28,13 @@ export type { SupabaseClientOptions, QueryResult, QueryData, QueryError } from '
  */
 export const createClient = <
   Database = any,
-  ClientOptions extends ServicesOptions = { postgrestVersion: 12 },
-  SchemaName extends string & keyof Database = 'public' extends keyof Database
+  ClientOptions extends ServicesOptions = { PostgrestVersion: '12' },
+  SchemaName extends string &
+    keyof GetGenericDatabaseWithOptions<Database>['db'] = 'public' extends keyof GetGenericDatabaseWithOptions<Database>['db']
     ? 'public'
-    : string & keyof Database,
-  Schema extends GenericSchema = Database[SchemaName] extends GenericSchema
-    ? Database[SchemaName]
+    : string & keyof GetGenericDatabaseWithOptions<Database>['db'],
+  Schema extends GenericSchema = GetGenericDatabaseWithOptions<Database>['db'][SchemaName] extends GenericSchema
+    ? GetGenericDatabaseWithOptions<Database>['db'][SchemaName]
     : any
 >(
   supabaseUrl: string,

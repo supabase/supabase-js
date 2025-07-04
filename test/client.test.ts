@@ -35,10 +35,10 @@ describe('Custom Headers', () => {
 
     const request = createClient(URL, KEY, { global: { headers: customHeader } }).rpc('')
 
-    // @ts-ignore
-    const getHeaders = request.headers
+    //@ts-expect-error headers is protected attribute
+    const requestHeader = request.headers.get('X-Test-Header')
 
-    expect(getHeaders).toHaveProperty('X-Test-Header', 'value')
+    expect(requestHeader).toBe(customHeader['X-Test-Header'])
   })
 })
 
@@ -80,13 +80,13 @@ describe('Dynamic schema', () => {
 })
 
 describe('Postgrest 13 client', () => {
-  test('should be able to declare specific postgrestVersion ', async () => {
-    // Note: The template argument properties (postgrestVersion) will not be autocompleted
+  test('should be able to declare specific PostgrestVersion ', async () => {
+    // Note: The template argument properties (PostgrestVersion) will not be autocompleted
     // due to a Typescript bug tracked here: https://github.com/microsoft/TypeScript/issues/56299
-    createClient<Database, { postgrestVersion: 13 }>('HTTP://localhost:3000', KEY)
-    createClient<Database, { postgrestVersion: 12 }>('HTTP://localhost:3000', KEY)
+    createClient<Database, { PostgrestVersion: '13' }>('HTTP://localhost:3000', KEY)
+    createClient<Database, { PostgrestVersion: '12' }>('HTTP://localhost:3000', KEY)
     // @ts-expect-error should raise error if provinding invalid version
-    createClient<Database, { postgrestVersion: 42 }>('HTTP://localhost:3000', KEY)
+    createClient<Database, { PostgrestVersion: 42 }>('HTTP://localhost:3000', KEY)
   })
 })
 
