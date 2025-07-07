@@ -81,6 +81,7 @@ describe('SupabaseClient', () => {
 
     test('should merge custom headers with default headers', () => {
       const customHeader = { 'X-Test-Header': 'value' }
+      const request = createClient(URL, KEY, { global: { headers: customHeader } }).rpc('')
 
       //@ts-expect-error headers is protected attribute
       const requestHeader = request.headers.get('X-Test-Header')
