@@ -4,6 +4,7 @@ export interface Bucket {
   owner: string
   file_size_limit?: number
   allowed_mime_types?: string[]
+  iceberg_catalog?: boolean
   created_at: string
   updated_at: string
   public: boolean
