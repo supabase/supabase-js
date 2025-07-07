@@ -28,7 +28,7 @@ export type { SupabaseClientOptions, QueryResult, QueryData, QueryError } from '
  */
 export const createClient = <
   Database = any,
-  ClientOptions extends ServicesOptions = { PostgrestVersion: '12' },
+  ClientOptions extends ServicesOptions = GetGenericDatabaseWithOptions<Database>['options'],
   SchemaName extends string &
     keyof GetGenericDatabaseWithOptions<Database>['db'] = 'public' extends keyof GetGenericDatabaseWithOptions<Database>['db']
     ? 'public'

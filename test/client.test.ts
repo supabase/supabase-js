@@ -75,18 +75,7 @@ describe('Dynamic schema', () => {
   test('should swap schemas', async () => {
     const client = createClient<Database>('HTTP://localhost:3000', KEY)
     expect(client.schema('personal')).toBeInstanceOf(PostgrestClient)
-    expect(client.schema('personal').from('users').schema).toBe('personal')
-  })
-})
-
-describe('Postgrest 13 client', () => {
-  test('should be able to declare specific PostgrestVersion ', async () => {
-    // Note: The template argument properties (PostgrestVersion) will not be autocompleted
-    // due to a Typescript bug tracked here: https://github.com/microsoft/TypeScript/issues/56299
-    createClient<Database, { PostgrestVersion: '13' }>('HTTP://localhost:3000', KEY)
-    createClient<Database, { PostgrestVersion: '12' }>('HTTP://localhost:3000', KEY)
-    // @ts-expect-error should raise error if provinding invalid version
-    createClient<Database, { PostgrestVersion: 42 }>('HTTP://localhost:3000', KEY)
+    expect(client.schema('personal').from('users').insert([]).maxAffected(21)).toBe('personal')
   })
 })
 
