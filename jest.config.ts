@@ -14,5 +14,6 @@ const config: Config.InitialOptions = {
     '!**/vendor/**',
     '!**/vendor/**',
   ],
+  testPathIgnorePatterns: ['/node_modules/', '/dist/', '/examples/'],
 }
 export default config

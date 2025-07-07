@@ -9,8 +9,8 @@ export function uuid() {
   })
 }
 
-export function stripTrailingSlash(url: string): string {
-  return url.replace(/\/$/, '')
+export function ensureTrailingSlash(url: string): string {
+  return url.endsWith('/') ? url : url + '/'
 }
 
 export const isBrowser = () => typeof window !== 'undefined'
@@ -53,6 +53,10 @@ export function applySettingDefaults<
     global: {
       ...DEFAULT_GLOBAL_OPTIONS,
       ...globalOptions,
+      headers: {
+        ...(DEFAULT_GLOBAL_OPTIONS?.headers ?? {}),
+        ...(globalOptions?.headers ?? {}),
+      },
     },
     accessToken: async () => '',
   }

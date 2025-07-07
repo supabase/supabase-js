@@ -1,6 +1,6 @@
-import { SupabaseAuthClient } from '../src/lib/SupabaseAuthClient'
-import SupabaseClient from '../src/SupabaseClient'
-import { DEFAULT_HEADERS } from '../src/lib/constants'
+import { SupabaseAuthClient } from '../../src/lib/SupabaseAuthClient'
+import SupabaseClient from '../../src/SupabaseClient'
+import { DEFAULT_HEADERS } from '../../src/lib/constants'
 
 const DEFAULT_OPTIONS = {
   auth: {
