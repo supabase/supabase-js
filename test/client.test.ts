@@ -75,7 +75,7 @@ describe('Dynamic schema', () => {
   test('should swap schemas', async () => {
     const client = createClient<Database>('HTTP://localhost:3000', KEY)
     expect(client.schema('personal')).toBeInstanceOf(PostgrestClient)
-    expect(client.schema('personal').from('users').insert([]).maxAffected(21)).toBe('personal')
+    expect(client.schema('personal').from('users').schema).toBe('personal')
   })
 })
 
