@@ -1,4 +1,3 @@
-import PostgrestBuilder from './PostgrestBuilder'
 import PostgrestFilterBuilder from './PostgrestFilterBuilder'
 import { GetResult } from './select-query-parser/result'
 import { ClientServerOptions, Fetch, GenericSchema, GenericTable, GenericView } from './types'
@@ -11,7 +10,7 @@ export default class PostgrestQueryBuilder<
   Relationships = Relation extends { Relationships: infer R } ? R : unknown
 > {
   url: URL
-  headers: Record<string, string>
+  headers: Headers
   schema?: string
   signal?: AbortSignal
   fetch?: Fetch
@@ -23,13 +22,13 @@ export default class PostgrestQueryBuilder<
       schema,
       fetch,
     }: {
-      headers?: Record<string, string>
+      headers?: HeadersInit
       schema?: string
       fetch?: Fetch
     }
   ) {
     this.url = url
-    this.headers = headers
+    this.headers = new Headers(headers)
     this.schema = schema
     this.fetch = fetch
   }
@@ -80,7 +79,8 @@ export default class PostgrestQueryBuilder<
     Relation['Row'],
     ResultOne[],
     RelationName,
-    Relationships
+    Relationships,
+    'GET'
   > {
     const method = head ? 'HEAD' : 'GET'
     // Remove whitespaces except when quoted
@@ -98,8 +98,9 @@ export default class PostgrestQueryBuilder<
       })
       .join('')
     this.url.searchParams.set('select', cleanedColumns)
+
     if (count) {
-      this.headers['Prefer'] = `count=${count}`
+      this.headers.append('Prefer', `count=${count}`)
     }
 
     return new PostgrestFilterBuilder({
@@ -108,8 +109,7 @@ export default class PostgrestQueryBuilder<
       headers: this.headers,
       schema: this.schema,
       fetch: this.fetch,
-      allowEmpty: false,
-    } as unknown as PostgrestBuilder<ClientOptions, ResultOne[]>)
+    })
   }
 
   // TODO(v3): Make `defaultToNull` consistent for both single & bulk inserts.
@@ -124,7 +124,8 @@ export default class PostgrestQueryBuilder<
     Relation['Row'],
     null,
     RelationName,
-    Relationships
+    Relationships,
+    'POST'
   >
   insert<Row extends Relation extends { Insert: unknown } ? Relation['Insert'] : never>(
     values: Row[],
@@ -138,7 +139,8 @@ export default class PostgrestQueryBuilder<
     Relation['Row'],
     null,
     RelationName,
-    Relationships
+    Relationships,
+    'POST'
   >
   /**
    * Perform an INSERT into the table or view.
@@ -181,21 +183,17 @@ export default class PostgrestQueryBuilder<
     Relation['Row'],
     null,
     RelationName,
-    Relationships
+    Relationships,
+    'POST'
   > {
     const method = 'POST'
 
-    const prefersHeaders = []
-    if (this.headers['Prefer']) {
-      prefersHeaders.push(this.headers['Prefer'])
-    }
     if (count) {
-      prefersHeaders.push(`count=${count}`)
+      this.headers.append('Prefer', `count=${count}`)
     }
     if (!defaultToNull) {
-      prefersHeaders.push('missing=default')
+      this.headers.append('Prefer', `missing=default`)
     }
-    this.headers['Prefer'] = prefersHeaders.join(',')
 
     if (Array.isArray(values)) {
       const columns = values.reduce((acc, x) => acc.concat(Object.keys(x)), [] as string[])
@@ -211,9 +209,8 @@ export default class PostgrestQueryBuilder<
       headers: this.headers,
       schema: this.schema,
       body: values,
-      fetch: this.fetch,
-      allowEmpty: false,
-    } as unknown as PostgrestBuilder<ClientOptions, null>)
+      fetch: this.fetch ?? fetch,
+    })
   }
 
   // TODO(v3): Make `defaultToNull` consistent for both single & bulk upserts.
@@ -230,7 +227,8 @@ export default class PostgrestQueryBuilder<
     Relation['Row'],
     null,
     RelationName,
-    Relationships
+    Relationships,
+    'POST'
   >
   upsert<Row extends Relation extends { Insert: unknown } ? Relation['Insert'] : never>(
     values: Row[],
@@ -246,7 +244,8 @@ export default class PostgrestQueryBuilder<
     Relation['Row'],
     null,
     RelationName,
-    Relationships
+    Relationships,
+    'POST'
   >
   /**
    * Perform an UPSERT on the table or view. Depending on the column(s) passed
@@ -305,23 +304,20 @@ export default class PostgrestQueryBuilder<
     Relation['Row'],
     null,
     RelationName,
-    Relationships
+    Relationships,
+    'POST'
   > {
     const method = 'POST'
 
-    const prefersHeaders = [`resolution=${ignoreDuplicates ? 'ignore' : 'merge'}-duplicates`]
+    this.headers.append('Prefer', `resolution=${ignoreDuplicates ? 'ignore' : 'merge'}-duplicates`)
 
     if (onConflict !== undefined) this.url.searchParams.set('on_conflict', onConflict)
-    if (this.headers['Prefer']) {
-      prefersHeaders.push(this.headers['Prefer'])
-    }
     if (count) {
-      prefersHeaders.push(`count=${count}`)
+      this.headers.append('Prefer', `count=${count}`)
     }
     if (!defaultToNull) {
-      prefersHeaders.push('missing=default')
+      this.headers.append('Prefer', 'missing=default')
     }
-    this.headers['Prefer'] = prefersHeaders.join(',')
 
     if (Array.isArray(values)) {
       const columns = values.reduce((acc, x) => acc.concat(Object.keys(x)), [] as string[])
@@ -337,9 +333,8 @@ export default class PostgrestQueryBuilder<
       headers: this.headers,
       schema: this.schema,
       body: values,
-      fetch: this.fetch,
-      allowEmpty: false,
-    } as unknown as PostgrestBuilder<ClientOptions, null>)
+      fetch: this.fetch ?? fetch,
+    })
   }
 
   /**
@@ -376,17 +371,13 @@ export default class PostgrestQueryBuilder<
     Relation['Row'],
     null,
     RelationName,
-    Relationships
+    Relationships,
+    'PATCH'
   > {
     const method = 'PATCH'
-    const prefersHeaders = []
-    if (this.headers['Prefer']) {
-      prefersHeaders.push(this.headers['Prefer'])
-    }
     if (count) {
-      prefersHeaders.push(`count=${count}`)
+      this.headers.append('Prefer', `count=${count}`)
     }
-    this.headers['Prefer'] = prefersHeaders.join(',')
 
     return new PostgrestFilterBuilder({
       method,
@@ -394,9 +385,8 @@ export default class PostgrestQueryBuilder<
       headers: this.headers,
       schema: this.schema,
       body: values,
-      fetch: this.fetch,
-      allowEmpty: false,
-    } as unknown as PostgrestBuilder<ClientOptions, null>)
+      fetch: this.fetch ?? fetch,
+    })
   }
 
   /**
@@ -428,25 +418,20 @@ export default class PostgrestQueryBuilder<
     Relation['Row'],
     null,
     RelationName,
-    Relationships
+    Relationships,
+    'DELETE'
   > {
     const method = 'DELETE'
-    const prefersHeaders = []
     if (count) {
-      prefersHeaders.push(`count=${count}`)
+      this.headers.append('Prefer', `count=${count}`)
     }
-    if (this.headers['Prefer']) {
-      prefersHeaders.unshift(this.headers['Prefer'])
-    }
-    this.headers['Prefer'] = prefersHeaders.join(',')
 
     return new PostgrestFilterBuilder({
       method,
       url: this.url,
       headers: this.headers,
       schema: this.schema,
-      fetch: this.fetch,
-      allowEmpty: false,
-    } as unknown as PostgrestBuilder<ClientOptions, null>)
+      fetch: this.fetch ?? fetch,
+    })
   }
 }

@@ -77,14 +77,16 @@ export default class PostgrestFilterBuilder<
   Row extends Record<string, unknown>,
   Result,
   RelationName = unknown,
-  Relationships = unknown
+  Relationships = unknown,
+  Method = unknown
 > extends PostgrestTransformBuilder<
   ClientOptions,
   Schema,
   Row,
   Result,
   RelationName,
-  Relationships
+  Relationships,
+  Method
 > {
   /**
    * Match only rows where `column` is equal to `value`.

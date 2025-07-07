@@ -24,7 +24,7 @@ export default abstract class PostgrestBuilder<
 {
   protected method: 'GET' | 'HEAD' | 'POST' | 'PATCH' | 'DELETE'
   protected url: URL
-  protected headers: Record<string, string>
+  protected headers: Headers
   protected schema?: string
   protected body?: unknown
   protected shouldThrowOnError = false
@@ -32,15 +32,25 @@ export default abstract class PostgrestBuilder<
   protected fetch: Fetch
   protected isMaybeSingle: boolean
 
-  constructor(builder: PostgrestBuilder<ClientOptions, Result>) {
+  constructor(builder: {
+    method: 'GET' | 'HEAD' | 'POST' | 'PATCH' | 'DELETE'
+    url: URL
+    headers: HeadersInit
+    schema?: string
+    body?: unknown
+    shouldThrowOnError?: boolean
+    signal?: AbortSignal
+    fetch?: Fetch
+    isMaybeSingle?: boolean
+  }) {
     this.method = builder.method
     this.url = builder.url
-    this.headers = builder.headers
+    this.headers = new Headers(builder.headers)
     this.schema = builder.schema
     this.body = builder.body
-    this.shouldThrowOnError = builder.shouldThrowOnError
+    this.shouldThrowOnError = builder.shouldThrowOnError ?? false
     this.signal = builder.signal
-    this.isMaybeSingle = builder.isMaybeSingle
+    this.isMaybeSingle = builder.isMaybeSingle ?? false
 
     if (builder.fetch) {
       this.fetch = builder.fetch
@@ -66,8 +76,8 @@ export default abstract class PostgrestBuilder<
    * Set an HTTP header for the request.
    */
   setHeader(name: string, value: string): this {
-    this.headers = { ...this.headers }
-    this.headers[name] = value
+    this.headers = new Headers(this.headers)
+    this.headers.set(name, value)
     return this
   }
 
@@ -91,12 +101,12 @@ export default abstract class PostgrestBuilder<
     if (this.schema === undefined) {
       // skip
     } else if (['GET', 'HEAD'].includes(this.method)) {
-      this.headers['Accept-Profile'] = this.schema
+      this.headers.set('Accept-Profile', this.schema)
     } else {
-      this.headers['Content-Profile'] = this.schema
+      this.headers.set('Content-Profile', this.schema)
     }
     if (this.method !== 'GET' && this.method !== 'HEAD') {
-      this.headers['Content-Type'] = 'application/json'
+      this.headers.set('Content-Type', 'application/json')
     }
 
     // NOTE: Invoke w/o `this` to avoid illegal invocation error.
@@ -119,11 +129,11 @@ export default abstract class PostgrestBuilder<
           const body = await res.text()
           if (body === '') {
             // Prefer: return=minimal
-          } else if (this.headers['Accept'] === 'text/csv') {
+          } else if (this.headers.get('Accept') === 'text/csv') {
             data = body
           } else if (
-            this.headers['Accept'] &&
-            this.headers['Accept'].includes('application/vnd.pgrst.plan+text')
+            this.headers.get('Accept') &&
+            this.headers.get('Accept')?.includes('application/vnd.pgrst.plan+text')
           ) {
             data = body
           } else {
@@ -131,7 +141,7 @@ export default abstract class PostgrestBuilder<
           }
         }
 
-        const countHeader = this.headers['Prefer']?.match(/count=(exact|planned|estimated)/)
+        const countHeader = this.headers.get('Prefer')?.match(/count=(exact|planned|estimated)/)
         const contentRange = res.headers.get('content-range')?.split('/')
         if (countHeader && contentRange && contentRange.length > 1) {
           count = parseInt(contentRange[1])

@@ -1,6 +1,12 @@
 import PostgrestBuilder from './PostgrestBuilder'
+import { InvalidMethodError } from './PostgrestFilterBuilder'
 import { GetResult } from './select-query-parser/result'
-import { GenericSchema, CheckMatchingArrayTypes, ClientServerOptions } from './types'
+import {
+  GenericSchema,
+  CheckMatchingArrayTypes,
+  ClientServerOptions,
+  MaxAffectedEnabled,
+} from './types'
 
 export default class PostgrestTransformBuilder<
   ClientOptions extends ClientServerOptions,
@@ -49,10 +55,7 @@ export default class PostgrestTransformBuilder<
       })
       .join('')
     this.url.searchParams.set('select', cleanedColumns)
-    if (this.headers['Prefer']) {
-      this.headers['Prefer'] += ','
-    }
-    this.headers['Prefer'] += 'return=representation'
+    this.headers.append('Prefer', 'return=representation')
     return this as unknown as PostgrestTransformBuilder<
       ClientOptions,
       Schema,
@@ -204,7 +207,7 @@ export default class PostgrestTransformBuilder<
     ClientOptions,
     ResultOne
   > {
-    this.headers['Accept'] = 'application/vnd.pgrst.object+json'
+    this.headers.set('Accept', 'application/vnd.pgrst.object+json')
     return this as unknown as PostgrestBuilder<ClientOptions, ResultOne>
   }
 
@@ -220,9 +223,9 @@ export default class PostgrestTransformBuilder<
     // Temporary partial fix for https://github.com/supabase/postgrest-js/issues/361
     // Issue persists e.g. for `.insert([...]).select().maybeSingle()`
     if (this.method === 'GET') {
-      this.headers['Accept'] = 'application/json'
+      this.headers.set('Accept', 'application/json')
     } else {
-      this.headers['Accept'] = 'application/vnd.pgrst.object+json'
+      this.headers.set('Accept', 'application/vnd.pgrst.object+json')
     }
     this.isMaybeSingle = true
     return this as unknown as PostgrestBuilder<ClientOptions, ResultOne | null>
@@ -232,7 +235,7 @@ export default class PostgrestTransformBuilder<
    * Return `data` as a string in CSV format.
    */
   csv(): PostgrestBuilder<ClientOptions, string> {
-    this.headers['Accept'] = 'text/csv'
+    this.headers.set('Accept', 'text/csv')
     return this as unknown as PostgrestBuilder<ClientOptions, string>
   }
 
@@ -240,7 +243,7 @@ export default class PostgrestTransformBuilder<
    * Return `data` as an object in [GeoJSON](https://geojson.org) format.
    */
   geojson(): PostgrestBuilder<ClientOptions, Record<string, unknown>> {
-    this.headers['Accept'] = 'application/geo+json'
+    this.headers.set('Accept', 'application/geo+json')
     return this as unknown as PostgrestBuilder<ClientOptions, Record<string, unknown>>
   }
 
@@ -283,9 +286,7 @@ export default class PostgrestTransformBuilder<
     buffers?: boolean
     wal?: boolean
     format?: 'json' | 'text'
-  } = {}):
-    | PostgrestBuilder<ClientOptions, Record<string, unknown>[]>
-    | PostgrestBuilder<ClientOptions, string> {
+  } = {}) {
     const options = [
       analyze ? 'analyze' : null,
       verbose ? 'verbose' : null,
@@ -296,13 +297,16 @@ export default class PostgrestTransformBuilder<
       .filter(Boolean)
       .join('|')
     // An Accept header can carry multiple media types but postgrest-js always sends one
-    const forMediatype = this.headers['Accept'] ?? 'application/json'
-    this.headers[
-      'Accept'
-    ] = `application/vnd.pgrst.plan+${format}; for="${forMediatype}"; options=${options};`
-    if (format === 'json')
+    const forMediatype = this.headers.get('Accept') ?? 'application/json'
+    this.headers.set(
+      'Accept',
+      `application/vnd.pgrst.plan+${format}; for="${forMediatype}"; options=${options};`
+    )
+    if (format === 'json') {
       return this as unknown as PostgrestBuilder<ClientOptions, Record<string, unknown>[]>
-    else return this as unknown as PostgrestBuilder<ClientOptions, string>
+    } else {
+      return this as unknown as PostgrestBuilder<ClientOptions, string>
+    }
   }
 
   /**
@@ -311,11 +315,7 @@ export default class PostgrestTransformBuilder<
    * `data` will still be returned, but the query is not committed.
    */
   rollback(): this {
-    if ((this.headers['Prefer'] ?? '').trim().length > 0) {
-      this.headers['Prefer'] += ',tx=rollback'
-    } else {
-      this.headers['Prefer'] = 'tx=rollback'
-    }
+    this.headers.append('Prefer', 'tx=rollback')
     return this
   }
 
@@ -343,5 +343,26 @@ export default class PostgrestTransformBuilder<
       Relationships,
       Method
     >
+  }
+
+  /**
+   * Set the maximum number of rows that can be affected by the query.
+   * Only available in PostgREST v13+ and only works with PATCH and DELETE methods.
+   *
+   * @param value - The maximum number of rows that can be affected
+   */
+  maxAffected(value: number): MaxAffectedEnabled<ClientOptions['PostgrestVersion']> extends true
+    ? // TODO: update the RPC case to only work on RPC that returns SETOF rows
+      Method extends 'PATCH' | 'DELETE' | 'RPC'
+      ? this
+      : InvalidMethodError<'maxAffected method only available on update or delete'>
+    : InvalidMethodError<'maxAffected method only available on postgrest 13+'> {
+    this.headers.append('Prefer', 'handling=strict')
+    this.headers.append('Prefer', `max-affected=${value}`)
+    return this as unknown as MaxAffectedEnabled<ClientOptions['PostgrestVersion']> extends true
+      ? Method extends 'PATCH' | 'DELETE' | 'RPC'
+        ? this
+        : InvalidMethodError<'maxAffected method only available on update or delete'>
+      : InvalidMethodError<'maxAffected method only available on postgrest 13+'>
   }
 }
