@@ -1,10 +1,12 @@
+export type BucketType = 'STANDARD' | 'ICEBERG'
+
 export interface Bucket {
   id: string
+  type?: BucketType
   name: string
   owner: string
   file_size_limit?: number
   allowed_mime_types?: string[]
-  iceberg_catalog?: boolean
   created_at: string
   updated_at: string
   public: boolean

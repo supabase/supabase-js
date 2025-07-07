@@ -2,7 +2,7 @@ import { DEFAULT_HEADERS } from '../lib/constants'
 import { isStorageError, StorageError } from '../lib/errors'
 import { Fetch, get, post, put, remove } from '../lib/fetch'
 import { resolveFetch } from '../lib/helpers'
-import { Bucket } from '../lib/types'
+import { Bucket, BucketType } from '../lib/types'
 
 export default class StorageBucketApi {
   protected url: string
@@ -96,7 +96,8 @@ export default class StorageBucketApi {
    * The default value is null, which allows files with all mime types to be uploaded.
    * Each mime type specified can be a wildcard, e.g. image/*, or a specific mime type, e.g. image/png.
    * @returns newly created bucket id
-   * @param options.icebergCatalog (private-beta) specifies whether this bucket can be used as an Iceberg data lake.
+   * @param options.type (private-beta) specifies the bucket type. see `BucketType` for more details.
+   *   - default bucket type is `STANDARD`
    */
   async createBucket(
     id: string,
@@ -104,7 +105,7 @@ export default class StorageBucketApi {
       public: boolean
       fileSizeLimit?: number | string | null
       allowedMimeTypes?: string[] | null
-      icebergCatalog?: boolean | null
+      type?: BucketType
     } = {
       public: false,
     }
@@ -125,10 +126,10 @@ export default class StorageBucketApi {
         {
           id,
           name: id,
+          type: options.type,
           public: options.public,
           file_size_limit: options.fileSizeLimit,
           allowed_mime_types: options.allowedMimeTypes,
-          iceberg_catalog: options.icebergCatalog,
         },
         { headers: this.headers }
       )
@@ -153,7 +154,6 @@ export default class StorageBucketApi {
    * @param options.allowedMimeTypes specifies the allowed mime types that this bucket can accept during upload.
    * The default value is null, which allows files with all mime types to be uploaded.
    * Each mime type specified can be a wildcard, e.g. image/*, or a specific mime type, e.g. image/png.
-   * @param options.icebergCatalog (private-beta) specifies whether this bucket can be used as an Iceberg data lake.
    */
   async updateBucket(
     id: string,
@@ -161,7 +161,6 @@ export default class StorageBucketApi {
       public: boolean
       fileSizeLimit?: number | string | null
       allowedMimeTypes?: string[] | null
-      icebergCatalog?: boolean | null
     }
   ): Promise<
     | {
@@ -183,7 +182,6 @@ export default class StorageBucketApi {
           public: options.public,
           file_size_limit: options.fileSizeLimit,
           allowed_mime_types: options.allowedMimeTypes,
-          iceberg_catalog: options.icebergCatalog,
         },
         { headers: this.headers }
       )
