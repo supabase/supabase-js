@@ -33,17 +33,18 @@ export const createClient = <
     keyof GetGenericDatabaseWithOptions<Database>['db'] = 'public' extends keyof GetGenericDatabaseWithOptions<Database>['db']
     ? 'public'
     : string & keyof GetGenericDatabaseWithOptions<Database>['db'],
-  Schema extends GenericSchema = GetGenericDatabaseWithOptions<Database>['db'][SchemaName] extends GenericSchema
+  Schema = GetGenericDatabaseWithOptions<Database>['db'][SchemaName] extends GenericSchema
     ? GetGenericDatabaseWithOptions<Database>['db'][SchemaName]
     : any
 >(
   supabaseUrl: string,
   supabaseKey: string,
   options?: SupabaseClientOptions<SchemaName>
-): SupabaseClient<Database, ClientOptions, SchemaName, Schema> => {
-  return new SupabaseClient<Database, ClientOptions, SchemaName, Schema>(
-    supabaseUrl,
-    supabaseKey,
-    options
-  )
+) => {
+  return new SupabaseClient<
+    Database,
+    ClientOptions,
+    SchemaName,
+    Schema extends GenericSchema ? Schema : any
+  >(supabaseUrl, supabaseKey, options)
 }
