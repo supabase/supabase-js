@@ -7,14 +7,17 @@ const path = require('node:path')
 const scriptDir = __dirname
 const projectRoot = path.dirname(path.dirname(scriptDir))
 
-// Read package-lock.json
-const packageLockPath = path.join(projectRoot, 'package-lock.json')
-const packageLock = JSON.parse(fs.readFileSync(packageLockPath, 'utf8'))
+// Read package.json from main project
+const packageJsonPath = path.join(projectRoot, 'package.json')
+const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'))
 
-// Extract versions from package-lock.json
+// Extract versions from package.json dependencies
 const getVersion = (packageName) => {
-  const packagePath = `node_modules/${packageName}`
-  return packageLock.packages[packagePath]?.version
+  const dependencies = packageJson.dependencies || {}
+  const devDependencies = packageJson.devDependencies || {}
+
+  // Check both dependencies and devDependencies
+  return dependencies[packageName] || devDependencies[packageName] || null
 }
 
 const versions = {
@@ -54,4 +57,5 @@ denoJson.imports = {
 // Write updated deno.json
 fs.writeFileSync(denoJsonPath, JSON.stringify(denoJson, null, 2) + '\n')
 
-console.log('Updated deno.json with versions from package-lock.json')
+console.log('Updated deno.json with versions from package.json')
+console.log('Versions used:', versions)

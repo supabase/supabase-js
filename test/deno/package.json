@@ -6,6 +6,6 @@
     "setup-deps": "node setup-deps.js"
   },
   "dependencies": {
-    "@supabase/supabase-js": "file:../../"
+    "@supabase/supabase-js": "file:supabase-supabase-js-0.0.0-automated.tgz"
   }
 }

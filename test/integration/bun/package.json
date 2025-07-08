@@ -1,0 +1,14 @@
+{
+  "name": "test-bun",
+  "private": true,
+  "scripts": {
+    "test": "bun test integration.test.ts",
+    "test:watch": "bun test --watch integration.test.ts"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "file:supabase-supabase-js-0.0.0-automated.tgz"
+  },
+  "devDependencies": {
+    "bun-types": "latest"
+  }
+}

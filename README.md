@@ -98,6 +98,47 @@ supabase start
 pnpm run test:integration
 ```
 
+### Expo Testing
+
+The project includes Expo integration tests to ensure compatibility with React Native environments.
+
+### Next.js Testing
+
+The project includes Next.js integration tests to ensure compatibility with React SSR environments.
+
+### Deno Testing
+
+The project includes Deno integration tests to ensure compatibility with Deno runtime.
+
+### Bun Testing
+
+The project includes Bun integration tests to ensure compatibility with Bun runtime.
+
+#### CI/CD Testing
+
+When running on CI, the tests automatically use the latest dependencies from the root project. The CI pipeline:
+
+1. Builds the main project with current dependencies
+2. Creates a package archive (`.tgz`) with the latest versions
+3. Uses this archive in Expo, Next.js, and Deno tests to ensure consistency
+
+#### Local Development
+
+For local development of Expo, Next.js, and Deno tests, you can update dependencies using automated scripts:
+
+```bash
+# Update all test dependencies at once
+npm run update:test-deps
+
+# Or update specific test environments:
+npm run update:test-deps:expo    # Expo tests only
+npm run update:test-deps:next    # Next.js tests only
+npm run update:test-deps:deno    # Deno tests only
+npm run update:test-deps:bun     # Bun tests only
+```
+
+**Note:** The CI automatically handles dependency synchronization, so manual updates are only needed for local development and testing.
+
 ## Badges
 
 [![Coverage Status](https://coveralls.io/repos/github/supabase/supabase-js/badge.svg?branch=master)](https://coveralls.io/github/supabase/supabase-js?branch=master)
