@@ -85,29 +85,22 @@ const supabase = createClient('https://xyzcompany.supabase.co', 'public-anon-key
 
 ## Support Policy
 
-This document outlines the scope of support for Node.js, JavaScript/TypeScript, and various runtime environments in Supabase JavaScript client.
+This section outlines the scope of support for various runtime environments in Supabase JavaScript client.
 
 ### Node.js
 
 We only support Node.js versions that are in **Active LTS** or **Maintenance** status as defined by the [official Node.js release schedule](https://nodejs.org/en/about/previous-releases#release-schedule). This means we support versions that are currently receiving long-term support and critical bug fixes.
 
-Currently supported Node.js versions:
-
-- **v22** (Jod) - Active LTS (until April 2027)
-- **v20** (Iron) - Maintenance LTS (until April 2026)
-
 When a Node.js version reaches end-of-life and is no longer in Active LTS or Maintenance status, Supabase will drop it in a **minor release**, and **this won't be considered a breaking change**.
 
-### JavaScript/TypeScript
+### Deno
 
-The minimum supported JavaScript features correspond to the ECMAScript version supported by the oldest-supported Node.js LTS version. When JavaScript features reach their end of support, they will be dropped from Supabase in a **minor release**, and **this won't be considered a breaking change**.
+We support Deno versions that are currently receiving active development and security updates. We follow the [official Deno release schedule](https://docs.deno.com/runtime/fundamentals/stability_and_releases/) and only support versions from the `stable` and `lts` release channels.
 
-For TypeScript, we support the four latest stable versions. When a TypeScript version is no longer supported, it will be dropped in a **minor release**, and **this won't count as a breaking change**.
+When a Deno version reaches end-of-life and is no longer receiving security updates, Supabase will drop it in a **minor release**, and **this won't be considered a breaking change**.
 
 ### Important Notes
 
-- **Mobile browsers**: While we strive for compatibility, mobile browser support may vary and is not guaranteed
-- **Legacy browsers**: Internet Explorer and other legacy browsers are not supported
 - **Experimental features**: Features marked as experimental may be removed or changed without notice
 
 ## Testing
