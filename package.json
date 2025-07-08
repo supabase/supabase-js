@@ -37,14 +37,16 @@
     "test:integration:browser": "deno test --allow-all test/integration.browser.test.ts",
     "test:watch": "jest --watch --verbose false --silent false",
     "test:node:playwright": "cd test/integration/node-browser && npm install && cp ../../../dist/umd/supabase.js . && npm run test",
+    "test:bun": "cd test/integration/bun && bun install && bun test",
     "test:types": "run-s build:module && tsd --files test/types/*.test-d.ts",
     "docs": "typedoc --entryPoints src/index.ts --out docs/v2 --includes src/**/*.ts",
     "docs:json": "typedoc --entryPoints src/index.ts --includes src/**/*.ts --json docs/v2/spec.json --excludeExternals",
     "serve:coverage": "npm run test:coverage && serve test/coverage",
-    "update:test-deps": "npm run build && npm pack && cp supabase-supabase-js-*.tgz test/integration/expo/supabase-supabase-js-0.0.0-automated.tgz && cp supabase-supabase-js-*.tgz test/integration/next/supabase-supabase-js-0.0.0-automated.tgz && cp supabase-supabase-js-*.tgz test/deno/supabase-supabase-js-0.0.0-automated.tgz && cd test/integration/expo && npm install && cd ../next && npm install --legacy-peer-deps && cd ../../deno && npm install",
+    "update:test-deps": "npm run build && npm pack && cp supabase-supabase-js-*.tgz test/integration/expo/supabase-supabase-js-0.0.0-automated.tgz && cp supabase-supabase-js-*.tgz test/integration/next/supabase-supabase-js-0.0.0-automated.tgz && cp supabase-supabase-js-*.tgz test/deno/supabase-supabase-js-0.0.0-automated.tgz && cp supabase-supabase-js-*.tgz test/integration/bun/supabase-supabase-js-0.0.0-automated.tgz && cd test/integration/expo && npm install && cd ../next && npm install --legacy-peer-deps && cd ../../deno && npm install && cd ../integration/bun && bun install",
     "update:test-deps:expo": "npm run build && npm pack && cp supabase-supabase-js-*.tgz test/integration/expo/supabase-supabase-js-0.0.0-automated.tgz && cd test/integration/expo && npm install",
     "update:test-deps:next": "npm run build && npm pack && cp supabase-supabase-js-*.tgz test/integration/next/supabase-supabase-js-0.0.0-automated.tgz && cd test/integration/next && npm install --legacy-peer-deps",
-    "update:test-deps:deno": "npm run build && npm pack && cp supabase-supabase-js-*.tgz test/deno/supabase-supabase-js-0.0.0-automated.tgz && cd test/deno && npm install"
+    "update:test-deps:deno": "npm run build && npm pack && cp supabase-supabase-js-*.tgz test/deno/supabase-supabase-js-0.0.0-automated.tgz && cd test/deno && npm install",
+    "update:test-deps:bun": "npm run build && npm pack && cp supabase-supabase-js-*.tgz test/integration/bun/supabase-supabase-js-0.0.0-automated.tgz && cd test/integration/bun && bun install"
   },
   "dependencies": {
     "@supabase/auth-js": "2.70.0",

@@ -110,6 +110,10 @@ The project includes Next.js integration tests to ensure compatibility with Reac
 
 The project includes Deno integration tests to ensure compatibility with Deno runtime.
 
+### Bun Testing
+
+The project includes Bun integration tests to ensure compatibility with Bun runtime.
+
 #### CI/CD Testing
 
 When running on CI, the tests automatically use the latest dependencies from the root project. The CI pipeline:
@@ -130,6 +134,7 @@ npm run update:test-deps
 npm run update:test-deps:expo    # Expo tests only
 npm run update:test-deps:next    # Next.js tests only
 npm run update:test-deps:deno    # Deno tests only
+npm run update:test-deps:bun     # Bun tests only
 ```
 
 **Note:** The CI automatically handles dependency synchronization, so manual updates are only needed for local development and testing.
