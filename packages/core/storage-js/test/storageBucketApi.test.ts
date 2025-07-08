@@ -64,7 +64,9 @@ describe('Bucket API Error Handling', () => {
 
     urlTestCases.forEach(([inputUrl, expectUrl, description]) => {
       it('should ' + description, () => {
-        const storage = new StorageClient(inputUrl, { apikey: KEY })
+        const storage = new StorageClient(inputUrl, { apikey: KEY }, undefined, {
+          useNewHostname: true,
+        })
         expect(storage['url']).toBe(expectUrl)
       })
     })
