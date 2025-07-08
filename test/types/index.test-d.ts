@@ -136,3 +136,59 @@ const supabase = createClient<Database>(URL, KEY)
     }[]
   >(channels)
 }
+// Test Postgrest13
+// should be able to declare specific PostgrestVersion
+{
+  // @ts-expect-error should raise error if provinding invalid version
+  createClient<Database, { PostgrestVersion: 42 }>('HTTP://localhost:3000', KEY)
+}
+//  should be able to infer PostgrestVersion from Database __InternalSupabase
+{
+  type DatabaseWithInternals = {
+    __InternalSupabase: {
+      PostgrestVersion: '13'
+    }
+    public: {
+      Tables: {
+        shops: {
+          Row: {
+            address: string | null
+            id: number
+            shop_geom: unknown | null
+          }
+          Insert: {
+            address?: string | null
+            id: number
+            shop_geom?: unknown | null
+          }
+          Update: {
+            address?: string | null
+            id?: number
+            shop_geom?: unknown | null
+          }
+          Relationships: []
+        }
+      }
+      Views: {
+        [_ in never]: never
+      }
+      Functions: {
+        [_ in never]: never
+      }
+      Enums: {
+        [_ in never]: never
+      }
+      CompositeTypes: {
+        [_ in never]: never
+      }
+    }
+  }
+  // Note: The template argument properties (PostgrestVersion) will not be autocompleted
+  // due to a Typescript bug tracked here: https://github.com/microsoft/TypeScript/issues/56299
+  const pg13Client = createClient<DatabaseWithInternals>('HTTP://localhost:3000', KEY)
+  const pg12Client = createClient<Database>('HTTP://localhost:3000', KEY)
+  const res13 = await pg13Client.from('shops').update({ id: 21 }).maxAffected(1)
+  const res12 = await pg12Client.from('shops').update({ id: 21 }).maxAffected(1)
+  expectType<typeof res13.data>(null)
+  expectType<typeof res12.Error>('maxAffected method only available on postgrest 13+')
+}
