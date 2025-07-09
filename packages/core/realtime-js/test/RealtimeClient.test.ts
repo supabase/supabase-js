@@ -131,6 +131,35 @@ describe('connect with WebSocket', () => {
     socket.connect()
     assert.deepStrictEqual(conn, socket.conn)
   })
+
+  test('handles setAuth errors gracefully during connection', async () => {
+    const errorMessage = 'Token fetch failed'
+    const accessToken = sinon.spy(() => Promise.reject(new Error(errorMessage)))
+    const logSpy = sinon.spy()
+
+    const socketWithError = new RealtimeClient(url, {
+      transport: MockWebSocket,
+      accessToken,
+      logger: logSpy,
+    })
+
+    socketWithError.connect()
+
+    await new Promise((resolve) => setTimeout(() => resolve(undefined), 100))
+
+    // Verify that the error was logged
+    assert.ok(
+      logSpy.calledWith(
+        'error',
+        'error setting auth',
+        sinon.match.instanceOf(Error)
+      )
+    )
+
+    // Verify that the connection was still established despite the error
+    assert.ok(socketWithError.conn, 'connection should still exist')
+    assert.equal(socketWithError.conn!.url, socketWithError.endpointURL())
+  })
 })
 
 describe('disconnect', () => {
@@ -210,7 +239,7 @@ describe('channel', () => {
   let channel
 
   test('returns channel with given topic and params', () => {
-    channel = socket.channel('topic', { one: 'two' })
+    channel = socket.channel('topic')
 
     assert.deepStrictEqual(channel.socket, socket)
     assert.equal(channel.topic, 'realtime:topic')
@@ -220,12 +249,11 @@ describe('channel', () => {
         presence: { key: '', enabled: false },
         private: false,
       },
-      one: 'two',
     })
   })
 
   test('returns channel with given topic and params for a private channel', () => {
-    channel = socket.channel('topic', { config: { private: true }, one: 'two' })
+    channel = socket.channel('topic', { config: { private: true } })
 
     assert.deepStrictEqual(channel.socket, socket)
     assert.equal(channel.topic, 'realtime:topic')
@@ -235,7 +263,6 @@ describe('channel', () => {
         presence: { key: '', enabled: false },
         private: true,
       },
-      one: 'two',
     })
   })
 
@@ -540,7 +567,7 @@ describe('setAuth', () => {
     let new_token = generateJWT('1h')
     let new_socket = new RealtimeClient(url, {
       transport: MockWebSocket,
-      accessToken: () => Promise.resolve(token),
+      accessToken: () => Promise.resolve(new_token),
     })
 
     const channel1 = new_socket.channel('test-topic1')
@@ -725,15 +752,18 @@ describe('flushSendBuffer', () => {
   })
 })
 
-describe('_onConnClose', () => {
-  beforeEach(() => {
-    socket.connect()
-  })
+describe('socket close event', () => {
+  beforeEach(() => socket.connect())
 
   test('schedules reconnectTimer timeout', () => {
     const spy = sinon.spy(socket.reconnectTimer, 'scheduleTimeout')
 
-    socket._onConnClose()
+    const closeEvent = new CloseEvent('close', {
+      code: 1000,
+      reason: '',
+      wasClean: true,
+    })
+    socket.conn?.onclose?.(closeEvent)
 
     assert.ok(spy.calledOnce)
   })
@@ -742,9 +772,38 @@ describe('_onConnClose', () => {
     const channel = socket.channel('topic')
     const spy = sinon.spy(channel, '_trigger')
 
-    socket._onConnClose()
+    const closeEvent = new CloseEvent('close', {
+      code: 1000,
+      reason: '',
+      wasClean: true,
+    })
+    socket.conn?.onclose?.(closeEvent)
 
     assert.ok(spy.calledWith('phx_error'))
+  })
+
+  test('should use a new token after reconnect', async () => {
+    const tokens = ['initial-token', 'refreshed-token']
+
+    let callCount = 0
+    const accessToken = sinon.spy(() => Promise.resolve(tokens[callCount++]))
+
+    const socket = new RealtimeClient(url, {
+      transport: MockWebSocket,
+      accessToken,
+    })
+    socket.connect()
+
+    // Wait for the async setAuth call to complete
+    await new Promise((resolve) => setTimeout(resolve, 100))
+    assert.strictEqual(accessToken.callCount, 1)
+    expect(socket.accessTokenValue).toBe(tokens[0])
+
+    // Call the callback and wait for async operations to complete
+    await socket.reconnectTimer.callback()
+    await new Promise((resolve) => setTimeout(resolve, 100))
+    expect(socket.accessTokenValue).toBe(tokens[1])
+    assert.strictEqual(accessToken.callCount, 2)
   })
 })
 
@@ -757,7 +816,7 @@ describe('_onConnError', () => {
     const channel = socket.channel('topic')
     const spy = sinon.spy(channel, '_trigger')
 
-    socket._onConnError('error')
+    socket.conn?.onerror?.(new Event('error'))
 
     assert.ok(spy.calledWith('phx_error'))
   })
@@ -780,7 +839,8 @@ describe('onConnMessage', () => {
     const otherSpy = sinon.spy(otherChannel, '_trigger')
 
     socket.pendingHeartbeatRef = '3'
-    socket._onConnMessage(data)
+    const messageEvent = new MessageEvent('message', { data: message })
+    socket.conn?.onmessage?.(messageEvent)
 
     // assert.ok(targetSpy.calledWith('INSERT', {type: 'INSERT'}, 'ref'))
     assert.strictEqual(targetSpy.callCount, 1)
@@ -792,12 +852,15 @@ describe('onConnMessage', () => {
     let socket = new RealtimeClient(url)
     socket.onHeartbeat((message: HeartbeatStatus) => (called = message == 'ok'))
 
+    socket.connect()
+
     const message =
       '{"ref":"1","event":"phx_reply","payload":{"status":"ok","response":{}},"topic":"phoenix"}'
     const data = { data: message }
 
     socket.pendingHeartbeatRef = '3'
-    socket._onConnMessage(data)
+    const messageEvent = new MessageEvent('message', { data: message })
+    socket.conn?.onmessage?.(messageEvent)
 
     assert.strictEqual(called, true)
   })
@@ -808,12 +871,15 @@ describe('onConnMessage', () => {
       (message: HeartbeatStatus) => (called = message == 'error')
     )
 
+    socket.connect()
+
     const message =
       '{"ref":"1","event":"phx_reply","payload":{"status":"error","response":{}},"topic":"phoenix"}'
     const data = { data: message }
 
     socket.pendingHeartbeatRef = '3'
-    socket._onConnMessage(data)
+    const messageEvent = new MessageEvent('message', { data: message })
+    socket.conn?.onmessage?.(messageEvent)
 
     assert.strictEqual(called, true)
   })

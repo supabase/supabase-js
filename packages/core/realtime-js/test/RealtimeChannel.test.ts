@@ -1017,7 +1017,7 @@ describe('on', () => {
 
     channel.on('presence', { event: 'join' }, sinon.spy())
 
-    await new Promise((resolve) => setTimeout(resolve, 3000))
+    await new Promise((resolve) => setTimeout(resolve, 100))
 
     assert.deepEqual(channel.joinPush.payload, {
       config: {
