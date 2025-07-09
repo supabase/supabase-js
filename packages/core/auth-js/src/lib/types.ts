@@ -1,6 +1,6 @@
 import { AuthError } from './errors'
 import { Fetch } from './fetch'
-import type { SolanaSignInInput, SolanaSignInOutput } from '@solana/wallet-standard-features'
+import type { SolanaSignInInput, SolanaSignInOutput } from './solana'
 
 /** One of the providers supported by GoTrue. */
 export type Provider =
