@@ -134,6 +134,16 @@ async function lockNoOp<R>(name: string, acquireTimeout: number, fn: () => Promi
   return await fn()
 }
 
+/**
+ * Caches JWKS values for all clients created in the same environment. This is
+ * especially useful for shared-memory execution environments such as Vercel's
+ * Fluid Compute, AWS Lambda or Supabase's Edge Functions. Regardless of how
+ * many clients are created, if they share the same storage key they will use
+ * the same JWKS cache, significantly speeding up getClaims() with asymmetric
+ * JWTs.
+ */
+const GLOBAL_JWKS: { [storageKey: string]: { cachedAt: number; jwks: { keys: JWK[] } } } = {}
+
 export default class GoTrueClient {
   private static nextInstanceID = 0
 
@@ -154,11 +164,26 @@ export default class GoTrueClient {
   protected storageKey: string
 
   protected flowType: AuthFlowType
+
   /**
    * The JWKS used for verifying asymmetric JWTs
    */
-  protected jwks: { keys: JWK[] }
-  protected jwks_cached_at: number
+  protected get jwks() {
+    return GLOBAL_JWKS[this.storageKey]?.jwks ?? { keys: [] }
+  }
+
+  protected set jwks(value: { keys: JWK[] }) {
+    GLOBAL_JWKS[this.storageKey] = { ...GLOBAL_JWKS[this.storageKey], jwks: value }
+  }
+
+  protected get jwks_cached_at() {
+    return GLOBAL_JWKS[this.storageKey]?.cachedAt ?? Number.MIN_SAFE_INTEGER
+  }
+
+  protected set jwks_cached_at(value: number) {
+    GLOBAL_JWKS[this.storageKey] = { ...GLOBAL_JWKS[this.storageKey], cachedAt: value }
+  }
+
   protected autoRefreshToken: boolean
   protected persistSession: boolean
   protected storage: SupportedStorage
@@ -242,8 +267,12 @@ export default class GoTrueClient {
     } else {
       this.lock = lockNoOp
     }
-    this.jwks = { keys: [] }
-    this.jwks_cached_at = Number.MIN_SAFE_INTEGER
+
+    if (!this.jwks) {
+      this.jwks = { keys: [] }
+      this.jwks_cached_at = Number.MIN_SAFE_INTEGER
+    }
+
     this.mfa = {
       verify: this._verify.bind(this),
       enroll: this._enroll.bind(this),
@@ -2946,11 +2975,13 @@ export default class GoTrueClient {
       return jwk
     }
 
+    const now = Date.now()
+
     // try fetching from cache
     jwk = this.jwks.keys.find((key) => key.kid === kid)
 
     // jwk exists and jwks isn't stale
-    if (jwk && this.jwks_cached_at + JWKS_TTL > Date.now()) {
+    if (jwk && this.jwks_cached_at + JWKS_TTL > now) {
       return jwk
     }
     // jwk isn't cached in memory so we need to fetch it from the well-known endpoint
@@ -2963,8 +2994,10 @@ export default class GoTrueClient {
     if (!data.keys || data.keys.length === 0) {
       throw new AuthInvalidJwtError('JWKS is empty')
     }
+
     this.jwks = data
-    this.jwks_cached_at = Date.now()
+    this.jwks_cached_at = now
+
     // Find the signing key
     jwk = data.keys.find((key: any) => key.kid === kid)
     if (!jwk) {
@@ -2974,12 +3007,35 @@ export default class GoTrueClient {
   }
 
   /**
-   * @experimental This method may change in future versions.
-   * @description Gets the claims from a JWT. If the JWT is symmetric JWTs, it will call getUser() to verify against the server. If the JWT is asymmetric, it will be verified against the JWKS using the WebCrypto API.
+   * Extracts the JWT claims present in the access token by first verifying the
+   * JWT against the server's JSON Web Key Set endpoint
+   * `/.well-known/jwks.json` which is often cached, resulting in significantly
+   * faster responses. Prefer this method over {@link #getUser} which always
+   * sends a request to the Auth server for each JWT.
+   *
+   * If the project is not using an asymmetric JWT signing key (like ECC or
+   * RSA) it always sends a request to the Auth server (similar to {@link
+   * #getUser}) to verify the JWT.
+   *
+   * @param jwt An optional specific JWT you wish to verify, not the one you
+   *            can obtain from {@link #getSession}.
+   * @param options Various additional options that allow you to customize the
+   *                behavior of this method.
    */
   async getClaims(
     jwt?: string,
-    jwks: { keys: JWK[] } = { keys: [] }
+    options: {
+      /**
+       * @deprecated Please use options.jwks instead.
+       */
+      keys?: JWK[]
+
+      /** If set to `true` the `exp` claim will not be validated against the current time. */
+      allowExpired?: boolean
+
+      /** If set, this JSON Web Key Set is going to have precedence over the cached value available on the server. */
+      jwks?: { keys: JWK[] }
+    } = {}
   ): Promise<
     | {
         data: { claims: JwtPayload; header: JwtHeader; signature: Uint8Array }
@@ -3005,8 +3061,10 @@ export default class GoTrueClient {
         raw: { header: rawHeader, payload: rawPayload },
       } = decodeJWT(token)
 
-      // Reject expired JWTs
-      validateExp(payload.exp)
+      if (!options?.allowExpired) {
+        // Reject expired JWTs should only happen if jwt argument was passed
+        validateExp(payload.exp)
+      }
 
       // If symmetric algorithm or WebCrypto API is unavailable, fallback to getUser()
       if (
@@ -3030,7 +3088,10 @@ export default class GoTrueClient {
       }
 
       const algorithm = getAlgorithm(header.alg)
-      const signingKey = await this.fetchJwk(header.kid, jwks)
+      const signingKey = await this.fetchJwk(
+        header.kid,
+        options?.keys ? { keys: options.keys } : options?.jwks
+      )
 
       // Convert JWK to CryptoKey
       const publicKey = await crypto.subtle.importKey('jwk', signingKey, algorithm, true, [
