@@ -40,7 +40,12 @@ export const createClient = <
   supabaseUrl: string,
   supabaseKey: string,
   options?: SupabaseClientOptions<SchemaName>
-) => {
+): SupabaseClient<
+  Database,
+  ClientOptions,
+  SchemaName,
+  Schema extends GenericSchema ? Schema : any
+> => {
   return new SupabaseClient<
     Database,
     ClientOptions,
