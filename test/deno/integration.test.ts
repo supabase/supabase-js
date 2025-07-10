@@ -59,7 +59,7 @@ Deno.test(
         const { error: deleteError } = await supabase
           .from('todos')
           .delete()
-          .eq('id', createdTodo!.id as string)
+          .eq('id', createdTodo!.id)
 
         assertEquals(deleteError, null)
 
@@ -67,7 +67,7 @@ Deno.test(
         const { data: fetchedTodo, error: fetchError } = await supabase
           .from('todos')
           .select('*')
-          .eq('id', createdTodo!.id as string)
+          .eq('id', createdTodo!.id)
           .single()
 
         assertExists(fetchError)
