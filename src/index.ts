@@ -1,6 +1,5 @@
 import SupabaseClient from './SupabaseClient'
-import type { GenericSchema, SupabaseClientOptions } from './lib/types'
-import type { ServicesOptions } from './SupabaseClient'
+import type { GenericSchema, SupabaseClientOptions, ServicesOptions } from './lib/types'
 import type { GetGenericDatabaseWithOptions } from '@supabase/postgrest-js'
 
 export * from '@supabase/auth-js'
