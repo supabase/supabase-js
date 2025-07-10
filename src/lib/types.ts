@@ -2,7 +2,6 @@ import { AuthClient } from '@supabase/auth-js'
 import { RealtimeClientOptions } from '@supabase/realtime-js'
 import {
   PostgrestError,
-  GetGenericDatabaseWithOptions,
   ClientServerOptions as PostgrestClientServerOption,
 } from '@supabase/postgrest-js'
 
@@ -125,5 +124,4 @@ export type GenericSchema = {
 export type QueryResult<T> = T extends PromiseLike<infer U> ? U : never
 export type QueryData<T> = T extends PromiseLike<{ data: infer U }> ? Exclude<U, null> : never
 export type QueryError = PostgrestError
-export type { GetGenericDatabaseWithOptions }
 export type ServicesOptions = PostgrestClientServerOption & {}

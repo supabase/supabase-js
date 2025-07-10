@@ -22,10 +22,7 @@ export * from '@supabase/realtime-js'
 export { default as SupabaseClient } from './SupabaseClient'
 export type { SupabaseClientOptions, QueryResult, QueryData, QueryError } from './lib/types'
 
-/**
- * Creates a new Supabase Client.
- */
-export const createClient = <
+export type CreateClientHelper<AdditionalOptions = {}> = <
   Database = any,
   ClientOptions extends ServicesOptions = GetGenericDatabaseWithOptions<Database>['options'],
   SchemaName extends string &
@@ -38,17 +35,19 @@ export const createClient = <
 >(
   supabaseUrl: string,
   supabaseKey: string,
-  options?: SupabaseClientOptions<SchemaName>
-): SupabaseClient<
+  options?: SupabaseClientOptions<SchemaName> & AdditionalOptions
+) => SupabaseClient<
   Database,
   ClientOptions,
   SchemaName,
   Schema extends GenericSchema ? Schema : any
-> => {
-  return new SupabaseClient<
-    Database,
-    ClientOptions,
-    SchemaName,
-    Schema extends GenericSchema ? Schema : any
-  >(supabaseUrl, supabaseKey, options)
+>
+
+export type GenericSupabaseClient = SupabaseClient<any, any, any, any>
+
+/**
+ * Creates a new Supabase Client.
+ */
+export const createClient: CreateClientHelper = (supabaseUrl, supabaseKey, options) => {
+  return new SupabaseClient(supabaseUrl, supabaseKey, options)
 }
