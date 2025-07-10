@@ -1,5 +1,5 @@
 import { FunctionsClient } from '@supabase/functions-js'
-import { AuthChangeEvent } from '@supabase/auth-js'
+import { AuthChangeEvent, Subscription } from '@supabase/auth-js'
 import {
   PostgrestClient,
   PostgrestFilterBuilder,
@@ -268,7 +268,7 @@ export default class SupabaseClient<
     return this.realtime.removeAllChannels()
   }
 
-  protected async _getAccessToken() {
+  protected async _getAccessToken(): Promise<string | null> {
     if (this.accessToken) {
       return await this.accessToken()
     }
@@ -291,7 +291,7 @@ export default class SupabaseClient<
     }: SupabaseAuthClientOptions,
     headers?: Record<string, string>,
     fetch?: Fetch
-  ) {
+  ): SupabaseAuthClient {
     const authHeaders = {
       Authorization: `Bearer ${this.supabaseKey}`,
       apikey: `${this.supabaseKey}`,
@@ -314,14 +314,14 @@ export default class SupabaseClient<
     })
   }
 
-  protected _initRealtimeClient(options: RealtimeClientOptions) {
+  protected _initRealtimeClient(options: RealtimeClientOptions): RealtimeClient {
     return new RealtimeClient(this.realtimeUrl.href, {
       ...options,
       params: { ...{ apikey: this.supabaseKey }, ...options?.params },
     })
   }
 
-  protected async _listenForAuthEvents() {
+  protected async _listenForAuthEvents(): Promise<{ data: { subscription: Subscription } }> {
     return await this.auth.onAuthStateChange((event, session) => {
       setTimeout(
         async () => await this._handleTokenChanged(event, 'CLIENT', session?.access_token),

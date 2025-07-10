@@ -81,6 +81,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Check JSR
+        run: npm run check:jsr
+
       - name: Type Check
         run: npm run test:types
 
