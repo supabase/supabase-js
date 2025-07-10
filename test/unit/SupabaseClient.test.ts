@@ -1,15 +1,10 @@
 import { PostgrestClient } from '@supabase/postgrest-js'
 import { createClient, SupabaseClient } from '../../src/index'
 import { Database } from '../types'
-import type { GenericSchema } from '../../src/lib/types'
 import type { AuthChangeEvent } from '@supabase/auth-js'
 
 // Testable subclass to expose protected methods/properties for testing
-class TestableSupabaseClient<
-  DB = any,
-  SN extends string & keyof DB = 'public' extends keyof DB ? 'public' : string & keyof DB,
-  S extends GenericSchema = DB[SN] extends GenericSchema ? DB[SN] : any
-> extends SupabaseClient<DB, SN, S> {
+class TestableSupabaseClient extends SupabaseClient {
   public getAccessToken = this._getAccessToken.bind(this)
   public listenForAuthEvents = this._listenForAuthEvents.bind(this)
   public get changedAccessTokenPublic() {
