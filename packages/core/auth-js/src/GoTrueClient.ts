@@ -2968,7 +2968,7 @@ export default class GoTrueClient {
     })
   }
 
-  private async fetchJwk(kid: string, jwks: { keys: JWK[] } = { keys: [] }): Promise<JWK> {
+  private async fetchJwk(kid: string, jwks: { keys: JWK[] } = { keys: [] }): Promise<JWK | null> {
     // try fetching from the supplied jwks
     let jwk = jwks.keys.find((key) => key.kid === kid)
     if (jwk) {
@@ -2992,7 +2992,7 @@ export default class GoTrueClient {
       throw error
     }
     if (!data.keys || data.keys.length === 0) {
-      throw new AuthInvalidJwtError('JWKS is empty')
+      return null
     }
 
     this.jwks = data
@@ -3001,7 +3001,7 @@ export default class GoTrueClient {
     // Find the signing key
     jwk = data.keys.find((key: any) => key.kid === kid)
     if (!jwk) {
-      throw new AuthInvalidJwtError('No matching signing key found in JWKS')
+      return null
     }
     return jwk
   }
@@ -3066,12 +3066,16 @@ export default class GoTrueClient {
         validateExp(payload.exp)
       }
 
-      // If symmetric algorithm or WebCrypto API is unavailable, fallback to getUser()
-      if (
+      const signingKey =
+        !header.alg ||
+        header.alg.startsWith('HS') ||
         !header.kid ||
-        header.alg === 'HS256' ||
         !('crypto' in globalThis && 'subtle' in globalThis.crypto)
-      ) {
+          ? null
+          : await this.fetchJwk(header.kid, options?.keys ? { keys: options.keys } : options?.jwks)
+
+      // If symmetric algorithm or WebCrypto API is unavailable, fallback to getUser()
+      if (!signingKey) {
         const { error } = await this.getUser(token)
         if (error) {
           throw error
@@ -3088,10 +3092,6 @@ export default class GoTrueClient {
       }
 
       const algorithm = getAlgorithm(header.alg)
-      const signingKey = await this.fetchJwk(
-        header.kid,
-        options?.keys ? { keys: options.keys } : options?.jwks
-      )
 
       // Convert JWK to CryptoKey
       const publicKey = await crypto.subtle.importKey('jwk', signingKey, algorithm, true, [
