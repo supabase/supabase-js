@@ -138,7 +138,7 @@ export default class SupabaseClient<
     })
 
     if (!settings.accessToken) {
-      this._listenForAuthEvents()
+      setTimeout(() => this._listenForAuthEvents(), 0)
     }
   }
 
@@ -278,7 +278,7 @@ export default class SupabaseClient<
     return this.realtime.removeAllChannels()
   }
 
-  private async _getAccessToken() {
+  protected async _getAccessToken() {
     if (this.accessToken) {
       return await this.accessToken()
     }
@@ -288,7 +288,7 @@ export default class SupabaseClient<
     return data.session?.access_token ?? null
   }
 
-  private _initSupabaseAuthClient(
+  protected _initSupabaseAuthClient(
     {
       autoRefreshToken,
       persistSession,
@@ -324,21 +324,23 @@ export default class SupabaseClient<
     })
   }
 
-  private _initRealtimeClient(options: RealtimeClientOptions) {
+  protected _initRealtimeClient(options: RealtimeClientOptions) {
     return new RealtimeClient(this.realtimeUrl.href, {
       ...options,
       params: { ...{ apikey: this.supabaseKey }, ...options?.params },
     })
   }
 
-  private _listenForAuthEvents() {
-    let data = this.auth.onAuthStateChange((event, session) => {
-      this._handleTokenChanged(event, 'CLIENT', session?.access_token)
+  protected async _listenForAuthEvents() {
+    return await this.auth.onAuthStateChange((event, session) => {
+      setTimeout(
+        async () => await this._handleTokenChanged(event, 'CLIENT', session?.access_token),
+        0
+      )
     })
-    return data
   }
 
-  private _handleTokenChanged(
+  protected async _handleTokenChanged(
     event: AuthChangeEvent,
     source: 'CLIENT' | 'STORAGE',
     token?: string
@@ -348,10 +350,16 @@ export default class SupabaseClient<
       this.changedAccessToken !== token
     ) {
       this.changedAccessToken = token
+      this.realtime.setAuth(token)
     } else if (event === 'SIGNED_OUT') {
-      this.realtime.setAuth()
-      if (source == 'STORAGE') this.auth.signOut()
-      this.changedAccessToken = undefined
+      try {
+        await this.realtime.setAuth()
+        if (source == 'STORAGE') this.auth.signOut()
+      } catch (error) {
+        console.log('Failed to set auth for realtime client:', error)
+      } finally {
+        this.changedAccessToken = undefined
+      }
     }
   }
 }
