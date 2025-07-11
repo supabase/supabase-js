@@ -160,8 +160,8 @@ function detectBrowserVersion(): string | undefined {
 
 export const DEFAULT_HEADERS = {
   'X-Client-Info': `supabase-js-${JS_ENV}/${version}`,
-  'X-Supabase-Platform': getPlatformName(),
-  'X-Supabase-Platform-Version': getPlatformVersion(),
+  'X-Supabase-Client-Platform': getPlatformName(),
+  'X-Supabase-Client-Platform-Version': getPlatformVersion(),
   'X-Supabase-Client-Runtime': getRuntimeName(),
   'X-Supabase-Client-Runtime-Version': getRuntimeVersion(),
 }
