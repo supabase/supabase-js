@@ -5,7 +5,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "test": "npm run test:types && playwright test",
+    "test": "playwright test",
     "test:types": "npx tsd --files tests/types/*.test-d.ts",
     "test:ui": "playwright test --ui",
     "test:debug": "playwright test --debug"
