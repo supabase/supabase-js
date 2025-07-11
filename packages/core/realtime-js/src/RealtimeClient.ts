@@ -205,6 +205,12 @@ export default class RealtimeClient {
    * Connects the socket, unless already connected.
    */
   connect(): void {
+    // Set the token on connect
+    setTimeout(() => {
+      this.setAuth().catch((e) => {
+        this.log('error', 'error setting auth', e)
+      })
+    }, 0)
     if (this.conn) {
       return
     }
@@ -216,12 +222,6 @@ export default class RealtimeClient {
     }
     this.conn = new this.transport(this.endpointURL()) as WebSocketLike
     this.setupConnection()
-    // Set the token on connect
-    setTimeout(() => {
-      this.setAuth().catch((e) => {
-        this.log('error', 'error setting auth', e)
-      })
-    }, 0)
   }
 
   /**
