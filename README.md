@@ -83,6 +83,26 @@ const supabase = createClient('https://xyzcompany.supabase.co', 'public-anon-key
 })
 ```
 
+## Support Policy
+
+This section outlines the scope of support for various runtime environments in Supabase JavaScript client.
+
+### Node.js
+
+We only support Node.js versions that are in **Active LTS** or **Maintenance** status as defined by the [official Node.js release schedule](https://nodejs.org/en/about/previous-releases#release-schedule). This means we support versions that are currently receiving long-term support and critical bug fixes.
+
+When a Node.js version reaches end-of-life and is no longer in Active LTS or Maintenance status, Supabase will drop it in a **minor release**, and **this won't be considered a breaking change**.
+
+### Deno
+
+We support Deno versions that are currently receiving active development and security updates. We follow the [official Deno release schedule](https://docs.deno.com/runtime/fundamentals/stability_and_releases/) and only support versions from the `stable` and `lts` release channels.
+
+When a Deno version reaches end-of-life and is no longer receiving security updates, Supabase will drop it in a **minor release**, and **this won't be considered a breaking change**.
+
+### Important Notes
+
+- **Experimental features**: Features marked as experimental may be removed or changed without notice
+
 ## Testing
 
 ### Unit Testing
