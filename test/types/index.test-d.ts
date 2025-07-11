@@ -1,5 +1,5 @@
 import { expectError, expectType } from 'tsd'
-import { PostgrestSingleResponse, createClient } from '../../src/index'
+import { PostgrestSingleResponse, SupabaseClient, createClient } from '../../src/index'
 import { Database, Json } from '../types'
 
 const URL = 'http://localhost:3000'
@@ -137,6 +137,45 @@ const supabase = createClient<Database>(URL, KEY)
   >(channels)
 }
 // Test Postgrest13
+type DatabaseWithInternals = {
+  __InternalSupabase: {
+    PostgrestVersion: '13'
+  }
+  public: {
+    Tables: {
+      shops: {
+        Row: {
+          address: string | null
+          id: number
+          shop_geom: unknown | null
+        }
+        Insert: {
+          address?: string | null
+          id: number
+          shop_geom?: unknown | null
+        }
+        Update: {
+          address?: string | null
+          id?: number
+          shop_geom?: unknown | null
+        }
+        Relationships: []
+      }
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      [_ in never]: never
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
+}
 // should be able to declare specific PostgrestVersion
 {
   // @ts-expect-error should raise error if provinding invalid version
@@ -144,49 +183,42 @@ const supabase = createClient<Database>(URL, KEY)
 }
 //  should be able to infer PostgrestVersion from Database __InternalSupabase
 {
-  type DatabaseWithInternals = {
-    __InternalSupabase: {
-      PostgrestVersion: '13'
-    }
-    public: {
-      Tables: {
-        shops: {
-          Row: {
-            address: string | null
-            id: number
-            shop_geom: unknown | null
-          }
-          Insert: {
-            address?: string | null
-            id: number
-            shop_geom?: unknown | null
-          }
-          Update: {
-            address?: string | null
-            id?: number
-            shop_geom?: unknown | null
-          }
-          Relationships: []
-        }
-      }
-      Views: {
-        [_ in never]: never
-      }
-      Functions: {
-        [_ in never]: never
-      }
-      Enums: {
-        [_ in never]: never
-      }
-      CompositeTypes: {
-        [_ in never]: never
-      }
-    }
-  }
   // Note: The template argument properties (PostgrestVersion) will not be autocompleted
   // due to a Typescript bug tracked here: https://github.com/microsoft/TypeScript/issues/56299
   const pg13Client = createClient<DatabaseWithInternals>('HTTP://localhost:3000', KEY)
   const pg12Client = createClient<Database>('HTTP://localhost:3000', KEY)
+  const res13 = await pg13Client.from('shops').update({ id: 21 }).maxAffected(1)
+  const res12 = await pg12Client.from('shops').update({ id: 21 }).maxAffected(1)
+  expectType<typeof res13.data>(null)
+  expectType<typeof res12.Error>('maxAffected method only available on postgrest 13+')
+}
+//  should default to postgrest 12 for untyped client
+{
+  const pg12Client = createClient('HTTP://localhost:3000', KEY)
+  const res12 = await pg12Client.from('shops').update({ id: 21 }).maxAffected(1)
+  expectType<typeof res12.Error>('maxAffected method only available on postgrest 13+')
+}
+// Should be able to get typed postgrest12 and postgrest13 client from new SupabaseClient and Database as first parameter
+{
+  const pg13Client = new SupabaseClient<DatabaseWithInternals, { PostgrestVersion: '13' }>(
+    'HTTP://localhost:3000',
+    KEY
+  )
+  const pg12Client = new SupabaseClient<Database>('HTTP://localhost:3000', KEY)
+  const res13 = await pg13Client.from('shops').update({ id: 21 }).maxAffected(1)
+  const res12 = await pg12Client.from('shops').update({ id: 21 }).maxAffected(1)
+  expectType<typeof res13.data>(null)
+  expectType<typeof res12.Error>('maxAffected method only available on postgrest 13+')
+}
+
+// Should be able to get specific schema client for both PostgrestVersion 13 and 12
+{
+  const pg13Client = new SupabaseClient<
+    DatabaseWithInternals,
+    DatabaseWithInternals['__InternalSupabase'],
+    'public'
+  >('HTTP://localhost:3000', KEY)
+  const pg12Client = new SupabaseClient<Database, {}, 'public'>('HTTP://localhost:3000', KEY)
   const res13 = await pg13Client.from('shops').update({ id: 21 }).maxAffected(1)
   const res12 = await pg12Client.from('shops').update({ id: 21 }).maxAffected(1)
   expectType<typeof res13.data>(null)

@@ -157,3 +157,13 @@ type DatabaseWithInternals = {
     | null
   >(res12.data)
 }
+
+//  should default to postgrest 12 for untyped client
+{
+  const pg12ServerClient = createServerClient('HTTP://localhost:3000', '')
+  const res12Server = await pg12ServerClient.from('shops').update({ id: 21 }).maxAffected(1)
+  const pg12BrowserClient = createBrowserClient('HTTP://localhost:3000', '')
+  const res12Browser = await pg12BrowserClient.from('shops').update({ id: 21 }).maxAffected(1)
+  expectType<typeof res12Server.Error>('maxAffected method only available on postgrest 13+')
+  expectType<typeof res12Browser.Error>('maxAffected method only available on postgrest 13+')
+}
