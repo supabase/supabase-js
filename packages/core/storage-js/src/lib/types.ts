@@ -1,4 +1,4 @@
-export type BucketType = 'STANDARD' | 'ICEBERG'
+export type BucketType = 'STANDARD' | 'ANALYTICS'
 
 export interface Bucket {
   id: string
