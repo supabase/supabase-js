@@ -20,8 +20,8 @@ importers:
         specifier: 1.21.0
         version: 1.21.0
       '@supabase/realtime-js':
-        specifier: 2.12.1
-        version: 2.12.1
+        specifier: 2.12.2
+        version: 2.12.2
       '@supabase/storage-js':
         specifier: 2.7.1
         version: 2.7.1
@@ -625,10 +625,10 @@ packages:
         integrity: sha512-fqpV5ZwaLVJyQnsmljJF6MnpRWnkjbLEymPylhVo9nFxr6XpkmP0XjRdsDwICBR2ugezoyPYj8yPCrPgSyys3Q==,
       }
 
-  '@supabase/realtime-js@2.12.1':
+  '@supabase/realtime-js@2.12.2':
     resolution:
       {
-        integrity: sha512-2NCUIQc3iTcaFiGYUDiulTE9J1fKDLO1BY5m7w7phoxdqJoseqvIL57s9Tc4chkDhQTGrCXPiLMen1vKTstoqw==,
+        integrity: sha512-4M89QQ9Kv7tstAzw61FI8fbVWh0daSR4HvIpqBtYvNAQ+BkpsXwxj4chqT6WBO+I5yY/aAVtj1ll1049XkCYJA==,
       }
 
   '@supabase/storage-js@2.7.1':
@@ -5606,7 +5606,7 @@ snapshots:
     dependencies:
       '@supabase/node-fetch': 2.6.15
 
-  '@supabase/realtime-js@2.12.1':
+  '@supabase/realtime-js@2.12.2':
     dependencies:
       '@supabase/node-fetch': 2.6.15
       '@types/phoenix': 1.6.6
