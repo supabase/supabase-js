@@ -1,0 +1,333 @@
+import { Card } from "@/components/ui/card";
+import { TrendingUp, TrendingDown, Target } from "lucide-react";
+
+interface PredictionStats {
+  currentPrice: number;
+  predictedPrice: number;
+  confidence: number;
+  change: number;
+  changePercent: number;
+}
+
+interface StockPredictionCardProps {
+  stats: PredictionStats;
+  ticker: string;
+  companyName?: string;
+}
+
+export const StockPredictionCard = ({ stats, ticker, companyName }: StockPredictionCardProps) => {
+  const isPositive = stats.change >= 0;
+  
+  return (
+    <Card className="p-6 bg-card border-border">
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-xl font-bold text-foreground">{ticker.toUpperCase()}</h3>
+            {companyName && (
+              <p className="text-sm text-muted-foreground">{companyName}</p>
+            )}
+          </div>
+          <div className="flex items-center space-x-2">
+            {isPositive ? (
+              <TrendingUp className="h-5 w-5 text-success" />
+            ) : (
+              <TrendingDown className="h-5 w-5 text-destructive" />
+            )}
+            <span className={`text-sm font-medium ${isPositive ? 'text-success' : 'text-destructive'}`}>
+              {isPositive ? '+' : ''}{stats.changePercent.toFixed(2)}%
+            </span>
+          </div>
+        </div>
+        
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <p className="text-sm text-muted-foreground">Current Price</p>
+            <p className="text-2xl font-bold text-foreground">${stats.currentPrice.toFixed(2)}</p>
+          </div>
+          <div>
+            <p className="text-sm text-muted-foreground">30-Day Prediction</p>
+            <p className="text-2xl font-bold text-primary">${stats.predictedPrice.toFixed(2)}</p>
+          </div>
+        </div>
+        
+        <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-2">
+            <Target className="h-4 w-4 text-accent" />
+            <span className="text-sm text-muted-foreground">Confidence:</span>
+            <span className="text-sm font-medium text-accent">{stats.confidence}%</span>
+          </div>
+          <div className="flex items-center space-x-2">
+            <span className="text-sm text-muted-foreground">Expected Change:</span>
+            <span className={`text-sm font-medium ${isPositive ? 'text-success' : 'text-destructive'}`}>
+              ${Math.abs(stats.change).toFixed(2)}
+            </span>
+          </div>
+        </div>
+      </div>
+    </Card>
+  );
+};
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { StockChart } from "@/components/StockChart";
+import { StockPredictionCard } from "@/components/StockPredictionCard";
+import { generateMockStockData, popularTickers } from "@/utils/mockData";
+import { TrendingUp, BarChart3, Activity, Sparkles } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+
+const Index = () => {
+  const [ticker, setTicker] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [stockData, setStockData] = useState<any>(null);
+  const { toast } = useToast();
+
+  const handlePredict = async () => {
+    if (!ticker.trim()) {
+      toast({
+        title: "Error",
+        description: "Please enter a stock ticker symbol",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsLoading(true);
+    
+    // Simulate API call delay
+    setTimeout(() => {
+      const data = generateMockStockData(ticker);
+      setStockData(data);
+      setIsLoading(false);
+      
+      toast({
+        title: "Prediction Complete",
+        description: `Generated 30-day forecast for ${ticker.toUpperCase()}`,
+      });
+    }, 2000);
+  };
+
+  const handleTickerClick = (selectedTicker: string) => {
+    setTicker(selectedTicker);
+  };
+
+  return (
+    <div className="min-h-screen bg-background">
+      {/* Hero Section */}
+      <div className="relative overflow-hidden">
+        {/* Background gradient */}
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-accent/10 to-background" />
+        
+        <div className="relative container mx-auto px-4 py-16">
+          <div className="text-center space-y-6 mb-12">
+            <div className="inline-flex items-center space-x-2 mb-4">
+              <Activity className="h-8 w-8 text-primary animate-pulse-glow" />
+              <span className="text-sm font-medium text-primary uppercase tracking-wider">AI-Powered</span>
+            </div>
+            
+            <h1 className="text-5xl md:text-7xl font-bold bg-gradient-to-r from-foreground via-primary to-accent bg-clip-text text-transparent animate-slide-up">
+              Stock Price
+              <br />
+              <span className="text-primary">Predictor</span>
+            </h1>
+            
+            <p className="text-xl text-muted-foreground max-w-2xl mx-auto animate-slide-up">
+              Get AI-powered stock price predictions with interactive charts and confidence intervals. 
+              Enter any ticker symbol and see the future unfold.
+            </p>
+          </div>
+
+          {/* Prediction Input */}
+          <Card className="max-w-2xl mx-auto p-8 bg-card/50 backdrop-blur-sm border-border shadow-xl">
+            <div className="space-y-6">
+              <div className="flex items-center space-x-2 mb-4">
+                <BarChart3 className="h-6 w-6 text-accent" />
+                <h2 className="text-2xl font-bold text-foreground">Make a Prediction</h2>
+              </div>
+              
+              <div className="flex space-x-3">
+                <Input
+                  placeholder="Enter stock ticker (e.g., AAPL, TSLA)"
+                  value={ticker}
+                  onChange={(e) => setTicker(e.target.value.toUpperCase())}
+                  className="flex-1 text-lg bg-input border-border focus:ring-primary"
+                  onKeyPress={(e) => e.key === 'Enter' && handlePredict()}
+                />
+                <Button 
+                  onClick={handlePredict}
+                  disabled={isLoading}
+                  size="lg"
+                  className="bg-gradient-to-r from-primary to-accent hover:opacity-90 transition-all duration-300 shadow-lg hover:shadow-xl"
+                >
+                  {isLoading ? (
+                    <div className="flex items-center space-x-2">
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary-foreground" />
+                      <span>Predicting...</span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center space-x-2">
+                      <Sparkles className="h-5 w-5" />
+                      <span>Predict</span>
+                    </div>
+                  )}
+                </Button>
+              </div>
+
+              {/* Popular Tickers */}
+              <div className="space-y-3">
+                <p className="text-sm text-muted-foreground">Popular stocks:</p>
+                <div className="flex flex-wrap gap-2">
+                  {popularTickers.map((popularTicker) => (
+                    <Badge
+                      key={popularTicker}
+                      variant="secondary"
+                      className="cursor-pointer hover:bg-accent hover:text-accent-foreground transition-colors"
+                      onClick={() => handleTickerClick(popularTicker)}
+                    >
+                      {popularTicker}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </Card>
+        </div>
+      </div>
+
+      {/* Results Section */}
+      {stockData && (
+        <div className="container mx-auto px-4 py-16">
+          <div className="space-y-8">
+            {/* Prediction Stats */}
+            <div className="animate-slide-up">
+              <StockPredictionCard
+                stats={{
+                  currentPrice: stockData.currentPrice,
+                  predictedPrice: stockData.predictedPrice,
+                  confidence: stockData.confidence,
+                  change: stockData.change,
+                  changePercent: stockData.changePercent,
+                }}
+                ticker={ticker}
+                companyName={stockData.companyName}
+              />
+            </div>
+
+            {/* Chart */}
+            <Card className="p-6 bg-card border-border animate-slide-up">
+              <StockChart
+                data={{
+                  dates: stockData.dates,
+                  historicalPrices: stockData.historicalPrices,
+                  predictedPrices: stockData.predictedPrices,
+                }}
+                ticker={ticker}
+              />
+            </Card>
+
+            {/* Disclaimer */}
+            <Card className="p-6 bg-muted/30 border-border animate-slide-up">
+              <div className="flex items-start space-x-3">
+                <TrendingUp className="h-5 w-5 text-warning mt-1" />
+                <div>
+                  <h3 className="font-semibold text-warning mb-2">Investment Disclaimer</h3>
+                  <p className="text-sm text-muted-foreground">
+                    This prediction is for educational purposes only and should not be used as financial advice. 
+                    Stock prices are volatile and predictions may not reflect actual market performance. 
+                    Always consult with a financial advisor before making investment decisions.
+                  </p>
+                </div>
+              </div>
+            </Card>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default Index;
+export const generateMockStockData = (ticker: string) => {
+  const today = new Date();
+  const dates: string[] = [];
+  const historicalPrices: number[] = [];
+  const predictedPrices: number[] = [];
+  
+  // Base price varies by ticker
+  const basePrices: { [key: string]: number } = {
+    'AAPL': 175,
+    'TSLA': 240,
+    'GOOGL': 135,
+    'MSFT': 420,
+    'AMZN': 145,
+    'NVDA': 450,
+    'META': 320,
+    'NFLX': 485,
+  };
+
+  // Company names mapping
+  const companyNames: { [key: string]: string } = {
+    'AAPL': 'Apple Inc.',
+    'TSLA': 'Tesla, Inc.',
+    'GOOGL': 'Alphabet Inc.',
+    'MSFT': 'Microsoft Corporation',
+    'AMZN': 'Amazon.com, Inc.',
+    'NVDA': 'NVIDIA Corporation',
+    'META': 'Meta Platforms, Inc.',
+    'NFLX': 'Netflix, Inc.',
+  };
+  
+  let basePrice = basePrices[ticker.toUpperCase()] || 100;
+  
+  // Generate 60 days of historical data
+  for (let i = 59; i >= 0; i--) {
+    const date = new Date(today);
+    date.setDate(date.getDate() - i);
+    dates.push(date.toLocaleDateString());
+    
+    // Add some realistic price movement
+    const volatility = 0.03; // 3% daily volatility
+    const randomChange = (Math.random() - 0.5) * 2 * volatility;
+    basePrice *= (1 + randomChange);
+    
+    historicalPrices.push(basePrice);
+    predictedPrices.push(null as any); // No predictions for historical data
+  }
+  
+  // Generate 30 days of predicted data
+  let predictedBasePrice = basePrice;
+  const trend = Math.random() > 0.5 ? 1.002 : 0.998; // Slight upward or downward trend
+  
+  for (let i = 1; i <= 30; i++) {
+    const date = new Date(today);
+    date.setDate(date.getDate() + i);
+    dates.push(date.toLocaleDateString());
+    
+    // Add trend and some randomness to predictions
+    const volatility = 0.02; // Slightly less volatile for predictions
+    const randomChange = (Math.random() - 0.5) * 2 * volatility;
+    predictedBasePrice *= trend * (1 + randomChange);
+    
+    historicalPrices.push(null as any); // No historical data for future dates
+    predictedPrices.push(predictedBasePrice);
+  }
+  
+  return {
+    dates,
+    historicalPrices,
+    predictedPrices,
+    currentPrice: basePrice,
+    predictedPrice: predictedBasePrice,
+    change: predictedBasePrice - basePrice,
+    changePercent: ((predictedBasePrice - basePrice) / basePrice) * 100,
+    confidence: Math.floor(Math.random() * 20) + 75, // 75-95% confidence
+    companyName: companyNames[ticker.toUpperCase()] || `${ticker.toUpperCase()} Corp.`,
+  };
+};
+
+export const popularTickers = [
+  'AAPL', 'TSLA', 'GOOGL', 'MSFT', 'AMZN', 'NVDA', 'META', 'NFLX'
+];
