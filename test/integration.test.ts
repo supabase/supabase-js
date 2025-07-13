@@ -18,7 +18,7 @@ describe('Supabase Integration Tests', () => {
   })
 
   describe('PostgREST', () => {
-    test('should query data from public schema', async () => {
+    test('should connect to PostgREST API', async () => {
       const { data, error } = await supabase.from('todos').select('*').limit(5)
 
       // The default schema includes a 'todos' table, but it might be empty
@@ -54,6 +54,120 @@ describe('Supabase Integration Tests', () => {
 
       expect(fetchError).not.toBeNull()
       expect(fetchedTodo).toBeNull()
+    })
+  })
+
+  describe('PostgreSQL RLS', () => {
+    let user1Email: string
+    let user2Email: string
+    let user1Id: string
+    let user2Id: string
+    let user1TodoId: string
+    let user2TodoId: string
+
+    beforeAll(async () => {
+      // Create two test users
+      user1Email = `user1-${Date.now()}@example.com`
+      user2Email = `user2-${Date.now()}@example.com`
+      const password = 'password123'
+
+      const { data: user1Data } = await supabase.auth.signUp({
+        email: user1Email,
+        password,
+      })
+      user1Id = user1Data.user!.id
+
+      const { data: user2Data } = await supabase.auth.signUp({
+        email: user2Email,
+        password,
+      })
+      user2Id = user2Data.user!.id
+
+      // Create todos for both users
+      await supabase.auth.signInWithPassword({ email: user1Email, password })
+      const { data: user1Todo } = await supabase
+        .from('todos')
+        .insert({ task: 'User 1 Todo', is_complete: false, user_id: user1Id })
+        .select()
+        .single()
+      user1TodoId = user1Todo!.id
+
+      await supabase.auth.signInWithPassword({ email: user2Email, password })
+      const { data: user2Todo } = await supabase
+        .from('todos')
+        .insert({ task: 'User 2 Todo', is_complete: false, user_id: user2Id })
+        .select()
+        .single()
+      user2TodoId = user2Todo!.id
+    })
+
+    afterAll(async () => {
+      await supabase.auth.signOut()
+    })
+
+    test('should allow anonymous access via RLS policies', async () => {
+      await supabase.auth.signOut()
+
+      const { data, error } = await supabase.from('todos').select('*').limit(5)
+
+      expect(error).toBeNull()
+      expect(Array.isArray(data)).toBe(true)
+    })
+
+    test('should allow authenticated user to access their own data', async () => {
+      await supabase.auth.signInWithPassword({ email: user1Email, password: 'password123' })
+
+      const { data, error } = await supabase
+        .from('todos')
+        .select('*')
+        .eq('id', user1TodoId)
+        .single()
+
+      expect(error).toBeNull()
+      expect(data).toBeDefined()
+      expect(data!.task).toBe('User 1 Todo')
+    })
+
+    test('should prevent access to other users data', async () => {
+      await supabase.auth.signInWithPassword({ email: user1Email, password: 'password123' })
+
+      const { data, error } = await supabase
+        .from('todos')
+        .select('*')
+        .eq('id', user2TodoId)
+        .single()
+
+      expect(error).not.toBeNull()
+      expect(data).toBeNull()
+    })
+
+    test('should allow authenticated user to create their own data', async () => {
+      await supabase.auth.signInWithPassword({ email: user1Email, password: 'password123' })
+
+      const { data, error } = await supabase
+        .from('todos')
+        .insert({ task: 'New User 1 Todo', is_complete: false, user_id: user1Id })
+        .select()
+        .single()
+
+      expect(error).toBeNull()
+      expect(data).toBeDefined()
+      expect(data!.task).toBe('New User 1 Todo')
+    })
+
+    test('should allow authenticated user to update their own data', async () => {
+      await supabase.auth.signInWithPassword({ email: user1Email, password: 'password123' })
+
+      const { data, error } = await supabase
+        .from('todos')
+        .update({ task: 'Updated User 1 Todo' })
+        .eq('id', user1TodoId)
+        .select()
+        .single()
+
+      expect(error).toBeNull()
+      expect(data).toBeDefined()
+      expect(data!.task).toBe('Updated User 1 Todo')
     })
   })
 
