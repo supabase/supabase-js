@@ -4,7 +4,6 @@ import {
   PostgrestClient,
   PostgrestFilterBuilder,
   PostgrestQueryBuilder,
-  ClientServerOptions as PostgrestClientServerOption,
   GetGenericDatabaseWithOptions,
 } from '@supabase/postgrest-js'
 import {
@@ -23,15 +22,19 @@ import {
 import { fetchWithAuth } from './lib/fetch'
 import { ensureTrailingSlash, applySettingDefaults } from './lib/helpers'
 import { SupabaseAuthClient } from './lib/SupabaseAuthClient'
-import { Fetch, GenericSchema, SupabaseClientOptions, SupabaseAuthClientOptions } from './lib/types'
+import {
+  Fetch,
+  GenericSchema,
+  SupabaseClientOptions,
+  SupabaseAuthClientOptions,
+  ServicesOptions,
+} from './lib/types'
 
 /**
  * Supabase Client.
  *
  * An isomorphic Javascript client for interacting with Postgres.
  */
-
-export type ServicesOptions = PostgrestClientServerOption & {}
 
 export default class SupabaseClient<
   Database = any,
