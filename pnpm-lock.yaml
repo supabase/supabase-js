@@ -8,8 +8,8 @@ importers:
   .:
     dependencies:
       '@supabase/auth-js':
-        specifier: 2.70.0
-        version: 2.70.0
+        specifier: 2.71.0
+        version: 2.71.0
       '@supabase/functions-js':
         specifier: 2.4.5
         version: 2.4.5
@@ -603,10 +603,10 @@ packages:
       }
     engines: { node: '>=16' }
 
-  '@supabase/auth-js@2.70.0':
+  '@supabase/auth-js@2.71.0':
     resolution:
       {
-        integrity: sha512-BaAK/tOAZFJtzF1sE3gJ2FwTjLf4ky3PSvcvLGEgEmO4BSBkwWKu8l67rLLIBZPDnCyV7Owk2uPyKHa0kj5QGg==,
+        integrity: sha512-OMYNbhGa1Cj4stalJq0VoHm5l7Sj/xY0j9CiYEQCikbQmtiDG3c27EIFA4OD+NxuoHTZmjaW8VJlS3SP+yasEA==,
       }
 
   '@supabase/functions-js@2.4.5':
@@ -5587,7 +5587,7 @@ snapshots:
       '@wallet-standard/base': 1.1.0
       '@wallet-standard/features': 1.1.0
 
-  '@supabase/auth-js@2.70.0':
+  '@supabase/auth-js@2.71.0':
     dependencies:
       '@supabase/node-fetch': 2.6.15
 
