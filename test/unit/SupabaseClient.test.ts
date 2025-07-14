@@ -109,20 +109,18 @@ describe('SupabaseClient', () => {
       test('should have custom header set', () => {
         const customHeader = { 'X-Test-Header': 'value' }
         const request = createClient(URL, KEY, { global: { headers: customHeader } }).rpc('')
-        //@ts-expect-error headers is protected attribute
-        const requestHeader = request.headers.get('X-Test-Header')
-        expect(requestHeader).toBe(customHeader['X-Test-Header'])
+        // @ts-ignore
+        const getHeaders = request.headers
+        expect(getHeaders).toHaveProperty('X-Test-Header', 'value')
       })
 
       test('should merge custom headers with default headers', () => {
         const customHeader = { 'X-Test-Header': 'value' }
-        const request = createClient(URL, KEY, { global: { headers: customHeader } }).rpc('')
-
-        //@ts-expect-error headers is protected attribute
-        const requestHeader = request.headers.get('X-Test-Header')
-        expect(requestHeader).toBe(customHeader['X-Test-Header'])
-        //@ts-expect-error headers is protected attribute
-        expect(request.headers.get('X-Client-Info')).not.toBeNull()
+        const client = createClient(URL, KEY, { global: { headers: customHeader } })
+        // @ts-ignore
+        expect(client.headers).toHaveProperty('X-Test-Header', 'value')
+        // @ts-ignore
+        expect(client.headers).toHaveProperty('X-Client-Info')
       })
     })
 
