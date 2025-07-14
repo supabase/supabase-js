@@ -2,16 +2,16 @@ import { createClient, RealtimeChannel, SupabaseClient } from '../src/index'
 
 // These tests assume that a local Supabase server is already running
 // Start a local Supabase instance with 'supabase start' before running these tests
+// Default local dev credentials from Supabase CLI
+const SUPABASE_URL = 'http://127.0.0.1:54321'
+const ANON_KEY =
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0'
+
+const supabase = createClient(SUPABASE_URL, ANON_KEY, {
+  realtime: { heartbeatIntervalMs: 500 },
+})
+
 describe('Supabase Integration Tests', () => {
-  // Default local dev credentials from Supabase CLI
-  const SUPABASE_URL = 'http://127.0.0.1:54321'
-  const ANON_KEY =
-    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0'
-
-  const supabase = createClient(SUPABASE_URL, ANON_KEY, {
-    realtime: { heartbeatIntervalMs: 500 },
-  })
-
   test('should connect to Supabase instance', async () => {
     expect(supabase).toBeDefined()
     expect(supabase).toBeInstanceOf(SupabaseClient)
@@ -304,5 +304,42 @@ describe('Supabase Integration Tests', () => {
       expect(receivedMessage).toBeDefined()
       expect(supabase.realtime.getChannels().length).toBe(1)
     }, 10000)
+  })
+})
+
+describe('Storage API', () => {
+  const bucket = 'test-bucket'
+  const filePath = 'test-file.txt'
+  const fileContent = new Blob(['Hello, Supabase Storage!'], { type: 'text/plain' })
+
+  // use service_role key for bypass RLS
+  const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || 'use-service-role-key'
+  const supabaseWithServiceRole = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
+    realtime: { heartbeatIntervalMs: 500 },
+  })
+
+  test('upload and list file in bucket', async () => {
+    // upload
+    const { data: uploadData, error: uploadError } = await supabaseWithServiceRole.storage
+      .from(bucket)
+      .upload(filePath, fileContent, { upsert: true })
+    expect(uploadError).toBeNull()
+    expect(uploadData).toBeDefined()
+
+    // list
+    const { data: listData, error: listError } = await supabaseWithServiceRole.storage
+      .from(bucket)
+      .list()
+    expect(listError).toBeNull()
+    expect(Array.isArray(listData)).toBe(true)
+    if (!listData) throw new Error('listData is null')
+    const fileNames = listData.map((f: any) => f.name)
+    expect(fileNames).toContain('test-file.txt')
+
+    // delete file
+    const { error: deleteError } = await supabaseWithServiceRole.storage
+      .from(bucket)
+      .remove([filePath])
+    expect(deleteError).toBeNull()
   })
 })

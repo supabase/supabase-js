@@ -176,8 +176,13 @@ jobs:
           npm ci
           npm run build
 
+      - name: Install jq
+        run: sudo apt-get update && sudo apt-get install -y jq
+
       - name: Run integration tests
-        run: npm run test:integration || npm run test:integration
+        run: |
+          export SUPABASE_SERVICE_ROLE_KEY="$(supabase status --output json | jq -r '.SERVICE_ROLE_KEY')"
+          npm run test:integration || npm run test:integration
 
       - name: Stop Supabase
         if: always()
