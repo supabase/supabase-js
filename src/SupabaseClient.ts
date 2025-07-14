@@ -4,8 +4,6 @@ import {
   PostgrestClient,
   PostgrestFilterBuilder,
   PostgrestQueryBuilder,
-  ClientServerOptions as PostgrestClientServerOption,
-  GetGenericDatabaseWithOptions,
 } from '@supabase/postgrest-js'
 import {
   RealtimeChannel,
@@ -30,18 +28,13 @@ import { Fetch, GenericSchema, SupabaseClientOptions, SupabaseAuthClientOptions 
  *
  * An isomorphic Javascript client for interacting with Postgres.
  */
-
-export type ServicesOptions = PostgrestClientServerOption & {}
-
 export default class SupabaseClient<
   Database = any,
-  ClientOptions extends ServicesOptions = { PostgrestVersion: '12' },
-  SchemaName extends string &
-    keyof GetGenericDatabaseWithOptions<Database>['db'] = 'public' extends keyof GetGenericDatabaseWithOptions<Database>['db']
+  SchemaName extends string & keyof Database = 'public' extends keyof Database
     ? 'public'
-    : string & keyof GetGenericDatabaseWithOptions<Database>['db'],
-  Schema extends GenericSchema = GetGenericDatabaseWithOptions<Database>['db'][SchemaName] extends GenericSchema
-    ? GetGenericDatabaseWithOptions<Database>['db'][SchemaName]
+    : string & keyof Database,
+  Schema extends GenericSchema = Database[SchemaName] extends GenericSchema
+    ? Database[SchemaName]
     : any
 > {
   /**
@@ -54,7 +47,7 @@ export default class SupabaseClient<
   protected authUrl: URL
   protected storageUrl: URL
   protected functionsUrl: URL
-  protected rest: PostgrestClient<Database, ClientOptions, SchemaName, Schema>
+  protected rest: PostgrestClient<Database, SchemaName, Schema>
   protected storageKey: string
   protected fetch?: Fetch
   protected changedAccessToken?: string
@@ -163,16 +156,16 @@ export default class SupabaseClient<
   from<
     TableName extends string & keyof Schema['Tables'],
     Table extends Schema['Tables'][TableName]
-  >(relation: TableName): PostgrestQueryBuilder<ClientOptions, Schema, Table, TableName>
+  >(relation: TableName): PostgrestQueryBuilder<Schema, Table, TableName>
   from<ViewName extends string & keyof Schema['Views'], View extends Schema['Views'][ViewName]>(
     relation: ViewName
-  ): PostgrestQueryBuilder<ClientOptions, Schema, View, ViewName>
+  ): PostgrestQueryBuilder<Schema, View, ViewName>
   /**
    * Perform a query on a table or a view.
    *
    * @param relation - The table or view name to query
    */
-  from(relation: string): PostgrestQueryBuilder<ClientOptions, Schema, any, any> {
+  from(relation: string): PostgrestQueryBuilder<Schema, any, any> {
     return this.rest.from(relation)
   }
 
@@ -184,11 +177,10 @@ export default class SupabaseClient<
    *
    * @param schema - The schema to query
    */
-  schema<DynamicSchema extends string & keyof GetGenericDatabaseWithOptions<Database>['db']>(
+  schema<DynamicSchema extends string & keyof Database>(
     schema: DynamicSchema
   ): PostgrestClient<
     Database,
-    ClientOptions,
     DynamicSchema,
     Database[DynamicSchema] extends GenericSchema ? Database[DynamicSchema] : any
   > {
@@ -228,7 +220,6 @@ export default class SupabaseClient<
       count?: 'exact' | 'planned' | 'estimated'
     } = {}
   ): PostgrestFilterBuilder<
-    ClientOptions,
     Schema,
     Fn['Returns'] extends any[]
       ? Fn['Returns'][number] extends Record<string, unknown>
@@ -237,8 +228,7 @@ export default class SupabaseClient<
       : never,
     Fn['Returns'],
     FnName,
-    null,
-    'RPC'
+    null
   > {
     return this.rest.rpc(fn, args, options)
   }

@@ -8,8 +8,8 @@ importers:
   .:
     dependencies:
       '@supabase/auth-js':
-        specifier: 2.70.0
-        version: 2.70.0
+        specifier: 2.71.0
+        version: 2.71.0
       '@supabase/functions-js':
         specifier: 2.4.5
         version: 2.4.5
@@ -41,6 +41,9 @@ importers:
       jest:
         specifier: ^29.3.1
         version: 29.7.0(@types/node@22.14.1)(ts-node@10.9.2(@types/node@22.14.1)(typescript@4.9.5))
+      jsr:
+        specifier: ^0.13.5
+        version: 0.13.5
       npm-run-all:
         specifier: ^4.1.5
         version: 4.1.5
@@ -600,10 +603,10 @@ packages:
       }
     engines: { node: '>=16' }
 
-  '@supabase/auth-js@2.70.0':
+  '@supabase/auth-js@2.71.0':
     resolution:
       {
-        integrity: sha512-BaAK/tOAZFJtzF1sE3gJ2FwTjLf4ky3PSvcvLGEgEmO4BSBkwWKu8l67rLLIBZPDnCyV7Owk2uPyKHa0kj5QGg==,
+        integrity: sha512-OMYNbhGa1Cj4stalJq0VoHm5l7Sj/xY0j9CiYEQCikbQmtiDG3c27EIFA4OD+NxuoHTZmjaW8VJlS3SP+yasEA==,
       }
 
   '@supabase/functions-js@2.4.5':
@@ -3157,10 +3160,10 @@ packages:
         integrity: sha512-HUgH65KyejrUFPvHFPbqOY0rsFip3Bo5wb4ngvdi1EpCYWUQDC5V+Y7mZws+DLkr4M//zQJoanu1SP+87Dv1oQ==,
       }
 
-  jsr@0.13.4:
+  jsr@0.13.5:
     resolution:
       {
-        integrity: sha512-GJ9Ju8kf2SxH90C1AqANrMKBFlDjrZu1YoFm4SoMCOBOxix3Bvirdg5JB31gbF8FwPBo3196dAaqV0WUjeuq8Q==,
+        integrity: sha512-qQP20ZcG28pYes7bCq3uuvixl1TL1EpJzwLPfoQadSyWk9j2AID66qhW8+aXpRDRFDvDkXFnONsSRhpnnQAupg==,
       }
     hasBin: true
 
@@ -3177,12 +3180,6 @@ packages:
         integrity: sha512-eTIzlVOSUR+JxdDFepEYcBMtZ9Qqdef+rnzWdRZuMbOywu5tO2w2N7rqjoANZ5k9vywhL6Br1VRjUIgTQx4E8w==,
       }
     engines: { node: '>=6' }
-
-  kolorist@1.8.0:
-    resolution:
-      {
-        integrity: sha512-Y+60/zizpJ3HRH8DCss+q95yr6145JXZo46OTpFvDZWLfRCE4qChOyk1b26nMaNpfHHgxagk9dXT5OP0Tfe+dQ==,
-      }
 
   leven@3.1.0:
     resolution:
@@ -5573,7 +5570,7 @@ snapshots:
 
   '@sebbo2002/semantic-release-jsr@1.1.0':
     dependencies:
-      jsr: 0.13.4
+      jsr: 0.13.5
 
   '@sinclair/typebox@0.27.8': {}
 
@@ -5590,7 +5587,7 @@ snapshots:
       '@wallet-standard/base': 1.1.0
       '@wallet-standard/features': 1.1.0
 
-  '@supabase/auth-js@2.70.0':
+  '@supabase/auth-js@2.71.0':
     dependencies:
       '@supabase/node-fetch': 2.6.15
 
@@ -7334,17 +7331,14 @@ snapshots:
 
   jsonc-parser@3.3.1: {}
 
-  jsr@0.13.4:
+  jsr@0.13.5:
     dependencies:
-      kolorist: 1.8.0
       node-stream-zip: 1.15.0
       semiver: 1.1.0
 
   kind-of@6.0.3: {}
 
   kleur@3.0.3: {}
-
-  kolorist@1.8.0: {}
 
   leven@3.1.0: {}
 
