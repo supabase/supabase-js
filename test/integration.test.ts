@@ -176,6 +176,7 @@ describe('Supabase Integration Tests', () => {
       // Clean up by signing out the user
       await supabase.auth.signOut()
     })
+
     test('should sign up a user', async () => {
       const email = `test-${Date.now()}@example.com`
       const password = 'password123'
@@ -188,6 +189,64 @@ describe('Supabase Integration Tests', () => {
       expect(error).toBeNull()
       expect(data.user).toBeDefined()
       expect(data.user!.email).toBe(email)
+    })
+
+    test('should sign in and out successfully', async () => {
+      const email = `test-${Date.now()}@example.com`
+      const password = 'password123'
+
+      await supabase.auth.signUp({ email, password })
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+
+      expect(error).toBeNull()
+      expect(data.user).toBeDefined()
+      expect(data.user!.email).toBe(email)
+
+      const { error: signOutError } = await supabase.auth.signOut()
+
+      expect(signOutError).toBeNull()
+    })
+
+    test('should get current user', async () => {
+      const email = `test-${Date.now()}@example.com`
+      const password = 'password123'
+
+      await supabase.auth.signUp({ email, password })
+      await supabase.auth.signInWithPassword({ email, password })
+
+      const { data, error } = await supabase.auth.getUser()
+
+      expect(error).toBeNull()
+      expect(data.user).toBeDefined()
+      expect(data.user!.email).toBe(email)
+    })
+
+    test('should handle invalid credentials', async () => {
+      const email = `test-${Date.now()}@example.com`
+      const password = 'password123'
+
+      await supabase.auth.signUp({ email, password })
+
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password: 'wrongpassword',
+      })
+
+      expect(error).not.toBeNull()
+      expect(data.user).toBeNull()
+    })
+
+    test('should handle non-existent user', async () => {
+      const email = `nonexistent-${Date.now()}@example.com`
+      const password = 'password123'
+
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      })
+
+      expect(error).not.toBeNull()
+      expect(data.user).toBeNull()
     })
   })
 
