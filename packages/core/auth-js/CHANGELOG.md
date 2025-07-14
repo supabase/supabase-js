@@ -1,5 +1,20 @@
 # Changelog
 
+## [2.71.0](https://github.com/supabase/auth-js/compare/v2.70.0...v2.71.0) (2025-07-10)
+
+
+### Features
+
+* fallback to `getUser()` if the `kid` of the JWT is not found ([#1080](https://github.com/supabase/auth-js/issues/1080)) ([9721f60](https://github.com/supabase/auth-js/commit/9721f605d3fdd046b5453befa1abfcb755cf7235))
+* introduce experimental split user and session storage ([#1023](https://github.com/supabase/auth-js/issues/1023)) ([e7b2f21](https://github.com/supabase/auth-js/commit/e7b2f2169cbbf2cd1e56526c488fc7c169335eac))
+* make `getClaims()` non experimental, add global cache ([#1078](https://github.com/supabase/auth-js/issues/1078)) ([ffe13d7](https://github.com/supabase/auth-js/commit/ffe13d7e833f3e53129e152ad3084fb042f9f7c9))
+* remove solana dependency by inlining types ([#1079](https://github.com/supabase/auth-js/issues/1079)) ([7665f94](https://github.com/supabase/auth-js/commit/7665f941bbf1f1f420f56b98df01da304f1b2e1d))
+
+
+### Bug Fixes
+
+* handle null current session with split session storage ([#1071](https://github.com/supabase/auth-js/issues/1071)) ([bc6192a](https://github.com/supabase/auth-js/commit/bc6192afd17e2995ca63acb7fbd4e7ee0b435687))
+
 ## [2.70.0](https://github.com/supabase/auth-js/compare/v2.69.1...v2.70.0) (2025-05-16)
 
 
