@@ -1,6 +1,7 @@
 import { AuthClient } from '@supabase/auth-js'
 import { RealtimeClientOptions } from '@supabase/realtime-js'
 import { PostgrestError } from '@supabase/postgrest-js'
+import { StorageClientOptions } from '@supabase/storage-js/dist/module/StorageClient'
 
 type AuthClientOptions = ConstructorParameters<typeof AuthClient>[0]
 
@@ -56,6 +57,7 @@ export type SupabaseClientOptions<SchemaName> = {
    * Options passed to the realtime-js instance
    */
   realtime?: RealtimeClientOptions
+  storage?: StorageClientOptions
   global?: {
     /**
      * A custom `fetch` implementation.
