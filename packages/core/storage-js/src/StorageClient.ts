@@ -2,12 +2,16 @@ import StorageFileApi from './packages/StorageFileApi'
 import StorageBucketApi from './packages/StorageBucketApi'
 import { Fetch } from './lib/fetch'
 
+export interface StorageClientOptions {
+  useNewHostname?: boolean
+}
+
 export class StorageClient extends StorageBucketApi {
   constructor(
     url: string,
     headers: { [key: string]: string } = {},
     fetch?: Fetch,
-    opts?: { useNewHostname?: boolean }
+    opts?: StorageClientOptions
   ) {
     super(url, headers, fetch, opts)
   }

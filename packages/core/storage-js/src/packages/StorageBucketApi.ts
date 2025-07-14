@@ -3,6 +3,7 @@ import { isStorageError, StorageError } from '../lib/errors'
 import { Fetch, get, post, put, remove } from '../lib/fetch'
 import { resolveFetch } from '../lib/helpers'
 import { Bucket, BucketType } from '../lib/types'
+import { StorageClientOptions } from '../StorageClient'
 
 export default class StorageBucketApi {
   protected url: string
@@ -13,21 +14,15 @@ export default class StorageBucketApi {
     url: string,
     headers: { [key: string]: string } = {},
     fetch?: Fetch,
-    opts?: { useNewHostname?: boolean }
+    opts?: StorageClientOptions
   ) {
     const baseUrl = new URL(url)
 
     // if legacy uri is used, replace with new storage host (disables request buffering to allow > 50GB uploads)
-    // "project-ref.supabase.co/storage/v1" becomes "project-ref.storage.supabase.co/v1"
+    // "project-ref.supabase.co" becomes "project-ref.storage.supabase.co"
     if (opts?.useNewHostname) {
       const isSupabaseHost = /supabase\.(co|in|red)$/.test(baseUrl.hostname)
-      const legacyStoragePrefix = '/storage'
-      if (
-        isSupabaseHost &&
-        !baseUrl.hostname.includes('storage.supabase.') &&
-        baseUrl.pathname.startsWith(legacyStoragePrefix)
-      ) {
-        baseUrl.pathname = baseUrl.pathname.substring(legacyStoragePrefix.length)
+      if (isSupabaseHost && !baseUrl.hostname.includes('storage.supabase.')) {
         baseUrl.hostname = baseUrl.hostname.replace('supabase.', 'storage.supabase.')
       }
     }
