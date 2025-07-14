@@ -50,6 +50,7 @@ export function applySettingDefaults<
       ...DEFAULT_REALTIME_OPTIONS,
       ...realtimeOptions,
     },
+    storage: {},
     global: {
       ...DEFAULT_GLOBAL_OPTIONS,
       ...globalOptions,
