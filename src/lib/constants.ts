@@ -25,16 +25,22 @@ export function getClientPlatform(): string | null {
     if (platform === 'linux') return 'Linux'
     if (platform === 'android') return 'Android'
   }
+
   // @ts-ignore
-  if (typeof navigator !== 'undefined' && navigator.platform) {
+  if (typeof navigator !== 'undefined') {
+    // Modern User-Agent Client Hints API
     // @ts-ignore
-    const platform = navigator.platform
-    if (platform === 'MacIntel') return 'macOS'
-    if (platform === 'Win32') return 'Windows'
-    if (platform === 'Linux x86_64') return 'Linux'
-    if (platform === 'iPhone') return 'iOS'
-    if (platform === 'iPad') return 'iOS'
+    if (navigator.userAgentData && navigator.userAgentData.platform) {
+      // @ts-ignore
+      const platform = navigator.userAgentData.platform
+      if (platform === 'macOS') return 'macOS'
+      if (platform === 'Windows') return 'Windows'
+      if (platform === 'Linux') return 'Linux'
+      if (platform === 'Android') return 'Android'
+      if (platform === 'iOS') return 'iOS'
+    }
   }
+
   return null
 }
 
@@ -44,6 +50,17 @@ export function getClientPlatformVersion(): string | null {
     // @ts-ignore
     return process.version.slice(1)
   }
+
+  // @ts-ignore
+  if (typeof navigator !== 'undefined') {
+    // Modern User-Agent Client Hints API
+    // @ts-ignore
+    if (navigator.userAgentData && navigator.userAgentData.platformVersion) {
+      // @ts-ignore
+      return navigator.userAgentData.platformVersion
+    }
+  }
+
   return null
 }
 
