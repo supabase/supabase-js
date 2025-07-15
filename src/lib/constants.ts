@@ -15,19 +15,7 @@ if (typeof Deno !== 'undefined') {
   JS_ENV = 'node'
 }
 
-export function getClientPlatform(): string {
-  // @ts-ignore
-  if (typeof navigator !== 'undefined' && navigator.platform) {
-    // @ts-ignore
-    const platform = navigator.platform.toLowerCase()
-    if (platform.includes('mac')) return 'macOS'
-    if (platform.includes('win')) return 'Windows'
-    if (platform.includes('linux')) return 'Linux'
-    if (platform.includes('iphone') || platform.includes('ipad')) return 'iOS'
-    if (platform.includes('android')) return 'Android'
-    // @ts-ignore
-    return navigator.platform
-  }
+export function getClientPlatform(): string | null {
   // @ts-ignore
   if (typeof process !== 'undefined' && process.platform) {
     // @ts-ignore
@@ -35,37 +23,31 @@ export function getClientPlatform(): string {
     if (platform === 'darwin') return 'macOS'
     if (platform === 'win32') return 'Windows'
     if (platform === 'linux') return 'Linux'
-    return platform
+    if (platform === 'android') return 'Android'
   }
-  return 'unknown'
+  // @ts-ignore
+  if (typeof navigator !== 'undefined' && navigator.platform) {
+    // @ts-ignore
+    const platform = navigator.platform
+    if (platform === 'MacIntel') return 'macOS'
+    if (platform === 'Win32') return 'Windows'
+    if (platform === 'Linux x86_64') return 'Linux'
+    if (platform === 'iPhone') return 'iOS'
+    if (platform === 'iPad') return 'iOS'
+  }
+  return null
 }
 
-export function getClientPlatformVersion(): string {
-  // @ts-ignore
-  if (typeof navigator !== 'undefined' && navigator.userAgent) {
-    // @ts-ignore
-    const userAgent = navigator.userAgent
-    const macMatch = userAgent.match(/Mac OS X (\d+[._]\d+[._]\d+)/)
-    if (macMatch) return macMatch[1].replace(/_/g, '.')
-
-    const windowsMatch = userAgent.match(/Windows NT (\d+\.\d+)/)
-    if (windowsMatch) return windowsMatch[1]
-
-    const iosMatch = userAgent.match(/OS (\d+[._]\d+[._]\d+)/)
-    if (iosMatch) return iosMatch[1].replace(/_/g, '.')
-
-    const androidMatch = userAgent.match(/Android (\d+\.\d+)/)
-    if (androidMatch) return androidMatch[1]
-  }
+export function getClientPlatformVersion(): string | null {
   // @ts-ignore
   if (typeof process !== 'undefined' && process.version) {
     // @ts-ignore
     return process.version.slice(1)
   }
-  return 'unknown'
+  return null
 }
 
-export function getClientRuntime(): string {
+export function getClientRuntime(): string | null {
   // @ts-ignore
   if (typeof Deno !== 'undefined') {
     return 'deno'
@@ -78,13 +60,10 @@ export function getClientRuntime(): string {
   if (typeof process !== 'undefined' && process.versions && process.versions.node) {
     return 'node'
   }
-  if (typeof document !== 'undefined') {
-    return 'web'
-  }
-  return 'unknown'
+  return null
 }
 
-export function getClientRuntimeVersion(): string {
+export function getClientRuntimeVersion(): string | null {
   // @ts-ignore
   if (typeof Deno !== 'undefined' && Deno.version) {
     // @ts-ignore
@@ -100,19 +79,38 @@ export function getClientRuntimeVersion(): string {
     // @ts-ignore
     return process.versions.node
   }
-  if (typeof document !== 'undefined') {
-    return 'unknown'
-  }
-  return 'unknown'
+  return null
 }
 
-export const DEFAULT_HEADERS = {
-  'X-Client-Info': `supabase-js-${JS_ENV}/${version}`,
-  'X-Supabase-Client-Platform': getClientPlatform(),
-  'X-Supabase-Client-Platform-Version': getClientPlatformVersion(),
-  'X-Supabase-Client-Runtime': getClientRuntime(),
-  'X-Supabase-Client-Runtime-Version': getClientRuntimeVersion(),
+function buildHeaders() {
+  const headers: Record<string, string> = {
+    'X-Client-Info': `supabase-js-${JS_ENV}/${version}`,
+  }
+
+  const platform = getClientPlatform()
+  if (platform) {
+    headers['X-Supabase-Client-Platform'] = platform
+  }
+
+  const platformVersion = getClientPlatformVersion()
+  if (platformVersion) {
+    headers['X-Supabase-Client-Platform-Version'] = platformVersion
+  }
+
+  const runtime = getClientRuntime()
+  if (runtime) {
+    headers['X-Supabase-Client-Runtime'] = runtime
+  }
+
+  const runtimeVersion = getClientRuntimeVersion()
+  if (runtimeVersion) {
+    headers['X-Supabase-Client-Runtime-Version'] = runtimeVersion
+  }
+
+  return headers
 }
+
+export const DEFAULT_HEADERS = buildHeaders()
 
 export const DEFAULT_GLOBAL_OPTIONS = {
   headers: DEFAULT_HEADERS,
