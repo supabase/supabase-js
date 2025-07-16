@@ -39,3 +39,12 @@ export const createClient = <
 ): SupabaseClient<Database, SchemaName, Schema> => {
   return new SupabaseClient<Database, SchemaName, Schema>(supabaseUrl, supabaseKey, options)
 }
+
+// Check for Node.js 18 deprecation
+if (typeof process !== 'undefined' && process.version && process.version.startsWith('v18')) {
+  console.warn(
+    `⚠️  Node.js 18 is deprecated and will no longer be supported in future versions of @supabase/supabase-js. ` +
+      `Please upgrade to Node.js 20 or later. ` +
+      `For more information, visit: https://github.com/orgs/supabase/discussions/37217`
+  )
+}
