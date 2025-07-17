@@ -1,5 +1,5 @@
 import SupabaseClient from './SupabaseClient'
-import type { GenericSchema, SupabaseClientOptions } from './lib/types'
+import type { GenericSchema, SupabaseClientOptions } from './lib/typesz
 
 export * from '@supabase/auth-js'
 export type { User as AuthUser, Session as AuthSession } from '@supabase/auth-js'
@@ -41,7 +41,7 @@ export const createClient = <
 }
 
 // Check for Node.js 18 deprecation
-if (typeof process !== 'undefined' && process.version && process.version.startsWith('v18')) {
+if (typeof window === 'undefined' && typeof process !== 'undefined' && process.version && process.version.startsWith('v18')) {
   console.warn(
     `⚠️  Node.js 18 is deprecated and will no longer be supported in future versions of @supabase/supabase-js. ` +
       `Please upgrade to Node.js 20 or later. ` +
