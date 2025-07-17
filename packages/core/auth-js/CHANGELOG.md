@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.71.1](https://github.com/supabase/auth-js/compare/v2.71.0...v2.71.1) (2025-07-17)
+
+
+### Bug Fixes
+
+* use JSON-based deep clone instead of structuredClone ([#1084](https://github.com/supabase/auth-js/issues/1084)) ([9a6edb9](https://github.com/supabase/auth-js/commit/9a6edb9d0e4d80c79c79b2f643dbaaf57f3d5ebe))
+
 ## [2.71.0](https://github.com/supabase/auth-js/compare/v2.70.0...v2.71.0) (2025-07-10)
 
 
