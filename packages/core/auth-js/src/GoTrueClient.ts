@@ -112,6 +112,7 @@ import type {
   Web3Credentials,
 } from './lib/types'
 import { stringToUint8Array, bytesToBase64URL } from './lib/base64url'
+import { deepClone } from './lib/helpers'
 
 polyfillGlobalThis() // Make "globalThis" available
 
@@ -2419,13 +2420,13 @@ export default class GoTrueClient {
       const mainSessionData: Omit<Session, 'user'> & { user?: User } = { ...sessionToProcess }
       delete mainSessionData.user // Remove user (real or proxy) before cloning for main storage
 
-      const clonedMainSessionData = structuredClone(mainSessionData)
+      const clonedMainSessionData = deepClone(mainSessionData)
       await setItemAsync(this.storage, this.storageKey, clonedMainSessionData)
     } else {
       // No userStorage is configured.
       // In this case, session.user should ideally not be a proxy.
       // If it were, structuredClone would fail. This implies an issue elsewhere if user is a proxy here
-      const clonedSession = structuredClone(sessionToProcess) // sessionToProcess still has its original user property
+      const clonedSession = deepClone(sessionToProcess) // sessionToProcess still has its original user property
       await setItemAsync(this.storage, this.storageKey, clonedSession)
     }
   }
