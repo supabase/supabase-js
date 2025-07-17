@@ -49,7 +49,7 @@
     "update:test-deps:bun": "npm run build && npm pack && cp supabase-supabase-js-*.tgz test/integration/bun/supabase-supabase-js-0.0.0-automated.tgz && cd test/integration/bun && bun install"
   },
   "dependencies": {
-    "@supabase/auth-js": "2.71.0",
+    "@supabase/auth-js": "2.71.1",
     "@supabase/functions-js": "2.4.5",
     "@supabase/node-fetch": "2.6.15",
     "@supabase/postgrest-js": "1.19.4",
