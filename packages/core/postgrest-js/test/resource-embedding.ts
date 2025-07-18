@@ -1,5 +1,7 @@
 import { PostgrestClient } from '../src/index'
 import { Database } from './types.override'
+import { expectType } from 'tsd'
+import { TypeEqual } from 'ts-expect'
 
 const postgrest = new PostgrestClient<Database>('http://localhost:3000')
 
@@ -52,6 +54,17 @@ test('embedded select', async () => {
       "statusText": "OK",
     }
   `)
+  let result: Exclude<typeof res.data, null>
+  let expected: {
+    messages: {
+      channel_id: number
+      data: unknown
+      id: number
+      message: string | null
+      username: string
+    }[]
+  }[]
+  expectType<TypeEqual<typeof result, typeof expected>>(true)
 })
 
 describe('embedded filters', () => {
@@ -94,6 +107,17 @@ describe('embedded filters', () => {
         "statusText": "OK",
       }
     `)
+    let result: Exclude<typeof res.data, null>
+    let expected: {
+      messages: {
+        channel_id: number
+        data: unknown
+        id: number
+        message: string | null
+        username: string
+      }[]
+    }[]
+    expectType<TypeEqual<typeof result, typeof expected>>(true)
   })
   test('embedded or', async () => {
     const res = await postgrest
@@ -140,6 +164,17 @@ describe('embedded filters', () => {
         "statusText": "OK",
       }
     `)
+    let result: Exclude<typeof res.data, null>
+    let expected: {
+      messages: {
+        channel_id: number
+        data: unknown
+        id: number
+        message: string | null
+        username: string
+      }[]
+    }[]
+    expectType<TypeEqual<typeof result, typeof expected>>(true)
   })
   test('embedded or with and', async () => {
     const res = await postgrest
@@ -188,6 +223,17 @@ describe('embedded filters', () => {
         "statusText": "OK",
       }
     `)
+    let result: Exclude<typeof res.data, null>
+    let expected: {
+      messages: {
+        channel_id: number
+        data: unknown
+        id: number
+        message: string | null
+        username: string
+      }[]
+    }[]
+    expectType<TypeEqual<typeof result, typeof expected>>(true)
   })
 })
 
@@ -244,6 +290,17 @@ describe('embedded transforms', () => {
         "statusText": "OK",
       }
     `)
+    let result: Exclude<typeof res.data, null>
+    let expected: {
+      messages: {
+        channel_id: number
+        data: unknown
+        id: number
+        message: string | null
+        username: string
+      }[]
+    }[]
+    expectType<TypeEqual<typeof result, typeof expected>>(true)
   })
 
   test('embedded order on multiple columns', async () => {
@@ -299,6 +356,17 @@ describe('embedded transforms', () => {
         "statusText": "OK",
       }
     `)
+    let result: Exclude<typeof res.data, null>
+    let expected: {
+      messages: {
+        channel_id: number
+        data: unknown
+        id: number
+        message: string | null
+        username: string
+      }[]
+    }[]
+    expectType<TypeEqual<typeof result, typeof expected>>(true)
   })
 
   test('embedded limit', async () => {
@@ -339,6 +407,17 @@ describe('embedded transforms', () => {
         "statusText": "OK",
       }
     `)
+    let result: Exclude<typeof res.data, null>
+    let expected: {
+      messages: {
+        channel_id: number
+        data: unknown
+        id: number
+        message: string | null
+        username: string
+      }[]
+    }[]
+    expectType<TypeEqual<typeof result, typeof expected>>(true)
   })
 
   test('embedded range', async () => {
@@ -379,5 +458,16 @@ describe('embedded transforms', () => {
         "statusText": "OK",
       }
     `)
+    let result: Exclude<typeof res.data, null>
+    let expected: {
+      messages: {
+        channel_id: number
+        data: unknown
+        id: number
+        message: string | null
+        username: string
+      }[]
+    }[]
+    expectType<TypeEqual<typeof result, typeof expected>>(true)
   })
 })

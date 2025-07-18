@@ -3,14 +3,14 @@ import { Database } from './types.override'
 import { Database as DatabasePostgrest13 } from './types.override-with-options-postgrest13'
 import { expectType } from 'tsd'
 import { InvalidMethodError } from '../src/PostgrestFilterBuilder'
+import { Json } from './types.generated'
 
 const REST_URL_13 = 'http://localhost:3001'
 const postgrest13 = new PostgrestClient<DatabasePostgrest13>(REST_URL_13)
 const postgrest12 = new PostgrestClient<Database>(REST_URL_13)
 
 describe('maxAffected', () => {
-  // Type checking tests
-  test('maxAffected should show type warning on postgrest 12 clients', async () => {
+  test('types: maxAffected should show type warning on postgrest 12 clients', async () => {
     const resUpdate = await postgrest12
       .from('messages')
       .update({ channel_id: 2 })
@@ -18,7 +18,7 @@ describe('maxAffected', () => {
       .maxAffected(1)
     expectType<InvalidMethodError<'maxAffected method only available on postgrest 13+'>>(resUpdate)
   })
-  test('maxAffected should show type warning on non update / delete', async () => {
+  test('types: maxAffected should show type warning on non update / delete', async () => {
     const resSelect = await postgrest13.from('messages').select('*').maxAffected(10)
     const resInsert = await postgrest13
       .from('messages')
@@ -59,7 +59,6 @@ describe('maxAffected', () => {
     )
   })
 
-  // Runtime behavior tests
   test('update should fail when maxAffected is exceeded', async () => {
     // First create multiple rows
     await postgrest13.from('messages').insert([
@@ -74,6 +73,7 @@ describe('maxAffected', () => {
       .update({ message: 'updated' })
       .eq('message', 'test1')
       .maxAffected(2)
+
     const { error } = result
     expect(error).toBeDefined()
     expect(error?.code).toBe('PGRST124')
@@ -92,7 +92,16 @@ describe('maxAffected', () => {
       .eq('message', 'test2')
       .maxAffected(2)
       .select()
-
+    expectType<
+      | {
+          channel_id: number
+          data: Json | null
+          id: number
+          message: string | null
+          username: string
+        }[]
+      | null
+    >(data)
     expect(error).toBeNull()
     expect(data).toHaveLength(1)
     expect(data?.[0].message).toBe('updated')
@@ -113,7 +122,6 @@ describe('maxAffected', () => {
       .eq('message', 'test3')
       .maxAffected(2)
       .select()
-
     expect(error).toBeDefined()
     expect(error?.code).toBe('PGRST124')
   })

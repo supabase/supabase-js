@@ -1,41 +1,15 @@
 import { PostgrestClient } from '../src/index'
 import { Database } from './types.override'
+import { expectType } from 'tsd'
+import { TypeEqual } from 'ts-expect'
 
 const REST_URL = 'http://localhost:3000'
 export const postgrest = new PostgrestClient<Database>(REST_URL)
 
 export const RPC_NAME = 'get_username_and_status'
 
-export const selectParams = {
-  noParams: undefined,
-  starSelect: '*',
-  fieldSelect: 'username',
-  fieldsSelect: 'username, status',
-  fieldAliasing: 'name:username',
-  fieldCasting: 'status::text',
-  fieldAggregate: 'username.count(), status',
-} as const
-
-export const selectQueries = {
-  noParams: postgrest.rpc(RPC_NAME, { name_param: 'supabot' }).select(selectParams.noParams),
-  starSelect: postgrest.rpc(RPC_NAME, { name_param: 'supabot' }).select(selectParams.starSelect),
-  fieldSelect: postgrest.rpc(RPC_NAME, { name_param: 'supabot' }).select(selectParams.fieldSelect),
-  fieldsSelect: postgrest
-    .rpc(RPC_NAME, { name_param: 'supabot' })
-    .select(selectParams.fieldsSelect),
-  fieldAliasing: postgrest
-    .rpc(RPC_NAME, { name_param: 'supabot' })
-    .select(selectParams.fieldAliasing),
-  fieldCasting: postgrest
-    .rpc(RPC_NAME, { name_param: 'supabot' })
-    .select(selectParams.fieldCasting),
-  fieldAggregate: postgrest
-    .rpc(RPC_NAME, { name_param: 'supabot' })
-    .select(selectParams.fieldAggregate),
-} as const
-
 test('RPC call with no params', async () => {
-  const res = await selectQueries.noParams
+  const res = await postgrest.rpc(RPC_NAME, { name_param: 'supabot' }).select()
   expect(res).toMatchInlineSnapshot(`
     Object {
       "count": null,
@@ -50,10 +24,14 @@ test('RPC call with no params', async () => {
       "statusText": "OK",
     }
   `)
+  // check our result types match the runtime result
+  let result: Exclude<typeof res.data, null>
+  let expected: Database['public']['Functions'][typeof RPC_NAME]['Returns']
+  expectType<TypeEqual<typeof result, typeof expected>>(true)
 })
 
 test('RPC call with star select', async () => {
-  const res = await selectQueries.starSelect
+  const res = await postgrest.rpc(RPC_NAME, { name_param: 'supabot' }).select('*')
   expect(res).toMatchInlineSnapshot(`
     Object {
       "count": null,
@@ -68,10 +46,14 @@ test('RPC call with star select', async () => {
       "statusText": "OK",
     }
   `)
+  // check our result types match the runtime result
+  let result: Exclude<typeof res.data, null>
+  let expected: Database['public']['Functions'][typeof RPC_NAME]['Returns']
+  expectType<TypeEqual<typeof result, typeof expected>>(true)
 })
 
 test('RPC call with single field select', async () => {
-  const res = await selectQueries.fieldSelect
+  const res = await postgrest.rpc(RPC_NAME, { name_param: 'supabot' }).select('username')
   expect(res).toMatchInlineSnapshot(`
     Object {
       "count": null,
@@ -85,10 +67,14 @@ test('RPC call with single field select', async () => {
       "statusText": "OK",
     }
   `)
+  // check our result types match the runtime result
+  let result: Exclude<typeof res.data, null>
+  let expected: { username: string }[]
+  expectType<TypeEqual<typeof result, typeof expected>>(true)
 })
 
 test('RPC call with multiple fields select', async () => {
-  const res = await selectQueries.fieldsSelect
+  const res = await postgrest.rpc(RPC_NAME, { name_param: 'supabot' }).select('username, status')
   expect(res).toMatchInlineSnapshot(`
     Object {
       "count": null,
@@ -103,10 +89,14 @@ test('RPC call with multiple fields select', async () => {
       "statusText": "OK",
     }
   `)
+  // check our result types match the runtime result
+  let result: Exclude<typeof res.data, null>
+  let expected: Database['public']['Functions'][typeof RPC_NAME]['Returns']
+  expectType<TypeEqual<typeof result, typeof expected>>(true)
 })
 
 test('RPC call with field aliasing', async () => {
-  const res = await selectQueries.fieldAliasing
+  const res = await postgrest.rpc(RPC_NAME, { name_param: 'supabot' }).select('name:username')
   expect(res).toMatchInlineSnapshot(`
     Object {
       "count": null,
@@ -120,10 +110,14 @@ test('RPC call with field aliasing', async () => {
       "statusText": "OK",
     }
   `)
+  // check our result types match the runtime result
+  let result: Exclude<typeof res.data, null>
+  let expected: { name: string }[]
+  expectType<TypeEqual<typeof result, typeof expected>>(true)
 })
 
 test('RPC call with field casting', async () => {
-  const res = await selectQueries.fieldCasting
+  const res = await postgrest.rpc(RPC_NAME, { name_param: 'supabot' }).select('status::text')
   expect(res).toMatchInlineSnapshot(`
     Object {
       "count": null,
@@ -137,10 +131,16 @@ test('RPC call with field casting', async () => {
       "statusText": "OK",
     }
   `)
+  // check our result types match the runtime result
+  let result: Exclude<typeof res.data, null>
+  let expected: { status: string }[]
+  expectType<TypeEqual<typeof result, typeof expected>>(true)
 })
 
 test('RPC call with field aggregate', async () => {
-  const res = await selectQueries.fieldAggregate
+  const res = await postgrest
+    .rpc(RPC_NAME, { name_param: 'supabot' })
+    .select('username.count(), status')
   expect(res).toMatchInlineSnapshot(`
     Object {
       "count": null,
@@ -155,4 +155,8 @@ test('RPC call with field aggregate', async () => {
       "statusText": "OK",
     }
   `)
+  // check our result types match the runtime result
+  let result: Exclude<typeof res.data, null>
+  let expected: { count: number; status: 'ONLINE' | 'OFFLINE' }[]
+  expectType<TypeEqual<typeof result, typeof expected>>(true)
 })

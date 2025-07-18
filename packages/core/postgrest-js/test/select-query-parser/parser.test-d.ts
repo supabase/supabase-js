@@ -1,6 +1,5 @@
 import { expectType } from 'tsd'
 import type { ParseQuery, ParserError } from '../../src/select-query-parser/parser'
-import { selectParams } from '../relationships'
 
 // This test file is here to ensure some of our perser behave as expected
 // it's useful to track down if the result type of a query is invalid becase of bad parsing
@@ -527,7 +526,7 @@ import { selectParams } from '../relationships'
 
 // select JSON accessor
 {
-  expect<ParseQuery<typeof selectParams.selectJsonAccessor.select>>([
+  expect<ParseQuery<'data->foo->bar, data->foo->>baz'>>([
     { type: 'field', name: 'data', alias: 'bar', castType: 'json', jsonPath: 'foo.bar' },
     { type: 'field', name: 'data', alias: 'baz', castType: 'text', jsonPath: 'foo.baz' },
   ])
@@ -535,7 +534,7 @@ import { selectParams } from '../relationships'
 
 // embed resource with no fields
 {
-  expect<ParseQuery<typeof selectParams.selectEmbedRessourceWithNoFields.select>>([
+  expect<ParseQuery<'message, users()'>>([
     { type: 'field', name: 'message' },
     { type: 'field', name: 'users', children: [] },
   ])

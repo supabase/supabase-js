@@ -354,11 +354,6 @@ test('abort signal', async () => {
   )
 })
 
-// test('geojson', async () => {
-//   const res = await postgrest.from('shops').select().geojson()
-//   expect(res).toMatchInlineSnapshot()
-// })
-
 test('explain with json/text format', async () => {
   const res1 = await postgrest.from('users').select().explain({ format: 'json' })
   expect(res1).toMatchInlineSnapshot(
