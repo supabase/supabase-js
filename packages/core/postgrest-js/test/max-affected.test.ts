@@ -19,22 +19,22 @@ describe('maxAffected', () => {
     expectType<InvalidMethodError<'maxAffected method only available on postgrest 13+'>>(resUpdate)
   })
   test('types: maxAffected should show type warning on non update / delete', async () => {
-    const resSelect = await postgrest13.from('messages').select('*').maxAffected(10)
-    const resInsert = await postgrest13
+    const resSelect = postgrest13.from('messages').select('*').maxAffected(10)
+    const resInsert = postgrest13
       .from('messages')
       .insert({ message: 'foo', username: 'supabot', channel_id: 1 })
       .maxAffected(10)
-    const resUpsert = await postgrest13
+    const resUpsert = postgrest13
       .from('messages')
       .upsert({ id: 3, message: 'foo', username: 'supabot', channel_id: 2 })
       .maxAffected(10)
-    const resUpdate = await postgrest13
+    const resUpdate = postgrest13
       .from('messages')
       .update({ channel_id: 2 })
       .eq('message', 'foo')
       .maxAffected(1)
       .select()
-    const resDelete = await postgrest13
+    const resDelete = postgrest13
       .from('messages')
       .delete()
       .eq('message', 'foo')
@@ -77,6 +77,9 @@ describe('maxAffected', () => {
     const { error } = result
     expect(error).toBeDefined()
     expect(error?.code).toBe('PGRST124')
+
+    // cleanup
+    await postgrest13.from('messages').delete().eq('message', 'test1')
   })
 
   test('update should succeed when within maxAffected limit', async () => {
@@ -105,6 +108,9 @@ describe('maxAffected', () => {
     expect(error).toBeNull()
     expect(data).toHaveLength(1)
     expect(data?.[0].message).toBe('updated')
+
+    // cleanup
+    await postgrest13.from('messages').delete().eq('message', 'updated')
   })
 
   test('delete should fail when maxAffected is exceeded', async () => {
@@ -124,6 +130,9 @@ describe('maxAffected', () => {
       .select()
     expect(error).toBeDefined()
     expect(error?.code).toBe('PGRST124')
+
+    // cleanup
+    await postgrest13.from('messages').delete().eq('message', 'test3')
   })
 
   test('delete should succeed when within maxAffected limit', async () => {
@@ -165,6 +174,9 @@ describe('maxAffected', () => {
         catchphrase: null,
       },
     ])
+
+    // cleanup
+    await postgrest13.from('users').delete().eq('username', 'testuser')
   })
 
   test('should fail when rpc returns more results than maxAffected', async () => {
@@ -184,5 +196,8 @@ describe('maxAffected', () => {
     expect(error).toBeDefined()
     expect(error?.code).toBe('PGRST124')
     expect(data).toBeNull()
+
+    // cleanup
+    await postgrest13.from('users').delete().in('username', ['testuser1', 'testuser2', 'testuser3'])
   })
 })

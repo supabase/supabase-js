@@ -44,7 +44,7 @@
     "test:types:watch": "run-s build && tsd --files 'test/**/*.test-d.ts' --watch",
     "db:clean": "cd test/db && docker compose down --volumes",
     "db:run": "cd test/db && docker compose up --detach && wait-for-localhost 3000",
-    "db:generate-test-types": "cd test/db && docker compose up --detach && wait-for-localhost 8080 && curl --location 'http://0.0.0.0:8080/generators/typescript?included_schemas=public,personal&detect_one_to_one_relationships=true' > ../types.generated.ts && sed -i 's/export type Json = .*/export type Json = unknown;/' ../types.generated.ts"
+    "db:generate-test-types": "cd test/db && docker compose up --detach && wait-for-localhost 8080 && curl --location 'http://0.0.0.0:8080/generators/typescript?included_schemas=public,personal&detect_one_to_one_relationships=true' > ../types.generated.ts && sed -i '' 's/export type Json = .*/export type Json = unknown;/' ../types.generated.ts"
   },
   "dependencies": {
     "@supabase/node-fetch": "^2.6.14"
