@@ -163,9 +163,14 @@ $$ language sql immutable;
 create function public.function_with_array_param(param uuid[])
 returns void as '' language sql immutable;
 
-
 create table public.cornercase (
   id        int primary key,
   "column whitespace" text,
   array_column text[]
 );
+
+-- Function creating a computed field
+create function public.blurb_message(public.messages) returns character varying as
+$$
+select substring($1.message, 1, 3);
+$$ language sql stable;

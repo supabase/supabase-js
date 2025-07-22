@@ -205,7 +205,7 @@ test('one-to-many relationship', async () => {
   `)
   let result: Exclude<typeof res.data, null>
   let expected: {
-    messages: Database['public']['Tables']['messages']['Row'][]
+    messages: Array<Omit<Database['public']['Tables']['messages']['Row'], 'blurb_message'>>
   }
   expectType<TypeEqual<typeof result, typeof expected>>(true)
 })

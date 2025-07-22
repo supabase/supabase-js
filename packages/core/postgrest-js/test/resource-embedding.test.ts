@@ -6,6 +6,7 @@ import { TypeEqual } from 'ts-expect'
 const postgrest = new PostgrestClient<Database>('http://localhost:3000')
 
 test('embedded select', async () => {
+  // By default postgrest will omit computed field from "star" selector
   const res = await postgrest.from('users').select('messages(*)')
   expect(res).toMatchInlineSnapshot(`
     Object {
@@ -62,6 +63,73 @@ test('embedded select', async () => {
       id: number
       message: string | null
       username: string
+    }[]
+  }[]
+  expectType<TypeEqual<typeof result, typeof expected>>(true)
+})
+
+test('embedded select with computed field explicit selection', async () => {
+  // If the computed field is explicitely requested on top of the star selector, it should be present in the result
+  const res = await postgrest.from('users').select('messages(*, blurb_message)')
+  expect(res).toMatchInlineSnapshot(`
+    Object {
+      "count": null,
+      "data": Array [
+        Object {
+          "messages": Array [
+            Object {
+              "blurb_message": "Hel",
+              "channel_id": 1,
+              "data": null,
+              "id": 1,
+              "message": "Hello World 👋",
+              "username": "supabot",
+            },
+            Object {
+              "blurb_message": "Per",
+              "channel_id": 2,
+              "data": null,
+              "id": 2,
+              "message": "Perfection is attained, not when there is nothing more to add, but when there is nothing left to take away.",
+              "username": "supabot",
+            },
+            Object {
+              "blurb_message": "Som",
+              "channel_id": 3,
+              "data": null,
+              "id": 4,
+              "message": "Some message on channel wihtout details",
+              "username": "supabot",
+            },
+          ],
+        },
+        Object {
+          "messages": Array [],
+        },
+        Object {
+          "messages": Array [],
+        },
+        Object {
+          "messages": Array [],
+        },
+        Object {
+          "messages": Array [],
+        },
+      ],
+      "error": null,
+      "status": 200,
+      "statusText": "OK",
+    }
+  `)
+  let result: Exclude<typeof res.data, null>
+  let expected: {
+    messages: {
+      channel_id: number
+      data: unknown
+      id: number
+      message: string | null
+      username: string
+      blurb_message: string | null
     }[]
   }[]
   expectType<TypeEqual<typeof result, typeof expected>>(true)

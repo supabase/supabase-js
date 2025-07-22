@@ -7,19 +7,19 @@ export type Database = {
         Row: {
           age_range: unknown | null
           data: Json | null
-          status: Database['public']['Enums']['user_status'] | null
+          status: Database['personal']['Enums']['user_status'] | null
           username: string
         }
         Insert: {
           age_range?: unknown | null
           data?: Json | null
-          status?: Database['public']['Enums']['user_status'] | null
+          status?: Database['personal']['Enums']['user_status'] | null
           username: string
         }
         Update: {
           age_range?: unknown | null
           data?: Json | null
-          status?: Database['public']['Enums']['user_status'] | null
+          status?: Database['personal']['Enums']['user_status'] | null
           username?: string
         }
         Relationships: []
@@ -30,10 +30,8 @@ export type Database = {
     }
     Functions: {
       get_status: {
-        Args: {
-          name_param: string
-        }
-        Returns: Database['public']['Enums']['user_status']
+        Args: { name_param: string }
+        Returns: Database['personal']['Enums']['user_status']
       }
     }
     Enums: {
@@ -69,6 +67,13 @@ export type Database = {
             foreignKeyName: 'best_friends_first_user_fkey'
             columns: ['first_user']
             isOneToOne: false
+            referencedRelation: 'active_users'
+            referencedColumns: ['username']
+          },
+          {
+            foreignKeyName: 'best_friends_first_user_fkey'
+            columns: ['first_user']
+            isOneToOne: false
             referencedRelation: 'non_updatable_view'
             referencedColumns: ['username']
           },
@@ -90,6 +95,13 @@ export type Database = {
             foreignKeyName: 'best_friends_second_user_fkey'
             columns: ['second_user']
             isOneToOne: false
+            referencedRelation: 'active_users'
+            referencedColumns: ['username']
+          },
+          {
+            foreignKeyName: 'best_friends_second_user_fkey'
+            columns: ['second_user']
+            isOneToOne: false
             referencedRelation: 'non_updatable_view'
             referencedColumns: ['username']
           },
@@ -105,6 +117,13 @@ export type Database = {
             columns: ['second_user']
             isOneToOne: false
             referencedRelation: 'users'
+            referencedColumns: ['username']
+          },
+          {
+            foreignKeyName: 'best_friends_third_wheel_fkey'
+            columns: ['third_wheel']
+            isOneToOne: false
+            referencedRelation: 'active_users'
             referencedColumns: ['username']
           },
           {
@@ -278,6 +297,7 @@ export type Database = {
           id: number
           message: string | null
           username: string
+          blurb_message: string | null
         }
         Insert: {
           channel_id: number
@@ -300,6 +320,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: 'channels'
             referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'messages_username_fkey'
+            columns: ['username']
+            isOneToOne: false
+            referencedRelation: 'active_users'
+            referencedColumns: ['username']
           },
           {
             foreignKeyName: 'messages_username_fkey'
@@ -411,6 +438,13 @@ export type Database = {
             foreignKeyName: 'user_profiles_username_fkey'
             columns: ['username']
             isOneToOne: false
+            referencedRelation: 'active_users'
+            referencedColumns: ['username']
+          },
+          {
+            foreignKeyName: 'user_profiles_username_fkey'
+            columns: ['username']
+            isOneToOne: false
             referencedRelation: 'non_updatable_view'
             referencedColumns: ['username']
           },
@@ -456,11 +490,81 @@ export type Database = {
       }
     }
     Views: {
+      active_users: {
+        Row: {
+          age_range: unknown | null
+          catchphrase: unknown | null
+          data: Json | null
+          status: Database['public']['Enums']['user_status'] | null
+          username: string | null
+        }
+        Insert: {
+          age_range?: unknown | null
+          catchphrase?: unknown | null
+          data?: Json | null
+          status?: Database['public']['Enums']['user_status'] | null
+          username?: string | null
+        }
+        Update: {
+          age_range?: unknown | null
+          catchphrase?: unknown | null
+          data?: Json | null
+          status?: Database['public']['Enums']['user_status'] | null
+          username?: string | null
+        }
+        Relationships: []
+      }
       non_updatable_view: {
         Row: {
           username: string | null
         }
         Relationships: []
+      }
+      recent_messages: {
+        Row: {
+          channel_id: number | null
+          data: Json | null
+          id: number | null
+          message: string | null
+          username: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'messages_channel_id_fkey'
+            columns: ['channel_id']
+            isOneToOne: false
+            referencedRelation: 'channels'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'messages_username_fkey'
+            columns: ['username']
+            isOneToOne: false
+            referencedRelation: 'active_users'
+            referencedColumns: ['username']
+          },
+          {
+            foreignKeyName: 'messages_username_fkey'
+            columns: ['username']
+            isOneToOne: false
+            referencedRelation: 'non_updatable_view'
+            referencedColumns: ['username']
+          },
+          {
+            foreignKeyName: 'messages_username_fkey'
+            columns: ['username']
+            isOneToOne: false
+            referencedRelation: 'updatable_view'
+            referencedColumns: ['username']
+          },
+          {
+            foreignKeyName: 'messages_username_fkey'
+            columns: ['username']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['username']
+          }
+        ]
       }
       updatable_view: {
         Row: {
@@ -479,43 +583,22 @@ export type Database = {
       }
     }
     Functions: {
-      function_with_array_param: {
-        Args: {
-          param: string[]
-        }
-        Returns: undefined
-      }
-      function_with_optional_param: {
-        Args: {
-          param?: string
-        }
+      blurb_message: {
+        Args: { '': Database['public']['Tables']['messages']['Row'] }
         Returns: string
       }
-      get_status: {
-        Args: {
-          name_param: string
-        }
-        Returns: Database['public']['Enums']['user_status']
-      }
-      get_username_and_status: {
-        Args: {
-          name_param: string
-        }
+      function_returning_row: {
+        Args: Record<PropertyKey, never>
         Returns: {
+          age_range: unknown | null
+          catchphrase: unknown | null
+          data: Json | null
+          status: Database['public']['Enums']['user_status'] | null
           username: string
-          status: Database['public']['Enums']['user_status']
-        }[]
-      }
-      offline_user: {
-        Args: {
-          name_param: string
         }
-        Returns: Database['public']['Enums']['user_status']
       }
-      set_users_offline: {
-        Args: {
-          name_param: string
-        }
+      function_returning_set_of_rows: {
+        Args: Record<PropertyKey, never>
         Returns: {
           age_range: unknown | null
           catchphrase: unknown | null
@@ -523,6 +606,163 @@ export type Database = {
           status: Database['public']['Enums']['user_status'] | null
           username: string
         }[]
+      }
+      function_with_array_param: {
+        Args: { param: string[] }
+        Returns: undefined
+      }
+      function_with_optional_param: {
+        Args: { param?: string }
+        Returns: string
+      }
+      get_active_user_messages: {
+        Args: { active_user_row: unknown }
+        Returns: {
+          channel_id: number
+          data: Json | null
+          id: number
+          message: string | null
+          username: string
+        }[]
+      }
+      get_messages: {
+        Args:
+          | { channel_row: Database['public']['Tables']['channels']['Row'] }
+          | { user_row: Database['public']['Tables']['users']['Row'] }
+        Returns: {
+          channel_id: number
+          data: Json | null
+          id: number
+          message: string | null
+          username: string
+        }[]
+      }
+      get_messages_by_username: {
+        Args: { search_username: string }
+        Returns: {
+          channel_id: number
+          data: Json | null
+          id: number
+          message: string | null
+          username: string
+        }[]
+      }
+      get_recent_messages_by_username: {
+        Args: { search_username: string }
+        Returns: {
+          channel_id: number | null
+          data: Json | null
+          id: number | null
+          message: string | null
+          username: string | null
+        }[]
+      }
+      get_status: {
+        Args: { name_param: string }
+        Returns: Database['public']['Enums']['user_status']
+      }
+      get_user_first_message: {
+        Args: { active_user_row: unknown }
+        Returns: {
+          channel_id: number | null
+          data: Json | null
+          id: number | null
+          message: string | null
+          username: string | null
+        }[]
+      }
+      get_user_messages: {
+        Args: { user_row: Database['public']['Tables']['users']['Row'] }
+        Returns: {
+          channel_id: number
+          data: Json | null
+          id: number
+          message: string | null
+          username: string
+        }[]
+      }
+      get_user_profile: {
+        Args: { user_row: Database['public']['Tables']['users']['Row'] }
+        Returns: {
+          id: number
+          username: string | null
+        }[]
+      }
+      get_user_profile_non_nullable: {
+        Args: { user_row: Database['public']['Tables']['users']['Row'] }
+        Returns: {
+          id: number
+          username: string | null
+        }[]
+      }
+      get_user_recent_messages: {
+        Args:
+          | { active_user_row: unknown }
+          | { user_row: Database['public']['Tables']['users']['Row'] }
+        Returns: {
+          channel_id: number | null
+          data: Json | null
+          id: number | null
+          message: string | null
+          username: string | null
+        }[]
+      }
+      get_username_and_status: {
+        Args: { name_param: string }
+        Returns: {
+          username: string
+          status: Database['public']['Enums']['user_status']
+        }[]
+      }
+      offline_user: {
+        Args: { name_param: string }
+        Returns: Database['public']['Enums']['user_status']
+      }
+      polymorphic_function_with_different_return: {
+        Args: { '': boolean } | { '': number } | { '': string }
+        Returns: string
+      }
+      polymorphic_function_with_no_params_or_unnamed: {
+        Args: Record<PropertyKey, never> | { '': boolean } | { '': string }
+        Returns: number
+      }
+      polymorphic_function_with_unnamed_default: {
+        Args: Record<PropertyKey, never> | { ''?: number } | { ''?: string }
+        Returns: number
+      }
+      polymorphic_function_with_unnamed_default_overload: {
+        Args: Record<PropertyKey, never> | { ''?: boolean } | { ''?: number } | { ''?: string }
+        Returns: number
+      }
+      polymorphic_function_with_unnamed_integer: {
+        Args: { '': number }
+        Returns: number
+      }
+      polymorphic_function_with_unnamed_json: {
+        Args: { '': Json }
+        Returns: number
+      }
+      polymorphic_function_with_unnamed_jsonb: {
+        Args: { '': Json }
+        Returns: number
+      }
+      polymorphic_function_with_unnamed_text: {
+        Args: { '': string }
+        Returns: number
+      }
+      postgrest_resolvable_with_override_function: {
+        Args:
+          | Record<PropertyKey, never>
+          | { a: string }
+          | { b: number }
+          | { cid: number; search?: string }
+          | { profile_id: number }
+          | { user_row: Database['public']['Tables']['users']['Row'] }
+        Returns: undefined
+      }
+      postgrest_unresolvable_function: {
+        Args: Record<PropertyKey, never> | { a: number } | { a: string }
+        Returns: undefined
       }
       void_func: {
         Args: Record<PropertyKey, never>
@@ -538,21 +778,25 @@ export type Database = {
   }
 }
 
-type DefaultSchema = Database[Extract<keyof Database, 'public'>]
+type DatabaseWithoutInternals = Omit<Database, '__InternalSupabase'>
+
+type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, 'public'>]
 
 export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema['Tables'] & DefaultSchema['Views'])
-    | { schema: keyof Database },
+    | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof Database
+    schema: keyof DatabaseWithoutInternals
   }
-    ? keyof (Database[DefaultSchemaTableNameOrOptions['schema']]['Tables'] &
-        Database[DefaultSchemaTableNameOrOptions['schema']]['Views'])
+    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables'] &
+        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Views'])
     : never = never
-> = DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
-  ? (Database[DefaultSchemaTableNameOrOptions['schema']]['Tables'] &
-      Database[DefaultSchemaTableNameOrOptions['schema']]['Views'])[TableName] extends {
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables'] &
+      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Views'])[TableName] extends {
       Row: infer R
     }
     ? R
@@ -568,14 +812,16 @@ export type Tables<
 export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema['Tables']
-    | { schema: keyof Database },
+    | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof Database
+    schema: keyof DatabaseWithoutInternals
   }
-    ? keyof Database[DefaultSchemaTableNameOrOptions['schema']]['Tables']
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables']
     : never = never
-> = DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
-  ? Database[DefaultSchemaTableNameOrOptions['schema']]['Tables'][TableName] extends {
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables'][TableName] extends {
       Insert: infer I
     }
     ? I
@@ -591,14 +837,16 @@ export type TablesInsert<
 export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema['Tables']
-    | { schema: keyof Database },
+    | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof Database
+    schema: keyof DatabaseWithoutInternals
   }
-    ? keyof Database[DefaultSchemaTableNameOrOptions['schema']]['Tables']
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables']
     : never = never
-> = DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
-  ? Database[DefaultSchemaTableNameOrOptions['schema']]['Tables'][TableName] extends {
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables'][TableName] extends {
       Update: infer U
     }
     ? U
@@ -612,14 +860,18 @@ export type TablesUpdate<
   : never
 
 export type Enums<
-  DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema['Enums'] | { schema: keyof Database },
+  DefaultSchemaEnumNameOrOptions extends
+    | keyof DefaultSchema['Enums']
+    | { schema: keyof DatabaseWithoutInternals },
   EnumName extends DefaultSchemaEnumNameOrOptions extends {
-    schema: keyof Database
+    schema: keyof DatabaseWithoutInternals
   }
-    ? keyof Database[DefaultSchemaEnumNameOrOptions['schema']]['Enums']
+    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions['schema']]['Enums']
     : never = never
-> = DefaultSchemaEnumNameOrOptions extends { schema: keyof Database }
-  ? Database[DefaultSchemaEnumNameOrOptions['schema']]['Enums'][EnumName]
+> = DefaultSchemaEnumNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions['schema']]['Enums'][EnumName]
   : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema['Enums']
   ? DefaultSchema['Enums'][DefaultSchemaEnumNameOrOptions]
   : never
@@ -627,14 +879,16 @@ export type Enums<
 export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema['CompositeTypes']
-    | { schema: keyof Database },
+    | { schema: keyof DatabaseWithoutInternals },
   CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
-    schema: keyof Database
+    schema: keyof DatabaseWithoutInternals
   }
-    ? keyof Database[PublicCompositeTypeNameOrOptions['schema']]['CompositeTypes']
+    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions['schema']]['CompositeTypes']
     : never = never
-> = PublicCompositeTypeNameOrOptions extends { schema: keyof Database }
-  ? Database[PublicCompositeTypeNameOrOptions['schema']]['CompositeTypes'][CompositeTypeName]
+> = PublicCompositeTypeNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions['schema']]['CompositeTypes'][CompositeTypeName]
   : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema['CompositeTypes']
   ? DefaultSchema['CompositeTypes'][PublicCompositeTypeNameOrOptions]
   : never

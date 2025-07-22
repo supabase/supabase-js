@@ -12,6 +12,7 @@ import {
 } from './types'
 import {
   CheckDuplicateEmbededReference,
+  GetComputedFields,
   GetFieldNodeResultName,
   IsAny,
   IsRelationNullable,
@@ -234,7 +235,12 @@ export type ProcessNode<
 > =
   // TODO: figure out why comparing the `type` property is necessary vs. `NodeType extends Ast.StarNode`
   NodeType['type'] extends Ast.StarNode['type'] // If the selection is *
-    ? Row
+    ? // If the row has computed field, postgrest will omit them from star selection per default
+      GetComputedFields<Schema, RelationName> extends never
+      ? // If no computed fields are detected on the row, we can return it as is
+        Row
+      : // otherwise we omit all the computed field from the star result return
+        Omit<Row, GetComputedFields<Schema, RelationName>>
     : NodeType['type'] extends Ast.SpreadNode['type'] // If the selection is a ...spread
     ? ProcessSpreadNode<
         ClientOptions,
