@@ -457,16 +457,19 @@ describe('GoTrueAdminApi', () => {
         })
         expect(signUpError).toBeNull()
 
-        const { data: { session }, error } = await authClientWithSession.signInWithPassword({
+        const {
+          data: { session },
+          error,
+        } = await authClientWithSession.signInWithPassword({
           email,
           password,
         })
         expect(error).toBeNull()
         expect(session).not.toBeNull()
 
-        await expect(authClientWithSession.signOut({ scope: 'invalid_scope' as any })).rejects.toThrow(
-          '@supabase/auth-js: Parameter scope must be one of global, local, others'
-        )
+        await expect(
+          authClientWithSession.signOut({ scope: 'invalid_scope' as any })
+        ).rejects.toThrow('@supabase/auth-js: Parameter scope must be one of global, local, others')
       })
     })
   })

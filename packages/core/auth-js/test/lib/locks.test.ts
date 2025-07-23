@@ -6,19 +6,21 @@ describe('navigatorLock', () => {
     Object.defineProperty(globalThis, 'navigator', {
       value: {
         locks: {
-          request: jest.fn().mockImplementation((_, __, callback) => Promise.resolve(callback(null))),
-          query: jest.fn().mockResolvedValue({ held: [] })
-        }
+          request: jest
+            .fn()
+            .mockImplementation((_, __, callback) => Promise.resolve(callback(null))),
+          query: jest.fn().mockResolvedValue({ held: [] }),
+        },
       },
-      configurable: true
+      configurable: true,
     })
   })
 
   it('should acquire and release lock successfully', async () => {
     const mockLock = { name: 'test-lock' }
-      ; (globalThis.navigator.locks.request as jest.Mock).mockImplementation((_, __, callback) =>
-        Promise.resolve(callback(mockLock))
-      )
+    ;(globalThis.navigator.locks.request as jest.Mock).mockImplementation((_, __, callback) =>
+      Promise.resolve(callback(mockLock))
+    )
 
     const result = await navigatorLock('test', -1, async () => 'success')
     expect(result).toBe('success')
@@ -26,7 +28,7 @@ describe('navigatorLock', () => {
   })
 
   it('should handle immediate acquisition failure', async () => {
-    ; (globalThis.navigator.locks.request as jest.Mock).mockImplementation((_, __, callback) =>
+    ;(globalThis.navigator.locks.request as jest.Mock).mockImplementation((_, __, callback) =>
       Promise.resolve(callback(null))
     )
 
@@ -101,7 +103,7 @@ describe('processLock', () => {
 
   it('should handle timeout correctly', async () => {
     const operation1 = processLock('timeout-test', -1, async () => {
-      await new Promise(resolve => setTimeout(resolve, 200))
+      await new Promise((resolve) => setTimeout(resolve, 200))
       return 'success'
     })
 
@@ -120,8 +122,6 @@ describe('processLock', () => {
       })
     ).rejects.toThrow(errorMessage)
 
-    await expect(
-      processLock('error-test', -1, async () => 'success')
-    ).resolves.toBe('success')
+    await expect(processLock('error-test', -1, async () => 'success')).resolves.toBe('success')
   })
 })

@@ -32,6 +32,7 @@ import {
   _ssoResponse,
 } from './lib/fetch'
 import {
+  deepClone,
   Deferred,
   getItemAsync,
   isBrowser,
@@ -110,9 +111,18 @@ import type {
   SolanaWeb3Credentials,
   SolanaWallet,
   Web3Credentials,
+  EthereumWeb3Credentials,
+  EthereumWallet,
 } from './lib/types'
 import { stringToUint8Array, bytesToBase64URL } from './lib/base64url'
-import { deepClone } from './lib/helpers'
+import {
+  fromHex,
+  getAddress,
+  Hex,
+  toHex,
+  createSiweMessage,
+  SiweMessage,
+} from './lib/web3/ethereum'
 
 polyfillGlobalThis() // Make "globalThis" available
 
@@ -648,7 +658,10 @@ export default class GoTrueClient {
 
   /**
    * Signs in a user by verifying a message signed by the user's private key.
-   * Only Solana supported at this time, using the Sign in with Solana standard.
+   * Supports Ethereum (via Sign-In-With-Ethereum) & Solana (Sign-In-With-Solana) standards,
+   * both of which derive from the EIP-4361 standard
+   * With slight variation on Solana's side.
+   * @reference https://eips.ethereum.org/EIPS/eip-4361
    */
   async signInWithWeb3(credentials: Web3Credentials): Promise<
     | {
@@ -659,11 +672,153 @@ export default class GoTrueClient {
   > {
     const { chain } = credentials
 
-    if (chain === 'solana') {
-      return await this.signInWithSolana(credentials)
+    switch (chain) {
+      case 'ethereum':
+        return await this.signInWithEthereum(credentials)
+      case 'solana':
+        return await this.signInWithSolana(credentials)
+      default:
+        throw new Error(`@supabase/auth-js: Unsupported chain "${chain}"`)
+    }
+  }
+
+  private async signInWithEthereum(
+    credentials: EthereumWeb3Credentials
+  ): Promise<
+    | { data: { session: Session; user: User }; error: null }
+    | { data: { session: null; user: null }; error: AuthError }
+  > {
+    // TODO: flatten type
+    let message: string
+    let signature: Hex
+
+    if ('message' in credentials) {
+      message = credentials.message
+      signature = credentials.signature
+    } else {
+      const { chain, wallet, statement, options } = credentials
+
+      let resolvedWallet: EthereumWallet
+
+      if (!isBrowser()) {
+        if (typeof wallet !== 'object' || !options?.url) {
+          throw new Error(
+            '@supabase/auth-js: Both wallet and url must be specified in non-browser environments.'
+          )
+        }
+
+        resolvedWallet = wallet
+      } else if (typeof wallet === 'object') {
+        resolvedWallet = wallet
+      } else {
+        const windowAny = window as any
+
+        if (
+          'ethereum' in windowAny &&
+          typeof windowAny.ethereum === 'object' &&
+          'request' in windowAny.ethereum &&
+          typeof windowAny.ethereum.request === 'function'
+        ) {
+          resolvedWallet = windowAny.ethereum
+        } else {
+          throw new Error(
+            `@supabase/auth-js: No compatible Ethereum wallet interface on the window object (window.ethereum) detected. Make sure the user already has a wallet installed and connected for this app. Prefer passing the wallet interface object directly to signInWithWeb3({ chain: 'ethereum', wallet: resolvedUserWallet }) instead.`
+          )
+        }
+      }
+
+      const url = new URL(options?.url ?? window.location.href)
+
+      const accounts = await resolvedWallet
+        .request({
+          method: 'eth_requestAccounts',
+        })
+        .then((accs) => accs as string[])
+        .catch(() => {
+          throw new Error(
+            `@supabase/auth-js: Wallet method eth_requestAccounts is missing or invalid`
+          )
+        })
+
+      if (!accounts || accounts.length === 0) {
+        throw new Error(
+          `@supabase/auth-js: No accounts available. Please ensure the wallet is connected.`
+        )
+      }
+
+      const address = getAddress(accounts[0])
+
+      let chainId = options?.signInWithEthereum?.chainId
+      if (!chainId) {
+        const chainIdHex = await resolvedWallet.request({
+          method: 'eth_chainId',
+        })
+        chainId = fromHex(chainIdHex as Hex)
+      }
+
+      const siweMessage: SiweMessage = {
+        domain: url.host,
+        address: address,
+        statement: statement,
+        uri: url.href,
+        version: '1',
+        chainId: chainId,
+        nonce: options?.signInWithEthereum?.nonce,
+        issuedAt: options?.signInWithEthereum?.issuedAt ?? new Date(),
+        expirationTime: options?.signInWithEthereum?.expirationTime,
+        notBefore: options?.signInWithEthereum?.notBefore,
+        requestId: options?.signInWithEthereum?.requestId,
+        resources: options?.signInWithEthereum?.resources,
+      }
+
+      message = createSiweMessage(siweMessage)
+
+      // Sign message
+      signature = (await resolvedWallet.request({
+        method: 'personal_sign',
+        params: [toHex(message), address],
+      })) as Hex
     }
 
-    throw new Error(`@supabase/auth-js: Unsupported chain "${chain}"`)
+    try {
+      const { data, error } = await _request(
+        this.fetch,
+        'POST',
+        `${this.url}/token?grant_type=web3`,
+        {
+          headers: this.headers,
+          body: {
+            chain: 'ethereum',
+            message,
+            signature,
+            ...(credentials.options?.captchaToken
+              ? { gotrue_meta_security: { captcha_token: credentials.options?.captchaToken } }
+              : null),
+          },
+          xform: _sessionResponse,
+        }
+      )
+      if (error) {
+        throw error
+      }
+      if (!data || !data.session || !data.user) {
+        return {
+          data: { user: null, session: null },
+          error: new AuthInvalidTokenResponseError(),
+        }
+      }
+      if (data.session) {
+        await this._saveSession(data.session)
+        await this._notifyAllSubscribers('SIGNED_IN', data.session)
+      }
+      return { data: { ...data }, error }
+    } catch (error) {
+      if (isAuthError(error)) {
+        return { data: { user: null, session: null }, error }
+      }
+
+      throw error
+    }
   }
 
   private async signInWithSolana(credentials: SolanaWeb3Credentials) {

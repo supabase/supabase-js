@@ -2,16 +2,12 @@
  * @jest-environment jsdom
  */
 
-import {
-  autoRefreshClient,
-  getClientWithSpecificStorage,
-  pkceClient
-} from './lib/clients'
+import { autoRefreshClient, getClientWithSpecificStorage, pkceClient } from './lib/clients'
 import { mockUserCredentials } from './lib/utils'
 
 // Add structuredClone polyfill for jsdom
 if (typeof structuredClone === 'undefined') {
-  (global as any).structuredClone = (obj: any) => JSON.parse(JSON.stringify(obj))
+  ;(global as any).structuredClone = (obj: any) => JSON.parse(JSON.stringify(obj))
 }
 
 describe('GoTrueClient in browser environment', () => {
@@ -32,7 +28,7 @@ describe('GoTrueClient in browser environment', () => {
       assign: jest.fn(),
       replace: jest.fn(),
       reload: jest.fn(),
-      toString: () => 'http://localhost:9999'
+      toString: () => 'http://localhost:9999',
     }
     Object.defineProperty(window, 'location', {
       value: mockLocation,
@@ -44,8 +40,8 @@ describe('GoTrueClient in browser environment', () => {
     const { data } = await pkceClient.signInWithOAuth({
       provider: 'github',
       options: {
-        redirectTo: 'http://localhost:9999/callback'
-      }
+        redirectTo: 'http://localhost:9999/callback',
+      },
     })
 
     expect(data?.url).toBeDefined()
@@ -87,8 +83,8 @@ describe('GoTrueClient in browser environment', () => {
       email,
       password,
       options: {
-        emailRedirectTo: 'http://localhost:9999/callback'
-      }
+        emailRedirectTo: 'http://localhost:9999/callback',
+      },
     })
 
     expect(signupError).toBeNull()
@@ -124,36 +120,41 @@ describe('Callback URL handling', () => {
 
   it('should handle implicit grant callback', async () => {
     // Set up URL with implicit grant callback parameters
-    window.location.href = 'http://localhost:9999/callback#access_token=test-token&refresh_token=test-refresh-token&expires_in=3600&token_type=bearer&type=implicit'
+    window.location.href =
+      'http://localhost:9999/callback#access_token=test-token&refresh_token=test-refresh-token&expires_in=3600&token_type=bearer&type=implicit'
 
     // Mock user info response
     mockFetch.mockImplementation((url: string) => {
       if (url.includes('/user')) {
         return Promise.resolve({
           ok: true,
-          json: () => Promise.resolve({
-            id: 'test-user',
-            email: 'test@example.com',
-            created_at: new Date().toISOString()
-          })
+          json: () =>
+            Promise.resolve({
+              id: 'test-user',
+              email: 'test@example.com',
+              created_at: new Date().toISOString(),
+            }),
         })
       }
       return Promise.resolve({
         ok: true,
-        json: () => Promise.resolve({
-          access_token: 'test-token',
-          refresh_token: 'test-refresh-token',
-          expires_in: 3600,
-          token_type: 'bearer',
-          user: { id: 'test-user' }
-        })
+        json: () =>
+          Promise.resolve({
+            access_token: 'test-token',
+            refresh_token: 'test-refresh-token',
+            expires_in: 3600,
+            token_type: 'bearer',
+            user: { id: 'test-user' },
+          }),
       })
     })
 
     const client = getClientWithSpecificStorage(mockStorage)
     await client.initialize()
 
-    const { data: { session } } = await client.getSession()
+    const {
+      data: { session },
+    } = await client.getSession()
     expect(session).toBeDefined()
     expect(session?.access_token).toBe('test-token')
     expect(session?.refresh_token).toBe('test-refresh-token')
@@ -161,22 +162,26 @@ describe('Callback URL handling', () => {
 
   it('should handle error in callback URL', async () => {
     // Set up URL with error parameters
-    window.location.href = 'http://localhost:9999/callback#error=invalid_grant&error_description=Invalid+grant'
+    window.location.href =
+      'http://localhost:9999/callback#error=invalid_grant&error_description=Invalid+grant'
 
     mockFetch.mockImplementation((url: string) => {
       return Promise.resolve({
         ok: false,
-        json: () => Promise.resolve({
-          error: 'invalid_grant',
-          error_description: 'Invalid grant'
-        })
+        json: () =>
+          Promise.resolve({
+            error: 'invalid_grant',
+            error_description: 'Invalid grant',
+          }),
       })
     })
 
     const client = getClientWithSpecificStorage(mockStorage)
     await client.initialize()
 
-    const { data: { session } } = await client.getSession()
+    const {
+      data: { session },
+    } = await client.getSession()
     expect(session).toBeNull()
   })
 })
@@ -204,8 +209,12 @@ describe('GoTrueClient BroadcastChannel', () => {
     const mockCallback1 = jest.fn()
     const mockCallback2 = jest.fn()
 
-    const { data: { subscription: sub1 } } = client.onAuthStateChange(mockCallback1)
-    const { data: { subscription: sub2 } } = client.onAuthStateChange(mockCallback2)
+    const {
+      data: { subscription: sub1 },
+    } = client.onAuthStateChange(mockCallback1)
+    const {
+      data: { subscription: sub2 },
+    } = client.onAuthStateChange(mockCallback2)
 
     // Simulate a broadcast message
     const mockEvent = {
@@ -216,13 +225,14 @@ describe('GoTrueClient BroadcastChannel', () => {
           refresh_token: 'test-refresh-token',
           expires_in: 3600,
           token_type: 'bearer',
-          user: { id: 'test-user' }
-        }
-      }
+          user: { id: 'test-user' },
+        },
+      },
     }
 
     // Get the event listener that was registered
-    const eventListener = mockBroadcastChannel.mock.results[0].value.addEventListener.mock.calls[0][1]
+    const eventListener =
+      mockBroadcastChannel.mock.results[0].value.addEventListener.mock.calls[0][1]
     eventListener(mockEvent)
 
     expect(mockCallback1).toHaveBeenCalledWith('SIGNED_IN', mockEvent.data.session)

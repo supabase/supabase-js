@@ -237,14 +237,14 @@ describe('getCodeChallengeAndMethod', () => {
     {
       name: 'should not append /PASSWORD_RECOVERY for other flows',
       isPasswordRecovery: false,
-    }
+    },
   ]
 
   test.each(testCases)('$name', async ({ isPasswordRecovery }) => {
     const mockStorage = {
       getItem: jest.fn(),
       setItem: jest.fn(),
-      removeItem: jest.fn()
+      removeItem: jest.fn(),
     }
 
     const [codeChallenge, codeChallengeMethod] = await getCodeChallengeAndMethod(
@@ -271,28 +271,30 @@ describe('validateUUID', () => {
     {
       name: 'should accept valid UUID',
       input: '123e4567-e89b-12d3-a456-426614174000',
-      shouldThrow: false
+      shouldThrow: false,
     },
     {
       name: 'should reject invalid UUID format',
       input: 'not-a-uuid',
-      shouldThrow: true
+      shouldThrow: true,
     },
     {
       name: 'should reject UUID with wrong length',
       input: '123e4567-e89b-12d3-a456',
-      shouldThrow: true
+      shouldThrow: true,
     },
     {
       name: 'should reject UUID with invalid characters',
       input: '123e4567-e89b-12d3-a456-42661417400g',
-      shouldThrow: true
-    }
+      shouldThrow: true,
+    },
   ]
 
   test.each(testCases)('$name', ({ input, shouldThrow }) => {
     if (shouldThrow) {
-      expect(() => validateUUID(input)).toThrow('@supabase/auth-js: Expected parameter to be UUID but is not')
+      expect(() => validateUUID(input)).toThrow(
+        '@supabase/auth-js: Expected parameter to be UUID but is not'
+      )
     } else {
       expect(() => validateUUID(input)).not.toThrow()
     }

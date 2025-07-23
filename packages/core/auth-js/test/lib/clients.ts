@@ -119,9 +119,9 @@ export const authAdminApiAutoConfirmDisabledClient = new GoTrueAdminApi({
 const SERVICE_ROLE_JWT = jwt.sign(
   {
     role: 'service_role',
-    // Set issued at to 1 minute ago to fix flacky tests because of 
+    // Set issued at to 1 minute ago to fix flacky tests because of
     // invalid JWT: unable to parse or verify signature, Token used before issued
-    iat: Math.floor(Date.now() / 1000) - 60
+    iat: Math.floor(Date.now() / 1000) - 60,
   },
   GOTRUE_JWT_SECRET
 )

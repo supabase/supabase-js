@@ -1,6 +1,8 @@
+import { EIP1193Provider } from './web3/ethereum'
 import { AuthError } from './errors'
 import { Fetch } from './fetch'
-import type { SolanaSignInInput, SolanaSignInOutput } from './solana'
+import type { SolanaSignInInput, SolanaSignInOutput } from './web3/solana'
+import { EthereumSignInInput, Hex } from './web3/ethereum'
 
 /** One of the providers supported by GoTrue. */
 export type Provider =
@@ -673,7 +675,46 @@ export type SolanaWeb3Credentials =
       }
     }
 
-export type Web3Credentials = SolanaWeb3Credentials
+export type EthereumWallet = EIP1193Provider
+
+export type EthereumWeb3Credentials =
+  | {
+      chain: 'ethereum'
+
+      /** Wallet interface to use. If not specified will default to `window.solana`. */
+      wallet?: EthereumWallet
+
+      /** Optional statement to include in the Sign in with Solana message. Must not include new line characters. Most wallets like Phantom **require specifying a statement!** */
+      statement?: string
+
+      options?: {
+        /** URL to use with the wallet interface. Some wallets do not allow signing a message for URLs different from the current page. */
+        url?: string
+
+        /** Verification token received when the user completes the captcha on the site. */
+        captchaToken?: string
+
+        signInWithEthereum?: Partial<
+          Omit<EthereumSignInInput, 'version' | 'domain' | 'uri' | 'statement'>
+        >
+      }
+    }
+  | {
+      chain: 'ethereum'
+
+      /** Sign in with Ethereum compatible message. Must include `Issued At`, `URI` and `Version`. */
+      message: string
+
+      /** Ed25519 signature of the message. */
+      signature: Hex
+
+      options?: {
+        /** Verification token received when the user completes the captcha on the site. */
+        captchaToken?: string
+      }
+    }
+
+export type Web3Credentials = SolanaWeb3Credentials | EthereumWeb3Credentials
 
 export type VerifyOtpParams = VerifyMobileOtpParams | VerifyEmailOtpParams | VerifyTokenHashParams
 export interface VerifyMobileOtpParams {

@@ -24,9 +24,10 @@ import { setItemAsync } from '../src/lib/helpers'
 
 const TEST_USER_DATA = { info: 'some info' }
 
-const expiredAccessToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJhdXRoZW50aWNhdGVkIiwiZXhwIjoxNzQ4MTA3MDc0LCJpYXQiOjE3NDgxMDM0NzQsImlzcyI6Imh0dHBzOi8vZXhhbXBsZS5jb20iLCJzdWIiOiIxMjM0NTY3ODkwIiwidXNlcl9tZXRhZGF0YSI6e30sInJvbGUiOiJhdXRoZW50aWNhdGVkIn0.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c'
+const expiredAccessToken =
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJhdXRoZW50aWNhdGVkIiwiZXhwIjoxNzQ4MTA3MDc0LCJpYXQiOjE3NDgxMDM0NzQsImlzcyI6Imh0dHBzOi8vZXhhbXBsZS5jb20iLCJzdWIiOiIxMjM0NTY3ODkwIiwidXNlcl9tZXRhZGF0YSI6e30sInJvbGUiOiJhdXRoZW50aWNhdGVkIn0.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c'
 
-const isNodeHigherThan18 = parseInt(process.version.slice(1).split('.')[0]) > 18;
+const isNodeHigherThan18 = parseInt(process.version.slice(1).split('.')[0]) > 18
 
 describe('GoTrueClient', () => {
   // @ts-expect-error 'Allow access to private _refreshAccessToken'
@@ -282,16 +283,16 @@ describe('GoTrueClient', () => {
     })
 
     test('getSession() returns null when no session is stored', async () => {
-      const { data, error } = await auth.getSession();
-      expect(data?.session).toBeNull();
-      expect(error).toBeNull();
-    });
+      const { data, error } = await auth.getSession()
+      expect(data?.session).toBeNull()
+      expect(error).toBeNull()
+    })
 
     test('getSession() returns null when no session is stored', async () => {
-      const { data, error } = await auth.getSession();
-      expect(data?.session).toBeNull();
-      expect(error).toBeNull();
-    });
+      const { data, error } = await auth.getSession()
+      expect(data?.session).toBeNull()
+      expect(error).toBeNull()
+    })
 
     test('refresh should only happen once', async () => {
       const { email, password } = mockUserCredentials()
@@ -463,8 +464,8 @@ describe('GoTrueClient', () => {
         password,
         options: {
           emailRedirectTo: email,
-          data: { ...TEST_USER_DATA }
-        }
+          data: { ...TEST_USER_DATA },
+        },
       })
 
       expect(error).toBeNull()
@@ -480,7 +481,7 @@ describe('GoTrueClient', () => {
 
       expect(data?.session).toBeNull()
       expect(error).not.toBeNull()
-      expect(error?.message).toContain("Password should be at least 6 characters")
+      expect(error?.message).toContain('Password should be at least 6 characters')
     })
 
     test('fail to signUp() with invalid email', async () => {
@@ -488,15 +489,16 @@ describe('GoTrueClient', () => {
 
       expect(data?.session).toBeNull()
       expect(error).not.toBeNull()
-      expect(error?.message).toContain("Unable to validate email address: invalid format")
+      expect(error?.message).toContain('Unable to validate email address: invalid format')
     })
 
     test('resend() with email', async () => {
       const { email } = mockUserCredentials()
 
       const { error } = await auth.resend({
-        email, type: 'signup',
-        options: { emailRedirectTo: email }
+        email,
+        type: 'signup',
+        options: { emailRedirectTo: email },
       })
 
       expect(error).toBeNull()
@@ -511,11 +513,13 @@ describe('GoTrueClient', () => {
 
     test('signUp() should fail when both email and phone are missing', async () => {
       const { data, error } = await auth.signUp({
-        password: 'password123'
+        password: 'password123',
       } as any)
 
       expect(error).not.toBeNull()
-      expect(error?.message).toContain('You must provide either an email or phone number and a password')
+      expect(error?.message).toContain(
+        'You must provide either an email or phone number and a password'
+      )
       expect(data.session).toBeNull()
       expect(data.user).toBeNull()
     })
@@ -550,8 +554,8 @@ describe('GoTrueClient', () => {
     test('signInWithOtp() should fail when both email and phone are missing', async () => {
       const { data, error } = await auth.signInWithOtp({
         options: {
-          data: { hello: 'world' }
-        }
+          data: { hello: 'world' },
+        },
       } as any)
 
       expect(error).not.toBeNull()
@@ -568,7 +572,7 @@ describe('GoTrueClient', () => {
           shouldCreateUser: false,
           captchaToken: 'some_token',
           emailRedirectTo: email,
-        }
+        },
       })
 
       expect(error).not.toBeNull()
@@ -587,8 +591,8 @@ describe('GoTrueClient', () => {
           shouldCreateUser: true,
           data: { ...TEST_USER_DATA },
           channel: 'whatsapp',
-          captchaToken: 'some_token'
-        }
+          captchaToken: 'some_token',
+        },
       })
       expect(error).not.toBeNull()
       expect(data.session).toBeNull()
@@ -604,8 +608,8 @@ describe('GoTrueClient', () => {
         options: {
           data: { ...TEST_USER_DATA },
           channel: 'whatsapp',
-          captchaToken: 'some_token'
-        }
+          captchaToken: 'some_token',
+        },
       })
 
       // Since auto-confirm is off, we should either:
@@ -634,10 +638,11 @@ describe('GoTrueClient', () => {
       const { phone } = mockUserCredentials()
 
       const { error } = await phoneClient.resend({
-        phone, type: 'phone_change',
+        phone,
+        type: 'phone_change',
         options: {
           captchaToken: 'some_token',
-        }
+        },
       })
 
       expect(error).toBeNull()
@@ -647,16 +652,17 @@ describe('GoTrueClient', () => {
       const { phone } = mockUserCredentials()
 
       const { error } = await phoneClient.verifyOtp({
-        phone, type: 'phone_change',
+        phone,
+        type: 'phone_change',
         token: '123456',
         options: {
           redirectTo: 'http://localhost:3000/callback',
           captchaToken: 'some_token',
-        }
+        },
       })
 
       expect(error).not.toBeNull()
-      expect(error?.message).toContain("Token has expired or is invalid")
+      expect(error?.message).toContain('Token has expired or is invalid')
     })
   })
 
@@ -985,7 +991,7 @@ describe('User management', () => {
       password: password + '-wrong',
       options: {
         captchaToken: 'some_token',
-      }
+      },
     })
 
     expect(error).not.toBeNull()
@@ -1001,7 +1007,7 @@ describe('User management', () => {
       password: password,
       options: {
         captchaToken: 'some_token',
-      }
+      },
     })
 
     expect(error).not.toBeNull()
@@ -1012,11 +1018,13 @@ describe('User management', () => {
 
 test('signInWithPassword() should fail when both email and phone are missing', async () => {
   const { data, error } = await auth.signInWithPassword({
-    password: 'password123'
+    password: 'password123',
   } as any)
 
   expect(error).not.toBeNull()
-  expect(error?.message).toContain('You must provide either an email or phone number and a password')
+  expect(error?.message).toContain(
+    'You must provide either an email or phone number and a password'
+  )
   expect(data.session).toBeNull()
   expect(data.user).toBeNull()
 })
@@ -1137,7 +1145,6 @@ describe('The auth client can signin with third-party oAuth providers', () => {
 })
 
 describe('User management', () => {
-
   beforeEach(async () => {
     await authWithSession.signOut()
   })
@@ -1231,7 +1238,7 @@ describe('MFA', () => {
     return {
       ...credentials,
       factorId: enrollData!.id,
-      totp: enrollData!.totp
+      totp: enrollData!.totp,
     }
   }
 
@@ -1260,7 +1267,7 @@ describe('MFA', () => {
     const { factorId } = await setupUserWithMFAAndTOTP()
 
     const { data: challengeData, error: challengeError } = await authWithSession.mfa.challenge({
-      factorId
+      factorId,
     })
 
     expect(challengeError).toBeNull()
@@ -1272,14 +1279,14 @@ describe('MFA', () => {
     const { factorId } = await setupUserWithMFAAndTOTP()
 
     const { data: challengeData, error: challengeError } = await authWithSession.mfa.challenge({
-      factorId
+      factorId,
     })
     expect(challengeError).toBeNull()
 
     const { data: verifyData, error: verifyError } = await authWithSession.mfa.verify({
       factorId,
       challengeId: challengeData!.id,
-      code: '123456'
+      code: '123456',
     })
 
     expect(verifyError).not.toBeNull()
@@ -1292,7 +1299,7 @@ describe('MFA', () => {
 
     const { data: verifyData, error: verifyError } = await authWithSession.mfa.challengeAndVerify({
       factorId,
-      code: '123456'
+      code: '123456',
     })
 
     expect(verifyError).not.toBeNull()
@@ -1304,7 +1311,7 @@ describe('MFA', () => {
     const { factorId } = await setupUserWithMFAAndTOTP()
 
     const { error: unenrollError } = await authWithSession.mfa.unenroll({
-      factorId
+      factorId,
     })
 
     expect(unenrollError).toBeNull()
@@ -1321,7 +1328,8 @@ describe('MFA', () => {
   test('getAuthenticatorAssuranceLevel should return current AAL', async () => {
     const { factorId } = await setupUserWithMFAAndTOTP()
 
-    const { data: aalData, error: aalError } = await authWithSession.mfa.getAuthenticatorAssuranceLevel()
+    const { data: aalData, error: aalError } =
+      await authWithSession.mfa.getAuthenticatorAssuranceLevel()
 
     expect(aalError).toBeNull()
     expect(aalData!.currentLevel).toBeDefined()
@@ -1339,11 +1347,11 @@ describe('MFA', () => {
             { factor_type: 'totp', status: 'verified' },
             { factor_type: 'totp', status: 'unverified' },
             { factor_type: 'phone', status: 'verified' },
-            { factor_type: 'phone', status: 'unverified' }
-          ]
-        }
+            { factor_type: 'phone', status: 'unverified' },
+          ],
+        },
       },
-      error: null
+      error: null,
     })
 
     const result = await pkceClient['_listFactors']()
@@ -1452,8 +1460,8 @@ describe('getClaims', () => {
   test('getClaims should return error for Invalid JWT signature', async () => {
     // node 18 doesn't support crypto.subtle API by default unless built with the experimental-global-webcrypto flag
     if (!isNodeHigherThan18) {
-      console.warn('Skipping test due to Node version <= 18');
-      return;
+      console.warn('Skipping test due to Node version <= 18')
+      return
     }
 
     const { email, password } = mockUserCredentials()
@@ -1486,15 +1494,17 @@ describe('getClaims', () => {
     expect(signUpData.session).not.toBeNull()
 
     const header = Buffer.from(JSON.stringify({ alg: 'HS256', typ: 'JWT' })).toString('base64url')
-    const payload = Buffer.from(JSON.stringify({
-      aud: 'authenticated',
-      exp: Math.floor(Date.now() / 1000) + 3600,
-      iat: Math.floor(Date.now() / 1000),
-      iss: 'https://example.com',
-      sub: '1234567890',
-      user_metadata: {},
-      role: 'authenticated'
-    })).toString('base64url')
+    const payload = Buffer.from(
+      JSON.stringify({
+        aud: 'authenticated',
+        exp: Math.floor(Date.now() / 1000) + 3600,
+        iat: Math.floor(Date.now() / 1000),
+        iss: 'https://example.com',
+        sub: '1234567890',
+        user_metadata: {},
+        role: 'authenticated',
+      })
+    ).toString('base64url')
     const invalidSignature = 'invalid_signature_that_is_not_base64url_encoded'
     const invalidJWT = `${header}.${payload}.${invalidSignature}`
 
@@ -1532,12 +1542,13 @@ describe('getClaims', () => {
     const storageKey = authWithSession.storageKey
 
     const invalidSession = {
-      access_token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJhdXRoZW50aWNhdGVkIiwiZXhwIjoxNzEwODg5NjAwLCJpYXQiOjE3MTA4ODYwMDAsImlzcyI6Imh0dHBzOi8vZXhhbXBsZS5jb20iLCJzdWIiOiIxMjM0NTY3ODkwIiwidXNlcl9tZXRhZGF0YSI6e30sInJvbGUiOiJhdXRoZW50aWNhdGVkIn0.invalid_signature',
+      access_token:
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJhdXRoZW50aWNhdGVkIiwiZXhwIjoxNzEwODg5NjAwLCJpYXQiOjE3MTA4ODYwMDAsImlzcyI6Imh0dHBzOi8vZXhhbXBsZS5jb20iLCJzdWIiOiIxMjM0NTY3ODkwIiwidXNlcl9tZXRhZGF0YSI6e30sInJvbGUiOiJhdXRoZW50aWNhdGVkIn0.invalid_signature',
       refresh_token: 'invalid-refresh-token',
       expires_in: 3600,
       expires_at: Math.floor(Date.now() / 1000) + 3600,
       token_type: 'bearer',
-      user: null
+      user: null,
     }
 
     await storage.setItem(storageKey, JSON.stringify(invalidSession))
@@ -1810,7 +1821,9 @@ describe('signInAnonymously', () => {
   })
 
   test('should sign in anonymously with user data', async () => {
-    const { data, error } = await authClient.signInAnonymously({ options: { data: TEST_USER_DATA } })
+    const { data, error } = await authClient.signInAnonymously({
+      options: { data: TEST_USER_DATA },
+    })
 
     expect(error).toBeNull()
     expect(data).not.toBeNull()
@@ -1822,20 +1835,20 @@ describe('signInAnonymously', () => {
 
     expect(data?.session).toBeNull()
     expect(error).not.toBeNull()
-    expect(error?.message).toContain("Anonymous sign-ins are disabled")
+    expect(error?.message).toContain('Anonymous sign-ins are disabled')
   })
 })
 
 describe('Web3 Authentication', () => {
   test('signInWithWeb3 should throw error for unsupported chain', async () => {
     const credentials = {
-      chain: 'ethereum' as any,
+      chain: 'polygon' as any,
       message: 'test message',
       signature: new Uint8Array([1, 2, 3]),
     }
 
     await expect(authClient.signInWithWeb3(credentials)).rejects.toThrow(
-      '@supabase/auth-js: Unsupported chain "ethereum"'
+      '@supabase/auth-js: Unsupported chain "polygon"'
     )
   })
 
@@ -1850,7 +1863,7 @@ describe('Web3 Authentication', () => {
 
     expect(data?.session).toBeNull()
     expect(error).not.toBeNull()
-    expect(error?.message).toContain("Web3 provider is disabled")
+    expect(error?.message).toContain('Web3 provider is disabled')
   })
 
   test('signInWithWeb3 should fail solana chain without message', async () => {
@@ -1871,11 +1884,10 @@ describe('Web3 Authentication', () => {
         address: '0x123',
         publicKey: { toBase58: () => '0x123' },
         privateKey: '0x123',
-
       },
       options: {
         url: 'https://example.com',
-      }
+      },
     }
 
     await expect(authClient.signInWithWeb3(credentials)).rejects.toThrow(
@@ -1893,11 +1905,79 @@ describe('Web3 Authentication', () => {
       },
       options: {
         url: 'https://example.com',
-      }
+      },
     }
 
     await expect(authClient.signInWithWeb3(credentials)).rejects.toThrow(
       '@supabase/auth-js: Wallet does not have a compatible signMessage() and publicKey.toBase58() API'
+    )
+  })
+
+  test('signInWithWeb3 should handle ethereum chain', async () => {
+    const credentials = {
+      chain: 'ethereum' as const,
+      message: 'test message',
+      signature: new Uint8Array([1, 2, 3]),
+    }
+
+    const { data, error } = await authClient.signInWithWeb3(credentials)
+
+    expect(data?.session).toBeNull()
+    expect(error).not.toBeNull()
+    expect(error?.message).toContain('Web3 provider is disabled')
+  })
+
+  test('signInWithWeb3 should fail ethereum chain without message', async () => {
+    const credentials = {
+      chain: 'ethereum' as const,
+      signature: new Uint8Array([1, 2, 3]),
+    }
+
+    await expect(authClient.signInWithWeb3(credentials)).rejects.toThrow(
+      '@supabase/auth-js: Both wallet and url must be specified in non-browser environments.'
+    )
+  })
+
+  test('signInWithWeb3 should fail ethereum chain without signMessage', async () => {
+    await expect(
+      authClient.signInWithWeb3({
+        chain: 'ethereum' as const,
+        wallet: {
+          address: '0xa1E993d09257291470e86778399D79A0864F327E',
+          on: () => void 0,
+          removeListener: () => void 0,
+          request: ({ method }) => {
+            if (method === 'eth_requestAccounts') {
+              return Promise.reject(
+                new Error('Missing or invalid. request() method: eth_requestAccounts')
+              )
+            }
+            return new Promise((resolve) => setTimeout(resolve, 100))
+          },
+        },
+        options: {
+          url: 'https://example.com',
+        },
+      })
+    ).rejects.toThrow('@supabase/auth-js: Wallet method eth_requestAccounts is missing or invalid')
+  })
+
+  test('signInWithWeb3 should fail ethereum chain without publicKey', async () => {
+    await expect(
+      authClient.signInWithWeb3({
+        chain: 'ethereum' as const,
+        wallet: {
+          address: '',
+          on: () => void 0,
+          removeListener: () => void 0,
+          request: () => new Promise((resolve) => resolve([])),
+        },
+        options: {
+          url: 'https://example.com',
+        },
+      })
+    ).rejects.toThrow(
+      '@supabase/auth-js: No accounts available. Please ensure the wallet is connected.'
     )
   })
 })
@@ -1910,14 +1990,16 @@ describe('ID Token Authentication', () => {
       nonce: 'mock-nonce',
       options: {
         captchaToken: 'some_token',
-      }
+      },
     }
 
     const { data, error } = await authClient.signInWithIdToken(credentials)
 
     expect(data?.session).toBeNull()
     expect(error).not.toBeNull()
-    expect(error?.message).toContain("Provider (issuer \"https://accounts.google.com\") is not enabled")
+    expect(error?.message).toContain(
+      'Provider (issuer "https://accounts.google.com") is not enabled'
+    )
   })
 })
 
@@ -1927,7 +2009,9 @@ describe('Reauthentication', () => {
 
     expect(data?.session).toBeNull()
     expect(error).not.toBeNull()
-    expect(error?.message).toContain("Reauthentication requires the user to have an email or a phone number")
+    expect(error?.message).toContain(
+      'Reauthentication requires the user to have an email or a phone number'
+    )
   })
 
   test('reauthenticate() returns null user and session', async () => {
@@ -1955,7 +2039,7 @@ describe('Identity Management', () => {
   test('getUserIdentities() returns error without session', async () => {
     const { error } = await authWithSession.getUserIdentities()
     expect(error).not.toBeNull()
-    expect(error?.message).toContain("Auth session missing!")
+    expect(error?.message).toContain('Auth session missing!')
   })
 
   test('getUserIdentities() returns user identities after signup', async () => {
@@ -1970,7 +2054,10 @@ describe('Identity Management', () => {
     const { data, error } = await authWithSession.getUserIdentities()
     expect(error).toBeNull()
     expect(data?.identities).toHaveLength(1)
-    const identity = data?.identities[0] as unknown as { provider: string; identity_data: { email: string } }
+    const identity = data?.identities[0] as unknown as {
+      provider: string
+      identity_data: { email: string }
+    }
     expect(identity.provider).toBe('email')
     expect(identity.identity_data.email).toBe(email)
   })
@@ -1992,7 +2079,7 @@ describe('Identity Management', () => {
         queryParams: {
           prompt: 'select_account',
         },
-      }
+      },
     })
     expect(error).not.toBeNull()
     expect(error?.message).toContain('Manual linking is disabled')
@@ -2015,7 +2102,6 @@ describe('Identity Management', () => {
     expect(error).not.toBeNull()
     expect(error?.message).toContain('Manual linking is disabled')
   })
-
 })
 
 describe('Auto Refresh', () => {
@@ -2102,7 +2188,9 @@ describe('Session Management', () => {
     const { email, password } = mockUserCredentials()
     const mockCallback = jest.fn()
 
-    const { data: { subscription } } = authWithSession.onAuthStateChange(mockCallback)
+    const {
+      data: { subscription },
+    } = authWithSession.onAuthStateChange(mockCallback)
 
     const { data } = await authWithSession.signUp({
       email,
@@ -2119,7 +2207,9 @@ describe('Session Management', () => {
   test('_removeSession removes session and notifies subscribers', async () => {
     const { email, password } = mockUserCredentials()
     const mockCallback = jest.fn()
-    const { data: { subscription } } = authWithSession.onAuthStateChange(mockCallback)
+    const {
+      data: { subscription },
+    } = authWithSession.onAuthStateChange(mockCallback)
 
     const { data } = await authWithSession.signUp({
       email,
@@ -2160,7 +2250,7 @@ describe('Session Management Edge Cases', () => {
       expires_in: 3600,
       expires_at: Math.floor(Date.now() / 1000) + 3600,
       token_type: 'bearer',
-      user: null
+      user: null,
     }
 
     await storage.setItem(storageKey, JSON.stringify(invalidSession))
@@ -2194,7 +2284,7 @@ describe('Session Management Edge Cases', () => {
       ...currentSession,
       expires_at: expiredSeconds,
       access_token: 'expired-token',
-      refresh_token: 'expired-refresh-token'
+      refresh_token: 'expired-refresh-token',
     }
 
     await storage.setItem(storageKey, JSON.stringify(expiredSession))
@@ -2214,9 +2304,15 @@ describe('Session Management Edge Cases', () => {
 describe('Storage adapter edge cases', () => {
   test('should handle storage failure gracefully', async () => {
     const brokenStorage = {
-      getItem: async () => { throw new Error('getItem failed message') },
-      setItem: async () => { throw new Error('setItem failed message') },
-      removeItem: async () => { throw new Error('removeItem failed message') },
+      getItem: async () => {
+        throw new Error('getItem failed message')
+      },
+      setItem: async () => {
+        throw new Error('setItem failed message')
+      },
+      removeItem: async () => {
+        throw new Error('removeItem failed message')
+      },
     }
     const client = getClientWithSpecificStorage(brokenStorage)
 
@@ -2225,9 +2321,11 @@ describe('Storage adapter edge cases', () => {
 
   test('should handle storage getItem failure in getSession', async () => {
     const brokenStorage = {
-      getItem: async () => { throw new Error('getItem failed message') },
-      setItem: async () => { },
-      removeItem: async () => { },
+      getItem: async () => {
+        throw new Error('getItem failed message')
+      },
+      setItem: async () => {},
+      removeItem: async () => {},
     }
     const client = getClientWithSpecificStorage(brokenStorage)
     await expect(client.getSession()).rejects.toThrow('getItem failed message')
@@ -2236,8 +2334,10 @@ describe('Storage adapter edge cases', () => {
   test('should handle storage setItem failure in _saveSession', async () => {
     const brokenStorage = {
       getItem: async () => '{}',
-      setItem: async () => { throw new Error('setItem failed message') },
-      removeItem: async () => { },
+      setItem: async () => {
+        throw new Error('setItem failed message')
+      },
+      removeItem: async () => {},
     }
     const client = getClientWithSpecificStorage(brokenStorage)
     const session = {
@@ -2245,7 +2345,7 @@ describe('Storage adapter edge cases', () => {
       refresh_token: 'test-refresh',
       expires_in: 3600,
       token_type: 'bearer',
-      user: null
+      user: null,
     }
     // @ts-expect-error private method
     await expect(client._saveSession(session)).rejects.toThrow('setItem failed message')
@@ -2258,8 +2358,10 @@ describe('Storage adapter edge cases', () => {
   test('should handle storage removeItem failure in _removeSession', async () => {
     const brokenStorage = {
       getItem: async () => '{}',
-      setItem: async () => { },
-      removeItem: async () => { throw new Error('removeItem failed message') },
+      setItem: async () => {},
+      removeItem: async () => {
+        throw new Error('removeItem failed message')
+      },
     }
     const client = getClientWithSpecificStorage(brokenStorage)
 
@@ -2269,8 +2371,8 @@ describe('Storage adapter edge cases', () => {
   test('should handle invalid JSON in storage', async () => {
     const invalidStorage = {
       getItem: async () => 'invalid-json',
-      setItem: async () => { },
-      removeItem: async () => { },
+      setItem: async () => {},
+      removeItem: async () => {},
     }
     const client = getClientWithSpecificStorage(invalidStorage)
     const { data, error } = await client.getSession()
@@ -2281,8 +2383,8 @@ describe('Storage adapter edge cases', () => {
   test('should handle null storage value', async () => {
     const nullStorage = {
       getItem: async () => null,
-      setItem: async () => { },
-      removeItem: async () => { },
+      setItem: async () => {},
+      removeItem: async () => {},
     }
     const client = getClientWithSpecificStorage(nullStorage)
     const { data, error } = await client.getSession()
@@ -2293,8 +2395,8 @@ describe('Storage adapter edge cases', () => {
   test('should handle empty storage value', async () => {
     const emptyStorage = {
       getItem: async () => '',
-      setItem: async () => { },
-      removeItem: async () => { },
+      setItem: async () => {},
+      removeItem: async () => {},
     }
     const client = getClientWithSpecificStorage(emptyStorage)
     const { data, error } = await client.getSession()
@@ -2305,8 +2407,8 @@ describe('Storage adapter edge cases', () => {
   test('should handle malformed session data', async () => {
     const malformedStorage = {
       getItem: async () => JSON.stringify({ access_token: 'test' }), // Missing required fields
-      setItem: async () => { },
-      removeItem: async () => { },
+      setItem: async () => {},
+      removeItem: async () => {},
     }
     const client = getClientWithSpecificStorage(malformedStorage)
     const { data, error } = await client.getSession()
@@ -2316,16 +2418,17 @@ describe('Storage adapter edge cases', () => {
 
   test('should handle expired session data', async () => {
     const expiredStorage = {
-      getItem: async () => JSON.stringify({
-        access_token: 'test',
-        refresh_token: 'test',
-        expires_in: 3600,
-        expires_at: Math.floor(Date.now() / 1000) - 1000, // Expired 1 second ago
-        token_type: 'bearer',
-        user: null
-      }),
-      setItem: async () => { },
-      removeItem: async () => { },
+      getItem: async () =>
+        JSON.stringify({
+          access_token: 'test',
+          refresh_token: 'test',
+          expires_in: 3600,
+          expires_at: Math.floor(Date.now() / 1000) - 1000, // Expired 1 second ago
+          token_type: 'bearer',
+          user: null,
+        }),
+      setItem: async () => {},
+      removeItem: async () => {},
     }
     const client = getClientWithSpecificStorage(expiredStorage)
     // @ts-expect-error private method
@@ -2352,7 +2455,11 @@ describe('Storage adapter edge cases', () => {
   test('should build provider URL with _getUrlForProvider', async () => {
     const client = getClientWithSpecificStorage(memoryLocalStorageAdapter())
     // @ts-expect-error private method
-    const url = await client._getUrlForProvider(GOTRUE_URL_SIGNUP_ENABLED_AUTO_CONFIRM_ON, 'google', { redirectTo: 'http://localhost' })
+    const url = await client._getUrlForProvider(
+      GOTRUE_URL_SIGNUP_ENABLED_AUTO_CONFIRM_ON,
+      'google',
+      { redirectTo: 'http://localhost' }
+    )
     expect(typeof url).toBe('string')
     expect(url).toContain('google')
   })
@@ -2362,11 +2469,11 @@ describe('Storage adapter edge cases', () => {
       url: 'https://example.com',
       autoRefreshToken: false,
       persistSession: false,
-      flowType: 'pkce'
+      flowType: 'pkce',
     })
 
     const url = await client['_getUrlForProvider']('https://example.com/authorize', 'github', {
-      redirectTo: 'http://localhost:3000/callback'
+      redirectTo: 'http://localhost:3000/callback',
     })
 
     expect(url).toContain('provider=github')
@@ -2380,8 +2487,8 @@ describe('SSO Authentication', () => {
     const { data, error } = await pkceClient.signInWithSSO({
       providerId: 'valid-provider-id',
       options: {
-        redirectTo: 'http://localhost:3000/callback'
-      }
+        redirectTo: 'http://localhost:3000/callback',
+      },
     })
 
     expect(error).not.toBeNull()
@@ -2412,11 +2519,11 @@ describe('Lock functionality', () => {
       url: GOTRUE_URL_SIGNUP_ENABLED_AUTO_CONFIRM_ON,
       lock: mockLock,
       autoRefreshToken: false,
-      persistSession: false
+      persistSession: false,
     })
 
     // Wait for initialization to complete
-    await new Promise(resolve => setTimeout(resolve, 100))
+    await new Promise((resolve) => setTimeout(resolve, 100))
 
     // Now make the lock fail
     shouldFail = true
@@ -2435,7 +2542,7 @@ describe('userNotAvailableProxy behavior', () => {
 
     const client = new GoTrueClient({
       storage,
-      userStorage
+      userStorage,
     })
 
     await setItemAsync(storage, STORAGE_KEY, {
@@ -2443,14 +2550,18 @@ describe('userNotAvailableProxy behavior', () => {
       refresh_token: 'refresh-token',
       token_type: 'bearer',
       expires_in: 1000,
-      expires_at: Date.now() / 1000 + 1000
+      expires_at: Date.now() / 1000 + 1000,
     })
 
-    const { data: { session } } = await client.getSession()
+    const {
+      data: { session },
+    } = await client.getSession()
 
     expect(session?.user).toBeDefined()
     expect((session?.user as any).__isUserNotAvailableProxy).toBe(true)
 
-    expect(() => session?.user?.id).toThrow('@supabase/auth-js: client was created with userStorage option')
+    expect(() => session?.user?.id).toThrow(
+      '@supabase/auth-js: client was created with userStorage option'
+    )
   })
 })
