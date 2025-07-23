@@ -8,8 +8,8 @@ importers:
   .:
     dependencies:
       '@supabase/auth-js':
-        specifier: 2.71.0
-        version: 2.71.0
+        specifier: 2.70.0
+        version: 2.70.0
       '@supabase/functions-js':
         specifier: 2.4.5
         version: 2.4.5
@@ -17,8 +17,8 @@ importers:
         specifier: 2.6.15
         version: 2.6.15
       '@supabase/postgrest-js':
-        specifier: 1.19.4
-        version: 1.19.4
+        specifier: 1.21.0
+        version: 1.21.0
       '@supabase/realtime-js':
         specifier: 2.11.15
         version: 2.11.15
@@ -603,10 +603,10 @@ packages:
       }
     engines: { node: '>=16' }
 
-  '@supabase/auth-js@2.71.0':
+  '@supabase/auth-js@2.70.0':
     resolution:
       {
-        integrity: sha512-OMYNbhGa1Cj4stalJq0VoHm5l7Sj/xY0j9CiYEQCikbQmtiDG3c27EIFA4OD+NxuoHTZmjaW8VJlS3SP+yasEA==,
+        integrity: sha512-BaAK/tOAZFJtzF1sE3gJ2FwTjLf4ky3PSvcvLGEgEmO4BSBkwWKu8l67rLLIBZPDnCyV7Owk2uPyKHa0kj5QGg==,
       }
 
   '@supabase/functions-js@2.4.5':
@@ -622,10 +622,10 @@ packages:
       }
     engines: { node: 4.x || >=6.0.0 }
 
-  '@supabase/postgrest-js@1.19.4':
+  '@supabase/postgrest-js@1.21.0':
     resolution:
       {
-        integrity: sha512-O4soKqKtZIW3olqmbXXbKugUtByD2jPa8kL2m2c1oozAO11uCcGrRhkZL0kVxjBLrXHE0mdSkFsMj7jDSfyNpw==,
+        integrity: sha512-fqpV5ZwaLVJyQnsmljJF6MnpRWnkjbLEymPylhVo9nFxr6XpkmP0XjRdsDwICBR2ugezoyPYj8yPCrPgSyys3Q==,
       }
 
   '@supabase/realtime-js@2.11.15':
@@ -5587,7 +5587,7 @@ snapshots:
       '@wallet-standard/base': 1.1.0
       '@wallet-standard/features': 1.1.0
 
-  '@supabase/auth-js@2.71.0':
+  '@supabase/auth-js@2.70.0':
     dependencies:
       '@supabase/node-fetch': 2.6.15
 
@@ -5599,7 +5599,7 @@ snapshots:
     dependencies:
       whatwg-url: 5.0.0
 
-  '@supabase/postgrest-js@1.19.4':
+  '@supabase/postgrest-js@1.21.0':
     dependencies:
       '@supabase/node-fetch': 2.6.15
 
