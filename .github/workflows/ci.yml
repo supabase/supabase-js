@@ -92,6 +92,19 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           path-to-lcov: ./test/coverage/lcov.info
+          parallel: true
+          flag-name: node-${{ matrix.node }}-${{ matrix.os }}
+
+  coveralls-finish:
+    name: Coveralls Finished
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - name: Coveralls Finished
+        uses: coverallsapp/github-action@v2
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          parallel-finished: true
 
   deno-tests:
     name: Deno Tests / ${{ matrix.deno }}
