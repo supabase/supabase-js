@@ -88,6 +88,64 @@ Deno.test(
         assertEquals(data.user!.email, email)
       })
 
+      await t.step('Authentication - should sign in and out successfully', async () => {
+        const email = `deno-signout-${Date.now()}@example.com`
+        const password = 'password123'
+
+        await supabase.auth.signUp({ email, password })
+        const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+
+        assertEquals(error, null)
+        assertExists(data.user)
+        assertEquals(data.user!.email, email)
+
+        const { error: signOutError } = await supabase.auth.signOut()
+
+        assertEquals(signOutError, null)
+      })
+
+      await t.step('Authentication - should get current user', async () => {
+        const email = `deno-getuser-${Date.now()}@example.com`
+        const password = 'password123'
+
+        await supabase.auth.signUp({ email, password })
+        await supabase.auth.signInWithPassword({ email, password })
+
+        const { data, error } = await supabase.auth.getUser()
+
+        assertEquals(error, null)
+        assertExists(data.user)
+        assertEquals(data.user!.email, email)
+      })
+
+      await t.step('Authentication - should handle invalid credentials', async () => {
+        const email = `deno-invalid-${Date.now()}@example.com`
+        const password = 'password123'
+
+        await supabase.auth.signUp({ email, password })
+
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email,
+          password: 'wrongpassword',
+        })
+
+        assertExists(error)
+        assertEquals(data.user, null)
+      })
+
+      await t.step('Authentication - should handle non-existent user', async () => {
+        const email = `deno-nonexistent-${Date.now()}@example.com`
+        const password = 'password123'
+
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        })
+
+        assertExists(error)
+        assertEquals(data.user, null)
+      })
+
       await t.step('Realtime - is able to connect and broadcast', async () => {
         const channelName = `channel-${crypto.randomUUID()}`
         let channel: RealtimeChannel
