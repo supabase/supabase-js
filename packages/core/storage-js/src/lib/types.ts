@@ -80,7 +80,8 @@ export interface DestinationOptions {
 
 export interface SearchOptions {
   /**
-   *  The number of files you want to be returned.
+   * The number of files you want to be returned.
+   * @default 100
    */
   limit?: number
 
