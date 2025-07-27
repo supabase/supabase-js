@@ -145,6 +145,12 @@ jobs:
         if: ${{ matrix.deno == '2.x' }}
         run: npm run test:integration:browser
 
+      - name: Run Edge Functions Tests
+        if: ${{ matrix.deno == '2.x' }}
+        run: |
+          cd test/deno
+          npm run test:edge-functions
+
       - name: Stop Supabase
         if: always()
         run: supabase stop

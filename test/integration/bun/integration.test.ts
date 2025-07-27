@@ -109,3 +109,40 @@ test('should handle invalid credentials', async () => {
   expect(error).not.toBeNull()
   expect(data.user).toBeNull()
 })
+
+test('should upload and list file in bucket', async () => {
+  const bucket = 'test-bucket'
+  const filePath = 'test-file.txt'
+  const fileContent = new Blob(['Hello, Supabase Storage!'], { type: 'text/plain' })
+
+  // use service_role key for bypass RLS
+  const SERVICE_ROLE_KEY =
+    process.env.SUPABASE_SERVICE_ROLE_KEY ||
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU'
+  const supabaseWithServiceRole = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
+    realtime: { heartbeatIntervalMs: 500 },
+  })
+
+  // upload
+  const { data: uploadData, error: uploadError } = await supabaseWithServiceRole.storage
+    .from(bucket)
+    .upload(filePath, fileContent, { upsert: true })
+  expect(uploadError).toBeNull()
+  expect(uploadData).toBeDefined()
+
+  // list
+  const { data: listData, error: listError } = await supabaseWithServiceRole.storage
+    .from(bucket)
+    .list()
+  expect(listError).toBeNull()
+  expect(Array.isArray(listData)).toBe(true)
+  if (!listData) throw new Error('listData is null')
+  const fileNames = listData.map((f: any) => f.name)
+  expect(fileNames).toContain('test-file.txt')
+
+  // delete file
+  const { error: deleteError } = await supabaseWithServiceRole.storage
+    .from(bucket)
+    .remove([filePath])
+  expect(deleteError).toBeNull()
+})
