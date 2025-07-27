@@ -87,6 +87,9 @@ jobs:
       - name: Run Unit Tests + Coverage
         run: npm run test:coverage
 
+      - name: Run isows Compatibility Test
+        run: npm run test:isows-compatibility
+
       - name: Upload coverage results to Coveralls
         uses: coverallsapp/github-action@v2
         with:
