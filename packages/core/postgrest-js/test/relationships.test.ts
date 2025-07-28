@@ -1,11 +1,25 @@
 import { PostgrestClient } from '../src/index'
-import { Database } from './types.override'
+import { CustomUserDataTypeSchema, Database } from './types.override'
 import { expectType } from 'tsd'
 import { TypeEqual } from 'ts-expect'
+import { z } from 'zod'
 import { Json } from '../src/select-query-parser/types'
 
 const REST_URL = 'http://localhost:3000'
 export const postgrest = new PostgrestClient<Database>(REST_URL)
+
+const UsersRowSchema = z.object({
+  age_range: z.unknown().nullable(),
+  catchphrase: z.unknown().nullable(),
+  data: CustomUserDataTypeSchema.nullable(),
+  status: z.enum(['ONLINE', 'OFFLINE'] as const).nullable(),
+  username: z.string(),
+})
+
+const ChannelDetailsRowSchema = z.object({
+  details: z.string().nullable(),
+  id: z.number(),
+})
 
 test('nested query with selective fields', async () => {
   const res = await postgrest
@@ -38,15 +52,20 @@ test('nested query with selective fields', async () => {
       "statusText": "OK",
     }
   `)
+  const ExpectedSchema = z.object({
+    username: z.string(),
+    messages: z.array(
+      z.object({
+        id: z.number(),
+        message: z.string().nullable(),
+      })
+    ),
+  })
+  type ExpectedType = z.infer<typeof ExpectedSchema>
   let result: Exclude<typeof res.data, null>
-  let expected: {
-    username: string
-    messages: {
-      id: number
-      message: string | null
-    }[]
-  }
+  let expected: ExpectedType
   expectType<TypeEqual<typeof result, typeof expected>>(true)
+  ExpectedSchema.parse(res.data)
 })
 
 test('nested query with multiple levels and selective fields', async () => {
@@ -92,19 +111,24 @@ test('nested query with multiple levels and selective fields', async () => {
       "statusText": "OK",
     }
   `)
+  const ExpectedSchema = z.object({
+    username: z.string(),
+    messages: z.array(
+      z.object({
+        id: z.number(),
+        message: z.string().nullable(),
+        channels: z.object({
+          id: z.number(),
+          slug: z.string().nullable(),
+        }),
+      })
+    ),
+  })
+  type ExpectedType = z.infer<typeof ExpectedSchema>
   let result: Exclude<typeof res.data, null>
-  let expected: {
-    messages: Array<{
-      id: number
-      message: string | null
-      channels: {
-        id: number
-        slug: string | null
-      }
-    }>
-    username: string
-  }
+  let expected: ExpectedType
   expectType<TypeEqual<typeof result, typeof expected>>(true)
+  ExpectedSchema.parse(res.data)
 })
 
 test('query with multiple one-to-many relationships', async () => {
@@ -140,6 +164,16 @@ test('query with multiple one-to-many relationships', async () => {
       "statusText": "OK",
     }
   `)
+  const ExpectedSchema = z.object({
+    username: z.string(),
+    messages: z.array(z.object({ id: z.number() })),
+    user_profiles: z.array(z.object({ id: z.number() })),
+  })
+  type ExpectedType = z.infer<typeof ExpectedSchema>
+  let result: Exclude<typeof res.data, null>
+  let expected: ExpectedType
+  expectType<TypeEqual<typeof result, typeof expected>>(true)
+  ExpectedSchema.parse(res.data)
 })
 
 test('many-to-one relationship', async () => {
@@ -161,11 +195,16 @@ test('many-to-one relationship', async () => {
       "statusText": "OK",
     }
   `)
+  const ExpectedSchema = z.object({
+    user: UsersRowSchema,
+  })
   let result: Exclude<typeof res.data, null>
+  // TODO: zod schema inference with status enum fail to properly pass the type test
   let expected: {
     user: Database['public']['Tables']['users']['Row']
   }
   expectType<TypeEqual<typeof result, typeof expected>>(true)
+  ExpectedSchema.parse(res.data)
 })
 
 test('one-to-many relationship', async () => {
@@ -203,11 +242,24 @@ test('one-to-many relationship', async () => {
       "statusText": "OK",
     }
   `)
+  const ExpectedSchema = z.object({
+    messages: z.array(
+      z.object({
+        channel_id: z.number(),
+        data: z.unknown().nullable(),
+        id: z.number(),
+        message: z.string().nullable(),
+        username: z.string(),
+      })
+    ),
+  })
+  type ExpectedType = z.infer<typeof ExpectedSchema>
   let result: Exclude<typeof res.data, null>
-  let expected: {
-    messages: Array<Omit<Database['public']['Tables']['messages']['Row'], 'blurb_message'>>
-  }
+  // TODO: older versions of zod require this trick for non optional unknown data type
+  // newer version of zod don't have this issue but require an upgrade of typescript minimal version
+  let expected: { messages: Array<Required<ExpectedType['messages'][number]>> }
   expectType<TypeEqual<typeof result, typeof expected>>(true)
+  ExpectedSchema.parse(res.data)
 })
 
 test('one-to-many relationship with selective columns', async () => {
@@ -233,11 +285,16 @@ test('one-to-many relationship with selective columns', async () => {
       "statusText": "OK",
     }
   `)
+  const ExpectedSchema = z.object({
+    messages: z.array(z.object({ data: z.unknown().nullable() })),
+  })
+  type ExpectedType = z.infer<typeof ExpectedSchema>
   let result: Exclude<typeof res.data, null>
-  let expected: {
-    messages: Array<Pick<Database['public']['Tables']['messages']['Row'], 'data'>>
-  }
+  // TODO: older versions of zod require this trick for non optional unknown data type
+  // newer version of zod don't have this issue but require an upgrade of typescript minimal version
+  let expected: { messages: Array<Required<ExpectedType['messages'][number]>> }
   expectType<TypeEqual<typeof result, typeof expected>>(true)
+  ExpectedSchema.parse(res.data)
 })
 
 test('one-to-one relationship', async () => {
@@ -256,16 +313,18 @@ test('one-to-one relationship', async () => {
       "statusText": "OK",
     }
   `)
+  const ExpectedSchema = z.object({
+    channel_details: ChannelDetailsRowSchema.nullable(),
+  })
+  type ExpectedType = z.infer<typeof ExpectedSchema>
   let result: Exclude<typeof res.data, null>
-  let expected: {
-    channel_details: Database['public']['Tables']['channel_details']['Row'] | null
-  }
+  let expected: ExpectedType
   expectType<TypeEqual<typeof result, typeof expected>>(true)
+  ExpectedSchema.parse(res.data)
 })
 
 test('select with type casting query', async () => {
   const res = await postgrest.from('best_friends').select('id::text').limit(1).single()
-
   expect(res).toMatchInlineSnapshot(`
     Object {
       "count": null,
@@ -277,11 +336,12 @@ test('select with type casting query', async () => {
       "statusText": "OK",
     }
   `)
+  const ExpectedSchema = z.object({ id: z.string() })
+  type ExpectedType = z.infer<typeof ExpectedSchema>
   let result: Exclude<typeof res.data, null>
-  let expected: {
-    id: string
-  }
+  let expected: ExpectedType
   expectType<TypeEqual<typeof result, typeof expected>>(true)
+  ExpectedSchema.parse(res.data)
 })
 
 test('multiple times the same column in selection', async () => {
@@ -297,11 +357,12 @@ test('multiple times the same column in selection', async () => {
       "statusText": "OK",
     }
   `)
+  const ExpectedSchema = z.object({ id: z.number() })
+  type ExpectedType = z.infer<typeof ExpectedSchema>
   let result: Exclude<typeof res.data, null>
-  let expected: {
-    id: number
-  }
+  let expected: ExpectedType
   expectType<TypeEqual<typeof result, typeof expected>>(true)
+  ExpectedSchema.parse(res.data)
 })
 
 test('embed resource with no fields', async () => {
@@ -316,12 +377,13 @@ test('embed resource with no fields', async () => {
       "status": 200,
       "statusText": "OK",
     }
-`)
+  `)
+  const ExpectedSchema = z.object({ message: z.string().nullable() })
+  type ExpectedType = z.infer<typeof ExpectedSchema>
   let result: Exclude<typeof res.data, null>
-  let expected: {
-    message: string | null
-  }
+  let expected: ExpectedType
   expectType<TypeEqual<typeof result, typeof expected>>(true)
+  ExpectedSchema.parse(res.data)
 })
 
 test('select JSON accessor', async () => {
@@ -344,13 +406,20 @@ test('select JSON accessor', async () => {
       "status": 200,
       "statusText": "OK",
     }
-`)
+  `)
+  const ExpectedSchema = z.object({
+    bar: z.unknown(),
+    baz: z.string(),
+  })
   let result: Exclude<typeof res.data, null>
+  // Cannot have a zod schema that match the Json type
+  // TODO: refactor the Json type to be unknown
   let expected: {
     bar: Json
     baz: string
   }
   expectType<TypeEqual<typeof result, typeof expected>>(true)
+  ExpectedSchema.parse(res.data)
 })
 
 test('self reference relation', async () => {
@@ -380,18 +449,23 @@ test('self reference relation', async () => {
       "statusText": "OK",
     }
   `)
+  const ExpectedSchema = z.object({
+    id: z.number(),
+    description: z.string().nullable(),
+    parent_id: z.number().nullable(),
+    collections: z.array(
+      z.object({
+        description: z.string().nullable(),
+        id: z.number(),
+        parent_id: z.number().nullable(),
+      })
+    ),
+  })
+  type ExpectedType = z.infer<typeof ExpectedSchema>
   let result: Exclude<typeof res.data, null>
-  let expected: {
-    id: number
-    description: string | null
-    parent_id: number | null
-    collections: {
-      id: number
-      description: string | null
-      parent_id: number | null
-    }[]
-  }
+  let expected: ExpectedType
   expectType<TypeEqual<typeof result, typeof expected>>(true)
+  ExpectedSchema.parse(res.data)
 })
 
 test('self reference relation via column', async () => {
@@ -418,19 +492,22 @@ test('self reference relation via column', async () => {
       "statusText": "OK",
     }
   `)
+  const ExpectedSchema = z.object({
+    description: z.string().nullable(),
+    id: z.number(),
+    parent_id: z
+      .object({
+        description: z.string().nullable(),
+        id: z.number(),
+        parent_id: z.number().nullable(),
+      })
+      .nullable(),
+  })
+  type ExpectedType = z.infer<typeof ExpectedSchema>
   let result: Exclude<typeof res.data, null>
-  let expected: {
-    description: string | null
-    id: number
-    parent_id:
-      | (number & {
-          description: string | null
-          id: number
-          parent_id: number | null
-        })
-      | null
-  }
+  let expected: ExpectedType
   expectType<TypeEqual<typeof result, typeof expected>>(true)
+  ExpectedSchema.parse(res.data)
 })
 
 test('many-to-many with join table', async () => {
@@ -461,17 +538,22 @@ test('many-to-many with join table', async () => {
       "statusText": "OK",
     }
   `)
+  const ExpectedSchema = z.object({
+    id: z.number(),
+    name: z.string(),
+    description: z.string().nullable(),
+    price: z.number(),
+    categories: z.array(
+      z.object({
+        description: z.string().nullable(),
+        id: z.number(),
+        name: z.string(),
+      })
+    ),
+  })
+  type ExpectedType = z.infer<typeof ExpectedSchema>
   let result: Exclude<typeof res.data, null>
-  let expected: {
-    id: number
-    name: string
-    description: string | null
-    price: number
-    categories: {
-      id: number
-      name: string
-      description: string | null
-    }[]
-  }
+  let expected: ExpectedType
   expectType<TypeEqual<typeof result, typeof expected>>(true)
+  ExpectedSchema.parse(res.data)
 })

@@ -1,15 +1,19 @@
 import type { Database as GeneratedDatabase } from './types.generated'
 import { MergeDeep } from 'type-fest'
 
-export type CustomUserDataType = {
-  foo: string
-  bar: {
-    baz: number
-  }
-  en: 'ONE' | 'TWO' | 'THREE'
-  record: Record<string, unknown> | null
-  recordNumber: Record<number, unknown> | null
-}
+import { z } from 'zod'
+
+export const CustomUserDataTypeSchema = z.object({
+  foo: z.string(),
+  bar: z.object({
+    baz: z.number(),
+  }),
+  en: z.enum(['ONE', 'TWO', 'THREE']),
+  record: z.record(z.string(), z.unknown()).nullable(),
+  recordNumber: z.record(z.number(), z.unknown()).nullable(),
+})
+
+export type CustomUserDataType = z.infer<typeof CustomUserDataTypeSchema>
 
 export type Database = MergeDeep<
   GeneratedDatabase,

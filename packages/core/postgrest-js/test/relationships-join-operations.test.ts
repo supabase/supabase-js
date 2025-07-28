@@ -528,11 +528,12 @@ test('join over a 1-M relation with both nullables and non-nullables fields usin
     }
   `)
   let result: Exclude<typeof res.data, null>
-  type ExpectedType = Prettify<
-    Database['public']['Tables']['best_friends']['Row'] & {
-      first_user: string & Database['public']['Tables']['users']['Row']
-    }
-  >
+  type ExpectedType = {
+    id: number
+    first_user: Database['public']['Tables']['users']['Row']
+    second_user: string
+    third_wheel: string | null
+  }
   let expected: {
     first_friend_of: ExpectedType[]
     second_friend_of: Array<Database['public']['Tables']['best_friends']['Row']>

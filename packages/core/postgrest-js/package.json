@@ -42,6 +42,8 @@
     "test:update": "run-s db:clean db:run db:generate-test-types && jest --runInBand --updateSnapshot && run-s db:clean",
     "test:types": "run-s build && tsd --files 'test/**/*.test-d.ts'",
     "test:types:watch": "run-s build && tsd --files 'test/**/*.test-d.ts' --watch",
+    "type-check": "tsc --noEmit --project tsconfig.json",
+    "type-check:test": "tsc --noEmit --project tsconfig.test.json",
     "db:clean": "cd test/db && docker compose down --volumes",
     "db:run": "cd test/db && docker compose up --detach && wait-for-localhost 3000",
     "db:generate-test-types": "cd test/db && docker compose up --detach && wait-for-localhost 8080 && curl --location 'http://0.0.0.0:8080/generators/typescript?included_schemas=public,personal&detect_one_to_one_relationships=true' > ../types.generated.ts && sed -i '' 's/export type Json = .*/export type Json = unknown;/' ../types.generated.ts"
@@ -64,6 +66,7 @@
     "type-fest": "^4.32.0",
     "typedoc": "^0.22.16",
     "typescript": "^4.5.5",
-    "wait-for-localhost-cli": "^3.0.0"
+    "wait-for-localhost-cli": "^3.0.0",
+    "zod": "^3.25.76"
   }
 }

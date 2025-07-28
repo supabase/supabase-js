@@ -205,7 +205,8 @@ export type ProcessNodes<
                 RelationName,
                 Relationships,
                 RestNodes,
-                Acc & FieldResult
+                // Replace fields that exist in both Acc and FieldResult instead of intersecting
+                Omit<Acc, keyof FieldResult> & FieldResult
               >
             : FieldResult extends SelectQueryError<infer E>
             ? SelectQueryError<E>

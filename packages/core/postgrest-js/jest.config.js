@@ -6,4 +6,11 @@ module.exports = {
   maxWorkers: 1,
   // Ensure deterministic test order
   testSequencer: '<rootDir>/test/testSequencer.js',
+  globals: {
+    // For consistency between VSCode and type-check
+    // https://github.com/supabase/postgrest-js/pull/627#discussion_r2236995331
+    'ts-jest': {
+      tsconfig: 'tsconfig.test.json'
+    }
+  }
 }
