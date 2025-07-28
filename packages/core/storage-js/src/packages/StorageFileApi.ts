@@ -783,7 +783,7 @@ export default class StorageFileApi {
   }
 
   private _getFinalPath(path: string) {
-    return `${this.bucketId}/${path}`
+    return `${this.bucketId}/${path.replace(/^\/+/, '')}`
   }
 
   private _removeEmptyFolders(path: string) {
