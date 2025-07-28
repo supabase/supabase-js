@@ -42,6 +42,10 @@ export default class SupabaseClient<
    */
   auth: SupabaseAuthClient
   realtime: RealtimeClient
+  /**
+   * Supabase Storage allows you to manage user-generated content, such as photos or videos.
+   */
+  storage: SupabaseStorageClient
 
   protected realtimeUrl: URL
   protected authUrl: URL
@@ -64,6 +68,7 @@ export default class SupabaseClient<
    * @param options.auth.persistSession Set to "true" if you want to automatically save the user session into local storage.
    * @param options.auth.detectSessionInUrl Set to "true" if you want to automatically detects OAuth grants in the URL and signs in the user.
    * @param options.realtime Options passed along to realtime-js constructor.
+   * @param options.storage Options passed along to the storage-js constructor.
    * @param options.global.fetch A custom fetch implementation.
    * @param options.global.headers Any additional headers to send with each network request.
    */
@@ -130,6 +135,13 @@ export default class SupabaseClient<
       fetch: this.fetch,
     })
 
+    this.storage = new SupabaseStorageClient(
+      this.storageUrl.href,
+      this.headers,
+      this.fetch,
+      options?.storage
+    )
+
     if (!settings.accessToken) {
       this._listenForAuthEvents()
     }
@@ -143,13 +155,6 @@ export default class SupabaseClient<
       headers: this.headers,
       customFetch: this.fetch,
     })
-  }
-
-  /**
-   * Supabase Storage allows you to manage user-generated content, such as photos or videos.
-   */
-  get storage(): SupabaseStorageClient {
-    return new SupabaseStorageClient(this.storageUrl.href, this.headers, this.fetch)
   }
 
   // NOTE: signatures must be kept in sync with PostgrestClient.from
