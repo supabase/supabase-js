@@ -4,12 +4,14 @@ export default defineConfig({
   testDir: './',
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
-  retries: process.env.CI ? 2 : 0,
+  retries: 0,
   workers: process.env.CI ? 1 : undefined,
+  timeout: 20000,
   reporter: 'html',
   use: {
     baseURL: 'http://localhost:8004',
-    trace: 'on-first-retry',
+    trace: 'retain-on-failure',
+    screenshot: 'only-on-failure',
   },
   projects: [
     {
