@@ -2,6 +2,7 @@ import { PostgrestClient } from '../src/index'
 import { Database } from './types.override'
 import { expectType } from 'tsd'
 import { TypeEqual } from 'ts-expect'
+import { z } from 'zod'
 
 const REST_URL = 'http://localhost:3000'
 export const postgrest = new PostgrestClient<Database>(REST_URL)
@@ -25,13 +26,17 @@ test('select with aggregate count function', async () => {
       }
     `)
   let result: Exclude<typeof res.data, null>
-  let expected: {
-    username: string
-    messages: Array<{
-      count: number
-    }>
-  }
+  const ExpectedSchema = z.object({
+    username: z.string(),
+    messages: z.array(
+      z.object({
+        count: z.number(),
+      })
+    ),
+  })
+  let expected: z.infer<typeof ExpectedSchema>
   expectType<TypeEqual<typeof result, typeof expected>>(true)
+  ExpectedSchema.parse(res.data)
 })
 
 test('select with aggregate count on a column function', async () => {
@@ -57,13 +62,17 @@ test('select with aggregate count on a column function', async () => {
       }
     `)
   let result: Exclude<typeof res.data, null>
-  let expected: {
-    username: string
-    messages: Array<{
-      count: number
-    }>
-  }
+  const ExpectedSchema = z.object({
+    username: z.string(),
+    messages: z.array(
+      z.object({
+        count: z.number(),
+      })
+    ),
+  })
+  let expected: z.infer<typeof ExpectedSchema>
   expectType<TypeEqual<typeof result, typeof expected>>(true)
+  ExpectedSchema.parse(res.data)
 })
 
 test('select with aggregate count function and alias', async () => {
@@ -89,13 +98,17 @@ test('select with aggregate count function and alias', async () => {
       }
     `)
   let result: Exclude<typeof res.data, null>
-  let expected: {
-    username: string
-    messages: Array<{
-      message_count: number
-    }>
-  }
+  const ExpectedSchema = z.object({
+    username: z.string(),
+    messages: z.array(
+      z.object({
+        message_count: z.number(),
+      })
+    ),
+  })
+  let expected: z.infer<typeof ExpectedSchema>
   expectType<TypeEqual<typeof result, typeof expected>>(true)
+  ExpectedSchema.parse(res.data)
 })
 
 test('select with aggregate nested count function', async () => {
@@ -133,15 +146,19 @@ test('select with aggregate nested count function', async () => {
       }
     `)
   let result: Exclude<typeof res.data, null>
-  let expected: {
-    username: string
-    messages: Array<{
-      channels: {
-        count: number
-      }
-    }>
-  }
+  const ExpectedSchema = z.object({
+    username: z.string(),
+    messages: z.array(
+      z.object({
+        channels: z.object({
+          count: z.number(),
+        }),
+      })
+    ),
+  })
+  let expected: z.infer<typeof ExpectedSchema>
   expectType<TypeEqual<typeof result, typeof expected>>(true)
+  ExpectedSchema.parse(res.data)
 })
 
 test('select with aggregate nested count function and alias', async () => {
@@ -179,15 +196,19 @@ test('select with aggregate nested count function and alias', async () => {
       }
     `)
   let result: Exclude<typeof res.data, null>
-  let expected: {
-    username: string
-    messages: Array<{
-      channels: {
-        channel_count: number
-      }
-    }>
-  }
+  const ExpectedSchema = z.object({
+    username: z.string(),
+    messages: z.array(
+      z.object({
+        channels: z.object({
+          channel_count: z.number(),
+        }),
+      })
+    ),
+  })
+  let expected: z.infer<typeof ExpectedSchema>
   expectType<TypeEqual<typeof result, typeof expected>>(true)
+  ExpectedSchema.parse(res.data)
 })
 
 test('select with aggregate sum function', async () => {
@@ -209,13 +230,17 @@ test('select with aggregate sum function', async () => {
       }
     `)
   let result: Exclude<typeof res.data, null>
-  let expected: {
-    username: string
-    messages: Array<{
-      sum: number
-    }>
-  }
+  const ExpectedSchema = z.object({
+    username: z.string(),
+    messages: z.array(
+      z.object({
+        sum: z.number(),
+      })
+    ),
+  })
+  let expected: z.infer<typeof ExpectedSchema>
   expectType<TypeEqual<typeof result, typeof expected>>(true)
+  ExpectedSchema.parse(res.data)
 })
 
 test('select with aggregate aliased sum function', async () => {
@@ -241,13 +266,17 @@ test('select with aggregate aliased sum function', async () => {
       }
     `)
   let result: Exclude<typeof res.data, null>
-  let expected: {
-    username: string
-    messages: Array<{
-      sum_id: number
-    }>
-  }
+  const ExpectedSchema = z.object({
+    username: z.string(),
+    messages: z.array(
+      z.object({
+        sum_id: z.number(),
+      })
+    ),
+  })
+  let expected: z.infer<typeof ExpectedSchema>
   expectType<TypeEqual<typeof result, typeof expected>>(true)
+  ExpectedSchema.parse(res.data)
 })
 
 test('select with aggregate sum function on nested relation', async () => {
@@ -285,13 +314,17 @@ test('select with aggregate sum function on nested relation', async () => {
       }
     `)
   let result: Exclude<typeof res.data, null>
-  let expected: {
-    username: string
-    messages: Array<{
-      channels: {
-        sum: number
-      }
-    }>
-  }
+  const ExpectedSchema = z.object({
+    username: z.string(),
+    messages: z.array(
+      z.object({
+        channels: z.object({
+          sum: z.number(),
+        }),
+      })
+    ),
+  })
+  let expected: z.infer<typeof ExpectedSchema>
   expectType<TypeEqual<typeof result, typeof expected>>(true)
+  ExpectedSchema.parse(res.data)
 })

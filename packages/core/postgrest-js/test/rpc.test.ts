@@ -2,6 +2,7 @@ import { PostgrestClient } from '../src/index'
 import { Database } from './types.override'
 import { expectType } from 'tsd'
 import { TypeEqual } from 'ts-expect'
+import { z } from 'zod'
 
 const REST_URL = 'http://localhost:3000'
 export const postgrest = new PostgrestClient<Database>(REST_URL)
@@ -26,8 +27,15 @@ test('RPC call with no params', async () => {
   `)
   // check our result types match the runtime result
   let result: Exclude<typeof res.data, null>
-  let expected: Database['public']['Functions'][typeof RPC_NAME]['Returns']
+  const ExpectedSchema = z.array(
+    z.object({
+      status: z.enum(['ONLINE', 'OFFLINE'] as const),
+      username: z.string(),
+    })
+  )
+  let expected: z.infer<typeof ExpectedSchema>
   expectType<TypeEqual<typeof result, typeof expected>>(true)
+  ExpectedSchema.parse(res.data)
 })
 
 test('RPC call with star select', async () => {
@@ -48,8 +56,15 @@ test('RPC call with star select', async () => {
   `)
   // check our result types match the runtime result
   let result: Exclude<typeof res.data, null>
-  let expected: Database['public']['Functions'][typeof RPC_NAME]['Returns']
+  const ExpectedSchema = z.array(
+    z.object({
+      status: z.enum(['ONLINE', 'OFFLINE'] as const),
+      username: z.string(),
+    })
+  )
+  let expected: z.infer<typeof ExpectedSchema>
   expectType<TypeEqual<typeof result, typeof expected>>(true)
+  ExpectedSchema.parse(res.data)
 })
 
 test('RPC call with single field select', async () => {
@@ -69,8 +84,14 @@ test('RPC call with single field select', async () => {
   `)
   // check our result types match the runtime result
   let result: Exclude<typeof res.data, null>
-  let expected: { username: string }[]
+  const ExpectedSchema = z.array(
+    z.object({
+      username: z.string(),
+    })
+  )
+  let expected: z.infer<typeof ExpectedSchema>
   expectType<TypeEqual<typeof result, typeof expected>>(true)
+  ExpectedSchema.parse(res.data)
 })
 
 test('RPC call with multiple fields select', async () => {
@@ -91,8 +112,15 @@ test('RPC call with multiple fields select', async () => {
   `)
   // check our result types match the runtime result
   let result: Exclude<typeof res.data, null>
-  let expected: Database['public']['Functions'][typeof RPC_NAME]['Returns']
+  const ExpectedSchema = z.array(
+    z.object({
+      status: z.enum(['ONLINE', 'OFFLINE'] as const),
+      username: z.string(),
+    })
+  )
+  let expected: z.infer<typeof ExpectedSchema>
   expectType<TypeEqual<typeof result, typeof expected>>(true)
+  ExpectedSchema.parse(res.data)
 })
 
 test('RPC call with field aliasing', async () => {
@@ -112,8 +140,14 @@ test('RPC call with field aliasing', async () => {
   `)
   // check our result types match the runtime result
   let result: Exclude<typeof res.data, null>
-  let expected: { name: string }[]
+  const ExpectedSchema = z.array(
+    z.object({
+      name: z.string(),
+    })
+  )
+  let expected: z.infer<typeof ExpectedSchema>
   expectType<TypeEqual<typeof result, typeof expected>>(true)
+  ExpectedSchema.parse(res.data)
 })
 
 test('RPC call with field casting', async () => {
@@ -133,8 +167,14 @@ test('RPC call with field casting', async () => {
   `)
   // check our result types match the runtime result
   let result: Exclude<typeof res.data, null>
-  let expected: { status: string }[]
+  const ExpectedSchema = z.array(
+    z.object({
+      status: z.string(),
+    })
+  )
+  let expected: z.infer<typeof ExpectedSchema>
   expectType<TypeEqual<typeof result, typeof expected>>(true)
+  ExpectedSchema.parse(res.data)
 })
 
 test('RPC call with field aggregate', async () => {
@@ -157,6 +197,13 @@ test('RPC call with field aggregate', async () => {
   `)
   // check our result types match the runtime result
   let result: Exclude<typeof res.data, null>
-  let expected: { count: number; status: 'ONLINE' | 'OFFLINE' }[]
+  const ExpectedSchema = z.array(
+    z.object({
+      count: z.number(),
+      status: z.enum(['ONLINE', 'OFFLINE'] as const),
+    })
+  )
+  let expected: z.infer<typeof ExpectedSchema>
   expectType<TypeEqual<typeof result, typeof expected>>(true)
+  ExpectedSchema.parse(res.data)
 })

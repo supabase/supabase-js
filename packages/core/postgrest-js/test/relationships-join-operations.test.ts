@@ -1,12 +1,48 @@
 import { PostgrestClient } from '../src/index'
-import { Database, CustomUserDataType } from './types.override'
+import { Database, CustomUserDataTypeSchema } from './types.override'
 import { expectType } from 'tsd'
 import { TypeEqual } from 'ts-expect'
-import { Prettify } from '../src/types'
+import { z } from 'zod'
+import { RequiredDeep } from 'type-fest'
 
 const REST_URL = 'http://localhost:3000'
 export const postgrest = new PostgrestClient<Database>(REST_URL)
 const userColumn: 'catchphrase' | 'username' = 'username'
+
+// Zod schemas for common types
+const UsersRowSchema = z.object({
+  age_range: z.unknown().nullable(),
+  catchphrase: z.unknown().nullable(),
+  data: CustomUserDataTypeSchema.nullable(),
+  status: z.enum(['ONLINE', 'OFFLINE'] as const).nullable(),
+  username: z.string(),
+})
+
+const ChannelDetailsRowSchema = z.object({
+  details: z.string().nullable(),
+  id: z.number(),
+})
+
+const ChannelsRowSchema = z.object({
+  data: z.unknown().nullable(),
+  id: z.number(),
+  slug: z.string().nullable(),
+})
+
+const MessagesRowSchema = z.object({
+  channel_id: z.number(),
+  data: z.unknown().nullable(),
+  id: z.number(),
+  message: z.string().nullable(),
+  username: z.string(),
+})
+
+const BestFriendsRowSchema = z.object({
+  first_user: z.string(),
+  id: z.number(),
+  second_user: z.string(),
+  third_wheel: z.string().nullable(),
+})
 
 test('!inner relationship', async () => {
   const res = await postgrest
@@ -33,16 +69,18 @@ test('!inner relationship', async () => {
       "statusText": "OK",
     }
   `)
+
   let result: Exclude<typeof res.data, null>
-  type ExpectedType = Prettify<
-    Database['public']['Tables']['channels']['Row'] & {
-      channel_details: Database['public']['Tables']['channel_details']['Row']
-    }
-  >
-  let expected: {
-    channels: ExpectedType
-  }
+  const ExpectedSchema = z.object({
+    channels: ChannelsRowSchema.extend({
+      channel_details: ChannelDetailsRowSchema,
+    }),
+  })
+  // TODO: older versions of zod require this trick for non optional unknown data type
+  // newer version of zod don't have this issue but require an upgrade of typescript minimal version
+  let expected: RequiredDeep<z.infer<typeof ExpectedSchema>>
   expectType<TypeEqual<typeof result, typeof expected>>(true)
+  ExpectedSchema.parse(res.data)
 })
 
 test('!inner relationship on nullable relation', async () => {
@@ -100,14 +138,18 @@ test('!inner relationship on nullable relation', async () => {
     }
   `)
   let result: Exclude<typeof res.data, null>
-  let expected: Array<{
-    id: number
-    hotel: {
-      id: number
-      name: string | null
-    }
-  }>
+  const ExpectedSchema = z.array(
+    z.object({
+      id: z.number(),
+      hotel: z.object({
+        id: z.number(),
+        name: z.string().nullable(),
+      }),
+    })
+  )
+  let expected: z.infer<typeof ExpectedSchema>
   expectType<TypeEqual<typeof result, typeof expected>>(true)
+  ExpectedSchema.parse(res.data)
 })
 
 test('!left oneToOne', async () => {
@@ -128,10 +170,15 @@ test('!left oneToOne', async () => {
     }
   `)
   let result: Exclude<typeof res.data, null>
-  let expected: {
-    channels: Database['public']['Tables']['channels']['Row']
-  }
+  const ExpectedSchema = z.object({
+    channels: ChannelsRowSchema,
+  })
+
+  // TODO: older versions of zod require this trick for non optional unknown data type
+  // newer version of zod don't have this issue but require an upgrade of typescript minimal version
+  let expected: RequiredDeep<z.infer<typeof ExpectedSchema>>
   expectType<TypeEqual<typeof result, typeof expected>>(true)
+  ExpectedSchema.parse(res.data)
 })
 
 test('!left oneToMany', async () => {
@@ -169,11 +216,16 @@ test('!left oneToMany', async () => {
       "statusText": "OK",
     }
   `)
+
   let result: Exclude<typeof res.data, null>
-  let expected: {
-    messages: Array<Omit<Database['public']['Tables']['messages']['Row'], 'blurb_message'>>
-  }
+  const ExpectedSchema = z.object({
+    messages: z.array(MessagesRowSchema),
+  })
+  // TODO: older versions of zod require this trick for non optional unknown data type
+  // newer version of zod don't have this issue but require an upgrade of typescript minimal version
+  let expected: RequiredDeep<z.infer<typeof ExpectedSchema>>
   expectType<TypeEqual<typeof result, typeof expected>>(true)
+  ExpectedSchema.parse(res.data)
 })
 
 test('!left zeroToOne', async () => {
@@ -195,11 +247,17 @@ test('!left zeroToOne', async () => {
       "statusText": "OK",
     }
   `)
+
+  const ExpectedSchema = z.object({
+    users: UsersRowSchema.nullable(),
+  })
+
   let result: Exclude<typeof res.data, null>
-  let expected: {
-    users: Database['public']['Tables']['users']['Row'] | null
-  }
+  // TODO: older versions of zod require this trick for non optional unknown data type
+  // newer version of zod don't have this issue but require an upgrade of typescript minimal version
+  let expected: RequiredDeep<z.infer<typeof ExpectedSchema>>
   expectType<TypeEqual<typeof result, typeof expected>>(true)
+  ExpectedSchema.parse(res.data)
 })
 
 test('join over a 1-1 relation with both nullables and non-nullables fields using foreign key name for hinting', async () => {
@@ -241,13 +299,18 @@ test('join over a 1-1 relation with both nullables and non-nullables fields usin
       "statusText": "OK",
     }
   `)
+
   let result: Exclude<typeof res.data, null>
-  let expected: {
-    first_user: Database['public']['Tables']['users']['Row']
-    second_user: Database['public']['Tables']['users']['Row']
-    third_wheel: Database['public']['Tables']['users']['Row'] | null
-  }
+  const ExpectedSchema = z.object({
+    first_user: UsersRowSchema,
+    second_user: UsersRowSchema,
+    third_wheel: UsersRowSchema.nullable(),
+  })
+  // TODO: older versions of zod require this trick for non optional unknown data type
+  // newer version of zod don't have this issue but require an upgrade of typescript minimal version
+  let expected: RequiredDeep<z.infer<typeof ExpectedSchema>>
   expectType<TypeEqual<typeof result, typeof expected>>(true)
+  ExpectedSchema.parse(res.data)
 })
 
 test('join over a 1-M relation with both nullables and non-nullables fields using foreign key name for hinting', async () => {
@@ -286,13 +349,16 @@ test('join over a 1-M relation with both nullables and non-nullables fields usin
       "statusText": "OK",
     }
   `)
+
   let result: Exclude<typeof res.data, null>
-  let expected: {
-    first_friend_of: Array<Database['public']['Tables']['best_friends']['Row']>
-    second_friend_of: Array<Database['public']['Tables']['best_friends']['Row']>
-    third_wheel_of: Array<Database['public']['Tables']['best_friends']['Row']>
-  }
+  const ExpectedSchema = z.object({
+    first_friend_of: z.array(BestFriendsRowSchema),
+    second_friend_of: z.array(BestFriendsRowSchema),
+    third_wheel_of: z.array(BestFriendsRowSchema),
+  })
+  let expected: z.infer<typeof ExpectedSchema>
   expectType<TypeEqual<typeof result, typeof expected>>(true)
+  ExpectedSchema.parse(res.data)
 })
 
 test('join on 1-M relation', async () => {
@@ -332,13 +398,16 @@ test('join on 1-M relation', async () => {
       "statusText": "OK",
     }
   `)
+
   let result: Exclude<typeof res.data, null>
-  let expected: {
-    first_friend_of: Array<Database['public']['Tables']['best_friends']['Row']>
-    second_friend_of: Array<Database['public']['Tables']['best_friends']['Row']>
-    third_wheel_of: Array<Database['public']['Tables']['best_friends']['Row']>
-  }
+  let expected: z.infer<typeof ExpectedSchema>
+  const ExpectedSchema = z.object({
+    first_friend_of: z.array(BestFriendsRowSchema),
+    second_friend_of: z.array(BestFriendsRowSchema),
+    third_wheel_of: z.array(BestFriendsRowSchema),
+  })
   expectType<TypeEqual<typeof result, typeof expected>>(true)
+  ExpectedSchema.parse(res.data)
 })
 
 test('join on 1-1 relation with nullables', async () => {
@@ -381,13 +450,18 @@ test('join on 1-1 relation with nullables', async () => {
       "statusText": "OK",
     }
   `)
+
   let result: Exclude<typeof res.data, null>
-  let expected: {
-    first_user: Database['public']['Tables']['users']['Row']
-    second_user: Database['public']['Tables']['users']['Row']
-    third_wheel: Database['public']['Tables']['users']['Row'] | null
-  }
+  const ExpectedSchema = z.object({
+    first_user: UsersRowSchema,
+    second_user: UsersRowSchema,
+    third_wheel: UsersRowSchema.nullable(),
+  })
+  // TODO: older versions of zod require this trick for non optional unknown data type
+  // newer version of zod don't have this issue but require an upgrade of typescript minimal version
+  let expected: RequiredDeep<z.infer<typeof ExpectedSchema>>
   expectType<TypeEqual<typeof result, typeof expected>>(true)
+  ExpectedSchema.parse(res.data)
 })
 
 test('join over a 1-1 relation with both nullablesand non-nullables fields with column name hinting', async () => {
@@ -429,13 +503,19 @@ test('join over a 1-1 relation with both nullablesand non-nullables fields with 
       "statusText": "OK",
     }
   `)
+
+  const ExpectedSchema = z.object({
+    first_user: UsersRowSchema,
+    second_user: UsersRowSchema,
+    third_wheel: UsersRowSchema.nullable(),
+  })
+
   let result: Exclude<typeof res.data, null>
-  let expected: {
-    first_user: Database['public']['Tables']['users']['Row']
-    second_user: Database['public']['Tables']['users']['Row']
-    third_wheel: Database['public']['Tables']['users']['Row'] | null
-  }
+  // TODO: older versions of zod require this trick for non optional unknown data type
+  // newer version of zod don't have this issue but require an upgrade of typescript minimal version
+  let expected: RequiredDeep<z.infer<typeof ExpectedSchema>>
   expectType<TypeEqual<typeof result, typeof expected>>(true)
+  ExpectedSchema.parse(res.data)
 })
 
 test('join over a 1-M relation with both nullables and non-nullables fields using column name for hinting', async () => {
@@ -472,13 +552,16 @@ test('join over a 1-M relation with both nullables and non-nullables fields usin
       "statusText": "OK",
     }
   `)
+
   let result: Exclude<typeof res.data, null>
-  let expected: {
-    first_friend_of: Array<Database['public']['Tables']['best_friends']['Row']>
-    second_friend_of: Array<Database['public']['Tables']['best_friends']['Row']>
-    third_wheel_of: Array<Database['public']['Tables']['best_friends']['Row']>
-  }
+  const ExpectedSchema = z.object({
+    first_friend_of: z.array(BestFriendsRowSchema),
+    second_friend_of: z.array(BestFriendsRowSchema),
+    third_wheel_of: z.array(BestFriendsRowSchema),
+  })
+  let expected: z.infer<typeof ExpectedSchema>
   expectType<TypeEqual<typeof result, typeof expected>>(true)
+  ExpectedSchema.parse(res.data)
 })
 
 test('join over a 1-M relation with both nullables and non-nullables fields using column name hinting on nested relation', async () => {
@@ -527,19 +610,23 @@ test('join over a 1-M relation with both nullables and non-nullables fields usin
       "statusText": "OK",
     }
   `)
+
+  const ExpectedSchema = z.object({
+    first_friend_of: z.array(
+      BestFriendsRowSchema.extend({
+        first_user: UsersRowSchema,
+      })
+    ),
+    second_friend_of: z.array(BestFriendsRowSchema),
+    third_wheel_of: z.array(BestFriendsRowSchema),
+  })
+
   let result: Exclude<typeof res.data, null>
-  type ExpectedType = {
-    id: number
-    first_user: Database['public']['Tables']['users']['Row']
-    second_user: string
-    third_wheel: string | null
-  }
-  let expected: {
-    first_friend_of: ExpectedType[]
-    second_friend_of: Array<Database['public']['Tables']['best_friends']['Row']>
-    third_wheel_of: Array<Database['public']['Tables']['best_friends']['Row']>
-  }
+  // TODO: older versions of zod require this trick for non optional unknown data type
+  // newer version of zod don't have this issue but require an upgrade of typescript minimal version
+  let expected: RequiredDeep<z.infer<typeof ExpectedSchema>>
   expectType<TypeEqual<typeof result, typeof expected>>(true)
+  ExpectedSchema.parse(res.data)
 })
 
 test('!left join on one to 0-1 non-empty relation', async () => {
@@ -566,11 +653,14 @@ test('!left join on one to 0-1 non-empty relation', async () => {
           "statusText": "OK",
         }
       `)
+
   let result: Exclude<typeof res.data, null>
-  let expected: {
-    user_profiles: Array<Pick<Database['public']['Tables']['user_profiles']['Row'], 'username'>>
-  }
+  const ExpectedSchema = z.object({
+    user_profiles: z.array(z.object({ username: z.string().nullable() })),
+  })
+  let expected: z.infer<typeof ExpectedSchema>
   expectType<TypeEqual<typeof result, typeof expected>>(true)
+  ExpectedSchema.parse(res.data)
 })
 
 test('join on one to 0-1 non-empty relation via column name', async () => {
@@ -598,11 +688,14 @@ test('join on one to 0-1 non-empty relation via column name', async () => {
         "statusText": "OK",
       }
     `)
+
   let result: Exclude<typeof res.data, null>
-  let expected: {
-    user_profiles: Array<Pick<Database['public']['Tables']['user_profiles']['Row'], 'username'>>
-  }
+  const ExpectedSchema = z.object({
+    user_profiles: z.array(z.object({ username: z.string().nullable() })),
+  })
+  let expected: z.infer<typeof ExpectedSchema>
   expectType<TypeEqual<typeof result, typeof expected>>(true)
+  ExpectedSchema.parse(res.data)
 })
 
 test('!left join on zero to one with null relation', async () => {
@@ -628,13 +721,18 @@ test('!left join on zero to one with null relation', async () => {
           "statusText": "OK",
         }
       `)
+
   let result: Exclude<typeof res.data, null>
-  let expected: {
-    id: number
-    username: string | null
-    users: Database['public']['Tables']['users']['Row'] | null
-  }
+  const ExpectedSchema = z.object({
+    id: z.number(),
+    username: z.string().nullable(),
+    users: UsersRowSchema.nullable(),
+  })
+  // TODO: older versions of zod require this trick for non optional unknown data type
+  // newer version of zod don't have this issue but require an upgrade of typescript minimal version
+  let expected: RequiredDeep<z.infer<typeof ExpectedSchema>>
   expectType<TypeEqual<typeof result, typeof expected>>(true)
+  ExpectedSchema.parse(res.data)
 })
 
 test('!left join on zero to one with valid relation', async () => {
@@ -663,13 +761,16 @@ test('!left join on zero to one with valid relation', async () => {
           "statusText": "OK",
         }
       `)
+
   let result: Exclude<typeof res.data, null>
-  let expected: {
-    id: number
-    username: string | null
-    users: Pick<Database['public']['Tables']['users']['Row'], 'status'> | null
-  }
+  const ExpectedSchema = z.object({
+    id: z.number(),
+    username: z.string().nullable(),
+    users: z.object({ status: z.enum(['ONLINE', 'OFFLINE'] as const).nullable() }).nullable(),
+  })
+  let expected: z.infer<typeof ExpectedSchema>
   expectType<TypeEqual<typeof result, typeof expected>>(true)
+  ExpectedSchema.parse(res.data)
 })
 
 test('!left join on zero to one empty relation', async () => {
@@ -684,11 +785,14 @@ test('!left join on zero to one empty relation', async () => {
       "user_profiles": Array [],
     }
   `)
+
   let result: Exclude<typeof res.data, null>
-  let expected: {
-    user_profiles: Array<Pick<Database['public']['Tables']['user_profiles']['Row'], 'username'>>
-  }
+  const ExpectedSchema = z.object({
+    user_profiles: z.array(z.object({ username: z.string().nullable() })),
+  })
+  let expected: z.infer<typeof ExpectedSchema>
   expectType<TypeEqual<typeof result, typeof expected>>(true)
+  ExpectedSchema.parse(res.data)
 })
 
 test('join on 1-M relation with selective fk hinting', async () => {
@@ -724,13 +828,16 @@ test('join on 1-M relation with selective fk hinting', async () => {
         "statusText": "OK",
       }
     `)
+
   let result: Exclude<typeof res.data, null>
-  let expected: {
-    first_friend_of: Array<Pick<Database['public']['Tables']['best_friends']['Row'], 'id'>>
-    second_friend_of: Array<Database['public']['Tables']['best_friends']['Row']>
-    third_wheel_of: Array<Database['public']['Tables']['best_friends']['Row']>
-  }
+  const ExpectedSchema = z.object({
+    first_friend_of: z.array(z.object({ id: z.number() })),
+    second_friend_of: z.array(BestFriendsRowSchema),
+    third_wheel_of: z.array(BestFriendsRowSchema),
+  })
+  let expected: z.infer<typeof ExpectedSchema>
   expectType<TypeEqual<typeof result, typeof expected>>(true)
+  ExpectedSchema.parse(res.data)
 })
 
 test('join select via column', async () => {
@@ -752,11 +859,16 @@ test('join select via column', async () => {
         "statusText": "OK",
       }
     `)
+
   let result: Exclude<typeof res.data, null>
-  let expected: {
-    username: Database['public']['Tables']['users']['Row'] | null
-  }
+  const ExpectedSchema = z.object({
+    username: UsersRowSchema.nullable(),
+  })
+  // TODO: older versions of zod require this trick for non optional unknown data type
+  // newer version of zod don't have this issue but require an upgrade of typescript minimal version
+  let expected: RequiredDeep<z.infer<typeof ExpectedSchema>>
   expectType<TypeEqual<typeof result, typeof expected>>(true)
+  ExpectedSchema.parse(res.data)
 })
 
 test('join select via column selective', async () => {
@@ -774,13 +886,14 @@ test('join select via column selective', async () => {
         "statusText": "OK",
       }
     `)
+
   let result: Exclude<typeof res.data, null>
-  let expected: {
-    username: {
-      status: Database['public']['Enums']['user_status'] | null
-    } | null
-  }
+  const ExpectedSchema = z.object({
+    username: z.object({ status: z.enum(['ONLINE', 'OFFLINE'] as const).nullable() }).nullable(),
+  })
+  let expected: z.infer<typeof ExpectedSchema>
   expectType<TypeEqual<typeof result, typeof expected>>(true)
+  ExpectedSchema.parse(res.data)
 })
 
 test('join select via column and alias', async () => {
@@ -802,11 +915,16 @@ test('join select via column and alias', async () => {
         "statusText": "OK",
       }
     `)
+
   let result: Exclude<typeof res.data, null>
-  let expected: {
-    user: Database['public']['Tables']['users']['Row'] | null
-  }
+  const ExpectedSchema = z.object({
+    user: UsersRowSchema.nullable(),
+  })
+  // TODO: older versions of zod require this trick for non optional unknown data type
+  // newer version of zod don't have this issue but require an upgrade of typescript minimal version
+  let expected: RequiredDeep<z.infer<typeof ExpectedSchema>>
   expectType<TypeEqual<typeof result, typeof expected>>(true)
+  ExpectedSchema.parse(res.data)
 })
 
 test('join select via unique table relationship', async () => {
@@ -828,11 +946,16 @@ test('join select via unique table relationship', async () => {
         "statusText": "OK",
       }
     `)
+
   let result: Exclude<typeof res.data, null>
-  let expected: {
-    users: Database['public']['Tables']['users']['Row'] | null
-  }
+  const ExpectedSchema = z.object({
+    users: UsersRowSchema.nullable(),
+  })
+  // TODO: older versions of zod require this trick for non optional unknown data type
+  // newer version of zod don't have this issue but require an upgrade of typescript minimal version
+  let expected: RequiredDeep<z.infer<typeof ExpectedSchema>>
   expectType<TypeEqual<typeof result, typeof expected>>(true)
+  ExpectedSchema.parse(res.data)
 })
 
 test('join select via view name relationship', async () => {
@@ -851,11 +974,19 @@ test('join select via view name relationship', async () => {
       "statusText": "OK",
     }
   `)
+
   let result: Exclude<typeof res.data, null>
-  let expected: {
-    updatable_view: Database['public']['Views']['updatable_view']['Row'] | null
-  }
+  const ExpectedSchema = z.object({
+    updatable_view: z
+      .object({
+        non_updatable_column: z.number().nullable(),
+        username: z.string().nullable(),
+      })
+      .nullable(),
+  })
+  let expected: z.infer<typeof ExpectedSchema>
   expectType<TypeEqual<typeof result, typeof expected>>(true)
+  ExpectedSchema.parse(res.data)
 })
 
 test('join select via column with string templating', async () => {
@@ -872,12 +1003,15 @@ test('join select via column with string templating', async () => {
       "statusText": "OK",
     }
   `)
+
   let result: Exclude<typeof res.data, null>
-  let expected: {
-    status: Database['public']['Enums']['user_status'] | null
-    username: string
-  }
+  const ExpectedSchema = z.object({
+    status: z.enum(['ONLINE', 'OFFLINE'] as const).nullable(),
+    username: z.string(),
+  })
+  let expected: z.infer<typeof ExpectedSchema>
   expectType<TypeEqual<typeof result, typeof expected>>(true)
+  ExpectedSchema.parse(res.data)
 })
 
 test('join with column hinting', async () => {
@@ -899,17 +1033,16 @@ test('join with column hinting', async () => {
       "statusText": "OK",
     }
   `)
+
   let result: Exclude<typeof res.data, null>
-  let expected: {
-    users: {
-      age_range: unknown | null
-      catchphrase: unknown | null
-      data: CustomUserDataType | null
-      status: Database['public']['Enums']['user_status'] | null
-      username: string
-    }
-  }
+  const ExpectedSchema = z.object({
+    users: UsersRowSchema,
+  })
+  // TODO: older versions of zod require this trick for non optional unknown data type
+  // newer version of zod don't have this issue but require an upgrade of typescript minimal version
+  let expected: RequiredDeep<z.infer<typeof ExpectedSchema>>
   expectType<TypeEqual<typeof result, typeof expected>>(true)
+  ExpectedSchema.parse(res.data)
 })
 
 test('inner join on many relation', async () => {
@@ -935,13 +1068,13 @@ test('inner join on many relation', async () => {
       "statusText": "OK",
     }
   `)
+
   let result: Exclude<typeof res.data, null>
-  let expected: {
-    id: number
-    messages: {
-      id: number
-      username: string
-    }[]
-  }
+  const ExpectedSchema = z.object({
+    id: z.number(),
+    messages: z.array(z.object({ id: z.number(), username: z.string() })),
+  })
+  let expected: z.infer<typeof ExpectedSchema>
   expectType<TypeEqual<typeof result, typeof expected>>(true)
+  ExpectedSchema.parse(res.data)
 })

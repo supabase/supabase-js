@@ -2,6 +2,8 @@ import { PostgrestClient } from '../src/index'
 import { Database } from './types.override'
 import { expectType } from 'tsd'
 import { TypeEqual } from 'ts-expect'
+import { z } from 'zod'
+import { RequiredDeep } from 'type-fest'
 
 const postgrest = new PostgrestClient<Database>('http://localhost:3000')
 
@@ -56,16 +58,24 @@ test('embedded select', async () => {
     }
   `)
   let result: Exclude<typeof res.data, null>
-  let expected: {
-    messages: {
-      channel_id: number
-      data: unknown
-      id: number
-      message: string | null
-      username: string
-    }[]
-  }[]
+  const ExpectedSchema = z.array(
+    z.object({
+      messages: z.array(
+        z.object({
+          channel_id: z.number(),
+          data: z.unknown().nullable(),
+          id: z.number(),
+          message: z.string().nullable(),
+          username: z.string(),
+        })
+      ),
+    })
+  )
+  // TODO: older versions of zod require this trick for non optional unknown data type
+  // newer version of zod don't have this issue but require an upgrade of typescript minimal version
+  let expected: RequiredDeep<z.infer<typeof ExpectedSchema>>
   expectType<TypeEqual<typeof result, typeof expected>>(true)
+  ExpectedSchema.parse(res.data)
 })
 
 test('embedded select with computed field explicit selection', async () => {
@@ -122,17 +132,25 @@ test('embedded select with computed field explicit selection', async () => {
     }
   `)
   let result: Exclude<typeof res.data, null>
-  let expected: {
-    messages: {
-      channel_id: number
-      data: unknown
-      id: number
-      message: string | null
-      username: string
-      blurb_message: string | null
-    }[]
-  }[]
+  const ExpectedSchema = z.array(
+    z.object({
+      messages: z.array(
+        z.object({
+          channel_id: z.number(),
+          data: z.unknown().nullable(),
+          id: z.number(),
+          message: z.string().nullable(),
+          username: z.string(),
+          blurb_message: z.string().nullable(),
+        })
+      ),
+    })
+  )
+  // TODO: older versions of zod require this trick for non optional unknown data type
+  // newer version of zod don't have this issue but require an upgrade of typescript minimal version
+  let expected: RequiredDeep<z.infer<typeof ExpectedSchema>>
   expectType<TypeEqual<typeof result, typeof expected>>(true)
+  ExpectedSchema.parse(res.data)
 })
 
 describe('embedded filters', () => {
@@ -176,16 +194,24 @@ describe('embedded filters', () => {
       }
     `)
     let result: Exclude<typeof res.data, null>
-    let expected: {
-      messages: {
-        channel_id: number
-        data: unknown
-        id: number
-        message: string | null
-        username: string
-      }[]
-    }[]
+    const ExpectedSchema = z.array(
+      z.object({
+        messages: z.array(
+          z.object({
+            channel_id: z.number(),
+            data: z.unknown().nullable(),
+            id: z.number(),
+            message: z.string().nullable(),
+            username: z.string(),
+          })
+        ),
+      })
+    )
+    // TODO: older versions of zod require this trick for non optional unknown data type
+    // newer version of zod don't have this issue but require an upgrade of typescript minimal version
+    let expected: RequiredDeep<z.infer<typeof ExpectedSchema>>
     expectType<TypeEqual<typeof result, typeof expected>>(true)
+    ExpectedSchema.parse(res.data)
   })
   test('embedded or', async () => {
     const res = await postgrest
@@ -233,16 +259,24 @@ describe('embedded filters', () => {
       }
     `)
     let result: Exclude<typeof res.data, null>
-    let expected: {
-      messages: {
-        channel_id: number
-        data: unknown
-        id: number
-        message: string | null
-        username: string
-      }[]
-    }[]
+    const ExpectedSchema = z.array(
+      z.object({
+        messages: z.array(
+          z.object({
+            channel_id: z.number(),
+            data: z.unknown().nullable(),
+            id: z.number(),
+            message: z.string().nullable(),
+            username: z.string(),
+          })
+        ),
+      })
+    )
+    // TODO: older versions of zod require this trick for non optional unknown data type
+    // newer version of zod don't have this issue but require an upgrade of typescript minimal version
+    let expected: RequiredDeep<z.infer<typeof ExpectedSchema>>
     expectType<TypeEqual<typeof result, typeof expected>>(true)
+    ExpectedSchema.parse(res.data)
   })
   test('embedded or with and', async () => {
     const res = await postgrest
@@ -292,16 +326,24 @@ describe('embedded filters', () => {
       }
     `)
     let result: Exclude<typeof res.data, null>
-    let expected: {
-      messages: {
-        channel_id: number
-        data: unknown
-        id: number
-        message: string | null
-        username: string
-      }[]
-    }[]
+    const ExpectedSchema = z.array(
+      z.object({
+        messages: z.array(
+          z.object({
+            channel_id: z.number(),
+            data: z.unknown().nullable(),
+            id: z.number(),
+            message: z.string().nullable(),
+            username: z.string(),
+          })
+        ),
+      })
+    )
+    // TODO: older versions of zod require this trick for non optional unknown data type
+    // newer version of zod don't have this issue but require an upgrade of typescript minimal version
+    let expected: RequiredDeep<z.infer<typeof ExpectedSchema>>
     expectType<TypeEqual<typeof result, typeof expected>>(true)
+    ExpectedSchema.parse(res.data)
   })
 })
 
@@ -359,16 +401,24 @@ describe('embedded transforms', () => {
       }
     `)
     let result: Exclude<typeof res.data, null>
-    let expected: {
-      messages: {
-        channel_id: number
-        data: unknown
-        id: number
-        message: string | null
-        username: string
-      }[]
-    }[]
+    const ExpectedSchema = z.array(
+      z.object({
+        messages: z.array(
+          z.object({
+            channel_id: z.number(),
+            data: z.unknown().nullable(),
+            id: z.number(),
+            message: z.string().nullable(),
+            username: z.string(),
+          })
+        ),
+      })
+    )
+    // TODO: older versions of zod require this trick for non optional unknown data type
+    // newer version of zod don't have this issue but require an upgrade of typescript minimal version
+    let expected: RequiredDeep<z.infer<typeof ExpectedSchema>>
     expectType<TypeEqual<typeof result, typeof expected>>(true)
+    ExpectedSchema.parse(res.data)
   })
 
   test('embedded order on multiple columns', async () => {
@@ -425,16 +475,24 @@ describe('embedded transforms', () => {
       }
     `)
     let result: Exclude<typeof res.data, null>
-    let expected: {
-      messages: {
-        channel_id: number
-        data: unknown
-        id: number
-        message: string | null
-        username: string
-      }[]
-    }[]
+    const ExpectedSchema = z.array(
+      z.object({
+        messages: z.array(
+          z.object({
+            channel_id: z.number(),
+            data: z.unknown().nullable(),
+            id: z.number(),
+            message: z.string().nullable(),
+            username: z.string(),
+          })
+        ),
+      })
+    )
+    // TODO: older versions of zod require this trick for non optional unknown data type
+    // newer version of zod don't have this issue but require an upgrade of typescript minimal version
+    let expected: RequiredDeep<z.infer<typeof ExpectedSchema>>
     expectType<TypeEqual<typeof result, typeof expected>>(true)
+    ExpectedSchema.parse(res.data)
   })
 
   test('embedded limit', async () => {
@@ -476,16 +534,24 @@ describe('embedded transforms', () => {
       }
     `)
     let result: Exclude<typeof res.data, null>
-    let expected: {
-      messages: {
-        channel_id: number
-        data: unknown
-        id: number
-        message: string | null
-        username: string
-      }[]
-    }[]
+    const ExpectedSchema = z.array(
+      z.object({
+        messages: z.array(
+          z.object({
+            channel_id: z.number(),
+            data: z.unknown().nullable(),
+            id: z.number(),
+            message: z.string().nullable(),
+            username: z.string(),
+          })
+        ),
+      })
+    )
+    // TODO: older versions of zod require this trick for non optional unknown data type
+    // newer version of zod don't have this issue but require an upgrade of typescript minimal version
+    let expected: RequiredDeep<z.infer<typeof ExpectedSchema>>
     expectType<TypeEqual<typeof result, typeof expected>>(true)
+    ExpectedSchema.parse(res.data)
   })
 
   test('embedded range', async () => {
@@ -527,15 +593,23 @@ describe('embedded transforms', () => {
       }
     `)
     let result: Exclude<typeof res.data, null>
-    let expected: {
-      messages: {
-        channel_id: number
-        data: unknown
-        id: number
-        message: string | null
-        username: string
-      }[]
-    }[]
+    const ExpectedSchema = z.array(
+      z.object({
+        messages: z.array(
+          z.object({
+            channel_id: z.number(),
+            data: z.unknown().nullable(),
+            id: z.number(),
+            message: z.string().nullable(),
+            username: z.string(),
+          })
+        ),
+      })
+    )
+    // TODO: older versions of zod require this trick for non optional unknown data type
+    // newer version of zod don't have this issue but require an upgrade of typescript minimal version
+    let expected: RequiredDeep<z.infer<typeof ExpectedSchema>>
     expectType<TypeEqual<typeof result, typeof expected>>(true)
+    ExpectedSchema.parse(res.data)
   })
 })

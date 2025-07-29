@@ -3,6 +3,7 @@ import { Database } from './types.override'
 import { Database as DatabaseWithOptions13 } from './types.override-with-options-postgrest13'
 import { expectType } from 'tsd'
 import { TypeEqual } from 'ts-expect'
+import { z } from 'zod'
 
 const REST_URL = 'http://localhost:3000'
 export const postgrest = new PostgrestClient<Database>(REST_URL)
@@ -48,16 +49,20 @@ test('select with aggregate count and spread', async () => {
     }
   `)
   let result: Exclude<typeof res.data, null>
-  let expected: {
-    username: string
-    messages: Array<{
-      channels: {
-        count: number
-        details: string | null
-      }
-    }>
-  }
+  const ExpectedSchema = z.object({
+    username: z.string(),
+    messages: z.array(
+      z.object({
+        channels: z.object({
+          count: z.number(),
+          details: z.string().nullable(),
+        }),
+      })
+    ),
+  })
+  let expected: z.infer<typeof ExpectedSchema>
   expectType<TypeEqual<typeof result, typeof expected>>(true)
+  ExpectedSchema.parse(res.data)
 })
 
 test('spread resource with single column in select query', async () => {
@@ -98,16 +103,20 @@ test('spread resource with single column in select query', async () => {
     }
   `)
   let result: Exclude<typeof res.data, null>
-  let expected: {
-    username: string
-    messages: Array<{
-      channels: {
-        count: number
-        details: string | null
-      }
-    }>
-  }
+  const ExpectedSchema = z.object({
+    username: z.string(),
+    messages: z.array(
+      z.object({
+        channels: z.object({
+          count: z.number(),
+          details: z.string().nullable(),
+        }),
+      })
+    ),
+  })
+  let expected: z.infer<typeof ExpectedSchema>
   expectType<TypeEqual<typeof result, typeof expected>>(true)
+  ExpectedSchema.parse(res.data)
 })
 
 test('spread resource with all columns in select query', async () => {
@@ -151,17 +160,21 @@ test('spread resource with all columns in select query', async () => {
     }
   `)
   let result: Exclude<typeof res.data, null>
-  let expected: {
-    username: string
-    messages: Array<{
-      channels: {
-        count: number
-        details: string | null
-        id: number | null
-      }
-    }>
-  }
+  const ExpectedSchema = z.object({
+    username: z.string(),
+    messages: z.array(
+      z.object({
+        channels: z.object({
+          count: z.number(),
+          details: z.string().nullable(),
+          id: z.number().nullable(),
+        }),
+      })
+    ),
+  })
+  let expected: z.infer<typeof ExpectedSchema>
   expectType<TypeEqual<typeof result, typeof expected>>(true)
+  ExpectedSchema.parse(res.data)
 })
 
 test('select with aggregate sum and spread', async () => {
@@ -202,16 +215,20 @@ test('select with aggregate sum and spread', async () => {
     }
   `)
   let result: Exclude<typeof res.data, null>
-  let expected: {
-    username: string
-    messages: Array<{
-      channels: {
-        sum: number
-        details: string | null
-      }
-    }>
-  }
+  const ExpectedSchema = z.object({
+    username: z.string(),
+    messages: z.array(
+      z.object({
+        channels: z.object({
+          sum: z.number(),
+          details: z.string().nullable(),
+        }),
+      })
+    ),
+  })
+  let expected: z.infer<typeof ExpectedSchema>
   expectType<TypeEqual<typeof result, typeof expected>>(true)
+  ExpectedSchema.parse(res.data)
 })
 
 test('select with aggregate sum and spread on nested relation', async () => {
@@ -257,17 +274,21 @@ test('select with aggregate sum and spread on nested relation', async () => {
     }
   `)
   let result: Exclude<typeof res.data, null>
-  let expected: {
-    username: string
-    messages: Array<{
-      channels: {
-        sum: number
-        details_sum: number | null
-        details: string | null
-      }
-    }>
-  }
+  const ExpectedSchema = z.object({
+    username: z.string(),
+    messages: z.array(
+      z.object({
+        channels: z.object({
+          sum: z.number(),
+          details_sum: z.number().nullable(),
+          details: z.string().nullable(),
+        }),
+      })
+    ),
+  })
+  let expected: z.infer<typeof ExpectedSchema>
   expectType<TypeEqual<typeof result, typeof expected>>(true)
+  ExpectedSchema.parse(res.data)
 })
 
 test('select with spread on nested relation', async () => {
@@ -293,15 +314,17 @@ test('select with spread on nested relation', async () => {
     }
   `)
   let result: Exclude<typeof res.data, null>
-  let expected: {
-    id: number
-    channels: {
-      id: number
-      details_id: number | null
-      details: string | null
-    }
-  }
+  const ExpectedSchema = z.object({
+    id: z.number(),
+    channels: z.object({
+      id: z.number(),
+      details_id: z.number().nullable(),
+      details: z.string().nullable(),
+    }),
+  })
+  let expected: z.infer<typeof ExpectedSchema>
   expectType<TypeEqual<typeof result, typeof expected>>(true)
+  ExpectedSchema.parse(res.data)
 })
 
 test('select spread on many relation postgrest13', async () => {
@@ -328,12 +351,14 @@ test('select spread on many relation postgrest13', async () => {
     }
   `)
   let result: Exclude<typeof res.data, null>
-  let expected: {
-    channel_id: number
-    id: Array<number>
-    message: Array<string | null>
-  }
+  const ExpectedSchema = z.object({
+    channel_id: z.number(),
+    id: z.array(z.number()),
+    message: z.array(z.string().nullable()),
+  })
+  let expected: z.infer<typeof ExpectedSchema>
   expectType<TypeEqual<typeof result, typeof expected>>(true)
+  ExpectedSchema.parse(res.data)
 })
 
 test('select spread on many relation postgrest13FromDatabaseTypes', async () => {
@@ -360,10 +385,12 @@ test('select spread on many relation postgrest13FromDatabaseTypes', async () => 
     }
   `)
   let result: Exclude<typeof res.data, null>
-  let expected: {
-    channel_id: number
-    id: Array<number>
-    message: Array<string | null>
-  }
+  const ExpectedSchema = z.object({
+    channel_id: z.number(),
+    id: z.array(z.number()),
+    message: z.array(z.string().nullable()),
+  })
+  let expected: z.infer<typeof ExpectedSchema>
   expectType<TypeEqual<typeof result, typeof expected>>(true)
+  ExpectedSchema.parse(res.data)
 })

@@ -3,11 +3,21 @@ import { Database } from './types.override'
 import { Database as DatabasePostgrest13 } from './types.override-with-options-postgrest13'
 import { expectType } from 'tsd'
 import { InvalidMethodError } from '../src/PostgrestFilterBuilder'
-import { Json } from './types.generated'
+import { z } from 'zod'
+import { RequiredDeep } from 'type-fest'
+import { TypeEqual } from 'ts-expect'
 
 const REST_URL_13 = 'http://localhost:3001'
 const postgrest13 = new PostgrestClient<DatabasePostgrest13>(REST_URL_13)
 const postgrest12 = new PostgrestClient<Database>(REST_URL_13)
+
+const MessageRowSchema = z.object({
+  channel_id: z.number(),
+  data: z.unknown().nullable(),
+  id: z.number(),
+  message: z.string().nullable(),
+  username: z.string(),
+})
 
 describe('maxAffected', () => {
   test('types: maxAffected should show type warning on postgrest 12 clients', async () => {
@@ -95,16 +105,13 @@ describe('maxAffected', () => {
       .eq('message', 'test2')
       .maxAffected(2)
       .select()
-    expectType<
-      | {
-          channel_id: number
-          data: Json | null
-          id: number
-          message: string | null
-          username: string
-        }[]
-      | null
-    >(data)
+
+    let result: Exclude<typeof data, null>
+    const ExpectedSchema = z.array(MessageRowSchema)
+    let expected: RequiredDeep<z.infer<typeof ExpectedSchema>>
+    expectType<TypeEqual<typeof result, typeof expected>>(true)
+    ExpectedSchema.parse(data)
+
     expect(error).toBeNull()
     expect(data).toHaveLength(1)
     expect(data?.[0].message).toBe('updated')
