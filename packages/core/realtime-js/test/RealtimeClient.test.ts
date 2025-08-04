@@ -36,7 +36,10 @@ beforeEach(() => {
   projectRef = randomProjectRef()
   url = `wss://${projectRef}/socket`
   mockServer = new Server(url)
-  socket = new RealtimeClient(url, { transport: MockWebSocket })
+  socket = new RealtimeClient(url, {
+    transport: MockWebSocket,
+    params: { apikey: '123456789' },
+  })
 })
 
 afterEach(() => {
@@ -46,7 +49,7 @@ afterEach(() => {
 
 describe('constructor', () => {
   test('sets defaults', () => {
-    let socket = new RealtimeClient(url)
+    let socket = new RealtimeClient(url, { params: { apikey: '123456789' } })
 
     assert.equal(socket.getChannels().length, 0)
     assert.equal(socket.sendBuffer.length, 0)
@@ -75,7 +78,7 @@ describe('constructor', () => {
       transport: MockWebSocket,
       logger: customLogger,
       reconnectAfterMs: customReconnect,
-      params: { one: 'two' },
+      params: { one: 'two', apikey: '123456789' },
     })
 
     assert.equal(socket.timeout, 40000)
@@ -83,12 +86,14 @@ describe('constructor', () => {
     assert.equal(socket.transport, MockWebSocket)
     assert.equal(socket.logger, customLogger)
     assert.equal(socket.reconnectAfterMs, customReconnect)
-    assert.deepEqual(socket.params, { one: 'two' })
+    assert.deepEqual(socket.params, { one: 'two', apikey: '123456789' })
   })
 
   describe('with Websocket', () => {
     test('defaults to Websocket transport if available', () => {
-      socket = new RealtimeClient(`wss://${projectRef}/socket`)
+      socket = new RealtimeClient(`wss://${projectRef}/socket`, {
+        params: { apikey: '123456789' },
+      })
       assert.equal(socket.transport, null)
     })
   })
@@ -96,12 +101,20 @@ describe('constructor', () => {
 
 describe('endpointURL', () => {
   test('returns endpoint for given full url', () => {
-    assert.equal(socket.endpointURL(), `${url}/websocket?vsn=1.0.0`)
+    assert.equal(
+      socket.endpointURL(),
+      `${url}/websocket?apikey=123456789&vsn=1.0.0`
+    )
   })
 
   test('returns endpoint with parameters', () => {
-    socket = new RealtimeClient(url, { params: { foo: 'bar' } })
-    assert.equal(socket.endpointURL(), `${url}/websocket?foo=bar&vsn=1.0.0`)
+    socket = new RealtimeClient(url, {
+      params: { foo: 'bar', apikey: '123456789' },
+    })
+    assert.equal(
+      socket.endpointURL(),
+      `${url}/websocket?foo=bar&apikey=123456789&vsn=1.0.0`
+    )
   })
 
   test('returns endpoint with apikey', () => {
@@ -141,6 +154,7 @@ describe('connect with WebSocket', () => {
       transport: MockWebSocket,
       accessToken,
       logger: logSpy,
+      params: { apikey: '123456789' },
     })
 
     socketWithError.connect()
@@ -151,7 +165,7 @@ describe('connect with WebSocket', () => {
     assert.ok(
       logSpy.calledWith(
         'error',
-        'error setting auth',
+        'error setting auth in connect',
         sinon.match.instanceOf(Error)
       )
     )
@@ -568,6 +582,7 @@ describe('setAuth', () => {
     let new_socket = new RealtimeClient(url, {
       transport: MockWebSocket,
       accessToken: () => Promise.resolve(new_token),
+      params: { apikey: '123456789' },
     })
 
     const channel1 = new_socket.channel('test-topic1')
@@ -791,6 +806,7 @@ describe('socket close event', () => {
     const socket = new RealtimeClient(url, {
       transport: MockWebSocket,
       accessToken,
+      params: { apikey: '123456789' },
     })
     socket.connect()
 
@@ -849,7 +865,7 @@ describe('onConnMessage', () => {
 
   test("on heartbeat events from the 'phoenix' topic, callback is called", async () => {
     let called = false
-    let socket = new RealtimeClient(url)
+    let socket = new RealtimeClient(url, { params: { apikey: '123456789' } })
     socket.onHeartbeat((message: HeartbeatStatus) => (called = message == 'ok'))
 
     socket.connect()
@@ -866,7 +882,7 @@ describe('onConnMessage', () => {
   })
   test("on heartbeat events from the 'phoenix' topic, callback is called with error", async () => {
     let called = false
-    let socket = new RealtimeClient(url)
+    let socket = new RealtimeClient(url, { params: { apikey: '123456789' } })
     socket.onHeartbeat(
       (message: HeartbeatStatus) => (called = message == 'error')
     )
@@ -899,6 +915,7 @@ describe('custom encoder and decoder', () => {
     socket = new RealtimeClient(`wss://${projectRef}/socket`, {
       transport: WebSocket,
       encode: encoder,
+      params: { apikey: '123456789' },
     })
 
     socket.encode({ foo: 'bar' }, (encoded) => {
@@ -907,7 +924,9 @@ describe('custom encoder and decoder', () => {
   })
 
   test('decodes JSON by default', () => {
-    socket = new RealtimeClient(`wss://${projectRef}/socket`)
+    socket = new RealtimeClient(`wss://${projectRef}/socket`, {
+      params: { apikey: '123456789' },
+    })
     let payload = JSON.stringify({ foo: 'bar' })
 
     socket.decode(payload, (decoded) => {
@@ -916,7 +935,9 @@ describe('custom encoder and decoder', () => {
   })
 
   test('decodes ArrayBuffer by default', () => {
-    socket = new RealtimeClient(`wss://${projectRef}/socket`)
+    socket = new RealtimeClient(`wss://${projectRef}/socket`, {
+      params: { apikey: '123456789' },
+    })
     const buffer = new Uint8Array([
       2, 20, 6, 114, 101, 97, 108, 116, 105, 109, 101, 58, 112, 117, 98, 108,
       105, 99, 58, 116, 101, 115, 116, 73, 78, 83, 69, 82, 84, 123, 34, 102,
@@ -938,6 +959,7 @@ describe('custom encoder and decoder', () => {
     socket = new RealtimeClient(`wss://${projectRef}/socket`, {
       transport: WebSocket,
       decode: decoder,
+      params: { apikey: '123456789' },
     })
 
     socket.decode('...esoteric format...', (decoded) => {
@@ -949,7 +971,10 @@ describe('custom encoder and decoder', () => {
 describe('log operations', () => {
   test('calls the logger with the correct arguments', () => {
     const mockLogger = vi.fn()
-    socket = new RealtimeClient(url, { logger: mockLogger })
+    socket = new RealtimeClient(url, {
+      logger: mockLogger,
+      params: { apikey: '123456789' },
+    })
 
     socket.log('testKind', 'testMessage', { testData: 'test' })
 
@@ -958,21 +983,27 @@ describe('log operations', () => {
     })
   })
   test('changing log_level sends proper params in URL', () => {
-    socket = new RealtimeClient(url, { log_level: 'warn' })
+    socket = new RealtimeClient(url, {
+      log_level: 'warn',
+      params: { apikey: '123456789' },
+    })
 
     assert.equal(socket.logLevel, 'warn')
     assert.equal(
       socket.endpointURL(),
-      `${url}/websocket?log_level=warn&vsn=1.0.0`
+      `${url}/websocket?apikey=123456789&log_level=warn&vsn=1.0.0`
     )
   })
   test('changing logLevel sends proper params in URL', () => {
-    socket = new RealtimeClient(url, { logLevel: 'warn' })
+    socket = new RealtimeClient(url, {
+      logLevel: 'warn',
+      params: { apikey: '123456789' },
+    })
 
     assert.equal(socket.logLevel, 'warn')
     assert.equal(
       socket.endpointURL(),
-      `${url}/websocket?log_level=warn&vsn=1.0.0`
+      `${url}/websocket?apikey=123456789&log_level=warn&vsn=1.0.0`
     )
   })
 })
@@ -999,6 +1030,7 @@ describe('worker', () => {
       worker: true,
       workerUrl: workerPath,
       heartbeatIntervalMs: 10,
+      params: { apikey: '123456789' },
     })
   })
   test('sets worker flag', () => {

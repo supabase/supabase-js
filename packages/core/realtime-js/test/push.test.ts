@@ -9,7 +9,10 @@ let socket, channel, push
 
 describe('constructor', () => {
   beforeEach(() => {
-    socket = new RealtimeClient('/socket', { timeout: 1234 })
+    socket = new RealtimeClient('/socket', {
+      timeout: 1234,
+      params: { apikey: '123456789' },
+    })
   })
 
   afterEach(() => {
@@ -30,7 +33,10 @@ describe('constructor', () => {
 
 describe('updatePayload', () => {
   beforeEach(() => {
-    socket = new RealtimeClient('/socket', { timeout: 1234 })
+    socket = new RealtimeClient('/socket', {
+      timeout: 1234,
+      params: { apikey: '123456789' },
+    })
   })
 
   afterEach(() => {

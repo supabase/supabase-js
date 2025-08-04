@@ -198,6 +198,15 @@ export default class RealtimeChannel {
       this.state = CHANNEL_STATES.errored
       this.rejoinTimer.scheduleTimeout()
     })
+
+    this.joinPush.receive('error', (reason: any) => {
+      if (this._isLeaving() || this._isClosed()) {
+        return
+      }
+      this.socket.log('channel', `error ${this.topic}`, reason)
+      this.state = CHANNEL_STATES.errored
+      this.rejoinTimer.scheduleTimeout()
+    })
     this._on(CHANNEL_EVENTS.reply, {}, (payload: any, ref: string) => {
       this._trigger(this._replyEventName(ref), payload)
     })
@@ -225,7 +234,9 @@ export default class RealtimeChannel {
       const postgres_changes =
         this.bindings.postgres_changes?.map((r) => r.filter) ?? []
 
-      const presence_enabled = !!this.bindings[REALTIME_LISTEN_TYPES.PRESENCE]
+      const presence_enabled =
+        !!this.bindings[REALTIME_LISTEN_TYPES.PRESENCE] &&
+        this.bindings[REALTIME_LISTEN_TYPES.PRESENCE].length > 0
       const accessTokenPayload: { access_token?: string } = {}
       const config = {
         broadcast,
