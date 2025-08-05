@@ -1,4 +1,4 @@
-import { WebSocket } from 'isows'
+import WebSocketFactory, { WebSocketLike } from './lib/websocket-factory'
 
 import {
   CHANNEL_EVENTS,
@@ -68,8 +68,6 @@ export interface WebSocketLikeConstructor {
     subprotocols?: string | string[] | undefined
   ): WebSocketLike
 }
-
-export type WebSocketLike = WebSocket
 
 export interface WebSocketLikeError {
   error: any
@@ -197,17 +195,19 @@ export default class RealtimeClient {
 
     this._setConnectionState('connecting')
     this._setAuthSafely('connect')
-    
+
     // Establish WebSocket connection
     if (!this.transport) {
-      this.transport = WebSocket
+      try {
+        this.conn = WebSocketFactory.createWebSocket(this.endpointURL())
+      } catch (error) {
+        this._setConnectionState('disconnected')
+        throw new Error(`WebSocket not available: ${(error as Error).message}`)
+      }
+    } else {
+      // Use custom transport if provided
+      this.conn = new this.transport!(this.endpointURL()) as WebSocketLike
     }
-    if (!this.transport) {
-      this._setConnectionState('disconnected')
-      throw new Error('No transport provided')
-    }
-
-    this.conn = new this.transport!(this.endpointURL()) as WebSocketLike
     this._setupConnectionHandlers()
   }
 
@@ -234,7 +234,7 @@ export default class RealtimeClient {
     }
 
     this._setConnectionState('disconnecting', true)
-    
+
     if (this.conn) {
       // Setup fallback timer to prevent hanging in disconnecting state
       const fallbackTimer = setTimeout(() => {
@@ -413,11 +413,11 @@ export default class RealtimeClient {
         'heartbeat timeout. Attempting to re-establish connection'
       )
       this.heartbeatCallback('timeout')
-      
+
       // Force reconnection after heartbeat timeout
       this._wasManualDisconnect = false
       this.conn?.close(WS_CLOSE_NORMAL, 'heartbeat timeout')
-      
+
       setTimeout(() => {
         if (!this.isConnected()) {
           this.reconnectTimer?.scheduleTimeout()
@@ -435,7 +435,7 @@ export default class RealtimeClient {
       ref: this.pendingHeartbeatRef,
     })
     this.heartbeatCallback('sent')
-    
+
     this._setAuthSafely('heartbeat')
   }
 
@@ -462,10 +462,16 @@ export default class RealtimeClient {
     if (customFetch) {
       _fetch = customFetch
     } else if (typeof fetch === 'undefined') {
+      // Node.js environment without native fetch
       _fetch = (...args) =>
-        import('@supabase/node-fetch' as any).then(({ default: fetch }) =>
-          fetch(...args)
-        )
+        import('@supabase/node-fetch' as any)
+          .then(({ default: fetch }) => fetch(...args))
+          .catch((error) => {
+            throw new Error(
+              `Failed to load @supabase/node-fetch: ${error.message}. ` +
+                `This is required for HTTP requests in Node.js environments without native fetch.`
+            )
+          })
     } else {
       _fetch = fetch
     }
@@ -548,8 +554,6 @@ export default class RealtimeClient {
     })
   }
 
-
-
   /**
    * Clear specific timer
    * @internal
@@ -579,7 +583,11 @@ export default class RealtimeClient {
   private _setupConnectionHandlers(): void {
     if (!this.conn) return
 
-    this.conn.binaryType = 'arraybuffer'
+    // Set binary type if supported (browsers and most WebSocket implementations)
+    if ('binaryType' in this.conn) {
+      ;(this.conn as any).binaryType = 'arraybuffer'
+    }
+
     this.conn.onopen = () => this._onConnOpen()
     this.conn.onerror = (error: Event) => this._onConnError(error)
     this.conn.onmessage = (event: any) => this._onConnMessage(event)
@@ -798,7 +806,6 @@ export default class RealtimeClient {
     }
   }
 
-
   /**
    * Setup reconnection timer with proper configuration
    * @internal
@@ -813,8 +820,6 @@ export default class RealtimeClient {
       }, CONNECTION_TIMEOUTS.RECONNECT_DELAY)
     }, this.reconnectAfterMs)
   }
-
-
 
   /**
    * Initialize client options with defaults

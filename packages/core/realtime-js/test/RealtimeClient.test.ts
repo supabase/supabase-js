@@ -10,7 +10,6 @@ import {
   vi,
 } from 'vitest'
 import { Server, WebSocket as MockWebSocket } from 'mock-socket'
-import { WebSocket } from 'isows'
 import sinon from 'sinon'
 import crypto from 'crypto'
 import RealtimeClient, { HeartbeatStatus } from '../src/RealtimeClient'
@@ -66,6 +65,20 @@ describe('constructor', () => {
     assert.equal(socket.heartbeatIntervalMs, 25000)
     assert.equal(typeof socket.logger, 'function')
     assert.equal(typeof socket.reconnectAfterMs, 'function')
+  })
+
+  test('throws error when API key is missing', () => {
+    expect(() => {
+      new RealtimeClient(url, {})
+    }).toThrow('API key is required to connect to Realtime')
+
+    expect(() => {
+      new RealtimeClient(url, { params: {} })
+    }).toThrow('API key is required to connect to Realtime')
+
+    expect(() => {
+      new RealtimeClient(url, { params: { apikey: null } })
+    }).toThrow('API key is required to connect to Realtime')
   })
 
   test('overrides some defaults with options', () => {
@@ -173,6 +186,27 @@ describe('connect with WebSocket', () => {
     // Verify that the connection was still established despite the error
     assert.ok(socketWithError.conn, 'connection should still exist')
     assert.equal(socketWithError.conn!.url, socketWithError.endpointURL())
+  })
+
+  test('handles WebSocket factory errors gracefully', async () => {
+    // Create a socket without transport to trigger WebSocketFactory usage
+    const socketWithoutTransport = new RealtimeClient(url, {
+      params: { apikey: '123456789' },
+    })
+
+    // Mock WebSocketFactory to throw an error
+    const { default: WebSocketFactory } = await import('../src/lib/websocket-factory.js')
+    const originalCreateWebSocket = WebSocketFactory.createWebSocket
+    WebSocketFactory.createWebSocket = vi.fn(() => {
+      throw new Error('WebSocket not available in test environment')
+    })
+
+    expect(() => {
+      socketWithoutTransport.connect()
+    }).toThrow('WebSocket not available: WebSocket not available in test environment')
+
+    // Restore original method
+    WebSocketFactory.createWebSocket = originalCreateWebSocket
   })
 })
 
@@ -735,6 +769,35 @@ describe('sendHeartbeat', () => {
     expect(sendSpy).toHaveBeenCalledWith(heartbeatData)
     expect(setAuthSpy).toHaveBeenCalled()
     expect(setAuthSpy).toHaveBeenCalledTimes(1)
+  })
+
+  test('handles heartbeat timeout and triggers reconnection', async () => {
+    vi.spyOn(socket.conn!, 'readyState', 'get').mockReturnValue(1) // open
+    const logSpy = vi.spyOn(socket, 'log')
+    const heartbeatCallbackSpy = vi.spyOn(socket, 'heartbeatCallback')
+    
+    // Mock the close method to avoid the mock-socket issue
+    const closeSpy = vi.spyOn(socket.conn!, 'close').mockImplementation(() => {})
+    
+    // Set a pending heartbeat reference to simulate timeout condition
+    socket.pendingHeartbeatRef = 'test-ref'
+    
+    await socket.sendHeartbeat()
+    
+    // Verify the timeout was logged
+    expect(logSpy).toHaveBeenCalledWith(
+      'transport',
+      'heartbeat timeout. Attempting to re-establish connection'
+    )
+    
+    // Verify the heartbeat callback was called with timeout
+    expect(heartbeatCallbackSpy).toHaveBeenCalledWith('timeout')
+    
+    // Verify the pending heartbeat ref was cleared
+    expect(socket.pendingHeartbeatRef).toBe(null)
+    
+    // Verify close was called with correct parameters
+    expect(closeSpy).toHaveBeenCalledWith(1000, 'heartbeat timeout')
   })
 })
 
