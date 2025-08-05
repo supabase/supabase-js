@@ -20,11 +20,11 @@ importers:
         specifier: 1.19.4
         version: 1.19.4
       '@supabase/realtime-js':
-        specifier: 2.11.15
-        version: 2.11.15
+        specifier: ^2.14.0
+        version: 2.14.0
       '@supabase/storage-js':
-        specifier: 2.7.1
-        version: 2.7.1
+        specifier: ^2.10.4
+        version: 2.10.4
     devDependencies:
       '@sebbo2002/semantic-release-jsr':
         specifier: ^1.0.0
@@ -628,16 +628,16 @@ packages:
         integrity: sha512-O4soKqKtZIW3olqmbXXbKugUtByD2jPa8kL2m2c1oozAO11uCcGrRhkZL0kVxjBLrXHE0mdSkFsMj7jDSfyNpw==,
       }
 
-  '@supabase/realtime-js@2.11.15':
+  '@supabase/realtime-js@2.14.0':
     resolution:
       {
-        integrity: sha512-HQKRnwAqdVqJW/P9TjKVK+/ETpW4yQ8tyDPPtRMKOH4Uh3vQD74vmj353CYs8+YwVBKubeUOOEpI9CT8mT4obw==,
+        integrity: sha512-p9GhtxOBr1YLqxU9C1g8Pi+jgATYWa3KKgTqD7Qo77wOkbn+ts0Xg8mitptSVYb9DDIX6xbhJv6GghUMyH2ykA==,
       }
 
-  '@supabase/storage-js@2.7.1':
+  '@supabase/storage-js@2.10.4':
     resolution:
       {
-        integrity: sha512-asYHcyDR1fKqrMpytAS1zjyEfvxuOIp1CIXX7ji4lHHcJKqyk+sLl/Vxgm4sN6u8zvuUtae9e4kDxQP2qrwWBA==,
+        integrity: sha512-cvL02GarJVFcNoWe36VBybQqTVRq6wQSOCvTS64C+eyuxOruFIm1utZAY0xi2qKtHJO3EjKaj8iWJKySusDmAQ==,
       }
 
   '@tootallnate/quickjs-emscripten@0.23.0':
@@ -2821,14 +2821,6 @@ packages:
         integrity: sha512-WhB9zCku7EGTj/HQQRz5aUQEUeoQZH2bWcltRErOpymJ4boYE6wL9Tbr23krRPSZ+C5zqNSrSw+Cc7sZZ4b7vg==,
       }
     engines: { node: '>=0.10.0' }
-
-  isows@1.0.7:
-    resolution:
-      {
-        integrity: sha512-I1fSfDCZL5P0v33sVqeTDSpcstAg/N+wF5HS033mogOVIp4B+oHC7oOCsA3axAbBSGTJ8QubbNmnIRN/h8U7hg==,
-      }
-    peerDependencies:
-      ws: '*'
 
   istanbul-lib-coverage@3.2.2:
     resolution:
@@ -5603,18 +5595,17 @@ snapshots:
     dependencies:
       '@supabase/node-fetch': 2.6.15
 
-  '@supabase/realtime-js@2.11.15':
+  '@supabase/realtime-js@2.14.0':
     dependencies:
       '@supabase/node-fetch': 2.6.15
       '@types/phoenix': 1.6.6
       '@types/ws': 8.18.1
-      isows: 1.0.7(ws@8.18.2)
       ws: 8.18.2
     transitivePeerDependencies:
       - bufferutil
       - utf-8-validate
 
-  '@supabase/storage-js@2.7.1':
+  '@supabase/storage-js@2.10.4':
     dependencies:
       '@supabase/node-fetch': 2.6.15
 
@@ -6938,10 +6929,6 @@ snapshots:
   isexe@2.0.0: {}
 
   isobject@3.0.1: {}
-
-  isows@1.0.7(ws@8.18.2):
-    dependencies:
-      ws: 8.18.2
 
   istanbul-lib-coverage@3.2.2: {}
 
