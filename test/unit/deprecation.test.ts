@@ -40,7 +40,11 @@ describe('Node.js deprecation warning', () => {
 
   it('should not show warning when process.version is undefined', () => {
     // Process exists but version is undefined
-    global.process = { ...originalProcess, version: undefined } as any
+    // Only mock the version property to avoid TTYWRAP warnings
+    Object.defineProperty(global.process, 'version', {
+      value: undefined,
+      configurable: true,
+    })
 
     require('../../src/index')
 
@@ -49,7 +53,11 @@ describe('Node.js deprecation warning', () => {
 
   it('should not show warning when process.version is null', () => {
     // Process exists but version is null
-    global.process = { ...originalProcess, version: null } as any
+    // Only mock the version property to avoid TTYWRAP warnings
+    Object.defineProperty(global.process, 'version', {
+      value: null,
+      configurable: true,
+    })
 
     require('../../src/index')
 
@@ -57,7 +65,10 @@ describe('Node.js deprecation warning', () => {
   })
 
   it('should show warning for Node.js 18', () => {
-    global.process = { ...originalProcess, version: 'v18.0.0' } as any
+    Object.defineProperty(global.process, 'version', {
+      value: 'v18.0.0',
+      configurable: true,
+    })
     delete (global as any).window
 
     require('../../src/index')
@@ -68,7 +79,10 @@ describe('Node.js deprecation warning', () => {
   })
 
   it('should show warning for Node.js 16', () => {
-    global.process = { ...originalProcess, version: 'v16.14.0' } as any
+    Object.defineProperty(global.process, 'version', {
+      value: 'v16.14.0',
+      configurable: true,
+    })
     delete (global as any).window
 
     require('../../src/index')
@@ -79,7 +93,10 @@ describe('Node.js deprecation warning', () => {
   })
 
   it('should not show warning for Node.js 20', () => {
-    global.process = { ...originalProcess, version: 'v20.0.0' } as any
+    Object.defineProperty(global.process, 'version', {
+      value: 'v20.0.0',
+      configurable: true,
+    })
     delete (global as any).window
 
     require('../../src/index')
@@ -88,7 +105,10 @@ describe('Node.js deprecation warning', () => {
   })
 
   it('should not show warning for Node.js 22', () => {
-    global.process = { ...originalProcess, version: 'v22.0.0' } as any
+    Object.defineProperty(global.process, 'version', {
+      value: 'v22.0.0',
+      configurable: true,
+    })
     delete (global as any).window
 
     require('../../src/index')
@@ -97,7 +117,10 @@ describe('Node.js deprecation warning', () => {
   })
 
   it('should handle invalid version format gracefully', () => {
-    global.process = { ...originalProcess, version: 'invalid-version' } as any
+    Object.defineProperty(global.process, 'version', {
+      value: 'invalid-version',
+      configurable: true,
+    })
     delete (global as any).window
 
     require('../../src/index')
@@ -106,7 +129,10 @@ describe('Node.js deprecation warning', () => {
   })
 
   it('should handle version without v prefix', () => {
-    global.process = { ...originalProcess, version: '18.0.0' } as any
+    Object.defineProperty(global.process, 'version', {
+      value: '18.0.0',
+      configurable: true,
+    })
     delete (global as any).window
 
     require('../../src/index')
