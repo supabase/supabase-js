@@ -28,7 +28,9 @@ module.exports = (env) => ({
   },
   plugins: [
     new webpack.DefinePlugin({
-      process: 'process/browser',
+      'process.env.NODE_ENV': JSON.stringify(env?.mode || 'production'),
+      'typeof process': JSON.stringify('undefined'),
+      'typeof global': JSON.stringify('undefined'),
     }),
   ],
 })
