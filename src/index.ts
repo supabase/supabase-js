@@ -54,7 +54,7 @@ function shouldShowDeprecationWarning(): boolean {
 
   // Use dynamic property access to avoid Next.js Edge Runtime static analysis warnings
   const processVersion = (process as any)['version']
-  if (!processVersion) {
+  if (processVersion === undefined || processVersion === null) {
     return false
   }
 
