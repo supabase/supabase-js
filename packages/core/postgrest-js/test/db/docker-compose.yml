@@ -43,8 +43,8 @@ services:
       POSTGRES_HOST: /var/run/postgresql
       POSTGRES_PORT: 5432
   pgmeta:
-    image: supabase/postgres-meta:v0.87.1
+    image: supabase/postgres-meta:v0.91.5
     ports:
       - '8080:8080'
     environment:
-      - PG_META_DB_URL=postgresql://postgres:postgres@db:5432/postgres
+      - PG_META_DB_HOST=db

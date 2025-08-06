@@ -37,8 +37,9 @@
     "build:esm": "cpy wrapper.mjs dist/esm/",
     "docs": "typedoc src/index.ts --out docs/v2",
     "docs:json": "typedoc --json docs/v2/spec.json --excludeExternals src/index.ts",
-    "test": "run-s format:check test:types db:clean db:run test:run db:clean && node test/smoke.cjs && node test/smoke.mjs",
+    "test": "run-s format:check test:types db:clean db:run test:generated-types test:run db:clean && node test/smoke.cjs && node test/smoke.mjs",
     "test:run": "jest --runInBand --coverage",
+    "test:generated-types": "run-s db:generate-test-types && git diff --exit-code test/types.generated.ts || (echo '❌ Generated types are not up to date. Run npm run db:generate-test-types.' && exit 1)",
     "test:update": "run-s db:clean db:run db:generate-test-types && jest --runInBand --updateSnapshot && run-s db:clean",
     "test:types": "run-s build && tsd --files 'test/**/*.test*.ts'",
     "test:types:watch": "chokidar 'src/**/*.ts' 'test/**/*.ts' -c 'npm run test:types'",
@@ -46,7 +47,7 @@
     "type-check:test": "tsc --noEmit --project tsconfig.test.json",
     "db:clean": "cd test/db && docker compose down --volumes",
     "db:run": "cd test/db && docker compose up --detach && wait-for-localhost 3000",
-    "db:generate-test-types": "cd test/db && docker compose up --detach && wait-for-localhost 8080 && curl --location 'http://0.0.0.0:8080/generators/typescript?included_schemas=public,personal&detect_one_to_one_relationships=true' > ../types.generated.ts && sed -i '' 's/export type Json = .*/export type Json = unknown;/' ../types.generated.ts"
+    "db:generate-test-types": "cd test/db && docker compose up --detach && wait-for-localhost 8080 && curl --location 'http://0.0.0.0:8080/generators/typescript?included_schemas=public,personal&detect_one_to_one_relationships=true' > ../types.generated.ts && node ../scripts/update-json-type.js && prettier --write ../types.generated.ts"
   },
   "dependencies": {
     "@supabase/node-fetch": "^2.6.14"
