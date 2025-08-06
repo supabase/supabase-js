@@ -1,4 +1,4 @@
-import { expectError, expectType } from 'tsd'
+import { expectType } from 'tsd'
 import { PostgrestSingleResponse, createClient } from '../../src/index'
 import { Database, Json } from '../types'
 
@@ -8,17 +8,21 @@ const supabase = createClient<Database>(URL, KEY)
 
 // table invalid type
 {
-  expectError(supabase.from(42))
-  expectError(supabase.from('some_table_that_does_not_exist'))
+  // @ts-expect-error invalid table type
+  supabase.from(42)
+  // @ts-expect-error table does not exist
+  supabase.from('some_table_that_does_not_exist')
 }
 
 // `null` can't be used with `.eq()`
 {
   supabase.from('users').select().eq('username', 'foo')
-  expectError(supabase.from('users').select().eq('username', null))
+  // @ts-expect-error null cannot be used with eq()
+  supabase.from('users').select().eq('username', null)
 
   const nullableVar = 'foo' as string | null
-  expectError(supabase.from('users').select().eq('username', nullableVar))
+  // @ts-expect-error nullable variable cannot be used with eq()
+  supabase.from('users').select().eq('username', nullableVar)
 }
 
 // can override result type
@@ -46,12 +50,14 @@ const supabase = createClient<Database>(URL, KEY)
 
 // cannot update non-updatable views
 {
-  expectError(supabase.from('updatable_view').update({ non_updatable_column: 0 }))
+  // @ts-expect-error cannot update non-updatable views
+  supabase.from('updatable_view').update({ non_updatable_column: 0 })
 }
 
 // cannot update non-updatable columns
 {
-  expectError(supabase.from('updatable_view').update({ non_updatable_column: 0 }))
+  // @ts-expect-error cannot update non-updatable columns
+  supabase.from('updatable_view').update({ non_updatable_column: 0 })
 }
 
 // json accessor in select query
