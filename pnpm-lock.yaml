@@ -20,7 +20,7 @@ importers:
         specifier: 1.19.4
         version: 1.19.4
       '@supabase/realtime-js':
-        specifier: ^2.14.0
+        specifier: 2.14.0
         version: 2.14.0
       '@supabase/storage-js':
         specifier: ^2.10.4
