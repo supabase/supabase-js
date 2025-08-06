@@ -205,8 +205,18 @@ export type ProcessNodes<
                 RelationName,
                 Relationships,
                 RestNodes,
-                // Replace fields that exist in both Acc and FieldResult instead of intersecting
-                Omit<Acc, keyof FieldResult> & FieldResult
+                // TODO:
+                // This SHOULD be `Omit<Acc, keyof FieldResult> & FieldResult` since in the case where the key
+                // is present in the Acc already, the intersection will create bad intersection types
+                // (eg: `{ a: number } & { a: { property } }` will become `{ a: number & { property } }`)
+                // but using Omit here explode the inference complexity resulting in "infinite recursion error" from typescript
+                // very early (see: 'Check that selecting many fields doesn't yield an possibly infinite recursion error') test
+                // in this case we can't get above ~10 fields before reaching the recursion error
+                // If someone find a better way to do this, please do it !
+                // It'll also allow to fix those two tests:
+                // - `'join over a 1-M relation with both nullables and non-nullables fields using column name hinting on nested relation'`
+                // - `'self reference relation via column''`
+                Acc & FieldResult
               >
             : FieldResult extends SelectQueryError<infer E>
             ? SelectQueryError<E>

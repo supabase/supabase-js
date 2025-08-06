@@ -119,3 +119,263 @@ const postgrest = new PostgrestClient<Database>(REST_URL)
   let expected: { settings: { theme: 'light' | 'dark' } }
   expectType<TypeEqual<typeof resultType, typeof expected>>(true)
 }
+
+// Check that a deeply nested result type doesn't yield an possibly infinite recursion error
+{
+  // Maximum reached is 14 levels of nesting before the recursion too deep error
+  const result = await postgrest
+    .from('users')
+    .select(
+      `username,
+      catchphrase,
+      messages(
+        *,
+        blurb_message,
+        users(
+          *,
+          catchphrase,
+          messages(
+            *,
+            blurb_message,
+            channels(
+              *,
+              users(
+                *,
+                catchphrase,
+                messages(
+                  *,
+                  blurb_message,
+                  users(
+                    *,
+                    catchphrase,
+                    messages(
+                      *,
+                      blurb_message,
+                      channels(
+                        *,
+                        users(
+                          *,
+                          catchphrase,
+                          messages(
+                            *,
+                            blurb_message,
+                            users(
+                              *,
+                              catchphrase,
+                              messages(
+                                *,
+                                blurb_message,
+                                channels(
+                                  *
+                                )
+                              )
+                            )
+                          )
+                        )
+                      )
+                    )
+                  )
+                )
+              )
+            )
+          )
+        )
+      )
+      `
+    )
+    .single()
+  let resultType: Exclude<typeof result.data, null>
+  let resultUsernameNested: (typeof resultType)['messages'][0]['username']
+  let expected: string
+  expectType<TypeEqual<typeof resultUsernameNested, typeof expected>>(true)
+}
+
+// Check that selecting many fields doesn't yield an possibly infinite recursion error
+{
+  const result = await postgrest
+    .from('users')
+    // Maximum reached was one hundred seventy six fields
+    // Without the Omit<Acc, keyof FieldResult> & FieldResult
+    // With it, it raise as soon as after 12 fields only
+    .select(
+      `username,
+      catchphrase,
+      one:username,
+      two:username,
+      three:username,
+      four:username,
+      five:username,
+      six:username,
+      seven:username,
+      eight:username,
+      nine:username,
+      ten:username,
+      eleven:username,
+      twelve:username,
+      thirteen:username,
+      fourteen:username,
+      fifteen:username,
+      sixteen:username,
+      seventeen:username,
+      eighteen:username,
+      nineteen:username,
+      twenty:username,
+      twentyone:username,
+      twentytwo:username,
+      twentythree:username,
+      twentyfour:username,
+      twentyfive:username,
+      twentysix:username,
+      twentyseven:username,
+      twentyeight:username,
+      twentynine:username,
+      thirty:username,
+      thirtyone:username,
+      thirtytwo:username,
+      thirtythree:username,
+      thirtyfour:username,
+      thirtyfive:username,
+      thirtysix:username,
+      thirtyseven:username,
+      thirtyeight:username,
+      thirtynine:username,
+      forty:username,
+      fortyone:username,
+      fortytwo:username,
+      fortythree:username,
+      fortyfour:username,
+      fortyfive:username,
+      fortysix:username,
+      fortyseven:username,
+      fortyeight:username,
+      fortynine:username,
+      fifty:username
+      `
+    )
+    .single()
+  let resultType: Exclude<typeof result.data, null>
+  let resultFifty: (typeof resultType)['fifty']
+  let expected: string
+  expectType<TypeEqual<typeof resultFifty, typeof expected>>(true)
+}
+
+// Check that selecting many fields doesn't affect the depth recursion limit
+{
+  const result = await postgrest
+    .from('users')
+    .select(
+      `username,
+      catchphrase,
+      data->>one,
+      data->>two,
+      data->>three,
+      data->>four,
+      data->>five,
+      data->>six,
+      data->>seven,
+      data->>eight,
+      data->>nine,
+      data->>ten,
+      data->>eleven,
+      data->>twelve,
+      data->>thirteen,
+      data->>fourteen,
+      data->>fifteen,
+      data->>sixteen,
+      data->>seventeen,
+      data->>eighteen,
+      data->>nineteen,
+      data->>twenty,
+      data->>twentyone,
+      data->>twentytwo,
+      data->>twentythree,
+      data->>twentyfour,
+      data->>twentyfive,
+      data->>twentysix,
+      data->>twentyseven,
+      data->>twentyeight,
+      data->>twentynine,
+      data->>thirty,
+      data->>thirtyone,
+      data->>thirtytwo,
+      data->>thirtythree,
+      data->>thirtyfour,
+      data->>thirtyfive,
+      data->>thirtysix,
+      data->>thirtyseven,
+      data->>thirtyeight,
+      data->>thirtynine,
+      data->>forty,
+      data->>fortyone,
+      data->>fortytwo,
+      data->>fortythree,
+      data->>fortyfour,
+      data->>fortyfive,
+      data->>fortysix,
+      data->>fortyseven,
+      data->>fortyeight,
+      data->>fortynine,
+      data->>fifty,
+      messages(
+        *,
+        blurb_message,
+        users(
+          *,
+          catchphrase,
+          messages(
+            *,
+            blurb_message,
+            channels(
+              *,
+              users(
+                *,
+                catchphrase,
+                messages(
+                  *,
+                  blurb_message,
+                  users(
+                    *,
+                    catchphrase,
+                    messages(
+                      *,
+                      blurb_message,
+                      channels(
+                        *,
+                        users(
+                          *,
+                          catchphrase,
+                          messages(
+                            *,
+                            blurb_message,
+                            users(
+                              *,
+                              catchphrase,
+                              messages(
+                                *,
+                                blurb_message,
+                                channels(
+                                  *
+                                )
+                              )
+                            )
+                          )
+                        )
+                      )
+                    )
+                  )
+                )
+              )
+            )
+          )
+        )
+      )
+      `
+    )
+    .single()
+  let resultType: Exclude<typeof result.data, null>
+  let resultFifty: (typeof resultType)['fifty']
+  let resultUsernameNested: (typeof resultType)['messages'][0]['username']
+  let expected: string
+  expectType<TypeEqual<typeof resultFifty, typeof expected>>(true)
+  expectType<TypeEqual<typeof resultUsernameNested, typeof expected>>(true)
+}
