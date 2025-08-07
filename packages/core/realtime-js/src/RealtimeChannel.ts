@@ -1,4 +1,8 @@
-import { CHANNEL_EVENTS, CHANNEL_STATES } from './lib/constants'
+import {
+  CHANNEL_EVENTS,
+  CHANNEL_STATES,
+  MAX_PUSH_BUFFER_SIZE,
+} from './lib/constants'
 import Push from './lib/push'
 import type RealtimeClient from './RealtimeClient'
 import Timer from './lib/timer'
@@ -213,8 +217,7 @@ export default class RealtimeChannel {
 
     this.presence = new RealtimePresence(this)
 
-    this.broadcastEndpointURL =
-      httpEndpointURL(this.socket.endPoint) + '/api/broadcast'
+    this.broadcastEndpointURL = httpEndpointURL(this.socket.endPoint)
     this.private = this.params.config.private || false
   }
 
@@ -571,8 +574,11 @@ export default class RealtimeChannel {
    */
   teardown() {
     this.pushBuffer.forEach((push: Push) => push.destroy())
-    this.rejoinTimer && clearTimeout(this.rejoinTimer.timer)
+    this.pushBuffer = []
+    this.rejoinTimer.reset()
     this.joinPush.destroy()
+    this.state = CHANNEL_STATES.closed
+    this.bindings = {}
   }
 
   /** @internal */
@@ -608,11 +614,29 @@ export default class RealtimeChannel {
     if (this._canPush()) {
       pushEvent.send()
     } else {
-      pushEvent.startTimeout()
-      this.pushBuffer.push(pushEvent)
+      this._addToPushBuffer(pushEvent)
     }
 
     return pushEvent
+  }
+
+  /** @internal */
+  _addToPushBuffer(pushEvent: Push) {
+    pushEvent.startTimeout()
+    this.pushBuffer.push(pushEvent)
+
+    // Enforce buffer size limit
+    if (this.pushBuffer.length > MAX_PUSH_BUFFER_SIZE) {
+      const removedPush = this.pushBuffer.shift()
+      if (removedPush) {
+        removedPush.destroy()
+        this.socket.log(
+          'channel',
+          `discarded push due to buffer overflow: ${removedPush.event}`,
+          removedPush.payload
+        )
+      }
+    }
   }
 
   /**
@@ -757,12 +781,14 @@ export default class RealtimeChannel {
   _off(type: string, filter: { [key: string]: any }) {
     const typeLower = type.toLocaleLowerCase()
 
-    this.bindings[typeLower] = this.bindings[typeLower].filter((bind) => {
-      return !(
-        bind.type?.toLocaleLowerCase() === typeLower &&
-        RealtimeChannel.isEqual(bind.filter, filter)
-      )
-    })
+    if (this.bindings[typeLower]) {
+      this.bindings[typeLower] = this.bindings[typeLower].filter((bind) => {
+        return !(
+          bind.type?.toLocaleLowerCase() === typeLower &&
+          RealtimeChannel.isEqual(bind.filter, filter)
+        )
+      })
+    }
     return this
   }
 

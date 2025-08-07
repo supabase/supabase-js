@@ -246,6 +246,24 @@ describe('WebSocketFactory', () => {
     test('returns false for isWebSocketSupported', () => {
       expect(WebSocketFactory.isWebSocketSupported()).toBe(false)
     })
+
+    test('throws error with workaround when calling getWebSocketConstructor', () => {
+      // Mock detectEnvironment to return an unsupported environment with workaround
+      const spy = vi.spyOn(WebSocketFactory as any, 'detectEnvironment')
+      spy.mockReturnValue({
+        type: 'unsupported',
+        constructor: null,
+        error: 'Unknown JavaScript runtime without WebSocket support.',
+        workaround: "Ensure you're running in a supported environment (browser, Node.js, Deno) or provide a custom WebSocket implementation."
+      })
+
+      // Now test that getWebSocketConstructor throws with both error and workaround
+      expect(() => {
+        WebSocketFactory.getWebSocketConstructor()
+      }).toThrow(/Unknown JavaScript runtime[\s\S]*Ensure you're running in a supported environment/)
+      
+      spy.mockRestore()
+    })
   })
 
   describe('Error handling', () => {

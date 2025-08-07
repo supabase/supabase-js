@@ -32,6 +32,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "coverage": "vitest run --coverage",
+    "coverage:text": "vitest run --coverage.enabled true --coverage.reporter=text",
     "docs": "typedoc src/index.ts --out docs/v2",
     "docs:json": "typedoc --json docs/v2/spec.json --excludeExternals src/index.ts",
     "check-exports": "attw --pack .",
@@ -45,7 +46,6 @@
   },
   "devDependencies": {
     "@arethetypeswrong/cli": "^0.16.4",
-    "@types/sinon": "^17.0.4",
     "@vitest/coverage-v8": "^3.1.4",
     "eslint": "^9.27.0",
     "esm": "^3.2.25",
@@ -57,7 +57,6 @@
     "nyc": "^15.1.0",
     "prettier": "^2.8.8",
     "semantic-release-plugin-update-version-in-files": "^1.1.0",
-    "sinon": "^18.0.1",
     "typedoc": "^0.27.9",
     "typescript": "^5.8.3",
     "vitest": "^3.1.4",

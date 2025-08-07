@@ -4,3 +4,4 @@ docs/v2
 .env
 .nyc_output
 coverage/
+.claude/settings.local.json

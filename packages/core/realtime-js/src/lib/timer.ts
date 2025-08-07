@@ -22,6 +22,7 @@ export default class Timer {
   reset() {
     this.tries = 0
     clearTimeout(this.timer)
+    this.timer = undefined
   }
 
   // Cancels any previous scheduleTimeout and schedules callback

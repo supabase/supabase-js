@@ -8,6 +8,7 @@ export const VERSION = version
 export const DEFAULT_TIMEOUT = 10000
 
 export const WS_CLOSE_NORMAL = 1000
+export const MAX_PUSH_BUFFER_SIZE = 100
 
 export enum SOCKET_STATES {
   connecting = 0,
