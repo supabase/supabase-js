@@ -150,7 +150,6 @@ jobs:
       - name: Run Deno Tests
         run: |
           cd test/deno
-          rm -f supabase-supabase-js-0.0.0-automated.tgz package-lock.json
           cp ../../supabase-pkg/supabase-supabase-js-0.0.0-automated.tgz .
           npm install
           npm test || npm test
@@ -242,7 +241,6 @@ jobs:
       - name: Run integration tests
         run: |
           cd test/integration/next
-          rm -f supabase-supabase-js-0.0.0-automated.tgz package-lock.json
           cp ../../../supabase-pkg/supabase-supabase-js-0.0.0-automated.tgz .
           npm install --legacy-peer-deps
           npx playwright install
@@ -283,7 +281,6 @@ jobs:
       - name: Install dependencies and run tests
         run: |
           cd test/integration/expo
-          rm -f supabase-supabase-js-0.0.0-automated.tgz package-lock.json
           cp ../../../supabase-pkg/supabase-supabase-js-0.0.0-automated.tgz .
           npm install
           npm test || npm test
@@ -322,7 +319,6 @@ jobs:
       - name: Install dependencies and run tests
         run: |
           cd test/integration/bun
-          rm -f supabase-supabase-js-0.0.0-automated.tgz package-lock.json
           cp ../../../supabase-pkg/supabase-supabase-js-0.0.0-automated.tgz .
           bun install
           bun test
