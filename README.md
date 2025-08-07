@@ -108,14 +108,14 @@ When a Deno version reaches end-of-life and is no longer receiving security upda
 ### Unit Testing
 
 ```bash
-pnpm test
+npm test
 ```
 
 ### Integration Testing
 
 ```bash
 supabase start
-pnpm run test:integration
+npm run test:integration
 ```
 
 ### Expo Testing
