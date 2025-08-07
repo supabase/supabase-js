@@ -42,16 +42,23 @@ export const createClient = <
 
 // Check for Node.js <= 18 deprecation
 function shouldShowDeprecationWarning(): boolean {
-  if (
-    typeof window !== 'undefined' ||
-    typeof process === 'undefined' ||
-    process.version === undefined ||
-    process.version === null
-  ) {
+  // Skip in browser environments
+  if (typeof window !== 'undefined') {
     return false
   }
 
-  const versionMatch = process.version.match(/^v(\d+)\./)
+  // Skip if process is not available (e.g., Edge Runtime)
+  if (typeof process === 'undefined') {
+    return false
+  }
+
+  // Use dynamic property access to avoid Next.js Edge Runtime static analysis warnings
+  const processVersion = (process as any)['version']
+  if (processVersion === undefined || processVersion === null) {
+    return false
+  }
+
+  const versionMatch = processVersion.match(/^v(\d+)\./)
   if (!versionMatch) {
     return false
   }
