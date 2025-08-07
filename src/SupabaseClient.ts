@@ -280,7 +280,7 @@ export default class SupabaseClient<
 
     const { data } = await this.auth.getSession()
 
-    return data.session?.access_token ?? null
+    return data.session?.access_token ?? this.supabaseKey
   }
 
   private _initSupabaseAuthClient(
