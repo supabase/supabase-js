@@ -7,7 +7,8 @@
     "lint": "next lint",
     "test": "playwright test",
     "test:ui": "playwright test --ui",
-    "test:debug": "playwright test --debug"
+    "test:debug": "playwright test --debug",
+    "test:types": "npx tsd --files tests/types/*.test-d.ts"
   },
   "dependencies": {
     "@radix-ui/react-checkbox": "^1.3.1",
@@ -37,6 +38,7 @@
     "postcss": "^8",
     "tailwindcss": "^3.4.1",
     "tailwindcss-animate": "^1.0.7",
+    "tsd": "^0.33.0",
     "typescript": "^5"
   }
 }
