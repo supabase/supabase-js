@@ -1,4 +1,4 @@
-import { expectError, expectType } from 'tsd'
+import { expect, test } from 'tstyche'
 import { PostgrestSingleResponse, createClient } from '../../src/index'
 import { Database, Json } from '../types'
 
@@ -6,23 +6,20 @@ const URL = 'http://localhost:3000'
 const KEY = 'some.fake.key'
 const supabase = createClient<Database>(URL, KEY)
 
-// table invalid type
-{
-  expectError(supabase.from(42))
-  expectError(supabase.from('some_table_that_does_not_exist'))
-}
+test('table invalid type', async () => {
+  expect(supabase.from).type.not.toBeCallableWith(42)
+  expect(supabase.from).type.not.toBeCallableWith('some_table_that_does_not_exist')
+})
 
-// `null` can't be used with `.eq()`
-{
-  supabase.from('users').select().eq('username', 'foo')
-  expectError(supabase.from('users').select().eq('username', null))
+test('`null` cannot be used with `.eq()`', async () => {
+  expect(supabase.from('users').select().eq).type.toBeCallableWith('username', 'foo')
+  expect(supabase.from('users').select().eq).type.not.toBeCallableWith('username', null)
 
   const nullableVar = 'foo' as string | null
-  expectError(supabase.from('users').select().eq('username', nullableVar))
-}
+  expect(supabase.from('users').select().eq).type.not.toBeCallableWith('username', nullableVar)
+})
 
-// can override result type
-{
+test('can override result type', async () => {
   const { data, error } = await supabase
     .from('users')
     .select('*, messages(*)')
@@ -30,9 +27,9 @@ const supabase = createClient<Database>(URL, KEY)
   if (error) {
     throw new Error(error.message)
   }
-  expectType<{ foo: 'bar' }[]>(data[0].messages)
-}
-{
+  expect(data[0].messages).type.toBe<{ foo: 'bar' }[]>()
+})
+test('can override result type', async () => {
   const { data, error } = await supabase
     .from('users')
     .insert({ username: 'foo' })
@@ -41,21 +38,22 @@ const supabase = createClient<Database>(URL, KEY)
   if (error) {
     throw new Error(error.message)
   }
-  expectType<{ foo: 'bar' }[]>(data[0].messages)
-}
+  expect(data[0].messages).type.toBe<{ foo: 'bar' }[]>()
+})
 
-// cannot update non-updatable views
-{
-  expectError(supabase.from('updatable_view').update({ non_updatable_column: 0 }))
-}
+test('cannot update non-updatable views', async () => {
+  expect(supabase.from('updatable_view').update).type.not.toBeCallableWith({
+    non_updatable_column: 0,
+  })
+})
 
-// cannot update non-updatable columns
-{
-  expectError(supabase.from('updatable_view').update({ non_updatable_column: 0 }))
-}
+test('cannot update non-updatable columns', async () => {
+  expect(supabase.from('updatable_view').update).type.not.toBeCallableWith({
+    non_updatable_column: 0,
+  })
+})
 
-// json accessor in select query
-{
+test('json accessor in select query', async () => {
   const { data, error } = await supabase
     .from('users')
     .select('data->foo->bar, data->foo->>baz')
@@ -63,51 +61,44 @@ const supabase = createClient<Database>(URL, KEY)
   if (error) {
     throw new Error(error.message)
   }
-  // getting this w/o the cast, not sure why:
-  // Parameter type Json is declared too wide for argument type Json
-  expectType<Json>(data.bar as Json)
-  expectType<string>(data.baz)
-}
+  expect(data.bar).type.toBe<Json>()
+  expect(data.baz).type.toBe<string>()
+})
 
-// rpc return type
-{
+test('rpc return type', async () => {
   const { data, error } = await supabase.rpc('get_status')
   if (error) {
     throw new Error(error.message)
   }
-  expectType<'ONLINE' | 'OFFLINE'>(data)
-}
+  expect(data).type.toBe<'ONLINE' | 'OFFLINE'>()
+})
 
-// many-to-one relationship
-{
+test('many-to-one relationship', async () => {
   const { data: message, error } = await supabase.from('messages').select('user:users(*)').single()
   if (error) {
     throw new Error(error.message)
   }
-  expectType<Database['public']['Tables']['users']['Row']>(message.user)
-}
+  expect(message.user).type.toBe<Database['public']['Tables']['users']['Row']>()
+})
 
-// one-to-many relationship
-{
+test('one-to-many relationship', async () => {
   const { data: user, error } = await supabase.from('users').select('messages(*)').single()
   if (error) {
     throw new Error(error.message)
   }
-  expectType<Database['public']['Tables']['messages']['Row'][]>(user.messages)
-}
+  expect(user.messages).type.toBe<Database['public']['Tables']['messages']['Row'][]>()
+})
 
-// referencing missing column
-{
+test('referencing missing column', async () => {
   type SelectQueryError<Message extends string> = { error: true } & Message
 
   const res = await supabase.from('users').select('username, dat')
-  expectType<
+  expect(res).type.toBe<
     PostgrestSingleResponse<SelectQueryError<"column 'dat' does not exist on 'users'.">[]>
-  >(res)
-}
+  >()
+})
 
-// one-to-one relationship
-{
+test('one-to-one relationship', async () => {
   const { data: channels, error } = await supabase
     .from('channels')
     .select('channel_details(*)')
@@ -115,24 +106,16 @@ const supabase = createClient<Database>(URL, KEY)
   if (error) {
     throw new Error(error.message)
   }
-  expectType<Database['public']['Tables']['channel_details']['Row'] | null>(
-    channels.channel_details
-  )
-}
+  expect(channels.channel_details).type.toBe<
+    Database['public']['Tables']['channel_details']['Row'] | null
+  >()
+})
 
-// throwOnError in chaining
-{
+test('throwOnError in chaining', async () => {
   const { data: channels, error } = await supabase
     .from('channels')
     .select('channel_details(*)')
     .throwOnError()
-  expectType<typeof error>(null)
-  expectType<
-    {
-      channel_details: {
-        details: string | null
-        id: number
-      } | null
-    }[]
-  >(channels)
-}
+  expect(error).type.toBe<null>()
+  expect(channels).type.toBe<{ channel_details: { details: string | null; id: number } | null }[]>()
+})

@@ -1,5 +1,5 @@
 {
-  "extends": "./tsconfig",
+  "extends": "./tsconfig.json",
   "compilerOptions": {
     "module": "ES2020",
     "outDir": "dist/module"
