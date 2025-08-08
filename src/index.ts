@@ -21,23 +21,25 @@ export * from '@supabase/realtime-js'
 export { default as SupabaseClient } from './SupabaseClient'
 export type { SupabaseClientOptions, QueryResult, QueryData, QueryError } from './lib/types'
 
-/**
- * Creates a new Supabase Client.
- */
-export const createClient = <
+export type CreateClientHelper<AdditionalOptions = {}> = <
   Database = any,
   SchemaName extends string & keyof Database = 'public' extends keyof Database
     ? 'public'
     : string & keyof Database,
-  Schema extends GenericSchema = Database[SchemaName] extends GenericSchema
-    ? Database[SchemaName]
-    : any
+  Schema = Database[SchemaName] extends GenericSchema ? Database[SchemaName] : any
 >(
   supabaseUrl: string,
   supabaseKey: string,
-  options?: SupabaseClientOptions<SchemaName>
-): SupabaseClient<Database, SchemaName, Schema> => {
-  return new SupabaseClient<Database, SchemaName, Schema>(supabaseUrl, supabaseKey, options)
+  options?: SupabaseClientOptions<SchemaName> & AdditionalOptions
+) => SupabaseClient<Database, SchemaName, Schema extends GenericSchema ? Schema : any>
+
+export type GenericSupabaseClient = SupabaseClient<any, any, any>
+
+/**
+ * Creates a new Supabase Client.
+ */
+export const createClient: CreateClientHelper = (supabaseUrl, supabaseKey, options) => {
+  return new SupabaseClient(supabaseUrl, supabaseKey, options)
 }
 
 // Check for Node.js <= 18 deprecation

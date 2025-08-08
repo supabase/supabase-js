@@ -123,3 +123,4 @@ export type GenericSchema = {
 export type QueryResult<T> = T extends PromiseLike<infer U> ? U : never
 export type QueryData<T> = T extends PromiseLike<{ data: infer U }> ? Exclude<U, null> : never
 export type QueryError = PostgrestError
+export type ServicesOptions = {}
