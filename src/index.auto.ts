@@ -8,7 +8,7 @@
  * import { createClient } from '@supabase/supabase-js'
  */
 
-import SupabaseClient from './SupabaseClient'
+import SupabaseClient from './SupabaseClient.auto'
 import type { GenericSchema, SupabaseClientOptions } from './lib/types'
 
 export * from '@supabase/auth-js'
@@ -32,7 +32,7 @@ export {
 // @ts-ignore - TypeScript doesn't understand package.json exports with Node moduleResolution
 export * from '@supabase/realtime-js/auto'
 
-export { default as SupabaseClient } from './SupabaseClient'
+export { default as SupabaseClient } from './SupabaseClient.auto'
 export type { SupabaseClientOptions, QueryResult, QueryData, QueryError } from './lib/types'
 
 /**
