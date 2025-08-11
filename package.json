@@ -18,6 +18,18 @@
   "main": "dist/main/index.js",
   "module": "dist/module/index.js",
   "types": "dist/module/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/module/index.d.ts",
+      "import": "./dist/module/index.js",
+      "require": "./dist/main/index.js"
+    },
+    "./auto": {
+      "types": "./dist/module/index.auto.d.ts",
+      "import": "./dist/module/index.auto.js",
+      "require": "./dist/main/index.auto.js"
+    }
+  },
   "sideEffects": false,
   "repository": "supabase/supabase-js",
   "scripts": {
@@ -54,7 +66,7 @@
     "@supabase/functions-js": "2.4.5",
     "@supabase/node-fetch": "2.6.15",
     "@supabase/postgrest-js": "1.19.4",
-    "@supabase/realtime-js": "2.15.0-next.1",
+    "@supabase/realtime-js": "2.16.0-next.1",
     "@supabase/storage-js": "^2.10.4"
   },
   "devDependencies": {
