@@ -3,6 +3,12 @@
 - **Documentation:** https://supabase.com/docs/reference/javascript/start
 - TypeDoc: https://supabase.github.io/supabase-js/v2/
 
+<div align="center">
+
+[![pkg.pr.new](https://pkg.pr.new/badge/supabase/supabase-js)](https://pkg.pr.new/~/supabase/supabase-js)
+
+</div>
+
 ## Usage
 
 First of all, you need to install the library:
