@@ -21,6 +21,12 @@
   </p>
 </p>
 
+<div align="center">
+
+[![pkg.pr.new](https://pkg.pr.new/badge/supabase/realtime-js)](https://pkg.pr.new/~/supabase/realtime-js)
+
+</div>
+
 # Overview
 
 This client enables you to use the following Supabase Realtime's features:
