@@ -1,5 +1,11 @@
 # `storage-js`
 
+<div align="center">
+
+[![pkg.pr.new](https://pkg.pr.new/badge/supabase/storage-js)](https://pkg.pr.new/~/supabase/storage-js)
+
+</div>
+
 JS Client library to interact with Supabase Storage.
 
 - Documentation: https://supabase.io/docs/reference/javascript/storage-createbucket
