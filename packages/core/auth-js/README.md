@@ -2,6 +2,12 @@
 
 An isomorphic JavaScript client library for the [Supabase Auth](https://github.com/supabase/auth) API.
 
+<div align="center">
+
+[![pkg.pr.new](https://pkg.pr.new/badge/supabase/auth-js)](https://pkg.pr.new/~/supabase/auth-js)
+
+</div>
+
 ## Docs
 
 - Using `auth-js`: https://supabase.com/docs/reference/javascript/auth-signup
