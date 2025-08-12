@@ -1,9 +1,32 @@
-# Add this to the supabase-js repository as .github/workflows/external-test.yml
 name: External Dependency Test
 
 on:
-  repository_dispatch:
-    types: [test-with-preview]
+  workflow_dispatch:
+    inputs:
+      triggering_repo:
+        description: 'Repository that triggered this test'
+        required: true
+        type: string
+      triggering_pr:
+        description: 'PR number from triggering repository'
+        required: true
+        type: string
+      preview_url:
+        description: 'Preview package URL'
+        required: true
+        type: string
+      package_name:
+        description: 'Package name being tested'
+        required: true
+        type: string
+      triggering_sha:
+        description: 'SHA from triggering repository'
+        required: true
+        type: string
+      triggering_ref:
+        description: 'Git ref from triggering repository'
+        required: true
+        type: string
 
 env:
   NODE_VERSION: '20'
@@ -41,7 +64,7 @@ jobs:
       - name: Install preview dependency
         run: |
           # Install the preview package
-          PREVIEW_PACKAGE="${{ github.event.client_payload.preview_url }}"
+          PREVIEW_PACKAGE="${{ inputs.preview_url }}"
           echo "Installing preview package: $PREVIEW_PACKAGE"
           npm install "$PREVIEW_PACKAGE" --no-save
 
@@ -86,7 +109,6 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            const payload = ${{ toJson(github.event.client_payload) }};
             const typeCheckResult = '${{ steps.type-check.outputs.result }}' || 'failure';
             const unitTestResult = '${{ steps.unit-tests.outputs.result }}' || 'failure';
             const integrationTestResult = '${{ steps.integration-tests.outputs.result }}' || 'failure';
@@ -102,7 +124,7 @@ jobs:
 
             **Overall Status: ${overallStatus}**
 
-            Tests triggered by preview release of \`${payload.package_name}\`
+            Tests triggered by preview release of \`${{ inputs.package_name }}\`
 
             | Test Suite | Result |
             |------------|--------|
@@ -110,8 +132,8 @@ jobs:
             | Unit Tests | ${unitTestResult === 'success' ? '✅ PASSED' : '❌ FAILED'} |
             | Integration Tests | ${integrationTestResult === 'success' ? '✅ PASSED' : '❌ FAILED'} |
 
-            **Preview Package:** \`${payload.preview_url}\`
-            **Commit:** [\`${payload.triggering_sha.substring(0, 7)}\`](https://github.com/supabase/${payload.triggering_repo}/commit/${payload.triggering_sha})
+            **Preview Package:** \`${{ inputs.preview_url }}\`
+            **Commit:** [\`${{ inputs.triggering_sha }}\`](https://github.com/supabase/${{ inputs.triggering_repo }}/commit/${{ inputs.triggering_sha }})
 
             ${allPassed ? 
               '🎉 All tests passed! This preview release is compatible with supabase-js.' : 
@@ -127,8 +149,8 @@ jobs:
             try {
               await github.rest.issues.createComment({
                 owner: 'supabase',
-                repo: payload.triggering_repo,
-                issue_number: parseInt(payload.triggering_pr),
+                repo: '${{ inputs.triggering_repo }}',
+                issue_number: parseInt('${{ inputs.triggering_pr }}'),
                 body: body
               });
               console.log('Successfully posted comment to PR');
