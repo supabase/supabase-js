@@ -8,6 +8,7 @@ export interface FetchOptions {
   headers?: {
     [key: string]: string
   }
+  duplex?: string
   noResolveJson?: boolean
 }
 
@@ -56,6 +57,10 @@ const _getRequestParams = (
     params.body = JSON.stringify(body)
   } else {
     params.body = body
+  }
+
+  if (options?.duplex) {
+    params.duplex = options.duplex
   }
 
   return { ...params, ...parameters }
