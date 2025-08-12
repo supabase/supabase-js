@@ -98,11 +98,11 @@ test('creates worker with blob URL when no workerUrl provided', () => {
 
     // Trigger worker creation by calling _onConnOpen
     client._onConnOpen()
-    
+
     // Verify worker was created (workerRef should exist)
     assert.ok(client.workerRef)
     assert.ok(client.workerRef instanceof Worker)
-    
+
     // Verify createObjectURL was called (this exercises the blob creation path)
     expect(global.URL.createObjectURL).toHaveBeenCalled()
   } finally {

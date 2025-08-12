@@ -33,32 +33,6 @@ export interface WebSocketEnvironment {
 }
 
 export class WebSocketFactory {
-  /**
-   * Dynamic require that works in both CJS and ESM environments
-   * Bulletproof against strict ESM environments where require might not be in scope
-   * @private
-   */
-  private static dynamicRequire(moduleId: string): any {
-    try {
-      // Check if we're in a Node.js environment first
-      if (
-        typeof process !== 'undefined' &&
-        process.versions &&
-        process.versions.node
-      ) {
-        // In Node.js, both CJS and ESM support require for dynamic imports
-        // Wrap in try/catch to handle strict ESM environments
-        if (typeof require !== 'undefined') {
-          return require(moduleId)
-        }
-      }
-      return null
-    } catch {
-      // Catches any error from typeof require OR require() call in strict ESM
-      return null
-    }
-  }
-
   private static detectEnvironment(): WebSocketEnvironment {
     if (typeof WebSocket !== 'undefined') {
       return { type: 'native', constructor: WebSocket }
@@ -112,38 +86,30 @@ export class WebSocketFactory {
       process.versions.node
     ) {
       const nodeVersion = parseInt(process.versions.node.split('.')[0])
+
+      // Node.js 22+ should have native WebSocket
       if (nodeVersion >= 22) {
-        try {
-          if (typeof globalThis.WebSocket !== 'undefined') {
-            return { type: 'native', constructor: globalThis.WebSocket }
-          }
-          const undici = this.dynamicRequire('undici')
-          if (undici && undici.WebSocket) {
-            return { type: 'native', constructor: undici.WebSocket }
-          }
-          throw new Error('undici not available')
-        } catch (err) {
-          return {
-            type: 'unsupported',
-            error: `Node.js ${nodeVersion} detected but native WebSocket not found.`,
-            workaround:
-              'Install the "ws" package or check your Node.js installation.',
-          }
+        // Check if native WebSocket is available (should be in Node.js 22+)
+        if (typeof globalThis.WebSocket !== 'undefined') {
+          return { type: 'native', constructor: globalThis.WebSocket }
         }
-      }
-      try {
-        // Use dynamic require to work in both CJS and ESM environments
-        const ws = this.dynamicRequire('ws')
-        if (ws) {
-          return { type: 'ws', constructor: ws.WebSocket ?? ws }
-        }
-        throw new Error('ws package not available')
-      } catch (err) {
+        // If not available, user needs to provide it
         return {
           type: 'unsupported',
-          error: `Node.js ${nodeVersion} detected without WebSocket support.`,
-          workaround: 'Install the "ws" package: npm install ws',
+          error: `Node.js ${nodeVersion} detected but native WebSocket not found.`,
+          workaround:
+            'Provide a WebSocket implementation via the transport option.',
         }
+      }
+
+      // Node.js < 22 doesn't have native WebSocket
+      return {
+        type: 'unsupported',
+        error: `Node.js ${nodeVersion} detected without native WebSocket support.`,
+        workaround:
+          'For Node.js < 22, install "ws" package and provide it via the transport option:\n' +
+          'import ws from "ws"\n' +
+          'new RealtimeClient(url, { transport: ws })',
       }
     }
 

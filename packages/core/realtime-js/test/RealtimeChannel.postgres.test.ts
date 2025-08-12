@@ -599,7 +599,10 @@ describe('PostgreSQL payload transformation', () => {
           table: 'users',
           commit_timestamp: '2023-01-01T00:00:00Z',
           errors: [],
-          columns: [{ name: 'id', type: 'int4' }, { name: 'name', type: 'text' }],
+          columns: [
+            { name: 'id', type: 'int4' },
+            { name: 'name', type: 'text' },
+          ],
           record: { id: 1, name: 'updated' },
           old_record: { id: 1, name: 'original' },
         },
@@ -627,7 +630,10 @@ describe('PostgreSQL payload transformation', () => {
           table: 'users',
           commit_timestamp: '2023-01-01T00:00:00Z',
           errors: [],
-          columns: [{ name: 'id', type: 'int4' }, { name: 'name', type: 'text' }],
+          columns: [
+            { name: 'id', type: 'int4' },
+            { name: 'name', type: 'text' },
+          ],
           old_record: { id: 2, name: 'deleted' },
         },
       },

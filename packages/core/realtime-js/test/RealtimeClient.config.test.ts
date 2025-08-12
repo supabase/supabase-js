@@ -51,9 +51,6 @@ describe('endpointURL', () => {
     })
     // Clear params after construction to test empty params scenario
     socket.params = {}
-    assert.equal(
-      socket.endpointURL(),
-      `${testSetup.url}/websocket?vsn=1.0.0`
-    )
+    assert.equal(socket.endpointURL(), `${testSetup.url}/websocket?vsn=1.0.0`)
   })
 })

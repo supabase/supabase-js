@@ -5,3 +5,4 @@ docs/v2
 .nyc_output
 coverage/
 .claude/settings.local.json
+.DS_Store

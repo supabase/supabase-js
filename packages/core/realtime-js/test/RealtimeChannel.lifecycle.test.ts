@@ -532,7 +532,7 @@ describe('Channel Lifecycle Management', () => {
     test('_rejoin does nothing when channel state is leaving', () => {
       // Set up channel to be in 'leaving' state
       channel.state = CHANNEL_STATES.leaving
-      
+
       // Spy on socket methods to verify no actions are taken
       const leaveOpenTopicSpy = vi.spyOn(testSetup.socket, '_leaveOpenTopic')
       const resendSpy = vi.spyOn(channel.joinPush, 'resend')

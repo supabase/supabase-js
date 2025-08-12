@@ -356,7 +356,11 @@ describe('custom encoder and decoder', () => {
 
     testCases.forEach(({ payload, description }) => {
       testSetup.socket.decode(payload as any, (decoded) => {
-        assert.deepStrictEqual(decoded, {}, `Expected empty object for ${description}`)
+        assert.deepStrictEqual(
+          decoded,
+          {},
+          `Expected empty object for ${description}`
+        )
       })
     })
   })

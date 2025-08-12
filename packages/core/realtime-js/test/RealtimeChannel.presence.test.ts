@@ -136,7 +136,9 @@ describe('Presence message filtering', () => {
 describe('Presence helper methods', () => {
   test('gets presence state', () => {
     channel.presence.state = { u1: [{ id: 1, presence_ref: '1' }] }
-    assert.deepEqual(channel.presenceState(), { u1: [{ id: 1, presence_ref: '1' }] })
+    assert.deepEqual(channel.presenceState(), {
+      u1: [{ id: 1, presence_ref: '1' }],
+    })
   })
 
   test.each([
@@ -144,22 +146,25 @@ describe('Presence helper methods', () => {
       method: 'track',
       payload: { id: 123 },
       expectedCall: { type: 'presence', event: 'track', payload: { id: 123 } },
-      timeout: 1000
+      timeout: 1000,
     },
     {
-      method: 'untrack', 
+      method: 'untrack',
       payload: undefined,
       expectedCall: { type: 'presence', event: 'untrack' },
-      timeout: {}
+      timeout: {},
+    },
+  ])(
+    '$method presence via send method',
+    async ({ method, payload, expectedCall, timeout }) => {
+      setupJoinedChannelWithSocket(channel, testSetup.socket)
+      const sendStub = vi.spyOn(channel, 'send').mockResolvedValue('ok')
+
+      await (payload ? channel[method](payload) : channel[method]())
+
+      expect(sendStub).toHaveBeenCalledWith(expectedCall, timeout)
     }
-  ])('$method presence via send method', async ({ method, payload, expectedCall, timeout }) => {
-    setupJoinedChannelWithSocket(channel, testSetup.socket)
-    const sendStub = vi.spyOn(channel, 'send').mockResolvedValue('ok')
-
-    await (payload ? channel[method](payload) : channel[method]())
-
-    expect(sendStub).toHaveBeenCalledWith(expectedCall, timeout)
-  })
+  )
 })
 
 describe('RealtimePresence static methods', () => {
@@ -197,8 +202,10 @@ describe('RealtimePresence static methods', () => {
         initialState: {},
         newState: { u1: [{ id: 1, presence_ref: '1' }] },
         expectedResult: { u1: [{ id: 1, presence_ref: '1' }] },
-        expectedJoined: { u1: { current: [], newPres: [{ id: 1, presence_ref: '1' }] } },
-        expectedLeft: {}
+        expectedJoined: {
+          u1: { current: [], newPres: [{ id: 1, presence_ref: '1' }] },
+        },
+        expectedLeft: {},
       },
       {
         name: 'should handle onJoin and onLeave callbacks',
@@ -212,7 +219,7 @@ describe('RealtimePresence static methods', () => {
         },
         expectedLeft: {
           u4: { current: [], leftPres: [{ id: 4, presence_ref: '4' }] },
-        }
+        },
       },
       {
         name: 'should only join newly added presences',
@@ -233,30 +240,44 @@ describe('RealtimePresence static methods', () => {
           u3: {
             current: [{ id: 3, presence_ref: '3' }],
             newPres: [{ id: 3, presence_ref: '3.new' }],
-          }
+          },
         },
-        expectedLeft: {}
-      }
-    ])('$name', ({ initialState, newState, expectedResult, expectedJoined, expectedLeft }) => {
-      const stateBefore = clone(initialState)
-      const joined: any = {}
-      const left: any = {}
+        expectedLeft: {},
+      },
+    ])(
+      '$name',
+      ({
+        initialState,
+        newState,
+        expectedResult,
+        expectedJoined,
+        expectedLeft,
+      }) => {
+        const stateBefore = clone(initialState)
+        const joined: any = {}
+        const left: any = {}
 
-      const onJoin = (key: string, current: any, newPres: any) => {
-        joined[key] = { current, newPres }
-      }
-      const onLeave = (key: string, current: any, leftPres: any) => {
-        left[key] = { current, leftPres }
-      }
+        const onJoin = (key: string, current: any, newPres: any) => {
+          joined[key] = { current, newPres }
+        }
+        const onLeave = (key: string, current: any, leftPres: any) => {
+          left[key] = { current, leftPres }
+        }
 
-      // @ts-ignore - accessing static private method for testing
-      const result = RealtimePresence.syncState(initialState, newState, onJoin, onLeave)
-      
-      assert.deepEqual(initialState, stateBefore)
-      assert.deepEqual(result, expectedResult)
-      assert.deepEqual(joined, expectedJoined)
-      assert.deepEqual(left, expectedLeft)
-    })
+        // @ts-ignore - accessing static private method for testing
+        const result = RealtimePresence.syncState(
+          initialState,
+          newState,
+          onJoin,
+          onLeave
+        )
+
+        assert.deepEqual(initialState, stateBefore)
+        assert.deepEqual(result, expectedResult)
+        assert.deepEqual(joined, expectedJoined)
+        assert.deepEqual(left, expectedLeft)
+      }
+    )
   })
 
   describe('syncDiff and utility methods', () => {
@@ -265,16 +286,19 @@ describe('RealtimePresence static methods', () => {
         name: 'sync empty state with joins',
         initialState: {},
         diff: { joins: { u1: [{ id: 1, presence_ref: '1' }] }, leaves: {} },
-        expected: { u1: [{ id: 1, presence_ref: '1' }] }
+        expected: { u1: [{ id: 1, presence_ref: '1' }] },
       },
       {
         name: 'add presence and remove empty key',
         initialState: fixtures.state(),
         diff: { joins: fixtures.joins(), leaves: fixtures.leaves() },
         expected: {
-          u1: [{ id: 1, presence_ref: '1' }, { id: 1, presence_ref: '1.2' }],
-          u3: [{ id: 3, presence_ref: '3' }]
-        }
+          u1: [
+            { id: 1, presence_ref: '1' },
+            { id: 1, presence_ref: '1.2' },
+          ],
+          u3: [{ id: 3, presence_ref: '3' }],
+        },
       },
       {
         name: 'remove presence while leaving key if others exist',
@@ -285,38 +309,59 @@ describe('RealtimePresence static methods', () => {
           ],
         },
         diff: { joins: {}, leaves: { u1: [{ id: 1, presence_ref: '1' }] } },
-        expected: { u1: [{ id: 1, presence_ref: '1.2' }] }
+        expected: { u1: [{ id: 1, presence_ref: '1.2' }] },
       },
       {
         name: 'handle undefined callbacks',
         initialState: { u1: [{ id: 1, presence_ref: '1' }] },
-        diff: { joins: { u2: [{ id: 2, presence_ref: '2' }] }, leaves: { u1: [{ id: 1, presence_ref: '1' }] } },
+        diff: {
+          joins: { u2: [{ id: 2, presence_ref: '2' }] },
+          leaves: { u1: [{ id: 1, presence_ref: '1' }] },
+        },
         expected: { u2: [{ id: 2, presence_ref: '2' }] },
-        useUndefinedCallbacks: true
+        useUndefinedCallbacks: true,
+      },
+    ])(
+      'syncDiff: $name',
+      ({ initialState, diff, expected, useUndefinedCallbacks }) => {
+        // @ts-ignore - accessing static private method for testing
+        const result = useUndefinedCallbacks
+          ? RealtimePresence.syncDiff(initialState, diff, undefined, undefined)
+          : RealtimePresence.syncDiff(initialState, diff)
+
+        assert.deepEqual(result, expected)
       }
-    ])('syncDiff: $name', ({ initialState, diff, expected, useUndefinedCallbacks }) => {
-      // @ts-ignore - accessing static private method for testing
-      const result = useUndefinedCallbacks 
-        ? RealtimePresence.syncDiff(initialState, diff, undefined, undefined)
-        : RealtimePresence.syncDiff(initialState, diff)
-      
-      assert.deepEqual(result, expected)
-    })
+    )
 
     test('static utility methods work correctly', () => {
       // Test map function
-      const state = { u1: [{ id: 1, presence_ref: '1' }], u2: [{ id: 2, presence_ref: '2' }] }
+      const state = {
+        u1: [{ id: 1, presence_ref: '1' }],
+        u2: [{ id: 2, presence_ref: '2' }],
+      }
       // @ts-ignore - accessing static private method for testing
-      const mapResult = RealtimePresence.map(state, (key, presences) => ({ key, count: presences.length }))
-      assert.deepEqual(mapResult, [{ key: 'u1', count: 1 }, { key: 'u2', count: 1 }])
+      const mapResult = RealtimePresence.map(state, (key, presences) => ({
+        key,
+        count: presences.length,
+      }))
+      assert.deepEqual(mapResult, [
+        { key: 'u1', count: 1 },
+        { key: 'u2', count: 1 },
+      ])
 
       // Test transformState function
       const rawState = {
-        u1: { metas: [{ id: 1, phx_ref: '1', phx_ref_prev: 'prev1', name: 'User 1' }] }
+        u1: {
+          metas: [
+            { id: 1, phx_ref: '1', phx_ref_prev: 'prev1', name: 'User 1' },
+          ],
+        },
       }
       // @ts-ignore - accessing static private method for testing
       const transformResult = RealtimePresence.transformState(rawState)
-      assert.deepEqual(transformResult, { u1: [{ id: 1, presence_ref: '1', name: 'User 1' }] })
+      assert.deepEqual(transformResult, {
+        u1: [{ id: 1, presence_ref: '1', name: 'User 1' }],
+      })
       assert.ok(!transformResult.u1[0].hasOwnProperty('phx_ref'))
 
       // Test cloneDeep function
@@ -334,10 +379,12 @@ describe('RealtimePresence static methods', () => {
       // Test custom channel events
       const customChannel = testSetup.socket.channel('custom-presence')
       const customPresence = new RealtimePresence(customChannel, {
-        events: { state: 'custom_state', diff: 'custom_diff' }
+        events: { state: 'custom_state', diff: 'custom_diff' },
       })
-      
-      customChannel._trigger('custom_state', { user1: { metas: [{ id: 1, phx_ref: '1' }] } })
+
+      customChannel._trigger('custom_state', {
+        user1: { metas: [{ id: 1, phx_ref: '1' }] },
+      })
       assert.ok(customPresence.state.user1)
       assert.equal(customPresence.state.user1[0].presence_ref, '1')
 
@@ -345,12 +392,18 @@ describe('RealtimePresence static methods', () => {
       const presence = new RealtimePresence(channel)
 
       // Send diff before state (should be pending)
-      channel._trigger('presence_diff', { joins: {}, leaves: { u2: [{ id: 2, presence_ref: '2' }] } })
+      channel._trigger('presence_diff', {
+        joins: {},
+        leaves: { u2: [{ id: 2, presence_ref: '2' }] },
+      })
       assert.equal(presence.pendingDiffs.length, 1)
 
       // Send state (should apply pending diffs)
       channel.joinPush.ref = 'test-ref'
-      channel._trigger('presence_state', { u1: [{ id: 1, presence_ref: '1' }], u2: [{ id: 2, presence_ref: '2' }] })
+      channel._trigger('presence_state', {
+        u1: [{ id: 1, presence_ref: '1' }],
+        u2: [{ id: 2, presence_ref: '2' }],
+      })
       assert.equal(presence.pendingDiffs.length, 0)
     })
   })
