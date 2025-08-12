@@ -111,3 +111,5 @@ test/*/package-lock.json
 test/integration/*/package-lock.json
 
 .cursor/
+
+deno.lock

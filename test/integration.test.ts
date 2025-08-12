@@ -7,8 +7,22 @@ const SUPABASE_URL = 'http://127.0.0.1:54321'
 const ANON_KEY =
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0'
 
+// For Node.js < 22, we need to provide a WebSocket implementation
+// Node.js 22+ has native WebSocket support
+let wsTransport: any = undefined
+if (typeof WebSocket === 'undefined' && typeof process !== 'undefined' && process.versions?.node) {
+  try {
+    wsTransport = require('ws')
+  } catch (error) {
+    console.warn('WebSocket not available, Realtime features may not work')
+  }
+}
+
 const supabase = createClient(SUPABASE_URL, ANON_KEY, {
-  realtime: { heartbeatIntervalMs: 500 },
+  realtime: {
+    heartbeatIntervalMs: 500,
+    ...(wsTransport && { transport: wsTransport }),
+  },
 })
 
 describe('Supabase Integration Tests', () => {
@@ -315,7 +329,10 @@ describe('Storage API', () => {
   // use service_role key for bypass RLS
   const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || 'use-service-role-key'
   const supabaseWithServiceRole = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
-    realtime: { heartbeatIntervalMs: 500 },
+    realtime: {
+      heartbeatIntervalMs: 500,
+      ...(wsTransport && { transport: wsTransport }),
+    },
   })
 
   test('upload and list file in bucket', async () => {
