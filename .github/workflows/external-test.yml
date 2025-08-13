@@ -106,7 +106,15 @@ jobs:
           app-id: ${{ vars.CROSS_REPO_APP_ID }}
           private-key: ${{ secrets.CROSS_REPO_APP_PRIVATE_KEY }}
           owner: supabase
-          repositories: realtime-js,supabase-js
+          # Generate token specifically for the repo we need to comment on
+          repositories: ${{ inputs.triggering_repo }}
+
+      - name: Debug token permissions
+        run: |
+          echo "Token generated successfully"
+          echo "App ID: ${{ vars.CROSS_REPO_APP_ID }}"
+          echo "Target repositories: realtime-js,supabase-js"
+          echo "Attempting to comment on: supabase/realtime-js#${{ inputs.triggering_pr }}"
 
       - name: Stop Supabase
         if: always()
