@@ -120,94 +120,79 @@ jobs:
         if: always()
         run: supabase stop
 
-      - name: Report results to triggering PR
-        if: always()
-        uses: actions/github-script@v7
+      - name: Find existing test results comment
+        if: always() && inputs.triggering_pr != 'push'
+        uses: peter-evans/find-comment@v3
+        id: find-comment
         with:
-          github-token: ${{ steps.generate-token.outputs.token }}
-          script: |
-            const typeCheckResult = '${{ steps.type-check.outputs.result }}' || 'failure';
-            const unitTestResult = '${{ steps.unit-tests.outputs.result }}' || 'failure';
-            const integrationTestResult = '${{ steps.integration-tests.outputs.result }}' || 'failure';
+          repository: supabase/${{ inputs.triggering_repo }}
+          issue-number: ${{ inputs.triggering_pr }}
+          comment-author: 'github-actions[bot]'
+          body-includes: '<!-- supabase-js-test-results -->'
+          token: ${{ steps.generate-token.outputs.token }}
 
-            const allPassed = typeCheckResult === 'success' && 
-                             unitTestResult === 'success' && 
-                             integrationTestResult === 'success';
+      - name: Prepare test results body
+        if: always()
+        id: prepare-body
+        run: |
+          TYPE_CHECK="${{ steps.type-check.outputs.result }}"
+          UNIT_TEST="${{ steps.unit-tests.outputs.result }}"
+          INTEGRATION_TEST="${{ steps.integration-tests.outputs.result }}"
 
-            const statusIcon = allPassed ? '✅' : '❌';
-            const overallStatus = allPassed ? 'PASSED' : 'FAILED';
+          TYPE_CHECK=${TYPE_CHECK:-failure}
+          UNIT_TEST=${UNIT_TEST:-failure}
+          INTEGRATION_TEST=${INTEGRATION_TEST:-failure}
 
-            // Unique identifier for this bot's comments
-            const commentIdentifier = '<!-- supabase-js-test-results -->';
+          if [[ "$TYPE_CHECK" == "success" && "$UNIT_TEST" == "success" && "$INTEGRATION_TEST" == "success" ]]; then
+            STATUS_ICON="✅"
+            OVERALL_STATUS="PASSED"
+            STATUS_MESSAGE="🎉 All tests passed! This preview release is compatible with supabase-js."
+          else
+            STATUS_ICON="❌"
+            OVERALL_STATUS="FAILED"
+            STATUS_MESSAGE="⚠️ Some tests failed. Please review the failing tests before merging."
+          fi
 
-            const body = `${commentIdentifier}
-            ## ${statusIcon} supabase-js CI Test Results
+          TYPE_CHECK_DISPLAY=$([ "$TYPE_CHECK" == "success" ] && echo "✅ PASSED" || echo "❌ FAILED")
+          UNIT_TEST_DISPLAY=$([ "$UNIT_TEST" == "success" ] && echo "✅ PASSED" || echo "❌ FAILED")
+          INTEGRATION_TEST_DISPLAY=$([ "$INTEGRATION_TEST" == "success" ] && echo "✅ PASSED" || echo "❌ FAILED")
 
-            **Overall Status: ${overallStatus}**
+          cat << EOF > comment-body.md
+          <!-- supabase-js-test-results -->
+          ## ${STATUS_ICON} supabase-js CI Test Results
 
-            Tests triggered by preview release of \`${{ inputs.package_name }}\`
+          **Overall Status: ${OVERALL_STATUS}**
 
-            | Test Suite | Result |
-            |------------|--------|
-            | Type Check | ${typeCheckResult === 'success' ? '✅ PASSED' : '❌ FAILED'} |
-            | Unit Tests | ${unitTestResult === 'success' ? '✅ PASSED' : '❌ FAILED'} |
-            | Integration Tests | ${integrationTestResult === 'success' ? '✅ PASSED' : '❌ FAILED'} |
+          Tests triggered by preview release of \`${{ inputs.package_name }}\`
 
-            **Preview Package:** \`${{ inputs.preview_url }}\`
-            **Commit:** [\`${{ inputs.triggering_sha }}\`](https://github.com/supabase/${{ inputs.triggering_repo }}/commit/${{ inputs.triggering_sha }})
+          | Test Suite | Result |
+          |------------|--------|
+          | Type Check | ${TYPE_CHECK_DISPLAY} |
+          | Unit Tests | ${UNIT_TEST_DISPLAY} |
+          | Integration Tests | ${INTEGRATION_TEST_DISPLAY} |
 
-            ${allPassed ? 
-              '🎉 All tests passed! This preview release is compatible with supabase-js.' : 
-              '⚠️ Some tests failed. Please review the failing tests before merging.'}
+          **Preview Package:** \`${{ inputs.preview_url }}\`
+          **Commit:** [\`${{ inputs.triggering_sha }}\`](https://github.com/supabase/${{ inputs.triggering_repo }}/commit/${{ inputs.triggering_sha }})
 
-            <details>
-            <summary>View workflow run</summary>
+          ${STATUS_MESSAGE}
 
-            [View full test results](https://github.com/supabase/supabase-js/actions/runs/${context.runId})
-            </details>
+          <details>
+          <summary>View workflow run</summary>
 
-            ---
-            <sub>Last updated: ${new Date().toISOString()}</sub>`;
+          [View full test results](https://github.com/supabase/supabase-js/actions/runs/${{ github.run_id }})
+          </details>
 
-            try {
-              // First, try to find an existing comment from this bot
-              const { data: comments } = await github.rest.issues.listComments({
-                owner: 'supabase',
-                repo: '${{ inputs.triggering_repo }}',
-                issue_number: parseInt('${{ inputs.triggering_pr }}')
-              });
+          ---
+          <sub>Last updated: $(date -u +"%Y-%m-%dT%H:%M:%SZ")</sub>
+          EOF
 
-              // Look for a comment with our identifier
-              const botComment = comments.find(comment => 
-                comment.body && comment.body.includes(commentIdentifier)
-              );
-
-              if (botComment) {
-                // Update existing comment
-                await github.rest.issues.updateComment({
-                  owner: 'supabase',
-                  repo: '${{ inputs.triggering_repo }}',
-                  comment_id: botComment.id,
-                  body: body
-                });
-                console.log('Successfully updated existing comment');
-              } else {
-                // Create new comment if none exists
-                await github.rest.issues.createComment({
-                  owner: 'supabase',
-                  repo: '${{ inputs.triggering_repo }}',
-                  issue_number: parseInt('${{ inputs.triggering_pr }}'),
-                  body: body
-                });
-                console.log('Successfully posted new comment to PR');
-              }
-            } catch (error) {
-              console.log('Failed to post/update comment:', error.message);
-              // Still log the results for manual review
-              console.log('Test Results Summary:', {
-                typeCheck: typeCheckResult,
-                unitTests: unitTestResult,
-                integrationTests: integrationTestResult,
-                overallStatus: overallStatus
-              });
-            }
+      - name: Report results to triggering PR
+        if: always() && inputs.triggering_pr != 'push'
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          repository: supabase/${{ inputs.triggering_repo }}
+          comment-id: ${{ steps.find-comment.outputs.comment-id }}
+          issue-number: ${{ inputs.triggering_pr }}
+          body-path: comment-body.md
+          edit-mode: replace
+          token: ${{ steps.generate-token.outputs.token }}
