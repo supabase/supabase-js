@@ -23,10 +23,6 @@ on:
         description: 'SHA from triggering repository'
         required: true
         type: string
-      triggering_ref:
-        description: 'Git ref from triggering repository'
-        required: true
-        type: string
 
 env:
   NODE_VERSION: '20'
@@ -35,6 +31,7 @@ jobs:
   test-with-preview-dependency:
     name: Test supabase-js with preview dependency
     runs-on: ubuntu-latest
+    timeout-minutes: 30 # Overall job timeout
     steps:
       - name: Generate GitHub App token
         id: generate-token
@@ -131,6 +128,7 @@ jobs:
       - name: Run Type Check
         id: type-check
         continue-on-error: true
+        timeout-minutes: 5
         run: |
           if npm run test:types; then
             echo "result=success" >> $GITHUB_OUTPUT
@@ -143,6 +141,7 @@ jobs:
           version: latest
 
       - name: Start Supabase
+        timeout-minutes: 10
         run: supabase start
 
       - name: Install jq for JSON parsing
@@ -151,6 +150,7 @@ jobs:
       - name: Run Unit Tests
         id: unit-tests
         continue-on-error: true
+        timeout-minutes: 10
         run: |
           if npm run test:coverage; then
             echo "result=success" >> $GITHUB_OUTPUT
@@ -160,6 +160,7 @@ jobs:
       - name: Run Integration Tests
         id: integration-tests
         continue-on-error: true
+        timeout-minutes: 10
         run: |
           export SUPABASE_SERVICE_ROLE_KEY="$(supabase status --output json | jq -r '.SERVICE_ROLE_KEY')"
           if npm run test:integration; then
