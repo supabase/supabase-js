@@ -49,14 +49,12 @@ jobs:
         run: |
           npm ci
           npm run build
-
       - name: Install preview dependency
         run: |
           # Install the preview package
           PREVIEW_PACKAGE="${{ inputs.preview_url }}"
           echo "Installing preview package: $PREVIEW_PACKAGE"
           npm install "$PREVIEW_PACKAGE" --no-save
-
       - name: Run Type Check
         id: type-check
         continue-on-error: true
@@ -66,7 +64,6 @@ jobs:
           else
             echo "result=failure" >> $GITHUB_OUTPUT
           fi
-
       - name: Setup Supabase CLI
         uses: supabase/setup-cli@v1
         with:
@@ -87,7 +84,6 @@ jobs:
           else
             echo "result=failure" >> $GITHUB_OUTPUT
           fi
-
       - name: Run Integration Tests
         id: integration-tests
         continue-on-error: true
@@ -98,7 +94,6 @@ jobs:
           else
             echo "result=failure" >> $GITHUB_OUTPUT
           fi
-
       - name: Generate GitHub App token
         id: generate-token
         uses: actions/create-github-app-token@v1
@@ -115,82 +110,81 @@ jobs:
           echo "App ID: ${{ vars.CROSS_REPO_APP_ID }}"
           echo "Target repositories: realtime-js,supabase-js"
           echo "Attempting to comment on: supabase/realtime-js#${{ inputs.triggering_pr }}"
-
       - name: Stop Supabase
         if: always()
         run: supabase stop
 
-      - name: Find existing test results comment
-        if: always() && inputs.triggering_pr != 'push'
-        uses: peter-evans/find-comment@v3
-        id: find-comment
-        with:
-          repository: supabase/${{ inputs.triggering_repo }}
-          issue-number: ${{ inputs.triggering_pr }}
-          comment-author: 'github-actions[bot]'
-          body-includes: '<!-- supabase-js-test-results -->'
-          token: ${{ steps.generate-token.outputs.token }}
-
-      - name: Prepare test results body
-        if: always()
-        id: prepare-body
-        run: |
-          TYPE_CHECK="${{ steps.type-check.outputs.result }}"
-          UNIT_TEST="${{ steps.unit-tests.outputs.result }}"
-          INTEGRATION_TEST="${{ steps.integration-tests.outputs.result }}"
-
-          TYPE_CHECK=${TYPE_CHECK:-failure}
-          UNIT_TEST=${UNIT_TEST:-failure}
-          INTEGRATION_TEST=${INTEGRATION_TEST:-failure}
-
-          if [[ "$TYPE_CHECK" == "success" && "$UNIT_TEST" == "success" && "$INTEGRATION_TEST" == "success" ]]; then
-            STATUS_ICON="✅"
-            OVERALL_STATUS="PASSED"
-            STATUS_MESSAGE="🎉 All tests passed! This preview release is compatible with supabase-js."
-          else
-            STATUS_ICON="❌"
-            OVERALL_STATUS="FAILED"
-            STATUS_MESSAGE="⚠️ Some tests failed. Please review the failing tests before merging."
-          fi
-
-          TYPE_CHECK_DISPLAY=$([ "$TYPE_CHECK" == "success" ] && echo "✅ PASSED" || echo "❌ FAILED")
-          UNIT_TEST_DISPLAY=$([ "$UNIT_TEST" == "success" ] && echo "✅ PASSED" || echo "❌ FAILED")
-          INTEGRATION_TEST_DISPLAY=$([ "$INTEGRATION_TEST" == "success" ] && echo "✅ PASSED" || echo "❌ FAILED")
-
-          cat << EOF > comment-body.md
-          <!-- supabase-js-test-results -->
-          ## ${STATUS_ICON} supabase-js CI Test Results
-
-          **Overall Status: ${OVERALL_STATUS}**
-
-          Tests triggered by preview release of \`${{ inputs.package_name }}\`
-
-          | Test Suite | Result |
-          |------------|--------|
-          | Type Check | ${TYPE_CHECK_DISPLAY} |
-          | Unit Tests | ${UNIT_TEST_DISPLAY} |
-          | Integration Tests | ${INTEGRATION_TEST_DISPLAY} |
-
-          **Preview Package:** \`${{ inputs.preview_url }}\`
-          **Commit:** [\`${{ inputs.triggering_sha }}\`](https://github.com/supabase/${{ inputs.triggering_repo }}/commit/${{ inputs.triggering_sha }})
-
-          ${STATUS_MESSAGE}
-
-          <details>
-          <summary>View workflow run</summary>
-
-          [View full test results](https://github.com/supabase/supabase-js/actions/runs/${{ github.run_id }})
-          </details>
-
-          EOF
-
       - name: Report results to triggering PR
-        if: always() && inputs.triggering_pr != 'push'
-        uses: peter-evans/create-or-update-comment@v4
+        if: always()
+        uses: actions/github-script@v7
         with:
-          repository: supabase/${{ inputs.triggering_repo }}
-          comment-id: ${{ steps.find-comment.outputs.comment-id }}
-          issue-number: ${{ inputs.triggering_pr }}
-          body-path: comment-body.md
-          edit-mode: replace
-          token: ${{ steps.generate-token.outputs.token }}
+          github-token: ${{ steps.generate-token.outputs.token }}
+          script: |
+            const typeCheckResult = '${{ steps.type-check.outputs.result }}' || 'failure';
+            const unitTestResult = '${{ steps.unit-tests.outputs.result }}' || 'failure';
+            const integrationTestResult = '${{ steps.integration-tests.outputs.result }}' || 'failure';
+            const allPassed = typeCheckResult === 'success' && 
+                             unitTestResult === 'success' && 
+                             integrationTestResult === 'success';
+            const statusIcon = allPassed ? '✅' : '❌';
+            const overallStatus = allPassed ? 'PASSED' : 'FAILED';
+            // Unique identifier for this bot's comments
+            const commentIdentifier = '<!-- supabase-js-test-results -->';
+            const body = `${commentIdentifier}
+            ## ${statusIcon} supabase-js CI Test Results
+            **Overall Status: ${overallStatus}**
+            Tests triggered by preview release of \`${{ inputs.package_name }}\`
+            | Test Suite | Result |
+            |------------|--------|
+            | Type Check | ${typeCheckResult === 'success' ? '✅ PASSED' : '❌ FAILED'} |
+            | Unit Tests | ${unitTestResult === 'success' ? '✅ PASSED' : '❌ FAILED'} |
+            | Integration Tests | ${integrationTestResult === 'success' ? '✅ PASSED' : '❌ FAILED'} |
+            **Preview Package:** \`${{ inputs.preview_url }}\`
+            **Commit:** [\`${{ inputs.triggering_sha }}\`](https://github.com/supabase/${{ inputs.triggering_repo }}/commit/${{ inputs.triggering_sha }})
+            ${allPassed ? 
+              '🎉 All tests passed! This preview release is compatible with supabase-js.' : 
+              '⚠️ Some tests failed. Please review the failing tests before merging.'}
+            <details>
+            <summary>View workflow run</summary>
+            [View full test results](https://github.com/supabase/supabase-js/actions/runs/${context.runId})
+            </details>`;
+            try {
+              // First, try to find an existing comment from this bot
+              const { data: comments } = await github.rest.issues.listComments({
+                owner: 'supabase',
+                repo: '${{ inputs.triggering_repo }}',
+                issue_number: parseInt('${{ inputs.triggering_pr }}')
+              });
+              // Look for a comment with our identifier
+              const botComment = comments.find(comment => 
+                comment.body && comment.body.includes(commentIdentifier)
+              );
+              if (botComment) {
+                // Update existing comment
+                await github.rest.issues.updateComment({
+                  owner: 'supabase',
+                  repo: '${{ inputs.triggering_repo }}',
+                  comment_id: botComment.id,
+                  body: body
+                });
+                console.log('Successfully updated existing comment');
+              } else {
+                // Create new comment if none exists
+                await github.rest.issues.createComment({
+                  owner: 'supabase',
+                  repo: '${{ inputs.triggering_repo }}',
+                  issue_number: parseInt('${{ inputs.triggering_pr }}'),
+                  body: body
+                });
+                console.log('Successfully posted new comment to PR');
+              }
+            } catch (error) {
+              console.log('Failed to post/update comment:', error.message);
+              // Still log the results for manual review
+              console.log('Test Results Summary:', {
+                typeCheck: typeCheckResult,
+                unitTests: unitTestResult,
+                integrationTests: integrationTestResult,
+                overallStatus: overallStatus
+              });
+            }
