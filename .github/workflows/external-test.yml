@@ -182,8 +182,6 @@ jobs:
           [View full test results](https://github.com/supabase/supabase-js/actions/runs/${{ github.run_id }})
           </details>
 
-          ---
-          <sub>Last updated: $(date -u +"%Y-%m-%dT%H:%M:%SZ")</sub>
           EOF
 
       - name: Report results to triggering PR
