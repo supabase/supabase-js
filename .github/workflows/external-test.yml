@@ -45,17 +45,6 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
 
-      - name: Setup Supabase CLI
-        uses: supabase/setup-cli@v1
-        with:
-          version: latest
-
-      - name: Start Supabase
-        run: supabase start
-
-      - name: Install jq for JSON parsing
-        run: sudo apt-get update && sudo apt-get install -y jq
-
       - name: Install dependencies and build supabase-js
         run: |
           npm ci
@@ -77,6 +66,17 @@ jobs:
           else
             echo "result=failure" >> $GITHUB_OUTPUT
           fi
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Start Supabase
+        run: supabase start
+
+      - name: Install jq for JSON parsing
+        run: sudo apt-get update && sudo apt-get install -y jq
 
       - name: Run Unit Tests
         id: unit-tests
@@ -137,7 +137,11 @@ jobs:
             const statusIcon = allPassed ? '✅' : '❌';
             const overallStatus = allPassed ? 'PASSED' : 'FAILED';
 
-            const body = `## ${statusIcon} supabase-js CI Test Results
+            // Unique identifier for this bot's comments
+            const commentIdentifier = '<!-- supabase-js-test-results -->';
+
+            const body = `${commentIdentifier}
+            ## ${statusIcon} supabase-js CI Test Results
 
             **Overall Status: ${overallStatus}**
 
@@ -160,19 +164,45 @@ jobs:
             <summary>View workflow run</summary>
 
             [View full test results](https://github.com/supabase/supabase-js/actions/runs/${context.runId})
-            </details>`;
+            </details>
 
-            // Post comment to the triggering PR
+            ---
+            <sub>Last updated: ${new Date().toISOString()}</sub>`;
+
             try {
-              await github.rest.issues.createComment({
+              // First, try to find an existing comment from this bot
+              const { data: comments } = await github.rest.issues.listComments({
                 owner: 'supabase',
                 repo: '${{ inputs.triggering_repo }}',
-                issue_number: parseInt('${{ inputs.triggering_pr }}'),
-                body: body
+                issue_number: parseInt('${{ inputs.triggering_pr }}')
               });
-              console.log('Successfully posted comment to PR');
+
+              // Look for a comment with our identifier
+              const botComment = comments.find(comment => 
+                comment.body && comment.body.includes(commentIdentifier)
+              );
+
+              if (botComment) {
+                // Update existing comment
+                await github.rest.issues.updateComment({
+                  owner: 'supabase',
+                  repo: '${{ inputs.triggering_repo }}',
+                  comment_id: botComment.id,
+                  body: body
+                });
+                console.log('Successfully updated existing comment');
+              } else {
+                // Create new comment if none exists
+                await github.rest.issues.createComment({
+                  owner: 'supabase',
+                  repo: '${{ inputs.triggering_repo }}',
+                  issue_number: parseInt('${{ inputs.triggering_pr }}'),
+                  body: body
+                });
+                console.log('Successfully posted new comment to PR');
+              }
             } catch (error) {
-              console.log('Failed to post comment:', error.message);
+              console.log('Failed to post/update comment:', error.message);
               // Still log the results for manual review
               console.log('Test Results Summary:', {
                 typeCheck: typeCheckResult,
