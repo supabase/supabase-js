@@ -1,0 +1,250 @@
+name: External Dependency Test
+
+on:
+  workflow_dispatch:
+    inputs:
+      triggering_repo:
+        description: 'Repository that triggered this test'
+        required: true
+        type: string
+      triggering_pr:
+        description: 'PR number from triggering repository'
+        required: true
+        type: string
+      preview_url:
+        description: 'Preview package URL'
+        required: true
+        type: string
+      package_name:
+        description: 'Package name being tested'
+        required: true
+        type: string
+      triggering_sha:
+        description: 'SHA from triggering repository'
+        required: true
+        type: string
+
+env:
+  NODE_VERSION: '20'
+
+jobs:
+  test-with-preview-dependency:
+    name: Test supabase-js with preview dependency
+    runs-on: ubuntu-latest
+    timeout-minutes: 30 # Overall job timeout
+    steps:
+      - name: Generate GitHub App token
+        id: generate-token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ vars.CROSS_REPO_APP_ID }}
+          private-key: ${{ secrets.CROSS_REPO_APP_PRIVATE_KEY }}
+          owner: supabase
+          repositories: ${{ inputs.triggering_repo }}
+
+      - name: Post initial comment
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ steps.generate-token.outputs.token }}
+          script: |
+            // Unique identifier for this bot's comments
+            const commentIdentifier = '<!-- supabase-js-test-results -->';
+
+            const body = `${commentIdentifier}
+            ## 🔄 supabase-js CI Tests Running...
+
+            **Status:** Tests in progress
+
+            Tests triggered by preview release of \`${{ inputs.package_name }}\`
+
+            | Test Suite | Status |
+            |------------|--------|
+            | Type Check | ⏳ Running... |
+            | Unit Tests | ⏳ Pending... |
+            | Integration Tests | ⏳ Pending... |
+
+            **Preview Package:** \`${{ inputs.preview_url }}\`
+            **Commit:** [\`${{ inputs.triggering_sha }}\`](https://github.com/supabase/${{ inputs.triggering_repo }}/commit/${{ inputs.triggering_sha }})
+
+            [View workflow run](https://github.com/supabase/supabase-js/actions/runs/${{ github.run_id }})
+
+            _This comment will update when tests complete._`;
+
+            try {
+              // First, try to find an existing comment from this bot
+              const { data: comments } = await github.rest.issues.listComments({
+                owner: 'supabase',
+                repo: '${{ inputs.triggering_repo }}',
+                issue_number: parseInt('${{ inputs.triggering_pr }}')
+              });
+              
+              // Look for a comment with our identifier
+              const botComment = comments.find(comment => 
+                comment.body && comment.body.includes(commentIdentifier)
+              );
+              
+              if (botComment) {
+                // Update existing comment
+                await github.rest.issues.updateComment({
+                  owner: 'supabase',
+                  repo: '${{ inputs.triggering_repo }}',
+                  comment_id: botComment.id,
+                  body: body
+                });
+                console.log('Successfully updated existing comment with running status');
+              } else {
+                // Create new comment if none exists
+                await github.rest.issues.createComment({
+                  owner: 'supabase',
+                  repo: '${{ inputs.triggering_repo }}',
+                  issue_number: parseInt('${{ inputs.triggering_pr }}'),
+                  body: body
+                });
+                console.log('Successfully posted new comment with running status');
+              }
+            } catch (error) {
+              console.log('Failed to post/update initial comment:', error.message);
+            }
+
+      - name: Checkout supabase-js
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies and build supabase-js
+        run: |
+          npm ci
+          npm run build
+      - name: Install preview dependency
+        run: |
+          # Install the preview package
+          PREVIEW_PACKAGE="${{ inputs.preview_url }}"
+          echo "Installing preview package: $PREVIEW_PACKAGE"
+          npm install "$PREVIEW_PACKAGE" --no-save
+      - name: Run Type Check
+        id: type-check
+        continue-on-error: true
+        timeout-minutes: 5
+        run: |
+          if npm run test:types; then
+            echo "result=success" >> $GITHUB_OUTPUT
+          else
+            echo "result=failure" >> $GITHUB_OUTPUT
+          fi
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Start Supabase
+        timeout-minutes: 10
+        run: supabase start
+
+      - name: Install jq for JSON parsing
+        run: sudo apt-get update && sudo apt-get install -y jq
+
+      - name: Run Unit Tests
+        id: unit-tests
+        continue-on-error: true
+        timeout-minutes: 10
+        run: |
+          if npm run test:coverage; then
+            echo "result=success" >> $GITHUB_OUTPUT
+          else
+            echo "result=failure" >> $GITHUB_OUTPUT
+          fi
+      - name: Run Integration Tests
+        id: integration-tests
+        continue-on-error: true
+        timeout-minutes: 10
+        run: |
+          export SUPABASE_SERVICE_ROLE_KEY="$(supabase status --output json | jq -r '.SERVICE_ROLE_KEY')"
+          if npm run test:integration; then
+            echo "result=success" >> $GITHUB_OUTPUT
+          else
+            echo "result=failure" >> $GITHUB_OUTPUT
+          fi
+      - name: Stop Supabase
+        if: always()
+        run: supabase stop
+
+      - name: Report results to triggering PR
+        if: always()
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ steps.generate-token.outputs.token }}
+          script: |
+            const typeCheckResult = '${{ steps.type-check.outputs.result }}' || 'failure';
+            const unitTestResult = '${{ steps.unit-tests.outputs.result }}' || 'failure';
+            const integrationTestResult = '${{ steps.integration-tests.outputs.result }}' || 'failure';
+            const allPassed = typeCheckResult === 'success' && 
+                             unitTestResult === 'success' && 
+                             integrationTestResult === 'success';
+            const statusIcon = allPassed ? '✅' : '❌';
+            const overallStatus = allPassed ? 'PASSED' : 'FAILED';
+
+            // Unique identifier for this bot's comments (using HTML comment for cleaner look)
+            const commentIdentifier = '<!-- supabase-js-test-results -->';
+
+            const body = `${commentIdentifier}
+            ## ${statusIcon} supabase-js CI Test Results
+            **Overall Status: ${overallStatus}**
+            Tests triggered by preview release of \`${{ inputs.package_name }}\`
+            | Test Suite | Result |
+            |------------|--------|
+            | Type Check | ${typeCheckResult === 'success' ? '✅ PASSED' : '❌ FAILED'} |
+            | Unit Tests | ${unitTestResult === 'success' ? '✅ PASSED' : '❌ FAILED'} |
+            | Integration Tests | ${integrationTestResult === 'success' ? '✅ PASSED' : '❌ FAILED'} |
+            **Preview Package:** \`${{ inputs.preview_url }}\`
+            **Commit:** [\`${{ inputs.triggering_sha }}\`](https://github.com/supabase/${{ inputs.triggering_repo }}/commit/${{ inputs.triggering_sha }})
+            ${allPassed ? 
+              '🎉 All tests passed! This preview release is compatible with supabase-js.' : 
+              '⚠️ Some tests failed. Please review the failing tests before merging.'}
+            <details>
+            <summary>View workflow run</summary>
+            <a href="https://github.com/supabase/supabase-js/actions/runs/${{ github.run_id }}">View full test results</a>
+            </details>`;
+            try {
+              // First, try to find an existing comment from this bot
+              const { data: comments } = await github.rest.issues.listComments({
+                owner: 'supabase',
+                repo: '${{ inputs.triggering_repo }}',
+                issue_number: parseInt('${{ inputs.triggering_pr }}')
+              });
+              // Look for a comment with our identifier
+              const botComment = comments.find(comment => 
+                comment.body && comment.body.includes(commentIdentifier)
+              );
+              if (botComment) {
+                // Update existing comment
+                await github.rest.issues.updateComment({
+                  owner: 'supabase',
+                  repo: '${{ inputs.triggering_repo }}',
+                  comment_id: botComment.id,
+                  body: body
+                });
+                console.log('Successfully updated existing comment');
+              } else {
+                // Create new comment if none exists
+                await github.rest.issues.createComment({
+                  owner: 'supabase',
+                  repo: '${{ inputs.triggering_repo }}',
+                  issue_number: parseInt('${{ inputs.triggering_pr }}'),
+                  body: body
+                });
+                console.log('Successfully posted new comment to PR');
+              }
+            } catch (error) {
+              console.log('Failed to post/update comment:', error.message);
+              // Still log the results for manual review
+              console.log('Test Results Summary:', {
+                typeCheck: typeCheckResult,
+                unitTests: unitTestResult,
+                integrationTests: integrationTestResult,
+                overallStatus: overallStatus
+              });
+            }
