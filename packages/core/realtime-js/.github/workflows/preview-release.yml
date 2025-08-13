@@ -27,8 +27,9 @@ on:
       - 'package-lock.json'
       - 'tsconfig.json'
   
-  # PR triggers - only when labeled  
-  pull_request:
+  # PR triggers - only when labeled
+  # Using pull_request_target to access secrets when PRs come from forks
+  pull_request_target:
     types: [labeled, synchronize]
 
 jobs:
@@ -39,7 +40,7 @@ jobs:
       (
         github.event_name == 'workflow_dispatch' ||
         github.event_name == 'push' ||
-        (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'trigger: preview'))
+        (github.event_name == 'pull_request_target' && contains(github.event.pull_request.labels.*.name, 'trigger: preview'))
       )
     runs-on: ubuntu-latest
     outputs:
@@ -48,6 +49,9 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          # For pull_request_target, we need to explicitly checkout the PR's head
+          ref: ${{ github.event_name == 'pull_request_target' && github.event.pull_request.head.sha || github.sha }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -123,7 +127,7 @@ jobs:
                   triggering_pr: prNumber.toString(),
                   preview_url: '${{ needs.preview.outputs.preview-url }}',
                   package_name: '${{ needs.preview.outputs.package-name }}',
-                  triggering_sha: context.eventName === 'pull_request' ? context.payload.pull_request.head.sha : context.sha
+                  triggering_sha: context.eventName === 'pull_request_target' ? context.payload.pull_request.head.sha : context.sha
                 }
               });
               
@@ -135,7 +139,7 @@ jobs:
             }
 
       - name: Find existing preview comment
-        if: github.event_name == 'pull_request'
+        if: github.event_name == 'pull_request_target'
         uses: peter-evans/find-comment@v3
         id: find-comment
         with:
@@ -145,7 +149,7 @@ jobs:
           body-includes: '<!-- realtime-js-preview-status -->'
 
       - name: Create or update preview comment
-        if: github.event_name == 'pull_request'
+        if: github.event_name == 'pull_request_target'
         uses: peter-evans/create-or-update-comment@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
