@@ -205,7 +205,7 @@ jobs:
               '⚠️ Some tests failed. Please review the failing tests before merging.'}
             <details>
             <summary>View workflow run</summary>
-            [View full test results](https://github.com/supabase/supabase-js/actions/runs/${{ github.run_id }})
+            <a href="https://github.com/supabase/supabase-js/actions/runs/${{ github.run_id }}">View full test results</a>
             </details>`;
             try {
               // First, try to find an existing comment from this bot
