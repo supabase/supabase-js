@@ -36,6 +36,79 @@ jobs:
     name: Test supabase-js with preview dependency
     runs-on: ubuntu-latest
     steps:
+      - name: Generate GitHub App token
+        id: generate-token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ vars.CROSS_REPO_APP_ID }}
+          private-key: ${{ secrets.CROSS_REPO_APP_PRIVATE_KEY }}
+          owner: supabase
+          repositories: ${{ inputs.triggering_repo }}
+
+      - name: Post initial comment
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ steps.generate-token.outputs.token }}
+          script: |
+            // Unique identifier for this bot's comments
+            const commentIdentifier = '<!-- supabase-js-test-results -->';
+
+            const body = `${commentIdentifier}
+            ## 🔄 supabase-js CI Tests Running...
+
+            **Status:** Tests in progress
+
+            Tests triggered by preview release of \`${{ inputs.package_name }}\`
+
+            | Test Suite | Status |
+            |------------|--------|
+            | Type Check | ⏳ Running... |
+            | Unit Tests | ⏳ Pending... |
+            | Integration Tests | ⏳ Pending... |
+
+            **Preview Package:** \`${{ inputs.preview_url }}\`
+            **Commit:** [\`${{ inputs.triggering_sha }}\`](https://github.com/supabase/${{ inputs.triggering_repo }}/commit/${{ inputs.triggering_sha }})
+
+            [View workflow run](https://github.com/supabase/supabase-js/actions/runs/${{ github.run_id }})
+
+            _This comment will update when tests complete._`;
+
+            try {
+              // First, try to find an existing comment from this bot
+              const { data: comments } = await github.rest.issues.listComments({
+                owner: 'supabase',
+                repo: '${{ inputs.triggering_repo }}',
+                issue_number: parseInt('${{ inputs.triggering_pr }}')
+              });
+              
+              // Look for a comment with our identifier
+              const botComment = comments.find(comment => 
+                comment.body && comment.body.includes(commentIdentifier)
+              );
+              
+              if (botComment) {
+                // Update existing comment
+                await github.rest.issues.updateComment({
+                  owner: 'supabase',
+                  repo: '${{ inputs.triggering_repo }}',
+                  comment_id: botComment.id,
+                  body: body
+                });
+                console.log('Successfully updated existing comment with running status');
+              } else {
+                // Create new comment if none exists
+                await github.rest.issues.createComment({
+                  owner: 'supabase',
+                  repo: '${{ inputs.triggering_repo }}',
+                  issue_number: parseInt('${{ inputs.triggering_pr }}'),
+                  body: body
+                });
+                console.log('Successfully posted new comment with running status');
+              }
+            } catch (error) {
+              console.log('Failed to post/update initial comment:', error.message);
+            }
+
       - name: Checkout supabase-js
         uses: actions/checkout@v4
 
@@ -94,22 +167,6 @@ jobs:
           else
             echo "result=failure" >> $GITHUB_OUTPUT
           fi
-      - name: Generate GitHub App token
-        id: generate-token
-        uses: actions/create-github-app-token@v1
-        with:
-          app-id: ${{ vars.CROSS_REPO_APP_ID }}
-          private-key: ${{ secrets.CROSS_REPO_APP_PRIVATE_KEY }}
-          owner: supabase
-          # Generate token specifically for the repo we need to comment on
-          repositories: ${{ inputs.triggering_repo }}
-
-      - name: Debug token permissions
-        run: |
-          echo "Token generated successfully"
-          echo "App ID: ${{ vars.CROSS_REPO_APP_ID }}"
-          echo "Target repositories: realtime-js,supabase-js"
-          echo "Attempting to comment on: supabase/realtime-js#${{ inputs.triggering_pr }}"
       - name: Stop Supabase
         if: always()
         run: supabase stop
@@ -128,8 +185,10 @@ jobs:
                              integrationTestResult === 'success';
             const statusIcon = allPassed ? '✅' : '❌';
             const overallStatus = allPassed ? 'PASSED' : 'FAILED';
-            // Unique identifier for this bot's comments
+
+            // Unique identifier for this bot's comments (using HTML comment for cleaner look)
             const commentIdentifier = '<!-- supabase-js-test-results -->';
+
             const body = `${commentIdentifier}
             ## ${statusIcon} supabase-js CI Test Results
             **Overall Status: ${overallStatus}**
@@ -146,7 +205,7 @@ jobs:
               '⚠️ Some tests failed. Please review the failing tests before merging.'}
             <details>
             <summary>View workflow run</summary>
-            [View full test results](https://github.com/supabase/supabase-js/actions/runs/${context.runId})
+            [View full test results](https://github.com/supabase/supabase-js/actions/runs/${{ github.run_id }})
             </details>`;
             try {
               // First, try to find an existing comment from this bot
