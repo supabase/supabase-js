@@ -101,30 +101,12 @@ jobs:
 
       - name: Generate GitHub App token
         id: generate-token
-        uses: actions/github-script@v7
+        uses: actions/create-github-app-token@v1
         with:
-          script: |
-            const { createAppAuth } = require('@octokit/auth-app');
-
-            const appId = '${{ secrets.CROSS_REPO_APP_ID }}';
-            const privateKey = `${{ secrets.CROSS_REPO_APP_PRIVATE_KEY }}`;
-            const installationId = '${{ secrets.CROSS_REPO_APP_INSTALLATION_ID }}';
-
-            // Create authenticated app instance
-            const auth = createAppAuth({
-              appId: appId,
-              privateKey: privateKey,
-              installationId: installationId,
-            });
-
-            // Get installation access token
-            const { token } = await auth({ type: 'installation' });
-
-            // Set the token as output
-            core.setSecret(token);
-            core.setOutput('token', token);
-
-            console.log('Successfully generated installation access token');
+          app-id: ${{ secrets.CROSS_REPO_APP_ID }}
+          private-key: ${{ secrets.CROSS_REPO_APP_PRIVATE_KEY }}
+          owner: supabase
+          repositories: realtime-js,supabase-js
 
       - name: Stop Supabase
         if: always()
