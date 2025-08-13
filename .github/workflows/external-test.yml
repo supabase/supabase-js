@@ -99,6 +99,33 @@ jobs:
             echo "result=failure" >> $GITHUB_OUTPUT
           fi
 
+      - name: Generate GitHub App token
+        id: generate-token
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { createAppAuth } = require('@octokit/auth-app');
+
+            const appId = '${{ secrets.CROSS_REPO_APP_ID }}';
+            const privateKey = `${{ secrets.CROSS_REPO_APP_PRIVATE_KEY }}`;
+            const installationId = '${{ secrets.CROSS_REPO_APP_INSTALLATION_ID }}';
+
+            // Create authenticated app instance
+            const auth = createAppAuth({
+              appId: appId,
+              privateKey: privateKey,
+              installationId: installationId,
+            });
+
+            // Get installation access token
+            const { token } = await auth({ type: 'installation' });
+
+            // Set the token as output
+            core.setSecret(token);
+            core.setOutput('token', token);
+
+            console.log('Successfully generated installation access token');
+
       - name: Stop Supabase
         if: always()
         run: supabase stop
@@ -107,7 +134,7 @@ jobs:
         if: always()
         uses: actions/github-script@v7
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+          github-token: ${{ steps.generate-token.outputs.token }}
           script: |
             const typeCheckResult = '${{ steps.type-check.outputs.result }}' || 'failure';
             const unitTestResult = '${{ steps.unit-tests.outputs.result }}' || 'failure';
