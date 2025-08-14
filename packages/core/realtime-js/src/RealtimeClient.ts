@@ -67,6 +67,8 @@ export interface WebSocketLikeConstructor {
     address: string | URL,
     subprotocols?: string | string[] | undefined
   ): WebSocketLike
+  // Allow additional properties that may exist on WebSocket constructors
+  [key: string]: any
 }
 
 export interface WebSocketLikeError {

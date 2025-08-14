@@ -2,6 +2,7 @@ import RealtimeClient, {
   RealtimeClientOptions,
   RealtimeMessage,
   RealtimeRemoveChannelResponse,
+  WebSocketLikeConstructor,
 } from './RealtimeClient'
 import RealtimeChannel, {
   RealtimeChannelOptions,
@@ -48,4 +49,5 @@ export {
   REALTIME_CHANNEL_STATES,
   WebSocketFactory,
   WebSocketLike,
+  WebSocketLikeConstructor,
 }
