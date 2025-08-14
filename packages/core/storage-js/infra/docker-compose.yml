@@ -1,6 +1,5 @@
 # docker-compose.yml
 
-version: '3.6'
 services:
   kong:
     container_name: supabase-kong

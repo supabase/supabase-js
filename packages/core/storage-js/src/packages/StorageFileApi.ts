@@ -783,7 +783,7 @@ export default class StorageFileApi {
     parameters?: FetchParameters
   ): Promise<
     | {
-        data: SearchV2Result[]
+        data: SearchV2Result
         error: null
       }
     | {

@@ -109,6 +109,7 @@ export interface SearchV2Options {
 }
 
 export interface SearchV2Result {
+  hasNext: boolean
   folders: { name: string }[]
   objects: FileObject[]
 }
