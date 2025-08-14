@@ -35,6 +35,7 @@
     "test:coverage": "jest --runInBand --coverage --testPathIgnorePatterns=\"test/integration|test/deno\"",
     "test:integration": "jest --runInBand --detectOpenHandles test/integration.test.ts",
     "test:integration:browser": "deno test --allow-all test/integration.browser.test.ts",
+    "test:integration:node-20": "cd test/integration/node-20 && npm install && npm run test",
     "test:edge-functions": "deno test --allow-all --no-check test/deno/edge-functions-integration.test.ts",
     "test:watch": "jest --watch --verbose false --silent false",
     "test:node:playwright": "cd test/integration/node-browser && npm install && cp ../../../dist/umd/supabase.js . && npm run test",
@@ -47,14 +48,15 @@
     "update:test-deps:expo": "npm run build && npm pack && cp supabase-supabase-js-*.tgz test/integration/expo/supabase-supabase-js-0.0.0-automated.tgz && cd test/integration/expo && npm install",
     "update:test-deps:next": "npm run build && npm pack && cp supabase-supabase-js-*.tgz test/integration/next/supabase-supabase-js-0.0.0-automated.tgz && cd test/integration/next && npm install --legacy-peer-deps",
     "update:test-deps:deno": "npm run build && npm pack && cp supabase-supabase-js-*.tgz test/deno/supabase-supabase-js-0.0.0-automated.tgz && cd test/deno && npm install",
-    "update:test-deps:bun": "npm run build && npm pack && cp supabase-supabase-js-*.tgz test/integration/bun/supabase-supabase-js-0.0.0-automated.tgz && cd test/integration/bun && bun install"
+    "update:test-deps:bun": "npm run build && npm pack && cp supabase-supabase-js-*.tgz test/integration/bun/supabase-supabase-js-0.0.0-automated.tgz && cd test/integration/bun && bun install",
+    "update:test-deps:node-20": "npm run build && npm pack && cp supabase-supabase-js-*.tgz test/integration/node-20/supabase-supabase-js-0.0.0-automated.tgz && cd test/integration/node-20 && npm install"
   },
   "dependencies": {
     "@supabase/auth-js": "2.71.1",
     "@supabase/functions-js": "2.4.5",
     "@supabase/node-fetch": "2.6.15",
     "@supabase/postgrest-js": "1.19.4",
-    "@supabase/realtime-js": "2.15.1",
+    "@supabase/realtime-js": "2.15.2",
     "@supabase/storage-js": "^2.10.4"
   },
   "devDependencies": {

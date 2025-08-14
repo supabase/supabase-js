@@ -1,0 +1,26 @@
+{
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "ts-node index.ts",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run"
+  },
+  "version": "1.0.0",
+  "author": "",
+  "description": "",
+  "license": "ISC",
+  "repository": {
+    "type": "git",
+    "url": ""
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "file:supabase-supabase-js-0.0.0-automated.tgz",
+    "vitest": "^3.2.4",
+    "ws": "^8.18.3"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.2",
+    "@types/ws": "^8.18.1"
+  }
+}
