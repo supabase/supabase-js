@@ -101,6 +101,19 @@ export interface SearchOptions {
   search?: string
 }
 
+export interface SearchV2Options {
+  limit?: number
+  prefix?: string
+  cursor?: string
+  with_delimiter?: boolean
+}
+
+export interface SearchV2Result {
+  hasNext: boolean
+  folders: { name: string }[]
+  objects: FileObject[]
+}
+
 export interface FetchParameters {
   /**
    * Pass in an AbortController's signal to cancel the request.

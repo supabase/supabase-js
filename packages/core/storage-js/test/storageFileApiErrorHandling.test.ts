@@ -19,55 +19,6 @@ describe('File API Error Handling', () => {
     jest.restoreAllMocks()
   })
 
-  describe('upload', () => {
-    // Skip these tests until we can set up a proper test environment
-    it.skip('handles network errors', async () => {
-      global.fetch = jest
-        .fn()
-        .mockImplementation(() => Promise.reject(new Error('Network failure')))
-      const storage = new StorageClient(URL, { apikey: KEY })
-
-      const { data, error } = await storage.from(BUCKET_ID).upload('test.jpg', 'test-file-content')
-      expect(data).toBeNull()
-      expect(error).not.toBeNull()
-      expect(error?.message).toBe('Network failure')
-    })
-
-    it.skip('wraps non-Response errors as StorageUnknownError', async () => {
-      global.fetch = jest
-        .fn()
-        .mockImplementation(() => Promise.reject(new TypeError('Invalid upload format')))
-
-      const storage = new StorageClient(URL, { apikey: KEY })
-
-      const { data, error } = await storage.from(BUCKET_ID).upload('test.jpg', 'test-file-content')
-      expect(data).toBeNull()
-      expect(error).toBeInstanceOf(StorageUnknownError)
-      expect(error?.message).toBe('Invalid upload format')
-    })
-
-    it.skip('throws non-StorageError exceptions', async () => {
-      // Create a storage client
-      const storage = new StorageClient(URL, { apikey: KEY })
-
-      // Create a spy on the fetch method that will throw a non-StorageError
-      const mockFn = jest.spyOn(global, 'fetch').mockImplementationOnce(() => {
-        const error = new Error('Unexpected error in upload')
-        // Ensure it's not recognized as a StorageError
-        Object.defineProperty(error, 'name', { value: 'CustomError' })
-        throw error
-      })
-
-      // The error should be thrown all the way up
-      await expect(storage.from(BUCKET_ID).upload('test.jpg', 'test-file-content')).rejects.toThrow(
-        'Unexpected error in upload'
-      )
-
-      // Clean up
-      mockFn.mockRestore()
-    })
-  })
-
   describe('download', () => {
     it('handles network errors', async () => {
       const mockError = new Error('Network failure')

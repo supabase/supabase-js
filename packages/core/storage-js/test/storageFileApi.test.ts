@@ -2,7 +2,6 @@ import { StorageClient } from '../src/index'
 import * as fsp from 'fs/promises'
 import * as fs from 'fs'
 import * as path from 'path'
-import FormData from 'form-data'
 import assert from 'assert'
 // @ts-ignore
 import fetch, { Response } from '@supabase/node-fetch'
@@ -119,7 +118,7 @@ describe('Object API', () => {
     test('uploading using form-data', async () => {
       const bucketName = await newBucket()
       const formData = new FormData()
-      formData.append('file', file)
+      formData.append('file', file as any)
 
       const res = await storage.from(bucketName).upload(uploadPath, formData)
       expect(res.error).toBeNull()
@@ -305,66 +304,6 @@ describe('Object API', () => {
     })
   })
 
-  describe('Error handling', () => {
-    let mockError: Error
-
-    beforeEach(() => {
-      uploadPath = `testpath/file-${Date.now()}.jpg`
-      mockError = new Error('Network failure')
-    })
-
-    afterEach(() => {
-      jest.restoreAllMocks()
-    })
-
-    test.skip('throws unknown errors', async () => {
-      global.fetch = jest.fn().mockImplementation(() => Promise.reject(mockError))
-      const storage = new StorageClient(`${URL}`, {
-        apikey: 'test-token',
-      })
-
-      const { data, error } = await storage.from(bucketName).upload(uploadPath, file)
-      expect(error).not.toBeNull()
-      expect(error?.message).toBe('Network failure')
-    })
-
-    test.skip('handles malformed responses', async () => {
-      const mockResponse = new Response(
-        JSON.stringify({
-          statusCode: '500',
-          error: 'Internal Server Error',
-          message: 'Unexpected server error',
-        }),
-        {
-          status: 500,
-          statusText: 'Internal Server Error',
-        }
-      )
-
-      global.fetch = jest.fn().mockImplementation(() => Promise.resolve(mockResponse))
-      const storage = new StorageClient(`${URL}`, {
-        apikey: 'test-token',
-      })
-
-      const { data, error } = await storage.from(bucketName).upload(uploadPath, file)
-      expect(data).toBeNull()
-      expect(error).not.toBeNull()
-      expect(error?.message).toBe('Unexpected server error')
-    })
-
-    test.skip('handles network timeouts', async () => {
-      mockError = new Error('Network timeout')
-      global.fetch = jest.fn().mockImplementation(() => Promise.reject(mockError))
-      const storage = new StorageClient(`${URL}`, {
-        apikey: 'test-token',
-      })
-
-      const { data, error } = await storage.from(bucketName).upload(uploadPath, file)
-      expect(error).not.toBeNull()
-      expect(error?.message).toBe('Network timeout')
-    })
-  })
-
   describe('File operations', () => {
     test('list objects', async () => {
       await storage.from(bucketName).upload(uploadPath, file)
@@ -376,6 +315,22 @@ describe('Object API', () => {
           name: uploadPath.replace('testpath/', ''),
         }),
       ])
+    })
+
+    test('list objects V2', async () => {
+      await storage.from(bucketName).upload(uploadPath, file)
+      const res = await storage.from(bucketName).listV2({
+        prefix: 'testpath',
+      })
+
+      expect(res.error).toBeNull()
+      expect(res.data).toEqual(
+        expect.objectContaining({
+          hasNext: false,
+          folders: [],
+          objects: expect.arrayContaining([expect.objectContaining({ name: uploadPath })]),
+        })
+      )
     })
 
     test('move object to different path', async () => {
@@ -629,5 +584,129 @@ describe('error handling', () => {
     expect(data).toBeNull()
     expect(error).not.toBeNull()
     expect(error?.message).toBe('Network timeout')
+  })
+})
+
+describe('StorageFileApi Edge Cases', () => {
+  let storage: StorageClient
+
+  beforeEach(() => {
+    storage = new StorageClient('http://localhost:8000/storage/v1', {
+      apikey: 'test-token',
+    })
+  })
+
+  describe('Public URL with transformations', () => {
+    test('handles all transformation options', () => {
+      const { data } = storage.from('test-bucket').getPublicUrl('test.jpg', {
+        transform: {
+          width: 200,
+          height: 150,
+          resize: 'cover',
+          format: 'origin',
+          quality: 80,
+        },
+      })
+
+      expect(data.publicUrl).toContain('width=200')
+      expect(data.publicUrl).toContain('height=150')
+      expect(data.publicUrl).toContain('resize=cover')
+      expect(data.publicUrl).toContain('format=origin')
+      expect(data.publicUrl).toContain('quality=80')
+    })
+
+    test('handles download with filename', () => {
+      const { data } = storage.from('test-bucket').getPublicUrl('test.jpg', {
+        download: 'custom-filename.jpg',
+      })
+
+      expect(data.publicUrl).toContain('download=custom-filename.jpg')
+    })
+  })
+
+  describe('Body Payload Tests', () => {
+    let mockPut: jest.SpyInstance
+    let mockPost: jest.SpyInstance
+
+    beforeEach(() => {
+      const fetchLib = require('../src/lib/fetch')
+      mockPut = jest.spyOn(fetchLib, 'put').mockResolvedValue({
+        id: 'test-id',
+        path: 'test-path',
+        Key: 'test-key',
+      })
+      mockPost = jest.spyOn(fetchLib, 'post').mockResolvedValue({
+        id: 'test-id',
+        path: 'test-path',
+        Key: 'test-key',
+      })
+    })
+
+    afterEach(() => {
+      mockPut.mockRestore()
+      mockPost.mockRestore()
+    })
+
+    test('uploadToSignedUrl with Blob', async () => {
+      const testBlob = new Blob(['test content'], { type: 'text/plain' })
+
+      await storage.from('test-bucket').uploadToSignedUrl('test-path', 'test-token', testBlob)
+
+      expect(mockPut).toHaveBeenCalled()
+      const [, , body] = mockPut.mock.calls[0]
+      expect(body.constructor.name).toBe('FormData')
+    })
+
+    test('uploadToSignedUrl with FormData', async () => {
+      const testFormData = new FormData()
+      testFormData.append('file', 'test content')
+
+      await storage.from('test-bucket').uploadToSignedUrl('test-path', 'test-token', testFormData)
+
+      expect(mockPut).toHaveBeenCalled()
+      const [, , body] = mockPut.mock.calls[0]
+      expect(body).toBe(testFormData)
+    })
+
+    test('upload with metadata', async () => {
+      const testBlob = new Blob(['test content'], { type: 'text/plain' })
+      const metadata = { customKey: 'customValue', author: 'test' }
+
+      await storage.from('test-bucket').upload('test-path', testBlob, { metadata })
+
+      expect(mockPost).toHaveBeenCalled()
+      const [, , body] = mockPost.mock.calls[0]
+      expect(body.constructor.name).toBe('FormData')
+    })
+
+    test('upload with FormData', async () => {
+      const testFormData = new FormData()
+      testFormData.append('file', 'test content')
+      const metadata = { blah: 'abc213' }
+
+      await storage.from('test-bucket').upload('test-path', testFormData, { metadata })
+
+      expect(mockPost).toHaveBeenCalled()
+      const [, , body] = mockPost.mock.calls[0] as [null, null, FormData]
+      expect(body).toBe(testFormData)
+      expect(body.get('metadata')).toBe(JSON.stringify(metadata))
+    })
+
+    test('upload passes headers', async () => {
+      const testFormData = new FormData()
+      testFormData.append('file', 'test content')
+
+      const testHeaderKey = 'x-test-header'
+      const testHeaderValue = 'abc123'
+
+      await storage
+        .from('test-bucket')
+        .upload('test-path', testFormData, { headers: { [testHeaderKey]: testHeaderValue } })
+
+      expect(mockPost).toHaveBeenCalled()
+      const [, , body, { headers }] = mockPost.mock.calls[0]
+      expect(body).toBe(testFormData)
+      expect(headers[testHeaderKey]).toBe(testHeaderValue)
+    })
   })
 })

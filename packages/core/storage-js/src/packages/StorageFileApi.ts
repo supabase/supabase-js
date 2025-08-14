@@ -10,6 +10,8 @@ import {
   DestinationOptions,
   FileObjectV2,
   Camelize,
+  SearchV2Options,
+  SearchV2Result,
 } from '../lib/types'
 
 const DEFAULT_SEARCH_OPTIONS = {
@@ -757,6 +759,43 @@ export default class StorageFileApi {
       const data = await post(
         this.fetch,
         `${this.url}/object/list/${this.bucketId}`,
+        body,
+        { headers: this.headers },
+        parameters
+      )
+      return { data, error: null }
+    } catch (error) {
+      if (isStorageError(error)) {
+        return { data: null, error }
+      }
+
+      throw error
+    }
+  }
+
+  /**
+   * @experimental this method signature might change in the future
+   * @param options search options
+   * @param parameters
+   */
+  async listV2(
+    options?: SearchV2Options,
+    parameters?: FetchParameters
+  ): Promise<
+    | {
+        data: SearchV2Result
+        error: null
+      }
+    | {
+        data: null
+        error: StorageError
+      }
+  > {
+    try {
+      const body = { ...options }
+      const data = await post(
+        this.fetch,
+        `${this.url}/object/list-v2/${this.bucketId}`,
         body,
         { headers: this.headers },
         parameters
