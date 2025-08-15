@@ -40,3 +40,47 @@ test('override setting defaults', async () => {
   // Existing property values should remain constant
   expect(settings.db.schema).toBe(defaults.db.schema)
 })
+
+test('applySettingDefaults with accessToken', () => {
+  const defaults = {
+    db: { schema: 'public' },
+    auth: { autoRefreshToken: true },
+    global: { headers: {} },
+  }
+
+  const customAccessToken = async () => 'custom-token'
+  const options = {
+    accessToken: customAccessToken,
+  }
+
+  const settings = helpers.applySettingDefaults(options, defaults)
+  expect(settings.accessToken).toBe(customAccessToken)
+})
+
+test('applySettingDefaults without accessToken', () => {
+  const defaults = {
+    db: { schema: 'public' },
+    auth: { autoRefreshToken: true },
+    global: { headers: {} },
+  }
+
+  const options = {}
+
+  const settings = helpers.applySettingDefaults(options, defaults)
+  expect(settings).not.toHaveProperty('accessToken')
+})
+
+test('isBrowser function', () => {
+  const originalWindow = global.window
+
+  // Test browser environment
+  global.window = {} as any
+  expect(helpers.isBrowser()).toBe(true)
+
+  // Test non-browser environment
+  delete (global as any).window
+  expect(helpers.isBrowser()).toBe(false)
+
+  // Restore
+  if (originalWindow) global.window = originalWindow
+})
