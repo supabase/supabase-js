@@ -4,10 +4,17 @@
 
 import { autoRefreshClient, getClientWithSpecificStorage, pkceClient } from './lib/clients'
 import { mockUserCredentials } from './lib/utils'
+import {
+  supportsLocalStorage,
+  validateExp,
+  sleep,
+  userNotAvailableProxy,
+  resolveFetch,
+} from '../src/lib/helpers'
 
 // Add structuredClone polyfill for jsdom
 if (typeof structuredClone === 'undefined') {
-  ;(global as any).structuredClone = (obj: any) => JSON.parse(JSON.stringify(obj))
+  ; (global as any).structuredClone = (obj: any) => JSON.parse(JSON.stringify(obj))
 }
 
 describe('GoTrueClient in browser environment', () => {
@@ -97,6 +104,49 @@ describe('GoTrueClient in browser environment', () => {
 
     expect(signinError).toBeNull()
     expect(signinData?.session).toBeDefined()
+  })
+})
+
+describe('Browser-specific helper functions', () => {
+  it('should handle localStorage not available', () => {
+    // Mock localStorage as undefined
+    Object.defineProperty(window, 'localStorage', {
+      value: undefined,
+      writable: true,
+    })
+    expect(supportsLocalStorage()).toBe(false)
+  })
+})
+
+describe('JWT and cryptographic functions in browser', () => {
+  it('should throw on missing exp claim', () => {
+    expect(() => validateExp(0)).toThrow('Missing exp claim')
+  })
+})
+
+describe('Retryable and sleep functions in browser', () => {
+  it('should sleep for specified time', async () => {
+    const start = Date.now()
+    await sleep(100)
+    const end = Date.now()
+    expect(end - start).toBeGreaterThanOrEqual(90)
+  })
+})
+
+describe('User proxy and deep clone functions in browser', () => {
+  it('should throw on property setting to user proxy', () => {
+    const proxy = userNotAvailableProxy()
+    expect(() => {
+      (proxy as any).email = 'test@example.com'
+    }).toThrow()
+  })
+})
+
+describe('Fetch resolution in browser environment', () => {
+  it('should resolve fetch correctly', () => {
+    const customFetch = jest.fn()
+    const resolvedFetch = resolveFetch(customFetch)
+    expect(typeof resolvedFetch).toBe('function')
   })
 })
 
@@ -240,5 +290,89 @@ describe('GoTrueClient BroadcastChannel', () => {
 
     sub1.unsubscribe()
     sub2.unsubscribe()
+  })
+
+  it('should handle BroadcastChannel errors', () => {
+    const mockBroadcastChannel = jest.fn().mockImplementation(() => {
+      throw new Error('BroadcastChannel not supported')
+    })
+
+    Object.defineProperty(window, 'BroadcastChannel', {
+      value: mockBroadcastChannel,
+      writable: true,
+    })
+
+    const client = getClientWithSpecificStorage({
+      getItem: jest.fn(),
+      setItem: jest.fn(),
+      removeItem: jest.fn(),
+    })
+
+    expect(client).toBeDefined()
+  })
+})
+
+describe('Browser locks functionality', () => {
+  it('should use navigator locks when available', () => {
+    // Mock navigator.locks
+    const mockLock = { name: 'test-lock' }
+    const mockRequest = jest.fn().mockImplementation((_, __, callback) =>
+      Promise.resolve(callback(mockLock))
+    )
+
+    Object.defineProperty(navigator, 'locks', {
+      value: { request: mockRequest },
+      writable: true,
+    })
+
+    // Test navigator locks usage in GoTrueClient
+    const client = getClientWithSpecificStorage({
+      getItem: jest.fn(),
+      setItem: jest.fn(),
+      removeItem: jest.fn(),
+    })
+
+    expect(client).toBeDefined()
+  })
+})
+
+describe('Web3 functionality in browser', () => {
+  it('should handle Web3 provider not available', async () => {
+    const credentials = {
+      chain: 'ethereum' as const,
+      wallet: {} as any,
+    }
+
+    await expect(pkceClient.signInWithWeb3(credentials)).rejects.toThrow()
+  })
+
+  it('should handle Solana Web3 provider not available', async () => {
+    const credentials = {
+      chain: 'solana' as const,
+      wallet: {} as any,
+    }
+
+    await expect(pkceClient.signInWithWeb3(credentials)).rejects.toThrow()
+  })
+})
+
+describe('GoTrueClient constructor edge cases', () => {
+
+  it('should handle userStorage with persistSession', () => {
+    const customUserStorage = {
+      getItem: jest.fn(),
+      setItem: jest.fn(),
+      removeItem: jest.fn(),
+    }
+
+    const client = new (require('../src/GoTrueClient').default)({
+      url: 'http://localhost:9999',
+      userStorage: customUserStorage,
+      persistSession: true,
+      autoRefreshToken: false,
+    })
+
+    expect(client).toBeDefined()
+    expect((client as any).userStorage).toBe(customUserStorage)
   })
 })

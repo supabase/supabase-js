@@ -492,15 +492,49 @@ describe('GoTrueClient', () => {
       expect(error?.message).toContain('Unable to validate email address: invalid format')
     })
 
-    test('resend() with email', async () => {
-      const { email } = mockUserCredentials()
+    test.each([
+      {
+        name: 'resend with email with options',
+        params: {
+          email: mockUserCredentials().email,
+          type: 'signup' as const,
+          options: { emailRedirectTo: mockUserCredentials().email },
+        },
+      },
+      {
+        name: 'resend with email with empty options',
+        params: {
+          email: mockUserCredentials().email,
+          type: 'signup' as const,
+          options: {},
+        },
+      },
+    ])('$name', async ({ params }) => {
+      const { error } = await auth.resend(params)
+      expect(error).toBeNull()
+    })
 
-      const { error } = await auth.resend({
-        email,
-        type: 'signup',
-        options: { emailRedirectTo: email },
-      })
-
+    test.each([
+      {
+        name: 'resend with phone with options',
+        params: {
+          phone: mockUserCredentials().phone,
+          type: 'phone_change' as const,
+          options: {
+            captchaToken: 'some_token',
+          },
+        },
+      },
+      {
+        name: 'resend with phone with empty options',
+        params: {
+          phone: mockUserCredentials().phone,
+          type: 'phone_change' as const,
+          options: {},
+        },
+      },
+    ])('$name', async ({ params }) => {
+      const { error } = await phoneClient.resend(params)
       expect(error).toBeNull()
     })
 
@@ -538,6 +572,40 @@ describe('GoTrueClient', () => {
       expect(error).toBeNull()
       expect(data.user).toBeNull()
       expect(data.session).toBeNull()
+    })
+
+    test.each([
+      {
+        name: 'signInWithOtp for email with empty options',
+        testFn: async () => {
+          const { email } = mockUserCredentials()
+          const { data, error } = await auth.signInWithOtp({
+            email,
+            options: {},
+          })
+          expect(error).toBeNull()
+          expect(data.user).toBeNull()
+          expect(data.session).toBeNull()
+        },
+      },
+      {
+        name: 'verifyOTP fails with empty options',
+        testFn: async () => {
+          const { phone } = mockUserCredentials()
+
+          const { error } = await phoneClient.verifyOtp({
+            phone,
+            type: 'phone_change',
+            token: '123456',
+            options: {},
+          })
+
+          expect(error).not.toBeNull()
+          expect(error?.message).toContain('Token has expired or is invalid')
+        },
+      },
+    ])('$name', async ({ testFn }) => {
+      await testFn()
     })
 
     test('signInWithOtp() pkce flow fails with invalid sms provider', async () => {
@@ -634,19 +702,7 @@ describe('GoTrueClient', () => {
       }
     })
 
-    test('resend() with phone', async () => {
-      const { phone } = mockUserCredentials()
 
-      const { error } = await phoneClient.resend({
-        phone,
-        type: 'phone_change',
-        options: {
-          captchaToken: 'some_token',
-        },
-      })
-
-      expect(error).toBeNull()
-    })
 
     test('verifyOTP() fails with invalid token', async () => {
       const { phone } = mockUserCredentials()
@@ -664,6 +720,8 @@ describe('GoTrueClient', () => {
       expect(error).not.toBeNull()
       expect(error?.message).toContain('Token has expired or is invalid')
     })
+
+
   })
 
   test('signUp() the same user twice should not share email already registered message', async () => {
@@ -1266,13 +1324,13 @@ describe('MFA', () => {
   test('challenge should create MFA challenge', async () => {
     const { factorId } = await setupUserWithMFAAndTOTP()
 
-    const { data: challengeData, error: challengeError } = await authWithSession.mfa.challenge({
+    const { data, error: challengeError } = await authWithSession.mfa.challenge({
       factorId,
     })
 
     expect(challengeError).toBeNull()
-    expect(challengeData!.id).not.toBeNull()
-    expect(challengeData!.expires_at).not.toBeNull()
+    expect(data!.id).not.toBeNull()
+    expect(data!.expires_at).not.toBeNull()
   })
 
   test('verify should verify MFA challenge', async () => {
@@ -2324,8 +2382,8 @@ describe('Storage adapter edge cases', () => {
       getItem: async () => {
         throw new Error('getItem failed message')
       },
-      setItem: async () => {},
-      removeItem: async () => {},
+      setItem: async () => { },
+      removeItem: async () => { },
     }
     const client = getClientWithSpecificStorage(brokenStorage)
     await expect(client.getSession()).rejects.toThrow('getItem failed message')
@@ -2337,7 +2395,7 @@ describe('Storage adapter edge cases', () => {
       setItem: async () => {
         throw new Error('setItem failed message')
       },
-      removeItem: async () => {},
+      removeItem: async () => { },
     }
     const client = getClientWithSpecificStorage(brokenStorage)
     const session = {
@@ -2358,7 +2416,7 @@ describe('Storage adapter edge cases', () => {
   test('should handle storage removeItem failure in _removeSession', async () => {
     const brokenStorage = {
       getItem: async () => '{}',
-      setItem: async () => {},
+      setItem: async () => { },
       removeItem: async () => {
         throw new Error('removeItem failed message')
       },
@@ -2371,8 +2429,8 @@ describe('Storage adapter edge cases', () => {
   test('should handle invalid JSON in storage', async () => {
     const invalidStorage = {
       getItem: async () => 'invalid-json',
-      setItem: async () => {},
-      removeItem: async () => {},
+      setItem: async () => { },
+      removeItem: async () => { },
     }
     const client = getClientWithSpecificStorage(invalidStorage)
     const { data, error } = await client.getSession()
@@ -2383,8 +2441,8 @@ describe('Storage adapter edge cases', () => {
   test('should handle null storage value', async () => {
     const nullStorage = {
       getItem: async () => null,
-      setItem: async () => {},
-      removeItem: async () => {},
+      setItem: async () => { },
+      removeItem: async () => { },
     }
     const client = getClientWithSpecificStorage(nullStorage)
     const { data, error } = await client.getSession()
@@ -2395,8 +2453,8 @@ describe('Storage adapter edge cases', () => {
   test('should handle empty storage value', async () => {
     const emptyStorage = {
       getItem: async () => '',
-      setItem: async () => {},
-      removeItem: async () => {},
+      setItem: async () => { },
+      removeItem: async () => { },
     }
     const client = getClientWithSpecificStorage(emptyStorage)
     const { data, error } = await client.getSession()
@@ -2407,8 +2465,8 @@ describe('Storage adapter edge cases', () => {
   test('should handle malformed session data', async () => {
     const malformedStorage = {
       getItem: async () => JSON.stringify({ access_token: 'test' }), // Missing required fields
-      setItem: async () => {},
-      removeItem: async () => {},
+      setItem: async () => { },
+      removeItem: async () => { },
     }
     const client = getClientWithSpecificStorage(malformedStorage)
     const { data, error } = await client.getSession()
@@ -2427,8 +2485,8 @@ describe('Storage adapter edge cases', () => {
           token_type: 'bearer',
           user: null,
         }),
-      setItem: async () => {},
-      removeItem: async () => {},
+      setItem: async () => { },
+      removeItem: async () => { },
     }
     const client = getClientWithSpecificStorage(expiredStorage)
     // @ts-expect-error private method
@@ -2488,8 +2546,37 @@ describe('SSO Authentication', () => {
       providerId: 'valid-provider-id',
       options: {
         redirectTo: 'http://localhost:3000/callback',
+        captchaToken: 'some-token',
       },
     })
+
+    expect(error).not.toBeNull()
+    expect(error?.message).toContain('SAML 2.0 is disabled')
+    expect(data).toBeNull()
+  })
+
+  test.each([
+    {
+      name: 'with empty options',
+      params: {
+        providerId: 'valid-provider-id',
+        domain: 'valid-domain',
+        options: {},
+      },
+    },
+    {
+      name: 'without params',
+      params: {} as any,
+    },
+    {
+      name: 'with minimal params',
+      params: {
+        providerId: 'test-provider',
+        domain: 'test-domain',
+      },
+    },
+  ])('signInWithSSO $name', async ({ params }) => {
+    const { data, error } = await pkceClient.signInWithSSO(params)
 
     expect(error).not.toBeNull()
     expect(error?.message).toContain('SAML 2.0 is disabled')
