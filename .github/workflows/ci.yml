@@ -207,6 +207,48 @@ jobs:
         if: always()
         run: supabase stop
 
+  node-20-integration:
+    name: Node 20 Integration
+    runs-on: ubuntu-latest
+    needs: build-package
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Start Supabase
+        run: supabase start
+
+      - name: Install dependencies and build
+        run: |
+          npm ci
+          npm run build
+
+      - name: Install jq
+        run: sudo apt-get update && sudo apt-get install -y jq
+
+      - name: Download artifact
+        run: npm run update:test-deps:node-20
+
+      - name: Run integration tests
+        run: |
+          export SUPABASE_SERVICE_ROLE_KEY="$(supabase status --output json | jq -r '.SERVICE_ROLE_KEY')"
+          npm run test:integration:node-20
+
+      - name: Stop Supabase
+        if: always()
+        run: supabase stop
+
   next-integration:
     name: Next.js Integration
     runs-on: ubuntu-latest
