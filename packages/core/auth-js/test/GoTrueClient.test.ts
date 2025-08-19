@@ -39,6 +39,39 @@ describe('GoTrueClient', () => {
     refreshAccessTokenSpy.mockClear()
   })
 
+  test('should handle debug function in settings', async () => {
+    const debugSpy = jest.fn()
+    const client = new GoTrueClient({
+      url: 'http://localhost:9999',
+      debug: debugSpy,
+    })
+
+    await client.initialize()
+    expect(debugSpy).toHaveBeenCalled()
+  })
+
+  test('should handle custom lock implementation', async () => {
+    const customLock = jest.fn().mockResolvedValue(undefined)
+    const client = new GoTrueClient({
+      url: 'http://localhost:9999',
+      lock: customLock,
+    })
+
+    await client.initialize()
+    expect(customLock).toHaveBeenCalled()
+  })
+
+  test('should handle userStorage configuration', async () => {
+    const userStorage = memoryLocalStorageAdapter()
+    const client = new GoTrueClient({
+      url: 'http://localhost:9999',
+      userStorage,
+    })
+
+    await client.initialize()
+    expect(client['userStorage']).toBe(userStorage)
+  })
+
   describe('Sessions', () => {
     test('refreshSession() should return a new session using a passed-in refresh token', async () => {
       const { email, password } = mockUserCredentials()
@@ -556,6 +589,67 @@ describe('GoTrueClient', () => {
       )
       expect(data.session).toBeNull()
       expect(data.user).toBeNull()
+    })
+
+    test('should handle signUp with invalid credentials', async () => {
+      const { data, error } = await auth.signUp({
+        email: 'invalid-email',
+        password: '123', // too short
+      })
+
+      expect(error).toBeDefined()
+      expect(data.user).toBeNull()
+      expect(data.session).toBeNull()
+    })
+
+    test('should handle signInWithPassword with invalid credentials', async () => {
+      const { data, error } = await auth.signInWithPassword({
+        email: 'nonexistent@example.com',
+        password: 'wrongpassword',
+      })
+
+      expect(error).toBeDefined()
+      expect(data.user).toBeNull()
+      expect(data.session).toBeNull()
+    })
+
+    test('should handle signInWithOAuth with invalid provider', async () => {
+      const { data, error } = await auth.signInWithOAuth({
+        provider: 'invalid-provider' as any,
+      })
+
+      expect(error).toBeNull()
+      expect(data.url).toBeDefined()
+    })
+
+    test('should handle signInWithOtp with invalid email', async () => {
+      const { data, error } = await auth.signInWithOtp({
+        email: 'invalid-email',
+      })
+
+      expect(error).toBeDefined()
+      expect(data.user).toBeNull()
+    })
+
+    test('should handle signInWithOtp with invalid phone', async () => {
+      const { data, error } = await auth.signInWithOtp({
+        phone: 'invalid-phone',
+      })
+
+      expect(error).toBeDefined()
+      expect(data.user).toBeNull()
+    })
+
+    test('should handle verifyOtp with invalid code', async () => {
+      const { data, error } = await auth.verifyOtp({
+        email: 'test@example.com',
+        token: 'invalid-token',
+        type: 'email',
+      })
+
+      expect(error).toBeDefined()
+      expect(data.user).toBeNull()
+      expect(data.session).toBeNull()
     })
   })
 
@@ -1146,6 +1240,40 @@ describe('The auth client can signin with third-party oAuth providers', () => {
     expect(provider).toBeTruthy()
   })
 
+  test('should handle exchangeCodeForSession with invalid code', async () => {
+    const { data, error } = await auth.exchangeCodeForSession('invalid-code')
+    expect(error).toBeDefined()
+    expect(data.session).toBeNull()
+    expect(data.user).toBeNull()
+  })
+
+  test('should handle signInWithOAuth with redirectTo option', async () => {
+    const { data, error } = await auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: 'http://localhost:3000/callback',
+      },
+    })
+
+    expect(error).toBeNull()
+    expect(data.url).toBeDefined()
+  })
+
+  test('should handle signInWithOAuth with queryParams', async () => {
+    const { data, error } = await auth.signInWithOAuth({
+      provider: 'github',
+      options: {
+        queryParams: {
+          access_type: 'offline',
+          prompt: 'consent',
+        },
+      },
+    })
+
+    expect(error).toBeNull()
+    expect(data.url).toBeDefined()
+  })
+
   describe('Developers can subscribe and unsubscribe', () => {
     const {
       data: { subscription },
@@ -1421,6 +1549,45 @@ describe('MFA', () => {
       expect(result.data.totp).toHaveLength(1)
       expect(result.data.phone).toHaveLength(1)
     }
+  })
+
+  test('should handle MFA enroll without session', async () => {
+    await auth.signOut()
+    const { data, error } = await auth.mfa.enroll({
+      factorType: 'totp',
+    })
+
+    expect(error).toBeDefined()
+    expect(data?.id).toBeUndefined()
+  })
+
+  test('should handle MFA challenge without session', async () => {
+    const { data, error } = await auth.mfa.challenge({
+      factorId: 'test-factor-id',
+    })
+
+    expect(error).toBeDefined()
+    expect(data?.id).toBeUndefined()
+  })
+
+  test('should handle MFA verify without session', async () => {
+    const { data, error } = await auth.mfa.verify({
+      factorId: 'test-factor-id',
+      challengeId: 'test-challenge-id',
+      code: '123456',
+    })
+
+    expect(error).toBeDefined()
+    expect(data?.access_token).toBeUndefined()
+  })
+
+  test('should handle MFA unenroll without session', async () => {
+    const { data, error } = await auth.mfa.unenroll({
+      factorId: 'test-factor-id',
+    })
+
+    expect(error).toBeDefined()
+    expect(data?.id).toBeUndefined()
   })
 })
 
@@ -2038,6 +2205,74 @@ describe('Web3 Authentication', () => {
       '@supabase/auth-js: No accounts available. Please ensure the wallet is connected.'
     )
   })
+
+  test('should handle signInWithWeb3 with unsupported chain', async () => {
+    const credentials = {
+      chain: 'polygon' as any,
+      message: 'test message',
+      signature: '0xtest-signature' as any,
+    }
+
+    await expect(
+      auth.signInWithWeb3(credentials)
+    ).rejects.toThrow('Unsupported chain "polygon"')
+  })
+
+  test('should handle signInWithWeb3 with missing message', async () => {
+    const credentials = {
+      chain: 'ethereum',
+      signature: 'test signature',
+    } as any
+
+    await expect(
+      auth.signInWithWeb3(credentials)
+    ).rejects.toThrow('Both wallet and url must be specified in non-browser environments')
+  })
+
+  test('should handle signInWithWeb3 with missing wallet', async () => {
+    const credentials = {
+      chain: 'ethereum',
+      message: 'test message',
+    } as any
+
+    const { data, error } = await auth.signInWithWeb3(credentials)
+    expect(error).toBeDefined()
+    expect(data.session).toBeNull()
+    expect(data.user).toBeNull()
+  })
+
+  test('should handle signInWithWeb3 with invalid signature', async () => {
+    const credentials = {
+      chain: 'ethereum',
+      message: 'test message',
+      signature: '0xinvalid-signature' as any,
+    } as any
+
+    const { data, error } = await auth.signInWithWeb3(credentials)
+    expect(error).toBeDefined()
+    expect(data.session).toBeNull()
+    expect(data.user).toBeNull()
+  })
+
+  test('should handle signInWithWeb3 in non-browser environment', async () => {
+    const credentials = {
+      chain: 'ethereum',
+      message: 'test message',
+      wallet: {
+        request: jest.fn(),
+        on: jest.fn(),
+        removeListener: jest.fn(),
+      },
+      options: {
+        url: 'http://localhost:9999',
+      },
+    } as any
+
+    const { data, error } = await auth.signInWithWeb3(credentials)
+    expect(error).toBeDefined()
+    expect(data.session).toBeNull()
+    expect(data.user).toBeNull()
+  })
 })
 
 describe('ID Token Authentication', () => {
@@ -2239,6 +2474,14 @@ describe('Auto Refresh', () => {
       expect(session?.access_token).not.toEqual(signUpData.session?.access_token)
     })
   })
+
+  test('should handle auto refresh start/stop multiple times', async () => {
+    await autoRefreshClient.startAutoRefresh()
+    await autoRefreshClient.startAutoRefresh() // Should handle duplicate calls
+
+    await autoRefreshClient.stopAutoRefresh()
+    await autoRefreshClient.stopAutoRefresh() // Should handle duplicate calls
+  })
 })
 
 describe('Session Management', () => {
@@ -2284,6 +2527,60 @@ describe('Session Management', () => {
 
     // Cleanup
     subscription?.unsubscribe()
+  })
+
+  test('should handle getSession when no session exists', async () => {
+    // Clear any existing session first
+    await auth.signOut()
+    const { data, error } = await auth.getSession()
+    expect(data.session).toBeNull()
+    expect(error).toBeNull()
+  })
+
+  test('should handle refreshSession with invalid refresh token', async () => {
+    const { data, error } = await auth.refreshSession({
+      refresh_token: 'invalid-refresh-token',
+    })
+
+    expect(error).toBeDefined()
+    expect(data.session).toBeNull()
+  })
+
+  test('should handle setSession with invalid session data', async () => {
+    const { data, error } = await auth.setSession({
+      access_token: 'invalid-token',
+      refresh_token: 'invalid-refresh-token',
+    })
+
+    expect(error).toBeDefined()
+    expect(data.session).toBeNull()
+  })
+
+  test('should handle getUser without valid session', async () => {
+    await auth.signOut()
+    const { data, error } = await auth.getUser()
+    expect(data.user).toBeNull()
+    expect(error).toBeDefined()
+  })
+
+  test('should handle updateUser without valid session', async () => {
+    await auth.signOut()
+    const { data, error } = await auth.updateUser({
+      data: { name: 'Test User' },
+    })
+
+    expect(error).toBeDefined()
+    expect(data.user).toBeNull()
+  })
+
+  test('should handle custom URL parameters', async () => {
+    const client = new GoTrueClient({
+      url: 'http://localhost:9999',
+      detectSessionInUrl: false,
+    })
+
+    await client.initialize()
+    expect(client['detectSessionInUrl']).toBe(false)
   })
 })
 
@@ -2537,6 +2834,22 @@ describe('Storage adapter edge cases', () => {
     expect(url).toContain('provider=github')
     expect(url).toContain('code_challenge=')
     expect(url).toContain('code_challenge_method=')
+  })
+
+  test('should handle localStorage not supported', async () => {
+    // Mock supportsLocalStorage to return false
+    jest.doMock('../src/lib/helpers', () => ({
+      ...jest.requireActual('../src/lib/helpers'),
+      supportsLocalStorage: () => false,
+    }))
+
+    const client = new GoTrueClient({
+      url: 'http://localhost:9999',
+    })
+
+    await client.initialize()
+    // Should fall back to memory storage
+    expect(client['storage']).toBeDefined()
   })
 })
 
