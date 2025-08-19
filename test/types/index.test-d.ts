@@ -1,10 +1,16 @@
 import { expectError, expectType } from 'tsd'
-import { PostgrestSingleResponse, createClient } from '../../src/index'
+import { PostgrestSingleResponse, createClient, SupabaseClient } from '../../src/index'
 import { Database, Json } from '../types'
 
 const URL = 'http://localhost:3000'
 const KEY = 'some.fake.key'
 const supabase = createClient<Database>(URL, KEY)
+
+// createClient with custom schema
+{
+  createClient<Database, 'personal'>(URL, KEY, { db: { schema: 'personal' } })
+  new SupabaseClient<Database, 'personal'>(URL, KEY, { db: { schema: 'personal' } })
+}
 
 // table invalid type
 {
