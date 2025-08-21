@@ -195,8 +195,19 @@ const supabase = createClient<Database>(URL, KEY)
   const pg12Client = createClient<Database>('HTTP://localhost:3000', KEY)
   const res13 = await pg13Client.from('shops').update({ id: 21 }).maxAffected(1)
   const res12 = await pg12Client.from('shops').update({ id: 21 }).maxAffected(1)
+  const pg13ClientNew = new SupabaseClient<DatabaseWithInternals>('HTTP://localhost:3000', KEY)
+  const res13New = await pg13ClientNew.from('shops').update({ id: 21 }).maxAffected(1)
   expectType<typeof res13.data>(null)
+  expectType<typeof res13New.data>(null)
   expectType<typeof res12.Error>('maxAffected method only available on postgrest 13+')
+  // Explicitly set PostgrestVersion should override the inferred __InternalSupabase schema version
+  const internal13Set12 = new SupabaseClient<DatabaseWithInternals, { PostgrestVersion: '12' }>(
+    URL,
+    KEY
+  )
+  const resinternal13Set12 = await internal13Set12.from('shops').update({ id: 21 }).maxAffected(1)
+  // The explicitly set PostgrestVersion should override the inferred __InternalSupabase schema version
+  expectType<typeof resinternal13Set12.Error>('maxAffected method only available on postgrest 13+')
 }
 
 // createClient with custom schema

@@ -52,7 +52,11 @@ export default class SupabaseClient<
     : never,
   ClientOptions extends { PostgrestVersion: string } = SchemaNameOrClientOptions extends string &
     keyof Omit<Database, '__InternalSupabase'>
-    ? { PostgrestVersion: '12' }
+    ? // If the version isn't explicitly set, look for it in the __InternalSupabase object to infer the right version
+      Database extends { __InternalSupabase: { PostgrestVersion: string } }
+      ? Database['__InternalSupabase']
+      : // otherwise default to 12
+        { PostgrestVersion: '12' }
     : SchemaNameOrClientOptions extends { PostgrestVersion: string }
     ? SchemaNameOrClientOptions
     : never
