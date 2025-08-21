@@ -30,12 +30,36 @@ import { Fetch, GenericSchema, SupabaseClientOptions, SupabaseAuthClientOptions 
  */
 export default class SupabaseClient<
   Database = any,
-  SchemaName extends string & keyof Database = 'public' extends keyof Database
+  // The second type parameter is also used for specifying db_schema, so we
+  // support both cases.
+  // TODO: Allow setting db_schema from ClientOptions.
+  SchemaNameOrClientOptions extends
+    | (string & keyof Omit<Database, '__InternalSupabase'>)
+    | { PostgrestVersion: string } = 'public' extends keyof Omit<Database, '__InternalSupabase'>
     ? 'public'
-    : string & keyof Database,
-  Schema extends GenericSchema = Database[SchemaName] extends GenericSchema
-    ? Database[SchemaName]
-    : any
+    : string & keyof Omit<Database, '__InternalSupabase'>,
+  SchemaName extends string &
+    keyof Omit<Database, '__InternalSupabase'> = SchemaNameOrClientOptions extends string &
+    keyof Omit<Database, '__InternalSupabase'>
+    ? SchemaNameOrClientOptions
+    : 'public' extends keyof Omit<Database, '__InternalSupabase'>
+    ? 'public'
+    : string & keyof Omit<Omit<Database, '__InternalSupabase'>, '__InternalSupabase'>,
+  Schema extends Omit<Database, '__InternalSupabase'>[SchemaName] extends GenericSchema
+    ? Omit<Database, '__InternalSupabase'>[SchemaName]
+    : never = Omit<Database, '__InternalSupabase'>[SchemaName] extends GenericSchema
+    ? Omit<Database, '__InternalSupabase'>[SchemaName]
+    : never,
+  ClientOptions extends { PostgrestVersion: string } = SchemaNameOrClientOptions extends string &
+    keyof Omit<Database, '__InternalSupabase'>
+    ? // If the version isn't explicitly set, look for it in the __InternalSupabase object to infer the right version
+      Database extends { __InternalSupabase: { PostgrestVersion: string } }
+      ? Database['__InternalSupabase']
+      : // otherwise default to 12
+        { PostgrestVersion: '12' }
+    : SchemaNameOrClientOptions extends { PostgrestVersion: string }
+    ? SchemaNameOrClientOptions
+    : never
 > {
   /**
    * Supabase Auth allows you to create and manage user sessions for access to data that is secured by access policies.
@@ -51,7 +75,7 @@ export default class SupabaseClient<
   protected authUrl: URL
   protected storageUrl: URL
   protected functionsUrl: URL
-  protected rest: PostgrestClient<Database, SchemaName, Schema>
+  protected rest: PostgrestClient<Database, ClientOptions, SchemaName>
   protected storageKey: string
   protected fetch?: Fetch
   protected changedAccessToken?: string
@@ -161,16 +185,16 @@ export default class SupabaseClient<
   from<
     TableName extends string & keyof Schema['Tables'],
     Table extends Schema['Tables'][TableName]
-  >(relation: TableName): PostgrestQueryBuilder<Schema, Table, TableName>
+  >(relation: TableName): PostgrestQueryBuilder<ClientOptions, Schema, Table, TableName>
   from<ViewName extends string & keyof Schema['Views'], View extends Schema['Views'][ViewName]>(
     relation: ViewName
-  ): PostgrestQueryBuilder<Schema, View, ViewName>
+  ): PostgrestQueryBuilder<ClientOptions, Schema, View, ViewName>
   /**
    * Perform a query on a table or a view.
    *
    * @param relation - The table or view name to query
    */
-  from(relation: string): PostgrestQueryBuilder<Schema, any, any> {
+  from(relation: string): PostgrestQueryBuilder<ClientOptions, Schema, any> {
     return this.rest.from(relation)
   }
 
@@ -182,10 +206,11 @@ export default class SupabaseClient<
    *
    * @param schema - The schema to query
    */
-  schema<DynamicSchema extends string & keyof Database>(
+  schema<DynamicSchema extends string & keyof Omit<Database, '__InternalSupabase'>>(
     schema: DynamicSchema
   ): PostgrestClient<
     Database,
+    ClientOptions,
     DynamicSchema,
     Database[DynamicSchema] extends GenericSchema ? Database[DynamicSchema] : any
   > {
@@ -225,6 +250,7 @@ export default class SupabaseClient<
       count?: 'exact' | 'planned' | 'estimated'
     } = {}
   ): PostgrestFilterBuilder<
+    ClientOptions,
     Schema,
     Fn['Returns'] extends any[]
       ? Fn['Returns'][number] extends Record<string, unknown>
@@ -233,7 +259,8 @@ export default class SupabaseClient<
       : never,
     Fn['Returns'],
     FnName,
-    null
+    null,
+    'RPC'
   > {
     return this.rest.rpc(fn, args, options)
   }

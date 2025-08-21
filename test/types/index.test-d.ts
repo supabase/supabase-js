@@ -1,5 +1,5 @@
 import { expectError, expectType } from 'tsd'
-import { PostgrestSingleResponse, createClient } from '../../src/index'
+import { PostgrestSingleResponse, SupabaseClient, createClient } from '../../src/index'
 import { Database, Json } from '../types'
 
 const URL = 'http://localhost:3000'
@@ -135,4 +135,133 @@ const supabase = createClient<Database>(URL, KEY)
       } | null
     }[]
   >(channels)
+}
+
+// Test Postgrest13
+// should be able to declare specific PostgrestVersion
+{
+  // @ts-expect-error should raise error if provinding invalid version
+  createClient<Database, { PostgrestVersion: 42 }>('HTTP://localhost:3000', KEY)
+}
+
+//  should be able to infer PostgrestVersion from Database __InternalSupabase
+{
+  type DatabaseWithInternals = {
+    __InternalSupabase: {
+      PostgrestVersion: '13'
+    }
+    public: {
+      Tables: {
+        shops: {
+          Row: {
+            address: string | null
+            id: number
+            shop_geom: unknown | null
+          }
+          Insert: {
+            address?: string | null
+            id: number
+            shop_geom?: unknown | null
+          }
+          Update: {
+            address?: string | null
+            id?: number
+            shop_geom?: unknown | null
+          }
+          Relationships: []
+        }
+      }
+      Views: {
+        [_ in never]: never
+      }
+      Functions: {
+        [_ in never]: never
+      }
+      Enums: {
+        [_ in never]: never
+      }
+      CompositeTypes: {
+        [_ in never]: never
+      }
+    }
+  }
+  // Note: The template argument properties (PostgrestVersion) will not be autocompleted
+  // due to a Typescript bug tracked here: https://github.com/microsoft/TypeScript/issues/56299
+  const pg13Client = createClient<DatabaseWithInternals>('HTTP://localhost:3000', KEY)
+  // @ts-expect-error should raise error if providing __InternalSupabase as schema name
+  createClient<DatabaseWithInternals, '__InternalSupabase'>('HTTP://localhost:3000', KEY)
+  // @ts-expect-error should raise error if providing __InternalSupabase as schema name
+  new SupabaseClient<DatabaseWithInternals, '__InternalSupabase'>('HTTP://localhost:3000', KEY)
+  const pg12Client = createClient<Database>('HTTP://localhost:3000', KEY)
+  const res13 = await pg13Client.from('shops').update({ id: 21 }).maxAffected(1)
+  const res12 = await pg12Client.from('shops').update({ id: 21 }).maxAffected(1)
+  const pg13ClientNew = new SupabaseClient<DatabaseWithInternals>('HTTP://localhost:3000', KEY)
+  const res13New = await pg13ClientNew.from('shops').update({ id: 21 }).maxAffected(1)
+  expectType<typeof res13.data>(null)
+  expectType<typeof res13New.data>(null)
+  expectType<typeof res12.Error>('maxAffected method only available on postgrest 13+')
+  // Explicitly set PostgrestVersion should override the inferred __InternalSupabase schema version
+  const internal13Set12 = new SupabaseClient<DatabaseWithInternals, { PostgrestVersion: '12' }>(
+    URL,
+    KEY
+  )
+  const resinternal13Set12 = await internal13Set12.from('shops').update({ id: 21 }).maxAffected(1)
+  // The explicitly set PostgrestVersion should override the inferred __InternalSupabase schema version
+  expectType<typeof resinternal13Set12.Error>('maxAffected method only available on postgrest 13+')
+}
+
+// createClient with custom schema
+{
+  const pg12CustomSchemaClient = createClient<Database, 'personal'>(URL, KEY, {
+    db: { schema: 'personal' },
+  })
+  const pg12CustomSchemaNewClient = new SupabaseClient<Database, 'personal'>(URL, KEY, {
+    db: { schema: 'personal' },
+  })
+  const res12new = await pg12CustomSchemaNewClient
+    .from('users')
+    .update({ username: 'test' })
+    .maxAffected(1)
+  const res12 = await pg12CustomSchemaClient
+    .from('users')
+    .update({ username: 'test' })
+    .maxAffected(1)
+  expectType<typeof res12.Error>('maxAffected method only available on postgrest 13+')
+  expectType<typeof res12new.Error>('maxAffected method only available on postgrest 13+')
+  // @ts-expect-error should raise error if providing table name not in the schema
+  pg12CustomSchemaClient.from('channels_details')
+  // @ts-expect-error should raise error if providing table name not in the schema
+  pg12CustomSchemaNewClient.from('channels_details')
+}
+
+// createClient with custom schema and PostgrestVersion explicitly set
+{
+  const pg13CustomSchemaClient = createClient<Database, { PostgrestVersion: '13' }, 'personal'>(
+    URL,
+    KEY,
+    {
+      db: { schema: 'personal' },
+    }
+  )
+  const pg12CustomSchemaNewClient = new SupabaseClient<
+    Database,
+    { PostgrestVersion: '12' },
+    'personal'
+  >(URL, KEY, {
+    db: { schema: 'personal' },
+  })
+  const res12new = await pg12CustomSchemaNewClient
+    .from('users')
+    .update({ username: 'test' })
+    .maxAffected(1)
+  const res13 = await pg13CustomSchemaClient
+    .from('users')
+    .update({ username: 'test' })
+    .maxAffected(1)
+  expectType<typeof res13.data>(null)
+  expectType<typeof res12new.Error>('maxAffected method only available on postgrest 13+')
+  // @ts-expect-error should raise error if providing table name not in the schema
+  pg12CustomSchemaClient.from('channels_details')
+  // @ts-expect-error should raise error if providing table name not in the schema
+  pg13CustomSchemaClient.from('channels_details')
 }

@@ -1,5 +1,5 @@
 import SupabaseClient from './SupabaseClient'
-import type { GenericSchema, SupabaseClientOptions } from './lib/types'
+import type { SupabaseClientOptions } from './lib/types'
 
 export * from '@supabase/auth-js'
 export type { User as AuthUser, Session as AuthSession } from '@supabase/auth-js'
@@ -26,18 +26,28 @@ export type { SupabaseClientOptions, QueryResult, QueryData, QueryError } from '
  */
 export const createClient = <
   Database = any,
-  SchemaName extends string & keyof Database = 'public' extends keyof Database
+  SchemaNameOrClientOptions extends
+    | (string & keyof Omit<Database, '__InternalSupabase'>)
+    | { PostgrestVersion: string } = 'public' extends keyof Omit<Database, '__InternalSupabase'>
     ? 'public'
-    : string & keyof Database,
-  Schema extends GenericSchema = Database[SchemaName] extends GenericSchema
-    ? Database[SchemaName]
-    : any
+    : string & keyof Omit<Database, '__InternalSupabase'>,
+  SchemaName extends string &
+    keyof Omit<Database, '__InternalSupabase'> = SchemaNameOrClientOptions extends string &
+    keyof Omit<Database, '__InternalSupabase'>
+    ? SchemaNameOrClientOptions
+    : 'public' extends keyof Omit<Database, '__InternalSupabase'>
+    ? 'public'
+    : string & keyof Omit<Omit<Database, '__InternalSupabase'>, '__InternalSupabase'>
 >(
   supabaseUrl: string,
   supabaseKey: string,
   options?: SupabaseClientOptions<SchemaName>
-): SupabaseClient<Database, SchemaName, Schema> => {
-  return new SupabaseClient<Database, SchemaName, Schema>(supabaseUrl, supabaseKey, options)
+): SupabaseClient<Database, SchemaNameOrClientOptions, SchemaName> => {
+  return new SupabaseClient<Database, SchemaNameOrClientOptions, SchemaName>(
+    supabaseUrl,
+    supabaseKey,
+    options
+  )
 }
 
 // Check for Node.js <= 18 deprecation
