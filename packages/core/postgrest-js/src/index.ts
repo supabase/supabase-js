@@ -28,8 +28,7 @@ export type {
   PostgrestResponseSuccess,
   PostgrestSingleResponse,
   PostgrestMaybeSingleResponse,
-  ClientServerOptions,
-  GetGenericDatabaseWithOptions,
+  ClientServerOptions as PostgrestClientOptions,
 } from './types'
 // https://github.com/supabase/postgrest-js/issues/551
 // To be replaced with a helper type that only uses public types

@@ -38,7 +38,7 @@ jobs:
       (
         github.event_name == 'workflow_dispatch' ||
         github.event_name == 'push' ||
-        (github.event_name == 'pull_request_target' && contains(github.event.pull_request.labels.*.name, 'trigger: preview'))
+        (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'trigger: preview'))
       )
     runs-on: ubuntu-latest
     outputs:
@@ -94,7 +94,7 @@ jobs:
         id: generate-token
         uses: actions/create-github-app-token@v1
         with:
-          app-id: ${{ vars.CROSS_REPO_APP_ID }}
+          app-id: ${{ secrets.CROSS_REPO_APP_ID }}
           private-key: ${{ secrets.CROSS_REPO_APP_PRIVATE_KEY }}
           owner: supabase
           repositories: postgrest-js,supabase-js

@@ -80,22 +80,6 @@ export type DatabaseWithOptions<Database, Options extends ClientServerOptions> =
   options: Options
 }
 
-const INTERNAL_SUPABASE_OPTIONS = '__InternalSupabase'
-
-export type GetGenericDatabaseWithOptions<
-  Database,
-  Opts extends ClientServerOptions = { PostgrestVersion: '12' }
-> = IsAny<Database> extends true
-  ? DatabaseWithOptions<Database, Opts>
-  : typeof INTERNAL_SUPABASE_OPTIONS extends keyof Database
-  ? Database[typeof INTERNAL_SUPABASE_OPTIONS] extends ClientServerOptions
-    ? DatabaseWithOptions<
-        Omit<Database, typeof INTERNAL_SUPABASE_OPTIONS>,
-        Database[typeof INTERNAL_SUPABASE_OPTIONS]
-      >
-    : DatabaseWithOptions<Omit<Database, typeof INTERNAL_SUPABASE_OPTIONS>, Opts>
-  : DatabaseWithOptions<Database, Opts>
-
 export type MaxAffectedEnabled<PostgrestVersion extends string | undefined> =
   PostgrestVersion extends `13${string}` ? true : false
 
