@@ -188,6 +188,10 @@ const supabase = createClient<Database>(URL, KEY)
   // Note: The template argument properties (PostgrestVersion) will not be autocompleted
   // due to a Typescript bug tracked here: https://github.com/microsoft/TypeScript/issues/56299
   const pg13Client = createClient<DatabaseWithInternals>('HTTP://localhost:3000', KEY)
+  // @ts-expect-error should raise error if providing __InternalSupabase as schema name
+  createClient<DatabaseWithInternals, '__InternalSupabase'>('HTTP://localhost:3000', KEY)
+  // @ts-expect-error should raise error if providing __InternalSupabase as schema name
+  new SupabaseClient<DatabaseWithInternals, '__InternalSupabase'>('HTTP://localhost:3000', KEY)
   const pg12Client = createClient<Database>('HTTP://localhost:3000', KEY)
   const res13 = await pg13Client.from('shops').update({ id: 21 }).maxAffected(1)
   const res12 = await pg12Client.from('shops').update({ id: 21 }).maxAffected(1)

@@ -34,10 +34,10 @@ export default class SupabaseClient<
   // support both cases.
   // TODO: Allow setting db_schema from ClientOptions.
   SchemaNameOrClientOptions extends
-    | (string & keyof Database)
-    | { PostgrestVersion: string } = 'public' extends keyof Database
+    | (string & keyof Omit<Database, '__InternalSupabase'>)
+    | { PostgrestVersion: string } = 'public' extends keyof Omit<Database, '__InternalSupabase'>
     ? 'public'
-    : string & keyof Database,
+    : string & keyof Omit<Database, '__InternalSupabase'>,
   SchemaName extends string &
     keyof Omit<Database, '__InternalSupabase'> = SchemaNameOrClientOptions extends string &
     keyof Omit<Database, '__InternalSupabase'>

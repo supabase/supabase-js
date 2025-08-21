@@ -27,10 +27,10 @@ export type { SupabaseClientOptions, QueryResult, QueryData, QueryError } from '
 export const createClient = <
   Database = any,
   SchemaNameOrClientOptions extends
-    | (string & keyof Database)
-    | { PostgrestVersion: string } = 'public' extends keyof Database
+    | (string & keyof Omit<Database, '__InternalSupabase'>)
+    | { PostgrestVersion: string } = 'public' extends keyof Omit<Database, '__InternalSupabase'>
     ? 'public'
-    : string & keyof Database,
+    : string & keyof Omit<Database, '__InternalSupabase'>,
   SchemaName extends string &
     keyof Omit<Database, '__InternalSupabase'> = SchemaNameOrClientOptions extends string &
     keyof Omit<Database, '__InternalSupabase'>
