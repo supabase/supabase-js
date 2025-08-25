@@ -15,7 +15,7 @@ on:
         description: 'Target branch for supabase-js tests'
         type: string
         default: 'master'
-
+  
   # Push to master - only when source code changes
   push:
     branches:
@@ -25,9 +25,10 @@ on:
       - 'package.json'
       - 'package-lock.json'
       - 'tsconfig.json'
-
+  
   # PR triggers - only when labeled
-  pull_request:
+  # Using pull_request_target to access secrets when PRs come from forks
+  pull_request_target:
     types: [labeled, synchronize]
 
 jobs:
@@ -38,7 +39,7 @@ jobs:
       (
         github.event_name == 'workflow_dispatch' ||
         github.event_name == 'push' ||
-        (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'trigger: preview'))
+        (github.event_name == 'pull_request_target' && contains(github.event.pull_request.labels.*.name, 'trigger: preview'))
       )
     runs-on: ubuntu-latest
     outputs:
@@ -47,6 +48,9 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          # For pull_request_target, we need to explicitly checkout the PR's head
+          ref: ${{ github.event_name == 'pull_request_target' && github.event.pull_request.head.sha || github.sha }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -94,7 +98,7 @@ jobs:
         id: generate-token
         uses: actions/create-github-app-token@v1
         with:
-          app-id: ${{ secrets.CROSS_REPO_APP_ID }}
+          app-id: ${{ vars.CROSS_REPO_APP_ID }}
           private-key: ${{ secrets.CROSS_REPO_APP_PRIVATE_KEY }}
           owner: supabase
           repositories: postgrest-js,supabase-js
@@ -153,11 +157,11 @@ jobs:
           body: |
             <!-- postgrest-js-preview-status -->
             🚀 **Preview release created!**
-
+            
             supabase-js CI tests have been automatically triggered on feature branch to verify compatibility.
-
+            
             **Preview package:** `${{ needs.preview.outputs.preview-url }}`
-
+            
             Results will be posted here once testing is complete.
-
+            
           edit-mode: replace
