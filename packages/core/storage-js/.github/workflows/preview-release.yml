@@ -16,10 +16,10 @@ on:
         type: string
         default: 'master'
 
-  # Push to master - only when source code changes
+  # Push to main - only when source code changes
   push:
     branches:
-      - master
+      - main
     paths:
       - 'src/**'
       - 'infra/**'
@@ -28,12 +28,13 @@ on:
       - 'tsconfig.json'
 
   # PR triggers - only when labeled
-  pull_request:
+  # Using pull_request_target to access secrets when PRs come from forks
+  pull_request_target:
     types: [labeled, synchronize]
 
 jobs:
   preview:
-    # Run only for PRs with 'trigger: preview' label or pushes to master
+    # Run only for PRs with 'trigger: preview' label or pushes to main
     if: >
       github.repository == 'supabase/storage-js' &&
       (
@@ -48,6 +49,9 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          # For pull_request_target, we need to explicitly checkout the PR's head
+          ref: ${{ github.event_name == 'pull_request_target' && github.event.pull_request.head.sha || github.sha }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -107,10 +111,10 @@ jobs:
           script: |
             const prNumber = context.issue.number || 'push';
             const triggeringRepo = context.repo.repo;
-            // Use input target_branch if workflow_dispatch, otherwise default to master
+            // Use input target_branch if workflow_dispatch, otherwise default to main
             const targetBranch = context.eventName === 'workflow_dispatch' && context.payload.inputs?.target_branch
               ? context.payload.inputs.target_branch
-              : 'master';
+              : 'main';
 
             try {
               const response = await github.rest.actions.createWorkflowDispatch({
