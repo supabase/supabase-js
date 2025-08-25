@@ -210,7 +210,7 @@ export default class GoTrueClient {
   /**
    * Keeps track of the async client initialization.
    * When null or not yet resolved the auth state is `unknown`
-   * Once resolved the the auth state is known and it's save to call any further client methods.
+   * Once resolved the auth state is known and it's safe to call any further client methods.
    * Keep extra care to never reject or throw uncaught errors
    */
   protected initializePromise: Promise<InitializeResult> | null = null
