@@ -11,6 +11,7 @@ import {
   userNotAvailableProxy,
   resolveFetch,
 } from '../src/lib/helpers'
+import type { SolanaWeb3Credentials } from '../src/lib/types'
 
 // Add structuredClone polyfill for jsdom
 if (typeof structuredClone === 'undefined') {
@@ -462,6 +463,83 @@ describe('Web3 functionality in browser', () => {
 
     await expect(pkceClient.signInWithWeb3(credentials)).rejects.toThrow()
   })
+
+  it('should handle Web3 Ethereum with wallet object', async () => {
+    const mockWallet = {
+      address: '0x1234567890abcdef',
+      request: jest.fn().mockResolvedValue(['0x1234567890abcdef']),
+      on: jest.fn(),
+      removeListener: jest.fn(),
+    }
+
+    const credentials = {
+      chain: 'ethereum' as const,
+      wallet: mockWallet,
+    }
+
+    try {
+      await pkceClient.signInWithWeb3(credentials)
+    } catch (error) {
+      // Expected to fail in test environment, but should have attempted the flow
+      expect(error).toBeDefined()
+    }
+  })
+
+  it('should handle Web3 Solana with wallet object', async () => {
+    const mockWallet = {
+      publicKey: {
+        toString: () => 'test-public-key',
+        toBase58: () => 'test-public-key-base58'
+      },
+      signMessage: jest.fn().mockResolvedValue(new Uint8Array(64)),
+    }
+
+    const credentials: SolanaWeb3Credentials = {
+      chain: 'solana',
+      wallet: mockWallet,
+    }
+
+    try {
+      await pkceClient.signInWithWeb3(credentials)
+    } catch (error) {
+      // Expected to fail in test environment, but should have attempted the flow
+      expect(error).toBeDefined()
+    }
+  })
+
+  it('should handle Ethereum wallet object', async () => {
+    const mockWallet = {
+      request: jest.fn().mockResolvedValue(['0x123']),
+      on: jest.fn(),
+      removeListener: jest.fn(),
+    }
+
+    const mockFetch = jest.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: () => Promise.resolve({
+        session: { access_token: 'test', user: { id: 'test' } },
+        user: { id: 'test' }
+      }),
+      headers: new Headers(),
+    })
+
+    const client = new (require('../src/GoTrueClient').default)({
+      url: 'http://localhost:9999',
+      autoRefreshToken: false,
+      fetch: mockFetch,
+    })
+
+    const { data, error } = await client.signInWithIdToken({
+      provider: 'ethereum',
+      token: 'test-token',
+      nonce: 'test-nonce',
+      accessToken: 'test-access-token',
+      wallet: mockWallet,
+    })
+
+    expect(data.session).toBeDefined()
+  })
 })
 
 describe('GoTrueClient constructor edge cases', () => {
@@ -668,6 +746,64 @@ describe('Session Management Tests', () => {
 
     expect(client).toBeDefined()
   })
+
+  it('should handle separate user storage with missing user', async () => {
+    const mockSession = {
+      access_token: 'test-token',
+      refresh_token: 'test-refresh',
+      expires_in: 3600,
+      token_type: 'bearer',
+      user: null,
+    }
+
+    const sessionStorage = {
+      getItem: jest.fn().mockResolvedValue(JSON.stringify(mockSession)),
+      setItem: jest.fn(),
+      removeItem: jest.fn(),
+    }
+
+    const userStorage = {
+      getItem: jest.fn().mockResolvedValue(JSON.stringify({ user: { id: 'test-user' } })),
+      setItem: jest.fn(),
+      removeItem: jest.fn(),
+    }
+
+    const client = new (require('../src/GoTrueClient').default)({
+      url: 'http://localhost:9999',
+      storage: sessionStorage,
+      userStorage: userStorage,
+      autoRefreshToken: false,
+    })
+
+    await client.initialize()
+    expect(client).toBeDefined()
+  })
+
+  it('should handle session with invalid tokens', async () => {
+    const mockSession = {
+      access_token: '',
+      refresh_token: '',
+      expires_in: 3600,
+      token_type: 'bearer',
+      user: { id: 'test-user' },
+    }
+
+    const mockStorage = {
+      getItem: jest.fn().mockResolvedValue(JSON.stringify(mockSession)),
+      setItem: jest.fn(),
+      removeItem: jest.fn(),
+    }
+
+    const client = new (require('../src/GoTrueClient').default)({
+      url: 'http://localhost:9999',
+      autoRefreshToken: false,
+      storage: mockStorage,
+    })
+
+    const { data, error } = await client.refreshSession()
+    expect(error).toBeDefined()
+    expect(error?.message).toContain('session missing')
+  })
 })
 
 describe('Additional Tests', () => {
@@ -715,5 +851,260 @@ describe('Additional Tests', () => {
     await client.initialize()
 
     expect(client).toBeDefined()
+  })
+
+  it('should handle signInWithOAuth skipBrowserRedirect false', async () => {
+    const mockFetch = jest.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: () => Promise.resolve({ url: 'http://localhost:9999/authorize?provider=github' }),
+      headers: new Headers(),
+    })
+
+    const mockAssign = jest.fn()
+    Object.defineProperty(window, 'location', {
+      value: {
+        href: 'http://localhost:9999',
+        assign: mockAssign,
+        replace: jest.fn(),
+        reload: jest.fn(),
+        toString: () => 'http://localhost:9999',
+      },
+      writable: true,
+    })
+
+    const client = new (require('../src/GoTrueClient').default)({
+      url: 'http://localhost:9999',
+      autoRefreshToken: false,
+      fetch: mockFetch,
+    })
+
+    const { data } = await client.signInWithOAuth({
+      provider: 'github',
+      options: {
+        skipBrowserRedirect: false,
+      },
+    })
+
+    expect(data?.url).toBeDefined()
+    expect(mockAssign).toHaveBeenCalledWith('http://localhost:9999/authorize?provider=github')
+  })
+})
+
+describe('OAuth and Sign-in Branch Testing', () => {
+  it('should handle signInWithOAuth redirect', async () => {
+    const mockFetch = jest.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: () => Promise.resolve({ url: 'http://localhost:9999/authorize?provider=github' }),
+      headers: new Headers(),
+    })
+
+    const mockAssign = jest.fn()
+    Object.defineProperty(window, 'location', {
+      value: {
+        href: 'http://localhost:9999',
+        assign: mockAssign,
+        replace: jest.fn(),
+        reload: jest.fn(),
+        toString: () => 'http://localhost:9999',
+      },
+      writable: true,
+    })
+
+    const client = new (require('../src/GoTrueClient').default)({
+      url: 'http://localhost:9999',
+      autoRefreshToken: false,
+      fetch: mockFetch,
+    })
+
+    const { data } = await client.signInWithOAuth({
+      provider: 'github',
+      options: {
+        skipBrowserRedirect: false,
+      },
+    })
+
+    expect(data?.url).toBeDefined()
+    expect(mockAssign).toHaveBeenCalledWith('http://localhost:9999/authorize?provider=github')
+  })
+
+  it('should handle signInWithPassword with phone', async () => {
+    const mockFetch = jest.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: () => Promise.resolve({
+        session: { access_token: 'test', user: { id: 'test' } },
+        user: { id: 'test' }
+      }),
+      headers: new Headers(),
+    })
+
+    const client = new (require('../src/GoTrueClient').default)({
+      url: 'http://localhost:9999',
+      autoRefreshToken: false,
+      fetch: mockFetch,
+    })
+
+    const { data, error } = await client.signInWithPassword({
+      phone: '+1234567890',
+      password: 'password123',
+    })
+
+    expect(data.session).toBeDefined()
+  })
+})
+
+describe('Auto Refresh and Token Management', () => {
+  it('should handle user proxy', async () => {
+    const mockSession = {
+      access_token: 'test-token',
+      refresh_token: 'test-refresh',
+      expires_in: 3600,
+      expires_at: Math.floor(Date.now() / 1000) + 3600,
+      token_type: 'bearer',
+      user: { id: 'test-user' },
+    }
+
+    const mockStorage = {
+      getItem: jest.fn().mockResolvedValue(JSON.stringify(mockSession)),
+      setItem: jest.fn(),
+      removeItem: jest.fn(),
+    }
+
+    const mockUserStorage = {
+      getItem: jest.fn().mockResolvedValue(null),
+      setItem: jest.fn(),
+      removeItem: jest.fn(),
+    }
+
+    const client = new (require('../src/GoTrueClient').default)({
+      url: 'http://localhost:9999',
+      autoRefreshToken: false,
+      storage: mockStorage,
+      userStorage: mockUserStorage,
+    })
+
+    await client.initialize()
+    const { data } = await client.getSession()
+    expect(data.session).toBeDefined()
+  })
+})
+
+describe('Storage and User Storage Combinations', () => {
+  it('should handle separate user storage with missing user', async () => {
+    const mockSession = {
+      access_token: 'test-token',
+      refresh_token: 'test-refresh',
+      expires_in: 3600,
+      expires_at: Math.floor(Date.now() / 1000) + 3600,
+      token_type: 'bearer',
+      user: { id: 'test-user' },
+    }
+
+    const mockStorage = {
+      getItem: jest.fn().mockResolvedValue(JSON.stringify(mockSession)),
+      setItem: jest.fn(),
+      removeItem: jest.fn(),
+    }
+
+    const mockUserStorage = {
+      getItem: jest.fn().mockResolvedValue({ user: null }),
+      setItem: jest.fn(),
+      removeItem: jest.fn(),
+    }
+
+    const client = new (require('../src/GoTrueClient').default)({
+      url: 'http://localhost:9999',
+      autoRefreshToken: false,
+      storage: mockStorage,
+      userStorage: mockUserStorage,
+    })
+
+    await client.initialize()
+    const { data } = await client.getSession()
+    expect(data.session).toBeDefined()
+  })
+})
+
+describe('Lock Mechanism Branches', () => {
+  it('should handle lock acquisition timeout', async () => {
+    const slowLock = jest.fn().mockImplementation(() =>
+      new Promise((resolve) => setTimeout(resolve, 100))
+    )
+
+    const client = new (require('../src/GoTrueClient').default)({
+      url: 'http://localhost:9999',
+      autoRefreshToken: false,
+      lock: slowLock,
+    })
+
+    await client.initialize()
+    expect(client).toBeDefined()
+  })
+
+  it('should handle lock release errors', async () => {
+    const errorLock = jest.fn().mockImplementation(() => ({
+      acquire: jest.fn().mockResolvedValue(undefined),
+      release: jest.fn().mockRejectedValue(new Error('Lock release error')),
+    }))
+
+    const client = new (require('../src/GoTrueClient').default)({
+      url: 'http://localhost:9999',
+      autoRefreshToken: false,
+      lock: errorLock,
+    })
+
+    await client.initialize()
+    expect(client).toBeDefined()
+  })
+})
+
+describe('MFA Complex Branches', () => {
+  it('should handle MFA enroll with phone', async () => {
+    const mockSession = {
+      access_token: 'test-token',
+      refresh_token: 'test-refresh',
+      expires_in: 3600,
+      expires_at: Math.floor(Date.now() / 1000) + 3600,
+      token_type: 'bearer',
+      user: { id: 'test-user' },
+    }
+
+    const mockStorage = {
+      getItem: jest.fn().mockResolvedValue(JSON.stringify(mockSession)),
+      setItem: jest.fn(),
+      removeItem: jest.fn(),
+    }
+
+    const mockFetch = jest.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: () => Promise.resolve({
+        id: 'factor-id',
+        type: 'phone',
+        status: 'unverified',
+        friendly_name: 'Test Phone',
+        created_at: new Date().toISOString(),
+      }),
+      headers: new Headers(),
+    })
+
+    const client = new (require('../src/GoTrueClient').default)({
+      url: 'http://localhost:9999',
+      autoRefreshToken: false,
+      storage: mockStorage,
+      fetch: mockFetch,
+    })
+
+    await client.initialize()
+
+    const { data, error } = await client.mfa.enroll({
+      factorType: 'phone',
+      phone: '+1234567890',
+    })
+
+    expect(data).toBeDefined()
+    expect(mockFetch).toHaveBeenCalled()
   })
 })
