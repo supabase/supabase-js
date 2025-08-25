@@ -15,7 +15,7 @@ on:
         description: 'Target branch for supabase-js tests'
         type: string
         default: 'master'
-
+  
   # Push to master - only when source code changes
   push:
     branches:
@@ -25,7 +25,7 @@ on:
       - 'package.json'
       - 'package-lock.json'
       - 'tsconfig.json'
-
+  
   # PR triggers - only when labeled
   # Using pull_request_target to access secrets when PRs come from forks
   pull_request_target:
@@ -48,6 +48,9 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          # For pull_request_target, we need to explicitly checkout the PR's head
+          ref: ${{ github.event_name == 'pull_request_target' && github.event.pull_request.head.sha || github.sha }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -154,11 +157,11 @@ jobs:
           body: |
             <!-- auth-js-preview-status -->
             🚀 **Preview release created!**
-
+            
             supabase-js CI tests have been automatically triggered on feature branch to verify compatibility.
-
+            
             **Preview package:** `${{ needs.preview.outputs.preview-url }}`
-
+            
             Results will be posted here once testing is complete.
-
+            
           edit-mode: replace
