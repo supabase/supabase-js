@@ -1,5 +1,4 @@
-import { expectType } from 'tsd'
-import { TypeEqual } from 'ts-expect'
+import { expectType, TypeEqual } from '../types'
 import { DeduplicateRelationships, GetComputedFields } from '../../src/select-query-parser/utils'
 import { Database } from '../types.generated'
 

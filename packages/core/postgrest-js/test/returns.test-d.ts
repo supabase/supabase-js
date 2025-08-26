@@ -1,7 +1,6 @@
-import { expectType } from 'tsd'
+import { expectType, TypeEqual } from './types'
 import { PostgrestBuilder, PostgrestClient } from '../src/index'
 import { Database } from './types.override'
-import { TypeEqual } from 'ts-expect'
 
 const REST_URL = 'http://localhost:3000'
 const postgrest = new PostgrestClient<Database>(REST_URL)

@@ -1,11 +1,10 @@
 import { PostgrestClient } from '../src/index'
 import { Database } from './types.override'
 import { Database as DatabasePostgrest13 } from './types.override-with-options-postgrest13'
-import { expectType } from 'tsd'
+import { expectType, TypeEqual } from './types'
 import { InvalidMethodError } from '../src/PostgrestFilterBuilder'
 import { z } from 'zod'
 import { RequiredDeep } from 'type-fest'
-import { TypeEqual } from 'ts-expect'
 
 const REST_URL_13 = 'http://localhost:3001'
 const postgrest13 = new PostgrestClient<DatabasePostgrest13>(REST_URL_13)
@@ -60,11 +59,11 @@ describe('maxAffected', () => {
       resUpsert
     )
     expectType<InvalidMethodError<'maxAffected method only available on update or delete'>>(
-      // @ts-expect-error update method shouldn't return an error
+      // @ts-expect-error InvalidMethodError<"maxAffected method only available on update or delete">
       resUpdate
     )
     expectType<InvalidMethodError<'maxAffected method only available on update or delete'>>(
-      // @ts-expect-error delete method shouldn't return an error
+      // @ts-expect-error InvalidMethodError<"maxAffected method only available on update or delete">
       resDelete
     )
   })

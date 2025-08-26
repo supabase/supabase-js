@@ -900,7 +900,7 @@ test('throwOnError throws errors instead of returning them', async () => {
   let isErrorCaught = false
 
   try {
-    // @ts-expect-error: nonexistent table
+    // @ts-expect-error Argument of type '"missing_table"' is not assignable to parameter
     await postgrest.from('missing_table').select().throwOnError()
   } catch (error) {
     expect(error).toMatchInlineSnapshot(
@@ -914,7 +914,7 @@ test('throwOnError throws errors instead of returning them', async () => {
 
 test('throwOnError throws errors which include stack', async () => {
   try {
-    // @ts-expect-error: nonexistent table
+    // @ts-expect-error Argument of type '"does_not_exist"' is not assignable to parameter
     await postgrest.from('does_not_exist').select().throwOnError()
   } catch (err) {
     expect(err instanceof Error).toBe(true)
@@ -927,7 +927,7 @@ test('throwOnError throws errors which include stack', async () => {
 //   const postgrest_ = new PostgrestClient<Database>(REST_URL, { throwOnError: true })
 
 //   try {
-//     // @ts-expect-error missing table
+//     // @ts-expect-error! missing table
 //     await postgrest_.from('missing_table').select()
 //   } catch (error) {
 //     expect(error).toMatchInlineSnapshot()
@@ -942,7 +942,7 @@ test('throwOnError throws errors which include stack', async () => {
 //   const postgrest_ = new PostgrestClient<Database>(REST_URL, { throwOnError: true })
 
 //   try {
-//     // @ts-expect-error missing function
+//     // @ts-expect-error! missing function
 //     await postgrest_.rpc('missing_fn').select()
 //   } catch (error) {
 //     expect(error).toMatchInlineSnapshot()
@@ -955,7 +955,7 @@ test('throwOnError throws errors which include stack', async () => {
 // test('throwOnError can be disabled per call', async () => {
 //   let isErrorCaught = false
 //   const postgrest_ = new PostgrestClient<Database>(REST_URL, { throwOnError: true })
-//   // @ts-expect-error missing table
+//   // @ts-expect-error! missing table
 //   const { error } = await postgrest_.from('missing_table').select().throwOnError(false)
 
 //   expect(error).toMatchInlineSnapshot()

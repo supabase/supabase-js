@@ -1,12 +1,10 @@
 import { PostgrestClient } from '../src/index'
 import { Database } from './types.override'
-import { expectType } from 'tsd'
-import { TypeEqual } from 'ts-expect'
+import { expectType, TypeEqual } from './types'
 import { SelectQueryError } from '../src/select-query-parser/utils'
 
 const REST_URL = 'http://localhost:3000'
 export const postgrest = new PostgrestClient<Database>(REST_URL)
-const userColumn: 'catchphrase' | 'username' = 'username'
 
 test('join over a 1-1 relation with both nullables and non-nullables fields with no hinting', async () => {
   const res = await postgrest

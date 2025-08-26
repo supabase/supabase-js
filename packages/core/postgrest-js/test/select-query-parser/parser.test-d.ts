@@ -1,4 +1,4 @@
-import { expectType } from 'tsd'
+import { expectType, TypeEqual } from '../types'
 import type { ParseQuery, ParserError } from '../../src/select-query-parser/parser'
 
 // This test file is here to ensure some of our perser behave as expected
@@ -526,7 +526,7 @@ import type { ParseQuery, ParserError } from '../../src/select-query-parser/pars
 
 // select JSON accessor
 {
-  expect<ParseQuery<'data->foo->bar, data->foo->>baz'>>([
+  expectType<ParseQuery<'data->foo->bar, data->foo->>baz'>>([
     { type: 'field', name: 'data', alias: 'bar', castType: 'json', jsonPath: 'foo.bar' },
     { type: 'field', name: 'data', alias: 'baz', castType: 'text', jsonPath: 'foo.baz' },
   ])
@@ -534,7 +534,7 @@ import type { ParseQuery, ParserError } from '../../src/select-query-parser/pars
 
 // embed resource with no fields
 {
-  expect<ParseQuery<'message, users()'>>([
+  expectType<ParseQuery<'message, users()'>>([
     { type: 'field', name: 'message' },
     { type: 'field', name: 'users', children: [] },
   ])

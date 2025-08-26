@@ -1,5 +1,4 @@
-import { TypeEqual } from 'ts-expect'
-import { expectError, expectType } from 'tsd'
+import { expectType, TypeEqual } from './types'
 import { PostgrestClient, PostgrestError } from '../src/index'
 import { Prettify } from '../src/types'
 import { Json } from '../src/select-query-parser/types'
@@ -12,48 +11,50 @@ const postgrestWithOptions = new PostgrestClient<DatabaseWithOptions>(REST_URL)
 
 // table invalid type
 {
-  expectError(postgrest.from(42))
-  expectError(postgrest.from('nonexistent_table'))
+  // @ts-expect-error Argument of type '42' is not assignable to parameter of type
+  postgrest.from(42)
+  // @ts-expect-error Argument of type '"nonexistent_table"' is not assignable to parameter of type
+  postgrest.from('nonexistent_table')
 }
 
 // `null` can't be used with `.eq()`
 {
   postgrest.from('users').select().eq('username', 'foo')
-  expectError(postgrest.from('users').select().eq('username', null))
+  // @ts-expect-error  Argument of type 'null' is not assignable to parameter of type 'string'
+  postgrest.from('users').select().eq('username', null)
 
   const nullableVar = 'foo' as string | null
-  expectError(postgrest.from('users').select().eq('username', nullableVar))
+  // @ts-expect-error Argument of type 'string | null' is not assignable to parameter of type 'string'
+  postgrest.from('users').select().eq('username', nullableVar)
 }
 
 // `.eq()`, '.neq()' and `.in()` validate provided filter value when column is an enum.
 // Behaves the same for simple columns, as well as relationship filters.
 {
-  expectError(postgrest.from('users').select().eq('status', 'invalid'))
-  expectError(postgrest.from('users').select().neq('status', 'invalid'))
-  expectError(postgrest.from('users').select().in('status', ['invalid']))
+  // @ts-expect-error Argument of type '"invalid"' is not assignable to parameter
+  postgrest.from('users').select().eq('status', 'invalid')
+  // @ts-expect-error Argument of type '"invalid"' is not assignable to parameter of type '"ONLINE" | "OFFLINE" | null'
+  postgrest.from('users').select().neq('status', 'invalid')
+  // @ts-expect-error Type '"invalid"' is not assignable to type '"ONLINE" | "OFFLINE" | null'
+  postgrest.from('users').select().in('status', ['invalid'])
 
-  expectError(
-    postgrest.from('best_friends').select('users!first_user(status)').eq('users.status', 'invalid')
-  )
-  expectError(
-    postgrest.from('best_friends').select('users!first_user(status)').neq('users.status', 'invalid')
-  )
-  expectError(
-    postgrest
-      .from('best_friends')
-      .select('users!first_user(status)')
-      .in('users.status', ['invalid'])
-  )
+  // @ts-expect-error Argument of type '"invalid"' is not assignable to parameter
+  postgrest.from('best_friends').select('users!first_user(status)').eq('users.status', 'invalid')
+  // @ts-expect-error Argument of type '"invalid"' is not assignable to parameter of type '"ONLINE" | "OFFLINE" | null'
+  postgrest.from('best_friends').select('users!first_user(status)').neq('users.status', 'invalid')
+  postgrest
+    .from('best_friends')
+    .select('users!first_user(status)')
+    // @ts-expect-error Type '"invalid"' is not assignable to type '"ONLINE" | "OFFLINE" | null'
+    .in('users.status', ['invalid'])
+
   // Validate deeply nested embedded tables
-  expectError(
-    postgrest.from('users').select('messages(channels(*))').eq('messages.channels.id', 'invalid')
-  )
-  expectError(
-    postgrest.from('users').select('messages(channels(*))').neq('messages.channels.id', 'invalid')
-  )
-  expectError(
-    postgrest.from('users').select('messages(channels(*))').in('messages.channels.id', ['invalid'])
-  )
+  // @ts-expect-error Argument of type 'string' is not assignable to parameter of type 'number'
+  postgrest.from('users').select('messages(channels(*))').eq('messages.channels.id', 'invalid')
+  // @ts-expect-error Argument of type 'string' is not assignable to parameter of type 'number'
+  postgrest.from('users').select('messages(channels(*))').neq('messages.channels.id', 'invalid')
+  // @ts-expect-error Type 'string' is not assignable to type 'number'
+  postgrest.from('users').select('messages(channels(*))').in('messages.channels.id', ['invalid'])
 
   {
     const result = await postgrest.from('users').select('status').eq('status', 'ONLINE')
@@ -147,12 +148,14 @@ const postgrestWithOptions = new PostgrestClient<DatabaseWithOptions>(REST_URL)
 
 // cannot update non-updatable views
 {
-  expectError(postgrest.from('updatable_view').update({ non_updatable_column: 0 }))
+  // @ts-expect-error Type 'number' is not assignable to type 'undefined'
+  postgrest.from('updatable_view').update({ non_updatable_column: 0 })
 }
 
 // cannot update non-updatable columns
 {
-  expectError(postgrest.from('updatable_view').update({ non_updatable_column: 0 }))
+  // @ts-expect-error Type 'number' is not assignable to type 'undefined'
+  postgrest.from('updatable_view').update({ non_updatable_column: 0 })
 }
 
 // spread resource with single column in select query
@@ -288,18 +291,21 @@ const postgrestWithOptions = new PostgrestClient<DatabaseWithOptions>(REST_URL)
     throw new Error(result.error.message)
   }
   expectType<
-    {
-      baz: number
-      en: 'ONE' | 'TWO' | 'THREE'
-      bar: {
+    TypeEqual<
+      typeof result.data,
+      {
         baz: number
-      }
-    }[]
-  >(result.data)
+        en: 'ONE' | 'TWO' | 'THREE'
+        bar: {
+          baz: number
+        }
+      }[]
+    >
+  >(true)
 }
 // Check that client options __InternalSupabase isn't considered like the other schemas
 {
   await postgrestWithOptions
-    // @ts-expect-error supabase internal shouldn't be available as one of the selectable schema
+    // @ts-expect-error Argument of type '"__InternalSupabase"' is not assignable to parameter of type '"personal" | "public"'
     .schema('__InternalSupabase')
 }
