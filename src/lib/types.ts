@@ -39,7 +39,9 @@ export type SupabaseClientOptions<SchemaName> = {
      */
     storage?: SupabaseAuthClientOptions['storage']
     /**
-     * A storage provider to store the user profile separately from the session. Useful when you need to store the session information in cookies, without bloating the data with the redundant user object.
+     * A storage provider to store the user profile separately from the session.
+     * Useful when you need to store the session information in cookies,
+     * without bloating the data with the redundant user object.
      *
      * @experimental
      */
