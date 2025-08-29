@@ -1,6 +1,5 @@
 import { vi } from 'vitest'
 import RealtimeClient from '../../src/RealtimeClient'
-import RealtimeChannel from '../../src/RealtimeChannel'
 
 /**
  * Data-driven fixtures for lifecycle testing scenarios
@@ -110,6 +109,21 @@ export const fixtures = {
         transport: null, // Will be overridden
         timeout: 40000,
         heartbeatIntervalMs: 60000,
+      },
+    },
+    {
+      name: 'sets heartbeatCallback',
+      options: {
+        params: { apikey: '123456789' },
+        heartbeatCallback: () => {},
+      },
+      expected: {
+        channelsLength: 0,
+        sendBufferLength: 0,
+        ref: 0,
+        transport: null,
+        timeout: 10000,
+        heartbeatIntervalMs: 25000,
       },
     },
   ],

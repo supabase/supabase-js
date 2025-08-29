@@ -81,6 +81,7 @@ export type RealtimeClientOptions = {
   transport?: WebSocketLikeConstructor
   timeout?: number
   heartbeatIntervalMs?: number
+  heartbeatCallback?: (status: HeartbeatStatus) => void
   logger?: Function
   encode?: Function
   decode?: Function
@@ -158,6 +159,7 @@ export default class RealtimeClient {
    * @param options.params The optional params to pass when connecting.
    * @param options.headers Deprecated: headers cannot be set on websocket connections and this option will be removed in the future.
    * @param options.heartbeatIntervalMs The millisec interval to send a heartbeat message.
+   * @param options.heartbeatCallback The optional function to handle heartbeat status.
    * @param options.logger The optional function for specialized logging, ie: logger: (kind, msg, data) => { console.log(`${kind}: ${msg}`, data) }
    * @param options.logLevel Sets the log level for Realtime
    * @param options.encode The function to encode outgoing messages. Defaults to JSON: (payload, callback) => callback(JSON.stringify(payload))
@@ -421,7 +423,11 @@ export default class RealtimeClient {
    */
   async sendHeartbeat() {
     if (!this.isConnected()) {
-      this.heartbeatCallback('disconnected')
+      try {
+        this.heartbeatCallback('disconnected')
+      } catch (e) {
+        this.log('error', 'error in heartbeat callback', e)
+      }
       return
     }
 
@@ -432,7 +438,11 @@ export default class RealtimeClient {
         'transport',
         'heartbeat timeout. Attempting to re-establish connection'
       )
-      this.heartbeatCallback('timeout')
+      try {
+        this.heartbeatCallback('timeout')
+      } catch (e) {
+        this.log('error', 'error in heartbeat callback', e)
+      }
 
       // Force reconnection after heartbeat timeout
       this._wasManualDisconnect = false
@@ -454,7 +464,11 @@ export default class RealtimeClient {
       payload: {},
       ref: this.pendingHeartbeatRef,
     })
-    this.heartbeatCallback('sent')
+    try {
+      this.heartbeatCallback('sent')
+    } catch (e) {
+      this.log('error', 'error in heartbeat callback', e)
+    }
 
     this._setAuthSafely('heartbeat')
   }
@@ -545,7 +559,11 @@ export default class RealtimeClient {
     this.decode(rawMessage.data, (msg: RealtimeMessage) => {
       // Handle heartbeat responses
       if (msg.topic === 'phoenix' && msg.event === 'phx_reply') {
-        this.heartbeatCallback(msg.payload.status === 'ok' ? 'ok' : 'error')
+        try {
+          this.heartbeatCallback(msg.payload.status === 'ok' ? 'ok' : 'error')
+        } catch (e) {
+          this.log('error', 'error in heartbeat callback', e)
+        }
       }
 
       // Handle pending heartbeat reference cleanup
@@ -853,7 +871,7 @@ export default class RealtimeClient {
       options?.heartbeatIntervalMs ?? CONNECTION_TIMEOUTS.HEARTBEAT_INTERVAL
     this.worker = options?.worker ?? false
     this.accessToken = options?.accessToken ?? null
-
+    this.heartbeatCallback = options?.heartbeatCallback ?? noop
     // Handle special cases
     if (options?.params) this.params = options.params
     if (options?.logger) this.logger = options.logger

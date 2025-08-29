@@ -72,6 +72,28 @@ describe('constructor', () => {
     })
     assert.equal(socket.transport, null)
   })
+
+  test('sets heartbeatCallback when provided in options', () => {
+    const mockCallback = () => {}
+    const socket = new RealtimeClient(testSetup.url, {
+      params: { apikey: '123456789' },
+      heartbeatCallback: mockCallback,
+    })
+
+    assert.equal(socket.heartbeatCallback, mockCallback)
+  })
+
+  test('defaults heartbeatCallback to noop when not provided', () => {
+    const socket = new RealtimeClient(testSetup.url, {
+      params: { apikey: '123456789' },
+    })
+
+    // Should be a function (noop)
+    assert.equal(typeof socket.heartbeatCallback, 'function')
+
+    // Should not throw when called
+    assert.doesNotThrow(() => socket.heartbeatCallback('sent'))
+  })
 })
 
 describe('connect with WebSocket', () => {
