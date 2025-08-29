@@ -238,8 +238,9 @@ export default class RealtimeChannel {
         this.bindings.postgres_changes?.map((r) => r.filter) ?? []
 
       const presence_enabled =
-        !!this.bindings[REALTIME_LISTEN_TYPES.PRESENCE] &&
-        this.bindings[REALTIME_LISTEN_TYPES.PRESENCE].length > 0
+        (!!this.bindings[REALTIME_LISTEN_TYPES.PRESENCE] &&
+          this.bindings[REALTIME_LISTEN_TYPES.PRESENCE].length > 0) ||
+        this.params.config.presence?.enabled === true
       const accessTokenPayload: { access_token?: string } = {}
       const config = {
         broadcast,

@@ -137,6 +137,33 @@ describe('Channel Lifecycle Management', () => {
         },
         testChannelDefaults: false,
       },
+      {
+        name: 'sets up joinPush object with presence enabled when config.presence.enabled is true even without bindings',
+        config: {
+          private: true,
+          presence: { key: '', enabled: true },
+        },
+        setup: (channel: RealtimeChannel) => {
+          // No presence bindings added
+          channel.subscribe()
+        },
+        expectedParams: {
+          config: {
+            broadcast: { ack: false, self: false },
+            presence: { key: '', enabled: true },
+            private: true,
+          },
+        },
+        expectedJoinPayload: {
+          config: {
+            broadcast: { ack: false, self: false },
+            presence: { key: '', enabled: true },
+            postgres_changes: [],
+            private: true,
+          },
+        },
+        testChannelDefaults: false,
+      },
     ])(
       '$name',
       ({
