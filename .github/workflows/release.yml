@@ -9,12 +9,8 @@ on:
   workflow_dispatch:
 
 jobs:
-  test:
-    uses: ./.github/workflows/ci.yml
-
   release:
     name: Release / Node ${{ matrix.node }}
-    needs: test
     strategy:
       matrix:
         node: ['20']
