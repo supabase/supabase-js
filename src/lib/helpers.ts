@@ -71,3 +71,26 @@ export function applySettingDefaults<
 
   return result
 }
+
+/**
+ * Validates a Supabase client URL
+ *
+ * @param {string} supabaseUrl - The Supabase client URL string.
+ * @returns {URL} - The validated base URL.
+ * @throws {Error}
+ */
+export function validateSupabaseUrl(supabaseUrl: string): URL {
+  if (!supabaseUrl) {
+    throw new Error('supabaseUrl is required.')
+  }
+
+  if (!supabaseUrl.match(/^https?:\/\/.+/i)) {
+    throw new Error('Invalid supabaseUrl: Must be a valid HTTP or HTTPS URL.')
+  }
+
+  try {
+    return new URL(ensureTrailingSlash(supabaseUrl))
+  } catch {
+    throw Error('Invalid supabaseUrl: Provided URL is malformed.')
+  }
+}
