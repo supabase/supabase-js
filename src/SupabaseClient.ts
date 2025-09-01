@@ -101,9 +101,8 @@ export default class SupabaseClient<
     protected supabaseKey: string,
     options?: SupabaseClientOptions<SchemaName>
   ) {
-    if (!supabaseKey) throw new Error('supabaseKey is required.')
-
     const baseUrl = validateSupabaseUrl(supabaseUrl)
+    if (!supabaseKey) throw new Error('supabaseKey is required.')
 
     this.realtimeUrl = new URL('realtime/v1', baseUrl)
     this.realtimeUrl.protocol = this.realtimeUrl.protocol.replace('http', 'ws')
