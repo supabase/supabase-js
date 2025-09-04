@@ -736,7 +736,7 @@ export default class StorageFileApi {
   // }
 
   /**
-   * Lists all the files within a bucket.
+   * Lists all the files and folders within a path of the bucket.
    * @param path The folder path.
    * @param options Search options including limit (defaults to 100), offset, sortBy, and search
    */
