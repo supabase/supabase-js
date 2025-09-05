@@ -1,0 +1,6698 @@
+{
+	"id": 0,
+	"name": "@supabase/supabase-js",
+	"kind": 1,
+	"flags": {},
+	"originalName": "",
+	"children": [
+		{
+			"id": 1,
+			"name": "index",
+			"kind": 2,
+			"kindString": "Module",
+			"flags": {},
+			"children": [
+				{
+					"id": 266,
+					"name": "QueryData",
+					"kind": 16777216,
+					"kindString": "Reference",
+					"flags": {},
+					"sources": [
+						{
+							"fileName": "src/index.ts",
+							"line": 22,
+							"character": 50
+						}
+					],
+					"target": 135
+				},
+				{
+					"id": 267,
+					"name": "QueryError",
+					"kind": 16777216,
+					"kindString": "Reference",
+					"flags": {},
+					"sources": [
+						{
+							"fileName": "src/index.ts",
+							"line": 22,
+							"character": 61
+						}
+					],
+					"target": 139
+				},
+				{
+					"id": 265,
+					"name": "QueryResult",
+					"kind": 16777216,
+					"kindString": "Reference",
+					"flags": {},
+					"sources": [
+						{
+							"fileName": "src/index.ts",
+							"line": 22,
+							"character": 37
+						}
+					],
+					"target": 133
+				},
+				{
+					"id": 264,
+					"name": "SupabaseClientOptions",
+					"kind": 16777216,
+					"kindString": "Reference",
+					"flags": {},
+					"sources": [
+						{
+							"fileName": "src/index.ts",
+							"line": 22,
+							"character": 14
+						}
+					],
+					"target": 80
+				},
+				{
+					"id": 142,
+					"name": "SupabaseClient",
+					"kind": 128,
+					"kindString": "Class",
+					"flags": {},
+					"comment": {
+						"shortText": "Supabase Client.",
+						"text": "An isomorphic Javascript client for interacting with Postgres.\n"
+					},
+					"children": [
+						{
+							"id": 143,
+							"name": "constructor",
+							"kind": 512,
+							"kindString": "Constructor",
+							"flags": {},
+							"sources": [
+								{
+									"fileName": "src/SupabaseClient.ts",
+									"line": 99,
+									"character": 2
+								}
+							],
+							"signatures": [
+								{
+									"id": 144,
+									"name": "new SupabaseClient",
+									"kind": 16384,
+									"kindString": "Constructor signature",
+									"flags": {},
+									"comment": {
+										"shortText": "Create a new client for use in the browser."
+									},
+									"typeParameter": [
+										{
+											"id": 145,
+											"name": "Database",
+											"kind": 131072,
+											"kindString": "Type parameter",
+											"flags": {},
+											"default": {
+												"type": "intrinsic",
+												"name": "any"
+											}
+										},
+										{
+											"id": 148,
+											"name": "SchemaNameOrClientOptions",
+											"kind": 131072,
+											"kindString": "Type parameter",
+											"flags": {},
+											"type": {
+												"type": "union",
+												"types": [
+													{
+														"type": "intrinsic",
+														"name": "string"
+													},
+													{
+														"type": "reflection",
+														"declaration": {
+															"id": 146,
+															"name": "__type",
+															"kind": 65536,
+															"kindString": "Type literal",
+															"flags": {},
+															"children": [
+																{
+																	"id": 147,
+																	"name": "PostgrestVersion",
+																	"kind": 1024,
+																	"kindString": "Property",
+																	"flags": {},
+																	"sources": [
+																		{
+																			"fileName": "src/SupabaseClient.ts",
+																			"line": 38,
+																			"character": 8
+																		}
+																	],
+																	"type": {
+																		"type": "intrinsic",
+																		"name": "string"
+																	}
+																}
+															],
+															"groups": [
+																{
+																	"title": "Properties",
+																	"kind": 1024,
+																	"children": [
+																		147
+																	]
+																}
+															]
+														}
+													}
+												]
+											},
+											"default": {
+												"type": "conditional",
+												"checkType": {
+													"type": "literal",
+													"value": "public"
+												},
+												"extendsType": {
+													"type": "reference",
+													"typeArguments": [
+														{
+															"type": "typeOperator",
+															"operator": "keyof",
+															"target": {
+																"type": "reference",
+																"id": 145,
+																"name": "Database"
+															}
+														},
+														{
+															"type": "literal",
+															"value": "__InternalSupabase"
+														}
+													],
+													"qualifiedName": "Exclude",
+													"package": "typescript",
+													"name": "Exclude"
+												},
+												"trueType": {
+													"type": "literal",
+													"value": "public"
+												},
+												"falseType": {
+													"type": "intersection",
+													"types": [
+														{
+															"type": "intrinsic",
+															"name": "string"
+														},
+														{
+															"type": "reference",
+															"typeArguments": [
+																{
+																	"type": "typeOperator",
+																	"operator": "keyof",
+																	"target": {
+																		"type": "reference",
+																		"id": 145,
+																		"name": "Database"
+																	}
+																},
+																{
+																	"type": "literal",
+																	"value": "__InternalSupabase"
+																}
+															],
+															"qualifiedName": "Exclude",
+															"package": "typescript",
+															"name": "Exclude"
+														}
+													]
+												}
+											}
+										},
+										{
+											"id": 149,
+											"name": "SchemaName",
+											"kind": 131072,
+											"kindString": "Type parameter",
+											"flags": {},
+											"type": {
+												"type": "intrinsic",
+												"name": "string"
+											},
+											"default": {
+												"type": "conditional",
+												"checkType": {
+													"type": "reference",
+													"id": 148,
+													"name": "SchemaNameOrClientOptions"
+												},
+												"extendsType": {
+													"type": "intersection",
+													"types": [
+														{
+															"type": "intrinsic",
+															"name": "string"
+														},
+														{
+															"type": "reference",
+															"typeArguments": [
+																{
+																	"type": "typeOperator",
+																	"operator": "keyof",
+																	"target": {
+																		"type": "reference",
+																		"id": 145,
+																		"name": "Database"
+																	}
+																},
+																{
+																	"type": "literal",
+																	"value": "__InternalSupabase"
+																}
+															],
+															"qualifiedName": "Exclude",
+															"package": "typescript",
+															"name": "Exclude"
+														}
+													]
+												},
+												"trueType": {
+													"type": "reference",
+													"name": "SchemaNameOrClientOptions"
+												},
+												"falseType": {
+													"type": "conditional",
+													"checkType": {
+														"type": "literal",
+														"value": "public"
+													},
+													"extendsType": {
+														"type": "reference",
+														"typeArguments": [
+															{
+																"type": "typeOperator",
+																"operator": "keyof",
+																"target": {
+																	"type": "reference",
+																	"id": 145,
+																	"name": "Database"
+																}
+															},
+															{
+																"type": "literal",
+																"value": "__InternalSupabase"
+															}
+														],
+														"qualifiedName": "Exclude",
+														"package": "typescript",
+														"name": "Exclude"
+													},
+													"trueType": {
+														"type": "literal",
+														"value": "public"
+													},
+													"falseType": {
+														"type": "intersection",
+														"types": [
+															{
+																"type": "intrinsic",
+																"name": "string"
+															},
+															{
+																"type": "reference",
+																"typeArguments": [
+																	{
+																		"type": "reference",
+																		"typeArguments": [
+																			{
+																				"type": "typeOperator",
+																				"operator": "keyof",
+																				"target": {
+																					"type": "reference",
+																					"id": 145,
+																					"name": "Database"
+																				}
+																			},
+																			{
+																				"type": "literal",
+																				"value": "__InternalSupabase"
+																			}
+																		],
+																		"qualifiedName": "Exclude",
+																		"package": "typescript",
+																		"name": "Exclude"
+																	},
+																	{
+																		"type": "literal",
+																		"value": "__InternalSupabase"
+																	}
+																],
+																"qualifiedName": "Exclude",
+																"package": "typescript",
+																"name": "Exclude"
+															}
+														]
+													}
+												}
+											}
+										},
+										{
+											"id": 150,
+											"name": "Schema",
+											"kind": 131072,
+											"kindString": "Type parameter",
+											"flags": {},
+											"type": {
+												"type": "reference",
+												"id": 128,
+												"name": "GenericSchema"
+											},
+											"default": {
+												"type": "conditional",
+												"checkType": {
+													"type": "indexedAccess",
+													"indexType": {
+														"type": "reference",
+														"id": 149,
+														"name": "SchemaName"
+													},
+													"objectType": {
+														"type": "reference",
+														"typeArguments": [
+															{
+																"type": "reference",
+																"id": 145,
+																"name": "Database"
+															},
+															{
+																"type": "literal",
+																"value": "__InternalSupabase"
+															}
+														],
+														"qualifiedName": "Omit",
+														"package": "typescript",
+														"name": "Omit"
+													}
+												},
+												"extendsType": {
+													"type": "reference",
+													"id": 128,
+													"name": "GenericSchema"
+												},
+												"trueType": {
+													"type": "indexedAccess",
+													"indexType": {
+														"type": "intrinsic",
+														"name": "any"
+													},
+													"objectType": {
+														"type": "intrinsic",
+														"name": "any"
+													}
+												},
+												"falseType": {
+													"type": "intrinsic",
+													"name": "never"
+												}
+											}
+										},
+										{
+											"id": 161,
+											"name": "ClientOptions",
+											"kind": 131072,
+											"kindString": "Type parameter",
+											"flags": {},
+											"type": {
+												"type": "reflection",
+												"declaration": {
+													"id": 151,
+													"name": "__type",
+													"kind": 65536,
+													"kindString": "Type literal",
+													"flags": {},
+													"children": [
+														{
+															"id": 152,
+															"name": "PostgrestVersion",
+															"kind": 1024,
+															"kindString": "Property",
+															"flags": {},
+															"sources": [
+																{
+																	"fileName": "src/SupabaseClient.ts",
+																	"line": 53,
+																	"character": 26
+																}
+															],
+															"type": {
+																"type": "intrinsic",
+																"name": "string"
+															}
+														}
+													],
+													"groups": [
+														{
+															"title": "Properties",
+															"kind": 1024,
+															"children": [
+																152
+															]
+														}
+													]
+												}
+											},
+											"default": {
+												"type": "conditional",
+												"checkType": {
+													"type": "reference",
+													"id": 148,
+													"name": "SchemaNameOrClientOptions"
+												},
+												"extendsType": {
+													"type": "intersection",
+													"types": [
+														{
+															"type": "intrinsic",
+															"name": "string"
+														},
+														{
+															"type": "reference",
+															"typeArguments": [
+																{
+																	"type": "typeOperator",
+																	"operator": "keyof",
+																	"target": {
+																		"type": "reference",
+																		"id": 145,
+																		"name": "Database"
+																	}
+																},
+																{
+																	"type": "literal",
+																	"value": "__InternalSupabase"
+																}
+															],
+															"qualifiedName": "Exclude",
+															"package": "typescript",
+															"name": "Exclude"
+														}
+													]
+												},
+												"trueType": {
+													"type": "conditional",
+													"checkType": {
+														"type": "reference",
+														"id": 145,
+														"name": "Database"
+													},
+													"extendsType": {
+														"type": "reflection",
+														"declaration": {
+															"id": 153,
+															"name": "__type",
+															"kind": 65536,
+															"kindString": "Type literal",
+															"flags": {},
+															"children": [
+																{
+																	"id": 154,
+																	"name": "__InternalSupabase",
+																	"kind": 1024,
+																	"kindString": "Property",
+																	"flags": {},
+																	"sources": [
+																		{
+																			"fileName": "src/SupabaseClient.ts",
+																			"line": 56,
+																			"character": 25
+																		}
+																	],
+																	"type": {
+																		"type": "reflection",
+																		"declaration": {
+																			"id": 155,
+																			"name": "__type",
+																			"kind": 65536,
+																			"kindString": "Type literal",
+																			"flags": {},
+																			"children": [
+																				{
+																					"id": 156,
+																					"name": "PostgrestVersion",
+																					"kind": 1024,
+																					"kindString": "Property",
+																					"flags": {},
+																					"sources": [
+																						{
+																							"fileName": "src/SupabaseClient.ts",
+																							"line": 56,
+																							"character": 47
+																						}
+																					],
+																					"type": {
+																						"type": "intrinsic",
+																						"name": "string"
+																					}
+																				}
+																			],
+																			"groups": [
+																				{
+																					"title": "Properties",
+																					"kind": 1024,
+																					"children": [
+																						156
+																					]
+																				}
+																			]
+																		}
+																	}
+																}
+															],
+															"groups": [
+																{
+																	"title": "Properties",
+																	"kind": 1024,
+																	"children": [
+																		154
+																	]
+																}
+															]
+														}
+													},
+													"trueType": {
+														"type": "indexedAccess",
+														"indexType": {
+															"type": "literal",
+															"value": "__InternalSupabase"
+														},
+														"objectType": {
+															"type": "reference",
+															"name": "Database"
+														}
+													},
+													"falseType": {
+														"type": "reflection",
+														"declaration": {
+															"id": 157,
+															"name": "__type",
+															"kind": 65536,
+															"kindString": "Type literal",
+															"flags": {},
+															"children": [
+																{
+																	"id": 158,
+																	"name": "PostgrestVersion",
+																	"kind": 1024,
+																	"kindString": "Property",
+																	"flags": {},
+																	"sources": [
+																		{
+																			"fileName": "src/SupabaseClient.ts",
+																			"line": 59,
+																			"character": 10
+																		}
+																	],
+																	"type": {
+																		"type": "literal",
+																		"value": "12"
+																	}
+																}
+															],
+															"groups": [
+																{
+																	"title": "Properties",
+																	"kind": 1024,
+																	"children": [
+																		158
+																	]
+																}
+															]
+														}
+													}
+												},
+												"falseType": {
+													"type": "conditional",
+													"checkType": {
+														"type": "reference",
+														"id": 148,
+														"name": "SchemaNameOrClientOptions"
+													},
+													"extendsType": {
+														"type": "reflection",
+														"declaration": {
+															"id": 159,
+															"name": "__type",
+															"kind": 65536,
+															"kindString": "Type literal",
+															"flags": {},
+															"children": [
+																{
+																	"id": 160,
+																	"name": "PostgrestVersion",
+																	"kind": 1024,
+																	"kindString": "Property",
+																	"flags": {},
+																	"sources": [
+																		{
+																			"fileName": "src/SupabaseClient.ts",
+																			"line": 60,
+																			"character": 42
+																		}
+																	],
+																	"type": {
+																		"type": "intrinsic",
+																		"name": "string"
+																	}
+																}
+															],
+															"groups": [
+																{
+																	"title": "Properties",
+																	"kind": 1024,
+																	"children": [
+																		160
+																	]
+																}
+															]
+														}
+													},
+													"trueType": {
+														"type": "reference",
+														"name": "SchemaNameOrClientOptions"
+													},
+													"falseType": {
+														"type": "intrinsic",
+														"name": "never"
+													}
+												}
+											}
+										}
+									],
+									"parameters": [
+										{
+											"id": 162,
+											"name": "supabaseUrl",
+											"kind": 32768,
+											"kindString": "Parameter",
+											"flags": {},
+											"comment": {
+												"shortText": "The unique Supabase URL which is supplied when you create a new project in your project dashboard."
+											},
+											"type": {
+												"type": "intrinsic",
+												"name": "string"
+											}
+										},
+										{
+											"id": 163,
+											"name": "supabaseKey",
+											"kind": 32768,
+											"kindString": "Parameter",
+											"flags": {},
+											"comment": {
+												"shortText": "The unique Supabase Key which is supplied when you create a new project in your project dashboard."
+											},
+											"type": {
+												"type": "intrinsic",
+												"name": "string"
+											}
+										},
+										{
+											"id": 164,
+											"name": "options",
+											"kind": 32768,
+											"kindString": "Parameter",
+											"flags": {
+												"isOptional": true
+											},
+											"type": {
+												"type": "reference",
+												"id": 80,
+												"typeArguments": [
+													{
+														"type": "reference",
+														"id": 149,
+														"name": "SchemaName"
+													}
+												],
+												"name": "SupabaseClientOptions"
+											}
+										}
+									],
+									"type": {
+										"type": "reference",
+										"id": 142,
+										"typeArguments": [
+											{
+												"type": "reference",
+												"id": 145,
+												"name": "Database"
+											},
+											{
+												"type": "reference",
+												"id": 148,
+												"name": "SchemaNameOrClientOptions"
+											},
+											{
+												"type": "reference",
+												"id": 149,
+												"name": "SchemaName"
+											},
+											{
+												"type": "reference",
+												"id": 150,
+												"name": "Schema"
+											},
+											{
+												"type": "reference",
+												"id": 161,
+												"name": "ClientOptions"
+											}
+										],
+										"name": "default"
+									}
+								}
+							]
+						},
+						{
+							"id": 180,
+							"name": "accessToken",
+							"kind": 1024,
+							"kindString": "Property",
+							"flags": {
+								"isProtected": true,
+								"isOptional": true
+							},
+							"sources": [
+								{
+									"fileName": "src/SupabaseClient.ts",
+									"line": 82,
+									"character": 12
+								}
+							],
+							"type": {
+								"type": "reflection",
+								"declaration": {
+									"id": 181,
+									"name": "__type",
+									"kind": 65536,
+									"kindString": "Type literal",
+									"flags": {},
+									"signatures": [
+										{
+											"id": 182,
+											"name": "__type",
+											"kind": 4096,
+											"kindString": "Call signature",
+											"flags": {},
+											"type": {
+												"type": "reference",
+												"typeArguments": [
+													{
+														"type": "union",
+														"types": [
+															{
+																"type": "literal",
+																"value": null
+															},
+															{
+																"type": "intrinsic",
+																"name": "string"
+															}
+														]
+													}
+												],
+												"qualifiedName": "Promise",
+												"package": "typescript",
+												"name": "Promise"
+											}
+										}
+									]
+								}
+							}
+						},
+						{
+							"id": 165,
+							"name": "auth",
+							"kind": 1024,
+							"kindString": "Property",
+							"flags": {},
+							"comment": {
+								"shortText": "Supabase Auth allows you to create and manage user sessions for access to data that is secured by access policies."
+							},
+							"sources": [
+								{
+									"fileName": "src/SupabaseClient.ts",
+									"line": 67,
+									"character": 2
+								}
+							],
+							"type": {
+								"type": "reference",
+								"name": "SupabaseAuthClient"
+							}
+						},
+						{
+							"id": 169,
+							"name": "authUrl",
+							"kind": 1024,
+							"kindString": "Property",
+							"flags": {
+								"isProtected": true
+							},
+							"sources": [
+								{
+									"fileName": "src/SupabaseClient.ts",
+									"line": 75,
+									"character": 12
+								}
+							],
+							"type": {
+								"type": "reference",
+								"qualifiedName": "URL",
+								"package": "typescript",
+								"name": "URL"
+							}
+						},
+						{
+							"id": 179,
+							"name": "changedAccessToken",
+							"kind": 1024,
+							"kindString": "Property",
+							"flags": {
+								"isProtected": true,
+								"isOptional": true
+							},
+							"sources": [
+								{
+									"fileName": "src/SupabaseClient.ts",
+									"line": 81,
+									"character": 12
+								}
+							],
+							"type": {
+								"type": "intrinsic",
+								"name": "string"
+							}
+						},
+						{
+							"id": 174,
+							"name": "fetch",
+							"kind": 1024,
+							"kindString": "Property",
+							"flags": {
+								"isProtected": true,
+								"isOptional": true
+							},
+							"sources": [
+								{
+									"fileName": "src/SupabaseClient.ts",
+									"line": 80,
+									"character": 12
+								}
+							],
+							"type": {
+								"type": "reflection",
+								"declaration": {
+									"id": 175,
+									"name": "__type",
+									"kind": 65536,
+									"kindString": "Type literal",
+									"flags": {},
+									"signatures": [
+										{
+											"id": 176,
+											"name": "__type",
+											"kind": 4096,
+											"kindString": "Call signature",
+											"flags": {},
+											"parameters": [
+												{
+													"id": 177,
+													"name": "input",
+													"kind": 32768,
+													"kindString": "Parameter",
+													"flags": {},
+													"type": {
+														"type": "union",
+														"types": [
+															{
+																"type": "reference",
+																"qualifiedName": "RequestInfo",
+																"package": "typescript",
+																"name": "RequestInfo"
+															},
+															{
+																"type": "reference",
+																"qualifiedName": "URL",
+																"package": "typescript",
+																"name": "URL"
+															}
+														]
+													}
+												},
+												{
+													"id": 178,
+													"name": "init",
+													"kind": 32768,
+													"kindString": "Parameter",
+													"flags": {
+														"isOptional": true
+													},
+													"type": {
+														"type": "reference",
+														"qualifiedName": "RequestInit",
+														"package": "typescript",
+														"name": "RequestInit"
+													}
+												}
+											],
+											"type": {
+												"type": "reference",
+												"typeArguments": [
+													{
+														"type": "reference",
+														"qualifiedName": "Response",
+														"package": "typescript",
+														"name": "Response"
+													}
+												],
+												"qualifiedName": "Promise",
+												"package": "typescript",
+												"name": "Promise"
+											}
+										}
+									]
+								}
+							}
+						},
+						{
+							"id": 171,
+							"name": "functionsUrl",
+							"kind": 1024,
+							"kindString": "Property",
+							"flags": {
+								"isProtected": true
+							},
+							"sources": [
+								{
+									"fileName": "src/SupabaseClient.ts",
+									"line": 77,
+									"character": 12
+								}
+							],
+							"type": {
+								"type": "reference",
+								"qualifiedName": "URL",
+								"package": "typescript",
+								"name": "URL"
+							}
+						},
+						{
+							"id": 183,
+							"name": "headers",
+							"kind": 1024,
+							"kindString": "Property",
+							"flags": {
+								"isProtected": true
+							},
+							"sources": [
+								{
+									"fileName": "src/SupabaseClient.ts",
+									"line": 84,
+									"character": 12
+								}
+							],
+							"type": {
+								"type": "reference",
+								"typeArguments": [
+									{
+										"type": "intrinsic",
+										"name": "string"
+									},
+									{
+										"type": "intrinsic",
+										"name": "string"
+									}
+								],
+								"qualifiedName": "Record",
+								"package": "typescript",
+								"name": "Record"
+							}
+						},
+						{
+							"id": 166,
+							"name": "realtime",
+							"kind": 1024,
+							"kindString": "Property",
+							"flags": {},
+							"sources": [
+								{
+									"fileName": "src/SupabaseClient.ts",
+									"line": 68,
+									"character": 2
+								}
+							],
+							"type": {
+								"type": "reference",
+								"qualifiedName": "RealtimeClient",
+								"package": "@supabase/realtime-js",
+								"name": "default"
+							}
+						},
+						{
+							"id": 168,
+							"name": "realtimeUrl",
+							"kind": 1024,
+							"kindString": "Property",
+							"flags": {
+								"isProtected": true
+							},
+							"sources": [
+								{
+									"fileName": "src/SupabaseClient.ts",
+									"line": 74,
+									"character": 12
+								}
+							],
+							"type": {
+								"type": "reference",
+								"qualifiedName": "URL",
+								"package": "typescript",
+								"name": "URL"
+							}
+						},
+						{
+							"id": 172,
+							"name": "rest",
+							"kind": 1024,
+							"kindString": "Property",
+							"flags": {
+								"isProtected": true
+							},
+							"sources": [
+								{
+									"fileName": "src/SupabaseClient.ts",
+									"line": 78,
+									"character": 12
+								}
+							],
+							"type": {
+								"type": "reference",
+								"typeArguments": [
+									{
+										"type": "reference",
+										"id": 145,
+										"name": "Database"
+									},
+									{
+										"type": "reference",
+										"id": 161,
+										"name": "ClientOptions"
+									},
+									{
+										"type": "reference",
+										"id": 149,
+										"name": "SchemaName"
+									},
+									{
+										"type": "conditional",
+										"checkType": {
+											"type": "indexedAccess",
+											"indexType": {
+												"type": "reference",
+												"id": 149,
+												"name": "SchemaName"
+											},
+											"objectType": {
+												"type": "reference",
+												"typeArguments": [
+													{
+														"type": "reference",
+														"id": 145,
+														"name": "Database"
+													},
+													{
+														"type": "literal",
+														"value": "__InternalSupabase"
+													}
+												],
+												"qualifiedName": "Omit",
+												"package": "typescript",
+												"name": "Omit"
+											}
+										},
+										"extendsType": {
+											"type": "reference",
+											"qualifiedName": "GenericSchema",
+											"package": "@supabase/postgrest-js",
+											"name": "GenericSchema"
+										},
+										"trueType": {
+											"type": "indexedAccess",
+											"indexType": {
+												"type": "intrinsic",
+												"name": "any"
+											},
+											"objectType": {
+												"type": "intrinsic",
+												"name": "any"
+											}
+										},
+										"falseType": {
+											"type": "intrinsic",
+											"name": "any"
+										}
+									}
+								],
+								"qualifiedName": "PostgrestClient",
+								"package": "@supabase/postgrest-js",
+								"name": "default"
+							}
+						},
+						{
+							"id": 167,
+							"name": "storage",
+							"kind": 1024,
+							"kindString": "Property",
+							"flags": {},
+							"comment": {
+								"shortText": "Supabase Storage allows you to manage user-generated content, such as photos or videos."
+							},
+							"sources": [
+								{
+									"fileName": "src/SupabaseClient.ts",
+									"line": 72,
+									"character": 2
+								}
+							],
+							"type": {
+								"type": "reference",
+								"qualifiedName": "StorageClient",
+								"package": "@supabase/storage-js",
+								"name": "StorageClient"
+							}
+						},
+						{
+							"id": 173,
+							"name": "storageKey",
+							"kind": 1024,
+							"kindString": "Property",
+							"flags": {
+								"isProtected": true
+							},
+							"sources": [
+								{
+									"fileName": "src/SupabaseClient.ts",
+									"line": 79,
+									"character": 12
+								}
+							],
+							"type": {
+								"type": "intrinsic",
+								"name": "string"
+							}
+						},
+						{
+							"id": 170,
+							"name": "storageUrl",
+							"kind": 1024,
+							"kindString": "Property",
+							"flags": {
+								"isProtected": true
+							},
+							"sources": [
+								{
+									"fileName": "src/SupabaseClient.ts",
+									"line": 76,
+									"character": 12
+								}
+							],
+							"type": {
+								"type": "reference",
+								"qualifiedName": "URL",
+								"package": "typescript",
+								"name": "URL"
+							}
+						},
+						{
+							"id": 185,
+							"name": "supabaseKey",
+							"kind": 1024,
+							"kindString": "Property",
+							"flags": {
+								"isProtected": true
+							},
+							"type": {
+								"type": "intrinsic",
+								"name": "string"
+							}
+						},
+						{
+							"id": 184,
+							"name": "supabaseUrl",
+							"kind": 1024,
+							"kindString": "Property",
+							"flags": {
+								"isProtected": true
+							},
+							"type": {
+								"type": "intrinsic",
+								"name": "string"
+							}
+						},
+						{
+							"id": 186,
+							"name": "functions",
+							"kind": 262144,
+							"kindString": "Accessor",
+							"flags": {},
+							"sources": [
+								{
+									"fileName": "src/SupabaseClient.ts",
+									"line": 177,
+									"character": 6
+								}
+							],
+							"getSignature": [
+								{
+									"id": 187,
+									"name": "functions",
+									"kind": 524288,
+									"kindString": "Get signature",
+									"flags": {},
+									"comment": {
+										"shortText": "Supabase Functions allows you to deploy and invoke edge functions."
+									},
+									"type": {
+										"type": "reference",
+										"qualifiedName": "FunctionsClient",
+										"package": "@supabase/functions-js",
+										"name": "FunctionsClient"
+									}
+								}
+							]
+						},
+						{
+							"id": 225,
+							"name": "_getAccessToken",
+							"kind": 2048,
+							"kindString": "Method",
+							"flags": {
+								"isPrivate": true
+							},
+							"sources": [
+								{
+									"fileName": "src/SupabaseClient.ts",
+									"line": 303,
+									"character": 16
+								}
+							],
+							"signatures": [
+								{
+									"id": 226,
+									"name": "_getAccessToken",
+									"kind": 4096,
+									"kindString": "Call signature",
+									"flags": {},
+									"type": {
+										"type": "reference",
+										"typeArguments": [
+											{
+												"type": "union",
+												"types": [
+													{
+														"type": "literal",
+														"value": null
+													},
+													{
+														"type": "intrinsic",
+														"name": "string"
+													}
+												]
+											}
+										],
+										"qualifiedName": "Promise",
+										"package": "typescript",
+										"name": "Promise"
+									}
+								}
+							]
+						},
+						{
+							"id": 242,
+							"name": "_handleTokenChanged",
+							"kind": 2048,
+							"kindString": "Method",
+							"flags": {
+								"isPrivate": true
+							},
+							"sources": [
+								{
+									"fileName": "src/SupabaseClient.ts",
+									"line": 367,
+									"character": 10
+								}
+							],
+							"signatures": [
+								{
+									"id": 243,
+									"name": "_handleTokenChanged",
+									"kind": 4096,
+									"kindString": "Call signature",
+									"flags": {},
+									"parameters": [
+										{
+											"id": 244,
+											"name": "event",
+											"kind": 32768,
+											"kindString": "Parameter",
+											"flags": {},
+											"type": {
+												"type": "reference",
+												"qualifiedName": "AuthChangeEvent",
+												"package": "@supabase/auth-js",
+												"name": "AuthChangeEvent"
+											}
+										},
+										{
+											"id": 245,
+											"name": "source",
+											"kind": 32768,
+											"kindString": "Parameter",
+											"flags": {},
+											"type": {
+												"type": "union",
+												"types": [
+													{
+														"type": "literal",
+														"value": "CLIENT"
+													},
+													{
+														"type": "literal",
+														"value": "STORAGE"
+													}
+												]
+											}
+										},
+										{
+											"id": 246,
+											"name": "token",
+											"kind": 32768,
+											"kindString": "Parameter",
+											"flags": {
+												"isOptional": true
+											},
+											"type": {
+												"type": "intrinsic",
+												"name": "string"
+											}
+										}
+									],
+									"type": {
+										"type": "intrinsic",
+										"name": "void"
+									}
+								}
+							]
+						},
+						{
+							"id": 236,
+							"name": "_initRealtimeClient",
+							"kind": 2048,
+							"kindString": "Method",
+							"flags": {
+								"isPrivate": true
+							},
+							"sources": [
+								{
+									"fileName": "src/SupabaseClient.ts",
+									"line": 353,
+									"character": 10
+								}
+							],
+							"signatures": [
+								{
+									"id": 237,
+									"name": "_initRealtimeClient",
+									"kind": 4096,
+									"kindString": "Call signature",
+									"flags": {},
+									"parameters": [
+										{
+											"id": 238,
+											"name": "options",
+											"kind": 32768,
+											"kindString": "Parameter",
+											"flags": {},
+											"type": {
+												"type": "reference",
+												"qualifiedName": "RealtimeClientOptions",
+												"package": "@supabase/realtime-js",
+												"name": "RealtimeClientOptions"
+											}
+										}
+									],
+									"type": {
+										"type": "reference",
+										"qualifiedName": "RealtimeClient",
+										"package": "@supabase/realtime-js",
+										"name": "default"
+									}
+								}
+							]
+						},
+						{
+							"id": 227,
+							"name": "_initSupabaseAuthClient",
+							"kind": 2048,
+							"kindString": "Method",
+							"flags": {
+								"isPrivate": true
+							},
+							"sources": [
+								{
+									"fileName": "src/SupabaseClient.ts",
+									"line": 313,
+									"character": 10
+								}
+							],
+							"signatures": [
+								{
+									"id": 228,
+									"name": "_initSupabaseAuthClient",
+									"kind": 4096,
+									"kindString": "Call signature",
+									"flags": {},
+									"parameters": [
+										{
+											"id": 229,
+											"name": "__namedParameters",
+											"kind": 32768,
+											"kindString": "Parameter",
+											"flags": {},
+											"type": {
+												"type": "reference",
+												"id": 78,
+												"name": "SupabaseAuthClientOptions"
+											}
+										},
+										{
+											"id": 230,
+											"name": "headers",
+											"kind": 32768,
+											"kindString": "Parameter",
+											"flags": {
+												"isOptional": true
+											},
+											"type": {
+												"type": "reference",
+												"typeArguments": [
+													{
+														"type": "intrinsic",
+														"name": "string"
+													},
+													{
+														"type": "intrinsic",
+														"name": "string"
+													}
+												],
+												"qualifiedName": "Record",
+												"package": "typescript",
+												"name": "Record"
+											}
+										},
+										{
+											"id": 231,
+											"name": "fetch",
+											"kind": 32768,
+											"kindString": "Parameter",
+											"flags": {
+												"isOptional": true
+											},
+											"type": {
+												"type": "reflection",
+												"declaration": {
+													"id": 232,
+													"name": "__type",
+													"kind": 65536,
+													"kindString": "Type literal",
+													"flags": {},
+													"signatures": [
+														{
+															"id": 233,
+															"name": "__type",
+															"kind": 4096,
+															"kindString": "Call signature",
+															"flags": {},
+															"parameters": [
+																{
+																	"id": 234,
+																	"name": "input",
+																	"kind": 32768,
+																	"kindString": "Parameter",
+																	"flags": {},
+																	"type": {
+																		"type": "union",
+																		"types": [
+																			{
+																				"type": "reference",
+																				"qualifiedName": "RequestInfo",
+																				"package": "typescript",
+																				"name": "RequestInfo"
+																			},
+																			{
+																				"type": "reference",
+																				"qualifiedName": "URL",
+																				"package": "typescript",
+																				"name": "URL"
+																			}
+																		]
+																	}
+																},
+																{
+																	"id": 235,
+																	"name": "init",
+																	"kind": 32768,
+																	"kindString": "Parameter",
+																	"flags": {
+																		"isOptional": true
+																	},
+																	"type": {
+																		"type": "reference",
+																		"qualifiedName": "RequestInit",
+																		"package": "typescript",
+																		"name": "RequestInit"
+																	}
+																}
+															],
+															"type": {
+																"type": "reference",
+																"typeArguments": [
+																	{
+																		"type": "reference",
+																		"qualifiedName": "Response",
+																		"package": "typescript",
+																		"name": "Response"
+																	}
+																],
+																"qualifiedName": "Promise",
+																"package": "typescript",
+																"name": "Promise"
+															}
+														}
+													]
+												}
+											}
+										}
+									],
+									"type": {
+										"type": "reference",
+										"name": "SupabaseAuthClient"
+									}
+								}
+							]
+						},
+						{
+							"id": 239,
+							"name": "_listenForAuthEvents",
+							"kind": 2048,
+							"kindString": "Method",
+							"flags": {
+								"isPrivate": true
+							},
+							"sources": [
+								{
+									"fileName": "src/SupabaseClient.ts",
+									"line": 360,
+									"character": 10
+								}
+							],
+							"signatures": [
+								{
+									"id": 240,
+									"name": "_listenForAuthEvents",
+									"kind": 4096,
+									"kindString": "Call signature",
+									"flags": {},
+									"type": {
+										"type": "reflection",
+										"declaration": {
+											"id": 241,
+											"name": "__type",
+											"kind": 65536,
+											"kindString": "Type literal",
+											"flags": {}
+										}
+									}
+								}
+							]
+						},
+						{
+							"id": 214,
+							"name": "channel",
+							"kind": 2048,
+							"kindString": "Method",
+							"flags": {},
+							"sources": [
+								{
+									"fileName": "src/SupabaseClient.ts",
+									"line": 275,
+									"character": 2
+								}
+							],
+							"signatures": [
+								{
+									"id": 215,
+									"name": "channel",
+									"kind": 4096,
+									"kindString": "Call signature",
+									"flags": {},
+									"comment": {
+										"shortText": "Creates a Realtime channel with Broadcast, Presence, and Postgres Changes."
+									},
+									"parameters": [
+										{
+											"id": 216,
+											"name": "name",
+											"kind": 32768,
+											"kindString": "Parameter",
+											"flags": {},
+											"comment": {
+												"shortText": "The name of the Realtime channel."
+											},
+											"type": {
+												"type": "intrinsic",
+												"name": "string"
+											}
+										},
+										{
+											"id": 217,
+											"name": "opts",
+											"kind": 32768,
+											"kindString": "Parameter",
+											"flags": {},
+											"comment": {
+												"shortText": "The options to pass to the Realtime channel.\n\n"
+											},
+											"type": {
+												"type": "reference",
+												"qualifiedName": "RealtimeChannelOptions",
+												"package": "@supabase/realtime-js",
+												"name": "RealtimeChannelOptions"
+											},
+											"defaultValue": "..."
+										}
+									],
+									"type": {
+										"type": "reference",
+										"qualifiedName": "RealtimeChannel",
+										"package": "@supabase/realtime-js",
+										"name": "default"
+									}
+								}
+							]
+						},
+						{
+							"id": 188,
+							"name": "from",
+							"kind": 2048,
+							"kindString": "Method",
+							"flags": {},
+							"sources": [
+								{
+									"fileName": "src/SupabaseClient.ts",
+									"line": 185,
+									"character": 2
+								}
+							],
+							"signatures": [
+								{
+									"id": 189,
+									"name": "from",
+									"kind": 4096,
+									"kindString": "Call signature",
+									"flags": {},
+									"comment": {
+										"shortText": "Perform a query on a table or a view."
+									},
+									"typeParameter": [
+										{
+											"id": 190,
+											"name": "TableName",
+											"kind": 131072,
+											"kindString": "Type parameter",
+											"flags": {},
+											"type": {
+												"type": "intrinsic",
+												"name": "string"
+											}
+										},
+										{
+											"id": 191,
+											"name": "Table",
+											"kind": 131072,
+											"kindString": "Type parameter",
+											"flags": {},
+											"type": {
+												"type": "reference",
+												"id": 112,
+												"name": "GenericTable"
+											}
+										}
+									],
+									"parameters": [
+										{
+											"id": 192,
+											"name": "relation",
+											"kind": 32768,
+											"kindString": "Parameter",
+											"flags": {},
+											"comment": {
+												"shortText": "The table or view name to query\n"
+											},
+											"type": {
+												"type": "reference",
+												"id": 190,
+												"name": "TableName"
+											}
+										}
+									],
+									"type": {
+										"type": "reference",
+										"typeArguments": [
+											{
+												"type": "reference",
+												"id": 161,
+												"name": "ClientOptions"
+											},
+											{
+												"type": "reference",
+												"id": 150,
+												"name": "Schema"
+											},
+											{
+												"type": "reference",
+												"id": 191,
+												"name": "Table"
+											},
+											{
+												"type": "reference",
+												"id": 190,
+												"name": "TableName"
+											},
+											{
+												"type": "conditional",
+												"checkType": {
+													"type": "reference",
+													"id": 191,
+													"name": "Table"
+												},
+												"extendsType": {
+													"type": "reflection",
+													"declaration": {
+														"id": 193,
+														"name": "__type",
+														"kind": 65536,
+														"kindString": "Type literal",
+														"flags": {}
+													}
+												},
+												"trueType": {
+													"type": "reference",
+													"qualifiedName": "R",
+													"package": "@supabase/postgrest-js",
+													"name": "R"
+												},
+												"falseType": {
+													"type": "intrinsic",
+													"name": "unknown"
+												}
+											}
+										],
+										"qualifiedName": "PostgrestQueryBuilder",
+										"package": "@supabase/postgrest-js",
+										"name": "default"
+									}
+								},
+								{
+									"id": 194,
+									"name": "from",
+									"kind": 4096,
+									"kindString": "Call signature",
+									"flags": {},
+									"comment": {
+										"shortText": "Perform a query on a table or a view."
+									},
+									"typeParameter": [
+										{
+											"id": 195,
+											"name": "ViewName",
+											"kind": 131072,
+											"kindString": "Type parameter",
+											"flags": {},
+											"type": {
+												"type": "intrinsic",
+												"name": "string"
+											}
+										},
+										{
+											"id": 196,
+											"name": "View",
+											"kind": 131072,
+											"kindString": "Type parameter",
+											"flags": {},
+											"type": {
+												"type": "reference",
+												"id": 123,
+												"name": "GenericView"
+											}
+										}
+									],
+									"parameters": [
+										{
+											"id": 197,
+											"name": "relation",
+											"kind": 32768,
+											"kindString": "Parameter",
+											"flags": {},
+											"comment": {
+												"shortText": "The table or view name to query\n"
+											},
+											"type": {
+												"type": "reference",
+												"id": 195,
+												"name": "ViewName"
+											}
+										}
+									],
+									"type": {
+										"type": "reference",
+										"typeArguments": [
+											{
+												"type": "reference",
+												"id": 161,
+												"name": "ClientOptions"
+											},
+											{
+												"type": "reference",
+												"id": 150,
+												"name": "Schema"
+											},
+											{
+												"type": "reference",
+												"id": 196,
+												"name": "View"
+											},
+											{
+												"type": "reference",
+												"id": 195,
+												"name": "ViewName"
+											},
+											{
+												"type": "conditional",
+												"checkType": {
+													"type": "reference",
+													"id": 196,
+													"name": "View"
+												},
+												"extendsType": {
+													"type": "reflection",
+													"declaration": {
+														"id": 198,
+														"name": "__type",
+														"kind": 65536,
+														"kindString": "Type literal",
+														"flags": {}
+													}
+												},
+												"trueType": {
+													"type": "reference",
+													"qualifiedName": "R",
+													"package": "@supabase/postgrest-js",
+													"name": "R"
+												},
+												"falseType": {
+													"type": "intrinsic",
+													"name": "unknown"
+												}
+											}
+										],
+										"qualifiedName": "PostgrestQueryBuilder",
+										"package": "@supabase/postgrest-js",
+										"name": "default"
+									}
+								}
+							]
+						},
+						{
+							"id": 218,
+							"name": "getChannels",
+							"kind": 2048,
+							"kindString": "Method",
+							"flags": {},
+							"sources": [
+								{
+									"fileName": "src/SupabaseClient.ts",
+									"line": 282,
+									"character": 2
+								}
+							],
+							"signatures": [
+								{
+									"id": 219,
+									"name": "getChannels",
+									"kind": 4096,
+									"kindString": "Call signature",
+									"flags": {},
+									"comment": {
+										"shortText": "Returns all Realtime channels."
+									},
+									"type": {
+										"type": "array",
+										"elementType": {
+											"type": "reference",
+											"qualifiedName": "RealtimeChannel",
+											"package": "@supabase/realtime-js",
+											"name": "default"
+										}
+									}
+								}
+							]
+						},
+						{
+							"id": 223,
+							"name": "removeAllChannels",
+							"kind": 2048,
+							"kindString": "Method",
+							"flags": {},
+							"sources": [
+								{
+									"fileName": "src/SupabaseClient.ts",
+									"line": 299,
+									"character": 2
+								}
+							],
+							"signatures": [
+								{
+									"id": 224,
+									"name": "removeAllChannels",
+									"kind": 4096,
+									"kindString": "Call signature",
+									"flags": {},
+									"comment": {
+										"shortText": "Unsubscribes and removes all Realtime channels from Realtime client."
+									},
+									"type": {
+										"type": "reference",
+										"typeArguments": [
+											{
+												"type": "array",
+												"elementType": {
+													"type": "union",
+													"types": [
+														{
+															"type": "literal",
+															"value": "error"
+														},
+														{
+															"type": "literal",
+															"value": "ok"
+														},
+														{
+															"type": "literal",
+															"value": "timed out"
+														}
+													]
+												}
+											}
+										],
+										"qualifiedName": "Promise",
+										"package": "typescript",
+										"name": "Promise"
+									}
+								}
+							]
+						},
+						{
+							"id": 220,
+							"name": "removeChannel",
+							"kind": 2048,
+							"kindString": "Method",
+							"flags": {},
+							"sources": [
+								{
+									"fileName": "src/SupabaseClient.ts",
+									"line": 292,
+									"character": 2
+								}
+							],
+							"signatures": [
+								{
+									"id": 221,
+									"name": "removeChannel",
+									"kind": 4096,
+									"kindString": "Call signature",
+									"flags": {},
+									"comment": {
+										"shortText": "Unsubscribes and removes Realtime channel from Realtime client."
+									},
+									"parameters": [
+										{
+											"id": 222,
+											"name": "channel",
+											"kind": 32768,
+											"kindString": "Parameter",
+											"flags": {},
+											"comment": {
+												"shortText": "The name of the Realtime channel.\n\n"
+											},
+											"type": {
+												"type": "reference",
+												"qualifiedName": "RealtimeChannel",
+												"package": "@supabase/realtime-js",
+												"name": "default"
+											}
+										}
+									],
+									"type": {
+										"type": "reference",
+										"typeArguments": [
+											{
+												"type": "union",
+												"types": [
+													{
+														"type": "literal",
+														"value": "error"
+													},
+													{
+														"type": "literal",
+														"value": "ok"
+													},
+													{
+														"type": "literal",
+														"value": "timed out"
+													}
+												]
+											}
+										],
+										"qualifiedName": "Promise",
+										"package": "typescript",
+										"name": "Promise"
+									}
+								}
+							]
+						},
+						{
+							"id": 203,
+							"name": "rpc",
+							"kind": 2048,
+							"kindString": "Method",
+							"flags": {},
+							"sources": [
+								{
+									"fileName": "src/SupabaseClient.ts",
+									"line": 244,
+									"character": 2
+								}
+							],
+							"signatures": [
+								{
+									"id": 204,
+									"name": "rpc",
+									"kind": 4096,
+									"kindString": "Call signature",
+									"flags": {},
+									"comment": {
+										"shortText": "Perform a function call."
+									},
+									"typeParameter": [
+										{
+											"id": 205,
+											"name": "FnName",
+											"kind": 131072,
+											"kindString": "Type parameter",
+											"flags": {},
+											"type": {
+												"type": "intrinsic",
+												"name": "string"
+											}
+										},
+										{
+											"id": 206,
+											"name": "Fn",
+											"kind": 131072,
+											"kindString": "Type parameter",
+											"flags": {},
+											"type": {
+												"type": "reference",
+												"id": 124,
+												"name": "GenericFunction"
+											}
+										}
+									],
+									"parameters": [
+										{
+											"id": 207,
+											"name": "fn",
+											"kind": 32768,
+											"kindString": "Parameter",
+											"flags": {},
+											"comment": {
+												"shortText": "The function name to call"
+											},
+											"type": {
+												"type": "reference",
+												"id": 205,
+												"name": "FnName"
+											}
+										},
+										{
+											"id": 208,
+											"name": "args",
+											"kind": 32768,
+											"kindString": "Parameter",
+											"flags": {},
+											"comment": {
+												"shortText": "The arguments to pass to the function call"
+											},
+											"type": {
+												"type": "indexedAccess",
+												"indexType": {
+													"type": "literal",
+													"value": "Args"
+												},
+												"objectType": {
+													"type": "reference",
+													"id": 206,
+													"name": "Fn"
+												}
+											},
+											"defaultValue": "{}"
+										},
+										{
+											"id": 209,
+											"name": "options",
+											"kind": 32768,
+											"kindString": "Parameter",
+											"flags": {},
+											"comment": {
+												"shortText": "Named parameters"
+											},
+											"type": {
+												"type": "reflection",
+												"declaration": {
+													"id": 210,
+													"name": "__type",
+													"kind": 65536,
+													"kindString": "Type literal",
+													"flags": {},
+													"children": [
+														{
+															"id": 213,
+															"name": "count",
+															"kind": 1024,
+															"kindString": "Property",
+															"flags": {
+																"isOptional": true
+															},
+															"comment": {
+																"shortText": "Count algorithm to use to count rows returned by the\nfunction. Only applicable for [set-returning\nfunctions](https://www.postgresql.org/docs/current/functions-srf.html).\n\n`\"exact\"`: Exact but slow count algorithm. Performs a `COUNT(*)` under the\nhood.\n\n`\"planned\"`: Approximated but fast count algorithm. Uses the Postgres\nstatistics under the hood.\n\n`\"estimated\"`: Uses exact count for low numbers and planned count for high\nnumbers.\n"
+															},
+															"sources": [
+																{
+																	"fileName": "src/SupabaseClient.ts",
+																	"line": 250,
+																	"character": 6
+																}
+															],
+															"type": {
+																"type": "union",
+																"types": [
+																	{
+																		"type": "literal",
+																		"value": "exact"
+																	},
+																	{
+																		"type": "literal",
+																		"value": "planned"
+																	},
+																	{
+																		"type": "literal",
+																		"value": "estimated"
+																	}
+																]
+															}
+														},
+														{
+															"id": 212,
+															"name": "get",
+															"kind": 1024,
+															"kindString": "Property",
+															"flags": {
+																"isOptional": true
+															},
+															"comment": {
+																"shortText": "When set to `true`, the function will be called with\nread-only access mode."
+															},
+															"sources": [
+																{
+																	"fileName": "src/SupabaseClient.ts",
+																	"line": 249,
+																	"character": 6
+																}
+															],
+															"type": {
+																"type": "intrinsic",
+																"name": "boolean"
+															}
+														},
+														{
+															"id": 211,
+															"name": "head",
+															"kind": 1024,
+															"kindString": "Property",
+															"flags": {
+																"isOptional": true
+															},
+															"comment": {
+																"shortText": "When set to `true`, `data` will not be returned.\nUseful if you only need the count."
+															},
+															"sources": [
+																{
+																	"fileName": "src/SupabaseClient.ts",
+																	"line": 248,
+																	"character": 6
+																}
+															],
+															"type": {
+																"type": "intrinsic",
+																"name": "boolean"
+															}
+														}
+													],
+													"groups": [
+														{
+															"title": "Properties",
+															"kind": 1024,
+															"children": [
+																213,
+																212,
+																211
+															]
+														}
+													]
+												}
+											},
+											"defaultValue": "{}"
+										}
+									],
+									"type": {
+										"type": "reference",
+										"typeArguments": [
+											{
+												"type": "reference",
+												"id": 161,
+												"name": "ClientOptions"
+											},
+											{
+												"type": "reference",
+												"id": 150,
+												"name": "Schema"
+											},
+											{
+												"type": "conditional",
+												"checkType": {
+													"type": "indexedAccess",
+													"indexType": {
+														"type": "literal",
+														"value": "Returns"
+													},
+													"objectType": {
+														"type": "reference",
+														"id": 206,
+														"name": "Fn"
+													}
+												},
+												"extendsType": {
+													"type": "array",
+													"elementType": {
+														"type": "intrinsic",
+														"name": "any"
+													}
+												},
+												"trueType": {
+													"type": "conditional",
+													"checkType": {
+														"type": "indexedAccess",
+														"indexType": {
+															"type": "intrinsic",
+															"name": "number"
+														},
+														"objectType": {
+															"type": "indexedAccess",
+															"indexType": {
+																"type": "intrinsic",
+																"name": "any"
+															},
+															"objectType": {
+																"type": "intrinsic",
+																"name": "any"
+															}
+														}
+													},
+													"extendsType": {
+														"type": "reference",
+														"typeArguments": [
+															{
+																"type": "intrinsic",
+																"name": "string"
+															},
+															{
+																"type": "intrinsic",
+																"name": "unknown"
+															}
+														],
+														"qualifiedName": "Record",
+														"package": "typescript",
+														"name": "Record"
+													},
+													"trueType": {
+														"type": "indexedAccess",
+														"indexType": {
+															"type": "intrinsic",
+															"name": "any"
+														},
+														"objectType": {
+															"type": "intrinsic",
+															"name": "any"
+														}
+													},
+													"falseType": {
+														"type": "intrinsic",
+														"name": "never"
+													}
+												},
+												"falseType": {
+													"type": "intrinsic",
+													"name": "never"
+												}
+											},
+											{
+												"type": "indexedAccess",
+												"indexType": {
+													"type": "literal",
+													"value": "Returns"
+												},
+												"objectType": {
+													"type": "reference",
+													"id": 206,
+													"name": "Fn"
+												}
+											},
+											{
+												"type": "reference",
+												"id": 205,
+												"name": "FnName"
+											},
+											{
+												"type": "literal",
+												"value": null
+											},
+											{
+												"type": "literal",
+												"value": "RPC"
+											}
+										],
+										"qualifiedName": "PostgrestFilterBuilder",
+										"package": "@supabase/postgrest-js",
+										"name": "default"
+									}
+								}
+							]
+						},
+						{
+							"id": 199,
+							"name": "schema",
+							"kind": 2048,
+							"kindString": "Method",
+							"flags": {},
+							"sources": [
+								{
+									"fileName": "src/SupabaseClient.ts",
+									"line": 209,
+									"character": 2
+								}
+							],
+							"signatures": [
+								{
+									"id": 200,
+									"name": "schema",
+									"kind": 4096,
+									"kindString": "Call signature",
+									"flags": {},
+									"comment": {
+										"shortText": "Select a schema to query or perform an function (rpc) call.",
+										"text": "The schema needs to be on the list of exposed schemas inside Supabase.\n"
+									},
+									"typeParameter": [
+										{
+											"id": 201,
+											"name": "DynamicSchema",
+											"kind": 131072,
+											"kindString": "Type parameter",
+											"flags": {},
+											"type": {
+												"type": "intrinsic",
+												"name": "string"
+											}
+										}
+									],
+									"parameters": [
+										{
+											"id": 202,
+											"name": "schema",
+											"kind": 32768,
+											"kindString": "Parameter",
+											"flags": {},
+											"comment": {
+												"shortText": "The schema to query\n"
+											},
+											"type": {
+												"type": "reference",
+												"id": 201,
+												"name": "DynamicSchema"
+											}
+										}
+									],
+									"type": {
+										"type": "reference",
+										"typeArguments": [
+											{
+												"type": "reference",
+												"id": 145,
+												"name": "Database"
+											},
+											{
+												"type": "reference",
+												"id": 161,
+												"name": "ClientOptions"
+											},
+											{
+												"type": "reference",
+												"id": 201,
+												"name": "DynamicSchema"
+											},
+											{
+												"type": "conditional",
+												"checkType": {
+													"type": "indexedAccess",
+													"indexType": {
+														"type": "reference",
+														"id": 201,
+														"name": "DynamicSchema"
+													},
+													"objectType": {
+														"type": "reference",
+														"id": 145,
+														"name": "Database"
+													}
+												},
+												"extendsType": {
+													"type": "reference",
+													"id": 128,
+													"name": "GenericSchema"
+												},
+												"trueType": {
+													"type": "indexedAccess",
+													"indexType": {
+														"type": "intrinsic",
+														"name": "any"
+													},
+													"objectType": {
+														"type": "intrinsic",
+														"name": "any"
+													}
+												},
+												"falseType": {
+													"type": "intrinsic",
+													"name": "any"
+												}
+											}
+										],
+										"qualifiedName": "PostgrestClient",
+										"package": "@supabase/postgrest-js",
+										"name": "default"
+									}
+								}
+							]
+						}
+					],
+					"groups": [
+						{
+							"title": "Constructors",
+							"kind": 512,
+							"children": [
+								143
+							]
+						},
+						{
+							"title": "Properties",
+							"kind": 1024,
+							"children": [
+								180,
+								165,
+								169,
+								179,
+								174,
+								171,
+								183,
+								166,
+								168,
+								172,
+								167,
+								173,
+								170,
+								185,
+								184
+							]
+						},
+						{
+							"title": "Accessors",
+							"kind": 262144,
+							"children": [
+								186
+							]
+						},
+						{
+							"title": "Methods",
+							"kind": 2048,
+							"children": [
+								225,
+								242,
+								236,
+								227,
+								239,
+								214,
+								188,
+								218,
+								223,
+								220,
+								203,
+								199
+							]
+						}
+					],
+					"sources": [
+						{
+							"fileName": "src/SupabaseClient.ts",
+							"line": 31,
+							"character": 21
+						}
+					],
+					"typeParameter": [
+						{
+							"id": 247,
+							"name": "Database",
+							"kind": 131072,
+							"kindString": "Type parameter",
+							"flags": {},
+							"default": {
+								"type": "intrinsic",
+								"name": "any"
+							}
+						},
+						{
+							"id": 250,
+							"name": "SchemaNameOrClientOptions",
+							"kind": 131072,
+							"kindString": "Type parameter",
+							"flags": {},
+							"type": {
+								"type": "union",
+								"types": [
+									{
+										"type": "intersection",
+										"types": [
+											{
+												"type": "intrinsic",
+												"name": "string"
+											},
+											{
+												"type": "typeOperator",
+												"operator": "keyof",
+												"target": {
+													"type": "reference",
+													"typeArguments": [
+														{
+															"type": "reference",
+															"id": 145,
+															"name": "Database"
+														},
+														{
+															"type": "literal",
+															"value": "__InternalSupabase"
+														}
+													],
+													"qualifiedName": "Omit",
+													"package": "typescript",
+													"name": "Omit"
+												}
+											}
+										]
+									},
+									{
+										"type": "reflection",
+										"declaration": {
+											"id": 248,
+											"name": "__type",
+											"kind": 65536,
+											"kindString": "Type literal",
+											"flags": {},
+											"children": [
+												{
+													"id": 249,
+													"name": "PostgrestVersion",
+													"kind": 1024,
+													"kindString": "Property",
+													"flags": {},
+													"sources": [
+														{
+															"fileName": "src/SupabaseClient.ts",
+															"line": 38,
+															"character": 8
+														}
+													],
+													"type": {
+														"type": "intrinsic",
+														"name": "string"
+													}
+												}
+											],
+											"groups": [
+												{
+													"title": "Properties",
+													"kind": 1024,
+													"children": [
+														249
+													]
+												}
+											],
+											"sources": [
+												{
+													"fileName": "src/SupabaseClient.ts",
+													"line": 38,
+													"character": 6
+												}
+											]
+										}
+									}
+								]
+							},
+							"default": {
+								"type": "conditional",
+								"checkType": {
+									"type": "literal",
+									"value": "public"
+								},
+								"extendsType": {
+									"type": "typeOperator",
+									"operator": "keyof",
+									"target": {
+										"type": "reference",
+										"typeArguments": [
+											{
+												"type": "reference",
+												"id": 145,
+												"name": "Database"
+											},
+											{
+												"type": "literal",
+												"value": "__InternalSupabase"
+											}
+										],
+										"qualifiedName": "Omit",
+										"package": "typescript",
+										"name": "Omit"
+									}
+								},
+								"trueType": {
+									"type": "literal",
+									"value": "public"
+								},
+								"falseType": {
+									"type": "intersection",
+									"types": [
+										{
+											"type": "intrinsic",
+											"name": "string"
+										},
+										{
+											"type": "typeOperator",
+											"operator": "keyof",
+											"target": {
+												"type": "reference",
+												"typeArguments": [
+													{
+														"type": "reference",
+														"id": 145,
+														"name": "Database"
+													},
+													{
+														"type": "literal",
+														"value": "__InternalSupabase"
+													}
+												],
+												"qualifiedName": "Omit",
+												"package": "typescript",
+												"name": "Omit"
+											}
+										}
+									]
+								}
+							}
+						},
+						{
+							"id": 251,
+							"name": "SchemaName",
+							"kind": 131072,
+							"kindString": "Type parameter",
+							"flags": {},
+							"type": {
+								"type": "intersection",
+								"types": [
+									{
+										"type": "intrinsic",
+										"name": "string"
+									},
+									{
+										"type": "typeOperator",
+										"operator": "keyof",
+										"target": {
+											"type": "reference",
+											"typeArguments": [
+												{
+													"type": "reference",
+													"id": 145,
+													"name": "Database"
+												},
+												{
+													"type": "literal",
+													"value": "__InternalSupabase"
+												}
+											],
+											"qualifiedName": "Omit",
+											"package": "typescript",
+											"name": "Omit"
+										}
+									}
+								]
+							},
+							"default": {
+								"type": "conditional",
+								"checkType": {
+									"type": "reference",
+									"id": 148,
+									"name": "SchemaNameOrClientOptions"
+								},
+								"extendsType": {
+									"type": "intersection",
+									"types": [
+										{
+											"type": "intrinsic",
+											"name": "string"
+										},
+										{
+											"type": "typeOperator",
+											"operator": "keyof",
+											"target": {
+												"type": "reference",
+												"typeArguments": [
+													{
+														"type": "reference",
+														"id": 145,
+														"name": "Database"
+													},
+													{
+														"type": "literal",
+														"value": "__InternalSupabase"
+													}
+												],
+												"qualifiedName": "Omit",
+												"package": "typescript",
+												"name": "Omit"
+											}
+										}
+									]
+								},
+								"trueType": {
+									"type": "reference",
+									"id": 148,
+									"name": "SchemaNameOrClientOptions"
+								},
+								"falseType": {
+									"type": "conditional",
+									"checkType": {
+										"type": "literal",
+										"value": "public"
+									},
+									"extendsType": {
+										"type": "typeOperator",
+										"operator": "keyof",
+										"target": {
+											"type": "reference",
+											"typeArguments": [
+												{
+													"type": "reference",
+													"id": 145,
+													"name": "Database"
+												},
+												{
+													"type": "literal",
+													"value": "__InternalSupabase"
+												}
+											],
+											"qualifiedName": "Omit",
+											"package": "typescript",
+											"name": "Omit"
+										}
+									},
+									"trueType": {
+										"type": "literal",
+										"value": "public"
+									},
+									"falseType": {
+										"type": "intersection",
+										"types": [
+											{
+												"type": "intrinsic",
+												"name": "string"
+											},
+											{
+												"type": "typeOperator",
+												"operator": "keyof",
+												"target": {
+													"type": "reference",
+													"typeArguments": [
+														{
+															"type": "reference",
+															"typeArguments": [
+																{
+																	"type": "reference",
+																	"id": 145,
+																	"name": "Database"
+																},
+																{
+																	"type": "literal",
+																	"value": "__InternalSupabase"
+																}
+															],
+															"qualifiedName": "Omit",
+															"package": "typescript",
+															"name": "Omit"
+														},
+														{
+															"type": "literal",
+															"value": "__InternalSupabase"
+														}
+													],
+													"qualifiedName": "Omit",
+													"package": "typescript",
+													"name": "Omit"
+												}
+											}
+										]
+									}
+								}
+							}
+						},
+						{
+							"id": 252,
+							"name": "Schema",
+							"kind": 131072,
+							"kindString": "Type parameter",
+							"flags": {},
+							"type": {
+								"type": "conditional",
+								"checkType": {
+									"type": "indexedAccess",
+									"indexType": {
+										"type": "reference",
+										"id": 149,
+										"name": "SchemaName"
+									},
+									"objectType": {
+										"type": "reference",
+										"typeArguments": [
+											{
+												"type": "reference",
+												"id": 145,
+												"name": "Database"
+											},
+											{
+												"type": "literal",
+												"value": "__InternalSupabase"
+											}
+										],
+										"qualifiedName": "Omit",
+										"package": "typescript",
+										"name": "Omit"
+									}
+								},
+								"extendsType": {
+									"type": "reference",
+									"id": 128,
+									"name": "GenericSchema"
+								},
+								"trueType": {
+									"type": "indexedAccess",
+									"indexType": {
+										"type": "reference",
+										"id": 149,
+										"name": "SchemaName"
+									},
+									"objectType": {
+										"type": "reference",
+										"typeArguments": [
+											{
+												"type": "reference",
+												"id": 145,
+												"name": "Database"
+											},
+											{
+												"type": "literal",
+												"value": "__InternalSupabase"
+											}
+										],
+										"qualifiedName": "Omit",
+										"package": "typescript",
+										"name": "Omit"
+									}
+								},
+								"falseType": {
+									"type": "intrinsic",
+									"name": "never"
+								}
+							},
+							"default": {
+								"type": "conditional",
+								"checkType": {
+									"type": "indexedAccess",
+									"indexType": {
+										"type": "reference",
+										"id": 149,
+										"name": "SchemaName"
+									},
+									"objectType": {
+										"type": "reference",
+										"typeArguments": [
+											{
+												"type": "reference",
+												"id": 145,
+												"name": "Database"
+											},
+											{
+												"type": "literal",
+												"value": "__InternalSupabase"
+											}
+										],
+										"qualifiedName": "Omit",
+										"package": "typescript",
+										"name": "Omit"
+									}
+								},
+								"extendsType": {
+									"type": "reference",
+									"id": 128,
+									"name": "GenericSchema"
+								},
+								"trueType": {
+									"type": "indexedAccess",
+									"indexType": {
+										"type": "reference",
+										"id": 149,
+										"name": "SchemaName"
+									},
+									"objectType": {
+										"type": "reference",
+										"typeArguments": [
+											{
+												"type": "reference",
+												"id": 145,
+												"name": "Database"
+											},
+											{
+												"type": "literal",
+												"value": "__InternalSupabase"
+											}
+										],
+										"qualifiedName": "Omit",
+										"package": "typescript",
+										"name": "Omit"
+									}
+								},
+								"falseType": {
+									"type": "intrinsic",
+									"name": "never"
+								}
+							}
+						},
+						{
+							"id": 263,
+							"name": "ClientOptions",
+							"kind": 131072,
+							"kindString": "Type parameter",
+							"flags": {},
+							"type": {
+								"type": "reflection",
+								"declaration": {
+									"id": 253,
+									"name": "__type",
+									"kind": 65536,
+									"kindString": "Type literal",
+									"flags": {},
+									"children": [
+										{
+											"id": 254,
+											"name": "PostgrestVersion",
+											"kind": 1024,
+											"kindString": "Property",
+											"flags": {},
+											"sources": [
+												{
+													"fileName": "src/SupabaseClient.ts",
+													"line": 53,
+													"character": 26
+												}
+											],
+											"type": {
+												"type": "intrinsic",
+												"name": "string"
+											}
+										}
+									],
+									"groups": [
+										{
+											"title": "Properties",
+											"kind": 1024,
+											"children": [
+												254
+											]
+										}
+									],
+									"sources": [
+										{
+											"fileName": "src/SupabaseClient.ts",
+											"line": 53,
+											"character": 24
+										}
+									]
+								}
+							},
+							"default": {
+								"type": "conditional",
+								"checkType": {
+									"type": "reference",
+									"id": 148,
+									"name": "SchemaNameOrClientOptions"
+								},
+								"extendsType": {
+									"type": "intersection",
+									"types": [
+										{
+											"type": "intrinsic",
+											"name": "string"
+										},
+										{
+											"type": "typeOperator",
+											"operator": "keyof",
+											"target": {
+												"type": "reference",
+												"typeArguments": [
+													{
+														"type": "reference",
+														"id": 145,
+														"name": "Database"
+													},
+													{
+														"type": "literal",
+														"value": "__InternalSupabase"
+													}
+												],
+												"qualifiedName": "Omit",
+												"package": "typescript",
+												"name": "Omit"
+											}
+										}
+									]
+								},
+								"trueType": {
+									"type": "conditional",
+									"checkType": {
+										"type": "reference",
+										"id": 145,
+										"name": "Database"
+									},
+									"extendsType": {
+										"type": "reflection",
+										"declaration": {
+											"id": 255,
+											"name": "__type",
+											"kind": 65536,
+											"kindString": "Type literal",
+											"flags": {},
+											"children": [
+												{
+													"id": 256,
+													"name": "__InternalSupabase",
+													"kind": 1024,
+													"kindString": "Property",
+													"flags": {},
+													"sources": [
+														{
+															"fileName": "src/SupabaseClient.ts",
+															"line": 56,
+															"character": 25
+														}
+													],
+													"type": {
+														"type": "reflection",
+														"declaration": {
+															"id": 257,
+															"name": "__type",
+															"kind": 65536,
+															"kindString": "Type literal",
+															"flags": {},
+															"children": [
+																{
+																	"id": 258,
+																	"name": "PostgrestVersion",
+																	"kind": 1024,
+																	"kindString": "Property",
+																	"flags": {},
+																	"sources": [
+																		{
+																			"fileName": "src/SupabaseClient.ts",
+																			"line": 56,
+																			"character": 47
+																		}
+																	],
+																	"type": {
+																		"type": "intrinsic",
+																		"name": "string"
+																	}
+																}
+															],
+															"groups": [
+																{
+																	"title": "Properties",
+																	"kind": 1024,
+																	"children": [
+																		258
+																	]
+																}
+															],
+															"sources": [
+																{
+																	"fileName": "src/SupabaseClient.ts",
+																	"line": 56,
+																	"character": 45
+																}
+															]
+														}
+													}
+												}
+											],
+											"groups": [
+												{
+													"title": "Properties",
+													"kind": 1024,
+													"children": [
+														256
+													]
+												}
+											],
+											"sources": [
+												{
+													"fileName": "src/SupabaseClient.ts",
+													"line": 56,
+													"character": 23
+												}
+											]
+										}
+									},
+									"trueType": {
+										"type": "indexedAccess",
+										"indexType": {
+											"type": "literal",
+											"value": "__InternalSupabase"
+										},
+										"objectType": {
+											"type": "reference",
+											"id": 145,
+											"name": "Database"
+										}
+									},
+									"falseType": {
+										"type": "reflection",
+										"declaration": {
+											"id": 259,
+											"name": "__type",
+											"kind": 65536,
+											"kindString": "Type literal",
+											"flags": {},
+											"children": [
+												{
+													"id": 260,
+													"name": "PostgrestVersion",
+													"kind": 1024,
+													"kindString": "Property",
+													"flags": {},
+													"sources": [
+														{
+															"fileName": "src/SupabaseClient.ts",
+															"line": 59,
+															"character": 10
+														}
+													],
+													"type": {
+														"type": "literal",
+														"value": "12"
+													}
+												}
+											],
+											"groups": [
+												{
+													"title": "Properties",
+													"kind": 1024,
+													"children": [
+														260
+													]
+												}
+											],
+											"sources": [
+												{
+													"fileName": "src/SupabaseClient.ts",
+													"line": 59,
+													"character": 8
+												}
+											]
+										}
+									}
+								},
+								"falseType": {
+									"type": "conditional",
+									"checkType": {
+										"type": "reference",
+										"id": 148,
+										"name": "SchemaNameOrClientOptions"
+									},
+									"extendsType": {
+										"type": "reflection",
+										"declaration": {
+											"id": 261,
+											"name": "__type",
+											"kind": 65536,
+											"kindString": "Type literal",
+											"flags": {},
+											"children": [
+												{
+													"id": 262,
+													"name": "PostgrestVersion",
+													"kind": 1024,
+													"kindString": "Property",
+													"flags": {},
+													"sources": [
+														{
+															"fileName": "src/SupabaseClient.ts",
+															"line": 60,
+															"character": 42
+														}
+													],
+													"type": {
+														"type": "intrinsic",
+														"name": "string"
+													}
+												}
+											],
+											"groups": [
+												{
+													"title": "Properties",
+													"kind": 1024,
+													"children": [
+														262
+													]
+												}
+											],
+											"sources": [
+												{
+													"fileName": "src/SupabaseClient.ts",
+													"line": 60,
+													"character": 40
+												}
+											]
+										}
+									},
+									"trueType": {
+										"type": "reference",
+										"id": 148,
+										"name": "SchemaNameOrClientOptions"
+									},
+									"falseType": {
+										"type": "intrinsic",
+										"name": "never"
+									}
+								}
+							}
+						}
+					]
+				},
+				{
+					"id": 2,
+					"name": "createClient",
+					"kind": 64,
+					"kindString": "Function",
+					"flags": {},
+					"sources": [
+						{
+							"fileName": "src/index.ts",
+							"line": 27,
+							"character": 13
+						}
+					],
+					"signatures": [
+						{
+							"id": 3,
+							"name": "createClient",
+							"kind": 4096,
+							"kindString": "Call signature",
+							"flags": {},
+							"comment": {
+								"shortText": "Creates a new Supabase Client."
+							},
+							"typeParameter": [
+								{
+									"id": 4,
+									"name": "Database",
+									"kind": 131072,
+									"kindString": "Type parameter",
+									"flags": {},
+									"default": {
+										"type": "intrinsic",
+										"name": "any"
+									}
+								},
+								{
+									"id": 7,
+									"name": "SchemaNameOrClientOptions",
+									"kind": 131072,
+									"kindString": "Type parameter",
+									"flags": {},
+									"type": {
+										"type": "union",
+										"types": [
+											{
+												"type": "intrinsic",
+												"name": "string"
+											},
+											{
+												"type": "reflection",
+												"declaration": {
+													"id": 5,
+													"name": "__type",
+													"kind": 65536,
+													"kindString": "Type literal",
+													"flags": {},
+													"children": [
+														{
+															"id": 6,
+															"name": "PostgrestVersion",
+															"kind": 1024,
+															"kindString": "Property",
+															"flags": {},
+															"sources": [
+																{
+																	"fileName": "src/index.ts",
+																	"line": 31,
+																	"character": 8
+																}
+															],
+															"type": {
+																"type": "intrinsic",
+																"name": "string"
+															}
+														}
+													],
+													"groups": [
+														{
+															"title": "Properties",
+															"kind": 1024,
+															"children": [
+																6
+															]
+														}
+													]
+												}
+											}
+										]
+									},
+									"default": {
+										"type": "conditional",
+										"checkType": {
+											"type": "literal",
+											"value": "public"
+										},
+										"extendsType": {
+											"type": "reference",
+											"typeArguments": [
+												{
+													"type": "typeOperator",
+													"operator": "keyof",
+													"target": {
+														"type": "reference",
+														"id": 4,
+														"name": "Database"
+													}
+												},
+												{
+													"type": "literal",
+													"value": "__InternalSupabase"
+												}
+											],
+											"qualifiedName": "Exclude",
+											"package": "typescript",
+											"name": "Exclude"
+										},
+										"trueType": {
+											"type": "literal",
+											"value": "public"
+										},
+										"falseType": {
+											"type": "intersection",
+											"types": [
+												{
+													"type": "intrinsic",
+													"name": "string"
+												},
+												{
+													"type": "reference",
+													"typeArguments": [
+														{
+															"type": "typeOperator",
+															"operator": "keyof",
+															"target": {
+																"type": "reference",
+																"id": 4,
+																"name": "Database"
+															}
+														},
+														{
+															"type": "literal",
+															"value": "__InternalSupabase"
+														}
+													],
+													"qualifiedName": "Exclude",
+													"package": "typescript",
+													"name": "Exclude"
+												}
+											]
+										}
+									}
+								},
+								{
+									"id": 8,
+									"name": "SchemaName",
+									"kind": 131072,
+									"kindString": "Type parameter",
+									"flags": {},
+									"type": {
+										"type": "intrinsic",
+										"name": "string"
+									},
+									"default": {
+										"type": "conditional",
+										"checkType": {
+											"type": "reference",
+											"id": 7,
+											"name": "SchemaNameOrClientOptions"
+										},
+										"extendsType": {
+											"type": "intersection",
+											"types": [
+												{
+													"type": "intrinsic",
+													"name": "string"
+												},
+												{
+													"type": "reference",
+													"typeArguments": [
+														{
+															"type": "typeOperator",
+															"operator": "keyof",
+															"target": {
+																"type": "reference",
+																"id": 4,
+																"name": "Database"
+															}
+														},
+														{
+															"type": "literal",
+															"value": "__InternalSupabase"
+														}
+													],
+													"qualifiedName": "Exclude",
+													"package": "typescript",
+													"name": "Exclude"
+												}
+											]
+										},
+										"trueType": {
+											"type": "reference",
+											"name": "SchemaNameOrClientOptions"
+										},
+										"falseType": {
+											"type": "conditional",
+											"checkType": {
+												"type": "literal",
+												"value": "public"
+											},
+											"extendsType": {
+												"type": "reference",
+												"typeArguments": [
+													{
+														"type": "typeOperator",
+														"operator": "keyof",
+														"target": {
+															"type": "reference",
+															"id": 4,
+															"name": "Database"
+														}
+													},
+													{
+														"type": "literal",
+														"value": "__InternalSupabase"
+													}
+												],
+												"qualifiedName": "Exclude",
+												"package": "typescript",
+												"name": "Exclude"
+											},
+											"trueType": {
+												"type": "literal",
+												"value": "public"
+											},
+											"falseType": {
+												"type": "intersection",
+												"types": [
+													{
+														"type": "intrinsic",
+														"name": "string"
+													},
+													{
+														"type": "reference",
+														"typeArguments": [
+															{
+																"type": "reference",
+																"typeArguments": [
+																	{
+																		"type": "typeOperator",
+																		"operator": "keyof",
+																		"target": {
+																			"type": "reference",
+																			"id": 4,
+																			"name": "Database"
+																		}
+																	},
+																	{
+																		"type": "literal",
+																		"value": "__InternalSupabase"
+																	}
+																],
+																"qualifiedName": "Exclude",
+																"package": "typescript",
+																"name": "Exclude"
+															},
+															{
+																"type": "literal",
+																"value": "__InternalSupabase"
+															}
+														],
+														"qualifiedName": "Exclude",
+														"package": "typescript",
+														"name": "Exclude"
+													}
+												]
+											}
+										}
+									}
+								}
+							],
+							"parameters": [
+								{
+									"id": 9,
+									"name": "supabaseUrl",
+									"kind": 32768,
+									"kindString": "Parameter",
+									"flags": {},
+									"type": {
+										"type": "intrinsic",
+										"name": "string"
+									}
+								},
+								{
+									"id": 10,
+									"name": "supabaseKey",
+									"kind": 32768,
+									"kindString": "Parameter",
+									"flags": {},
+									"type": {
+										"type": "intrinsic",
+										"name": "string"
+									}
+								},
+								{
+									"id": 11,
+									"name": "options",
+									"kind": 32768,
+									"kindString": "Parameter",
+									"flags": {
+										"isOptional": true
+									},
+									"type": {
+										"type": "reference",
+										"id": 80,
+										"typeArguments": [
+											{
+												"type": "reference",
+												"id": 8,
+												"name": "SchemaName"
+											}
+										],
+										"name": "SupabaseClientOptions"
+									}
+								}
+							],
+							"type": {
+								"type": "reference",
+								"id": 142,
+								"typeArguments": [
+									{
+										"type": "reference",
+										"id": 4,
+										"name": "Database"
+									},
+									{
+										"type": "reference",
+										"id": 7,
+										"name": "SchemaNameOrClientOptions"
+									},
+									{
+										"type": "reference",
+										"id": 8,
+										"name": "SchemaName"
+									},
+									{
+										"type": "conditional",
+										"checkType": {
+											"type": "indexedAccess",
+											"indexType": {
+												"type": "reference",
+												"id": 8,
+												"name": "SchemaName"
+											},
+											"objectType": {
+												"type": "reference",
+												"typeArguments": [
+													{
+														"type": "reference",
+														"id": 4,
+														"name": "Database"
+													},
+													{
+														"type": "literal",
+														"value": "__InternalSupabase"
+													}
+												],
+												"qualifiedName": "Omit",
+												"package": "typescript",
+												"name": "Omit"
+											}
+										},
+										"extendsType": {
+											"type": "reference",
+											"id": 128,
+											"name": "GenericSchema"
+										},
+										"trueType": {
+											"type": "indexedAccess",
+											"indexType": {
+												"type": "intrinsic",
+												"name": "any"
+											},
+											"objectType": {
+												"type": "intrinsic",
+												"name": "any"
+											}
+										},
+										"falseType": {
+											"type": "intrinsic",
+											"name": "never"
+										}
+									},
+									{
+										"type": "conditional",
+										"checkType": {
+											"type": "reference",
+											"id": 7,
+											"name": "SchemaNameOrClientOptions"
+										},
+										"extendsType": {
+											"type": "intersection",
+											"types": [
+												{
+													"type": "intrinsic",
+													"name": "string"
+												},
+												{
+													"type": "reference",
+													"typeArguments": [
+														{
+															"type": "typeOperator",
+															"operator": "keyof",
+															"target": {
+																"type": "reference",
+																"id": 4,
+																"name": "Database"
+															}
+														},
+														{
+															"type": "literal",
+															"value": "__InternalSupabase"
+														}
+													],
+													"qualifiedName": "Exclude",
+													"package": "typescript",
+													"name": "Exclude"
+												}
+											]
+										},
+										"trueType": {
+											"type": "conditional",
+											"checkType": {
+												"type": "reference",
+												"id": 4,
+												"name": "Database"
+											},
+											"extendsType": {
+												"type": "reflection",
+												"declaration": {
+													"id": 12,
+													"name": "__type",
+													"kind": 65536,
+													"kindString": "Type literal",
+													"flags": {},
+													"children": [
+														{
+															"id": 13,
+															"name": "__InternalSupabase",
+															"kind": 1024,
+															"kindString": "Property",
+															"flags": {},
+															"sources": [
+																{
+																	"fileName": "src/SupabaseClient.ts",
+																	"line": 56,
+																	"character": 25
+																}
+															],
+															"type": {
+																"type": "reflection",
+																"declaration": {
+																	"id": 14,
+																	"name": "__type",
+																	"kind": 65536,
+																	"kindString": "Type literal",
+																	"flags": {},
+																	"children": [
+																		{
+																			"id": 15,
+																			"name": "PostgrestVersion",
+																			"kind": 1024,
+																			"kindString": "Property",
+																			"flags": {},
+																			"sources": [
+																				{
+																					"fileName": "src/SupabaseClient.ts",
+																					"line": 56,
+																					"character": 47
+																				}
+																			],
+																			"type": {
+																				"type": "intrinsic",
+																				"name": "string"
+																			}
+																		}
+																	],
+																	"groups": [
+																		{
+																			"title": "Properties",
+																			"kind": 1024,
+																			"children": [
+																				15
+																			]
+																		}
+																	]
+																}
+															}
+														}
+													],
+													"groups": [
+														{
+															"title": "Properties",
+															"kind": 1024,
+															"children": [
+																13
+															]
+														}
+													]
+												}
+											},
+											"trueType": {
+												"type": "indexedAccess",
+												"indexType": {
+													"type": "literal",
+													"value": "__InternalSupabase"
+												},
+												"objectType": {
+													"type": "reference",
+													"name": "Database"
+												}
+											},
+											"falseType": {
+												"type": "reflection",
+												"declaration": {
+													"id": 16,
+													"name": "__type",
+													"kind": 65536,
+													"kindString": "Type literal",
+													"flags": {},
+													"children": [
+														{
+															"id": 17,
+															"name": "PostgrestVersion",
+															"kind": 1024,
+															"kindString": "Property",
+															"flags": {},
+															"sources": [
+																{
+																	"fileName": "src/SupabaseClient.ts",
+																	"line": 59,
+																	"character": 10
+																}
+															],
+															"type": {
+																"type": "literal",
+																"value": "12"
+															}
+														}
+													],
+													"groups": [
+														{
+															"title": "Properties",
+															"kind": 1024,
+															"children": [
+																17
+															]
+														}
+													]
+												}
+											}
+										},
+										"falseType": {
+											"type": "conditional",
+											"checkType": {
+												"type": "reference",
+												"id": 7,
+												"name": "SchemaNameOrClientOptions"
+											},
+											"extendsType": {
+												"type": "reflection",
+												"declaration": {
+													"id": 18,
+													"name": "__type",
+													"kind": 65536,
+													"kindString": "Type literal",
+													"flags": {},
+													"children": [
+														{
+															"id": 19,
+															"name": "PostgrestVersion",
+															"kind": 1024,
+															"kindString": "Property",
+															"flags": {},
+															"sources": [
+																{
+																	"fileName": "src/SupabaseClient.ts",
+																	"line": 60,
+																	"character": 42
+																}
+															],
+															"type": {
+																"type": "intrinsic",
+																"name": "string"
+															}
+														}
+													],
+													"groups": [
+														{
+															"title": "Properties",
+															"kind": 1024,
+															"children": [
+																19
+															]
+														}
+													]
+												}
+											},
+											"trueType": {
+												"type": "reference",
+												"name": "SchemaNameOrClientOptions"
+											},
+											"falseType": {
+												"type": "intrinsic",
+												"name": "never"
+											}
+										}
+									}
+								],
+								"name": "default"
+							}
+						}
+					]
+				}
+			],
+			"groups": [
+				{
+					"title": "References",
+					"kind": 16777216,
+					"children": [
+						266,
+						267,
+						265,
+						264
+					]
+				},
+				{
+					"title": "Classes",
+					"kind": 128,
+					"children": [
+						142
+					]
+				},
+				{
+					"title": "Functions",
+					"kind": 64,
+					"children": [
+						2
+					]
+				}
+			],
+			"sources": [
+				{
+					"fileName": "src/index.ts",
+					"line": 1,
+					"character": 0
+				}
+			]
+		},
+		{
+			"id": 20,
+			"name": "lib/constants",
+			"kind": 2,
+			"kindString": "Module",
+			"flags": {},
+			"children": [
+				{
+					"id": 32,
+					"name": "DEFAULT_AUTH_OPTIONS",
+					"kind": 32,
+					"kindString": "Variable",
+					"flags": {
+						"isConst": true
+					},
+					"sources": [
+						{
+							"fileName": "src/lib/constants.ts",
+							"line": 28,
+							"character": 13
+						}
+					],
+					"type": {
+						"type": "reference",
+						"id": 78,
+						"name": "SupabaseAuthClientOptions"
+					},
+					"defaultValue": "..."
+				},
+				{
+					"id": 29,
+					"name": "DEFAULT_DB_OPTIONS",
+					"kind": 32,
+					"kindString": "Variable",
+					"flags": {
+						"isConst": true
+					},
+					"sources": [
+						{
+							"fileName": "src/lib/constants.ts",
+							"line": 24,
+							"character": 13
+						}
+					],
+					"type": {
+						"type": "reflection",
+						"declaration": {
+							"id": 30,
+							"name": "__type",
+							"kind": 65536,
+							"kindString": "Type literal",
+							"flags": {},
+							"children": [
+								{
+									"id": 31,
+									"name": "schema",
+									"kind": 1024,
+									"kindString": "Property",
+									"flags": {},
+									"sources": [
+										{
+											"fileName": "src/lib/constants.ts",
+											"line": 25,
+											"character": 2
+										}
+									],
+									"type": {
+										"type": "intrinsic",
+										"name": "string"
+									},
+									"defaultValue": "'public'"
+								}
+							],
+							"groups": [
+								{
+									"title": "Properties",
+									"kind": 1024,
+									"children": [
+										31
+									]
+								}
+							]
+						}
+					},
+					"defaultValue": "..."
+				},
+				{
+					"id": 24,
+					"name": "DEFAULT_GLOBAL_OPTIONS",
+					"kind": 32,
+					"kindString": "Variable",
+					"flags": {
+						"isConst": true
+					},
+					"sources": [
+						{
+							"fileName": "src/lib/constants.ts",
+							"line": 20,
+							"character": 13
+						}
+					],
+					"type": {
+						"type": "reflection",
+						"declaration": {
+							"id": 25,
+							"name": "__type",
+							"kind": 65536,
+							"kindString": "Type literal",
+							"flags": {},
+							"children": [
+								{
+									"id": 26,
+									"name": "headers",
+									"kind": 1024,
+									"kindString": "Property",
+									"flags": {},
+									"sources": [
+										{
+											"fileName": "src/lib/constants.ts",
+											"line": 21,
+											"character": 2
+										}
+									],
+									"type": {
+										"type": "reflection",
+										"declaration": {
+											"id": 27,
+											"name": "__type",
+											"kind": 65536,
+											"kindString": "Type literal",
+											"flags": {},
+											"children": [
+												{
+													"id": 28,
+													"name": "X-Client-Info",
+													"kind": 1024,
+													"kindString": "Property",
+													"flags": {},
+													"sources": [
+														{
+															"fileName": "src/lib/constants.ts",
+															"line": 18,
+															"character": 33
+														}
+													],
+													"type": {
+														"type": "intrinsic",
+														"name": "string"
+													},
+													"defaultValue": "..."
+												}
+											],
+											"groups": [
+												{
+													"title": "Properties",
+													"kind": 1024,
+													"children": [
+														28
+													]
+												}
+											]
+										}
+									},
+									"defaultValue": "DEFAULT_HEADERS"
+								}
+							],
+							"groups": [
+								{
+									"title": "Properties",
+									"kind": 1024,
+									"children": [
+										26
+									]
+								}
+							]
+						}
+					},
+					"defaultValue": "..."
+				},
+				{
+					"id": 21,
+					"name": "DEFAULT_HEADERS",
+					"kind": 32,
+					"kindString": "Variable",
+					"flags": {
+						"isConst": true
+					},
+					"sources": [
+						{
+							"fileName": "src/lib/constants.ts",
+							"line": 18,
+							"character": 13
+						}
+					],
+					"type": {
+						"type": "reflection",
+						"declaration": {
+							"id": 22,
+							"name": "__type",
+							"kind": 65536,
+							"kindString": "Type literal",
+							"flags": {},
+							"children": [
+								{
+									"id": 23,
+									"name": "X-Client-Info",
+									"kind": 1024,
+									"kindString": "Property",
+									"flags": {},
+									"sources": [
+										{
+											"fileName": "src/lib/constants.ts",
+											"line": 18,
+											"character": 33
+										}
+									],
+									"type": {
+										"type": "intrinsic",
+										"name": "string"
+									},
+									"defaultValue": "..."
+								}
+							],
+							"groups": [
+								{
+									"title": "Properties",
+									"kind": 1024,
+									"children": [
+										23
+									]
+								}
+							]
+						}
+					},
+					"defaultValue": "..."
+				},
+				{
+					"id": 33,
+					"name": "DEFAULT_REALTIME_OPTIONS",
+					"kind": 32,
+					"kindString": "Variable",
+					"flags": {
+						"isConst": true
+					},
+					"sources": [
+						{
+							"fileName": "src/lib/constants.ts",
+							"line": 35,
+							"character": 13
+						}
+					],
+					"type": {
+						"type": "reference",
+						"qualifiedName": "RealtimeClientOptions",
+						"package": "@supabase/realtime-js",
+						"name": "RealtimeClientOptions"
+					},
+					"defaultValue": "{}"
+				}
+			],
+			"groups": [
+				{
+					"title": "Variables",
+					"kind": 32,
+					"children": [
+						32,
+						29,
+						24,
+						21,
+						33
+					]
+				}
+			],
+			"sources": [
+				{
+					"fileName": "src/lib/constants.ts",
+					"line": 2,
+					"character": 0
+				}
+			]
+		},
+		{
+			"id": 34,
+			"name": "lib/fetch",
+			"kind": 2,
+			"kindString": "Module",
+			"flags": {},
+			"children": [
+				{
+					"id": 48,
+					"name": "fetchWithAuth",
+					"kind": 64,
+					"kindString": "Function",
+					"flags": {},
+					"sources": [
+						{
+							"fileName": "src/lib/fetch.ts",
+							"line": 26,
+							"character": 13
+						}
+					],
+					"signatures": [
+						{
+							"id": 49,
+							"name": "fetchWithAuth",
+							"kind": 4096,
+							"kindString": "Call signature",
+							"flags": {},
+							"parameters": [
+								{
+									"id": 50,
+									"name": "supabaseKey",
+									"kind": 32768,
+									"kindString": "Parameter",
+									"flags": {},
+									"type": {
+										"type": "intrinsic",
+										"name": "string"
+									}
+								},
+								{
+									"id": 51,
+									"name": "getAccessToken",
+									"kind": 32768,
+									"kindString": "Parameter",
+									"flags": {},
+									"type": {
+										"type": "reflection",
+										"declaration": {
+											"id": 52,
+											"name": "__type",
+											"kind": 65536,
+											"kindString": "Type literal",
+											"flags": {},
+											"signatures": [
+												{
+													"id": 53,
+													"name": "__type",
+													"kind": 4096,
+													"kindString": "Call signature",
+													"flags": {},
+													"type": {
+														"type": "reference",
+														"typeArguments": [
+															{
+																"type": "union",
+																"types": [
+																	{
+																		"type": "literal",
+																		"value": null
+																	},
+																	{
+																		"type": "intrinsic",
+																		"name": "string"
+																	}
+																]
+															}
+														],
+														"qualifiedName": "Promise",
+														"package": "typescript",
+														"name": "Promise"
+													}
+												}
+											]
+										}
+									}
+								},
+								{
+									"id": 54,
+									"name": "customFetch",
+									"kind": 32768,
+									"kindString": "Parameter",
+									"flags": {
+										"isOptional": true
+									},
+									"type": {
+										"type": "reflection",
+										"declaration": {
+											"id": 55,
+											"name": "__type",
+											"kind": 65536,
+											"kindString": "Type literal",
+											"flags": {},
+											"signatures": [
+												{
+													"id": 56,
+													"name": "__type",
+													"kind": 4096,
+													"kindString": "Call signature",
+													"flags": {},
+													"parameters": [
+														{
+															"id": 57,
+															"name": "input",
+															"kind": 32768,
+															"kindString": "Parameter",
+															"flags": {},
+															"type": {
+																"type": "union",
+																"types": [
+																	{
+																		"type": "reference",
+																		"qualifiedName": "RequestInfo",
+																		"package": "typescript",
+																		"name": "RequestInfo"
+																	},
+																	{
+																		"type": "reference",
+																		"qualifiedName": "URL",
+																		"package": "typescript",
+																		"name": "URL"
+																	}
+																]
+															}
+														},
+														{
+															"id": 58,
+															"name": "init",
+															"kind": 32768,
+															"kindString": "Parameter",
+															"flags": {
+																"isOptional": true
+															},
+															"type": {
+																"type": "reference",
+																"qualifiedName": "RequestInit",
+																"package": "typescript",
+																"name": "RequestInit"
+															}
+														}
+													],
+													"type": {
+														"type": "reference",
+														"typeArguments": [
+															{
+																"type": "reference",
+																"qualifiedName": "Response",
+																"package": "typescript",
+																"name": "Response"
+															}
+														],
+														"qualifiedName": "Promise",
+														"package": "typescript",
+														"name": "Promise"
+													}
+												}
+											]
+										}
+									}
+								}
+							],
+							"type": {
+								"type": "reflection",
+								"declaration": {
+									"id": 59,
+									"name": "__type",
+									"kind": 65536,
+									"kindString": "Type literal",
+									"flags": {},
+									"signatures": [
+										{
+											"id": 60,
+											"name": "__type",
+											"kind": 4096,
+											"kindString": "Call signature",
+											"flags": {},
+											"parameters": [
+												{
+													"id": 61,
+													"name": "input",
+													"kind": 32768,
+													"kindString": "Parameter",
+													"flags": {},
+													"type": {
+														"type": "union",
+														"types": [
+															{
+																"type": "reference",
+																"qualifiedName": "RequestInfo",
+																"package": "typescript",
+																"name": "RequestInfo"
+															},
+															{
+																"type": "reference",
+																"qualifiedName": "URL",
+																"package": "typescript",
+																"name": "URL"
+															}
+														]
+													}
+												},
+												{
+													"id": 62,
+													"name": "init",
+													"kind": 32768,
+													"kindString": "Parameter",
+													"flags": {
+														"isOptional": true
+													},
+													"type": {
+														"type": "reference",
+														"qualifiedName": "RequestInit",
+														"package": "typescript",
+														"name": "RequestInit"
+													}
+												}
+											],
+											"type": {
+												"type": "reference",
+												"typeArguments": [
+													{
+														"type": "reference",
+														"qualifiedName": "Response",
+														"package": "typescript",
+														"name": "Response"
+													}
+												],
+												"qualifiedName": "Promise",
+												"package": "typescript",
+												"name": "Promise"
+											}
+										}
+									]
+								}
+							}
+						}
+					]
+				},
+				{
+					"id": 35,
+					"name": "resolveFetch",
+					"kind": 64,
+					"kindString": "Function",
+					"flags": {},
+					"sources": [
+						{
+							"fileName": "src/lib/fetch.ts",
+							"line": 6,
+							"character": 13
+						}
+					],
+					"signatures": [
+						{
+							"id": 36,
+							"name": "resolveFetch",
+							"kind": 4096,
+							"kindString": "Call signature",
+							"flags": {},
+							"parameters": [
+								{
+									"id": 37,
+									"name": "customFetch",
+									"kind": 32768,
+									"kindString": "Parameter",
+									"flags": {
+										"isOptional": true
+									},
+									"type": {
+										"type": "reflection",
+										"declaration": {
+											"id": 38,
+											"name": "__type",
+											"kind": 65536,
+											"kindString": "Type literal",
+											"flags": {},
+											"signatures": [
+												{
+													"id": 39,
+													"name": "__type",
+													"kind": 4096,
+													"kindString": "Call signature",
+													"flags": {},
+													"parameters": [
+														{
+															"id": 40,
+															"name": "input",
+															"kind": 32768,
+															"kindString": "Parameter",
+															"flags": {},
+															"type": {
+																"type": "union",
+																"types": [
+																	{
+																		"type": "reference",
+																		"qualifiedName": "RequestInfo",
+																		"package": "typescript",
+																		"name": "RequestInfo"
+																	},
+																	{
+																		"type": "reference",
+																		"qualifiedName": "URL",
+																		"package": "typescript",
+																		"name": "URL"
+																	}
+																]
+															}
+														},
+														{
+															"id": 41,
+															"name": "init",
+															"kind": 32768,
+															"kindString": "Parameter",
+															"flags": {
+																"isOptional": true
+															},
+															"type": {
+																"type": "reference",
+																"qualifiedName": "RequestInit",
+																"package": "typescript",
+																"name": "RequestInit"
+															}
+														}
+													],
+													"type": {
+														"type": "reference",
+														"typeArguments": [
+															{
+																"type": "reference",
+																"qualifiedName": "Response",
+																"package": "typescript",
+																"name": "Response"
+															}
+														],
+														"qualifiedName": "Promise",
+														"package": "typescript",
+														"name": "Promise"
+													}
+												}
+											]
+										}
+									}
+								}
+							],
+							"type": {
+								"type": "reflection",
+								"declaration": {
+									"id": 42,
+									"name": "__type",
+									"kind": 65536,
+									"kindString": "Type literal",
+									"flags": {},
+									"signatures": [
+										{
+											"id": 43,
+											"name": "__type",
+											"kind": 4096,
+											"kindString": "Call signature",
+											"flags": {},
+											"parameters": [
+												{
+													"id": 44,
+													"name": "input",
+													"kind": 32768,
+													"kindString": "Parameter",
+													"flags": {},
+													"type": {
+														"type": "union",
+														"types": [
+															{
+																"type": "reference",
+																"qualifiedName": "RequestInfo",
+																"package": "typescript",
+																"name": "RequestInfo"
+															},
+															{
+																"type": "reference",
+																"qualifiedName": "URL",
+																"package": "typescript",
+																"name": "URL"
+															}
+														]
+													}
+												},
+												{
+													"id": 45,
+													"name": "init",
+													"kind": 32768,
+													"kindString": "Parameter",
+													"flags": {
+														"isOptional": true
+													},
+													"type": {
+														"type": "reference",
+														"qualifiedName": "RequestInit",
+														"package": "typescript",
+														"name": "RequestInit"
+													}
+												}
+											],
+											"type": {
+												"type": "reference",
+												"typeArguments": [
+													{
+														"type": "reference",
+														"qualifiedName": "Response",
+														"package": "typescript",
+														"name": "Response"
+													}
+												],
+												"qualifiedName": "Promise",
+												"package": "typescript",
+												"name": "Promise"
+											}
+										}
+									]
+								}
+							}
+						}
+					]
+				},
+				{
+					"id": 46,
+					"name": "resolveHeadersConstructor",
+					"kind": 64,
+					"kindString": "Function",
+					"flags": {},
+					"sources": [
+						{
+							"fileName": "src/lib/fetch.ts",
+							"line": 18,
+							"character": 13
+						}
+					],
+					"signatures": [
+						{
+							"id": 47,
+							"name": "resolveHeadersConstructor",
+							"kind": 4096,
+							"kindString": "Call signature",
+							"flags": {},
+							"type": {
+								"type": "intrinsic",
+								"name": "any"
+							}
+						}
+					]
+				}
+			],
+			"groups": [
+				{
+					"title": "Functions",
+					"kind": 64,
+					"children": [
+						48,
+						35,
+						46
+					]
+				}
+			],
+			"sources": [
+				{
+					"fileName": "src/lib/fetch.ts",
+					"line": 2,
+					"character": 0
+				}
+			]
+		},
+		{
+			"id": 63,
+			"name": "lib/helpers",
+			"kind": 2,
+			"kindString": "Module",
+			"flags": {},
+			"children": [
+				{
+					"id": 69,
+					"name": "applySettingDefaults",
+					"kind": 64,
+					"kindString": "Function",
+					"flags": {},
+					"sources": [
+						{
+							"fileName": "src/lib/helpers.ts",
+							"line": 18,
+							"character": 16
+						}
+					],
+					"signatures": [
+						{
+							"id": 70,
+							"name": "applySettingDefaults",
+							"kind": 4096,
+							"kindString": "Call signature",
+							"flags": {},
+							"typeParameter": [
+								{
+									"id": 71,
+									"name": "Database",
+									"kind": 131072,
+									"kindString": "Type parameter",
+									"flags": {},
+									"default": {
+										"type": "intrinsic",
+										"name": "any"
+									}
+								},
+								{
+									"id": 72,
+									"name": "SchemaName",
+									"kind": 131072,
+									"kindString": "Type parameter",
+									"flags": {},
+									"type": {
+										"type": "intrinsic",
+										"name": "string"
+									},
+									"default": {
+										"type": "conditional",
+										"checkType": {
+											"type": "literal",
+											"value": "public"
+										},
+										"extendsType": {
+											"type": "typeOperator",
+											"operator": "keyof",
+											"target": {
+												"type": "reference",
+												"id": 71,
+												"name": "Database"
+											}
+										},
+										"trueType": {
+											"type": "literal",
+											"value": "public"
+										},
+										"falseType": {
+											"type": "intersection",
+											"types": [
+												{
+													"type": "intrinsic",
+													"name": "string"
+												},
+												{
+													"type": "typeOperator",
+													"operator": "keyof",
+													"target": {
+														"type": "reference",
+														"id": 71,
+														"name": "Database"
+													}
+												}
+											]
+										}
+									}
+								}
+							],
+							"parameters": [
+								{
+									"id": 73,
+									"name": "options",
+									"kind": 32768,
+									"kindString": "Parameter",
+									"flags": {},
+									"type": {
+										"type": "reference",
+										"id": 80,
+										"typeArguments": [
+											{
+												"type": "reference",
+												"id": 72,
+												"name": "SchemaName"
+											}
+										],
+										"name": "SupabaseClientOptions"
+									}
+								},
+								{
+									"id": 74,
+									"name": "defaults",
+									"kind": 32768,
+									"kindString": "Parameter",
+									"flags": {},
+									"type": {
+										"type": "reference",
+										"id": 80,
+										"typeArguments": [
+											{
+												"type": "intrinsic",
+												"name": "any"
+											}
+										],
+										"name": "SupabaseClientOptions"
+									}
+								}
+							],
+							"type": {
+								"type": "reference",
+								"typeArguments": [
+									{
+										"type": "reference",
+										"id": 80,
+										"typeArguments": [
+											{
+												"type": "reference",
+												"id": 72,
+												"name": "SchemaName"
+											}
+										],
+										"name": "SupabaseClientOptions"
+									}
+								],
+								"qualifiedName": "Required",
+								"package": "typescript",
+								"name": "Required"
+							}
+						}
+					]
+				},
+				{
+					"id": 66,
+					"name": "ensureTrailingSlash",
+					"kind": 64,
+					"kindString": "Function",
+					"flags": {},
+					"sources": [
+						{
+							"fileName": "src/lib/helpers.ts",
+							"line": 12,
+							"character": 16
+						}
+					],
+					"signatures": [
+						{
+							"id": 67,
+							"name": "ensureTrailingSlash",
+							"kind": 4096,
+							"kindString": "Call signature",
+							"flags": {},
+							"parameters": [
+								{
+									"id": 68,
+									"name": "url",
+									"kind": 32768,
+									"kindString": "Parameter",
+									"flags": {},
+									"type": {
+										"type": "intrinsic",
+										"name": "string"
+									}
+								}
+							],
+							"type": {
+								"type": "intrinsic",
+								"name": "string"
+							}
+						}
+					]
+				},
+				{
+					"id": 75,
+					"name": "isBrowser",
+					"kind": 64,
+					"kindString": "Function",
+					"flags": {},
+					"sources": [
+						{
+							"fileName": "src/lib/helpers.ts",
+							"line": 16,
+							"character": 13
+						}
+					],
+					"signatures": [
+						{
+							"id": 76,
+							"name": "isBrowser",
+							"kind": 4096,
+							"kindString": "Call signature",
+							"flags": {},
+							"type": {
+								"type": "intrinsic",
+								"name": "boolean"
+							}
+						}
+					]
+				},
+				{
+					"id": 64,
+					"name": "uuid",
+					"kind": 64,
+					"kindString": "Function",
+					"flags": {},
+					"sources": [
+						{
+							"fileName": "src/lib/helpers.ts",
+							"line": 4,
+							"character": 16
+						}
+					],
+					"signatures": [
+						{
+							"id": 65,
+							"name": "uuid",
+							"kind": 4096,
+							"kindString": "Call signature",
+							"flags": {},
+							"type": {
+								"type": "intrinsic",
+								"name": "string"
+							}
+						}
+					]
+				}
+			],
+			"groups": [
+				{
+					"title": "Functions",
+					"kind": 64,
+					"children": [
+						69,
+						66,
+						75,
+						64
+					]
+				}
+			],
+			"sources": [
+				{
+					"fileName": "src/lib/helpers.ts",
+					"line": 2,
+					"character": 0
+				}
+			]
+		},
+		{
+			"id": 77,
+			"name": "lib/types",
+			"kind": 2,
+			"kindString": "Module",
+			"flags": {},
+			"children": [
+				{
+					"id": 78,
+					"name": "SupabaseAuthClientOptions",
+					"kind": 256,
+					"kindString": "Interface",
+					"flags": {},
+					"sources": [
+						{
+							"fileName": "src/lib/types.ts",
+							"line": 8,
+							"character": 17
+						}
+					],
+					"extendedTypes": [
+						{
+							"type": "reference",
+							"name": "AuthClientOptions"
+						}
+					]
+				},
+				{
+					"id": 79,
+					"name": "Fetch",
+					"kind": 4194304,
+					"kindString": "Type alias",
+					"flags": {},
+					"sources": [
+						{
+							"fileName": "src/lib/types.ts",
+							"line": 10,
+							"character": 12
+						}
+					],
+					"type": {
+						"type": "query",
+						"queryType": {
+							"type": "reference",
+							"id": 38,
+							"qualifiedName": "fetch",
+							"package": "typescript",
+							"name": "fetch"
+						}
+					}
+				},
+				{
+					"id": 124,
+					"name": "GenericFunction",
+					"kind": 4194304,
+					"kindString": "Type alias",
+					"flags": {},
+					"sources": [
+						{
+							"fileName": "src/lib/types.ts",
+							"line": 117,
+							"character": 12
+						}
+					],
+					"type": {
+						"type": "reflection",
+						"declaration": {
+							"id": 125,
+							"name": "__type",
+							"kind": 65536,
+							"kindString": "Type literal",
+							"flags": {},
+							"children": [
+								{
+									"id": 126,
+									"name": "Args",
+									"kind": 1024,
+									"kindString": "Property",
+									"flags": {},
+									"sources": [
+										{
+											"fileName": "src/lib/types.ts",
+											"line": 118,
+											"character": 2
+										}
+									],
+									"type": {
+										"type": "reference",
+										"typeArguments": [
+											{
+												"type": "intrinsic",
+												"name": "string"
+											},
+											{
+												"type": "intrinsic",
+												"name": "unknown"
+											}
+										],
+										"qualifiedName": "Record",
+										"package": "typescript",
+										"name": "Record"
+									}
+								},
+								{
+									"id": 127,
+									"name": "Returns",
+									"kind": 1024,
+									"kindString": "Property",
+									"flags": {},
+									"sources": [
+										{
+											"fileName": "src/lib/types.ts",
+											"line": 119,
+											"character": 2
+										}
+									],
+									"type": {
+										"type": "intrinsic",
+										"name": "unknown"
+									}
+								}
+							],
+							"groups": [
+								{
+									"title": "Properties",
+									"kind": 1024,
+									"children": [
+										126,
+										127
+									]
+								}
+							],
+							"sources": [
+								{
+									"fileName": "src/lib/types.ts",
+									"line": 117,
+									"character": 30
+								}
+							]
+						}
+					}
+				},
+				{
+					"id": 119,
+					"name": "GenericNonUpdatableView",
+					"kind": 4194304,
+					"kindString": "Type alias",
+					"flags": {},
+					"sources": [
+						{
+							"fileName": "src/lib/types.ts",
+							"line": 110,
+							"character": 12
+						}
+					],
+					"type": {
+						"type": "reflection",
+						"declaration": {
+							"id": 120,
+							"name": "__type",
+							"kind": 65536,
+							"kindString": "Type literal",
+							"flags": {},
+							"children": [
+								{
+									"id": 122,
+									"name": "Relationships",
+									"kind": 1024,
+									"kindString": "Property",
+									"flags": {},
+									"sources": [
+										{
+											"fileName": "src/lib/types.ts",
+											"line": 112,
+											"character": 2
+										}
+									],
+									"type": {
+										"type": "array",
+										"elementType": {
+											"type": "reference",
+											"id": 105,
+											"name": "GenericRelationship"
+										}
+									}
+								},
+								{
+									"id": 121,
+									"name": "Row",
+									"kind": 1024,
+									"kindString": "Property",
+									"flags": {},
+									"sources": [
+										{
+											"fileName": "src/lib/types.ts",
+											"line": 111,
+											"character": 2
+										}
+									],
+									"type": {
+										"type": "reference",
+										"typeArguments": [
+											{
+												"type": "intrinsic",
+												"name": "string"
+											},
+											{
+												"type": "intrinsic",
+												"name": "unknown"
+											}
+										],
+										"qualifiedName": "Record",
+										"package": "typescript",
+										"name": "Record"
+									}
+								}
+							],
+							"groups": [
+								{
+									"title": "Properties",
+									"kind": 1024,
+									"children": [
+										122,
+										121
+									]
+								}
+							],
+							"sources": [
+								{
+									"fileName": "src/lib/types.ts",
+									"line": 110,
+									"character": 38
+								}
+							]
+						}
+					}
+				},
+				{
+					"id": 105,
+					"name": "GenericRelationship",
+					"kind": 4194304,
+					"kindString": "Type alias",
+					"flags": {},
+					"sources": [
+						{
+							"fileName": "src/lib/types.ts",
+							"line": 93,
+							"character": 12
+						}
+					],
+					"type": {
+						"type": "reflection",
+						"declaration": {
+							"id": 106,
+							"name": "__type",
+							"kind": 65536,
+							"kindString": "Type literal",
+							"flags": {},
+							"children": [
+								{
+									"id": 108,
+									"name": "columns",
+									"kind": 1024,
+									"kindString": "Property",
+									"flags": {},
+									"sources": [
+										{
+											"fileName": "src/lib/types.ts",
+											"line": 95,
+											"character": 2
+										}
+									],
+									"type": {
+										"type": "array",
+										"elementType": {
+											"type": "intrinsic",
+											"name": "string"
+										}
+									}
+								},
+								{
+									"id": 107,
+									"name": "foreignKeyName",
+									"kind": 1024,
+									"kindString": "Property",
+									"flags": {},
+									"sources": [
+										{
+											"fileName": "src/lib/types.ts",
+											"line": 94,
+											"character": 2
+										}
+									],
+									"type": {
+										"type": "intrinsic",
+										"name": "string"
+									}
+								},
+								{
+									"id": 109,
+									"name": "isOneToOne",
+									"kind": 1024,
+									"kindString": "Property",
+									"flags": {
+										"isOptional": true
+									},
+									"sources": [
+										{
+											"fileName": "src/lib/types.ts",
+											"line": 96,
+											"character": 2
+										}
+									],
+									"type": {
+										"type": "intrinsic",
+										"name": "boolean"
+									}
+								},
+								{
+									"id": 111,
+									"name": "referencedColumns",
+									"kind": 1024,
+									"kindString": "Property",
+									"flags": {},
+									"sources": [
+										{
+											"fileName": "src/lib/types.ts",
+											"line": 98,
+											"character": 2
+										}
+									],
+									"type": {
+										"type": "array",
+										"elementType": {
+											"type": "intrinsic",
+											"name": "string"
+										}
+									}
+								},
+								{
+									"id": 110,
+									"name": "referencedRelation",
+									"kind": 1024,
+									"kindString": "Property",
+									"flags": {},
+									"sources": [
+										{
+											"fileName": "src/lib/types.ts",
+											"line": 97,
+											"character": 2
+										}
+									],
+									"type": {
+										"type": "intrinsic",
+										"name": "string"
+									}
+								}
+							],
+							"groups": [
+								{
+									"title": "Properties",
+									"kind": 1024,
+									"children": [
+										108,
+										107,
+										109,
+										111,
+										110
+									]
+								}
+							],
+							"sources": [
+								{
+									"fileName": "src/lib/types.ts",
+									"line": 93,
+									"character": 34
+								}
+							]
+						}
+					}
+				},
+				{
+					"id": 128,
+					"name": "GenericSchema",
+					"kind": 4194304,
+					"kindString": "Type alias",
+					"flags": {},
+					"sources": [
+						{
+							"fileName": "src/lib/types.ts",
+							"line": 122,
+							"character": 12
+						}
+					],
+					"type": {
+						"type": "reflection",
+						"declaration": {
+							"id": 129,
+							"name": "__type",
+							"kind": 65536,
+							"kindString": "Type literal",
+							"flags": {},
+							"children": [
+								{
+									"id": 132,
+									"name": "Functions",
+									"kind": 1024,
+									"kindString": "Property",
+									"flags": {},
+									"sources": [
+										{
+											"fileName": "src/lib/types.ts",
+											"line": 125,
+											"character": 2
+										}
+									],
+									"type": {
+										"type": "reference",
+										"typeArguments": [
+											{
+												"type": "intrinsic",
+												"name": "string"
+											},
+											{
+												"type": "reference",
+												"id": 124,
+												"name": "GenericFunction"
+											}
+										],
+										"qualifiedName": "Record",
+										"package": "typescript",
+										"name": "Record"
+									}
+								},
+								{
+									"id": 130,
+									"name": "Tables",
+									"kind": 1024,
+									"kindString": "Property",
+									"flags": {},
+									"sources": [
+										{
+											"fileName": "src/lib/types.ts",
+											"line": 123,
+											"character": 2
+										}
+									],
+									"type": {
+										"type": "reference",
+										"typeArguments": [
+											{
+												"type": "intrinsic",
+												"name": "string"
+											},
+											{
+												"type": "reference",
+												"id": 112,
+												"name": "GenericTable"
+											}
+										],
+										"qualifiedName": "Record",
+										"package": "typescript",
+										"name": "Record"
+									}
+								},
+								{
+									"id": 131,
+									"name": "Views",
+									"kind": 1024,
+									"kindString": "Property",
+									"flags": {},
+									"sources": [
+										{
+											"fileName": "src/lib/types.ts",
+											"line": 124,
+											"character": 2
+										}
+									],
+									"type": {
+										"type": "reference",
+										"typeArguments": [
+											{
+												"type": "intrinsic",
+												"name": "string"
+											},
+											{
+												"type": "reference",
+												"id": 123,
+												"name": "GenericView"
+											}
+										],
+										"qualifiedName": "Record",
+										"package": "typescript",
+										"name": "Record"
+									}
+								}
+							],
+							"groups": [
+								{
+									"title": "Properties",
+									"kind": 1024,
+									"children": [
+										132,
+										130,
+										131
+									]
+								}
+							],
+							"sources": [
+								{
+									"fileName": "src/lib/types.ts",
+									"line": 122,
+									"character": 28
+								}
+							]
+						}
+					}
+				},
+				{
+					"id": 112,
+					"name": "GenericTable",
+					"kind": 4194304,
+					"kindString": "Type alias",
+					"flags": {},
+					"sources": [
+						{
+							"fileName": "src/lib/types.ts",
+							"line": 101,
+							"character": 12
+						}
+					],
+					"type": {
+						"type": "reflection",
+						"declaration": {
+							"id": 113,
+							"name": "__type",
+							"kind": 65536,
+							"kindString": "Type literal",
+							"flags": {},
+							"children": [
+								{
+									"id": 115,
+									"name": "Insert",
+									"kind": 1024,
+									"kindString": "Property",
+									"flags": {},
+									"sources": [
+										{
+											"fileName": "src/lib/types.ts",
+											"line": 103,
+											"character": 2
+										}
+									],
+									"type": {
+										"type": "reference",
+										"typeArguments": [
+											{
+												"type": "intrinsic",
+												"name": "string"
+											},
+											{
+												"type": "intrinsic",
+												"name": "unknown"
+											}
+										],
+										"qualifiedName": "Record",
+										"package": "typescript",
+										"name": "Record"
+									}
+								},
+								{
+									"id": 117,
+									"name": "Relationships",
+									"kind": 1024,
+									"kindString": "Property",
+									"flags": {},
+									"sources": [
+										{
+											"fileName": "src/lib/types.ts",
+											"line": 105,
+											"character": 2
+										}
+									],
+									"type": {
+										"type": "array",
+										"elementType": {
+											"type": "reference",
+											"id": 105,
+											"name": "GenericRelationship"
+										}
+									}
+								},
+								{
+									"id": 114,
+									"name": "Row",
+									"kind": 1024,
+									"kindString": "Property",
+									"flags": {},
+									"sources": [
+										{
+											"fileName": "src/lib/types.ts",
+											"line": 102,
+											"character": 2
+										}
+									],
+									"type": {
+										"type": "reference",
+										"typeArguments": [
+											{
+												"type": "intrinsic",
+												"name": "string"
+											},
+											{
+												"type": "intrinsic",
+												"name": "unknown"
+											}
+										],
+										"qualifiedName": "Record",
+										"package": "typescript",
+										"name": "Record"
+									}
+								},
+								{
+									"id": 116,
+									"name": "Update",
+									"kind": 1024,
+									"kindString": "Property",
+									"flags": {},
+									"sources": [
+										{
+											"fileName": "src/lib/types.ts",
+											"line": 104,
+											"character": 2
+										}
+									],
+									"type": {
+										"type": "reference",
+										"typeArguments": [
+											{
+												"type": "intrinsic",
+												"name": "string"
+											},
+											{
+												"type": "intrinsic",
+												"name": "unknown"
+											}
+										],
+										"qualifiedName": "Record",
+										"package": "typescript",
+										"name": "Record"
+									}
+								}
+							],
+							"groups": [
+								{
+									"title": "Properties",
+									"kind": 1024,
+									"children": [
+										115,
+										117,
+										114,
+										116
+									]
+								}
+							],
+							"sources": [
+								{
+									"fileName": "src/lib/types.ts",
+									"line": 101,
+									"character": 27
+								}
+							]
+						}
+					}
+				},
+				{
+					"id": 118,
+					"name": "GenericUpdatableView",
+					"kind": 4194304,
+					"kindString": "Type alias",
+					"flags": {},
+					"sources": [
+						{
+							"fileName": "src/lib/types.ts",
+							"line": 108,
+							"character": 12
+						}
+					],
+					"type": {
+						"type": "reference",
+						"id": 112,
+						"name": "GenericTable"
+					}
+				},
+				{
+					"id": 123,
+					"name": "GenericView",
+					"kind": 4194304,
+					"kindString": "Type alias",
+					"flags": {},
+					"sources": [
+						{
+							"fileName": "src/lib/types.ts",
+							"line": 115,
+							"character": 12
+						}
+					],
+					"type": {
+						"type": "union",
+						"types": [
+							{
+								"type": "reference",
+								"id": 118,
+								"name": "GenericUpdatableView"
+							},
+							{
+								"type": "reference",
+								"id": 119,
+								"name": "GenericNonUpdatableView"
+							}
+						]
+					}
+				},
+				{
+					"id": 135,
+					"name": "QueryData",
+					"kind": 4194304,
+					"kindString": "Type alias",
+					"flags": {},
+					"sources": [
+						{
+							"fileName": "src/lib/types.ts",
+							"line": 132,
+							"character": 12
+						}
+					],
+					"typeParameter": [
+						{
+							"id": 138,
+							"name": "T",
+							"kind": 131072,
+							"kindString": "Type parameter",
+							"flags": {}
+						}
+					],
+					"type": {
+						"type": "conditional",
+						"checkType": {
+							"type": "reference",
+							"id": 138,
+							"name": "T"
+						},
+						"extendsType": {
+							"type": "reference",
+							"typeArguments": [
+								{
+									"type": "reflection",
+									"declaration": {
+										"id": 136,
+										"name": "__type",
+										"kind": 65536,
+										"kindString": "Type literal",
+										"flags": {},
+										"children": [
+											{
+												"id": 137,
+												"name": "data",
+												"kind": 1024,
+												"kindString": "Property",
+												"flags": {},
+												"sources": [
+													{
+														"fileName": "src/lib/types.ts",
+														"line": 132,
+														"character": 51
+													}
+												],
+												"type": {
+													"type": "inferred",
+													"name": "U"
+												}
+											}
+										],
+										"groups": [
+											{
+												"title": "Properties",
+												"kind": 1024,
+												"children": [
+													137
+												]
+											}
+										],
+										"sources": [
+											{
+												"fileName": "src/lib/types.ts",
+												"line": 132,
+												"character": 49
+											}
+										]
+									}
+								}
+							],
+							"qualifiedName": "PromiseLike",
+							"package": "typescript",
+							"name": "PromiseLike"
+						},
+						"trueType": {
+							"type": "reference",
+							"typeArguments": [
+								{
+									"type": "reference",
+									"name": "U"
+								},
+								{
+									"type": "literal",
+									"value": null
+								}
+							],
+							"qualifiedName": "Exclude",
+							"package": "typescript",
+							"name": "Exclude"
+						},
+						"falseType": {
+							"type": "intrinsic",
+							"name": "never"
+						}
+					}
+				},
+				{
+					"id": 139,
+					"name": "QueryError",
+					"kind": 4194304,
+					"kindString": "Type alias",
+					"flags": {},
+					"sources": [
+						{
+							"fileName": "src/lib/types.ts",
+							"line": 133,
+							"character": 12
+						}
+					],
+					"type": {
+						"type": "reference",
+						"qualifiedName": "PostgrestError",
+						"package": "@supabase/postgrest-js",
+						"name": "PostgrestError"
+					}
+				},
+				{
+					"id": 133,
+					"name": "QueryResult",
+					"kind": 4194304,
+					"kindString": "Type alias",
+					"flags": {},
+					"comment": {
+						"shortText": "Helper types for query results."
+					},
+					"sources": [
+						{
+							"fileName": "src/lib/types.ts",
+							"line": 131,
+							"character": 12
+						}
+					],
+					"typeParameter": [
+						{
+							"id": 134,
+							"name": "T",
+							"kind": 131072,
+							"kindString": "Type parameter",
+							"flags": {}
+						}
+					],
+					"type": {
+						"type": "conditional",
+						"checkType": {
+							"type": "reference",
+							"id": 134,
+							"name": "T"
+						},
+						"extendsType": {
+							"type": "reference",
+							"typeArguments": [
+								{
+									"type": "inferred",
+									"name": "U"
+								}
+							],
+							"qualifiedName": "PromiseLike",
+							"package": "typescript",
+							"name": "PromiseLike"
+						},
+						"trueType": {
+							"type": "reference",
+							"name": "U"
+						},
+						"falseType": {
+							"type": "intrinsic",
+							"name": "never"
+						}
+					}
+				},
+				{
+					"id": 80,
+					"name": "SupabaseClientOptions",
+					"kind": 4194304,
+					"kindString": "Type alias",
+					"flags": {},
+					"sources": [
+						{
+							"fileName": "src/lib/types.ts",
+							"line": 12,
+							"character": 12
+						}
+					],
+					"typeParameter": [
+						{
+							"id": 104,
+							"name": "SchemaName",
+							"kind": 131072,
+							"kindString": "Type parameter",
+							"flags": {}
+						}
+					],
+					"type": {
+						"type": "reflection",
+						"declaration": {
+							"id": 81,
+							"name": "__type",
+							"kind": 65536,
+							"kindString": "Type literal",
+							"flags": {},
+							"children": [
+								{
+									"id": 85,
+									"name": "auth",
+									"kind": 1024,
+									"kindString": "Property",
+									"flags": {
+										"isOptional": true
+									},
+									"sources": [
+										{
+											"fileName": "src/lib/types.ts",
+											"line": 20,
+											"character": 2
+										}
+									],
+									"type": {
+										"type": "reflection",
+										"declaration": {
+											"id": 86,
+											"name": "__type",
+											"kind": 65536,
+											"kindString": "Type literal",
+											"flags": {},
+											"children": [
+												{
+													"id": 87,
+													"name": "autoRefreshToken",
+													"kind": 1024,
+													"kindString": "Property",
+													"flags": {
+														"isOptional": true
+													},
+													"comment": {
+														"shortText": "Automatically refreshes the token for logged-in users. Defaults to true."
+													},
+													"sources": [
+														{
+															"fileName": "src/lib/types.ts",
+															"line": 24,
+															"character": 4
+														}
+													],
+													"type": {
+														"type": "intrinsic",
+														"name": "boolean"
+													}
+												},
+												{
+													"id": 94,
+													"name": "debug",
+													"kind": 1024,
+													"kindString": "Property",
+													"flags": {
+														"isOptional": true
+													},
+													"comment": {
+														"shortText": "If debug messages for authentication client are emitted. Can be used to inspect the behavior of the library."
+													},
+													"sources": [
+														{
+															"fileName": "src/lib/types.ts",
+															"line": 56,
+															"character": 4
+														}
+													],
+													"type": {
+														"type": "indexedAccess",
+														"indexType": {
+															"type": "literal",
+															"value": "debug"
+														},
+														"objectType": {
+															"type": "reference",
+															"id": 78,
+															"name": "SupabaseAuthClientOptions"
+														}
+													}
+												},
+												{
+													"id": 90,
+													"name": "detectSessionInUrl",
+													"kind": 1024,
+													"kindString": "Property",
+													"flags": {
+														"isOptional": true
+													},
+													"comment": {
+														"shortText": "Detect a session from the URL. Used for OAuth login callbacks. Defaults to true."
+													},
+													"sources": [
+														{
+															"fileName": "src/lib/types.ts",
+															"line": 36,
+															"character": 4
+														}
+													],
+													"type": {
+														"type": "intrinsic",
+														"name": "boolean"
+													}
+												},
+												{
+													"id": 93,
+													"name": "flowType",
+													"kind": 1024,
+													"kindString": "Property",
+													"flags": {
+														"isOptional": true
+													},
+													"comment": {
+														"shortText": "OAuth flow to use - defaults to implicit flow. PKCE is recommended for mobile and server-side applications."
+													},
+													"sources": [
+														{
+															"fileName": "src/lib/types.ts",
+															"line": 52,
+															"character": 4
+														}
+													],
+													"type": {
+														"type": "indexedAccess",
+														"indexType": {
+															"type": "literal",
+															"value": "flowType"
+														},
+														"objectType": {
+															"type": "reference",
+															"id": 78,
+															"name": "SupabaseAuthClientOptions"
+														}
+													}
+												},
+												{
+													"id": 95,
+													"name": "lock",
+													"kind": 1024,
+													"kindString": "Property",
+													"flags": {
+														"isOptional": true
+													},
+													"comment": {
+														"shortText": "Provide your own locking mechanism based on the environment. By default no locking is done at this time.",
+														"tags": [
+															{
+																"tag": "experimental",
+																"text": "\n"
+															}
+														]
+													},
+													"sources": [
+														{
+															"fileName": "src/lib/types.ts",
+															"line": 62,
+															"character": 4
+														}
+													],
+													"type": {
+														"type": "indexedAccess",
+														"indexType": {
+															"type": "literal",
+															"value": "lock"
+														},
+														"objectType": {
+															"type": "reference",
+															"id": 78,
+															"name": "SupabaseAuthClientOptions"
+														}
+													}
+												},
+												{
+													"id": 89,
+													"name": "persistSession",
+													"kind": 1024,
+													"kindString": "Property",
+													"flags": {
+														"isOptional": true
+													},
+													"comment": {
+														"shortText": "Whether to persist a logged-in session to storage. Defaults to true."
+													},
+													"sources": [
+														{
+															"fileName": "src/lib/types.ts",
+															"line": 32,
+															"character": 4
+														}
+													],
+													"type": {
+														"type": "intrinsic",
+														"name": "boolean"
+													}
+												},
+												{
+													"id": 91,
+													"name": "storage",
+													"kind": 1024,
+													"kindString": "Property",
+													"flags": {
+														"isOptional": true
+													},
+													"comment": {
+														"shortText": "A storage provider. Used to store the logged-in session."
+													},
+													"sources": [
+														{
+															"fileName": "src/lib/types.ts",
+															"line": 40,
+															"character": 4
+														}
+													],
+													"type": {
+														"type": "indexedAccess",
+														"indexType": {
+															"type": "literal",
+															"value": "storage"
+														},
+														"objectType": {
+															"type": "reference",
+															"id": 78,
+															"name": "SupabaseAuthClientOptions"
+														}
+													}
+												},
+												{
+													"id": 88,
+													"name": "storageKey",
+													"kind": 1024,
+													"kindString": "Property",
+													"flags": {
+														"isOptional": true
+													},
+													"comment": {
+														"shortText": "Optional key name used for storing tokens in local storage."
+													},
+													"sources": [
+														{
+															"fileName": "src/lib/types.ts",
+															"line": 28,
+															"character": 4
+														}
+													],
+													"type": {
+														"type": "intrinsic",
+														"name": "string"
+													}
+												},
+												{
+													"id": 92,
+													"name": "userStorage",
+													"kind": 1024,
+													"kindString": "Property",
+													"flags": {
+														"isOptional": true
+													},
+													"comment": {
+														"shortText": "A storage provider to store the user profile separately from the session.\nUseful when you need to store the session information in cookies,\nwithout bloating the data with the redundant user object.",
+														"tags": [
+															{
+																"tag": "experimental",
+																"text": "\n"
+															}
+														]
+													},
+													"sources": [
+														{
+															"fileName": "src/lib/types.ts",
+															"line": 48,
+															"character": 4
+														}
+													],
+													"type": {
+														"type": "indexedAccess",
+														"indexType": {
+															"type": "literal",
+															"value": "userStorage"
+														},
+														"objectType": {
+															"type": "reference",
+															"id": 78,
+															"name": "SupabaseAuthClientOptions"
+														}
+													}
+												}
+											],
+											"groups": [
+												{
+													"title": "Properties",
+													"kind": 1024,
+													"children": [
+														87,
+														94,
+														90,
+														93,
+														95,
+														89,
+														91,
+														88,
+														92
+													]
+												}
+											],
+											"sources": [
+												{
+													"fileName": "src/lib/types.ts",
+													"line": 20,
+													"character": 9
+												}
+											]
+										}
+									}
+								},
+								{
+									"id": 82,
+									"name": "db",
+									"kind": 1024,
+									"kindString": "Property",
+									"flags": {
+										"isOptional": true
+									},
+									"comment": {
+										"shortText": "The Postgres schema which your tables belong to. Must be on the list of exposed schemas in Supabase. Defaults to `public`."
+									},
+									"sources": [
+										{
+											"fileName": "src/lib/types.ts",
+											"line": 16,
+											"character": 2
+										}
+									],
+									"type": {
+										"type": "reflection",
+										"declaration": {
+											"id": 83,
+											"name": "__type",
+											"kind": 65536,
+											"kindString": "Type literal",
+											"flags": {},
+											"children": [
+												{
+													"id": 84,
+													"name": "schema",
+													"kind": 1024,
+													"kindString": "Property",
+													"flags": {
+														"isOptional": true
+													},
+													"sources": [
+														{
+															"fileName": "src/lib/types.ts",
+															"line": 17,
+															"character": 4
+														}
+													],
+													"type": {
+														"type": "reference",
+														"id": 104,
+														"name": "SchemaName"
+													}
+												}
+											],
+											"groups": [
+												{
+													"title": "Properties",
+													"kind": 1024,
+													"children": [
+														84
+													]
+												}
+											],
+											"sources": [
+												{
+													"fileName": "src/lib/types.ts",
+													"line": 16,
+													"character": 7
+												}
+											]
+										}
+									}
+								},
+								{
+									"id": 98,
+									"name": "global",
+									"kind": 1024,
+									"kindString": "Property",
+									"flags": {
+										"isOptional": true
+									},
+									"sources": [
+										{
+											"fileName": "src/lib/types.ts",
+											"line": 69,
+											"character": 2
+										}
+									],
+									"type": {
+										"type": "reflection",
+										"declaration": {
+											"id": 99,
+											"name": "__type",
+											"kind": 65536,
+											"kindString": "Type literal",
+											"flags": {},
+											"children": [
+												{
+													"id": 100,
+													"name": "fetch",
+													"kind": 1024,
+													"kindString": "Property",
+													"flags": {
+														"isOptional": true
+													},
+													"comment": {
+														"shortText": "A custom `fetch` implementation."
+													},
+													"sources": [
+														{
+															"fileName": "src/lib/types.ts",
+															"line": 73,
+															"character": 4
+														}
+													],
+													"type": {
+														"type": "reference",
+														"id": 79,
+														"name": "Fetch"
+													}
+												},
+												{
+													"id": 101,
+													"name": "headers",
+													"kind": 1024,
+													"kindString": "Property",
+													"flags": {
+														"isOptional": true
+													},
+													"comment": {
+														"shortText": "Optional headers for initializing the client."
+													},
+													"sources": [
+														{
+															"fileName": "src/lib/types.ts",
+															"line": 77,
+															"character": 4
+														}
+													],
+													"type": {
+														"type": "reference",
+														"typeArguments": [
+															{
+																"type": "intrinsic",
+																"name": "string"
+															},
+															{
+																"type": "intrinsic",
+																"name": "string"
+															}
+														],
+														"qualifiedName": "Record",
+														"package": "typescript",
+														"name": "Record"
+													}
+												}
+											],
+											"groups": [
+												{
+													"title": "Properties",
+													"kind": 1024,
+													"children": [
+														100,
+														101
+													]
+												}
+											],
+											"sources": [
+												{
+													"fileName": "src/lib/types.ts",
+													"line": 69,
+													"character": 11
+												}
+											]
+										}
+									}
+								},
+								{
+									"id": 96,
+									"name": "realtime",
+									"kind": 1024,
+									"kindString": "Property",
+									"flags": {
+										"isOptional": true
+									},
+									"comment": {
+										"shortText": "Options passed to the realtime-js instance"
+									},
+									"sources": [
+										{
+											"fileName": "src/lib/types.ts",
+											"line": 67,
+											"character": 2
+										}
+									],
+									"type": {
+										"type": "reference",
+										"qualifiedName": "RealtimeClientOptions",
+										"package": "@supabase/realtime-js",
+										"name": "RealtimeClientOptions"
+									}
+								},
+								{
+									"id": 97,
+									"name": "storage",
+									"kind": 1024,
+									"kindString": "Property",
+									"flags": {
+										"isOptional": true
+									},
+									"sources": [
+										{
+											"fileName": "src/lib/types.ts",
+											"line": 68,
+											"character": 2
+										}
+									],
+									"type": {
+										"type": "reference",
+										"qualifiedName": "StorageClientOptions",
+										"package": "@supabase/storage-js",
+										"name": "StorageClientOptions"
+									}
+								},
+								{
+									"id": 102,
+									"name": "accessToken",
+									"kind": 2048,
+									"kindString": "Method",
+									"flags": {
+										"isOptional": true
+									},
+									"sources": [
+										{
+											"fileName": "src/lib/types.ts",
+											"line": 90,
+											"character": 2
+										}
+									],
+									"signatures": [
+										{
+											"id": 103,
+											"name": "accessToken",
+											"kind": 4096,
+											"kindString": "Call signature",
+											"flags": {},
+											"comment": {
+												"shortText": "Optional function for using a third-party authentication system with\nSupabase. The function should return an access token or ID token (JWT) by\nobtaining it from the third-party auth client library. Note that this\nfunction may be called concurrently and many times. Use memoization and\nlocking techniques if this is not supported by the client libraries.",
+												"text": "When set, the `auth` namespace of the Supabase client cannot be used.\nCreate another client if you wish to use Supabase Auth and third-party\nauthentications concurrently in the same application.\n"
+											},
+											"type": {
+												"type": "reference",
+												"typeArguments": [
+													{
+														"type": "union",
+														"types": [
+															{
+																"type": "literal",
+																"value": null
+															},
+															{
+																"type": "intrinsic",
+																"name": "string"
+															}
+														]
+													}
+												],
+												"qualifiedName": "Promise",
+												"package": "typescript",
+												"name": "Promise"
+											}
+										}
+									]
+								}
+							],
+							"groups": [
+								{
+									"title": "Properties",
+									"kind": 1024,
+									"children": [
+										85,
+										82,
+										98,
+										96,
+										97
+									]
+								},
+								{
+									"title": "Methods",
+									"kind": 2048,
+									"children": [
+										102
+									]
+								}
+							],
+							"sources": [
+								{
+									"fileName": "src/lib/types.ts",
+									"line": 12,
+									"character": 48
+								}
+							]
+						}
+					}
+				}
+			],
+			"groups": [
+				{
+					"title": "Interfaces",
+					"kind": 256,
+					"children": [
+						78
+					]
+				},
+				{
+					"title": "Type Aliases",
+					"kind": 4194304,
+					"children": [
+						79,
+						124,
+						119,
+						105,
+						128,
+						112,
+						118,
+						123,
+						135,
+						139,
+						133,
+						80
+					]
+				}
+			],
+			"sources": [
+				{
+					"fileName": "src/lib/types.ts",
+					"line": 1,
+					"character": 0
+				}
+			]
+		},
+		{
+			"id": 140,
+			"name": "lib/version",
+			"kind": 2,
+			"kindString": "Module",
+			"flags": {},
+			"children": [
+				{
+					"id": 141,
+					"name": "version",
+					"kind": 32,
+					"kindString": "Variable",
+					"flags": {
+						"isConst": true
+					},
+					"sources": [
+						{
+							"fileName": "src/lib/version.ts",
+							"line": 1,
+							"character": 13
+						}
+					],
+					"type": {
+						"type": "literal",
+						"value": "0.0.0-automated"
+					},
+					"defaultValue": "'0.0.0-automated'"
+				}
+			],
+			"groups": [
+				{
+					"title": "Variables",
+					"kind": 32,
+					"children": [
+						141
+					]
+				}
+			],
+			"sources": [
+				{
+					"fileName": "src/lib/version.ts",
+					"line": 1,
+					"character": 0
+				}
+			]
+		}
+	],
+	"groups": [
+		{
+			"title": "Modules",
+			"kind": 2,
+			"children": [
+				1,
+				20,
+				34,
+				63,
+				77,
+				140
+			]
+		}
+	]
+}
