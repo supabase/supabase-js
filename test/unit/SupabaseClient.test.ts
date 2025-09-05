@@ -29,6 +29,20 @@ describe('SupabaseClient', () => {
     expect(() => createClient(URL, '')).toThrow('supabaseKey is required.')
   })
 
+  test('should validate supabaseUrl', () => {
+    expect(() => createClient('https://xyz123.supabase.co', KEY)).not.toThrow()
+    expect(() => createClient('http://localhost:54321', KEY)).not.toThrow()
+    expect(() => createClient('http://[invalid', KEY)).toThrow(
+      'Invalid supabaseUrl: Provided URL is malformed.'
+    )
+    expect(() =>
+      createClient('postgresql://postgre:password@db.test.co:5432/postgres', KEY)
+    ).toThrow('Invalid supabaseUrl: Must be a valid HTTP or HTTPS URL.')
+    expect(() => createClient('http:/localhost:3000', KEY)).toThrow(
+      'Invalid supabaseUrl: Must be a valid HTTP or HTTPS URL.'
+    )
+  })
+
   describe('URL Construction', () => {
     test('should construct URLs correctly', () => {
       const client = createClient(URL, KEY)
