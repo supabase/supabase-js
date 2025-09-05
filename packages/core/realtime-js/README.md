@@ -88,7 +88,7 @@ Your client can send and receive messages based on the `event`.
 ```js
 // Setup...
 
-const channel = client.channel('broadcast-test', { broadcast: { ack: false, self: false } })
+const channel = client.channel('broadcast-test', { config: { broadcast: { ack: false, self: false } } })
 
 channel.on('broadcast', { event: 'some-event' }, (payload) =>
   console.log(payload)
