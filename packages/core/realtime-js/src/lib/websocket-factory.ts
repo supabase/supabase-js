@@ -80,36 +80,40 @@ export class WebSocketFactory {
       }
     }
 
-    if (
-      typeof process !== 'undefined' &&
-      process.versions &&
-      process.versions.node
-    ) {
-      const nodeVersion = parseInt(process.versions.node.split('.')[0])
+    if (typeof process !== 'undefined') {
+      // Use dynamic property access to avoid Next.js Edge Runtime static analysis warnings
+      const processVersions = (process as any)['versions']
+      if (processVersions && processVersions['node']) {
+        // Remove 'v' prefix if present and parse the major version
+        const versionString = processVersions['node']
+        const nodeVersion = parseInt(
+          versionString.replace(/^v/, '').split('.')[0]
+        )
 
-      // Node.js 22+ should have native WebSocket
-      if (nodeVersion >= 22) {
-        // Check if native WebSocket is available (should be in Node.js 22+)
-        if (typeof globalThis.WebSocket !== 'undefined') {
-          return { type: 'native', constructor: globalThis.WebSocket }
+        // Node.js 22+ should have native WebSocket
+        if (nodeVersion >= 22) {
+          // Check if native WebSocket is available (should be in Node.js 22+)
+          if (typeof globalThis.WebSocket !== 'undefined') {
+            return { type: 'native', constructor: globalThis.WebSocket }
+          }
+          // If not available, user needs to provide it
+          return {
+            type: 'unsupported',
+            error: `Node.js ${nodeVersion} detected but native WebSocket not found.`,
+            workaround:
+              'Provide a WebSocket implementation via the transport option.',
+          }
         }
-        // If not available, user needs to provide it
+
+        // Node.js < 22 doesn't have native WebSocket
         return {
           type: 'unsupported',
-          error: `Node.js ${nodeVersion} detected but native WebSocket not found.`,
+          error: `Node.js ${nodeVersion} detected without native WebSocket support.`,
           workaround:
-            'Provide a WebSocket implementation via the transport option.',
+            'For Node.js < 22, install "ws" package and provide it via the transport option:\n' +
+            'import ws from "ws"\n' +
+            'new RealtimeClient(url, { transport: ws })',
         }
-      }
-
-      // Node.js < 22 doesn't have native WebSocket
-      return {
-        type: 'unsupported',
-        error: `Node.js ${nodeVersion} detected without native WebSocket support.`,
-        workaround:
-          'For Node.js < 22, install "ws" package and provide it via the transport option:\n' +
-          'import ws from "ws"\n' +
-          'new RealtimeClient(url, { transport: ws })',
       }
     }
 

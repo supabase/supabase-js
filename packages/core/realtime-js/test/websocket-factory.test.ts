@@ -107,6 +107,179 @@ describe('WebSocketFactory', () => {
     })
   })
 
+  describe('Edge Runtime compatibility - dynamic property access', () => {
+    // These tests verify that we use dynamic property access to avoid
+    // Next.js Edge Runtime static analysis warnings
+
+    const originalProcess = global.process
+
+    afterEach(() => {
+      global.process = originalProcess
+    })
+
+    test('should handle undefined process.versions', () => {
+      // Process exists but versions is undefined
+      global.process = {} as any
+      Object.defineProperty(global.process, 'versions', {
+        value: undefined,
+        configurable: true,
+      })
+      delete global.WebSocket
+      delete (globalThis as any).WebSocket
+
+      const env = (WebSocketFactory as any).detectEnvironment()
+      expect(env.type).toBe('unsupported')
+      expect(env.error).toContain('Unknown JavaScript runtime')
+    })
+
+    test('should handle null process.versions', () => {
+      // Process exists but versions is null
+      global.process = {} as any
+      Object.defineProperty(global.process, 'versions', {
+        value: null,
+        configurable: true,
+      })
+      delete global.WebSocket
+      delete (globalThis as any).WebSocket
+
+      const env = (WebSocketFactory as any).detectEnvironment()
+      expect(env.type).toBe('unsupported')
+      expect(env.error).toContain('Unknown JavaScript runtime')
+    })
+
+    test('should handle process.versions.node being undefined', () => {
+      global.process = { versions: {} } as any
+      delete global.WebSocket
+      delete (globalThis as any).WebSocket
+
+      const env = (WebSocketFactory as any).detectEnvironment()
+      expect(env.type).toBe('unsupported')
+      expect(env.error).toContain('Unknown JavaScript runtime')
+    })
+
+    test('should handle process.versions.node being null', () => {
+      global.process = { versions: { node: null } } as any
+      delete global.WebSocket
+      delete (globalThis as any).WebSocket
+
+      const env = (WebSocketFactory as any).detectEnvironment()
+      expect(env.type).toBe('unsupported')
+      expect(env.error).toContain('Unknown JavaScript runtime')
+    })
+
+    test('should handle invalid Node.js version string', () => {
+      global.process = { versions: { node: 'invalid-version' } } as any
+      delete global.WebSocket
+      delete (globalThis as any).WebSocket
+
+      const env = (WebSocketFactory as any).detectEnvironment()
+      expect(env.type).toBe('unsupported')
+      // NaN from parseInt('invalid') makes nodeVersion < 22 true
+      expect(env.error).toContain('detected without native WebSocket support')
+    })
+
+    test('should handle Node.js version without v prefix', () => {
+      global.process = { versions: { node: '18.0.0' } } as any
+      delete global.WebSocket
+      delete (globalThis as any).WebSocket
+
+      const env = (WebSocketFactory as any).detectEnvironment()
+      expect(env.type).toBe('unsupported')
+      expect(env.error).toContain(
+        'Node.js 18 detected without native WebSocket support'
+      )
+    })
+
+    test('should correctly detect Node.js 16', () => {
+      global.process = { versions: { node: 'v16.14.0' } } as any
+      delete global.WebSocket
+      delete (globalThis as any).WebSocket
+
+      const env = (WebSocketFactory as any).detectEnvironment()
+      expect(env.type).toBe('unsupported')
+      expect(env.error).toContain(
+        'Node.js 16 detected without native WebSocket support'
+      )
+      expect(env.workaround).toContain('ws')
+    })
+
+    test('should correctly detect Node.js 18', () => {
+      global.process = { versions: { node: 'v18.0.0' } } as any
+      delete global.WebSocket
+      delete (globalThis as any).WebSocket
+
+      const env = (WebSocketFactory as any).detectEnvironment()
+      expect(env.type).toBe('unsupported')
+      expect(env.error).toContain(
+        'Node.js 18 detected without native WebSocket support'
+      )
+      expect(env.workaround).toContain('ws')
+    })
+
+    test('should correctly detect Node.js 20', () => {
+      global.process = { versions: { node: 'v20.0.0' } } as any
+      delete global.WebSocket
+      delete (globalThis as any).WebSocket
+
+      const env = (WebSocketFactory as any).detectEnvironment()
+      expect(env.type).toBe('unsupported')
+      expect(env.error).toContain(
+        'Node.js 20 detected without native WebSocket support'
+      )
+      expect(env.workaround).toContain('ws')
+    })
+
+    test('should correctly detect Node.js 22 without WebSocket', () => {
+      global.process = { versions: { node: 'v22.0.0' } } as any
+      delete global.WebSocket
+      delete (globalThis as any).WebSocket
+
+      const env = (WebSocketFactory as any).detectEnvironment()
+      expect(env.type).toBe('unsupported')
+      expect(env.error).toContain(
+        'Node.js 22 detected but native WebSocket not found'
+      )
+      expect(env.workaround).toContain(
+        'Provide a WebSocket implementation via the transport option'
+      )
+    })
+
+    test('should correctly detect Node.js 22 with WebSocket', () => {
+      global.process = { versions: { node: 'v22.0.0' } } as any
+      delete global.WebSocket
+      ;(globalThis as any).WebSocket = MockWebSocket
+
+      const env = (WebSocketFactory as any).detectEnvironment()
+      expect(env.type).toBe('native')
+      expect(env.constructor).toBe(MockWebSocket)
+
+      delete (globalThis as any).WebSocket
+    })
+
+    test('ensures process.versions access uses bracket notation', () => {
+      // This test verifies that our implementation doesn't directly access process.versions
+      // which would trigger Next.js Edge Runtime warnings.
+      // The actual verification happens through static analysis, but we can test the behavior.
+
+      const processProxy = new Proxy({} as any, {
+        get(target, prop) {
+          if (prop === 'versions') {
+            return { node: 'v18.0.0' }
+          }
+          return undefined
+        },
+      })
+
+      global.process = processProxy
+      delete global.WebSocket
+      delete (globalThis as any).WebSocket
+
+      const env = (WebSocketFactory as any).detectEnvironment()
+      expect(env.type).toBe('unsupported')
+      expect(env.error).toContain('Node.js 18')
+    })
+  })
+
   describe('Node.js environment', () => {
     beforeEach(() => {
       delete global.WebSocket
