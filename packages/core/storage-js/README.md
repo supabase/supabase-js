@@ -156,6 +156,21 @@ const storageClient = new StorageClient(STORAGE_URL, {
   const { data, error } = await storageClient.from('public-bucket').getPublicUrl('path/to/file')
   ```
 
+### Error Handling
+
+Supplying `.throwOnError()` will throw errors instead of returning them as a property on the response object.
+
+  ```js
+  try {
+    const { data } = await storageClient
+      .from('bucket')
+      .throwOnError()
+      .download('path/to/file')
+  } catch (error) {
+    console.error(error)
+  }
+  ```
+
 ## Sponsors
 
 We are building the features of Firebase using enterprise-grade, open source products. We support existing communities wherever possible, and if the products don’t exist we build them and open source them ourselves. Thanks to these sponsors who are making the OSS ecosystem better for everyone.

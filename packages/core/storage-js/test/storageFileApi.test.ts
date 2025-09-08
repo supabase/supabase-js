@@ -67,6 +67,19 @@ describe('Object API', () => {
       )
     })
 
+    test('upload files error handling', async () => {
+      const { data, error } = await storage.from('non-existent-bucket').upload(uploadPath, file)
+
+      expect(data).toBeNull()
+      expect(error).not.toBeNull()
+      expect(error?.message).toBe('Bucket not found')
+
+      // throws when .throwOnError is enabled
+      await expect(
+        storage.from('non-existent-bucket').throwOnError().upload(uploadPath, file)
+      ).rejects.toThrow('Bucket not found')
+    })
+
     test('sign url', async () => {
       const uploadRes = await storage.from(bucketName).upload(uploadPath, file)
       expect(uploadRes.error).toBeNull()
@@ -75,6 +88,11 @@ describe('Object API', () => {
 
       expect(res.error).toBeNull()
       expect(res.data?.signedUrl).toContain(`${URL}/object/sign/${bucketName}/${uploadPath}`)
+
+      // throws when .throwOnError is enabled
+      await expect(
+        storage.from(bucketName).throwOnError().createSignedUrl('non-existent-path', 2000)
+      ).rejects.toThrow()
     })
 
     test('sign url with download querystring parameter', async () => {
@@ -301,6 +319,10 @@ describe('Object API', () => {
       expect(outError).toBeInstanceOf(StorageApiError)
       expect(outError.message).toBe('The resource already exists')
       expect(outError.statusCode).toBe('409')
+
+      await expect(
+        storage.from(bucketName).throwOnError().uploadToSignedUrl(data.path, data.token, file)
+      ).rejects.toThrow()
     })
   })
 
@@ -308,7 +330,6 @@ describe('Object API', () => {
     test('list objects', async () => {
       await storage.from(bucketName).upload(uploadPath, file)
       const res = await storage.from(bucketName).list('testpath')
-
       expect(res.error).toBeNull()
       expect(res.data).toEqual([
         expect.objectContaining({
@@ -340,6 +361,11 @@ describe('Object API', () => {
 
       expect(res.error).toBeNull()
       expect(res.data?.message).toEqual(`Successfully moved`)
+
+      // throws when .throwOnError is enabled
+      await expect(
+        storage.from(bucketName).throwOnError().move('non-existent', '')
+      ).rejects.toThrow()
     })
 
     test('move object across buckets in different path', async () => {
@@ -387,6 +413,11 @@ describe('Object API', () => {
       expect(res.error).toBeNull()
       expect(res.data?.size).toBeGreaterThan(0)
       expect(res.data?.type).toEqual('text/plain;charset=utf-8')
+
+      // throws when .throwOnError is enabled
+      await expect(
+        storage.from(bucketName).throwOnError().download('non-existent-file')
+      ).rejects.toThrow()
     })
 
     test('removes an object', async () => {
@@ -421,6 +452,9 @@ describe('Object API', () => {
           version: expect.any(String),
         })
       )
+
+      // throws when .throwOnError is enabled
+      await expect(storage.from(bucketName).throwOnError().info('non-existent')).rejects.toThrow()
     })
 
     test('check if object exists', async () => {
@@ -432,6 +466,11 @@ describe('Object API', () => {
 
       const resNotExists = await storage.from(bucketName).exists('do-not-exists')
       expect(resNotExists.data).toEqual(false)
+
+      // should throw when .throwOnError is enabled
+      await expect(
+        storage.from(bucketName).throwOnError().exists('do-not-exists')
+      ).rejects.toThrowError()
     })
   })
 
@@ -554,15 +593,19 @@ describe('error handling', () => {
     expect(data).toBeNull()
     expect(error).not.toBeNull()
     expect(error?.message).toBe('Network failure')
+
+    // throws when .throwOnError is enabled
+    await expect(storage.from('test').throwOnError().list()).rejects.toThrow('Network failure')
   })
 
   it('handles malformed responses', async () => {
-    const mockResponse = new Response(JSON.stringify({ message: 'Internal server error' }), {
-      status: 500,
-      statusText: 'Internal Server Error',
-    })
+    const createMockResponse = () =>
+      new Response(JSON.stringify({ message: 'Internal server error' }), {
+        status: 500,
+        statusText: 'Internal Server Error',
+      })
 
-    global.fetch = jest.fn().mockImplementation(() => Promise.resolve(mockResponse))
+    global.fetch = jest.fn().mockImplementation(() => Promise.resolve(createMockResponse()))
     const storage = new StorageClient('http://localhost:8000/storage/v1', {
       apikey: 'test-token',
     })
@@ -571,6 +614,11 @@ describe('error handling', () => {
     expect(data).toBeNull()
     expect(error).toBeInstanceOf(StorageError)
     expect(error?.message).toBe('Internal server error')
+
+    global.fetch = jest.fn().mockImplementation(() => Promise.resolve(createMockResponse()))
+    await expect(storage.from('test').throwOnError().list()).rejects.toThrow(
+      'Internal server error'
+    )
   })
 
   it('handles network timeouts', async () => {
@@ -584,6 +632,8 @@ describe('error handling', () => {
     expect(data).toBeNull()
     expect(error).not.toBeNull()
     expect(error?.message).toBe('Network timeout')
+
+    await expect(storage.from('test').throwOnError().list()).rejects.toThrow('Network timeout')
   })
 })
 

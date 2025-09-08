@@ -9,6 +9,7 @@ export default class StorageBucketApi {
   protected url: string
   protected headers: { [key: string]: string }
   protected fetch: Fetch
+  protected shouldThrowOnError = false
 
   constructor(
     url: string,
@@ -33,6 +34,14 @@ export default class StorageBucketApi {
   }
 
   /**
+   * Enable throwing errors instead of returning them.
+   */
+  public throwOnError(): this {
+    this.shouldThrowOnError = true
+    return this
+  }
+
+  /**
    * Retrieves the details of all Storage buckets within an existing project.
    */
   async listBuckets(): Promise<
@@ -49,6 +58,9 @@ export default class StorageBucketApi {
       const data = await get(this.fetch, `${this.url}/bucket`, { headers: this.headers })
       return { data, error: null }
     } catch (error) {
+      if (this.shouldThrowOnError) {
+        throw error
+      }
       if (isStorageError(error)) {
         return { data: null, error }
       }
@@ -78,6 +90,9 @@ export default class StorageBucketApi {
       const data = await get(this.fetch, `${this.url}/bucket/${id}`, { headers: this.headers })
       return { data, error: null }
     } catch (error) {
+      if (this.shouldThrowOnError) {
+        throw error
+      }
       if (isStorageError(error)) {
         return { data: null, error }
       }
@@ -137,6 +152,9 @@ export default class StorageBucketApi {
       )
       return { data, error: null }
     } catch (error) {
+      if (this.shouldThrowOnError) {
+        throw error
+      }
       if (isStorageError(error)) {
         return { data: null, error }
       }
@@ -189,6 +207,9 @@ export default class StorageBucketApi {
       )
       return { data, error: null }
     } catch (error) {
+      if (this.shouldThrowOnError) {
+        throw error
+      }
       if (isStorageError(error)) {
         return { data: null, error }
       }
@@ -223,6 +244,9 @@ export default class StorageBucketApi {
       )
       return { data, error: null }
     } catch (error) {
+      if (this.shouldThrowOnError) {
+        throw error
+      }
       if (isStorageError(error)) {
         return { data: null, error }
       }
@@ -258,6 +282,9 @@ export default class StorageBucketApi {
       )
       return { data, error: null }
     } catch (error) {
+      if (this.shouldThrowOnError) {
+        throw error
+      }
       if (isStorageError(error)) {
         return { data: null, error }
       }

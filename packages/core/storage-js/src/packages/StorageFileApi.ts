@@ -46,6 +46,7 @@ export default class StorageFileApi {
   protected headers: { [key: string]: string }
   protected bucketId?: string
   protected fetch: Fetch
+  protected shouldThrowOnError = false
 
   constructor(
     url: string,
@@ -57,6 +58,14 @@ export default class StorageFileApi {
     this.headers = headers
     this.bucketId = bucketId
     this.fetch = resolveFetch(fetch)
+  }
+
+  /**
+   * Enable throwing errors instead of returning them.
+   */
+  public throwOnError(): this {
+    this.shouldThrowOnError = true
+    return this
   }
 
   /**
@@ -132,6 +141,9 @@ export default class StorageFileApi {
         error: null,
       }
     } catch (error) {
+      if (this.shouldThrowOnError) {
+        throw error
+      }
       if (isStorageError(error)) {
         return { data: null, error }
       }
@@ -209,6 +221,9 @@ export default class StorageFileApi {
         error: null,
       }
     } catch (error) {
+      if (this.shouldThrowOnError) {
+        throw error
+      }
       if (isStorageError(error)) {
         return { data: null, error }
       }
@@ -263,6 +278,9 @@ export default class StorageFileApi {
 
       return { data: { signedUrl: url.toString(), path, token }, error: null }
     } catch (error) {
+      if (this.shouldThrowOnError) {
+        throw error
+      }
       if (isStorageError(error)) {
         return { data: null, error }
       }
@@ -339,6 +357,9 @@ export default class StorageFileApi {
       )
       return { data, error: null }
     } catch (error) {
+      if (this.shouldThrowOnError) {
+        throw error
+      }
       if (isStorageError(error)) {
         return { data: null, error }
       }
@@ -382,6 +403,9 @@ export default class StorageFileApi {
       )
       return { data: { path: data.Key }, error: null }
     } catch (error) {
+      if (this.shouldThrowOnError) {
+        throw error
+      }
       if (isStorageError(error)) {
         return { data: null, error }
       }
@@ -428,6 +452,9 @@ export default class StorageFileApi {
       data = { signedUrl }
       return { data, error: null }
     } catch (error) {
+      if (this.shouldThrowOnError) {
+        throw error
+      }
       if (isStorageError(error)) {
         return { data: null, error }
       }
@@ -478,6 +505,9 @@ export default class StorageFileApi {
         error: null,
       }
     } catch (error) {
+      if (this.shouldThrowOnError) {
+        throw error
+      }
       if (isStorageError(error)) {
         return { data: null, error }
       }
@@ -519,6 +549,9 @@ export default class StorageFileApi {
       const data = await res.blob()
       return { data, error: null }
     } catch (error) {
+      if (this.shouldThrowOnError) {
+        throw error
+      }
       if (isStorageError(error)) {
         return { data: null, error }
       }
@@ -552,6 +585,9 @@ export default class StorageFileApi {
 
       return { data: recursiveToCamel(data) as Camelize<FileObjectV2>, error: null }
     } catch (error) {
+      if (this.shouldThrowOnError) {
+        throw error
+      }
       if (isStorageError(error)) {
         return { data: null, error }
       }
@@ -585,6 +621,9 @@ export default class StorageFileApi {
 
       return { data: true, error: null }
     } catch (error) {
+      if (this.shouldThrowOnError) {
+        throw error
+      }
       if (isStorageError(error) && error instanceof StorageUnknownError) {
         const originalError = (error.originalError as unknown) as { status: number }
 
@@ -664,6 +703,9 @@ export default class StorageFileApi {
       )
       return { data, error: null }
     } catch (error) {
+      if (this.shouldThrowOnError) {
+        throw error
+      }
       if (isStorageError(error)) {
         return { data: null, error }
       }
@@ -765,6 +807,9 @@ export default class StorageFileApi {
       )
       return { data, error: null }
     } catch (error) {
+      if (this.shouldThrowOnError) {
+        throw error
+      }
       if (isStorageError(error)) {
         return { data: null, error }
       }
@@ -802,6 +847,9 @@ export default class StorageFileApi {
       )
       return { data, error: null }
     } catch (error) {
+      if (this.shouldThrowOnError) {
+        throw error
+      }
       if (isStorageError(error)) {
         return { data: null, error }
       }
