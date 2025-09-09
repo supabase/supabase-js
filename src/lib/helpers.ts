@@ -86,12 +86,12 @@ export function validateSupabaseUrl(supabaseUrl: string): URL {
     throw new Error('supabaseUrl is required.')
   }
 
-  if (!supabaseUrl.match(/^https?:\/\/.+/i)) {
+  if (!trimmedUrl.match(/^https?:\/\//i)) {
     throw new Error('Invalid supabaseUrl: Must be a valid HTTP or HTTPS URL.')
   }
 
   try {
-    return new URL(ensureTrailingSlash(supabaseUrl))
+    return new URL(ensureTrailingSlash(trimmedUrl))
   } catch {
     throw Error('Invalid supabaseUrl: Provided URL is malformed.')
   }

@@ -41,6 +41,9 @@ describe('SupabaseClient', () => {
     expect(() => createClient('http:/localhost:3000', KEY)).toThrow(
       'Invalid supabaseUrl: Must be a valid HTTP or HTTPS URL.'
     )
+
+    expect(() => createClient('  https://xyz123.supabase.co  ', KEY)).not.toThrow()
+    expect(() => createClient('http://user:pass@localhost:54321', KEY)).not.toThrow()
   })
 
   describe('URL Construction', () => {
