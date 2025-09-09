@@ -80,7 +80,9 @@ export function applySettingDefaults<
  * @throws {Error}
  */
 export function validateSupabaseUrl(supabaseUrl: string): URL {
-  if (!supabaseUrl) {
+  const trimmedUrl = supabaseUrl?.trim()
+
+  if (!trimmedUrl) {
     throw new Error('supabaseUrl is required.')
   }
 
