@@ -19,7 +19,7 @@ import {
   DEFAULT_REALTIME_OPTIONS,
 } from './lib/constants'
 import { fetchWithAuth } from './lib/fetch'
-import { ensureTrailingSlash, applySettingDefaults } from './lib/helpers'
+import { applySettingDefaults, validateSupabaseUrl } from './lib/helpers'
 import { SupabaseAuthClient } from './lib/SupabaseAuthClient'
 import { Fetch, GenericSchema, SupabaseClientOptions, SupabaseAuthClientOptions } from './lib/types'
 
@@ -101,11 +101,8 @@ export default class SupabaseClient<
     protected supabaseKey: string,
     options?: SupabaseClientOptions<SchemaName>
   ) {
-    if (!supabaseUrl) throw new Error('supabaseUrl is required.')
+    const baseUrl = validateSupabaseUrl(supabaseUrl)
     if (!supabaseKey) throw new Error('supabaseKey is required.')
-
-    const _supabaseUrl = ensureTrailingSlash(supabaseUrl)
-    const baseUrl = new URL(_supabaseUrl)
 
     this.realtimeUrl = new URL('realtime/v1', baseUrl)
     this.realtimeUrl.protocol = this.realtimeUrl.protocol.replace('http', 'ws')
