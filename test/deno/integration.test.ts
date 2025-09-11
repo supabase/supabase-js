@@ -156,7 +156,6 @@ Deno.test(
         await supabase.auth.signUp({ email, password })
         const config = { broadcast: { self: true }, private: true }
         channel = supabase.channel(channelName, { config })
-        await supabase.realtime.setAuth()
 
         const testMessage = { message: 'test' }
         let receivedMessage: any
