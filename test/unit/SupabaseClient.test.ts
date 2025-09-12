@@ -277,13 +277,13 @@ describe('SupabaseClient', () => {
 
         // @ts-ignore - accessing private method for testing
         client._handleTokenChanged('TOKEN_REFRESHED', 'CLIENT', 'new-token')
-        expect(setAuthSpy).toHaveBeenCalledWith()
+        expect(setAuthSpy).toHaveBeenCalledWith('new-token')
 
         setAuthSpy.mockClear()
 
         // @ts-ignore - accessing private method for testing
         client._handleTokenChanged('SIGNED_IN', 'CLIENT', 'signin-token')
-        expect(setAuthSpy).toHaveBeenCalledWith()
+        expect(setAuthSpy).toHaveBeenCalledWith('signin-token')
 
         setAuthSpy.mockClear()
 
