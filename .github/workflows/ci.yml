@@ -316,6 +316,14 @@ jobs:
       - name: Start Supabase
         run: supabase start
 
+      - name: Create storage bucket for tests
+        run: |
+          SERVICE_ROLE_KEY="$(supabase status --output json | jq -r '.SERVICE_ROLE_KEY')"
+          curl -X POST 'http://127.0.0.1:54321/storage/v1/bucket' \
+            -H "Authorization: Bearer $SERVICE_ROLE_KEY" \
+            -H 'Content-Type: application/json' \
+            -d '{"id": "test-bucket", "name": "test-bucket", "public": true}'
+
       - name: Install dependencies and run tests
         run: |
           cd test/integration/bun

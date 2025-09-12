@@ -14,7 +14,6 @@ test('should subscribe to realtime channel', async () => {
   const email = `bun-test-${Date.now()}@example.com`
   const password = 'password123'
   await supabase.auth.signUp({ email, password })
-  await supabase.realtime.setAuth()
 
   const channelName = `bun-channel-${crypto.randomUUID()}`
   const config = { broadcast: { self: true }, private: true }

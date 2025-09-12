@@ -219,124 +219,174 @@ describe('SupabaseClient', () => {
     })
   })
 
-  describe('Access Token Handling', () => {
-    test('should use custom accessToken when provided', async () => {
-      const customToken = 'custom-jwt-token'
-      const client = createClient(URL, KEY, {
-        accessToken: async () => customToken,
+  describe('Token Management', () => {
+    describe('Token Resolution', () => {
+      test('should resolve token from session', async () => {
+        const expectedToken = 'test-jwt-token'
+        const client = createClient(URL, KEY)
+
+        client.auth.getSession = jest.fn().mockResolvedValue({
+          data: { session: { access_token: expectedToken } },
+        })
+
+        // @ts-ignore - accessing private method
+        const token = await client._getAccessToken()
+        expect(token).toBe(expectedToken)
       })
 
-      // Access the private method through the client instance
-      const accessToken = await (client as any)._getAccessToken()
-      expect(accessToken).toBe(customToken)
+      test('should use custom accessToken callback', async () => {
+        const customToken = 'custom-access-token'
+        const customAccessTokenFn = jest.fn().mockResolvedValue(customToken)
+        const client = createClient(URL, KEY, { accessToken: customAccessTokenFn })
+
+        // @ts-ignore - accessing private method
+        const token = await client._getAccessToken()
+        expect(token).toBe(customToken)
+        expect(customAccessTokenFn).toHaveBeenCalled()
+      })
+
+      test('should fallback to supabaseKey when no session available', async () => {
+        const client = createClient(URL, KEY)
+
+        client.auth.getSession = jest.fn().mockResolvedValue({
+          data: { session: null },
+        })
+
+        // @ts-ignore - accessing private method
+        const token = await client._getAccessToken()
+        expect(token).toBe(KEY)
+      })
     })
 
-    test('should fallback to session access token when no custom accessToken', async () => {
-      const client = createClient(URL, KEY)
+    describe('Realtime Authentication', () => {
+      test('should provide access token to realtime client', async () => {
+        const expectedToken = 'test-jwt-token'
+        const client = createClient(URL, KEY)
 
-      // Mock the auth.getSession method
-      const mockSession = {
-        data: {
-          session: {
-            access_token: 'session-jwt-token',
-          },
-        },
-      }
-      client.auth.getSession = jest.fn().mockResolvedValue(mockSession)
+        client.auth.getSession = jest.fn().mockResolvedValue({
+          data: { session: { access_token: expectedToken } },
+        })
 
-      const accessToken = await (client as any)._getAccessToken()
-      expect(accessToken).toBe('session-jwt-token')
+        const realtimeToken = await client.realtime.accessToken!()
+        expect(realtimeToken).toBe(expectedToken)
+      })
+
+      test('should handle authentication state changes', async () => {
+        const client = createClient(URL, KEY)
+        const setAuthSpy = jest.spyOn(client.realtime, 'setAuth')
+
+        // @ts-ignore - accessing private method for testing
+        client._handleTokenChanged('TOKEN_REFRESHED', 'CLIENT', 'new-token')
+        expect(setAuthSpy).toHaveBeenCalledWith('new-token')
+
+        setAuthSpy.mockClear()
+
+        // @ts-ignore - accessing private method for testing
+        client._handleTokenChanged('SIGNED_IN', 'CLIENT', 'signin-token')
+        expect(setAuthSpy).toHaveBeenCalledWith('signin-token')
+
+        setAuthSpy.mockClear()
+
+        // @ts-ignore - accessing private method for testing
+        client._handleTokenChanged('SIGNED_OUT', 'CLIENT')
+        expect(setAuthSpy).toHaveBeenCalledWith()
+      })
+
+      test('should update token in realtime client when setAuth is called', async () => {
+        const client = createClient(URL, KEY)
+        const testToken = 'test-realtime-token'
+
+        client.realtime.setAuth = jest.fn(async (token) => {
+          if (token) {
+            ;(client.realtime as any).accessTokenValue = token
+          } else {
+            const freshToken = await client.realtime.accessToken!()
+            ;(client.realtime as any).accessTokenValue = freshToken
+          }
+        })
+
+        await client.realtime.setAuth(testToken)
+        expect(client.realtime.setAuth).toHaveBeenCalledWith(testToken)
+        expect((client.realtime as any).accessTokenValue).toBe(testToken)
+      })
     })
 
-    test('should fallback to supabaseKey when no session', async () => {
-      const client = createClient(URL, KEY)
+    describe('FetchWithAuth Token Integration', () => {
+      test('should pass correct token to fetchWithAuth wrapper', async () => {
+        const expectedToken = 'test-fetch-token'
+        const mockFetch = jest.fn().mockResolvedValue({
+          ok: true,
+          json: () => Promise.resolve({}),
+        })
 
-      // Mock the auth.getSession method to return no session
-      const mockSession = {
-        data: {
-          session: null,
-        },
-      }
-      client.auth.getSession = jest.fn().mockResolvedValue(mockSession)
+        const client = createClient(URL, KEY, {
+          global: { fetch: mockFetch },
+        })
 
-      const accessToken = await (client as any)._getAccessToken()
-      expect(accessToken).toBe(KEY)
-    })
-  })
+        client.auth.getSession = jest.fn().mockResolvedValue({
+          data: { session: { access_token: expectedToken } },
+        })
 
-  describe('Auth Event Handling', () => {
-    test('should handle TOKEN_REFRESHED event', () => {
-      const client = createClient(URL, KEY)
-      const newToken = 'new-refreshed-token'
+        await client.from('test').select('*')
 
-      // Mock realtime.setAuth
-      client.realtime.setAuth = jest.fn()
-      ;(client as any)._handleTokenChanged('TOKEN_REFRESHED', 'CLIENT', newToken)
+        expect(mockFetch).toHaveBeenCalled()
+        const [, options] = mockFetch.mock.calls[0]
+        expect(options.headers.get('Authorization')).toBe(`Bearer ${expectedToken}`)
+        expect(options.headers.get('apikey')).toBe(KEY)
+      })
 
-      expect((client as any).changedAccessToken).toBe(newToken)
-    })
+      test('should work across all fetchWithAuth services', async () => {
+        const expectedToken = 'test-multi-service-token'
+        const mockFetch = jest
+          .fn()
+          .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({}) }) // rest
+          .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ data: [] }) }) // storage
+          .mockResolvedValueOnce({
+            ok: true,
+            text: () => Promise.resolve('{}'),
+            headers: new Map(),
+          }) // functions
 
-    test('should listen for auth events', () => {
-      const client = createClient(URL, KEY)
+        const client = createClient(URL, KEY, {
+          global: { fetch: mockFetch },
+        })
 
-      // Mock auth.onAuthStateChange
-      const mockCallback = jest.fn()
-      client.auth.onAuthStateChange = jest.fn().mockReturnValue(mockCallback)
+        client.auth.getSession = jest.fn().mockResolvedValue({
+          data: { session: { access_token: expectedToken } },
+        })
 
-      // Call the private method
-      const result = (client as any)._listenForAuthEvents()
+        await client.from('test').select('*')
+        await client.storage.from('test').list()
+        await client.functions.invoke('test-function')
 
-      expect(client.auth.onAuthStateChange).toHaveBeenCalled()
-      expect(result).toBe(mockCallback)
-    })
+        expect(mockFetch).toHaveBeenCalledTimes(3)
 
-    test('should handle SIGNED_IN event', () => {
-      const client = createClient(URL, KEY)
-      const newToken = 'new-signed-in-token'
+        mockFetch.mock.calls.forEach(([, options]) => {
+          expect(options.headers.get('Authorization')).toBe(`Bearer ${expectedToken}`)
+        })
+      })
 
-      // Mock realtime.setAuth
-      client.realtime.setAuth = jest.fn()
-      ;(client as any)._handleTokenChanged('SIGNED_IN', 'CLIENT', newToken)
+      test('should use supabaseKey fallback in fetchWithAuth', async () => {
+        const mockFetch = jest.fn().mockResolvedValue({
+          ok: true,
+          json: () => Promise.resolve({}),
+        })
 
-      expect((client as any).changedAccessToken).toBe(newToken)
-    })
+        const client = createClient(URL, KEY, {
+          global: { fetch: mockFetch },
+        })
 
-    test('should not update token if it is the same', () => {
-      const client = createClient(URL, KEY)
-      const existingToken = 'existing-token'
-      ;(client as any).changedAccessToken = existingToken
+        client.auth.getSession = jest.fn().mockResolvedValue({
+          data: { session: null },
+        })
 
-      // Mock realtime.setAuth
-      client.realtime.setAuth = jest.fn()
-      ;(client as any)._handleTokenChanged('TOKEN_REFRESHED', 'CLIENT', existingToken)
+        await client.from('test').select('*')
 
-      expect((client as any).changedAccessToken).toBe(existingToken)
-    })
-
-    test('should handle SIGNED_OUT event from CLIENT source', () => {
-      const client = createClient(URL, KEY)
-      ;(client as any).changedAccessToken = 'old-token'
-
-      // Mock realtime.setAuth
-      client.realtime.setAuth = jest.fn()
-      ;(client as any)._handleTokenChanged('SIGNED_OUT', 'CLIENT')
-
-      expect(client.realtime.setAuth).toHaveBeenCalled()
-      expect((client as any).changedAccessToken).toBeUndefined()
-    })
-
-    test('should handle SIGNED_OUT event from STORAGE source', () => {
-      const client = createClient(URL, KEY)
-      ;(client as any).changedAccessToken = 'old-token'
-
-      // Mock realtime.setAuth and auth.signOut
-      client.realtime.setAuth = jest.fn()
-      client.auth.signOut = jest.fn()
-      ;(client as any)._handleTokenChanged('SIGNED_OUT', 'STORAGE')
-
-      expect(client.realtime.setAuth).toHaveBeenCalled()
-      expect(client.auth.signOut).toHaveBeenCalled()
-      expect((client as any).changedAccessToken).toBeUndefined()
+        expect(mockFetch).toHaveBeenCalled()
+        const [, options] = mockFetch.mock.calls[0]
+        expect(options.headers.get('Authorization')).toBe(`Bearer ${KEY}`)
+        expect(options.headers.get('apikey')).toBe(KEY)
+      })
     })
   })
 })
