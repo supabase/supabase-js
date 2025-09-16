@@ -34,12 +34,15 @@ describe('basic tests (hello function)', () => {
     })
 
     log('invoke hello')
-    const { data, error } = await fclient.invoke<string>('hello', {})
+    const { data, error, response } = await fclient.invoke<string>('hello', {})
 
     log('assert no error')
     expect(error).toBeNull()
     log(`assert ${data} is equal to 'Hello World'`)
     expect(data).toEqual('Hello World')
+    log('assert response object is present')
+    expect(response).toBeDefined()
+    expect(response).toBeInstanceOf(Response)
   })
 
   test('invoke hello with setAuth', async () => {
@@ -71,12 +74,14 @@ describe('basic tests (hello function)', () => {
     fclient.setAuth(wrongKey)
 
     log('invoke hello')
-    const { data, error } = await fclient.invoke<string>('hello', {})
+    const { data, error, response } = await fclient.invoke<string>('hello', {})
 
     log('check error')
     expect(error).not.toBeNull()
     expect(error?.message).toEqual('Relay Error invoking the Edge Function')
     expect(data).toBeNull()
+    log('assert response object is present in error case')
+    expect(response).toBeDefined()
   })
 
   test('invoke hello: auth override by setAuth wrong key', async () => {

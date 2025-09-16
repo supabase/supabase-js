@@ -56,7 +56,7 @@
     "ts-jest": "^28.0.0",
     "ts-node": "^10.9.0",
     "ts-test-decorators": "^0.0.6",
-    "typedoc": "^0.22.13",
+    "typedoc": "^0.23.28",
     "typescript": "^4.6.2"
   },
   "publishConfig": {

@@ -2,15 +2,16 @@ export type Fetch = typeof fetch
 
 /**
  * Response format
- *
  */
 export interface FunctionsResponseSuccess<T> {
   data: T
   error: null
+  response?: Response
 }
 export interface FunctionsResponseFailure {
   data: null
   error: any
+  response?: Response
 }
 export type FunctionsResponse<T> = FunctionsResponseSuccess<T> | FunctionsResponseFailure
 
@@ -62,7 +63,7 @@ export enum FunctionRegion {
 export type FunctionInvokeOptions = {
   /**
    * Object representing the headers to send with the request.
-   * */
+   */
   headers?: { [key: string]: string }
   /**
    * The HTTP verb of the request

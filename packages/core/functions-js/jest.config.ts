@@ -13,6 +13,7 @@ const config: Config.InitialOptions = {
     'src/**/*.{ts,tsx}',
     '!src/version.ts',
     '!src/index.ts',
+    '!**/*.d.ts',
   ],
   coverageProvider: 'v8',
   coverageThreshold: {

@@ -1,6 +1,7 @@
 # `functions-js`
 
-[![Coverage Status](https://coveralls.io/repos/github/supabase/functions-js/badge.svg?branch=main)](https://coveralls.io/github/supabase/functions-js?branch=main)
+[![Coverage Status](https://coveralls.io/repos/github/supabase/functions-js/badge.svg?branch=main)](https://coveralls.io/github/supabase/functions-js?branch=main) [![pkg.pr.new](https://pkg.pr.new/badge/supabase/functions-js)](https://pkg.pr.new/~/supabase/functions-js)
+
 
 JS Client library to interact with Supabase Functions.
 

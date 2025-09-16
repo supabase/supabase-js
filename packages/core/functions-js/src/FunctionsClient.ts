@@ -57,8 +57,11 @@ export class FunctionsClient {
       if (!region) {
         region = this.region
       }
+      // Add region as query parameter using URL API
+      const url = new URL(`${this.url}/${functionName}`)
       if (region && region !== 'any') {
         _headers['x-region'] = region
+        url.searchParams.set('forceFunctionRegion', region)
       }
       let body: any
       if (
@@ -88,7 +91,7 @@ export class FunctionsClient {
         }
       }
 
-      const response = await this.fetch(`${this.url}/${functionName}`, {
+      const response = await this.fetch(url.toString(), {
         method: method || 'POST',
         // headers priority is (high to low):
         // 1. invoke-level headers
@@ -128,12 +131,12 @@ export class FunctionsClient {
         data = await response.text()
       }
 
-      return { data, error: null }
+      return { data, error: null, response }
     } catch (error) {
       if (error instanceof Error && error.name === 'AbortError') {
         return { data: null, error: new FunctionsFetchError(error) }
       }
-      return { data: null, error }
+      return { data: null, error, response: error instanceof FunctionsHttpError || error instanceof FunctionsRelayError ? error.context : undefined }
     }
   }
 }
