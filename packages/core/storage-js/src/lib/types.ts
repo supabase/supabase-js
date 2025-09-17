@@ -1,3 +1,5 @@
+import { StorageError } from './errors'
+
 export type BucketType = 'STANDARD' | 'ANALYTICS'
 
 export interface Bucket {
@@ -164,3 +166,13 @@ type CamelCase<S extends string> = S extends `${infer P1}_${infer P2}${infer P3}
 export type Camelize<T> = {
   [K in keyof T as CamelCase<Extract<K, string>>]: T[K]
 }
+
+export type DownloadResult<T> =
+  | {
+      data: T
+      error: null
+    }
+  | {
+      data: null
+      error: StorageError
+    }

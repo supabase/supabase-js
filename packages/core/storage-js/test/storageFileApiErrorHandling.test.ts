@@ -25,10 +25,15 @@ describe('File API Error Handling', () => {
       global.fetch = jest.fn().mockImplementation(() => Promise.reject(mockError))
       const storage = new StorageClient(URL, { apikey: KEY })
 
-      const { data, error } = await storage.from(BUCKET_ID).download('test.jpg')
-      expect(data).toBeNull()
-      expect(error).not.toBeNull()
-      expect(error?.message).toBe('Network failure')
+      const blobDownload = await storage.from(BUCKET_ID).download('test.jpg')
+      expect(blobDownload.data).toBeNull()
+      expect(blobDownload.error).not.toBeNull()
+      expect(blobDownload.error?.message).toBe('Network failure')
+
+      const streamDownload = await storage.from(BUCKET_ID).download('test.jpg').asStream()
+      expect(streamDownload.data).toBeNull()
+      expect(streamDownload.error).not.toBeNull()
+      expect(streamDownload.error?.message).toBe('Network failure')
     })
 
     it('wraps non-Response errors as StorageUnknownError', async () => {
@@ -37,10 +42,15 @@ describe('File API Error Handling', () => {
 
       const storage = new StorageClient(URL, { apikey: KEY })
 
-      const { data, error } = await storage.from(BUCKET_ID).download('test.jpg')
-      expect(data).toBeNull()
-      expect(error).toBeInstanceOf(StorageUnknownError)
-      expect(error?.message).toBe('Invalid download format')
+      const blobDownload = await storage.from(BUCKET_ID).download('test.jpg')
+      expect(blobDownload.data).toBeNull()
+      expect(blobDownload.error).toBeInstanceOf(StorageUnknownError)
+      expect(blobDownload.error?.message).toBe('Invalid download format')
+
+      const streamDownload = await storage.from(BUCKET_ID).download('test.jpg').asStream()
+      expect(streamDownload.data).toBeNull()
+      expect(streamDownload.error).toBeInstanceOf(StorageUnknownError)
+      expect(streamDownload.error?.message).toBe('Invalid download format')
     })
 
     it('throws non-StorageError exceptions', async () => {
@@ -48,13 +58,17 @@ describe('File API Error Handling', () => {
       const storage = new StorageClient(URL, { apikey: KEY })
 
       // Create a spy on the fetch method that will throw a non-StorageError
-      const mockFn = jest.spyOn(global, 'fetch').mockImplementationOnce(() => {
+      const mockFn = jest.spyOn(global, 'fetch').mockImplementation(() => {
         const error = new Error('Unexpected error in download')
         Object.defineProperty(error, 'name', { value: 'CustomError' })
         throw error
       })
 
       await expect(storage.from(BUCKET_ID).download('test.jpg')).rejects.toThrow(
+        'Unexpected error in download'
+      )
+
+      await expect(storage.from(BUCKET_ID).download('test.jpg').asStream()).rejects.toThrow(
         'Unexpected error in download'
       )
 

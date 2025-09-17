@@ -13,6 +13,7 @@ import {
   SearchV2Options,
   SearchV2Result,
 } from '../lib/types'
+import BlobDownloadBuilder from './BlobDownloadBuilder'
 
 const DEFAULT_SEARCH_OPTIONS = {
   limit: 100,
@@ -522,42 +523,21 @@ export default class StorageFileApi {
    * @param path The full path and file name of the file to be downloaded. For example `folder/image.png`.
    * @param options.transform Transform the asset before serving it to the client.
    */
-  async download(
+  download<Options extends { transform?: TransformOptions }>(
     path: string,
-    options?: { transform?: TransformOptions }
-  ): Promise<
-    | {
-        data: Blob
-        error: null
-      }
-    | {
-        data: null
-        error: StorageError
-      }
-  > {
+    options?: Options
+  ): BlobDownloadBuilder {
     const wantsTransformation = typeof options?.transform !== 'undefined'
     const renderPath = wantsTransformation ? 'render/image/authenticated' : 'object'
     const transformationQuery = this.transformOptsToQueryString(options?.transform || {})
     const queryString = transformationQuery ? `?${transformationQuery}` : ''
-
-    try {
-      const _path = this._getFinalPath(path)
-      const res = await get(this.fetch, `${this.url}/${renderPath}/${_path}${queryString}`, {
+    const _path = this._getFinalPath(path)
+    const downloadFn = () =>
+      get(this.fetch, `${this.url}/${renderPath}/${_path}${queryString}`, {
         headers: this.headers,
         noResolveJson: true,
       })
-      const data = await res.blob()
-      return { data, error: null }
-    } catch (error) {
-      if (this.shouldThrowOnError) {
-        throw error
-      }
-      if (isStorageError(error)) {
-        return { data: null, error }
-      }
-
-      throw error
-    }
+    return new BlobDownloadBuilder(downloadFn, this.shouldThrowOnError)
   }
 
   /**

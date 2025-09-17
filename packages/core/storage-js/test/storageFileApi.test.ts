@@ -3,9 +3,12 @@ import * as fsp from 'fs/promises'
 import * as fs from 'fs'
 import * as path from 'path'
 import assert from 'assert'
+import ReadableStream from 'node:stream'
 // @ts-ignore
 import fetch, { Response } from '@supabase/node-fetch'
 import { StorageApiError, StorageError } from '../src/lib/errors'
+import BlobDownloadBuilder from '../src/packages/BlobDownloadBuilder'
+import StreamDownloadBuilder from '../src/packages/StreamDownloadBuilder'
 
 // TODO: need to setup storage-api server for this test
 const URL = 'http://localhost:8000/storage/v1'
@@ -408,15 +411,34 @@ describe('Object API', () => {
 
     test('downloads an object', async () => {
       await storage.from(bucketName).upload(uploadPath, file)
-      const res = await storage.from(bucketName).download(uploadPath)
 
-      expect(res.error).toBeNull()
-      expect(res.data?.size).toBeGreaterThan(0)
-      expect(res.data?.type).toEqual('text/plain;charset=utf-8')
+      const blobBuilder = storage.from(bucketName).download(uploadPath)
+      expect(blobBuilder).toBeInstanceOf(BlobDownloadBuilder)
+
+      const blobResponse = await blobBuilder
+      expect(blobResponse.error).toBeNull()
+      expect(blobResponse.data?.size).toBeGreaterThan(0)
+      expect(blobResponse.data?.type).toEqual('text/plain;charset=utf-8')
 
       // throws when .throwOnError is enabled
       await expect(
         storage.from(bucketName).throwOnError().download('non-existent-file')
+      ).rejects.toThrow()
+    })
+
+    test('downloads an object as a stream', async () => {
+      await storage.from(bucketName).upload(uploadPath, file)
+
+      const streamBuilder = storage.from(bucketName).download(uploadPath).asStream()
+      expect(streamBuilder).toBeInstanceOf(StreamDownloadBuilder)
+
+      const streamResponse = await streamBuilder
+      expect(streamResponse.error).toBeNull()
+      expect(streamResponse.data).toBeInstanceOf(ReadableStream)
+
+      // throws when .throwOnError is enabled
+      await expect(
+        storage.from(bucketName).throwOnError().download('non-existent-file').asStream()
       ).rejects.toThrow()
     })
 
