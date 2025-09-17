@@ -90,6 +90,7 @@ jobs:
       - name: Upload coverage results to Coveralls
         uses: coverallsapp/github-action@v2
         with:
+          fail-on-error: false
           github-token: ${{ secrets.GITHUB_TOKEN }}
           path-to-lcov: ./test/coverage/lcov.info
           parallel: true
@@ -103,6 +104,7 @@ jobs:
       - name: Coveralls Finished
         uses: coverallsapp/github-action@v2
         with:
+          fail-on-error: false
           github-token: ${{ secrets.GITHUB_TOKEN }}
           parallel-finished: true
 
