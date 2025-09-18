@@ -50,12 +50,12 @@
     "update:test-deps:bun": "npm run build && npm pack && cp supabase-supabase-js-*.tgz test/integration/bun/supabase-supabase-js-0.0.0-automated.tgz && cd test/integration/bun && bun install"
   },
   "dependencies": {
-    "@supabase/auth-js": "2.71.1",
-    "@supabase/functions-js": "2.5.0",
-    "@supabase/node-fetch": "2.6.15",
-    "@supabase/postgrest-js": "1.21.4",
-    "@supabase/realtime-js": "2.15.5",
-    "@supabase/storage-js": "2.12.1"
+    "@supabase/auth-js": "2.71.2-canary.0",
+    "@supabase/functions-js": "2.71.2-canary.0",
+    "@supabase/node-fetch": "2.6.13",
+    "@supabase/postgrest-js": "2.71.2-canary.0",
+    "@supabase/realtime-js": "2.71.2-canary.0",
+    "@supabase/storage-js": "2.71.2-canary.0"
   },
   "devDependencies": {
     "@sebbo2002/semantic-release-jsr": "^1.0.0",
