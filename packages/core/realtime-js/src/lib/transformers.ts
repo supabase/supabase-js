@@ -60,10 +60,14 @@ type Record = {
  */
 export const convertChangeData = (
   columns: Columns,
-  record: Record,
+  record: Record | null,
   options: { skipTypes?: string[] } = {}
 ): Record => {
   const skipTypes = options.skipTypes ?? []
+
+  if (!record) {
+    return {}
+  }
 
   return Object.keys(record).reduce((acc, rec_key) => {
     acc[rec_key] = convertColumn(rec_key, columns, record, skipTypes)

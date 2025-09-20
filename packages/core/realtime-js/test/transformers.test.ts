@@ -46,6 +46,18 @@ test('convertChangeData', () => {
     ),
     { first_name: 'Paul', age: null }
   )
+
+  assert.deepEqual(
+    convertChangeData(
+      [
+        { name: 'first_name', type: 'text' },
+        { name: 'age', type: 'int4' },
+      ],
+      null,
+      {}
+    ),
+    {}
+  )
 })
 
 test('convertColumn', () => {
