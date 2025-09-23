@@ -301,10 +301,21 @@ export default class SupabaseClient<
     if (this.accessToken) {
       return await this.accessToken()
     }
-
+  
     const { data } = await this.auth.getSession()
-
-    return data.session?.access_token ?? this.supabaseKey
+  
+    // If no session exists, check for global Authorization header or fall back to supabaseKey
+    if (!data.session?.access_token) {
+      // Prefer global.headers.Authorization if explicitly set
+      const authHeader = this.headers['Authorization'] || this.headers['authorization']
+      if (authHeader) {
+        return authHeader.startsWith('Bearer ') ? authHeader.replace('Bearer ', '') : authHeader
+      }
+      // Otherwise, use supabaseKey (service role key)
+      return this.supabaseKey
+    }
+  
+    return data.session.access_token
   }
 
   private _initSupabaseAuthClient(
