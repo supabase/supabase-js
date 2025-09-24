@@ -269,10 +269,7 @@ describe('ethereum', () => {
         expirationTime: new Date('2024-12-31T23:59:59Z'),
         notBefore: new Date('2024-01-01T00:00:00Z'),
         requestId: 'auth-request-12345',
-        resources: [
-          'https://polygon.example.com/api',
-          'https://polygon.example.com/dashboard',
-        ],
+        resources: ['https://polygon.example.com/api', 'https://polygon.example.com/dashboard'],
         scheme: 'https',
       }
 
@@ -280,7 +277,9 @@ describe('ethereum', () => {
 
       // Check the structure
       const lines = message.split('\n')
-      expect(lines[0]).toBe('https://polygon.example.com wants you to sign in with your Ethereum account:')
+      expect(lines[0]).toBe(
+        'https://polygon.example.com wants you to sign in with your Ethereum account:'
+      )
       expect(lines[1]).toBe('0x742d35cc6634c0532925a3b8d4c9db96c4b4d8b6')
       expect(lines[2]).toBe('')
       expect(lines[3]).toBe('Sign in to access your account')

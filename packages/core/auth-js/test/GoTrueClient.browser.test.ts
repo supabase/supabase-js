@@ -15,7 +15,7 @@ import type { SolanaWeb3Credentials } from '../src/lib/types'
 
 // Add structuredClone polyfill for jsdom
 if (typeof structuredClone === 'undefined') {
-  ; (global as any).structuredClone = (obj: any) => JSON.parse(JSON.stringify(obj))
+  ;(global as any).structuredClone = (obj: any) => JSON.parse(JSON.stringify(obj))
 }
 
 describe('GoTrueClient in browser environment', () => {
@@ -163,7 +163,7 @@ describe('User proxy and deep clone functions in browser', () => {
   it('should throw on property setting to user proxy', () => {
     const proxy = userNotAvailableProxy()
     expect(() => {
-      (proxy as any).email = 'test@example.com'
+      ;(proxy as any).email = 'test@example.com'
     }).toThrow()
   })
 })
@@ -401,9 +401,9 @@ describe('Browser locks functionality', () => {
   it('should use navigator locks when available', () => {
     // Mock navigator.locks
     const mockLock = { name: 'test-lock' }
-    const mockRequest = jest.fn().mockImplementation((_, __, callback) =>
-      Promise.resolve(callback(mockLock))
-    )
+    const mockRequest = jest
+      .fn()
+      .mockImplementation((_, __, callback) => Promise.resolve(callback(mockLock)))
 
     Object.defineProperty(navigator, 'locks', {
       value: { request: mockRequest },
@@ -429,9 +429,9 @@ describe('Browser locks functionality', () => {
 
     // Mock navigator.locks
     const mockLock = { name: 'test-lock' }
-    const mockRequest = jest.fn().mockImplementation((_, __, callback) =>
-      Promise.resolve(callback(mockLock))
-    )
+    const mockRequest = jest
+      .fn()
+      .mockImplementation((_, __, callback) => Promise.resolve(callback(mockLock)))
 
     Object.defineProperty(navigator, 'locks', {
       value: { request: mockRequest },
@@ -489,7 +489,7 @@ describe('Web3 functionality in browser', () => {
     const mockWallet = {
       publicKey: {
         toString: () => 'test-public-key',
-        toBase58: () => 'test-public-key-base58'
+        toBase58: () => 'test-public-key-base58',
       },
       signMessage: jest.fn().mockResolvedValue(new Uint8Array(64)),
     }
@@ -517,10 +517,11 @@ describe('Web3 functionality in browser', () => {
     const mockFetch = jest.fn().mockResolvedValue({
       ok: true,
       status: 200,
-      json: () => Promise.resolve({
-        session: { access_token: 'test', user: { id: 'test' } },
-        user: { id: 'test' }
-      }),
+      json: () =>
+        Promise.resolve({
+          session: { access_token: 'test', user: { id: 'test' } },
+          user: { id: 'test' },
+        }),
       headers: new Headers(),
     })
 
@@ -543,7 +544,6 @@ describe('Web3 functionality in browser', () => {
 })
 
 describe('GoTrueClient constructor edge cases', () => {
-
   it('should handle userStorage with persistSession', () => {
     const customUserStorage = {
       getItem: jest.fn(),
@@ -564,7 +564,6 @@ describe('GoTrueClient constructor edge cases', () => {
 })
 
 describe('linkIdentity with skipBrowserRedirect false', () => {
-
   it('should linkIdentity with skipBrowserRedirect false', async () => {
     Object.defineProperty(window, 'location', {
       value: {
@@ -933,10 +932,11 @@ describe('OAuth and Sign-in Branch Testing', () => {
     const mockFetch = jest.fn().mockResolvedValue({
       ok: true,
       status: 200,
-      json: () => Promise.resolve({
-        session: { access_token: 'test', user: { id: 'test' } },
-        user: { id: 'test' }
-      }),
+      json: () =>
+        Promise.resolve({
+          session: { access_token: 'test', user: { id: 'test' } },
+          user: { id: 'test' },
+        }),
       headers: new Headers(),
     })
 
@@ -1029,9 +1029,9 @@ describe('Storage and User Storage Combinations', () => {
 
 describe('Lock Mechanism Branches', () => {
   it('should handle lock acquisition timeout', async () => {
-    const slowLock = jest.fn().mockImplementation(() =>
-      new Promise((resolve) => setTimeout(resolve, 100))
-    )
+    const slowLock = jest
+      .fn()
+      .mockImplementation(() => new Promise((resolve) => setTimeout(resolve, 100)))
 
     const client = new (require('../src/GoTrueClient').default)({
       url: 'http://localhost:9999',
@@ -1080,13 +1080,14 @@ describe('MFA Complex Branches', () => {
     const mockFetch = jest.fn().mockResolvedValue({
       ok: true,
       status: 200,
-      json: () => Promise.resolve({
-        id: 'factor-id',
-        type: 'phone',
-        status: 'unverified',
-        friendly_name: 'Test Phone',
-        created_at: new Date().toISOString(),
-      }),
+      json: () =>
+        Promise.resolve({
+          id: 'factor-id',
+          type: 'phone',
+          status: 'unverified',
+          friendly_name: 'Test Phone',
+          created_at: new Date().toISOString(),
+        }),
       headers: new Headers(),
     })
 

@@ -99,93 +99,76 @@ export type GoTrueClientOptions = {
   hasCustomAuthorizationHeader?: boolean
 }
 
-export type WeakPasswordReasons = 'length' | 'characters' | 'pwned' | (string & {})
+const WeakPasswordReasons = ['length', 'characters', 'pwned'] as const
+
+export type WeakPasswordReasons = typeof WeakPasswordReasons[number]
 export type WeakPassword = {
   reasons: WeakPasswordReasons[]
   message: string
 }
 
-export type AuthResponse =
+/**
+ * Resolve mapped types and show the derived keys and their types when hovering in
+ * VS Code, instead of just showing the names those mapped types are defined with.
+ */
+export type Prettify<T> = T extends Function ? T : { [K in keyof T]: T[K] }
+
+/**
+ * a shared result type that encapsulates errors instead of throwing them, allows you to optionally specify the ErrorType
+ */
+export type RequestResult<T, ErrorType extends Error = AuthError> =
   | {
-      data: {
-        user: User | null
-        session: Session | null
-      }
+      data: T
       error: null
     }
   | {
-      data: {
-        user: null
-        session: null
-      }
+      data: null
+      error: Error extends AuthError ? AuthError : ErrorType
+    }
+
+/**
+ * similar to RequestResult except it allows you to destructure the possible shape of the success response
+ *  {@see RequestResult}
+ */
+export type RequestResultSafeDestructure<T> =
+  | { data: T; error: null }
+  | {
+      data: T extends object ? { [K in keyof T]: null } : null
       error: AuthError
     }
 
-export type AuthResponsePassword =
-  | {
-      data: {
-        user: User | null
-        session: Session | null
-        weak_password?: WeakPassword | null
-      }
-      error: null
-    }
-  | {
-      data: {
-        user: null
-        session: null
-      }
-      error: AuthError
-    }
+export type AuthResponse = RequestResultSafeDestructure<{
+  user: User | null
+  session: Session | null
+}>
+
+export type AuthResponsePassword = RequestResultSafeDestructure<{
+  user: User | null
+  session: Session | null
+  weak_password?: WeakPassword | null
+}>
 
 /**
  * AuthOtpResponse is returned when OTP is used.
  *
  * {@see AuthResponse}
  */
-export type AuthOtpResponse =
-  | {
-      data: { user: null; session: null; messageId?: string | null }
-      error: null
-    }
-  | {
-      data: { user: null; session: null; messageId?: string | null }
-      error: AuthError
-    }
+export type AuthOtpResponse = RequestResultSafeDestructure<{
+  user: null
+  session: null
+  messageId?: string | null
+}>
 
-export type AuthTokenResponse =
-  | {
-      data: {
-        user: User
-        session: Session
-      }
-      error: null
-    }
-  | {
-      data: {
-        user: null
-        session: null
-      }
-      error: AuthError
-    }
+export type AuthTokenResponse = RequestResultSafeDestructure<{
+  user: User
+  session: Session
+}>
 
-export type AuthTokenResponsePassword =
-  | {
-      data: {
-        user: User
-        session: Session
-        weakPassword?: WeakPassword
-      }
-      error: null
-    }
-  | {
-      data: {
-        user: null
-        session: null
-        weakPassword?: null
-      }
-      error: AuthError
-    }
+export type AuthTokenResponsePassword = RequestResultSafeDestructure<{
+  user: User
+  session: Session
+  weakPassword?: WeakPassword
+}>
 
 export type OAuthResponse =
   | {
@@ -203,38 +186,20 @@ export type OAuthResponse =
       error: AuthError
     }
 
-export type SSOResponse =
-  | {
-      data: {
-        /**
-         * URL to open in a browser which will complete the sign-in flow by
-         * taking the user to the identity provider's authentication flow.
-         *
-         * On browsers you can set the URL to `window.location.href` to take
-         * the user to the authentication flow.
-         */
-        url: string
-      }
-      error: null
-    }
-  | {
-      data: null
-      error: AuthError
-    }
+export type SSOResponse = RequestResult<{
+  /**
+   * URL to open in a browser which will complete the sign-in flow by
+   * taking the user to the identity provider's authentication flow.
+   *
+   * On browsers you can set the URL to `window.location.href` to take
+   * the user to the authentication flow.
+   */
+  url: string
+}>
 
-export type UserResponse =
-  | {
-      data: {
-        user: User
-      }
-      error: null
-    }
-  | {
-      data: {
-        user: null
-      }
-      error: AuthError
-    }
+export type UserResponse = RequestResultSafeDestructure<{
+  user: User
+}>
 
 export interface Session {
   /**
@@ -262,13 +227,28 @@ export interface Session {
    * A timestamp of when the token will expire. Returned when a login is confirmed.
    */
   expires_at?: number
-  token_type: string
+  token_type: 'bearer'
 
   /**
    * When using a separate user storage, accessing properties of this object will throw an error.
    */
   user: User
 }
+
+const AMRMethods = [
+  'password',
+  'otp',
+  'oauth',
+  'totp',
+  'mfa/totp',
+  'mfa/phone',
+  'anonymous',
+  'sso/saml',
+  'magiclink',
+  'web3',
+] as const
+
+export type AMRMethod = typeof AMRMethods[number] | (string & {})
 
 /**
  * An authentication methord reference (AMR) entry.
@@ -280,7 +260,7 @@ export interface Session {
  */
 export interface AMREntry {
   /** Authentication method name. */
-  method: 'password' | 'otp' | 'oauth' | 'mfa/totp' | (string & {})
+  method: AMRMethod
 
   /**
    * Timestamp when the method was successfully used. Represents number of
@@ -302,6 +282,19 @@ export interface UserIdentity {
   updated_at?: string
 }
 
+export const FactorTypes = ['totp', 'phone'] as const
+/**
+ * Type of factor. `totp` and `phone` supported with this version
+ */
+export type FactorType = typeof FactorTypes[number]
+
+const FactorVerificationStatuses = ['verified', 'unverified'] as const
+
+/**
+ * The verification status of the factor, default is `unverified` after `.enroll()`, then `verified` after the user verifies it with `.verify()`
+ */
+type FactorVerificationStatus = typeof FactorVerificationStatuses[number]
+
 /**
  * A MFA factor.
  *
@@ -309,7 +302,10 @@ export interface UserIdentity {
  * @see {@link GoTrueMFAApi#listFactors}
  * @see {@link GoTrueMFAAdminApi#listFactors}
  */
-export interface Factor {
+export type Factor<
+  Type extends FactorType = FactorType,
+  Status extends FactorVerificationStatus = typeof FactorVerificationStatuses[number]
+> = {
   /** ID of the factor. */
   id: string
 
@@ -319,10 +315,12 @@ export interface Factor {
   /**
    * Type of factor. `totp` and `phone` supported with this version
    */
-  factor_type: 'totp' | 'phone' | (string & {})
+  factor_type: Type
 
-  /** Factor's status. */
-  status: 'verified' | 'unverified'
+  /**
+   * The verification status of the factor, default is `unverified` after `.enroll()`, then `verified` after the user verifies it with `.verify()`
+   */
+  status: Status
 
   created_at: string
   updated_at: string
@@ -361,7 +359,7 @@ export interface User {
   identities?: UserIdentity[]
   is_anonymous?: boolean
   is_sso_user?: boolean
-  factors?: Factor[]
+  factors?: Factor<FactorType>[]
   deleted_at?: string
 }
 
@@ -500,65 +498,26 @@ export type SignInAnonymouslyCredentials = {
   }
 }
 
-export type SignUpWithPasswordCredentials =
-  | {
-      /** The user's email address. */
-      email: string
-      /** The user's password. */
-      password: string
-      options?: {
-        /** The redirect url embedded in the email link */
-        emailRedirectTo?: string
-        /**
-         * A custom data object to store the user's metadata. This maps to the `auth.users.raw_user_meta_data` column.
-         *
-         * The `data` should be a JSON object that includes user-specific info, such as their first and last name.
-         */
-        data?: object
-        /** Verification token received when the user completes the captcha on the site. */
-        captchaToken?: string
-      }
+export type SignUpWithPasswordCredentials = Prettify<
+  PasswordCredentialsBase & {
+    options?: {
+      emailRedirectTo?: string // only for email
+      data?: object
+      captchaToken?: string
+      channel?: 'sms' | 'whatsapp' // only for phone
     }
-  | {
-      /** The user's phone number. */
-      phone: string
-      /** The user's password. */
-      password: string
-      options?: {
-        /**
-         * A custom data object to store the user's metadata. This maps to the `auth.users.raw_user_meta_data` column.
-         *
-         * The `data` should be a JSON object that includes user-specific info, such as their first and last name.
-         */
-        data?: object
-        /** Verification token received when the user completes the captcha on the site. Requires a configured WhatsApp sender on Twilio */
-        captchaToken?: string
-        /** Messaging channel to use (e.g. whatsapp or sms) */
-        channel?: 'sms' | 'whatsapp'
-      }
-    }
+  }
+>
 
-export type SignInWithPasswordCredentials =
-  | {
-      /** The user's email address. */
-      email: string
-      /** The user's password. */
-      password: string
-      options?: {
-        /** Verification token received when the user completes the captcha on the site. */
-        captchaToken?: string
-      }
-    }
-  | {
-      /** The user's phone number. */
-      phone: string
-      /** The user's password. */
-      password: string
-      options?: {
-        /** Verification token received when the user completes the captcha on the site. */
-        captchaToken?: string
-      }
-    }
+type PasswordCredentialsBase =
+  | { email: string; password: string }
+  | { phone: string; password: string }
+
+export type SignInWithPasswordCredentials = PasswordCredentialsBase & {
+  options?: {
+    captchaToken?: string
+  }
+}
 
 export type SignInWithPasswordlessCredentials =
   | {
@@ -859,21 +818,10 @@ export type GenerateLinkParams =
   | GenerateRecoveryLinkParams
   | GenerateEmailChangeLinkParams
 
-export type GenerateLinkResponse =
-  | {
-      data: {
-        properties: GenerateLinkProperties
-        user: User
-      }
-      error: null
-    }
-  | {
-      data: {
-        properties: null
-        user: null
-      }
-      error: AuthError
-    }
+export type GenerateLinkResponse = RequestResultSafeDestructure<{
+  properties: GenerateLinkProperties
+  user: User
+}>
 
 /** The properties related to the email link generated  */
 export type GenerateLinkProperties = {
@@ -912,125 +860,134 @@ export type MFAUnenrollParams = {
   factorId: string
 }
 
-export type MFAVerifyParams = {
+type MFAVerifyParamsBase = {
   /** ID of the factor being verified. Returned in enroll(). */
   factorId: string
-
   /** ID of the challenge being verified. Returned in challenge(). */
   challengeId: string
+}
 
+type MFAVerifyTOTPParamFields = {
   /** Verification code provided by the user. */
   code: string
 }
 
-export type MFAChallengeParams = {
+export type MFAVerifyTOTPParams = Prettify<MFAVerifyParamsBase & MFAVerifyTOTPParamFields>
+
+type MFAVerifyPhoneParamFields = MFAVerifyTOTPParamFields
+
+export type MFAVerifyPhoneParams = Prettify<MFAVerifyParamsBase & MFAVerifyPhoneParamFields>
+
+export type MFAVerifyParams = MFAVerifyTOTPParams | MFAVerifyPhoneParams
+
+type MFAChallengeParamsBase = {
   /** ID of the factor to be challenged. Returned in enroll(). */
   factorId: string
+}
+
+const MFATOTPChannels = ['sms', 'whatsapp'] as const
+export type MFATOTPChannel = typeof MFATOTPChannels[number]
+
+export type MFAChallengeTOTPParams = Prettify<MFAChallengeParamsBase>
+
+type MFAChallengePhoneParamFields<Channel extends MFATOTPChannel = MFATOTPChannel> = {
   /** Messaging channel to use (e.g. whatsapp or sms). Only relevant for phone factors */
-  channel?: 'sms' | 'whatsapp'
+  channel: Channel
 }
 
-export type MFAChallengeAndVerifyParams = {
-  /** ID of the factor being verified. Returned in enroll(). */
-  factorId: string
-  /** Verification code provided by the user. */
-  code: string
-}
+export type MFAChallengePhoneParams = Prettify<
+  MFAChallengeParamsBase & MFAChallengePhoneParamFields
+>
 
-export type AuthMFAVerifyResponse =
-  | {
-      data: {
-        /** New access token (JWT) after successful verification. */
-        access_token: string
+export type MFAChallengeParams = MFAChallengeTOTPParams | MFAChallengePhoneParams
 
-        /** Type of token, typically `Bearer`. */
-        token_type: string
+type MFAChallengeAndVerifyParamsBase = Omit<MFAVerifyParamsBase, 'challengeId'>
 
-        /** Number of seconds in which the access token will expire. */
-        expires_in: number
+type MFAChallengeAndVerifyTOTPParamFields = MFAVerifyTOTPParamFields
 
-        /** Refresh token you can use to obtain new access tokens when expired. */
-        refresh_token: string
+type MFAChallengeAndVerifyTOTPParams = Prettify<
+  MFAChallengeAndVerifyParamsBase & MFAChallengeAndVerifyTOTPParamFields
+>
 
-        /** Updated user profile. */
-        user: User
-      }
-      error: null
-    }
-  | {
-      data: null
-      error: AuthError
-    }
+type MFAChallengeAndVerifyPhoneParamFields = MFAVerifyPhoneParamFields
+
+type MFAChallengeAndVerifyPhoneParams = Prettify<
+  MFAChallengeAndVerifyParamsBase & MFAChallengeAndVerifyPhoneParamFields
+>
+
+export type MFAChallengeAndVerifyParams =
+  | MFAChallengeAndVerifyTOTPParams
+  | MFAChallengeAndVerifyPhoneParams
+
+export type AuthMFAVerifyResponse = RequestResult<{
+  /** New access token (JWT) after successful verification. */
+  access_token: string
+
+  /** Type of token, always `bearer`. */
+  token_type: 'bearer'
+
+  /** Number of seconds in which the access token will expire. */
+  expires_in: number
+
+  /** Refresh token you can use to obtain new access tokens when expired. */
+  refresh_token: string
+
+  /** Updated user profile. */
+  user: User
+}>
 
 export type AuthMFAEnrollResponse = AuthMFAEnrollTOTPResponse | AuthMFAEnrollPhoneResponse
 
-export type AuthMFAUnenrollResponse =
-  | {
-      data: {
-        /** ID of the factor that was successfully unenrolled. */
-        id: string
-      }
-      error: null
+export type AuthMFAUnenrollResponse = RequestResult<{
+  /** ID of the factor that was successfully unenrolled. */
+  id: string
+}>
+
+export type AuthMFAChallengeResponse<T extends FactorType> = RequestResult<{
+  /** ID of the newly created challenge. */
+  id: string
+
+  /** Factor Type which generated the challenge */
+  type: T
+
+  /** Timestamp in UNIX seconds when this challenge will no longer be usable. */
+  expires_at: number
+}>
+
+/** response of ListFactors, which should contain all the types of factors that are available, this ensures we always include all */
+export type AuthMFAListFactorsResponse<T extends typeof FactorTypes = typeof FactorTypes> =
+  RequestResult<
+    {
+      /** All available factors (verified and unverified). */
+      all: Prettify<Factor>[]
+
+      // Dynamically create a property for each factor type with only verified factors
+    } & {
+      [K in T[number]]: Prettify<Factor<K, 'verified'>>[]
     }
-  | { data: null; error: AuthError }
-
-export type AuthMFAChallengeResponse =
-  | {
-      data: {
-        /** ID of the newly created challenge. */
-        id: string
-
-        /** Factor Type which generated the challenge */
-        type: 'totp' | 'phone'
-
-        /** Timestamp in UNIX seconds when this challenge will no longer be usable. */
-        expires_at: number
-      }
-      error: null
-    }
-  | { data: null; error: AuthError }
-
-export type AuthMFAListFactorsResponse =
-  | {
-      data: {
-        /** All available factors (verified and unverified). */
-        all: Factor[]
-
-        /** Only verified TOTP factors. (A subset of `all`.) */
-        totp: Factor[]
-        /** Only verified Phone factors. (A subset of `all`.) */
-        phone: Factor[]
-      }
-      error: null
-    }
-  | { data: null; error: AuthError }
+  >
 
 export type AuthenticatorAssuranceLevels = 'aal1' | 'aal2'
 
-export type AuthMFAGetAuthenticatorAssuranceLevelResponse =
-  | {
-      data: {
-        /** Current AAL level of the session. */
-        currentLevel: AuthenticatorAssuranceLevels | null
+export type AuthMFAGetAuthenticatorAssuranceLevelResponse = RequestResult<{
+  /** Current AAL level of the session. */
+  currentLevel: AuthenticatorAssuranceLevels | null
 
-        /**
-         * Next possible AAL level for the session. If the next level is higher
-         * than the current one, the user should go through MFA.
-         *
-         * @see {@link GoTrueMFAApi#challenge}
-         */
-        nextLevel: AuthenticatorAssuranceLevels | null
+  /**
+   * Next possible AAL level for the session. If the next level is higher
+   * than the current one, the user should go through MFA.
+   *
+   * @see {@link GoTrueMFAApi#challenge}
+   */
+  nextLevel: AuthenticatorAssuranceLevels | null
 
-        /**
-         * A list of all authentication methods attached to this session. Use
-         * the information here to detect the last time a user verified a
-         * factor, for example if implementing a step-up scenario.
-         */
-        currentAuthenticationMethods: AMREntry[]
-      }
-      error: null
-    }
-  | { data: null; error: AuthError }
+  /**
+   * A list of all authentication methods attached to this session. Use
+   * the information here to detect the last time a user verified a
+   * factor, for example if implementing a step-up scenario.
+   */
+  currentAuthenticationMethods: AMREntry[]
+}>
 
 /**
  * Contains the full multi-factor authentication API.
@@ -1045,7 +1002,6 @@ export interface GoTrueMFAApi {
    * The user has to enter the code from their authenticator app to verify it.
    *
    * Upon verifying a factor, all other sessions are logged out and the current session's authenticator level is promoted to `aal2`.
-   *
    */
   enroll(params: MFAEnrollTOTPParams): Promise<AuthMFAEnrollTOTPResponse>
   enroll(params: MFAEnrollPhoneParams): Promise<AuthMFAEnrollPhoneResponse>
@@ -1055,12 +1011,18 @@ export interface GoTrueMFAApi {
    * Prepares a challenge used to verify that a user has access to a MFA
    * factor.
    */
-  challenge(params: MFAChallengeParams): Promise<AuthMFAChallengeResponse>
+  challenge(params: MFAChallengeTOTPParams): Promise<Prettify<AuthMFAChallengeResponse<'totp'>>>
+  challenge(params: MFAChallengePhoneParams): Promise<Prettify<AuthMFAChallengeResponse<'phone'>>>
+  challenge(
+    params: MFAChallengeParams
+  ): Promise<Prettify<AuthMFAChallengeResponse<'totp' | 'phone'>>>
 
   /**
    * Verifies a code against a challenge. The verification code is
    * provided by the user by entering a code seen in their authenticator app.
    */
+  verify(params: MFAVerifyTOTPParams): Promise<AuthMFAVerifyResponse>
+  verify(params: MFAVerifyPhoneParams): Promise<AuthMFAVerifyResponse>
   verify(params: MFAVerifyParams): Promise<AuthMFAVerifyResponse>
 
   /**
@@ -1104,16 +1066,10 @@ export interface GoTrueMFAApi {
 /**
  * @expermental
  */
-export type AuthMFAAdminDeleteFactorResponse =
-  | {
-      data: {
-        /** ID of the factor that was successfully deleted. */
-        id: string
-      }
-      error: null
-    }
-  | { data: null; error: AuthError }
-
+export type AuthMFAAdminDeleteFactorResponse = RequestResult<{
+  /** ID of the factor that was successfully deleted. */
+  id: string
+}>
 /**
  * @expermental
  */
@@ -1128,15 +1084,10 @@ export type AuthMFAAdminDeleteFactorParams = {
 /**
  * @expermental
  */
-export type AuthMFAAdminListFactorsResponse =
-  | {
-      data: {
-        /** All factors attached to the user. */
-        factors: Factor[]
-      }
-      error: null
-    }
-  | { data: null; error: AuthError }
+export type AuthMFAAdminListFactorsResponse = RequestResult<{
+  /** All factors attached to the user. */
+  factors: Factor[]
+}>
 
 /**
  * @expermental
@@ -1193,15 +1144,7 @@ export type SupportedStorage = PromisifyMethods<
 
 export type InitializeResult = { error: AuthError | null }
 
-export type CallRefreshTokenResult =
-  | {
-      session: Session
-      error: null
-    }
-  | {
-      session: null
-      error: AuthError
-    }
+export type CallRefreshTokenResult = RequestResult<Session>
 
 export type Pagination = {
   [key: string]: any
@@ -1231,79 +1174,69 @@ export type SignOut = {
   scope?: 'global' | 'local' | 'others'
 }
 
-export type MFAEnrollTOTPParams = {
+type MFAEnrollParamsBase<T extends FactorType> = {
   /** The type of factor being enrolled. */
-  factorType: 'totp'
-  /** Domain which the user is enrolled with. */
-  issuer?: string
+  factorType: T
   /** Human readable name assigned to the factor. */
   friendlyName?: string
 }
-export type MFAEnrollPhoneParams = {
-  /** The type of factor being enrolled. */
-  factorType: 'phone'
-  /** Human readable name assigned to the factor. */
-  friendlyName?: string
+
+type MFAEnrollTOTPParamFields = {
+  /** Domain which the user is enrolled with. */
+  issuer?: string
+}
+
+export type MFAEnrollTOTPParams = Prettify<MFAEnrollParamsBase<'totp'> & MFAEnrollTOTPParamFields>
+
+type MFAEnrollPhoneParamFields = {
   /** Phone number associated with a factor. Number should conform to E.164 format */
   phone: string
 }
+export type MFAEnrollPhoneParams = Prettify<
+  MFAEnrollParamsBase<'phone'> & MFAEnrollPhoneParamFields
+>
 
-export type AuthMFAEnrollTOTPResponse =
-  | {
-      data: {
-        /** ID of the factor that was just enrolled (in an unverified state). */
-        id: string
+type AuthMFAEnrollResponseBase<T extends FactorType> = {
+  /** ID of the factor that was just enrolled (in an unverified state). */
+  id: string
 
-        /** Type of MFA factor.*/
-        type: 'totp'
+  /** Type of MFA factor.*/
+  type: T
 
-        /** TOTP enrollment information. */
-        totp: {
-          /** Contains a QR code encoding the authenticator URI. You can
-           * convert it to a URL by prepending `data:image/svg+xml;utf-8,` to
-           * the value. Avoid logging this value to the console. */
-          qr_code: string
+  /** Friendly name of the factor, useful for distinguishing between factors **/
+  friendly_name?: string
+}
 
-          /** The TOTP secret (also encoded in the QR code). Show this secret
-           * in a password-style field to the user, in case they are unable to
-           * scan the QR code. Avoid logging this value to the console. */
-          secret: string
+type AuthMFAEnrollTOTPResponseFields = {
+  /** TOTP enrollment information. */
+  totp: {
+    /** Contains a QR code encoding the authenticator URI. You can
+     * convert it to a URL by prepending `data:image/svg+xml;utf-8,` to
+     * the value. Avoid logging this value to the console. */
+    qr_code: string
 
-          /** The authenticator URI encoded within the QR code, should you need
-           * to use it. Avoid loggin this value to the console. */
-          uri: string
-        }
-        /** Friendly name of the factor, useful for distinguishing between factors **/
-        friendly_name?: string
-      }
-      error: null
-    }
-  | {
-      data: null
-      error: AuthError
-    }
+    /** The TOTP secret (also encoded in the QR code). Show this secret
+     * in a password-style field to the user, in case they are unable to
+     * scan the QR code. Avoid logging this value to the console. */
+    secret: string
 
-export type AuthMFAEnrollPhoneResponse =
-  | {
-      data: {
-        /** ID of the factor that was just enrolled (in an unverified state). */
-        id: string
+    /** The authenticator URI encoded within the QR code, should you need
+     * to use it. Avoid loggin this value to the console. */
+    uri: string
+  }
+}
 
-        /** Type of MFA factor. */
-        type: 'phone'
+export type AuthMFAEnrollTOTPResponse = RequestResult<
+  Prettify<AuthMFAEnrollResponseBase<'totp'> & AuthMFAEnrollTOTPResponseFields>
+>
 
-        /** Friendly name of the factor, useful for distinguishing between factors **/
-        friendly_name?: string
-
-        /** Phone number of the MFA factor in E.164 format. Used to send messages  */
-        phone: string
-      }
-      error: null
-    }
-  | {
-      data: null
-      error: AuthError
-    }
+type AuthMFAEnrollPhoneResponseFields = {
+  /** Phone number of the MFA factor in E.164 format. Used to send messages  */
+  phone: string
+}
+export type AuthMFAEnrollPhoneResponse = RequestResult<
+  Prettify<AuthMFAEnrollResponseBase<'phone'> & AuthMFAEnrollPhoneResponseFields>
+>
 
 export type JwtHeader = {
   alg: 'RS256' | 'ES256' | 'HS256'

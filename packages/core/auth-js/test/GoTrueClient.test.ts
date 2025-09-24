@@ -338,7 +338,7 @@ describe('GoTrueClient', () => {
       expect(error).toBeNull()
       expect(data.session).not.toBeNull()
 
-      const [{ session: session1, error: error1 }, { session: session2, error: error2 }] =
+      const [{ data: session1, error: error1 }, { data: session2, error: error2 }] =
         await Promise.all([
           // @ts-expect-error 'Allow access to private _callRefreshToken()'
           authWithSession._callRefreshToken(data.session?.refresh_token),
@@ -376,7 +376,7 @@ describe('GoTrueClient', () => {
       expect(error).toBeNull()
       expect(data.session).not.toBeNull()
 
-      const [{ session: session1, error: error1 }, { session: session2, error: error2 }] =
+      const [{ data: session1, error: error1 }, { data: session2, error: error2 }] =
         await Promise.all([
           // @ts-expect-error 'Allow access to private _callRefreshToken()'
           authWithSession._callRefreshToken(data.session?.refresh_token),
@@ -393,7 +393,7 @@ describe('GoTrueClient', () => {
 
       // verify the deferred has been reset and successive calls can be made
       // @ts-expect-error 'Allow access to private _callRefreshToken()'
-      const { session: session3, error: error3 } = await authWithSession._callRefreshToken(
+      const { data: session3, error: error3 } = await authWithSession._callRefreshToken(
         data.session!.refresh_token
       )
 
@@ -435,7 +435,7 @@ describe('GoTrueClient', () => {
 
       // vreify the deferred has been reset and successive calls can be made
       // @ts-expect-error 'Allow access to private _callRefreshToken()'
-      const { session: session3, error: error3 } = await authWithSession._callRefreshToken(
+      const { data: session3, error: error3 } = await authWithSession._callRefreshToken(
         data.session!.refresh_token
       )
 
@@ -796,8 +796,6 @@ describe('GoTrueClient', () => {
       }
     })
 
-
-
     test('verifyOTP() fails with invalid token', async () => {
       const { phone } = mockUserCredentials()
 
@@ -814,8 +812,6 @@ describe('GoTrueClient', () => {
       expect(error).not.toBeNull()
       expect(error?.message).toContain('Token has expired or is invalid')
     })
-
-
   })
 
   test('signUp() the same user twice should not share email already registered message', async () => {
@@ -2213,9 +2209,7 @@ describe('Web3 Authentication', () => {
       signature: '0xtest-signature' as any,
     }
 
-    await expect(
-      auth.signInWithWeb3(credentials)
-    ).rejects.toThrow('Unsupported chain "polygon"')
+    await expect(auth.signInWithWeb3(credentials)).rejects.toThrow('Unsupported chain "polygon"')
   })
 
   test('should handle signInWithWeb3 with missing message', async () => {
@@ -2224,9 +2218,9 @@ describe('Web3 Authentication', () => {
       signature: 'test signature',
     } as any
 
-    await expect(
-      auth.signInWithWeb3(credentials)
-    ).rejects.toThrow('Both wallet and url must be specified in non-browser environments')
+    await expect(auth.signInWithWeb3(credentials)).rejects.toThrow(
+      'Both wallet and url must be specified in non-browser environments'
+    )
   })
 
   test('should handle signInWithWeb3 with missing wallet', async () => {
@@ -2693,8 +2687,8 @@ describe('Storage adapter edge cases', () => {
       getItem: async () => {
         throw new Error('getItem failed message')
       },
-      setItem: async () => { },
-      removeItem: async () => { },
+      setItem: async () => {},
+      removeItem: async () => {},
     }
     const client = getClientWithSpecificStorage(brokenStorage)
     await expect(client.getSession()).rejects.toThrow('getItem failed message')
@@ -2706,7 +2700,7 @@ describe('Storage adapter edge cases', () => {
       setItem: async () => {
         throw new Error('setItem failed message')
       },
-      removeItem: async () => { },
+      removeItem: async () => {},
     }
     const client = getClientWithSpecificStorage(brokenStorage)
     const session = {
@@ -2727,7 +2721,7 @@ describe('Storage adapter edge cases', () => {
   test('should handle storage removeItem failure in _removeSession', async () => {
     const brokenStorage = {
       getItem: async () => '{}',
-      setItem: async () => { },
+      setItem: async () => {},
       removeItem: async () => {
         throw new Error('removeItem failed message')
       },
@@ -2740,8 +2734,8 @@ describe('Storage adapter edge cases', () => {
   test('should handle invalid JSON in storage', async () => {
     const invalidStorage = {
       getItem: async () => 'invalid-json',
-      setItem: async () => { },
-      removeItem: async () => { },
+      setItem: async () => {},
+      removeItem: async () => {},
     }
     const client = getClientWithSpecificStorage(invalidStorage)
     const { data, error } = await client.getSession()
@@ -2752,8 +2746,8 @@ describe('Storage adapter edge cases', () => {
   test('should handle null storage value', async () => {
     const nullStorage = {
       getItem: async () => null,
-      setItem: async () => { },
-      removeItem: async () => { },
+      setItem: async () => {},
+      removeItem: async () => {},
     }
     const client = getClientWithSpecificStorage(nullStorage)
     const { data, error } = await client.getSession()
@@ -2764,8 +2758,8 @@ describe('Storage adapter edge cases', () => {
   test('should handle empty storage value', async () => {
     const emptyStorage = {
       getItem: async () => '',
-      setItem: async () => { },
-      removeItem: async () => { },
+      setItem: async () => {},
+      removeItem: async () => {},
     }
     const client = getClientWithSpecificStorage(emptyStorage)
     const { data, error } = await client.getSession()
@@ -2776,8 +2770,8 @@ describe('Storage adapter edge cases', () => {
   test('should handle malformed session data', async () => {
     const malformedStorage = {
       getItem: async () => JSON.stringify({ access_token: 'test' }), // Missing required fields
-      setItem: async () => { },
-      removeItem: async () => { },
+      setItem: async () => {},
+      removeItem: async () => {},
     }
     const client = getClientWithSpecificStorage(malformedStorage)
     const { data, error } = await client.getSession()
@@ -2796,8 +2790,8 @@ describe('Storage adapter edge cases', () => {
           token_type: 'bearer',
           user: null,
         }),
-      setItem: async () => { },
-      removeItem: async () => { },
+      setItem: async () => {},
+      removeItem: async () => {},
     }
     const client = getClientWithSpecificStorage(expiredStorage)
     // @ts-expect-error private method

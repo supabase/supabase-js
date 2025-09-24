@@ -147,7 +147,7 @@ export class AuthWeakPasswordError extends CustomAuthError {
    */
   reasons: WeakPasswordReasons[]
 
-  constructor(message: string, status: number, reasons: string[]) {
+  constructor(message: string, status: number, reasons: WeakPasswordReasons[]) {
     super(message, 'AuthWeakPasswordError', status, 'weak_password')
 
     this.reasons = reasons
