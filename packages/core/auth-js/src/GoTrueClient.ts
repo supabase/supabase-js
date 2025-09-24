@@ -1,130 +1,155 @@
 import GoTrueAdminApi from './GoTrueAdminApi'
 import {
-  DEFAULT_HEADERS,
-  EXPIRY_MARGIN_MS,
   AUTO_REFRESH_TICK_DURATION_MS,
   AUTO_REFRESH_TICK_THRESHOLD,
+  DEFAULT_HEADERS,
+  EXPIRY_MARGIN_MS,
   GOTRUE_URL,
-  STORAGE_KEY,
   JWKS_TTL,
+  STORAGE_KEY,
 } from './lib/constants'
 import {
   AuthError,
   AuthImplicitGrantRedirectError,
-  AuthPKCEGrantCodeExchangeError,
   AuthInvalidCredentialsError,
-  AuthSessionMissingError,
+  AuthInvalidJwtError,
   AuthInvalidTokenResponseError,
+  AuthPKCEGrantCodeExchangeError,
+  AuthSessionMissingError,
   AuthUnknownError,
   isAuthApiError,
   isAuthError,
+  isAuthImplicitGrantRedirectError,
   isAuthRetryableFetchError,
   isAuthSessionMissingError,
-  isAuthImplicitGrantRedirectError,
-  AuthInvalidJwtError,
 } from './lib/errors'
 import {
   Fetch,
   _request,
   _sessionResponse,
   _sessionResponsePassword,
-  _userResponse,
   _ssoResponse,
+  _userResponse,
 } from './lib/fetch'
 import {
+  decodeJWT,
   deepClone,
   Deferred,
+  getAlgorithm,
+  getCodeChallengeAndMethod,
   getItemAsync,
   isBrowser,
+  parseParametersFromURL,
   removeItemAsync,
   resolveFetch,
-  setItemAsync,
-  uuid,
   retryable,
+  setItemAsync,
   sleep,
-  parseParametersFromURL,
-  getCodeChallengeAndMethod,
-  getAlgorithm,
-  validateExp,
-  decodeJWT,
-  userNotAvailableProxy,
   supportsLocalStorage,
+  userNotAvailableProxy,
+  uuid,
+  validateExp,
 } from './lib/helpers'
 import { memoryLocalStorageAdapter } from './lib/local-storage'
+import { LockAcquireTimeoutError, navigatorLock } from './lib/locks'
 import { polyfillGlobalThis } from './lib/polyfills'
 import { version } from './lib/version'
-import { LockAcquireTimeoutError, navigatorLock } from './lib/locks'
 
-import {
+import { bytesToBase64URL, stringToUint8Array } from './lib/base64url'
+import type {
   AuthChangeEvent,
+  AuthenticatorAssuranceLevels,
+  AuthFlowType,
+  AuthMFAChallengePhoneResponse,
+  AuthMFAChallengeResponse,
+  AuthMFAChallengeTOTPResponse,
+  AuthMFAChallengeWebauthnResponse,
+  AuthMFAChallengeWebauthnServerResponse,
+  AuthMFAEnrollPhoneResponse,
+  AuthMFAEnrollResponse,
+  AuthMFAEnrollTOTPResponse,
+  AuthMFAEnrollWebauthnResponse,
+  AuthMFAGetAuthenticatorAssuranceLevelResponse,
+  AuthMFAListFactorsResponse,
+  AuthMFAUnenrollResponse,
+  AuthMFAVerifyResponse,
+  AuthOtpResponse,
   AuthResponse,
   AuthResponsePassword,
   AuthTokenResponse,
   AuthTokenResponsePassword,
-  AuthOtpResponse,
   CallRefreshTokenResult,
+  EthereumWallet,
+  EthereumWeb3Credentials,
+  Factor,
   GoTrueClientOptions,
+  GoTrueMFAApi,
   InitializeResult,
+  JWK,
+  JwtHeader,
+  JwtPayload,
+  LockFunc,
+  MFAChallengeAndVerifyParams,
+  MFAChallengeParams,
+  MFAChallengePhoneParams,
+  MFAChallengeTOTPParams,
+  MFAChallengeWebauthnParams,
+  MFAEnrollParams,
+  MFAEnrollPhoneParams,
+  MFAEnrollTOTPParams,
+  MFAEnrollWebauthnParams,
+  MFAUnenrollParams,
+  MFAVerifyParams,
+  MFAVerifyPhoneParams,
+  MFAVerifyTOTPParams,
+  MFAVerifyWebauthnParamFields,
+  MFAVerifyWebauthnParams,
   OAuthResponse,
-  SSOResponse,
+  Prettify,
   Provider,
+  ResendParams,
   Session,
+  SignInAnonymouslyCredentials,
   SignInWithIdTokenCredentials,
   SignInWithOAuthCredentials,
   SignInWithPasswordCredentials,
   SignInWithPasswordlessCredentials,
-  SignUpWithPasswordCredentials,
   SignInWithSSO,
   SignOut,
+  SignUpWithPasswordCredentials,
+  SolanaWallet,
+  SolanaWeb3Credentials,
+  SSOResponse,
+  StrictOmit,
   Subscription,
   SupportedStorage,
   User,
   UserAttributes,
+  UserIdentity,
   UserResponse,
   VerifyOtpParams,
-  GoTrueMFAApi,
-  MFAEnrollParams,
-  AuthMFAEnrollResponse,
-  MFAChallengeParams,
-  AuthMFAChallengeResponse,
-  MFAUnenrollParams,
-  AuthMFAUnenrollResponse,
-  MFAVerifyParams,
-  AuthMFAVerifyResponse,
-  AuthMFAListFactorsResponse,
-  AuthMFAGetAuthenticatorAssuranceLevelResponse,
-  AuthenticatorAssuranceLevels,
-  Factor,
-  MFAChallengeAndVerifyParams,
-  ResendParams,
-  AuthFlowType,
-  LockFunc,
-  UserIdentity,
-  SignInAnonymouslyCredentials,
-  MFAEnrollTOTPParams,
-  MFAEnrollPhoneParams,
-  AuthMFAEnrollTOTPResponse,
-  AuthMFAEnrollPhoneResponse,
-  JWK,
-  JwtPayload,
-  JwtHeader,
-  SolanaWeb3Credentials,
-  SolanaWallet,
   Web3Credentials,
-  EthereumWeb3Credentials,
-  EthereumWallet,
-  FactorType,
-  FactorTypes,
 } from './lib/types'
-import { stringToUint8Array, bytesToBase64URL } from './lib/base64url'
 import {
+  createSiweMessage,
   fromHex,
   getAddress,
   Hex,
-  toHex,
-  createSiweMessage,
   SiweMessage,
+  toHex,
 } from './lib/web3/ethereum'
+import {
+  deserializeCredentialCreationOptions,
+  deserializeCredentialRequestOptions,
+  serializeCredentialCreationResponse,
+  serializeCredentialRequestResponse,
+  WebAuthnApi,
+} from './lib/webauthn'
+import {
+  AuthenticationCredential,
+  PublicKeyCredentialJSON,
+  RegistrationCredential,
+} from './lib/webauthn.dom'
 
 polyfillGlobalThis() // Make "globalThis" available
 
@@ -294,6 +319,7 @@ export default class GoTrueClient {
       listFactors: this._listFactors.bind(this),
       challengeAndVerify: this._challengeAndVerify.bind(this),
       getAuthenticatorAssuranceLevel: this._getAuthenticatorAssuranceLevel.bind(this),
+      webauthn: new WebAuthnApi(this),
     }
 
     if (this.persistSession) {
@@ -2981,6 +3007,7 @@ export default class GoTrueClient {
    */
   private async _enroll(params: MFAEnrollTOTPParams): Promise<AuthMFAEnrollTOTPResponse>
   private async _enroll(params: MFAEnrollPhoneParams): Promise<AuthMFAEnrollPhoneResponse>
+  private async _enroll(params: MFAEnrollWebauthnParams): Promise<AuthMFAEnrollWebauthnResponse>
   private async _enroll(params: MFAEnrollParams): Promise<AuthMFAEnrollResponse> {
     try {
       return await this._useSession(async (result) => {
@@ -2992,20 +3019,23 @@ export default class GoTrueClient {
         const body = {
           friendly_name: params.friendlyName,
           factor_type: params.factorType,
-          ...(params.factorType === 'phone' ? { phone: params.phone } : { issuer: params.issuer }),
+          ...(params.factorType === 'phone'
+            ? { phone: params.phone }
+            : params.factorType === 'totp'
+            ? { issuer: params.issuer }
+            : {}),
         }
 
-        const { data, error } = await _request(this.fetch, 'POST', `${this.url}/factors`, {
+        const { data, error } = (await _request(this.fetch, 'POST', `${this.url}/factors`, {
           body,
           headers: this.headers,
           jwt: sessionData?.session?.access_token,
-        })
-
+        })) as AuthMFAEnrollResponse
         if (error) {
           return { data: null, error }
         }
 
-        if (params.factorType === 'totp' && data?.totp?.qr_code) {
+        if (params.factorType === 'totp' && data.type === 'totp' && data?.totp?.qr_code) {
           data.totp.qr_code = `data:image/svg+xml;utf-8,${data.totp.qr_code}`
         }
 
@@ -3022,6 +3052,11 @@ export default class GoTrueClient {
   /**
    * {@see GoTrueMFAApi#verify}
    */
+  private async _verify(params: MFAVerifyTOTPParams): Promise<AuthMFAVerifyResponse>
+  private async _verify(params: MFAVerifyPhoneParams): Promise<AuthMFAVerifyResponse>
+  private async _verify<T extends 'create' | 'request'>(
+    params: MFAVerifyWebauthnParams<T>
+  ): Promise<AuthMFAVerifyResponse>
   private async _verify(params: MFAVerifyParams): Promise<AuthMFAVerifyResponse> {
     return this._acquireLock(-1, async () => {
       try {
@@ -3031,12 +3066,50 @@ export default class GoTrueClient {
             return { data: null, error: sessionError }
           }
 
+          const body: StrictOmit<
+            | Exclude<MFAVerifyParams, MFAVerifyWebauthnParams>
+            /** Exclude out the webauthn params from here because we're going to need to serialize them in the response */
+            | Prettify<
+                StrictOmit<MFAVerifyWebauthnParams, 'webauthn'> & {
+                  webauthn: Prettify<
+                    | StrictOmit<
+                        MFAVerifyWebauthnParamFields['webauthn'],
+                        'credential_response'
+                      > & {
+                        credential_response: PublicKeyCredentialJSON
+                      }
+                  >
+                }
+              >,
+            /*  Exclude challengeId because the backend expects snake_case, and exclude factorId since it's passed in the path params */
+            'challengeId' | 'factorId'
+          > & {
+            challenge_id: string
+          } = {
+            challenge_id: params.challengeId,
+            ...('webauthn' in params
+              ? {
+                  webauthn: {
+                    ...params.webauthn,
+                    credential_response:
+                      params.webauthn.type === 'create'
+                        ? serializeCredentialCreationResponse(
+                            params.webauthn.credential_response as RegistrationCredential
+                          )
+                        : serializeCredentialRequestResponse(
+                            params.webauthn.credential_response as AuthenticationCredential
+                          ),
+                  },
+                }
+              : { code: params.code }),
+          }
+
           const { data, error } = await _request(
             this.fetch,
             'POST',
             `${this.url}/factors/${params.factorId}/verify`,
             {
-              body: { code: params.code, challenge_id: params.challengeId },
+              body,
               headers: this.headers,
               jwt: sessionData?.session?.access_token,
             }
@@ -3065,9 +3138,16 @@ export default class GoTrueClient {
   /**
    * {@see GoTrueMFAApi#challenge}
    */
-  private async _challenge<T extends FactorType>(
-    params: MFAChallengeParams
-  ): Promise<AuthMFAChallengeResponse<T>> {
+  private async _challenge(
+    params: MFAChallengeTOTPParams
+  ): Promise<Prettify<AuthMFAChallengeTOTPResponse>>
+  private async _challenge(
+    params: MFAChallengePhoneParams
+  ): Promise<Prettify<AuthMFAChallengePhoneResponse>>
+  private async _challenge(
+    params: MFAChallengeWebauthnParams
+  ): Promise<Prettify<AuthMFAChallengeWebauthnResponse>>
+  private async _challenge(params: MFAChallengeParams): Promise<AuthMFAChallengeResponse> {
     return this._acquireLock(-1, async () => {
       try {
         return await this._useSession(async (result) => {
@@ -3076,16 +3156,64 @@ export default class GoTrueClient {
             return { data: null, error: sessionError }
           }
 
-          return await _request(
+          const response = (await _request(
             this.fetch,
             'POST',
             `${this.url}/factors/${params.factorId}/challenge`,
             {
-              body: 'channel' in params ? { channel: params.channel } : {},
+              body: params,
               headers: this.headers,
               jwt: sessionData?.session?.access_token,
             }
-          )
+          )) as
+            | Exclude<AuthMFAChallengeResponse, AuthMFAChallengeWebauthnResponse>
+            /** The server will send `serialized` data, so we assert the serialized response */
+            | AuthMFAChallengeWebauthnServerResponse
+
+          if (response.error) {
+            return response
+          }
+
+          const { data } = response
+
+          if (data.type !== 'webauthn') {
+            return { data, error: null }
+          }
+
+          switch (data.webauthn.type) {
+            case 'create':
+              return {
+                data: {
+                  ...data,
+                  webauthn: {
+                    ...data.webauthn,
+                    credential_options: {
+                      ...data.webauthn.credential_options,
+                      publicKey: deserializeCredentialCreationOptions(
+                        data.webauthn.credential_options.publicKey
+                      ),
+                    },
+                  },
+                },
+                error: null,
+              }
+            case 'request':
+              return {
+                data: {
+                  ...data,
+                  webauthn: {
+                    ...data.webauthn,
+                    credential_options: {
+                      ...data.webauthn.credential_options,
+                      publicKey: deserializeCredentialRequestOptions(
+                        data.webauthn.credential_options.publicKey
+                      ),
+                    },
+                  },
+                },
+                error: null,
+              }
+          }
         })
       } catch (error) {
         if (isAuthError(error)) {
@@ -3136,8 +3264,10 @@ export default class GoTrueClient {
       all: [],
       phone: [],
       totp: [],
+      webauthn: [],
     }
 
+    // loop over the factors ONCE
     for (const factor of user?.factors ?? []) {
       data.all.push(factor)
       if (factor.status === 'verified') {

@@ -2,6 +2,7 @@ import { API_VERSION_HEADER_NAME, BASE64URL_REGEX } from './constants'
 import { AuthInvalidJwtError } from './errors'
 import { base64UrlToUint8Array, stringFromBase64URL } from './base64url'
 import { JwtHeader, JwtPayload, SupportedStorage, User } from './types'
+import { Uint8Array_ } from './webauthn.dom'
 
 export function expiresAt(expiresIn: number) {
   const timeNow = Math.round(Date.now() / 1000)
@@ -171,7 +172,7 @@ export class Deferred<T = any> {
 export function decodeJWT(token: string): {
   header: JwtHeader
   payload: JwtPayload
-  signature: Uint8Array
+  signature: Uint8Array_
   raw: {
     header: string
     payload: string

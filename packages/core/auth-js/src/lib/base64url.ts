@@ -4,6 +4,8 @@
  * that repo!
  */
 
+import { Uint8Array_ } from './webauthn.dom'
+
 /**
  * An array of characters that encode 6 bits into a Base64-URL alphabet
  * character.
@@ -268,7 +270,7 @@ export function stringFromUTF8(
  * Helper functions to convert different types of strings to Uint8Array
  */
 
-export function base64UrlToUint8Array(str: string): Uint8Array {
+export function base64UrlToUint8Array(str: string): Uint8Array_ {
   const result: number[] = []
   const state = { queue: 0, queuedBits: 0 }
 
@@ -283,7 +285,7 @@ export function base64UrlToUint8Array(str: string): Uint8Array {
   return new Uint8Array(result)
 }
 
-export function stringToUint8Array(str: string): Uint8Array {
+export function stringToUint8Array(str: string): Uint8Array_ {
   const result: number[] = []
   stringToUTF8(str, (byte: number) => result.push(byte))
   return new Uint8Array(result)
