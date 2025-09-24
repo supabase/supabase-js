@@ -2176,11 +2176,27 @@ export default class GoTrueClient {
       throw error
     }
   }
+
   /**
    * Links an oauth identity to an existing user.
    * This method supports the PKCE flow.
    */
-  async linkIdentity(credentials: SignInWithOAuthCredentials): Promise<OAuthResponse> {
+  async linkIdentity(credentials: SignInWithOAuthCredentials): Promise<OAuthResponse>
+
+  /**
+   * Links an OIDC identity to an existing user.
+   */
+  async linkIdentity(credentials: SignInWithIdTokenCredentials): Promise<AuthTokenResponse>
+
+  async linkIdentity(credentials: any): Promise<any> {
+    if ('token' in credentials) {
+      return this.linkIdentityIdToken(credentials)
+    }
+
+    return this.linkIdentityOAuth(credentials)
+  }
+
+  private async linkIdentityOAuth(credentials: SignInWithOAuthCredentials): Promise<OAuthResponse> {
     try {
       const { data, error } = await this._useSession(async (result) => {
         const { data, error } = result
@@ -2211,6 +2227,56 @@ export default class GoTrueClient {
       }
       throw error
     }
+  }
+
+  private async linkIdentityIdToken(
+    credentials: SignInWithIdTokenCredentials
+  ): Promise<AuthTokenResponse> {
+    return await this._useSession(async (result) => {
+      try {
+        const {
+          error: sessionError,
+          data: { session },
+        } = result
+        if (sessionError) throw sessionError
+
+        const { options, provider, token, access_token, nonce } = credentials
+
+        const res = await _request(this.fetch, 'POST', `${this.url}/token?grant_type=id_token`, {
+          headers: this.headers,
+          jwt: session?.access_token ?? undefined,
+          body: {
+            provider,
+            id_token: token,
+            access_token,
+            nonce,
+            link_identity: true,
+            gotrue_meta_security: { captcha_token: options?.captchaToken },
+          },
+          xform: _sessionResponse,
+        })
+
+        const { data, error } = res
+        if (error) {
+          return { data: { user: null, session: null }, error }
+        } else if (!data || !data.session || !data.user) {
+          return {
+            data: { user: null, session: null },
+            error: new AuthInvalidTokenResponseError(),
+          }
+        }
+        if (data.session) {
+          await this._saveSession(data.session)
+          await this._notifyAllSubscribers('USER_UPDATED', data.session)
+        }
+        return { data, error }
+      } catch (error) {
+        if (isAuthError(error)) {
+          return { data: { user: null, session: null }, error }
+        }
+        throw error
+      }
+    })
   }
 
   /**
