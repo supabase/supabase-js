@@ -1,7 +1,7 @@
 import { AuthClient } from '@supabase/auth-js'
 import { RealtimeClientOptions } from '@supabase/realtime-js'
 import { PostgrestError } from '@supabase/postgrest-js'
-import { StorageClientOptions } from '@supabase/storage-js/dist/module/StorageClient'
+import type { StorageClientOptions } from '@supabase/storage-js'
 
 type AuthClientOptions = ConstructorParameters<typeof AuthClient>[0]
 
