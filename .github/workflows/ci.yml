@@ -90,10 +90,12 @@ jobs:
       - name: Upload coverage results to Coveralls
         uses: coverallsapp/github-action@v2
         with:
+          fail-on-error: false
           github-token: ${{ secrets.GITHUB_TOKEN }}
           path-to-lcov: ./test/coverage/lcov.info
           parallel: true
           flag-name: node-${{ matrix.node }}-${{ matrix.os }}
+        continue-on-error: true
 
   coveralls-finish:
     name: Coveralls Finished
@@ -103,8 +105,10 @@ jobs:
       - name: Coveralls Finished
         uses: coverallsapp/github-action@v2
         with:
+          fail-on-error: false
           github-token: ${{ secrets.GITHUB_TOKEN }}
           parallel-finished: true
+        continue-on-error: true
 
   deno-tests:
     name: Deno Tests / ${{ matrix.deno }}
