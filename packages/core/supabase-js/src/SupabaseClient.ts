@@ -2,9 +2,9 @@ import type { AuthChangeEvent } from '@supabase/auth-js'
 import { FunctionsClient } from '@supabase/functions-js'
 import {
   PostgrestClient,
-  type PostgrestFilterBuilder,
-  type PostgrestQueryBuilder,
-  type PostgrestQueryBuilderOptions,
+  PostgrestFilterBuilder,
+  PostgrestQueryBuilder,
+  PostgrestQueryBuilderOptions,
 } from '@supabase/postgrest-js'
 import {
   type RealtimeChannel,
