@@ -145,7 +145,7 @@ export default class SupabaseClient<
       })
     }
 
-    this.fetch = fetchWithAuth(supabaseKey, this._getAccessToken.bind(this), settings.global.fetch)
+    this.fetch = this._createFetchWithAuth(settings.global.fetch)
     this.realtime = this._initRealtimeClient({
       headers: this.headers,
       accessToken: this._getAccessToken.bind(this),
@@ -200,6 +200,10 @@ export default class SupabaseClient<
     relation: string,
     options?: PostgrestQueryBuilderOptions
   ): PostgrestQueryBuilder<ClientOptions, Schema, any> {
+    if (options?.fetch) {
+      options.fetch = this._createFetchWithAuth(options.fetch)
+    }
+
     return this.rest.from(relation, options)
   }
 
@@ -385,5 +389,9 @@ export default class SupabaseClient<
       if (source == 'STORAGE') this.auth.signOut()
       this.changedAccessToken = undefined
     }
+  }
+
+  private _createFetchWithAuth(_fetch?: typeof global.fetch) {
+    return fetchWithAuth(this.supabaseKey, this._getAccessToken.bind(this), _fetch)
   }
 }
