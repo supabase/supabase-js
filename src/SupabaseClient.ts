@@ -4,6 +4,7 @@ import {
   PostgrestClient,
   PostgrestFilterBuilder,
   PostgrestQueryBuilder,
+  PostgrestQueryBuilderOptions,
 } from '@supabase/postgrest-js'
 import {
   RealtimeChannel,
@@ -144,7 +145,7 @@ export default class SupabaseClient<
       })
     }
 
-    this.fetch = fetchWithAuth(supabaseKey, this._getAccessToken.bind(this), settings.global.fetch)
+    this.fetch = this._createFetchWithAuth(settings.global.fetch)
     this.realtime = this._initRealtimeClient({
       headers: this.headers,
       accessToken: this._getAccessToken.bind(this),
@@ -182,17 +183,28 @@ export default class SupabaseClient<
   from<
     TableName extends string & keyof Schema['Tables'],
     Table extends Schema['Tables'][TableName]
-  >(relation: TableName): PostgrestQueryBuilder<ClientOptions, Schema, Table, TableName>
+  >(
+    relation: TableName,
+    options?: PostgrestQueryBuilderOptions
+  ): PostgrestQueryBuilder<ClientOptions, Schema, Table, TableName>
   from<ViewName extends string & keyof Schema['Views'], View extends Schema['Views'][ViewName]>(
-    relation: ViewName
+    relation: ViewName,
+    options?: PostgrestQueryBuilderOptions
   ): PostgrestQueryBuilder<ClientOptions, Schema, View, ViewName>
   /**
    * Perform a query on a table or a view.
    *
    * @param relation - The table or view name to query
    */
-  from(relation: string): PostgrestQueryBuilder<ClientOptions, Schema, any> {
-    return this.rest.from(relation)
+  from(
+    relation: string,
+    options?: PostgrestQueryBuilderOptions
+  ): PostgrestQueryBuilder<ClientOptions, Schema, any> {
+    if (options?.fetch) {
+      options.fetch = this._createFetchWithAuth(options.fetch)
+    }
+
+    return this.rest.from(relation, options)
   }
 
   // NOTE: signatures must be kept in sync with PostgrestClient.schema
@@ -377,5 +389,9 @@ export default class SupabaseClient<
       if (source == 'STORAGE') this.auth.signOut()
       this.changedAccessToken = undefined
     }
+  }
+
+  private _createFetchWithAuth(_fetch?: typeof global.fetch) {
+    return fetchWithAuth(this.supabaseKey, this._getAccessToken.bind(this), _fetch)
   }
 }
