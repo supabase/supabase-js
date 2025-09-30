@@ -4,8 +4,8 @@ import {
   PostgrestClient,
   PostgrestFilterBuilder,
   PostgrestQueryBuilder,
-  PostgrestQueryBuilderOptions,
 } from '@supabase/postgrest-js'
+import type { PostgrestQueryBuilderOptions } from '@supabase/postgrest-js'
 import {
   RealtimeChannel,
   RealtimeChannelOptions,
