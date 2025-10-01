@@ -1,0 +1,58 @@
+name: Preview release
+
+permissions:
+  pull-requests: write
+
+on:
+  pull_request:
+    types: [opened, synchronize, labeled]
+    paths:
+      - 'packages/core/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'nx.json'
+      - 'tsconfig.base.json'
+      - '.github/workflows/preview-release.yml'
+      - '!packages/**/*.md'
+      - '!packages/**/docs/**'
+      - '!packages/**/.prettierrc'
+      - '!packages/**/*ignore'
+
+jobs:
+  preview:
+    if: >
+      github.repository == 'supabase/js-client-libs' &&
+      (github.event_name == 'push' ||
+      (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'trigger: preview')))
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          filter: tree:0
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Set up Nx SHAs
+        uses: nrwl/nx-set-shas@v4
+
+      - name: Build all packages
+        run: npx nx run-many --target=build --all
+
+      - name: Publish preview packages
+        run: |
+          npx pkg-pr-new@latest publish --compact \
+            ./packages/core/auth-js \
+            ./packages/core/functions-js \
+            ./packages/core/postgrest-js \
+            ./packages/core/realtime-js \
+            ./packages/core/storage-js \
+            ./packages/core/supabase-js

@@ -1,0 +1,175 @@
+name: Release Stable
+
+on:
+  workflow_dispatch:
+    inputs:
+      version_specifier:
+        description: "Semver bump (patch|minor|major|pre*) or exact version (v1.2.3)"
+        required: true
+        type: string
+
+env:
+  NODE_VERSION: "20"
+
+jobs:
+  release-stable:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      id-token: write
+
+    steps:
+      - name: Check if actor is member of admin or client-libs team
+        id: team-check
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const org = 'supabase'
+            const { actor } = context
+
+            async function isTeamMember(team_slug) {
+              try {
+                const res = await github.rest.teams.getMembershipForUserInOrg({
+                  org,
+                  team_slug,
+                  username: actor,
+                })
+                return res && res.status === 200
+              } catch (_) {
+                return false
+              }
+            }
+
+            const isAdmin = await isTeamMember('admin')
+            const isClientLibs = await isTeamMember('client-libs')
+            const isMember = isAdmin || isClientLibs
+            core.setOutput('is_team_member', isMember ? 'true' : 'false')
+
+      - name: Fail if not authorized
+        if: steps.team-check.outputs.is_team_member != 'true'
+        run: |
+          echo "You must be a member of @supabase/admin or @supabase/client-libs."
+          exit 1
+
+      - name: Generate token
+        id: app-token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ secrets.APP_ID }}
+          private-key: ${{ secrets.PRIVATE_KEY }}
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+          registry-url: "https://registry.npmjs.org"
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+      - name: Configure git
+        run: |
+          git config --global user.name "supabase-releaser[bot]"
+          git config --global user.email "supabase-releaser[bot]@users.noreply.github.com"
+
+      - name: Validate input
+        run: |
+          VS="${{ github.event.inputs.version_specifier }}"
+          echo "Validating: $VS"
+
+          if [[ "$VS" =~ ^(patch|minor|major|prepatch|preminor|premajor|prerelease)$ ]]; then
+            echo "✔ bump keyword"
+          elif [[ "$VS" =~ ^v?[0-9]+\.[0-9]+\.[0-9]+([.-][0-9A-Za-z.-]+)?$ ]]; then
+            echo "✔ explicit version"
+          else
+            echo "❌ Invalid version_specifier: '$VS'"
+            echo "   Use: patch|minor|major|pre*, or v1.2.3"
+            exit 1
+          fi
+
+      - name: Release
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NPM_CONFIG_PROVENANCE: true
+          GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+          npm run release-stable -- --versionSpecifier "${{ github.event.inputs.version_specifier }}"
+
+      - name: Summary
+        run: |
+          echo "## ✅ Stable Release" >> $GITHUB_STEP_SUMMARY
+          echo "- **Version specifier:** \`${{ github.event.inputs.version_specifier }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Source commit:** HEAD of the checked-out branch" >> $GITHUB_STEP_SUMMARY
+          echo "- **Dist-tag:** \`latest\`" >> $GITHUB_STEP_SUMMARY
+
+  docs-after-stable-release:
+    name: Generate Documentation
+    needs: release-stable
+    if: needs.release-stable.result == 'success'
+    uses: ./.github/workflows/docs.yml
+    permissions:
+      actions: read
+      contents: write
+
+  trigger-update-js-libs:
+    name: Trigger Update JS Libs
+    runs-on: ubuntu-latest
+    needs: release-stable
+    if: needs.release-stable.result == 'success'
+    steps:
+      - name: Generate token
+        id: app-token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ secrets.APP_ID }}
+          private-key: ${{ secrets.PRIVATE_KEY }}
+      - name: Trigger supabase/supabase update-js-libs workflow
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ steps.app-token.outputs.token }}
+          script: |
+            await github.rest.actions.createWorkflowDispatch({
+              owner: 'supabase',
+              repo: 'supabase',
+              workflow_id: 'update-js-libs.yml',
+              ref: 'master',
+              inputs: {
+                version: '${{ github.event.inputs.version_specifier }}',
+                source: 'js-client-libs-stable-release'
+              }
+            });
+
+  trigger-supabase-docs-update:
+    name: Trigger Supabase Docs Update
+    runs-on: ubuntu-latest
+    needs: [release-stable, docs-after-stable-release]
+    if: |
+      needs.release-stable.result == 'success' &&
+      needs.docs-after-stable-release.result == 'success'
+    steps:
+      - name: Generate token
+        id: app-token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ secrets.APP_ID }}
+          private-key: ${{ secrets.PRIVATE_KEY }}
+
+      - name: Trigger supabase/supabase docs workflow
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ steps.app-token.outputs.token }}
+          script: |
+            await github.rest.actions.createWorkflowDispatch({
+              owner: 'supabase',
+              repo: 'supabase',
+              workflow_id: 'docs-js-libs-update.yml',
+              ref: 'master',
+              inputs: {
+                version: '${{ github.event.inputs.version_specifier }}',
+                source: 'js-client-libs-stable-release'
+              }
+            });

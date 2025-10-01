@@ -1,0 +1,53 @@
+name: Auth JS tests for Node.js 18
+
+on:
+  pull_request:
+    paths:
+      - 'packages/core/auth-js/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'nx.json'
+      - 'tsconfig.base.json'
+      - '.github/workflows/ci-auth-js-node18.yml'
+      - '!packages/core/auth-js/**/*.md'
+      - '!packages/core/auth-js/docs/**'
+      - '!packages/core/auth-js/.prettierrc'
+      - '!packages/core/auth-js/*ignore'
+  workflow_call:
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  setup-and-build-node-18-auth-js:
+    name: Run auth-js tests for Node.js 18
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          filter: tree:0
+          fetch-depth: 0
+      # Cache node_modules
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: 'npm'
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Build auth-js
+        working-directory: packages/core/auth-js
+        run: npm run build:node18
+
+      - name: Run auth-js tests
+        working-directory: packages/core/auth-js
+        run: npm run test:auth
+
+      - name: Upload coverage results to Coveralls
+        uses: coverallsapp/github-action@v2
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path-to-lcov: ./packages/core/auth-js/test/coverage/lcov.info
+          fail-on-error: false
+        continue-on-error: true

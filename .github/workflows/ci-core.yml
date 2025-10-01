@@ -1,0 +1,128 @@
+name: Core packages tests
+
+on:
+  pull_request:
+    paths:
+      - 'packages/core/auth-js/**'
+      - 'packages/core/functions-js/**'
+      - 'packages/core/postgrest-js/**'
+      - 'packages/core/realtime-js/**'
+      - 'packages/core/storage-js/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'nx.json'
+      - 'tsconfig.base.json'
+      - '.github/workflows/ci-core.yml'
+      - '!packages/**/*.md'
+      - '!packages/**/docs/**'
+      - '!packages/**/.prettierrc'
+      - '!packages/**/*ignore'
+  workflow_call:
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  setup-build-test-node-20:
+    name: Run tests for Node.js 20
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          filter: tree:0
+          fetch-depth: 0
+      # Cache node_modules
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+      - uses: nrwl/nx-set-shas@v4
+
+      # Prepend any command with "nx-cloud record --" to record its logs to Nx Cloud
+      # - run: npx nx-cloud record -- echo Hello World
+      # When you enable task distribution, run the e2e-ci task instead of e2e
+      - name: Build affected packages
+        run: npx nx affected --target=build
+
+      - name: Generate docs json for affected packages
+        run: npx nx affected --target=docs:json
+
+      - name: Run test:ci for affected packages
+        run: npx nx affected --target=test:ci
+
+      - name: Upload coverage for functions-js (if affected)
+        uses: coverallsapp/github-action@v2
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path-to-lcov: ./packages/core/functions-js/coverage/lcov.info
+          parallel: true
+          flag-name: functions-js
+          fail-on-error: false
+        continue-on-error: true
+
+      - name: Upload coverage for realtime-js (if affected)
+        uses: coverallsapp/github-action@v2
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path-to-lcov: ./packages/core/realtime-js/coverage/lcov.info
+          parallel: true
+          flag-name: realtime-js
+          fail-on-error: false
+        continue-on-error: true
+      - name: Upload coverage for postgrest-js (if affected)
+        uses: coverallsapp/github-action@v2
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path-to-lcov: ./packages/core/postgrest-js/coverage/lcov.info
+          parallel: true
+          flag-name: postgrest-js
+          fail-on-error: false
+        continue-on-error: true
+      - name: Run auth-js tests (if affected)
+        run: npx nx affected --target=test:auth
+
+      - name: Upload coverage for auth-js (if affected)
+        uses: coverallsapp/github-action@v2
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path-to-lcov: ./packages/core/auth-js/test/coverage/lcov.info
+          parallel: true
+          flag-name: auth-js
+          fail-on-error: false
+        continue-on-error: true
+      - name: Run storage-js tests (if affected)
+        run: npx nx affected --target=test:storage
+
+      - name: Upload coverage for storage-js (if affected)
+        uses: coverallsapp/github-action@v2
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path-to-lcov: ./packages/core/storage-js/coverage/lcov.info
+          parallel: true
+          flag-name: storage-js
+          fail-on-error: false
+        continue-on-error: true
+  # SUMMARY JOB
+  all-core-tests-pass:
+    name: All Core Package Tests Pass
+    runs-on: ubuntu-latest
+    needs: setup-build-test-node-20
+    steps:
+      - name: Summary
+        run: echo "✅ All core package tests passed successfully!"
+
+  coveralls-finish:
+    name: Coveralls Finished
+    runs-on: ubuntu-latest
+    needs: setup-build-test-node-20
+    steps:
+      - name: Coveralls Finished
+        uses: coverallsapp/github-action@v2
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          parallel-finished: true
+          fail-on-error: false
+        continue-on-error: true
