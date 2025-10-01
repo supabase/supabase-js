@@ -99,6 +99,13 @@ async function publishGotrueLegacy(): Promise<void> {
       fs.writeFileSync(authJsPackageLockJson, modifiedPackageLock)
     }
 
+    // Validate tag to prevent command injection
+    const validTags = ['latest', 'canary', 'beta', 'alpha', 'next', 'rc']
+    if (!validTags.includes(tag)) {
+      log(`❌ Error: Invalid tag '${tag}'. Must be one of: ${validTags.join(', ')}`, colors.red)
+      process.exit(1)
+    }
+
     // Publish to npm from the auth-js directory
     const publishCommand = `npm publish --provenance --tag ${tag}`
 

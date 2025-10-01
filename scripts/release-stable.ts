@@ -22,6 +22,15 @@ if (!versionSpecifier) {
   process.exit(1)
 }
 
+// Validate versionSpecifier to prevent command injection
+const validSpecifiers = ['patch', 'minor', 'major', 'prepatch', 'preminor', 'premajor', 'prerelease']
+const isValidVersion = /^v?\d+\.\d+\.\d+(-[a-zA-Z0-9.-]+)?$/.test(versionSpecifier)
+if (!validSpecifiers.includes(versionSpecifier) && !isValidVersion) {
+  console.error(`❌ Invalid version specifier: ${versionSpecifier}`)
+  console.error(`Must be one of: ${validSpecifiers.join(', ')} or a valid semver version`)
+  process.exit(1)
+}
+
 ;(async () => {
   const { workspaceVersion, projectsVersionData } = await releaseVersion({
     verbose: true,
@@ -66,6 +75,14 @@ if (!versionSpecifier) {
 
   // ---- Create release branch + PR ----
   const version = result.workspaceChangelog?.releaseVersion.rawVersion || workspaceVersion
+  
+  // Validate version to prevent command injection
+  // Version should match semver pattern or be a valid npm version specifier
+  if (!version || !/^(v?\d+\.\d+\.\d+(-[a-zA-Z0-9.-]+)?|patch|minor|major|prepatch|preminor|premajor|prerelease)$/.test(version)) {
+    console.error(`❌ Invalid version format: ${version}`)
+    process.exit(1)
+  }
+  
   const branchName = `release-${version}`
 
   try {
