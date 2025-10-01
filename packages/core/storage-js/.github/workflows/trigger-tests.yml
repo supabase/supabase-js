@@ -1,0 +1,108 @@
+name: Trigger Supabase JS Tests
+
+permissions:
+  contents: read
+  actions: read
+
+on:
+  workflow_run:
+    workflows: ['Preview Build']
+    types: [completed]
+
+  workflow_dispatch:
+    inputs:
+      preview_url:
+        description: 'Preview package URL to test'
+        required: true
+        type: string
+      target_branch:
+        description: 'Target branch for supabase-js tests'
+        type: string
+        default: 'master'
+
+jobs:
+  trigger-tests:
+    # Only run if the preview build succeeded and on the correct repository
+    if: |
+      github.repository == 'supabase/storage-js' &&
+      (github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      # For workflow_run trigger, download the preview info
+      - name: Download preview info
+        if: github.event_name != 'workflow_dispatch'
+        uses: actions/download-artifact@v4
+        with:
+          name: preview-info
+          path: preview-info/
+          run-id: ${{ github.event.workflow_run.id }}
+
+      - name: Read preview info
+        id: info
+        run: |
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            # Use inputs from workflow_dispatch
+            echo "url=${{ github.event.inputs.preview_url }}" >> $GITHUB_OUTPUT
+            echo "pr=manual" >> $GITHUB_OUTPUT
+            echo "sha=manual" >> $GITHUB_OUTPUT
+            echo "package=storage-js" >> $GITHUB_OUTPUT
+          else
+            # Read from downloaded artifacts
+            echo "url=$(cat preview-info/preview-url.txt)" >> $GITHUB_OUTPUT
+            echo "pr=$(cat preview-info/pr-number.txt)" >> $GITHUB_OUTPUT
+            echo "sha=$(cat preview-info/commit-sha.txt)" >> $GITHUB_OUTPUT
+            echo "package=$(cat preview-info/package-name.txt)" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Show preview info
+        run: |
+          echo "Preview URL: ${{ steps.info.outputs.url }}"
+          echo "PR Number: ${{ steps.info.outputs.pr }}"
+          echo "Commit SHA: ${{ steps.info.outputs.sha }}"
+          echo "Package: ${{ steps.info.outputs.package }}"
+
+      # Generate GitHub App token for cross-repo access
+      - name: Generate GitHub App token
+        id: generate-token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ vars.CROSS_REPO_APP_ID }}
+          private-key: ${{ secrets.CROSS_REPO_APP_PRIVATE_KEY }}
+          owner: supabase
+          repositories: storage-js,supabase-js
+
+      - name: Trigger supabase-js CI tests
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ steps.generate-token.outputs.token }}
+          script: |
+            const targetBranch = context.eventName === 'workflow_dispatch' && context.payload.inputs?.target_branch
+              ? context.payload.inputs.target_branch
+              : 'master';
+
+            console.log('Triggering supabase-js tests...');
+            console.log('Target branch:', targetBranch);
+            console.log('Preview URL:', '${{ steps.info.outputs.url }}');
+
+            try {
+              const response = await github.rest.actions.createWorkflowDispatch({
+                owner: 'supabase',
+                repo: 'supabase-js',
+                workflow_id: 'external-test.yml',
+                ref: targetBranch,
+                inputs: {
+                  triggering_repo: '${{ steps.info.outputs.package }}',
+                  triggering_pr: '${{ steps.info.outputs.pr }}',
+                  preview_url: '${{ steps.info.outputs.url }}',
+                  package_name: '${{ steps.info.outputs.package }}',
+                  triggering_sha: '${{ steps.info.outputs.sha }}'
+                }
+              });
+              
+              console.log('✅ Successfully triggered supabase-js tests');
+              console.log('Response status:', response.status);
+            } catch (error) {
+              console.error('❌ Failed to trigger supabase-js tests:', error);
+              throw error;
+            }

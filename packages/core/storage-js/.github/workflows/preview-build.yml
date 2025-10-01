@@ -1,0 +1,84 @@
+name: Preview Build
+
+permissions:
+  contents: read
+  pull-requests: read
+
+on:
+  pull_request:
+    types: [opened, synchronize, labeled]
+    paths:
+      - 'src/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'tsconfig.json'
+
+jobs:
+  build-preview:
+    # Only run if PR has the 'trigger: preview' label, is on the correct repository, and targets main branch
+    if: |
+      github.repository == 'supabase/storage-js' &&
+      github.event.pull_request.base.ref == 'main' &&
+      contains(github.event.pull_request.labels.*.name, 'trigger: preview')
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    outputs:
+      preview-url: ${{ steps.preview.outputs.url }}
+      pr-number: ${{ github.event.pull_request.number }}
+    steps:
+      # Checkout fork code - safe because no secrets are available
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Log PR author for auditing
+      - name: Log PR author
+        run: |
+          echo "Preview build triggered by: ${{ github.event.pull_request.user.login }}"
+          echo "PR #${{ github.event.pull_request.number }} from fork: ${{ github.event.pull_request.head.repo.full_name }}"
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+      - name: Create preview release
+        id: preview
+        run: |
+          echo "Creating preview release..."
+          OUTPUT=$(npx pkg-pr-new@latest publish --compact 2>&1 || true)
+          echo "Full output:"
+          echo "$OUTPUT"
+
+          # Extract the preview URL
+          PREVIEW_URL=$(echo "$OUTPUT" | grep -o 'https://pkg\.pr\.new/@supabase/[^[:space:]]*' | head -1)
+
+          if [ -z "$PREVIEW_URL" ]; then
+            echo "Error: Failed to extract preview URL from pkg-pr-new output"
+            echo "Output was: $OUTPUT"
+            exit 1
+          fi
+
+          echo "Preview Release URL: $PREVIEW_URL"
+          echo "url=$PREVIEW_URL" >> $GITHUB_OUTPUT
+
+      # Save preview info for the next workflows
+      - name: Save preview info
+        run: |
+          mkdir -p preview-info
+          echo "${{ steps.preview.outputs.url }}" > preview-info/preview-url.txt
+          echo "${{ github.event.pull_request.number }}" > preview-info/pr-number.txt
+          echo "${{ github.event.pull_request.head.sha }}" > preview-info/commit-sha.txt
+          echo "storage-js" > preview-info/package-name.txt
+
+      - name: Upload preview info
+        uses: actions/upload-artifact@v4
+        with:
+          name: preview-info
+          path: preview-info/
+          retention-days: 7

@@ -1,0 +1,115 @@
+name: Update PR Comment
+
+permissions:
+  pull-requests: write
+  actions: read
+
+on:
+  workflow_run:
+    workflows: ['Preview Build', 'Trigger Supabase JS Tests']
+    types: [completed]
+
+jobs:
+  update-comment:
+    # Only run on the correct repository
+    if: github.repository == 'supabase/storage-js'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      # Get PR number from the workflow run
+      - name: Get PR info
+        id: pr-info
+        uses: actions/github-script@v7
+        with:
+          script: |
+            // Get the workflow run details
+            const workflowRun = context.payload.workflow_run;
+
+            // Find associated PR
+            const prs = await github.rest.pulls.list({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              head: `${workflowRun.head_repository.owner.login}:${workflowRun.head_branch}`
+            });
+
+            if (prs.data.length > 0) {
+              const pr = prs.data[0];
+              core.setOutput('pr-number', pr.number);
+              core.setOutput('found', 'true');
+              console.log(`Found PR #${pr.number}`);
+            } else {
+              core.setOutput('found', 'false');
+              console.log('No associated PR found');
+            }
+
+      # Only continue if we found a PR
+      - name: Download preview info
+        if: steps.pr-info.outputs.found == 'true' && github.event.workflow_run.name == 'Preview Build' && github.event.workflow_run.conclusion == 'success'
+        uses: actions/download-artifact@v4
+        with:
+          name: preview-info
+          path: preview-info/
+          run-id: ${{ github.event.workflow_run.id }}
+        continue-on-error: true
+
+      - name: Read preview URL
+        if: steps.pr-info.outputs.found == 'true' && github.event.workflow_run.name == 'Preview Build' && github.event.workflow_run.conclusion == 'success'
+        id: preview-url
+        run: |
+          if [ -f "preview-info/preview-url.txt" ]; then
+            echo "url=$(cat preview-info/preview-url.txt)" >> $GITHUB_OUTPUT
+            echo "found=true" >> $GITHUB_OUTPUT
+          else
+            echo "found=false" >> $GITHUB_OUTPUT
+          fi
+        continue-on-error: true
+
+      # Find existing comment
+      - name: Find existing comment
+        if: steps.pr-info.outputs.found == 'true'
+        uses: peter-evans/find-comment@v3
+        id: find-comment
+        with:
+          issue-number: ${{ steps.pr-info.outputs.pr-number }}
+          comment-author: 'github-actions[bot]'
+          body-includes: '<!-- storage-js-preview-status -->'
+
+      # Create or update comment based on workflow status
+      - name: Create or update preview comment
+        if: steps.pr-info.outputs.found == 'true'
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          comment-id: ${{ steps.find-comment.outputs.comment-id }}
+          issue-number: ${{ steps.pr-info.outputs.pr-number }}
+          body: |
+            <!-- storage-js-preview-status -->
+            ## 🚀 Preview Release Status
+
+            ${{ github.event.workflow_run.name == 'Preview Build' && github.event.workflow_run.conclusion == 'success' && steps.preview-url.outputs.found == 'true' && format('✅ **Preview package created successfully!**
+
+            📦 **Preview URL:** `{0}`
+
+            You can install this preview package in your project by running:
+            ```bash
+            npm install {0}
+            ```
+
+            🔄 Supabase-js CI tests have been automatically triggered to verify compatibility.
+            ', steps.preview-url.outputs.url) || '' }}
+
+            ${{ github.event.workflow_run.name == 'Preview Build' && github.event.workflow_run.conclusion == 'failure' && '❌ **Preview build failed**
+
+            Please check the [workflow logs](' }}${{ github.event.workflow_run.name == 'Preview Build' && github.event.workflow_run.conclusion == 'failure' && github.event.workflow_run.html_url || '' }}${{ github.event.workflow_run.name == 'Preview Build' && github.event.workflow_run.conclusion == 'failure' && ') for more details.' || '' }}
+
+            ${{ github.event.workflow_run.name == 'Trigger Supabase JS Tests' && github.event.workflow_run.conclusion == 'success' && '✅ **Supabase-js tests triggered successfully!**
+
+            The integration tests are now running. Results will be posted here when complete.' || '' }}
+
+            ${{ github.event.workflow_run.name == 'Trigger Supabase JS Tests' && github.event.workflow_run.conclusion == 'failure' && '⚠️ **Failed to trigger supabase-js tests**
+
+            The preview package was created but the integration tests could not be triggered. You may need to trigger them manually.' || '' }}
+
+            ---
+            <sub>Last updated: ${{ github.event.workflow_run.updated_at }}</sub>
+          edit-mode: replace

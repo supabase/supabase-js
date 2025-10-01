@@ -1,0 +1,42 @@
+name: Release
+
+on:
+  push:
+    branches:
+      - main
+      - next
+      - rc
+      - next-rc-1
+  workflow_run:
+    workflows: ['CI']
+    types:
+      - completed
+  workflow_dispatch:
+
+jobs:
+  release:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    name: Release / Node ${{ matrix.node }}
+    strategy:
+      matrix:
+        node: ['20']
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ matrix.node }}
+
+      - run: |
+          npm ci
+          npm run build
+
+      - name: Create a release
+        run: npx semantic-release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_ACCESS_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
