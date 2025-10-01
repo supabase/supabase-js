@@ -1,0 +1,47 @@
+name: Check pull requests
+
+on:
+  push:
+    branches-ignore: # Run the checks on all branches but the protected ones
+      - master
+      - release/*
+
+  pull_request_target:
+    branches:
+      - master
+      - release/*
+    types:
+      - opened
+      - edited
+      - reopened
+      - ready_for_review
+
+permissions: 
+  contents: read
+
+jobs:
+  check-conventional-commits:
+    runs-on: ubuntu-latest
+    if: github.actor != 'dependabot[bot]' # skip for dependabot PRs
+    env:
+      EVENT: ${{ toJSON(github.event) }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            .github
+
+      - if: ${{ github.event_name == 'pull_request_target' }}
+        run: |
+          set -ex
+          TMP_FILE=$(mktemp)
+          echo "${EVENT}" > "$TMP_FILE"
+          node .github/workflows/conventional-commits-lint.js pr "${TMP_FILE}"
+
+      - if: ${{ github.event_name == 'push' }}
+        run: |
+          set -ex
+
+          TMP_FILE=$(mktemp)
+          echo "${EVENT}" > "$TMP_FILE"
+          node .github/workflows/conventional-commits-lint.js push "${TMP_FILE}"
