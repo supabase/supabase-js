@@ -19,7 +19,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/supabase/js-client-libs.git",
+    "url": "https://github.com/supabase/supabase-js.git",
     "directory": "packages/core/functions-js"
   },
   "keywords": [
@@ -33,9 +33,9 @@
   ],
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/supabase/js-client-libs/issues"
+    "url": "https://github.com/supabase/supabase-js/issues"
   },
-  "homepage": "https://github.com/supabase/js-client-libs/tree/main/packages/core/functions-js",
+  "homepage": "https://github.com/supabase/supabase-js/tree/main/packages/core/functions-js",
   "dependencies": {
     "@supabase/node-fetch": "2.6.15"
   },

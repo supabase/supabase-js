@@ -217,7 +217,7 @@ client.disconnect()
 
 ## Development
 
-This package is part of the [Supabase JavaScript monorepo](https://github.com/supabase/js-client-libs). To work on this package:
+This package is part of the [Supabase JavaScript monorepo](https://github.com/supabase/supabase-js). To work on this package:
 
 ### Building
 

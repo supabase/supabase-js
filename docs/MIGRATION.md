@@ -1,6 +1,6 @@
-# Migration Guide: From Separate Repos to Unified Monorepo
+# Migration Guide: From Separate Repos to the Supabase JS Monorepo
 
-> 🚀 **Welcome to the new unified Supabase JS Libraries monorepo!** This guide will help you transition from the old separate repository structure to our new Nx-powered monorepo.
+> 🚀 **Welcome to the Supabase JS monorepo!** This guide will help you transition from the old separate repository structure to our new Nx monorepo.
 
 ## 📋 Table of Contents
 
@@ -15,7 +15,7 @@
 
 ## Why We Migrated
 
-We consolidated 6 separate repositories into a single Nx monorepo to solve several critical challenges:
+The `supabase-js` repository has been converted into a Nx monorepo and the other js client libraries have been absorbed into it to solve several critical challenges:
 
 ### Problems with Separate Repos
 
@@ -51,10 +51,10 @@ github.com/supabase/storage-js
 github.com/supabase/functions-js
 ```
 
-**After:** 1 unified monorepo
+**After:** The Supabase JS monorepo (absorbed all client libraries)
 
 ```tree
-github.com/supabase/js-client-libs
+github.com/supabase/supabase-js
 ├── packages/
 │   └── core/
 │       ├── supabase-js/
@@ -67,10 +67,10 @@ github.com/supabase/js-client-libs
 
 ### Development Workflow
 
-| Task                     | Old Workflow                     | New Workflow                                    |
-| ------------------------ | -------------------------------- | ----------------------------------------------- |
-| **Clone & Setup**        | Clone each repo individually     | Clone once: `git clone supabase/js-client-libs` |
-| **Install Dependencies** | `npm install` in each repo       | Single `npm install` at root                    |
+| Task                     | Old Workflow                     | New Workflow                                  |
+| ------------------------ | -------------------------------- | --------------------------------------------- |
+| **Clone & Setup**        | Clone each repo individually     | Clone once: `git clone supabase/supabase-js`  |
+| **Install Dependencies** | `npm install` in each repo       | Single `npm install` at root                  |
 | **Build a Library**      | `npm run build` in specific repo | `npx nx build auth-js`                          |
 | **Test a Library**       | `npm test` in specific repo      | `npx nx test postgrest-js`                      |
 | **Format Code**          | Various tools per repo           | `npx nx format`                                 |
@@ -116,13 +116,13 @@ If you have uncommitted changes or an active branch in an old repository, you'll
 #### Step 1: Set up the new monorepo
 
 ```bash
-# Fork github.com/supabase/js-client-libs on GitHub, then:
-git clone https://github.com/YOUR_USERNAME/js-client-libs.git
-cd js-client-libs
+# Fork github.com/supabase/supabase-js on GitHub, then:
+git clone https://github.com/YOUR_USERNAME/supabase-js.git
+cd supabase-js
 npm install
 
 # Add upstream remote
-git remote add upstream https://github.com/supabase/js-client-libs.git
+git remote add upstream https://github.com/supabase/supabase-js.git
 git fetch upstream
 
 # Create your feature branch
@@ -316,7 +316,7 @@ npx nx test auth-js --watch
 
 ### Q: What about my Git history?
 
-**A:** The Git history from individual repos has been preserved in the migration. You can still see the history of individual files using:
+**A:** The Git history from all individual repos has been preserved during the migration. You can still see the history of individual files using:
 
 ```bash
 git log --follow packages/core/auth-js/src/GoTrueClient.ts
@@ -333,13 +333,13 @@ npm install @supabase/supabase-js
 
 ### Q: What if I find a bug in the migration?
 
-**A:** Please [open an issue](https://github.com/supabase/js-client-libs/issues) and tag it with `migration`. We're actively monitoring these during the transition period.
+**A:** Please [open an issue](https://github.com/supabase/supabase-js/issues) and tag it with `migration`. We're actively monitoring these during the transition period.
 
 ## Getting Help
 
 ### Migration Support
 
-- **Migration Issues**: Tag with `migration` label in [GitHub Issues](https://github.com/supabase/js-client-libs/issues)
+- **Migration Issues**: Tag with `migration` label in [GitHub Issues](https://github.com/supabase/supabase-js/issues)
 - **Questions**: [GitHub Discussions](https://github.com/supabase/supabase/discussions) with "Monorepo Migration" topic
 - **Discord**: [Supabase Discord](https://discord.supabase.com) in #contributing channel
 
@@ -350,9 +350,8 @@ npm install @supabase/supabase-js
 
 ### Important Links
 
-- **New Monorepo**: https://github.com/supabase/js-client-libs
+- **Supabase JS Monorepo**: https://github.com/supabase/supabase-js
 - **Old Repos** (archived/read-only):
-  - https://github.com/supabase/supabase-js
   - https://github.com/supabase/auth-js
   - https://github.com/supabase/postgrest-js
   - https://github.com/supabase/realtime-js

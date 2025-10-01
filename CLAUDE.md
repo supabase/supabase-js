@@ -15,7 +15,7 @@ You are assisting with development in a unified Nx monorepo that consolidates al
 ### Monorepo Structure
 
 ```text
-js-client-libs/
+supabase-js/
 ├── packages/core/
 │   ├── supabase-js/      # @supabase/supabase-js - Main isomorphic client for Supabase
 │   ├── auth-js/          # @supabase/auth-js - Authentication client

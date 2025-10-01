@@ -1,8 +1,8 @@
 # Supabase JS Client Libraries
 
-_A unified monorepo for all the Supabase JavaScript client libraries._
+_The Supabase JS monorepo containing all the Supabase JavaScript client libraries._
 
-> **📣 Coming from our old repositories?** This is a new unified monorepo structure. If you previously contributed to individual repositories like `supabase-js`, `auth-js`, `postgrest-js`, `realtime-js`, `storage-js`, or `functions-js`, please see our **[Migration Guide](./docs/MIGRATION.md)** to learn about the new structure and workflows.
+> **📣 Coming from our old repositories?** The `supabase-js` repository has been converted into a monorepo and all other client libraries have been absorbed into it. If you previously contributed to individual repositories like `auth-js`, `postgrest-js`, `realtime-js`, `storage-js`, or `functions-js`, please see our **[Migration Guide](./docs/MIGRATION.md)** to learn about the new structure and workflows.
 
 ## 📦 Libraries
 
@@ -23,8 +23,8 @@ This monorepo contains the complete suite of Supabase JavaScript client librarie
 
 ```bash
 # Clone the repository
-git clone https://github.com/supabase/js-client-libs.git
-cd js-client-libs
+git clone https://github.com/supabase/supabase-js.git
+cd supabase-js
 
 # Install dependencies
 npm install
@@ -127,7 +127,7 @@ npx nx test <package-name> --coverage
 ### Monorepo Structure
 
 ```tree
-js-client-libs/
+supabase-js/
 ├── packages/
 │   └── core/                  # Published libraries
 │       ├── auth-js/           # Authentication client
@@ -149,7 +149,7 @@ This project is licensed under the MIT License - see the [LICENSE](./LICENSE) fi
 
 - **Documentation**: [supabase.com/docs](https://supabase.com/docs)
 - **Community**: [GitHub Discussions](https://github.com/supabase/supabase/discussions)
-- **Issues**: [GitHub Issues](https://github.com/supabase/js-client-libs/issues)
+- **Issues**: [GitHub Issues](https://github.com/supabase/supabase-js/issues)
 - **Discord**: [Supabase Discord](https://discord.supabase.com)
 
 ---

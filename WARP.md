@@ -43,7 +43,7 @@ This monorepo replaces the following individual repositories:
 ## Project Structure
 
 ```text
-js-client-libs/
+supabase-js/
 ├── packages/core/              # Published libraries
 │   ├── supabase-js/           # Main isomorphic client for Supabase (@supabase/supabase-js)
 │   ├── auth-js/               # Authentication client (@supabase/auth-js)

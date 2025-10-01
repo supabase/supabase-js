@@ -91,15 +91,15 @@ body:
       options:
         - label: Follow our [Code of Conduct](https://github.com/supabase/.github/blob/main/CODE_OF_CONDUCT.md)
           required: true
-        - label: Read the [Contributing Guidelines](https://github.com/supabase/js-client-libs/blob/main/docs/CONTRIBUTING.md).
+        - label: Read the [Contributing Guidelines](https://github.com/supabase/supabase-js/blob/main/docs/CONTRIBUTING.md).
           required: true
         - label: Read the [docs](https://supabase.com/docs/reference/javascript/introduction).
           required: true
-        - label: Check that there isn't [already an issue](https://github.com/supabase/js-client-libs/issues) that reports the same bug to avoid creating a duplicate.
+        - label: Check that there isn't [already an issue](https://github.com/supabase/supabase-js/issues) that reports the same bug to avoid creating a duplicate.
           required: true
         - label: Make sure this is a Supabase JS Library issue and not an issue with the Supabase platform. If it's a Supabase platform related bug, it should likely be reported to [supabase/supabase](https://github.com/supabase/supabase) instead.
           required: true
-        - label: Check that this is a concrete bug. For Q&A open a [GitHub Discussion](https://github.com/supabase/js-client-libs/discussions) or join our [Discord Chat Server](https://discord.supabase.com//).
+        - label: Check that this is a concrete bug. For Q&A open a [GitHub Discussion](https://github.com/supabase/supabase-js/discussions) or join our [Discord Chat Server](https://discord.supabase.com//).
           required: true
         - label: The provided reproduction is a [minimal reproducible example](https://stackoverflow.com/help/minimal-reproducible-example) of the bug.
           required: true

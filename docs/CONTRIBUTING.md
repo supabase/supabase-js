@@ -1,8 +1,8 @@
 # Contributing to Supabase JS Libraries
 
-Thank you for your interest in contributing to the Supabase JavaScript client libraries! This guide will help you get started with contributing to this unified monorepo.
+Thank you for your interest in contributing to the Supabase JavaScript client libraries! This guide will help you get started with contributing to the Supabase JS monorepo.
 
-> **📣 Coming from a separate repository?** We recently unified all Supabase JS libraries into a single monorepo. If you previously contributed to `gotrue-js`, `postgrest-js`, `realtime-js`, `storage-js`, or `functions-js`, please read our **[Migration Guide](./MIGRATION.md)** to understand the new structure, workflow changes, and command mappings.
+> **📣 Coming from a separate repository?** The `supabase-js` repository has been converted into a monorepo and all other Supabase JS libraries have been absorbed into it. If you previously contributed to `auth-js`, `postgrest-js`, `realtime-js`, `storage-js`, or `functions-js`, please read our **[Migration Guide](MIGRATION.md)** to understand the new structure, workflow changes, and command mappings.
 
 ## 📋 Table of Contents
 
@@ -30,8 +30,8 @@ Thank you for your interest in contributing to the Supabase JavaScript client li
 2. **Clone your fork** locally:
 
    ```bash
-   git clone git@github.com:YOUR_USERNAME/js-client-libs.git
-   cd js-client-libs
+   git clone git@github.com:YOUR_USERNAME/supabase-js.git
+   cd supabase-js
    ```
 
 3. **Install dependencies**:
@@ -331,7 +331,7 @@ Official releases are handled by maintainers using Nx Release. You can read more
 
 - **Documentation**: [supabase.com/docs](https://supabase.com/docs)
 - **Community**: [GitHub Discussions](https://github.com/supabase/supabase/discussions)
-- **Issues**: [GitHub Issues](https://github.com/supabase/js-client-libs/issues)
+- **Issues**: [GitHub Issues](https://github.com/supabase/supabase-js/issues)
 - **Discord**: [Supabase Discord](https://discord.supabase.com)
 
 ### Reporting Issues
@@ -347,8 +347,8 @@ When reporting issues, please include:
 ### Asking Questions
 
 - **General questions**: Use [GitHub Discussions](https://github.com/supabase/supabase/discussions)
-- **Bug reports**: Use [GitHub Issues](https://github.com/supabase/js-client-libs/issues)
-- **Feature requests**: Use [GitHub Issues](https://github.com/supabase/js-client-libs/issues) with the "enhancement" label
+- **Bug reports**: Use [GitHub Issues](https://github.com/supabase/supabase-js/issues)
+- **Feature requests**: Use [GitHub Issues](https://github.com/supabase/supabase-js/issues) with the "enhancement" label
 
 ## 🤝 Code of Conduct
 

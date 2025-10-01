@@ -132,7 +132,7 @@ jobs:
               
               <hr style="margin-top: 50px; border: 1px solid #eee;">
               <p style="color: #999; font-size: 12px;">
-                  Generated from the <a href="https://github.com/supabase/js-client-libs">js-client-libs</a> monorepo.
+                  Generated from the <a href="https://github.com/supabase/supabase-js">supabase-js</a> monorepo.
               </p>
           </body>
           </html>

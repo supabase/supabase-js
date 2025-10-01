@@ -9,8 +9,8 @@
     "auth",
     "authentication"
   ],
-  "homepage": "https://github.com/supabase/js-client-libs/tree/main/packages/core/auth-js",
-  "bugs": "https://github.com/supabase/js-client-libs/issues",
+  "homepage": "https://github.com/supabase/supabase-js/tree/main/packages/core/auth-js",
+  "bugs": "https://github.com/supabase/supabase-js/issues",
   "license": "MIT",
   "author": "Supabase",
   "files": [
@@ -22,7 +22,7 @@
   "types": "dist/module/index.d.ts",
   "repository": {
     "type": "git",
-    "url": "https://github.com/supabase/js-client-libs.git",
+    "url": "https://github.com/supabase/supabase-js.git",
     "directory": "packages/core/auth-js"
   },
   "scripts": {

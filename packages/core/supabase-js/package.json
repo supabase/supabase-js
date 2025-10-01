@@ -7,8 +7,8 @@
     "typescript",
     "supabase"
   ],
-  "homepage": "https://github.com/supabase/js-client-libs/tree/main/packages/core/supabase-js",
-  "bugs": "https://github.com/supabase/js-client-libs/issues",
+  "homepage": "https://github.com/supabase/supabase-js/tree/main/packages/core/supabase-js",
+  "bugs": "https://github.com/supabase/supabase-js/issues",
   "license": "MIT",
   "author": "Supabase",
   "files": [
@@ -21,7 +21,7 @@
   "sideEffects": false,
   "repository": {
     "type": "git",
-    "url": "https://github.com/supabase/js-client-libs.git",
+    "url": "https://github.com/supabase/supabase-js.git",
     "directory": "packages/core/supabase-js"
   },
   "scripts": {

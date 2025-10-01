@@ -139,7 +139,7 @@ jobs:
               ref: 'master',
               inputs: {
                 version: '${{ github.event.inputs.version_specifier }}',
-                source: 'js-client-libs-stable-release'
+                source: 'supabase-js-stable-release'
               }
             });
 
@@ -170,6 +170,6 @@ jobs:
               ref: 'master',
               inputs: {
                 version: '${{ github.event.inputs.version_specifier }}',
-                source: 'js-client-libs-stable-release'
+                source: 'supabase-js-stable-release'
               }
             });

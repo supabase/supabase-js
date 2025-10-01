@@ -11,8 +11,8 @@
     "firebase",
     "supabase"
   ],
-  "homepage": "https://github.com/supabase/js-client-libs/tree/main/packages/core/realtime-js",
-  "bugs": "https://github.com/supabase/js-client-libs/issues",
+  "homepage": "https://github.com/supabase/supabase-js/tree/main/packages/core/realtime-js",
+  "bugs": "https://github.com/supabase/supabase-js/issues",
   "files": [
     "dist",
     "src"
@@ -22,7 +22,7 @@
   "types": "dist/module/index.d.ts",
   "repository": {
     "type": "git",
-    "url": "https://github.com/supabase/js-client-libs.git",
+    "url": "https://github.com/supabase/supabase-js.git",
     "directory": "packages/core/realtime-js"
   },
   "author": "Supabase",

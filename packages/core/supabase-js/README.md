@@ -1,7 +1,7 @@
 # `supabase-js` - Isomorphic JavaScript Client for Supabase.
 
 - **Documentation:** https://supabase.com/docs/reference/javascript/start
-- TypeDoc: https://supabase.github.io/js-client-libs/supabase-js/v2/spec.json
+- TypeDoc: https://supabase.github.io/supabase-js/supabase-js/v2/spec.json
 
 <div align="center">
 
@@ -111,7 +111,7 @@ When a Deno version reaches end-of-life and is no longer receiving security upda
 
 ## Development
 
-This package is part of the [Supabase JavaScript monorepo](https://github.com/supabase/js-client-libs). To work on this package:
+This package is part of the [Supabase JavaScript monorepo](https://github.com/supabase/supabase-js). To work on this package:
 
 ### Building
 
