@@ -1,1 +1,0 @@
-global.WebSocket = require('ws')
