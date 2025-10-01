@@ -1,0 +1,16 @@
+# Ignore example directories that have their own node_modules
+packages/core/*/example
+packages/core/*/examples
+
+# Ignore node_modules in any example directories
+**/example/node_modules
+**/examples/node_modules
+**/example/*/node_modules
+**/examples/*/node_modules
+
+# Ignore test directories that have their own package.json
+# These are test fixtures, not actual projects
+packages/core/auth-js/test
+packages/core/supabase-js/test/integration/next
+packages/core/supabase-js/test/integration/expo
+packages/core/supabase-js/test/deno

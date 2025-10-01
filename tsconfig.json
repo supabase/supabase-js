@@ -1,22 +1,6 @@
 {
-  "include": ["src"],
-  "exclude": ["node_modules/**/*.ts"],
-  "compilerOptions": {
-    "declaration": true,
-    "declarationMap": true,
-    "module": "CommonJS",
-    "outDir": "dist/main",
-    "sourceMap": true,
-    "target": "ES2015",
-
-    "strict": true,
-
-    "esModuleInterop": true,
-    "moduleResolution": "Node",
-    "isolatedModules": true,
-
-    "forceConsistentCasingInFileNames": true,
-    "stripInternal": true,
-    "allowSyntheticDefaultImports": true
-  }
+  "extends": "./tsconfig.base.json",
+  "compileOnSave": false,
+  "files": [],
+  "references": []
 }
