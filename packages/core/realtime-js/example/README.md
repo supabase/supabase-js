@@ -44,7 +44,6 @@ The `anon` key is your client-side API key. It allows "anonymous access" to your
 
 Refer to [step 3](#3.-get-the-url-and-key) to help form `NEXT_PUBLIC_SUPABASE_URL` (e.g. `wss://<project_ref>.supabase.co/realtime/v1`) and to retrieve `NEXT_PUBLIC_SUPABASE_KEY` (i.e. `anon` API key).
 
-
 ## Supabase details
 
 ### Postgres Row level security

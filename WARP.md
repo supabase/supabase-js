@@ -8,7 +8,7 @@ This is a unified Nx monorepo consolidating all Supabase JavaScript client libra
 
 > **📚 Key Documentation**: For comprehensive guides, see:
 >
-> - [CONTRIBUTING.md](docs/CONTRIBUTING.md) - Development guidelines and PR process
+> - [CONTRIBUTING.md](CONTRIBUTING.md) - Development guidelines and PR process
 > - [TESTING.md](docs/TESTING.md) - Complete testing guide
 > - [RELEASE.md](docs/RELEASE.md) - Release workflows and versioning
 > - [MIGRATION.md](docs/MIGRATION.md) - Migration guide from old repos
@@ -404,7 +404,7 @@ Nx automatically replaces `*` with the actual version during release.
 
 ## Commit Message Guidelines
 
-> **📖 Complete guidelines in [CONTRIBUTING.md](docs/CONTRIBUTING.md#commit-guidelines)**
+> **📖 Complete guidelines in [CONTRIBUTING.md](CONTRIBUTING.md#commit-guidelines)**
 
 This monorepo uses [Conventional Commits](https://www.conventionalcommits.org/) with strict validation.
 
@@ -485,7 +485,7 @@ feat(realtime)!: remove deprecated subscribe method
 
 ## Pull Request Process
 
-> **📖 Complete PR guidelines in [CONTRIBUTING.md](docs/CONTRIBUTING.md#pull-request-process)**
+> **📖 Complete PR guidelines in [CONTRIBUTING.md](CONTRIBUTING.md#pull-request-process)**
 
 ### Before Submitting
 
@@ -622,7 +622,7 @@ nx affected --target=test
 ## Additional Resources
 
 - **[Main README](README.md)** - Repository overview and quick start
-- **[CONTRIBUTING.md](docs/CONTRIBUTING.md)** - Contribution guidelines and workflow
+- **[CONTRIBUTING.md](CONTRIBUTING.md)** - Contribution guidelines and workflow
 - **[TESTING.md](docs/TESTING.md)** - Complete testing guide
 - **[RELEASE.md](docs/RELEASE.md)** - Release workflows and versioning
 - **[MIGRATION.md](docs/MIGRATION.md)** - Migration guide from old repos

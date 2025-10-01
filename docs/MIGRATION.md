@@ -67,14 +67,14 @@ github.com/supabase/supabase-js
 
 ### Development Workflow
 
-| Task                     | Old Workflow                     | New Workflow                                  |
-| ------------------------ | -------------------------------- | --------------------------------------------- |
-| **Clone & Setup**        | Clone each repo individually     | Clone once: `git clone supabase/supabase-js`  |
-| **Install Dependencies** | `npm install` in each repo       | Single `npm install` at root                  |
-| **Build a Library**      | `npm run build` in specific repo | `npx nx build auth-js`                          |
-| **Test a Library**       | `npm test` in specific repo      | `npx nx test postgrest-js`                      |
-| **Format Code**          | Various tools per repo           | `npx nx format`                                 |
-| **Release**              | Individual releases per repo     | Single coordinated release                      |
+| Task                     | Old Workflow                     | New Workflow                                 |
+| ------------------------ | -------------------------------- | -------------------------------------------- |
+| **Clone & Setup**        | Clone each repo individually     | Clone once: `git clone supabase/supabase-js` |
+| **Install Dependencies** | `npm install` in each repo       | Single `npm install` at root                 |
+| **Build a Library**      | `npm run build` in specific repo | `npx nx build auth-js`                       |
+| **Test a Library**       | `npm test` in specific repo      | `npx nx test postgrest-js`                   |
+| **Format Code**          | Various tools per repo           | `npx nx format`                              |
+| **Release**              | Individual releases per repo     | Single coordinated release                   |
 
 ### Versioning Strategy
 

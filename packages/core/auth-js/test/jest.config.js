@@ -8,8 +8,8 @@ module.exports = {
     'src/**/*.{js,ts}',
     'src/**/*.unit.test.ts',
     '!**/node_modules/**',
-    '!**/vendor/**'
+    '!**/vendor/**',
   ],
   rootDir: '..',
-  silent: true
+  silent: true,
 }

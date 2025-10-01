@@ -70,7 +70,7 @@ npx nx test auth-js --watch
 
 ## 🤝 Contributing
 
-We welcome contributions! Please see our [Contributing Guide](./docs/CONTRIBUTING.md) for details.
+We welcome contributions! Please see our [Contributing Guide](./CONTRIBUTING.md) for details.
 
 ### Quick Contribution Steps
 
@@ -117,7 +117,7 @@ npx nx test <package-name> --coverage
 
 ### Architecture Documentation
 
-- **[Contributing](./docs/CONTRIBUTING.md)** - Development guidelines
+- **[Contributing](./CONTRIBUTING.md)** - Development guidelines
 - **[Release Workflows](./docs/RELEASE.md)** - Release and publishing process
 - **[Migration Guide](./docs/MIGRATION.md)** - Migrating to the monorepo structure
 - **[Security Policy](./docs/SECURITY.md)** - Security guidelines and reporting

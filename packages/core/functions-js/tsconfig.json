@@ -20,7 +20,5 @@
     "stripInternal": true,
     "allowSyntheticDefaultImports": true
   },
-  "typeRoots": [
-    "./src/types"
-  ]
+  "typeRoots": ["./src/types"]
 }

@@ -1,9 +1,6 @@
 import { useEffect, useState } from 'react'
 import { RealtimeClient } from '@supabase/realtime-js'
-import {
-  NEXT_PUBLIC_SUPABASE_URL,
-  NEXT_PUBLIC_SUPABASE_KEY,
-} from '../lib/constants'
+import { NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_KEY } from '../lib/constants'
 
 var socket = new RealtimeClient(NEXT_PUBLIC_SUPABASE_URL, {
   params: { apikey: NEXT_PUBLIC_SUPABASE_KEY },

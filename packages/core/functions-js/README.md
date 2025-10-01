@@ -98,6 +98,6 @@ npx nx test:ci functions-js
 
 ### Contributing
 
-We welcome contributions! Please see our [Contributing Guide](../../../docs/CONTRIBUTING.md) for details on how to get started.
+We welcome contributions! Please see our [Contributing Guide](../../../CONTRIBUTING.md) for details on how to get started.
 
 For major changes or if you're unsure about something, please open an issue first to discuss your proposed changes.

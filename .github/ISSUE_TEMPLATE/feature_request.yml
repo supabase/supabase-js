@@ -40,7 +40,7 @@ body:
       options:
         - label: Follow our [Code of Conduct](https://github.com/supabase/.github/blob/main/CODE_OF_CONDUCT.md)
           required: true
-        - label: Read the [Contributing Guidelines](https://github.com/supabase/supabase-js/blob/main/docs/CONTRIBUTING.md).
+        - label: Read the [Contributing Guidelines](https://github.com/supabase/supabase-js/blob/main/CONTRIBUTING.md).
           required: true
         - label: Read the [docs](https://supabase.com/docs/reference/javascript/introduction).
           required: true

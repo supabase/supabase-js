@@ -10,7 +10,7 @@ module.exports = {
     // For consistency between VSCode and type-check
     // https://github.com/supabase/postgrest-js/pull/627#discussion_r2236995331
     'ts-jest': {
-      tsconfig: 'tsconfig.test.json'
-    }
-  }
+      tsconfig: 'tsconfig.test.json',
+    },
+  },
 }

@@ -4,7 +4,7 @@ You are assisting with development in a unified Nx monorepo that consolidates al
 
 > **📚 Essential Documentation**: Always refer to these guides for detailed information:
 >
-> - **[CONTRIBUTING.md](docs/CONTRIBUTING.md)** - Development guidelines, commit format, PR process
+> - **[CONTRIBUTING.md](CONTRIBUTING.md)** - Development guidelines, commit format, PR process
 > - **[TESTING.md](docs/TESTING.md)** - Complete testing guide with Docker requirements
 > - **[RELEASE.md](docs/RELEASE.md)** - Release workflows and versioning strategy
 > - **[MIGRATION.md](docs/MIGRATION.md)** - Migration context from old repositories
@@ -108,7 +108,7 @@ Use conventional commit format for automated versioning:
 npm run commit
 ```
 
-> **📖 See [CONTRIBUTING.md](docs/CONTRIBUTING.md#commit-guidelines) for complete commit guidelines**
+> **📖 See [CONTRIBUTING.md](CONTRIBUTING.md#commit-guidelines) for complete commit guidelines**
 
 ## Essential Commands Reference
 
@@ -352,7 +352,7 @@ All commits are validated using commitlint with strict rules:
 - **Subject**: Required, imperative mood, no period at end, max 100 characters
 - **Interactive Tool**: Use `npm run commit` to ensure compliance
 
-See [CONTRIBUTING.md](docs/CONTRIBUTING.md#commit-guidelines) for complete details.
+See [CONTRIBUTING.md](CONTRIBUTING.md#commit-guidelines) for complete details.
 
 ## Common Pitfalls & Solutions
 
@@ -480,7 +480,7 @@ cat docs/TESTING.md
 
 ## Pull Request Best Practices
 
-> **📖 See [CONTRIBUTING.md](docs/CONTRIBUTING.md#pull-request-process) for complete PR guidelines**
+> **📖 See [CONTRIBUTING.md](CONTRIBUTING.md#pull-request-process) for complete PR guidelines**
 
 ### Before Creating PR
 
@@ -622,7 +622,7 @@ nx test auth-js --testFile=GoTrueClient.test.ts
 ## Additional Resources
 
 - **[README.md](README.md)** - Repository overview and quick start
-- **[CONTRIBUTING.md](docs/CONTRIBUTING.md)** - Complete contribution guide
+- **[CONTRIBUTING.md](CONTRIBUTING.md)** - Complete contribution guide
 - **[TESTING.md](docs/TESTING.md)** - Comprehensive testing documentation
 - **[RELEASE.md](docs/RELEASE.md)** - Release workflows and automation
 - **[MIGRATION.md](docs/MIGRATION.md)** - Migration context and history

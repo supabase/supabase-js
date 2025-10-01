@@ -2,7 +2,7 @@
 
 Thank you for your interest in contributing to the Supabase JavaScript client libraries! This guide will help you get started with contributing to the Supabase JS monorepo.
 
-> **📣 Coming from a separate repository?** The `supabase-js` repository has been converted into a monorepo and all other Supabase JS libraries have been absorbed into it. If you previously contributed to `auth-js`, `postgrest-js`, `realtime-js`, `storage-js`, or `functions-js`, please read our **[Migration Guide](MIGRATION.md)** to understand the new structure, workflow changes, and command mappings.
+> **📣 Coming from a separate repository?** The `supabase-js` repository has been converted into a monorepo and all other Supabase JS libraries have been absorbed into it. If you previously contributed to `auth-js`, `postgrest-js`, `realtime-js`, `storage-js`, or `functions-js`, please read our **[Migration Guide](docs/MIGRATION.md)** to understand the new structure, workflow changes, and command mappings.
 
 ## 📋 Table of Contents
 
