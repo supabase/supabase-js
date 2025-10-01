@@ -1,0 +1,42 @@
+name: Release
+
+on:
+  push:
+    branches:
+      - main
+      - next
+      - rc
+  workflow_dispatch:
+
+jobs:
+  release:
+    name: Release / Node ${{ matrix.node }}
+    strategy:
+      matrix:
+        node: ['20']
+
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+      issues: write
+      id-token: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+
+      - run: |
+          npm ci
+          npm run build
+
+      - uses: cycjimmy/semantic-release-action@v4
+        with:
+          semantic_version: 19
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}

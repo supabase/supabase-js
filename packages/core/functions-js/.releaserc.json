@@ -1,0 +1,27 @@
+{
+  "branches": [
+    { "name": "main" },
+    { "name": "next", "channel": "next", "prerelease": true },
+    { "name": "rc", "channel": "rc", "prerelease": true }
+  ],
+  "plugins": [
+    [
+      "semantic-release-plugin-update-version-in-files",
+      {
+        "files": [
+          "src/version.ts",
+          "dist/main/version.js",
+          "dist/main/version.d.ts",
+          "dist/module/version.js",
+          "dist/module/version.d.ts"
+        ],
+        "placeholder": "0.0.0-automated"
+      }
+    ],
+    "@semantic-release/commit-analyzer",
+    "@semantic-release/release-notes-generator",
+    "@semantic-release/github",
+    "@semantic-release/npm",
+    "@sebbo2002/semantic-release-jsr"
+  ]
+}
