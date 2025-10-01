@@ -2,7 +2,7 @@ name: Main CI & Canary Release
 
 on:
   push:
-    branches: [main]
+    branches: [main,chore/monorepo]
 permissions:
   actions: read
   contents: write
