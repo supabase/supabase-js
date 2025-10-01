@@ -102,7 +102,7 @@ export class FunctionsClient {
         signal,
       }).catch((fetchError) => {
         if (fetchError.name === 'AbortError') {
-          throw fetchError;
+          throw fetchError
         }
         throw new FunctionsFetchError(fetchError)
       })
@@ -136,7 +136,14 @@ export class FunctionsClient {
       if (error instanceof Error && error.name === 'AbortError') {
         return { data: null, error: new FunctionsFetchError(error) }
       }
-      return { data: null, error, response: error instanceof FunctionsHttpError || error instanceof FunctionsRelayError ? error.context : undefined }
+      return {
+        data: null,
+        error,
+        response:
+          error instanceof FunctionsHttpError || error instanceof FunctionsRelayError
+            ? error.context
+            : undefined,
+      }
     }
   }
 }

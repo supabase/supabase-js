@@ -3,11 +3,7 @@ import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import { WebSocket as MockWebSocket } from 'mock-socket'
 import RealtimeClient from '../src/RealtimeClient'
 import { CHANNEL_EVENTS } from '../src/lib/constants'
-import {
-  setupRealtimeTest,
-  cleanupRealtimeTest,
-  TestSetup,
-} from './helpers/setup'
+import { setupRealtimeTest, cleanupRealtimeTest, TestSetup } from './helpers/setup'
 
 let testSetup: TestSetup
 
@@ -28,9 +24,7 @@ describe('Additional Coverage Tests', () => {
       })
 
       // Mock WebSocketFactory to throw Node.js specific error
-      const WebSocketFactoryModule = await import(
-        '../src/lib/websocket-factory'
-      )
+      const WebSocketFactoryModule = await import('../src/lib/websocket-factory')
       const WebSocketFactory = WebSocketFactoryModule.default
       const originalCreateWebSocket = WebSocketFactory.createWebSocket
       WebSocketFactory.createWebSocket = vi.fn(() => {
@@ -42,9 +36,7 @@ describe('Additional Coverage Tests', () => {
       }).toThrow(/Node.js environment detected/)
       expect(() => {
         socketWithoutTransport.connect()
-      }).toThrow(
-        /To use Realtime in Node.js, you need to provide a WebSocket implementation/
-      )
+      }).toThrow(/To use Realtime in Node.js, you need to provide a WebSocket implementation/)
 
       // Restore original method
       WebSocketFactory.createWebSocket = originalCreateWebSocket
@@ -117,10 +109,7 @@ describe('Additional Coverage Tests', () => {
       }
 
       // Mock reconnectTimer
-      const scheduleTimeoutSpy = vi.spyOn(
-        testSetup.socket.reconnectTimer!,
-        'scheduleTimeout'
-      )
+      const scheduleTimeoutSpy = vi.spyOn(testSetup.socket.reconnectTimer!, 'scheduleTimeout')
 
       // Trigger heartbeat timeout
       await testSetup.socket.sendHeartbeat()
@@ -195,10 +184,7 @@ describe('Additional Coverage Tests', () => {
 
       testSetup.socket._leaveOpenTopic(topic)
 
-      expect(logSpy).toHaveBeenCalledWith(
-        'transport',
-        `leaving duplicate topic "${topic}"`
-      )
+      expect(logSpy).toHaveBeenCalledWith('transport', `leaving duplicate topic "${topic}"`)
       expect(unsubscribeSpy).toHaveBeenCalled()
     })
 
@@ -215,10 +201,7 @@ describe('Additional Coverage Tests', () => {
 
       testSetup.socket._leaveOpenTopic(topic)
 
-      expect(logSpy).toHaveBeenCalledWith(
-        'transport',
-        `leaving duplicate topic "${topic}"`
-      )
+      expect(logSpy).toHaveBeenCalledWith('transport', `leaving duplicate topic "${topic}"`)
       expect(unsubscribeSpy).toHaveBeenCalled()
     })
 
@@ -332,11 +315,7 @@ describe('Additional Coverage Tests', () => {
 
         mockWorker.onerror?.(errorEvent)
 
-        expect(logSpy).toHaveBeenCalledWith(
-          'worker',
-          'worker error',
-          'Worker script error'
-        )
+        expect(logSpy).toHaveBeenCalledWith('worker', 'worker error', 'Worker script error')
         expect(mockWorker.terminate).toHaveBeenCalled()
       } finally {
         // Restore original functions
@@ -457,11 +436,9 @@ describe('Additional Coverage Tests', () => {
 
       ;(testSetup.socket as any)._onConnMessage(message)
 
-      expect(logSpy).toHaveBeenCalledWith(
-        'receive',
-        'test-topic test-event (123)',
-        { data: 'test' }
-      )
+      expect(logSpy).toHaveBeenCalledWith('receive', 'test-topic test-event (123)', {
+        data: 'test',
+      })
     })
   })
 })

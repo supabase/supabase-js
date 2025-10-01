@@ -544,9 +544,7 @@ export default class StorageFileApi {
    * Retrieves the details of an existing file.
    * @param path
    */
-  async info(
-    path: string
-  ): Promise<
+  async info(path: string): Promise<
     | {
         data: Camelize<FileObjectV2>
         error: null
@@ -580,9 +578,7 @@ export default class StorageFileApi {
    * Checks the existence of a file.
    * @param path
    */
-  async exists(
-    path: string
-  ): Promise<
+  async exists(path: string): Promise<
     | {
         data: boolean
         error: null
@@ -605,7 +601,7 @@ export default class StorageFileApi {
         throw error
       }
       if (isStorageError(error) && error instanceof StorageUnknownError) {
-        const originalError = (error.originalError as unknown) as { status: number }
+        const originalError = error.originalError as unknown as { status: number }
 
         if ([400, 404].includes(originalError?.status)) {
           return { data: false, error }
@@ -662,9 +658,7 @@ export default class StorageFileApi {
    *
    * @param paths An array of files to delete, including the path and file name. For example [`'folder/image.png'`].
    */
-  async remove(
-    paths: string[]
-  ): Promise<
+  async remove(paths: string[]): Promise<
     | {
         data: FileObject[]
         error: null

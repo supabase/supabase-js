@@ -16,7 +16,7 @@ import { ContainsNull } from './select-query-parser/types'
 export default abstract class PostgrestBuilder<
   ClientOptions extends ClientServerOptions,
   Result,
-  ThrowOnError extends boolean = false
+  ThrowOnError extends boolean = false,
 > implements
     PromiseLike<
       ThrowOnError extends true ? PostgrestResponseSuccess<Result> : PostgrestSingleResponse<Result>
@@ -85,7 +85,7 @@ export default abstract class PostgrestBuilder<
     TResult1 = ThrowOnError extends true
       ? PostgrestResponseSuccess<Result>
       : PostgrestSingleResponse<Result>,
-    TResult2 = never
+    TResult2 = never,
   >(
     onfulfilled?:
       | ((
@@ -275,7 +275,7 @@ export default abstract class PostgrestBuilder<
    */
   overrideTypes<
     NewResult,
-    Options extends { merge?: boolean } = { merge: true }
+    Options extends { merge?: boolean } = { merge: true },
   >(): PostgrestBuilder<
     ClientOptions,
     IsValidResultOverride<Result, NewResult, false, false> extends true

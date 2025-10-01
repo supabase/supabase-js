@@ -3022,8 +3022,8 @@ export default class GoTrueClient {
           ...(params.factorType === 'phone'
             ? { phone: params.phone }
             : params.factorType === 'totp'
-            ? { issuer: params.issuer }
-            : {}),
+              ? { issuer: params.issuer }
+              : {}),
         }
 
         const { data, error } = (await _request(this.fetch, 'POST', `${this.url}/factors`, {
@@ -3072,12 +3072,9 @@ export default class GoTrueClient {
             | Prettify<
                 StrictOmit<MFAVerifyWebauthnParams, 'webauthn'> & {
                   webauthn: Prettify<
-                    | StrictOmit<
-                        MFAVerifyWebauthnParamFields['webauthn'],
-                        'credential_response'
-                      > & {
-                        credential_response: PublicKeyCredentialJSON
-                      }
+                    StrictOmit<MFAVerifyWebauthnParamFields['webauthn'], 'credential_response'> & {
+                      credential_response: PublicKeyCredentialJSON
+                    }
                   >
                 }
               >,
@@ -3271,7 +3268,7 @@ export default class GoTrueClient {
     for (const factor of user?.factors ?? []) {
       data.all.push(factor)
       if (factor.status === 'verified') {
-        ;(data[factor.factor_type] as typeof factor[]).push(factor)
+        ;(data[factor.factor_type] as (typeof factor)[]).push(factor)
       }
     }
 

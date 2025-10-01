@@ -3,11 +3,7 @@
   License: https://github.com/phoenixframework/phoenix/blob/d344ec0a732ab4ee204215b31de69cf4be72e3bf/LICENSE.md
 */
 
-import type {
-  PresenceOpts,
-  PresenceOnJoinCallback,
-  PresenceOnLeaveCallback,
-} from 'phoenix'
+import type { PresenceOpts, PresenceOnJoinCallback, PresenceOnLeaveCallback } from 'phoenix'
 import type RealtimeChannel from './RealtimeChannel'
 
 type Presence<T extends { [key: string]: any } = {}> = {
@@ -82,7 +78,10 @@ export default class RealtimePresence {
    * @param opts - The options,
    *        for example `{events: {state: 'state', diff: 'diff'}}`
    */
-  constructor(public channel: RealtimeChannel, opts?: PresenceOpts) {
+  constructor(
+    public channel: RealtimeChannel,
+    opts?: PresenceOpts
+  ) {
     const events = opts?.events || {
       state: 'presence_state',
       diff: 'presence_diff',
@@ -93,20 +92,10 @@ export default class RealtimePresence {
 
       this.joinRef = this.channel._joinRef()
 
-      this.state = RealtimePresence.syncState(
-        this.state,
-        newState,
-        onJoin,
-        onLeave
-      )
+      this.state = RealtimePresence.syncState(this.state, newState, onJoin, onLeave)
 
       this.pendingDiffs.forEach((diff) => {
-        this.state = RealtimePresence.syncDiff(
-          this.state,
-          diff,
-          onJoin,
-          onLeave
-        )
+        this.state = RealtimePresence.syncDiff(this.state, diff, onJoin, onLeave)
       })
 
       this.pendingDiffs = []
@@ -120,12 +109,7 @@ export default class RealtimePresence {
       if (this.inPendingSyncState()) {
         this.pendingDiffs.push(diff)
       } else {
-        this.state = RealtimePresence.syncDiff(
-          this.state,
-          diff,
-          onJoin,
-          onLeave
-        )
+        this.state = RealtimePresence.syncDiff(this.state, diff, onJoin, onLeave)
 
         onSync()
       }
@@ -185,12 +169,8 @@ export default class RealtimePresence {
       const currentPresences: Presence[] = state[key]
 
       if (currentPresences) {
-        const newPresenceRefs = newPresences.map(
-          (m: Presence) => m.presence_ref
-        )
-        const curPresenceRefs = currentPresences.map(
-          (m: Presence) => m.presence_ref
-        )
+        const newPresenceRefs = newPresences.map((m: Presence) => m.presence_ref)
+        const curPresenceRefs = currentPresences.map((m: Presence) => m.presence_ref)
         const joinedPresences: Presence[] = newPresences.filter(
           (m: Presence) => curPresenceRefs.indexOf(m.presence_ref) < 0
         )
@@ -247,9 +227,7 @@ export default class RealtimePresence {
       state[key] = this.cloneDeep(newPresences)
 
       if (currentPresences.length > 0) {
-        const joinedPresenceRefs = state[key].map(
-          (m: Presence) => m.presence_ref
-        )
+        const joinedPresenceRefs = state[key].map((m: Presence) => m.presence_ref)
         const curPresences: Presence[] = currentPresences.filter(
           (m: Presence) => joinedPresenceRefs.indexOf(m.presence_ref) < 0
         )
@@ -265,9 +243,7 @@ export default class RealtimePresence {
 
       if (!currentPresences) return
 
-      const presenceRefsToRemove = leftPresences.map(
-        (m: Presence) => m.presence_ref
-      )
+      const presenceRefsToRemove = leftPresences.map((m: Presence) => m.presence_ref)
       currentPresences = currentPresences.filter(
         (m: Presence) => presenceRefsToRemove.indexOf(m.presence_ref) < 0
       )
@@ -283,10 +259,7 @@ export default class RealtimePresence {
   }
 
   /** @internal */
-  private static map<T = any>(
-    obj: RealtimePresenceState,
-    func: PresenceChooser<T>
-  ): T[] {
+  private static map<T = any>(obj: RealtimePresenceState, func: PresenceChooser<T>): T[] {
     return Object.getOwnPropertyNames(obj).map((key) => func(key, obj[key]))
   }
 

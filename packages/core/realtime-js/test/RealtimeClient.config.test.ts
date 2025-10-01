@@ -1,11 +1,7 @@
 import assert from 'assert'
 import { afterEach, beforeEach, describe, test } from 'vitest'
 import RealtimeClient from '../src/RealtimeClient'
-import {
-  setupRealtimeTest,
-  cleanupRealtimeTest,
-  TestSetup,
-} from './helpers/setup'
+import { setupRealtimeTest, cleanupRealtimeTest, TestSetup } from './helpers/setup'
 
 let testSetup: TestSetup
 
@@ -39,10 +35,7 @@ describe('endpointURL', () => {
     const socket = new RealtimeClient(testSetup.url, {
       params: { apikey: '123456789' },
     })
-    assert.equal(
-      socket.endpointURL(),
-      `${testSetup.url}/websocket?apikey=123456789&vsn=1.0.0`
-    )
+    assert.equal(socket.endpointURL(), `${testSetup.url}/websocket?apikey=123456789&vsn=1.0.0`)
   })
 
   test('returns endpoint with no params (empty params object)', () => {

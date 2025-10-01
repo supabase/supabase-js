@@ -50,7 +50,7 @@ import { RealtimeClient } from '@supabase/realtime-js'
 
 const client = new RealtimeClient(REALTIME_URL, {
   params: {
-    apikey: API_KEY
+    apikey: API_KEY,
   },
 })
 
@@ -88,11 +88,9 @@ Your client can send and receive messages based on the `event`.
 ```js
 // Setup...
 
-const channel = client.channel('broadcast-test', { config: { broadcast: { ack: false, self: false } } })
+const channel = client.channel('broadcast-test', { broadcast: { ack: false, self: false } })
 
-channel.on('broadcast', { event: 'some-event' }, (payload) =>
-  console.log(payload)
-)
+channel.on('broadcast', { event: 'some-event' }, (payload) => console.log(payload))
 
 channel.subscribe(async (status) => {
   if (status === 'SUBSCRIBED') {
@@ -119,16 +117,13 @@ Your client can track and sync state that's stored in the channel.
 ```js
 // Setup...
 
-const channel = client.channel(
-  'presence-test',
-  {
-    config: {
-      presence: {
-        key: ''
-      }
-    }
-  }
-)
+const channel = client.channel('presence-test', {
+  config: {
+    presence: {
+      key: '',
+    },
+  },
+})
 
 channel.on('presence', { event: 'sync' }, () => {
   console.log('Online users: ', channel.presenceState())
@@ -144,7 +139,7 @@ channel.on('presence', { event: 'leave' }, ({ leftPresences }) => {
 
 channel.subscribe(async (status) => {
   if (status === 'SUBSCRIBED') {
-    const status = await channel.track({ 'user_id': 1 })
+    const status = await channel.track({ user_id: 1 })
     console.log(status)
   }
 })
@@ -163,13 +158,21 @@ channel.on('postgres_changes', { event: '*', schema: 'public' }, (payload) => {
   console.log('All changes in public schema: ', payload)
 })
 
-channel.on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, (payload) => {
-  console.log('All inserts in messages table: ', payload)
-})
+channel.on(
+  'postgres_changes',
+  { event: 'INSERT', schema: 'public', table: 'messages' },
+  (payload) => {
+    console.log('All inserts in messages table: ', payload)
+  }
+)
 
-channel.on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'users', filter: 'username=eq.Realtime' }, (payload) => {
-  console.log('All updates on users table when username is Realtime: ', payload)
-})
+channel.on(
+  'postgres_changes',
+  { event: 'UPDATE', schema: 'public', table: 'users', filter: 'username=eq.Realtime' },
+  (payload) => {
+    console.log('All updates on users table when username is Realtime: ', payload)
+  }
+)
 
 channel.subscribe(async (status) => {
   if (status === 'SUBSCRIBED') {
@@ -199,24 +202,88 @@ It is highly recommended that you clean up your channels after you're done with 
 
 const channel = client.channel('some-channel-to-remove')
 
-channel.subscribe()
-
+channel.unsubscribe()
 client.removeChannel(channel)
 ```
 
-- Remove all channels
+- Remove all channels and close the connection
 
 ```js
 // Setup...
 
-const channel1 = client.channel('a-channel-to-remove')
-const channel2 = client.channel('another-channel-to-remove')
-
-channel1.subscribe()
-channel2.subscribe()
-
 client.removeAllChannels()
+client.disconnect()
 ```
+
+## Development
+
+This package is part of the [Supabase JavaScript monorepo](https://github.com/supabase/js-client-libs). To work on this package:
+
+### Building
+
+```bash
+# Complete build (from monorepo root)
+npx nx build realtime-js
+
+# Build with watch mode for development
+npx nx build realtime-js --watch
+
+# Individual build targets
+npx nx build:main realtime-js    # CommonJS build (dist/main/)
+npx nx build:module realtime-js  # ES Modules build (dist/module/)
+
+# Other useful commands
+npx nx clean realtime-js         # Clean build artifacts
+npx nx format realtime-js        # Format code with Prettier
+npx nx lint realtime-js          # Run ESLint
+npx nx typecheck realtime-js     # TypeScript type checking
+```
+
+#### Build Outputs
+
+- **CommonJS (`dist/main/`)** - For Node.js environments
+- **ES Modules (`dist/module/`)** - For modern bundlers (Webpack, Vite, Rollup)
+- **TypeScript definitions (`dist/module/index.d.ts`)** - Type definitions for TypeScript projects
+
+Note: Unlike some other packages, realtime-js doesn't include a UMD build since it's primarily used in Node.js or bundled applications.
+
+#### Validating Package Exports
+
+```bash
+# Check if package exports are correctly configured
+npx nx check-exports realtime-js
+```
+
+This command uses ["Are the types wrong?"](https://github.com/arethetypeswrong/arethetypeswrong.github.io) to verify that the package exports work correctly in different environments. Run this before publishing to ensure your package can be imported correctly by all consumers.
+
+### Testing
+
+**No Docker or Supabase instance required!** The realtime-js tests use mocked WebSocket connections, so they're completely self-contained.
+
+```bash
+# Run unit tests (from monorepo root)
+npx nx test realtime-js
+
+# Run tests with coverage report
+npx nx test:coverage realtime-js
+
+# Run tests in watch mode during development
+npx nx test:watch realtime-js
+```
+
+#### Test Scripts Explained
+
+- **test** - Runs all unit tests once using Vitest
+- **test:coverage** - Runs tests and generates coverage report with terminal output
+- **test:watch** - Runs tests in interactive watch mode for development
+
+The tests mock WebSocket connections using `mock-socket`, so you can run them anytime without any external dependencies.
+
+### Contributing
+
+We welcome contributions! Please see our [Contributing Guide](../../../docs/CONTRIBUTING.md) for details on how to get started.
+
+For major changes or if you're unsure about something, please open an issue first to discuss your proposed changes.
 
 ## Credits
 

@@ -26,9 +26,7 @@ describe('index.ts exports', () => {
 
     // Test that constants have expected structure
     expect(typeof RealtimeJS.REALTIME_LISTEN_TYPES).toBe('object')
-    expect(typeof RealtimeJS.REALTIME_POSTGRES_CHANGES_LISTEN_EVENT).toBe(
-      'object'
-    )
+    expect(typeof RealtimeJS.REALTIME_POSTGRES_CHANGES_LISTEN_EVENT).toBe('object')
     expect(typeof RealtimeJS.REALTIME_PRESENCE_LISTEN_EVENTS).toBe('object')
     expect(typeof RealtimeJS.REALTIME_SUBSCRIBE_STATES).toBe('object')
     expect(typeof RealtimeJS.REALTIME_CHANNEL_STATES).toBe('object')

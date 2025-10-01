@@ -535,7 +535,7 @@ export type PublicKeyCredentialJSON = RegistrationResponseJSON | AuthenticationR
  * @see {@link https://developer.mozilla.org/en-US/docs/Web/API/PublicKeyCredential MDN - PublicKeyCredential}
  */
 export interface PublicKeyCredentialFuture<
-  T extends PublicKeyCredentialJSON = PublicKeyCredentialJSON
+  T extends PublicKeyCredentialJSON = PublicKeyCredentialJSON,
 > extends PublicKeyCredential {
   /**
    * The type of the credential (always "public-key").

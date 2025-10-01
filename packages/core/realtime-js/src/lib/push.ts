@@ -90,8 +90,7 @@ export default class Push {
   }
 
   trigger(status: string, response: any) {
-    if (this.refEvent)
-      this.channel._trigger(this.refEvent, { status, response })
+    if (this.refEvent) this.channel._trigger(this.refEvent, { status, response })
   }
 
   destroy() {
@@ -112,16 +111,8 @@ export default class Push {
     this.timeoutTimer = undefined
   }
 
-  private _matchReceive({
-    status,
-    response,
-  }: {
-    status: string
-    response: Function
-  }) {
-    this.recHooks
-      .filter((h) => h.status === status)
-      .forEach((h) => h.callback(response))
+  private _matchReceive({ status, response }: { status: string; response: Function }) {
+    this.recHooks.filter((h) => h.status === status).forEach((h) => h.callback(response))
   }
 
   private _hasReceived(status: string) {

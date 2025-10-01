@@ -40,9 +40,7 @@ export default class Serializer {
     offset = offset + topicSize
     const event = decoder.decode(buffer.slice(offset, offset + eventSize))
     offset = offset + eventSize
-    const data = JSON.parse(
-      decoder.decode(buffer.slice(offset, buffer.byteLength))
-    )
+    const data = JSON.parse(decoder.decode(buffer.slice(offset, buffer.byteLength)))
 
     return { ref: null, topic: topic, event: event, payload: data }
   }

@@ -2,11 +2,7 @@ import assert from 'assert'
 import { describe, beforeEach, afterEach, test, vi, expect } from 'vitest'
 import RealtimeClient from '../src/RealtimeClient'
 import RealtimeChannel from '../src/RealtimeChannel'
-import {
-  setupRealtimeTest,
-  cleanupRealtimeTest,
-  TestSetup,
-} from './helpers/setup'
+import { setupRealtimeTest, cleanupRealtimeTest, TestSetup } from './helpers/setup'
 
 const defaultRef = '1'
 const defaultTimeout = 1000
@@ -147,9 +143,7 @@ describe('on', () => {
 
   describe('off', () => {
     beforeEach(() => {
-      vi.spyOn(testSetup.socket, '_makeRef').mockImplementation(
-        () => defaultRef
-      )
+      vi.spyOn(testSetup.socket, '_makeRef').mockImplementation(() => defaultRef)
       channel = testSetup.socket.channel('topic')
     })
 
@@ -310,11 +304,7 @@ describe('send', () => {
       new_channel.send({ type: 'broadcast', event: 'test' })
 
       expect(pushStub).toHaveBeenCalledTimes(1)
-      expect(pushStub).toHaveBeenCalledWith(
-        'broadcast',
-        { type: 'broadcast', event: 'test' },
-        1000
-      )
+      expect(pushStub).toHaveBeenCalledWith('broadcast', { type: 'broadcast', event: 'test' }, 1000)
     })
 
     test('cannot send via ws conn when subscription times out', () => {

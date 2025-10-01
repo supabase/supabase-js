@@ -28,7 +28,7 @@ import { Database } from '../types.generated'
       columns: ['project_id']
       referencedRelation: 'sls_physical_backups_monitoring'
       referencedColumns: ['project_id']
-    }
+    },
   ]
   type expected = [
     {
@@ -48,7 +48,7 @@ import { Database } from '../types.generated'
       columns: ['project_id']
       referencedRelation: 'sls_physical_backups_monitoring'
       referencedColumns: ['project_id']
-    }
+    },
   ]
 
   type result = DeduplicateRelationships<rels>

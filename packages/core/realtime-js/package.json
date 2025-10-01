@@ -11,8 +11,8 @@
     "firebase",
     "supabase"
   ],
-  "homepage": "https://github.com/supabase/realtime-js",
-  "bugs": "https://github.com/supabase/realtime-js/issues",
+  "homepage": "https://github.com/supabase/js-client-libs/tree/main/packages/core/realtime-js",
+  "bugs": "https://github.com/supabase/js-client-libs/issues",
   "files": [
     "dist",
     "src"
@@ -20,46 +20,41 @@
   "main": "dist/main/index.js",
   "module": "dist/module/index.js",
   "types": "dist/module/index.d.ts",
-  "repository": "https://github.com/supabase/realtime-js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/supabase/js-client-libs.git",
+    "directory": "packages/core/realtime-js"
+  },
   "author": "Supabase",
   "license": "MIT",
   "scripts": {
     "clean": "rimraf dist docs/v2",
     "format": "prettier --write \"{src,test}/**/*.ts\"",
-    "build": "run-s clean format build:*",
+    "build": "npm run clean && npm run format && npm run build:main && npm run build:module",
     "build:main": "tsc -p tsconfig.json",
     "build:module": "tsc -p tsconfig.module.json",
     "test": "vitest run",
     "test:watch": "vitest",
-    "coverage": "vitest run --coverage",
-    "coverage:text": "vitest run --coverage.enabled true --coverage.reporter=text",
+    "test:coverage": "vitest run --coverage.enabled true --coverage.reporter=text",
     "docs": "typedoc src/index.ts --out docs/v2",
     "docs:json": "typedoc --json docs/v2/spec.json --excludeExternals src/index.ts",
     "check-exports": "attw --pack .",
-    "ci": "run-s test coverage"
+    "test:ci": "vitest run --coverage"
   },
   "dependencies": {
-    "@supabase/node-fetch": "^2.6.13",
     "@types/phoenix": "^1.6.6",
     "ws": "^8.18.2",
-    "@types/ws": "^8.18.1"
+    "@types/ws": "^8.18.1",
+    "@supabase/node-fetch": "2.6.15"
   },
   "devDependencies": {
     "@arethetypeswrong/cli": "^0.16.4",
     "@vitest/coverage-v8": "^3.1.4",
-    "eslint": "^9.27.0",
     "esm": "^3.2.25",
     "jsdom": "^16.7.0",
     "jsdom-global": "3.0.0",
-    "jsonwebtoken": "^9.0.2",
     "mock-socket": "^9.3.1",
-    "npm-run-all": "^4.1.5",
     "nyc": "^15.1.0",
-    "prettier": "^2.8.8",
-    "semantic-release-plugin-update-version-in-files": "^1.1.0",
-    "typedoc": "^0.27.9",
-    "typescript": "^5.8.3",
-    "vitest": "^3.1.4",
     "web-worker": "1.2.0"
   }
 }

@@ -4,7 +4,6 @@ import querystring from 'querystring'
 import 'jest'
 import { nanoid } from 'nanoid'
 import { sign } from 'jsonwebtoken'
-import { ContentType } from 'allure-js-commons'
 
 import { FunctionsClient } from '../../src/index'
 import { FunctionRegion } from '../../src/types'
@@ -52,7 +51,7 @@ describe('params reached to function', () => {
     attach(
       'check data from function',
       `expected: ${JSON.stringify(expected)}\n actual: ${JSON.stringify(data)}`,
-      ContentType.TEXT
+      'text/plain'
     )
     expect(data).toEqual(expected)
   })
@@ -84,7 +83,7 @@ describe('params reached to function', () => {
     attach(
       'check data from function',
       `expected: ${JSON.stringify(expected)}\n actual: ${JSON.stringify(data)}`,
-      ContentType.TEXT
+      'text/plain'
     )
     expect(data).toEqual(expected)
     attach(
@@ -92,7 +91,7 @@ describe('params reached to function', () => {
       `expected to include: ${['customheader', 'check me']}\n actual: ${JSON.stringify(
         data?.headers
       )}`,
-      ContentType.TEXT
+      'text/plain'
     )
     expect(
       (data?.headers as [Array<string>]).filter(
@@ -129,7 +128,7 @@ describe('params reached to function', () => {
     attach(
       'check data from function',
       `expected: ${JSON.stringify(expected)}\n actual: ${JSON.stringify(data)}`,
-      ContentType.TEXT
+      'text/plain'
     )
     expect(data).toEqual(expected)
     attach(
@@ -137,7 +136,7 @@ describe('params reached to function', () => {
       `expected to include: ${['custom-header', customHeader]}\n actual: ${JSON.stringify(
         data?.headers
       )}`,
-      ContentType.TEXT
+      'text/plain'
     )
     expect(
       (data?.headers as [Array<string>]).filter(
@@ -182,7 +181,7 @@ describe('params reached to function', () => {
       `expected to include: ${['custom-header', customHeader]}\n actual: ${JSON.stringify(
         data?.headers
       )}`,
-      ContentType.TEXT
+      'text/plain'
     )
   })
 
@@ -220,7 +219,7 @@ describe('params reached to function', () => {
       `expected to include: ${['custom-header', customHeader]}\n actual: ${JSON.stringify(
         data?.headers
       )}`,
-      ContentType.TEXT
+      'text/plain'
     )
     console.log(data?.headers)
     expect(
@@ -263,7 +262,7 @@ describe('params reached to function', () => {
       `expected to include: ${['custom-header', customHeader]}\n actual: ${JSON.stringify(
         data?.headers
       )}`,
-      ContentType.TEXT
+      'text/plain'
     )
     console.log(data?.headers)
     expect(
@@ -305,7 +304,7 @@ describe('params reached to function', () => {
      */
     log('create FunctionsClient')
     const fclient = new FunctionsClient(`http://localhost:${relay.container.getMappedPort(8081)}`)
-    attach('setAuth', apiKey, ContentType.TEXT)
+    attach('setAuth', apiKey, 'text/plain')
     fclient.setAuth(apiKey)
 
     log('invoke mirror')
@@ -336,7 +335,7 @@ describe('params reached to function', () => {
     attach(
       'check data from function',
       `expected: ${JSON.stringify(expected)}\n actual: ${JSON.stringify(data)}`,
-      ContentType.TEXT
+      'text/plain'
     )
     expect(data).toEqual(expected)
   })
@@ -347,7 +346,7 @@ describe('params reached to function', () => {
      */
     log('create FunctionsClient')
     const fclient = new FunctionsClient(`http://localhost:${relay.container.getMappedPort(8081)}`)
-    attach('setAuth', apiKey, ContentType.TEXT)
+    attach('setAuth', apiKey, 'text/plain')
     fclient.setAuth(apiKey)
 
     log('invoke mirror')
@@ -378,7 +377,7 @@ describe('params reached to function', () => {
     attach(
       'check data from function',
       `expected: ${JSON.stringify(expected)}\n actual: ${JSON.stringify(data)}`,
-      ContentType.TEXT
+      'text/plain'
     )
     expect(data).toEqual(expected)
   })
@@ -389,7 +388,7 @@ describe('params reached to function', () => {
      */
     log('create FunctionsClient')
     const fclient = new FunctionsClient(`http://localhost:${relay.container.getMappedPort(8081)}`)
-    attach('setAuth', apiKey, ContentType.TEXT)
+    attach('setAuth', apiKey, 'text/plain')
     fclient.setAuth(apiKey)
 
     log('invoke mirror')
@@ -426,7 +425,7 @@ describe('params reached to function', () => {
      */
     log('create FunctionsClient')
     const fclient = new FunctionsClient(`http://localhost:${relay.container.getMappedPort(8081)}`)
-    attach('setAuth', apiKey, ContentType.TEXT)
+    attach('setAuth', apiKey, 'text/plain')
     fclient.setAuth(apiKey)
 
     log('invoke mirror')
@@ -463,7 +462,7 @@ describe('params reached to function', () => {
      */
     log('create FunctionsClient')
     const fclient = new FunctionsClient(`http://localhost:${relay.container.getMappedPort(8081)}`)
-    attach('setAuth', apiKey, ContentType.TEXT)
+    attach('setAuth', apiKey, 'text/plain')
     fclient.setAuth(apiKey)
 
     log('invoke mirror')

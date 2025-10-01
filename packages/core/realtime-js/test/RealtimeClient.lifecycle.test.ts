@@ -120,9 +120,7 @@ describe('connect with WebSocket', () => {
     })
 
     // Mock WebSocketFactory to throw an error
-    const { default: WebSocketFactory } = await import(
-      '../src/lib/websocket-factory.js'
-    )
+    const { default: WebSocketFactory } = await import('../src/lib/websocket-factory.js')
     const originalCreateWebSocket = WebSocketFactory.createWebSocket
     WebSocketFactory.createWebSocket = vi.fn(() => {
       throw new Error('WebSocket not available in test environment')
@@ -130,9 +128,7 @@ describe('connect with WebSocket', () => {
 
     expect(() => {
       socketWithoutTransport.connect()
-    }).toThrow(
-      'WebSocket not available: WebSocket not available in test environment'
-    )
+    }).toThrow('WebSocket not available: WebSocket not available in test environment')
 
     // Restore original method
     WebSocketFactory.createWebSocket = originalCreateWebSocket

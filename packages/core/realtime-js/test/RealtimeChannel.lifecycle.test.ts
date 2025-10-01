@@ -6,11 +6,7 @@ import RealtimeChannel from '../src/RealtimeChannel'
 import { WebSocket } from 'mock-socket'
 import { CHANNEL_STATES } from '../src/lib/constants'
 import Push from '../src/lib/push'
-import {
-  setupRealtimeTest,
-  cleanupRealtimeTest,
-  TestSetup,
-} from './helpers/setup'
+import { setupRealtimeTest, cleanupRealtimeTest, TestSetup } from './helpers/setup'
 
 const defaultRef = '1'
 const defaultTimeout = 1000
@@ -164,39 +160,30 @@ describe('Channel Lifecycle Management', () => {
         },
         testChannelDefaults: false,
       },
-    ])(
-      '$name',
-      ({
-        config,
-        setup,
-        expectedParams,
-        expectedJoinPayload,
-        testChannelDefaults,
-      }) => {
-        testSetup.socket.timeout = 1234
-        channel = new RealtimeChannel('topic', { config }, testSetup.socket)
+    ])('$name', ({ config, setup, expectedParams, expectedJoinPayload, testChannelDefaults }) => {
+      testSetup.socket.timeout = 1234
+      channel = new RealtimeChannel('topic', { config }, testSetup.socket)
 
-        setup(channel)
+      setup(channel)
 
-        if (testChannelDefaults) {
-          assert.equal(channel.state, 'closed')
-          assert.equal(channel.topic, 'topic')
-          assert.deepEqual(channel.socket, testSetup.socket)
-          assert.equal(channel.timeout, 1234)
-          assert.equal(channel.joinedOnce, false)
-          expect(channel.joinPush).toBeTruthy()
-          assert.deepEqual(channel.pushBuffer, [])
-        }
-
-        assert.deepEqual(channel.params, expectedParams)
-
-        const joinPush = channel.joinPush
-        assert.deepEqual(joinPush.channel, channel)
-        assert.deepEqual(joinPush.payload, expectedJoinPayload)
-        assert.equal(joinPush.event, 'phx_join')
-        assert.equal(joinPush.timeout, 1234)
+      if (testChannelDefaults) {
+        assert.equal(channel.state, 'closed')
+        assert.equal(channel.topic, 'topic')
+        assert.deepEqual(channel.socket, testSetup.socket)
+        assert.equal(channel.timeout, 1234)
+        assert.equal(channel.joinedOnce, false)
+        expect(channel.joinPush).toBeTruthy()
+        assert.deepEqual(channel.pushBuffer, [])
       }
-    )
+
+      assert.deepEqual(channel.params, expectedParams)
+
+      const joinPush = channel.joinPush
+      assert.deepEqual(joinPush.channel, channel)
+      assert.deepEqual(joinPush.payload, expectedJoinPayload)
+      assert.equal(joinPush.event, 'phx_join')
+      assert.equal(joinPush.timeout, 1234)
+    })
   })
 
   describe('subscribe', () => {
@@ -285,9 +272,7 @@ describe('Channel Lifecycle Management', () => {
 
     describe('socket push operations', () => {
       beforeEach(() => {
-        vi.spyOn(testSetup.socket, '_makeRef').mockImplementation(
-          () => defaultRef
-        )
+        vi.spyOn(testSetup.socket, '_makeRef').mockImplementation(() => defaultRef)
       })
 
       test('triggers socket push with default channel params', () => {
@@ -458,8 +443,7 @@ describe('Channel Lifecycle Management', () => {
       expect(callbackSpy).toHaveBeenCalledWith(
         'CHANNEL_ERROR',
         expect.objectContaining({
-          message:
-            'mismatch between server and client bindings for postgres changes',
+          message: 'mismatch between server and client bindings for postgres changes',
         })
       )
       assert.equal(channel.state, CHANNEL_STATES.errored)

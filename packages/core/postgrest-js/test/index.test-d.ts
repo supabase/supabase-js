@@ -245,14 +245,13 @@ const postgrestWithOptions = new PostgrestClient<DatabaseWithOptions>(REST_URL)
     .throwOnError()
   const { data } = result
   const { error } = result
-  let expected:
-    | {
-        username: string
-        messages: {
-          id: number
-          message: string | null
-        }[]
-      }[]
+  let expected: {
+    username: string
+    messages: {
+      id: number
+      message: string | null
+    }[]
+  }[]
   expectType<TypeEqual<typeof data, typeof expected>>(true)
   expectType<TypeEqual<typeof error, null>>(true)
   error
@@ -268,14 +267,13 @@ const postgrestWithOptions = new PostgrestClient<DatabaseWithOptions>(REST_URL)
     .limit(1)
   const { data } = result
   const { error } = result
-  let expected:
-    | {
-        username: string
-        messages: {
-          id: number
-          message: string | null
-        }[]
-      }[]
+  let expected: {
+    username: string
+    messages: {
+      id: number
+      message: string | null
+    }[]
+  }[]
   expectType<TypeEqual<typeof data, typeof expected>>(true)
   expectType<TypeEqual<typeof error, null>>(true)
   error

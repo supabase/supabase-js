@@ -6,8 +6,8 @@
     "postgrest",
     "supabase"
   ],
-  "homepage": "https://github.com/supabase/postgrest-js",
-  "bugs": "https://github.com/supabase/postgrest-js/issues",
+  "homepage": "https://github.com/supabase/js-client-libs/tree/main/packages/core/postgrest-js",
+  "bugs": "https://github.com/supabase/js-client-libs/issues",
   "license": "MIT",
   "author": "Supabase",
   "files": [
@@ -27,23 +27,27 @@
     }
   },
   "types": "./dist/cjs/index.d.ts",
-  "repository": "supabase/postgrest-js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/supabase/js-client-libs.git",
+    "directory": "packages/core/postgrest-js"
+  },
   "scripts": {
     "clean": "rimraf dist docs/v2",
     "format": "prettier --write \"{src,test}/**/*.ts\" wrapper.mjs",
     "format:check": "prettier --check \"{src,test}/**/*.ts\"",
-    "build": "run-s clean format build:*",
+    "build": "npm run clean && npm run build:cjs && npm run build:esm",
     "build:cjs": "tsc -p tsconfig.json",
     "build:esm": "cpy wrapper.mjs dist/esm/",
     "docs": "typedoc src/index.ts --out docs/v2",
     "docs:json": "typedoc --json docs/v2/spec.json --excludeExternals src/index.ts",
-    "test": "run-s format:check test:types db:clean db:run test:generated-types test:run db:clean && node test/smoke.cjs && node test/smoke.mjs",
-    "test:ci": "run-s format:check test:types:ci db:clean db:run test:generated-types test:run db:clean && node test/smoke.cjs && node test/smoke.mjs",
+    "test": "npm run format:check && npm run test:types && npm run db:clean && npm run db:run && npm run test:generated-types && npm run test:run && npm run db:clean && node test/smoke.cjs && node test/smoke.mjs",
+    "test:ci": "npm run format:check && npm run test:types:ci && npm run db:clean && npm run db:run && npm run test:generated-types && npm run test:run && npm run db:clean && node test/smoke.cjs && node test/smoke.mjs",
     "test:run": "jest --runInBand --coverage",
-    "test:generated-types": "run-s db:generate-test-types && git diff --exit-code test/types.generated.ts || (echo '❌ Generated types are not up to date. Run npm run db:generate-test-types.' && exit 1)",
-    "test:update": "run-s db:clean db:run db:generate-test-types && jest --runInBand --updateSnapshot && run-s db:clean",
-    "test:types": "run-s build && tstyche",
-    "test:types:ci": "run-s build && tstyche --target '4.7,5.5,latest'",
+    "test:generated-types": "npm run db:generate-test-types && git diff --exit-code test/types.generated.ts || (echo '❌ Generated types are not up to date. Run npm run db:generate-test-types.' && exit 1)",
+    "test:update": "npm run db:clean && npm run db:run && npm run db:generate-test-types && jest --runInBand --updateSnapshot && npm run db:clean",
+    "test:types": "npm run build && tstyche",
+    "test:types:ci": "npm run build && tstyche --target '4.7,5.5,latest'",
     "test:types:watch": "chokidar 'src/**/*.ts' 'test/**/*.ts' -c 'npm run test:types'",
     "type-check": "tsc --noEmit --project tsconfig.json",
     "type-check:test": "tsc --noEmit --project tsconfig.test.json",
@@ -52,23 +56,16 @@
     "db:generate-test-types": "cd test/db && docker compose up --detach && wait-for-localhost 8080 && curl --location 'http://0.0.0.0:8080/generators/typescript?included_schemas=public,personal&detect_one_to_one_relationships=true' > ../types.generated.ts && node ../scripts/update-json-type.js && prettier --write ../types.generated.ts"
   },
   "dependencies": {
-    "@supabase/node-fetch": "^2.6.14"
+    "@supabase/node-fetch": "2.6.15"
   },
   "devDependencies": {
-    "@types/jest": "^27.5.1",
     "chokidar-cli": "^3.0.0",
     "cpy-cli": "^5.0.0",
     "jest": "^28.1.0",
     "node-abort-controller": "^3.0.1",
-    "npm-run-all": "^4.1.5",
-    "prettier": "^2.6.2",
-    "rimraf": "^3.0.2",
-    "semantic-release-plugin-update-version-in-files": "^1.1.0",
     "ts-jest": "^28.0.3",
     "tstyche": "^4.3.0",
     "type-fest": "^4.32.0",
-    "typedoc": "^0.23.28",
-    "typescript": "^4.5.5",
     "wait-for-localhost-cli": "^3.0.0",
     "zod": "^3.25.76"
   }

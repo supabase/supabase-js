@@ -2,11 +2,7 @@ import assert from 'assert'
 import { describe, beforeEach, afterEach, test, vi, expect } from 'vitest'
 import RealtimeChannel from '../src/RealtimeChannel'
 import { CHANNEL_STATES } from '../src/lib/constants'
-import {
-  setupRealtimeTest,
-  cleanupRealtimeTest,
-  TestSetup,
-} from './helpers/setup'
+import { setupRealtimeTest, cleanupRealtimeTest, TestSetup } from './helpers/setup'
 
 const defaultTimeout = 1000
 
@@ -140,10 +136,7 @@ describe('PostgreSQL subscription validation', () => {
     })
 
     // Should call error callback and set errored state
-    expect(errorCallbackSpy).toHaveBeenCalledWith(
-      'CHANNEL_ERROR',
-      expect.any(Error)
-    )
+    expect(errorCallbackSpy).toHaveBeenCalledWith('CHANNEL_ERROR', expect.any(Error))
     assert.equal(channel.state, CHANNEL_STATES.errored)
   })
 })
@@ -315,10 +308,7 @@ describe('PostgreSQL binding matching behavior', () => {
     })
 
     // Should trigger error callback and set errored state
-    expect(errorCallbackSpy).toHaveBeenCalledWith(
-      'CHANNEL_ERROR',
-      expect.any(Error)
-    )
+    expect(errorCallbackSpy).toHaveBeenCalledWith('CHANNEL_ERROR', expect.any(Error))
     assert.equal(channel.state, CHANNEL_STATES.errored)
   })
 })
@@ -337,10 +327,7 @@ describe('Subscription error handling', () => {
     })
 
     // Should trigger error callback and set error state
-    expect(errorCallbackSpy).toHaveBeenCalledWith(
-      'CHANNEL_ERROR',
-      expect.any(Error)
-    )
+    expect(errorCallbackSpy).toHaveBeenCalledWith('CHANNEL_ERROR', expect.any(Error))
     assert.equal(channel.state, CHANNEL_STATES.errored)
   })
 

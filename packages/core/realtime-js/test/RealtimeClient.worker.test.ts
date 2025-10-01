@@ -1,21 +1,9 @@
 import assert from 'assert'
 import path from 'path'
-import {
-  afterAll,
-  afterEach,
-  beforeAll,
-  beforeEach,
-  expect,
-  test,
-  vi,
-} from 'vitest'
+import { afterAll, afterEach, beforeAll, beforeEach, expect, test, vi } from 'vitest'
 import { Server } from 'mock-socket'
 import RealtimeClient from '../src/RealtimeClient'
-import {
-  setupRealtimeTest,
-  cleanupRealtimeTest,
-  TestSetup,
-} from './helpers/setup'
+import { setupRealtimeTest, cleanupRealtimeTest, TestSetup } from './helpers/setup'
 import Worker from 'web-worker'
 
 let testSetup: TestSetup

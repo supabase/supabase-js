@@ -1,12 +1,7 @@
 import assert from 'assert'
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import RealtimeClient, { HeartbeatStatus } from '../src/RealtimeClient'
-import {
-  setupRealtimeTest,
-  cleanupRealtimeTest,
-  TestSetup,
-  testSuites,
-} from './helpers/setup'
+import { setupRealtimeTest, cleanupRealtimeTest, TestSetup, testSuites } from './helpers/setup'
 
 let testSetup: TestSetup
 
@@ -25,14 +20,11 @@ describe('push', () => {
     payload: 'payload',
     ref: 'ref',
   }
-  const json =
-    '{"topic":"topic","event":"event","payload":"payload","ref":"ref"}'
+  const json = '{"topic":"topic","event":"event","payload":"payload","ref":"ref"}'
 
   test('sends data to connection when connected', () => {
     testSetup.socket.connect()
-    const readyStateSpy = vi
-      .spyOn(testSetup.socket.conn!, 'readyState', 'get')
-      .mockReturnValue(1) // open
+    const readyStateSpy = vi.spyOn(testSetup.socket.conn!, 'readyState', 'get').mockReturnValue(1) // open
 
     const spy = vi.spyOn(testSetup.socket.conn!, 'send')
 
@@ -44,9 +36,7 @@ describe('push', () => {
 
   test('buffers data when not connected', () => {
     testSetup.socket.connect()
-    const readyStateSpy = vi
-      .spyOn(testSetup.socket.conn!, 'readyState', 'get')
-      .mockReturnValue(0) // connecting
+    const readyStateSpy = vi.spyOn(testSetup.socket.conn!, 'readyState', 'get').mockReturnValue(0) // connecting
     const spy = vi.spyOn(testSetup.socket.conn!, 'send')
 
     assert.equal(testSetup.socket.sendBuffer.length, 0)
@@ -92,9 +82,7 @@ describe('sendHeartbeat', () => {
   })
 
   test("closes socket when heartbeat is not ack'd within heartbeat window", () => {
-    const readyStateSpy = vi
-      .spyOn(testSetup.socket.conn!, 'readyState', 'get')
-      .mockReturnValue(1) // open
+    const readyStateSpy = vi.spyOn(testSetup.socket.conn!, 'readyState', 'get').mockReturnValue(1) // open
     testSetup.socket.sendHeartbeat()
     assert.equal(testSetup.socket.connectionState(), 'open')
 
@@ -105,13 +93,10 @@ describe('sendHeartbeat', () => {
   })
 
   test('pushes heartbeat data when connected', () => {
-    const readyStateSpy = vi
-      .spyOn(testSetup.socket.conn!, 'readyState', 'get')
-      .mockReturnValue(1) // open
+    const readyStateSpy = vi.spyOn(testSetup.socket.conn!, 'readyState', 'get').mockReturnValue(1) // open
 
     const spy = vi.spyOn(testSetup.socket.conn!, 'send')
-    const data =
-      '{"topic":"phoenix","event":"heartbeat","payload":{},"ref":"1"}'
+    const data = '{"topic":"phoenix","event":"heartbeat","payload":{},"ref":"1"}'
 
     testSetup.socket.sendHeartbeat()
     expect(spy).toHaveBeenCalledWith(data)
@@ -119,13 +104,10 @@ describe('sendHeartbeat', () => {
   })
 
   test('no ops when not connected', () => {
-    const readyStateSpy = vi
-      .spyOn(testSetup.socket.conn!, 'readyState', 'get')
-      .mockReturnValue(0) // connecting
+    const readyStateSpy = vi.spyOn(testSetup.socket.conn!, 'readyState', 'get').mockReturnValue(0) // connecting
 
     const spy = vi.spyOn(testSetup.socket.conn!, 'send')
-    const data =
-      '{"topic":"phoenix","event":"heartbeat","payload":{},"ref":"1"}'
+    const data = '{"topic":"phoenix","event":"heartbeat","payload":{},"ref":"1"}'
 
     testSetup.socket.sendHeartbeat()
     expect(spy).not.toHaveBeenCalledWith(data)
@@ -138,9 +120,7 @@ describe('sendHeartbeat', () => {
     const heartbeatCallbackSpy = vi.spyOn(testSetup.socket, 'heartbeatCallback')
 
     // Mock the close method to avoid the mock-socket issue
-    const closeSpy = vi
-      .spyOn(testSetup.socket.conn!, 'close')
-      .mockImplementation(() => {})
+    const closeSpy = vi.spyOn(testSetup.socket.conn!, 'close').mockImplementation(() => {})
 
     // Set a pending heartbeat reference to simulate timeout condition
     testSetup.socket.pendingHeartbeatRef = 'test-ref'
@@ -177,9 +157,7 @@ describe('flushSendBuffer', () => {
   })
 
   test('calls callbacks in buffer when connected', () => {
-    const readyStateSpy = vi
-      .spyOn(testSetup.socket.conn!, 'readyState', 'get')
-      .mockReturnValue(1) // open
+    const readyStateSpy = vi.spyOn(testSetup.socket.conn!, 'readyState', 'get').mockReturnValue(1) // open
     const spy1 = vi.fn()
     const spy2 = vi.fn()
     const spy3 = vi.fn()
@@ -195,9 +173,7 @@ describe('flushSendBuffer', () => {
   })
 
   test('empties sendBuffer', () => {
-    const readyStateSpy = vi
-      .spyOn(testSetup.socket.conn!, 'readyState', 'get')
-      .mockReturnValue(1) // open
+    const readyStateSpy = vi.spyOn(testSetup.socket.conn!, 'readyState', 'get').mockReturnValue(1) // open
     testSetup.socket.sendBuffer.push(() => {})
 
     testSetup.socket.flushSendBuffer()
@@ -257,9 +233,7 @@ describe('onConnMessage', () => {
     let socket = new RealtimeClient(testSetup.url, {
       params: { apikey: '123456789' },
     })
-    socket.onHeartbeat(
-      (message: HeartbeatStatus) => (called = message == 'error')
-    )
+    socket.onHeartbeat((message: HeartbeatStatus) => (called = message == 'error'))
 
     socket.connect()
 
@@ -286,14 +260,11 @@ describe('custom encoder and decoder', () => {
 
   test('allows custom encoding when using WebSocket transport', () => {
     let encoder = (payload, callback) => callback('encode works')
-    testSetup.socket = new RealtimeClient(
-      `wss://${testSetup.projectRef}/socket`,
-      {
-        transport: WebSocket,
-        encode: encoder,
-        params: { apikey: '123456789' },
-      }
-    )
+    testSetup.socket = new RealtimeClient(`wss://${testSetup.projectRef}/socket`, {
+      transport: WebSocket,
+      encode: encoder,
+      params: { apikey: '123456789' },
+    })
 
     testSetup.socket.encode({ foo: 'bar' }, (encoded) => {
       assert.deepStrictEqual(encoded, 'encode works')
@@ -301,12 +272,9 @@ describe('custom encoder and decoder', () => {
   })
 
   test('decodes JSON by default', () => {
-    testSetup.socket = new RealtimeClient(
-      `wss://${testSetup.projectRef}/socket`,
-      {
-        params: { apikey: '123456789' },
-      }
-    )
+    testSetup.socket = new RealtimeClient(`wss://${testSetup.projectRef}/socket`, {
+      params: { apikey: '123456789' },
+    })
     let payload = JSON.stringify({ foo: 'bar' })
 
     testSetup.socket.decode(payload, (decoded) => {
@@ -315,16 +283,12 @@ describe('custom encoder and decoder', () => {
   })
 
   test('decodes ArrayBuffer by default', () => {
-    testSetup.socket = new RealtimeClient(
-      `wss://${testSetup.projectRef}/socket`,
-      {
-        params: { apikey: '123456789' },
-      }
-    )
+    testSetup.socket = new RealtimeClient(`wss://${testSetup.projectRef}/socket`, {
+      params: { apikey: '123456789' },
+    })
     const buffer = new Uint8Array([
-      2, 20, 6, 114, 101, 97, 108, 116, 105, 109, 101, 58, 112, 117, 98, 108,
-      105, 99, 58, 116, 101, 115, 116, 73, 78, 83, 69, 82, 84, 123, 34, 102,
-      111, 111, 34, 58, 34, 98, 97, 114, 34, 125,
+      2, 20, 6, 114, 101, 97, 108, 116, 105, 109, 101, 58, 112, 117, 98, 108, 105, 99, 58, 116, 101,
+      115, 116, 73, 78, 83, 69, 82, 84, 123, 34, 102, 111, 111, 34, 58, 34, 98, 97, 114, 34, 125,
     ]).buffer
 
     testSetup.socket.decode(buffer, (decoded) => {
@@ -338,12 +302,9 @@ describe('custom encoder and decoder', () => {
   })
 
   test('decodes unexpected payload types to empty object by default', () => {
-    testSetup.socket = new RealtimeClient(
-      `wss://${testSetup.projectRef}/socket`,
-      {
-        params: { apikey: '123456789' },
-      }
-    )
+    testSetup.socket = new RealtimeClient(`wss://${testSetup.projectRef}/socket`, {
+      params: { apikey: '123456789' },
+    })
 
     // Test various non-string, non-ArrayBuffer payload types that have .constructor
     // This tests the fallback path on line 16 of serializer.ts
@@ -356,25 +317,18 @@ describe('custom encoder and decoder', () => {
 
     testCases.forEach(({ payload, description }) => {
       testSetup.socket.decode(payload as any, (decoded) => {
-        assert.deepStrictEqual(
-          decoded,
-          {},
-          `Expected empty object for ${description}`
-        )
+        assert.deepStrictEqual(decoded, {}, `Expected empty object for ${description}`)
       })
     })
   })
 
   test('allows custom decoding when using WebSocket transport', () => {
     let decoder = (_payload, callback) => callback('decode works')
-    testSetup.socket = new RealtimeClient(
-      `wss://${testSetup.projectRef}/socket`,
-      {
-        transport: WebSocket,
-        decode: decoder,
-        params: { apikey: '123456789' },
-      }
-    )
+    testSetup.socket = new RealtimeClient(`wss://${testSetup.projectRef}/socket`, {
+      transport: WebSocket,
+      decode: decoder,
+      params: { apikey: '123456789' },
+    })
 
     testSetup.socket.decode('...esoteric format...', (decoded) => {
       assert.deepStrictEqual(decoded, 'decode works')

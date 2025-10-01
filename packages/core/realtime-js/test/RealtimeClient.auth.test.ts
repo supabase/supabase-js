@@ -141,11 +141,7 @@ describe('auth during connection states', () => {
     await new Promise((resolve) => setTimeout(() => resolve(undefined), 100))
 
     // Verify that the error was logged
-    expect(logSpy).toHaveBeenCalledWith(
-      'error',
-      'error setting auth in connect',
-      expect.any(Error)
-    )
+    expect(logSpy).toHaveBeenCalledWith('error', 'error setting auth in connect', expect.any(Error))
 
     // Verify that the connection was still established despite the error
     assert.ok(socketWithError.conn, 'connection should still exist')
@@ -172,8 +168,7 @@ describe('auth during connection states', () => {
       .spyOn(connectedSetup.socket, 'accessTokenValue', 'get')
       .mockReturnValue(token)
 
-    const heartbeatData =
-      '{"topic":"phoenix","event":"heartbeat","payload":{},"ref":"1"}'
+    const heartbeatData = '{"topic":"phoenix","event":"heartbeat","payload":{},"ref":"1"}'
 
     await connectedSetup.socket.sendHeartbeat()
 

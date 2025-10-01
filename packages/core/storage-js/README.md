@@ -156,20 +156,255 @@ const storageClient = new StorageClient(STORAGE_URL, {
   const { data, error } = await storageClient.from('public-bucket').getPublicUrl('path/to/file')
   ```
 
-### Error Handling
+## Development
 
-Supplying `.throwOnError()` will throw errors instead of returning them as a property on the response object.
+This package is part of the [Supabase JavaScript monorepo](https://github.com/supabase/js-client-libs). To work on this package:
 
-  ```js
-  try {
-    const { data } = await storageClient
-      .from('bucket')
-      .throwOnError()
-      .download('path/to/file')
-  } catch (error) {
-    console.error(error)
-  }
+### Building
+
+#### Build Scripts Overview
+
+The storage-js package uses multiple build scripts to generate different module formats for various JavaScript environments:
+
+| Script         | Description                 | Output                                                          |
+| -------------- | --------------------------- | --------------------------------------------------------------- |
+| `build`        | **Complete build pipeline** | Runs all build steps in sequence                                |
+| `build:main`   | **CommonJS build**          | `dist/main/` - Node.js compatible CommonJS modules              |
+| `build:module` | **ES Modules build**        | `dist/module/` - Modern ES6 modules with TypeScript definitions |
+| `build:umd`    | **UMD build**               | `dist/umd/` - Universal Module Definition for browsers/CDN      |
+| `clean`        | **Clean build artifacts**   | Removes `dist/` and `docs/v2/` directories                      |
+| `format`       | **Format code**             | Runs Prettier on all TypeScript files                           |
+
+#### Running Builds
+
+##### Complete Build (Recommended)
+
+```bash
+# From the monorepo root
+npx nx build storage-js
+```
+
+This command executes the full build pipeline:
+
+1. **Cleans** - Removes any existing build artifacts
+2. **Formats** - Ensures consistent code formatting
+3. **Builds CommonJS** - For Node.js environments (`dist/main/`)
+4. **Builds ES Modules** - For modern bundlers (`dist/module/`)
+5. **Builds UMD** - For browser script tags (`dist/umd/`)
+
+##### Development Build with Watch Mode
+
+```bash
+# Continuously rebuild on file changes (from monorepo root)
+npx nx build storage-js --watch
+```
+
+##### Individual Build Targets
+
+For specific build outputs during development:
+
+```bash
+# Build CommonJS only (Node.js)
+npx nx build:main storage-js
+
+# Build ES Modules only (Modern bundlers)
+npx nx build:module storage-js
+
+# Build UMD only (Browser/CDN)
+npx nx build:umd storage-js
+```
+
+##### Other Useful Commands
+
+```bash
+# Clean build artifacts
+npx nx clean storage-js
+
+# Format code
+npx nx format storage-js
+
+# Type checking
+npx nx typecheck storage-js
+
+# Generate documentation
+npx nx docs storage-js
+```
+
+#### Build Outputs Explained
+
+##### CommonJS (`dist/main/`)
+
+- **Used by:** Node.js applications, older build tools
+- **Entry point:** `dist/main/index.js`
+- **Module format:** `require()` and `module.exports`
+- **TypeScript definitions:** Included
+
+##### ES Modules (`dist/module/`)
+
+- **Used by:** Modern bundlers (Webpack, Rollup, Vite)
+- **Entry point:** `dist/module/index.js`
+- **Module format:** `import` and `export`
+- **TypeScript definitions:** `dist/module/index.d.ts`
+- **Benefits:** Tree-shaking, better static analysis
+
+##### UMD (`dist/umd/`)
+
+- **Used by:** Browser `<script>` tags, CDNs
+- **Entry point:** `dist/umd/supabase.js`
+- **Global variable:** `window.supabase`
+- **Size:** Larger (includes all dependencies)
+- **Usage example:**
+  ```html
+  <script src="https://unpkg.com/@supabase/storage-js/dist/umd/supabase.js"></script>
+  <script>
+    const { StorageClient } = window.supabase
+  </script>
   ```
+
+#### Package Exports
+
+The package.json exports are configured to provide the right format for each environment:
+
+```json
+{
+  "main": "dist/main/index.js",
+  "module": "dist/module/index.js",
+  "types": "dist/module/index.d.ts",
+  "jsdelivr": "dist/umd/supabase.js",
+  "unpkg": "dist/umd/supabase.js"
+}
+```
+
+- **main** → Node.js environments (CommonJS format)
+- **module** → Modern bundlers like Webpack, Vite, Rollup (ES Modules)
+- **types** → TypeScript type definitions
+- **jsdelivr/unpkg** → CDN usage via `<script>` tags (UMD format)
+
+### Testing
+
+**Important:** The storage-js tests require a local test infrastructure running in Docker. This is **NOT** the same as a regular Supabase instance - it's a specialized test setup with its own storage API, database, and Kong gateway.
+
+#### Prerequisites
+
+1. **Docker** must be installed and running
+2. **Port availability** - The following ports must be free:
+   - 5432 (PostgreSQL database)
+   - 5050 (Storage API - sometimes 5000 conflicts macOS AirPlay conflict)
+   - 8000 (Kong API Gateway)
+   - 50020 (imgproxy for image transformations)
+
+**Note:** If port 5000 conflicts with macOS AirPlay Receiver, the docker-compose.yml has been configured to use port 5050 instead.
+
+#### Test Scripts Overview
+
+| Script         | Description                       | What it does                                                      |
+| -------------- | --------------------------------- | ----------------------------------------------------------------- |
+| `test:storage` | **Complete test workflow**        | Runs the full test cycle: clean → start infra → run tests → clean |
+| `test:suite`   | **Jest tests only**               | Runs Jest tests with coverage (requires infra to be running)      |
+| `test:infra`   | **Start test infrastructure**     | Starts Docker containers for storage API, database, and Kong      |
+| `test:clean`   | **Stop and clean infrastructure** | Stops all Docker containers and removes them                      |
+
+#### Running Tests
+
+##### Option 1: Complete Test Run (Recommended)
+
+This handles everything automatically - starting infrastructure, running tests, and cleaning up:
+
+```bash
+# From monorepo root
+npx nx test:storage storage-js
+```
+
+This command will:
+
+1. Stop any existing test containers
+2. Build and start fresh test infrastructure
+3. Wait for services to be ready
+4. Run all Jest tests with coverage
+5. Clean up all containers after tests complete
+
+##### Option 2: Manual Infrastructure Management
+
+Useful for development when you want to run tests multiple times without restarting Docker:
+
+```bash
+# Step 1: Start the test infrastructure
+# From root
+npx nx test:infra storage-js
+# This starts: PostgreSQL, Storage API, Kong Gateway, and imgproxy
+
+# Step 2: Run tests (can run multiple times)
+npx nx test:suite storage-js
+
+# Step 3: When done, clean up the infrastructure
+npx nx test:clean storage-js
+```
+
+##### Option 3: Development Mode
+
+For actively developing and debugging tests:
+
+```bash
+# Start infrastructure once (from root)
+npx nx test:infra storage-js
+
+# Run tests in watch mode
+npx nx test:suite storage-js --watch
+
+# Clean up when done
+npx nx test:clean storage-js
+```
+
+#### Test Infrastructure Details
+
+The test infrastructure (`infra/docker-compose.yml`) includes:
+
+- **PostgreSQL Database** (port 5432)
+  - Initialized with storage schema and test data
+  - Contains bucket configurations and permissions
+
+- **Storage API** (port 5050, internal 5000)
+  - Supabase Storage service for handling file operations
+  - Configured with test authentication keys
+
+- **Kong Gateway** (port 8000)
+  - API gateway that routes requests to storage service
+  - Handles authentication and CORS
+
+- **imgproxy** (port 50020)
+  - Image transformation service for on-the-fly image processing
+
+#### Common Issues and Solutions
+
+| Issue                             | Solution                                                                                                                               |
+| --------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| Port 5000 already in use          | macOS AirPlay uses this port. Either disable AirPlay Receiver in System Settings or use the modified docker-compose.yml with port 5050 |
+| Port 5432 already in use          | Another PostgreSQL instance is running. Stop it or modify the port in docker-compose.yml                                               |
+| "request failed, reason:" errors  | Infrastructure isn't running. Run `npx nx test:infra storage-js` first                                                                 |
+| Tests fail with connection errors | Ensure Docker is running and healthy                                                                                                   |
+| "Container name already exists"   | Run `npx nx test:clean storage-js` to remove existing containers                                                                       |
+
+#### Understanding Test Failures
+
+- **StorageUnknownError with "request failed"**: Infrastructure not running
+- **Port binding errors**: Ports are already in use by other services
+- **Snapshot failures**: Expected test data has changed - review and update snapshots if needed
+
+#### What About Supabase CLI?
+
+**No**, you don't need `supabase start` or a regular Supabase instance for these tests. The storage-js tests use their own specialized Docker setup that's lighter and focused specifically on testing the storage client library. This test infrastructure:
+
+- Is completely independent from any Supabase CLI projects
+- Uses fixed test authentication keys
+- Has predictable test data and bucket configurations
+- Runs faster than a full Supabase stack
+- Doesn't interfere with your local Supabase development projects
+
+### Contributing
+
+We welcome contributions! Please see our [Contributing Guide](../../../docs/CONTRIBUTING.md) for details on how to get started.
+
+For major changes or if you're unsure about something, please open an issue first to discuss your proposed changes.
 
 ## Sponsors
 

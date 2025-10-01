@@ -1,7 +1,6 @@
 import 'jest'
 import { nanoid } from 'nanoid'
 import { sign } from 'jsonwebtoken'
-import { ContentType } from 'allure-js-commons'
 
 import { FunctionsClient } from '../../src/index'
 
@@ -51,7 +50,7 @@ describe('basic tests (hello function)', () => {
      */
     log('create FunctionsClient')
     const fclient = new FunctionsClient(`http://localhost:${relay.container.getMappedPort(8081)}`)
-    attach('setAuth', apiKey, ContentType.TEXT)
+    attach('setAuth', apiKey, 'text/plain')
     fclient.setAuth(apiKey)
 
     log('invoke hello')
@@ -70,7 +69,7 @@ describe('basic tests (hello function)', () => {
     log('create FunctionsClient')
     const fclient = new FunctionsClient(`http://localhost:${relay.container.getMappedPort(8081)}`)
     const wrongKey = sign({ name: 'anon' }, 'wrong_jwt')
-    attach('setAuth with wrong jwt', wrongKey, ContentType.TEXT)
+    attach('setAuth with wrong jwt', wrongKey, 'text/plain')
     fclient.setAuth(wrongKey)
 
     log('invoke hello')
@@ -95,7 +94,7 @@ describe('basic tests (hello function)', () => {
       },
     })
     const wrongKey = sign({ name: 'anon' }, 'wrong_jwt')
-    attach('setAuth with wrong jwt', wrongKey, ContentType.TEXT)
+    attach('setAuth with wrong jwt', wrongKey, 'text/plain')
     fclient.setAuth(wrongKey)
 
     log('invoke hello')
@@ -120,7 +119,7 @@ describe('basic tests (hello function)', () => {
       },
     })
 
-    attach('setAuth with right jwt', apiKey, ContentType.TEXT)
+    attach('setAuth with right jwt', apiKey, 'text/plain')
     fclient.setAuth(apiKey)
 
     log('invoke hello')
@@ -160,7 +159,7 @@ describe('basic tests (hello function)', () => {
     const fclient = new FunctionsClient(`http://localhost:${relay.container.getMappedPort(8081)}`)
 
     const wrongKey = sign({ name: 'anon' }, 'wrong_jwt')
-    attach('setAuth with wrong jwt', wrongKey, ContentType.TEXT)
+    attach('setAuth with wrong jwt', wrongKey, 'text/plain')
     fclient.setAuth(wrongKey)
 
     log('invoke hello with Authorization header')

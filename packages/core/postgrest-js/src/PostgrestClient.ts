@@ -31,7 +31,7 @@ export default class PostgrestClient<
     '__InternalSupabase'
   >[SchemaName] extends GenericSchema
     ? Omit<Database, '__InternalSupabase'>[SchemaName]
-    : any
+    : any,
 > {
   url: string
   headers: Headers
@@ -67,7 +67,7 @@ export default class PostgrestClient<
   }
   from<
     TableName extends string & keyof Schema['Tables'],
-    Table extends Schema['Tables'][TableName]
+    Table extends Schema['Tables'][TableName],
   >(relation: TableName): PostgrestQueryBuilder<ClientOptions, Schema, Table, TableName>
   from<ViewName extends string & keyof Schema['Views'], View extends Schema['Views'][ViewName]>(
     relation: ViewName
