@@ -1,0 +1,84 @@
+{
+  "$schema": "./node_modules/nx/schemas/nx-schema.json",
+  "targetDefaults": {
+    "build": {
+      "outputs": ["{projectRoot}/dist"],
+      "cache": true
+    },
+    "build:main": {
+      "outputs": ["{projectRoot}/dist"],
+      "cache": true
+    },
+    "build:module": {
+      "outputs": ["{projectRoot}/dist"],
+      "cache": true
+    },
+    "build:umd": {
+      "outputs": ["{projectRoot}/dist"],
+      "cache": true
+    },
+    "docs:json": {
+      "outputs": ["{projectRoot}/docs"],
+      "cache": true
+    },
+    "format": {
+      "cache": true
+    },
+    "types-generate": {
+      "cache": true
+    },
+    "test": {
+      "cache": true
+    },
+    "test:all": {
+      "cache": true
+    },
+    "test:run": {
+      "cache": true
+    },
+    "test:unit": {
+      "cache": true
+    },
+    "test:coverage": {
+      "cache": true
+    },
+    "test:integration": {
+      "cache": true
+    },
+    "test:integration:browser": {
+      "cache": true
+    },
+    "test:edge-functions": {
+      "cache": true
+    },
+    "test:watch": {
+      "cache": true
+    },
+    "test:node:playwright": {
+      "cache": true
+    },
+    "test:bun": {
+      "cache": true
+    },
+    "test:types": {
+      "cache": true
+    },
+    "docs": {
+      "cache": true
+    }
+  },
+  "defaultBase": "next",
+  "plugins": [
+    {
+      "plugin": "@nx/webpack/plugin",
+      "options": {
+        "buildTargetName": "webpack:build",
+        "serveTargetName": "serve",
+        "previewTargetName": "preview",
+        "buildDepsTargetName": "build-deps",
+        "watchDepsTargetName": "watch-deps",
+        "serveStaticTargetName": "serve-static"
+      }
+    }
+  ]
+}
