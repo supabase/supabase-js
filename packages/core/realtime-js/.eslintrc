@@ -1,0 +1,26 @@
+{
+  "parser": "babel-eslint",
+  "parserOptions": {
+    "allowImportExportEverywhere": true,
+    "ecmaVersion": 6,
+    "sourceType": "module"
+  },
+  "ecmaFeatures": {
+    "modules": true
+  },
+  "env": {
+    "node": true
+  },
+  "globals": {
+    "window": true
+  },
+  "rules": {
+    "curly": 2,
+    "no-eq-null": 2,
+    "comma-dangle": [ 2, "always-multiline" ],
+    "no-caller": 2,
+    "dot-notation": 0,
+    "no-debugger": 2,
+    "no-undef": 2
+  }
+}

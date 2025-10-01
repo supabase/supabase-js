@@ -1,0 +1,45 @@
+name: CI
+
+on:
+  pull_request:
+    branches:
+      - master
+      - next
+      - rc
+  push:
+    branches:
+      - master
+      - next
+      - rc
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: Test / OS ${{ matrix.os }} / Node ${{ matrix.node }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        node: ['20']
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Node
+        uses: actions/setup-node@v2
+        with:
+          node-version: ${{ matrix.node }}
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - name: Run CI steps
+        run: |
+          pnpm install
+          pnpm run ci
+      - name: Upload coverage results to Coveralls
+        uses: coverallsapp/github-action@v2
+        with:
+          fail-on-error: false
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path-to-lcov: ./coverage/lcov.info
