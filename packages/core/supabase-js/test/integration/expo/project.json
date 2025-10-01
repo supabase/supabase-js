@@ -1,0 +1,23 @@
+{
+  "name": "expo-app",
+  "$schema": "../../../../node_modules/nx/schemas/project-schema.json",
+  "projectType": "application",
+  "sourceRoot": "packages/core/supabase-js/test/integration/expo",
+  "targets": {
+    "test": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "npm test",
+        "cwd": "packages/core/supabase-js/test/integration/expo"
+      }
+    },
+    "install": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "npm install",
+        "cwd": "packages/core/supabase-js/test/integration/expo"
+      }
+    }
+  },
+  "tags": ["integration-test", "expo", "react-native"]
+}
