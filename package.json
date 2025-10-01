@@ -1,5 +1,5 @@
 {
-  "name": "@js-client-libs/source",
+  "name": "@supabase-js/source",
   "version": "0.0.0",
   "license": "MIT",
   "scripts": {
