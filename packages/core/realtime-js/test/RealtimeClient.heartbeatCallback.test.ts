@@ -1,11 +1,7 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import { WebSocket as MockWebSocket } from 'mock-socket'
 import RealtimeClient, { HeartbeatStatus } from '../src/RealtimeClient'
-import {
-  setupRealtimeTest,
-  cleanupRealtimeTest,
-  TestSetup,
-} from './helpers/setup'
+import { setupRealtimeTest, cleanupRealtimeTest, TestSetup } from './helpers/setup'
 
 let testSetup: TestSetup
 
@@ -222,11 +218,7 @@ describe('heartbeatCallback option', () => {
     expect(errorCallback).toHaveBeenCalledWith('sent')
 
     // Error should be logged
-    expect(logSpy).toHaveBeenCalledWith(
-      'error',
-      'error in heartbeat callback',
-      expect.any(Error)
-    )
+    expect(logSpy).toHaveBeenCalledWith('error', 'error in heartbeat callback', expect.any(Error))
   })
 
   test('should handle heartbeatCallback errors gracefully in message handling', () => {
@@ -267,11 +259,7 @@ describe('heartbeatCallback option', () => {
     expect(errorCallback).toHaveBeenCalledWith('ok')
 
     // Error should be logged
-    expect(logSpy).toHaveBeenCalledWith(
-      'error',
-      'error in heartbeat callback',
-      expect.any(Error)
-    )
+    expect(logSpy).toHaveBeenCalledWith('error', 'error in heartbeat callback', expect.any(Error))
   })
 
   test('should work with onHeartbeat method to update callback', () => {
@@ -307,13 +295,7 @@ describe('heartbeatCallback option', () => {
       heartbeatCallback: mockCallback,
     })
 
-    const statuses: HeartbeatStatus[] = [
-      'sent',
-      'ok',
-      'error',
-      'timeout',
-      'disconnected',
-    ]
+    const statuses: HeartbeatStatus[] = ['sent', 'ok', 'error', 'timeout', 'disconnected']
 
     // Test each status
     statuses.forEach((status) => {

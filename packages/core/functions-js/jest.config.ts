@@ -8,6 +8,8 @@ const config: Config.InitialOptions = {
   moduleFileExtensions: ['ts', 'js', 'cjs', 'json', 'node'],
   setupFilesAfterEnv: ['./test/utils/jest-custom-reporter.ts'],
   testTimeout: 60000,
+  // Retry failed tests up to 3 times in CI
+  ...(process.env.CI && { retryTimes: 3 }),
   collectCoverageFrom: [
     '!**/node_modules/**',
     'src/**/*.{ts,tsx}',

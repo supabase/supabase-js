@@ -2,7 +2,10 @@ import { isStorageError } from '../lib/errors'
 import { DownloadResult } from '../lib/types'
 
 export default class StreamDownloadBuilder implements PromiseLike<DownloadResult<ReadableStream>> {
-  constructor(private downloadFn: () => Promise<Response>, private shouldThrowOnError: boolean) {}
+  constructor(
+    private downloadFn: () => Promise<Response>,
+    private shouldThrowOnError: boolean
+  ) {}
 
   then<TResult1 = DownloadResult<ReadableStream>, TResult2 = never>(
     onfulfilled?:

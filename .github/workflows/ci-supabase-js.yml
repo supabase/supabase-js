@@ -1,0 +1,503 @@
+name: Supabase JS tests
+
+on:
+  pull_request:
+    paths:
+      - 'package.json'
+      - 'package-lock.json'
+      - 'nx.json'
+      - '.github/workflows/ci-supabase-js.yml'
+      # any change in any of the packages should trigger these tests
+      - 'packages/**'
+      - '!packages/core/**/docs/**'
+      - '!packages/core/**/*.md'
+      - '!packages/**/.prettierrc'
+      - '!packages/**/*ignore'
+  workflow_call:
+
+env:
+  NODE_VERSION: '20'
+
+jobs:
+  build-package:
+    name: Build supabase-js package
+    runs-on: ubuntu-latest
+    outputs:
+      tgz-name: ${{ steps.pack.outputs.filename }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          filter: tree:0
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - uses: nrwl/nx-set-shas@v4
+
+      - name: Build
+        run: npx nx build supabase-js
+
+      - name: Pack npm module
+        id: pack
+        run: |
+          cd packages/core/supabase-js
+          PKG=$(npm pack)
+          echo "filename=$PKG" >> "$GITHUB_OUTPUT"
+          cd ../../..
+
+      - name: Upload .tgz package
+        uses: actions/upload-artifact@v4
+        with:
+          name: supabase-tgz
+          path: packages/core/supabase-js/${{ steps.pack.outputs.filename }}
+
+      - name: Upload UMD build
+        uses: actions/upload-artifact@v4
+        with:
+          name: supabase-umd
+          path: packages/core/supabase-js/dist/umd/supabase.js
+
+  test:
+    name: Unit + Type Check / Node.js ${{ matrix.node }} / OS ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    needs: build-package
+    strategy:
+      matrix:
+        node: [20]
+        os: [ubuntu-latest, macos-latest, windows-latest]
+      fail-fast: false
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          filter: tree:0
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Type Check
+        run: npx nx test:types supabase-js
+
+      - name: Run Unit Tests + Coverage
+        run: npx nx test:coverage supabase-js
+
+      - name: Upload coverage results to Coveralls
+        uses: coverallsapp/github-action@v2
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path-to-lcov: ./packages/core/supabase-js/test/coverage/lcov.info
+          parallel: true
+          flag-name: node-${{ matrix.node }}-${{ matrix.os }}
+          fail-on-error: false
+        continue-on-error: true
+
+  coveralls-finish:
+    name: Coveralls Finished
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - name: Coveralls Finished
+        uses: coverallsapp/github-action@v2
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          parallel-finished: true
+          fail-on-error: false
+        continue-on-error: true
+  deno-tests:
+    name: Deno Tests / ${{ matrix.deno }}
+    runs-on: ubuntu-latest
+    needs: build-package
+    strategy:
+      matrix:
+        deno: ['1.x', '2.x']
+      fail-fast: false
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          filter: tree:0
+          fetch-depth: 0
+
+      - name: Setup Deno
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: ${{ matrix.deno }}
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: supabase-tgz
+          path: ./packages/core/supabase-js/supabase-pkg
+
+      - name: Start Supabase and apply migrations
+        run: |
+          cd packages/core/supabase-js
+          echo "Starting Supabase from packages/core/supabase-js directory"
+          supabase start
+          echo "Resetting database to apply migrations"
+          supabase db reset --no-seed
+          echo "Waiting for PostgREST schema cache to refresh"
+          sleep 5
+          echo "Creating storage bucket"
+          supabase db query "insert into storage.buckets (id, name, public) values ('test-bucket','test-bucket', false) on conflict (id) do nothing;"
+          echo "Verifying todos table exists"
+          supabase db query "select count(*) from public.todos;"
+          echo "Verifying storage bucket exists"
+          supabase db query "select id, name from storage.buckets where id = 'test-bucket';"
+
+      - name: Install dependencies and build
+        run: |
+          npm ci --legacy-peer-deps
+          npx nx build supabase-js
+
+      - name: Run Deno Tests
+        if: ${{ matrix.deno == '1.x' }}
+        env:
+          STORAGE_JS_ENTRY: main
+        run: |
+          cd packages/core/supabase-js/test/deno
+          cp ../../supabase-pkg/supabase-supabase-js-0.0.0-automated.tgz .
+          npm install
+          npm test || npm test
+          cd ../../..
+
+      - name: Run Deno Tests
+        if: ${{ matrix.deno == '2.x' }}
+        run: |
+          cd packages/core/supabase-js/test/deno
+          cp ../../supabase-pkg/supabase-supabase-js-0.0.0-automated.tgz .
+          npm install
+          npm test || npm test
+          cd ../../..
+
+      - name: Run integration and browser tests on Deno 2.x only
+        if: ${{ matrix.deno == '2.x' }}
+        run: npx nx test:integration:browser supabase-js
+
+      - name: Run Edge Functions Tests
+        if: ${{ matrix.deno == '2.x' }}
+        run: |
+          cd packages/core/supabase-js/test/deno
+          npx nx test:edge-functions supabase-js
+          cd ../../..
+
+      - name: Stop Supabase
+        if: always()
+        run: |
+          cd packages/core/supabase-js
+          supabase stop
+  node-integration:
+    name: Node Integration
+    runs-on: ubuntu-latest
+    needs: build-package
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          filter: tree:0
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Start Supabase and apply migrations
+        run: |
+          cd packages/core/supabase-js
+          echo "Starting Supabase from packages/core/supabase-js directory"
+          supabase start
+          echo "Resetting database to apply migrations"
+          supabase db reset --no-seed
+          echo "Waiting for PostgREST schema cache to refresh"
+          sleep 5
+          echo "Creating storage bucket"
+          supabase db query "insert into storage.buckets (id, name, public) values ('test-bucket','test-bucket', false) on conflict (id) do nothing;"
+          echo "Verifying todos table exists"
+          supabase db query "select count(*) from public.todos;"
+          echo "Verifying storage bucket exists"
+          supabase db query "select id, name from storage.buckets where id = 'test-bucket';"
+
+      - name: Install dependencies and build
+        run: |
+          npm ci --legacy-peer-deps
+          npx nx build supabase-js
+
+      - name: Install jq
+        run: sudo apt-get update && sudo apt-get install -y jq
+
+      - name: Run integration tests
+        run: |
+          cd packages/core/supabase-js
+          export SUPABASE_SERVICE_ROLE_KEY="$(supabase status --output json | jq -r '.SERVICE_ROLE_KEY')"
+          cd ../../..
+          npx nx test:integration supabase-js || npx nx test:integration supabase-js
+
+      - name: Stop Supabase
+        if: always()
+        run: |
+          cd packages/core/supabase-js
+          supabase stop
+
+  next-integration:
+    name: Next.js Integration
+    runs-on: ubuntu-latest
+    needs: build-package
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          filter: tree:0
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: supabase-tgz
+          path: ./packages/core/supabase-js/supabase-pkg
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Start Supabase and apply migrations
+        run: |
+          cd packages/core/supabase-js
+          echo "Starting Supabase from packages/core/supabase-js directory"
+          supabase start
+          echo "Resetting database to apply migrations"
+          supabase db reset --no-seed
+          echo "Waiting for PostgREST schema cache to refresh"
+          sleep 5
+          echo "Creating storage bucket"
+          supabase db query "insert into storage.buckets (id, name, public) values ('test-bucket','test-bucket', false) on conflict (id) do nothing;"
+          echo "Verifying todos table exists"
+          supabase db query "select count(*) from public.todos;"
+          echo "Verifying storage bucket exists"
+          supabase db query "select id, name from storage.buckets where id = 'test-bucket';"
+
+      - name: Install Playwright browsers and dependencies
+        run: npx playwright install --with-deps
+
+      - name: Run integration tests
+        run: |
+          cd packages/core/supabase-js/test/integration/next
+          cp ../../../supabase-pkg/supabase-supabase-js-0.0.0-automated.tgz .
+          npm install --legacy-peer-deps
+          npx playwright install
+          npm run test
+
+      - name: Stop Supabase
+        if: always()
+        run: |
+          cd packages/core/supabase-js
+          supabase stop
+
+  expo-tests:
+    name: Expo Tests
+    runs-on: ubuntu-latest
+    needs: build-package
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          filter: tree:0
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: supabase-tgz
+          path: ./packages/core/supabase-js/supabase-pkg
+
+      - name: Start Supabase and apply migrations
+        run: |
+          cd packages/core/supabase-js
+          echo "Starting Supabase from packages/core/supabase-js directory"
+          supabase start
+          echo "Resetting database to apply migrations"
+          supabase db reset --no-seed
+          echo "Waiting for PostgREST schema cache to refresh"
+          sleep 5
+          echo "Creating storage bucket"
+          supabase db query "insert into storage.buckets (id, name, public) values ('test-bucket','test-bucket', false) on conflict (id) do nothing;"
+          echo "Verifying todos table exists"
+          supabase db query "select count(*) from public.todos;"
+          echo "Verifying storage bucket exists"
+          supabase db query "select id, name from storage.buckets where id = 'test-bucket';"
+
+      - name: Install dependencies and run tests
+        run: |
+          cd packages/core/supabase-js/test/integration/expo
+          cp ../../../supabase-pkg/supabase-supabase-js-0.0.0-automated.tgz .
+          npm install
+          npm test || npm test
+
+      - name: Stop Supabase
+        if: always()
+        run: |
+          cd packages/core/supabase-js
+          supabase stop
+
+  bun-integration:
+    name: Bun Integration
+    runs-on: ubuntu-latest
+    needs: build-package
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          filter: tree:0
+          fetch-depth: 0
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: supabase-tgz
+          path: ./packages/core/supabase-js/supabase-pkg
+
+      - name: Start Supabase and apply migrations
+        run: |
+          cd packages/core/supabase-js
+          echo "Starting Supabase from packages/core/supabase-js directory"
+          supabase start
+          echo "Resetting database to apply migrations"
+          supabase db reset --no-seed
+          echo "Waiting for PostgREST schema cache to refresh"
+          sleep 5
+          echo "Creating storage bucket"
+          supabase db query "insert into storage.buckets (id, name, public) values ('test-bucket','test-bucket', false) on conflict (id) do nothing;"
+          echo "Verifying todos table exists"
+          supabase db query "select count(*) from public.todos;"
+          echo "Verifying storage bucket exists"
+          supabase db query "select id, name from storage.buckets where id = 'test-bucket';"
+
+      - name: Install dependencies and run tests
+        run: |
+          cd packages/core/supabase-js/test/integration/bun
+          cp ../../../supabase-pkg/supabase-supabase-js-0.0.0-automated.tgz .
+          bun install
+          bun test
+
+      - name: Stop Supabase
+        if: always()
+        run: |
+          cd packages/core/supabase-js
+          supabase stop
+
+  websocket-browser-tests:
+    name: WebSocket Browser Tests
+    runs-on: ubuntu-latest
+    needs: build-package
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          filter: tree:0
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: supabase-umd
+          path: ./packages/core/supabase-js/dist/umd/
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Install Playwright browsers and dependencies
+        run: npx playwright install --with-deps
+
+      - name: Start Supabase and apply migrations
+        run: |
+          cd packages/core/supabase-js
+          echo "Starting Supabase from packages/core/supabase-js directory"
+          supabase start
+          echo "Resetting database to apply migrations"
+          supabase db reset --no-seed
+          echo "Waiting for PostgREST schema cache to refresh"
+          sleep 5
+          echo "Creating storage bucket"
+          supabase db query "insert into storage.buckets (id, name, public) values ('test-bucket','test-bucket', false) on conflict (id) do nothing;"
+          echo "Verifying todos table exists"
+          supabase db query "select count(*) from public.todos;"
+          echo "Verifying storage bucket exists"
+          supabase db query "select id, name from storage.buckets where id = 'test-bucket';"
+
+      - name: Run WebSocket tests
+        run: |
+          cd packages/core/supabase-js/test/integration/node-browser
+          npm install
+          cp ../../../dist/umd/supabase.js .
+          npm run test
+
+      - name: Stop Supabase
+        if: always()
+        run: |
+          cd packages/core/supabase-js
+          supabase stop

@@ -95,12 +95,12 @@ export type SimplifyDeep<Type, ExcludeType = never> = ConditionalSimplifyDeep<
 type ConditionalSimplifyDeep<
   Type,
   ExcludeType = never,
-  IncludeType = unknown
+  IncludeType = unknown,
 > = Type extends ExcludeType
   ? Type
   : Type extends IncludeType
-  ? { [TypeKey in keyof Type]: ConditionalSimplifyDeep<Type[TypeKey], ExcludeType, IncludeType> }
-  : Type
+    ? { [TypeKey in keyof Type]: ConditionalSimplifyDeep<Type[TypeKey], ExcludeType, IncludeType> }
+    : Type
 type NonRecursiveType = BuiltIns | Function | (new (...arguments_: any[]) => unknown)
 type BuiltIns = Primitive | void | Date | RegExp
 type Primitive = null | undefined | string | number | boolean | symbol | bigint
@@ -112,9 +112,9 @@ export type IsValidResultOverride<Result, NewResult, ErrorResult, ErrorNewResult
         true
       : ErrorResult
     : NewResult extends any[]
-    ? ErrorNewResult
-    : // Neither are arrays - valid
-      true
+      ? ErrorNewResult
+      : // Neither are arrays - valid
+        true
 /**
  * Utility type to check if array types match between Result and NewResult.
  * Returns either the valid NewResult type or an error message type.
@@ -124,23 +124,23 @@ export type CheckMatchingArrayTypes<Result, NewResult> =
   Result extends SelectQueryError<string>
     ? NewResult
     : IsValidResultOverride<
-        Result,
-        NewResult,
-        {
-          Error: 'Type mismatch: Cannot cast array result to a single object. Use .overrideTypes<Array<YourType>> or .returns<Array<YourType>> (deprecated) for array results or .single() to convert the result to a single object'
-        },
-        {
-          Error: 'Type mismatch: Cannot cast single object to array type. Remove Array wrapper from return type or make sure you are not using .single() up in the calling chain'
-        }
-      > extends infer ValidationResult
-    ? ValidationResult extends true
-      ? // Preserve the optionality of the result if the overriden type is an object (case of chaining with `maybeSingle`)
-        ContainsNull<Result> extends true
-        ? NewResult | null
-        : NewResult
-      : // contains the error
-        ValidationResult
-    : never
+          Result,
+          NewResult,
+          {
+            Error: 'Type mismatch: Cannot cast array result to a single object. Use .overrideTypes<Array<YourType>> or .returns<Array<YourType>> (deprecated) for array results or .single() to convert the result to a single object'
+          },
+          {
+            Error: 'Type mismatch: Cannot cast single object to array type. Remove Array wrapper from return type or make sure you are not using .single() up in the calling chain'
+          }
+        > extends infer ValidationResult
+      ? ValidationResult extends true
+        ? // Preserve the optionality of the result if the overriden type is an object (case of chaining with `maybeSingle`)
+          ContainsNull<Result> extends true
+          ? NewResult | null
+          : NewResult
+        : // contains the error
+          ValidationResult
+      : never
 
 type Simplify<T> = T extends object ? { [K in keyof T]: T[K] } : T
 
@@ -157,25 +157,25 @@ type MergeExplicit<New, Row> = {
       ? Row[K] extends SelectQueryError<string>
         ? New[K]
         : // Check if the override is on a embedded relation (array)
-        New[K] extends any[]
-        ? Row[K] extends any[]
-          ? Array<Simplify<MergeDeep<NonNullable<New[K][number]>, NonNullable<Row[K][number]>>>>
-          : New[K]
-        : // Check if both properties are objects omitting a potential null union
-        IsPlainObject<NonNullable<New[K]>> extends true
-        ? IsPlainObject<NonNullable<Row[K]>> extends true
-          ? // If they are, use the new override as source of truth for the optionality
-            ContainsNull<New[K]> extends true
-            ? // If the override wants to preserve optionality
-              Simplify<MergeDeep<NonNullable<New[K]>, NonNullable<Row[K]>>> | null
-            : // If the override wants to enforce non-null result
-              Simplify<MergeDeep<New[K], NonNullable<Row[K]>>>
-          : New[K] // Override with New type if Row isn't an object
-        : New[K] // Override primitives with New type
+          New[K] extends any[]
+          ? Row[K] extends any[]
+            ? Array<Simplify<MergeDeep<NonNullable<New[K][number]>, NonNullable<Row[K][number]>>>>
+            : New[K]
+          : // Check if both properties are objects omitting a potential null union
+            IsPlainObject<NonNullable<New[K]>> extends true
+            ? IsPlainObject<NonNullable<Row[K]>> extends true
+              ? // If they are, use the new override as source of truth for the optionality
+                ContainsNull<New[K]> extends true
+                ? // If the override wants to preserve optionality
+                  Simplify<MergeDeep<NonNullable<New[K]>, NonNullable<Row[K]>>> | null
+                : // If the override wants to enforce non-null result
+                  Simplify<MergeDeep<New[K], NonNullable<Row[K]>>>
+              : New[K] // Override with New type if Row isn't an object
+            : New[K] // Override primitives with New type
       : New[K] // Add new properties from New
     : K extends keyof Row
-    ? Row[K] // Keep existing properties not in New
-    : never
+      ? Row[K] // Keep existing properties not in New
+      : never
 }
 
 type MergeDeep<New, Row> = Simplify<

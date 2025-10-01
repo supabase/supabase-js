@@ -52,9 +52,7 @@ describe('Complete lifecycle integration', () => {
     const result = await channel.unsubscribe()
     unsubscriptionResult = result
 
-    expect(
-      ['ok', 'timed out', 'error'].includes(unsubscriptionResult)
-    ).toBeTruthy()
+    expect(['ok', 'timed out', 'error'].includes(unsubscriptionResult)).toBeTruthy()
     assert.equal(channel.state, CHANNEL_STATES.closed)
   })
 

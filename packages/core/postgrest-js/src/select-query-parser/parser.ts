@@ -14,12 +14,12 @@ import { JsonPathToAccessor } from './utils'
 export type ParseQuery<Query extends string> = string extends Query
   ? GenericStringError
   : ParseNodes<EatWhitespace<Query>> extends [infer Nodes, `${infer Remainder}`]
-  ? Nodes extends Ast.Node[]
-    ? EatWhitespace<Remainder> extends ''
-      ? SimplifyDeep<Nodes>
-      : ParserError<`Unexpected input: ${Remainder}`>
-    : ParserError<'Invalid nodes array structure'>
-  : ParseNodes<EatWhitespace<Query>>
+    ? Nodes extends Ast.Node[]
+      ? EatWhitespace<Remainder> extends ''
+        ? SimplifyDeep<Nodes>
+        : ParserError<`Unexpected input: ${Remainder}`>
+      : ParserError<'Invalid nodes array structure'>
+    : ParseNodes<EatWhitespace<Query>>
 
 /**
  * Notes: all `Parse*` types assume that their input strings have their whitespace
@@ -36,16 +36,14 @@ type ParseNodes<Input extends string> = string extends Input
   ? GenericStringError
   : ParseNodesHelper<Input, []>
 
-type ParseNodesHelper<Input extends string, Nodes extends Ast.Node[]> = ParseNode<Input> extends [
-  infer Node,
-  `${infer Remainder}`
-]
-  ? Node extends Ast.Node
-    ? EatWhitespace<Remainder> extends `,${infer Remainder}`
-      ? ParseNodesHelper<EatWhitespace<Remainder>, [...Nodes, Node]>
-      : [[...Nodes, Node], EatWhitespace<Remainder>]
-    : ParserError<'Invalid node type in nodes helper'>
-  : ParseNode<Input>
+type ParseNodesHelper<Input extends string, Nodes extends Ast.Node[]> =
+  ParseNode<Input> extends [infer Node, `${infer Remainder}`]
+    ? Node extends Ast.Node
+      ? EatWhitespace<Remainder> extends `,${infer Remainder}`
+        ? ParseNodesHelper<EatWhitespace<Remainder>, [...Nodes, Node]>
+        : [[...Nodes, Node], EatWhitespace<Remainder>]
+      : ParserError<'Invalid node type in nodes helper'>
+    : ParseNode<Input>
 /**
  * Parses a node.
  * A node is one of the following:
@@ -57,29 +55,29 @@ type ParseNodesHelper<Input extends string, Nodes extends Ast.Node[]> = ParseNod
 type ParseNode<Input extends string> = Input extends ''
   ? ParserError<'Empty string'>
   : // `*`
-  Input extends `*${infer Remainder}`
-  ? [Ast.StarNode, EatWhitespace<Remainder>]
-  : // `...field`
-  Input extends `...${infer Remainder}`
-  ? ParseField<EatWhitespace<Remainder>> extends [infer TargetField, `${infer Remainder}`]
-    ? TargetField extends Ast.FieldNode
-      ? [{ type: 'spread'; target: TargetField }, EatWhitespace<Remainder>]
-      : ParserError<'Invalid target field type in spread'>
-    : ParserError<`Unable to parse spread resource at \`${Input}\``>
-  : ParseIdentifier<Input> extends [infer NameOrAlias, `${infer Remainder}`]
-  ? EatWhitespace<Remainder> extends `::${infer _}`
-    ? // It's a type cast and not an alias, so treat it as part of the field.
-      ParseField<Input>
-    : EatWhitespace<Remainder> extends `:${infer Remainder}`
-    ? // `alias:`
-      ParseField<EatWhitespace<Remainder>> extends [infer Field, `${infer Remainder}`]
-      ? Field extends Ast.FieldNode
-        ? [Omit<Field, 'alias'> & { alias: NameOrAlias }, EatWhitespace<Remainder>]
-        : ParserError<'Invalid field type in alias parsing'>
-      : ParserError<`Unable to parse renamed field at \`${Input}\``>
-    : // Otherwise, just parse it as a field without alias.
-      ParseField<Input>
-  : ParserError<`Expected identifier at \`${Input}\``>
+    Input extends `*${infer Remainder}`
+    ? [Ast.StarNode, EatWhitespace<Remainder>]
+    : // `...field`
+      Input extends `...${infer Remainder}`
+      ? ParseField<EatWhitespace<Remainder>> extends [infer TargetField, `${infer Remainder}`]
+        ? TargetField extends Ast.FieldNode
+          ? [{ type: 'spread'; target: TargetField }, EatWhitespace<Remainder>]
+          : ParserError<'Invalid target field type in spread'>
+        : ParserError<`Unable to parse spread resource at \`${Input}\``>
+      : ParseIdentifier<Input> extends [infer NameOrAlias, `${infer Remainder}`]
+        ? EatWhitespace<Remainder> extends `::${infer _}`
+          ? // It's a type cast and not an alias, so treat it as part of the field.
+            ParseField<Input>
+          : EatWhitespace<Remainder> extends `:${infer Remainder}`
+            ? // `alias:`
+              ParseField<EatWhitespace<Remainder>> extends [infer Field, `${infer Remainder}`]
+              ? Field extends Ast.FieldNode
+                ? [Omit<Field, 'alias'> & { alias: NameOrAlias }, EatWhitespace<Remainder>]
+                : ParserError<'Invalid field type in alias parsing'>
+              : ParserError<`Unable to parse renamed field at \`${Input}\``>
+            : // Otherwise, just parse it as a field without alias.
+              ParseField<Input>
+        : ParserError<`Expected identifier at \`${Input}\``>
 
 /**
  * Parses a field without preceding alias.
@@ -97,88 +95,101 @@ type ParseNode<Input extends string> = Input extends ''
 type ParseField<Input extends string> = Input extends ''
   ? ParserError<'Empty string'>
   : ParseIdentifier<Input> extends [infer Name, `${infer Remainder}`]
-  ? Name extends 'count'
-    ? ParseCountField<Input>
-    : Remainder extends `!inner${infer Remainder}`
-    ? ParseEmbeddedResource<EatWhitespace<Remainder>> extends [infer Children, `${infer Remainder}`]
-      ? Children extends Ast.Node[]
-        ? // `field!inner(nodes)`
-          [{ type: 'field'; name: Name; innerJoin: true; children: Children }, Remainder]
-        : ParserError<'Invalid children array in inner join'>
-      : CreateParserErrorIfRequired<
-          ParseEmbeddedResource<EatWhitespace<Remainder>>,
-          `Expected embedded resource after "!inner" at \`${Remainder}\``
-        >
-    : EatWhitespace<Remainder> extends `!left${infer Remainder}`
-    ? ParseEmbeddedResource<EatWhitespace<Remainder>> extends [infer Children, `${infer Remainder}`]
-      ? Children extends Ast.Node[]
-        ? // `field!left(nodes)`
-          // !left is a noise word - treat it the same way as a non-`!inner`.
-          [{ type: 'field'; name: Name; children: Children }, EatWhitespace<Remainder>]
-        : ParserError<'Invalid children array in left join'>
-      : CreateParserErrorIfRequired<
-          ParseEmbeddedResource<EatWhitespace<Remainder>>,
-          `Expected embedded resource after "!left" at \`${EatWhitespace<Remainder>}\``
-        >
-    : EatWhitespace<Remainder> extends `!${infer Remainder}`
-    ? ParseIdentifier<EatWhitespace<Remainder>> extends [infer Hint, `${infer Remainder}`]
-      ? EatWhitespace<Remainder> extends `!inner${infer Remainder}`
+    ? Name extends 'count'
+      ? ParseCountField<Input>
+      : Remainder extends `!inner${infer Remainder}`
         ? ParseEmbeddedResource<EatWhitespace<Remainder>> extends [
             infer Children,
-            `${infer Remainder}`
+            `${infer Remainder}`,
           ]
           ? Children extends Ast.Node[]
-            ? // `field!hint!inner(nodes)`
-              [
-                { type: 'field'; name: Name; hint: Hint; innerJoin: true; children: Children },
-                EatWhitespace<Remainder>
-              ]
-            : ParserError<'Invalid children array in hint inner join'>
-          : ParseEmbeddedResource<EatWhitespace<Remainder>>
-        : ParseEmbeddedResource<EatWhitespace<Remainder>> extends [
-            infer Children,
-            `${infer Remainder}`
-          ]
-        ? Children extends Ast.Node[]
-          ? // `field!hint(nodes)`
-            [
-              { type: 'field'; name: Name; hint: Hint; children: Children },
-              EatWhitespace<Remainder>
+            ? // `field!inner(nodes)`
+              [{ type: 'field'; name: Name; innerJoin: true; children: Children }, Remainder]
+            : ParserError<'Invalid children array in inner join'>
+          : CreateParserErrorIfRequired<
+              ParseEmbeddedResource<EatWhitespace<Remainder>>,
+              `Expected embedded resource after "!inner" at \`${Remainder}\``
+            >
+        : EatWhitespace<Remainder> extends `!left${infer Remainder}`
+          ? ParseEmbeddedResource<EatWhitespace<Remainder>> extends [
+              infer Children,
+              `${infer Remainder}`,
             ]
-          : ParserError<'Invalid children array in hint'>
-        : ParseEmbeddedResource<EatWhitespace<Remainder>>
-      : ParserError<`Expected identifier after "!" at \`${EatWhitespace<Remainder>}\``>
-    : EatWhitespace<Remainder> extends `(${infer _}`
-    ? ParseEmbeddedResource<EatWhitespace<Remainder>> extends [infer Children, `${infer Remainder}`]
-      ? Children extends Ast.Node[]
-        ? // `field(nodes)`
-          [{ type: 'field'; name: Name; children: Children }, EatWhitespace<Remainder>]
-        : ParserError<'Invalid children array in field'>
-      : // Return error if start of embedded resource was detected but not found.
-        ParseEmbeddedResource<EatWhitespace<Remainder>>
-    : // Otherwise it's a non-embedded resource field.
-      ParseNonEmbeddedResourceField<Input>
-  : ParserError<`Expected identifier at \`${Input}\``>
+            ? Children extends Ast.Node[]
+              ? // `field!left(nodes)`
+                // !left is a noise word - treat it the same way as a non-`!inner`.
+                [{ type: 'field'; name: Name; children: Children }, EatWhitespace<Remainder>]
+              : ParserError<'Invalid children array in left join'>
+            : CreateParserErrorIfRequired<
+                ParseEmbeddedResource<EatWhitespace<Remainder>>,
+                `Expected embedded resource after "!left" at \`${EatWhitespace<Remainder>}\``
+              >
+          : EatWhitespace<Remainder> extends `!${infer Remainder}`
+            ? ParseIdentifier<EatWhitespace<Remainder>> extends [infer Hint, `${infer Remainder}`]
+              ? EatWhitespace<Remainder> extends `!inner${infer Remainder}`
+                ? ParseEmbeddedResource<EatWhitespace<Remainder>> extends [
+                    infer Children,
+                    `${infer Remainder}`,
+                  ]
+                  ? Children extends Ast.Node[]
+                    ? // `field!hint!inner(nodes)`
+                      [
+                        {
+                          type: 'field'
+                          name: Name
+                          hint: Hint
+                          innerJoin: true
+                          children: Children
+                        },
+                        EatWhitespace<Remainder>,
+                      ]
+                    : ParserError<'Invalid children array in hint inner join'>
+                  : ParseEmbeddedResource<EatWhitespace<Remainder>>
+                : ParseEmbeddedResource<EatWhitespace<Remainder>> extends [
+                      infer Children,
+                      `${infer Remainder}`,
+                    ]
+                  ? Children extends Ast.Node[]
+                    ? // `field!hint(nodes)`
+                      [
+                        { type: 'field'; name: Name; hint: Hint; children: Children },
+                        EatWhitespace<Remainder>,
+                      ]
+                    : ParserError<'Invalid children array in hint'>
+                  : ParseEmbeddedResource<EatWhitespace<Remainder>>
+              : ParserError<`Expected identifier after "!" at \`${EatWhitespace<Remainder>}\``>
+            : EatWhitespace<Remainder> extends `(${infer _}`
+              ? ParseEmbeddedResource<EatWhitespace<Remainder>> extends [
+                  infer Children,
+                  `${infer Remainder}`,
+                ]
+                ? Children extends Ast.Node[]
+                  ? // `field(nodes)`
+                    [{ type: 'field'; name: Name; children: Children }, EatWhitespace<Remainder>]
+                  : ParserError<'Invalid children array in field'>
+                : // Return error if start of embedded resource was detected but not found.
+                  ParseEmbeddedResource<EatWhitespace<Remainder>>
+              : // Otherwise it's a non-embedded resource field.
+                ParseNonEmbeddedResourceField<Input>
+    : ParserError<`Expected identifier at \`${Input}\``>
 
-type ParseCountField<Input extends string> = ParseIdentifier<Input> extends [
-  'count',
-  `${infer Remainder}`
-]
-  ? (
-      EatWhitespace<Remainder> extends `()${infer Remainder_}`
-        ? EatWhitespace<Remainder_>
-        : EatWhitespace<Remainder>
-    ) extends `${infer Remainder}`
-    ? Remainder extends `::${infer _}`
-      ? ParseFieldTypeCast<Remainder> extends [infer CastType, `${infer Remainder}`]
-        ? [
-            { type: 'field'; name: 'count'; aggregateFunction: 'count'; castType: CastType },
-            Remainder
-          ]
-        : ParseFieldTypeCast<Remainder>
-      : [{ type: 'field'; name: 'count'; aggregateFunction: 'count' }, Remainder]
-    : never
-  : ParserError<`Expected "count" at \`${Input}\``>
+type ParseCountField<Input extends string> =
+  ParseIdentifier<Input> extends ['count', `${infer Remainder}`]
+    ? (
+        EatWhitespace<Remainder> extends `()${infer Remainder_}`
+          ? EatWhitespace<Remainder_>
+          : EatWhitespace<Remainder>
+      ) extends `${infer Remainder}`
+      ? Remainder extends `::${infer _}`
+        ? ParseFieldTypeCast<Remainder> extends [infer CastType, `${infer Remainder}`]
+          ? [
+              { type: 'field'; name: 'count'; aggregateFunction: 'count'; castType: CastType },
+              Remainder,
+            ]
+          : ParseFieldTypeCast<Remainder>
+        : [{ type: 'field'; name: 'count'; aggregateFunction: 'count' }, Remainder]
+      : never
+    : ParserError<`Expected "count" at \`${Input}\``>
 
 /**
  * Parses an embedded resource, which is an opening `(`, followed by a sequence of
@@ -191,12 +202,12 @@ type ParseEmbeddedResource<Input extends string> = Input extends `(${infer Remai
   ? EatWhitespace<Remainder> extends `)${infer Remainder}`
     ? [[], EatWhitespace<Remainder>]
     : ParseNodes<EatWhitespace<Remainder>> extends [infer Nodes, `${infer Remainder}`]
-    ? Nodes extends Ast.Node[]
-      ? EatWhitespace<Remainder> extends `)${infer Remainder}`
-        ? [Nodes, EatWhitespace<Remainder>]
-        : ParserError<`Expected ")" at \`${EatWhitespace<Remainder>}\``>
-      : ParserError<'Invalid nodes array in embedded resource'>
-    : ParseNodes<EatWhitespace<Remainder>>
+      ? Nodes extends Ast.Node[]
+        ? EatWhitespace<Remainder> extends `)${infer Remainder}`
+          ? [Nodes, EatWhitespace<Remainder>]
+          : ParserError<`Expected ")" at \`${EatWhitespace<Remainder>}\``>
+        : ParserError<'Invalid nodes array in embedded resource'>
+      : ParseNodes<EatWhitespace<Remainder>>
   : ParserError<`Expected "(" at \`${Input}\``>
 
 /**
@@ -215,68 +226,66 @@ type ParseEmbeddedResource<Input extends string> = Input extends `(${infer Remai
  * - `field->json::type.aggregate()`
  * - `field->json::type.aggregate()::type`
  */
-type ParseNonEmbeddedResourceField<Input extends string> = ParseIdentifier<Input> extends [
-  infer Name,
-  `${infer Remainder}`
-]
-  ? // Parse optional JSON path.
-    (
-      Remainder extends `->${infer PathAndRest}`
-        ? ParseJsonAccessor<Remainder> extends [
-            infer PropertyName,
-            infer PropertyType,
-            `${infer Remainder}`
-          ]
-          ? [
-              {
-                type: 'field'
-                name: Name
-                alias: PropertyName
-                castType: PropertyType
-                jsonPath: JsonPathToAccessor<
-                  PathAndRest extends `${infer Path},${string}` ? Path : PathAndRest
-                >
-              },
-              Remainder
+type ParseNonEmbeddedResourceField<Input extends string> =
+  ParseIdentifier<Input> extends [infer Name, `${infer Remainder}`]
+    ? // Parse optional JSON path.
+      (
+        Remainder extends `->${infer PathAndRest}`
+          ? ParseJsonAccessor<Remainder> extends [
+              infer PropertyName,
+              infer PropertyType,
+              `${infer Remainder}`,
             ]
-          : ParseJsonAccessor<Remainder>
-        : [{ type: 'field'; name: Name }, Remainder]
-    ) extends infer Parsed
-    ? Parsed extends [infer Field, `${infer Remainder}`]
-      ? // Parse optional typecast or aggregate function input typecast.
-        (
-          Remainder extends `::${infer _}`
-            ? ParseFieldTypeCast<Remainder> extends [infer CastType, `${infer Remainder}`]
-              ? [Omit<Field, 'castType'> & { castType: CastType }, Remainder]
-              : ParseFieldTypeCast<Remainder>
-            : [Field, Remainder]
-        ) extends infer Parsed
-        ? Parsed extends [infer Field, `${infer Remainder}`]
-          ? // Parse optional aggregate function.
-            Remainder extends `.${infer _}`
-            ? ParseFieldAggregation<Remainder> extends [
-                infer AggregateFunction,
-                `${infer Remainder}`
+            ? [
+                {
+                  type: 'field'
+                  name: Name
+                  alias: PropertyName
+                  castType: PropertyType
+                  jsonPath: JsonPathToAccessor<
+                    PathAndRest extends `${infer Path},${string}` ? Path : PathAndRest
+                  >
+                },
+                Remainder,
               ]
-              ? // Parse optional aggregate function output typecast.
-                Remainder extends `::${infer _}`
-                ? ParseFieldTypeCast<Remainder> extends [infer CastType, `${infer Remainder}`]
-                  ? [
-                      Omit<Field, 'castType'> & {
-                        aggregateFunction: AggregateFunction
-                        castType: CastType
-                      },
-                      Remainder
-                    ]
-                  : ParseFieldTypeCast<Remainder>
-                : [Field & { aggregateFunction: AggregateFunction }, Remainder]
-              : ParseFieldAggregation<Remainder>
-            : [Field, Remainder]
-          : Parsed
-        : never
-      : Parsed
-    : never
-  : ParserError<`Expected identifier at \`${Input}\``>
+            : ParseJsonAccessor<Remainder>
+          : [{ type: 'field'; name: Name }, Remainder]
+      ) extends infer Parsed
+      ? Parsed extends [infer Field, `${infer Remainder}`]
+        ? // Parse optional typecast or aggregate function input typecast.
+          (
+            Remainder extends `::${infer _}`
+              ? ParseFieldTypeCast<Remainder> extends [infer CastType, `${infer Remainder}`]
+                ? [Omit<Field, 'castType'> & { castType: CastType }, Remainder]
+                : ParseFieldTypeCast<Remainder>
+              : [Field, Remainder]
+          ) extends infer Parsed
+          ? Parsed extends [infer Field, `${infer Remainder}`]
+            ? // Parse optional aggregate function.
+              Remainder extends `.${infer _}`
+              ? ParseFieldAggregation<Remainder> extends [
+                  infer AggregateFunction,
+                  `${infer Remainder}`,
+                ]
+                ? // Parse optional aggregate function output typecast.
+                  Remainder extends `::${infer _}`
+                  ? ParseFieldTypeCast<Remainder> extends [infer CastType, `${infer Remainder}`]
+                    ? [
+                        Omit<Field, 'castType'> & {
+                          aggregateFunction: AggregateFunction
+                          castType: CastType
+                        },
+                        Remainder,
+                      ]
+                    : ParseFieldTypeCast<Remainder>
+                  : [Field & { aggregateFunction: AggregateFunction }, Remainder]
+                : ParseFieldAggregation<Remainder>
+              : [Field, Remainder]
+            : Parsed
+          : never
+        : Parsed
+      : never
+    : ParserError<`Expected identifier at \`${Input}\``>
 
 /**
  * Parses a JSON property accessor of the shape `->a->b->c`. The last accessor in
@@ -290,24 +299,25 @@ type ParseJsonAccessor<Input extends string> = Input extends `->${infer Remainde
       ? [Name, 'text', EatWhitespace<Remainder>]
       : ParserError<'Expected property name after `->>`'>
     : ParseIdentifier<Remainder> extends [infer Name, `${infer Remainder}`]
-    ? ParseJsonAccessor<Remainder> extends [
-        infer PropertyName,
-        infer PropertyType,
-        `${infer Remainder}`
-      ]
-      ? [PropertyName, PropertyType, EatWhitespace<Remainder>]
-      : [Name, 'json', EatWhitespace<Remainder>]
-    : ParserError<'Expected property name after `->`'>
+      ? ParseJsonAccessor<Remainder> extends [
+          infer PropertyName,
+          infer PropertyType,
+          `${infer Remainder}`,
+        ]
+        ? [PropertyName, PropertyType, EatWhitespace<Remainder>]
+        : [Name, 'json', EatWhitespace<Remainder>]
+      : ParserError<'Expected property name after `->`'>
   : ParserError<'Expected ->'>
 
 /**
  * Parses a field typecast (`::type`), returning a tuple of ["Type", "Remainder of text"].
  */
-type ParseFieldTypeCast<Input extends string> = EatWhitespace<Input> extends `::${infer Remainder}`
-  ? ParseIdentifier<EatWhitespace<Remainder>> extends [`${infer CastType}`, `${infer Remainder}`]
-    ? [CastType, EatWhitespace<Remainder>]
-    : ParserError<`Invalid type for \`::\` operator at \`${Remainder}\``>
-  : ParserError<'Expected ::'>
+type ParseFieldTypeCast<Input extends string> =
+  EatWhitespace<Input> extends `::${infer Remainder}`
+    ? ParseIdentifier<EatWhitespace<Remainder>> extends [`${infer CastType}`, `${infer Remainder}`]
+      ? [CastType, EatWhitespace<Remainder>]
+      : ParserError<`Invalid type for \`::\` operator at \`${Remainder}\``>
+    : ParserError<'Expected ::'>
 
 /**
  * Parses a field aggregation (`.max()`), returning a tuple of ["Aggregate function", "Remainder of text"]
@@ -316,7 +326,7 @@ type ParseFieldAggregation<Input extends string> =
   EatWhitespace<Input> extends `.${infer Remainder}`
     ? ParseIdentifier<EatWhitespace<Remainder>> extends [
         `${infer FunctionName}`,
-        `${infer Remainder}`
+        `${infer Remainder}`,
       ]
       ? // Ensure that aggregation function is valid.
         FunctionName extends Token.AggregateFunction
@@ -331,14 +341,12 @@ type ParseFieldAggregation<Input extends string> =
  * Parses a (possibly double-quoted) identifier.
  * Identifiers are sequences of 1 or more letters.
  */
-type ParseIdentifier<Input extends string> = ParseLetters<Input> extends [
-  infer Name,
-  `${infer Remainder}`
-]
-  ? [Name, EatWhitespace<Remainder>]
-  : ParseQuotedLetters<Input> extends [infer Name, `${infer Remainder}`]
-  ? [Name, EatWhitespace<Remainder>]
-  : ParserError<`No (possibly double-quoted) identifier at \`${Input}\``>
+type ParseIdentifier<Input extends string> =
+  ParseLetters<Input> extends [infer Name, `${infer Remainder}`]
+    ? [Name, EatWhitespace<Remainder>]
+    : ParseQuotedLetters<Input> extends [infer Name, `${infer Remainder}`]
+      ? [Name, EatWhitespace<Remainder>]
+      : ParserError<`No (possibly double-quoted) identifier at \`${Input}\``>
 
 /**
  * Parse a consecutive sequence of 1 or more letter, where letters are `[0-9a-zA-Z_]`.
@@ -346,18 +354,18 @@ type ParseIdentifier<Input extends string> = ParseLetters<Input> extends [
 type ParseLetters<Input extends string> = string extends Input
   ? GenericStringError
   : ParseLettersHelper<Input, ''> extends [`${infer Letters}`, `${infer Remainder}`]
-  ? Letters extends ''
-    ? ParserError<`Expected letter at \`${Input}\``>
-    : [Letters, Remainder]
-  : ParseLettersHelper<Input, ''>
+    ? Letters extends ''
+      ? ParserError<`Expected letter at \`${Input}\``>
+      : [Letters, Remainder]
+    : ParseLettersHelper<Input, ''>
 
 type ParseLettersHelper<Input extends string, Acc extends string> = string extends Input
   ? GenericStringError
   : Input extends `${infer L}${infer Remainder}`
-  ? L extends Token.Letter
-    ? ParseLettersHelper<Remainder, `${Acc}${L}`>
-    : [Acc, Input]
-  : [Acc, '']
+    ? L extends Token.Letter
+      ? ParseLettersHelper<Remainder, `${Acc}${L}`>
+      : [Acc, Input]
+    : [Acc, '']
 
 /**
  * Parse a consecutive sequence of 1 or more double-quoted letters,
@@ -366,20 +374,20 @@ type ParseLettersHelper<Input extends string, Acc extends string> = string exten
 type ParseQuotedLetters<Input extends string> = string extends Input
   ? GenericStringError
   : Input extends `"${infer Remainder}`
-  ? ParseQuotedLettersHelper<Remainder, ''> extends [`${infer Letters}`, `${infer Remainder}`]
-    ? Letters extends ''
-      ? ParserError<`Expected string at \`${Remainder}\``>
-      : [Letters, Remainder]
-    : ParseQuotedLettersHelper<Remainder, ''>
-  : ParserError<`Not a double-quoted string at \`${Input}\``>
+    ? ParseQuotedLettersHelper<Remainder, ''> extends [`${infer Letters}`, `${infer Remainder}`]
+      ? Letters extends ''
+        ? ParserError<`Expected string at \`${Remainder}\``>
+        : [Letters, Remainder]
+      : ParseQuotedLettersHelper<Remainder, ''>
+    : ParserError<`Not a double-quoted string at \`${Input}\``>
 
 type ParseQuotedLettersHelper<Input extends string, Acc extends string> = string extends Input
   ? GenericStringError
   : Input extends `${infer L}${infer Remainder}`
-  ? L extends '"'
-    ? [Acc, Remainder]
-    : ParseQuotedLettersHelper<Remainder, `${Acc}${L}`>
-  : ParserError<`Missing closing double-quote in \`"${Acc}${Input}\``>
+    ? L extends '"'
+      ? [Acc, Remainder]
+      : ParseQuotedLettersHelper<Remainder, `${Acc}${L}`>
+    : ParserError<`Missing closing double-quote in \`"${Acc}${Input}\``>
 
 /**
  * Trims whitespace from the left of the input.
@@ -387,15 +395,14 @@ type ParseQuotedLettersHelper<Input extends string, Acc extends string> = string
 type EatWhitespace<Input extends string> = string extends Input
   ? GenericStringError
   : Input extends `${Token.Whitespace}${infer Remainder}`
-  ? EatWhitespace<Remainder>
-  : Input
+    ? EatWhitespace<Remainder>
+    : Input
 
 /**
  * Creates a new {@link ParserError} if the given input is not already a parser error.
  */
-type CreateParserErrorIfRequired<Input, Message extends string> = Input extends ParserError<string>
-  ? Input
-  : ParserError<Message>
+type CreateParserErrorIfRequired<Input, Message extends string> =
+  Input extends ParserError<string> ? Input : ParserError<Message>
 
 /**
  * Parser errors.

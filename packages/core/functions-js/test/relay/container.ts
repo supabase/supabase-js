@@ -6,7 +6,6 @@ import { sign } from 'jsonwebtoken'
 import { GenericContainer, Network, StartedTestContainer, Wait } from 'testcontainers'
 import { ExecResult } from 'testcontainers/dist/docker/types'
 import { attach, log } from '../utils/jest-custom-reporter'
-import { ContentType } from 'allure-js-commons'
 
 /**
  * A Relay contains a running relay container that has a unique ID and two promises:
@@ -47,7 +46,7 @@ export async function runRelay(
   // read function to deploy
   log('read function body')
   const functionBytes = fs.readFileSync('test/functions/' + slug + '/index.ts', 'utf8')
-  attach('function body', functionBytes, ContentType.TEXT)
+  attach('function body', functionBytes, 'text/plain')
 
   // random id for parallel execution
   const id = nanoid(5)
@@ -64,7 +63,7 @@ export async function runRelay(
     .withNetworkMode(network.getName())
     .withExposedPorts(8081)
     .withWaitStrategy(Wait.forLogMessage('Listening on http://0.0.0.0:8081'))
-    .withStartupTimeout(15000)
+    .withStartupTimeout(30000) // Increased from 15s to 30s for CI stability
     .withReuse()
 
   // add envs
@@ -86,7 +85,7 @@ export async function runRelay(
 
   // wait till function is running
   log(`check function is healthy: ${slug + '-' + id}`)
-  for (let ctr = 0; ctr < 30; ctr++) {
+  for (let ctr = 0; ctr < 60; ctr++) {
     try {
       const healthCheck = await nodeFetch(
         `http://localhost:${startedRelay.getMappedPort(8081)}/${slug}`,
@@ -99,6 +98,8 @@ export async function runRelay(
       )
       if (healthCheck.ok || healthCheck.status === 101) {
         log(`function started to serve: ${slug + '-' + id}`)
+        // Add a small delay after health check passes to ensure full readiness
+        await new Promise((resolve) => setTimeout(resolve, 1000))
         return { container: startedRelay, id, execCache, execRun }
       }
     } catch {

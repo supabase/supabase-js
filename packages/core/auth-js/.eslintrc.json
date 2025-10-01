@@ -10,7 +10,7 @@
     "sourceType": "module"
   },
   "plugins": ["@typescript-eslint"],
-  "ignorePatterns": ["*.md", "test/__snapshots__/**/*"],
+  "ignorePatterns": ["*.md", "test/__snapshots__/**/*", "example/**/*"],
   "rules": {
     "comma-dangle": "off",
     "@typescript-eslint/no-explicit-any": "off",

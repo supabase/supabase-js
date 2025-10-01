@@ -5,7 +5,6 @@
 [![License: MIT](https://img.shields.io/npm/l/@supabase/postgrest-js)](#license)
 [![pkg.pr.new](https://pkg.pr.new/badge/supabase/postgrest-js)](https://pkg.pr.new/~/supabase/postgrest-js)
 
-
 Isomorphic JavaScript client for [PostgREST](https://postgrest.org). The goal of this library is to make an "ORM-like" restful interface.
 
 Full documentation can be found [here](https://supabase.github.io/postgrest-js/v2).
@@ -44,6 +43,137 @@ const postgrest = new PostgrestClient(REST_URL, {
   fetch: (...args) => fetch(...args),
 })
 ```
+
+## Development
+
+This package is part of the [Supabase JavaScript monorepo](https://github.com/supabase/supabase-js). To work on this package:
+
+### Building
+
+```bash
+# Complete build (from monorepo root)
+npx nx build postgrest-js
+
+# Build with watch mode for development
+npx nx build postgrest-js --watch
+
+# Individual build targets
+npx nx build:cjs postgrest-js   # CommonJS build
+npx nx build:esm postgrest-js   # ES Modules wrapper
+
+# Other useful commands
+npx nx clean postgrest-js       # Clean build artifacts
+npx nx format postgrest-js      # Format code with Prettier
+npx nx lint postgrest-js        # Run ESLint
+npx nx type-check postgrest-js  # TypeScript type checking
+npx nx docs postgrest-js        # Generate documentation
+```
+
+#### Build Outputs
+
+- **CommonJS (`dist/cjs/`)** - For Node.js environments
+  - `index.js` - Main entry point
+  - `index.d.ts` - TypeScript definitions
+- **ES Modules (`dist/esm/`)** - For modern bundlers
+  - `wrapper.mjs` - ESM wrapper that imports CommonJS
+
+#### Special Build Setup
+
+Unlike other packages, postgrest-js uses a hybrid approach:
+
+- The main code is compiled to CommonJS
+- An ESM wrapper (`wrapper.mjs`) is provided for ES Module environments
+- This ensures maximum compatibility across different JavaScript environments
+
+The `wrapper.mjs` file simply re-exports the CommonJS build, allowing the package to work seamlessly in both CommonJS and ESM contexts.
+
+### Testing
+
+**Docker Required!** The postgrest-js tests need a local PostgreSQL database and PostgREST server running in Docker containers.
+
+#### Quick Start
+
+```bash
+# Run all tests (from monorepo root)
+npx nx test postgrest-js
+```
+
+This single command automatically:
+
+1. Cleans any existing test containers
+2. Starts PostgreSQL database and PostgREST server in Docker
+3. Waits for services to be ready
+4. Runs format checking
+5. Runs TypeScript type tests
+6. Generates and validates TypeScript types from the database schema
+7. Runs all Jest unit tests with coverage
+8. Runs CommonJS and ESM smoke tests
+9. Cleans up Docker containers
+
+#### Individual Test Commands
+
+```bash
+# Run tests with coverage
+npx nx test:run postgrest-js
+
+# Update test snapshots and regenerate types
+npx nx test:update postgrest-js
+
+# Type checking only
+npx nx test:types postgrest-js
+
+# Format checking
+npx nx format:check postgrest-js
+```
+
+#### Test Infrastructure
+
+The tests use Docker Compose to spin up:
+
+- **PostgreSQL** - Database with test schema and dummy data
+- **PostgREST** - REST API server that the client connects to
+
+```bash
+# Manually manage test infrastructure
+npx nx db:run postgrest-js     # Start containers
+npx nx db:clean postgrest-js   # Stop and remove containers
+```
+
+#### What `test:update` Does
+
+The `test:update` command is useful when:
+
+- Database schema changes require updating TypeScript types
+- Test snapshots need to be updated after intentional changes
+
+It performs these steps:
+
+1. Starts fresh database containers
+2. **Regenerates TypeScript types** from the actual database schema
+3. **Updates Jest snapshots** for all tests
+4. Cleans up containers
+
+#### Test Types Explained
+
+- **Format Check** - Ensures code formatting with Prettier
+- **Type Tests** - Validates TypeScript types using `tstyche`
+- **Generated Types Test** - Ensures generated types match database schema
+- **Unit Tests** - Jest tests covering all client functionality
+- **Smoke Tests** - Basic import/require tests for CommonJS and ESM
+
+#### Prerequisites
+
+- **Docker** must be installed and running
+- **Port 3000** - PostgREST server (API)
+- **Port 8080** - Database schema endpoint (for type generation)
+
+**Note:** Unlike a full Supabase instance, this uses a minimal PostgREST setup specifically for testing the client library.
+
+### Contributing
+
+We welcome contributions! Please see our [Contributing Guide](../../../docs/CONTRIBUTING.md) for details on how to get started.
+
+For major changes or if you're unsure about something, please open an issue first to discuss your proposed changes.
 
 ## License
 

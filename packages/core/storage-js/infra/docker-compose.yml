@@ -15,7 +15,7 @@ services:
     build:
       context: ./storage
     ports:
-      - '5000:5000'
+      - '5050:5000'
     depends_on:
       db:
         condition: service_healthy
@@ -26,18 +26,18 @@ services:
       PROJECT_REF: bjwdssmqcnupljrqypxz # can be any random string
       REGION: us-east-1 # region where your bucket is located
       POSTGREST_URL: http://rest:3000
-      GLOBAL_S3_BUCKET: supa-storage-testing  # name of s3 bucket where you want to store objects
+      GLOBAL_S3_BUCKET: supa-storage-testing # name of s3 bucket where you want to store objects
       PGRST_JWT_SECRET: super-secret-jwt-token-with-at-least-32-characters-long
       DATABASE_URL: postgres://postgres:postgres@db:5432/postgres
-      PGOPTIONS: "-c search_path=storage"
+      PGOPTIONS: '-c search_path=storage'
       AWS_ACCESS_KEY_ID: replace-with-your-aws-key
       AWS_SECRET_ACCESS_KEY: replace-with-your-aws-secret
       FILE_SIZE_LIMIT: 52428800
       STORAGE_BACKEND: file
       FILE_STORAGE_BACKEND_PATH: /tmp/storage
-      ENABLE_IMAGE_TRANSFORMATION: "true"
+      ENABLE_IMAGE_TRANSFORMATION: 'true'
       IMGPROXY_URL: http://imgproxy:8080
-      DEBUG: "knex:*"
+      DEBUG: 'knex:*'
     volumes:
       - assets-volume:/tmp/storage
     healthcheck:
@@ -52,7 +52,7 @@ services:
     environment:
       POSTGRES_PASSWORD: postgres
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready" ]
+      test: ['CMD-SHELL', 'pg_isready']
       interval: 10s
       timeout: 5s
       retries: 5
@@ -67,7 +67,7 @@ services:
       - ./postgres:/sql
     command:
       - psql
-      - "postgresql://postgres:postgres@db:5432/postgres"
+      - 'postgresql://postgres:postgres@db:5432/postgres'
       - -f
       - /sql/dummy-data.sql
 
@@ -76,7 +76,7 @@ services:
     ports:
       - 50020:8080
     volumes:
-    -   assets-volume:/tmp/storage
+      - assets-volume:/tmp/storage
     environment:
       - IMGPROXY_LOCAL_FILESYSTEM_ROOT=/
       - IMGPROXY_USE_ETAG=true

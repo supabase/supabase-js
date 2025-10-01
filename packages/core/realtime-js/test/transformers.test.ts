@@ -109,28 +109,19 @@ test('convertCell', () => {
   assert.deepEqual(convertCell('_int4', '{1,2,3,4}'), [1, 2, 3, 4])
 
   // Test uncovered branches
-  assert.strictEqual(
-    convertCell('timestamp', '2021-01-01 12:00:00'),
-    '2021-01-01T12:00:00'
-  )
+  assert.strictEqual(convertCell('timestamp', '2021-01-01 12:00:00'), '2021-01-01T12:00:00')
   assert.strictEqual(convertCell('unknown_type', 'value'), 'value')
 })
 
 test('toArray', () => {
   assert.deepEqual(toArray('{}', 'int4'), [])
   assert.deepEqual(toArray('{1,2,3,4}', 'int4'), [1, 2, 3, 4])
-  assert.deepEqual(
-    toArray(
-      '{"[2021-01-01,2021-12-31)","(2021-01-01,2021-12-32]"}',
-      'daterange'
-    ),
-    ['[2021-01-01,2021-12-31)', '(2021-01-01,2021-12-32]']
-  )
+  assert.deepEqual(toArray('{"[2021-01-01,2021-12-31)","(2021-01-01,2021-12-32]"}', 'daterange'), [
+    '[2021-01-01,2021-12-31)',
+    '(2021-01-01,2021-12-32]',
+  ])
   assert.deepEqual(toArray('{a,b,c}', 'text'), ['a', 'b', 'c'])
-  assert.deepEqual(
-    toArray([99, 999, 9999, 99999], 'int8'),
-    [99, 999, 9999, 99999]
-  )
+  assert.deepEqual(toArray([99, 999, 9999, 99999], 'int8'), [99, 999, 9999, 99999])
 
   // Test non-string input to cover the return statement
   assert.strictEqual(toArray(null, 'int4'), null)
@@ -138,10 +129,7 @@ test('toArray', () => {
 })
 
 test('toTimestampString', () => {
-  assert.deepEqual(
-    toTimestampString('2019-09-10 00:00:00'),
-    '2019-09-10T00:00:00'
-  )
+  assert.deepEqual(toTimestampString('2019-09-10 00:00:00'), '2019-09-10T00:00:00')
   // Test non-string input to cover uncovered branch
   assert.deepEqual(toTimestampString(123), 123)
   assert.deepEqual(toTimestampString(null), null)

@@ -15,7 +15,7 @@ export default class PostgrestTransformBuilder<
   Result,
   RelationName = unknown,
   Relationships = unknown,
-  Method = unknown
+  Method = unknown,
 > extends PostgrestBuilder<ClientOptions, Result> {
   /**
    * Perform a SELECT on the query result.
@@ -28,7 +28,7 @@ export default class PostgrestTransformBuilder<
    */
   select<
     Query extends string = '*',
-    NewResultOne = GetResult<Schema, Row, RelationName, Relationships, Query, ClientOptions>
+    NewResultOne = GetResult<Schema, Row, RelationName, Relationships, Query, ClientOptions>,
   >(
     columns?: Query
   ): PostgrestTransformBuilder<
@@ -218,7 +218,7 @@ export default class PostgrestTransformBuilder<
    * this returns an error.
    */
   maybeSingle<
-    ResultOne = Result extends (infer ResultOne)[] ? ResultOne : never
+    ResultOne = Result extends (infer ResultOne)[] ? ResultOne : never,
   >(): PostgrestBuilder<ClientOptions, ResultOne | null> {
     // Temporary partial fix for https://github.com/supabase/postgrest-js/issues/361
     // Issue persists e.g. for `.insert([...]).select().maybeSingle()`

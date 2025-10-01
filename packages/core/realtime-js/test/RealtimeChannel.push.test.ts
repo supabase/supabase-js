@@ -3,11 +3,7 @@ import { describe, beforeEach, afterEach, test, vi, expect } from 'vitest'
 import RealtimeClient from '../src/RealtimeClient'
 import RealtimeChannel from '../src/RealtimeChannel'
 import { CHANNEL_STATES } from '../src/lib/constants'
-import {
-  setupRealtimeTest,
-  cleanupRealtimeTest,
-  TestSetup,
-} from './helpers/setup'
+import { setupRealtimeTest, cleanupRealtimeTest, TestSetup } from './helpers/setup'
 
 const defaultRef = '1'
 const defaultTimeout = 1000
@@ -98,9 +94,7 @@ describe('push', () => {
     channel.subscribe()
     channel.joinPush.trigger('ok', {})
 
-    channel
-      ._push('event', { foo: 'bar' }, channel.timeout * 2)
-      .receive('timeout', timeoutSpy)
+    channel._push('event', { foo: 'bar' }, channel.timeout * 2).receive('timeout', timeoutSpy)
 
     vi.advanceTimersByTime(channel.timeout / 2)
     expect(timeoutSpy).not.toHaveBeenCalled()
@@ -126,10 +120,7 @@ describe('push', () => {
   })
 
   test('throws if channel has not been joined', () => {
-    assert.throws(
-      () => channel._push('event', {}),
-      /tried to push.*before joining/
-    )
+    assert.throws(() => channel._push('event', {}), /tried to push.*before joining/)
   })
 })
 

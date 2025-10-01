@@ -155,28 +155,23 @@ describe('Presence helper methods', () => {
       expectedCall: { type: 'presence', event: 'untrack' },
       timeout: {},
     },
-  ])(
-    '$method presence via send method',
-    async ({ method, payload, expectedCall, timeout }) => {
-      setupJoinedChannelWithSocket(channel, testSetup.socket)
-      const sendStub = vi.spyOn(channel, 'send').mockResolvedValue('ok')
+  ])('$method presence via send method', async ({ method, payload, expectedCall, timeout }) => {
+    setupJoinedChannelWithSocket(channel, testSetup.socket)
+    const sendStub = vi.spyOn(channel, 'send').mockResolvedValue('ok')
 
-      await (payload ? channel[method](payload) : channel[method]())
+    await (payload ? channel[method](payload) : channel[method]())
 
-      expect(sendStub).toHaveBeenCalledWith(expectedCall, timeout)
-    }
-  )
+    expect(sendStub).toHaveBeenCalledWith(expectedCall, timeout)
+  })
 })
 
 describe('Presence configuration override', () => {
   test('should enable presence when config.presence.enabled is true even without bindings', () => {
-    const channelWithPresenceEnabled = testSetup.socket.channel(
-      'test-presence-override',
-      { config: { presence: { enabled: true } } }
-    )
+    const channelWithPresenceEnabled = testSetup.socket.channel('test-presence-override', {
+      config: { presence: { enabled: true } },
+    })
     assert.equal(
-      channelWithPresenceEnabled.bindings[REALTIME_LISTEN_TYPES.PRESENCE]
-        ?.length,
+      channelWithPresenceEnabled.bindings[REALTIME_LISTEN_TYPES.PRESENCE]?.length,
       undefined
     )
     channelWithPresenceEnabled.subscribe()
@@ -197,9 +192,7 @@ describe('Presence configuration override', () => {
   })
 
   test('should enable presence when only bindings exist (existing behavior)', () => {
-    const channelWithBindingsOnly = testSetup.socket.channel(
-      'test-presence-bindings-only'
-    )
+    const channelWithBindingsOnly = testSetup.socket.channel('test-presence-bindings-only')
     channelWithBindingsOnly.on('presence', { event: 'sync' }, () => {})
     channelWithBindingsOnly.subscribe()
     const joinPayload = channelWithBindingsOnly.joinPush.payload
@@ -209,10 +202,7 @@ describe('Presence configuration override', () => {
 
   test('should not enable presence when neither bindings exist nor config.presence.enabled is true', () => {
     const channelWithNeither = testSetup.socket.channel('test-presence-neither')
-    assert.equal(
-      channelWithNeither.bindings[REALTIME_LISTEN_TYPES.PRESENCE]?.length,
-      undefined
-    )
+    assert.equal(channelWithNeither.bindings[REALTIME_LISTEN_TYPES.PRESENCE]?.length, undefined)
     channelWithNeither.subscribe()
     const joinPayload = channelWithNeither.joinPush.payload
     assert.equal(joinPayload.config.presence.enabled, false)
@@ -220,14 +210,11 @@ describe('Presence configuration override', () => {
   })
 
   test('should allow using track() method when presence is enabled via config override', async () => {
-    const channelWithPresenceEnabled = testSetup.socket.channel(
-      'test-presence-track',
-      { config: { presence: { enabled: true } } }
-    )
+    const channelWithPresenceEnabled = testSetup.socket.channel('test-presence-track', {
+      config: { presence: { enabled: true } },
+    })
     setupJoinedChannelWithSocket(channelWithPresenceEnabled, testSetup.socket)
-    const sendStub = vi
-      .spyOn(channelWithPresenceEnabled, 'send')
-      .mockResolvedValue('ok')
+    const sendStub = vi.spyOn(channelWithPresenceEnabled, 'send').mockResolvedValue('ok')
     await channelWithPresenceEnabled.track({ id: 123, name: 'Test User' })
     expect(sendStub).toHaveBeenCalledWith(
       {
@@ -241,19 +228,13 @@ describe('Presence configuration override', () => {
   })
 
   test('should allow using untrack() method when presence is enabled via config override', async () => {
-    const channelWithPresenceEnabled = testSetup.socket.channel(
-      'test-presence-untrack',
-      { config: { presence: { enabled: true } } }
-    )
+    const channelWithPresenceEnabled = testSetup.socket.channel('test-presence-untrack', {
+      config: { presence: { enabled: true } },
+    })
     setupJoinedChannelWithSocket(channelWithPresenceEnabled, testSetup.socket)
-    const sendStub = vi
-      .spyOn(channelWithPresenceEnabled, 'send')
-      .mockResolvedValue('ok')
+    const sendStub = vi.spyOn(channelWithPresenceEnabled, 'send').mockResolvedValue('ok')
     await channelWithPresenceEnabled.untrack()
-    expect(sendStub).toHaveBeenCalledWith(
-      { type: 'presence', event: 'untrack' },
-      {}
-    )
+    expect(sendStub).toHaveBeenCalledWith({ type: 'presence', event: 'untrack' }, {})
     channelWithPresenceEnabled.unsubscribe()
   })
 })
@@ -335,40 +316,26 @@ describe('RealtimePresence static methods', () => {
         },
         expectedLeft: {},
       },
-    ])(
-      '$name',
-      ({
-        initialState,
-        newState,
-        expectedResult,
-        expectedJoined,
-        expectedLeft,
-      }) => {
-        const stateBefore = clone(initialState)
-        const joined: any = {}
-        const left: any = {}
+    ])('$name', ({ initialState, newState, expectedResult, expectedJoined, expectedLeft }) => {
+      const stateBefore = clone(initialState)
+      const joined: any = {}
+      const left: any = {}
 
-        const onJoin = (key: string, current: any, newPres: any) => {
-          joined[key] = { current, newPres }
-        }
-        const onLeave = (key: string, current: any, leftPres: any) => {
-          left[key] = { current, leftPres }
-        }
-
-        // @ts-ignore - accessing static private method for testing
-        const result = RealtimePresence.syncState(
-          initialState,
-          newState,
-          onJoin,
-          onLeave
-        )
-
-        assert.deepEqual(initialState, stateBefore)
-        assert.deepEqual(result, expectedResult)
-        assert.deepEqual(joined, expectedJoined)
-        assert.deepEqual(left, expectedLeft)
+      const onJoin = (key: string, current: any, newPres: any) => {
+        joined[key] = { current, newPres }
       }
-    )
+      const onLeave = (key: string, current: any, leftPres: any) => {
+        left[key] = { current, leftPres }
+      }
+
+      // @ts-ignore - accessing static private method for testing
+      const result = RealtimePresence.syncState(initialState, newState, onJoin, onLeave)
+
+      assert.deepEqual(initialState, stateBefore)
+      assert.deepEqual(result, expectedResult)
+      assert.deepEqual(joined, expectedJoined)
+      assert.deepEqual(left, expectedLeft)
+    })
   })
 
   describe('syncDiff and utility methods', () => {
@@ -412,17 +379,14 @@ describe('RealtimePresence static methods', () => {
         expected: { u2: [{ id: 2, presence_ref: '2' }] },
         useUndefinedCallbacks: true,
       },
-    ])(
-      'syncDiff: $name',
-      ({ initialState, diff, expected, useUndefinedCallbacks }) => {
-        // @ts-ignore - accessing static private method for testing
-        const result = useUndefinedCallbacks
-          ? RealtimePresence.syncDiff(initialState, diff, undefined, undefined)
-          : RealtimePresence.syncDiff(initialState, diff)
+    ])('syncDiff: $name', ({ initialState, diff, expected, useUndefinedCallbacks }) => {
+      // @ts-ignore - accessing static private method for testing
+      const result = useUndefinedCallbacks
+        ? RealtimePresence.syncDiff(initialState, diff, undefined, undefined)
+        : RealtimePresence.syncDiff(initialState, diff)
 
-        assert.deepEqual(result, expected)
-      }
-    )
+      assert.deepEqual(result, expected)
+    })
 
     test('static utility methods work correctly', () => {
       // Test map function
@@ -443,9 +407,7 @@ describe('RealtimePresence static methods', () => {
       // Test transformState function
       const rawState = {
         u1: {
-          metas: [
-            { id: 1, phx_ref: '1', phx_ref_prev: 'prev1', name: 'User 1' },
-          ],
+          metas: [{ id: 1, phx_ref: '1', phx_ref_prev: 'prev1', name: 'User 1' }],
         },
       }
       // @ts-ignore - accessing static private method for testing

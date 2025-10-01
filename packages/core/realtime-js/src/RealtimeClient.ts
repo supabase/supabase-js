@@ -37,20 +37,11 @@ export type RealtimeMessage = {
 }
 
 export type RealtimeRemoveChannelResponse = 'ok' | 'timed out' | 'error'
-export type HeartbeatStatus =
-  | 'sent'
-  | 'ok'
-  | 'error'
-  | 'timeout'
-  | 'disconnected'
+export type HeartbeatStatus = 'sent' | 'ok' | 'error' | 'timeout' | 'disconnected'
 
 const noop = () => {}
 
-type RealtimeClientState =
-  | 'connecting'
-  | 'connected'
-  | 'disconnecting'
-  | 'disconnected'
+type RealtimeClientState = 'connecting' | 'connected' | 'disconnecting' | 'disconnected'
 
 // Connection-related constants
 const CONNECTION_TIMEOUTS = {
@@ -63,10 +54,7 @@ const RECONNECT_INTERVALS = [1000, 2000, 5000, 10000] as const
 const DEFAULT_RECONNECT_FALLBACK = 10000
 
 export interface WebSocketLikeConstructor {
-  new (
-    address: string | URL,
-    subprotocols?: string | string[] | undefined
-  ): WebSocketLike
+  new (address: string | URL, subprotocols?: string | string[] | undefined): WebSocketLike
   // Allow additional properties that may exist on WebSocket constructors
   [key: string]: any
 }
@@ -238,10 +226,7 @@ export default class RealtimeClient {
    * @returns string The URL of the websocket.
    */
   endpointURL(): string {
-    return this._appendParams(
-      this.endPoint,
-      Object.assign({}, this.params, { vsn: VSN })
-    )
+    return this._appendParams(this.endPoint, Object.assign({}, this.params, { vsn: VSN }))
   }
 
   /**
@@ -292,9 +277,7 @@ export default class RealtimeClient {
    * Unsubscribes and removes a single channel
    * @param channel A RealtimeChannel instance
    */
-  async removeChannel(
-    channel: RealtimeChannel
-  ): Promise<RealtimeRemoveChannelResponse> {
+  async removeChannel(channel: RealtimeChannel): Promise<RealtimeRemoveChannelResponse> {
     const status = await channel.unsubscribe()
 
     if (this.channels.length === 0) {
@@ -308,9 +291,7 @@ export default class RealtimeClient {
    * Unsubscribes and removes all channels
    */
   async removeAllChannels(): Promise<RealtimeRemoveChannelResponse[]> {
-    const values_1 = await Promise.all(
-      this.channels.map((channel) => channel.unsubscribe())
-    )
+    const values_1 = await Promise.all(this.channels.map((channel) => channel.unsubscribe()))
     this.channels = []
     this.disconnect()
     return values_1
@@ -362,14 +343,9 @@ export default class RealtimeClient {
     return this._connectionState === 'disconnecting'
   }
 
-  channel(
-    topic: string,
-    params: RealtimeChannelOptions = { config: {} }
-  ): RealtimeChannel {
+  channel(topic: string, params: RealtimeChannelOptions = { config: {} }): RealtimeChannel {
     const realtimeTopic = `realtime:${topic}`
-    const exists = this.getChannels().find(
-      (c: RealtimeChannel) => c.topic === realtimeTopic
-    )
+    const exists = this.getChannels().find((c: RealtimeChannel) => c.topic === realtimeTopic)
 
     if (!exists) {
       const chan = new RealtimeChannel(`realtime:${topic}`, params, this)
@@ -434,10 +410,7 @@ export default class RealtimeClient {
     // Handle heartbeat timeout and force reconnection if needed
     if (this.pendingHeartbeatRef) {
       this.pendingHeartbeatRef = null
-      this.log(
-        'transport',
-        'heartbeat timeout. Attempting to re-establish connection'
-      )
+      this.log('transport', 'heartbeat timeout. Attempting to re-establish connection')
       try {
         this.heartbeatCallback('timeout')
       } catch (e) {
@@ -575,18 +548,12 @@ export default class RealtimeClient {
       const { topic, event, payload, ref } = msg
       const refString = ref ? `(${ref})` : ''
       const status = payload.status || ''
-      this.log(
-        'receive',
-        `${status} ${topic} ${event} ${refString}`.trim(),
-        payload
-      )
+      this.log('receive', `${status} ${topic} ${event} ${refString}`.trim(), payload)
 
       // Route message to appropriate channels
       this.channels
         .filter((channel: RealtimeChannel) => channel._isMember(topic))
-        .forEach((channel: RealtimeChannel) =>
-          channel._trigger(event, payload, ref)
-        )
+        .forEach((channel: RealtimeChannel) => channel._trigger(event, payload, ref))
 
       this._triggerStateCallbacks('message', msg)
     })
@@ -668,10 +635,7 @@ export default class RealtimeClient {
   /** @internal */
   private _startHeartbeat() {
     this.heartbeatTimer && clearInterval(this.heartbeatTimer)
-    this.heartbeatTimer = setInterval(
-      () => this.sendHeartbeat(),
-      this.heartbeatIntervalMs
-    )
+    this.heartbeatTimer = setInterval(() => this.sendHeartbeat(), this.heartbeatIntervalMs)
   }
 
   /** @internal */
@@ -722,16 +686,11 @@ export default class RealtimeClient {
 
   /** @internal */
   private _triggerChanError() {
-    this.channels.forEach((channel: RealtimeChannel) =>
-      channel._trigger(CHANNEL_EVENTS.error)
-    )
+    this.channels.forEach((channel: RealtimeChannel) => channel._trigger(CHANNEL_EVENTS.error))
   }
 
   /** @internal */
-  private _appendParams(
-    url: string,
-    params: { [key: string]: string }
-  ): string {
+  private _appendParams(url: string, params: { [key: string]: string }): string {
     if (Object.keys(params).length === 0) {
       return url
     }
@@ -755,10 +714,7 @@ export default class RealtimeClient {
    * Set connection state with proper state management
    * @internal
    */
-  private _setConnectionState(
-    state: RealtimeClientState,
-    manual = false
-  ): void {
+  private _setConnectionState(state: RealtimeClientState, manual = false): void {
     this._connectionState = state
 
     if (state === 'connecting') {
@@ -827,10 +783,7 @@ export default class RealtimeClient {
    * Trigger state change callbacks with proper error handling
    * @internal
    */
-  private _triggerStateCallbacks(
-    event: keyof typeof this.stateChangeCallbacks,
-    data?: any
-  ): void {
+  private _triggerStateCallbacks(event: keyof typeof this.stateChangeCallbacks, data?: any): void {
     try {
       this.stateChangeCallbacks[event].forEach((callback) => {
         try {
@@ -893,8 +846,7 @@ export default class RealtimeClient {
         return callback(JSON.stringify(payload))
       })
 
-    this.decode =
-      options?.decode ?? this.serializer.decode.bind(this.serializer)
+    this.decode = options?.decode ?? this.serializer.decode.bind(this.serializer)
 
     // Handle worker setup
     if (this.worker) {

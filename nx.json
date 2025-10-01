@@ -1,74 +1,181 @@
 {
   "$schema": "./node_modules/nx/schemas/nx-schema.json",
+  "namedInputs": {
+    "default": ["{projectRoot}/**/*", "sharedGlobals"],
+    "production": [
+      "{projectRoot}/src/**/*",
+      "{projectRoot}/package.json",
+      "{projectRoot}/tsconfig*.json",
+      "!{projectRoot}/src/**/?(*.)+(spec|test).[jt]s?(x)?(.snap)",
+      "!{projectRoot}/**/?(*.)+(spec|test).[jt]s?(x)?(.snap)",
+      "!{projectRoot}/test/**/*",
+      "!{projectRoot}/jest.config.[jt]s",
+      "!{projectRoot}/vitest.config.[jt]s",
+      "!{projectRoot}/**/*.md",
+      "!{projectRoot}/docs/**/*",
+      "!{projectRoot}/coverage/**/*",
+      "sharedGlobals"
+    ],
+    "testing": [
+      "production",
+      "{projectRoot}/test/**/*",
+      "{projectRoot}/**/?(*.)+(spec|test).[jt]s?(x)?(.snap)",
+      "{projectRoot}/jest.config.[jt]s",
+      "{projectRoot}/vitest.config.[jt]s",
+      "{projectRoot}/tsconfig.spec.json"
+    ],
+    "linting": [
+      "{projectRoot}/src/**/*",
+      "{projectRoot}/test/**/*",
+      "{projectRoot}/.eslintrc*",
+      "{projectRoot}/.prettierrc*",
+      "{projectRoot}/tsconfig*.json",
+      "sharedGlobals"
+    ],
+    "docs": [
+      "{projectRoot}/src/**/*",
+      "{projectRoot}/README.md",
+      "{projectRoot}/docs/**/*",
+      "{projectRoot}/typedoc.json",
+      "{projectRoot}/package.json",
+      "sharedGlobals"
+    ],
+    "buildConfig": [
+      "{projectRoot}/webpack.config.[jt]s",
+      "{projectRoot}/vite.config.[jt]s",
+      "{projectRoot}/rollup.config.[jt]s",
+      "{projectRoot}/tsconfig*.json",
+      "{projectRoot}/package.json",
+      "sharedGlobals"
+    ],
+    "sharedGlobals": [
+      "{workspaceRoot}/.github/workflows/**/*",
+      "{workspaceRoot}/nx.json",
+      "{workspaceRoot}/package.json",
+      "{workspaceRoot}/package-lock.json",
+      "{workspaceRoot}/tsconfig.base.json",
+      "{workspaceRoot}/tsconfig.json",
+      "{workspaceRoot}/.prettierrc*",
+      "{workspaceRoot}/.eslintrc*",
+      "{workspaceRoot}/jest.config.[jt]s",
+      "{workspaceRoot}/vitest.config.[jt]s"
+    ]
+  },
   "targetDefaults": {
     "build": {
-      "outputs": ["{projectRoot}/dist"],
-      "cache": true
+      "inputs": ["production", "^production", "buildConfig"],
+      "dependsOn": ["^build"]
     },
     "build:main": {
-      "outputs": ["{projectRoot}/dist"],
-      "cache": true
+      "inputs": ["production", "^production", "buildConfig"],
+      "dependsOn": ["^build:main"]
     },
     "build:module": {
-      "outputs": ["{projectRoot}/dist"],
-      "cache": true
+      "inputs": ["production", "^production", "buildConfig"],
+      "dependsOn": ["^build:module"]
     },
     "build:umd": {
-      "outputs": ["{projectRoot}/dist"],
-      "cache": true
+      "inputs": ["production", "^production", "buildConfig"],
+      "dependsOn": ["^build:umd"]
     },
-    "docs:json": {
-      "outputs": ["{projectRoot}/docs"],
-      "cache": true
-    },
-    "format": {
-      "cache": true
-    },
-    "types-generate": {
-      "cache": true
+    "webpack:build": {
+      "inputs": ["production", "^production", "buildConfig"],
+      "dependsOn": ["^webpack:build"]
     },
     "test": {
-      "cache": true
-    },
-    "test:all": {
-      "cache": true
-    },
-    "test:run": {
-      "cache": true
-    },
-    "test:unit": {
-      "cache": true
-    },
-    "test:coverage": {
-      "cache": true
-    },
-    "test:integration": {
-      "cache": true
-    },
-    "test:integration:browser": {
-      "cache": true
-    },
-    "test:edge-functions": {
-      "cache": true
-    },
-    "test:watch": {
-      "cache": true
-    },
-    "test:node:playwright": {
-      "cache": true
-    },
-    "test:bun": {
-      "cache": true
+      "inputs": ["testing", "^production"],
+      "dependsOn": ["^build"]
     },
     "test:types": {
-      "cache": true
+      "inputs": ["testing", "^production"],
+      "dependsOn": ["^build"]
+    },
+    "test:unit": {
+      "inputs": ["testing", "^production"]
+    },
+    "test:coverage": {
+      "inputs": ["testing", "^production"],
+      "dependsOn": ["^build"]
+    },
+    "test:integration": {
+      "inputs": ["testing", "^production"]
+    },
+    "test:ci": {
+      "inputs": ["testing", "^production"]
+    },
+    "vite:test": {
+      "inputs": ["testing", "^production"]
+    },
+    "lint": {
+      "inputs": ["linting"]
+    },
+    "format": {
+      "inputs": ["linting"]
+    },
+    "typecheck": {
+      "inputs": ["production", "^production", "{projectRoot}/tsconfig*.json"]
     },
     "docs": {
-      "cache": true
+      "inputs": ["docs"]
+    },
+    "docs:json": {
+      "inputs": ["docs"],
+      "dependsOn": ["^docs", "^build"]
+    },
+    "clean": {
+      "inputs": []
+    },
+    "nx-release-publish": {
+      "options": {
+        "skipLockFileUpdate": true
+      }
+    },
+    "nx-release-version": {
+      "options": {
+        "skipLockFileUpdate": true
+      }
+    },
+    "nx-release-changelog": {
+      "options": {
+        "skipLockFileUpdate": true
+      }
     }
   },
-  "defaultBase": "next",
   "plugins": [
+    {
+      "plugin": "@nx/js/typescript",
+      "options": {
+        "typecheck": {
+          "targetName": "typecheck"
+        },
+        "build": {
+          "targetName": "build",
+          "configName": "tsconfig.lib.json",
+          "buildDepsName": "build-deps",
+          "watchDepsName": "watch-deps"
+        }
+      }
+    },
+    {
+      "plugin": "@nx/jest/plugin",
+      "options": {
+        "targetName": "test"
+      }
+    },
+    {
+      "plugin": "@nx/vite/plugin",
+      "options": {
+        "buildTargetName": "build",
+        "testTargetName": "vite:test",
+        "serveTargetName": "serve",
+        "devTargetName": "dev",
+        "previewTargetName": "preview",
+        "serveStaticTargetName": "serve-static",
+        "typecheckTargetName": "vite:typecheck",
+        "buildDepsTargetName": "build-deps",
+        "watchDepsTargetName": "watch-deps"
+      }
+    },
     {
       "plugin": "@nx/webpack/plugin",
       "options": {
@@ -76,9 +183,42 @@
         "serveTargetName": "serve",
         "previewTargetName": "preview",
         "buildDepsTargetName": "build-deps",
-        "watchDepsTargetName": "watch-deps",
-        "serveStaticTargetName": "serve-static"
+        "watchDepsTargetName": "watch-deps"
+      }
+    },
+    {
+      "plugin": "@nx/eslint/plugin",
+      "options": {
+        "targetName": "lint",
+        "exclude": ["**/example/**/*", "**/examples/**/*"]
       }
     }
-  ]
+  ],
+  "release": {
+    "projects": ["packages/core/*"],
+    "projectsRelationship": "fixed",
+    "releaseTagPatternCheckAllBranchesWhen": true,
+    "version": {
+      "conventionalCommits": true
+    },
+    "changelog": {
+      "projectChangelogs": {
+        "renderOptions": {
+          "authors": true,
+          "mapAuthorsToGitHubUsernames": true,
+          "versionTitleDate": true,
+          "commitReferences": true
+        }
+      },
+      "workspaceChangelog": {
+        "createRelease": "github",
+        "renderOptions": {
+          "authors": true,
+          "mapAuthorsToGitHubUsernames": true,
+          "versionTitleDate": true,
+          "commitReferences": true
+        }
+      }
+    }
+  }
 }

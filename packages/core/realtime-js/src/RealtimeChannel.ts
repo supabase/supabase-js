@@ -1,14 +1,8 @@
-import {
-  CHANNEL_EVENTS,
-  CHANNEL_STATES,
-  MAX_PUSH_BUFFER_SIZE,
-} from './lib/constants'
+import { CHANNEL_EVENTS, CHANNEL_STATES, MAX_PUSH_BUFFER_SIZE } from './lib/constants'
 import Push from './lib/push'
 import type RealtimeClient from './RealtimeClient'
 import Timer from './lib/timer'
-import RealtimePresence, {
-  REALTIME_PRESENCE_LISTEN_EVENTS,
-} from './RealtimePresence'
+import RealtimePresence, { REALTIME_PRESENCE_LISTEN_EVENTS } from './RealtimePresence'
 import type {
   RealtimePresenceJoinPayload,
   RealtimePresenceLeavePayload,
@@ -68,9 +62,7 @@ export type RealtimePostgresChangesPayload<T extends { [key: string]: any }> =
   | RealtimePostgresUpdatePayload<T>
   | RealtimePostgresDeletePayload<T>
 
-export type RealtimePostgresChangesFilter<
-  T extends `${REALTIME_POSTGRES_CHANGES_LISTEN_EVENT}`
-> = {
+export type RealtimePostgresChangesFilter<T extends `${REALTIME_POSTGRES_CHANGES_LISTEN_EVENT}`> = {
   /**
    * The type of database change to listen to.
    */
@@ -164,16 +156,8 @@ export default class RealtimeChannel {
       ...params.config,
     }
     this.timeout = this.socket.timeout
-    this.joinPush = new Push(
-      this,
-      CHANNEL_EVENTS.join,
-      this.params,
-      this.timeout
-    )
-    this.rejoinTimer = new Timer(
-      () => this._rejoinUntilConnected(),
-      this.socket.reconnectAfterMs
-    )
+    this.joinPush = new Push(this, CHANNEL_EVENTS.join, this.params, this.timeout)
+    this.rejoinTimer = new Timer(() => this._rejoinUntilConnected(), this.socket.reconnectAfterMs)
     this.joinPush.receive('ok', () => {
       this.state = CHANNEL_STATES.joined
       this.rejoinTimer.reset()
@@ -234,8 +218,7 @@ export default class RealtimeChannel {
         config: { broadcast, presence, private: isPrivate },
       } = this.params
 
-      const postgres_changes =
-        this.bindings.postgres_changes?.map((r) => r.filter) ?? []
+      const postgres_changes = this.bindings.postgres_changes?.map((r) => r.filter) ?? []
 
       const presence_enabled =
         (!!this.bindings[REALTIME_LISTEN_TYPES.PRESENCE] &&
@@ -253,9 +236,7 @@ export default class RealtimeChannel {
         accessTokenPayload.access_token = this.socket.accessTokenValue
       }
 
-      this._onError((e: Error) =>
-        callback?.(REALTIME_SUBSCRIBE_STATES.CHANNEL_ERROR, e)
-      )
+      this._onError((e: Error) => callback?.(REALTIME_SUBSCRIBE_STATES.CHANNEL_ERROR, e))
 
       this._onClose(() => callback?.(REALTIME_SUBSCRIBE_STATES.CLOSED))
 
@@ -280,8 +261,7 @@ export default class RealtimeChannel {
               const {
                 filter: { event, schema, table, filter },
               } = clientPostgresBinding
-              const serverPostgresFilter =
-                postgres_changes && postgres_changes[i]
+              const serverPostgresFilter = postgres_changes && postgres_changes[i]
 
               if (
                 serverPostgresFilter &&
@@ -300,9 +280,7 @@ export default class RealtimeChannel {
 
                 callback?.(
                   REALTIME_SUBSCRIBE_STATES.CHANNEL_ERROR,
-                  new Error(
-                    'mismatch between server and client bindings for postgres changes'
-                  )
+                  new Error('mismatch between server and client bindings for postgres changes')
                 )
                 return
               }
@@ -318,9 +296,7 @@ export default class RealtimeChannel {
           this.state = CHANNEL_STATES.errored
           callback?.(
             REALTIME_SUBSCRIBE_STATES.CHANNEL_ERROR,
-            new Error(
-              JSON.stringify(Object.values(error).join(', ') || 'error')
-            )
+            new Error(JSON.stringify(Object.values(error).join(', ') || 'error'))
           )
           return
         })
@@ -332,9 +308,7 @@ export default class RealtimeChannel {
     return this
   }
 
-  presenceState<
-    T extends { [key: string]: any } = {}
-  >(): RealtimePresenceState<T> {
+  presenceState<T extends { [key: string]: any } = {}>(): RealtimePresenceState<T> {
     return this.presence.state as RealtimePresenceState<T>
   }
 
@@ -352,9 +326,7 @@ export default class RealtimeChannel {
     )
   }
 
-  async untrack(
-    opts: { [key: string]: any } = {}
-  ): Promise<RealtimeChannelSendResponse> {
+  async untrack(opts: { [key: string]: any } = {}): Promise<RealtimeChannelSendResponse> {
     return await this.send(
       {
         type: 'presence',
@@ -436,10 +408,7 @@ export default class RealtimeChannel {
     filter: { event: string; [key: string]: string },
     callback: (payload: any) => void
   ): RealtimeChannel {
-    if (
-      this.state === CHANNEL_STATES.joined &&
-      type === REALTIME_LISTEN_TYPES.PRESENCE
-    ) {
+    if (this.state === CHANNEL_STATES.joined && type === REALTIME_LISTEN_TYPES.PRESENCE) {
       this.socket.log(
         'channel',
         `resubscribe to ${this.topic} due to change in presence callbacks on joined channel`
@@ -584,11 +553,7 @@ export default class RealtimeChannel {
 
   /** @internal */
 
-  async _fetchWithTimeout(
-    url: string,
-    options: { [key: string]: any },
-    timeout: number
-  ) {
+  async _fetchWithTimeout(url: string, options: { [key: string]: any }, timeout: number) {
     const controller = new AbortController()
     const id = setTimeout(() => controller.abort(), timeout)
 
@@ -603,11 +568,7 @@ export default class RealtimeChannel {
   }
 
   /** @internal */
-  _push(
-    event: string,
-    payload: { [key: string]: any },
-    timeout = this.timeout
-  ) {
+  _push(event: string, payload: { [key: string]: any }, timeout = this.timeout) {
     if (!this.joinedOnce) {
       throw `tried to push '${event}' to '${this.topic}' before joining. Use channel.subscribe() before pushing events`
     }
@@ -678,18 +639,13 @@ export default class RealtimeChannel {
     if (['insert', 'update', 'delete'].includes(typeLower)) {
       this.bindings.postgres_changes
         ?.filter((bind) => {
-          return (
-            bind.filter?.event === '*' ||
-            bind.filter?.event?.toLocaleLowerCase() === typeLower
-          )
+          return bind.filter?.event === '*' || bind.filter?.event?.toLocaleLowerCase() === typeLower
         })
         .map((bind) => bind.callback(handledPayload, ref))
     } else {
       this.bindings[typeLower]
         ?.filter((bind) => {
-          if (
-            ['broadcast', 'presence', 'postgres_changes'].includes(typeLower)
-          ) {
+          if (['broadcast', 'presence', 'postgres_changes'].includes(typeLower)) {
             if ('id' in bind) {
               const bindId = bind.id
               const bindEvent = bind.filter?.event
@@ -697,15 +653,11 @@ export default class RealtimeChannel {
                 bindId &&
                 payload.ids?.includes(bindId) &&
                 (bindEvent === '*' ||
-                  bindEvent?.toLocaleLowerCase() ===
-                    payload.data?.type.toLocaleLowerCase())
+                  bindEvent?.toLocaleLowerCase() === payload.data?.type.toLocaleLowerCase())
               )
             } else {
               const bindEvent = bind?.filter?.event?.toLocaleLowerCase()
-              return (
-                bindEvent === '*' ||
-                bindEvent === payload?.event?.toLocaleLowerCase()
-              )
+              return bindEvent === '*' || bindEvent === payload?.event?.toLocaleLowerCase()
             }
           } else {
             return bind.type.toLocaleLowerCase() === typeLower
@@ -714,8 +666,7 @@ export default class RealtimeChannel {
         .map((bind) => {
           if (typeof handledPayload === 'object' && 'ids' in handledPayload) {
             const postgresChanges = handledPayload.data
-            const { schema, table, commit_timestamp, type, errors } =
-              postgresChanges
+            const { schema, table, commit_timestamp, type, errors } = postgresChanges
             const enrichedPayload = {
               schema: schema,
               table: table,
@@ -794,10 +745,7 @@ export default class RealtimeChannel {
   }
 
   /** @internal */
-  private static isEqual(
-    obj1: { [key: string]: string },
-    obj2: { [key: string]: string }
-  ) {
+  private static isEqual(obj1: { [key: string]: string }, obj2: { [key: string]: string }) {
     if (Object.keys(obj1).length !== Object.keys(obj2).length) {
       return false
     }
@@ -864,17 +812,11 @@ export default class RealtimeChannel {
     }
 
     if (payload.type === 'INSERT' || payload.type === 'UPDATE') {
-      records.new = Transformers.convertChangeData(
-        payload.columns,
-        payload.record
-      )
+      records.new = Transformers.convertChangeData(payload.columns, payload.record)
     }
 
     if (payload.type === 'UPDATE' || payload.type === 'DELETE') {
-      records.old = Transformers.convertChangeData(
-        payload.columns,
-        payload.old_record
-      )
+      records.old = Transformers.convertChangeData(payload.columns, payload.old_record)
     }
 
     return records

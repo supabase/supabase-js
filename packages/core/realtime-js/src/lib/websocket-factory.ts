@@ -38,17 +38,11 @@ export class WebSocketFactory {
       return { type: 'native', constructor: WebSocket }
     }
 
-    if (
-      typeof globalThis !== 'undefined' &&
-      typeof (globalThis as any).WebSocket !== 'undefined'
-    ) {
+    if (typeof globalThis !== 'undefined' && typeof (globalThis as any).WebSocket !== 'undefined') {
       return { type: 'native', constructor: (globalThis as any).WebSocket }
     }
 
-    if (
-      typeof global !== 'undefined' &&
-      typeof (global as any).WebSocket !== 'undefined'
-    ) {
+    if (typeof global !== 'undefined' && typeof (global as any).WebSocket !== 'undefined') {
       return { type: 'native', constructor: (global as any).WebSocket }
     }
 
@@ -68,8 +62,7 @@ export class WebSocketFactory {
 
     if (
       (typeof globalThis !== 'undefined' && (globalThis as any).EdgeRuntime) ||
-      (typeof navigator !== 'undefined' &&
-        navigator.userAgent?.includes('Vercel-Edge'))
+      (typeof navigator !== 'undefined' && navigator.userAgent?.includes('Vercel-Edge'))
     ) {
       return {
         type: 'unsupported',
@@ -86,9 +79,7 @@ export class WebSocketFactory {
       if (processVersions && processVersions['node']) {
         // Remove 'v' prefix if present and parse the major version
         const versionString = processVersions['node']
-        const nodeVersion = parseInt(
-          versionString.replace(/^v/, '').split('.')[0]
-        )
+        const nodeVersion = parseInt(versionString.replace(/^v/, '').split('.')[0])
 
         // Node.js 22+ should have native WebSocket
         if (nodeVersion >= 22) {
@@ -100,8 +91,7 @@ export class WebSocketFactory {
           return {
             type: 'unsupported',
             error: `Node.js ${nodeVersion} detected but native WebSocket not found.`,
-            workaround:
-              'Provide a WebSocket implementation via the transport option.',
+            workaround: 'Provide a WebSocket implementation via the transport option.',
           }
         }
 
@@ -130,18 +120,14 @@ export class WebSocketFactory {
     if (env.constructor) {
       return env.constructor
     }
-    let errorMessage =
-      env.error || 'WebSocket not supported in this environment.'
+    let errorMessage = env.error || 'WebSocket not supported in this environment.'
     if (env.workaround) {
       errorMessage += `\n\nSuggested solution: ${env.workaround}`
     }
     throw new Error(errorMessage)
   }
 
-  public static createWebSocket(
-    url: string | URL,
-    protocols?: string | string[]
-  ): WebSocketLike {
+  public static createWebSocket(url: string | URL, protocols?: string | string[]): WebSocketLike {
     const WS = this.getWebSocketConstructor()
     return new WS(url, protocols)
   }

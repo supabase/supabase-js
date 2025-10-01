@@ -149,9 +149,7 @@ describe('Error Recovery & Resilience', () => {
       channel.joinPush.trigger('error', errorPayload)
 
       assert.equal(errorStatus, 'CHANNEL_ERROR')
-      expect(
-        errorMessage !== null && errorMessage.includes('Authentication failed')
-      )
+      expect(errorMessage !== null && errorMessage.includes('Authentication failed'))
     })
   })
 
@@ -221,10 +219,7 @@ describe('Error Handling Consolidation', () => {
       // Set channel to joining state (not joined, so error handler will work)
       channel.state = CHANNEL_STATES.joining
 
-      const scheduleTimeoutSpy = vi.spyOn(
-        channel.rejoinTimer,
-        'scheduleTimeout'
-      )
+      const scheduleTimeoutSpy = vi.spyOn(channel.rejoinTimer, 'scheduleTimeout')
 
       // Simulate the actual error flow by calling _matchReceive directly on the joinPush
       // This is how the error would actually be processed
@@ -237,11 +232,7 @@ describe('Error Handling Consolidation', () => {
       assert.equal(channel.state, CHANNEL_STATES.errored)
       expect(scheduleTimeoutSpy).toHaveBeenCalledTimes(1)
       // Check that log was called with the correct arguments
-      expect(logSpy).toHaveBeenCalledWith(
-        'channel',
-        `error ${channel.topic}`,
-        'test reason'
-      )
+      expect(logSpy).toHaveBeenCalledWith('channel', `error ${channel.topic}`, 'test reason')
     })
 
     test.each([
@@ -257,10 +248,7 @@ describe('Error Handling Consolidation', () => {
       channel.state = state
       const originalState = channel.state
 
-      const scheduleTimeoutSpy = vi.spyOn(
-        channel.rejoinTimer,
-        'scheduleTimeout'
-      )
+      const scheduleTimeoutSpy = vi.spyOn(channel.rejoinTimer, 'scheduleTimeout')
 
       // Trigger actual error through public API
       channel.joinPush.trigger('error', 'test reason')
@@ -273,10 +261,7 @@ describe('Error Handling Consolidation', () => {
       // Keep channel in joining state so timeout handler will trigger
       channel.state = CHANNEL_STATES.joining
 
-      const scheduleTimeoutSpy = vi.spyOn(
-        channel.rejoinTimer,
-        'scheduleTimeout'
-      )
+      const scheduleTimeoutSpy = vi.spyOn(channel.rejoinTimer, 'scheduleTimeout')
 
       // Simulate the actual timeout flow by calling _matchReceive directly
       // @ts-ignore - accessing private method for proper simulation
@@ -302,10 +287,7 @@ describe('Error Handling Consolidation', () => {
 
     test('should handle multiple error events gracefully', () => {
       channel.state = CHANNEL_STATES.joining
-      const scheduleTimeoutSpy = vi.spyOn(
-        channel.rejoinTimer,
-        'scheduleTimeout'
-      )
+      const scheduleTimeoutSpy = vi.spyOn(channel.rejoinTimer, 'scheduleTimeout')
 
       // Simulate first error through proper flow
       // @ts-ignore - accessing private method for proper simulation
@@ -329,10 +311,7 @@ describe('Error Handling Consolidation', () => {
     test('should handle joinPush timeout through existing error handling', () => {
       channel.subscribe()
 
-      const scheduleTimeoutSpy = vi.spyOn(
-        channel.rejoinTimer,
-        'scheduleTimeout'
-      )
+      const scheduleTimeoutSpy = vi.spyOn(channel.rejoinTimer, 'scheduleTimeout')
 
       // Simulate timeout through public API
       channel.joinPush.trigger('timeout', {})
@@ -345,10 +324,7 @@ describe('Error Handling Consolidation', () => {
     test('should handle joinPush error through existing error handling', () => {
       channel.subscribe()
 
-      const scheduleTimeoutSpy = vi.spyOn(
-        channel.rejoinTimer,
-        'scheduleTimeout'
-      )
+      const scheduleTimeoutSpy = vi.spyOn(channel.rejoinTimer, 'scheduleTimeout')
 
       // Trigger error through public API
       channel.joinPush.trigger('error', { message: 'join failed' })

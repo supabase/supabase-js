@@ -111,7 +111,7 @@ export type GoTrueClientOptions = {
 
 const WeakPasswordReasons = ['length', 'characters', 'pwned'] as const
 
-export type WeakPasswordReasons = typeof WeakPasswordReasons[number]
+export type WeakPasswordReasons = (typeof WeakPasswordReasons)[number]
 export type WeakPassword = {
   reasons: WeakPasswordReasons[]
   message: string
@@ -266,7 +266,7 @@ const AMRMethods = [
   'web3',
 ] as const
 
-export type AMRMethod = typeof AMRMethods[number] | (string & {})
+export type AMRMethod = (typeof AMRMethods)[number] | (string & {})
 
 /**
  * An authentication methord reference (AMR) entry.
@@ -305,14 +305,14 @@ const FactorTypes = ['totp', 'phone', 'webauthn'] as const
 /**
  * Type of factor. `totp` and `phone` supported with this version
  */
-export type FactorType = typeof FactorTypes[number]
+export type FactorType = (typeof FactorTypes)[number]
 
 const FactorVerificationStatuses = ['verified', 'unverified'] as const
 
 /**
  * The verification status of the factor, default is `unverified` after `.enroll()`, then `verified` after the user verifies it with `.verify()`
  */
-type FactorVerificationStatus = typeof FactorVerificationStatuses[number]
+type FactorVerificationStatus = (typeof FactorVerificationStatuses)[number]
 
 /**
  * A MFA factor.
@@ -323,7 +323,7 @@ type FactorVerificationStatus = typeof FactorVerificationStatuses[number]
  */
 export type Factor<
   Type extends FactorType = FactorType,
-  Status extends FactorVerificationStatus = typeof FactorVerificationStatuses[number]
+  Status extends FactorVerificationStatus = (typeof FactorVerificationStatuses)[number],
 > = {
   /** ID of the factor. */
   id: string
@@ -938,7 +938,7 @@ type MFAChallengeParamsBase = {
 }
 
 const MFATOTPChannels = ['sms', 'whatsapp'] as const
-export type MFATOTPChannel = typeof MFATOTPChannels[number]
+export type MFATOTPChannel = (typeof MFATOTPChannels)[number]
 
 export type MFAChallengeTOTPParams = Prettify<MFAChallengeParamsBase>
 
@@ -1447,4 +1447,4 @@ export interface JWK {
 }
 
 export const SIGN_OUT_SCOPES = ['global', 'local', 'others'] as const
-export type SignOutScope = typeof SIGN_OUT_SCOPES[number]
+export type SignOutScope = (typeof SIGN_OUT_SCOPES)[number]

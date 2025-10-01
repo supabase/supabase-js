@@ -3,7 +3,10 @@ import { DownloadResult } from '../lib/types'
 import StreamDownloadBuilder from './StreamDownloadBuilder'
 
 export default class BlobDownloadBuilder implements PromiseLike<DownloadResult<Blob>> {
-  constructor(private downloadFn: () => Promise<Response>, private shouldThrowOnError: boolean) {}
+  constructor(
+    private downloadFn: () => Promise<Response>,
+    private shouldThrowOnError: boolean
+  ) {}
 
   asStream(): StreamDownloadBuilder {
     return new StreamDownloadBuilder(this.downloadFn, this.shouldThrowOnError)

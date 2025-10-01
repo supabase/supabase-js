@@ -59,11 +59,7 @@ export const authHelpers = {
   /**
    * Setup spies for auth test channels
    */
-  setupAuthTestSpies(channels: {
-    channel1: any
-    channel2: any
-    channel3: any
-  }) {
+  setupAuthTestSpies(channels: { channel1: any; channel2: any; channel3: any }) {
     return {
       pushSpies: {
         push1: vi.spyOn(channels.channel1, '_push'),

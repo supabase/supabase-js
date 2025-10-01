@@ -1,11 +1,7 @@
 import assert from 'assert'
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import RealtimeClient from '../src/RealtimeClient'
-import {
-  setupRealtimeTest,
-  cleanupRealtimeTest,
-  TestSetup,
-} from './helpers/setup'
+import { setupRealtimeTest, cleanupRealtimeTest, TestSetup } from './helpers/setup'
 
 let testSetup: TestSetup
 
@@ -36,11 +32,7 @@ describe('Callback Error Handling', () => {
     testSetup.socket._triggerStateCallbacks('open', {})
 
     // Verify error was logged
-    expect(logSpy).toHaveBeenCalledWith(
-      'error',
-      'error in open callback',
-      expect.any(Error)
-    )
+    expect(logSpy).toHaveBeenCalledWith('error', 'error in open callback', expect.any(Error))
 
     // Verify normal callback still executed
     expect(normalCallbackCalled).toBe(true)
