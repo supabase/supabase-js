@@ -1,0 +1,167 @@
+<!doctype html>
+<html class="default no-js">
+<head>
+	<meta charset="utf-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<title>@supabase/postgrest-js</title>
+	<meta name="description" content="Documentation for @supabase/postgrest-js">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<link rel="stylesheet" href="assets/css/main.css">
+</head>
+<body>
+<header>
+	<div class="tsd-page-toolbar">
+		<div class="container">
+			<div class="table-wrap">
+				<div class="table-cell" id="tsd-search" data-index="assets/js/search.json" data-base=".">
+					<div class="field">
+						<label for="tsd-search-field" class="tsd-widget search no-caption">Search</label>
+						<input id="tsd-search-field" type="text" />
+					</div>
+					<ul class="results">
+						<li class="state loading">Preparing search index...</li>
+						<li class="state failure">The search index is not available</li>
+					</ul>
+					<a href="index.html" class="title">@supabase/postgrest-js</a>
+				</div>
+				<div class="table-cell" id="tsd-widgets">
+					<div id="tsd-filter">
+						<a href="#" class="tsd-widget options no-caption" data-toggle="options">Options</a>
+						<div class="tsd-filter-group">
+							<div class="tsd-select" id="tsd-filter-visibility">
+								<span class="tsd-select-label">All</span>
+								<ul class="tsd-select-list">
+									<li data-value="public">Public</li>
+									<li data-value="protected">Public/Protected</li>
+									<li data-value="private" class="selected">All</li>
+								</ul>
+							</div>
+							<input type="checkbox" id="tsd-filter-inherited" checked />
+							<label class="tsd-widget" for="tsd-filter-inherited">Inherited</label>
+							<input type="checkbox" id="tsd-filter-externals" checked />
+							<label class="tsd-widget" for="tsd-filter-externals">Externals</label>
+							<input type="checkbox" id="tsd-filter-only-exported" />
+							<label class="tsd-widget" for="tsd-filter-only-exported">Only exported</label>
+						</div>
+					</div>
+					<a href="#" class="tsd-widget menu no-caption" data-toggle="menu">Menu</a>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="tsd-page-title">
+		<div class="container">
+			<ul class="tsd-breadcrumb">
+				<li>
+					<a href="globals.html">Globals</a>
+				</li>
+			</ul>
+			<h1>@supabase/postgrest-js</h1>
+		</div>
+	</div>
+</header>
+<div class="container container-main">
+	<div class="row">
+		<div class="col-8 col-content">
+			<div class="tsd-panel tsd-typography">
+				<a href="#postgrest-js" id="postgrest-js" style="color: inherit; text-decoration: none;">
+					<h1><code>postgrest-js</code></h1>
+				</a>
+				<p><a href="https://github.com/supabase/postgrest-js/actions?query=branch%3Amaster"><img src="https://github.com/supabase/postgrest-js/workflows/CI/badge.svg" alt="Build"></a>
+					<a href="https://www.npmjs.com/package/@supabase/postgrest-js"><img src="https://img.shields.io/npm/v/@supabase/postgrest-js" alt="Package"></a>
+				<a href="#license"><img src="https://img.shields.io/npm/l/@supabase/postgrest-js" alt="License: MIT"></a></p>
+				<p>Isomorphic JavaScript client for <a href="https://postgrest.org">PostgREST</a>. The goal of this library is to make an &quot;ORM-like&quot; restful interface.</p>
+				<p>Full documentation can be found <a href="https://supabase.github.io/postgrest-js/v1">here</a>.</p>
+				<a href="#quick-start" id="quick-start" style="color: inherit; text-decoration: none;">
+					<h3>Quick start</h3>
+				</a>
+				<p>Install</p>
+				<pre><code class="language-bash">npm install @supabase/postgrest-js</code></pre>
+				<p>Usage</p>
+				<pre><code class="language-js"><span class="hljs-keyword">import</span> { PostgrestClient } <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;@supabase/postgrest-js&#x27;</span>
+
+<span class="hljs-keyword">const</span> REST_URL = <span class="hljs-string">&#x27;http://localhost:3000&#x27;</span>
+<span class="hljs-keyword">const</span> postgrest = <span class="hljs-keyword">new</span> PostgrestClient(REST_URL)</code></pre>
+				<ul>
+					<li>select(): <a href="https://supabase.com/docs/reference/javascript/select">https://supabase.com/docs/reference/javascript/select</a></li>
+					<li>insert(): <a href="https://supabase.com/docs/reference/javascript/insert">https://supabase.com/docs/reference/javascript/insert</a></li>
+					<li>update(): <a href="https://supabase.com/docs/reference/javascript/update">https://supabase.com/docs/reference/javascript/update</a></li>
+					<li>delete(): <a href="https://supabase.com/docs/reference/javascript/delete">https://supabase.com/docs/reference/javascript/delete</a></li>
+				</ul>
+				<a href="#custom-fetch-implementation" id="custom-fetch-implementation" style="color: inherit; text-decoration: none;">
+					<h4>Custom <code>fetch</code> implementation</h4>
+				</a>
+				<p><code>postgrest-js</code> uses the <a href="https://www.npmjs.com/package/cross-fetch"><code>cross-fetch</code></a> library to make HTTP requests, but an alternative <code>fetch</code> implementation can be provided as an option. This is most useful in environments where <code>cross-fetch</code> is not compatible, for instance Cloudflare Workers:</p>
+				<pre><code class="language-js"><span class="hljs-keyword">import</span> { PostgrestClient } <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;@supabase/postgrest-js&#x27;</span>
+
+<span class="hljs-keyword">const</span> REST_URL = <span class="hljs-string">&#x27;http://localhost:3000&#x27;</span>
+<span class="hljs-keyword">const</span> postgrest = <span class="hljs-keyword">new</span> PostgrestClient(REST_URL, {
+  <span class="hljs-attr">fetch</span>: <span class="hljs-function">(<span class="hljs-params">...args</span>) =&gt;</span> fetch(...args),
+})</code></pre>
+				<a href="#license" id="license" style="color: inherit; text-decoration: none;">
+					<h2>License</h2>
+				</a>
+				<p>This repo is licensed under MIT License.</p>
+				<a href="#sponsors" id="sponsors" style="color: inherit; text-decoration: none;">
+					<h2>Sponsors</h2>
+				</a>
+				<p>We are building the features of Firebase using enterprise-grade, open source products. We support existing communities wherever possible, and if the products don’t exist we build them and open source them ourselves. Thanks to these sponsors who are making the OSS ecosystem better for everyone.</p>
+				<p><a href="https://github.com/sponsors/supabase"><img src="https://user-images.githubusercontent.com/10214025/90518111-e74bbb00-e198-11ea-8f88-c9e3c1aa4b5b.png" alt="New Sponsor"></a></p>
+			</div>
+		</div>
+		<div class="col-4 col-menu menu-sticky-wrap menu-highlight">
+			<nav class="tsd-navigation primary">
+				<ul>
+					<li class="globals  ">
+						<a href="globals.html"><em>Globals</em></a>
+					</li>
+					<li class="label tsd-is-external">
+						<span>Externals</span>
+					</li>
+					<li class=" tsd-kind-module tsd-is-external">
+						<a href="modules/_postgrestclient_.html">&quot;<wbr>Postgrest<wbr>Client&quot;</a>
+					</li>
+					<li class=" tsd-kind-module tsd-is-external">
+						<a href="modules/_lib_postgrestfilterbuilder_.html">&quot;lib/<wbr>Postgrest<wbr>Filter<wbr>Builder&quot;</a>
+					</li>
+					<li class=" tsd-kind-module tsd-is-external">
+						<a href="modules/_lib_postgrestquerybuilder_.html">&quot;lib/<wbr>Postgrest<wbr>Query<wbr>Builder&quot;</a>
+					</li>
+					<li class=" tsd-kind-module tsd-is-external">
+						<a href="modules/_lib_postgrestrpcbuilder_.html">&quot;lib/<wbr>Postgrest<wbr>Rpc<wbr>Builder&quot;</a>
+					</li>
+					<li class=" tsd-kind-module tsd-is-external">
+						<a href="modules/_lib_postgresttransformbuilder_.html">&quot;lib/<wbr>Postgrest<wbr>Transform<wbr>Builder&quot;</a>
+					</li>
+					<li class=" tsd-kind-module tsd-is-external">
+						<a href="modules/_lib_constants_.html">&quot;lib/constants&quot;</a>
+					</li>
+					<li class=" tsd-kind-module tsd-is-external">
+						<a href="modules/_lib_types_.html">&quot;lib/types&quot;</a>
+					</li>
+					<li class=" tsd-kind-module tsd-is-external">
+						<a href="modules/_lib_version_.html">&quot;lib/version&quot;</a>
+					</li>
+				</ul>
+			</nav>
+			<nav class="tsd-navigation secondary menu-sticky">
+				<ul class="before-current">
+				</ul>
+			</nav>
+		</div>
+	</div>
+</div>
+<footer class="with-border-bottom">
+	<div class="container">
+		<h2>Legend</h2>
+		<div class="tsd-legend-group">
+		</div>
+	</div>
+</footer>
+<div class="container tsd-generator">
+	<p>Generated using <a href="https://typedoc.org/" target="_blank">TypeDoc</a></p>
+</div>
+<div class="overlay"></div>
+<script src="assets/js/main.js"></script>
+</body>
+</html>
