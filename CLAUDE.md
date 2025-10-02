@@ -140,7 +140,7 @@ nx test supabase-js --coverage           # Test with coverage
 
 | Package      | Docker Required | Infrastructure                  | Special Commands |
 | ------------ | --------------- | ------------------------------- | ---------------- |
-| auth-js      | ✅ Yes          | GoTrue + PostgreSQL             | May use `nx test:auth auth-js` |
+| auth-js      | ✅ Yes          | Auth Server + Postgres          | May use `nx test:auth auth-js` |
 | functions-js | ✅ Yes          | Deno relay (testcontainers)     | Standard `nx test functions-js` |
 | postgrest-js | ✅ Yes          | PostgREST + PostgreSQL          | Standard `nx test postgrest-js` |
 | storage-js   | ✅ Yes          | Storage API + PostgreSQL + Kong | May use `nx test:storage storage-js` |
