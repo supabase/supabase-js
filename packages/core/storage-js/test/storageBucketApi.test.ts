@@ -60,6 +60,11 @@ describe('Bucket API Error Handling', () => {
         'http://localhost:1234/storage/v1',
         'support local host with port without modification',
       ],
+      [
+        'http://localhost:1234',
+        'http://localhost:1234',
+        'support local host only with port',
+      ],
     ]
 
     urlTestCases.forEach(([inputUrl, expectUrl, description]) => {
