@@ -6,7 +6,22 @@
 
 _The Supabase JS monorepo containing all the Supabase JavaScript client libraries._
 
-> **📣 Coming from our old repositories?** The `supabase-js` repository has been converted into a monorepo and all other client libraries have been absorbed into it. If you previously contributed to individual repositories like `auth-js`, `postgrest-js`, `realtime-js`, `storage-js`, or `functions-js`, please see our **[Migration Guide](./docs/MIGRATION.md)** to learn about the new structure and workflows.
+> **IMPORTANT: Repository Structure Changed**
+>
+> This repository has been restructured as a monorepo. **All libraries, including `supabase-js` itself, have moved to `packages/core/`**:
+>
+> | What You're Looking For | Where It Is Now |
+> |------------------------|-----------------|
+> | Main supabase-js code | `packages/core/supabase-js/` |
+> | Auth library code | `packages/core/auth-js/` |
+> | Database library code | `packages/core/postgrest-js/` |
+> | Other libraries | `packages/core/*/` |
+>
+> **If you contributed to ANY of these repositories before**, please read our **[Migration Guide](./docs/MIGRATION.md)** to understand:
+>
+> - Where your code moved
+> - How commands changed (e.g., `npm test` → `npx nx test supabase-js`)
+> - How to update your development workflow
 
 ## 📦 Libraries
 

@@ -2,7 +2,11 @@
 
 Thank you for your interest in contributing to the Supabase JavaScript client libraries! This guide will help you get started with contributing to the Supabase JS monorepo.
 
-> **📣 Coming from a separate repository?** The `supabase-js` repository has been converted into a monorepo and all other Supabase JS libraries have been absorbed into it. If you previously contributed to `auth-js`, `postgrest-js`, `realtime-js`, `storage-js`, or `functions-js`, please read our **[Migration Guide](docs/MIGRATION.md)** to understand the new structure, workflow changes, and command mappings.
+> **Repository Structure Changed:** This repository has been restructured as a monorepo. **All libraries, including `supabase-js`, are now under `packages/core/`**. If you previously contributed to `supabase-js`, `auth-js`, `postgrest-js`, `realtime-js`, `storage-js`, or `functions-js`, please read our **[Migration Guide](docs/MIGRATION.md)** to understand:
+>
+> - Where your code moved (everything is now in `packages/core/<library-name>/`)
+> - How commands changed (`npm test` → `npx nx test <library-name>`)
+> - New workflow with Nx
 
 ## 📋 Table of Contents
 
