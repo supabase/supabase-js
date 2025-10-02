@@ -9,7 +9,7 @@
     "auth",
     "authentication"
   ],
-  "homepage": "https://github.com/supabase/supabase-js/tree/main/packages/core/auth-js",
+  "homepage": "https://github.com/supabase/supabase-js/tree/master/packages/core/auth-js",
   "bugs": "https://github.com/supabase/supabase-js/issues",
   "license": "MIT",
   "author": "Supabase",

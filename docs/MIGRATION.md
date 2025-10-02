@@ -1,6 +1,89 @@
-# Migration Guide: From Separate Repos to the Supabase JS Monorepo
+# Migration Guide: Transitioning to the Supabase JS Monorepo
 
-> 🚀 **Welcome to the Supabase JS monorepo!** This guide will help you transition from the old separate repository structure to our new Nx monorepo.
+> **This repository has been restructured.** If you contributed to `supabase-js`, `auth-js`, `postgrest-js`, or any other Supabase JS library, this guide explains what changed and how to work with the new structure.
+
+> **📦 Note for Package Users:** If you install and use these packages via npm, **nothing changed**. This guide is for contributors who develop and maintain these libraries.
+
+## 🎯 Who This Guide Is For
+
+**This guide is for contributors**, including:
+
+- Contributors to the old `supabase-js` repository (even supabase-js moved)
+- Contributors to separate libraries (`auth-js`, `postgrest-js`, `realtime-js`, `storage-js`, `functions-js`)
+- Anyone with open PRs in any of the old repositories
+- New contributors who want to understand the architecture
+
+**Not a contributor?** You can skip this guide. Packages are still installed and used the same way.
+
+## ⚠️ What Changed: The Big Picture
+
+### The Repository URL Stayed the Same, But Everything Inside Changed
+
+The repository is still at `github.com/supabase/supabase-js`.
+
+**OLD Structure:**
+
+```tree
+github.com/supabase/supabase-js/
+├── src/              ← supabase-js code was here
+├── test/
+├── package.json
+└── README.md
+
+github.com/supabase/auth-js/        ← Separate repo
+github.com/supabase/postgrest-js/   ← Separate repo
+github.com/supabase/realtime-js/    ← Separate repo
+github.com/supabase/storage-js/     ← Separate repo
+github.com/supabase/functions-js/   ← Separate repo
+```
+
+**NEW Structure** (what you'll see now):
+
+```tree
+github.com/supabase/supabase-js/    ← Same URL, different structure!
+├── packages/
+│   └── core/
+│       ├── supabase-js/     ← YOUR supabase-js code is HERE now
+│       │   ├── src/
+│       │   ├── test/
+│       │   └── package.json
+│       ├── auth-js/         ← auth-js moved here
+│       ├── postgrest-js/    ← postgrest-js moved here
+│       ├── realtime-js/     ← realtime-js moved here
+│       ├── storage-js/      ← storage-js moved here
+│       └── functions-js/    ← functions-js moved here
+├── nx.json              ← New: Nx workspace config
+├── package.json         ← New: Root workspace config
+└── README.md
+```
+
+### Key Point: EVERYTHING Moved
+
+All six libraries, including `supabase-js` itself, now live under `packages/core/`. All libraries were reorganized into a shared monorepo structure.
+
+### 📦 Important: This Only Affects Contributors
+
+**If you use these packages, nothing changed.**
+
+The monorepo restructure is a **development workflow change** for maintainers and contributors. If you install these packages via npm, your experience is unchanged:
+
+```bash
+# Still works the same
+npm install @supabase/supabase-js
+npm install @supabase/auth-js
+npm install @supabase/storage-js
+```
+
+What stayed the same:
+
+- Packages are still published independently to npm
+- You can still install only what you need
+- Your existing code does not need any changes
+- Package names remain the same (`@supabase/package-name`)
+
+The only difference is that all packages now share the same version number for compatibility across the ecosystem.
+
+This guide is for contributors who need to understand where code moved and how to develop and test these packages.
 
 ## 📋 Table of Contents
 
@@ -15,7 +98,7 @@
 
 ## Why We Migrated
 
-The `supabase-js` repository has been converted into a Nx monorepo and the other js client libraries have been absorbed into it to solve several critical challenges:
+We converted the `supabase-js` repository into a monorepo and absorbed the other js client libraries to solve several challenges:
 
 ### Problems with Separate Repos
 
@@ -33,8 +116,8 @@ The `supabase-js` repository has been converted into a Nx monorepo and the other
 - **Unified CI/CD**: Single pipeline with intelligent affected detection
 - **Simplified Testing**: Easy integration testing across all libraries
 - **Consistent Tooling**: One build system, one test runner, one format
-- **Atomic Changes**: Make coordinated changes across multiple packages in one PR
-- **Better DX**: Nx provides powerful caching, affected commands, and dependency visualization
+- **Atomic Changes**: Coordinated changes across multiple packages in one PR
+- **Better DX**: Nx provides caching, affected commands, and dependency visualization
 
 ## What Changed
 
@@ -143,23 +226,25 @@ git checkout -b feature/your-feature-name
 
 ### For Active Pull Requests
 
-We're working with contributors who have open PRs to handle the migration case-by-case. If you have an open PR:
-
-- **Reach out to maintainers** in your existing PR
-- We'll help you either merge it quickly or assist with porting to the monorepo
+If you have an open PR, reach out to maintainers in your existing PR. We will help you merge it quickly or assist with porting to the monorepo.
 
 ### For Projects Depending on Supabase Libraries
 
-No changes needed for end users! The published npm packages remain the same:
+**Zero changes for package users.** If you use these packages in your project, everything works as before. The monorepo is an internal development change.
+
+Packages are still published independently.
 
 ```json
 {
   "dependencies": {
     "@supabase/supabase-js": "^2.0.0",
-    "@supabase/auth-js": "^2.0.0"
+    "@supabase/auth-js": "^2.0.0",
+    "@supabase/storage-js": "^2.0.0"
   }
 }
 ```
+
+Your application code, imports, and usage patterns remain unchanged. The monorepo structure only affects how contributors develop and maintain these libraries.
 
 ## Common Scenarios
 
@@ -174,8 +259,8 @@ npm run commit  # Use interactive commit tool
 ### Scenario 2: "I need to update auth-js and test it with supabase-js"
 
 ```bash
-# This was complex before - required npm link or multiple PRs
-# Now it's simple:
+# Before: required npm link or multiple PRs
+# Now: simple
 
 # Make changes to auth-js
 edit packages/core/auth-js/src/GoTrueClient.ts
@@ -211,19 +296,6 @@ npx nx affected --target=build
 # Commit with appropriate scope
 npm run commit
 # feat(supabase): add cross-package feature for X functionality
-```
-
-### Scenario 4: "I need to run integration tests"
-
-```bash
-# Old way: Complex Docker setup per repo
-
-# New way: Integrated Docker management
-npx nx test auth-js        # Automatically sets up GoTrue
-npx nx test storage-js     # Automatically sets up Storage server
-
-# Run all integration tests
-npx nx run-many --target=test:integration --all
 ```
 
 ## Command Reference
@@ -263,8 +335,8 @@ Commands that weren't available in separate repos:
 # Visualize project dependencies
 npx nx graph
 
-# Build only what changed since main
-npx nx affected --target=build --base=main
+# Build only what changed since master
+npx nx affected --target=build --base=master
 
 # Test only what changed
 npx nx affected --target=test
@@ -285,13 +357,35 @@ npx nx run-many --target=docs --all
 
 ## FAQ
 
+### Q: I contributed to the old supabase-js repo. Where did my code go?
+
+**A:** Your code is now in `packages/core/supabase-js/`. The repository URL (`github.com/supabase/supabase-js`) stayed the same, but the internal structure changed. What used to be in the root (`src/`, `test/`, etc.) is now nested under `packages/core/supabase-js/`.
+
+Example:
+
+- **Old:** `src/SupabaseClient.ts`
+- **New:** `packages/core/supabase-js/src/SupabaseClient.ts`
+
+This structure accommodates all the libraries in one repository.
+
+### Q: Why does it say supabase-js "absorbed" other libraries if supabase-js also moved?
+
+**A:** What happened:
+
+- The `supabase-js` **repository URL** stayed the same (`github.com/supabase/supabase-js`)
+- All libraries (including supabase-js itself) moved into a `packages/core/` structure
+- Other library repositories (`auth-js`, `postgrest-js`, etc.) were archived
+- The repository now contains all libraries, but supabase-js code also relocated
+
+The **repository** absorbed other libraries. The **supabase-js package code** also moved.
+
 ### Q: Why fixed versioning instead of independent versions?
 
-**A:** Fixed versioning ensures all Supabase JS libraries are always compatible with each other. Users don't need to worry about compatibility matrices or which version of auth-js works with which version of supabase-js.
+**A:** Fixed versioning ensures all Supabase JS libraries are compatible with each other. You do not need to worry about compatibility matrices or which version of auth-js works with which version of supabase-js.
 
 ### Q: Can I still work on just one library?
 
-**A:** Absolutely! The monorepo structure doesn't mean you have to work on everything. You can focus on a single library:
+**A:** Yes. The monorepo structure does not mean you have to work on everything. You can focus on a single library:
 
 ```bash
 npx nx build auth-js --watch
@@ -304,19 +398,24 @@ npx nx test auth-js --watch
 
 ### Q: Will old issues and PRs be migrated?
 
-**A:** Open issues are being triaged and migrated as appropriate. For open PRs, we'll work with contributors individually. Check the old repo for a migration notice.
+**A:** Open issues are being triaged and migrated as appropriate. For open PRs, we will work with contributors individually. Check the old repo for a migration notice.
 
 ### Q: How do I know which files to edit?
 
-**A:** The structure within each package is the same as before. If you edited `src/GoTrueClient.ts` in the old auth-js repo, you'll now edit `packages/core/auth-js/src/GoTrueClient.ts`.
+**A:** The structure within each package is the same as before. Examples:
+
+- **Old auth-js repo:** `src/GoTrueClient.ts` → **New:** `packages/core/auth-js/src/GoTrueClient.ts`
+- **Old supabase-js repo:** `src/SupabaseClient.ts` → **New:** `packages/core/supabase-js/src/SupabaseClient.ts`
+
+The internal structure of each library is unchanged. Only the top-level location changed.
 
 ### Q: Do I need to learn Nx?
 
-**A:** Not really! Basic commands are enough for most contributions. Nx handles the complexity behind the scenes. The main commands you need are `nx build`, `nx test`, and `nx affected`.
+**A:** No. Basic commands are enough for most contributions. Nx handles the complexity behind the scenes. The main commands you need are `nx build`, `nx test`, and `nx affected`.
 
 ### Q: What about my Git history?
 
-**A:** The Git history from all individual repos has been preserved during the migration. You can still see the history of individual files using:
+**A:** The Git history from all individual repos has been preserved during the migration. You can still see the history of individual files:
 
 ```bash
 git log --follow packages/core/auth-js/src/GoTrueClient.ts
@@ -324,16 +423,21 @@ git log --follow packages/core/auth-js/src/GoTrueClient.ts
 
 ### Q: Can I still install packages individually?
 
-**A:** Yes! End users still install packages individually from npm:
+**A:** Yes. **Nothing changed for package users.** Each package is still published independently to npm. The monorepo structure is only for contributor development.
+
+You can install any package individually:
 
 ```bash
 npm install @supabase/auth-js
 npm install @supabase/supabase-js
+npm install @supabase/storage-js
 ```
+
+The monorepo is an internal development tool. It makes it easier for contributors to work across packages. It does not affect package distribution or how you use them.
 
 ### Q: What if I find a bug in the migration?
 
-**A:** Please [open an issue](https://github.com/supabase/supabase-js/issues) and tag it with `migration`. We're actively monitoring these during the transition period.
+**A:** [Open an issue](https://github.com/supabase/supabase-js/issues) and tag it with `migration`. We are actively monitoring these during the transition period.
 
 ## Getting Help
 
@@ -345,25 +449,23 @@ npm install @supabase/supabase-js
 
 ### Resources
 
-- **[CONTRIBUTING.md](./CONTRIBUTING.md)** - Detailed contribution guidelines
-- **[README.md](./README.md)** - Repository overview and quick start
+- **[CONTRIBUTING.md](../CONTRIBUTING.md)** - Detailed contribution guidelines
+- **[README.md](../README.md)** - Repository overview and quick start
 
 ### Important Links
 
-- **Supabase JS Monorepo**: https://github.com/supabase/supabase-js
+- **Supabase JS Monorepo**: <https://github.com/supabase/supabase-js>
 - **Old Repos** (archived/read-only):
-  - https://github.com/supabase/auth-js
-  - https://github.com/supabase/postgrest-js
-  - https://github.com/supabase/realtime-js
-  - https://github.com/supabase/storage-js
-  - https://github.com/supabase/functions-js
+  - <https://github.com/supabase/auth-js>
+  - <https://github.com/supabase/postgrest-js>
+  - <https://github.com/supabase/realtime-js>
+  - <https://github.com/supabase/storage-js>
+  - <https://github.com/supabase/functions-js>
 
 ---
 
 ## Welcome to the Monorepo
 
-This migration represents a significant improvement in our development workflow. While change can be challenging, we believe this new structure will make contributing to Supabase JS libraries more enjoyable and productive.
-
 Thank you for your patience during this transition, and thank you for contributing to Supabase! 💚
 
-> **Note**: This document will be updated as we learn from the migration process.
+> **Note**: We will update this document as we learn from the migration process.

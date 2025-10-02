@@ -57,14 +57,14 @@ Every change must maintain full backward compatibility. The migration itself int
 
 Uses automated canary releases with batched stable releases:
 
-- **Canary**: Every commit to main → prerelease (e.g., `2.80.1-canary.0`) with `canary` dist-tag
+- **Canary**: Every commit to master → prerelease (e.g., `2.80.1-canary.0`) with `canary` dist-tag
 - **Stable**: Manual promotion of validated canary to `latest` dist-tag
 - **Fixed Versioning**: All packages share identical version numbers (e.g., all at 2.80.0)
 - **Version Line**: Continuing with v2.x.x to maintain ecosystem stability
 
 **Three Release Workflows:**
 
-1. **Canary** (`.github/workflows/main-ci-release.yml`) - Automated on every main commit
+1. **Canary** (`.github/workflows/main-ci-release.yml`) - Automated on every master commit
 2. **Stable** (`.github/workflows/release-stable.yml`) - Manual by repository owners
 3. **Preview** (`.github/workflows/preview-release.yml`) - PR-based testing via pkg.pr.new
 
@@ -129,7 +129,7 @@ nx test auth-js                          # Test specific package
 nx test postgrest-js                     # Test specific package
 nx test functions-js                     # Test specific package
 nx test realtime-js                      # Test specific package
-nx test storage-js                       # Test specific package
+nx test storage-js                       # Test specific package (may use special test:storage target)
 nx test supabase-js                      # Test specific package
 nx affected --target=test                # Test only affected (recommended)
 nx test auth-js --watch                  # Watch mode
@@ -138,14 +138,14 @@ nx test supabase-js --coverage           # Test with coverage
 
 **Docker Requirements:**
 
-| Package      | Docker Required | Infrastructure                  |
-| ------------ | --------------- | ------------------------------- |
-| auth-js      | ✅ Yes          | GoTrue + PostgreSQL             |
-| functions-js | ✅ Yes          | Deno relay (testcontainers)     |
-| postgrest-js | ✅ Yes          | PostgREST + PostgreSQL          |
-| storage-js   | ✅ Yes          | Storage API + PostgreSQL + Kong |
-| realtime-js  | ❌ No           | Mock WebSockets                 |
-| supabase-js  | ❌ No           | Unit tests only                 |
+| Package      | Docker Required | Infrastructure                  | Special Commands |
+| ------------ | --------------- | ------------------------------- | ---------------- |
+| auth-js      | ✅ Yes          | Auth Server + Postgres          | May use `nx test:auth auth-js` |
+| functions-js | ✅ Yes          | Deno relay (testcontainers)     | Standard `nx test functions-js` |
+| postgrest-js | ✅ Yes          | PostgREST + PostgreSQL          | Standard `nx test postgrest-js` |
+| storage-js   | ✅ Yes          | Storage API + PostgreSQL + Kong | May use `nx test:storage storage-js` |
+| realtime-js  | ❌ No           | Mock WebSockets                 | Standard `nx test realtime-js` |
+| supabase-js  | ❌ No           | Unit tests only                 | Standard `nx test supabase-js` |
 
 > **📖 See [TESTING.md](docs/TESTING.md) for complete testing guide and troubleshooting**
 
@@ -262,7 +262,6 @@ Tests run against multiple environments:
 - Requires Docker for integration tests (GoTrue + PostgreSQL)
 - Complex session management logic
 - Security-critical - extra review care needed
-- Default branch: **master**
 - See [auth-js README](packages/core/auth-js/README.md) for details
 
 ### realtime-js
@@ -270,28 +269,24 @@ Tests run against multiple environments:
 - WebSocket-based, timing-sensitive
 - Mock time in tests when possible
 - No Docker required (uses mock WebSockets)
-- Default branch: **master**
 - See [realtime-js README](packages/core/realtime-js/README.md) for details
 
 ### storage-js
 
 - Requires Docker for integration tests (Storage API + PostgreSQL + Kong)
 - File handling varies by platform
-- Default branch: **main**
 - See [storage-js README](packages/core/storage-js/README.md) for details
 
 ### postgrest-js
 
 - Pure HTTP client, easiest to test
 - Requires Docker for integration tests (PostgREST + PostgreSQL)
-- Default branch: **master**
 - See [postgrest-js README](packages/core/postgrest-js/README.md) for details
 
 ### functions-js
 
 - Simplest library, minimal dependencies
 - Uses testcontainers for Deno relay
-- Default branch: **main**
 - See [functions-js README](packages/core/functions-js/README.md) for details
 
 ## Code Style Guidelines
@@ -316,10 +311,13 @@ Tests run against multiple environments:
 
 ## Important Context
 
-### Branch Differences
+### Branch Information
 
-Original repositories use different default branches:
+**Current Repository:**
+- **Default branch**: `master` (confirmed current default)
+- **Repository URL**: `github.com/supabase/supabase-js`
 
+**Original Repository Branches** (for historical reference):
 - **master**: auth-js, postgrest-js, realtime-js, supabase-js
 - **main**: functions-js, storage-js
 
@@ -487,10 +485,10 @@ cat docs/TESTING.md
 1. **Ensure branch is up to date:**
 
    ```bash
-   git checkout main
-   git pull upstream main
+   git checkout master
+   git pull upstream master
    git checkout your-feature-branch
-   git rebase main
+   git rebase master
    ```
 
 2. **Run all necessary checks:**
@@ -643,7 +641,7 @@ nx test auth-js --testFile=GoTrueClient.test.ts
 **Canary Releases (Automated)**:
 
 ```bash
-# Triggered automatically on every commit to main
+# Triggered automatically on every commit to master
 git commit -m "fix(auth): resolve token issue"
 # → Automatic CI: nx release --tag=canary --yes
 # → Published: 2.80.1-canary.0 to 'canary' dist-tag
@@ -741,14 +739,16 @@ _No user-facing changes in this release._
 
 ## When Providing Code Suggestions
 
-1. **Consider Monorepo Impact**: Changes might affect multiple packages - always check
-2. **Use Nx Commands**: Prefer `nx` over direct `npm` for workspace operations
-3. **Suggest Affected Testing**: `nx affected --target=test` over full test suite
-4. **Respect Fixed Versioning**: All packages version together
-5. **Maintain Compatibility**: Never introduce breaking changes
-6. **Extract Shared Code**: Identify patterns that could be shared
-7. **Follow Conventions**: Use existing patterns and structures
-8. **Document Changes**: Update JSDoc and READMEs when changing APIs
+1. **Consider Monorepo Impact**: Changes might affect multiple packages - always check dependencies
+2. **Use Nx Commands**: Always prefer `nx` over direct `npm` for workspace operations
+3. **Suggest Affected Testing**: Use `nx affected --target=test` over full test suite for efficiency
+4. **Respect Fixed Versioning**: All packages version together - no independent versioning
+5. **Maintain Compatibility**: Never introduce breaking changes without proper process
+6. **Check Testing Requirements**: Be aware of Docker requirements for integration tests
+7. **Extract Shared Code**: Identify patterns that could be shared across packages
+8. **Follow Conventions**: Use existing patterns and structures within each library
+9. **Document Changes**: Update JSDoc and READMEs when changing public APIs
+10. **Use Conventional Commits**: Always suggest proper commit format with scope
 
 ## Quick Decision Tree
 

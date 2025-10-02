@@ -7,7 +7,7 @@
     "typescript",
     "supabase"
   ],
-  "homepage": "https://github.com/supabase/supabase-js/tree/main/packages/core/storage-js",
+  "homepage": "https://github.com/supabase/supabase-js/tree/master/packages/core/storage-js",
   "bugs": "https://github.com/supabase/supabase-js/issues",
   "license": "MIT",
   "author": "Supabase",

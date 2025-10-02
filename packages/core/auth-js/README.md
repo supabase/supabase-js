@@ -11,7 +11,7 @@ An isomorphic JavaScript client library for the [Supabase Auth](https://github.c
 ## Docs
 
 - Using `auth-js`: https://supabase.com/docs/reference/javascript/auth-signup
-- TypeDoc: https://supabase.github.io/auth-js/v2
+- TypeDoc: https://supabase.github.io/supabase-js/auth-js/v2/spec.json
 
 ## Quick start
 

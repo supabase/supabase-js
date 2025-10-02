@@ -1,6 +1,6 @@
 # Release Workflows
 
-- [.github/workflows/main-ci-release.yml](.github/workflows/main-ci-release.yml) - Main branch CI & automated canary releases
+- [.github/workflows/main-ci-release.yml](.github/workflows/main-ci-release.yml) - Main CI & automated canary releases
 - [.github/workflows/release-stable.yml](.github/workflows/release-stable.yml) - Manual stable releases
 - [.github/workflows/preview-release.yml](.github/workflows/preview-release.yml) - PR preview releases
 
@@ -8,7 +8,7 @@
 
 This monorepo uses a fixed release model where all packages share a single version number and are released together. There are three types of releases:
 
-1. **Canary Releases** - Automated pre-releases on every commit to main
+1. **Canary Releases** - Automated pre-releases on every commit to master
 2. **Stable Releases** - Manual releases for production use
 3. **Preview Releases** - PR-specific releases for testing changes
 
@@ -17,7 +17,7 @@ This monorepo uses a fixed release model where all packages share a single versi
 ### 🤖 Canary Releases (Automated)
 
 **File:** `main-ci-release.yml`  
-**Trigger:** Every push to `main` branch  
+**Trigger:** Every push to `master` branch  
 **Purpose:** Immediate feedback with pre-release versions
 
 #### What it does
@@ -37,7 +37,7 @@ This monorepo uses a fixed release model where all packages share a single versi
 git commit -m "fix(auth): resolve token refresh issue"
 ```
 
-- Open PR and get it merged to `main`
+- Open PR and get it merged to `master`
 
 - Then:
   → CI runs and passes
@@ -119,7 +119,7 @@ Canary releases are **fully automated**. Simply:
 
 1. Make changes in your feature branch
 2. Use conventional commits with type and scope (e.g., `fix(auth):`, `feat(realtime):`, `chore(repo):`)
-3. Create and merge PR to `main` branch
+3. Create and merge PR to `master` branch
 4. Workflow automatically:
    - Runs CI checks
    - Creates pre-release version
@@ -197,7 +197,7 @@ The workflows rely on `nx.json` release configuration:
 ### For Repository Owners
 
 1. **Release cadence**:
-   - Canary: Automatic on every `main` commit
+   - Canary: Automatic on every `master` commit
    - Stable: Weekly or as needed
    - Major: Coordinate with team and users
 2. **Version strategy**:
@@ -209,7 +209,7 @@ The workflows rely on `nx.json` release configuration:
 
 ### For Emergency Releases
 
-1. **Fix in `main` first** - Apply fix and let canary release
+1. **Fix in `master` first** - Apply fix and let canary release
 2. **Test canary** - Verify fix works in canary version
 3. **Release stable** - Use stable workflow with `patch`
 4. **Document incident** - Update changelog with details

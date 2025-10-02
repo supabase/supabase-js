@@ -1,11 +1,18 @@
 # `functions-js`
 
+<div align="center">
+
+[![pkg.pr.new](https://pkg.pr.new/badge/supabase/functions-js)](https://pkg.pr.new/~/supabase/functions-js)
+
+</div>
+
 JS Client library to interact with Supabase Functions.
 
 ## Docs
 
 - **API Reference**: <https://supabase.com/docs/reference/javascript/functions-invoke>
 - **Functions Guide**: <https://supabase.com/docs/guides/functions>
+- **Typedoc**: <https://supabase.github.io/supabase-js/functions-js/v2/spec.json>
 
 ## Quick Start
 

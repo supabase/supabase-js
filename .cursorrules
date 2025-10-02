@@ -30,9 +30,11 @@ This monorepo contains 6 JavaScript/TypeScript libraries previously maintained a
 
 ### Testing
 - Test all: `nx run-many --target=test --all`
-- Test specific: `nx test auth-js`
-- Test affected: `nx affected --target=test`
+- Test specific: `nx test auth-js` (some packages may have special targets like `nx test:auth auth-js` or `nx test:storage storage-js`)
+- Test affected: `nx affected --target=test` (recommended for efficiency)
 - Integration tests: `nx run-many --target=test:integration --all`
+- Watch mode: `nx test <package> --watch`
+- Coverage: `nx test <package> --coverage`
 
 ### Code Quality
 - Lint all: `nx run-many --target=lint --all`
@@ -109,10 +111,12 @@ packages/core/[library-name]/
 
 ## Important Notes
 
-- **Different Default Branches**: Original repos used either `master` or `main` - be aware when referencing history
+- **Current Default Branch**: `master` (confirmed current default branch)
+- **Original Branch Differences**: Original repos used either `master` or `main` - be aware when referencing history
 - **Package Names**: All packages maintain original npm names (@supabase/[package-name])
 - **Shared Code**: Extract common patterns (HTTP client, error handling) to shared packages when identified
-- **Docker Required**: Integration tests for auth-js and storage-js require Docker to be running
+- **Docker Required**: Integration tests for auth-js, functions-js, postgrest-js, and storage-js require Docker to be running
+- **Special Test Commands**: Some packages may use special test targets (check individual package READMEs)
 
 ## Release Process
 
@@ -156,7 +160,10 @@ The `*` is replaced with actual version during release.
 
 1. Always consider the monorepo structure - changes might affect multiple packages
 2. Use Nx commands rather than npm/yarn directly for workspace operations
-3. Suggest running affected tests, not all tests, for better performance
-4. Remember that all packages version together in fixed mode
-5. Consider Docker requirements for integration tests
-6. Maintain backward compatibility at all costs
+3. Suggest running affected tests (`nx affected --target=test`), not all tests, for better performance
+4. Remember that all packages version together in fixed mode - no independent versioning
+5. Consider Docker requirements for integration tests (auth-js, functions-js, postgrest-js, storage-js)
+6. Maintain backward compatibility at all costs - breaking changes require special process
+7. Check for special test commands in package READMEs (some may use `test:auth`, `test:storage`, etc.)
+8. Always suggest conventional commit format with proper scope
+9. Prefer `nx affected` commands over `nx run-many` for efficiency
