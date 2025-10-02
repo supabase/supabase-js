@@ -29,7 +29,7 @@ Closes #(issue_number) <!-- If applicable -->
 
 <!-- Ensure all items are checked before submitting -->
 
-- [ ] I have read the [Contributing Guidelines](https://github.com/supabase/supabase-js/blob/main/CONTRIBUTING.md)
+- [ ] I have read the [Contributing Guidelines](https://github.com/supabase/supabase-js/blob/master/CONTRIBUTING.md)
 - [ ] My PR title follows the [conventional commit format](https://www.conventionalcommits.org/): `<type>(<scope>): <description>`
 - [ ] I have run `npx nx format` to ensure consistent code formatting
 - [ ] I have added tests for new functionality (if applicable)

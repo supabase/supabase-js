@@ -57,14 +57,14 @@ Every change must maintain full backward compatibility. The migration itself int
 
 Uses automated canary releases with batched stable releases:
 
-- **Canary**: Every commit to main → prerelease (e.g., `2.80.1-canary.0`) with `canary` dist-tag
+- **Canary**: Every commit to master → prerelease (e.g., `2.80.1-canary.0`) with `canary` dist-tag
 - **Stable**: Manual promotion of validated canary to `latest` dist-tag
 - **Fixed Versioning**: All packages share identical version numbers (e.g., all at 2.80.0)
 - **Version Line**: Continuing with v2.x.x to maintain ecosystem stability
 
 **Three Release Workflows:**
 
-1. **Canary** (`.github/workflows/main-ci-release.yml`) - Automated on every main commit
+1. **Canary** (`.github/workflows/main-ci-release.yml`) - Automated on every master commit
 2. **Stable** (`.github/workflows/release-stable.yml`) - Manual by repository owners
 3. **Preview** (`.github/workflows/preview-release.yml`) - PR-based testing via pkg.pr.new
 
@@ -262,7 +262,6 @@ Tests run against multiple environments:
 - Requires Docker for integration tests (GoTrue + PostgreSQL)
 - Complex session management logic
 - Security-critical - extra review care needed
-- Default branch: **master**
 - See [auth-js README](packages/core/auth-js/README.md) for details
 
 ### realtime-js
@@ -270,28 +269,24 @@ Tests run against multiple environments:
 - WebSocket-based, timing-sensitive
 - Mock time in tests when possible
 - No Docker required (uses mock WebSockets)
-- Default branch: **master**
 - See [realtime-js README](packages/core/realtime-js/README.md) for details
 
 ### storage-js
 
 - Requires Docker for integration tests (Storage API + PostgreSQL + Kong)
 - File handling varies by platform
-- Default branch: **main**
 - See [storage-js README](packages/core/storage-js/README.md) for details
 
 ### postgrest-js
 
 - Pure HTTP client, easiest to test
 - Requires Docker for integration tests (PostgREST + PostgreSQL)
-- Default branch: **master**
 - See [postgrest-js README](packages/core/postgrest-js/README.md) for details
 
 ### functions-js
 
 - Simplest library, minimal dependencies
 - Uses testcontainers for Deno relay
-- Default branch: **main**
 - See [functions-js README](packages/core/functions-js/README.md) for details
 
 ## Code Style Guidelines
@@ -487,10 +482,10 @@ cat docs/TESTING.md
 1. **Ensure branch is up to date:**
 
    ```bash
-   git checkout main
-   git pull upstream main
+   git checkout master
+   git pull upstream master
    git checkout your-feature-branch
-   git rebase main
+   git rebase master
    ```
 
 2. **Run all necessary checks:**
@@ -643,7 +638,7 @@ nx test auth-js --testFile=GoTrueClient.test.ts
 **Canary Releases (Automated)**:
 
 ```bash
-# Triggered automatically on every commit to main
+# Triggered automatically on every commit to master
 git commit -m "fix(auth): resolve token issue"
 # → Automatic CI: nx release --tag=canary --yes
 # → Published: 2.80.1-canary.0 to 'canary' dist-tag

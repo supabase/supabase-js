@@ -11,7 +11,7 @@
     "firebase",
     "supabase"
   ],
-  "homepage": "https://github.com/supabase/supabase-js/tree/main/packages/core/realtime-js",
+  "homepage": "https://github.com/supabase/supabase-js/tree/master/packages/core/realtime-js",
   "bugs": "https://github.com/supabase/supabase-js/issues",
   "files": [
     "dist",

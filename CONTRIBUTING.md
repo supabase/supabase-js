@@ -56,7 +56,7 @@ Thank you for your interest in contributing to the Supabase JavaScript client li
 
 ### Making Changes
 
-1. **Create a new branch** from `main`:
+1. **Create a new branch** from `master`:
 
    ```bash
    git checkout -b feature/your-feature-name
@@ -186,13 +186,13 @@ ci(release): add preview package generation
 
 ### Before Submitting
 
-1. **Ensure your branch is up to date** with `main`:
+1. **Ensure your branch is up to date** with `master`:
 
    ```bash
-   git checkout main
-   git pull upstream main
+   git checkout master
+   git pull upstream master
    git checkout your-branch
-   git rebase main
+   git rebase master
    ```
 
 2. **Run the full test suite**:
@@ -283,7 +283,7 @@ npx nx test <package> --coverage
 We automatically generate TypeScript API documentation that is used by the main [Supabase documentation site](https://supabase.com/docs). The process works as follows:
 
 1. **TypeDoc generates JSON specifications** from TypeScript source code
-2. **GitHub Actions publishes** these specs to GitHub Pages on every push to `main`
+2. **GitHub Actions publishes** these specs to GitHub Pages on every push to `master`
 3. **Main Supabase repository** uses these JSON files to generate the official API docs via `make` commands
 
 #### Available Documentation Commands

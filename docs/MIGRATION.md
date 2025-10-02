@@ -263,8 +263,8 @@ Commands that weren't available in separate repos:
 # Visualize project dependencies
 npx nx graph
 
-# Build only what changed since main
-npx nx affected --target=build --base=main
+# Build only what changed since master
+npx nx affected --target=build --base=master
 
 # Test only what changed
 npx nx affected --target=test

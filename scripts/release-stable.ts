@@ -114,7 +114,7 @@ if (!validSpecifiers.includes(versionSpecifier) && !isValidVersion) {
 
     // Open PR using GitHub CLI
     execSync(
-      `gh pr create --base main --head ${branchName} --title "chore(release): ${version}" --body "Automated release PR for ${version}"`,
+      `gh pr create --base master --head ${branchName} --title "chore(release): ${version}" --body "Automated release PR for ${version}"`,
       { stdio: 'inherit' }
     )
 

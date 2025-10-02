@@ -256,14 +256,14 @@ nx affected --target=test
 
 ### Library Characteristics
 
-| Library      | Default Branch | Docker Required | Primary Use Case           |
-| ------------ | -------------- | --------------- | -------------------------- |
-| supabase-js  | master         | ❌ No           | Main isomorphic client     |
-| auth-js      | master         | ✅ Yes          | Authentication & user mgmt |
-| postgrest-js | master         | ✅ Yes          | Database queries           |
-| realtime-js  | master         | ❌ No           | Real-time subscriptions    |
-| functions-js | main           | ✅ Yes          | Edge Functions invocation  |
-| storage-js   | main           | ✅ Yes          | File storage operations    |
+| Library      | Docker Required | Primary Use Case           |
+| ------------ | --------------- | -------------------------- |
+| supabase-js  | ❌ No           | Main isomorphic client     |
+| auth-js      | ✅ Yes          | Authentication & user mgmt |
+| postgrest-js | ✅ Yes          | Database queries           |
+| realtime-js  | ❌ No           | Real-time subscriptions    |
+| functions-js | ✅ Yes          | Edge Functions invocation  |
+| storage-js   | ✅ Yes          | File storage operations    |
 
 ## Nx Workspace Features
 
@@ -343,7 +343,7 @@ All packages in this monorepo use **fixed version mode**, meaning they share the
 
 #### 1. Canary Releases (Automated)
 
-**Trigger**: Every commit to `main` branch  
+**Trigger**: Every commit to `master` branch  
 **Workflow**: `.github/workflows/main-ci-release.yml`
 
 - Automatically creates pre-release version (e.g., `2.80.1-canary.0`)
@@ -489,7 +489,7 @@ feat(realtime)!: remove deprecated subscribe method
 
 ### Before Submitting
 
-1. Ensure your branch is up to date with `main`
+1. Ensure your branch is up to date with `master`
 2. Run affected tests: `nx affected --target=test`
 3. Run affected builds: `nx affected --target=build`
 4. Format code: `nx format`

@@ -9,6 +9,7 @@
 JS Client library to interact with Supabase Storage.
 
 - Documentation: https://supabase.io/docs/reference/javascript/storage-createbucket
+- Typedoc: https://supabase.github.io/supabase-js/storage-js/v2/spec.json
 
 ## Quick Start Guide
 

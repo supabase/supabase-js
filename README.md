@@ -1,5 +1,9 @@
 # Supabase JS Client Libraries
 
+<div align="center">
+[![pkg.pr.new](https://pkg.pr.new/badge/supabase/supabase-js)](https://pkg.pr.new/badge/supabase/supabase-js)
+</div>
+
 _The Supabase JS monorepo containing all the Supabase JavaScript client libraries._
 
 > **📣 Coming from our old repositories?** The `supabase-js` repository has been converted into a monorepo and all other client libraries have been absorbed into it. If you previously contributed to individual repositories like `auth-js`, `postgrest-js`, `realtime-js`, `storage-js`, or `functions-js`, please see our **[Migration Guide](./docs/MIGRATION.md)** to learn about the new structure and workflows.
