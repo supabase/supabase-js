@@ -2078,8 +2078,30 @@ export default class GoTrueClient {
 
   /**
    * Receive a notification every time an auth event happens.
+   * Safe to use without an async function as callback.
+   *
    * @param callback A callback function to be invoked when an auth event happens.
    */
+  onAuthStateChange(callback: (event: AuthChangeEvent, session: Session | null) => void): {
+    data: { subscription: Subscription }
+  }
+
+  /**
+   * Avoid using an async function inside `onAuthStateChange` as you might end
+   * up with a deadlock. The callback function runs inside an exclusive lock,
+   * so calling other Supabase Client APIs that also try to acquire the
+   * exclusive lock, might cause a deadlock. This behavior is observable across
+   * tabs. In the next major library version, this behavior will not be supported.
+   *
+   * Receive a notification every time an auth event happens.
+   *
+   * @param callback A callback function to be invoked when an auth event happens.
+   * @deprecated Due to the possibility of deadlocks with async functions as callbacks, use the version without an async function.
+   */
+  onAuthStateChange(callback: (event: AuthChangeEvent, session: Session | null) => Promise<void>): {
+    data: { subscription: Subscription }
+  }
+
   onAuthStateChange(
     callback: (event: AuthChangeEvent, session: Session | null) => void | Promise<void>
   ): {
