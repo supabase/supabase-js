@@ -1,0 +1,20 @@
+{
+  "name": "@supabase/supabase-js",
+  "targets": {
+    "test": {
+      "inputs": ["testing", "^production"]
+    },
+    "test:unit": {
+      "inputs": ["testing", "^production"]
+    },
+    "test:coverage": {
+      "inputs": ["testing", "^production"]
+    },
+    "test:integration": {
+      "inputs": ["testing", "^production"]
+    },
+    "test:all": {
+      "inputs": ["testing", "^production"]
+    }
+  }
+}

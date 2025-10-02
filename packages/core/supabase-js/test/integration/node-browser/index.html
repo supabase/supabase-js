@@ -1,0 +1,113 @@
+<!doctype html>
+<html>
+  <body>
+    <pre id="log" data-testid="log" style="font-family: monospace"></pre>
+    <script src="http://localhost:8004/supabase.js"></script>
+    <script>
+      const log = (msg) => {
+        document.getElementById('log').textContent += msg + '\n'
+        console.log(msg)
+      }
+
+      log('Starting WebSocket test (Playwright)...')
+
+      // Add global error handler
+      window.addEventListener('error', (event) => {
+        log('Global error: ' + event.message)
+        log('Error source: ' + event.filename + ':' + event.lineno)
+      })
+
+      // Add unhandled promise rejection handler
+      window.addEventListener('unhandledrejection', (event) => {
+        log('Unhandled promise rejection: ' + event.reason)
+      })
+
+      try {
+        log('Attempting to access createClient...')
+
+        // Check if supabase is available
+        if (typeof window.supabase === 'undefined') {
+          throw new Error('window.supabase is not defined')
+        }
+        log('Supabase UMD loaded successfully')
+
+        const { createClient } = window.supabase
+        log('createClient function available')
+
+        // Intercept WebSocket constructor
+        const originalWebSocket = window.WebSocket
+        let wsConstructorCalls = []
+
+        window.WebSocket = function (...args) {
+          wsConstructorCalls.push(args.length)
+          log(
+            'WebSocket constructor called with ' +
+              args.length +
+              ' parameters: ' +
+              JSON.stringify(args)
+          )
+          return new originalWebSocket(...args)
+        }
+
+        // Intercept fetch
+        const originalFetch = window.fetch
+        let fetchCalls = []
+
+        window.fetch = function (...args) {
+          fetchCalls.push(args[0])
+          log('Fetch called with URL: ' + args[0])
+          return originalFetch.apply(this, args)
+        }
+
+        // Intercept setTimeout/setInterval for polling
+        const originalSetTimeout = window.setTimeout
+        const originalSetInterval = window.setInterval
+        let timeoutCalls = []
+        let intervalCalls = []
+
+        window.setTimeout = function (fn, delay, ...args) {
+          timeoutCalls.push({ fn: fn.toString().substring(0, 50), delay })
+          log('setTimeout called with delay: ' + delay)
+          return originalSetTimeout.apply(this, [fn, delay, ...args])
+        }
+
+        window.setInterval = function (fn, delay, ...args) {
+          intervalCalls.push({ fn: fn.toString().substring(0, 50), delay })
+          log('setInterval called with delay: ' + delay)
+          return originalSetInterval.apply(this, [fn, delay, ...args])
+        }
+
+        log('Creating Supabase client with WebSocket transport...')
+        const supabase = createClient(
+          'http://127.0.0.1:54321',
+          'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0',
+          {
+            realtime: {
+              transport: window.WebSocket,
+              heartbeatIntervalMs: 500,
+            },
+          }
+        )
+
+        log('Creating channel...')
+        const channel = supabase.channel('realtime:public:todos')
+
+        log('Subscribing to channel...')
+        channel.subscribe((status) => {
+          log('WebSocket subscribe callback called with: ' + status)
+        })
+
+        setTimeout(() => {
+          log('WebSocket calls: ' + JSON.stringify(wsConstructorCalls))
+          log('Fetch calls: ' + JSON.stringify(fetchCalls))
+          log('setTimeout calls: ' + JSON.stringify(timeoutCalls))
+          log('setInterval calls: ' + JSON.stringify(intervalCalls))
+        }, 3000)
+      } catch (error) {
+        log('Error in WebSocket test: ' + error.message)
+        log('Error stack: ' + error.stack)
+        log('Error name: ' + error.name)
+      }
+    </script>
+  </body>
+</html>

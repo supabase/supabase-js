@@ -1,0 +1,16 @@
+{
+  "name": "@supabase/auth-js-tests",
+  "version": "0.0.0",
+  "private": false,
+  "description": "Tests for auth-js",
+  "author": "Supabase",
+  "scripts": {
+    "test": "jest --runInBand --coverage"
+  },
+  "devDependencies": {
+    "jest": "28.1.3",
+    "jest-environment-jsdom": "28.1.3",
+    "ts-jest": "28.0.7",
+    "typescript": "^5.8.3"
+  }
+}

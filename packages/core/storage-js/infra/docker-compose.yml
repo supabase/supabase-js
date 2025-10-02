@@ -1,0 +1,85 @@
+# docker-compose.yml
+
+services:
+  kong:
+    container_name: supabase-kong
+    build:
+      context: ./kong
+    environment:
+      KONG_DECLARATIVE_CONFIG: /var/lib/kong/kong.yml
+      KONG_PLUGINS: request-transformer,cors,key-auth,http-log
+    ports:
+      - 8000:8000/tcp
+      - 8443:8443/tcp
+  storage:
+    build:
+      context: ./storage
+    ports:
+      - '5050:5000'
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: always
+    environment:
+      ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlhdCI6MTYxMzUzMTk4NSwiZXhwIjoxOTI5MTA3OTg1fQ.ReNhHIoXIOa-8tL1DO3e26mJmOTnYuvdgobwIYGzrLQ
+      SERVICE_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoic2VydmljZV9yb2xlIiwiaWF0IjoxNjEzNTMxOTg1LCJleHAiOjE5MjkxMDc5ODV9.FhK1kZdHmWdCIEZELt0QDCw6FIlCS8rVmp4RzaeI2LM
+      PROJECT_REF: bjwdssmqcnupljrqypxz # can be any random string
+      REGION: us-east-1 # region where your bucket is located
+      POSTGREST_URL: http://rest:3000
+      GLOBAL_S3_BUCKET: supa-storage-testing # name of s3 bucket where you want to store objects
+      PGRST_JWT_SECRET: super-secret-jwt-token-with-at-least-32-characters-long
+      DATABASE_URL: postgres://postgres:postgres@db:5432/postgres
+      PGOPTIONS: '-c search_path=storage'
+      AWS_ACCESS_KEY_ID: replace-with-your-aws-key
+      AWS_SECRET_ACCESS_KEY: replace-with-your-aws-secret
+      FILE_SIZE_LIMIT: 52428800
+      STORAGE_BACKEND: file
+      FILE_STORAGE_BACKEND_PATH: /tmp/storage
+      ENABLE_IMAGE_TRANSFORMATION: 'true'
+      IMGPROXY_URL: http://imgproxy:8080
+      DEBUG: 'knex:*'
+    volumes:
+      - assets-volume:/tmp/storage
+    healthcheck:
+      test: ['CMD-SHELL', 'curl -f -LI http://localhost:5000/status']
+      interval: 2s
+  db:
+    build:
+      context: ./postgres
+    ports:
+      - 5432:5432
+    command: postgres -c config_file=/etc/postgresql/postgresql.conf
+    environment:
+      POSTGRES_PASSWORD: postgres
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  dummy_data:
+    build:
+      context: ./postgres
+    depends_on:
+      storage:
+        condition: service_healthy
+    volumes:
+      - ./postgres:/sql
+    command:
+      - psql
+      - 'postgresql://postgres:postgres@db:5432/postgres'
+      - -f
+      - /sql/dummy-data.sql
+
+  imgproxy:
+    image: darthsim/imgproxy
+    ports:
+      - 50020:8080
+    volumes:
+      - assets-volume:/tmp/storage
+    environment:
+      - IMGPROXY_LOCAL_FILESYSTEM_ROOT=/
+      - IMGPROXY_USE_ETAG=true
+      - IMGPROXY_ENABLE_WEBP_DETECTION=true
+volumes:
+  assets-volume:

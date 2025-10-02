@@ -1,0 +1,20 @@
+# Global owners for the entire repository
+* @supabase/client-libs @supabase/admin @supabase/security
+
+# Root configuration files
+/.github/ @supabase/client-libs @supabase/security
+/nx.json @supabase/client-libs
+/package.json @supabase/client-libs
+/tsconfig*.json @supabase/client-libs
+/README.md @supabase/client-libs
+/docs/* @supabase/client-libs
+/LICENSE @supabase/client-libs
+/CODEOWNERS @supabase/client-libs @supabase/security
+
+# Core packages - each library has specific owners
+/packages/core/auth-js/ @supabase/client-libs @supabase/auth
+/packages/core/functions-js/ @supabase/client-libs @supabase/edge-functions @supabase/pg-functions
+/packages/core/postgrest-js/ @supabase/client-libs @supabase/postgrest
+/packages/core/realtime-js/ @supabase/client-libs @supabase/realtime
+/packages/core/storage-js/ @supabase/client-libs @supabase/storage
+/packages/core/supabase-js/ @supabase/client-libs 

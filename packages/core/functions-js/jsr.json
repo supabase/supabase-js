@@ -1,0 +1,8 @@
+{
+  "name": "@supabase/functions-js",
+  "version": "0.0.0-automated",
+  "exports": {
+    ".": "./src/index.ts",
+    "./edge-runtime.d.ts": "./src/edge-runtime.d.ts"
+  }
+}

@@ -1,38 +1,150 @@
-name: Docs
+name: Generate and Publish Docs
 
 on:
-  push:
-    branches:
-      - master
   workflow_dispatch:
+  workflow_call:
 
 jobs:
   docs:
-    name: Publish docs / OS ${{ matrix.os }} / Node ${{ matrix.node }}
-    strategy:
-      matrix:
-        os: [ubuntu-latest]
-        node: ['20']
-
-    runs-on: ${{ matrix.os }}
+    name: Generate and Publish Documentation
+    runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-      - name: Set up Node
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: ${{ matrix.node }}
+          node-version: '20'
+          cache: 'npm'
 
-      - run: |
-          npm ci
-          npm run docs
-          npm run docs:json
+      - name: Install dependencies
+        run: npm ci
 
-      - name: Publish
+      - name: Generate JSON documentation for all packages
+        run: npx nx run-many --target=docs:json --all
+
+      - name: Prepare GitHub Pages structure
+        run: |
+          # Create the docs output directory
+          mkdir -p ./gh-pages
+
+          # Copy each package's spec.json to a structure that matches the original URLs
+          # auth-js
+          mkdir -p ./gh-pages/auth-js/v2
+          cp ./packages/core/auth-js/docs/v2/spec.json ./gh-pages/auth-js/v2/spec.json || echo "No spec.json for auth-js"
+
+          # functions-js
+          mkdir -p ./gh-pages/functions-js/v2
+          cp ./packages/core/functions-js/docs/v2/spec.json ./gh-pages/functions-js/v2/spec.json || echo "No spec.json for functions-js"
+
+          # postgrest-js
+          mkdir -p ./gh-pages/postgrest-js/v2
+          cp ./packages/core/postgrest-js/docs/v2/spec.json ./gh-pages/postgrest-js/v2/spec.json || echo "No spec.json for postgrest-js"
+
+          # realtime-js
+          mkdir -p ./gh-pages/realtime-js/v2
+          cp ./packages/core/realtime-js/docs/v2/spec.json ./gh-pages/realtime-js/v2/spec.json || echo "No spec.json for realtime-js"
+
+          # storage-js
+          mkdir -p ./gh-pages/storage-js/v2
+          cp ./packages/core/storage-js/docs/v2/spec.json ./gh-pages/storage-js/v2/spec.json || echo "No spec.json for storage-js"
+
+          # supabase-js
+          mkdir -p ./gh-pages/supabase-js/v2
+          cp ./packages/core/supabase-js/docs/v2/spec.json ./gh-pages/supabase-js/v2/spec.json || echo "No spec.json for supabase-js"
+
+          # Create an index.html for the root
+          cat > ./gh-pages/index.html << 'EOF'
+          <!DOCTYPE html>
+          <html>
+          <head>
+              <title>Supabase JS Libraries Documentation</title>
+              <style>
+                  body {
+                      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+                      max-width: 800px;
+                      margin: 50px auto;
+                      padding: 20px;
+                      line-height: 1.6;
+                  }
+                  h1 {
+                      color: #333;
+                      border-bottom: 2px solid #3ecf8e;
+                      padding-bottom: 10px;
+                  }
+                  ul {
+                      list-style: none;
+                      padding: 0;
+                  }
+                  li {
+                      margin: 10px 0;
+                  }
+                  a {
+                      color: #3ecf8e;
+                      text-decoration: none;
+                      font-size: 18px;
+                  }
+                  a:hover {
+                      text-decoration: underline;
+                  }
+                  .description {
+                      color: #666;
+                      font-size: 14px;
+                      margin-top: 5px;
+                  }
+              </style>
+          </head>
+          <body>
+              <h1>Supabase JavaScript Libraries - API Documentation</h1>
+              <p>TypeScript/JavaScript API documentation for all Supabase client libraries.</p>
+              
+              <h2>Available Documentation:</h2>
+              <ul>
+                  <li>
+                      <a href="auth-js/v2/spec.json">@supabase/auth-js</a>
+                      <div class="description">Authentication client library</div>
+                  </li>
+                  <li>
+                      <a href="functions-js/v2/spec.json">@supabase/functions-js</a>
+                      <div class="description">Edge Functions client library</div>
+                  </li>
+                  <li>
+                      <a href="postgrest-js/v2/spec.json">@supabase/postgrest-js</a>
+                      <div class="description">PostgREST database client</div>
+                  </li>
+                  <li>
+                      <a href="realtime-js/v2/spec.json">@supabase/realtime-js</a>
+                      <div class="description">Realtime subscriptions client</div>
+                  </li>
+                  <li>
+                      <a href="storage-js/v2/spec.json">@supabase/storage-js</a>
+                      <div class="description">File storage client</div>
+                  </li>
+                  <li>
+                      <a href="supabase-js/v2/spec.json">@supabase/supabase-js</a>
+                      <div class="description">Main isomorphic client combining all libraries</div>
+                  </li>
+              </ul>
+              
+              <hr style="margin-top: 50px; border: 1px solid #eee;">
+              <p style="color: #999; font-size: 12px;">
+                  Generated from the <a href="https://github.com/supabase/supabase-js">supabase-js</a> monorepo.
+              </p>
+          </body>
+          </html>
+          EOF
+
+          echo "GitHub Pages structure created:"
+          find ./gh-pages -name "*.json" -o -name "*.html" | head -20
+
+      - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: docs
+          publish_dir: ./gh-pages
           force_orphan: true
-          commit_message: 'docs: update'
+          commit_message: 'docs: update API documentation'

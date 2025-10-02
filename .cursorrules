@@ -1,0 +1,162 @@
+# Cursor Rules for Supabase JS Libraries Monorepo
+
+You are working in a unified Nx monorepo that consolidates all Supabase JavaScript client libraries. This migration from 6 separate repositories addresses maintenance overhead, dependency duplication, and release coordination challenges.
+
+## Repository Context
+
+This monorepo contains 6 JavaScript/TypeScript libraries previously maintained as separate repositories:
+- `packages/core/supabase-js` - Main isomorphic client combining all libraries (@supabase/supabase-js)
+- `packages/core/auth-js` - Authentication client (@supabase/auth-js)
+- `packages/core/functions-js` - Edge Functions client (@supabase/functions-js)
+- `packages/core/postgrest-js` - PostgREST database client (@supabase/postgrest-js)
+- `packages/core/realtime-js` - Real-time subscriptions client (@supabase/realtime-js)
+- `packages/core/storage-js` - File storage client (@supabase/storage-js)
+
+## Key Principles
+
+1. **Zero Breaking Changes**: All migrations and changes must maintain full backward compatibility for consumers
+2. **Fixed Version Mode**: All packages share the same version number and are released together
+3. **Workspace Dependencies**: Internal dependencies use `*` which Nx replaces with actual versions during release
+4. **Affected Testing**: Always use `nx affected` commands to test only what changed
+5. **Conventional Commits**: Use conventional commit format for automated versioning and changelogs
+
+## Common Commands
+
+### Building
+- Build all: `nx run-many --target=build --all`
+- Build specific: `nx build auth-js`
+- Build affected: `nx affected --target=build`
+- Watch mode: `nx build auth-js --watch`
+
+### Testing
+- Test all: `nx run-many --target=test --all`
+- Test specific: `nx test auth-js`
+- Test affected: `nx affected --target=test`
+- Integration tests: `nx run-many --target=test:integration --all`
+
+### Code Quality
+- Lint all: `nx run-many --target=lint --all`
+- Format: `nx format`
+- Check format: `nx format:check`
+
+### Analysis
+- Dependency graph: `nx graph`
+- Show projects: `nx show projects`
+- Affected graph: `nx affected --graph`
+
+## Development Patterns
+
+### Cross-Library Changes
+When making changes that affect multiple libraries:
+1. Make all changes in a single PR
+2. Update tests in both source library and integration tests in supabase-js
+3. Use `nx affected --target=test` to verify all impacts
+4. Commit with clear scope: `fix(realtime-js): resolve connection issue`
+
+### Adding New Features
+1. Implement in the specific library under `packages/core/[library-name]`
+2. Add comprehensive unit tests in the library's `test/` directory
+3. If it affects supabase-js, add integration tests there
+4. Run `nx affected --target=test` before committing
+
+### Quick Fixes
+Even for single-library fixes:
+1. Use conventional commit: `fix(storage-js): correct upload timeout`
+2. All packages will be versioned together (fixed mode)
+3. Run `nx affected --target=test`
+4. Changes ship together in next release
+
+## TypeScript Configuration
+
+The workspace uses strict TypeScript settings:
+- Target: ES2022
+- Module: NodeNext
+- Strict mode enabled
+- Isolated modules for performance
+- Composite projects for incremental builds
+
+## Testing Infrastructure
+
+### Unit Tests
+- Located in each library's `test/` directory
+- Use Jest as test runner
+- Mock external dependencies
+
+### Integration Tests
+- Libraries with external services (auth-js, storage-js) use Docker
+- Docker Compose configs in `infra/` directories
+- Run with: `npm run test:infra` from library directory
+
+### Cross-Platform Tests
+The main supabase-js tests against:
+- Node.js
+- Next.js
+- Expo (React Native)
+- Bun runtime
+- Deno runtime
+- Browser environment
+
+## File Structure Conventions
+
+```
+packages/core/[library-name]/
+├── src/           # Source code
+├── test/          # Test files
+├── dist/          # Build output (gitignored)
+├── package.json   # Package configuration
+└── tsconfig.json  # TypeScript config
+```
+
+## Important Notes
+
+- **Different Default Branches**: Original repos used either `master` or `main` - be aware when referencing history
+- **Package Names**: All packages maintain original npm names (@supabase/[package-name])
+- **Shared Code**: Extract common patterns (HTTP client, error handling) to shared packages when identified
+- **Docker Required**: Integration tests for auth-js and storage-js require Docker to be running
+
+## Release Process
+
+### Fixed Version Release
+All packages released with same version:
+```bash
+nx release              # Interactive release
+nx release --dry-run    # Preview changes
+nx release --yes        # CI automation
+```
+
+### Internal Dependencies
+```json
+// packages/core/supabase-js/package.json
+"dependencies": {
+  "@supabase/auth-js": "*",
+  "@supabase/realtime-js": "*",
+  "@supabase/functions-js": "*",
+  "@supabase/storage-js": "*",
+  "@supabase/postgrest-js": "*"
+}
+```
+The `*` is replaced with actual version during release.
+
+## Code Style
+
+- Use Prettier for formatting (config in .prettierrc)
+- Follow existing patterns in each library
+- Maintain consistency across the monorepo
+- Document public APIs with JSDoc comments
+
+## Common Pitfalls to Avoid
+
+1. Don't hardcode version numbers for internal dependencies
+2. Don't make breaking changes to public APIs
+3. Don't forget to run affected tests before committing
+4. Don't mix unrelated changes in a single commit
+5. Don't bypass the Nx build system by running npm scripts directly for cross-library work
+
+## When Making Suggestions
+
+1. Always consider the monorepo structure - changes might affect multiple packages
+2. Use Nx commands rather than npm/yarn directly for workspace operations
+3. Suggest running affected tests, not all tests, for better performance
+4. Remember that all packages version together in fixed mode
+5. Consider Docker requirements for integration tests
+6. Maintain backward compatibility at all costs
