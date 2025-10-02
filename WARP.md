@@ -27,7 +27,8 @@ This monorepo replaces the following individual repositories:
 
 ### Important Notes
 
-- **Default Branches**: Original repos use different default branches (master vs main). Check each library's original repo for reference.
+- **Current Default Branch**: `master` (confirmed current default branch)
+- **Original Branch Differences**: Original repos used different default branches (master vs main). Check each library's original repo for reference.
 - **Package Names**: All packages maintain their original npm names (@supabase/[package-name])
 - **Zero Breaking Changes**: This migration maintains full backward compatibility for consumers
 - **Shared Code**: Common patterns (HTTP client, error handling) should be extracted to shared packages when identified
@@ -95,11 +96,11 @@ nx affected --target=build
 nx run-many --target=test --all
 
 # Run tests for a specific library
-nx test auth-js
+nx test auth-js                  # May also use: nx test:auth auth-js
 nx test postgrest-js
 nx test functions-js
 nx test realtime-js
-nx test storage-js
+nx test storage-js               # May also use: nx test:storage storage-js
 nx test supabase-js
 
 # Run only affected tests (recommended during development)
@@ -114,14 +115,14 @@ nx test auth-js --coverage
 
 **Docker Requirements for Integration Tests:**
 
-| Package      | Docker Required | Notes                           |
-| ------------ | --------------- | ------------------------------- |
-| auth-js      | ✅ Yes          | Requires GoTrue + PostgreSQL    |
-| functions-js | ✅ Yes          | Uses testcontainers for Deno    |
-| postgrest-js | ✅ Yes          | Requires PostgREST + PostgreSQL |
-| storage-js   | ✅ Yes          | Requires Storage API + Kong     |
-| realtime-js  | ❌ No           | Uses mock WebSockets            |
-| supabase-js  | ❌ No           | Unit tests only                 |
+| Package      | Docker Required | Notes                           | Special Commands |
+| ------------ | --------------- | ------------------------------- | ---------------- |
+| auth-js      | ✅ Yes          | Requires GoTrue + PostgreSQL    | May use `nx test:auth auth-js` |
+| functions-js | ✅ Yes          | Uses testcontainers for Deno    | Standard `nx test functions-js` |
+| postgrest-js | ✅ Yes          | Requires PostgREST + PostgreSQL | Standard `nx test postgrest-js` |
+| storage-js   | ✅ Yes          | Requires Storage API + Kong     | May use `nx test:storage storage-js` |
+| realtime-js  | ❌ No           | Uses mock WebSockets            | Standard `nx test realtime-js` |
+| supabase-js  | ❌ No           | Unit tests only                 | Standard `nx test supabase-js` |
 
 ### Code Quality
 
@@ -554,8 +555,10 @@ packages/core/[library]/
 - **Run affected commands** to save time (`nx affected --target=test`)
 - **Use interactive commit tool** (`npm run commit`)
 - **Format code** before committing (`nx format`)
-- **Read package READMEs** for library-specific details
+- **Read package READMEs** for library-specific details and special test commands
 - **Check documentation** in `docs/` for comprehensive guides
+- **Check for Docker requirements** before running integration tests
+- **Use conventional commit format** with proper scope
 
 ### Don'ts ❌
 
@@ -564,6 +567,7 @@ packages/core/[library]/
 - **Don't hardcode internal versions** (use `*` protocol)
 - **Don't test everything** when only some packages changed (use `nx affected`)
 - **Don't make breaking changes** without discussion and proper commit format
+- **Don't assume all packages use standard test commands** (check for special targets)
 
 ## Troubleshooting
 

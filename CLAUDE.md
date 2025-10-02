@@ -129,7 +129,7 @@ nx test auth-js                          # Test specific package
 nx test postgrest-js                     # Test specific package
 nx test functions-js                     # Test specific package
 nx test realtime-js                      # Test specific package
-nx test storage-js                       # Test specific package
+nx test storage-js                       # Test specific package (may use special test:storage target)
 nx test supabase-js                      # Test specific package
 nx affected --target=test                # Test only affected (recommended)
 nx test auth-js --watch                  # Watch mode
@@ -138,14 +138,14 @@ nx test supabase-js --coverage           # Test with coverage
 
 **Docker Requirements:**
 
-| Package      | Docker Required | Infrastructure                  |
-| ------------ | --------------- | ------------------------------- |
-| auth-js      | ✅ Yes          | GoTrue + PostgreSQL             |
-| functions-js | ✅ Yes          | Deno relay (testcontainers)     |
-| postgrest-js | ✅ Yes          | PostgREST + PostgreSQL          |
-| storage-js   | ✅ Yes          | Storage API + PostgreSQL + Kong |
-| realtime-js  | ❌ No           | Mock WebSockets                 |
-| supabase-js  | ❌ No           | Unit tests only                 |
+| Package      | Docker Required | Infrastructure                  | Special Commands |
+| ------------ | --------------- | ------------------------------- | ---------------- |
+| auth-js      | ✅ Yes          | GoTrue + PostgreSQL             | May use `nx test:auth auth-js` |
+| functions-js | ✅ Yes          | Deno relay (testcontainers)     | Standard `nx test functions-js` |
+| postgrest-js | ✅ Yes          | PostgREST + PostgreSQL          | Standard `nx test postgrest-js` |
+| storage-js   | ✅ Yes          | Storage API + PostgreSQL + Kong | May use `nx test:storage storage-js` |
+| realtime-js  | ❌ No           | Mock WebSockets                 | Standard `nx test realtime-js` |
+| supabase-js  | ❌ No           | Unit tests only                 | Standard `nx test supabase-js` |
 
 > **📖 See [TESTING.md](docs/TESTING.md) for complete testing guide and troubleshooting**
 
@@ -311,10 +311,13 @@ Tests run against multiple environments:
 
 ## Important Context
 
-### Branch Differences
+### Branch Information
 
-Original repositories use different default branches:
+**Current Repository:**
+- **Default branch**: `master` (confirmed current default)
+- **Repository URL**: `github.com/supabase/supabase-js`
 
+**Original Repository Branches** (for historical reference):
 - **master**: auth-js, postgrest-js, realtime-js, supabase-js
 - **main**: functions-js, storage-js
 
@@ -736,14 +739,16 @@ _No user-facing changes in this release._
 
 ## When Providing Code Suggestions
 
-1. **Consider Monorepo Impact**: Changes might affect multiple packages - always check
-2. **Use Nx Commands**: Prefer `nx` over direct `npm` for workspace operations
-3. **Suggest Affected Testing**: `nx affected --target=test` over full test suite
-4. **Respect Fixed Versioning**: All packages version together
-5. **Maintain Compatibility**: Never introduce breaking changes
-6. **Extract Shared Code**: Identify patterns that could be shared
-7. **Follow Conventions**: Use existing patterns and structures
-8. **Document Changes**: Update JSDoc and READMEs when changing APIs
+1. **Consider Monorepo Impact**: Changes might affect multiple packages - always check dependencies
+2. **Use Nx Commands**: Always prefer `nx` over direct `npm` for workspace operations
+3. **Suggest Affected Testing**: Use `nx affected --target=test` over full test suite for efficiency
+4. **Respect Fixed Versioning**: All packages version together - no independent versioning
+5. **Maintain Compatibility**: Never introduce breaking changes without proper process
+6. **Check Testing Requirements**: Be aware of Docker requirements for integration tests
+7. **Extract Shared Code**: Identify patterns that could be shared across packages
+8. **Follow Conventions**: Use existing patterns and structures within each library
+9. **Document Changes**: Update JSDoc and READMEs when changing public APIs
+10. **Use Conventional Commits**: Always suggest proper commit format with scope
 
 ## Quick Decision Tree
 

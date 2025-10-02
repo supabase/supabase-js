@@ -1,27 +1,38 @@
-# Supabase JS Client Libraries
+<br />
+<p align="center">
+  <a href="https://supabase.io">
+        <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/supabase/supabase/master/packages/common/assets/images/supabase-logo-wordmark--dark.svg">
+      <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/supabase/supabase/master/packages/common/assets/images/supabase-logo-wordmark--light.svg">
+      <img alt="Supabase Logo" width="300" src="https://raw.githubusercontent.com/supabase/supabase/master/packages/common/assets/images/logo-preview.jpg">
+    </picture>
+  </a>
+
+  <h1 align="center">Supabase JS Client Libraries</h1>
+
+  <p align="center">
+    <a href="https://supabase.com/docs/guides/getting-started">Guides</a>
+    ·
+    <a href="https://supabase.com/docs/reference/javascript/introduction">Reference Docs</a>
+  </p>
+</p>
 
 <div align="center">
-[![pkg.pr.new](https://pkg.pr.new/badge/supabase/supabase-js)](https://pkg.pr.new/badge/supabase/supabase-js)
+
+[![pkg.pr.new](https://pkg.pr.new/badge/supabase/supabase-js)](https://pkg.pr.new/~/supabase/supabase-js)
+
 </div>
 
-_The Supabase JS monorepo containing all the Supabase JavaScript client libraries._
-
-> **IMPORTANT: Repository Structure Changed**
+> **For contributors: Repository Structure Changed**
 >
-> This repository has been restructured as a monorepo. **All libraries, including `supabase-js` itself, have moved to `packages/core/`**:
+> This repository has been restructured as a monorepo. All libraries, including `supabase-js` itself, have moved to `packages/core/`:
 >
-> | What You're Looking For | Where It Is Now |
-> |------------------------|-----------------|
-> | Main supabase-js code | `packages/core/supabase-js/` |
-> | Auth library code | `packages/core/auth-js/` |
-> | Database library code | `packages/core/postgrest-js/` |
-> | Other libraries | `packages/core/*/` |
+> | What You're Looking For | Where It Is Now              |
+> | ----------------------- | ---------------------------- |
+> | Main supabase-js code   | `packages/core/supabase-js/` |
+> | Other libraries         | `packages/core/*/`           |
 >
-> **If you contributed to ANY of these repositories before**, please read our **[Migration Guide](./docs/MIGRATION.md)** to understand:
->
-> - Where your code moved
-> - How commands changed (e.g., `npm test` → `npx nx test supabase-js`)
-> - How to update your development workflow
+> Read the **[Migration Guide](./docs/MIGRATION.md)** to learn more.
 
 ## 📦 Libraries
 
@@ -35,6 +46,15 @@ This monorepo contains the complete suite of Supabase JavaScript client librarie
 | **[@supabase/realtime-js](./packages/core/realtime-js)**   | Real-time subscriptions client           |
 | **[@supabase/storage-js](./packages/core/storage-js)**     | File storage client                      |
 | **[@supabase/functions-js](./packages/core/functions-js)** | Edge Functions client                    |
+
+> **💡 Note for Package Users:** If you install and use these packages, **nothing has changed**. Continue installing packages normally:
+>
+> ```bash
+> npm install @supabase/supabase-js
+> npm install @supabase/auth-js
+> ```
+>
+> The monorepo structure **only affects contributors**. This is how we develop and maintain the code, not how you use it.
 
 ## 🚀 Quick Start
 
