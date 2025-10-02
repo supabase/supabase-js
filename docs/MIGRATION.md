@@ -437,14 +437,14 @@ The monorepo is an internal development tool. It makes it easier for contributor
 
 ### Q: What if I find a bug in the migration?
 
-**A:** [Open an issue](https://github.com/supabase/supabase-js/issues) and tag it with `migration`. We are actively monitoring these during the transition period.
+**A:** [Open an issue](https://github.com/supabase/supabase-js/issues/new/choose) and add `[migration]` in the title. We are actively monitoring these during the transition period.
 
 ## Getting Help
 
 ### Migration Support
 
-- **Migration Issues**: Tag with `migration` label in [GitHub Issues](https://github.com/supabase/supabase-js/issues)
-- **Questions**: [GitHub Discussions](https://github.com/supabase/supabase/discussions) with "Monorepo Migration" topic
+- **Migration Issues**: Create a [new GitHub issue](https://github.com/supabase/supabase-js/issues/new/choose) and add `[migration]` in the title
+- **Questions**: Check out the [GitHub Discussion](https://github.com/orgs/supabase/discussions/39197) on the monorepo transition
 - **Discord**: [Supabase Discord](https://discord.supabase.com) in #contributing channel
 
 ### Resources
