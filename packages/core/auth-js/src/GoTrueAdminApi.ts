@@ -21,12 +21,22 @@ import {
   PageParams,
   SIGN_OUT_SCOPES,
   SignOutScope,
+  GoTrueAdminOAuthApi,
+  CreateOAuthClientParams,
+  OAuthClientResponse,
+  OAuthClientListResponse,
 } from './lib/types'
 import { AuthError, isAuthError } from './lib/errors'
 
 export default class GoTrueAdminApi {
   /** Contains all MFA administration methods. */
   mfa: GoTrueAdminMFAApi
+
+  /**
+   * Contains all OAuth client administration methods.
+   * Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
+   */
+  oauth: GoTrueAdminOAuthApi
 
   protected url: string
   protected headers: {
@@ -51,6 +61,13 @@ export default class GoTrueAdminApi {
     this.mfa = {
       listFactors: this._listFactors.bind(this),
       deleteFactor: this._deleteFactor.bind(this),
+    }
+    this.oauth = {
+      listClients: this._listOAuthClients.bind(this),
+      createClient: this._createOAuthClient.bind(this),
+      getClient: this._getOAuthClient.bind(this),
+      deleteClient: this._deleteOAuthClient.bind(this),
+      regenerateClientSecret: this._regenerateOAuthClientSecret.bind(this),
     }
   }
 
@@ -341,6 +358,152 @@ export default class GoTrueAdminApi {
       )
 
       return { data, error: null }
+    } catch (error) {
+      if (isAuthError(error)) {
+        return { data: null, error }
+      }
+
+      throw error
+    }
+  }
+
+  /**
+   * Lists all OAuth clients with optional pagination.
+   * Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
+   *
+   * This function should only be called on a server. Never expose your `service_role` key in the browser.
+   */
+  private async _listOAuthClients(params?: PageParams): Promise<OAuthClientListResponse> {
+    try {
+      const pagination: Pagination = { nextPage: null, lastPage: 0, total: 0 }
+      const response = await _request(this.fetch, 'GET', `${this.url}/admin/oauth/clients`, {
+        headers: this.headers,
+        noResolveJson: true,
+        query: {
+          page: params?.page?.toString() ?? '',
+          per_page: params?.perPage?.toString() ?? '',
+        },
+        xform: _noResolveJsonResponse,
+      })
+      if (response.error) throw response.error
+
+      const clients = await response.json()
+      const total = response.headers.get('x-total-count') ?? 0
+      const links = response.headers.get('link')?.split(',') ?? []
+      if (links.length > 0) {
+        links.forEach((link: string) => {
+          const page = parseInt(link.split(';')[0].split('=')[1].substring(0, 1))
+          const rel = JSON.parse(link.split(';')[1].split('=')[1])
+          pagination[`${rel}Page`] = page
+        })
+
+        pagination.total = parseInt(total)
+      }
+      return { data: { ...clients, ...pagination }, error: null }
+    } catch (error) {
+      if (isAuthError(error)) {
+        return { data: { clients: [] }, error }
+      }
+      throw error
+    }
+  }
+
+  /**
+   * Creates a new OAuth client.
+   * Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
+   *
+   * This function should only be called on a server. Never expose your `service_role` key in the browser.
+   */
+  private async _createOAuthClient(
+    params: CreateOAuthClientParams
+  ): Promise<OAuthClientResponse> {
+    try {
+      return await _request(this.fetch, 'POST', `${this.url}/admin/oauth/clients`, {
+        body: params,
+        headers: this.headers,
+        xform: (client: any) => {
+          return { data: client, error: null }
+        },
+      })
+    } catch (error) {
+      if (isAuthError(error)) {
+        return { data: null, error }
+      }
+
+      throw error
+    }
+  }
+
+  /**
+   * Gets details of a specific OAuth client.
+   * Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
+   *
+   * This function should only be called on a server. Never expose your `service_role` key in the browser.
+   */
+  private async _getOAuthClient(clientId: string): Promise<OAuthClientResponse> {
+    try {
+      return await _request(this.fetch, 'GET', `${this.url}/admin/oauth/clients/${clientId}`, {
+        headers: this.headers,
+        xform: (client: any) => {
+          return { data: client, error: null }
+        },
+      })
+    } catch (error) {
+      if (isAuthError(error)) {
+        return { data: null, error }
+      }
+
+      throw error
+    }
+  }
+
+  /**
+   * Deletes an OAuth client.
+   * Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
+   *
+   * This function should only be called on a server. Never expose your `service_role` key in the browser.
+   */
+  private async _deleteOAuthClient(clientId: string): Promise<OAuthClientResponse> {
+    try {
+      return await _request(
+        this.fetch,
+        'DELETE',
+        `${this.url}/admin/oauth/clients/${clientId}`,
+        {
+          headers: this.headers,
+          xform: (client: any) => {
+            return { data: client, error: null }
+          },
+        }
+      )
+    } catch (error) {
+      if (isAuthError(error)) {
+        return { data: null, error }
+      }
+
+      throw error
+    }
+  }
+
+  /**
+   * Regenerates the secret for an OAuth client.
+   * Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
+   *
+   * This function should only be called on a server. Never expose your `service_role` key in the browser.
+   */
+  private async _regenerateOAuthClientSecret(clientId: string): Promise<OAuthClientResponse> {
+    try {
+      return await _request(
+        this.fetch,
+        'POST',
+        `${this.url}/admin/oauth/clients/${clientId}/regenerate_secret`,
+        {
+          headers: this.headers,
+          xform: (client: any) => {
+            return { data: client, error: null }
+          },
+        }
+      )
     } catch (error) {
       if (isAuthError(error)) {
         return { data: null, error }
