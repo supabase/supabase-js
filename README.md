@@ -161,6 +161,31 @@ npx nx test <package-name> --coverage
 - **[Migration Guide](./docs/MIGRATION.md)** - Migrating to the monorepo structure
 - **[Security Policy](./docs/SECURITY.md)** - Security guidelines and reporting
 
+## 🔐 Verifying provenance attestations
+
+You can verify registry signatures and provenance attestations for installed packages using the npm CLI:
+
+```bash
+npm audit signatures
+```
+
+Quick example for a single package install:
+
+```bash
+npm install @supabase/auth-js
+npm audit signatures
+```
+
+Example output:
+
+```text
+audited 1 package in 0s
+
+1 package has a verified registry signature
+```
+
+Because provenance attestations are a new capability, security features may evolve over time. Ensure you are using the latest npm CLI to verify attestation signatures reliably. This may require updating npm beyond the version bundled with Node.js.
+
 ## 🏛️ Architecture
 
 ### Monorepo Structure
