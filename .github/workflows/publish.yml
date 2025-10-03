@@ -1,7 +1,6 @@
+name: Publish releases
 # Consolidates canary and stable releases into single workflow
 # Trusted workflow for publishing to npm
-
-name: Publish releases
 
 on:
   push:
@@ -114,7 +113,7 @@ jobs:
     name: Generate Documentation
     needs: release-stable
     if: ${{
-      github.event_name == 'workflow_dispatch &&
+      github.event_name == 'workflow_dispatch' &&
       needs.release-stable.result == 'success'
       }}
     uses: ./.github/workflows/docs.yml

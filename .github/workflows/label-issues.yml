@@ -6,6 +6,9 @@ on:
       - opened
       - transferred
 
+permissions:
+  issues: write
+
 jobs:
   label-issue:
     runs-on: ubuntu-latest
@@ -31,7 +34,7 @@ jobs:
             let labels = [];
             if (context.payload.action === 'transferred') {
               // Label based on source repository
-              const sourceRepo = context.payload.changes.new_repository.full_name;
+              const sourceRepo = context.payload.changes?.old_repository?.full_name || context.payload.changes?.from?.full_name || context.payload.changes?.new_repository?.full_name;
               const label = labelMap[sourceRepo];
               if (label) labels.push(label);
             } else if (context.payload.action === 'opened') {
@@ -58,10 +61,10 @@ jobs:
             labels = [...new Set(labels)];
 
             if (labels.length > 0) {
-              await github.issues.addLabels({
+              await github.rest.issues.addLabels({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
-                issue_number: context.issue.number,
+                issue_number: context.payload.issue.number,
                 labels,
               });
             } else {
