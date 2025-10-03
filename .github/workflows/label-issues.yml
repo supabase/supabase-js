@@ -32,12 +32,15 @@ jobs:
             };
 
             let labels = [];
-            if (context.payload.action === 'transferred') {
-              // Label based on source repository
-              const sourceRepo = context.payload.changes?.old_repository?.full_name || context.payload.changes?.from?.full_name || context.payload.changes?.new_repository?.full_name;
-              const label = labelMap[sourceRepo];
-              if (label) labels.push(label);
-            } else if (context.payload.action === 'opened') {
+
+            const oldRepoFullName = context.payload.changes?.old_repository?.full_name;
+            if (oldRepoFullName) {
+              const fullNameLower = (oldRepoFullName || '').toLowerCase();
+              const shortName = fullNameLower.split('/')?.[1];
+              console.log('old_repository', fullNameLower, shortName);
+              const transferLabel = labelMap[fullNameLower] || labelMap[shortName];
+              if (transferLabel) labels.push(transferLabel);
+            } else {
               // Label based on "Library affected" field in the issue body
               const body = context.payload.issue.body || '';
               const match = body.match(/### Library affected\s*\n+([\s\S]*?)(\n###|\n$)/i);
@@ -49,12 +52,11 @@ jobs:
                   if (labelMap[lib]) labels.push(labelMap[lib]);
                 }
               }
-            }
-
-            // Check the title for "[migration]"
-            const title = context.payload.issue.title || '';
-            if (title.toLowerCase().includes('[migration]')) {
-              labels.push('migration');
+              // Check the title for "[migration]"
+              const title = context.payload.issue.title || '';
+              if (title.toLowerCase().includes('[migration]')) {
+                labels.push('migration');
+              }
             }
 
             // Remove duplicates

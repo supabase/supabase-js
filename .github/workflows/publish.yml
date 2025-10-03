@@ -103,6 +103,7 @@ jobs:
           npm run release-stable -- --versionSpecifier "${{ github.event.inputs.version_specifier }}"
 
       - name: Summary
+        if: ${{ success() }}
         run: |
           echo "## ✅ Stable Release" >> $GITHUB_STEP_SUMMARY
           echo "- **Version specifier:** \`${{ github.event.inputs.version_specifier }}\`" >> $GITHUB_STEP_SUMMARY
@@ -263,3 +264,20 @@ jobs:
         env:
           NPM_CONFIG_PROVENANCE: true
           RELEASE_GITHUB_TOKEN: ${{ steps.app-token.outputs.token }} # used for tags
+  notify-stable-failure:
+    name: Notify Slack for Stable failure
+    needs: release-stable
+    if: ${{ always() && github.event_name == 'workflow_dispatch' && needs.release-stable.result == 'failure' }}
+    uses: ./.github/workflows/slack-notify.yml
+    secrets: inherit
+    with:
+      subject: 'Stable Release'
+
+  notify-canary-failure:
+    name: Notify Slack for Canary failure
+    needs: release-canary
+    if: ${{ always() && github.event_name == 'push' && needs.release-canary.result == 'failure' }}
+    uses: ./.github/workflows/slack-notify.yml
+    secrets: inherit
+    with:
+      subject: 'Canary Release'
