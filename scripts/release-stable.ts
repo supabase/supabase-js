@@ -56,6 +56,15 @@ if (!validSpecifiers.includes(versionSpecifier) && !isValidVersion) {
   execSync('npx nx run-many --target=build --all', { stdio: 'inherit' })
   console.log('✅ Build complete\n')
 
+  // releaseChangelog should use the GitHub token with permission for tagging
+  // before switching the token, backup the GITHUB_TOKEN so that it
+  // can be restored afterwards and used by releasePublish. We can't use the same
+  // token, because releasePublish wants a token that has the id_token: write permission
+  // so that we can use OIDC for trusted publishing
+
+  const gh_token_bak = process.env.GITHUB_TOKEN
+  process.env.GITHUB_TOKEN = process.env.RELEASE_GITHUB_TOKEN
+
   const result = await releaseChangelog({
     versionData: projectsVersionData,
     version: workspaceVersion,
@@ -64,6 +73,8 @@ if (!validSpecifiers.includes(versionSpecifier) && !isValidVersion) {
     stageChanges: false,
   })
 
+  // npm publish with OIDC
+  process.env.GITHUB_TOKEN = gh_token_bak
   const publishResult = await releasePublish({
     registry: 'https://registry.npmjs.org/',
     access: 'public',
@@ -82,6 +93,8 @@ if (!validSpecifiers.includes(versionSpecifier) && !isValidVersion) {
   }
 
   // ---- Create release branch + PR ----
+  // switch back to the releaser GitHub token
+  process.env.GITHUB_TOKEN = process.env.RELEASE_GITHUB_TOKEN
   const version = result.workspaceChangelog?.releaseVersion.rawVersion || workspaceVersion
 
   // Validate version to prevent command injection
