@@ -19,7 +19,7 @@ jobs:
 
   notify-failure:
     needs: test
-    if: ${{ needs.test.result == 'failure' }}
+    if: ${{ always() && needs.test.result == 'failure' }}
     uses: ./.github/workflows/slack-notify.yml
     secrets: inherit
     with:
