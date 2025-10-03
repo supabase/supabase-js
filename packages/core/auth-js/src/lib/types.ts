@@ -1448,3 +1448,145 @@ export interface JWK {
 
 export const SIGN_OUT_SCOPES = ['global', 'local', 'others'] as const
 export type SignOutScope = (typeof SIGN_OUT_SCOPES)[number]
+
+/**
+ * OAuth client grant types supported by the OAuth 2.1 server.
+ * Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
+ */
+export type OAuthClientGrantType = 'authorization_code' | 'refresh_token'
+
+/**
+ * OAuth client response types supported by the OAuth 2.1 server.
+ * Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
+ */
+export type OAuthClientResponseType = 'code'
+
+/**
+ * OAuth client type indicating whether the client can keep credentials confidential.
+ * Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
+ */
+export type OAuthClientType = 'public' | 'confidential'
+
+/**
+ * OAuth client registration type.
+ * Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
+ */
+export type OAuthClientRegistrationType = 'dynamic' | 'manual'
+
+/**
+ * OAuth client object returned from the OAuth 2.1 server.
+ * Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
+ */
+export type OAuthClient = {
+  /** Unique identifier for the OAuth client */
+  client_id: string
+  /** Human-readable name of the OAuth client */
+  client_name: string
+  /** Client secret (only returned on registration and regeneration) */
+  client_secret?: string
+  /** Type of OAuth client */
+  client_type: OAuthClientType
+  /** Token endpoint authentication method */
+  token_endpoint_auth_method: string
+  /** Registration type of the client */
+  registration_type: OAuthClientRegistrationType
+  /** URI of the OAuth client */
+  client_uri?: string
+  /** Array of allowed redirect URIs */
+  redirect_uris: string[]
+  /** Array of allowed grant types */
+  grant_types: OAuthClientGrantType[]
+  /** Array of allowed response types */
+  response_types: OAuthClientResponseType[]
+  /** Scope of the OAuth client */
+  scope?: string
+  /** Timestamp when the client was created */
+  created_at: string
+  /** Timestamp when the client was last updated */
+  updated_at: string
+}
+
+/**
+ * Parameters for creating a new OAuth client.
+ * Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
+ */
+export type CreateOAuthClientParams = {
+  /** Human-readable name of the OAuth client */
+  client_name: string
+  /** URI of the OAuth client */
+  client_uri?: string
+  /** Array of allowed redirect URIs */
+  redirect_uris: string[]
+  /** Array of allowed grant types (optional, defaults to authorization_code and refresh_token) */
+  grant_types?: OAuthClientGrantType[]
+  /** Array of allowed response types (optional, defaults to code) */
+  response_types?: OAuthClientResponseType[]
+  /** Scope of the OAuth client */
+  scope?: string
+}
+
+/**
+ * Response type for OAuth client operations.
+ * Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
+ */
+export type OAuthClientResponse = RequestResult<OAuthClient>
+
+/**
+ * Response type for listing OAuth clients.
+ * Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
+ */
+export type OAuthClientListResponse =
+  | {
+      data: { clients: OAuthClient[]; aud: string } & Pagination
+      error: null
+    }
+  | {
+      data: { clients: [] }
+      error: AuthError
+    }
+
+/**
+ * Contains all OAuth client administration methods.
+ * Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
+ */
+export interface GoTrueAdminOAuthApi {
+  /**
+   * Lists all OAuth clients with optional pagination.
+   * Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
+   *
+   * This function should only be called on a server. Never expose your `service_role` key in the browser.
+   */
+  listClients(params?: PageParams): Promise<OAuthClientListResponse>
+
+  /**
+   * Creates a new OAuth client.
+   * Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
+   *
+   * This function should only be called on a server. Never expose your `service_role` key in the browser.
+   */
+  createClient(params: CreateOAuthClientParams): Promise<OAuthClientResponse>
+
+  /**
+   * Gets details of a specific OAuth client.
+   * Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
+   *
+   * This function should only be called on a server. Never expose your `service_role` key in the browser.
+   */
+  getClient(clientId: string): Promise<OAuthClientResponse>
+
+  /**
+   * Deletes an OAuth client.
+   * Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
+   *
+   * This function should only be called on a server. Never expose your `service_role` key in the browser.
+   */
+  deleteClient(clientId: string): Promise<OAuthClientResponse>
+
+  /**
+   * Regenerates the secret for an OAuth client.
+   * Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
+   *
+   * This function should only be called on a server. Never expose your `service_role` key in the browser.
+   */
+  regenerateClientSecret(clientId: string): Promise<OAuthClientResponse>
+}
