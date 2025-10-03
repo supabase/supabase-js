@@ -4,7 +4,7 @@ on:
   workflow_call:
     inputs:
       subject:
-        description: "Short subject describing what failed (e.g., Canary Release)"
+        description: 'Short subject describing what failed (e.g., Canary Release)'
         required: true
         type: string
 
@@ -24,7 +24,7 @@ jobs:
               },
               {
                 "type": "section",
-                "text": { "type": "mrkdwn", "text": "The workflow run failed. See details below." }
+                "text": { "type": "mrkdwn", "text": "The workflow run failed. See details below. @group-client-libs" }
               },
               {
                 "type": "section",
@@ -62,4 +62,3 @@ jobs:
           )
 
           curl -X POST -H 'Content-type: application/json' --data "$payload" ${{ secrets.SLACK_NOTIFICATIONS_WEBHOOK }}
-
