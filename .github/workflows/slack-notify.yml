@@ -1,0 +1,65 @@
+name: Reusable Slack Notification
+
+on:
+  workflow_call:
+    inputs:
+      subject:
+        description: "Short subject describing what failed (e.g., Canary Release)"
+        required: true
+        type: string
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send Slack notification
+        run: |
+          payload=$(cat <<EOF
+          {
+            "text": "❌ ${{ inputs.subject }} failed in ${{ github.repository }}",
+            "blocks": [
+              {
+                "type": "header",
+                "text": { "type": "plain_text", "text": "❌ ${{ inputs.subject }} failed", "emoji": true }
+              },
+              {
+                "type": "section",
+                "text": { "type": "mrkdwn", "text": "The workflow run failed. See details below." }
+              },
+              {
+                "type": "section",
+                "fields": [
+                  { "type": "mrkdwn", "text": "*Repository*\n${{ github.repository }}" },
+                  { "type": "mrkdwn", "text": "*Workflow*\n${{ github.workflow }}" },
+                  { "type": "mrkdwn", "text": "*Ref*\n${{ github.ref_name }}" },
+                  { "type": "mrkdwn", "text": "*Actor*\n${{ github.actor }}" }
+                ]
+              },
+              {
+                "type": "actions",
+                "elements": [
+                  {
+                    "type": "button",
+                    "text": { "type": "plain_text", "text": "View Run" },
+                    "url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+                  },
+                  {
+                    "type": "button",
+                    "text": { "type": "plain_text", "text": "View Commit" },
+                    "url": "https://github.com/${{ github.repository }}/commit/${{ github.sha }}"
+                  }
+                ]
+              },
+              {
+                "type": "context",
+                "elements": [
+                  { "type": "mrkdwn", "text": "Commit: ${{ github.sha }}" }
+                ]
+              }
+            ]
+          }
+          EOF
+          )
+
+          curl -X POST -H 'Content-type: application/json' --data "$payload" ${{ secrets.SLACK_NOTIFICATIONS_WEBHOOK }}
+

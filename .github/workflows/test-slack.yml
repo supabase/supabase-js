@@ -16,54 +16,11 @@ jobs:
       - name: Run a test command
         run: exit 1 # This will fail on purpose for the test
 
-      - name: Notify Slack on failure
-        if: failure() # Only runs if a previous step failed
-        run: |
-          payload=$(cat <<EOF
-          {
-            "text": "❌ CI failed in ${{ github.repository }}",
-            "blocks": [
-              {
-                "type": "header",
-                "text": { "type": "plain_text", "text": "❌ CI run failed", "emoji": true }
-              },
-              {
-                "type": "section",
-                "text": { "type": "mrkdwn", "text": "The workflow run failed. See details below." }
-              },
-              {
-                "type": "section",
-                "fields": [
-                  { "type": "mrkdwn", "text": "*Repository*\n${{ github.repository }}" },
-                  { "type": "mrkdwn", "text": "*Workflow*\n${{ github.workflow }}" },
-                  { "type": "mrkdwn", "text": "*Ref*\n${{ github.ref_name }}" },
-                  { "type": "mrkdwn", "text": "*Actor*\n${{ github.actor }}" }
-                ]
-              },
-              {
-                "type": "actions",
-                "elements": [
-                  {
-                    "type": "button",
-                    "text": { "type": "plain_text", "text": "View Run" },
-                    "url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-                  },
-                  {
-                    "type": "button",
-                    "text": { "type": "plain_text", "text": "View Commit" },
-                    "url": "https://github.com/${{ github.repository }}/commit/${{ github.sha }}"
-                  }
-                ]
-              },
-              {
-                "type": "context",
-                "elements": [
-                  { "type": "mrkdwn", "text": "Commit: ${{ github.sha }}" }
-                ]
-              }
-            ]
-          }
-          EOF
-          )
 
-          curl -X POST -H 'Content-type: application/json' --data "$payload" ${{ secrets.SLACK_NOTIFICATIONS_WEBHOOK }}
+  notify-failure:
+    needs: test
+    if: ${{ needs.test.result == 'failure' }}
+    uses: ./.github/workflows/slack-notify.yml
+    secrets: inherit
+    with:
+      subject: "Test CI"

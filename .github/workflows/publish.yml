@@ -8,12 +8,12 @@ on:
   workflow_dispatch:
     inputs:
       version_specifier:
-        description: 'Semver bump (patch|minor|major|pre*) or exact version (v1.2.3)'
+        description: "Semver bump (patch|minor|major|pre*) or exact version (v1.2.3)"
         required: true
         type: string
 
 env:
-  NODE_VERSION: '20'
+  NODE_VERSION: "20"
 
 jobs:
   release-stable: # stable releases can only be manually triggered
@@ -70,8 +70,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-          registry-url: 'https://registry.npmjs.org'
+          cache: "npm"
+          registry-url: "https://registry.npmjs.org"
 
       - name: Install dependencies
         run: npm ci --legacy-peer-deps
@@ -109,13 +109,6 @@ jobs:
           echo "- **Version specifier:** \`${{ github.event.inputs.version_specifier }}\`" >> $GITHUB_STEP_SUMMARY
           echo "- **Source commit:** HEAD of the checked-out branch" >> $GITHUB_STEP_SUMMARY
           echo "- **Dist-tag:** \`latest\`" >> $GITHUB_STEP_SUMMARY
-
-      - name: Notify Slack on failure (only on workflow_dispatch)
-        if: failure()
-        run: |
-          curl -X POST -H 'Content-type: application/json' \
-            --data '{"text":"❌ Stable Release failed! See details: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"}' \
-            ${{ secrets.SLACK_NOTIFICATIONS_WEBHOOK }}
 
   docs-after-stable-release:
     name: Generate Documentation
@@ -253,8 +246,8 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-          registry-url: 'https://registry.npmjs.org'
+          cache: "npm"
+          registry-url: "https://registry.npmjs.org"
 
       - name: Install dependencies
         run: npm ci --legacy-peer-deps
@@ -271,10 +264,20 @@ jobs:
         env:
           NPM_CONFIG_PROVENANCE: true
           RELEASE_GITHUB_TOKEN: ${{ steps.app-token.outputs.token }} # used for tags
+  notify-stable-failure:
+    name: Notify Slack for Stable failure
+    needs: release-stable
+    if: ${{ github.event_name == 'workflow_dispatch' && needs.release-stable.result == 'failure' }}
+    uses: ./.github/workflows/slack-notify.yml
+    secrets: inherit
+    with:
+      subject: "Stable Release"
 
-      - name: Notify Slack on failure (only on push)
-        if: failure()
-        run: |
-          curl -X POST -H 'Content-type: application/json' \
-            --data '{"text":"❌ Release Canary failed! See details: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"}' \
-            ${{ secrets.SLACK_NOTIFICATIONS_WEBHOOK }}
+  notify-canary-failure:
+    name: Notify Slack for Canary failure
+    needs: release-canary
+    if: ${{ github.event_name == 'push' && needs.release-canary.result == 'failure' }}
+    uses: ./.github/workflows/slack-notify.yml
+    secrets: inherit
+    with:
+      subject: "Canary Release"
