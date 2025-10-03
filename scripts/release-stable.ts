@@ -61,7 +61,8 @@ if (!validSpecifiers.includes(versionSpecifier) && !isValidVersion) {
   // can be restored afterwards and used by releasePublish. We can't use the same
   // token, because releasePublish wants a token that has the id_token: write permission
   // so that we can use OIDC for trusted publishing
-
+  const gh_token_bak = process.env.GITHUB_TOKEN
+  process.env.GITHUB_TOKEN = process.env.RELEASE_GITHUB_TOKEN
   // backup original auth header
   const originalAuth = execSync('git config --local http.https://github.com/.extraheader')
     .toString()
@@ -81,6 +82,8 @@ if (!validSpecifiers.includes(versionSpecifier) && !isValidVersion) {
   // npm publish with OIDC
   // not strictly necessary to restore the header but do it incase  we require it later
   execSync(`git config --local http.https://github.com/.extraheader "${originalAuth}"`)
+  // restore the GH token
+  process.env.GITHUB_TOKEN = gh_token_bak
 
   const publishResult = await releasePublish({
     registry: 'https://registry.npmjs.org/',
