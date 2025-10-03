@@ -62,8 +62,13 @@ if (!validSpecifiers.includes(versionSpecifier) && !isValidVersion) {
   // token, because releasePublish wants a token that has the id_token: write permission
   // so that we can use OIDC for trusted publishing
 
-  const gh_token_bak = process.env.GITHUB_TOKEN
-  process.env.GITHUB_TOKEN = process.env.RELEASE_GITHUB_TOKEN
+  // backup original auth header
+  const originalAuth = execSync('git config --local http.https://github.com/.extraheader')
+    .toString()
+    .trim()
+  // switch the token used
+  const authHeader = `AUTHORIZATION: basic ${Buffer.from(`x-access-token:${process.env.RELEASE_GITHUB_TOKEN}`).toString('base64')}`
+  execSync(`git config --local http.https://github.com/.extraheader "${authHeader}"`)
 
   const result = await releaseChangelog({
     versionData: projectsVersionData,
@@ -74,7 +79,9 @@ if (!validSpecifiers.includes(versionSpecifier) && !isValidVersion) {
   })
 
   // npm publish with OIDC
-  process.env.GITHUB_TOKEN = gh_token_bak
+  // not strictly necessary to restore the header but do it incase  we require it later
+  execSync(`git config --local http.https://github.com/.extraheader "${originalAuth}"`)
+
   const publishResult = await releasePublish({
     registry: 'https://registry.npmjs.org/',
     access: 'public',
