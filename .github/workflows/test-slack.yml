@@ -1,7 +1,6 @@
 name: Test Slack Notification on PR Failure
 
 on:
-  pull_request:
   push:
     branches:
       - chore/notify-slack-failure
@@ -48,6 +47,11 @@ jobs:
                     "type": "button",
                     "text": { "type": "plain_text", "text": "View Run" },
                     "url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+                  },
+                  {
+                    "type": "button",
+                    "text": { "type": "plain_text", "text": "View Commit" },
+                    "url": "https://github.com/${{ github.repository }}/commit/${{ github.sha }}"
                   }
                 ]
               },
