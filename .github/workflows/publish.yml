@@ -1,7 +1,6 @@
+name: Publish releases
 # Consolidates canary and stable releases into single workflow
 # Trusted workflow for publishing to npm
-
-name: Publish releases
 
 on:
   push:
@@ -9,12 +8,12 @@ on:
   workflow_dispatch:
     inputs:
       version_specifier:
-        description: 'Semver bump (patch|minor|major|pre*) or exact version (v1.2.3)'
+        description: "Semver bump (patch|minor|major|pre*) or exact version (v1.2.3)"
         required: true
         type: string
 
 env:
-  NODE_VERSION: '20'
+  NODE_VERSION: "20"
 
 jobs:
   release-stable: # stable releases can only be manually triggered
@@ -71,8 +70,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-          registry-url: 'https://registry.npmjs.org'
+          cache: "npm"
+          registry-url: "https://registry.npmjs.org"
 
       - name: Install dependencies
         run: npm ci --legacy-peer-deps
@@ -114,7 +113,7 @@ jobs:
     name: Generate Documentation
     needs: release-stable
     if: ${{
-      github.event_name == 'workflow_dispatch &&
+      github.event_name == 'workflow_dispatch' &&
       needs.release-stable.result == 'success'
       }}
     uses: ./.github/workflows/docs.yml
@@ -246,8 +245,8 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-          registry-url: 'https://registry.npmjs.org'
+          cache: "npm"
+          registry-url: "https://registry.npmjs.org"
 
       - name: Install dependencies
         run: npm ci --legacy-peer-deps
