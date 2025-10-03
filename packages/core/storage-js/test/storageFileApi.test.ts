@@ -1,4 +1,4 @@
-import { StorageClient } from '../src/index'
+import { SortByV2, StorageClient } from '../src/index'
 import * as fsp from 'fs/promises'
 import * as fs from 'fs'
 import * as path from 'path'
@@ -355,6 +355,76 @@ describe('Object API', () => {
           objects: expect.arrayContaining([expect.objectContaining({ name: uploadPath })]),
         })
       )
+    })
+
+    test('list objects V2 - folders', async () => {
+      await storage.from(bucketName).upload(uploadPath, file)
+      const res = await storage.from(bucketName).listV2({ with_delimiter: true })
+
+      expect(res.error).toBeNull()
+      expect(res.data).toEqual(
+        expect.objectContaining({
+          hasNext: false,
+          folders: expect.arrayContaining([
+            expect.objectContaining({ key: 'testpath', name: 'testpath/' }),
+          ]),
+          objects: [],
+        })
+      )
+    })
+
+    test('list objects V2 - paginated', async () => {
+      const fileSuffixes = ['zz', 'bb', 'xx', 'ww', 'cc', 'aa', 'yy', 'oo']
+      for (const suffix of fileSuffixes) {
+        await storage.from(bucketName).upload(uploadPath + suffix, file)
+      }
+
+      const testCases: { expectedSuffixes: string[]; sortBy?: SortByV2 }[] = [
+        {
+          expectedSuffixes: fileSuffixes.slice().sort(),
+          // default sortBy = name asc
+        },
+        {
+          expectedSuffixes: fileSuffixes.slice().sort().reverse(),
+          sortBy: { column: 'name', order: 'desc' },
+        },
+        {
+          expectedSuffixes: fileSuffixes.slice(),
+          sortBy: { column: 'created_at', order: 'asc' },
+        },
+        {
+          expectedSuffixes: fileSuffixes.slice().reverse(),
+          sortBy: { column: 'created_at', order: 'desc' },
+        },
+      ]
+
+      for (const { expectedSuffixes, sortBy } of testCases) {
+        let cursor: string | undefined
+        let hasNext = true
+        let pages = 0
+        while (hasNext) {
+          const res = await storage.from(bucketName).listV2({
+            prefix: 'testpath/',
+            with_delimiter: true,
+            limit: 2,
+            cursor,
+            sortBy,
+          })
+
+          expect(res.error).toBeNull()
+          expect(res.data?.objects).toHaveLength(2)
+          expect(res.data?.objects).toEqual(
+            expectedSuffixes
+              .splice(0, 2)
+              .map((v) => expect.objectContaining({ name: uploadPath + v }))
+          )
+
+          hasNext = res.data?.hasNext || false
+          cursor = res.data?.nextCursor
+          pages++
+        }
+        expect(pages).toBe(4)
+      }
     })
 
     test('move object to different path', async () => {

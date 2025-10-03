@@ -40,6 +40,7 @@ INSERT INTO "storage"."objects" ("id", "bucket_id", "name", "owner", "created_at
 -- allows user to CRUD all buckets
 CREATE POLICY crud_buckets ON storage.buckets for all USING (auth.uid() = '317eadce-631a-4429-a0bb-f19a7a517b4a');
 CREATE POLICY crud_objects ON storage.objects for all USING (auth.uid() = '317eadce-631a-4429-a0bb-f19a7a517b4a');
+CREATE POLICY crud_prefixes ON storage.prefixes for all USING (auth.uid() = '317eadce-631a-4429-a0bb-f19a7a517b4a');
 
 -- allow public CRUD acccess to the public folder in bucket2
 CREATE POLICY crud_public_folder ON storage.objects for all USING (bucket_id='bucket2' and (storage.foldername(name))[1] = 'public');
