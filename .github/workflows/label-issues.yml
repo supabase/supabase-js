@@ -35,7 +35,9 @@ jobs:
             if (context.payload.action === 'transferred') {
               // Label based on source repository
               const sourceRepo = context.payload.changes?.old_repository?.full_name || context.payload.changes?.from?.full_name || context.payload.changes?.new_repository?.full_name;
+              console.log('sourceRepo', sourceRepo);
               const label = labelMap[sourceRepo];
+              console.log('label', label);
               if (label) labels.push(label);
             } else if (context.payload.action === 'opened') {
               // Label based on "Library affected" field in the issue body
