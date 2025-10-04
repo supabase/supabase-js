@@ -98,6 +98,7 @@ jobs:
       - name: Release
         env:
           NPM_CONFIG_PROVENANCE: true
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           RELEASE_GITHUB_TOKEN: ${{ steps.app-token.outputs.token }} # used for tags
         run: |
           npm run release-stable -- --versionSpecifier "${{ github.event.inputs.version_specifier }}"
@@ -263,6 +264,7 @@ jobs:
           npm run release-canary
         env:
           NPM_CONFIG_PROVENANCE: true
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           RELEASE_GITHUB_TOKEN: ${{ steps.app-token.outputs.token }} # used for tags
   notify-stable-failure:
     name: Notify Slack for Stable failure
