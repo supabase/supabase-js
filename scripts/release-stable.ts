@@ -55,7 +55,8 @@ function safeExec(cmd: string, opts = {}) {
     verbose: true,
     gitCommit: false,
     stageChanges: false,
-    specifier: versionSpecifier,
+    specifier: 'prerelease',
+    preid: 'canary',
   })
 
   // Update version.ts files with the new versions
@@ -114,14 +115,14 @@ function safeExec(cmd: string, opts = {}) {
   const publishResult = await releasePublish({
     registry: 'https://registry.npmjs.org/',
     access: 'public',
-    tag: 'latest',
+    tag: 'canary',
     verbose: true,
   })
 
   // Publish gotrue-js as legacy mirror of auth-js
   console.log('\n📦 Publishing @supabase/gotrue-js (legacy mirror)...')
   try {
-    safeExec('npx tsx scripts/publish-gotrue-legacy.ts --tag=latest')
+    safeExec('npx tsx scripts/publish-gotrue-legacy.ts --tag=canary')
   } catch (error) {
     console.error('❌ Failed to publish gotrue-js legacy package:', error)
     // Don't fail the entire release if gotrue-js fails
