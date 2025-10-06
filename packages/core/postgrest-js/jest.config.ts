@@ -1,4 +1,6 @@
-module.exports = {
+import type { Config } from '@jest/types'
+
+const config: Config.InitialOptions = {
   preset: 'ts-jest',
   testEnvironment: 'node',
   collectCoverageFrom: ['src/**/*', '!src/types.ts'],
@@ -16,3 +18,4 @@ module.exports = {
     },
   },
 }
+export default config

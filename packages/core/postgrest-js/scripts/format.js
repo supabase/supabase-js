@@ -8,12 +8,12 @@ const monorepoRoot = path.resolve(__dirname, '../../../../')
 
 // Run prettier from the monorepo root
 const command =
-    process.argv[2] === 'check'
-        ? 'npx prettier --check "packages/core/postgrest-js/**/*{ts,mjs,json,yml,yaml}"'
-        : 'npx prettier --write "packages/core/postgrest-js/**/*{ts,mjs,json,yml,yaml}"'
+  process.argv[2] === 'check'
+    ? 'npx prettier --ignore-path packages/core/postgrest-js/.gitignore --check "packages/core/postgrest-js/**/*{ts,js,mjs,json,yml,yaml}"'
+    : 'npx prettier --ignore-path packages/core/postgrest-js/.gitignore --write "packages/core/postgrest-js/**/*{ts,js,mjs,json,yml,yaml}"'
 
 try {
-    execSync(command, { cwd: monorepoRoot, stdio: 'inherit' })
+  execSync(command, { cwd: monorepoRoot, stdio: 'inherit' })
 } catch (error) {
-    process.exit(error.status || 1)
+  process.exit(error.status || 1)
 }
