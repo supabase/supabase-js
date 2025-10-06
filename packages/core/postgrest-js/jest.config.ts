@@ -1,4 +1,6 @@
-module.exports = {
+import type { Config } from '@jest/types'
+
+const config: Config.InitialOptions = {
   preset: 'ts-jest',
   testEnvironment: 'node',
   collectCoverageFrom: ['src/**/*', '!src/types.ts'],
@@ -6,6 +8,8 @@ module.exports = {
   maxWorkers: 1,
   // Ensure deterministic test order
   testSequencer: '<rootDir>/test/testSequencer.js',
+  // Use local Prettier v2 only for Jest inline snapshots
+  prettierPath: require.resolve('prettier'),
   globals: {
     // For consistency between VSCode and type-check
     // https://github.com/supabase/postgrest-js/pull/627#discussion_r2236995331
@@ -14,3 +18,4 @@ module.exports = {
     },
   },
 }
+export default config
