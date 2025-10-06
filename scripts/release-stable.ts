@@ -24,7 +24,10 @@ import { execSync } from 'child_process'
   const authHeader = `AUTHORIZATION: basic ${Buffer.from(`x-access-token:${process.env.RELEASE_GITHUB_TOKEN}`).toString('base64')}`
   execSync(`git config --local http.https://github.com/.extraheader "${authHeader}"`)
 
-  // [Your code for changelog/tagging or npm publish goes here...]
+  // ---- RELEASE LOGIC ----
+  // Insert your release logic here (e.g. changelog, tagging, npm publish, etc.)
+  // Example:
+  // execSync('npm run release-build-or-tag-step-here')
 
   // Restore the header (if it existed) and GH token
   if (originalAuth) {
@@ -40,9 +43,6 @@ import { execSync } from 'child_process'
 
   // Remove ALL credential helpers to ensure only our token is used
   try {
-    execSync('git config --system --unset credential.helper || true')
-  } catch {}
-  try {
     execSync('git config --global --unset credential.helper || true')
   } catch {}
   try {
@@ -55,11 +55,12 @@ import { execSync } from 'child_process'
     execSync(`git remote set-url origin "${remoteUrl}"`)
   }
 
-  const branchName = `release-test`
+  // Use a descriptive branch name for the release
+  const branchName = `test-pr-create`
 
   try {
     execSync(`git checkout -b ${branchName}`)
-    // create a small file and git add it
+    // create a small file and git add it (replace with actual release changes)
     execSync('touch test.txt')
     execSync('git add test.txt')
 
@@ -74,13 +75,14 @@ import { execSync } from 'child_process'
 
     // Open PR using GitHub CLI (GH_TOKEN is automatically picked up in CI)
     execSync(
-      `gh pr create --base master --head ${branchName} --title "chore(repo): test permissions" --body "chore(repo): test permissions"`,
+      `gh pr create --base master --head ${branchName} --title "chore(repo): automated release" --body "Automated release PR from script"`,
       { stdio: 'inherit' }
     )
 
-    // Enable auto-merge
+    // Enable auto-merge (optional, remove if you want manual review)
     execSync(`gh pr merge --auto --squash`, { stdio: 'inherit' })
   } catch (err) {
     console.error('❌ Failed to push release branch or open PR', err)
+    process.exit(1)
   }
 })()

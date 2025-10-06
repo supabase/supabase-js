@@ -1,10 +1,10 @@
-name: Minimal App Token Push & PR Test
+name: Minimal App Token Release & PR Test
 
 on:
   workflow_dispatch:
 
 jobs:
-  push-and-pr-test:
+  release-stable-pr:
     runs-on: ubuntu-latest
     steps:
       - name: Generate App token
@@ -18,31 +18,21 @@ jobs:
         with:
           fetch-depth: 0
 
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
       - name: Configure git user
         run: |
           git config --global user.name "supabase-releaser[bot]"
           git config --global user.email "supabase-releaser[bot]@users.noreply.github.com"
 
-      - name: Remove credential helpers and set remote
-        run: |
-          git config --global --unset credential.helper || true
-          git config --local --unset credential.helper || true
-          git remote set-url origin https://x-access-token:${{ steps.app-token.outputs.token }}@github.com/supabase/supabase-js.git
-
-      - name: Create and push branch
-        run: |
-          git checkout -b minimal-token-test
-          touch minimal.txt
-          git add minimal.txt
-          git commit -m "test: minimal token branch push"
-          git push origin minimal-token-test
-
-      - name: Create PR with gh CLI
+      - name: Run release-stable script
         env:
+          RELEASE_GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
-        run: |
-          gh pr create \
-            --base master \
-            --head minimal-token-test \
-            --title "Minimal token push test" \
-            --body "Automated PR from minimal App token workflow"
+        run: npm run release-stable
