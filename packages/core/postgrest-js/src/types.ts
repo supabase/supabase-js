@@ -17,6 +17,15 @@ type ExtractExactFunction<Fns, Args> = Fns extends infer F
 
 type IsNever<T> = [T] extends [never] ? true : false
 
+type RpcFunctionNotFound<FnName> = {
+  Row: any
+  Result: {
+    error: true
+  } & "Couldn't infer function definition matching provided arguments"
+  RelationName: FnName
+  Relationships: null
+}
+
 export type GetRpcFunctionFilterBuilderByArgs<
   Schema extends GenericSchema,
   FnName extends string & keyof Schema['Functions'],
@@ -72,16 +81,9 @@ export type GetRpcFunctionFilterBuilderByArgs<
         }
       : // If we failed to find the function by argument, we still pass with any but also add an overridable
         Fn extends false
-        ? {
-            Row: any
-            Result: {
-              error: true
-            } & "Couldn't infer function definition matching provided arguments"
-            RelationName: FnName
-            Relationships: null
-          }
-        : never
-  : never
+        ? RpcFunctionNotFound<FnName>
+        : RpcFunctionNotFound<FnName>
+  : RpcFunctionNotFound<FnName>
 
 /**
  * Response format

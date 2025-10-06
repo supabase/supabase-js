@@ -635,7 +635,7 @@ export type IsStringUnion<T> = string extends T
     : false
 
 // Functions matching utils
-export type IsMatchingArgs<
+type IsMatchingArgs<
   FnArgs extends GenericFunction['Args'],
   PassedArgs extends GenericFunction['Args'],
 > = [FnArgs] extends [Record<PropertyKey, never>]
@@ -648,19 +648,19 @@ export type IsMatchingArgs<
       : false
     : false
 
-export type MatchingFunctionArgs<
+type MatchingFunctionArgs<
   Fn extends GenericFunction,
   Args extends GenericFunction['Args'],
 > = Fn extends { Args: infer A extends GenericFunction['Args'] }
   ? IsMatchingArgs<A, Args> extends true
     ? Fn
     : never
-  : never
+  : false
 
 export type FindMatchingFunctionByArgs<
   FnUnion,
   Args extends GenericFunction['Args'],
-> = FnUnion extends infer Fn extends GenericFunction ? MatchingFunctionArgs<Fn, Args> : never
+> = FnUnion extends infer Fn extends GenericFunction ? MatchingFunctionArgs<Fn, Args> : false
 
 type MatchingFunctionBySetofFrom<
   Fn extends GenericFunction,
@@ -669,7 +669,7 @@ type MatchingFunctionBySetofFrom<
   ? TableName extends Fn['SetofOptions']['from']
     ? Fn
     : never
-  : never
+  : false
 
 type FindMatchingFunctionBySetofFrom<
   FnUnion,

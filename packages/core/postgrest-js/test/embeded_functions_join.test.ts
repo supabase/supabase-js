@@ -72,6 +72,9 @@ describe('embeded functions select', () => {
       })
     )
     let expected: RequiredDeep<z.infer<typeof ExpectedSchema>>
+    // Assert over the keys of the expected and result objects to ensure consistency between versions of types
+    // should always fallback to a SelectQueryError if the relation cannot be found
+    expectType<TypeEqual<keyof (typeof expected)[number], keyof (typeof result)[number]>>(true)
     expectType<TypeEqual<typeof result, typeof expected>>(true)
     ExpectedSchema.parse(res.data)
   })
@@ -130,6 +133,7 @@ describe('embeded functions select', () => {
       })
     )
     let expected: z.infer<typeof ExpectedSchema>
+    expectType<TypeEqual<keyof (typeof expected)[number], keyof (typeof result)[number]>>(true)
     expectType<TypeEqual<typeof result, typeof expected>>(true)
     ExpectedSchema.parse(res.data)
   })
@@ -204,6 +208,7 @@ describe('embeded functions select', () => {
       })
     )
     let expected: RequiredDeep<z.infer<typeof ExpectedSchema>>
+    expectType<TypeEqual<keyof (typeof expected)[number], keyof (typeof result)[number]>>(true)
     expectType<TypeEqual<typeof result, typeof expected>>(true)
     ExpectedSchema.parse(res.data)
   })
@@ -268,6 +273,7 @@ describe('embeded functions select', () => {
       })
     )
     let expected: z.infer<typeof ExpectedSchema>
+    expectType<TypeEqual<keyof (typeof expected)[number], keyof (typeof result)[number]>>(true)
     expectType<TypeEqual<typeof result, typeof expected>>(true)
     ExpectedSchema.parse(res.data)
   })
@@ -336,6 +342,7 @@ describe('embeded functions select', () => {
       })
     )
     let expected: z.infer<typeof ExpectedSchema>
+    expectType<TypeEqual<keyof (typeof expected)[number], keyof (typeof result)[number]>>(true)
     expectType<TypeEqual<typeof result, typeof expected>>(true)
     ExpectedSchema.parse(res.data)
   })
@@ -390,6 +397,7 @@ describe('embeded functions select', () => {
       })
     )
     let expected: z.infer<typeof ExpectedSchema>
+    expectType<TypeEqual<keyof (typeof expected)[number], keyof (typeof result)[number]>>(true)
     expectType<TypeEqual<typeof result, typeof expected>>(true)
     ExpectedSchema.parse(res.data)
   })
@@ -454,6 +462,7 @@ describe('embeded functions select', () => {
       })
     )
     let expected: z.infer<typeof ExpectedSchema>
+    expectType<TypeEqual<keyof (typeof expected)[number], keyof (typeof result)[number]>>(true)
     expectType<TypeEqual<typeof result, typeof expected>>(true)
     ExpectedSchema.parse(res.data)
   })
@@ -461,7 +470,9 @@ describe('embeded functions select', () => {
   test('embeded_setof_row_one_function_not_nullable - function returning a single row embeded table not nullable', async () => {
     const res = await postgrest
       .from('users')
-      .select('username, user_called_profile_not_null:get_user_profile_non_nullable(*)')
+      // Inner join to ensure the join result is not nullable can also be set at relation level
+      // by setting isNotNullable for the function SetofOptions definition to true
+      .select('username, user_called_profile_not_null:get_user_profile_non_nullable!inner(*)')
     expect(res).toMatchInlineSnapshot(`
       Object {
         "count": null,
@@ -472,22 +483,6 @@ describe('embeded functions select', () => {
               "username": "supabot",
             },
             "username": "supabot",
-          },
-          Object {
-            "user_called_profile_not_null": null,
-            "username": "kiwicopple",
-          },
-          Object {
-            "user_called_profile_not_null": null,
-            "username": "awailas",
-          },
-          Object {
-            "user_called_profile_not_null": null,
-            "username": "jsonuser",
-          },
-          Object {
-            "user_called_profile_not_null": null,
-            "username": "dragarcia",
           },
         ],
         "error": null,
@@ -509,22 +504,10 @@ describe('embeded functions select', () => {
       })
     )
     let expected: z.infer<typeof ExpectedSchema>
+    expectType<TypeEqual<keyof (typeof expected)[number], keyof (typeof result)[number]>>(true)
     expectType<TypeEqual<typeof result, typeof expected>>(true)
-    // Parsing with the non-nullable schema should throw, because there are nulls in the data.
-    expect(() => ExpectedSchema.parse(res.data)).toThrowError()
-    // However, parsing with a nullable schema should succeed.
-    const ExpectedNullable = z.array(
-      z.object({
-        username: z.string(),
-        user_called_profile_not_null: z
-          .object({
-            id: z.number(),
-            username: z.string().nullable(),
-          })
-          .nullable(),
-      })
-    )
-    ExpectedNullable.parse(res.data)
+    // Can parse the data because the !inner ensure the join result from function is not nullable
+    ExpectedSchema.parse(res.data)
   })
 
   test('embeded_setof_row_one_function_with_fields_selection - function returning a single row embeded table with fields selection', async () => {
@@ -581,6 +564,7 @@ describe('embeded functions select', () => {
       })
     )
     let expected: z.infer<typeof ExpectedSchema>
+    expectType<TypeEqual<keyof (typeof expected)[number], keyof (typeof result)[number]>>(true)
     expectType<TypeEqual<typeof result, typeof expected>>(true)
     ExpectedSchema.parse(res.data)
   })
@@ -655,6 +639,7 @@ describe('embeded functions select', () => {
       })
     )
     let expected: z.infer<typeof ExpectedSchema>
+    expectType<TypeEqual<keyof (typeof expected)[number], keyof (typeof result)[number]>>(true)
     expectType<TypeEqual<typeof result, typeof expected>>(true)
     ExpectedSchema.parse(res.data)
   })
@@ -729,6 +714,7 @@ describe('embeded functions select', () => {
       })
     )
     let expected: RequiredDeep<z.infer<typeof ExpectedSchema>>
+    expectType<TypeEqual<keyof (typeof expected)[number], keyof (typeof result)[number]>>(true)
     expectType<TypeEqual<typeof result, typeof expected>>(true)
     ExpectedSchema.parse(res.data)
   })
@@ -801,6 +787,7 @@ describe('embeded functions select', () => {
       })
     )
     let expected: RequiredDeep<z.infer<typeof ExpectedSchema>>
+    expectType<TypeEqual<keyof (typeof expected)[number], keyof (typeof result)[number]>>(true)
     expectType<TypeEqual<typeof result, typeof expected>>(true)
     ExpectedSchema.parse(res.data)
   })
@@ -877,6 +864,7 @@ describe('embeded functions select', () => {
       })
     )
     let expected: RequiredDeep<z.infer<typeof ExpectedSchema>>
+    expectType<TypeEqual<keyof (typeof expected)[number], keyof (typeof result)[number]>>(true)
     expectType<TypeEqual<typeof result, typeof expected>>(true)
     ExpectedSchema.parse(res.data)
   })
@@ -949,6 +937,7 @@ describe('embeded functions select', () => {
       })
     )
     let expected: RequiredDeep<z.infer<typeof ExpectedSchema>>
+    expectType<TypeEqual<keyof (typeof expected)[number], keyof (typeof result)[number]>>(true)
     expectType<TypeEqual<typeof result, typeof expected>>(true)
     ExpectedSchema.parse(res.data)
   })
@@ -1017,6 +1006,7 @@ describe('embeded functions select', () => {
       })
     )
     let expected: z.infer<typeof ExpectedSchema>
+    expectType<TypeEqual<keyof (typeof expected)[number], keyof (typeof result)[number]>>(true)
     expectType<TypeEqual<typeof result, typeof expected>>(true)
     ExpectedSchema.parse(res.data)
   })
@@ -1088,6 +1078,7 @@ describe('embeded functions select', () => {
       })
     )
     let expected: z.infer<typeof ExpectedSchema>
+    expectType<TypeEqual<keyof (typeof expected)[number], keyof (typeof result)[number]>>(true)
     expectType<TypeEqual<typeof result, typeof expected>>(true)
     ExpectedSchema.parse(res.data)
   })
@@ -1175,6 +1166,7 @@ describe('embeded functions select', () => {
       })
     )
     let expected: z.infer<typeof ExpectedSchema>
+    expectType<TypeEqual<keyof (typeof expected)[number], keyof (typeof result)[number]>>(true)
     expectType<TypeEqual<typeof result, typeof expected>>(true)
     ExpectedSchema.parse(res.data)
   })
@@ -1229,6 +1221,7 @@ describe('embeded functions select', () => {
       })
     )
     let expected: z.infer<typeof ExpectedSchema>
+    expectType<TypeEqual<keyof (typeof expected)[number], keyof (typeof result)[number]>>(true)
     expectType<TypeEqual<typeof result, typeof expected>>(true)
     ExpectedSchema.parse(res.data)
   })

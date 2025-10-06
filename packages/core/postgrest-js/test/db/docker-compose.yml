@@ -41,7 +41,7 @@ services:
       POSTGRES_HOST: /var/run/postgresql
       POSTGRES_PORT: 5432
   pgmeta:
-    image: supabase/postgres-meta:v0.91.5
+    image: supabase/postgres-meta:canary-pr-971-12217b2b59b6eeddbb65949ddb257e17fec56393
     ports:
       - '8080:8080'
     environment:
