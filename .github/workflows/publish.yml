@@ -1,25 +1,13 @@
-name: Publish releases
-# Consolidates canary and stable releases into single workflow
-# Trusted workflow for publishing to npm
+name: Minimal App Token Push Test
 
 on:
-  push:
-    branches: [master]
   workflow_dispatch:
 
-env:
-  NODE_VERSION: '20'
-
 jobs:
-  release-stable: # stable releases can only be manually triggered
-    if: ${{ github.event_name == 'workflow_dispatch' }}
+  push-test:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      id-token: write
-
     steps:
-      - name: Generate token
+      - name: Generate App token
         id: app-token
         uses: actions/create-github-app-token@v2
         with:
@@ -30,114 +18,25 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-          registry-url: 'https://registry.npmjs.org'
-
-      # Ensure npm 11.5.1 or later is installed for trusted publishing support
-      - name: Update npm
-        run: npm install -g npm@latest
-
-      - name: Install dependencies
-        run: npm ci --legacy-peer-deps
-
-      - name: Configure git
+      - name: Configure git user
         run: |
           git config --global user.name "supabase-releaser[bot]"
           git config --global user.email "supabase-releaser[bot]@users.noreply.github.com"
 
-      # Remove ALL git credential helpers to ensure our App token is used
-      - name: Remove Actions credential helper
+      - name: Remove credential helpers and set remote
         run: |
-          git config --system --unset credential.helper || true
           git config --global --unset credential.helper || true
           git config --local --unset credential.helper || true
+          git remote set-url origin https://x-access-token:${{ steps.app-token.outputs.token }}@github.com/supabase/supabase-js.git
+          echo "Remote:"
+          git remote -v
+          echo "Credential helper:"
+          git config --show-origin --get credential.helper || true
 
-      - name: Set git remote to use App token
-        run: git remote set-url origin https://x-access-token:${{ steps.app-token.outputs.token }}@github.com/supabase/supabase-js.git
-
-      # No need to run gh auth login --with-token if GH_TOKEN is set
-      - name: Create and push branch with gh CLI
-        env:
-          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+      - name: Create and push branch
         run: |
-          git checkout --orphan test-token-push
-          git commit --allow-empty -m "chore(repo): test push"
-          git push origin test-token-push
-
-      - name: Create pull request with gh CLI
-        env:
-          GH_TOKEN: ${{ steps.app-token.outputs.token }}
-        run: |
-          gh pr create \
-            --base master \
-            --head test-token-push \
-            --title "chore(repo): test push" \
-            --body "Automated PR for test-token-push"
-
-      - name: Release
-        env:
-          NPM_CONFIG_PROVENANCE: true
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          RELEASE_GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
-        run: |
-          npm run release-stable
-
-  trigger-update-js-libs:
-    name: Trigger Update JS Libs
-    runs-on: ubuntu-latest
-    needs: release-stable
-    if: ${{ github.event_name == 'workflow_dispatch' && needs.release-stable.result == 'success' }}
-    steps:
-      - name: Generate token
-        id: app-token
-        uses: actions/create-github-app-token@v2
-        with:
-          app-id: ${{ secrets.APP_ID }}
-          private-key: ${{ secrets.PRIVATE_KEY }}
-      - name: Trigger supabase/supabase update-js-libs workflow
-        uses: actions/github-script@v7
-        with:
-          github-token: ${{ steps.app-token.outputs.token }}
-          script: |
-            await github.rest.actions.createWorkflowDispatch({
-              owner: 'supabase',
-              repo: 'supabase',
-              workflow_id: 'update-js-libs.yml',
-              ref: 'master',
-              inputs: {
-                version: '2.74.0',
-                source: 'supabase-js-stable-release'
-              }
-            });
-
-  trigger-supabase-docs-update:
-    name: Trigger Supabase Docs Update
-    runs-on: ubuntu-latest
-    needs: [release-stable]
-    if: ${{ github.event_name == 'workflow_dispatch' && needs.release-stable.result == 'success' }}
-    steps:
-      - name: Generate token
-        id: app-token
-        uses: actions/create-github-app-token@v2
-        with:
-          app-id: ${{ secrets.APP_ID }}
-          private-key: ${{ secrets.PRIVATE_KEY }}
-
-      - name: Trigger supabase/supabase docs workflow
-        uses: actions/github-script@v7
-        with:
-          github-token: ${{ steps.app-token.outputs.token }}
-          script: |
-            await github.rest.actions.createWorkflowDispatch({
-              owner: 'supabase',
-              repo: 'supabase',
-              workflow_id: 'docs-js-libs-update.yml',
-              ref: 'master',
-              inputs: {
-                version: '2.74.0',
-                source: 'supabase-js-stable-release'
-              }
-            });
+          git checkout -b minimal-token-test
+          touch minimal.txt
+          git add minimal.txt
+          git commit -m "test: minimal token branch push"
+          git push origin minimal-token-test
