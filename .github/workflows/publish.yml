@@ -105,6 +105,16 @@ jobs:
       - name: Set git remote to use App token
         run: git remote set-url origin https://x-access-token:${{ steps.app-token.outputs.token }}@github.com/supabase/supabase-js.git
 
+      - name: Test App token git push
+        env:
+          RELEASE_GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+          git checkout --orphan test-token-push
+          git commit --allow-empty -m "chore(repo): test push"
+          git remote set-url origin https://x-access-token:${RELEASE_GITHUB_TOKEN}@github.com/supabase/supabase-js.git
+          git config --global --unset credential.helper || true
+          git push origin test-token-push
+
       - name: Release
         env:
           NPM_CONFIG_PROVENANCE: true
