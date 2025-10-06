@@ -1,8 +1,85 @@
 import PostgrestError from './PostgrestError'
-import { ContainsNull } from './select-query-parser/types'
-import { IsAny, SelectQueryError } from './select-query-parser/utils'
+import { ContainsNull, TablesAndViews } from './select-query-parser/types'
+import { FindMatchingFunctionByArgs, IsAny, SelectQueryError } from './select-query-parser/utils'
+import { LastOf } from './select-query-parser/types'
 
 export type Fetch = typeof fetch
+
+type ExactMatch<T, S> = [T] extends [S] ? ([S] extends [T] ? true : false) : false
+
+type ExtractExactFunction<Fns, Args> = Fns extends infer F
+  ? F extends GenericFunction
+    ? ExactMatch<F['Args'], Args> extends true
+      ? F
+      : never
+    : never
+  : never
+
+type IsNever<T> = [T] extends [never] ? true : false
+
+export type GetRpcFunctionFilterBuilderByArgs<
+  Schema extends GenericSchema,
+  FnName extends string & keyof Schema['Functions'],
+  Args
+> = {
+  0: Schema['Functions'][FnName]
+  // If the Args is exactly never (function call without any params)
+  1: IsAny<Schema> extends true
+    ? any
+    : IsNever<Args> extends true
+    ? ExtractExactFunction<Schema['Functions'][FnName], Args>
+    : // Otherwise, we attempt to match with one of the function definition in the union based
+    // on the function arguments provided
+    Args extends GenericFunction['Args']
+    ? LastOf<FindMatchingFunctionByArgs<Schema['Functions'][FnName], Args>>
+    : // If we can't find a matching function by args, we try to find one by function name
+    ExtractExactFunction<Schema['Functions'][FnName], Args> extends GenericFunction
+    ? ExtractExactFunction<Schema['Functions'][FnName], Args>
+    : any
+}[1] extends infer Fn
+  ? // If we are dealing with an non-typed client everything is any
+    IsAny<Fn> extends true
+    ? { Row: any; Result: any; RelationName: FnName; Relationships: null }
+    : // Otherwise, we use the arguments based function definition narrowing to get the rigt value
+    Fn extends GenericFunction
+    ? {
+        Row: Fn['SetofOptions'] extends GenericSetofOption
+          ? Fn['SetofOptions']['isSetofReturn'] extends true
+            ? TablesAndViews<Schema>[Fn['SetofOptions']['to']]['Row']
+            : TablesAndViews<Schema>[Fn['SetofOptions']['to']]['Row']
+          : Fn['Returns'] extends any[]
+          ? Fn['Returns'][number] extends Record<string, unknown>
+            ? Fn['Returns'][number]
+            : never
+          : Fn['Returns'] extends Record<string, unknown>
+          ? Fn['Returns']
+          : never
+        Result: Fn['SetofOptions'] extends GenericSetofOption
+          ? Fn['SetofOptions']['isSetofReturn'] extends true
+            ? Fn['SetofOptions']['isOneToOne'] extends true
+              ? Fn['Returns'][]
+              : Fn['Returns']
+            : Fn['Returns']
+          : Fn['Returns']
+        RelationName: Fn['SetofOptions'] extends GenericSetofOption
+          ? Fn['SetofOptions']['to']
+          : FnName
+        Relationships: Fn['SetofOptions'] extends GenericSetofOption
+          ? Fn['SetofOptions']['to'] extends keyof Schema['Tables']
+            ? Schema['Tables'][Fn['SetofOptions']['to']]['Relationships']
+            : Schema['Views'][Fn['SetofOptions']['to']]['Relationships']
+          : null
+      }
+    : // If we failed to find the function by argument, we still pass with any but also add an overridable
+    Fn extends false
+    ? {
+        Row: any
+        Result: { error: true } & "Couldn't infer function definition matching provided arguments"
+        RelationName: FnName
+        Relationships: null
+      }
+    : never
+  : never
 
 /**
  * Response format
@@ -60,9 +137,18 @@ export type GenericNonUpdatableView = {
 
 export type GenericView = GenericUpdatableView | GenericNonUpdatableView
 
+export type GenericSetofOption = {
+  isSetofReturn?: boolean | undefined
+  isOneToOne?: boolean | undefined
+  isNotNullable?: boolean | undefined
+  to: string
+  from: string
+}
+
 export type GenericFunction = {
-  Args: Record<string, unknown>
+  Args: Record<string, unknown> | never
   Returns: unknown
+  SetofOptions?: GenericSetofOption
 }
 
 export type GenericSchema = {
@@ -95,12 +181,12 @@ export type SimplifyDeep<Type, ExcludeType = never> = ConditionalSimplifyDeep<
 type ConditionalSimplifyDeep<
   Type,
   ExcludeType = never,
-  IncludeType = unknown,
+  IncludeType = unknown
 > = Type extends ExcludeType
   ? Type
   : Type extends IncludeType
-    ? { [TypeKey in keyof Type]: ConditionalSimplifyDeep<Type[TypeKey], ExcludeType, IncludeType> }
-    : Type
+  ? { [TypeKey in keyof Type]: ConditionalSimplifyDeep<Type[TypeKey], ExcludeType, IncludeType> }
+  : Type
 type NonRecursiveType = BuiltIns | Function | (new (...arguments_: any[]) => unknown)
 type BuiltIns = Primitive | void | Date | RegExp
 type Primitive = null | undefined | string | number | boolean | symbol | bigint
@@ -112,9 +198,9 @@ export type IsValidResultOverride<Result, NewResult, ErrorResult, ErrorNewResult
         true
       : ErrorResult
     : NewResult extends any[]
-      ? ErrorNewResult
-      : // Neither are arrays - valid
-        true
+    ? ErrorNewResult
+    : // Neither are arrays - valid
+      true
 /**
  * Utility type to check if array types match between Result and NewResult.
  * Returns either the valid NewResult type or an error message type.
@@ -124,23 +210,23 @@ export type CheckMatchingArrayTypes<Result, NewResult> =
   Result extends SelectQueryError<string>
     ? NewResult
     : IsValidResultOverride<
-          Result,
-          NewResult,
-          {
-            Error: 'Type mismatch: Cannot cast array result to a single object. Use .overrideTypes<Array<YourType>> or .returns<Array<YourType>> (deprecated) for array results or .single() to convert the result to a single object'
-          },
-          {
-            Error: 'Type mismatch: Cannot cast single object to array type. Remove Array wrapper from return type or make sure you are not using .single() up in the calling chain'
-          }
-        > extends infer ValidationResult
-      ? ValidationResult extends true
-        ? // Preserve the optionality of the result if the overriden type is an object (case of chaining with `maybeSingle`)
-          ContainsNull<Result> extends true
-          ? NewResult | null
-          : NewResult
-        : // contains the error
-          ValidationResult
-      : never
+        Result,
+        NewResult,
+        {
+          Error: 'Type mismatch: Cannot cast array result to a single object. Use .overrideTypes<Array<YourType>> or .returns<Array<YourType>> (deprecated) for array results or .single() to convert the result to a single object'
+        },
+        {
+          Error: 'Type mismatch: Cannot cast single object to array type. Remove Array wrapper from return type or make sure you are not using .single() up in the calling chain'
+        }
+      > extends infer ValidationResult
+    ? ValidationResult extends true
+      ? // Preserve the optionality of the result if the overriden type is an object (case of chaining with `maybeSingle`)
+        ContainsNull<Result> extends true
+        ? NewResult | null
+        : NewResult
+      : // contains the error
+        ValidationResult
+    : never
 
 type Simplify<T> = T extends object ? { [K in keyof T]: T[K] } : T
 
@@ -157,25 +243,25 @@ type MergeExplicit<New, Row> = {
       ? Row[K] extends SelectQueryError<string>
         ? New[K]
         : // Check if the override is on a embedded relation (array)
-          New[K] extends any[]
-          ? Row[K] extends any[]
-            ? Array<Simplify<MergeDeep<NonNullable<New[K][number]>, NonNullable<Row[K][number]>>>>
-            : New[K]
-          : // Check if both properties are objects omitting a potential null union
-            IsPlainObject<NonNullable<New[K]>> extends true
-            ? IsPlainObject<NonNullable<Row[K]>> extends true
-              ? // If they are, use the new override as source of truth for the optionality
-                ContainsNull<New[K]> extends true
-                ? // If the override wants to preserve optionality
-                  Simplify<MergeDeep<NonNullable<New[K]>, NonNullable<Row[K]>>> | null
-                : // If the override wants to enforce non-null result
-                  Simplify<MergeDeep<New[K], NonNullable<Row[K]>>>
-              : New[K] // Override with New type if Row isn't an object
-            : New[K] // Override primitives with New type
+        New[K] extends any[]
+        ? Row[K] extends any[]
+          ? Array<Simplify<MergeDeep<NonNullable<New[K][number]>, NonNullable<Row[K][number]>>>>
+          : New[K]
+        : // Check if both properties are objects omitting a potential null union
+        IsPlainObject<NonNullable<New[K]>> extends true
+        ? IsPlainObject<NonNullable<Row[K]>> extends true
+          ? // If they are, use the new override as source of truth for the optionality
+            ContainsNull<New[K]> extends true
+            ? // If the override wants to preserve optionality
+              Simplify<MergeDeep<NonNullable<New[K]>, NonNullable<Row[K]>>> | null
+            : // If the override wants to enforce non-null result
+              Simplify<MergeDeep<New[K], NonNullable<Row[K]>>>
+          : New[K] // Override with New type if Row isn't an object
+        : New[K] // Override primitives with New type
       : New[K] // Add new properties from New
     : K extends keyof Row
-      ? Row[K] // Keep existing properties not in New
-      : never
+    ? Row[K] // Keep existing properties not in New
+    : never
 }
 
 type MergeDeep<New, Row> = Simplify<

@@ -1309,3 +1309,47 @@ test('should be able to filter before and after select rpc', async () => {
     }
   `)
 })
+
+test('RPC call with subselect and computed field', async () => {
+  const res = await postgrest
+    .rpc('get_messages_by_username', { search_username: 'supabot' })
+    // should be able to select computed field
+    .select('message, blurb_message')
+  // .limit(1)
+  expect(res).toMatchInlineSnapshot(`
+    Object {
+      "count": null,
+      "data": Array [
+        Object {
+          "blurb_message": "Hel",
+          "message": "Hello World 👋",
+        },
+        Object {
+          "blurb_message": "Per",
+          "message": "Perfection is attained, not when there is nothing more to add, but when there is nothing left to take away.",
+        },
+        Object {
+          "blurb_message": "Som",
+          "message": "Some message on channel wihtout details",
+        },
+        Object {
+          "blurb_message": "Som",
+          "message": "Some message on channel wihtout details",
+        },
+      ],
+      "error": null,
+      "status": 200,
+      "statusText": "OK",
+    }
+  `)
+  let result: Exclude<typeof res.data, null>
+  const ExpectedSchema = z.array(
+    z.object({
+      message: z.string().nullable(),
+      blurb_message: z.string().nullable(),
+    })
+  )
+  let expected: z.infer<typeof ExpectedSchema>
+  expectType<TypeEqual<typeof result, typeof expected>>(true)
+  ExpectedSchema.parse(res.data)
+})
