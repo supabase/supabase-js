@@ -67,56 +67,59 @@ jobs:
           echo "You must be a member of @supabase/admin or @supabase/client-libs."
           exit 1
 
-  #     - uses: actions/checkout@v5
-  #       with:
-  #         fetch-depth: 0
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
 
-  #     - uses: actions/setup-node@v4
-  #       with:
-  #         node-version: ${{ env.NODE_VERSION }}
-  #         cache: 'npm'
-  #         registry-url: 'https://registry.npmjs.org'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          registry-url: 'https://registry.npmjs.org'
 
-  #     # Ensure npm 11.5.1 or later is installed for trusted publishing support
-  #     - name: Update npm
-  #       run: npm install -g npm@latest
-  #     - name: Install dependencies
-  #       run: npm ci --legacy-peer-deps
-  #     - name: Configure git
-  #       run: |
-  #         git config --global user.name "supabase-releaser[bot]"
-  #         git config --global user.email "supabase-releaser[bot]@users.noreply.github.com"
+      # Ensure npm 11.5.1 or later is installed for trusted publishing support
+      - name: Update npm
+        run: npm install -g npm@latest
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+      - name: Configure git
+        run: |
+          git config --global user.name "supabase-releaser[bot]"
+          git config --global user.email "supabase-releaser[bot]@users.noreply.github.com"
 
-  #     - name: Validate input
-  #       run: |
-  #         VS="${{ github.event.inputs.version_specifier }}"
-  #         echo "Validating: $VS"
+      - name: Validate input
+        run: |
+          VS="${{ github.event.inputs.version_specifier }}"
+          echo "Validating: $VS"
 
-  #         if [[ "$VS" =~ ^(patch|minor|major|prepatch|preminor|premajor|prerelease)$ ]]; then
-  #           echo "✔ bump keyword"
-  #         elif [[ "$VS" =~ ^v?[0-9]+\.[0-9]+\.[0-9]+([.-][0-9A-Za-z.-]+)?$ ]]; then
-  #           echo "✔ explicit version"
-  #         else
-  #           echo "❌ Invalid version_specifier: '$VS'"
-  #           echo "   Use: patch|minor|major|pre*, or v1.2.3"
-  #           exit 1
-  #         fi
+          if [[ "$VS" =~ ^(patch|minor|major|prepatch|preminor|premajor|prerelease)$ ]]; then
+            echo "✔ bump keyword"
+          elif [[ "$VS" =~ ^v?[0-9]+\.[0-9]+\.[0-9]+([.-][0-9A-Za-z.-]+)?$ ]]; then
+            echo "✔ explicit version"
+          else
+            echo "❌ Invalid version_specifier: '$VS'"
+            echo "   Use: patch|minor|major|pre*, or v1.2.3"
+            exit 1
+          fi
+      
+      - name: Set git remote to use App token
+        run: git remote set-url origin https://x-access-token:${{ steps.app-token.outputs.token }}@github.com/supabase/supabase-js.git
+          
+      - name: Release
+        env:
+          NPM_CONFIG_PROVENANCE: true
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_GITHUB_TOKEN: ${{ steps.app-token.outputs.token }} # used for tags
+        run: |
+          npm run release-stable -- --versionSpecifier "${{ github.event.inputs.version_specifier }}"
 
-  #     - name: Release
-  #       env:
-  #         NPM_CONFIG_PROVENANCE: true
-  #         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  #         RELEASE_GITHUB_TOKEN: ${{ steps.app-token.outputs.token }} # used for tags
-  #       run: |
-  #         npm run release-stable -- --versionSpecifier "${{ github.event.inputs.version_specifier }}"
-
-  #     - name: Summary
-  #       if: ${{ success() }}
-  #       run: |
-  #         echo "## ✅ Stable Release" >> $GITHUB_STEP_SUMMARY
-  #         echo "- **Version specifier:** \`${{ github.event.inputs.version_specifier }}\`" >> $GITHUB_STEP_SUMMARY
-  #         echo "- **Source commit:** HEAD of the checked-out branch" >> $GITHUB_STEP_SUMMARY
-  #         echo "- **Dist-tag:** \`latest\`" >> $GITHUB_STEP_SUMMARY
+      - name: Summary
+        if: ${{ success() }}
+        run: |
+          echo "## ✅ Stable Release" >> $GITHUB_STEP_SUMMARY
+          echo "- **Version specifier:** \`${{ github.event.inputs.version_specifier }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Source commit:** HEAD of the checked-out branch" >> $GITHUB_STEP_SUMMARY
+          echo "- **Dist-tag:** \`latest\`" >> $GITHUB_STEP_SUMMARY
 
   # docs-after-stable-release:
   #   name: Generate Documentation

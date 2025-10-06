@@ -40,20 +40,20 @@ if (!validSpecifiers.includes(versionSpecifier) && !isValidVersion) {
 }
 
 ;(async () => {
-  const { workspaceVersion, projectsVersionData } = await releaseVersion({
-    verbose: true,
-    gitCommit: false,
-    stageChanges: false,
-    specifier: versionSpecifier,
-  })
+  // const { workspaceVersion, projectsVersionData } = await releaseVersion({
+  //   verbose: true,
+  //   gitCommit: false,
+  //   stageChanges: false,
+  //   specifier: versionSpecifier,
+  // })
 
   // Update version.ts files with the new versions
   console.log('\n📦 Updating version.ts files...')
-  execSync('npx tsx scripts/update-version-files.ts', { stdio: 'inherit' })
+  // execSync('npx tsx scripts/update-version-files.ts', { stdio: 'inherit' })
 
   // Rebuild packages with correct versions
   console.log('\n🔨 Rebuilding packages with new versions...')
-  execSync('npx nx run-many --target=build --all', { stdio: 'inherit' })
+  // execSync('npx nx run-many --target=build --all', { stdio: 'inherit' })
   console.log('✅ Build complete\n')
 
   // releaseChangelog should use the GitHub token with permission for tagging
@@ -71,13 +71,13 @@ if (!validSpecifiers.includes(versionSpecifier) && !isValidVersion) {
   const authHeader = `AUTHORIZATION: basic ${Buffer.from(`x-access-token:${process.env.RELEASE_GITHUB_TOKEN}`).toString('base64')}`
   execSync(`git config --local http.https://github.com/.extraheader "${authHeader}"`)
 
-  const result = await releaseChangelog({
-    versionData: projectsVersionData,
-    version: workspaceVersion,
-    verbose: true,
-    gitCommit: false,
-    stageChanges: false,
-  })
+  // const result = await releaseChangelog({
+  //   versionData: projectsVersionData,
+  //   version: workspaceVersion,
+  //   verbose: true,
+  //   gitCommit: false,
+  //   stageChanges: false,
+  // })
 
   // npm publish with OIDC
   // not strictly necessary to restore the header but do it incase  we require it later
@@ -85,50 +85,51 @@ if (!validSpecifiers.includes(versionSpecifier) && !isValidVersion) {
   // restore the GH token
   process.env.GITHUB_TOKEN = gh_token_bak
 
-  const publishResult = await releasePublish({
-    registry: 'https://registry.npmjs.org/',
-    access: 'public',
-    tag: 'latest',
-    verbose: true,
-  })
+  // const publishResult = await releasePublish({
+  //   registry: 'https://registry.npmjs.org/',
+  //   access: 'public',
+  //   tag: 'latest',
+  //   verbose: true,
+  // })
 
   // Publish gotrue-js as legacy mirror of auth-js
-  console.log('\n📦 Publishing @supabase/gotrue-js (legacy mirror)...')
-  try {
-    execSync('npx tsx scripts/publish-gotrue-legacy.ts --tag=latest', { stdio: 'inherit' })
-  } catch (error) {
-    console.error('❌ Failed to publish gotrue-js legacy package:', error)
-    // Don't fail the entire release if gotrue-js fails
-    console.log('⚠️  Continuing with release despite gotrue-js publish failure')
-  }
+  // console.log('\n📦 Publishing @supabase/gotrue-js (legacy mirror)...')
+  // try {
+  //   execSync('npx tsx scripts/publish-gotrue-legacy.ts --tag=latest', { stdio: 'inherit' })
+  // } catch (error) {
+  //   console.error('❌ Failed to publish gotrue-js legacy package:', error)
+  //   // Don't fail the entire release if gotrue-js fails
+  //   console.log('⚠️  Continuing with release despite gotrue-js publish failure')
+  // }
 
   // ---- Create release branch + PR ----
   // switch back to the releaser GitHub token
   process.env.GITHUB_TOKEN = process.env.RELEASE_GITHUB_TOKEN
-  const version = result.workspaceChangelog?.releaseVersion.rawVersion || workspaceVersion
+  // const version = result.workspaceChangelog?.releaseVersion.rawVersion || workspaceVersion
 
   // Validate version to prevent command injection
   // Version should match semver pattern or be a valid npm version specifier
-  if (
-    !version ||
-    !/^(v?\d+\.\d+\.\d+(-[a-zA-Z0-9.-]+)?|patch|minor|major|prepatch|preminor|premajor|prerelease)$/.test(
-      version
-    )
-  ) {
-    console.error(`❌ Invalid version format: ${version}`)
-    process.exit(1)
-  }
+  // if (
+  //   !version ||
+  //   !/^(v?\d+\.\d+\.\d+(-[a-zA-Z0-9.-]+)?|patch|minor|major|prepatch|preminor|premajor|prerelease)$/.test(
+  //     version
+  //   )
+  // ) {
+  //   console.error(`❌ Invalid version format: ${version}`)
+  //   process.exit(1)
+  // }
 
-  const branchName = `release-${version}`
+  const branchName = `release-test}`
 
   try {
     execSync(`git checkout -b ${branchName}`)
-    execSync('git add CHANGELOG.md || true')
-    execSync('git add packages/**/CHANGELOG.md || true')
+    // create a small file and git add it
+    execSync('touch test.txt')
+    execSync('git add test.txt')
 
     // Commit changes if any
     try {
-      execSync(`git commit -m "chore(release): publish version ${version}"`)
+      execSync(`git commit -m "chore(repo): test permissions"`)
     } catch {
       console.log('No changes to commit')
     }
@@ -137,18 +138,18 @@ if (!validSpecifiers.includes(versionSpecifier) && !isValidVersion) {
 
     // Open PR using GitHub CLI
     execSync(
-      `gh pr create --base master --head ${branchName} --title "chore(release): ${version}" --body "Automated release PR for ${version}"`,
+      `gh pr create --base master --head ${branchName} --title "chore(repo): test permissions" --body "chore(repo): test permissions"`,
       { stdio: 'inherit' }
     )
 
     // Enable auto-merge
     execSync(`gh pr merge --auto --squash`, { stdio: 'inherit' })
 
-    execSync('git stash')
-    console.log('✅ Stashed package.json changes')
+    // execSync('git stash')
+    // console.log('✅ Stashed package.json changes')
   } catch (err) {
     console.error('❌ Failed to push release branch or open PR', err)
   }
 
-  process.exit(Object.values(publishResult).every((r) => r.code === 0) ? 0 : 1)
+  // process.exit(Object.values(publishResult).every((r) => r.code === 0) ? 0 : 1)
 })()
