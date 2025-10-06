@@ -50,6 +50,7 @@ if (!validSpecifiers.includes(versionSpecifier) && !isValidVersion) {
   if (process.env.RELEASE_GITHUB_TOKEN) {
     const remoteUrl = `https://x-access-token:${process.env.RELEASE_GITHUB_TOKEN}@github.com/supabase/supabase-js.git`
     execSync(`git remote set-url origin "${remoteUrl}"`)
+    console.log('Set origin to:', remoteUrl)
   }
 
   // Update version.ts files with the new versions
@@ -144,6 +145,8 @@ if (!validSpecifiers.includes(versionSpecifier) && !isValidVersion) {
       execSync(`git remote set-url origin "${remoteUrl}"`)
     }
 
+    console.log('Remote config before push:')
+    console.log(execSync('git remote -v').toString())
     execSync(`git push origin ${branchName}`)
 
     // Open PR using GitHub CLI

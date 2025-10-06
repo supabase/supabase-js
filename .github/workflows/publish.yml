@@ -101,19 +101,17 @@ jobs:
             echo "   Use: patch|minor|major|pre*, or v1.2.3"
             exit 1
           fi
-      
+
       - name: Set git remote to use App token
         run: git remote set-url origin https://x-access-token:${{ steps.app-token.outputs.token }}@github.com/supabase/supabase-js.git
-          
+
       - name: Release
         env:
           NPM_CONFIG_PROVENANCE: true
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          RELEASE_GITHUB_TOKEN: ${{ steps.app-token.outputs.token }} # used for tags
+          RELEASE_GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
-          git remote set-url origin https://x-access-token:${{ steps.app-token.outputs.token }}@github.com/supabase/supabase-js.git
           npm run release-stable -- --versionSpecifier "${{ github.event.inputs.version_specifier }}"
-
       - name: Summary
         if: ${{ success() }}
         run: |
