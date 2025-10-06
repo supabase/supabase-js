@@ -11,13 +11,19 @@ import type {
 import * as Transformers from './lib/transformers'
 import { httpEndpointURL } from './lib/transformers'
 
+type ReplayOption = {
+  since: number
+  limit?: number
+}
+
 export type RealtimeChannelOptions = {
   config: {
     /**
      * self option enables client to receive message it broadcast
      * ack option instructs server to acknowledge that broadcast message was received
+     * replay option instructs server to replay broadcast messages
      */
-    broadcast?: { self?: boolean; ack?: boolean }
+    broadcast?: { self?: boolean; ack?: boolean; replay?: ReplayOption }
     /**
      * key option is used to track presence payload across clients
      */
@@ -203,6 +209,10 @@ export default class RealtimeChannel {
 
     this.broadcastEndpointURL = httpEndpointURL(this.socket.endPoint)
     this.private = this.params.config.private || false
+
+    if (!this.private && this.params.config?.broadcast?.replay) {
+      throw `tried to use replay on public channel '${this.topic}'. It must be a private channel.`
+    }
   }
 
   /** Subscribe registers your client with the server */
@@ -386,6 +396,10 @@ export default class RealtimeChannel {
     callback: (payload: {
       type: `${REALTIME_LISTEN_TYPES.BROADCAST}`
       event: string
+      meta?: {
+        replayed?: boolean
+        id: string
+      }
       [key: string]: any
     }) => void
   ): RealtimeChannel
@@ -395,6 +409,10 @@ export default class RealtimeChannel {
     callback: (payload: {
       type: `${REALTIME_LISTEN_TYPES.BROADCAST}`
       event: string
+      meta?: {
+        replayed?: boolean
+        id: string
+      }
       payload: T
     }) => void
   ): RealtimeChannel
