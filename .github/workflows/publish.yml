@@ -105,20 +105,25 @@ jobs:
       - name: Set git remote to use App token
         run: git remote set-url origin https://x-access-token:${{ steps.app-token.outputs.token }}@github.com/supabase/supabase-js.git
       
-      - name: Test App token git push
+      - name: Authenticate gh CLI with App token
         env:
-          RELEASE_GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+            gh auth login --with-token
+      
+      - name: Create and push branch with gh CLI
         run: |
           git checkout --orphan test-token-push
           git commit --allow-empty -m "chore(repo): test push"
-          # Unset credential helper so git does NOT use GITHUB_TOKEN
-          git config --global --unset credential.helper || true
-          git config --unset credential.helper || true
-          # Set remote to use the GitHub App token
-          git remote set-url origin https://x-access-token:${RELEASE_GITHUB_TOKEN}@github.com/supabase/supabase-js.git
-          # Optionally: show remote for debug (token will be masked in logs)
-          git remote -v
           git push origin test-token-push
+      
+      - name: Create pull request with gh CLI
+        run: |
+          gh pr create \
+            --base master \
+            --head test-token-push \
+            --title "chore(repo): test push" \
+            --body "Automated PR for test-token-push"
 
       - name: Release
         env:
