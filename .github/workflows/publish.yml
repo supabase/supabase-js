@@ -40,19 +40,22 @@ jobs:
                   team_slug,
                   username: actor,
                 })
+                  console.log('res', JSON.stringify(res, null, 2))
                 return res && res.status === 200
               } catch (_) {
                 return false
               }
             }
-
             const isAdmin = await isTeamMember('admin')
             const isClientLibs = await isTeamMember('client-libs')
             const isMember = isAdmin || isClientLibs
+            console.log('isAdmin', isAdmin)
+            console.log('isClientLibs', isClientLibs)
+            console.log('isMember', isMember)
             core.setOutput('is_team_member', isMember ? 'true' : 'false')
 
       - name: Fail if not authorized
-        if: ${{ steps.team-check.outputs.is_team_member != 'true' }}
+        if: steps.team-check.outputs.is_team_member != 'true'
         run: |
           echo "You must be a member of @supabase/admin or @supabase/client-libs."
           exit 1
@@ -207,8 +210,7 @@ jobs:
     uses: ./.github/workflows/ci-auth-js-node18.yml
     permissions:
       actions: read
-      contents:
-        read
+      contents: read
 
   # ==========================================
   # CANARY RELEASE (only on master, after all CI passes)
@@ -268,20 +270,20 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           RELEASE_GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
 
-  notify-stable-failure:
-    name: Notify Slack for Stable failure
-    needs: release-stable
-    if: ${{ always() && github.event_name == 'workflow_dispatch' && needs.release-stable.result == 'failure' }}
-    uses: ./.github/workflows/slack-notify.yml
-    secrets: inherit
-    with:
-      subject: 'Stable Release'
+  # notify-stable-failure:
+  #   name: Notify Slack for Stable failure
+  #   needs: release-stable
+  #   if: ${{ always() && github.event_name == 'workflow_dispatch' && needs.release-stable.result == 'failure' }}
+  #   uses: ./.github/workflows/slack-notify.yml
+  #   secrets: inherit
+  #   with:
+  #     subject: 'Stable Release'
 
-  notify-canary-failure:
-    name: Notify Slack for Canary failure
-    needs: release-canary
-    if: ${{ always() && github.event_name == 'push' && needs.release-canary.result == 'failure' }}
-    uses: ./.github/workflows/slack-notify.yml
-    secrets: inherit
-    with:
-      subject: 'Canary Release'
+  # notify-canary-failure:
+  #   name: Notify Slack for Canary failure
+  #   needs: release-canary
+  #   if: ${{ always() && github.event_name == 'push' && needs.release-canary.result == 'failure' }}
+  #   uses: ./.github/workflows/slack-notify.yml
+  #   secrets: inherit
+  #   with:
+  #     subject: 'Canary Release'
