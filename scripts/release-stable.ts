@@ -1,44 +1,4 @@
-import { releaseVersion, releaseChangelog, releasePublish } from 'nx/release'
 import { execSync } from 'child_process'
-
-function getArg(name: string): string | undefined {
-  // supports --name=value and --name value
-  const idx = process.argv.findIndex((a) => a === `--${name}` || a.startsWith(`--${name}=`))
-  if (idx === -1) return undefined
-  const token = process.argv[idx]
-  if (token.includes('=')) return token.split('=')[1]
-  return process.argv[idx + 1] // next token
-}
-
-const versionSpecifier = getArg('versionSpecifier') ?? process.argv[2] // optional positional fallback
-
-if (!versionSpecifier) {
-  console.error(
-    `Usage: npm run release-stable -- --versionSpecifier <specifier>\n` +
-      `Examples:\n` +
-      `  --versionSpecifier patch | minor | major | prepatch | preminor | premajor | prerelease\n` +
-      `  --versionSpecifier v2.3.4 (explicit version)\n`
-  )
-  process.exit(1)
-}
-
-// Validate versionSpecifier to prevent command injection
-const validSpecifiers = [
-  'patch',
-  'minor',
-  'major',
-  'prepatch',
-  'preminor',
-  'premajor',
-  'prerelease',
-]
-const isValidVersion = /^v?\d+\.\d+\.\d+(-[a-zA-Z0-9.-]+)?$/.test(versionSpecifier)
-if (!validSpecifiers.includes(versionSpecifier) && !isValidVersion) {
-  console.error(`❌ Invalid version specifier: ${versionSpecifier}`)
-  console.error(`Must be one of: ${validSpecifiers.join(', ')} or a valid semver version`)
-  process.exit(1)
-}
-
 ;(async () => {
   if (process.env.RELEASE_GITHUB_TOKEN) {
     const remoteUrl = `https://x-access-token:${process.env.RELEASE_GITHUB_TOKEN}@github.com/supabase/supabase-js.git`

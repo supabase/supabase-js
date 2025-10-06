@@ -6,11 +6,6 @@ on:
   push:
     branches: [master]
   workflow_dispatch:
-    inputs:
-      version_specifier:
-        description: 'Semver bump (patch|minor|major|pre*) or exact version (v1.2.3)'
-        required: true
-        type: string
 
 env:
   NODE_VERSION: '20'
@@ -30,42 +25,6 @@ jobs:
         with:
           app-id: ${{ secrets.APP_ID }}
           private-key: ${{ secrets.PRIVATE_KEY }}
-      - name: Check if actor is member of admin or client-libs team
-        id: team-check
-        uses: actions/github-script@v7
-        with:
-          github-token: ${{ steps.app-token.outputs.token }}
-          script: |
-            const org = 'supabase'
-            const { actor } = context
-
-            async function isTeamMember(team_slug) {
-              try {
-                const res = await github.rest.teams.getMembershipForUserInOrg({
-                  org,
-                  team_slug,
-                  username: actor,
-                })
-                console.log('res', JSON.stringify(res, null, 2))
-                return res && res.status === 200
-              } catch (_) {
-                return false
-              }
-            }
-
-            const isAdmin = await isTeamMember('admin')
-            const isClientLibs = await isTeamMember('client-libs')
-            const isMember = isAdmin || isClientLibs
-            console.log('isAdmin', isAdmin)
-            console.log('isClientLibs', isClientLibs)
-            console.log('isMember', isMember)
-            core.setOutput('is_team_member', isMember ? 'true' : 'false')
-
-      - name: Fail if not authorized
-        if: ${{ steps.team-check.outputs.is_team_member != 'true' }}
-        run: |
-          echo "You must be a member of @supabase/admin or @supabase/client-libs."
-          exit 1
 
       - uses: actions/checkout@v5
         with:
@@ -87,36 +46,21 @@ jobs:
           git config --global user.name "supabase-releaser[bot]"
           git config --global user.email "supabase-releaser[bot]@users.noreply.github.com"
 
-      - name: Validate input
-        run: |
-          VS="${{ github.event.inputs.version_specifier }}"
-          echo "Validating: $VS"
-
-          if [[ "$VS" =~ ^(patch|minor|major|prepatch|preminor|premajor|prerelease)$ ]]; then
-            echo "✔ bump keyword"
-          elif [[ "$VS" =~ ^v?[0-9]+\.[0-9]+\.[0-9]+([.-][0-9A-Za-z.-]+)?$ ]]; then
-            echo "✔ explicit version"
-          else
-            echo "❌ Invalid version_specifier: '$VS'"
-            echo "   Use: patch|minor|major|pre*, or v1.2.3"
-            exit 1
-          fi
-
       - name: Set git remote to use App token
         run: git remote set-url origin https://x-access-token:${{ steps.app-token.outputs.token }}@github.com/supabase/supabase-js.git
-      
+
       - name: Authenticate gh CLI with App token
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
-            gh auth login --with-token
-      
+          gh auth login --with-token
+
       - name: Create and push branch with gh CLI
         run: |
           git checkout --orphan test-token-push
           git commit --allow-empty -m "chore(repo): test push"
           git push origin test-token-push
-      
+
       - name: Create pull request with gh CLI
         run: |
           gh pr create \
@@ -131,14 +75,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           RELEASE_GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
-          npm run release-stable -- --versionSpecifier "${{ github.event.inputs.version_specifier }}"
-      - name: Summary
-        if: ${{ success() }}
-        run: |
-          echo "## ✅ Stable Release" >> $GITHUB_STEP_SUMMARY
-          echo "- **Version specifier:** \`${{ github.event.inputs.version_specifier }}\`" >> $GITHUB_STEP_SUMMARY
-          echo "- **Source commit:** HEAD of the checked-out branch" >> $GITHUB_STEP_SUMMARY
-          echo "- **Dist-tag:** \`latest\`" >> $GITHUB_STEP_SUMMARY
+          npm run release-stable
 
   trigger-update-js-libs:
     name: Trigger Update JS Libs
