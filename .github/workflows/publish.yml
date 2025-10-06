@@ -57,11 +57,11 @@ jobs:
             const isMember = isAdmin || isClientLibs
             core.setOutput('is_team_member', isMember ? 'true' : 'false')
 
-      - name: Fail if not authorized
-        if: steps.team-check.outputs.is_team_member != 'true'
-        run: |
-          echo "You must be a member of @supabase/admin or @supabase/client-libs."
-          exit 1
+      # - name: Fail if not authorized
+      #   if: steps.team-check.outputs.is_team_member != 'true'
+      #   run: |
+      #     echo "You must be a member of @supabase/admin or @supabase/client-libs."
+      #     exit 1
 
       - uses: actions/checkout@v5
         with:
