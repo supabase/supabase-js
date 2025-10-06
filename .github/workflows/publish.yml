@@ -73,6 +73,9 @@ jobs:
           cache: 'npm'
           registry-url: 'https://registry.npmjs.org'
 
+      # Ensure npm 11.5.1 or later is installed for trusted publishing support
+      - name: Update npm
+        run: npm install -g npm@latest
       - name: Install dependencies
         run: npm ci --legacy-peer-deps
       - name: Configure git
@@ -250,6 +253,9 @@ jobs:
           cache: 'npm'
           registry-url: 'https://registry.npmjs.org'
 
+      # Ensure npm 11.5.1 or later is installed for trusted publishing support
+      - name: Update npm
+        run: npm install -g npm@latest
       - name: Install dependencies
         run: npm ci --legacy-peer-deps
       - name: Configure git
