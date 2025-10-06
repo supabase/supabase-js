@@ -1,10 +1,10 @@
-name: Minimal App Token Push Test
+name: Minimal App Token Push & PR Test
 
 on:
   workflow_dispatch:
 
 jobs:
-  push-test:
+  push-and-pr-test:
     runs-on: ubuntu-latest
     steps:
       - name: Generate App token
@@ -28,10 +28,6 @@ jobs:
           git config --global --unset credential.helper || true
           git config --local --unset credential.helper || true
           git remote set-url origin https://x-access-token:${{ steps.app-token.outputs.token }}@github.com/supabase/supabase-js.git
-          echo "Remote:"
-          git remote -v
-          echo "Credential helper:"
-          git config --show-origin --get credential.helper || true
 
       - name: Create and push branch
         run: |
@@ -40,3 +36,13 @@ jobs:
           git add minimal.txt
           git commit -m "test: minimal token branch push"
           git push origin minimal-token-test
+
+      - name: Create PR with gh CLI
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+          gh pr create \
+            --base master \
+            --head minimal-token-test \
+            --title "Minimal token push test" \
+            --body "Automated PR from minimal App token workflow"
