@@ -146,7 +146,7 @@ export type Database = {
             isOneToOne: false
             referencedRelation: 'users'
             referencedColumns: ['username']
-          }
+          },
         ]
       }
       booking: {
@@ -169,7 +169,7 @@ export type Database = {
             isOneToOne: false
             referencedRelation: 'hotel'
             referencedColumns: ['id']
-          }
+          },
         ]
       }
       categories: {
@@ -210,7 +210,7 @@ export type Database = {
             isOneToOne: true
             referencedRelation: 'channels'
             referencedColumns: ['id']
-          }
+          },
         ]
       }
       channels: {
@@ -254,7 +254,7 @@ export type Database = {
             isOneToOne: false
             referencedRelation: 'collections'
             referencedColumns: ['id']
-          }
+          },
         ]
       }
       cornercase: {
@@ -348,7 +348,7 @@ export type Database = {
             isOneToOne: false
             referencedRelation: 'users'
             referencedColumns: ['username']
-          }
+          },
         ]
       }
       product_categories: {
@@ -378,7 +378,7 @@ export type Database = {
             isOneToOne: false
             referencedRelation: 'products'
             referencedColumns: ['id']
-          }
+          },
         ]
       }
       products: {
@@ -461,7 +461,7 @@ export type Database = {
             isOneToOne: false
             referencedRelation: 'users'
             referencedColumns: ['username']
-          }
+          },
         ]
       }
       users: {
@@ -563,7 +563,7 @@ export type Database = {
             isOneToOne: false
             referencedRelation: 'users'
             referencedColumns: ['username']
-          }
+          },
         ]
       }
       updatable_view: {
@@ -585,12 +585,10 @@ export type Database = {
     Functions: {
       blurb_message: {
         Args: { '': Database['public']['Tables']['messages']['Row'] }
-        Returns: {
-          error: true
-        } & 'the function public.blurb_message with parameter or with a single unnamed json/jsonb parameter, but no matches were found in the schema cache'
+        Returns: string
       }
       function_returning_row: {
-        Args: never
+        Args: Record<PropertyKey, never>
         Returns: {
           age_range: unknown | null
           catchphrase: unknown | null
@@ -598,15 +596,9 @@ export type Database = {
           status: Database['public']['Enums']['user_status'] | null
           username: string
         }
-        SetofOptions: {
-          from: '*'
-          to: 'users'
-          isOneToOne: true
-          isSetofReturn: false
-        }
       }
       function_returning_set_of_rows: {
-        Args: never
+        Args: Record<PropertyKey, never>
         Returns: {
           age_range: unknown | null
           catchphrase: unknown | null
@@ -614,12 +606,6 @@ export type Database = {
           status: Database['public']['Enums']['user_status'] | null
           username: string
         }[]
-        SetofOptions: {
-          from: '*'
-          to: 'users'
-          isOneToOne: false
-          isSetofReturn: true
-        }
       }
       function_returning_single_row: {
         Args: { messages: Database['public']['Tables']['messages']['Row'] }
@@ -630,37 +616,19 @@ export type Database = {
           status: Database['public']['Enums']['user_status'] | null
           username: string
         }
-        SetofOptions: {
-          from: 'messages'
-          to: 'users'
-          isOneToOne: true
-          isSetofReturn: false
-        }
       }
       function_using_setof_rows_one: {
         Args: { user_row: Database['public']['Tables']['users']['Row'] }
         Returns: {
           id: number
           username: string | null
-        }
-        SetofOptions: {
-          from: 'users'
-          to: 'user_profiles'
-          isOneToOne: true
-          isSetofReturn: true
-        }
+        }[]
       }
       function_using_table_returns: {
         Args: { user_row: Database['public']['Tables']['users']['Row'] }
         Returns: {
           id: number
           username: string | null
-        }
-        SetofOptions: {
-          from: 'users'
-          to: 'user_profiles'
-          isOneToOne: true
-          isSetofReturn: false
         }
       }
       function_with_array_param: {
@@ -672,9 +640,7 @@ export type Database = {
         Returns: string
       }
       get_active_user_messages: {
-        Args: {
-          active_user_row: Database['public']['Views']['active_users']['Row']
-        }
+        Args: { active_user_row: unknown }
         Returns: {
           channel_id: number
           data: Json | null
@@ -682,48 +648,19 @@ export type Database = {
           message: string | null
           username: string
         }[]
-        SetofOptions: {
-          from: 'active_users'
-          to: 'messages'
-          isOneToOne: false
-          isSetofReturn: true
-        }
       }
-      get_messages:
-        | {
-            Args: { user_row: Database['public']['Tables']['users']['Row'] }
-            Returns: {
-              channel_id: number
-              data: Json | null
-              id: number
-              message: string | null
-              username: string
-            }[]
-            SetofOptions: {
-              from: 'users'
-              to: 'messages'
-              isOneToOne: false
-              isSetofReturn: true
-            }
-          }
-        | {
-            Args: {
-              channel_row: Database['public']['Tables']['channels']['Row']
-            }
-            Returns: {
-              channel_id: number
-              data: Json | null
-              id: number
-              message: string | null
-              username: string
-            }[]
-            SetofOptions: {
-              from: 'channels'
-              to: 'messages'
-              isOneToOne: false
-              isSetofReturn: true
-            }
-          }
+      get_messages: {
+        Args:
+          | { channel_row: Database['public']['Tables']['channels']['Row'] }
+          | { user_row: Database['public']['Tables']['users']['Row'] }
+        Returns: {
+          channel_id: number
+          data: Json | null
+          id: number
+          message: string | null
+          username: string
+        }[]
+      }
       get_messages_by_username: {
         Args: { search_username: string }
         Returns: {
@@ -733,12 +670,6 @@ export type Database = {
           message: string | null
           username: string
         }[]
-        SetofOptions: {
-          from: '*'
-          to: 'messages'
-          isOneToOne: false
-          isSetofReturn: true
-        }
       }
       get_recent_messages_by_username: {
         Args: { search_username: string }
@@ -749,34 +680,20 @@ export type Database = {
           message: string | null
           username: string | null
         }[]
-        SetofOptions: {
-          from: '*'
-          to: 'recent_messages'
-          isOneToOne: false
-          isSetofReturn: true
-        }
       }
       get_status: {
         Args: { name_param: string }
         Returns: Database['public']['Enums']['user_status']
       }
       get_user_first_message: {
-        Args: {
-          active_user_row: Database['public']['Views']['active_users']['Row']
-        }
+        Args: { active_user_row: unknown }
         Returns: {
           channel_id: number | null
           data: Json | null
           id: number | null
           message: string | null
           username: string | null
-        }
-        SetofOptions: {
-          from: 'active_users'
-          to: 'recent_messages'
-          isOneToOne: true
-          isSetofReturn: true
-        }
+        }[]
       }
       get_user_messages: {
         Args: { user_row: Database['public']['Tables']['users']['Row'] }
@@ -787,12 +704,6 @@ export type Database = {
           message: string | null
           username: string
         }[]
-        SetofOptions: {
-          from: 'users'
-          to: 'messages'
-          isOneToOne: false
-          isSetofReturn: true
-        }
       }
       get_user_profile: {
         Args: { user_row: Database['public']['Tables']['users']['Row'] }
@@ -800,61 +711,26 @@ export type Database = {
           id: number
           username: string | null
         }
-        SetofOptions: {
-          from: 'users'
-          to: 'user_profiles'
-          isOneToOne: true
-          isSetofReturn: false
-        }
       }
       get_user_profile_non_nullable: {
         Args: { user_row: Database['public']['Tables']['users']['Row'] }
         Returns: {
           id: number
           username: string | null
-        }
-        SetofOptions: {
-          from: 'users'
-          to: 'user_profiles'
-          isOneToOne: true
-          isSetofReturn: true
-        }
+        }[]
       }
-      get_user_recent_messages:
-        | {
-            Args: { user_row: Database['public']['Tables']['users']['Row'] }
-            Returns: {
-              channel_id: number | null
-              data: Json | null
-              id: number | null
-              message: string | null
-              username: string | null
-            }[]
-            SetofOptions: {
-              from: 'users'
-              to: 'recent_messages'
-              isOneToOne: false
-              isSetofReturn: true
-            }
-          }
-        | {
-            Args: {
-              active_user_row: Database['public']['Views']['active_users']['Row']
-            }
-            Returns: {
-              channel_id: number | null
-              data: Json | null
-              id: number | null
-              message: string | null
-              username: string | null
-            }[]
-            SetofOptions: {
-              from: 'active_users'
-              to: 'recent_messages'
-              isOneToOne: false
-              isSetofReturn: true
-            }
-          }
+      get_user_recent_messages: {
+        Args:
+          | { active_user_row: unknown }
+          | { user_row: Database['public']['Tables']['users']['Row'] }
+        Returns: {
+          channel_id: number | null
+          data: Json | null
+          id: number | null
+          message: string | null
+          username: string | null
+        }[]
+      }
       get_username_and_status: {
         Args: { name_param: string }
         Returns: {
@@ -867,28 +743,25 @@ export type Database = {
         Returns: Database['public']['Enums']['user_status']
       }
       polymorphic_function_with_different_return: {
-        Args: { '': string }
-        Returns: string
+        Args: { '': boolean } | { '': number } | { '': string }
+        Returns: number
       }
-      polymorphic_function_with_no_params_or_unnamed:
-        | { Args: never; Returns: number }
-        | { Args: { '': string }; Returns: string }
-      polymorphic_function_with_unnamed_default:
-        | {
-            Args: never
-            Returns: {
-              error: true
-            } & 'Could not choose the best candidate function between: public.polymorphic_function_with_unnamed_default(), public.polymorphic_function_with_unnamed_default( => text). Try renaming the parameters or the function itself in the database so function overloading can be resolved'
-          }
-        | { Args: { ''?: string }; Returns: string }
-      polymorphic_function_with_unnamed_default_overload:
-        | {
-            Args: never
-            Returns: {
-              error: true
-            } & 'Could not choose the best candidate function between: public.polymorphic_function_with_unnamed_default_overload(), public.polymorphic_function_with_unnamed_default_overload( => text). Try renaming the parameters or the function itself in the database so function overloading can be resolved'
-          }
-        | { Args: { ''?: string }; Returns: string }
+      polymorphic_function_with_no_params_or_unnamed: {
+        Args: Record<PropertyKey, never> | { '': boolean } | { '': string }
+        Returns: number
+      }
+      polymorphic_function_with_unnamed_default: {
+        Args: Record<PropertyKey, never> | { ''?: number } | { ''?: string }
+        Returns: number
+      }
+      polymorphic_function_with_unnamed_default_overload: {
+        Args: Record<PropertyKey, never> | { ''?: boolean } | { ''?: number } | { ''?: string }
+        Returns: number
+      }
+      polymorphic_function_with_unnamed_integer: {
+        Args: { '': number }
+        Returns: number
+      }
       polymorphic_function_with_unnamed_json: {
         Args: { '': Json }
         Returns: number
@@ -901,69 +774,20 @@ export type Database = {
         Args: { '': string }
         Returns: number
       }
-      postgrest_resolvable_with_override_function:
-        | { Args: { a: string }; Returns: number }
-        | { Args: { b: number }; Returns: string }
-        | {
-            Args: { profile_id: number }
-            Returns: {
-              id: number
-              username: string | null
-            }[]
-            SetofOptions: {
-              from: '*'
-              to: 'user_profiles'
-              isOneToOne: false
-              isSetofReturn: true
-            }
-          }
-        | {
-            Args: { user_row: Database['public']['Tables']['users']['Row'] }
-            Returns: {
-              channel_id: number
-              data: Json | null
-              id: number
-              message: string | null
-              username: string
-            }[]
-            SetofOptions: {
-              from: 'users'
-              to: 'messages'
-              isOneToOne: false
-              isSetofReturn: true
-            }
-          }
-        | {
-            Args: { cid: number; search?: string }
-            Returns: {
-              channel_id: number
-              data: Json | null
-              id: number
-              message: string | null
-              username: string
-            }[]
-            SetofOptions: {
-              from: '*'
-              to: 'messages'
-              isOneToOne: false
-              isSetofReturn: true
-            }
-          }
-        | { Args: never; Returns: undefined }
-      postgrest_unresolvable_function:
-        | {
-            Args: { a: string }
-            Returns: {
-              error: true
-            } & 'Could not choose the best candidate function between: public.postgrest_unresolvable_function(a => int4), public.postgrest_unresolvable_function(a => text). Try renaming the parameters or the function itself in the database so function overloading can be resolved'
-          }
-        | {
-            Args: { a: number }
-            Returns: {
-              error: true
-            } & 'Could not choose the best candidate function between: public.postgrest_unresolvable_function(a => int4), public.postgrest_unresolvable_function(a => text). Try renaming the parameters or the function itself in the database so function overloading can be resolved'
-          }
-        | { Args: never; Returns: undefined }
+      postgrest_resolvable_with_override_function: {
+        Args:
+          | Record<PropertyKey, never>
+          | { a: string }
+          | { b: number }
+          | { cid: number; search?: string }
+          | { profile_id: number }
+          | { user_row: Database['public']['Tables']['users']['Row'] }
+        Returns: undefined
+      }
+      postgrest_unresolvable_function: {
+        Args: Record<PropertyKey, never> | { a: number } | { a: string }
+        Returns: undefined
+      }
       set_users_offline: {
         Args: { name_param: string }
         Returns: {
@@ -973,14 +797,11 @@ export type Database = {
           status: Database['public']['Enums']['user_status'] | null
           username: string
         }[]
-        SetofOptions: {
-          from: '*'
-          to: 'users'
-          isOneToOne: false
-          isSetofReturn: true
-        }
       }
-      void_func: { Args: never; Returns: undefined }
+      void_func: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
     }
     Enums: {
       user_status: 'ONLINE' | 'OFFLINE'
@@ -1004,7 +825,7 @@ export type Tables<
   }
     ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables'] &
         DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Views'])
-    : never = never
+    : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -1015,12 +836,12 @@ export type Tables<
     ? R
     : never
   : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema['Tables'] & DefaultSchema['Views'])
-  ? (DefaultSchema['Tables'] & DefaultSchema['Views'])[DefaultSchemaTableNameOrOptions] extends {
-      Row: infer R
-    }
-    ? R
+    ? (DefaultSchema['Tables'] & DefaultSchema['Views'])[DefaultSchemaTableNameOrOptions] extends {
+        Row: infer R
+      }
+      ? R
+      : never
     : never
-  : never
 
 export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
@@ -1030,7 +851,7 @@ export type TablesInsert<
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables']
-    : never = never
+    : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -1040,12 +861,12 @@ export type TablesInsert<
     ? I
     : never
   : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema['Tables']
-  ? DefaultSchema['Tables'][DefaultSchemaTableNameOrOptions] extends {
-      Insert: infer I
-    }
-    ? I
+    ? DefaultSchema['Tables'][DefaultSchemaTableNameOrOptions] extends {
+        Insert: infer I
+      }
+      ? I
+      : never
     : never
-  : never
 
 export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
@@ -1055,7 +876,7 @@ export type TablesUpdate<
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables']
-    : never = never
+    : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -1065,12 +886,12 @@ export type TablesUpdate<
     ? U
     : never
   : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema['Tables']
-  ? DefaultSchema['Tables'][DefaultSchemaTableNameOrOptions] extends {
-      Update: infer U
-    }
-    ? U
+    ? DefaultSchema['Tables'][DefaultSchemaTableNameOrOptions] extends {
+        Update: infer U
+      }
+      ? U
+      : never
     : never
-  : never
 
 export type Enums<
   DefaultSchemaEnumNameOrOptions extends
@@ -1080,14 +901,14 @@ export type Enums<
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions['schema']]['Enums']
-    : never = never
+    : never = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
   ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions['schema']]['Enums'][EnumName]
   : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema['Enums']
-  ? DefaultSchema['Enums'][DefaultSchemaEnumNameOrOptions]
-  : never
+    ? DefaultSchema['Enums'][DefaultSchemaEnumNameOrOptions]
+    : never
 
 export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
@@ -1097,14 +918,14 @@ export type CompositeTypes<
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions['schema']]['CompositeTypes']
-    : never = never
+    : never = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
   ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions['schema']]['CompositeTypes'][CompositeTypeName]
   : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema['CompositeTypes']
-  ? DefaultSchema['CompositeTypes'][PublicCompositeTypeNameOrOptions]
-  : never
+    ? DefaultSchema['CompositeTypes'][PublicCompositeTypeNameOrOptions]
+    : never
 
 export const Constants = {
   personal: {
