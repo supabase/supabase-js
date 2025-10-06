@@ -24,11 +24,17 @@ jobs:
       id-token: write
 
     steps:
+      - name: Generate token
+        id: app-token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ secrets.APP_ID }}
+          private-key: ${{ secrets.PRIVATE_KEY }}
       - name: Check if actor is member of admin or client-libs team
         id: team-check
         uses: actions/github-script@v7
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+          github-token: ${{ steps.app-token.outputs.token }}
           script: |
             const org = 'supabase'
             const { actor } = context
@@ -40,32 +46,21 @@ jobs:
                   team_slug,
                   username: actor,
                 })
-                  console.log('res', JSON.stringify(res, null, 2))
                 return res && res.status === 200
-              } catch (_) {
+              } catch (error) {
                 return false
               }
             }
             const isAdmin = await isTeamMember('admin')
             const isClientLibs = await isTeamMember('client-libs')
             const isMember = isAdmin || isClientLibs
-            console.log('isAdmin', isAdmin)
-            console.log('isClientLibs', isClientLibs)
-            console.log('isMember', isMember)
             core.setOutput('is_team_member', isMember ? 'true' : 'false')
 
       - name: Fail if not authorized
-        if: steps.team-check.outputs.is_team_member != 'true'
+        if: ${{ steps.team-check.outputs.is_team_member != 'true' }}
         run: |
           echo "You must be a member of @supabase/admin or @supabase/client-libs."
           exit 1
-
-      - name: Generate token
-        id: app-token
-        uses: actions/create-github-app-token@v2
-        with:
-          app-id: ${{ secrets.APP_ID }}
-          private-key: ${{ secrets.PRIVATE_KEY }}
 
       - uses: actions/checkout@v5
         with:
