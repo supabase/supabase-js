@@ -128,7 +128,7 @@ if (!validSpecifiers.includes(versionSpecifier) && !isValidVersion) {
 
     // Commit changes if any
     try {
-      execSync(`git commit -m "chore(release): publish version ${version}"`)
+      execSync(`git commit -m "chore(release): version ${version} changelogs"`)
     } catch {
       console.log('No changes to commit')
     }
@@ -137,7 +137,7 @@ if (!validSpecifiers.includes(versionSpecifier) && !isValidVersion) {
 
     // Open PR using GitHub CLI
     execSync(
-      `gh pr create --base master --head ${branchName} --title "chore(release): ${version}" --body "Automated release PR for ${version}"`,
+      `gh pr create --base master --head ${branchName} --title "chore(release): version ${version} changelogs" --body "Automated release PR for ${version} to update changelogs."`,
       { stdio: 'inherit' }
     )
 
