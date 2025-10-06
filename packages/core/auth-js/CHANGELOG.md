@@ -1,3 +1,7 @@
+## 2.74.1-canary.1 (2025-10-06)
+
+This was a version bump only for @supabase/auth-js to align it with other projects, there were no code changes.
+
 # Changelog
 
 ## [2.72.0](https://github.com/supabase/auth-js/compare/v2.71.1...v2.72.0) (2025-09-11)
