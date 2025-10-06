@@ -71,7 +71,7 @@ const supabase = createClient<Database>(URL, KEY)
 
 // rpc return type
 {
-  const { data, error } = await supabase.rpc('get_status')
+  const { data, error } = await supabase.rpc('get_status', { name_param: 'supabot' })
   if (error) {
     throw new Error(error.message)
   }

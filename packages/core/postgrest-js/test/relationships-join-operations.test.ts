@@ -5,7 +5,7 @@ import { z } from 'zod'
 import { RequiredDeep } from 'type-fest'
 
 const REST_URL = 'http://localhost:3000'
-export const postgrest = new PostgrestClient<Database>(REST_URL)
+const postgrest = new PostgrestClient<Database>(REST_URL)
 const userColumn: 'catchphrase' | 'username' = 'username'
 
 // Zod schemas for common types

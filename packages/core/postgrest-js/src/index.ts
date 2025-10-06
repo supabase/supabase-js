@@ -29,6 +29,7 @@ export type {
   PostgrestSingleResponse,
   PostgrestMaybeSingleResponse,
   ClientServerOptions as PostgrestClientOptions,
+  GetRpcFunctionFilterBuilderByArgs,
 } from './types'
 // https://github.com/supabase/postgrest-js/issues/551
 // To be replaced with a helper type that only uses public types

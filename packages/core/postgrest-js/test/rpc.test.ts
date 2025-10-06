@@ -4,9 +4,9 @@ import { expectType, TypeEqual } from './types'
 import { z } from 'zod'
 
 const REST_URL = 'http://localhost:3000'
-export const postgrest = new PostgrestClient<Database>(REST_URL)
+const postgrest = new PostgrestClient<Database>(REST_URL)
 
-export const RPC_NAME = 'get_username_and_status'
+const RPC_NAME = 'get_username_and_status'
 
 test('RPC call with no params', async () => {
   const res = await postgrest.rpc(RPC_NAME, { name_param: 'supabot' }).select()
@@ -202,6 +202,46 @@ test('RPC call with field aggregate', async () => {
       status: z.enum(['ONLINE', 'OFFLINE'] as const),
     })
   )
+  let expected: z.infer<typeof ExpectedSchema>
+  expectType<TypeEqual<typeof result, typeof expected>>(true)
+  ExpectedSchema.parse(res.data)
+})
+
+test('RPC get_status with no params', async () => {
+  const res = await postgrest.rpc('get_status')
+  expect(res).toMatchInlineSnapshot(`
+    Object {
+      "count": null,
+      "data": null,
+      "error": Object {
+        "code": "PGRST202",
+        "details": "Searched for the function public.get_status without parameters or with a single unnamed json/jsonb parameter, but no matches were found in the schema cache.",
+        "hint": null,
+        "message": "Could not find the function public.get_status without parameters in the schema cache",
+      },
+      "status": 404,
+      "statusText": "Not Found",
+    }
+  `)
+  let result: Exclude<typeof res.data, null>
+  // get_status without name param doesn't exist in the schema so we expect never
+  let expected: never
+  expectType<TypeEqual<typeof result, typeof expected>>(true)
+})
+
+test('RPC get_status with name params', async () => {
+  const res = await postgrest.rpc('get_status', { name_param: 'supabot' })
+  expect(res).toMatchInlineSnapshot(`
+    Object {
+      "count": null,
+      "data": "ONLINE",
+      "error": null,
+      "status": 200,
+      "statusText": "OK",
+    }
+  `)
+  let result: Exclude<typeof res.data, null>
+  const ExpectedSchema = z.enum(['ONLINE', 'OFFLINE'] as const)
   let expected: z.infer<typeof ExpectedSchema>
   expectType<TypeEqual<typeof result, typeof expected>>(true)
   ExpectedSchema.parse(res.data)

@@ -115,7 +115,6 @@ RETURNS user_status AS $$
   RETURNING status;
 $$ LANGUAGE SQL VOLATILE;
 
-
 CREATE FUNCTION public.set_users_offline(name_param text)
 RETURNS SETOF users AS $$
   UPDATE users SET status = 'OFFLINE' WHERE username LIKE name_param RETURNING *;
@@ -169,8 +168,192 @@ create table public.cornercase (
   array_column text[]
 );
 
+-- Function that returns a single user profile for a user
+CREATE OR REPLACE FUNCTION public.get_user_profile(user_row users)
+RETURNS user_profiles
+LANGUAGE SQL STABLE
+AS $$
+  SELECT * FROM public.user_profiles WHERE username = user_row.username LIMIT 1;
+$$;
+
+-- Same definition, but will be used with a database.override to pretend this can't ever return null
+CREATE OR REPLACE FUNCTION public.get_user_profile_non_nullable(user_row users)
+RETURNS SETOF user_profiles
+LANGUAGE SQL STABLE
+ROWS 1
+AS $$
+  SELECT * FROM public.user_profiles WHERE username = user_row.username;
+$$;
+
+
+CREATE OR REPLACE FUNCTION public.get_messages(channel_row channels)
+RETURNS SETOF messages
+LANGUAGE SQL STABLE
+AS $$
+  SELECT * FROM public.messages WHERE channel_id = channel_row.id;
+$$;
+
+CREATE OR REPLACE FUNCTION public.get_messages(user_row users)
+RETURNS SETOF messages
+LANGUAGE SQL STABLE
+AS $$
+  SELECT * FROM public.messages WHERE username = user_row.username;
+$$;
+
+-- Create a view based on users table
+CREATE VIEW public.active_users AS
+    SELECT * FROM public.users WHERE status = 'ONLINE'::public.user_status;
+
+-- Create a view based on messages table
+CREATE VIEW public.recent_messages AS
+    SELECT * FROM public.messages ORDER BY id DESC LIMIT 100;
+
+-- Function returning messages using scalar as input (username)
+CREATE OR REPLACE FUNCTION public.get_messages_by_username(search_username text)
+RETURNS SETOF messages
+LANGUAGE SQL STABLE
+AS $$
+    SELECT * FROM public.messages WHERE username = search_username;
+$$;
+
+-- Function returning messages using table row as input
+CREATE OR REPLACE FUNCTION public.get_user_messages(user_row users)
+RETURNS SETOF messages
+LANGUAGE SQL STABLE
+AS $$
+    SELECT * FROM public.messages WHERE username = user_row.username;
+$$;
+
+-- Function returning messages using view row as input
+CREATE OR REPLACE FUNCTION public.get_active_user_messages(active_user_row active_users)
+RETURNS SETOF messages
+LANGUAGE SQL STABLE
+AS $$
+    SELECT * FROM public.messages WHERE username = active_user_row.username;
+$$;
+
+-- Function returning view using scalar as input
+CREATE OR REPLACE FUNCTION public.get_recent_messages_by_username(search_username text)
+RETURNS SETOF recent_messages
+LANGUAGE SQL STABLE
+AS $$
+    SELECT * FROM public.recent_messages WHERE username = search_username;
+$$;
+
+-- Function returning view using table row as input
+CREATE OR REPLACE FUNCTION public.get_user_recent_messages(user_row users)
+RETURNS SETOF recent_messages
+LANGUAGE SQL STABLE
+AS $$
+    SELECT * FROM public.recent_messages WHERE username = user_row.username;
+$$;
+CREATE OR REPLACE FUNCTION public.get_user_recent_messages(active_user_row active_users)
+RETURNS SETOF recent_messages
+LANGUAGE SQL STABLE
+AS $$
+    SELECT * FROM public.recent_messages WHERE username = active_user_row.username;
+$$;
+CREATE OR REPLACE FUNCTION public.get_user_first_message(active_user_row active_users)
+RETURNS SETOF recent_messages ROWS 1
+LANGUAGE SQL STABLE
+AS $$
+    SELECT * FROM public.recent_messages WHERE username = active_user_row.username ORDER BY id ASC LIMIT 1;
+$$;
+
+
+-- Valid postgresql function override but that produce an unresolvable postgrest function call
+create function postgrest_unresolvable_function() returns void language sql as '';
+create function postgrest_unresolvable_function(a text) returns int language sql as 'select 1';
+create function postgrest_unresolvable_function(a int) returns text language sql as $$ 
+    SELECT 'foo' 
+$$;
+-- Valid postgresql function override with differents returns types depending of different arguments
+create function postgrest_resolvable_with_override_function() returns void language sql as '';
+create function postgrest_resolvable_with_override_function(a text) returns int language sql as 'select 1';
+create function postgrest_resolvable_with_override_function(b int) returns text language sql as $$ 
+    SELECT 'foo' 
+$$;
+-- Function overrides returning setof tables
+create function postgrest_resolvable_with_override_function(profile_id bigint) returns setof user_profiles language sql stable as $$
+    SELECT * FROM user_profiles WHERE id = profile_id;
+$$;
+create function postgrest_resolvable_with_override_function(cid bigint, search text default '') returns setof messages language sql stable as $$
+    SELECT * FROM messages WHERE channel_id = cid AND message = search;
+$$;
+-- Function override taking a table as argument and returning a setof
+create function postgrest_resolvable_with_override_function(user_row users) returns setof messages language sql stable as $$
+    SELECT * FROM messages WHERE messages.username = user_row.username;
+$$;
+
+create or replace function public.polymorphic_function_with_different_return(bool) returns int language sql as 'SELECT 1';
+create or replace function public.polymorphic_function_with_different_return(int) returns int language sql as 'SELECT 2';
+create or replace function public.polymorphic_function_with_different_return(text) returns text language sql as $$ SELECT 'foo' $$;
+
+create or replace function public.polymorphic_function_with_no_params_or_unnamed() returns int language sql as 'SELECT 1';
+create or replace function public.polymorphic_function_with_no_params_or_unnamed(bool) returns int language sql as 'SELECT 2';
+create or replace function public.polymorphic_function_with_no_params_or_unnamed(text) returns text language sql as $$ SELECT 'foo' $$;
+-- Function with a single unnamed params that isn't a json/jsonb/text should never appears in the type gen as it won't be in postgrest schema
+create or replace function public.polymorphic_function_with_unnamed_integer(int) returns int language sql as 'SELECT 1';
+create or replace function public.polymorphic_function_with_unnamed_json(json) returns int language sql as 'SELECT 1';
+create or replace function public.polymorphic_function_with_unnamed_jsonb(jsonb) returns int language sql as 'SELECT 1';
+create or replace function public.polymorphic_function_with_unnamed_text(text) returns int language sql as 'SELECT 1';
+
+-- Functions with unnamed parameters that have default values
+create or replace function public.polymorphic_function_with_unnamed_default() returns int language sql as 'SELECT 1';
+create or replace function public.polymorphic_function_with_unnamed_default(int default 42) returns int language sql as 'SELECT 2';
+create or replace function public.polymorphic_function_with_unnamed_default(text default 'default') returns text language sql as $$ SELECT 'foo' $$;
+
+-- Functions with unnamed parameters that have default values and multiple overloads
+create or replace function public.polymorphic_function_with_unnamed_default_overload() returns int language sql as 'SELECT 1';
+create or replace function public.polymorphic_function_with_unnamed_default_overload(int default 42) returns int language sql as 'SELECT 2';
+create or replace function public.polymorphic_function_with_unnamed_default_overload(text default 'default') returns text language sql as $$ SELECT 'foo' $$;
+create or replace function public.polymorphic_function_with_unnamed_default_overload(bool default true) returns int language sql as 'SELECT 3';
+
 -- Function creating a computed field
 create function public.blurb_message(public.messages) returns character varying as
 $$
 select substring($1.message, 1, 3);
 $$ language sql stable;
+
+
+create or replace function public.function_returning_row()
+returns public.users
+language sql
+stable
+as $$
+  select * from public.users limit 1;
+$$;
+
+
+create or replace function public.function_returning_single_row(messages public.messages)
+returns public.users
+language sql
+stable
+as $$
+  select * from public.users limit 1;
+$$;
+
+create or replace function public.function_returning_set_of_rows()
+returns setof public.users
+language sql
+stable
+as $$
+  select * from public.users;
+$$;
+
+
+-- Function that returns a single element
+CREATE OR REPLACE FUNCTION public.function_using_table_returns(user_row users)
+RETURNS user_profiles
+LANGUAGE SQL STABLE
+AS $$
+  SELECT * FROM public.user_profiles WHERE username = user_row.username LIMIT 1;
+$$;
+
+CREATE OR REPLACE FUNCTION public.function_using_setof_rows_one(user_row users)
+RETURNS SETOF user_profiles
+LANGUAGE SQL STABLE
+ROWS 1
+AS $$
+  SELECT * FROM public.user_profiles WHERE username = user_row.username LIMIT 1;
+$$;

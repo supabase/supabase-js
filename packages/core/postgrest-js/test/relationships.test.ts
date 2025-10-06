@@ -6,7 +6,7 @@ import { Json } from '../src/select-query-parser/types'
 import { RequiredDeep } from 'type-fest'
 
 const REST_URL = 'http://localhost:3000'
-export const postgrest = new PostgrestClient<Database>(REST_URL)
+const postgrest = new PostgrestClient<Database>(REST_URL)
 
 const UsersRowSchema = z.object({
   age_range: z.unknown().nullable(),
