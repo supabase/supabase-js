@@ -61,4 +61,4 @@ jobs:
           EOF
           )
 
-          curl -X POST -H 'Content-type: application/json' --data "$payload" ${{ secrets.SLACK_NOTIFICATIONS_WEBHOOK }}
+          curl -X POST -H 'Content-type: application/json' --data "$payload" ${{ secrets.SLACK_CLIENT_LIBS_WEBHOOK }}
