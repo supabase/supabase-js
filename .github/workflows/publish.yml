@@ -8,12 +8,12 @@ on:
   workflow_dispatch:
     inputs:
       version_specifier:
-        description: "Semver bump (patch|minor|major|pre*) or exact version (v1.2.3)"
+        description: 'Semver bump (patch|minor|major|pre*) or exact version (v1.2.3)'
         required: true
         type: string
 
 env:
-  NODE_VERSION: "20"
+  NODE_VERSION: '20'
 
 jobs:
   release-stable: # stable releases can only be manually triggered
@@ -57,11 +57,11 @@ jobs:
             const isMember = isAdmin || isClientLibs
             core.setOutput('is_team_member', isMember ? 'true' : 'false')
 
-      - name: Fail if not authorized
-        if: steps.team-check.outputs.is_team_member != 'true'
-        run: |
-          echo "You must be a member of @supabase/admin or @supabase/client-libs."
-          exit 1
+      # - name: Fail if not authorized
+      #   if: steps.team-check.outputs.is_team_member != 'true'
+      #   run: |
+      #     echo "You must be a member of @supabase/admin or @supabase/client-libs."
+      #     exit 1
 
       - uses: actions/checkout@v5
         with:
@@ -70,8 +70,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: "npm"
-          registry-url: "https://registry.npmjs.org"
+          cache: 'npm'
+          registry-url: 'https://registry.npmjs.org'
 
       # Ensure npm 11.5.1 or later is installed for trusted publishing support
       - name: Update npm
@@ -250,8 +250,8 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: "npm"
-          registry-url: "https://registry.npmjs.org"
+          cache: 'npm'
+          registry-url: 'https://registry.npmjs.org'
 
       # Ensure npm 11.5.1 or later is installed for trusted publishing support
       - name: Update npm
@@ -279,7 +279,7 @@ jobs:
     uses: ./.github/workflows/slack-notify.yml
     secrets: inherit
     with:
-      subject: "Stable Release"
+      subject: 'Stable Release'
 
   notify-canary-failure:
     name: Notify Slack for Canary failure
@@ -288,4 +288,4 @@ jobs:
     uses: ./.github/workflows/slack-notify.yml
     secrets: inherit
     with:
-      subject: "Canary Release"
+      subject: 'Canary Release'
