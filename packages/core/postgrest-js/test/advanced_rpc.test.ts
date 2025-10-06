@@ -1247,3 +1247,65 @@ describe('advanced rpc', () => {
     UserProfileSchema.parse(res.data)
   })
 })
+
+test('should be able to filter before and after select rpc', async () => {
+  const res = await postgrest
+    .rpc('get_user_profile', {
+      //@ts-expect-error Type '{ username: string; }' is missing the following properties from type '{ age_range: unknown; catchphrase: unknown; data: unknown; status: "ONLINE" | "OFFLINE" | null; username: string; }': age_range, catchphrase, data, status
+      user_row: { username: 'supabot' },
+    })
+    .select('id, username, users(username, catchphrase)')
+    .eq('username', 'nope')
+
+  expect(res).toMatchInlineSnapshot(`
+    Object {
+      "count": null,
+      "data": null,
+      "error": null,
+      "status": 200,
+      "statusText": "OK",
+    }
+  `)
+  const res2 = await postgrest
+    .rpc('get_user_profile', {
+      //@ts-expect-error Type '{ username: string; }' is missing the following properties from type
+      user_row: { username: 'supabot' },
+    })
+    // should also be able to fitler before the select
+    .eq('username', 'nope')
+    .select('id, username, users(username, catchphrase)')
+
+  expect(res2).toMatchInlineSnapshot(`
+    Object {
+      "count": null,
+      "data": null,
+      "error": null,
+      "status": 200,
+      "statusText": "OK",
+    }
+  `)
+  const res3 = await postgrest
+    .rpc('get_user_profile', {
+      //@ts-expect-error Type '{ username: string; }' is missing the following properties from type
+      user_row: { username: 'supabot' },
+    })
+    // should also be able to fitler before the select
+    .eq('username', 'supabot')
+    .select('username, users(username, catchphrase)')
+
+  expect(res3).toMatchInlineSnapshot(`
+    Object {
+      "count": null,
+      "data": Object {
+        "username": "supabot",
+        "users": Object {
+          "catchphrase": "'cat' 'fat'",
+          "username": "supabot",
+        },
+      },
+      "error": null,
+      "status": 200,
+      "statusText": "OK",
+    }
+  `)
+})
