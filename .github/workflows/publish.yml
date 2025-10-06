@@ -104,15 +104,20 @@ jobs:
 
       - name: Set git remote to use App token
         run: git remote set-url origin https://x-access-token:${{ steps.app-token.outputs.token }}@github.com/supabase/supabase-js.git
-
+      
       - name: Test App token git push
         env:
           RELEASE_GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
           git checkout --orphan test-token-push
           git commit --allow-empty -m "chore(repo): test push"
-          git remote set-url origin https://x-access-token:${RELEASE_GITHUB_TOKEN}@github.com/supabase/supabase-js.git
+          # Unset credential helper so git does NOT use GITHUB_TOKEN
           git config --global --unset credential.helper || true
+          git config --unset credential.helper || true
+          # Set remote to use the GitHub App token
+          git remote set-url origin https://x-access-token:${RELEASE_GITHUB_TOKEN}@github.com/supabase/supabase-js.git
+          # Optionally: show remote for debug (token will be masked in logs)
+          git remote -v
           git push origin test-token-push
 
       - name: Release
