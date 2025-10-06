@@ -8,12 +8,12 @@ on:
   workflow_dispatch:
     inputs:
       version_specifier:
-        description: 'Semver bump (patch|minor|major|pre*) or exact version (v1.2.3)'
+        description: "Semver bump (patch|minor|major|pre*) or exact version (v1.2.3)"
         required: true
         type: string
 
 env:
-  NODE_VERSION: '20'
+  NODE_VERSION: "20"
 
 jobs:
   release-stable: # stable releases can only be manually triggered
@@ -24,11 +24,17 @@ jobs:
       id-token: write
 
     steps:
+      - name: Generate token
+        id: app-token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ secrets.APP_ID }}
+          private-key: ${{ secrets.PRIVATE_KEY }}
       - name: Check if actor is member of admin or client-libs team
         id: team-check
         uses: actions/github-script@v7
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+          github-token: ${{ steps.app-token.outputs.token }}
           script: |
             const org = 'supabase'
             const { actor } = context
@@ -57,12 +63,6 @@ jobs:
           echo "You must be a member of @supabase/admin or @supabase/client-libs."
           exit 1
 
-      - name: Generate token
-        id: app-token
-        uses: actions/create-github-app-token@v2
-        with:
-          app-id: ${{ secrets.APP_ID }}
-          private-key: ${{ secrets.PRIVATE_KEY }}
       - uses: actions/checkout@v5
         with:
           fetch-depth: 0
@@ -70,8 +70,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-          registry-url: 'https://registry.npmjs.org'
+          cache: "npm"
+          registry-url: "https://registry.npmjs.org"
 
       # Ensure npm 11.5.1 or later is installed for trusted publishing support
       - name: Update npm
@@ -250,8 +250,8 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-          registry-url: 'https://registry.npmjs.org'
+          cache: "npm"
+          registry-url: "https://registry.npmjs.org"
 
       # Ensure npm 11.5.1 or later is installed for trusted publishing support
       - name: Update npm
@@ -279,7 +279,7 @@ jobs:
     uses: ./.github/workflows/slack-notify.yml
     secrets: inherit
     with:
-      subject: 'Stable Release'
+      subject: "Stable Release"
 
   notify-canary-failure:
     name: Notify Slack for Canary failure
@@ -288,4 +288,4 @@ jobs:
     uses: ./.github/workflows/slack-notify.yml
     secrets: inherit
     with:
-      subject: 'Canary Release'
+      subject: "Canary Release"
