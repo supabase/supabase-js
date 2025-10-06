@@ -1,36 +1,61 @@
 import { execSync } from 'child_process'
 ;(async () => {
+  // Set remote to use GitHub App token
   if (process.env.RELEASE_GITHUB_TOKEN) {
     const remoteUrl = `https://x-access-token:${process.env.RELEASE_GITHUB_TOKEN}@github.com/supabase/supabase-js.git`
     execSync(`git remote set-url origin "${remoteUrl}"`)
   }
 
-  // releaseChangelog should use the GitHub token with permission for tagging
-  // before switching the token, backup the GITHUB_TOKEN so that it
-  // can be restored afterwards and used by releasePublish. We can't use the same
-  // token, because releasePublish wants a token that has the id_token: write permission
-  // so that we can use OIDC for trusted publishing
+  // Backup GITHUB_TOKEN for later restore
   const gh_token_bak = process.env.GITHUB_TOKEN
   process.env.GITHUB_TOKEN = process.env.RELEASE_GITHUB_TOKEN
-  // backup original auth header
-  const originalAuth = execSync('git config --local http.https://github.com/.extraheader')
-    .toString()
-    .trim()
-  // switch the token used
+
+  // Backup original auth header
+  let originalAuth = ''
+  try {
+    originalAuth = execSync('git config --local http.https://github.com/.extraheader')
+      .toString()
+      .trim()
+  } catch {
+    // Might not exist, ignore
+  }
+
+  // Switch the token used for git http requests
   const authHeader = `AUTHORIZATION: basic ${Buffer.from(`x-access-token:${process.env.RELEASE_GITHUB_TOKEN}`).toString('base64')}`
   execSync(`git config --local http.https://github.com/.extraheader "${authHeader}"`)
 
-  // npm publish with OIDC
-  // not strictly necessary to restore the header but do it incase  we require it later
-  execSync(`git config --local http.https://github.com/.extraheader "${originalAuth}"`)
-  // restore the GH token
+  // [Your code for changelog/tagging or npm publish goes here...]
+
+  // Restore the header (if it existed) and GH token
+  if (originalAuth) {
+    execSync(`git config --local http.https://github.com/.extraheader "${originalAuth}"`)
+  } else {
+    execSync(`git config --local --unset http.https://github.com/.extraheader || true`)
+  }
   process.env.GITHUB_TOKEN = gh_token_bak
 
   // ---- Create release branch + PR ----
-  // switch back to the releaser GitHub token
+  // Switch back to the releaser GitHub token
   process.env.GITHUB_TOKEN = process.env.RELEASE_GITHUB_TOKEN
 
-  const branchName = `release-test}`
+  // Remove ALL credential helpers to ensure only our token is used
+  try {
+    execSync('git config --system --unset credential.helper || true')
+  } catch {}
+  try {
+    execSync('git config --global --unset credential.helper || true')
+  } catch {}
+  try {
+    execSync('git config --local --unset credential.helper || true')
+  } catch {}
+
+  // Ensure remote is set again before push
+  if (process.env.RELEASE_GITHUB_TOKEN) {
+    const remoteUrl = `https://x-access-token:${process.env.RELEASE_GITHUB_TOKEN}@github.com/supabase/supabase-js.git`
+    execSync(`git remote set-url origin "${remoteUrl}"`)
+  }
+
+  const branchName = `release-test`
 
   try {
     execSync(`git checkout -b ${branchName}`)
@@ -45,14 +70,9 @@ import { execSync } from 'child_process'
       console.log('No changes to commit')
     }
 
-    if (process.env.RELEASE_GITHUB_TOKEN) {
-      const remoteUrl = `https://x-access-token:${process.env.RELEASE_GITHUB_TOKEN}@github.com/supabase/supabase-js.git`
-      execSync(`git remote set-url origin "${remoteUrl}"`)
-    }
-
     execSync(`git push origin ${branchName}`)
 
-    // Open PR using GitHub CLI
+    // Open PR using GitHub CLI (GH_TOKEN is automatically picked up in CI)
     execSync(
       `gh pr create --base master --head ${branchName} --title "chore(repo): test permissions" --body "chore(repo): test permissions"`,
       { stdio: 'inherit' }
