@@ -47,6 +47,11 @@ if (!validSpecifiers.includes(versionSpecifier) && !isValidVersion) {
   //   specifier: versionSpecifier,
   // })
 
+  if (process.env.RELEASE_GITHUB_TOKEN) {
+    const remoteUrl = `https://x-access-token:${process.env.RELEASE_GITHUB_TOKEN}@github.com/supabase/supabase-js.git`
+    execSync(`git remote set-url origin "${remoteUrl}"`)
+  }
+
   // Update version.ts files with the new versions
   console.log('\n📦 Updating version.ts files...')
   // execSync('npx tsx scripts/update-version-files.ts', { stdio: 'inherit' })

@@ -111,6 +111,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           RELEASE_GITHUB_TOKEN: ${{ steps.app-token.outputs.token }} # used for tags
         run: |
+          git remote set-url origin https://x-access-token:${{ steps.app-token.outputs.token }}@github.com/supabase/supabase-js.git
           npm run release-stable -- --versionSpecifier "${{ github.event.inputs.version_specifier }}"
 
       - name: Summary
