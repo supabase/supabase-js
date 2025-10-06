@@ -16,7 +16,7 @@ env:
   NODE_VERSION: '20'
 
 jobs:
-  release-stable:
+  release-stable: # stable releases can only be manually triggered
     if: ${{ github.event_name == 'workflow_dispatch' }}
     runs-on: ubuntu-latest
     permissions:
@@ -74,6 +74,7 @@ jobs:
           cache: 'npm'
           registry-url: 'https://registry.npmjs.org'
 
+      # Ensure npm 11.5.1 or later is installed for trusted publishing support
       - name: Update npm
         run: npm install -g npm@latest
 
@@ -206,7 +207,12 @@ jobs:
     uses: ./.github/workflows/ci-auth-js-node18.yml
     permissions:
       actions: read
-      contents: read
+      contents:
+        read
+
+  # ==========================================
+  # CANARY RELEASE (only on master, after all CI passes)
+  # ==========================================
 
   release-canary:
     name: Release Canary
@@ -215,6 +221,7 @@ jobs:
     permissions:
       contents: read
       id-token: write
+    # Only run on master branch pushes, and only if all CI jobs succeeded
     if: |
       github.ref == 'refs/heads/master' &&
       github.event_name == 'push' &&
@@ -241,6 +248,7 @@ jobs:
           cache: 'npm'
           registry-url: 'https://registry.npmjs.org'
 
+      # Ensure npm 11.5.1 or later is installed for trusted publishing support
       - name: Update npm
         run: npm install -g npm@latest
       - name: Install dependencies

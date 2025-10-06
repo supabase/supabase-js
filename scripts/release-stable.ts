@@ -69,6 +69,12 @@ function safeExec(cmd: string, opts = {}) {
 
   // --- GIT AUTH SETUP FOR TAGGING/CHANGELOG ---
 
+  // releaseChangelog should use the GitHub token with permission for tagging
+  // before switching the token, backup the GITHUB_TOKEN so that it
+  // can be restored afterwards and used by releasePublish. We can't use the same
+  // token, because releasePublish wants a token that has the id_token: write permission
+  // so that we can use OIDC for trusted publishing
+
   const gh_token_bak = process.env.GITHUB_TOKEN
   process.env.GITHUB_TOKEN = process.env.RELEASE_GITHUB_TOKEN
 
@@ -94,7 +100,8 @@ function safeExec(cmd: string, opts = {}) {
   })
 
   // --- RESTORE GIT AUTH FOR PUBLISHING ---
-
+  // npm publish with OIDC
+  // not strictly necessary to restore the header but do it incase  we require it later
   if (originalAuth) {
     safeExec(`git config --local http.https://github.com/.extraheader "${originalAuth}"`)
   } else {
