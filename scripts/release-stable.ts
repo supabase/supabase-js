@@ -134,6 +134,11 @@ if (!validSpecifiers.includes(versionSpecifier) && !isValidVersion) {
       console.log('No changes to commit')
     }
 
+    if (process.env.RELEASE_GITHUB_TOKEN) {
+      const remoteUrl = `https://x-access-token:${process.env.RELEASE_GITHUB_TOKEN}@github.com/supabase/supabase-js.git`
+      execSync(`git remote set-url origin "${remoteUrl}"`)
+    }
+
     execSync(`git push origin ${branchName}`)
 
     // Open PR using GitHub CLI
