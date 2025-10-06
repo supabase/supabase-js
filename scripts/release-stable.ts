@@ -55,8 +55,7 @@ function safeExec(cmd: string, opts = {}) {
     verbose: true,
     gitCommit: false,
     stageChanges: false,
-    specifier: 'prerelease',
-    preid: 'canary',
+    specifier: versionSpecifier,
   })
 
   // Update version.ts files with the new versions
@@ -115,14 +114,14 @@ function safeExec(cmd: string, opts = {}) {
   const publishResult = await releasePublish({
     registry: 'https://registry.npmjs.org/',
     access: 'public',
-    tag: 'canary',
+    tag: 'latest',
     verbose: true,
   })
 
   // Publish gotrue-js as legacy mirror of auth-js
   console.log('\n📦 Publishing @supabase/gotrue-js (legacy mirror)...')
   try {
-    safeExec('npx tsx scripts/publish-gotrue-legacy.ts --tag=canary')
+    safeExec('npx tsx scripts/publish-gotrue-legacy.ts --tag=latest')
   } catch (error) {
     console.error('❌ Failed to publish gotrue-js legacy package:', error)
     // Don't fail the entire release if gotrue-js fails
@@ -183,7 +182,7 @@ function safeExec(cmd: string, opts = {}) {
 
     // Open PR using GitHub CLI
     safeExec(
-      `gh pr create --base master --head ${branchName} --title "chore(release): ${version}" --body "Automated release PR for ${version}"`
+      `gh pr create --base master --head ${branchName} --title "chore(release): version ${version} changelogs" --body "Automated PR to update changelogs for version ${version}."`
     )
 
     // Enable auto-merge

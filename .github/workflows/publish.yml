@@ -47,7 +47,7 @@ jobs:
                   username: actor,
                 })
                 return res && res.status === 200
-              } catch (error) {
+              } catch (_) {
                 return false
               }
             }
@@ -265,20 +265,20 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           RELEASE_GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
 
-  # notify-stable-failure:
-  #   name: Notify Slack for Stable failure
-  #   needs: release-stable
-  #   if: ${{ always() && github.event_name == 'workflow_dispatch' && needs.release-stable.result == 'failure' }}
-  #   uses: ./.github/workflows/slack-notify.yml
-  #   secrets: inherit
-  #   with:
-  #     subject: 'Stable Release'
+  notify-stable-failure:
+    name: Notify Slack for Stable failure
+    needs: release-stable
+    if: ${{ always() && github.event_name == 'workflow_dispatch' && needs.release-stable.result == 'failure' }}
+    uses: ./.github/workflows/slack-notify.yml
+    secrets: inherit
+    with:
+      subject: 'Stable Release'
 
-  # notify-canary-failure:
-  #   name: Notify Slack for Canary failure
-  #   needs: release-canary
-  #   if: ${{ always() && github.event_name == 'push' && needs.release-canary.result == 'failure' }}
-  #   uses: ./.github/workflows/slack-notify.yml
-  #   secrets: inherit
-  #   with:
-  #     subject: 'Canary Release'
+  notify-canary-failure:
+    name: Notify Slack for Canary failure
+    needs: release-canary
+    if: ${{ always() && github.event_name == 'push' && needs.release-canary.result == 'failure' }}
+    uses: ./.github/workflows/slack-notify.yml
+    secrets: inherit
+    with:
+      subject: 'Canary Release'
