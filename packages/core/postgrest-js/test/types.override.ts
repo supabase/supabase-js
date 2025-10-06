@@ -50,13 +50,7 @@ export type Database = MergeDeep<
           }
         }
       }
-      Functions: {
-        get_user_profile_non_nullable: {
-          SetofOptions: {
-            isNotNullable: true
-          }
-        }
-      }
+      Functions: {}
       Views: {}
       Enums: {}
       CompositeTypes: {}
