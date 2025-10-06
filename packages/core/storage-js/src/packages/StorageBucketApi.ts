@@ -28,7 +28,7 @@ export default class StorageBucketApi {
       }
     }
 
-    this.url = baseUrl.href
+    this.url = baseUrl.href.replace(/\/$/, '')
     this.headers = { ...DEFAULT_HEADERS, ...headers }
     this.fetch = resolveFetch(fetch)
   }
