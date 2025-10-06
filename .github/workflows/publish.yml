@@ -39,29 +39,37 @@ jobs:
       # Ensure npm 11.5.1 or later is installed for trusted publishing support
       - name: Update npm
         run: npm install -g npm@latest
+
       - name: Install dependencies
         run: npm ci --legacy-peer-deps
+
       - name: Configure git
         run: |
           git config --global user.name "supabase-releaser[bot]"
           git config --global user.email "supabase-releaser[bot]@users.noreply.github.com"
 
+      # Remove ALL git credential helpers to ensure our App token is used
+      - name: Remove Actions credential helper
+        run: |
+          git config --system --unset credential.helper || true
+          git config --global --unset credential.helper || true
+          git config --local --unset credential.helper || true
+
       - name: Set git remote to use App token
         run: git remote set-url origin https://x-access-token:${{ steps.app-token.outputs.token }}@github.com/supabase/supabase-js.git
 
-      - name: Authenticate gh CLI with App token
+      # No need to run gh auth login --with-token if GH_TOKEN is set
+      - name: Create and push branch with gh CLI
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
-        run: |
-          gh auth login --with-token
-
-      - name: Create and push branch with gh CLI
         run: |
           git checkout --orphan test-token-push
           git commit --allow-empty -m "chore(repo): test push"
           git push origin test-token-push
 
       - name: Create pull request with gh CLI
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
           gh pr create \
             --base master \
@@ -81,10 +89,7 @@ jobs:
     name: Trigger Update JS Libs
     runs-on: ubuntu-latest
     needs: release-stable
-    if: ${{
-      github.event_name == 'workflow_dispatch' &&
-      needs.release-stable.result == 'success'
-      }}
+    if: ${{ github.event_name == 'workflow_dispatch' && needs.release-stable.result == 'success' }}
     steps:
       - name: Generate token
         id: app-token
@@ -112,10 +117,7 @@ jobs:
     name: Trigger Supabase Docs Update
     runs-on: ubuntu-latest
     needs: [release-stable]
-    if: ${{
-      github.event_name == 'workflow_dispatch' &&
-      needs.release-stable.result == 'success'
-      }}
+    if: ${{ github.event_name == 'workflow_dispatch' && needs.release-stable.result == 'success' }}
     steps:
       - name: Generate token
         id: app-token
