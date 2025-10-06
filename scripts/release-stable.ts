@@ -131,12 +131,16 @@ function safeExec(cmd: string, opts = {}) {
 
   // ---- CREATE RELEASE BRANCH + PR ----
   process.env.GITHUB_TOKEN = process.env.RELEASE_GITHUB_TOKEN
-  // Remove ALL credential helpers to ensure only our token is used
+
+  // REMOVE ALL credential helpers and .extraheader IMMEDIATELY BEFORE PUSH
   try {
     safeExec('git config --global --unset credential.helper || true')
   } catch {}
   try {
     safeExec('git config --local --unset credential.helper || true')
+  } catch {}
+  try {
+    safeExec('git config --local --unset http.https://github.com/.extraheader || true')
   } catch {}
 
   // Ensure remote is set again before push
@@ -171,6 +175,9 @@ function safeExec(cmd: string, opts = {}) {
     } catch {
       console.log('No changes to commit')
     }
+
+    // DEBUG: Show credential config and remote before push
+    safeExec('git config --local --get http.https://github.com/.extraheader || true')
 
     safeExec(`git push origin ${branchName}`)
 
