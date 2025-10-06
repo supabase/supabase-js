@@ -80,6 +80,7 @@ channel.subscribe((status, err) => {
 - `REALTIME_URL` is `'ws://localhost:4000/socket'` when developing locally and `'wss://<project_ref>.supabase.co/realtime/v1'` when connecting to your Supabase project.
 - `API_KEY` is a JWT whose claims must contain `exp` and `role` (existing database role).
 - Channel name can be any `string`.
+- Setting `private` to `true` means that the client will use RLS to determine if the user can connect or not to a given channel.
 
 ## Broadcast
 
@@ -106,9 +107,38 @@ channel.subscribe(async (status) => {
 
 ### Notes:
 
-- Setting `ack` to `true` means that the `channel.send` promise will resolve once server replies with acknowledgement that it received the broadcast message request.
+- Setting `ack` to `true` means that the `channel.send` promise will resolve once server replies with acknowledgment that it received the broadcast message request.
 - Setting `self` to `true` means that the client will receive the broadcast message it sent out.
-- Setting `private` to `true` means that the client will use RLS to determine if the user can connect or not to a given channel.
+
+### Broadcast Replay
+
+Broadcast Replay enables **private** channels to access messages that were sent earlier. Only messages published via [Broadcast From the Database](https://supabase.com/docs/guides/realtime/broadcast#trigger-broadcast-messages-from-your-database) are available for replay.
+
+You can configure replay with the following options:
+
+- **`since`** (Required): The epoch timestamp in milliseconds, specifying the earliest point from which messages should be retrieved.
+- **`limit`** (Optional): The number of messages to return. This must be a positive integer, with a maximum value of 25.
+
+Example:
+
+```typescript
+const twelveHours = 12 * 60 * 60 * 1000
+const twelveHoursAgo = Date.now() - twelveHours
+
+const config = { private: true, broadcast: { replay: { since: twelveHoursAgo, limit: 10 } } }
+
+supabase
+  .channel('main:room', { config })
+  .on('broadcast', { event: 'my_event' }, (payload) => {
+    if (payload?.meta?.replayed) {
+      console.log('This message was sent earlier:', payload)
+    } else {
+      console.log('This is a new message', payload)
+    }
+    // ...
+  })
+  .subscribe()
+```
 
 ## Presence
 
