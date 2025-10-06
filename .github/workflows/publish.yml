@@ -46,6 +46,7 @@ jobs:
                   team_slug,
                   username: actor,
                 })
+                console.log('res', JSON.stringify(res, null, 2))
                 return res && res.status === 200
               } catch (_) {
                 return false
@@ -55,6 +56,9 @@ jobs:
             const isAdmin = await isTeamMember('admin')
             const isClientLibs = await isTeamMember('client-libs')
             const isMember = isAdmin || isClientLibs
+            console.log('isAdmin', isAdmin)
+            console.log('isClientLibs', isClientLibs)
+            console.log('isMember', isMember)
             core.setOutput('is_team_member', isMember ? 'true' : 'false')
 
       - name: Fail if not authorized
