@@ -66,13 +66,10 @@ export default class PostgrestQueryBuilder<
     >,
   >(
     columns?: Query,
-    {
-      head = false,
-      count,
-    }: {
+    options?: {
       head?: boolean
       count?: 'exact' | 'planned' | 'estimated'
-    } = {}
+    }
   ): PostgrestFilterBuilder<
     ClientOptions,
     Schema,
@@ -82,6 +79,8 @@ export default class PostgrestQueryBuilder<
     Relationships,
     'GET'
   > {
+    const { head = false, count } = options ?? {}
+
     const method = head ? 'HEAD' : 'GET'
     // Remove whitespaces except when quoted
     let quoted = false
