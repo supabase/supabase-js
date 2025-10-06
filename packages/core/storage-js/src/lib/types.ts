@@ -103,17 +103,51 @@ export interface SearchOptions {
   search?: string
 }
 
+export interface SortByV2 {
+  column: 'name' | 'updated_at' | 'created_at'
+  order?: 'asc' | 'desc'
+}
+
 export interface SearchV2Options {
+  /**
+   * The number of files you want to be returned.
+   * @default 1000
+   */
   limit?: number
+
+  /**
+   * The prefix search string to filter files by.
+   */
   prefix?: string
+
+  /**
+   * The cursor used for pagination. Pass the value received from nextCursor of the previous request.
+   */
   cursor?: string
+
+  /**
+   * Whether to emulate a hierarchical listing of objects using delimiters.
+   *
+   * - When `false` (default), all objects are listed as flat key/value pairs.
+   * - When `true`, the response groups objects by delimiter, making it appear
+   *   like a file/folder hierarchy.
+   *
+   * @default false
+   */
   with_delimiter?: boolean
+
+  /**
+   * The column and order to sort by
+   * @default 'name asc'
+   */
+  sortBy?: SortByV2
 }
 
 export interface SearchV2Result {
   hasNext: boolean
   folders: { name: string }[]
   objects: FileObject[]
+  nextCursor?: string
 }
 
 export interface FetchParameters {

@@ -23,7 +23,7 @@ exports[`bucket api delete bucket 1`] = `
 
 exports[`bucket api empty bucket 1`] = `
 {
-  "message": "Successfully emptied",
+  "message": "Empty bucket has been queued. Completion may take up to an hour.",
 }
 `;
 
