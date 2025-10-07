@@ -36,22 +36,28 @@ export type GetRpcFunctionFilterBuilderByArgs<
   1: IsAny<Schema> extends true
     ? any
     : IsNever<Args> extends true
-      ? ExtractExactFunction<Schema['Functions'][FnName], Args>
-      : // Otherwise, we attempt to match with one of the function definition in the union based
-        // on the function arguments provided
-        Args extends GenericFunction['Args']
-        ? // This is for retro compatibility, if the funcition is defined with an single return and an union of Args
-          // we fallback to the last function definition matched by name
-          IsNever<
-            LastOf<FindMatchingFunctionByArgs<Schema['Functions'][FnName], Args>>
-          > extends true
-          ? LastOf<Schema['Functions'][FnName]>
-          : // Otherwise, we use the arguments based function definition narrowing to get the right value
-            LastOf<FindMatchingFunctionByArgs<Schema['Functions'][FnName], Args>>
-        : // If we can't find a matching function by args, we try to find one by function name
-          ExtractExactFunction<Schema['Functions'][FnName], Args> extends GenericFunction
-          ? ExtractExactFunction<Schema['Functions'][FnName], Args>
-          : any
+      ? // This is for retro compatibility, if the funcition is defined with an single return and an union of Args
+        // we fallback to the last function definition matched by name
+        IsNever<ExtractExactFunction<Schema['Functions'][FnName], Args>> extends true
+        ? LastOf<Schema['Functions'][FnName]>
+        : ExtractExactFunction<Schema['Functions'][FnName], Args>
+      : Args extends Record<PropertyKey, never>
+        ? LastOf<Schema['Functions'][FnName]>
+        : // Otherwise, we attempt to match with one of the function definition in the union based
+          // on the function arguments provided
+          Args extends GenericFunction['Args']
+          ? // This is for retro compatibility, if the funcition is defined with an single return and an union of Args
+            // we fallback to the last function definition matched by name
+            IsNever<
+              LastOf<FindMatchingFunctionByArgs<Schema['Functions'][FnName], Args>>
+            > extends true
+            ? LastOf<Schema['Functions'][FnName]>
+            : // Otherwise, we use the arguments based function definition narrowing to get the right value
+              LastOf<FindMatchingFunctionByArgs<Schema['Functions'][FnName], Args>>
+          : // If we can't find a matching function by args, we try to find one by function name
+            ExtractExactFunction<Schema['Functions'][FnName], Args> extends GenericFunction
+            ? ExtractExactFunction<Schema['Functions'][FnName], Args>
+            : any
 }[1] extends infer Fn
   ? // If we are dealing with an non-typed client everything is any
     IsAny<Fn> extends true
