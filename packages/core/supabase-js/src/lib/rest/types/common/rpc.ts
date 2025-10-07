@@ -1,0 +1,1 @@
+../../../../../../postgrest-js/src/types/common/rpc.ts

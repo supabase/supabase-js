@@ -1,6 +1,6 @@
 import { expectType, TypeEqual } from './types'
 import { PostgrestClient, PostgrestError } from '../src/index'
-import { Prettify } from '../src/types'
+import { Prettify } from '../src/types/types'
 import { Json } from '../src/select-query-parser/types'
 import { Database } from './types.override'
 import { Database as DatabaseWithOptions } from './types.override-with-options-postgrest13'

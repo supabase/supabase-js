@@ -1,12 +1,8 @@
 import PostgrestBuilder from './PostgrestBuilder'
 import PostgrestFilterBuilder, { InvalidMethodError } from './PostgrestFilterBuilder'
 import { GetResult } from './select-query-parser/result'
-import {
-  GenericSchema,
-  CheckMatchingArrayTypes,
-  ClientServerOptions,
-  MaxAffectedEnabled,
-} from './types'
+import { CheckMatchingArrayTypes, MaxAffectedEnabled } from './types/types'
+import { ClientServerOptions, GenericSchema } from './types/common/common'
 
 export default class PostgrestTransformBuilder<
   ClientOptions extends ClientServerOptions,
@@ -15,7 +11,7 @@ export default class PostgrestTransformBuilder<
   Result,
   RelationName = unknown,
   Relationships = unknown,
-  Method = unknown,
+  Method = unknown
 > extends PostgrestBuilder<ClientOptions, Result> {
   /**
    * Perform a SELECT on the query result.
@@ -28,7 +24,7 @@ export default class PostgrestTransformBuilder<
    */
   select<
     Query extends string = '*',
-    NewResultOne = GetResult<Schema, Row, RelationName, Relationships, Query, ClientOptions>,
+    NewResultOne = GetResult<Schema, Row, RelationName, Relationships, Query, ClientOptions>
   >(
     columns?: Query
   ): PostgrestFilterBuilder<
@@ -226,7 +222,7 @@ export default class PostgrestTransformBuilder<
    * this returns an error.
    */
   maybeSingle<
-    ResultOne = Result extends (infer ResultOne)[] ? ResultOne : never,
+    ResultOne = Result extends (infer ResultOne)[] ? ResultOne : never
   >(): PostgrestBuilder<ClientOptions, ResultOne | null> {
     // Temporary partial fix for https://github.com/supabase/postgrest-js/issues/361
     // Issue persists e.g. for `.insert([...]).select().maybeSingle()`

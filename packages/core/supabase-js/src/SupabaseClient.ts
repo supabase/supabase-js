@@ -1,6 +1,10 @@
 import type { AuthChangeEvent } from '@supabase/auth-js'
 import { FunctionsClient } from '@supabase/functions-js'
-import { PostgrestClient, type PostgrestQueryBuilder } from '@supabase/postgrest-js'
+import {
+  PostgrestClient,
+  type PostgrestFilterBuilder,
+  type PostgrestQueryBuilder,
+} from '@supabase/postgrest-js'
 import {
   type RealtimeChannel,
   type RealtimeChannelOptions,
@@ -23,6 +27,7 @@ import type {
   SupabaseAuthClientOptions,
   SupabaseClientOptions,
 } from './lib/types'
+import { GetRpcFunctionFilterBuilderByArgs } from './lib/rest/types/common/rpc'
 
 /**
  * Supabase Client.
@@ -242,6 +247,11 @@ export default class SupabaseClient<
   rpc<
     FnName extends string & keyof Schema['Functions'],
     Args extends Schema['Functions'][FnName]['Args'] = never,
+    FilterBuilder extends GetRpcFunctionFilterBuilderByArgs<
+      Schema,
+      FnName,
+      Args
+    > = GetRpcFunctionFilterBuilderByArgs<Schema, FnName, Args>,
   >(
     fn: FnName,
     args: Args = {} as Args,
@@ -254,8 +264,24 @@ export default class SupabaseClient<
       get: false,
       count: undefined,
     }
-  ) {
-    return this.rest.rpc(fn, args, options)
+  ): PostgrestFilterBuilder<
+    ClientOptions,
+    Schema,
+    FilterBuilder['Row'],
+    FilterBuilder['Result'],
+    FilterBuilder['RelationName'],
+    FilterBuilder['Relationships'],
+    'RPC'
+  > {
+    return this.rest.rpc(fn, args, options) as unknown as PostgrestFilterBuilder<
+      ClientOptions,
+      Schema,
+      FilterBuilder['Row'],
+      FilterBuilder['Result'],
+      FilterBuilder['RelationName'],
+      FilterBuilder['Relationships'],
+      'RPC'
+    >
   }
 
   /**

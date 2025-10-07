@@ -1,11 +1,7 @@
 import PostgrestQueryBuilder from './PostgrestQueryBuilder'
 import PostgrestFilterBuilder from './PostgrestFilterBuilder'
-import {
-  Fetch,
-  GenericSchema,
-  ClientServerOptions,
-  GetRpcFunctionFilterBuilderByArgs,
-} from './types'
+import { Fetch, GenericSchema, ClientServerOptions } from './types/common/common'
+import { GetRpcFunctionFilterBuilderByArgs } from './types/common/rpc'
 
 /**
  * PostgREST client.
@@ -36,7 +32,7 @@ export default class PostgrestClient<
     '__InternalSupabase'
   >[SchemaName] extends GenericSchema
     ? Omit<Database, '__InternalSupabase'>[SchemaName]
-    : any,
+    : any
 > {
   url: string
   headers: Headers
@@ -72,7 +68,7 @@ export default class PostgrestClient<
   }
   from<
     TableName extends string & keyof Schema['Tables'],
-    Table extends Schema['Tables'][TableName],
+    Table extends Schema['Tables'][TableName]
   >(relation: TableName): PostgrestQueryBuilder<ClientOptions, Schema, Table, TableName>
   from<ViewName extends string & keyof Schema['Views'], View extends Schema['Views'][ViewName]>(
     relation: ViewName
@@ -143,7 +139,7 @@ export default class PostgrestClient<
       Schema,
       FnName,
       Args
-    > = GetRpcFunctionFilterBuilderByArgs<Schema, FnName, Args>,
+    > = GetRpcFunctionFilterBuilderByArgs<Schema, FnName, Args>
   >(
     fn: FnName,
     args: Args = {} as Args,
