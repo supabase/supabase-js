@@ -26,7 +26,7 @@ export default class Push {
   constructor(
     public channel: RealtimeChannel,
     public event: string,
-    public payload: { [key: string]: any } = {},
+    public payload: { [key: string]: any } | ArrayBuffer = {},
     public timeout: number = DEFAULT_TIMEOUT
   ) {}
 

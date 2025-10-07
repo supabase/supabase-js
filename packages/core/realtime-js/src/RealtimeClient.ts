@@ -7,7 +7,9 @@ import {
   DEFAULT_TIMEOUT,
   SOCKET_STATES,
   TRANSPORTS,
-  VSN,
+  DEFAULT_VSN,
+  VSN_1_0_0,
+  VSN_3_0_0,
   WS_CLOSE_NORMAL,
 } from './lib/constants'
 
@@ -70,6 +72,7 @@ export type RealtimeClientOptions = {
   timeout?: number
   heartbeatIntervalMs?: number
   heartbeatCallback?: (status: HeartbeatStatus) => void
+  vsn?: string
   logger?: Function
   encode?: Function
   decode?: Function
@@ -109,6 +112,7 @@ export default class RealtimeClient {
   heartbeatCallback: (status: HeartbeatStatus) => void = noop
   ref: number = 0
   reconnectTimer: Timer | null = null
+  vsn: string = DEFAULT_VSN
   logger: Function = noop
   logLevel?: LogLevel
   encode!: Function
@@ -157,6 +161,7 @@ export default class RealtimeClient {
    * @param options.workerUrl The URL of the worker script. Defaults to https://realtime.supabase.com/worker.js that includes a heartbeat event call to keep the connection alive.
    */
   constructor(endPoint: string, options?: RealtimeClientOptions) {
+    console.log('YOOO')
     // Validate required parameters
     if (!options?.params?.apikey) {
       throw new Error('API key is required to connect to Realtime')
@@ -226,7 +231,7 @@ export default class RealtimeClient {
    * @returns string The URL of the websocket.
    */
   endpointURL(): string {
-    return this._appendParams(this.endPoint, Object.assign({}, this.params, { vsn: VSN }))
+    return this._appendParams(this.endPoint, Object.assign({}, this.params, { vsn: this.vsn }))
   }
 
   /**
@@ -244,12 +249,12 @@ export default class RealtimeClient {
 
     if (this.conn) {
       // Setup fallback timer to prevent hanging in disconnecting state
-      const fallbackTimer = setTimeout(() => {
-        this._setConnectionState('disconnected')
-      }, 100)
-
+      // const fallbackTimer = setTimeout(() => {
+      //   this._setConnectionState('disconnected')
+      // }, 100)
+      //
       this.conn.onclose = () => {
-        clearTimeout(fallbackTimer)
+        // clearTimeout(fallbackTimer)
         this._setConnectionState('disconnected')
       }
 
@@ -825,6 +830,8 @@ export default class RealtimeClient {
     this.worker = options?.worker ?? false
     this.accessToken = options?.accessToken ?? null
     this.heartbeatCallback = options?.heartbeatCallback ?? noop
+    this.vsn = options?.vsn ?? DEFAULT_VSN
+
     // Handle special cases
     if (options?.params) this.params = options.params
     if (options?.logger) this.logger = options.logger
@@ -840,13 +847,27 @@ export default class RealtimeClient {
         return RECONNECT_INTERVALS[tries - 1] || DEFAULT_RECONNECT_FALLBACK
       })
 
-    this.encode =
-      options?.encode ??
-      ((payload: JSON, callback: Function) => {
-        return callback(JSON.stringify(payload))
-      })
+    switch (this.vsn) {
+      case VSN_1_0_0:
+        this.encode =
+          options?.encode ??
+          ((payload: JSON, callback: Function) => {
+            return callback(JSON.stringify(payload))
+          })
 
-    this.decode = options?.decode ?? this.serializer.decode.bind(this.serializer)
+        this.decode =
+          options?.decode ??
+          ((payload: string, callback: Function) => {
+            return callback(JSON.parse(payload))
+          })
+        break
+      case VSN_3_0_0:
+        this.encode = options?.encode ?? this.serializer.encode.bind(this.serializer)
+        this.decode = options?.decode ?? this.serializer.decode.bind(this.serializer)
+        break
+      default:
+        throw new Error(`Unsupported serializer version: ${this.vsn}`)
+    }
 
     // Handle worker setup
     if (this.worker) {

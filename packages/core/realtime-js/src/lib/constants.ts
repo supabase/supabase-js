@@ -1,7 +1,10 @@
 import { version } from './version'
 
 export const DEFAULT_VERSION = `realtime-js/${version}`
-export const VSN: string = '1.0.0'
+
+export const VSN_1_0_0: string = '1.0.0'
+export const VSN_3_0_0: string = '3.0.0'
+export const DEFAULT_VSN: string = VSN_1_0_0
 
 export const VERSION = version
 

@@ -1,6 +1,6 @@
 {
   "name": "@supabase/realtime-js",
-  "version": "0.0.0-automated",
+  "version": "2.75.0",
   "description": "Listen to realtime updates to your PostgreSQL database",
   "keywords": [
     "realtime",
