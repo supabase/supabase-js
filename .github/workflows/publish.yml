@@ -24,11 +24,17 @@ jobs:
       id-token: write
 
     steps:
+      - name: Generate token
+        id: app-token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ secrets.APP_ID }}
+          private-key: ${{ secrets.PRIVATE_KEY }}
       - name: Check if actor is member of admin or client-libs team
         id: team-check
         uses: actions/github-script@v7
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+          github-token: ${{ steps.app-token.outputs.token }}
           script: |
             const org = 'supabase'
             const { actor } = context
@@ -45,24 +51,17 @@ jobs:
                 return false
               }
             }
-
             const isAdmin = await isTeamMember('admin')
             const isClientLibs = await isTeamMember('client-libs')
             const isMember = isAdmin || isClientLibs
             core.setOutput('is_team_member', isMember ? 'true' : 'false')
 
       - name: Fail if not authorized
-        if: steps.team-check.outputs.is_team_member != 'true'
+        if: ${{ steps.team-check.outputs.is_team_member != 'true' }}
         run: |
           echo "You must be a member of @supabase/admin or @supabase/client-libs."
           exit 1
 
-      - name: Generate token
-        id: app-token
-        uses: actions/create-github-app-token@v2
-        with:
-          app-id: ${{ secrets.APP_ID }}
-          private-key: ${{ secrets.PRIVATE_KEY }}
       - uses: actions/checkout@v5
         with:
           fetch-depth: 0
@@ -76,8 +75,10 @@ jobs:
       # Ensure npm 11.5.1 or later is installed for trusted publishing support
       - name: Update npm
         run: npm install -g npm@latest
+
       - name: Install dependencies
         run: npm ci --legacy-peer-deps
+
       - name: Configure git
         run: |
           git config --global user.name "supabase-releaser[bot]"
@@ -98,11 +99,12 @@ jobs:
             exit 1
           fi
 
-      - name: Release
+      - name: Release & create PR
         env:
           NPM_CONFIG_PROVENANCE: true
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          RELEASE_GITHUB_TOKEN: ${{ steps.app-token.outputs.token }} # used for tags
+          RELEASE_GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
           npm run release-stable -- --versionSpecifier "${{ github.event.inputs.version_specifier }}"
 
@@ -117,10 +119,7 @@ jobs:
   docs-after-stable-release:
     name: Generate Documentation
     needs: release-stable
-    if: ${{
-      github.event_name == 'workflow_dispatch' &&
-      needs.release-stable.result == 'success'
-      }}
+    if: ${{ github.event_name == 'workflow_dispatch' && needs.release-stable.result == 'success' }}
     uses: ./.github/workflows/docs.yml
     permissions:
       actions: read
@@ -130,10 +129,7 @@ jobs:
     name: Trigger Update JS Libs
     runs-on: ubuntu-latest
     needs: release-stable
-    if: ${{
-      github.event_name == 'workflow_dispatch' &&
-      needs.release-stable.result == 'success'
-      }}
+    if: ${{ github.event_name == 'workflow_dispatch' && needs.release-stable.result == 'success' }}
     steps:
       - name: Generate token
         id: app-token
@@ -161,11 +157,7 @@ jobs:
     name: Trigger Supabase Docs Update
     runs-on: ubuntu-latest
     needs: [release-stable, docs-after-stable-release]
-    if: ${{
-      github.event_name == 'workflow_dispatch' &&
-      needs.release-stable.result == 'success' &&
-      needs.docs-after-stable-release.result == 'success'
-      }}
+    if: ${{ github.event_name == 'workflow_dispatch' && needs.release-stable.result == 'success' && needs.docs-after-stable-release.result == 'success' }}
     steps:
       - name: Generate token
         id: app-token
@@ -271,7 +263,8 @@ jobs:
         env:
           NPM_CONFIG_PROVENANCE: true
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          RELEASE_GITHUB_TOKEN: ${{ steps.app-token.outputs.token }} # used for tags
+          RELEASE_GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
+
   notify-stable-failure:
     name: Notify Slack for Stable failure
     needs: release-stable

@@ -39,7 +39,18 @@ if (!validSpecifiers.includes(versionSpecifier) && !isValidVersion) {
   process.exit(1)
 }
 
+function safeExec(cmd: string, opts = {}) {
+  try {
+    return execSync(cmd, { stdio: 'inherit', ...opts })
+  } catch (err) {
+    console.error(`❌ Command failed: ${cmd}`)
+    throw err
+  }
+}
+
 ;(async () => {
+  // --- VERSION AND BUILD ---
+
   const { workspaceVersion, projectsVersionData } = await releaseVersion({
     verbose: true,
     gitCommit: false,
@@ -49,28 +60,37 @@ if (!validSpecifiers.includes(versionSpecifier) && !isValidVersion) {
 
   // Update version.ts files with the new versions
   console.log('\n📦 Updating version.ts files...')
-  execSync('npx tsx scripts/update-version-files.ts', { stdio: 'inherit' })
+  safeExec('npx tsx scripts/update-version-files.ts')
 
   // Rebuild packages with correct versions
   console.log('\n🔨 Rebuilding packages with new versions...')
-  execSync('npx nx run-many --target=build --all', { stdio: 'inherit' })
+  safeExec('npx nx run-many --target=build --all')
   console.log('✅ Build complete\n')
+
+  // --- GIT AUTH SETUP FOR TAGGING/CHANGELOG ---
 
   // releaseChangelog should use the GitHub token with permission for tagging
   // before switching the token, backup the GITHUB_TOKEN so that it
   // can be restored afterwards and used by releasePublish. We can't use the same
   // token, because releasePublish wants a token that has the id_token: write permission
   // so that we can use OIDC for trusted publishing
+
   const gh_token_bak = process.env.GITHUB_TOKEN
   process.env.GITHUB_TOKEN = process.env.RELEASE_GITHUB_TOKEN
-  // backup original auth header
-  const originalAuth = execSync('git config --local http.https://github.com/.extraheader')
-    .toString()
-    .trim()
+
+  // backup original auth header if exists
+  let originalAuth = ''
+  try {
+    originalAuth = execSync('git config --local http.https://github.com/.extraheader')
+      .toString()
+      .trim()
+  } catch {}
+
   // switch the token used
   const authHeader = `AUTHORIZATION: basic ${Buffer.from(`x-access-token:${process.env.RELEASE_GITHUB_TOKEN}`).toString('base64')}`
-  execSync(`git config --local http.https://github.com/.extraheader "${authHeader}"`)
+  safeExec(`git config --local http.https://github.com/.extraheader "${authHeader}"`)
 
+  // ---- CHANGELOG GENERATION ---
   const result = await releaseChangelog({
     versionData: projectsVersionData,
     version: workspaceVersion,
@@ -79,11 +99,17 @@ if (!validSpecifiers.includes(versionSpecifier) && !isValidVersion) {
     stageChanges: false,
   })
 
+  // --- RESTORE GIT AUTH FOR PUBLISHING ---
   // npm publish with OIDC
   // not strictly necessary to restore the header but do it incase  we require it later
-  execSync(`git config --local http.https://github.com/.extraheader "${originalAuth}"`)
-  // restore the GH token
+  if (originalAuth) {
+    safeExec(`git config --local http.https://github.com/.extraheader "${originalAuth}"`)
+  } else {
+    safeExec(`git config --local --unset http.https://github.com/.extraheader || true`)
+  }
   process.env.GITHUB_TOKEN = gh_token_bak
+
+  // --- NPM PUBLISH ---
 
   const publishResult = await releasePublish({
     registry: 'https://registry.npmjs.org/',
@@ -95,20 +121,36 @@ if (!validSpecifiers.includes(versionSpecifier) && !isValidVersion) {
   // Publish gotrue-js as legacy mirror of auth-js
   console.log('\n📦 Publishing @supabase/gotrue-js (legacy mirror)...')
   try {
-    execSync('npx tsx scripts/publish-gotrue-legacy.ts --tag=latest', { stdio: 'inherit' })
+    safeExec('npx tsx scripts/publish-gotrue-legacy.ts --tag=latest')
   } catch (error) {
     console.error('❌ Failed to publish gotrue-js legacy package:', error)
     // Don't fail the entire release if gotrue-js fails
     console.log('⚠️  Continuing with release despite gotrue-js publish failure')
   }
 
-  // ---- Create release branch + PR ----
-  // switch back to the releaser GitHub token
+  // ---- CREATE RELEASE BRANCH + PR ----
   process.env.GITHUB_TOKEN = process.env.RELEASE_GITHUB_TOKEN
+
+  // REMOVE ALL credential helpers and .extraheader IMMEDIATELY BEFORE PUSH
+  try {
+    safeExec('git config --global --unset credential.helper || true')
+  } catch {}
+  try {
+    safeExec('git config --local --unset credential.helper || true')
+  } catch {}
+  try {
+    safeExec('git config --local --unset http.https://github.com/.extraheader || true')
+  } catch {}
+
+  // Ensure remote is set again before push
+  if (process.env.RELEASE_GITHUB_TOKEN) {
+    const remoteUrl = `https://x-access-token:${process.env.RELEASE_GITHUB_TOKEN}@github.com/supabase/supabase-js.git`
+    safeExec(`git remote set-url origin "${remoteUrl}"`)
+  }
+
   const version = result.workspaceChangelog?.releaseVersion.rawVersion || workspaceVersion
 
   // Validate version to prevent command injection
-  // Version should match semver pattern or be a valid npm version specifier
   if (
     !version ||
     !/^(v?\d+\.\d+\.\d+(-[a-zA-Z0-9.-]+)?|patch|minor|major|prepatch|preminor|premajor|prerelease)$/.test(
@@ -122,29 +164,31 @@ if (!validSpecifiers.includes(versionSpecifier) && !isValidVersion) {
   const branchName = `release-${version}`
 
   try {
-    execSync(`git checkout -b ${branchName}`)
-    execSync('git add CHANGELOG.md || true')
-    execSync('git add packages/**/CHANGELOG.md || true')
+    safeExec(`git checkout -b ${branchName}`)
+    safeExec('git add CHANGELOG.md || true')
+    safeExec('git add packages/**/CHANGELOG.md || true')
 
     // Commit changes if any
     try {
-      execSync(`git commit -m "chore(release): publish version ${version}"`)
+      safeExec(`git commit -m "chore(release): publish version ${version}"`)
     } catch {
       console.log('No changes to commit')
     }
 
-    execSync(`git push origin ${branchName}`)
+    // DEBUG: Show credential config and remote before push
+    safeExec('git config --local --get http.https://github.com/.extraheader || true')
+
+    safeExec(`git push origin ${branchName}`)
 
     // Open PR using GitHub CLI
-    execSync(
-      `gh pr create --base master --head ${branchName} --title "chore(release): ${version}" --body "Automated release PR for ${version}"`,
-      { stdio: 'inherit' }
+    safeExec(
+      `gh pr create --base master --head ${branchName} --title "chore(release): version ${version} changelogs" --body "Automated PR to update changelogs for version ${version}."`
     )
 
     // Enable auto-merge
-    execSync(`gh pr merge --auto --squash`, { stdio: 'inherit' })
+    safeExec(`gh pr merge --auto --squash`)
 
-    execSync('git stash')
+    safeExec('git stash')
     console.log('✅ Stashed package.json changes')
   } catch (err) {
     console.error('❌ Failed to push release branch or open PR', err)
