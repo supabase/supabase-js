@@ -37,6 +37,7 @@
     "format": "node scripts/format.js",
     "format:check": "node scripts/format.js check",
     "build": "npm run clean && npm run build:cjs && npm run build:esm",
+    "postbuild": "cp -rf ./src/types/common ../supabase-js/src/lib/rest/types/common",
     "build:cjs": "tsc -p tsconfig.json",
     "build:esm": "cpy wrapper.mjs dist/esm/",
     "docs": "typedoc src/index.ts --out docs/v2",
