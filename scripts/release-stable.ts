@@ -170,7 +170,7 @@ function safeExec(cmd: string, opts = {}) {
 
     // Commit changes if any
     try {
-      safeExec(`git commit -m "chore(release): publish version ${version}"`)
+      safeExec(`git commit -m "chore(release): version ${version} changelogs"`)
     } catch {
       console.log('No changes to commit')
     }
