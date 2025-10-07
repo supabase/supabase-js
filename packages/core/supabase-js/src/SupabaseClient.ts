@@ -59,7 +59,8 @@ export default class SupabaseClient<
         { PostgrestVersion: '12' }
     : SchemaNameOrClientOptions extends { PostgrestVersion: string }
       ? SchemaNameOrClientOptions
-      : never,
+      : // otherwise default to 12
+        { PostgrestVersion: '12' },
 > {
   /**
    * Supabase Auth allows you to create and manage user sessions for access to data that is secured by access policies.
