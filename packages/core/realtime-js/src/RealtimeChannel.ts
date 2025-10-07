@@ -586,10 +586,15 @@ export default class RealtimeChannel {
   }
 
   /** @internal */
-  _push(event: string, payload: { [key: string]: any }, timeout = this.timeout) {
+  _push(event: string, payload: { [key: string]: any } | ArrayBuffer, timeout = this.timeout) {
     if (!this.joinedOnce) {
       throw `tried to push '${event}' to '${this.topic}' before joining. Use channel.subscribe() before pushing events`
     }
+    if (event === 'broadcast') {
+      const encoder = new TextEncoder() // Encodes to UTF-8
+      payload = encoder.encode(JSON.stringify(payload)).buffer
+    }
+
     let pushEvent = new Push(this, event, payload, timeout)
     if (this._canPush()) {
       pushEvent.send()
