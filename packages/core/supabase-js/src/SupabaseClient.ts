@@ -184,6 +184,7 @@ export default class SupabaseClient<
    *
    * @param relation - The table or view name to query
    */
+  // @jsr-ignore slow-type-missing-explicit-return-type
   from<RelationName extends string & (keyof Schema['Tables'] | keyof Schema['Views'])>(
     relation: RelationName
   ) {
@@ -198,6 +199,7 @@ export default class SupabaseClient<
    *
    * @param schema - The schema to query
    */
+  // @jsr-ignore slow-type-missing-explicit-return-type
   schema<DynamicSchema extends string & keyof Omit<Database, '__InternalSupabase'>>(
     schema: DynamicSchema
   ) {
@@ -228,6 +230,7 @@ export default class SupabaseClient<
    * `"estimated"`: Uses exact count for low numbers and planned count for high
    * numbers.
    */
+  // @jsr-ignore slow-type-missing-explicit-return-type
   rpc<
     FnName extends string & keyof Schema['Functions'],
     Args extends Schema['Functions'][FnName]['Args'] = never,
