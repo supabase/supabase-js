@@ -70,16 +70,16 @@ type ArrayPostgreSQLTypes = `_${SingleValuePostgreSQLTypes}`
 type TypeScriptSingleValueTypes<T extends SingleValuePostgreSQLTypes> = T extends 'bool'
   ? boolean
   : T extends PostgresSQLNumberTypes
-  ? number
-  : T extends PostgresSQLStringTypes
-  ? string
-  : T extends 'json' | 'jsonb'
-  ? Json
-  : T extends 'void'
-  ? undefined
-  : T extends 'record'
-  ? Record<string, unknown>
-  : unknown
+    ? number
+    : T extends PostgresSQLStringTypes
+      ? string
+      : T extends 'json' | 'jsonb'
+        ? Json
+        : T extends 'void'
+          ? undefined
+          : T extends 'record'
+            ? Record<string, unknown>
+            : unknown
 
 type StripUnderscore<T extends string> = T extends `_${infer U}` ? U : T
 
@@ -98,9 +98,8 @@ export type UnionToIntersection<U> = (U extends any ? (k: U) => void : never) ex
   ? I
   : never
 
-export type LastOf<T> = UnionToIntersection<T extends any ? () => T : never> extends () => infer R
-  ? R
-  : never
+export type LastOf<T> =
+  UnionToIntersection<T extends any ? () => T : never> extends () => infer R ? R : never
 
 export type Push<T extends any[], V> = [...T, V]
 
@@ -117,9 +116,8 @@ export type ExtractFirstProperty<T> = T extends { [K in keyof T]: infer U } ? U 
 // Type predicates
 export type ContainsNull<T> = null extends T ? true : false
 
-export type IsNonEmptyArray<T> = Exclude<T, undefined> extends readonly [unknown, ...unknown[]]
-  ? true
-  : false
+export type IsNonEmptyArray<T> =
+  Exclude<T, undefined> extends readonly [unknown, ...unknown[]] ? true : false
 
 // Types for working with database schemas
 export type TablesAndViews<Schema extends GenericSchema> = Schema['Tables'] &
@@ -127,5 +125,5 @@ export type TablesAndViews<Schema extends GenericSchema> = Schema['Tables'] &
 
 export type GetTableRelationships<
   Schema extends GenericSchema,
-  Tname extends string
+  Tname extends string,
 > = TablesAndViews<Schema>[Tname] extends { Relationships: infer R } ? R : false

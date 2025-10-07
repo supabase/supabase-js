@@ -13,7 +13,7 @@ export default class PostgrestQueryBuilder<
   Schema extends GenericSchema,
   Relation extends GenericTable | GenericView,
   RelationName = unknown,
-  Relationships = Relation extends { Relationships: infer R } ? R : unknown
+  Relationships = Relation extends { Relationships: infer R } ? R : unknown,
 > {
   url: URL
   headers: Headers
@@ -69,7 +69,7 @@ export default class PostgrestQueryBuilder<
       Relationships,
       Query,
       ClientOptions
-    >
+    >,
   >(
     columns?: Query,
     options?: {

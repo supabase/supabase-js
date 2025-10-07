@@ -38,27 +38,27 @@ export type IsStringOperator<Path extends string> = Path extends `${string}->>${
 type ResolveFilterValue<
   Schema extends GenericSchema,
   Row extends Record<string, unknown>,
-  ColumnName extends string
+  ColumnName extends string,
 > = ColumnName extends `${infer RelationshipTable}.${infer Remainder}`
   ? Remainder extends `${infer _}.${infer _}`
     ? ResolveFilterValue<Schema, Row, Remainder>
     : ResolveFilterRelationshipValue<Schema, RelationshipTable, Remainder>
   : ColumnName extends keyof Row
-  ? Row[ColumnName]
-  : // If the column selection is a jsonpath like `data->value` or `data->>value` we attempt to match
-  // the expected type with the parsed custom json type
-  IsStringOperator<ColumnName> extends true
-  ? string
-  : JsonPathToType<Row, JsonPathToAccessor<ColumnName>> extends infer JsonPathValue
-  ? JsonPathValue extends never
-    ? never
-    : JsonPathValue
-  : never
+    ? Row[ColumnName]
+    : // If the column selection is a jsonpath like `data->value` or `data->>value` we attempt to match
+      // the expected type with the parsed custom json type
+      IsStringOperator<ColumnName> extends true
+      ? string
+      : JsonPathToType<Row, JsonPathToAccessor<ColumnName>> extends infer JsonPathValue
+        ? JsonPathValue extends never
+          ? never
+          : JsonPathValue
+        : never
 
 type ResolveFilterRelationshipValue<
   Schema extends GenericSchema,
   RelationshipTable extends string,
-  RelationshipColumn extends string
+  RelationshipColumn extends string,
 > = Schema['Tables'] & Schema['Views'] extends infer TablesAndViews
   ? RelationshipTable extends keyof TablesAndViews
     ? 'Row' extends keyof TablesAndViews[RelationshipTable]
@@ -78,7 +78,7 @@ export default class PostgrestFilterBuilder<
   Result,
   RelationName = unknown,
   Relationships = unknown,
-  Method = unknown
+  Method = unknown,
 > extends PostgrestTransformBuilder<
   ClientOptions,
   Schema,
@@ -101,11 +101,11 @@ export default class PostgrestFilterBuilder<
     value: ResolveFilterValue<Schema, Row, ColumnName> extends never
       ? NonNullable<unknown>
       : // We want to infer the type before wrapping it into a `NonNullable` to avoid too deep
-      // type resolution error
-      ResolveFilterValue<Schema, Row, ColumnName> extends infer ResolvedFilterValue
-      ? NonNullable<ResolvedFilterValue>
-      : // We should never enter this case as all the branches are covered above
-        never
+        // type resolution error
+        ResolveFilterValue<Schema, Row, ColumnName> extends infer ResolvedFilterValue
+        ? NonNullable<ResolvedFilterValue>
+        : // We should never enter this case as all the branches are covered above
+          never
   ): this {
     this.url.searchParams.append(column, `eq.${value}`)
     return this
@@ -122,8 +122,8 @@ export default class PostgrestFilterBuilder<
     value: ResolveFilterValue<Schema, Row, ColumnName> extends never
       ? unknown
       : ResolveFilterValue<Schema, Row, ColumnName> extends infer ResolvedFilterValue
-      ? ResolvedFilterValue
-      : never
+        ? ResolvedFilterValue
+        : never
   ): this {
     this.url.searchParams.append(column, `neq.${value}`)
     return this
@@ -305,11 +305,11 @@ export default class PostgrestFilterBuilder<
       ResolveFilterValue<Schema, Row, ColumnName> extends never
         ? unknown
         : // We want to infer the type before wrapping it into a `NonNullable` to avoid too deep
-        // type resolution error
-        ResolveFilterValue<Schema, Row, ColumnName> extends infer ResolvedFilterValue
-        ? ResolvedFilterValue
-        : // We should never enter this case as all the branches are covered above
-          never
+          // type resolution error
+          ResolveFilterValue<Schema, Row, ColumnName> extends infer ResolvedFilterValue
+          ? ResolvedFilterValue
+          : // We should never enter this case as all the branches are covered above
+            never
     >
   ): this {
     const cleanedValues = Array.from(new Set(values))
