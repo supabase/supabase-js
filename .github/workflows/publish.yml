@@ -73,6 +73,9 @@ jobs:
           cache: 'npm'
           registry-url: 'https://registry.npmjs.org'
 
+      # Ensure npm 11.5.1 or later is installed for trusted publishing support
+      - name: Update npm
+        run: npm install -g npm@latest
       - name: Install dependencies
         run: npm ci --legacy-peer-deps
       - name: Configure git
@@ -98,6 +101,7 @@ jobs:
       - name: Release
         env:
           NPM_CONFIG_PROVENANCE: true
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           RELEASE_GITHUB_TOKEN: ${{ steps.app-token.outputs.token }} # used for tags
         run: |
           npm run release-stable -- --versionSpecifier "${{ github.event.inputs.version_specifier }}"
@@ -249,6 +253,9 @@ jobs:
           cache: 'npm'
           registry-url: 'https://registry.npmjs.org'
 
+      # Ensure npm 11.5.1 or later is installed for trusted publishing support
+      - name: Update npm
+        run: npm install -g npm@latest
       - name: Install dependencies
         run: npm ci --legacy-peer-deps
       - name: Configure git
@@ -263,6 +270,7 @@ jobs:
           npm run release-canary
         env:
           NPM_CONFIG_PROVENANCE: true
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           RELEASE_GITHUB_TOKEN: ${{ steps.app-token.outputs.token }} # used for tags
   notify-stable-failure:
     name: Notify Slack for Stable failure

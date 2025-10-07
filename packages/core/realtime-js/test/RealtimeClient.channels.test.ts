@@ -14,6 +14,31 @@ afterEach(() => {
 
 describe('channel', () => {
   let channel
+  test('throws error on replay for a public channel', () => {
+    expect(() => {
+      channel = testSetup.socket.channel('topic', {
+        config: { broadcast: { replay: { since: 0 } } },
+      })
+    }).toThrow(
+      "tried to use replay on public channel 'realtime:topic'. It must be a private channel."
+    )
+  })
+
+  test('returns channel with private channel using replay', () => {
+    channel = testSetup.socket.channel('topic', {
+      config: { private: true, broadcast: { replay: { since: 0 } } },
+    })
+
+    assert.deepStrictEqual(channel.socket, testSetup.socket)
+    assert.equal(channel.topic, 'realtime:topic')
+    assert.deepEqual(channel.params, {
+      config: {
+        broadcast: { replay: { since: 0 } },
+        presence: { key: '', enabled: false },
+        private: true,
+      },
+    })
+  })
 
   test('returns channel with given topic and params', () => {
     channel = testSetup.socket.channel('topic')
