@@ -1,27 +1,28 @@
+import type { AuthChangeEvent } from '@supabase/auth-js'
 import { FunctionsClient } from '@supabase/functions-js'
-import { AuthChangeEvent } from '@supabase/auth-js'
+import { PostgrestClient } from '@supabase/postgrest-js'
 import {
-  PostgrestClient,
-  PostgrestFilterBuilder,
-  PostgrestQueryBuilder,
-} from '@supabase/postgrest-js'
-import {
-  RealtimeChannel,
-  RealtimeChannelOptions,
+  type RealtimeChannel,
+  type RealtimeChannelOptions,
   RealtimeClient,
-  RealtimeClientOptions,
+  type RealtimeClientOptions,
 } from '@supabase/realtime-js'
 import { StorageClient as SupabaseStorageClient } from '@supabase/storage-js'
 import {
-  DEFAULT_GLOBAL_OPTIONS,
-  DEFAULT_DB_OPTIONS,
   DEFAULT_AUTH_OPTIONS,
+  DEFAULT_DB_OPTIONS,
+  DEFAULT_GLOBAL_OPTIONS,
   DEFAULT_REALTIME_OPTIONS,
 } from './lib/constants'
 import { fetchWithAuth } from './lib/fetch'
 import { applySettingDefaults, validateSupabaseUrl } from './lib/helpers'
 import { SupabaseAuthClient } from './lib/SupabaseAuthClient'
-import { Fetch, GenericSchema, SupabaseClientOptions, SupabaseAuthClientOptions } from './lib/types'
+import type {
+  Fetch,
+  GenericSchema,
+  SupabaseAuthClientOptions,
+  SupabaseClientOptions,
+} from './lib/types'
 
 /**
  * Supabase Client.
@@ -178,20 +179,14 @@ export default class SupabaseClient<
     })
   }
 
-  // NOTE: signatures must be kept in sync with PostgrestClient.from
-  from<
-    TableName extends string & keyof Schema['Tables'],
-    Table extends Schema['Tables'][TableName],
-  >(relation: TableName): PostgrestQueryBuilder<ClientOptions, Schema, Table, TableName>
-  from<ViewName extends string & keyof Schema['Views'], View extends Schema['Views'][ViewName]>(
-    relation: ViewName
-  ): PostgrestQueryBuilder<ClientOptions, Schema, View, ViewName>
   /**
    * Perform a query on a table or a view.
    *
    * @param relation - The table or view name to query
    */
-  from(relation: string): PostgrestQueryBuilder<ClientOptions, Schema, any> {
+  from<RelationName extends string & (keyof Schema['Tables'] | keyof Schema['Views'])>(
+    relation: RelationName
+  ) {
     return this.rest.from(relation)
   }
 
@@ -205,13 +200,8 @@ export default class SupabaseClient<
    */
   schema<DynamicSchema extends string & keyof Omit<Database, '__InternalSupabase'>>(
     schema: DynamicSchema
-  ): PostgrestClient<
-    Database,
-    ClientOptions,
-    DynamicSchema,
-    Database[DynamicSchema] extends GenericSchema ? Database[DynamicSchema] : any
-  > {
-    return this.rest.schema<DynamicSchema>(schema)
+  ) {
+    return this.rest.schema(schema)
   }
 
   // NOTE: signatures must be kept in sync with PostgrestClient.rpc
@@ -238,27 +228,22 @@ export default class SupabaseClient<
    * `"estimated"`: Uses exact count for low numbers and planned count for high
    * numbers.
    */
-  rpc<FnName extends string & keyof Schema['Functions'], Fn extends Schema['Functions'][FnName]>(
+  rpc<
+    FnName extends string & keyof Schema['Functions'],
+    Args extends Schema['Functions'][FnName]['Args'] = never,
+  >(
     fn: FnName,
-    args: Fn['Args'] = {},
+    args: Args = {} as Args,
     options: {
       head?: boolean
       get?: boolean
       count?: 'exact' | 'planned' | 'estimated'
-    } = {}
-  ): PostgrestFilterBuilder<
-    ClientOptions,
-    Schema,
-    Fn['Returns'] extends any[]
-      ? Fn['Returns'][number] extends Record<string, unknown>
-        ? Fn['Returns'][number]
-        : never
-      : never,
-    Fn['Returns'],
-    FnName,
-    null,
-    'RPC'
-  > {
+    } = {
+      head: false,
+      get: false,
+      count: undefined,
+    }
+  ) {
     return this.rest.rpc(fn, args, options)
   }
 
@@ -355,7 +340,7 @@ export default class SupabaseClient<
   }
 
   private _listenForAuthEvents() {
-    let data = this.auth.onAuthStateChange((event, session) => {
+    const data = this.auth.onAuthStateChange((event, session) => {
       this._handleTokenChanged(event, 'CLIENT', session?.access_token)
     })
     return data
@@ -374,7 +359,7 @@ export default class SupabaseClient<
       this.realtime.setAuth(token)
     } else if (event === 'SIGNED_OUT') {
       this.realtime.setAuth()
-      if (source == 'STORAGE') this.auth.signOut()
+      if (source === 'STORAGE') this.auth.signOut()
       this.changedAccessToken = undefined
     }
   }
