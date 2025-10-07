@@ -1,3 +1,15 @@
+## 2.74.0 (2025-10-07)
+
+### 🚀 Features
+
+- **auth:** add OAuth 2.1 client admin endpoints ([#1582](https://github.com/supabase/supabase-js/pull/1582))
+- **auth:** add deprecation notice to `onAuthStateChange` with async function ([#1580](https://github.com/supabase/supabase-js/pull/1580))
+
+### ❤️ Thank You
+
+- Cemal Kılıç @cemalkilic
+- Stojan Dimitrovski @hf
+
 # Changelog
 
 ## [2.72.0](https://github.com/supabase/auth-js/compare/v2.71.1...v2.72.0) (2025-09-11)

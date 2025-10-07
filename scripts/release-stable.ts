@@ -1,6 +1,18 @@
 import { releaseVersion, releaseChangelog, releasePublish } from 'nx/release'
 import { execSync } from 'child_process'
 
+function getLastStableTag(): string {
+  try {
+    return execSync(
+      `git tag --list --sort=-version:refname | grep -E '^v?[0-9]+\\.[0-9]+\\.[0-9]+$' | head -n1`
+    )
+      .toString()
+      .trim()
+  } catch {
+    return ''
+  }
+}
+
 function getArg(name: string): string | undefined {
   // supports --name=value and --name value
   const idx = process.argv.findIndex((a) => a === `--${name}` || a.startsWith(`--${name}=`))
@@ -97,6 +109,7 @@ function safeExec(cmd: string, opts = {}) {
     verbose: true,
     gitCommit: false,
     stageChanges: false,
+    from: getLastStableTag(),
   })
 
   // --- RESTORE GIT AUTH FOR PUBLISHING ---
@@ -170,7 +183,7 @@ function safeExec(cmd: string, opts = {}) {
 
     // Commit changes if any
     try {
-      safeExec(`git commit -m "chore(release): publish version ${version}"`)
+      safeExec(`git commit -m "chore(release): version ${version} changelogs"`)
     } catch {
       console.log('No changes to commit')
     }
