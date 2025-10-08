@@ -1,6 +1,21 @@
 import { releaseVersion, releaseChangelog, releasePublish } from 'nx/release'
 import { execSync } from 'child_process'
 ;(async () => {
+  const { workspaceVersion: canaryCheckWorkspaceVersion } = await releaseVersion({
+    verbose: true,
+    gitCommit: false,
+    stageChanges: false,
+    dryRun: true, // Just to check if there are any conventional commits that warrant a release
+  })
+
+  // If no version bump detected, exit early
+  if (!canaryCheckWorkspaceVersion || canaryCheckWorkspaceVersion === '0.0.0') {
+    console.log(
+      'ℹ️  No conventional commits found that warrant a release. Skipping canary release.'
+    )
+    process.exit(0)
+  }
+
   const { workspaceVersion, projectsVersionData } = await releaseVersion({
     verbose: true,
     gitCommit: false,
@@ -62,9 +77,6 @@ import { execSync } from 'child_process'
     // Don't fail the entire release if gotrue-js fails
     console.log('⚠️  Continuing with release despite gotrue-js publish failure')
   }
-
-  execSync('git stash')
-  console.log('✅ All changes stashed.')
 
   process.exit(Object.values(publishResult).every((result) => result.code === 0) ? 0 : 1)
 })()
