@@ -12,12 +12,12 @@ import {
 export type GenericFunctionsDefintions = Record<
   string,
   {
-    args: Record<string, unknown>
+    args: FunctionInvokeOptions
     returns: unknown
   }
 >
 
-export class FunctionsClient<FunctionsDefintions extends GenericFunctionsDefintions = {}> {
+export class FunctionsClient<FunctionsDefintions extends GenericFunctionsDefintions = any> {
   protected url: string
   protected headers: Record<string, string>
   protected region: FunctionRegion
@@ -159,7 +159,7 @@ export class FunctionsClient<FunctionsDefintions extends GenericFunctionsDefinti
     Args extends FunctionsDefintions[Fname]['args'] = FunctionsDefintions[Fname] extends {
       args: infer A
     }
-      ? A extends Record<string, unknown>
+      ? A extends FunctionInvokeOptions
         ? A
         : any
       : any,
@@ -168,10 +168,7 @@ export class FunctionsClient<FunctionsDefintions extends GenericFunctionsDefinti
     }
       ? R
       : any,
-  >(
-    functionName: Fname,
-    options: FunctionInvokeOptions<Args>
-  ): Promise<FunctionsResponse<Returns>> {
+  >(functionName: Fname, options: Args): Promise<FunctionsResponse<Returns>> {
     try {
       const { headers, method, body: functionArgs, signal } = options
       let _headers: Record<string, string> = {}

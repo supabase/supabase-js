@@ -301,4 +301,55 @@ describe('basic tests (hello function)', () => {
     log(`assert ${data} is equal to 'Hello World'`)
     expect(data).toEqual('Hello World')
   })
+
+  test('invoke typed functions', async () => {
+    /**
+     * @feature fetch
+     */
+    type FunctionOneDefinition = {
+      args: {
+        body: {
+          name: string
+        }
+      }
+      returns: { id: string; value: number }
+    }
+    type FunctionTwoDefinition = {
+      args: {
+        body: {
+          id: number
+        }
+      }
+      returns: File
+    }
+    type FunctionsDefinitions = {
+      functionOne: FunctionOneDefinition
+      functionTwo: FunctionTwoDefinition
+    }
+
+    const wrongKey = sign({ name: 'anon' }, 'wrong_jwt')
+    log('create FunctionsClient')
+    const fclient = new FunctionsClient<FunctionsDefinitions>(
+      `http://localhost:${relay.container.getMappedPort(8081)}`,
+      {
+        headers: {
+          Authorization: `Bearer ${wrongKey}`,
+        },
+        customFetch: getCustomFetch(
+          `http://localhost:${relay.container.getMappedPort(8081)}/${'hello'}`,
+          {
+            method: 'Post',
+            headers: {
+              Authorization: `Bearer ${apiKey}`,
+            },
+          }
+        ),
+      }
+    )
+
+    const { data, error } = await fclient.typedInvoke('functionOne', { body: { name: 'test' } })
+    const { data: data2, error: error2 } = await fclient.typedInvoke('functionTwo', {
+      body: { id: 1 },
+    })
+  })
 })
