@@ -114,6 +114,28 @@ describe('GoTrueAdminApi', () => {
       expect(emails).toContain(email)
     })
 
+    test('listUsers() should support filter property', async () => {
+      const { email } = mockUserCredentials()
+      const { error: createError, data: createdUser } = await createNewUserWithEmail({ email })
+      expect(createError).toBeNull()
+      expect(createdUser.user).not.toBeUndefined()
+
+      const { error: listUserError, data: userList } = await serviceRoleApiClient.listUsers({
+        filter: email,
+      })
+      expect(listUserError).toBeNull()
+      expect(userList).toHaveProperty('users')
+      expect(userList).toHaveProperty('aud')
+
+      const emails =
+        userList.users?.map((user: User) => {
+          return user.email
+        }) || []
+
+      expect(emails.length).toEqual(1)
+      expect(emails).toContain(email)
+    })
+
     test('listUsers() returns AuthError when page is invalid', async () => {
       const { error, data } = await serviceRoleApiClient.listUsers({
         page: -1,
