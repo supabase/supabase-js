@@ -1,6 +1,7 @@
 import PostgrestQueryBuilder from './PostgrestQueryBuilder'
 import PostgrestFilterBuilder from './PostgrestFilterBuilder'
-import { Fetch, GenericSchema, ClientServerOptions } from './types'
+import { Fetch, GenericSchema, ClientServerOptions } from './types/common/common'
+import { GetRpcFunctionFilterBuilderByArgs } from './types/common/rpc'
 
 /**
  * PostgREST client.
@@ -131,9 +132,17 @@ export default class PostgrestClient<
    * `"estimated"`: Uses exact count for low numbers and planned count for high
    * numbers.
    */
-  rpc<FnName extends string & keyof Schema['Functions'], Fn extends Schema['Functions'][FnName]>(
+  rpc<
+    FnName extends string & keyof Schema['Functions'],
+    Args extends Schema['Functions'][FnName]['Args'] = never,
+    FilterBuilder extends GetRpcFunctionFilterBuilderByArgs<
+      Schema,
+      FnName,
+      Args
+    > = GetRpcFunctionFilterBuilderByArgs<Schema, FnName, Args>,
+  >(
     fn: FnName,
-    args: Fn['Args'] = {},
+    args: Args = {} as Args,
     {
       head = false,
       get = false,
@@ -146,14 +155,10 @@ export default class PostgrestClient<
   ): PostgrestFilterBuilder<
     ClientOptions,
     Schema,
-    Fn['Returns'] extends any[]
-      ? Fn['Returns'][number] extends Record<string, unknown>
-        ? Fn['Returns'][number]
-        : never
-      : never,
-    Fn['Returns'],
-    FnName,
-    null,
+    FilterBuilder['Row'],
+    FilterBuilder['Result'],
+    FilterBuilder['RelationName'],
+    FilterBuilder['Relationships'],
     'RPC'
   > {
     let method: 'HEAD' | 'GET' | 'POST'

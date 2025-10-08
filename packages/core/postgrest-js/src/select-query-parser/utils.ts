@@ -8,6 +8,8 @@ import {
   IsNonEmptyArray,
   TablesAndViews,
   UnionToArray,
+  GenericFunction,
+  GenericSetofOption,
 } from './types'
 
 export type IsAny<T> = 0 extends 1 & T ? true : false
@@ -457,7 +459,37 @@ export type ResolveForwardRelationship<
                   from: CurrentTableOrView
                   type: 'found-by-join-table'
                 }
-              : SelectQueryError<`could not find the relation between ${CurrentTableOrView} and ${Field['name']}`>
+              : ResolveEmbededFunctionJoinTableRelationship<
+                    Schema,
+                    CurrentTableOrView,
+                    Field['name']
+                  > extends infer FoundEmbededFunctionJoinTableRelation
+                ? FoundEmbededFunctionJoinTableRelation extends GenericSetofOption
+                  ? {
+                      referencedTable: TablesAndViews<Schema>[FoundEmbededFunctionJoinTableRelation['to']]
+                      relation: {
+                        foreignKeyName: `${Field['name']}_${CurrentTableOrView}_${FoundEmbededFunctionJoinTableRelation['to']}_forward`
+                        columns: []
+                        isOneToOne: FoundEmbededFunctionJoinTableRelation['isOneToOne'] extends true
+                          ? true
+                          : false
+                        referencedColumns: []
+                        referencedRelation: FoundEmbededFunctionJoinTableRelation['to']
+                      } & {
+                        match: 'func'
+                        isNotNullable: FoundEmbededFunctionJoinTableRelation['isNotNullable'] extends true
+                          ? true
+                          : FoundEmbededFunctionJoinTableRelation['isSetofReturn'] extends true
+                            ? false
+                            : true
+                        isSetofReturn: FoundEmbededFunctionJoinTableRelation['isSetofReturn']
+                      }
+                      direction: 'forward'
+                      from: CurrentTableOrView
+                      type: 'found-by-embeded-function'
+                    }
+                  : SelectQueryError<`could not find the relation between ${CurrentTableOrView} and ${Field['name']}`>
+                : SelectQueryError<`could not find the relation between ${CurrentTableOrView} and ${Field['name']}`>
             : SelectQueryError<`could not find the relation between ${CurrentTableOrView} and ${Field['name']}`>
         : SelectQueryError<`could not find the relation between ${CurrentTableOrView} and ${Field['name']}`>
     : SelectQueryError<`could not find the relation between ${CurrentTableOrView} and ${Field['name']}`>
@@ -499,6 +531,20 @@ type ResolveJoinTableRelationship<
       : never
     : never
 }[keyof TablesAndViews<Schema>]
+
+type ResolveEmbededFunctionJoinTableRelationship<
+  Schema extends GenericSchema,
+  CurrentTableOrView extends keyof TablesAndViews<Schema> & string,
+  FieldName extends string,
+> =
+  FindMatchingFunctionBySetofFrom<
+    Schema['Functions'][FieldName],
+    CurrentTableOrView
+  > extends infer Fn
+    ? Fn extends GenericFunction
+      ? Fn['SetofOptions']
+      : false
+    : false
 
 export type FindJoinTableRelationship<
   Schema extends GenericSchema,
@@ -588,6 +634,22 @@ export type IsStringUnion<T> = string extends T
       ? false
       : true
     : false
+
+type MatchingFunctionBySetofFrom<
+  Fn extends GenericFunction,
+  TableName extends string,
+> = Fn['SetofOptions'] extends GenericSetofOption
+  ? TableName extends Fn['SetofOptions']['from']
+    ? Fn
+    : never
+  : false
+
+type FindMatchingFunctionBySetofFrom<
+  FnUnion,
+  TableName extends string,
+> = FnUnion extends infer Fn extends GenericFunction
+  ? MatchingFunctionBySetofFrom<Fn, TableName>
+  : false
 
 type ComputedField<
   Schema extends GenericSchema,

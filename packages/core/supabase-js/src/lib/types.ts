@@ -2,6 +2,24 @@ import { AuthClient } from '@supabase/auth-js'
 import { RealtimeClientOptions } from '@supabase/realtime-js'
 import { PostgrestError } from '@supabase/postgrest-js'
 import type { StorageClientOptions } from '@supabase/storage-js'
+import type {
+  GenericSchema,
+  GenericRelationship,
+  GenericTable,
+  GenericUpdatableView,
+  GenericNonUpdatableView,
+  GenericView,
+  GenericFunction,
+} from './rest/types/common/common'
+export type {
+  GenericSchema,
+  GenericRelationship,
+  GenericTable,
+  GenericUpdatableView,
+  GenericNonUpdatableView,
+  GenericView,
+  GenericFunction,
+}
 
 type AuthClientOptions = ConstructorParameters<typeof AuthClient>[0]
 
@@ -88,41 +106,6 @@ export type SupabaseClientOptions<SchemaName> = {
    * authentications concurrently in the same application.
    */
   accessToken?: () => Promise<string | null>
-}
-
-export type GenericRelationship = {
-  foreignKeyName: string
-  columns: string[]
-  isOneToOne?: boolean
-  referencedRelation: string
-  referencedColumns: string[]
-}
-
-export type GenericTable = {
-  Row: Record<string, unknown>
-  Insert: Record<string, unknown>
-  Update: Record<string, unknown>
-  Relationships: GenericRelationship[]
-}
-
-export type GenericUpdatableView = GenericTable
-
-export type GenericNonUpdatableView = {
-  Row: Record<string, unknown>
-  Relationships: GenericRelationship[]
-}
-
-export type GenericView = GenericUpdatableView | GenericNonUpdatableView
-
-export type GenericFunction = {
-  Args: Record<string, unknown>
-  Returns: unknown
-}
-
-export type GenericSchema = {
-  Tables: Record<string, GenericTable>
-  Views: Record<string, GenericView>
-  Functions: Record<string, GenericFunction>
 }
 
 /**

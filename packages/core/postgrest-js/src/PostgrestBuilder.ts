@@ -2,14 +2,13 @@
 import nodeFetch from '@supabase/node-fetch'
 
 import type {
-  Fetch,
   PostgrestSingleResponse,
   PostgrestResponseSuccess,
   CheckMatchingArrayTypes,
   MergePartialResult,
   IsValidResultOverride,
-  ClientServerOptions,
-} from './types'
+} from './types/types'
+import { ClientServerOptions, Fetch } from './types/common/common'
 import PostgrestError from './PostgrestError'
 import { ContainsNull } from './select-query-parser/types'
 

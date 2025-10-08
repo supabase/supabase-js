@@ -1,6 +1,22 @@
-import type { GenericRelationship, GenericSchema, GenericTable, Prettify } from '../types'
+import type {
+  GenericRelationship,
+  GenericSchema,
+  GenericTable,
+  ClientServerOptions,
+  GenericSetofOption,
+  GenericFunction,
+} from '../types/common/common'
+import type { Prettify } from '../types/types'
 
-export type { GenericRelationship, GenericSchema, GenericTable, Prettify }
+export type {
+  GenericRelationship,
+  GenericSchema,
+  GenericTable,
+  ClientServerOptions,
+  GenericSetofOption,
+  Prettify,
+  GenericFunction,
+}
 
 export type AggregateWithoutColumnFunctions = 'count'
 

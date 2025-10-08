@@ -1,5 +1,3 @@
-import { ClientServerOptions, GenericTable } from '../types'
-import { ContainsNull, GenericRelationship, PostgreSQLTypes } from './types'
 import { Ast, ParseQuery } from './parser'
 import {
   AggregateFunctions,
@@ -9,6 +7,11 @@ import {
   Prettify,
   TablesAndViews,
   TypeScriptTypes,
+  ContainsNull,
+  GenericRelationship,
+  PostgreSQLTypes,
+  GenericTable,
+  ClientServerOptions,
 } from './types'
 import {
   CheckDuplicateEmbededReference,
@@ -366,7 +369,7 @@ export type ProcessEmbeddedResource<
   ResolveRelationship<Schema, Relationships, Field, CurrentTableOrView> extends infer Resolved
     ? Resolved extends {
         referencedTable: Pick<GenericTable, 'Row' | 'Relationships'>
-        relation: GenericRelationship & { match: 'refrel' | 'col' | 'fkname' }
+        relation: GenericRelationship & { match: 'refrel' | 'col' | 'fkname' | 'func' }
         direction: string
       }
       ? ProcessEmbeddedResourceResult<ClientOptions, Schema, Resolved, Field, CurrentTableOrView>
@@ -385,7 +388,12 @@ type ProcessEmbeddedResourceResult<
   Schema extends GenericSchema,
   Resolved extends {
     referencedTable: Pick<GenericTable, 'Row' | 'Relationships'>
-    relation: GenericRelationship & { match: 'refrel' | 'col' | 'fkname' }
+    relation: GenericRelationship & {
+      match: 'refrel' | 'col' | 'fkname' | 'func'
+      isNotNullable?: boolean
+      referencedRelation: string
+      isSetofReturn?: boolean
+    }
     direction: string
   },
   Field extends Ast.FieldNode,
@@ -395,7 +403,11 @@ type ProcessEmbeddedResourceResult<
     ClientOptions,
     Schema,
     Resolved['referencedTable']['Row'],
-    Field['name'],
+    // For embeded function selection, the source of truth is the 'referencedRelation'
+    // coming from the SetofOptions.to parameter
+    Resolved['relation']['match'] extends 'func'
+      ? Resolved['relation']['referencedRelation']
+      : Field['name'],
     Resolved['referencedTable']['Relationships'],
     Field['children'] extends undefined
       ? []
@@ -410,7 +422,18 @@ type ProcessEmbeddedResourceResult<
               ? ProcessedChildren
               : ProcessedChildren[]
             : Resolved['relation']['isOneToOne'] extends true
-              ? ProcessedChildren | null
+              ? Resolved['relation']['match'] extends 'func'
+                ? Resolved['relation']['isNotNullable'] extends true
+                  ? Resolved['relation']['isSetofReturn'] extends true
+                    ? ProcessedChildren
+                    : // TODO: This shouldn't be necessary but is due in an inconsitency in PostgREST v12/13 where if a function
+                      // is declared with RETURNS <table-name> instead of RETURNS SETOF <table-name> ROWS 1
+                      // In case where there is no object matching the relations, the object will be returned with all the properties within it
+                      // set to null, we mimic this buggy behavior for type safety an issue is opened on postgREST here:
+                      // https://github.com/PostgREST/postgrest/issues/4234
+                      { [P in keyof ProcessedChildren]: ProcessedChildren[P] | null }
+                  : ProcessedChildren | null
+                : ProcessedChildren | null
               : ProcessedChildren[]
           : // If the relation is a self-reference it'll always be considered as reverse relationship
             Resolved['relation']['referencedRelation'] extends CurrentTableOrView

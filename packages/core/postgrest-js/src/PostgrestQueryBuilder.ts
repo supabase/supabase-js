@@ -1,6 +1,12 @@
 import PostgrestFilterBuilder from './PostgrestFilterBuilder'
 import { GetResult } from './select-query-parser/result'
-import { ClientServerOptions, Fetch, GenericSchema, GenericTable, GenericView } from './types'
+import {
+  ClientServerOptions,
+  Fetch,
+  GenericSchema,
+  GenericTable,
+  GenericView,
+} from './types/common/common'
 
 export default class PostgrestQueryBuilder<
   ClientOptions extends ClientServerOptions,

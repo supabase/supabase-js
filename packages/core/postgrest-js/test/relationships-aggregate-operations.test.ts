@@ -4,7 +4,7 @@ import { expectType, TypeEqual } from './types'
 import { z } from 'zod'
 
 const REST_URL = 'http://localhost:3000'
-export const postgrest = new PostgrestClient<Database>(REST_URL)
+const postgrest = new PostgrestClient<Database>(REST_URL)
 
 test('select with aggregate count function', async () => {
   const res = await postgrest.from('users').select('username, messages(count)').limit(1).single()

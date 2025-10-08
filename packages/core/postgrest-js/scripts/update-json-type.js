@@ -8,7 +8,7 @@ const path = require('path')
  * This is a cross-platform replacement for the sed command
  */
 function updateJsonType() {
-  const filePath = path.join(__dirname, '..', 'types.generated.ts')
+  const filePath = path.join(__dirname, '..', 'test', 'types.generated.ts')
 
   try {
     // Read the file
@@ -23,7 +23,7 @@ function updateJsonType() {
     // Write the updated content back to the file
     fs.writeFileSync(filePath, updatedContent, 'utf8')
 
-    console.log('✅ Successfully updated Json type in types.generated.ts')
+    console.log('✅ Successfully updated Json type in test/types.generated.ts')
   } catch (error) {
     console.error('❌ Error updating Json type:', error.message)
     process.exit(1)

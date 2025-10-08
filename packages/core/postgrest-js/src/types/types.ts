@@ -1,8 +1,7 @@
-import PostgrestError from './PostgrestError'
-import { ContainsNull } from './select-query-parser/types'
-import { IsAny, SelectQueryError } from './select-query-parser/utils'
-
-export type Fetch = typeof fetch
+import PostgrestError from '../PostgrestError'
+import { ContainsNull } from '../select-query-parser/types'
+import { SelectQueryError } from '../select-query-parser/utils'
+import { ClientServerOptions } from './common/common'
 
 /**
  * Response format
@@ -30,50 +29,6 @@ export interface PostgrestResponseFailure extends PostgrestResponseBase {
 export type PostgrestSingleResponse<T> = PostgrestResponseSuccess<T> | PostgrestResponseFailure
 export type PostgrestMaybeSingleResponse<T> = PostgrestSingleResponse<T | null>
 export type PostgrestResponse<T> = PostgrestSingleResponse<T[]>
-
-export type GenericRelationship = {
-  foreignKeyName: string
-  columns: string[]
-  isOneToOne?: boolean
-  referencedRelation: string
-  referencedColumns: string[]
-}
-
-export type GenericTable = {
-  Row: Record<string, unknown>
-  Insert: Record<string, unknown>
-  Update: Record<string, unknown>
-  Relationships: GenericRelationship[]
-}
-
-export type GenericUpdatableView = {
-  Row: Record<string, unknown>
-  Insert: Record<string, unknown>
-  Update: Record<string, unknown>
-  Relationships: GenericRelationship[]
-}
-
-export type GenericNonUpdatableView = {
-  Row: Record<string, unknown>
-  Relationships: GenericRelationship[]
-}
-
-export type GenericView = GenericUpdatableView | GenericNonUpdatableView
-
-export type GenericFunction = {
-  Args: Record<string, unknown>
-  Returns: unknown
-}
-
-export type GenericSchema = {
-  Tables: Record<string, GenericTable>
-  Views: Record<string, GenericView>
-  Functions: Record<string, GenericFunction>
-}
-
-export type ClientServerOptions = {
-  PostgrestVersion?: string
-}
 
 export type DatabaseWithOptions<Database, Options extends ClientServerOptions> = {
   db: Database

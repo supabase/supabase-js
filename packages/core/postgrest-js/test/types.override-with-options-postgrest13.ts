@@ -28,6 +28,9 @@ export type Database = MergeDeep<
           }
         }
       }
+      Views: {}
+      Enums: {}
+      CompositeTypes: {}
     }
     public: {
       Tables: {
@@ -43,6 +46,9 @@ export type Database = MergeDeep<
           }
         }
       }
+      Views: {}
+      Enums: {}
+      CompositeTypes: {}
     }
   }
 >

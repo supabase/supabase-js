@@ -1,12 +1,8 @@
 import PostgrestBuilder from './PostgrestBuilder'
-import { InvalidMethodError } from './PostgrestFilterBuilder'
+import PostgrestFilterBuilder, { InvalidMethodError } from './PostgrestFilterBuilder'
 import { GetResult } from './select-query-parser/result'
-import {
-  GenericSchema,
-  CheckMatchingArrayTypes,
-  ClientServerOptions,
-  MaxAffectedEnabled,
-} from './types'
+import { CheckMatchingArrayTypes, MaxAffectedEnabled } from './types/types'
+import { ClientServerOptions, GenericSchema } from './types/common/common'
 
 export default class PostgrestTransformBuilder<
   ClientOptions extends ClientServerOptions,
@@ -31,11 +27,15 @@ export default class PostgrestTransformBuilder<
     NewResultOne = GetResult<Schema, Row, RelationName, Relationships, Query, ClientOptions>,
   >(
     columns?: Query
-  ): PostgrestTransformBuilder<
+  ): PostgrestFilterBuilder<
     ClientOptions,
     Schema,
     Row,
-    NewResultOne[],
+    Method extends 'RPC'
+      ? Result extends unknown[]
+        ? NewResultOne[]
+        : NewResultOne
+      : NewResultOne[],
     RelationName,
     Relationships,
     Method
@@ -56,11 +56,15 @@ export default class PostgrestTransformBuilder<
       .join('')
     this.url.searchParams.set('select', cleanedColumns)
     this.headers.append('Prefer', 'return=representation')
-    return this as unknown as PostgrestTransformBuilder<
+    return this as unknown as PostgrestFilterBuilder<
       ClientOptions,
       Schema,
       Row,
-      NewResultOne[],
+      Method extends 'RPC'
+        ? Result extends unknown[]
+          ? NewResultOne[]
+          : NewResultOne
+        : NewResultOne[],
       RelationName,
       Relationships,
       Method

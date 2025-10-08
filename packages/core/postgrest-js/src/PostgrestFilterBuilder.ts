@@ -1,6 +1,6 @@
 import PostgrestTransformBuilder from './PostgrestTransformBuilder'
 import { JsonPathToAccessor, JsonPathToType } from './select-query-parser/utils'
-import { ClientServerOptions, GenericSchema } from './types'
+import { ClientServerOptions, GenericSchema } from './types/common/common'
 
 type FilterOperator =
   | 'eq'

@@ -28,8 +28,8 @@ export type {
   PostgrestResponseSuccess,
   PostgrestSingleResponse,
   PostgrestMaybeSingleResponse,
-  ClientServerOptions as PostgrestClientOptions,
-} from './types'
+} from './types/types'
+export type { ClientServerOptions as PostgrestClientOptions } from './types/common/common'
 // https://github.com/supabase/postgrest-js/issues/551
 // To be replaced with a helper type that only uses public types
 export type { GetResult as UnstableGetResult } from './select-query-parser/result'

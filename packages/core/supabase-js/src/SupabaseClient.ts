@@ -1,27 +1,33 @@
+import type { AuthChangeEvent } from '@supabase/auth-js'
 import { FunctionsClient } from '@supabase/functions-js'
-import { AuthChangeEvent } from '@supabase/auth-js'
 import {
   PostgrestClient,
-  PostgrestFilterBuilder,
-  PostgrestQueryBuilder,
+  type PostgrestFilterBuilder,
+  type PostgrestQueryBuilder,
 } from '@supabase/postgrest-js'
 import {
-  RealtimeChannel,
-  RealtimeChannelOptions,
+  type RealtimeChannel,
+  type RealtimeChannelOptions,
   RealtimeClient,
-  RealtimeClientOptions,
+  type RealtimeClientOptions,
 } from '@supabase/realtime-js'
 import { StorageClient as SupabaseStorageClient } from '@supabase/storage-js'
 import {
-  DEFAULT_GLOBAL_OPTIONS,
-  DEFAULT_DB_OPTIONS,
   DEFAULT_AUTH_OPTIONS,
+  DEFAULT_DB_OPTIONS,
+  DEFAULT_GLOBAL_OPTIONS,
   DEFAULT_REALTIME_OPTIONS,
 } from './lib/constants'
 import { fetchWithAuth } from './lib/fetch'
 import { applySettingDefaults, validateSupabaseUrl } from './lib/helpers'
 import { SupabaseAuthClient } from './lib/SupabaseAuthClient'
-import { Fetch, GenericSchema, SupabaseClientOptions, SupabaseAuthClientOptions } from './lib/types'
+import type {
+  Fetch,
+  GenericSchema,
+  SupabaseAuthClientOptions,
+  SupabaseClientOptions,
+} from './lib/types'
+import { GetRpcFunctionFilterBuilderByArgs } from './lib/rest/types/common/rpc'
 
 /**
  * Supabase Client.
@@ -238,28 +244,44 @@ export default class SupabaseClient<
    * `"estimated"`: Uses exact count for low numbers and planned count for high
    * numbers.
    */
-  rpc<FnName extends string & keyof Schema['Functions'], Fn extends Schema['Functions'][FnName]>(
+  rpc<
+    FnName extends string & keyof Schema['Functions'],
+    Args extends Schema['Functions'][FnName]['Args'] = never,
+    FilterBuilder extends GetRpcFunctionFilterBuilderByArgs<
+      Schema,
+      FnName,
+      Args
+    > = GetRpcFunctionFilterBuilderByArgs<Schema, FnName, Args>,
+  >(
     fn: FnName,
-    args: Fn['Args'] = {},
+    args: Args = {} as Args,
     options: {
       head?: boolean
       get?: boolean
       count?: 'exact' | 'planned' | 'estimated'
-    } = {}
+    } = {
+      head: false,
+      get: false,
+      count: undefined,
+    }
   ): PostgrestFilterBuilder<
     ClientOptions,
     Schema,
-    Fn['Returns'] extends any[]
-      ? Fn['Returns'][number] extends Record<string, unknown>
-        ? Fn['Returns'][number]
-        : never
-      : never,
-    Fn['Returns'],
-    FnName,
-    null,
+    FilterBuilder['Row'],
+    FilterBuilder['Result'],
+    FilterBuilder['RelationName'],
+    FilterBuilder['Relationships'],
     'RPC'
   > {
-    return this.rest.rpc(fn, args, options)
+    return this.rest.rpc(fn, args, options) as unknown as PostgrestFilterBuilder<
+      ClientOptions,
+      Schema,
+      FilterBuilder['Row'],
+      FilterBuilder['Result'],
+      FilterBuilder['RelationName'],
+      FilterBuilder['Relationships'],
+      'RPC'
+    >
   }
 
   /**
@@ -355,7 +377,7 @@ export default class SupabaseClient<
   }
 
   private _listenForAuthEvents() {
-    let data = this.auth.onAuthStateChange((event, session) => {
+    const data = this.auth.onAuthStateChange((event, session) => {
       this._handleTokenChanged(event, 'CLIENT', session?.access_token)
     })
     return data

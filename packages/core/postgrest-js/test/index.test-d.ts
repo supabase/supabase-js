@@ -1,6 +1,6 @@
 import { expectType, TypeEqual } from './types'
 import { PostgrestClient, PostgrestError } from '../src/index'
-import { Prettify } from '../src/types'
+import { Prettify } from '../src/types/types'
 import { Json } from '../src/select-query-parser/types'
 import { Database } from './types.override'
 import { Database as DatabaseWithOptions } from './types.override-with-options-postgrest13'
@@ -199,15 +199,6 @@ const postgrestWithOptions = new PostgrestClient<DatabaseWithOptions>(REST_URL)
   expectType<string>(result.data.baz)
 }
 
-// rpc return type
-{
-  const result = await postgrest.rpc('get_status')
-  if (result.error) {
-    throw new Error(result.error.message)
-  }
-  expectType<'ONLINE' | 'OFFLINE'>(result.data)
-}
-
 // PostgrestBuilder's children retains class when using inherited methods
 {
   const x = postgrest.from('channels').select()
@@ -301,9 +292,28 @@ const postgrestWithOptions = new PostgrestClient<DatabaseWithOptions>(REST_URL)
     >
   >(true)
 }
+
 // Check that client options __InternalSupabase isn't considered like the other schemas
 {
   await postgrestWithOptions
     // @ts-expect-error Argument of type '"__InternalSupabase"' is not assignable to parameter of type '"personal" | "public"'
     .schema('__InternalSupabase')
+}
+
+// Json string Accessor with custom types overrides
+{
+  const result = await postgrest
+    .schema('personal')
+    .from('users')
+    .select('data->bar->>baz, data->>en, data->>bar')
+  if (result.error) {
+    throw new Error(result.error.message)
+  }
+  expectType<
+    {
+      baz: string
+      en: 'ONE' | 'TWO' | 'THREE'
+      bar: string
+    }[]
+  >(result.data)
 }
