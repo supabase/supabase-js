@@ -60,7 +60,17 @@ export enum FunctionRegion {
   UsWest2 = 'us-west-2',
 }
 
-export type FunctionInvokeOptions = {
+type FunctionDefaultBody =
+  | File
+  | Blob
+  | ArrayBuffer
+  | FormData
+  | ReadableStream<Uint8Array>
+  | Record<string, any>
+  | string
+  | undefined
+
+export type FunctionInvokeOptions<Args = FunctionDefaultBody> = {
   /**
    * Object representing the headers to send with the request.
    */
@@ -76,14 +86,7 @@ export type FunctionInvokeOptions = {
   /**
    * The body of the request.
    */
-  body?:
-    | File
-    | Blob
-    | ArrayBuffer
-    | FormData
-    | ReadableStream<Uint8Array>
-    | Record<string, any>
-    | string
+  body?: Args
   /**
    * The AbortSignal to use for the request.
    * */
