@@ -1,4 +1,4 @@
-import { isStorageError, StorageError, StorageUnknownError } from '../lib/errors'
+import { isStorageError, StorageError, StorageApiError, StorageUnknownError } from '../lib/errors'
 import { Fetch, get, head, post, put, remove } from '../lib/fetch'
 import { recursiveToCamel, resolveFetch } from '../lib/helpers'
 import {
@@ -828,6 +828,215 @@ export default class StorageFileApi {
         return { data: null, error }
       }
 
+      throw error
+    }
+  }
+
+  /**
+   * Purges the cache for a specific object from the CDN.
+   * Note: This method only works with individual file paths.
+   * Use purgeCacheByPrefix() to purge multiple objects or entire folders.
+   *
+   * @param path The specific file path to purge from cache. Cannot be empty or contain wildcards.
+   * @param parameters Optional fetch parameters like AbortController signal.
+   */
+  async purgeCache(
+    path: string,
+    parameters?: FetchParameters
+  ): Promise<
+    | {
+        data: { message: string; purgedPath: string }
+        error: null
+      }
+    | {
+        data: null
+        error: StorageError
+      }
+  > {
+    try {
+      // Validate input
+      if (!path || path.trim() === '') {
+        return {
+          data: null,
+          error: new StorageError(
+            'Path is required for cache purging. Use purgeCacheByPrefix() to purge folders or entire buckets.'
+          ),
+        }
+      }
+
+      // Check for wildcards
+      if (path.includes('*')) {
+        return {
+          data: null,
+          error: new StorageError(
+            'Wildcard purging is not supported. Please specify an exact file path.'
+          ),
+        }
+      }
+
+      const cleanPath = this._removeEmptyFolders(path)
+      const cdnPath = `${this.bucketId}/${cleanPath}`
+
+      const data = await remove(
+        this.fetch,
+        `${this.url}/cdn/${cdnPath}`,
+        {},
+        { headers: this.headers },
+        parameters
+      )
+
+      return {
+        data: {
+          message: data?.message || 'success',
+          purgedPath: cleanPath,
+        },
+        error: null,
+      }
+    } catch (error) {
+      if (isStorageError(error)) {
+        return { data: null, error }
+      }
+
+      throw error
+    }
+  }
+
+  /**
+   * Purges the cache for all objects in a folder or entire bucket.
+   * This method lists objects first, then purges each individually.
+   *
+   * Note: This operation can take a very long time for large numbers of objects.
+   * Each object purge takes between 300ms and 600ms, so purging 200+ objects
+   * could take several minutes.
+   *
+   * @param prefix The folder prefix to purge (empty string for entire bucket)
+   * @param options Optional configuration for listing and purging
+   * @param options.limit Maximum number of objects to list (default: 1000)
+   * @param options.batchSize Number of objects to process in each batch (default: 100)
+   * @param options.batchDelayMs Delay in milliseconds between batches (default: 0)
+   * @param parameters Optional fetch parameters
+   */
+  async purgeCacheByPrefix(
+    prefix: string = '',
+    options?: {
+      limit?: number
+      batchSize?: number
+      batchDelayMs?: number
+    },
+    parameters?: FetchParameters
+  ): Promise<
+    | {
+        data: { message: string; purgedPaths: string[]; warnings?: string[] }
+        error: null
+      }
+    | {
+        data: null
+        error: StorageError
+      }
+  > {
+    try {
+      const batchSize = options?.batchSize || 100
+      const batchDelayMs = options?.batchDelayMs || 0
+      const purgedPaths: string[] = []
+      const warnings: string[] = []
+
+      // List all objects with the given prefix
+      const { data: objects, error: listError } = await this.list(prefix, {
+        limit: options?.limit || 1000,
+        offset: 0,
+        sortBy: {
+          column: 'name',
+          order: 'asc',
+        },
+      })
+
+      if (listError) {
+        return { data: null, error: listError }
+      }
+
+      if (!objects || objects.length === 0) {
+        return {
+          data: {
+            message: 'No objects found to purge',
+            purgedPaths: [],
+          },
+          error: null,
+        }
+      }
+
+      // Extract file paths and filter out folders (folders have id === null)
+      const filePaths = objects
+        .filter((obj) => obj.id !== null) // Only files, not folders
+        .map((obj) => (prefix ? `${prefix}/${obj.name}` : obj.name))
+
+      if (filePaths.length === 0) {
+        return {
+          data: {
+            message: 'No files found to purge (only folders detected)',
+            purgedPaths: [],
+          },
+          error: null,
+        }
+      }
+      for (let i = 0; i < filePaths.length; i += batchSize) {
+        const batch = filePaths.slice(i, i + batchSize)
+
+        for (const filePath of batch) {
+          try {
+            const { error: purgeError } = await this.purgeCache(filePath, parameters)
+
+            if (purgeError) {
+              warnings.push(`Failed to purge ${filePath}: ${purgeError.message}`)
+            } else {
+              purgedPaths.push(filePath)
+            }
+          } catch (error) {
+            warnings.push(`Failed to purge ${filePath}: ${(error as Error).message}`)
+          }
+        }
+
+        // Add delay between batches if specified and not the last batch
+        if (batchDelayMs > 0 && i + batchSize < filePaths.length) {
+          await new Promise((resolve) => setTimeout(resolve, batchDelayMs))
+        }
+      }
+
+      // If all paths failed, return error
+      if (purgedPaths.length === 0 && warnings.length > 0) {
+        return {
+          data: null,
+          error: new StorageError(
+            `All purge operations failed: ${warnings.slice(0, 3).join(', ')}${
+              warnings.length > 3 ? '...' : ''
+            }`
+          ),
+        }
+      }
+
+      const message =
+        purgedPaths.length > 0
+          ? `Successfully purged ${purgedPaths.length} object(s)${
+              warnings.length > 0 ? ` (${warnings.length} failed)` : ''
+            }`
+          : 'No objects were purged'
+
+      const result: { message: string; purgedPaths: string[]; warnings?: string[] } = {
+        message,
+        purgedPaths,
+      }
+
+      if (warnings.length > 0) {
+        result.warnings = warnings
+      }
+
+      return {
+        data: result,
+        error: null,
+      }
+    } catch (error) {
+      if (isStorageError(error)) {
+        return { data: null, error }
+      }
       throw error
     }
   }
