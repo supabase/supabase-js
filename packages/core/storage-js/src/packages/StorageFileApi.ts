@@ -983,10 +983,9 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
               : undefined
 
         if (status !== undefined && [400, 404].includes(status)) {
-          return { data: false, error }
+          return { data: false, error: null }
         }
       }
-
       throw error
     }
   }
