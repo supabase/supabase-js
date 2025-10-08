@@ -78,8 +78,5 @@ import { execSync } from 'child_process'
     console.log('⚠️  Continuing with release despite gotrue-js publish failure')
   }
 
-  execSync('git stash')
-  console.log('✅ All changes stashed.')
-
   process.exit(Object.values(publishResult).every((result) => result.code === 0) ? 0 : 1)
 })()
