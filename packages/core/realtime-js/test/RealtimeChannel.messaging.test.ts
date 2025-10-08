@@ -473,3 +473,261 @@ describe('send', () => {
     })
   })
 })
+
+describe('postSend', () => {
+  test('rejects when access token is not set', async () => {
+    const socket = new RealtimeClient(testSetup.url, {
+      params: { apikey: 'abc123' },
+    })
+    const channel = socket.channel('topic')
+
+    await expect(channel.postSend('test', { data: 'test' })).rejects.toBe(
+      'Access token is required for postSend()'
+    )
+  })
+
+  test('rejects when payload is not provided', async () => {
+    const socket = new RealtimeClient(testSetup.url, {
+      params: { apikey: 'abc123' },
+      accessToken: () => Promise.resolve('token123'),
+    })
+    await socket.setAuth()
+    const channel = socket.channel('topic')
+
+    await expect(channel.postSend('test', undefined as any)).rejects.toBe(
+      'Payload is required for postSend()'
+    )
+  })
+
+  test('returns success true on 202 status', async () => {
+    const mockResponse = {
+      status: 202,
+      statusText: 'Accepted',
+      headers: new Headers(),
+      body: null,
+    }
+    const fetchStub = vi.fn().mockResolvedValue(mockResponse)
+
+    const socket = new RealtimeClient(testSetup.url, {
+      fetch: fetchStub as unknown as typeof fetch,
+      timeout: defaultTimeout,
+      params: { apikey: 'def456' },
+      accessToken: () => Promise.resolve('access_token_456'),
+    })
+
+    await socket.setAuth()
+
+    const channel = socket.channel('topic', {
+      config: { private: true },
+    })
+
+    const result = await channel.postSend('test-explicit', {
+      data: 'explicit',
+    })
+
+    expect(result).toEqual({ success: true })
+
+    const expectedUrl = testSetup.url
+      .replace('/socket', '')
+      .replace('wss', 'https')
+      .concat('/api/broadcast')
+
+    expect(fetchStub).toHaveBeenCalledTimes(1)
+    const [url, options] = fetchStub.mock.calls[0]
+    expect(url).toBe(expectedUrl)
+    expect(options.method).toBe('POST')
+    expect(options.headers.Authorization).toBe('Bearer access_token_456')
+    expect(options.headers.apikey).toBe('def456')
+    expect(options.body).toBe(
+      '{"messages":[{"topic":"topic","event":"test-explicit","payload":{"data":"explicit"},"private":true}]}'
+    )
+  })
+
+  test('throws on timeout error', async () => {
+    const timeoutError = new Error('Request timeout')
+    timeoutError.name = 'AbortError'
+
+    const fetchStub = vi.fn().mockRejectedValue(timeoutError)
+
+    const socket = new RealtimeClient(testSetup.url, {
+      fetch: fetchStub as unknown as typeof fetch,
+      params: { apikey: 'abc123' },
+      accessToken: () => Promise.resolve('token123'),
+    })
+    await socket.setAuth()
+    const channel = socket.channel('topic')
+
+    await expect(channel.postSend('test', { data: 'test' })).rejects.toThrow('Request timeout')
+  })
+
+  test('returns error object on non-202 status', async () => {
+    const mockResponse = {
+      status: 500,
+      statusText: 'Internal Server Error',
+      headers: new Headers(),
+      body: null,
+      json: vi.fn().mockResolvedValue({ error: 'Server error' }),
+    }
+    const fetchStub = vi.fn().mockResolvedValue(mockResponse)
+
+    const socket = new RealtimeClient(testSetup.url, {
+      fetch: fetchStub as unknown as typeof fetch,
+      params: { apikey: 'abc123' },
+      accessToken: () => Promise.resolve('token123'),
+    })
+    await socket.setAuth()
+    const channel = socket.channel('topic')
+
+    const result = await channel.postSend('test', { data: 'test' })
+
+    expect(result).toEqual({
+      success: false,
+      status: 500,
+      error: 'Server error',
+    })
+  })
+
+  test('respects custom timeout option', async () => {
+    const mockResponse = {
+      status: 202,
+      headers: new Headers(),
+      body: null,
+    }
+    const fetchStub = vi.fn().mockResolvedValue(mockResponse)
+
+    const socket = new RealtimeClient(testSetup.url, {
+      fetch: fetchStub as unknown as typeof fetch,
+      timeout: 5000,
+      params: { apikey: 'abc123' },
+      accessToken: () => Promise.resolve('token123'),
+    })
+    await socket.setAuth()
+    const channel = socket.channel('topic')
+
+    const result = await channel.postSend('test', { data: 'test' }, { timeout: 3000 })
+
+    expect(result).toEqual({ success: true })
+    expect(fetchStub).toHaveBeenCalledTimes(1)
+    const [, options] = fetchStub.mock.calls[0]
+    expect(options.signal).toBeDefined()
+    expect(options.signal).toBeInstanceOf(AbortSignal)
+  })
+
+  test('uses default timeout when not specified', async () => {
+    const mockResponse = {
+      status: 202,
+      headers: new Headers(),
+      body: null,
+    }
+    const fetchStub = vi.fn().mockResolvedValue(mockResponse)
+
+    const socket = new RealtimeClient(testSetup.url, {
+      fetch: fetchStub as unknown as typeof fetch,
+      timeout: 5000,
+      params: { apikey: 'abc123' },
+      accessToken: () => Promise.resolve('token123'),
+    })
+    await socket.setAuth()
+    const channel = socket.channel('topic')
+
+    const result = await channel.postSend('test', { data: 'test' })
+
+    expect(result).toEqual({ success: true })
+    expect(fetchStub).toHaveBeenCalledTimes(1)
+    const [, options] = fetchStub.mock.calls[0]
+    expect(options.signal).toBeDefined()
+  })
+
+  test('allows non-empty payload', async () => {
+    const mockResponse = {
+      status: 202,
+      headers: new Headers(),
+      body: null,
+    }
+    const fetchStub = vi.fn().mockResolvedValue(mockResponse)
+
+    const socket = new RealtimeClient(testSetup.url, {
+      fetch: fetchStub as unknown as typeof fetch,
+      params: { apikey: 'abc123' },
+      accessToken: () => Promise.resolve('token123'),
+    })
+    await socket.setAuth()
+    const channel = socket.channel('topic')
+
+    const result = await channel.postSend('test-payload', { data: 'value' })
+
+    expect(result).toEqual({ success: true })
+    expect(fetchStub).toHaveBeenCalledTimes(1)
+
+    const [, options] = fetchStub.mock.calls[0]
+    const body = JSON.parse(options.body)
+    expect(body.messages[0].payload).toEqual({ data: 'value' })
+  })
+
+  test('rejects when payload is null', async () => {
+    const socket = new RealtimeClient(testSetup.url, {
+      params: { apikey: 'abc123' },
+      accessToken: () => Promise.resolve('token123'),
+    })
+    await socket.setAuth()
+    const channel = socket.channel('topic')
+
+    await expect(channel.postSend('test', null as any)).rejects.toBe(
+      'Payload is required for postSend()'
+    )
+  })
+
+  test('uses statusText when error body has no error field', async () => {
+    const mockResponse = {
+      status: 400,
+      statusText: 'Bad Request',
+      headers: new Headers(),
+      body: null,
+      json: vi.fn().mockResolvedValue({ message: 'Invalid request' }),
+    }
+    const fetchStub = vi.fn().mockResolvedValue(mockResponse)
+
+    const socket = new RealtimeClient(testSetup.url, {
+      fetch: fetchStub as unknown as typeof fetch,
+      params: { apikey: 'abc123' },
+      accessToken: () => Promise.resolve('token123'),
+    })
+    await socket.setAuth()
+    const channel = socket.channel('topic')
+
+    const result = await channel.postSend('test', { data: 'test' })
+
+    expect(result).toEqual({
+      success: false,
+      status: 400,
+      error: 'Invalid request',
+    })
+  })
+
+  test('falls back to statusText when json parsing fails', async () => {
+    const mockResponse = {
+      status: 503,
+      statusText: 'Service Unavailable',
+      headers: new Headers(),
+      body: null,
+      json: vi.fn().mockRejectedValue(new Error('Invalid JSON')),
+    }
+    const fetchStub = vi.fn().mockResolvedValue(mockResponse)
+
+    const socket = new RealtimeClient(testSetup.url, {
+      fetch: fetchStub as unknown as typeof fetch,
+      params: { apikey: 'abc123' },
+      accessToken: () => Promise.resolve('token123'),
+    })
+    await socket.setAuth()
+    const channel = socket.channel('topic')
+
+    const result = await channel.postSend('test', { data: 'test' })
+
+    expect(result).toEqual({
+      success: false,
+      status: 503,
+      error: 'Service Unavailable',
+    })
+  })
+})

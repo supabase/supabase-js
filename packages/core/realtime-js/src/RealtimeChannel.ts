@@ -436,6 +436,68 @@ export default class RealtimeChannel {
     return this._on(type, filter, callback)
   }
   /**
+   * Sends a broadcast message explicitly via REST API.
+   *
+   * This method always uses the REST API endpoint regardless of WebSocket connection state.
+   * Useful when you want to guarantee REST delivery or when gradually migrating from implicit REST fallback.
+   *
+   * @param event The name of the broadcast event
+   * @param payload Payload to be sent (required)
+   * @param opts Options including timeout
+   * @returns Promise resolving to object with success status, and error details if failed
+   */
+  async postSend(
+    event: string,
+    payload: any,
+    opts: { timeout?: number } = {}
+  ): Promise<{ success: true } | { success: false; status: number; error: string }> {
+    if (!this.socket.accessTokenValue) {
+      return Promise.reject('Access token is required for postSend()')
+    }
+
+    if (payload === undefined || payload === null) {
+      return Promise.reject('Payload is required for postSend()')
+    }
+
+    const options = {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${this.socket.accessTokenValue}`,
+        apikey: this.socket.apiKey ? this.socket.apiKey : '',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        messages: [
+          {
+            topic: this.subTopic,
+            event,
+            payload: payload,
+            private: this.private,
+          },
+        ],
+      }),
+    }
+
+    const response = await this._fetchWithTimeout(
+      this.broadcastEndpointURL,
+      options,
+      opts.timeout ?? this.timeout
+    )
+
+    if (response.status === 202) {
+      return { success: true }
+    }
+
+    let errorMessage = response.statusText
+    try {
+      const errorBody = await response.json()
+      errorMessage = errorBody.error || errorBody.message || errorMessage
+    } catch {}
+
+    return Promise.reject(new Error(errorMessage))
+  }
+
+  /**
    * Sends a message into the channel.
    *
    * @param args Arguments to send to channel
@@ -454,6 +516,12 @@ export default class RealtimeChannel {
     opts: { [key: string]: any } = {}
   ): Promise<RealtimeChannelSendResponse> {
     if (!this._canPush() && args.type === 'broadcast') {
+      console.warn(
+        'Realtime send() is automatically falling back to REST API. ' +
+          'This behavior will be deprecated in the future. ' +
+          'Please use postSend() explicitly for REST delivery.'
+      )
+
       const { event, payload: endpoint_payload } = args
       const authorization = this.socket.accessTokenValue
         ? `Bearer ${this.socket.accessTokenValue}`
