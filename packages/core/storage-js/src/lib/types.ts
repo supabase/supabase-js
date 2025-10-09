@@ -143,10 +143,25 @@ export interface SearchV2Options {
   sortBy?: SortByV2
 }
 
+export interface SearchV2Object {
+  id: string
+  key: string
+  name: string
+  updated_at: string
+  created_at: string
+  metadata: Record<string, any>
+  /**
+   * @deprecated
+   */
+  last_accessed_at: string
+}
+
+export type SearchV2Folder = Omit<SearchV2Object, 'id' | 'metadata' | 'last_accessed_at'>
+
 export interface SearchV2Result {
   hasNext: boolean
-  folders: { name: string }[]
-  objects: FileObject[]
+  folders: SearchV2Folder[]
+  objects: SearchV2Object[]
   nextCursor?: string
 }
 
