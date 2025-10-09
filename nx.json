@@ -248,10 +248,11 @@
     }
   ],
   "release": {
-    "projects": ["packages/core/*"],
+    "projects": ["packages/core/*", "storage-vectors-js"],
     "projectsRelationship": "fixed",
     "releaseTagPatternCheckAllBranchesWhen": true,
     "version": {
+      "preVersionCommand": "npx nx run-many -t build",
       "conventionalCommits": true
     },
     "changelog": {
