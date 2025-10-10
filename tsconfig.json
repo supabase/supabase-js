@@ -2,5 +2,9 @@
   "extends": "./tsconfig.base.json",
   "compileOnSave": false,
   "files": [],
-  "references": []
+  "references": [
+    {
+      "path": "./packages/integrations/storage-vectors-js"
+    }
+  ]
 }
