@@ -21,6 +21,7 @@ export interface FileObject {
   id: string
   updated_at: string
   created_at: string
+  /** @deprecated */
   last_accessed_at: string
   metadata: Record<string, any>
   buckets: Bucket
@@ -33,6 +34,7 @@ export interface FileObjectV2 {
   bucket_id: string
   updated_at: string
   created_at: string
+  /** @deprecated */
   last_accessed_at: string
   size?: number
   cache_control?: string
