@@ -89,6 +89,9 @@ export class FunctionsClient {
           _headers['Content-Type'] = 'application/json'
           body = JSON.stringify(functionArgs)
         }
+      } else {
+        // if the Content-Type was supplied, simply set the body
+        body = functionArgs
       }
 
       const response = await this.fetch(url.toString(), {
