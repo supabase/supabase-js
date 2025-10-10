@@ -462,13 +462,14 @@ export const DEFAULT_CREATION_OPTIONS: Partial<PublicKeyCredentialCreationOption
     userVerification: 'preferred',
     residentKey: 'discouraged',
   },
-  attestation: 'none',
+  attestation: 'direct',
 }
 
 export const DEFAULT_REQUEST_OPTIONS: Partial<PublicKeyCredentialRequestOptionsFuture> = {
   /** set to preferred because older yubikeys don't have PIN/Biometric */
   userVerification: 'preferred',
   hints: ['security-key'],
+  attestation: 'direct',
 }
 
 function deepMerge<T>(...sources: Partial<T>[]): T {
