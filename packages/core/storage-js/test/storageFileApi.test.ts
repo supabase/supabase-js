@@ -664,58 +664,515 @@ describe('Object API', () => {
   })
 })
 
-describe('error handling', () => {
-  let mockError: Error
-
+describe('Purge Cache - Mock Tests', () => {
   beforeEach(() => {
-    mockError = new Error('Network failure')
+    jest.resetAllMocks()
   })
 
   afterEach(() => {
     jest.restoreAllMocks()
   })
 
-  it('throws unknown errors', async () => {
-    global.fetch = jest.fn().mockImplementation(() => Promise.reject(mockError))
-    const storage = new StorageClient('http://localhost:8000/storage/v1', {
-      apikey: 'test-token',
+  test('purge cache - single file success', async () => {
+    const mockResponse = new Response(JSON.stringify({ message: 'success' }), {
+      status: 200,
+      statusText: 'OK',
+      headers: { 'Content-Type': 'application/json' },
     })
+    global.fetch = jest.fn().mockResolvedValue(mockResponse)
 
-    const { data, error } = await storage.from('test').list()
-    expect(data).toBeNull()
-    expect(error).not.toBeNull()
-    expect(error?.message).toBe('Network failure')
+    const mockStorage = new StorageClient(URL, { Authorization: `Bearer ${KEY}` })
+    const testBucket = 'test-bucket'
 
-    // throws when .throwOnError is enabled
-    await expect(storage.from('test').throwOnError().list()).rejects.toThrow('Network failure')
-  })
+    const res = await mockStorage.from(testBucket).purgeCache('test-file.jpg')
+    expect(res.error).toBeNull()
+    expect(res.data?.message).toEqual('success')
+    expect(res.data?.purgedPath).toEqual('test-file.jpg')
 
-  it('handles malformed responses', async () => {
-    const createMockResponse = () =>
-      new Response(JSON.stringify({ message: 'Internal server error' }), {
-        status: 500,
-        statusText: 'Internal Server Error',
+    expect(global.fetch).toHaveBeenCalledWith(
+      expect.stringContaining(`/cdn/${testBucket}/test-file.jpg`),
+      expect.objectContaining({
+        method: 'DELETE',
       })
-
-    global.fetch = jest.fn().mockImplementation(() => Promise.resolve(createMockResponse()))
-    const storage = new StorageClient('http://localhost:8000/storage/v1', {
-      apikey: 'test-token',
-    })
-
-    const { data, error } = await storage.from('test').list()
-    expect(data).toBeNull()
-    expect(error).toBeInstanceOf(StorageError)
-    expect(error?.message).toBe('Internal server error')
-
-    global.fetch = jest.fn().mockImplementation(() => Promise.resolve(createMockResponse()))
-    await expect(storage.from('test').throwOnError().list()).rejects.toThrow(
-      'Internal server error'
     )
   })
 
+  test('purge cache - rejects empty path', async () => {
+    const mockStorage = new StorageClient(URL, { Authorization: `Bearer ${KEY}` })
+    const testBucket = 'test-bucket'
+
+    const res = await mockStorage.from(testBucket).purgeCache('')
+    expect(res.data).toBeNull()
+    expect(res.error?.message).toContain('Path is required')
+  })
+
+  test('purge cache - rejects wildcard', async () => {
+    const mockStorage = new StorageClient(URL, { Authorization: `Bearer ${KEY}` })
+    const testBucket = 'test-bucket'
+
+    const res = await mockStorage.from(testBucket).purgeCache('folder/*')
+    expect(res.data).toBeNull()
+    expect(res.error?.message).toContain('Wildcard purging is not supported')
+  })
+
+  test('purge cache - with path normalization', async () => {
+    const mockResponse = new Response(JSON.stringify({ message: 'success' }), {
+      status: 200,
+      statusText: 'OK',
+      headers: { 'Content-Type': 'application/json' },
+    })
+    global.fetch = jest.fn().mockResolvedValue(mockResponse)
+
+    const mockStorage = new StorageClient(URL, { Authorization: `Bearer ${KEY}` })
+    const testBucket = 'test-bucket'
+
+    const res = await mockStorage.from(testBucket).purgeCache('/folder//file.jpg/')
+    expect(res.error).toBeNull()
+    expect(res.data?.purgedPath).toEqual('folder/file.jpg')
+
+    expect(global.fetch).toHaveBeenCalledWith(
+      expect.stringContaining(`/cdn/${testBucket}/folder/file.jpg`),
+      expect.objectContaining({
+        method: 'DELETE',
+      })
+    )
+  })
+
+  test('purge cache - handles 404 error', async () => {
+    const mockResponse = new Response(
+      JSON.stringify({
+        statusCode: '404',
+        error: 'Not Found',
+        message: 'Object not found',
+      }),
+      {
+        status: 404,
+        statusText: 'Not Found',
+        headers: { 'Content-Type': 'application/json' },
+      }
+    )
+    global.fetch = jest.fn().mockResolvedValue(mockResponse)
+
+    const mockStorage = new StorageClient(URL, { Authorization: `Bearer ${KEY}` })
+    const testBucket = 'test-bucket'
+
+    const res = await mockStorage.from(testBucket).purgeCache('nonexistent.jpg')
+    expect(res.data).toBeNull()
+    expect(res.error).not.toBeNull()
+    expect(res.error?.message).toContain('Object not found')
+    await expect(storage.from('test').throwOnError().list()).rejects.toThrow('Network failure')
+  })
+
+  describe('Purge Cache By Prefix - Mock Tests', () => {
+    afterEach(() => {
+      jest.restoreAllMocks()
+    })
+
+    let bucketName: string
+    let file: Buffer
+    let uploadPath: string
+    beforeEach(async () => {
+      bucketName = await newBucket()
+      file = await fsp.readFile(uploadFilePath('sadcat.jpg'))
+      uploadPath = `testpath/file-${Date.now()}.jpg`
+    })
+
+    it('handles malformed responses', async () => {
+      const createMockResponse = () =>
+        new Response(JSON.stringify({ message: 'Internal server error' }), {
+          status: 500,
+          statusText: 'Internal Server Error',
+        })
+
+      global.fetch = jest.fn().mockImplementation(() => Promise.resolve(createMockResponse()))
+      const storage = new StorageClient('http://localhost:8000/storage/v1', {
+        apikey: 'test-token',
+      })
+
+      const { data, error } = await storage.from('test').list()
+      expect(data).toBeNull()
+      expect(error).toBeInstanceOf(StorageError)
+      expect(error?.message).toBe('Internal server error')
+
+      global.fetch = jest.fn().mockImplementation(() => Promise.resolve(createMockResponse()))
+      await expect(storage.from('test').throwOnError().list()).rejects.toThrow(
+        'Internal server error'
+      )
+    })
+
+    test('purge cache by prefix - successful folder purge', async () => {
+      // Mock list response
+      const listResponse = new Response(
+        JSON.stringify([
+          { name: 'file1.jpg', id: '1' },
+          { name: 'file2.png', id: '2' },
+        ]),
+        {
+          status: 200,
+          statusText: 'OK',
+          headers: { 'Content-Type': 'application/json' },
+        }
+      )
+
+      // Mock purge responses for each file
+      const purgeResponse = new Response(JSON.stringify({ message: 'success' }), {
+        status: 200,
+        statusText: 'OK',
+        headers: { 'Content-Type': 'application/json' },
+      })
+
+      let fetchCallCount = 0
+      global.fetch = jest.fn().mockImplementation(() => {
+        fetchCallCount++
+        // First call returns list response
+        if (fetchCallCount === 1) return Promise.resolve(listResponse)
+        // Subsequent calls return purge responses
+        return Promise.resolve(purgeResponse.clone())
+      })
+
+      const mockStorage = new StorageClient(URL, { apikey: KEY })
+      const testBucket = 'test-bucket'
+
+      const res = await mockStorage.from(testBucket).purgeCacheByPrefix('folder')
+      expect(res.error).toBeNull()
+      expect(res.data?.purgedPaths).toHaveLength(2)
+      expect(res.data?.purgedPaths).toEqual(['folder/file1.jpg', 'folder/file2.png'])
+      expect(res.data?.message).toContain('Successfully purged 2 object(s)')
+    })
+
+    test('purge cache by prefix - empty folder', async () => {
+      const listResponse = new Response(JSON.stringify([]), {
+        status: 200,
+        statusText: 'OK',
+        headers: { 'Content-Type': 'application/json' },
+      })
+
+      global.fetch = jest.fn().mockResolvedValue(listResponse)
+
+      const mockStorage = new StorageClient(URL, { Authorization: `Bearer ${KEY}` })
+      const testBucket = 'test-bucket'
+
+      const res = await mockStorage.from(testBucket).purgeCacheByPrefix('empty-folder')
+      expect(res.error).toBeNull()
+      expect(res.data?.purgedPaths).toHaveLength(0)
+      expect(res.data?.message).toEqual('No objects found to purge')
+    })
+
+    test('purge cache by prefix - handles partial failures', async () => {
+      let fetchCallCount = 0
+      global.fetch = jest.fn().mockImplementation(() => {
+        fetchCallCount++
+        if (fetchCallCount === 1) {
+          // List response
+          return Promise.resolve(
+            new Response(
+              JSON.stringify([
+                { name: 'file1.jpg', id: '1' },
+                { name: 'file2.png', id: '2' },
+                { name: 'file3.gif', id: '3' },
+              ]),
+              {
+                status: 200,
+                headers: { 'Content-Type': 'application/json' },
+              }
+            )
+          )
+        }
+        // Handle individual purge calls
+        const fileIndex = fetchCallCount - 2
+        if (fileIndex === 1) {
+          // Second file fails
+          return Promise.resolve(
+            new Response(
+              JSON.stringify({
+                statusCode: '404',
+                error: 'Not Found',
+                message: 'Object not found',
+              }),
+              { status: 404 }
+            )
+          )
+        }
+        return Promise.resolve(
+          new Response(JSON.stringify({ message: 'success' }), { status: 200 })
+        )
+      })
+
+      const mockStorage = new StorageClient(URL, { apikey: KEY })
+      const res = await mockStorage.from(bucketName).purgeCacheByPrefix('folder')
+
+      expect(res.error).toBeNull()
+      expect(res.data?.purgedPaths).toHaveLength(2)
+      expect(res.data?.purgedPaths).toEqual(['folder/file1.jpg', 'folder/file3.gif'])
+      expect(res.data?.warnings).toHaveLength(1)
+      expect(res.data?.warnings?.[0]).toContain('Failed to purge folder/file2.png')
+      expect(res.data?.message).toContain('Successfully purged 2 object(s) (1 failed)')
+    })
+
+    test('purge cache by prefix - all failures', async () => {
+      // Mock list response
+      const listResponse = new Response(
+        JSON.stringify([
+          { name: 'file1.jpg', id: '1' },
+          { name: 'file2.png', id: '2' },
+        ]),
+        {
+          status: 200,
+          statusText: 'OK',
+          headers: { 'Content-Type': 'application/json' },
+        }
+      )
+
+      const errorResponse = new Response(
+        JSON.stringify({
+          statusCode: '404',
+          error: 'Not Found',
+          message: 'Object not found',
+        }),
+        {
+          status: 404,
+          statusText: 'Not Found',
+          headers: { 'Content-Type': 'application/json' },
+        }
+      )
+
+      global.fetch = jest
+        .fn()
+        .mockResolvedValueOnce(listResponse) // List call
+        .mockResolvedValue(errorResponse) // All purge calls fail
+
+      const mockStorage = new StorageClient(URL, { Authorization: `Bearer ${KEY}` })
+      const testBucket = 'test-bucket'
+
+      const res = await mockStorage.from(testBucket).purgeCacheByPrefix('folder')
+      expect(res.data).toBeNull()
+      expect(res.error).not.toBeNull()
+      expect(res.error?.message).toContain('All purge operations failed')
+    })
+
+    test('purge cache by prefix - filters out folders', async () => {
+      let fetchCallCount = 0
+      global.fetch = jest.fn().mockImplementation(() => {
+        fetchCallCount++
+        if (fetchCallCount === 1) {
+          return Promise.resolve(
+            new Response(
+              JSON.stringify([
+                { name: 'file1.jpg', id: '1' },
+                { name: 'subfolder/', id: null },
+                { name: 'file2.png', id: '3' },
+              ]),
+              { status: 200 }
+            )
+          )
+        }
+        return Promise.resolve(
+          new Response(JSON.stringify({ message: 'success' }), { status: 200 })
+        )
+      })
+
+      const mockStorage = new StorageClient(URL, { apikey: KEY })
+      const res = await mockStorage.from(bucketName).purgeCacheByPrefix('folder')
+
+      expect(res.error).toBeNull()
+      expect(res.data?.purgedPaths).toHaveLength(2)
+      expect(res.data?.purgedPaths).toEqual(['folder/file1.jpg', 'folder/file2.png'])
+      expect(res.data?.message).toContain('Successfully purged 2 object(s)')
+    })
+
+    test('purge cache by prefix - only folders found', async () => {
+      // Mock list response with only folders
+      const listResponse = new Response(
+        JSON.stringify([
+          { name: 'subfolder1/', id: null },
+          { name: 'subfolder2/', id: null },
+        ]),
+        {
+          status: 200,
+          statusText: 'OK',
+          headers: { 'Content-Type': 'application/json' },
+        }
+      )
+
+      global.fetch = jest.fn().mockResolvedValue(listResponse)
+
+      const mockStorage = new StorageClient(URL, { Authorization: `Bearer ${KEY}` })
+      const testBucket = 'test-bucket'
+
+      const res = await mockStorage.from(testBucket).purgeCacheByPrefix('folder')
+      expect(res.error).toBeNull()
+      expect(res.data?.purgedPaths).toHaveLength(0)
+      expect(res.data?.message).toEqual('No files found to purge (only folders detected)')
+    })
+
+    test('purge cache by prefix - with batch size limit', async () => {
+      const fileCount = 150
+      const files = Array.from({ length: fileCount }, (_, i) => ({
+        name: `file${i}.jpg`,
+        id: String(i),
+      }))
+
+      let fetchCallCount = 0
+      global.fetch = jest.fn().mockImplementation(() => {
+        fetchCallCount++
+        if (fetchCallCount === 1) {
+          return Promise.resolve(new Response(JSON.stringify(files), { status: 200 }))
+        }
+        return Promise.resolve(
+          new Response(JSON.stringify({ message: 'success' }), { status: 200 })
+        )
+      })
+
+      const mockStorage = new StorageClient(URL, { Authorization: `Bearer ${KEY}` })
+      const res = await mockStorage.from(bucketName).purgeCacheByPrefix('folder', { batchSize: 50 })
+
+      expect(res.error).toBeNull()
+      expect(res.data?.purgedPaths).toHaveLength(150)
+      expect(res.data?.message).toContain('Successfully purged 150 object(s)')
+    })
+
+    test('purge cache by prefix - with batch delay', async () => {
+      const fileCount = 6
+      const files = Array.from({ length: fileCount }, (_, i) => ({
+        name: `file${i}.jpg`,
+        id: String(i),
+      }))
+
+      let fetchCallCount = 0
+      const startTime = Date.now()
+      global.fetch = jest.fn().mockImplementation(() => {
+        fetchCallCount++
+        if (fetchCallCount === 1) {
+          return Promise.resolve(new Response(JSON.stringify(files), { status: 200 }))
+        }
+        return Promise.resolve(
+          new Response(JSON.stringify({ message: 'success' }), { status: 200 })
+        )
+      })
+
+      const mockStorage = new StorageClient(URL, { Authorization: `Bearer ${KEY}` })
+      const res = await mockStorage
+        .from(bucketName)
+        .purgeCacheByPrefix('folder', { batchSize: 2, batchDelayMs: 50 })
+
+      const endTime = Date.now()
+      const executionTime = endTime - startTime
+
+      expect(res.error).toBeNull()
+      expect(res.data?.purgedPaths).toHaveLength(6)
+      expect(res.data?.message).toContain('Successfully purged 6 object(s)')
+      // Should have delays between batches (3 batches = 2 delays = ~100ms minimum)
+      expect(executionTime).toBeGreaterThanOrEqual(100)
+    })
+
+    test('purge cache by prefix - list error', async () => {
+      const listErrorResponse = new Response(
+        JSON.stringify({
+          statusCode: '403',
+          error: 'Forbidden',
+          message: 'Access denied',
+        }),
+        {
+          status: 403,
+          statusText: 'Forbidden',
+          headers: { 'Content-Type': 'application/json' },
+        }
+      )
+
+      global.fetch = jest.fn().mockResolvedValue(listErrorResponse)
+
+      const mockStorage = new StorageClient(URL, { Authorization: `Bearer ${KEY}` })
+      const testBucket = 'test-bucket'
+
+      const res = await mockStorage.from(testBucket).purgeCacheByPrefix('folder')
+      expect(res.data).toBeNull()
+      expect(res.error).not.toBeNull()
+      expect(res.error?.message).toContain('Access denied')
+    })
+
+    test('purge cache by prefix - with custom options', async () => {
+      const listResponse = new Response(
+        JSON.stringify([
+          { name: 'file1.jpg', id: '1' },
+          { name: 'file2.png', id: '2' },
+        ]),
+        {
+          status: 200,
+          statusText: 'OK',
+          headers: { 'Content-Type': 'application/json' },
+        }
+      )
+
+      const purgeResponse = new Response(JSON.stringify({ message: 'success' }), {
+        status: 200,
+        statusText: 'OK',
+        headers: { 'Content-Type': 'application/json' },
+      })
+
+      // Track and respond to each fetch call
+      let fetchCalls = 0
+      global.fetch = jest.fn().mockImplementation(() => {
+        fetchCalls++
+        if (fetchCalls === 1) {
+          return Promise.resolve(listResponse)
+        }
+        return Promise.resolve(purgeResponse.clone()) // Clone for multiple uses
+      })
+
+      const mockStorage = new StorageClient(URL, { apikey: KEY })
+      const testBucket = 'test-bucket'
+      const abortController = new AbortController()
+
+      const res = await mockStorage
+        .from(testBucket)
+        .purgeCacheByPrefix(
+          'folder',
+          { limit: 500, batchSize: 25 },
+          { signal: abortController.signal }
+        )
+
+      expect(res.error).toBeNull()
+      expect(res.data?.purgedPaths).toHaveLength(2)
+      expect(res.data?.message).toContain('Successfully purged 2 object(s)')
+    })
+
+    describe('Purge Cache - Integration Tests (Skipped)', () => {
+      test('purge cache for specific object', async () => {
+        await storage.from(bucketName).upload(uploadPath, file)
+        const res = await storage.from(bucketName).purgeCache(uploadPath)
+
+        expect(res.error).toBeNull()
+        expect(res.data?.message).toEqual('success')
+        expect(res.data?.purgedPath).toEqual(uploadPath)
+      })
+
+      test('purge cache by prefix for folder', async () => {
+        const file1Path = `testfolder/file1-${Date.now()}.jpg`
+        const file2Path = `testfolder/file2-${Date.now()}.jpg`
+
+        await storage.from(bucketName).upload(file1Path, file)
+        await storage.from(bucketName).upload(file2Path, file)
+
+        const res = await storage.from(bucketName).purgeCacheByPrefix('testfolder')
+
+        expect(res.error).toBeNull()
+        expect(res.data?.purgedPaths).toHaveLength(2)
+        expect(res.data?.message).toContain('Successfully purged 2 object(s)')
+      })
+
+      test('purge cache by prefix for entire bucket', async () => {
+        await storage.from(bucketName).upload(uploadPath, file)
+        const res = await storage.from(bucketName).purgeCacheByPrefix('')
+
+        expect(res.error).toBeNull()
+        expect(res.data?.purgedPaths.length).toBeGreaterThan(0)
+        expect(res.data?.message).toContain('Successfully purged')
+      })
+    })
+  })
+
   it('handles network timeouts', async () => {
-    mockError = new Error('Network timeout')
-    global.fetch = jest.fn().mockImplementation(() => Promise.reject(mockError))
+    global.fetch = jest.fn().mockImplementation(() => Promise.reject(new Error('Network timeout')))
     const storage = new StorageClient('http://localhost:8000/storage/v1', {
       apikey: 'test-token',
     })
@@ -726,6 +1183,33 @@ describe('error handling', () => {
     expect(error?.message).toBe('Network timeout')
 
     await expect(storage.from('test').throwOnError().list()).rejects.toThrow('Network timeout')
+  })
+
+  test('purge cache - with AbortController', async () => {
+    const mockResponse = new Response(JSON.stringify({ message: 'success' }), {
+      status: 200,
+      statusText: 'OK',
+      headers: { 'Content-Type': 'application/json' },
+    })
+    global.fetch = jest.fn().mockResolvedValue(mockResponse)
+
+    const mockStorage = new StorageClient(URL, { Authorization: `Bearer ${KEY}` })
+    const testBucket = 'test-bucket'
+    const abortController = new AbortController()
+
+    const res = await mockStorage
+      .from(testBucket)
+      .purgeCache('test.png', { signal: abortController.signal })
+    expect(res.error).toBeNull()
+    expect(res.data?.message).toEqual('success')
+
+    expect(global.fetch).toHaveBeenCalledWith(
+      expect.stringContaining(`/cdn/${testBucket}/test.png`),
+      expect.objectContaining({
+        method: 'DELETE',
+        signal: abortController.signal,
+      })
+    )
   })
 })
 
