@@ -40,32 +40,32 @@ export default class SupabaseClient<
   // support both cases.
   // TODO: Allow setting db_schema from ClientOptions.
   SchemaNameOrClientOptions extends
-    | (string & keyof Omit<Database, '__InternalSupabase'>)
-    | { PostgrestVersion: string } = 'public' extends keyof Omit<Database, '__InternalSupabase'>
-    ? 'public'
-    : string & keyof Omit<Database, '__InternalSupabase'>,
+  | (string & keyof Omit<Database, '__InternalSupabase'>)
+  | { PostgrestVersion: string } = 'public' extends keyof Omit<Database, '__InternalSupabase'>
+  ? 'public'
+  : string & keyof Omit<Database, '__InternalSupabase'>,
   SchemaName extends string &
-    keyof Omit<Database, '__InternalSupabase'> = SchemaNameOrClientOptions extends string &
-    keyof Omit<Database, '__InternalSupabase'>
-    ? SchemaNameOrClientOptions
-    : 'public' extends keyof Omit<Database, '__InternalSupabase'>
-      ? 'public'
-      : string & keyof Omit<Omit<Database, '__InternalSupabase'>, '__InternalSupabase'>,
+  keyof Omit<Database, '__InternalSupabase'> = SchemaNameOrClientOptions extends string &
+  keyof Omit<Database, '__InternalSupabase'>
+  ? SchemaNameOrClientOptions
+  : 'public' extends keyof Omit<Database, '__InternalSupabase'>
+  ? 'public'
+  : string & keyof Omit<Omit<Database, '__InternalSupabase'>, '__InternalSupabase'>,
   Schema extends Omit<Database, '__InternalSupabase'>[SchemaName] extends GenericSchema
-    ? Omit<Database, '__InternalSupabase'>[SchemaName]
-    : never = Omit<Database, '__InternalSupabase'>[SchemaName] extends GenericSchema
-    ? Omit<Database, '__InternalSupabase'>[SchemaName]
-    : never,
+  ? Omit<Database, '__InternalSupabase'>[SchemaName]
+  : never = Omit<Database, '__InternalSupabase'>[SchemaName] extends GenericSchema
+  ? Omit<Database, '__InternalSupabase'>[SchemaName]
+  : never,
   ClientOptions extends { PostgrestVersion: string } = SchemaNameOrClientOptions extends string &
-    keyof Omit<Database, '__InternalSupabase'>
-    ? // If the version isn't explicitly set, look for it in the __InternalSupabase object to infer the right version
-      Database extends { __InternalSupabase: { PostgrestVersion: string } }
-      ? Database['__InternalSupabase']
-      : // otherwise default to 12
-        { PostgrestVersion: '12' }
-    : SchemaNameOrClientOptions extends { PostgrestVersion: string }
-      ? SchemaNameOrClientOptions
-      : never,
+  keyof Omit<Database, '__InternalSupabase'>
+  ? // If the version isn't explicitly set, look for it in the __InternalSupabase object to infer the right version
+  Database extends { __InternalSupabase: { PostgrestVersion: string } }
+  ? Database['__InternalSupabase']
+  : // otherwise default to 12
+  { PostgrestVersion: '12' }
+  : SchemaNameOrClientOptions extends { PostgrestVersion: string }
+  ? SchemaNameOrClientOptions
+  : never,
 > {
   /**
    * Supabase Auth allows you to create and manage user sessions for access to data that is secured by access policies.
@@ -111,12 +111,8 @@ export default class SupabaseClient<
     if (!supabaseKey) throw new Error('supabaseKey is required.')
 
     this.realtimeUrl = new URL('realtime/v1', baseUrl)
-    // Convert HTTP protocol to WebSocket protocol using URL object
-    if (this.realtimeUrl.protocol === 'http:') {
-      this.realtimeUrl.protocol = 'ws:'
-    } else if (this.realtimeUrl.protocol === 'https:') {
-      this.realtimeUrl.protocol = 'wss:'
-    }
+    this.realtimeUrl.protocol = this.realtimeUrl.protocol.replace(/^http/i, 'ws')
+
     this.authUrl = new URL('auth/v1', baseUrl)
     this.storageUrl = new URL('storage/v1', baseUrl)
     this.functionsUrl = new URL('functions/v1', baseUrl)
@@ -265,10 +261,10 @@ export default class SupabaseClient<
       get?: boolean
       count?: 'exact' | 'planned' | 'estimated'
     } = {
-      head: false,
-      get: false,
-      count: undefined,
-    }
+        head: false,
+        get: false,
+        count: undefined,
+      }
   ): PostgrestFilterBuilder<
     ClientOptions,
     Schema,
