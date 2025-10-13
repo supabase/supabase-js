@@ -35,6 +35,41 @@ export type RealtimeChannelOptions = {
   }
 }
 
+type RealtimeChangesPayloadBase = {
+  schema: string
+  table: string
+}
+
+type RealtimeBroadcastChangesPayloadBase = RealtimeChangesPayloadBase & {
+  id: string
+}
+
+export type RealtimeBroadcastInsertPayload<T extends { [key: string]: any }> =
+  RealtimeBroadcastChangesPayloadBase & {
+    operation: `${REALTIME_POSTGRES_CHANGES_LISTEN_EVENT.INSERT}`
+    record: T
+    old_record: null
+  }
+
+export type RealtimeBroadcastUpdatePayload<T extends { [key: string]: any }> =
+  RealtimeBroadcastChangesPayloadBase & {
+    operation: `${REALTIME_POSTGRES_CHANGES_LISTEN_EVENT.UPDATE}`
+    record: T
+    old_record: T
+  }
+
+export type RealtimeBroadcastDeletePayload<T extends { [key: string]: any }> =
+  RealtimeBroadcastChangesPayloadBase & {
+    operation: `${REALTIME_POSTGRES_CHANGES_LISTEN_EVENT.DELETE}`
+    record: null
+    old_record: T
+  }
+
+export type RealtimeBroadcastPayload<T extends { [key: string]: any }> =
+  | RealtimeBroadcastInsertPayload<T>
+  | RealtimeBroadcastUpdatePayload<T>
+  | RealtimeBroadcastDeletePayload<T>
+
 type RealtimePostgresChangesPayloadBase = {
   schema: string
   table: string
@@ -414,6 +449,42 @@ export default class RealtimeChannel {
         id: string
       }
       payload: T
+    }) => void
+  ): RealtimeChannel
+  on<T extends Record<string, unknown>>(
+    type: `${REALTIME_LISTEN_TYPES.BROADCAST}`,
+    filter: { event: REALTIME_POSTGRES_CHANGES_LISTEN_EVENT.ALL },
+    callback: (payload: {
+      type: `${REALTIME_LISTEN_TYPES.BROADCAST}`
+      event: REALTIME_POSTGRES_CHANGES_LISTEN_EVENT.ALL
+      payload: RealtimeBroadcastPayload<T>
+    }) => void
+  ): RealtimeChannel
+  on<T extends { [key: string]: any }>(
+    type: `${REALTIME_LISTEN_TYPES.BROADCAST}`,
+    filter: { event: REALTIME_POSTGRES_CHANGES_LISTEN_EVENT.INSERT },
+    callback: (payload: {
+      type: `${REALTIME_LISTEN_TYPES.BROADCAST}`
+      event: REALTIME_POSTGRES_CHANGES_LISTEN_EVENT.INSERT
+      payload: RealtimeBroadcastInsertPayload<T>
+    }) => void
+  ): RealtimeChannel
+  on<T extends { [key: string]: any }>(
+    type: `${REALTIME_LISTEN_TYPES.BROADCAST}`,
+    filter: { event: REALTIME_POSTGRES_CHANGES_LISTEN_EVENT.UPDATE },
+    callback: (payload: {
+      type: `${REALTIME_LISTEN_TYPES.BROADCAST}`
+      event: REALTIME_POSTGRES_CHANGES_LISTEN_EVENT.UPDATE
+      payload: RealtimeBroadcastUpdatePayload<T>
+    }) => void
+  ): RealtimeChannel
+  on<T extends { [key: string]: any }>(
+    type: `${REALTIME_LISTEN_TYPES.BROADCAST}`,
+    filter: { event: REALTIME_POSTGRES_CHANGES_LISTEN_EVENT.DELETE },
+    callback: (payload: {
+      type: `${REALTIME_LISTEN_TYPES.BROADCAST}`
+      event: REALTIME_POSTGRES_CHANGES_LISTEN_EVENT.DELETE
+      payload: RealtimeBroadcastDeletePayload<T>
     }) => void
   ): RealtimeChannel
   on<T extends { [key: string]: any }>(
