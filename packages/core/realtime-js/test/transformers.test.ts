@@ -5,6 +5,7 @@ import {
   convertCell,
   convertChangeData,
   convertColumn,
+  httpEndpointURL,
   toArray,
   toJson,
   toTimestampString,
@@ -149,4 +150,75 @@ test('toArray with non-array strings', () => {
   assert.strictEqual(toArray('no braces here', 'json'), 'no braces here')
   assert.strictEqual(toArray('missing_closing', 'text'), 'missing_closing')
   assert.strictEqual(toArray('missing_opening}', 'text'), 'missing_opening}')
+})
+
+test('httpEndpointURL', () => {
+  // Test basic ws to http conversion
+  assert.strictEqual(
+    httpEndpointURL('ws://example.com/socket/websocket'),
+    'http://example.com/api/broadcast'
+  )
+
+  // Test wss to https conversion
+  assert.strictEqual(
+    httpEndpointURL('wss://example.com/socket/websocket'),
+    'https://example.com/api/broadcast'
+  )
+
+  // Test with /socket path
+  assert.strictEqual(httpEndpointURL('ws://example.com/socket'), 'http://example.com/api/broadcast')
+
+  // Test with /websocket path
+  assert.strictEqual(
+    httpEndpointURL('ws://example.com/websocket'),
+    'http://example.com/api/broadcast'
+  )
+
+  // Test with trailing slash
+  assert.strictEqual(
+    httpEndpointURL('ws://example.com/socket/websocket/'),
+    'http://example.com/api/broadcast'
+  )
+
+  // Test with port number
+  assert.strictEqual(
+    httpEndpointURL('ws://example.com:8080/socket/websocket'),
+    'http://example.com:8080/api/broadcast'
+  )
+
+  // Test with path prefix
+  assert.strictEqual(
+    httpEndpointURL('ws://example.com/prefix/socket/websocket'),
+    'http://example.com/prefix/api/broadcast'
+  )
+
+  // Test with query parameters
+  assert.strictEqual(
+    httpEndpointURL('ws://example.com/socket/websocket?apikey=test'),
+    'http://example.com/api/broadcast?apikey=test'
+  )
+
+  // Test already http protocol (should remain unchanged)
+  assert.strictEqual(
+    httpEndpointURL('http://example.com/socket/websocket'),
+    'http://example.com/api/broadcast'
+  )
+
+  // Test already https protocol (should remain unchanged)
+  assert.strictEqual(
+    httpEndpointURL('https://example.com/socket/websocket'),
+    'https://example.com/api/broadcast'
+  )
+
+  // Test with multiple trailing slashes
+  assert.strictEqual(
+    httpEndpointURL('ws://example.com/socket/websocket///'),
+    'http://example.com/api/broadcast'
+  )
+
+  // Test with no websocket-specific paths
+  assert.strictEqual(
+    httpEndpointURL('ws://example.com/some/path'),
+    'http://example.com/some/path/api/broadcast'
+  )
 })

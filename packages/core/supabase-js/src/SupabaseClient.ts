@@ -111,7 +111,12 @@ export default class SupabaseClient<
     if (!supabaseKey) throw new Error('supabaseKey is required.')
 
     this.realtimeUrl = new URL('realtime/v1', baseUrl)
-    this.realtimeUrl.protocol = this.realtimeUrl.protocol.replace('http', 'ws')
+    // Convert HTTP protocol to WebSocket protocol using URL object
+    if (this.realtimeUrl.protocol === 'http:') {
+      this.realtimeUrl.protocol = 'ws:'
+    } else if (this.realtimeUrl.protocol === 'https:') {
+      this.realtimeUrl.protocol = 'wss:'
+    }
     this.authUrl = new URL('auth/v1', baseUrl)
     this.storageUrl = new URL('storage/v1', baseUrl)
     this.functionsUrl = new URL('functions/v1', baseUrl)

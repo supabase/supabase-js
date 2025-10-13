@@ -251,8 +251,25 @@ export const toTimestampString = (value: RecordValue): RecordValue => {
 }
 
 export const httpEndpointURL = (socketUrl: string): string => {
-  let url = socketUrl
-  url = url.replace(/^ws/i, 'http')
-  url = url.replace(/(\/socket\/websocket|\/socket|\/websocket)\/?$/i, '')
-  return url.replace(/\/+$/, '') + '/api/broadcast'
+  // Convert ws/wss protocol to http/https using URL object for security
+  const wsUrl = new URL(socketUrl)
+
+  // Convert WebSocket protocol to HTTP protocol
+  if (wsUrl.protocol === 'ws:') {
+    wsUrl.protocol = 'http:'
+  } else if (wsUrl.protocol === 'wss:') {
+    wsUrl.protocol = 'https:'
+  }
+
+  // Remove WebSocket-specific path suffixes
+  wsUrl.pathname = wsUrl.pathname
+    .replace(/\/socket\/websocket\/?$/i, '')
+    .replace(/\/socket\/?$/i, '')
+    .replace(/\/websocket\/?$/i, '')
+    .replace(/\/+$/, '') // Remove trailing slashes
+
+  // Append the broadcast API path
+  wsUrl.pathname = wsUrl.pathname + '/api/broadcast'
+
+  return wsUrl.href
 }

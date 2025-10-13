@@ -28,7 +28,12 @@ export default class StorageBucketApi {
       }
     }
 
-    this.url = baseUrl.href.replace(/\/$/, '')
+    // Remove trailing slash from pathname using URL object
+    if (baseUrl.pathname.endsWith('/') && baseUrl.pathname.length > 1) {
+      baseUrl.pathname = baseUrl.pathname.slice(0, -1)
+    }
+
+    this.url = baseUrl.href
     this.headers = { ...DEFAULT_HEADERS, ...headers }
     this.fetch = resolveFetch(fetch)
   }
