@@ -254,22 +254,21 @@ export const httpEndpointURL = (socketUrl: string): string => {
   // Convert ws/wss protocol to http/https using URL object for security
   const wsUrl = new URL(socketUrl)
 
-  // Convert WebSocket protocol to HTTP protocol
-  if (wsUrl.protocol === 'ws:') {
-    wsUrl.protocol = 'http:'
-  } else if (wsUrl.protocol === 'wss:') {
-    wsUrl.protocol = 'https:'
-  }
+  wsUrl.protocol = wsUrl.protocol.replace(/^ws/i, 'http')
 
-  // Remove WebSocket-specific path suffixes
+  // Remove WebSocket-specific path suffixes (handle multiple trailing slashes)
   wsUrl.pathname = wsUrl.pathname
-    .replace(/\/socket\/websocket\/?$/i, '')
-    .replace(/\/socket\/?$/i, '')
-    .replace(/\/websocket\/?$/i, '')
-    .replace(/\/+$/, '') // Remove trailing slashes
+    .replace(/\/+$/, '') // First remove all trailing slashes
+    .replace(/\/socket\/websocket$/i, '')
+    .replace(/\/socket$/i, '')
+    .replace(/\/websocket$/i, '')
 
-  // Append the broadcast API path
-  wsUrl.pathname = wsUrl.pathname + '/api/broadcast'
+  // Ensure pathname doesn't end with slash before appending
+  if (wsUrl.pathname === '' || wsUrl.pathname === '/') {
+    wsUrl.pathname = '/api/broadcast'
+  } else {
+    wsUrl.pathname = wsUrl.pathname + '/api/broadcast'
+  }
 
   return wsUrl.href
 }
