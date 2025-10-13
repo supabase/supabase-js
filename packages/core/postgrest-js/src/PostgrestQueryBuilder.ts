@@ -7,6 +7,7 @@ import {
   GenericTable,
   GenericView,
 } from './types/common/common'
+import { PostgrestQueryBuilderOptionsWithSchema } from './types/types'
 
 export default class PostgrestQueryBuilder<
   ClientOptions extends ClientServerOptions,
@@ -27,11 +28,7 @@ export default class PostgrestQueryBuilder<
       headers = {},
       schema,
       fetch,
-    }: {
-      headers?: HeadersInit
-      schema?: string
-      fetch?: Fetch
-    }
+    }: PostgrestQueryBuilderOptionsWithSchema<string>
   ) {
     this.url = url
     this.headers = new Headers(headers)
