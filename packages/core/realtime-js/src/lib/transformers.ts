@@ -251,8 +251,21 @@ export const toTimestampString = (value: RecordValue): RecordValue => {
 }
 
 export const httpEndpointURL = (socketUrl: string): string => {
-  let url = socketUrl
-  url = url.replace(/^ws/i, 'http')
-  url = url.replace(/(\/socket\/websocket|\/socket|\/websocket)\/?$/i, '')
-  return url.replace(/\/+$/, '') + '/api/broadcast'
+  const wsUrl = new URL(socketUrl)
+
+  wsUrl.protocol = wsUrl.protocol.replace(/^ws/i, 'http')
+
+  wsUrl.pathname = wsUrl.pathname
+    .replace(/\/+$/, '') // remove all trailing slashes
+    .replace(/\/socket\/websocket$/i, '') // remove the socket/websocket path
+    .replace(/\/socket$/i, '') // remove the socket path
+    .replace(/\/websocket$/i, '') // remove the websocket path
+
+  if (wsUrl.pathname === '' || wsUrl.pathname === '/') {
+    wsUrl.pathname = '/api/broadcast'
+  } else {
+    wsUrl.pathname = wsUrl.pathname + '/api/broadcast'
+  }
+
+  return wsUrl.href
 }
