@@ -163,7 +163,7 @@ jobs:
               workflow_id: 'update-js-libs.yml',
               ref: 'master',
               inputs: {
-                version: '${{ github.event.inputs.version_specifier }}',
+                version: '${{ needs.release-stable.outputs.released_version }}',
                 source: 'supabase-js-stable-release'
               }
             });
@@ -194,7 +194,7 @@ jobs:
               workflow_id: 'docs-js-libs-update.yml',
               ref: 'master',
               inputs: {
-                version: '${{ github.event.inputs.version_specifier }}',
+                version: '${{ needs.release-stable.outputs.released_version }}',
                 source: 'supabase-js-stable-release'
               }
             });
