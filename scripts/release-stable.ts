@@ -1,5 +1,6 @@
 import { releaseVersion, releaseChangelog, releasePublish } from 'nx/release'
 import { execSync } from 'child_process'
+import { writeFile } from 'fs/promises'
 
 function getLastStableTag(): string {
   try {
@@ -162,6 +163,13 @@ function safeExec(cmd: string, opts = {}) {
   }
 
   const version = result.workspaceChangelog?.releaseVersion.rawVersion || workspaceVersion
+
+  // Write version to file for CI to read
+  try {
+    await writeFile('.release-version', version ?? '', 'utf-8')
+  } catch (error) {
+    console.error('❌ Failed to write release version to file', error)
+  }
 
   // Validate version to prevent command injection
   if (

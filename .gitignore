@@ -35,6 +35,9 @@ testem.log
 /typings
 .env
 
+# release artifacts
+.release-version
+
 # System Files
 .DS_Store
 Thumbs.db

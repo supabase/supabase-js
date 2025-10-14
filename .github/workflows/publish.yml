@@ -19,6 +19,8 @@ jobs:
   release-stable: # stable releases can only be manually triggered
     if: ${{ github.event_name == 'workflow_dispatch' }}
     runs-on: ubuntu-latest
+    outputs:
+      released_version: ${{ steps.extract-version.outputs.version }}
     permissions:
       contents: read
       id-token: write
@@ -99,14 +101,25 @@ jobs:
             exit 1
           fi
 
-      - name: Release & create PR
+      - name: Release stable version
         env:
           NPM_CONFIG_PROVENANCE: true
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           RELEASE_GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        shell: bash
+        run: npm run release-stable -- --versionSpecifier "${{ github.event.inputs.version_specifier }}"
+
+      - name: Extract released version
+        id: extract-version
+        shell: bash
         run: |
-          npm run release-stable -- --versionSpecifier "${{ github.event.inputs.version_specifier }}"
+          set -euo pipefail
+          VERSION=$(cat .release-version)
+          if [[ -z "$VERSION" ]]; then
+            exit 1
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
 
       - name: Summary
         if: ${{ success() }}
@@ -150,7 +163,7 @@ jobs:
               workflow_id: 'update-js-libs.yml',
               ref: 'master',
               inputs: {
-                version: '${{ github.event.inputs.version_specifier }}',
+                version: '${{ needs.release-stable.outputs.released_version }}',
                 source: 'supabase-js-stable-release'
               }
             });
@@ -181,7 +194,7 @@ jobs:
               workflow_id: 'docs-js-libs-update.yml',
               ref: 'master',
               inputs: {
-                version: '${{ github.event.inputs.version_specifier }}',
+                version: '${{ needs.release-stable.outputs.released_version }}',
                 source: 'supabase-js-stable-release'
               }
             });
@@ -276,7 +289,19 @@ jobs:
     uses: ./.github/workflows/slack-notify.yml
     secrets: inherit
     with:
-      subject: 'Stable Release'
+      title: 'Stable Release'
+      status: 'failure'
+
+  notify-stable-success:
+    name: Notify Slack for Stable success
+    needs: release-stable
+    if: ${{ github.event_name == 'workflow_dispatch' && needs.release-stable.result == 'success' }}
+    uses: ./.github/workflows/slack-notify.yml
+    secrets: inherit
+    with:
+      title: 'Stable Release'
+      status: 'success'
+      version: ${{ needs.release-stable.outputs.released_version }}
 
   notify-canary-failure:
     name: Notify Slack for Canary failure
@@ -285,4 +310,5 @@ jobs:
     uses: ./.github/workflows/slack-notify.yml
     secrets: inherit
     with:
-      subject: 'Canary Release'
+      title: 'Canary Release'
+      status: 'failure'

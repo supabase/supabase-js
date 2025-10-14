@@ -1,0 +1,26 @@
+name: Mark as Stale and Close Stale Issues
+
+on:
+  schedule:
+    - cron: '0 0 * * 0'
+  workflow_dispatch:
+
+permissions:
+  issues: write
+  pull-requests: write
+
+jobs:
+  stale:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/stale@v9
+        with:
+          days-before-stale: 365
+          days-before-close: 180
+          stale-issue-message: 'This issue has been automatically marked as stale because it has not had any activity for 1 year. It will be closed in 6 months if no further activity occurs. If this issue is still relevant, please comment to keep it open.'
+          close-issue-message: 'This issue has been automatically closed due to inactivity. If you believe this is still relevant, please reopen or create a new issue.'
+          stale-issue-label: 'stale'
+          exempt-issue-labels: 'security,needs-discussion,pinned'
+          exempt-all-assignees: true
+          remove-stale-when-updated: true
+          operations-per-run: 100

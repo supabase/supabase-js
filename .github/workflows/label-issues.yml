@@ -1,13 +1,17 @@
-name: Label Issues
+name: Label Issues and PRs
 
 on:
   issues:
     types:
       - opened
       - transferred
+  pull_request:
+    types:
+      - opened
 
 permissions:
   issues: write
+  pull-requests: write
 
 jobs:
   label-issue:
@@ -17,58 +21,75 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
-            // Define the mapping from repo/template value to label
             const labelMap = {
               'supabase/auth-js': 'auth-js',
               'supabase/functions-js': 'functions-js',
               'supabase/postgrest-js': 'postgrest-js',
               'supabase/storage-js': 'storage-js',
               'supabase/realtime-js': 'realtime-js',
+              'supabase/supabase-js': 'supabase-js',
               'auth-js': 'auth-js',
               'functions-js': 'functions-js',
               'postgrest-js': 'postgrest-js',
               'storage-js': 'storage-js',
               'realtime-js': 'realtime-js',
+              'supabase-js': 'supabase-js',
+            };
+
+            const scopeToLabel = {
+              'auth': 'auth-js',
+              'functions': 'functions-js',
+              'postgrest': 'postgrest-js',
+              'storage': 'storage-js',
+              'realtime': 'realtime-js',
+              'supabase': 'supabase-js',
             };
 
             let labels = [];
+            const isPR = !!context.payload.pull_request;
+            const item = context.payload.pull_request || context.payload.issue;
+            const itemNumber = item.number;
 
-            const oldRepoFullName = context.payload.changes?.old_repository?.full_name;
-            if (oldRepoFullName) {
-              const fullNameLower = (oldRepoFullName || '').toLowerCase();
-              const shortName = fullNameLower.split('/')?.[1];
-              console.log('old_repository', fullNameLower, shortName);
-              const transferLabel = labelMap[fullNameLower] || labelMap[shortName];
-              if (transferLabel) labels.push(transferLabel);
-            } else {
-              // Label based on "Library affected" field in the issue body
-              const body = context.payload.issue.body || '';
-              const match = body.match(/### Library affected\s*\n+([\s\S]*?)(\n###|\n$)/i);
-              if (match) {
-                const libsRaw = match[1];
-                // Split by comma, semicolon, or newlines
-                const libs = libsRaw.split(/,|;|\n/).map(s => s.trim().toLowerCase()).filter(Boolean);
-                for (const lib of libs) {
-                  if (labelMap[lib]) labels.push(labelMap[lib]);
+            if (isPR) {
+              const title = item.title || '';
+              const scopeMatch = title.match(/^[a-z]+\(([a-z]+)\):/);
+              if (scopeMatch) {
+                const scope = scopeMatch[1];
+                if (scopeToLabel[scope]) {
+                  labels.push(scopeToLabel[scope]);
                 }
               }
-              // Check the title for "[migration]"
-              const title = context.payload.issue.title || '';
-              if (title.toLowerCase().includes('[migration]')) {
-                labels.push('migration');
+            } else {
+              const oldRepoFullName = context.payload.changes?.old_repository?.full_name;
+              if (oldRepoFullName) {
+                const fullNameLower = (oldRepoFullName || '').toLowerCase();
+                const shortName = fullNameLower.split('/')?.[1];
+                const transferLabel = labelMap[fullNameLower] || labelMap[shortName];
+                if (transferLabel) labels.push(transferLabel);
+              } else {
+                const body = item.body || '';
+                const match = body.match(/### Library affected\s*\n+([\s\S]*?)(\n###|\n$)/i);
+                if (match) {
+                  const libsRaw = match[1];
+                  const libs = libsRaw.split(/,|;|\n/).map(s => s.trim().toLowerCase()).filter(Boolean);
+                  for (const lib of libs) {
+                    if (labelMap[lib]) labels.push(labelMap[lib]);
+                  }
+                }
+                const title = item.title || '';
+                if (title.toLowerCase().includes('[migration]')) {
+                  labels.push('migration');
+                }
               }
             }
 
-            // Remove duplicates
             labels = [...new Set(labels)];
 
             if (labels.length > 0) {
               await github.rest.issues.addLabels({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
-                issue_number: context.payload.issue.number,
+                issue_number: itemNumber,
                 labels,
               });
-            } else {
-              console.log('No matching label found; no label added.');
             }
