@@ -24,11 +24,13 @@ jobs:
               'supabase/postgrest-js': 'postgrest-js',
               'supabase/storage-js': 'storage-js',
               'supabase/realtime-js': 'realtime-js',
+              'supabase/supabase-js': 'supabase-js',
               'auth-js': 'auth-js',
               'functions-js': 'functions-js',
               'postgrest-js': 'postgrest-js',
               'storage-js': 'storage-js',
               'realtime-js': 'realtime-js',
+              'supabase-js': 'supabase-js',
             };
 
             let labels = [];
