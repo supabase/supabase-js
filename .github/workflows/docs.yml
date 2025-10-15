@@ -100,33 +100,33 @@ jobs:
           </head>
           <body>
               <h1>Supabase JavaScript Libraries - API Documentation</h1>
-              <p>TypeScript/JavaScript API documentation for all Supabase client libraries.</p>
+              <p>TypeScript/JavaScript API documentation for all Supabase JS SDKs.</p>
               
               <h2>Available Documentation:</h2>
               <ul>
                   <li>
                       <a href="auth-js/v2/spec.json">@supabase/auth-js</a>
-                      <div class="description">Authentication client library</div>
+                      <div class="description">Authentication SDK</div>
                   </li>
                   <li>
                       <a href="functions-js/v2/spec.json">@supabase/functions-js</a>
-                      <div class="description">Edge Functions client library</div>
+                      <div class="description">Edge Functions SDK</div>
                   </li>
                   <li>
                       <a href="postgrest-js/v2/spec.json">@supabase/postgrest-js</a>
-                      <div class="description">PostgREST database client</div>
+                      <div class="description">PostgREST database SDK</div>
                   </li>
                   <li>
                       <a href="realtime-js/v2/spec.json">@supabase/realtime-js</a>
-                      <div class="description">Realtime subscriptions client</div>
+                      <div class="description">Realtime subscriptions SDK</div>
                   </li>
                   <li>
                       <a href="storage-js/v2/spec.json">@supabase/storage-js</a>
-                      <div class="description">File storage client</div>
+                      <div class="description">File storage SDK</div>
                   </li>
                   <li>
                       <a href="supabase-js/v2/spec.json">@supabase/supabase-js</a>
-                      <div class="description">Main isomorphic client combining all libraries</div>
+                      <div class="description">Main isomorphic SDK combining all SDKs</div>
                   </li>
               </ul>
               

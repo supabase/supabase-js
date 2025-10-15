@@ -8,7 +8,7 @@
     </picture>
   </a>
 
-  <h1 align="center">Supabase Realtime Client</h1>
+  <h1 align="center">Supabase Realtime SDK</h1>
 
   <h3 align="center">Send ephemeral messages with <b>Broadcast</b>, track and synchronize state with <b>Presence</b>, and listen to database changes with <b>Postgres Change Data Capture (CDC)</b>.</h3>
 
@@ -29,7 +29,7 @@
 
 # Overview
 
-This client enables you to use the following Supabase Realtime's features:
+This SDK enables you to use the following Supabase Realtime's features:
 
 - **Broadcast**: send ephemeral messages from client to clients with minimal latency. Use cases include sharing cursor positions between users.
 - **Presence**: track and synchronize shared state across clients with the help of CRDTs. Use cases include tracking which users are currently viewing a specific webpage.

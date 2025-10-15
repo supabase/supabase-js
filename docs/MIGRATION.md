@@ -98,7 +98,7 @@ This guide is for contributors who need to understand where code moved and how t
 
 ## Why We Migrated
 
-We converted the `supabase-js` repository into a monorepo and absorbed the other js client libraries to solve several challenges:
+We converted the `supabase-js` repository into a monorepo and absorbed the other js SDKs to solve several challenges:
 
 ### Problems with Separate Repos
 
@@ -134,7 +134,7 @@ github.com/supabase/storage-js
 github.com/supabase/functions-js
 ```
 
-**After:** The Supabase JS monorepo (absorbed all client libraries)
+**After:** The Supabase JS monorepo (absorbed all SDKs)
 
 ```tree
 github.com/supabase/supabase-js

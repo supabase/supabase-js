@@ -6,7 +6,7 @@
 
 </div>
 
-JS Client library to interact with Supabase Functions.
+JS SDK to interact with Supabase Functions.
 
 ## Docs
 

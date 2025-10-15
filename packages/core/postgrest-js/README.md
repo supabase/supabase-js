@@ -5,7 +5,7 @@
 [![License: MIT](https://img.shields.io/npm/l/@supabase/postgrest-js)](#license)
 [![pkg.pr.new](https://pkg.pr.new/badge/supabase/postgrest-js)](https://pkg.pr.new/~/supabase/postgrest-js)
 
-Isomorphic JavaScript client for [PostgREST](https://postgrest.org). The goal of this library is to make an "ORM-like" restful interface.
+Isomorphic JavaScript SDK for [PostgREST](https://postgrest.org). The goal of this library is to make an "ORM-like" restful interface.
 
 Full documentation can be found [here](https://supabase.github.io/supabase-js/postgrest-js/v2/spec.json).
 

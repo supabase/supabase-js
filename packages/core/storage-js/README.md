@@ -6,7 +6,7 @@
 
 </div>
 
-JS Client library to interact with Supabase Storage.
+JS SDK to interact with Supabase Storage.
 
 - Documentation: https://supabase.io/docs/reference/javascript/storage-createbucket
 - Typedoc: https://supabase.github.io/supabase-js/storage-js/v2/spec.json
@@ -393,7 +393,7 @@ The test infrastructure (`infra/docker-compose.yml`) includes:
 
 #### What About Supabase CLI?
 
-**No**, you don't need `supabase start` or a regular Supabase instance for these tests. The storage-js tests use their own specialized Docker setup that's lighter and focused specifically on testing the storage client library. This test infrastructure:
+**No**, you don't need `supabase start` or a regular Supabase instance for these tests. The storage-js tests use their own specialized Docker setup that's lighter and focused specifically on testing the storage SDK. This test infrastructure:
 
 - Is completely independent from any Supabase CLI projects
 - Uses fixed test authentication keys

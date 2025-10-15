@@ -1,6 +1,6 @@
 # `auth-js`
 
-An isomorphic JavaScript client library for the [Supabase Auth](https://github.com/supabase/auth) API.
+An isomorphic JavaScript SDK for the [Supabase Auth](https://github.com/supabase/auth) API.
 
 <div align="center">
 

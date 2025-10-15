@@ -8,7 +8,7 @@
     </picture>
   </a>
 
-  <h1 align="center">Supabase JS Client Libraries</h1>
+  <h1 align="center">Supabase JS SDK</h1>
 
   <p align="center">
     <a href="https://supabase.com/docs/guides/getting-started">Guides</a>
@@ -36,16 +36,16 @@
 
 ## 📦 Libraries
 
-This monorepo contains the complete suite of Supabase JavaScript client libraries:
+This monorepo contains the complete suite of Supabase JavaScript SDK:
 
 | Library                                                    | Description                              |
 | ---------------------------------------------------------- | ---------------------------------------- |
-| **[@supabase/supabase-js](./packages/core/supabase-js)**   | Main isomorphic client for Supabase      |
-| **[@supabase/auth-js](./packages/core/auth-js)**           | Authentication client                    |
-| **[@supabase/postgrest-js](./packages/core/postgrest-js)** | PostgREST client for database operations |
-| **[@supabase/realtime-js](./packages/core/realtime-js)**   | Real-time subscriptions client           |
-| **[@supabase/storage-js](./packages/core/storage-js)**     | File storage client                      |
-| **[@supabase/functions-js](./packages/core/functions-js)** | Edge Functions client                    |
+| **[@supabase/supabase-js](./packages/core/supabase-js)**   | Main isomorphic sdk for Supabase      |
+| **[@supabase/auth-js](./packages/core/auth-js)**           | Authentication sdk                    |
+| **[@supabase/postgrest-js](./packages/core/postgrest-js)** | PostgREST sdk for database operations |
+| **[@supabase/realtime-js](./packages/core/realtime-js)**   | Real-time subscriptions sdk           |
+| **[@supabase/storage-js](./packages/core/storage-js)**     | File storage sdk                      |
+| **[@supabase/functions-js](./packages/core/functions-js)** | Edge Functions sdk                    |
 
 > **💡 Note for Package Users:** If you install and use these packages, **nothing has changed**. Continue installing packages normally:
 >
@@ -147,12 +147,12 @@ npx nx test <package-name> --coverage
 
 ### API Documentation
 
-- **[Auth Client](./packages/core/auth-js/README.md)** - Authentication and user management
-- **[Database Client](./packages/core/postgrest-js/README.md)** - Database queries and operations
-- **[Realtime Client](./packages/core/realtime-js/README.md)** - Real-time subscriptions
-- **[Storage Client](./packages/core/storage-js/README.md)** - File upload and management
-- **[Functions Client](./packages/core/functions-js/README.md)** - Edge Functions invocation
-- **[Main Client](./packages/core/supabase-js/README.md)** - Combined client library
+- **[Auth sdk](./packages/core/auth-js/README.md)** - Authentication and user management
+- **[Database sdk](./packages/core/postgrest-js/README.md)** - Database queries and operations
+- **[Realtime sdk](./packages/core/realtime-js/README.md)** - Real-time subscriptions
+- **[Storage sdk](./packages/core/storage-js/README.md)** - File upload and management
+- **[Functions sdk](./packages/core/functions-js/README.md)** - Edge Functions invocation
+- **[Main sdk](./packages/core/supabase-js/README.md)** - Combined sdk
 
 ### Architecture Documentation
 
@@ -194,12 +194,12 @@ Because provenance attestations are a new capability, security features may evol
 supabase-js/
 ├── packages/
 │   └── core/                  # Published libraries
-│       ├── auth-js/           # Authentication client
-│       ├── functions-js/      # Edge Functions client
-│       ├── postgrest-js/      # PostgREST database client
-│       ├── realtime-js/       # Real-time subscriptions client
-│       ├── storage-js/        # File storage client
-│       └── supabase-js/       # Main isomorphic client
+│       ├── auth-js/           # Authentication sdk
+│       ├── functions-js/      # Edge Functions sdk
+│       ├── postgrest-js/      # PostgREST database sdk
+│       ├── realtime-js/       # Real-time subscriptions sdk
+│       ├── storage-js/        # File storage sdk
+│       └── supabase-js/       # Main isomorphic sdk
 ├── nx.json                    # npx nx workspace configuration
 ├── package.json               # Root package.json and workspaces setup
 └── ...

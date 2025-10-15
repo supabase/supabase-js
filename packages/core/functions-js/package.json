@@ -1,7 +1,7 @@
 {
   "name": "@supabase/functions-js",
   "version": "0.0.0-automated",
-  "description": "JS Client library to interact with Supabase Functions.",
+  "description": "JS SDK to interact with Supabase Functions.",
   "main": "dist/main/index.js",
   "module": "dist/module/index.js",
   "types": "dist/module/index.d.ts",
