@@ -15,7 +15,6 @@ export class StorageClient extends StorageBucketApi {
     opts?: StorageClientOptions
   ) {
     super(url, headers, fetch, opts)
-    console.log(new StorageVectorsClient('https://api.example.com'))
   }
 
   /**
@@ -25,5 +24,17 @@ export class StorageClient extends StorageBucketApi {
    */
   from(id: string): StorageFileApi {
     return new StorageFileApi(this.url, this.headers, id, this.fetch)
+  }
+
+  /**
+   * Access vector storage operations.
+   *
+   * @returns A StorageVectorsClient instance configured with the current storage settings.
+   */
+  vectors(): StorageVectorsClient {
+    return new StorageVectorsClient(this.url, {
+      headers: this.headers,
+      fetch: this.fetch,
+    })
   }
 }

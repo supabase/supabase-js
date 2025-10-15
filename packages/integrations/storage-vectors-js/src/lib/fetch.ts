@@ -1,6 +1,6 @@
 import { StorageVectorsApiError, StorageVectorsUnknownError } from './errors'
 import { isPlainObject, resolveResponse } from './helpers'
-import { FetchParameters } from './types'
+import { VectorFetchParameters } from './types'
 
 export type Fetch = typeof fetch
 
@@ -69,7 +69,7 @@ const handleError = async (
 const _getRequestParams = (
   method: RequestMethodType,
   options?: FetchOptions,
-  parameters?: FetchParameters,
+  parameters?: VectorFetchParameters,
   body?: object
 ) => {
   const params: { [k: string]: any } = { method, headers: options?.headers || {} }
@@ -103,7 +103,7 @@ async function _handleRequest(
   method: RequestMethodType,
   url: string,
   options?: FetchOptions,
-  parameters?: FetchParameters,
+  parameters?: VectorFetchParameters,
   body?: object
 ): Promise<any> {
   return new Promise((resolve, reject) => {
@@ -135,7 +135,7 @@ export async function get(
   fetcher: Fetch,
   url: string,
   options?: FetchOptions,
-  parameters?: FetchParameters
+  parameters?: VectorFetchParameters
 ): Promise<any> {
   return _handleRequest(fetcher, 'GET', url, options, parameters)
 }
@@ -154,7 +154,7 @@ export async function post(
   url: string,
   body: object,
   options?: FetchOptions,
-  parameters?: FetchParameters
+  parameters?: VectorFetchParameters
 ): Promise<any> {
   return _handleRequest(fetcher, 'POST', url, options, parameters, body)
 }
@@ -173,7 +173,7 @@ export async function put(
   url: string,
   body: object,
   options?: FetchOptions,
-  parameters?: FetchParameters
+  parameters?: VectorFetchParameters
 ): Promise<any> {
   return _handleRequest(fetcher, 'PUT', url, options, parameters, body)
 }
@@ -192,7 +192,7 @@ export async function remove(
   url: string,
   body: object,
   options?: FetchOptions,
-  parameters?: FetchParameters
+  parameters?: VectorFetchParameters
 ): Promise<any> {
   return _handleRequest(fetcher, 'DELETE', url, options, parameters, body)
 }

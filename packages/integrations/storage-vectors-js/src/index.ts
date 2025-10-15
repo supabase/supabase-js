@@ -41,7 +41,7 @@ export type {
   ApiResponse,
   SuccessResponse,
   ErrorResponse,
-  FetchParameters,
+  VectorFetchParameters,
 } from './lib/types'
 
 // Errors

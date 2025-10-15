@@ -268,7 +268,7 @@ export interface QueryVectorsResponse {
  * Fetch-specific parameters like abort signals
  * @property signal - AbortSignal for cancelling requests
  */
-export interface FetchParameters {
+export interface VectorFetchParameters {
   signal?: AbortSignal
 }
 
