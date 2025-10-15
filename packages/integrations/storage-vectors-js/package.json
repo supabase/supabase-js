@@ -18,10 +18,21 @@
     "dist",
     "!**/*.tsbuildinfo"
   ],
+  "scripts": {
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "test:real": "USE_MOCK_SERVER=false jest",
+    "test:mock": "USE_MOCK_SERVER=true jest"
+  },
   "nx": {
     "name": "@supabase/storage-vectors-js"
   },
   "dependencies": {
-    "tslib": "^2.3.0"
+    "@supabase/node-fetch": "^2.6.13"
+  },
+  "devDependencies": {
+    "@types/node": "^24.7.2",
+    "tslib": "^2.8.1"
   }
 }
