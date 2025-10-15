@@ -1,13 +1,34 @@
-# `postgrest-js`
+<br />
+<p align="center">
+  <a href="https://supabase.io">
+        <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/supabase/supabase/master/packages/common/assets/images/supabase-logo-wordmark--dark.svg">
+      <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/supabase/supabase/master/packages/common/assets/images/supabase-logo-wordmark--light.svg">
+      <img alt="Supabase Logo" width="300" src="https://raw.githubusercontent.com/supabase/supabase/master/packages/common/assets/images/logo-preview.jpg">
+    </picture>
+  </a>
+
+  <h1 align="center">Supabase PostgREST JS SDK</h1>
+
+  <h3 align="center">Isomorphic JavaScript SDK for <a href="https://postgrest.org">PostgREST</a> with an ORM-like interface.</h3>
+
+  <p align="center">
+    <a href="https://supabase.com/docs/guides/database">Guides</a>
+    ·
+    <a href="https://supabase.com/docs/reference/javascript/select">Reference Docs</a>
+    ·
+    <a href="https://supabase.github.io/supabase-js/postgrest-js/v2/spec.json">TypeDoc</a>
+  </p>
+</p>
+
+<div align="center">
 
 [![Build](https://github.com/supabase/postgrest-js/workflows/CI/badge.svg)](https://github.com/supabase/postgrest-js/actions?query=branch%3Amaster)
 [![Package](https://img.shields.io/npm/v/@supabase/postgrest-js)](https://www.npmjs.com/package/@supabase/postgrest-js)
 [![License: MIT](https://img.shields.io/npm/l/@supabase/postgrest-js)](#license)
 [![pkg.pr.new](https://pkg.pr.new/badge/supabase/postgrest-js)](https://pkg.pr.new/~/supabase/postgrest-js)
 
-Isomorphic JavaScript SDK for [PostgREST](https://postgrest.org). The goal of this library is to make an "ORM-like" restful interface.
-
-Full documentation can be found [here](https://supabase.github.io/supabase-js/postgrest-js/v2/spec.json).
+</div>
 
 ### Quick start
 
@@ -167,7 +188,7 @@ It performs these steps:
 - **Port 3000** - PostgREST server (API)
 - **Port 8080** - Database schema endpoint (for type generation)
 
-**Note:** Unlike a full Supabase instance, this uses a minimal PostgREST setup specifically for testing the client library.
+**Note:** Unlike a full Supabase instance, this uses a minimal PostgREST setup specifically for testing the SDK.
 
 ### Contributing
 

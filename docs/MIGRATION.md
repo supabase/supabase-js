@@ -325,7 +325,7 @@ Use these names with Nx commands:
 - `postgrest-js` - PostgREST library
 - `realtime-js` - Realtime library
 - `storage-js` - Storage library
-- `supabase-js` - Main client library
+- `supabase-js` - Main SDK
 
 ### Useful New Commands
 

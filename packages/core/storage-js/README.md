@@ -1,15 +1,31 @@
-# `storage-js`
+<br />
+<p align="center">
+  <a href="https://supabase.io">
+        <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/supabase/supabase/master/packages/common/assets/images/supabase-logo-wordmark--dark.svg">
+      <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/supabase/supabase/master/packages/common/assets/images/supabase-logo-wordmark--light.svg">
+      <img alt="Supabase Logo" width="300" src="https://raw.githubusercontent.com/supabase/supabase/master/packages/common/assets/images/logo-preview.jpg">
+    </picture>
+  </a>
+
+  <h1 align="center">Supabase Storage JS SDK</h1>
+
+  <h3 align="center">JavaScript SDK to interact with Supabase Storage.</h3>
+
+  <p align="center">
+    <a href="https://supabase.com/docs/guides/storage">Guides</a>
+    ·
+    <a href="https://supabase.com/docs/reference/javascript/storage-createbucket">Reference Docs</a>
+    ·
+    <a href="https://supabase.github.io/supabase-js/storage-js/v2/spec.json">TypeDoc</a>
+  </p>
+</p>
 
 <div align="center">
 
 [![pkg.pr.new](https://pkg.pr.new/badge/supabase/storage-js)](https://pkg.pr.new/~/supabase/storage-js)
 
 </div>
-
-JS SDK to interact with Supabase Storage.
-
-- Documentation: https://supabase.io/docs/reference/javascript/storage-createbucket
-- Typedoc: https://supabase.github.io/supabase-js/storage-js/v2/spec.json
 
 ## Quick Start Guide
 

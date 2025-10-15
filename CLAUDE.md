@@ -1,6 +1,6 @@
 # Claude AI Instructions for Supabase JS Libraries Monorepo
 
-You are assisting with development in a unified Nx monorepo that consolidates all Supabase JavaScript client libraries, built with Nx for optimal developer experience and maintainability. This strategic migration from 6 separate repositories addresses critical maintenance overhead, dependency duplication, and release coordination challenges while maintaining **zero breaking changes** for consumers.
+You are assisting with development in a unified Nx monorepo that consolidates all Supabase JavaScript SDKs, built with Nx for optimal developer experience and maintainability. This strategic migration from 6 separate repositories addresses critical maintenance overhead, dependency duplication, and release coordination challenges while maintaining **zero breaking changes** for consumers.
 
 > **📚 Essential Documentation**: Always refer to these guides for detailed information:
 >
@@ -777,4 +777,4 @@ _No user-facing changes in this release._
 - Unchanged packages show "No user-facing changes"
 - Single npm install updates entire SDK suite
 
-Remember: This monorepo optimizes for developer experience and maintenance efficiency while ensuring zero breaking changes for the millions of developers using Supabase client libraries.
+Remember: This monorepo optimizes for developer experience and maintenance efficiency while ensuring zero breaking changes for the millions of developers using Supabase SDKs.

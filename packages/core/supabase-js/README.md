@@ -1,7 +1,25 @@
-# `supabase-js` - Isomorphic JavaScript SDK for Supabase.
+<br />
+<p align="center">
+  <a href="https://supabase.io">
+        <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/supabase/supabase/master/packages/common/assets/images/supabase-logo-wordmark--dark.svg">
+      <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/supabase/supabase/master/packages/common/assets/images/supabase-logo-wordmark--light.svg">
+      <img alt="Supabase Logo" width="300" src="https://raw.githubusercontent.com/supabase/supabase/master/packages/common/assets/images/logo-preview.jpg">
+    </picture>
+  </a>
 
-- **Documentation:** https://supabase.com/docs/reference/javascript/start
-- TypeDoc: https://supabase.github.io/supabase-js/supabase-js/v2/spec.json
+  <h1 align="center">Supabase JS SDK</h1>
+
+  <h3 align="center">Isomorphic JavaScript SDK for Supabase - combining Auth, Database, Storage, Functions, and Realtime.</h3>
+
+  <p align="center">
+    <a href="https://supabase.com/docs/guides/getting-started">Guides</a>
+    ·
+    <a href="https://supabase.com/docs/reference/javascript/start">Reference Docs</a>
+    ·
+    <a href="https://supabase.github.io/supabase-js/supabase-js/v2/spec.json">TypeDoc</a>
+  </p>
+</p>
 
 <div align="center">
 
