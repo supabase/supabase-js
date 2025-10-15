@@ -8,7 +8,7 @@
     </picture>
   </a>
 
-  <h1 align="center">Supabase Realtime Client</h1>
+  <h1 align="center">Supabase Realtime JS SDK</h1>
 
   <h3 align="center">Send ephemeral messages with <b>Broadcast</b>, track and synchronize state with <b>Presence</b>, and listen to database changes with <b>Postgres Change Data Capture (CDC)</b>.</h3>
 
@@ -23,13 +23,16 @@
 
 <div align="center">
 
+[![Build](https://github.com/supabase/supabase-js/workflows/CI/badge.svg)](https://github.com/supabase/supabase-js/actions?query=branch%3Amaster)
+[![Package](https://img.shields.io/npm/v/@supabase/realtime-js)](https://www.npmjs.com/package/@supabase/realtime-js)
+[![License: MIT](https://img.shields.io/npm/l/@supabase/supabase-js)](#license)
 [![pkg.pr.new](https://pkg.pr.new/badge/supabase/realtime-js)](https://pkg.pr.new/~/supabase/realtime-js)
 
 </div>
 
 # Overview
 
-This client enables you to use the following Supabase Realtime's features:
+This SDK enables you to use the following Supabase Realtime's features:
 
 - **Broadcast**: send ephemeral messages from client to clients with minimal latency. Use cases include sharing cursor positions between users.
 - **Presence**: track and synchronize shared state across clients with the help of CRDTs. Use cases include tracking which users are currently viewing a specific webpage.

@@ -4,7 +4,7 @@ This file provides guidance to WARP (warp.dev) when working with code in this re
 
 ## Repository Overview
 
-This is a unified Nx monorepo consolidating all Supabase JavaScript client libraries, built with Nx for optimal developer experience and maintainability. This strategic migration from 6 separate repositories addresses critical maintenance overhead, dependency duplication, and release coordination challenges while maintaining **zero breaking changes** for consumers.
+This is a unified Nx monorepo consolidating all Supabase JavaScript SDKs, built with Nx for optimal developer experience and maintainability. This strategic migration from 6 separate repositories addresses critical maintenance overhead, dependency duplication, and release coordination challenges while maintaining **zero breaking changes** for consumers.
 
 > **📚 Key Documentation**: For comprehensive guides, see:
 >
@@ -46,12 +46,12 @@ This monorepo replaces the following individual repositories:
 ```text
 supabase-js/
 ├── packages/core/              # Published libraries
-│   ├── supabase-js/           # Main isomorphic client for Supabase (@supabase/supabase-js)
-│   ├── auth-js/               # Authentication client (@supabase/auth-js)
-│   ├── postgrest-js/          # PostgREST client for database operations (@supabase/postgrest-js)
-│   ├── realtime-js/           # Real-time subscriptions client (@supabase/realtime-js)
-│   ├── storage-js/            # File storage client (@supabase/storage-js)
-│   └── functions-js/          # Edge Functions client (@supabase/functions-js)
+│   ├── supabase-js/           # Main isomorphic SDK for Supabase (@supabase/supabase-js)
+│   ├── auth-js/               # Authentication SDK (@supabase/auth-js)
+│   ├── postgrest-js/          # PostgREST SDK for database operations (@supabase/postgrest-js)
+│   ├── realtime-js/           # Real-time subscriptions SDK (@supabase/realtime-js)
+│   ├── storage-js/            # File storage SDK (@supabase/storage-js)
+│   └── functions-js/          # Edge Functions SDK (@supabase/functions-js)
 ├── docs/                       # Documentation guides
 │   ├── CONTRIBUTING.md         # Contribution guidelines
 │   ├── TESTING.md             # Testing guide
@@ -172,7 +172,7 @@ Each library has its own testing infrastructure. See the [TESTING.md](docs/TESTI
 
 ### Core Architecture
 
-The main `@supabase/supabase-js` package aggregates all individual client libraries:
+The main `@supabase/supabase-js` package aggregates all individual SDKs:
 
 - **auth-js**: Handles authentication and user management
 - **postgrest-js**: Provides database query capabilities via PostgREST
@@ -180,7 +180,7 @@ The main `@supabase/supabase-js` package aggregates all individual client librar
 - **storage-js**: Handles file uploads and storage operations
 - **functions-js**: Invokes Supabase Edge Functions
 
-Each library is designed to work independently but integrates seamlessly when used together through the main client.
+Each library is designed to work independently but integrates seamlessly when used together through the main SDK.
 
 ### Development Infrastructure
 
@@ -259,7 +259,7 @@ nx affected --target=test
 
 | Library      | Docker Required | Primary Use Case           |
 | ------------ | --------------- | -------------------------- |
-| supabase-js  | ❌ No           | Main isomorphic client     |
+| supabase-js  | ❌ No           | Main isomorphic SDK     |
 | auth-js      | ✅ Yes          | Authentication & user mgmt |
 | postgrest-js | ✅ Yes          | Database queries           |
 | realtime-js  | ❌ No           | Real-time subscriptions    |

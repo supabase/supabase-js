@@ -1,17 +1,33 @@
-# `auth-js`
+<br />
+<p align="center">
+  <a href="https://supabase.io">
+        <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/supabase/supabase/master/packages/common/assets/images/supabase-logo-wordmark--dark.svg">
+      <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/supabase/supabase/master/packages/common/assets/images/supabase-logo-wordmark--light.svg">
+      <img alt="Supabase Logo" width="300" src="https://raw.githubusercontent.com/supabase/supabase/master/packages/common/assets/images/logo-preview.jpg">
+    </picture>
+  </a>
 
-An isomorphic JavaScript client library for the [Supabase Auth](https://github.com/supabase/auth) API.
+  <h1 align="center">Supabase Auth JS SDK</h1>
+
+  <h3 align="center">An isomorphic JavaScript SDK for the <a href="https://github.com/supabase/auth">Supabase Auth</a> API.</h3>
+
+  <p align="center">
+    <a href="https://supabase.com/docs/guides/auth">Guides</a>
+    ·
+    <a href="https://supabase.com/docs/reference/javascript/auth-signup">Reference Docs</a>
+    ·
+    <a href="https://supabase.github.io/supabase-js/auth-js/v2/spec.json">TypeDoc</a>
+  </p>
+</p>
 
 <div align="center">
 
+[![Build](https://github.com/supabase/supabase-js/workflows/CI/badge.svg)](https://github.com/supabase/supabase-js/actions?query=branch%3Amaster)
+[![Package](https://img.shields.io/npm/v/@supabase/auth-js)](https://www.npmjs.com/package/@supabase/auth-js)
+[![License: MIT](https://img.shields.io/npm/l/@supabase/supabase-js)](#license)
 [![pkg.pr.new](https://pkg.pr.new/badge/supabase/auth-js)](https://pkg.pr.new/~/supabase/auth-js)
-
 </div>
-
-## Docs
-
-- Using `auth-js`: https://supabase.com/docs/reference/javascript/auth-signup
-- TypeDoc: https://supabase.github.io/supabase-js/auth-js/v2/spec.json
 
 ## Quick start
 
@@ -31,9 +47,9 @@ const GOTRUE_URL = 'http://localhost:9999'
 const auth = new AuthClient({ url: GOTRUE_URL })
 ```
 
-- `signUp()`: https://supabase.io/docs/reference/javascript/auth-signup
-- `signIn()`: https://supabase.io/docs/reference/javascript/auth-signin
-- `signOut()`: https://supabase.io/docs/reference/javascript/auth-signout
+- `signUp()`: https://supabase.com/docs/reference/javascript/auth-signup
+- `signIn()`: https://supabase.com/docs/reference/javascript/auth-signin
+- `signOut()`: https://supabase.com/docs/reference/javascript/auth-signout
 
 ### Custom `fetch` implementation
 

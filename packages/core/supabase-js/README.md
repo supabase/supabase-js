@@ -1,10 +1,31 @@
-# `supabase-js` - Isomorphic JavaScript Client for Supabase.
+<br />
+<p align="center">
+  <a href="https://supabase.io">
+        <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/supabase/supabase/master/packages/common/assets/images/supabase-logo-wordmark--dark.svg">
+      <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/supabase/supabase/master/packages/common/assets/images/supabase-logo-wordmark--light.svg">
+      <img alt="Supabase Logo" width="300" src="https://raw.githubusercontent.com/supabase/supabase/master/packages/common/assets/images/logo-preview.jpg">
+    </picture>
+  </a>
 
-- **Documentation:** https://supabase.com/docs/reference/javascript/start
-- TypeDoc: https://supabase.github.io/supabase-js/supabase-js/v2/spec.json
+  <h1 align="center">Supabase JS SDK</h1>
+
+  <h3 align="center">Isomorphic JavaScript SDK for Supabase - combining Auth, Database, Storage, Functions, and Realtime.</h3>
+
+  <p align="center">
+    <a href="https://supabase.com/docs/guides/getting-started">Guides</a>
+    ·
+    <a href="https://supabase.com/docs/reference/javascript/start">Reference Docs</a>
+    ·
+    <a href="https://supabase.github.io/supabase-js/supabase-js/v2/spec.json">TypeDoc</a>
+  </p>
+</p>
 
 <div align="center">
 
+[![Build](https://github.com/supabase/supabase-js/workflows/CI/badge.svg)](https://github.com/supabase/supabase-js/actions?query=branch%3Amaster)
+[![Package](https://img.shields.io/npm/v/@supabase/supabase-js)](https://www.npmjs.com/package/@supabase/supabase-js)
+[![License: MIT](https://img.shields.io/npm/l/@supabase/supabase-js)](#license)
 [![pkg.pr.new](https://pkg.pr.new/badge/supabase/supabase-js)](https://pkg.pr.new/~/supabase/supabase-js)
 
 </div>

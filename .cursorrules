@@ -1,6 +1,6 @@
 # Cursor Rules for Supabase JS Libraries Monorepo
 
-You are working in a unified Nx monorepo that consolidates all Supabase JavaScript client libraries. This migration from 6 separate repositories addresses maintenance overhead, dependency duplication, and release coordination challenges.
+You are working in a unified Nx monorepo that consolidates all Supabase JavaScript SDKs. This migration from 6 separate repositories addresses maintenance overhead, dependency duplication, and release coordination challenges.
 
 ## Repository Context
 

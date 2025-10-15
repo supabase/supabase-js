@@ -2,7 +2,7 @@
   "name": "@supabase/auth-js",
   "version": "0.0.0",
   "private": false,
-  "description": "Official client library for Supabase Auth",
+  "description": "Official SDK for Supabase Auth",
   "keywords": [
     "auth",
     "supabase",
