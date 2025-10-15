@@ -5,10 +5,8 @@
     "outDir": "./dist/main",
     "rootDir": "src",
     "sourceMap": true,
-    "target": "ES6",
+    "target": "ES2015",
     "emitDeclarationOnly": false,
-    "declaration": true,
-    "declarationMap": true,
 
     "stripInternal": true,
     "allowSyntheticDefaultImports": true,
@@ -18,7 +16,19 @@
   "exclude": ["src/**/*.spec.ts", "src/**/*.test.ts"],
   "references": [
     {
-      "path": "../../integrations/storage-vectors-js/tsconfig.lib.json"
+      "path": "../storage-js/tsconfig.lib.json"
+    },
+    {
+      "path": "../realtime-js"
+    },
+    {
+      "path": "../postgrest-js"
+    },
+    {
+      "path": "../functions-js"
+    },
+    {
+      "path": "../auth-js"
     }
   ]
 }
