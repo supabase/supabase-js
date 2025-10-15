@@ -1,6 +1,7 @@
 {
   "name": "@supabase/storage-vectors-js",
-  "version": "0.0.1",
+  "version": "0.0.0",
+  "private": true,
   "type": "module",
   "main": "./dist/index.js",
   "module": "./dist/index.js",
@@ -26,7 +27,7 @@
     "test:mock": "USE_MOCK_SERVER=true jest"
   },
   "nx": {
-    "name": "@supabase/storage-vectors-js"
+    "name": "storage-vectors-js"
   },
   "dependencies": {
     "@supabase/node-fetch": "^2.6.13"
