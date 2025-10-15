@@ -23,6 +23,9 @@
 
 <div align="center">
 
+[![Build](https://github.com/supabase/supabase-js/workflows/CI/badge.svg)](https://github.com/supabase/supabase-js/actions?query=branch%3Amaster)
+[![Package](https://img.shields.io/npm/v/@supabase/functions-js)](https://www.npmjs.com/package/@supabase/functions-js)
+[![License: MIT](https://img.shields.io/npm/l/@supabase/supabase-js)](#license)
 [![pkg.pr.new](https://pkg.pr.new/badge/supabase/functions-js)](https://pkg.pr.new/~/supabase/functions-js)
 
 </div>
