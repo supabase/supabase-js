@@ -1,6 +1,7 @@
 import StorageFileApi from './packages/StorageFileApi'
 import StorageBucketApi from './packages/StorageBucketApi'
 import { Fetch } from './lib/fetch'
+import { StorageVectorsClient } from '@supabase/storage-vectors-js'
 
 export interface StorageClientOptions {
   useNewHostname?: boolean
@@ -14,6 +15,7 @@ export class StorageClient extends StorageBucketApi {
     opts?: StorageClientOptions
   ) {
     super(url, headers, fetch, opts)
+    console.log(new StorageVectorsClient('https://api.example.com'))
   }
 
   /**

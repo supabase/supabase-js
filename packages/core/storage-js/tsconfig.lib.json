@@ -1,0 +1,22 @@
+{
+  "extends": "../../../tsconfig.base.json",
+  "compilerOptions": {
+    "module": "ES2020",
+    "outDir": "./dist/main",
+    "rootDir": "src",
+    "sourceMap": true,
+    "target": "ES6",
+    "emitDeclarationOnly": false,
+
+    "stripInternal": true,
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": ["src/**/*.spec.ts", "src/**/*.test.ts"],
+  "references": [
+    {
+      "path": "../../integrations/storage-vectors-js/tsconfig.lib.json"
+    }
+  ]
+}

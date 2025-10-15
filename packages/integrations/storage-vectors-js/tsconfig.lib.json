@@ -5,17 +5,17 @@
     "rootDir": "src",
     "outDir": "dist",
     "target": "ES6",
+    "module": "ES2020",
     "lib": ["ES2022", "dom"],
     "tsBuildInfoFile": "dist/tsconfig.lib.tsbuildinfo",
     "emitDeclarationOnly": false,
     "forceConsistentCasingInFileNames": true,
     "importHelpers": false,
-    "moduleResolution": "Node",
     "esModuleInterop": true,
     "strict": true,
     "types": ["node"]
   },
   "include": ["src/**/*.ts"],
   "references": [],
-  "exclude": ["jest.config.ts", "src/**/*.spec.ts", "src/**/*.test.ts"]
+  "exclude": ["jest.config.ts", "src/**/*.spec.ts", "src/**/*.test.ts", "src/**/__tests__/**/*"]
 }
