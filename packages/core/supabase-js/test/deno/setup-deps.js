@@ -6,7 +6,7 @@ const path = require('node:path')
 // Get the directory of the script
 const scriptDir = __dirname
 const projectRoot = path.dirname(path.dirname(scriptDir))
-const monorepoRoot = path.dirname(path.dirname(path.dirname(path.dirname(scriptDir))))
+const monorepoRoot = path.dirname(path.dirname(path.dirname(path.dirname(path.dirname(scriptDir)))))
 
 // Read package.json from main project
 const packageJsonPath = path.join(projectRoot, 'package.json')
