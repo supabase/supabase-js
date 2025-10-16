@@ -44,6 +44,9 @@ jobs:
       # Prepend any command with "nx-cloud record --" to record its logs to Nx Cloud
       # - run: npx nx-cloud record -- echo Hello World
       # When you enable task distribution, run the e2e-ci task instead of e2e
+      - name: Check generated types are in sync
+        run: npm run codegen:check
+
       - name: Build affected packages
         run: npx nx affected --target=build
 
