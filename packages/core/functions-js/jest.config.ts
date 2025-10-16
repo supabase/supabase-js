@@ -39,10 +39,5 @@ const config: Config.InitialOptions = {
       statements: 0,
     },
   },
-  globals: {
-    'ts-jest': {
-      tsconfig: 'tsconfig.test.json',
-    },
-  },
 }
 export default config
