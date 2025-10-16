@@ -6,6 +6,7 @@ const path = require('node:path')
 // Get the directory of the script
 const scriptDir = __dirname
 const projectRoot = path.dirname(path.dirname(scriptDir))
+const monorepoRoot = path.dirname(path.dirname(path.dirname(path.dirname(scriptDir))))
 
 // Read package.json from main project
 const packageJsonPath = path.join(projectRoot, 'package.json')
@@ -44,6 +45,10 @@ try {
   console.warn('Warning: Could not read existing deno.json, creating new one')
 }
 
+// Path to storage-vectors-js (workspace package, not published to npm)
+const storageVectorsPath = path.join(monorepoRoot, 'packages/integrations/storage-vectors-js/dist/index.js')
+const storageVectorsUrl = `file://${storageVectorsPath}`
+
 // Update imports in deno.json
 denoJson.imports = {
   '@supabase/realtime-js': `npm:@supabase/realtime-js@${versions.realtime}`,
@@ -54,6 +59,7 @@ denoJson.imports = {
     process.env.STORAGE_JS_ENTRY === 'main'
       ? `npm:@supabase/storage-js@${versions.storage}/dist/main/index.js`
       : `npm:@supabase/storage-js@${versions.storage}/dist/module/index.js`,
+  '@supabase/storage-vectors-js': storageVectorsUrl,
   '@supabase/node-fetch': `npm:@supabase/node-fetch@${versions.node_fetch}`,
 }
 
