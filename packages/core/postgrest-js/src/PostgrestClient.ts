@@ -2,6 +2,8 @@ import PostgrestQueryBuilder from './PostgrestQueryBuilder'
 import PostgrestFilterBuilder from './PostgrestFilterBuilder'
 import { Fetch, GenericSchema, ClientServerOptions } from './types/common/common'
 import { GetRpcFunctionFilterBuilderByArgs } from './types/common/rpc'
+import { PostgrestQueryBuilderOptions, PostgrestQueryBuilderOptionsWithSchema } from './types/types'
+import { mergeHeaders } from './utils'
 
 /**
  * PostgREST client.
@@ -18,21 +20,21 @@ export default class PostgrestClient<
   ClientOptions extends ClientServerOptions = Database extends {
     __InternalSupabase: infer I extends ClientServerOptions
   }
-    ? I
-    : {},
+  ? I
+  : {},
   SchemaName extends string &
-    keyof Omit<Database, '__InternalSupabase'> = 'public' extends keyof Omit<
+  keyof Omit<Database, '__InternalSupabase'> = 'public' extends keyof Omit<
     Database,
     '__InternalSupabase'
   >
-    ? 'public'
-    : string & keyof Omit<Database, '__InternalSupabase'>,
+  ? 'public'
+  : string & keyof Omit<Database, '__InternalSupabase'>,
   Schema extends GenericSchema = Omit<
     Database,
     '__InternalSupabase'
   >[SchemaName] extends GenericSchema
-    ? Omit<Database, '__InternalSupabase'>[SchemaName]
-    : any,
+  ? Omit<Database, '__InternalSupabase'>[SchemaName]
+  : any,
 > {
   url: string
   headers: Headers
@@ -55,11 +57,7 @@ export default class PostgrestClient<
       headers = {},
       schema,
       fetch,
-    }: {
-      headers?: HeadersInit
-      schema?: SchemaName
-      fetch?: Fetch
-    } = {}
+    }: PostgrestQueryBuilderOptionsWithSchema<SchemaName> = {}
   ) {
     this.url = url
     this.headers = new Headers(headers)
@@ -69,21 +67,28 @@ export default class PostgrestClient<
   from<
     TableName extends string & keyof Schema['Tables'],
     Table extends Schema['Tables'][TableName],
-  >(relation: TableName): PostgrestQueryBuilder<ClientOptions, Schema, Table, TableName>
+  >(
+    relation: TableName,
+    options?: PostgrestQueryBuilderOptions
+  ): PostgrestQueryBuilder<ClientOptions, Schema, Table, TableName>;
   from<ViewName extends string & keyof Schema['Views'], View extends Schema['Views'][ViewName]>(
-    relation: ViewName
-  ): PostgrestQueryBuilder<ClientOptions, Schema, View, ViewName>
+    relation: ViewName,
+    options?: PostgrestQueryBuilderOptions
+  ): PostgrestQueryBuilder<ClientOptions, Schema, View, ViewName>;
   /**
    * Perform a query on a table or a view.
    *
    * @param relation - The table or view name to query
    */
-  from(relation: string): PostgrestQueryBuilder<ClientOptions, Schema, any, any> {
+  from(
+    relation: string,
+    options?: PostgrestQueryBuilderOptions
+  ): PostgrestQueryBuilder<ClientOptions, Schema, any, any> {
     const url = new URL(`${this.url}/${relation}`)
     return new PostgrestQueryBuilder(url, {
-      headers: new Headers(this.headers),
+      headers: mergeHeaders(this.headers, options?.headers),
       schema: this.schemaName,
-      fetch: this.fetch,
+      fetch: options?.fetch ?? this.fetch,
     })
   }
 
