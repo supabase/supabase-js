@@ -143,8 +143,6 @@ npx nx test:update postgrest-js
 # Type checking only
 npx nx test:types postgrest-js
 
-# Format checking
-npx nx format:check postgrest-js
 ```
 
 #### Test Infrastructure
