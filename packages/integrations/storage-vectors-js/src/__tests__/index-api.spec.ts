@@ -98,7 +98,7 @@ describe('VectorIndexApi Integration Tests', () => {
       })
 
       const error = assertErrorResponse(response)
-      assertErrorCode(error, 'S3VectorConflictException')
+      assertErrorCode(error, 409)
       expect(error.message).toContain('already exists')
     })
 
@@ -113,7 +113,7 @@ describe('VectorIndexApi Integration Tests', () => {
       })
 
       const error = assertErrorResponse(response)
-      assertErrorCode(error, 'S3VectorNotFoundException')
+      assertErrorCode(error, 404)
     })
 
     it('should create multiple indexes in the same bucket', async () => {
@@ -208,7 +208,7 @@ describe('VectorIndexApi Integration Tests', () => {
       const response = await bucket.getIndex('non-existent-index')
 
       const error = assertErrorResponse(response)
-      assertErrorCode(error, 'S3VectorNotFoundException')
+      assertErrorCode(error, 404)
     })
 
     it('should return not found error when bucket does not exist', async () => {
@@ -216,7 +216,7 @@ describe('VectorIndexApi Integration Tests', () => {
       const response = await bucket.getIndex('test-index')
 
       const error = assertErrorResponse(response)
-      assertErrorCode(error, 'S3VectorNotFoundException')
+      assertErrorCode(error, 404)
     })
   })
 
@@ -330,7 +330,7 @@ describe('VectorIndexApi Integration Tests', () => {
       const response = await bucket.listIndexes()
 
       const error = assertErrorResponse(response)
-      assertErrorCode(error, 'S3VectorNotFoundException')
+      assertErrorCode(error, 404)
     })
   })
 
@@ -387,7 +387,7 @@ describe('VectorIndexApi Integration Tests', () => {
       const response = await bucket.deleteIndex('non-existent-index')
 
       const error = assertErrorResponse(response)
-      assertErrorCode(error, 'S3VectorNotFoundException')
+      assertErrorCode(error, 404)
     })
 
     it('should return not found error when bucket does not exist', async () => {
@@ -395,7 +395,7 @@ describe('VectorIndexApi Integration Tests', () => {
       const response = await bucket.deleteIndex('test-index')
 
       const error = assertErrorResponse(response)
-      assertErrorCode(error, 'S3VectorNotFoundException')
+      assertErrorCode(error, 404)
     })
   })
 

@@ -1,6 +1,6 @@
 import { DEFAULT_HEADERS } from './constants'
 import { isStorageVectorsError } from './errors'
-import { Fetch, post, remove } from './fetch'
+import { Fetch, post } from './fetch'
 import { resolveFetch } from './helpers'
 import {
   ApiResponse,
@@ -62,7 +62,7 @@ export default class VectorBucketApi {
    * }
    * ```
    */
-  async createVectorBucket(vectorBucketName: string): Promise<ApiResponse<{}>> {
+  async createVectorBucket(vectorBucketName: string): Promise<ApiResponse<undefined>> {
     try {
       const data = await post(
         this.fetch,
@@ -190,9 +190,9 @@ export default class VectorBucketApi {
    * }
    * ```
    */
-  async deleteVectorBucket(vectorBucketName: string): Promise<ApiResponse<{}>> {
+  async deleteVectorBucket(vectorBucketName: string): Promise<ApiResponse<undefined>> {
     try {
-      const data = await remove(
+      const data = await post(
         this.fetch,
         `${this.url}/DeleteVectorBucket`,
         { vectorBucketName },

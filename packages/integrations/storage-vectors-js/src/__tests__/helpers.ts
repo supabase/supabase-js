@@ -96,9 +96,9 @@ export async function retry<T>(
 /**
  * Assert that an error has a specific status code
  */
-export function assertErrorCode(error: any, expectedCode: string) {
+export function assertErrorCode(error: any, expectedCode: number) {
   expect(error).toBeTruthy()
-  expect(error.statusCode).toBe(expectedCode)
+  expect(error.statusCode.toString()).toBe(expectedCode.toString())
 }
 
 /**

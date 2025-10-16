@@ -1,6 +1,6 @@
 import { DEFAULT_HEADERS } from './constants'
 import { isStorageVectorsError } from './errors'
-import { Fetch, post, remove } from './fetch'
+import { Fetch, post } from './fetch'
 import { resolveFetch } from './helpers'
 import {
   ApiResponse,
@@ -82,7 +82,7 @@ export default class VectorDataApi {
    * })
    * ```
    */
-  async putVectors(options: PutVectorsOptions): Promise<ApiResponse<{}>> {
+  async putVectors(options: PutVectorsOptions): Promise<ApiResponse<undefined>> {
     try {
       // Validate batch size
       if (options.vectors.length < 1 || options.vectors.length > 500) {
@@ -329,14 +329,14 @@ export default class VectorDataApi {
    * }
    * ```
    */
-  async deleteVectors(options: DeleteVectorsOptions): Promise<ApiResponse<{}>> {
+  async deleteVectors(options: DeleteVectorsOptions): Promise<ApiResponse<undefined>> {
     try {
       // Validate batch size
       if (options.keys.length < 1 || options.keys.length > 500) {
         throw new Error('Keys batch size must be between 1 and 500 items')
       }
 
-      const data = await remove(
+      const data = await post(
         this.fetch,
         `${this.url}/DeleteVectors`,
         options,

@@ -12,7 +12,7 @@ interface MockResponse {
   status: number
   data?: any
   error?: {
-    statusCode: string
+    statusCode: number
     error: string
     message: string
   }
@@ -186,7 +186,7 @@ export function createMockFetch(): Fetch {
       response = {
         status: 500,
         error: {
-          statusCode: 'InternalError',
+          statusCode: 500,
           error: 'Internal Server Error',
           message: error.message,
         },
@@ -257,7 +257,7 @@ async function handleRequest(
   return {
     status: 404,
     error: {
-      statusCode: 'NotFound',
+      statusCode: 404,
       error: 'Not Found',
       message: `Endpoint not found: ${endpoint}`,
     },
@@ -272,7 +272,7 @@ function handleCreateBucket(body: any): MockResponse {
     return {
       status: 409,
       error: {
-        statusCode: 'S3VectorConflictException',
+        statusCode: 409,
         error: 'Conflict',
         message: `Bucket '${vectorBucketName}' already exists`,
       },
@@ -290,7 +290,7 @@ function handleGetBucket(body: any): MockResponse {
     return {
       status: 404,
       error: {
-        statusCode: 'S3VectorNotFoundException',
+        statusCode: 404,
         error: 'Not Found',
         message: `Bucket '${vectorBucketName}' not found`,
       },
@@ -328,7 +328,7 @@ function handleDeleteBucket(body: any): MockResponse {
     return {
       status: 404,
       error: {
-        statusCode: 'S3VectorNotFoundException',
+        statusCode: 409,
         error: 'Not Found',
         message: `Bucket '${vectorBucketName}' not found`,
       },
@@ -340,7 +340,7 @@ function handleDeleteBucket(body: any): MockResponse {
     return {
       status: 400,
       error: {
-        statusCode: 'S3VectorBucketNotEmpty',
+        statusCode: 409,
         error: 'Bad Request',
         message: `Bucket '${vectorBucketName}' is not empty`,
       },
@@ -359,7 +359,7 @@ function handleCreateIndex(body: any): MockResponse {
     return {
       status: 404,
       error: {
-        statusCode: 'S3VectorNotFoundException',
+        statusCode: 409,
         error: 'Not Found',
         message: `Bucket '${vectorBucketName}' not found`,
       },
@@ -370,7 +370,7 @@ function handleCreateIndex(body: any): MockResponse {
     return {
       status: 409,
       error: {
-        statusCode: 'S3VectorConflictException',
+        statusCode: 409,
         error: 'Conflict',
         message: `Index '${indexName}' already exists`,
       },
@@ -392,7 +392,7 @@ function handleGetIndex(body: any): MockResponse {
     return {
       status: 404,
       error: {
-        statusCode: 'S3VectorNotFoundException',
+        statusCode: 409,
         error: 'Not Found',
         message: `Bucket '${vectorBucketName}' not found`,
       },
@@ -404,7 +404,7 @@ function handleGetIndex(body: any): MockResponse {
     return {
       status: 404,
       error: {
-        statusCode: 'S3VectorNotFoundException',
+        statusCode: 409,
         error: 'Not Found',
         message: `Index '${indexName}' not found`,
       },
@@ -424,7 +424,7 @@ function handleListIndexes(body: any): MockResponse {
     return {
       status: 404,
       error: {
-        statusCode: 'S3VectorNotFoundException',
+        statusCode: 409,
         error: 'Not Found',
         message: `Bucket '${vectorBucketName}' not found`,
       },
@@ -449,7 +449,7 @@ function handleDeleteIndex(body: any): MockResponse {
     return {
       status: 404,
       error: {
-        statusCode: 'S3VectorNotFoundException',
+        statusCode: 409,
         error: 'Not Found',
         message: `Bucket '${vectorBucketName}' not found`,
       },
@@ -460,7 +460,7 @@ function handleDeleteIndex(body: any): MockResponse {
     return {
       status: 404,
       error: {
-        statusCode: 'S3VectorNotFoundException',
+        statusCode: 409,
         error: 'Not Found',
         message: `Index '${indexName}' not found`,
       },
@@ -479,7 +479,7 @@ function handlePutVectors(body: any): MockResponse {
     return {
       status: 404,
       error: {
-        statusCode: 'S3VectorNotFoundException',
+        statusCode: 404,
         error: 'Not Found',
         message: `Bucket '${vectorBucketName}' not found`,
       },
@@ -490,7 +490,7 @@ function handlePutVectors(body: any): MockResponse {
     return {
       status: 404,
       error: {
-        statusCode: 'S3VectorNotFoundException',
+        statusCode: 404,
         error: 'Not Found',
         message: `Index '${indexName}' not found`,
       },
@@ -511,7 +511,7 @@ function handleGetVectors(body: any): MockResponse {
     return {
       status: 404,
       error: {
-        statusCode: 'S3VectorNotFoundException',
+        statusCode: 404,
         error: 'Not Found',
         message: `Bucket '${vectorBucketName}' not found`,
       },
@@ -522,7 +522,7 @@ function handleGetVectors(body: any): MockResponse {
     return {
       status: 404,
       error: {
-        statusCode: 'S3VectorNotFoundException',
+        statusCode: 404,
         error: 'Not Found',
         message: `Index '${indexName}' not found`,
       },
@@ -555,7 +555,7 @@ function handleListVectors(body: any): MockResponse {
     return {
       status: 404,
       error: {
-        statusCode: 'S3VectorNotFoundException',
+        statusCode: 404,
         error: 'Not Found',
         message: `Bucket '${vectorBucketName}' not found`,
       },
@@ -566,7 +566,7 @@ function handleListVectors(body: any): MockResponse {
     return {
       status: 404,
       error: {
-        statusCode: 'S3VectorNotFoundException',
+        statusCode: 404,
         error: 'Not Found',
         message: `Index '${indexName}' not found`,
       },
@@ -596,7 +596,6 @@ function handleQueryVectors(body: any): MockResponse {
   const {
     vectorBucketName,
     indexName,
-    queryVector,
     topK = 10,
     filter,
     returnDistance = false,
@@ -607,7 +606,7 @@ function handleQueryVectors(body: any): MockResponse {
     return {
       status: 404,
       error: {
-        statusCode: 'S3VectorNotFoundException',
+        statusCode: 409,
         error: 'Not Found',
         message: `Bucket '${vectorBucketName}' not found`,
       },
@@ -618,7 +617,7 @@ function handleQueryVectors(body: any): MockResponse {
     return {
       status: 404,
       error: {
-        statusCode: 'S3VectorNotFoundException',
+        statusCode: 404,
         error: 'Not Found',
         message: `Index '${indexName}' not found`,
       },
@@ -662,7 +661,7 @@ function handleDeleteVectors(body: any): MockResponse {
     return {
       status: 404,
       error: {
-        statusCode: 'S3VectorNotFoundException',
+        statusCode: 404,
         error: 'Not Found',
         message: `Bucket '${vectorBucketName}' not found`,
       },
@@ -673,7 +672,7 @@ function handleDeleteVectors(body: any): MockResponse {
     return {
       status: 404,
       error: {
-        statusCode: 'S3VectorNotFoundException',
+        statusCode: 404,
         error: 'Not Found',
         message: `Index '${indexName}' not found`,
       },

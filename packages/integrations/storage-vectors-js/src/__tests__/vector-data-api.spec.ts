@@ -145,7 +145,7 @@ describe('VectorDataApi Integration Tests', () => {
       })
 
       const error = assertErrorResponse(response)
-      assertErrorCode(error, 'S3VectorNotFoundException')
+      assertErrorCode(error, 404)
     })
 
     it('should return not found error when index does not exist', async () => {
@@ -156,7 +156,7 @@ describe('VectorDataApi Integration Tests', () => {
       })
 
       const error = assertErrorResponse(response)
-      assertErrorCode(error, 'S3VectorNotFoundException')
+      assertErrorCode(error, 404)
     })
 
     it('should handle batch size limits', async () => {
@@ -608,7 +608,7 @@ describe('VectorDataApi Integration Tests', () => {
       const response = await index.deleteVectors({ keys: ['vec-1'] })
 
       const error = assertErrorResponse(response)
-      assertErrorCode(error, 'S3VectorNotFoundException')
+      assertErrorCode(error, 404)
     })
 
     it('should return not found error when index does not exist', async () => {
@@ -617,7 +617,7 @@ describe('VectorDataApi Integration Tests', () => {
       const response = await index.deleteVectors({ keys: ['vec-1'] })
 
       const error = assertErrorResponse(response)
-      assertErrorCode(error, 'S3VectorNotFoundException')
+      assertErrorCode(error, 404)
     })
   })
 

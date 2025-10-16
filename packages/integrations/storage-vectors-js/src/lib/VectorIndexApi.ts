@@ -1,6 +1,6 @@
 import { DEFAULT_HEADERS } from './constants'
 import { isStorageVectorsError } from './errors'
-import { Fetch, post, remove } from './fetch'
+import { Fetch, post } from './fetch'
 import { resolveFetch } from './helpers'
 import {
   ApiResponse,
@@ -90,7 +90,7 @@ export default class VectorIndexApi {
    * })
    * ```
    */
-  async createIndex(options: CreateIndexOptions): Promise<ApiResponse<{}>> {
+  async createIndex(options: CreateIndexOptions): Promise<ApiResponse<undefined>> {
     try {
       const data = await post(
         this.fetch,
@@ -229,9 +229,9 @@ export default class VectorIndexApi {
    * }
    * ```
    */
-  async deleteIndex(vectorBucketName: string, indexName: string): Promise<ApiResponse<{}>> {
+  async deleteIndex(vectorBucketName: string, indexName: string): Promise<ApiResponse<undefined>> {
     try {
-      const data = await remove(
+      const data = await post(
         this.fetch,
         `${this.url}/DeleteIndex`,
         { vectorBucketName, indexName },

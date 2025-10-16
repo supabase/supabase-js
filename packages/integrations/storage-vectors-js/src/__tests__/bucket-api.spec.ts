@@ -33,7 +33,7 @@ describe('VectorBucketApi Integration Tests', () => {
       const response = await client.createVectorBucket(bucketName)
 
       const error = assertErrorResponse(response)
-      assertErrorCode(error, 'S3VectorConflictException')
+      assertErrorCode(error, 409)
       expect(error.message).toContain('already exists')
     })
 
@@ -70,7 +70,7 @@ describe('VectorBucketApi Integration Tests', () => {
       const response = await client.getVectorBucket('non-existent-bucket')
 
       const error = assertErrorResponse(response)
-      assertErrorCode(error, 'S3VectorNotFoundException')
+      assertErrorCode(error, 404)
       expect(error.message).toContain('not found')
     })
 
@@ -177,7 +177,7 @@ describe('VectorBucketApi Integration Tests', () => {
       const response = await client.deleteVectorBucket('non-existent-bucket')
 
       const error = assertErrorResponse(response)
-      assertErrorCode(error, 'S3VectorNotFoundException')
+      assertErrorCode(error, 409)
     })
 
     it('should return error when bucket is not empty', async () => {
@@ -198,7 +198,7 @@ describe('VectorBucketApi Integration Tests', () => {
       const response = await client.deleteVectorBucket(bucketName)
 
       const error = assertErrorResponse(response)
-      assertErrorCode(error, 'S3VectorBucketNotEmpty')
+      assertErrorCode(error, 409)
       expect(error.message).toContain('not empty')
     })
 
