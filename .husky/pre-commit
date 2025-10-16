@@ -1,6 +1,3 @@
-#!/usr/bin/env sh
-. "$(dirname -- "$0")/_/husky.sh"
-
 # Check if postgrest-js common types were modified
 if git diff --cached --name-only | grep -q "packages/core/postgrest-js/src/types/common/"; then
   echo "📝 Detected changes in postgrest-js common types..."
