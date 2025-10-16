@@ -138,14 +138,14 @@ nx test supabase-js --coverage           # Test with coverage
 
 **Docker Requirements:**
 
-| Package      | Docker Required | Infrastructure                  | Special Commands |
-| ------------ | --------------- | ------------------------------- | ---------------- |
-| auth-js      | ✅ Yes          | Auth Server + Postgres          | May use `nx test:auth auth-js` |
-| functions-js | ✅ Yes          | Deno relay (testcontainers)     | Standard `nx test functions-js` |
-| postgrest-js | ✅ Yes          | PostgREST + PostgreSQL          | Standard `nx test postgrest-js` |
+| Package      | Docker Required | Infrastructure                  | Special Commands                     |
+| ------------ | --------------- | ------------------------------- | ------------------------------------ |
+| auth-js      | ✅ Yes          | Auth Server + Postgres          | May use `nx test:auth auth-js`       |
+| functions-js | ✅ Yes          | Deno relay (testcontainers)     | Standard `nx test functions-js`      |
+| postgrest-js | ✅ Yes          | PostgREST + PostgreSQL          | Standard `nx test postgrest-js`      |
 | storage-js   | ✅ Yes          | Storage API + PostgreSQL + Kong | May use `nx test:storage storage-js` |
-| realtime-js  | ❌ No           | Mock WebSockets                 | Standard `nx test realtime-js` |
-| supabase-js  | ❌ No           | Unit tests only                 | Standard `nx test supabase-js` |
+| realtime-js  | ❌ No           | Mock WebSockets                 | Standard `nx test realtime-js`       |
+| supabase-js  | ❌ No           | Unit tests only                 | Standard `nx test supabase-js`       |
 
 > **📖 See [TESTING.md](docs/TESTING.md) for complete testing guide and troubleshooting**
 
@@ -215,6 +215,68 @@ nx release --tag=latest --yes  # Promotes to stable with same version for ALL pa
 ### Per-Library Configs
 
 Each library has its own `tsconfig.json` extending the base configuration, allowing for library-specific adjustments while maintaining consistency.
+
+### TypeScript Project References Setup
+
+This repository uses TypeScript project references for incremental builds and better type checking across packages.
+
+**What's Configured:**
+
+1. **tsconfig.base.json** - Base configuration inherited by all projects:
+   - `composite: true` - Enables project references
+   - `declaration: true` - Required by composite
+   - `moduleResolution: "bundler"` - Works with workspaces
+   - `isolatedModules: true` - Inherited but overridden in core packages
+   - `noImplicitOverride: true` - Inherited but overridden in core packages
+   - **No `customConditions`** - Removed to avoid conflicts with CommonJS packages
+
+2. **Root tsconfig.json** - References all projects in the monorepo:
+
+   ```json
+   {
+     "extends": "./tsconfig.base.json",
+     "files": [],
+     "references": [
+       { "path": "./packages/core/auth-js" },
+       { "path": "./packages/core/realtime-js" }
+       // ... all other packages
+     ]
+   }
+   ```
+
+3. **Core packages** (auth-js, realtime-js, postgrest-js, functions-js, storage-js):
+   - Keep `module: "CommonJS"` for backward compatibility
+   - Override `moduleResolution: "Node"` (required for CommonJS)
+   - Override `isolatedModules: false` (existing code doesn't use `export type`)
+   - Override `noImplicitOverride: false` (existing code doesn't use `override` keyword)
+   - Add `references` array pointing to dependencies (managed by `nx sync`)
+
+4. **Utils packages** (utils-fetch):
+   - Inherit `moduleResolution: "bundler"` from base
+   - Can optionally add `customConditions: ["@supabase-js/source"]` for source preference
+
+**Key Principles:**
+
+- ✅ **No Breaking Changes**: Build output is identical - only type-checking is affected
+- ✅ **Incremental Builds**: TypeScript only recompiles changed projects
+- ✅ **Better Performance**: Reduced memory usage during builds
+- ✅ **Automatic References**: Nx sync automatically maintains project references
+- ⚠️ **No `customConditions` in base**: Would conflict with `moduleResolution: "Node"`
+
+**When Adding New Packages:**
+
+1. Ensure `composite: true` and `declaration: true` are set
+2. Add `references` array pointing to dependencies
+3. If using CommonJS, override `moduleResolution: "Node"` and disable strict options
+4. Run `nx sync` to update root tsconfig.json automatically
+
+**Important Notes:**
+
+- TypeScript project references work WITHOUT `customConditions` - it's optional
+- `customConditions` only optimizes source file resolution during development
+- Core packages use `moduleResolution: "Node"` which is incompatible with `customConditions`
+- The `isolatedModules: false` override avoids requiring `export type` for type re-exports
+- All build outputs remain identical to pre-project-references setup
 
 ## Testing Infrastructure
 
@@ -314,10 +376,12 @@ Tests run against multiple environments:
 ### Branch Information
 
 **Current Repository:**
+
 - **Default branch**: `master` (confirmed current default)
 - **Repository URL**: `github.com/supabase/supabase-js`
 
 **Original Repository Branches** (for historical reference):
+
 - **master**: auth-js, postgrest-js, realtime-js, supabase-js
 - **main**: functions-js, storage-js
 

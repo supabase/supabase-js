@@ -15,7 +15,12 @@
       "!{projectRoot}/**/*.md",
       "!{projectRoot}/docs/**/*",
       "!{projectRoot}/coverage/**/*",
-      "sharedGlobals"
+      "sharedGlobals",
+      "!{projectRoot}/.eslintrc.json",
+      "!{projectRoot}/eslint.config.mjs",
+      "!{projectRoot}/tsconfig.spec.json",
+      "!{projectRoot}/src/test-setup.[jt]s",
+      "!{projectRoot}/test-setup.[jt]s"
     ],
     "testing": [
       "production",
@@ -65,66 +70,113 @@
   "targetDefaults": {
     "build": {
       "inputs": ["production", "^production", "buildConfig"],
-      "dependsOn": ["^build"]
+      "dependsOn": ["^build"],
+      "cache": true,
+      "outputs": ["{projectRoot}/dist"]
     },
     "build:main": {
       "inputs": ["production", "^production", "buildConfig"],
-      "dependsOn": ["^build:main"]
+      "dependsOn": ["^build:main"],
+      "cache": true,
+      "outputs": ["{projectRoot}/dist/main", "{projectRoot}/dist/tsconfig.tsbuildinfo"]
     },
     "build:module": {
       "inputs": ["production", "^production", "buildConfig"],
-      "dependsOn": ["^build:module"]
+      "dependsOn": ["^build:module"],
+      "cache": true,
+      "outputs": ["{projectRoot}/dist/module", "{projectRoot}/dist/tsconfig.module.tsbuildinfo"]
     },
     "build:umd": {
       "inputs": ["production", "^production", "buildConfig"],
-      "dependsOn": ["^build:umd"]
+      "dependsOn": ["^build:umd"],
+      "cache": true,
+      "outputs": ["{projectRoot}/dist/umd"]
     },
     "webpack:build": {
       "inputs": ["production", "^production", "buildConfig"],
-      "dependsOn": ["^webpack:build"]
+      "dependsOn": ["^webpack:build"],
+      "cache": true,
+      "outputs": ["{projectRoot}/dist"]
     },
     "test": {
       "inputs": ["testing", "^production"],
-      "dependsOn": ["^build"]
+      "dependsOn": ["^build"],
+      "cache": true,
+      "outputs": ["{projectRoot}/coverage"]
     },
     "test:types": {
       "inputs": ["testing", "^production"],
-      "dependsOn": ["^build"]
+      "dependsOn": ["build:module"],
+      "cache": true,
+      "outputs": []
+    },
+    "test:types:ci": {
+      "inputs": ["testing", "^production"],
+      "dependsOn": ["build"],
+      "cache": true,
+      "outputs": []
     },
     "test:unit": {
-      "inputs": ["testing", "^production"]
+      "inputs": ["testing", "^production"],
+      "cache": true,
+      "outputs": ["{projectRoot}/coverage"]
     },
     "test:coverage": {
       "inputs": ["testing", "^production"],
-      "dependsOn": ["^build"]
+      "dependsOn": ["^build"],
+      "cache": true,
+      "outputs": ["{projectRoot}/coverage"]
     },
     "test:integration": {
-      "inputs": ["testing", "^production"]
+      "inputs": ["testing", "^production"],
+      "cache": true,
+      "outputs": ["{projectRoot}/coverage"]
     },
     "test:ci": {
-      "inputs": ["testing", "^production"]
+      "inputs": ["testing", "^production"],
+      "cache": true,
+      "outputs": ["{projectRoot}/coverage"]
+    },
+    "test:ci:postgrest": {
+      "inputs": ["testing", "^production"],
+      "dependsOn": ["build"],
+      "cache": true,
+      "outputs": ["{projectRoot}/coverage"]
     },
     "vite:test": {
-      "inputs": ["testing", "^production"]
+      "inputs": ["testing", "^production"],
+      "cache": true,
+      "outputs": ["{projectRoot}/coverage"]
     },
     "lint": {
-      "inputs": ["linting"]
+      "inputs": ["linting"],
+      "cache": true,
+      "outputs": []
     },
     "format": {
-      "inputs": ["linting"]
+      "inputs": ["linting"],
+      "cache": true,
+      "outputs": []
     },
     "typecheck": {
-      "inputs": ["production", "^production", "{projectRoot}/tsconfig*.json"]
+      "inputs": ["production", "^production", "{projectRoot}/tsconfig*.json"],
+      "cache": true,
+      "outputs": []
     },
     "docs": {
-      "inputs": ["docs"]
+      "inputs": ["docs"],
+      "cache": true,
+      "outputs": ["{projectRoot}/docs"]
     },
     "docs:json": {
       "inputs": ["docs"],
-      "dependsOn": ["^docs", "^build"]
+      "dependsOn": ["^docs", "^build"],
+      "cache": true,
+      "outputs": ["{projectRoot}/docs"]
     },
     "clean": {
-      "inputs": []
+      "inputs": [],
+      "cache": false
     },
     "nx-release-publish": {
       "options": {

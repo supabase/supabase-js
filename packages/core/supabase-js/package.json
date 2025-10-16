@@ -41,7 +41,7 @@
     "test:watch": "jest --watch --verbose false --silent false",
     "test:node:playwright": "cd test/integration/node-browser && npm install && cp ../../../dist/umd/supabase.js . && npm run test",
     "test:bun": "cd test/integration/bun && bun install && bun test",
-    "test:types": "npm run build:module && tsd --files test/types/*.test-d.ts && jsr publish --dry-run --allow-dirty",
+    "test:types": "tsd --files test/types/*.test-d.ts && jsr publish --dry-run --allow-dirty",
     "docs": "typedoc --entryPoints src/index.ts --out docs/v2",
     "docs:json": "typedoc --entryPoints src/index.ts --json docs/v2/spec.json --excludeExternals",
     "serve:coverage": "npx nx test:coverage supabase-js && serve test/coverage",

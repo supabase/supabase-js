@@ -29,7 +29,7 @@ services:
     depends_on:
       - db
   db:
-    image: supabase/postgres:15.1.0.37
+    image: postgis/postgis:15-3.4-alpine
     ports:
       - '5432:5432'
     volumes:
@@ -38,8 +38,7 @@ services:
       POSTGRES_DB: postgres
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
-      POSTGRES_HOST: /var/run/postgresql
-      POSTGRES_PORT: 5432
+    command: postgres -c compute_query_id=on
   pgmeta:
     image: supabase/postgres-meta:v0.91.5
     ports:

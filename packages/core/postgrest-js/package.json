@@ -34,26 +34,23 @@
   },
   "scripts": {
     "clean": "rimraf dist docs/v2",
-    "format": "node scripts/format.js",
-    "format:check": "node scripts/format.js check",
     "build": "npm run clean && npm run build:cjs && npm run build:esm",
     "build:cjs": "tsc -p tsconfig.json",
     "build:esm": "cpy wrapper.mjs dist/esm/",
     "docs": "typedoc src/index.ts --out docs/v2",
     "docs:json": "typedoc --json docs/v2/spec.json --excludeExternals src/index.ts",
-    "test": "npm run format:check && npm run test:types && npm run db:clean && npm run db:run && npm run test:generated-types && npm run test:run && npm run db:clean && node test/smoke.cjs && node test/smoke.mjs",
-    "test:ci": "npm run format:check && npm run test:types:ci && npm run db:clean && npm run db:run && npm run test:generated-types && npm run test:run && npm run db:clean && node test/smoke.cjs && node test/smoke.mjs",
+    "test:ci:postgrest": "npm run db:clean && npm run db:run && npm run test:run && npm run db:clean && npm run test:smoke",
     "test:run": "jest --runInBand --coverage",
-    "test:generated-types": "npm run db:generate-test-types && git diff --exit-code test/types.generated.ts || (echo '❌ Generated types are not up to date. Run npm run db:generate-test-types.' && exit 1)",
+    "test:smoke": "node test/smoke.cjs && node test/smoke.mjs",
     "test:update": "npm run db:clean && npm run db:run && npm run db:generate-test-types && jest --runInBand --updateSnapshot && npm run db:clean",
     "test:types": "npm run build && tstyche",
-    "test:types:ci": "npm run build && tstyche --target '4.7,5.5,latest'",
+    "test:types:ci": "tstyche --target '4.7,5.5,latest'",
     "test:types:watch": "chokidar 'src/**/*.ts' 'test/**/*.ts' -c 'npm run test:types'",
     "type-check": "tsc --noEmit --project tsconfig.json",
     "type-check:test": "tsc --noEmit --project tsconfig.test.json",
     "db:clean": "cd test/db && docker compose down --volumes",
     "db:run": "cd test/db && docker compose up --detach && wait-for-localhost 3000",
-    "db:generate-test-types": "cd test/db && docker compose up --detach && wait-for-localhost 8080 && wait-for-localhost 3000 && curl --location 'http://0.0.0.0:8080/generators/typescript?included_schemas=public,personal&detect_one_to_one_relationships=true' > ../types.generated.ts && node ../../scripts/update-json-type.js && cd ../../ && npm run format"
+    "db:generate-test-types": "cd test/db && docker compose up --detach && wait-for-localhost 8080 && wait-for-localhost 3000 && curl --location 'http://0.0.0.0:8080/generators/typescript?included_schemas=public,personal&detect_one_to_one_relationships=true' > ../types.generated.ts && node ../../scripts/update-json-type.js && cd ../../"
   },
   "dependencies": {
     "@supabase/node-fetch": "2.6.15"

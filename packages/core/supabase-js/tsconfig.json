@@ -1,22 +1,38 @@
 {
   "include": ["src"],
-  "exclude": ["node_modules/**/*.ts"],
+  "exclude": ["src/**/*.spec.ts", "src/**/*.test.ts", "test/**/*", "node_modules/**/*.ts"],
   "compilerOptions": {
     "declaration": true,
     "declarationMap": true,
     "module": "CommonJS",
+    "moduleResolution": "Node",
     "outDir": "dist/main",
     "sourceMap": true,
-    "target": "ES2015",
+    "target": "ES2017",
 
     "strict": true,
 
     "esModuleInterop": true,
-    "moduleResolution": "Node",
-    "isolatedModules": true,
-
-    "forceConsistentCasingInFileNames": true,
     "stripInternal": true,
-    "allowSyntheticDefaultImports": true
-  }
+    "allowSyntheticDefaultImports": true,
+    "forceConsistentCasingInFileNames": true,
+    "isolatedModules": false
+  },
+  "references": [
+    {
+      "path": "../storage-js"
+    },
+    {
+      "path": "../realtime-js"
+    },
+    {
+      "path": "../postgrest-js"
+    },
+    {
+      "path": "../functions-js"
+    },
+    {
+      "path": "../auth-js"
+    }
+  ]
 }

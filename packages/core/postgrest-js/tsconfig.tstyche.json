@@ -1,21 +1,22 @@
 {
-  "extends": "../../../tsconfig.base.json",
-  "include": ["src"],
+  "include": ["src", "test"],
   "compilerOptions": {
-    "composite": true,
     "declaration": true,
     "declarationMap": true,
-    "module": "CommonJS",
-    "outDir": "dist/main",
-    "rootDir": "src",
+    "module": "ESNext",
+    "outDir": "dist/cjs",
+    "rootDir": ".",
     "sourceMap": true,
     "target": "ES2017",
+
     "strict": true,
+
     "esModuleInterop": true,
     "moduleResolution": "Node",
+
     "forceConsistentCasingInFileNames": true,
     "stripInternal": true,
+    "noImplicitOverride": false,
     "isolatedModules": false
-  },
-  "references": []
+  }
 }

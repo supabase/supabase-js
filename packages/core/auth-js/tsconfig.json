@@ -1,9 +1,12 @@
 {
+  "extends": "../../../tsconfig.base.json",
   "include": ["src"],
   "compilerOptions": {
+    "composite": true,
     "declaration": true,
     "declarationMap": true,
     "module": "CommonJS",
+    "moduleResolution": "Node",
     "outDir": "dist/main",
     "rootDir": "src",
     "sourceMap": true,
@@ -12,10 +15,11 @@
     "strict": true,
 
     "esModuleInterop": true,
-    "moduleResolution": "Node",
 
     "forceConsistentCasingInFileNames": true,
-    "stripInternal": true
+    "stripInternal": true,
+    "noImplicitOverride": false,
+    "isolatedModules": false
   },
   "typedocOptions": {
     "excludeExternals": true
