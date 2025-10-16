@@ -391,14 +391,11 @@ describe('End-to-End Workflow Tests', () => {
       const batchSize = 500
 
       for (let i = 0; i < totalVectors; i += batchSize) {
-        const batch = Array.from(
-          { length: Math.min(batchSize, totalVectors - i) },
-          (_, j) => ({
-            key: `vector-${i + j}`,
-            data: { float32: generateRandomVector(64) },
-            metadata: { batch: Math.floor((i + j) / batchSize), index: i + j },
-          })
-        )
+        const batch = Array.from({ length: Math.min(batchSize, totalVectors - i) }, (_, j) => ({
+          key: `vector-${i + j}`,
+          data: { float32: generateRandomVector(64) },
+          metadata: { batch: Math.floor((i + j) / batchSize), index: i + j },
+        }))
 
         const response = await index.putVectors({ vectors: batch })
         assertSuccessResponse(response)

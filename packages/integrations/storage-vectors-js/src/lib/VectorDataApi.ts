@@ -89,12 +89,9 @@ export default class VectorDataApi {
         throw new Error('Vector batch size must be between 1 and 500 items')
       }
 
-      const data = await post(
-        this.fetch,
-        `${this.url}/PutVectors`,
-        options,
-        { headers: this.headers }
-      )
+      const data = await post(this.fetch, `${this.url}/PutVectors`, options, {
+        headers: this.headers,
+      })
       return { data: data || {}, error: null }
     } catch (error) {
       if (this.shouldThrowOnError) {
@@ -140,12 +137,9 @@ export default class VectorDataApi {
    */
   async getVectors(options: GetVectorsOptions): Promise<ApiResponse<GetVectorsResponse>> {
     try {
-      const data = await post(
-        this.fetch,
-        `${this.url}/GetVectors`,
-        options,
-        { headers: this.headers }
-      )
+      const data = await post(this.fetch, `${this.url}/GetVectors`, options, {
+        headers: this.headers,
+      })
       return { data, error: null }
     } catch (error) {
       if (this.shouldThrowOnError) {
@@ -223,12 +217,9 @@ export default class VectorDataApi {
         }
       }
 
-      const data = await post(
-        this.fetch,
-        `${this.url}/ListVectors`,
-        options,
-        { headers: this.headers }
-      )
+      const data = await post(this.fetch, `${this.url}/ListVectors`, options, {
+        headers: this.headers,
+      })
       return { data, error: null }
     } catch (error) {
       if (this.shouldThrowOnError) {
@@ -285,12 +276,9 @@ export default class VectorDataApi {
    */
   async queryVectors(options: QueryVectorsOptions): Promise<ApiResponse<QueryVectorsResponse>> {
     try {
-      const data = await post(
-        this.fetch,
-        `${this.url}/QueryVectors`,
-        options,
-        { headers: this.headers }
-      )
+      const data = await post(this.fetch, `${this.url}/QueryVectors`, options, {
+        headers: this.headers,
+      })
       return { data, error: null }
     } catch (error) {
       if (this.shouldThrowOnError) {
@@ -336,12 +324,9 @@ export default class VectorDataApi {
         throw new Error('Keys batch size must be between 1 and 500 items')
       }
 
-      const data = await post(
-        this.fetch,
-        `${this.url}/DeleteVectors`,
-        options,
-        { headers: this.headers }
-      )
+      const data = await post(this.fetch, `${this.url}/DeleteVectors`, options, {
+        headers: this.headers,
+      })
       return { data: data || {}, error: null }
     } catch (error) {
       if (this.shouldThrowOnError) {

@@ -1,5 +1,9 @@
 // Main client
-export { StorageVectorsClient, VectorBucketScope, VectorIndexScope } from './lib/StorageVectorsClient'
+export {
+  StorageVectorsClient,
+  VectorBucketScope,
+  VectorIndexScope,
+} from './lib/StorageVectorsClient'
 export type { StorageVectorsClientOptions } from './lib/StorageVectorsClient'
 
 // API classes (for advanced usage)
@@ -57,7 +61,13 @@ export {
 export type { Fetch, FetchOptions, RequestMethodType } from './lib/fetch'
 
 // Helper utilities
-export { resolveFetch, resolveResponse, isPlainObject, normalizeToFloat32, validateVectorDimension } from './lib/helpers'
+export {
+  resolveFetch,
+  resolveResponse,
+  isPlainObject,
+  normalizeToFloat32,
+  validateVectorDimension,
+} from './lib/helpers'
 
 // Constants
 export { DEFAULT_HEADERS } from './lib/constants'

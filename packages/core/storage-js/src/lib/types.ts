@@ -16,7 +16,7 @@ export interface Bucket {
 
 export interface AnalyticBucket {
   id: string
-  type: "ANALYTICS"
+  type: 'ANALYTICS'
   format: string
   created_at: string
   updated_at: string

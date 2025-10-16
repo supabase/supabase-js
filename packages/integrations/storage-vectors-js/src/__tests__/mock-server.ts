@@ -92,7 +92,7 @@ class MockStorage {
   getBuckets(prefix?: string): string[] {
     const buckets = Array.from(this.buckets)
     if (prefix) {
-      return buckets.filter(b => b.startsWith(prefix))
+      return buckets.filter((b) => b.startsWith(prefix))
     }
     return buckets
   }
@@ -127,7 +127,7 @@ class MockStorage {
 
     const indexes = Array.from(bucketIndexes.values())
     if (prefix) {
-      return indexes.filter(i => i.indexName.startsWith(prefix))
+      return indexes.filter((i) => i.indexName.startsWith(prefix))
     }
     return indexes
   }
@@ -204,11 +204,7 @@ export function createMockFetch(): Fetch {
   }
 }
 
-async function handleRequest(
-  endpoint: string,
-  method: string,
-  body: any
-): Promise<MockResponse> {
+async function handleRequest(endpoint: string, method: string, body: any): Promise<MockResponse> {
   // Bucket endpoints
   if (endpoint === 'CreateVectorBucket') {
     return handleCreateBucket(body)
@@ -315,7 +311,7 @@ function handleListBuckets(body: any): MockResponse {
   return {
     status: 200,
     data: {
-      buckets: buckets.slice(0, maxResults).map(name => ({ vectorBucketName: name })),
+      buckets: buckets.slice(0, maxResults).map((name) => ({ vectorBucketName: name })),
       nextToken: buckets.length > maxResults ? 'mock-next-token' : undefined,
     },
   }
@@ -436,7 +432,7 @@ function handleListIndexes(body: any): MockResponse {
   return {
     status: 200,
     data: {
-      indexes: indexes.slice(0, maxResults).map(i => ({ indexName: i.indexName })),
+      indexes: indexes.slice(0, maxResults).map((i) => ({ indexName: i.indexName })),
       nextToken: indexes.length > maxResults ? 'mock-next-token' : undefined,
     },
   }
@@ -549,7 +545,13 @@ function handleGetVectors(body: any): MockResponse {
 }
 
 function handleListVectors(body: any): MockResponse {
-  const { vectorBucketName, indexName, maxResults = 500, returnData = true, returnMetadata = true } = body
+  const {
+    vectorBucketName,
+    indexName,
+    maxResults = 500,
+    returnData = true,
+    returnMetadata = true,
+  } = body
 
   if (!storage.hasBucket(vectorBucketName)) {
     return {
@@ -576,7 +578,7 @@ function handleListVectors(body: any): MockResponse {
   const vectorStorage = storage.getVectorStorage(vectorBucketName, indexName)
   const allVectors = Array.from(vectorStorage?.values() || [])
 
-  const vectors = allVectors.slice(0, maxResults).map(vector => {
+  const vectors = allVectors.slice(0, maxResults).map((vector) => {
     const result: any = { key: vector.key }
     if (returnData) result.data = vector.data
     if (returnMetadata) result.metadata = vector.metadata
@@ -629,7 +631,7 @@ function handleQueryVectors(body: any): MockResponse {
 
   // Apply filter if provided
   if (filter) {
-    allVectors = allVectors.filter(vector => {
+    allVectors = allVectors.filter((vector) => {
       if (!vector.metadata) return false
       return Object.entries(filter).every(([key, value]) => vector.metadata[key] === value)
     })
@@ -641,7 +643,7 @@ function handleQueryVectors(body: any): MockResponse {
       const result: any = { key: vector.key }
       if (returnDistance) {
         // Mock distance calculation
-        result.distance = 0.1 + (index * 0.05)
+        result.distance = 0.1 + index * 0.05
       }
       if (returnMetadata) result.metadata = vector.metadata
       return result

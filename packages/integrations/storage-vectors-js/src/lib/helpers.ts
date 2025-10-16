@@ -81,7 +81,10 @@ export const normalizeToFloat32 = (values: number[]): number[] => {
  * @param expectedDimension - Expected vector dimension
  * @throws Error if dimensions don't match
  */
-export const validateVectorDimension = (vector: { float32: number[] }, expectedDimension?: number): void => {
+export const validateVectorDimension = (
+  vector: { float32: number[] },
+  expectedDimension?: number
+): void => {
   if (expectedDimension !== undefined && vector.float32.length !== expectedDimension) {
     throw new Error(
       `Vector dimension mismatch: expected ${expectedDimension}, got ${vector.float32.length}`

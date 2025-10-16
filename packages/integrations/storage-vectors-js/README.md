@@ -27,7 +27,7 @@ import { StorageVectorsClient } from '@supabase/storage-vectors-js'
 
 // Initialize client
 const client = new StorageVectorsClient('https://api.example.com', {
-  headers: { 'Authorization': 'Bearer YOUR_TOKEN' }
+  headers: { Authorization: 'Bearer YOUR_TOKEN' },
 })
 
 // Create a vector bucket
@@ -39,7 +39,7 @@ await bucket.createIndex({
   indexName: 'documents-openai',
   dataType: 'float32',
   dimension: 1536,
-  distanceMetric: 'cosine'
+  distanceMetric: 'cosine',
 })
 
 // Insert vectors
@@ -48,22 +48,22 @@ await index.putVectors({
   vectors: [
     {
       key: 'doc-1',
-      data: { float32: [0.1, 0.2, 0.3, /* ...1536 dimensions */] },
-      metadata: { title: 'Introduction', category: 'docs' }
-    }
-  ]
+      data: { float32: [0.1, 0.2, 0.3 /* ...1536 dimensions */] },
+      metadata: { title: 'Introduction', category: 'docs' },
+    },
+  ],
 })
 
 // Query similar vectors
 const { data, error } = await index.queryVectors({
-  queryVector: { float32: [0.15, 0.25, 0.35, /* ...1536 dimensions */] },
+  queryVector: { float32: [0.15, 0.25, 0.35 /* ...1536 dimensions */] },
   topK: 5,
   returnDistance: true,
-  returnMetadata: true
+  returnMetadata: true,
 })
 
 if (data) {
-  data.matches.forEach(match => {
+  data.matches.forEach((match) => {
     console.log(`${match.key}: distance=${match.distance}`)
     console.log('Metadata:', match.metadata)
   })
@@ -79,6 +79,7 @@ const client = new StorageVectorsClient(url, options?)
 ```
 
 **Options:**
+
 - `headers?: Record<string, string>` - Custom HTTP headers (e.g., Authorization)
 - `fetch?: Fetch` - Custom fetch implementation
 
@@ -104,7 +105,7 @@ console.log('Created at:', new Date(data.vectorBucket.creationTime! * 1000))
 ```typescript
 const { data, error } = await client.listVectorBuckets({
   prefix: 'prod-',
-  maxResults: 100
+  maxResults: 100,
 })
 
 // Pagination
@@ -135,12 +136,13 @@ await bucket.createIndex({
   dimension: 1536,
   distanceMetric: 'cosine', // 'cosine' | 'euclidean' | 'dotproduct'
   metadataConfiguration: {
-    nonFilterableMetadataKeys: ['raw_text', 'internal_id']
-  }
+    nonFilterableMetadataKeys: ['raw_text', 'internal_id'],
+  },
 })
 ```
 
 **Distance Metrics:**
+
 - `cosine` - Cosine similarity (normalized dot product)
 - `euclidean` - Euclidean distance (L2 norm)
 - `dotproduct` - Dot product similarity
@@ -158,7 +160,7 @@ console.log('Distance metric:', data?.index.distanceMetric)
 ```typescript
 const { data, error } = await bucket.listIndexes({
   prefix: 'documents-',
-  maxResults: 100
+  maxResults: 100,
 })
 ```
 
@@ -180,19 +182,24 @@ await index.putVectors({
   vectors: [
     {
       key: 'unique-id-1',
-      data: { float32: [/* 1536 numbers */] },
+      data: {
+        float32: [
+          /* 1536 numbers */
+        ],
+      },
       metadata: {
         title: 'Document Title',
         category: 'technical',
-        page: 1
-      }
+        page: 1,
+      },
     },
     // ... up to 500 vectors per request
-  ]
+  ],
 })
 ```
 
 **Limitations:**
+
 - 1-500 vectors per request
 - Vectors must match index dimension
 - Keys must be unique within index
@@ -202,11 +209,11 @@ await index.putVectors({
 ```typescript
 const { data, error } = await index.getVectors({
   keys: ['doc-1', 'doc-2', 'doc-3'],
-  returnData: true,      // Include embeddings (requires permission)
-  returnMetadata: true   // Include metadata (requires permission)
+  returnData: true, // Include embeddings (requires permission)
+  returnMetadata: true, // Include metadata (requires permission)
 })
 
-data?.vectors.forEach(v => {
+data?.vectors.forEach((v) => {
   console.log(v.key, v.metadata)
 })
 ```
@@ -215,18 +222,22 @@ data?.vectors.forEach(v => {
 
 ```typescript
 const { data, error } = await index.queryVectors({
-  queryVector: { float32: [/* 1536 numbers */] },
+  queryVector: {
+    float32: [
+      /* 1536 numbers */
+    ],
+  },
   topK: 10,
   filter: {
     category: 'technical',
-    published: true
+    published: true,
   },
   returnDistance: true,
-  returnMetadata: true
+  returnMetadata: true,
 })
 
 // Results ordered by similarity
-data?.matches.forEach(match => {
+data?.matches.forEach((match) => {
   console.log(`${match.key}: distance=${match.distance}`)
 })
 ```
@@ -243,7 +254,7 @@ do {
   const { data } = await index.listVectors({
     maxResults: 500,
     nextToken,
-    returnMetadata: true
+    returnMetadata: true,
   })
 
   console.log('Batch:', data?.vectors.length)
@@ -255,7 +266,7 @@ const workers = [0, 1, 2, 3].map(async (segmentIndex) => {
   const { data } = await index.listVectors({
     segmentCount: 4,
     segmentIndex,
-    returnMetadata: true
+    returnMetadata: true,
   })
   return data?.vectors || []
 })
@@ -265,6 +276,7 @@ const allVectors = results.flat()
 ```
 
 **Limitations:**
+
 - `maxResults`: 1-1000 (default: 500)
 - `segmentCount`: 1-16
 - Response may be limited by 1MB size
@@ -273,7 +285,7 @@ const allVectors = results.flat()
 
 ```typescript
 await index.deleteVectors({
-  keys: ['doc-1', 'doc-2', 'doc-3']
+  keys: ['doc-1', 'doc-2', 'doc-3'],
   // ... up to 500 keys per request
 })
 ```
@@ -294,14 +306,14 @@ if (error) {
 
 ### Error Codes
 
-| Code | HTTP | Description |
-|------|------|-------------|
-| `InternalError` | 500 | Internal server error |
-| `S3VectorConflictException` | 409 | Resource already exists |
-| `S3VectorNotFoundException` | 404 | Resource not found |
-| `S3VectorBucketNotEmpty` | 400 | Bucket contains indexes |
-| `S3VectorMaxBucketsExceeded` | 400 | Bucket quota exceeded |
-| `S3VectorMaxIndexesExceeded` | 400 | Index quota exceeded |
+| Code                         | HTTP | Description             |
+| ---------------------------- | ---- | ----------------------- |
+| `InternalError`              | 500  | Internal server error   |
+| `S3VectorConflictException`  | 409  | Resource already exists |
+| `S3VectorNotFoundException`  | 404  | Resource not found      |
+| `S3VectorBucketNotEmpty`     | 400  | Bucket contains indexes |
+| `S3VectorMaxBucketsExceeded` | 400  | Bucket quota exceeded   |
+| `S3VectorMaxIndexesExceeded` | 400  | Index quota exceeded    |
 
 ### Throwing Errors
 
@@ -330,13 +342,19 @@ Create scoped clients for cleaner code:
 ```typescript
 // Bucket-scoped operations
 const bucket = client.bucket('embeddings-prod')
-await bucket.createIndex({ /* ... */ })
+await bucket.createIndex({
+  /* ... */
+})
 await bucket.listIndexes()
 
 // Index-scoped operations
 const index = bucket.index('documents-openai')
-await index.putVectors({ /* ... */ })
-await index.queryVectors({ /* ... */ })
+await index.putVectors({
+  /* ... */
+})
+await index.queryVectors({
+  /* ... */
+})
 ```
 
 ### Custom Fetch
@@ -348,7 +366,9 @@ import { StorageVectorsClient } from '@supabase/storage-vectors-js'
 
 const client = new StorageVectorsClient(url, {
   fetch: customFetch,
-  headers: { /* ... */ }
+  headers: {
+    /* ... */
+  },
 })
 ```
 
@@ -375,7 +395,7 @@ Ensure vectors are properly normalized to float32:
 ```typescript
 import { normalizeToFloat32 } from '@supabase/storage-vectors-js'
 
-const vector = normalizeToFloat32([0.1, 0.2, 0.3, /* ... */])
+const vector = normalizeToFloat32([0.1, 0.2, 0.3 /* ... */])
 ```
 
 ## Type Definitions
@@ -392,7 +412,7 @@ import type {
   VectorMetadata,
   DistanceMetric,
   ApiResponse,
-  StorageVectorsError
+  StorageVectorsError,
 } from '@supabase/storage-vectors-js'
 ```
 

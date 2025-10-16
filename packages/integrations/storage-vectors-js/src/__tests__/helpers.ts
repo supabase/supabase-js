@@ -22,7 +22,9 @@ export function createTestClient(): StorageVectorsClient {
   }
 
   if (!config.apiUrl) {
-    throw new Error('STORAGE_VECTORS_API_URL environment variable is required when USE_MOCK_SERVER=false')
+    throw new Error(
+      'STORAGE_VECTORS_API_URL environment variable is required when USE_MOCK_SERVER=false'
+    )
   }
 
   return new StorageVectorsClient(config.apiUrl, {
@@ -53,7 +55,7 @@ export function generateTestName(prefix: string): string {
  * Sleep utility for tests
  */
 export function sleep(ms: number): Promise<void> {
-  return new Promise(resolve => setTimeout(resolve, ms))
+  return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
 /**
@@ -68,12 +70,7 @@ export async function retry<T>(
     factor?: number
   } = {}
 ): Promise<T> {
-  const {
-    maxAttempts = 3,
-    initialDelay = 100,
-    maxDelay = 5000,
-    factor = 2,
-  } = options
+  const { maxAttempts = 3, initialDelay = 100, maxDelay = 5000, factor = 2 } = options
 
   let lastError: Error | undefined
   let delay = initialDelay
@@ -160,5 +157,5 @@ export function cosineSimilarity(a: number[], b: number[]): number {
 export function normalizeVector(vector: number[]): number[] {
   const norm = Math.sqrt(vector.reduce((sum, val) => sum + val * val, 0))
   if (norm === 0) return vector
-  return vector.map(val => val / norm)
+  return vector.map((val) => val / norm)
 }

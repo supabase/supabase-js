@@ -3,7 +3,14 @@
  * Tests all index operations: create, get, list, delete
  */
 
-import { createTestClient, setupTest, generateTestName, assertSuccessResponse, assertErrorResponse, assertErrorCode } from './helpers'
+import {
+  createTestClient,
+  setupTest,
+  generateTestName,
+  assertSuccessResponse,
+  assertErrorResponse,
+  assertErrorCode,
+} from './helpers'
 
 describe('VectorIndexApi Integration Tests', () => {
   let client: ReturnType<typeof createTestClient>
@@ -247,7 +254,7 @@ describe('VectorIndexApi Integration Tests', () => {
       expect(Array.isArray(data.indexes)).toBe(true)
       expect(data.indexes.length).toBeGreaterThanOrEqual(2)
 
-      const indexNames = data.indexes.map(i => i.indexName)
+      const indexNames = data.indexes.map((i) => i.indexName)
       expect(indexNames).toContain(index1)
       expect(indexNames).toContain(index2)
     })
@@ -285,7 +292,7 @@ describe('VectorIndexApi Integration Tests', () => {
       const data = assertSuccessResponse(response)
       expect(data.indexes.length).toBeGreaterThanOrEqual(2)
 
-      const indexNames = data.indexes.map(i => i.indexName)
+      const indexNames = data.indexes.map((i) => i.indexName)
       expect(indexNames).toContain(index1)
       expect(indexNames).toContain(index2)
     })

@@ -101,7 +101,9 @@ export default class VectorBucketApi {
    * }
    * ```
    */
-  async getVectorBucket(vectorBucketName: string): Promise<ApiResponse<{ vectorBucket: VectorBucket }>> {
+  async getVectorBucket(
+    vectorBucketName: string
+  ): Promise<ApiResponse<{ vectorBucket: VectorBucket }>> {
     try {
       const data = await post(
         this.fetch,
@@ -151,12 +153,9 @@ export default class VectorBucketApi {
     options: ListVectorBucketsOptions = {}
   ): Promise<ApiResponse<ListVectorBucketsResponse>> {
     try {
-      const data = await post(
-        this.fetch,
-        `${this.url}/ListVectorBuckets`,
-        options,
-        { headers: this.headers }
-      )
+      const data = await post(this.fetch, `${this.url}/ListVectorBuckets`, options, {
+        headers: this.headers,
+      })
       return { data, error: null }
     } catch (error) {
       if (this.shouldThrowOnError) {

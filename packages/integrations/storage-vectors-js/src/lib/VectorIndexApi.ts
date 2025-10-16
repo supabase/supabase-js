@@ -92,12 +92,9 @@ export default class VectorIndexApi {
    */
   async createIndex(options: CreateIndexOptions): Promise<ApiResponse<undefined>> {
     try {
-      const data = await post(
-        this.fetch,
-        `${this.url}/CreateIndex`,
-        options,
-        { headers: this.headers }
-      )
+      const data = await post(this.fetch, `${this.url}/CreateIndex`, options, {
+        headers: this.headers,
+      })
       return { data: data || {}, error: null }
     } catch (error) {
       if (this.shouldThrowOnError) {
@@ -190,12 +187,9 @@ export default class VectorIndexApi {
    */
   async listIndexes(options: ListIndexesOptions): Promise<ApiResponse<ListIndexesResponse>> {
     try {
-      const data = await post(
-        this.fetch,
-        `${this.url}/ListIndexes`,
-        options,
-        { headers: this.headers }
-      )
+      const data = await post(this.fetch, `${this.url}/ListIndexes`, options, {
+        headers: this.headers,
+      })
       return { data, error: null }
     } catch (error) {
       if (this.shouldThrowOnError) {

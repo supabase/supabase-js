@@ -213,7 +213,7 @@ describe('VectorDataApi Integration Tests', () => {
       expect(data.vectors).toBeDefined()
       expect(data.vectors.length).toBe(2)
 
-      const keys = data.vectors.map(v => v.key)
+      const keys = data.vectors.map((v) => v.key)
       expect(keys).toContain('vec-1')
       expect(keys).toContain('vec-2')
     })
@@ -288,7 +288,7 @@ describe('VectorDataApi Integration Tests', () => {
       const data = assertSuccessResponse(response)
       expect(data.vectors.length).toBe(2)
 
-      const keys = data.vectors.map(v => v.key)
+      const keys = data.vectors.map((v) => v.key)
       expect(keys).toContain('vec-1')
       expect(keys).toContain('vec-2')
       expect(keys).not.toContain('non-existent')
@@ -591,7 +591,7 @@ describe('VectorDataApi Integration Tests', () => {
       await index.putVectors({ vectors })
 
       // Delete in batch (max 500)
-      const keysToDelete = vectors.slice(0, 50).map(v => v.key)
+      const keysToDelete = vectors.slice(0, 50).map((v) => v.key)
       const response = await index.deleteVectors({ keys: keysToDelete })
 
       assertSuccessResponse(response)

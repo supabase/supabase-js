@@ -137,9 +137,7 @@ export class VectorBucketScope extends VectorIndexApi {
    * })
    * ```
    */
-  override async createIndex(
-    options: Omit<CreateIndexOptions, 'vectorBucketName'>
-  ) {
+  override async createIndex(options: Omit<CreateIndexOptions, 'vectorBucketName'>) {
     return super.createIndex({
       ...options,
       vectorBucketName: this.vectorBucketName,
@@ -159,9 +157,7 @@ export class VectorBucketScope extends VectorIndexApi {
    * const { data } = await bucket.listIndexes({ prefix: 'documents-' })
    * ```
    */
-  override async listIndexes(
-    options: Omit<ListIndexesOptions, 'vectorBucketName'> = {}
-  ) {
+  override async listIndexes(options: Omit<ListIndexesOptions, 'vectorBucketName'> = {}) {
     return super.listIndexes({
       ...options,
       vectorBucketName: this.vectorBucketName,
@@ -304,9 +300,7 @@ export class VectorIndexScope extends VectorDataApi {
    * })
    * ```
    */
-  override async getVectors(
-    options: Omit<GetVectorsOptions, 'vectorBucketName' | 'indexName'>
-  ) {
+  override async getVectors(options: Omit<GetVectorsOptions, 'vectorBucketName' | 'indexName'>) {
     return super.getVectors({
       ...options,
       vectorBucketName: this.vectorBucketName,

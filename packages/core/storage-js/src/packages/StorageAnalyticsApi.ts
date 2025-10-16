@@ -48,11 +48,9 @@ export default class StorageAnalyticsApi {
    * }
    * ```
    */
-  async createBucket(
-    name: string
-  ): Promise<
+  async createBucket(name: string): Promise<
     | {
-        data: AnalyticBucket,
+        data: AnalyticBucket
         error: null
       }
     | {
@@ -61,12 +59,7 @@ export default class StorageAnalyticsApi {
       }
   > {
     try {
-      const data = await post(
-        this.fetch,
-        `${this.url}/bucket`,
-        { name },
-        { headers: this.headers }
-      )
+      const data = await post(this.fetch, `${this.url}/bucket`, { name }, { headers: this.headers })
       return { data, error: null }
     } catch (error) {
       if (this.shouldThrowOnError) {

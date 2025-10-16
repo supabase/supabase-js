@@ -3,7 +3,14 @@
  * Tests all bucket operations: create, get, list, delete
  */
 
-import { createTestClient, setupTest, generateTestName, assertSuccessResponse, assertErrorResponse, assertErrorCode } from './helpers'
+import {
+  createTestClient,
+  setupTest,
+  generateTestName,
+  assertSuccessResponse,
+  assertErrorResponse,
+  assertErrorCode,
+} from './helpers'
 
 describe('VectorBucketApi Integration Tests', () => {
   let client: ReturnType<typeof createTestClient>
@@ -103,7 +110,7 @@ describe('VectorBucketApi Integration Tests', () => {
       expect(Array.isArray(data.buckets)).toBe(true)
       expect(data.buckets.length).toBeGreaterThanOrEqual(2)
 
-      const bucketNames = data.buckets.map(b => b.vectorBucketName)
+      const bucketNames = data.buckets.map((b) => b.vectorBucketName)
       expect(bucketNames).toContain(bucket1)
       expect(bucketNames).toContain(bucket2)
     })
@@ -123,14 +130,14 @@ describe('VectorBucketApi Integration Tests', () => {
       const data = assertSuccessResponse(response)
       expect(data.buckets.length).toBeGreaterThanOrEqual(2)
 
-      const bucketNames = data.buckets.map(b => b.vectorBucketName)
+      const bucketNames = data.buckets.map((b) => b.vectorBucketName)
       expect(bucketNames).toContain(bucket1)
       expect(bucketNames).toContain(bucket2)
       // bucket3 should not be included as it doesn't match prefix
-      const hasOtherBucket = bucketNames.some(name => name.includes('other-bucket'))
+      const hasOtherBucket = bucketNames.some((name) => name.includes('other-bucket'))
       if (hasOtherBucket) {
         // If other buckets exist, they should match the prefix
-        expect(bucketNames.every(name => name.startsWith(prefix))).toBe(true)
+        expect(bucketNames.every((name) => name.startsWith(prefix))).toBe(true)
       }
     })
 

@@ -4,5 +4,5 @@
  */
 export const DEFAULT_HEADERS = {
   'X-Client-Info': `storage-vectors-js/0.0.1`,
-  'Content-Type': 'application/json'
+  'Content-Type': 'application/json',
 }
