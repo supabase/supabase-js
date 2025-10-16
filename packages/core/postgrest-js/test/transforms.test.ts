@@ -334,7 +334,7 @@ test('abort signal', async () => {
       error: {
         code: expect.any(String),
         details: expect.any(String),
-        message: expect.stringMatching(/^Error: AbortError/),
+        message: expect.stringMatching(/AbortError/),
       },
     },
     `
@@ -345,7 +345,7 @@ test('abort signal', async () => {
         "code": Any<String>,
         "details": Any<String>,
         "hint": "",
-        "message": StringMatching /\\^Error: AbortError/,
+        "message": StringMatching /AbortError/,
       },
       "status": 0,
       "statusText": "",

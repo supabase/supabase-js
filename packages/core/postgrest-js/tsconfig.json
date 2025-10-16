@@ -1,10 +1,13 @@
 {
+  "extends": "../../../tsconfig.base.json",
   "include": ["src"],
   "compilerOptions": {
+    "composite": true,
     "declaration": true,
     "declarationMap": true,
     "module": "CommonJS",
     "outDir": "dist/cjs",
+    "rootDir": "src",
     "sourceMap": true,
     "target": "ES2017",
 
@@ -14,6 +17,8 @@
     "moduleResolution": "Node",
 
     "forceConsistentCasingInFileNames": true,
-    "stripInternal": true
+    "stripInternal": true,
+    "noImplicitOverride": false,
+    "isolatedModules": false
   }
 }

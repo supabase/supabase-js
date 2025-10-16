@@ -10,6 +10,8 @@ const config: Config.InitialOptions = {
   testSequencer: '<rootDir>/test/testSequencer.js',
   // Use local Prettier v2 only for Jest inline snapshots
   prettierPath: require.resolve('prettier'),
+  // Increase timeout for CI environments (default is 5000ms)
+  testTimeout: 30000,
   globals: {
     // For consistency between VSCode and type-check
     // https://github.com/supabase/postgrest-js/pull/627#discussion_r2236995331

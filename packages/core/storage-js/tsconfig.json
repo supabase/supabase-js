@@ -1,7 +1,9 @@
 {
+  "extends": "../../../tsconfig.base.json",
   "include": ["src"],
   "exclude": ["node_modules/**/*.ts"],
   "compilerOptions": {
+    "composite": true,
     "declaration": true,
     "declarationMap": true,
     "module": "CommonJS",
@@ -17,6 +19,8 @@
 
     "forceConsistentCasingInFileNames": true,
     "stripInternal": true,
-    "allowSyntheticDefaultImports": true
+    "allowSyntheticDefaultImports": true,
+    "noImplicitOverride": false,
+    "isolatedModules": false
   }
 }

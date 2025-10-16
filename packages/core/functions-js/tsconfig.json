@@ -1,10 +1,13 @@
 {
+  "extends": "../../../tsconfig.base.json",
   "include": ["src"],
   "exclude": ["node_modules/**/*.ts"],
   "compilerOptions": {
     "declaration": true,
+    "composite": true,
     "declarationMap": true,
     "module": "CommonJS",
+    "moduleResolution": "Node",
     "outDir": "dist/main",
     "rootDir": "src",
     "sourceMap": true,
@@ -13,12 +16,12 @@
     "strict": true,
 
     "esModuleInterop": true,
-    "moduleResolution": "Node",
-    "isolatedModules": true,
 
     "forceConsistentCasingInFileNames": true,
     "stripInternal": true,
-    "allowSyntheticDefaultImports": true
+    "allowSyntheticDefaultImports": true,
+    "noImplicitOverride": false,
+    "isolatedModules": false
   },
   "typeRoots": ["./src/types"]
 }

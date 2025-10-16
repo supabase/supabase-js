@@ -11,4 +11,9 @@ module.exports = {
     '!**/vendor/**',
     '!**/vendor/**',
   ],
+  globals: {
+    'ts-jest': {
+      tsconfig: 'tsconfig.test.json',
+    },
+  },
 }

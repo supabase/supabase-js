@@ -38,8 +38,6 @@ services:
       POSTGRES_DB: postgres
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
-      POSTGRES_HOST: /var/run/postgresql
-      POSTGRES_PORT: 5432
   pgmeta:
     image: supabase/postgres-meta:v0.91.5
     ports:
