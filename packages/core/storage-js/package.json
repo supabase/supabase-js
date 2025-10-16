@@ -59,5 +59,20 @@
   "unpkg": "dist/umd/supabase.js",
   "publishConfig": {
     "access": "public"
+  },
+  "nx": {
+    "targets": {
+      "build:module": {
+        "dependsOn": [
+          "^build:module",
+          {
+            "projects": [
+              "storage-vectors-js"
+            ],
+            "target": "build"
+          }
+        ]
+      }
+    }
   }
 }
