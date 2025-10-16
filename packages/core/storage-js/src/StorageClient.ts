@@ -1,5 +1,6 @@
 import StorageFileApi from './packages/StorageFileApi'
 import StorageBucketApi from './packages/StorageBucketApi'
+import StorageAnalyticsApi from './packages/StorageAnalyticsApi'
 import { Fetch } from './lib/fetch'
 import { StorageVectorsClient } from '@supabase/storage-vectors-js'
 
@@ -31,10 +32,33 @@ export class StorageClient extends StorageBucketApi {
    *
    * @returns A StorageVectorsClient instance configured with the current storage settings.
    */
-  vectors(): StorageVectorsClient {
+  get vectors(): StorageVectorsClient {
     return new StorageVectorsClient(this.url + '/vector', {
       headers: this.headers,
       fetch: this.fetch,
     })
+  }
+
+  /**
+   * Access analytics storage operations using Iceberg tables.
+   *
+   * @returns A StorageAnalyticsApi instance configured with the current storage settings.
+   * @example
+   * ```typescript
+   * const client = createClient(url, key)
+   * const analytics = client.storage.analytics
+   *
+   * // Create an analytics bucket
+   * await analytics.createBucket('my-analytics-bucket', { public: false })
+   *
+   * // List all analytics buckets
+   * const { data: buckets } = await analytics.listBuckets()
+   *
+   * // Delete an analytics bucket
+   * await analytics.deleteBucket('old-analytics-bucket')
+   * ```
+   */
+  get analytics(): StorageAnalyticsApi {
+    return new StorageAnalyticsApi(this.url + '/iceberg', this.headers, this.fetch)
   }
 }

@@ -1,5 +1,6 @@
 export { StorageClient } from './StorageClient'
 export type { StorageClientOptions } from './StorageClient'
+export { default as StorageAnalyticsApi } from './packages/StorageAnalyticsApi'
 export * from './lib/types'
 export * from './lib/errors'
 export * from '@supabase/storage-vectors-js'

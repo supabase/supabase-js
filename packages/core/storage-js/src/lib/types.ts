@@ -14,6 +14,14 @@ export interface Bucket {
   public: boolean
 }
 
+export interface AnalyticBucket {
+  id: string
+  type: "ANALYTICS"
+  format: string
+  created_at: string
+  updated_at: string
+}
+
 export interface FileObject {
   name: string
   bucket_id: string
