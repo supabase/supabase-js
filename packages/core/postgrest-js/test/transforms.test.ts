@@ -405,6 +405,7 @@ test('explain with options', async () => {
           "Plan": Any<Object>,
           "Query Identifier": Any<Number>,
           "Settings": Object {
+            "effective_cache_size": "128MB",
             "search_path": "\\"public\\", \\"extensions\\"",
           },
         },
