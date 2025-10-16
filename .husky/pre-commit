@@ -1,0 +1,12 @@
+# Check if postgrest-js common types were modified
+if git diff --cached --name-only | grep -q "packages/core/postgrest-js/src/types/common/"; then
+  echo "📝 Detected changes in postgrest-js common types..."
+  echo "🔄 Running codegen to sync types..."
+
+  npm run codegen
+
+  # Add the generated files to the commit
+  git add packages/core/supabase-js/src/lib/rest/types/common/
+
+  echo "✅ Generated types have been updated and staged"
+fi

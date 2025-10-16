@@ -5,6 +5,8 @@
   "scripts": {
     "commit": "cz",
     "prepare": "husky",
+    "codegen": "node scripts/sync-common-types.js",
+    "codegen:check": "node scripts/sync-common-types.js && git diff --exit-code packages/core/supabase-js/src/lib/rest/types/common && echo '\n✅ Generated types are in sync!' || (echo '\n❌ Generated types are out of sync.\n   Run: npm run codegen\n   Then commit the changes.\n' && exit 1)",
     "release-canary": "npx tsx scripts/release-canary.ts",
     "release-stable": "npx tsx scripts/release-stable.ts"
   },
