@@ -32,7 +32,7 @@ export class StorageClient extends StorageBucketApi {
    * @returns A StorageVectorsClient instance configured with the current storage settings.
    */
   vectors(): StorageVectorsClient {
-    return new StorageVectorsClient(this.url, {
+    return new StorageVectorsClient(this.url + '/vector', {
       headers: this.headers,
       fetch: this.fetch,
     })
