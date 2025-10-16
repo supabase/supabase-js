@@ -64,4 +64,3 @@ export type GenericSchema = {
 export type ClientServerOptions = {
   PostgrestVersion?: string
 }
-
