@@ -13,7 +13,6 @@
 
 const fs = require('fs')
 const path = require('path')
-const crypto = require('crypto')
 
 const SOURCE_DIR = path.join(__dirname, '../packages/core/postgrest-js/src/types/common')
 const DEST_DIR = path.join(__dirname, '../packages/core/supabase-js/src/lib/rest/types/common')
@@ -29,18 +28,6 @@ const HEADER_COMMENT = `/**
  */
 
 `
-
-function getFileHash(filePath) {
-  if (!fs.existsSync(filePath)) return null
-  const content = fs.readFileSync(filePath, 'utf8')
-  return crypto.createHash('md5').update(content).digest('hex')
-}
-
-function stripGeneratedHeader(content) {
-  // Remove existing AUTO-GENERATED header if present
-  const headerRegex = /^\/\*\*\s*\n\s*\*\s*AUTO-GENERATED FILE[\s\S]*?\*\/\s*\n\s*\n/
-  return content.replace(headerRegex, '')
-}
 
 function syncFile(fileName) {
   const sourcePath = path.join(SOURCE_DIR, fileName)
@@ -85,7 +72,7 @@ function main() {
   }
 
   // Get all .ts files from source directory
-  const sourceFiles = fs.readdirSync(SOURCE_DIR).filter(file => file.endsWith('.ts'))
+  const sourceFiles = fs.readdirSync(SOURCE_DIR).filter((file) => file.endsWith('.ts'))
 
   if (sourceFiles.length === 0) {
     console.error(`❌ No TypeScript files found in ${SOURCE_DIR}`)
@@ -98,7 +85,9 @@ function main() {
     if (changed) changedCount++
   }
 
-  console.log(`\n✨ Sync complete: ${changedCount} file(s) updated, ${sourceFiles.length - changedCount} unchanged`)
+  console.log(
+    `\n✨ Sync complete: ${changedCount} file(s) updated, ${sourceFiles.length - changedCount} unchanged`
+  )
 
   if (changedCount > 0) {
     console.log('\n⚠️  Generated files were updated. Please commit these changes.')
