@@ -13,13 +13,13 @@
       "path": "./packages/core/realtime-js"
     },
     {
-      "path": "./packages/core/supabase-js"
-    },
-    {
       "path": "./packages/core/storage-js"
     },
     {
       "path": "./packages/core/auth-js"
+    },
+    {
+      "path": "./packages/integrations/storage-vectors-js"
     }
   ]
 }

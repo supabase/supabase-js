@@ -22,5 +22,10 @@
     "allowSyntheticDefaultImports": true,
     "noImplicitOverride": false,
     "isolatedModules": false
-  }
+  },
+  "references": [
+    {
+      "path": "../../integrations/storage-vectors-js"
+    }
+  ]
 }
