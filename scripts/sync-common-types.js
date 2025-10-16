@@ -52,23 +52,21 @@ function syncFile(fileName) {
   }
 
   const sourceContent = fs.readFileSync(sourcePath, 'utf8')
-  const sourceHash = crypto.createHash('md5').update(sourceContent).digest('hex')
+  const expectedContent = HEADER_COMMENT + sourceContent
 
-  // Check if destination exists and compare content (excluding header)
+  // Check if destination exists and compare with what we would generate
   let needsUpdate = true
   if (fs.existsSync(destPath)) {
     const destContent = fs.readFileSync(destPath, 'utf8')
-    const destContentStripped = stripGeneratedHeader(destContent)
-    const destHash = crypto.createHash('md5').update(destContentStripped).digest('hex')
 
-    if (sourceHash === destHash) {
+    // Compare the full expected output with the current file
+    if (destContent === expectedContent) {
       needsUpdate = false
     }
   }
 
   if (needsUpdate) {
-    const contentWithHeader = HEADER_COMMENT + sourceContent
-    fs.writeFileSync(destPath, contentWithHeader, 'utf8')
+    fs.writeFileSync(destPath, expectedContent, 'utf8')
     console.log(`✅ Synced: ${fileName}`)
     return true
   } else {
