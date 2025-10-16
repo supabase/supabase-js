@@ -32,7 +32,7 @@ export interface StorageVectorsClientOptions {
  *
  * @example
  * ```typescript
- * import { StorageVectorsClient } from '@supabase/storage-vectors-js'
+ * import { StorageVectorsClient } from '@supabase/storage'
  *
  * const client = new StorageVectorsClient('https://api.example.com', {
  *   headers: { 'Authorization': 'Bearer token' }

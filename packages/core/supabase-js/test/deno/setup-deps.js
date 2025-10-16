@@ -45,9 +45,12 @@ try {
   console.warn('Warning: Could not read existing deno.json, creating new one')
 }
 
-// Path to storage-vectors-js (workspace package, not published to npm)
+// Paths to workspace packages (not published to npm or need local builds)
 const storageVectorsPath = path.join(monorepoRoot, 'packages/integrations/storage-vectors-js/dist/index.js')
 const storageVectorsUrl = `file://${storageVectorsPath}`
+
+const storageJsPath = path.join(monorepoRoot, 'packages/core/storage-js/dist/module/index.js')
+const storageJsUrl = `file://${storageJsPath}`
 
 // Update imports in deno.json
 denoJson.imports = {
@@ -55,10 +58,7 @@ denoJson.imports = {
   '@supabase/functions-js': `npm:@supabase/functions-js@${versions.functions}`,
   '@supabase/postgrest-js': `npm:@supabase/postgrest-js@${versions.postgrest}`,
   '@supabase/auth-js': `npm:@supabase/auth-js@${versions.auth}`,
-  '@supabase/storage-js':
-    process.env.STORAGE_JS_ENTRY === 'main'
-      ? `npm:@supabase/storage-js@${versions.storage}/dist/main/index.js`
-      : `npm:@supabase/storage-js@${versions.storage}/dist/module/index.js`,
+  '@supabase/storage-js': storageJsUrl,
   '@supabase/storage-vectors-js': storageVectorsUrl,
   '@supabase/node-fetch': `npm:@supabase/node-fetch@${versions.node_fetch}`,
 }

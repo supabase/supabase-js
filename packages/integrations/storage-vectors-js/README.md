@@ -5,7 +5,7 @@ TypeScript client library for Supabase S3 Vector Buckets - a bottomless database
 ## Installation
 
 ```bash
-npm install @supabase/storage-vectors-js
+npm install @supabase/storage-js
 ```
 
 ## Features
@@ -23,7 +23,7 @@ npm install @supabase/storage-vectors-js
 ## Quick Start
 
 ```typescript
-import { StorageVectorsClient } from '@supabase/storage-vectors-js'
+import { StorageVectorsClient } from '@supabase/storage-js'
 
 // Initialize client
 const client = new StorageVectorsClient('https://api.example.com', {
@@ -362,7 +362,7 @@ await index.queryVectors({
 Provide a custom fetch implementation:
 
 ```typescript
-import { StorageVectorsClient } from '@supabase/storage-vectors-js'
+import { StorageVectorsClient } from '@supabase/storage-js'
 
 const client = new StorageVectorsClient(url, {
   fetch: customFetch,
