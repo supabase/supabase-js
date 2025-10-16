@@ -32,4 +32,5 @@ export type {
 export type { ClientServerOptions as PostgrestClientOptions } from './types/common/common'
 // https://github.com/supabase/postgrest-js/issues/551
 // To be replaced with a helper type that only uses public types
+// some comment to trigger pipeline
 export type { GetResult as UnstableGetResult } from './select-query-parser/result'
