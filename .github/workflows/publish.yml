@@ -30,7 +30,7 @@ jobs:
         with:
           app-id: ${{ secrets.APP_ID }}
           private-key: ${{ secrets.PRIVATE_KEY }}
-      - name: Check if actor is member of admin or client-libs team
+      - name: Check if actor is member of admin or sdk team
         id: team-check
         uses: actions/github-script@v7
         with:
@@ -52,14 +52,14 @@ jobs:
               }
             }
             const isAdmin = await isTeamMember('admin')
-            const isClientLibs = await isTeamMember('client-libs')
-            const isMember = isAdmin || isClientLibs
+            const isSdk = await isTeamMember('sdk')
+            const isMember = isAdmin || isSdk
             core.setOutput('is_team_member', isMember ? 'true' : 'false')
 
       - name: Fail if not authorized
         if: ${{ steps.team-check.outputs.is_team_member != 'true' }}
         run: |
-          echo "You must be a member of @supabase/admin or @supabase/client-libs."
+          echo "You must be a member of @supabase/admin or @supabase/sdk."
           exit 1
 
       - uses: actions/checkout@v5

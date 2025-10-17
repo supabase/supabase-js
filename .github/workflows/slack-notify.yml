@@ -24,7 +24,7 @@ jobs:
               },
               {
                 "type": "section",
-                "text": { "type": "mrkdwn", "text": "The workflow run failed. See details below. @group-client-libs" }
+                "text": { "type": "mrkdwn", "text": "See workflow details below. @group-sdk" }
               },
               {
                 "type": "section",
