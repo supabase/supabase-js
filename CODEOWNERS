@@ -1,20 +1,20 @@
 # Global owners for the entire repository
-* @supabase/client-libs @supabase/admin @supabase/security
+* @supabase/sdk @supabase/admin @supabase/security
 
 # Root configuration files
-/.github/ @supabase/client-libs @supabase/security
-/nx.json @supabase/client-libs
-/package.json @supabase/client-libs
-/tsconfig*.json @supabase/client-libs
-/README.md @supabase/client-libs
-/docs/* @supabase/client-libs
-/LICENSE @supabase/client-libs
-/CODEOWNERS @supabase/client-libs @supabase/security
+/.github/ @supabase/sdk @supabase/security
+/nx.json @supabase/sdk
+/package.json @supabase/sdk
+/tsconfig*.json @supabase/sdk
+/README.md @supabase/sdk
+/docs/* @supabase/sdk
+/LICENSE @supabase/sdk
+/CODEOWNERS @supabase/sdk @supabase/security
 
 # Core packages - each library has specific owners
-/packages/core/auth-js/ @supabase/client-libs @supabase/auth
-/packages/core/functions-js/ @supabase/client-libs @supabase/edge-functions
-/packages/core/postgrest-js/ @supabase/client-libs @supabase/postgrest
-/packages/core/realtime-js/ @supabase/client-libs @supabase/realtime
-/packages/core/storage-js/ @supabase/client-libs @supabase/storage
-/packages/core/supabase-js/ @supabase/client-libs 
+/packages/core/auth-js/ @supabase/sdk @supabase/auth
+/packages/core/functions-js/ @supabase/sdk @supabase/edge-functions
+/packages/core/postgrest-js/ @supabase/sdk @supabase/postgrest
+/packages/core/realtime-js/ @supabase/sdk @supabase/realtime
+/packages/core/storage-js/ @supabase/sdk @supabase/storage
+/packages/core/supabase-js/ @supabase/sdk 
