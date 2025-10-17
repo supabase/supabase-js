@@ -20,6 +20,12 @@ module.exports = {
           transpileOnly: true,
         },
       },
+      {
+        test: /\.m?js$/,
+        resolve: {
+          fullySpecified: false,
+        },
+      },
     ],
   },
   resolve: {

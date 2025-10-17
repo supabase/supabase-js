@@ -13,9 +13,6 @@
       "path": "./packages/core/realtime-js"
     },
     {
-      "path": "./packages/core/supabase-js"
-    },
-    {
       "path": "./packages/core/storage-js"
     },
     {

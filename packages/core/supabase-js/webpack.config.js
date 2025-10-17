@@ -21,6 +21,12 @@ module.exports = (env) => ({
           transpileOnly: true,
         },
       },
+      {
+        test: /\.m?js$/,
+        resolve: {
+          fullySpecified: false,
+        },
+      },
     ],
   },
   resolve: {

@@ -185,11 +185,11 @@ cd ../../..
 | `test:integration:browser` | Browser tests using Deno + Puppeteer      | Supabase running + Deno installed       |
 | `test:edge-functions`      | Edge Functions tests                      | Supabase running + Deno installed       |
 | `test:types`               | TypeScript type checking + JSR validation | None                                    |
-| `test:deno`                | Deno runtime compatibility tests          | Supabase running + Deno installed       |
 | `test:bun`                 | Bun runtime compatibility tests           | Supabase running + Bun installed        |
+| `test:node:playwright`     | WebSocket browser tests                   | Supabase running + Playwright           |
+| Deno (see section below)   | Deno runtime compatibility tests          | Supabase running + Deno installed       |
 | Expo (see section below)   | React Native/Expo tests                   | Supabase running + dependencies updated |
 | Next.js (see below)        | Next.js SSR tests                         | Supabase running + dependencies updated |
-| `test:node:playwright`     | WebSocket browser tests                   | Supabase running + Playwright           |
 
 #### Unit Testing
 
@@ -249,10 +249,11 @@ npx nx test:all supabase-js
 # Prerequisites:
 # 1. Supabase must be running (see Prerequisites)
 # 2. Update test dependencies and pack current build
-npx nx update:test-deps:expo supabase-js
+cd packages/core/supabase-js
+npm run update:test-deps:expo
 
 # Run Expo tests from the Expo test project
-cd packages/core/supabase-js/test/integration/expo
+cd test/integration/expo
 npm install
 npm test
 cd ../../..

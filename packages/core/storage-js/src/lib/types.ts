@@ -1,5 +1,10 @@
 import { StorageError } from './errors'
 
+/**
+ * Type of storage bucket
+ * - STANDARD: Regular file storage buckets
+ * - ANALYTICS: Iceberg table-based buckets for analytical workloads
+ */
 export type BucketType = 'STANDARD' | 'ANALYTICS'
 
 export interface Bucket {
@@ -12,6 +17,23 @@ export interface Bucket {
   created_at: string
   updated_at: string
   public: boolean
+}
+
+/**
+ * Represents an Analytics Bucket using Apache Iceberg table format.
+ * Analytics buckets are optimized for analytical queries and data processing.
+ */
+export interface AnalyticBucket {
+  /** Unique identifier for the bucket */
+  id: string
+  /** Bucket type - always 'ANALYTICS' for analytics buckets */
+  type: 'ANALYTICS'
+  /** Storage format used (e.g., 'iceberg') */
+  format: string
+  /** ISO 8601 timestamp of bucket creation */
+  created_at: string
+  /** ISO 8601 timestamp of last update */
+  updated_at: string
 }
 
 export interface FileObject {
