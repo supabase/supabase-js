@@ -52,15 +52,29 @@ const storageVectorsUrl = `file://${storageVectorsPath}`
 const storageJsPath = path.join(monorepoRoot, 'packages/core/storage-js/dist/module/index.js')
 const storageJsUrl = `file://${storageJsPath}`
 
+// Determine storage-js entry point based on environment variable
+// For Deno 1.x (uses npm package): set STORAGE_JS_ENTRY=main
+// For Deno 2.x (uses local build): don't set or set to 'module'
+const useLocalStorageJs = process.env.STORAGE_JS_ENTRY !== 'main'
+const storageJsImport = useLocalStorageJs
+  ? storageJsUrl
+  : process.env.STORAGE_JS_ENTRY === 'main'
+    ? `npm:@supabase/storage-js@${versions.storage}/dist/main/index.js`
+    : `npm:@supabase/storage-js@${versions.storage}/dist/module/index.js`
+
 // Update imports in deno.json
 denoJson.imports = {
   '@supabase/realtime-js': `npm:@supabase/realtime-js@${versions.realtime}`,
   '@supabase/functions-js': `npm:@supabase/functions-js@${versions.functions}`,
   '@supabase/postgrest-js': `npm:@supabase/postgrest-js@${versions.postgrest}`,
   '@supabase/auth-js': `npm:@supabase/auth-js@${versions.auth}`,
-  '@supabase/storage-js': storageJsUrl,
-  '@supabase/storage-vectors-js': storageVectorsUrl,
+  '@supabase/storage-js': storageJsImport,
   '@supabase/node-fetch': `npm:@supabase/node-fetch@${versions.node_fetch}`,
+}
+
+// Only add storage-vectors-js when using local storage-js build
+if (useLocalStorageJs) {
+  denoJson.imports['@supabase/storage-vectors-js'] = storageVectorsUrl
 }
 
 // Ensure Node types are available for Deno type-checking of .d.ts files
