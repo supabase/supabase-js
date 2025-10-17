@@ -75,8 +75,7 @@
     "packages/core/postgrest-js",
     "packages/core/realtime-js",
     "packages/core/storage-js",
-    "packages/core/supabase-js",
-    "packages/integrations/*"
+    "packages/core/supabase-js"
   ],
   "nx": {
     "includedScripts": [],
