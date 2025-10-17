@@ -1,3 +1,13 @@
+## 2.75.1 (2025-10-17)
+
+### 🩹 Fixes
+
+- **storage:** use backward compatible return type in download function ([#1750](https://github.com/supabase/supabase-js/pull/1750))
+
+### ❤️ Thank You
+
+- Lenny @itslenny
+
 ## 2.75.0 (2025-10-09)
 
 This was a version bump only for @supabase/storage-js to align it with other projects, there were no code changes.
