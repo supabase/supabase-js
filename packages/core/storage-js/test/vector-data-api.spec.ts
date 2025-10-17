@@ -24,7 +24,7 @@ describe('VectorDataApi Integration Tests', () => {
     testBucket = generateTestName('test-bucket')
     testIndex = generateTestName('test-index')
 
-    await client.createVectorBucket(testBucket)
+    await client.createBucket(testBucket)
     const bucket = client.from(testBucket)
     await bucket.createIndex({
       indexName: testIndex,

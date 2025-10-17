@@ -25,11 +25,11 @@ describe('End-to-End Workflow Tests', () => {
       const indexName = generateTestName('e2e-index')
 
       // Step 1: Create bucket
-      const createBucketResponse = await client.createVectorBucket(bucketName)
+      const createBucketResponse = await client.createBucket(bucketName)
       assertSuccessResponse(createBucketResponse)
 
       // Step 2: Verify bucket exists
-      const getBucketResponse = await client.getVectorBucket(bucketName)
+      const getBucketResponse = await client.getBucket(bucketName)
       const bucketData = assertSuccessResponse(getBucketResponse)
       expect(bucketData.vectorBucket.vectorBucketName).toBe(bucketName)
 
@@ -169,7 +169,7 @@ describe('End-to-End Workflow Tests', () => {
       assertSuccessResponse(deleteIndexResponse)
 
       // Step 14: Delete bucket
-      const deleteBucketResponse = await client.deleteVectorBucket(bucketName)
+      const deleteBucketResponse = await client.deleteBucket(bucketName)
       assertSuccessResponse(deleteBucketResponse)
     })
   })
@@ -179,7 +179,7 @@ describe('End-to-End Workflow Tests', () => {
       const bucketName = generateTestName('multi-index-bucket')
 
       // Create bucket
-      await client.createVectorBucket(bucketName)
+      await client.createBucket(bucketName)
       const bucket = client.from(bucketName)
 
       // Create multiple indexes with different configurations
@@ -249,7 +249,7 @@ describe('End-to-End Workflow Tests', () => {
       }
 
       // Delete bucket
-      await client.deleteVectorBucket(bucketName)
+      await client.deleteBucket(bucketName)
     })
   })
 
@@ -259,7 +259,7 @@ describe('End-to-End Workflow Tests', () => {
       const indexName = generateTestName('semantic-index')
 
       // Setup
-      await client.createVectorBucket(bucketName)
+      await client.createBucket(bucketName)
       const bucket = client.from(bucketName)
       await bucket.createIndex({
         indexName,
@@ -365,7 +365,7 @@ describe('End-to-End Workflow Tests', () => {
 
       // Cleanup
       await bucket.deleteIndex(indexName)
-      await client.deleteVectorBucket(bucketName)
+      await client.deleteBucket(bucketName)
     })
   })
 
@@ -375,7 +375,7 @@ describe('End-to-End Workflow Tests', () => {
       const indexName = generateTestName('batch-index')
 
       // Setup
-      await client.createVectorBucket(bucketName)
+      await client.createBucket(bucketName)
       const bucket = client.from(bucketName)
       await bucket.createIndex({
         indexName,
@@ -434,7 +434,7 @@ describe('End-to-End Workflow Tests', () => {
 
       // Cleanup
       await bucket.deleteIndex(indexName)
-      await client.deleteVectorBucket(bucketName)
+      await client.deleteBucket(bucketName)
     })
   })
 
@@ -444,7 +444,7 @@ describe('End-to-End Workflow Tests', () => {
       const indexName = generateTestName('error-index')
 
       // Create bucket
-      await client.createVectorBucket(bucketName)
+      await client.createBucket(bucketName)
       const bucket = client.from(bucketName)
 
       // Try to create index in non-existent bucket (error)
@@ -478,7 +478,7 @@ describe('End-to-End Workflow Tests', () => {
 
       // Cleanup
       await bucket.deleteIndex(indexName)
-      await client.deleteVectorBucket(bucketName)
+      await client.deleteBucket(bucketName)
     })
   })
 })

@@ -20,11 +20,11 @@ describe('VectorBucketApi Integration Tests', () => {
     client = createTestClient()
   })
 
-  describe('createVectorBucket', () => {
+  describe('createBucket', () => {
     it('should create a new vector bucket successfully', async () => {
       const bucketName = generateTestName('test-bucket')
 
-      const response = await client.createVectorBucket(bucketName)
+      const response = await client.createBucket(bucketName)
 
       assertSuccessResponse(response)
       expect(response.data).toEqual({})
@@ -34,10 +34,10 @@ describe('VectorBucketApi Integration Tests', () => {
       const bucketName = generateTestName('test-bucket')
 
       // Create bucket first time
-      await client.createVectorBucket(bucketName)
+      await client.createBucket(bucketName)
 
       // Try to create again
-      const response = await client.createVectorBucket(bucketName)
+      const response = await client.createBucket(bucketName)
 
       const error = assertErrorResponse(response)
       assertErrorCode(error, 409)
@@ -48,23 +48,23 @@ describe('VectorBucketApi Integration Tests', () => {
       const bucket1 = generateTestName('test-bucket-1')
       const bucket2 = generateTestName('test-bucket-2')
 
-      const response1 = await client.createVectorBucket(bucket1)
-      const response2 = await client.createVectorBucket(bucket2)
+      const response1 = await client.createBucket(bucket1)
+      const response2 = await client.createBucket(bucket2)
 
       assertSuccessResponse(response1)
       assertSuccessResponse(response2)
     })
   })
 
-  describe('getVectorBucket', () => {
+  describe('getBucket', () => {
     it('should retrieve an existing bucket', async () => {
       const bucketName = generateTestName('test-bucket')
 
       // Create bucket
-      await client.createVectorBucket(bucketName)
+      await client.createBucket(bucketName)
 
       // Retrieve bucket
-      const response = await client.getVectorBucket(bucketName)
+      const response = await client.getBucket(bucketName)
 
       const data = assertSuccessResponse(response)
       expect(data.vectorBucket).toBeDefined()
@@ -74,7 +74,7 @@ describe('VectorBucketApi Integration Tests', () => {
     })
 
     it('should return not found error for non-existent bucket', async () => {
-      const response = await client.getVectorBucket('non-existent-bucket')
+      const response = await client.getBucket('non-existent-bucket')
 
       const error = assertErrorResponse(response)
       assertErrorCode(error, 404)
@@ -84,8 +84,8 @@ describe('VectorBucketApi Integration Tests', () => {
     it('should return bucket with encryption configuration if set', async () => {
       const bucketName = generateTestName('test-bucket')
 
-      await client.createVectorBucket(bucketName)
-      const response = await client.getVectorBucket(bucketName)
+      await client.createBucket(bucketName)
+      const response = await client.getBucket(bucketName)
 
       const data = assertSuccessResponse(response)
       // Encryption configuration is optional
@@ -95,15 +95,15 @@ describe('VectorBucketApi Integration Tests', () => {
     })
   })
 
-  describe('listVectorBuckets', () => {
+  describe('listBuckets', () => {
     it('should list all buckets', async () => {
       const bucket1 = generateTestName('test-bucket-1')
       const bucket2 = generateTestName('test-bucket-2')
 
-      await client.createVectorBucket(bucket1)
-      await client.createVectorBucket(bucket2)
+      await client.createBucket(bucket1)
+      await client.createBucket(bucket2)
 
-      const response = await client.listVectorBuckets()
+      const response = await client.listBuckets()
 
       const data = assertSuccessResponse(response)
       expect(data.buckets).toBeDefined()
@@ -121,11 +121,11 @@ describe('VectorBucketApi Integration Tests', () => {
       const bucket2 = `${prefix}-bucket-2`
       const bucket3 = generateTestName('other-bucket')
 
-      await client.createVectorBucket(bucket1)
-      await client.createVectorBucket(bucket2)
-      await client.createVectorBucket(bucket3)
+      await client.createBucket(bucket1)
+      await client.createBucket(bucket2)
+      await client.createBucket(bucket3)
 
-      const response = await client.listVectorBuckets({ prefix })
+      const response = await client.listBuckets({ prefix })
 
       const data = assertSuccessResponse(response)
       expect(data.buckets.length).toBeGreaterThanOrEqual(2)
@@ -142,7 +142,7 @@ describe('VectorBucketApi Integration Tests', () => {
     })
 
     it('should support pagination with maxResults', async () => {
-      const response = await client.listVectorBuckets({ maxResults: 1 })
+      const response = await client.listBuckets({ maxResults: 1 })
 
       const data = assertSuccessResponse(response)
       expect(data.buckets.length).toBeLessThanOrEqual(1)
@@ -154,7 +154,7 @@ describe('VectorBucketApi Integration Tests', () => {
     })
 
     it('should return empty array when no buckets match prefix', async () => {
-      const response = await client.listVectorBuckets({
+      const response = await client.listBuckets({
         prefix: 'non-existent-prefix-' + Date.now(),
       })
 
@@ -164,24 +164,24 @@ describe('VectorBucketApi Integration Tests', () => {
     })
   })
 
-  describe('deleteVectorBucket', () => {
+  describe('deleteBucket', () => {
     it('should delete an empty bucket successfully', async () => {
       const bucketName = generateTestName('test-bucket')
 
-      await client.createVectorBucket(bucketName)
+      await client.createBucket(bucketName)
 
-      const response = await client.deleteVectorBucket(bucketName)
+      const response = await client.deleteBucket(bucketName)
 
       assertSuccessResponse(response)
       expect(response.data).toEqual({})
 
       // Verify bucket is deleted
-      const getResponse = await client.getVectorBucket(bucketName)
+      const getResponse = await client.getBucket(bucketName)
       assertErrorResponse(getResponse)
     })
 
     it('should return not found error for non-existent bucket', async () => {
-      const response = await client.deleteVectorBucket('non-existent-bucket')
+      const response = await client.deleteBucket('non-existent-bucket')
 
       const error = assertErrorResponse(response)
       assertErrorCode(error, 404)
@@ -190,7 +190,7 @@ describe('VectorBucketApi Integration Tests', () => {
     it('should return error when bucket is not empty', async () => {
       const bucketName = generateTestName('test-bucket')
 
-      await client.createVectorBucket(bucketName)
+      await client.createBucket(bucketName)
 
       // Create an index in the bucket
       const bucket = client.from(bucketName)
@@ -202,7 +202,7 @@ describe('VectorBucketApi Integration Tests', () => {
       })
 
       // Try to delete bucket with index
-      const response = await client.deleteVectorBucket(bucketName)
+      const response = await client.deleteBucket(bucketName)
 
       const error = assertErrorResponse(response)
       assertErrorCode(error, 400)
@@ -212,7 +212,7 @@ describe('VectorBucketApi Integration Tests', () => {
     it('should successfully delete bucket after removing all indexes', async () => {
       const bucketName = generateTestName('test-bucket')
 
-      await client.createVectorBucket(bucketName)
+      await client.createBucket(bucketName)
 
       const bucket = client.from(bucketName)
       await bucket.createIndex({
@@ -226,7 +226,7 @@ describe('VectorBucketApi Integration Tests', () => {
       await bucket.deleteIndex('test-index')
 
       // Now delete the bucket
-      const response = await client.deleteVectorBucket(bucketName)
+      const response = await client.deleteBucket(bucketName)
 
       assertSuccessResponse(response)
     })
@@ -236,15 +236,15 @@ describe('VectorBucketApi Integration Tests', () => {
     it('should throw error instead of returning error response', async () => {
       client.throwOnError()
 
-      await expect(client.getVectorBucket('non-existent-bucket')).rejects.toThrow()
+      await expect(client.getBucket('non-existent-bucket')).rejects.toThrow()
     })
 
     it('should still return data on success', async () => {
       const bucketName = generateTestName('test-bucket')
       client.throwOnError()
 
-      await client.createVectorBucket(bucketName)
-      const response = await client.getVectorBucket(bucketName)
+      await client.createBucket(bucketName)
+      const response = await client.getBucket(bucketName)
 
       expect(response.data).toBeDefined()
       expect(response.error).toBeNull()
@@ -255,7 +255,7 @@ describe('VectorBucketApi Integration Tests', () => {
     it('should create a bucket scope successfully', async () => {
       const bucketName = generateTestName('test-bucket')
 
-      await client.createVectorBucket(bucketName)
+      await client.createBucket(bucketName)
 
       const bucketScope = client.from(bucketName)
 

@@ -19,6 +19,12 @@ export default class VectorBucketApi {
   protected fetch: Fetch
   protected shouldThrowOnError = false
 
+  /**
+   * Creates a new VectorBucketApi instance
+   * @param url - The base URL for the storage vectors API
+   * @param headers - HTTP headers to include in requests
+   * @param fetch - Optional custom fetch implementation
+   */
   constructor(url: string, headers: { [key: string]: string } = {}, fetch?: Fetch) {
     this.url = url.replace(/\/$/, '')
     this.headers = { ...DEFAULT_HEADERS, ...headers }
@@ -34,7 +40,7 @@ export default class VectorBucketApi {
    * ```typescript
    * const client = new VectorBucketApi(url, headers)
    * client.throwOnError()
-   * const { data } = await client.createVectorBucket('my-bucket') // throws on error
+   * const { data } = await client.createBucket('my-bucket') // throws on error
    * ```
    */
   public throwOnError(): this {
@@ -56,13 +62,13 @@ export default class VectorBucketApi {
    *
    * @example
    * ```typescript
-   * const { data, error } = await client.createVectorBucket('embeddings-prod')
+   * const { data, error } = await client.createBucket('embeddings-prod')
    * if (error) {
    *   console.error('Failed to create bucket:', error.message)
    * }
    * ```
    */
-  async createVectorBucket(vectorBucketName: string): Promise<ApiResponse<undefined>> {
+  async createBucket(vectorBucketName: string): Promise<ApiResponse<undefined>> {
     try {
       const data = await post(
         this.fetch,
@@ -95,13 +101,13 @@ export default class VectorBucketApi {
    *
    * @example
    * ```typescript
-   * const { data, error } = await client.getVectorBucket('embeddings-prod')
+   * const { data, error } = await client.getBucket('embeddings-prod')
    * if (data) {
    *   console.log('Bucket created at:', new Date(data.vectorBucket.creationTime! * 1000))
    * }
    * ```
    */
-  async getVectorBucket(
+  async getBucket(
     vectorBucketName: string
   ): Promise<ApiResponse<{ vectorBucket: VectorBucket }>> {
     try {
@@ -139,17 +145,17 @@ export default class VectorBucketApi {
    * @example
    * ```typescript
    * // List all buckets with prefix 'prod-'
-   * const { data, error } = await client.listVectorBuckets({ prefix: 'prod-' })
+   * const { data, error } = await client.listBuckets({ prefix: 'prod-' })
    * if (data) {
    *   console.log('Found buckets:', data.buckets.length)
    *   // Fetch next page if available
    *   if (data.nextToken) {
-   *     const next = await client.listVectorBuckets({ nextToken: data.nextToken })
+   *     const next = await client.listBuckets({ nextToken: data.nextToken })
    *   }
    * }
    * ```
    */
-  async listVectorBuckets(
+  async listBuckets(
     options: ListVectorBucketsOptions = {}
   ): Promise<ApiResponse<ListVectorBucketsResponse>> {
     try {
@@ -183,13 +189,13 @@ export default class VectorBucketApi {
    * @example
    * ```typescript
    * // Delete all indexes first, then delete bucket
-   * const { error } = await client.deleteVectorBucket('old-bucket')
+   * const { error } = await client.deleteBucket('old-bucket')
    * if (error?.statusCode === 'S3VectorBucketNotEmpty') {
    *   console.error('Must delete all indexes first')
    * }
    * ```
    */
-  async deleteVectorBucket(vectorBucketName: string): Promise<ApiResponse<undefined>> {
+  async deleteBucket(vectorBucketName: string): Promise<ApiResponse<undefined>> {
     try {
       const data = await post(
         this.fetch,

@@ -123,7 +123,7 @@ Specialized buckets for storing and querying high-dimensional vector embeddings.
 
 ```js
 // Create vector bucket
-await storageClient.vectors.createVectorBucket('embeddings-prod')
+await storageClient.vectors.createBucket('embeddings-prod')
 
 // Create index and insert vectors
 const bucket = storageClient.vectors.from('embeddings-prod')
@@ -638,7 +638,7 @@ const supabase = createClient(
 const vectors = supabase.storage.vectors
 
 // Create a vector bucket
-await vectors.createVectorBucket('embeddings-prod')
+await vectors.createBucket('embeddings-prod')
 
 // Create an index
 const bucket = vectors.from('embeddings-prod')
@@ -693,7 +693,7 @@ const storageClient = new StorageClient('https://your-project.supabase.co/storag
 const vectors = storageClient.vectors
 
 // Use the same API as shown in Option 1
-await vectors.createVectorBucket('embeddings-prod')
+await vectors.createBucket('embeddings-prod')
 const bucket = vectors.from('embeddings-prod')
 // ... rest of operations
 ```
@@ -711,7 +711,7 @@ const vectorClient = new StorageVectorsClient('https://your-project.supabase.co/
 })
 
 // Use the same API as shown in Option 1
-await vectorClient.createVectorBucket('embeddings-prod')
+await vectorClient.createBucket('embeddings-prod')
 const bucket = vectorClient.from('embeddings-prod')
 // ... rest of operations
 ```
@@ -742,27 +742,27 @@ Vector buckets are top-level containers for organizing vector indexes.
 ##### Create Bucket
 
 ```typescript
-const { data, error } = await vectorClient.createVectorBucket('my-bucket')
+const { data, error } = await vectorClient.createBucket('my-bucket')
 ```
 
 ##### Get Bucket
 
 ```typescript
-const { data, error } = await vectorClient.getVectorBucket('my-bucket')
+const { data, error } = await vectorClient.getBucket('my-bucket')
 console.log('Created at:', new Date(data.vectorBucket.creationTime! * 1000))
 ```
 
 ##### List Buckets
 
 ```typescript
-const { data, error } = await vectorClient.listVectorBuckets({
+const { data, error } = await vectorClient.listBuckets({
   prefix: 'prod-',
   maxResults: 100,
 })
 
 // Pagination
 if (data?.nextToken) {
-  const next = await vectorClient.listVectorBuckets({ nextToken: data.nextToken })
+  const next = await vectorClient.listBuckets({ nextToken: data.nextToken })
 }
 ```
 
@@ -770,7 +770,7 @@ if (data?.nextToken) {
 
 ```typescript
 // Bucket must be empty (all indexes deleted first)
-const { error } = await vectorClient.deleteVectorBucket('my-bucket')
+const { error } = await vectorClient.deleteBucket('my-bucket')
 ```
 
 #### Vector Indexes
@@ -947,7 +947,7 @@ await index.deleteVectors({
 The library uses a consistent error handling pattern:
 
 ```typescript
-const { data, error } = await vectorClient.createVectorBucket('my-bucket')
+const { data, error } = await vectorClient.createBucket('my-bucket')
 
 if (error) {
   console.error('Error:', error.message)
@@ -976,7 +976,7 @@ const vectorClient = new StorageVectorsClient(url, options)
 vectorClient.throwOnError()
 
 try {
-  const { data } = await vectorClient.createVectorBucket('my-bucket')
+  const { data } = await vectorClient.createBucket('my-bucket')
   // data is guaranteed to be present
 } catch (error) {
   if (error instanceof StorageVectorsApiError) {

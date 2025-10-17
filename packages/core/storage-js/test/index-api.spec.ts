@@ -20,7 +20,7 @@ describe('VectorIndexApi Integration Tests', () => {
     setupTest()
     client = createTestClient()
     testBucket = generateTestName('test-bucket')
-    await client.createVectorBucket(testBucket)
+    await client.createBucket(testBucket)
   })
 
   describe('createIndex', () => {
@@ -323,7 +323,7 @@ describe('VectorIndexApi Integration Tests', () => {
 
     it('should return empty array when no indexes exist', async () => {
       const emptyBucket = generateTestName('empty-bucket')
-      await client.createVectorBucket(emptyBucket)
+      await client.createBucket(emptyBucket)
 
       const bucket = client.from(emptyBucket)
       const response = await bucket.listIndexes()

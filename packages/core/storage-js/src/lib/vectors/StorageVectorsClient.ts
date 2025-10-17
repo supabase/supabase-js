@@ -40,7 +40,7 @@ export interface StorageVectorsClientOptions {
  * const vectors = storageClient.vectors
  *
  * // Use vector operations
- * await vectors.createVectorBucket('embeddings-prod')
+ * await vectors.createBucket('embeddings-prod')
  * const bucket = vectors.from('embeddings-prod')
  * await bucket.createIndex({ ... })
  * ```
@@ -49,15 +49,15 @@ export interface StorageVectorsClientOptions {
  * ```typescript
  * import { StorageVectorsClient } from '@supabase/storage-js'
  *
- * const client = new StorageVectorsClient('https://api.example.com', {
+ * const vectorsClient = new StorageVectorsClient('https://api.example.com', {
  *   headers: { 'Authorization': 'Bearer token' }
  * })
  *
  * // Access bucket operations
- * await client.createVectorBucket('embeddings-prod')
+ * await vectorsClient.createBucket('embeddings-prod')
  *
  * // Access index operations via buckets
- * const bucket = client.from('embeddings-prod')
+ * const bucket = vectorsClient.from('embeddings-prod')
  * await bucket.createIndex({
  *   indexName: 'documents',
  *   dataType: 'float32',
