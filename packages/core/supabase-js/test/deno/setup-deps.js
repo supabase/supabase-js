@@ -46,7 +46,7 @@ try {
 }
 
 // Paths to workspace packages (not published to npm or need local builds)
-const storageVectorsPath = path.join(monorepoRoot, 'packages/integrations/storage-vectors-js/dist/index.js')
+const storageVectorsPath = path.join(monorepoRoot, 'packages/integrations/storage-vectors-js/dist/module/index.js')
 const storageVectorsUrl = `file://${storageVectorsPath}`
 
 const storageJsPath = path.join(monorepoRoot, 'packages/core/storage-js/dist/module/index.js')
