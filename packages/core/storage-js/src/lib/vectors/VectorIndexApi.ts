@@ -1,4 +1,4 @@
-import { DEFAULT_HEADERS } from './constants'
+import { DEFAULT_HEADERS } from '../constants'
 import { isStorageVectorsError } from './errors'
 import { Fetch, post } from './fetch'
 import { resolveFetch } from './helpers'

@@ -17,9 +17,6 @@
     },
     {
       "path": "./packages/core/auth-js"
-    },
-    {
-      "path": "./packages/integrations/storage-vectors-js"
     }
   ]
 }

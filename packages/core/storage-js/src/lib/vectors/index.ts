@@ -1,16 +1,12 @@
 // Main client
-export {
-  StorageVectorsClient,
-  VectorBucketScope,
-  VectorIndexScope,
-} from './lib/StorageVectorsClient'
-export type { StorageVectorsClientOptions } from './lib/StorageVectorsClient'
+export { StorageVectorsClient, VectorBucketScope, VectorIndexScope } from './StorageVectorsClient'
+export type { StorageVectorsClientOptions } from './StorageVectorsClient'
 
 // API classes (for advanced usage)
-export { default as VectorBucketApi } from './lib/VectorBucketApi'
-export { default as VectorIndexApi } from './lib/VectorIndexApi'
-export { default as VectorDataApi } from './lib/VectorDataApi'
-export type { CreateIndexOptions } from './lib/VectorIndexApi'
+export { default as VectorBucketApi } from './VectorBucketApi'
+export { default as VectorIndexApi } from './VectorIndexApi'
+export { default as VectorDataApi } from './VectorDataApi'
+export type { CreateIndexOptions } from './VectorIndexApi'
 
 // Types
 export type {
@@ -46,7 +42,7 @@ export type {
   SuccessResponse,
   ErrorResponse,
   VectorFetchParameters,
-} from './lib/types'
+} from './types'
 
 // Errors
 export {
@@ -55,10 +51,10 @@ export {
   StorageVectorsUnknownError,
   StorageVectorsErrorCode,
   isStorageVectorsError,
-} from './lib/errors'
+} from './errors'
 
 // Fetch utilities (for custom implementations)
-export type { Fetch, FetchOptions, RequestMethodType } from './lib/fetch'
+export type { Fetch, FetchOptions, RequestMethodType } from './fetch'
 
 // Helper utilities
 export {
@@ -67,7 +63,4 @@ export {
   isPlainObject,
   normalizeToFloat32,
   validateVectorDimension,
-} from './lib/helpers'
-
-// Constants
-export { DEFAULT_HEADERS } from './lib/constants'
+} from './helpers'

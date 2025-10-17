@@ -80,12 +80,6 @@
         "dependsOn": [
           {
             "projects": [
-              "storage-vectors-js"
-            ],
-            "target": "build"
-          },
-          {
-            "projects": [
               "storage-js"
             ],
             "target": "build"
@@ -94,12 +88,6 @@
       },
       "test:edge-functions": {
         "dependsOn": [
-          {
-            "projects": [
-              "storage-vectors-js"
-            ],
-            "target": "build"
-          },
           {
             "projects": [
               "storage-js"

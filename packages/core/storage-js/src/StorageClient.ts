@@ -2,7 +2,7 @@ import StorageFileApi from './packages/StorageFileApi'
 import StorageBucketApi from './packages/StorageBucketApi'
 import StorageAnalyticsApi from './packages/StorageAnalyticsApi'
 import { Fetch } from './lib/fetch'
-import { StorageVectorsClient } from '@supabase/storage-vectors-js'
+import { StorageVectorsClient } from './lib/vectors'
 
 export interface StorageClientOptions {
   useNewHostname?: boolean

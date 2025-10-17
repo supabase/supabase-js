@@ -27,6 +27,7 @@
 [![Package](https://img.shields.io/npm/v/@supabase/storage-js)](https://www.npmjs.com/package/@supabase/storage-js)
 [![License: MIT](https://img.shields.io/npm/l/@supabase/supabase-js)](#license)
 [![pkg.pr.new](https://pkg.pr.new/badge/supabase/storage-js)](https://pkg.pr.new/~/supabase/storage-js)
+
 </div>
 
 ## Features
@@ -276,6 +277,7 @@ const bucket = vectorClient.from('embeddings-prod')
 ```
 
 > **When to use each pattern:**
+>
 > - Use `storageClient.vectors` when working with both files and vectors in the same application
 > - Use `new StorageVectorsClient()` for applications that only need vector operations without file storage
 

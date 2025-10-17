@@ -16,9 +16,5 @@
   },
   "include": ["src/**/*.ts"],
   "exclude": ["src/**/*.spec.ts", "src/**/*.test.ts"],
-  "references": [
-    {
-      "path": "../../integrations/storage-vectors-js/tsconfig.lib.json"
-    }
-  ]
+  "references": []
 }
