@@ -156,9 +156,3 @@ The Docker setup includes:
 We welcome contributions! Please see our [Contributing Guide](../../../CONTRIBUTING.md) for details on how to get started.
 
 For major changes or if you're unsure about something, please open an issue first to discuss your proposed changes.
-
-## Sponsors
-
-We are building the features of Firebase using enterprise-grade, open source products. We support existing communities wherever possible, and if the products don't exist we build them and open source them ourselves.
-
-[![New Sponsor](https://user-images.githubusercontent.com/10214025/90518111-e74bbb00-e198-11ea-8f88-c9e3c1aa4b5b.png)](https://github.com/sponsors/supabase)
