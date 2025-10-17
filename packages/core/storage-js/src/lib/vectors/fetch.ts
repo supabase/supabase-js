@@ -40,19 +40,39 @@ const handleError = async (
   reject: (reason?: any) => void,
   options?: FetchOptions
 ) => {
-  const Res = await resolveResponse()
+  // Check if error is a Response-like object (has status and ok properties)
+  // This is more reliable than instanceof which can fail across realms
+  const isResponseLike =
+    error &&
+    typeof error === 'object' &&
+    'status' in error &&
+    'ok' in error &&
+    typeof (error as any).status === 'number'
 
-  if (error instanceof Res && !options?.noResolveJson) {
-    error
-      .json()
-      .then((err: any) => {
-        const status = error.status || 500
-        const statusCode = err?.statusCode || err?.code || status + ''
-        reject(new StorageVectorsApiError(_getErrorMessage(err), status, statusCode))
-      })
-      .catch((err: any) => {
-        reject(new StorageVectorsUnknownError(_getErrorMessage(err), err))
-      })
+  if (isResponseLike && !options?.noResolveJson) {
+    const status = (error as any).status || 500
+    const responseError = error as any
+
+    // Try to parse JSON body if available
+    if (typeof responseError.json === 'function') {
+      responseError
+        .json()
+        .then((err: any) => {
+          const statusCode = err?.statusCode || err?.code || status + ''
+          reject(new StorageVectorsApiError(_getErrorMessage(err), status, statusCode))
+        })
+        .catch(() => {
+          // If JSON parsing fails, create an ApiError with the HTTP status code
+          const statusCode = status + ''
+          const message = responseError.statusText || `HTTP ${status} error`
+          reject(new StorageVectorsApiError(message, status, statusCode))
+        })
+    } else {
+      // No json() method available, create error from status
+      const statusCode = status + ''
+      const message = responseError.statusText || `HTTP ${status} error`
+      reject(new StorageVectorsApiError(message, status, statusCode))
+    }
   } else {
     reject(new StorageVectorsUnknownError(_getErrorMessage(error), error))
   }

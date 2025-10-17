@@ -184,7 +184,7 @@ describe('VectorBucketApi Integration Tests', () => {
       const response = await client.deleteVectorBucket('non-existent-bucket')
 
       const error = assertErrorResponse(response)
-      assertErrorCode(error, 409)
+      assertErrorCode(error, 404)
     })
 
     it('should return error when bucket is not empty', async () => {
@@ -205,7 +205,7 @@ describe('VectorBucketApi Integration Tests', () => {
       const response = await client.deleteVectorBucket(bucketName)
 
       const error = assertErrorResponse(response)
-      assertErrorCode(error, 409)
+      assertErrorCode(error, 400)
       expect(error.message).toContain('not empty')
     })
 

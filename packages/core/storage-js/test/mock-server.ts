@@ -172,7 +172,13 @@ const storage = new MockStorage()
  */
 export function createMockFetch(): Fetch {
   return async (input: string | URL | Request, init?: RequestInit): Promise<Response> => {
-    const url = input instanceof Request ? input.url : input
+    // Handle different input types safely without assuming Request constructor exists
+    const url =
+      typeof input === 'string'
+        ? input
+        : input instanceof URL
+          ? input.toString()
+          : (input as any).url || String(input)
     const urlStr = url.toString()
     const endpoint = urlStr.split('/').pop() || ''
     const body = init?.body ? JSON.parse(init.body as string) : {}
@@ -195,12 +201,30 @@ export function createMockFetch(): Fetch {
 
     // Create mock Response object
     const responseBody = JSON.stringify(response.error || response.data || {})
-    return new Response(responseBody, {
+
+    // Check if Response constructor is available (Node 18+, modern browsers)
+    if (typeof Response !== 'undefined') {
+      return new Response(responseBody, {
+        status: response.status,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      }) as any
+    }
+
+    // Fallback: Create a minimal Response-like object for older environments
+    const mockResponse: any = {
+      ok: response.status >= 200 && response.status < 300,
       status: response.status,
+      statusText: response.status === 200 ? 'OK' : 'Error',
       headers: {
-        'Content-Type': 'application/json',
+        get: (key: string) => (key.toLowerCase() === 'content-type' ? 'application/json' : null),
       },
-    }) as any
+      json: async () => JSON.parse(responseBody),
+      text: async () => responseBody,
+    }
+
+    return mockResponse as Response
   }
 }
 
@@ -324,7 +348,7 @@ function handleDeleteBucket(body: any): MockResponse {
     return {
       status: 404,
       error: {
-        statusCode: 409,
+        statusCode: 404,
         error: 'Not Found',
         message: `Bucket '${vectorBucketName}' not found`,
       },
@@ -336,7 +360,7 @@ function handleDeleteBucket(body: any): MockResponse {
     return {
       status: 400,
       error: {
-        statusCode: 409,
+        statusCode: 400,
         error: 'Bad Request',
         message: `Bucket '${vectorBucketName}' is not empty`,
       },
@@ -355,7 +379,7 @@ function handleCreateIndex(body: any): MockResponse {
     return {
       status: 404,
       error: {
-        statusCode: 409,
+        statusCode: 404,
         error: 'Not Found',
         message: `Bucket '${vectorBucketName}' not found`,
       },
@@ -388,7 +412,7 @@ function handleGetIndex(body: any): MockResponse {
     return {
       status: 404,
       error: {
-        statusCode: 409,
+        statusCode: 404,
         error: 'Not Found',
         message: `Bucket '${vectorBucketName}' not found`,
       },
@@ -400,7 +424,7 @@ function handleGetIndex(body: any): MockResponse {
     return {
       status: 404,
       error: {
-        statusCode: 409,
+        statusCode: 404,
         error: 'Not Found',
         message: `Index '${indexName}' not found`,
       },
@@ -420,7 +444,7 @@ function handleListIndexes(body: any): MockResponse {
     return {
       status: 404,
       error: {
-        statusCode: 409,
+        statusCode: 404,
         error: 'Not Found',
         message: `Bucket '${vectorBucketName}' not found`,
       },
@@ -445,7 +469,7 @@ function handleDeleteIndex(body: any): MockResponse {
     return {
       status: 404,
       error: {
-        statusCode: 409,
+        statusCode: 404,
         error: 'Not Found',
         message: `Bucket '${vectorBucketName}' not found`,
       },
@@ -456,7 +480,7 @@ function handleDeleteIndex(body: any): MockResponse {
     return {
       status: 404,
       error: {
-        statusCode: 409,
+        statusCode: 404,
         error: 'Not Found',
         message: `Index '${indexName}' not found`,
       },
@@ -608,7 +632,7 @@ function handleQueryVectors(body: any): MockResponse {
     return {
       status: 404,
       error: {
-        statusCode: 409,
+        statusCode: 404,
         error: 'Not Found',
         message: `Bucket '${vectorBucketName}' not found`,
       },
