@@ -3,7 +3,7 @@
   "compilerOptions": {
     "baseUrl": ".",
     "rootDir": "src",
-    "outDir": "dist",
+    "outDir": "dist/main",
     "target": "ES2017",
     "module": "CommonJS",
     "moduleResolution": "Node",

@@ -30,9 +30,24 @@ export interface StorageVectorsClientOptions {
  * Main client for interacting with S3 Vectors API
  * Provides access to bucket, index, and vector data operations
  *
- * @example
+ * **Usage Patterns:**
+ *
+ * 1. **Via StorageClient (recommended for most use cases):**
  * ```typescript
- * import { StorageVectorsClient } from '@supabase/storage'
+ * import { StorageClient } from '@supabase/storage-js'
+ *
+ * const storageClient = new StorageClient(url, headers)
+ * const vectors = storageClient.vectors
+ *
+ * // Use vector operations
+ * await vectors.createVectorBucket('embeddings-prod')
+ * const bucket = vectors.from('embeddings-prod')
+ * await bucket.createIndex({ ... })
+ * ```
+ *
+ * 2. **Standalone (for vector-only applications):**
+ * ```typescript
+ * import { StorageVectorsClient } from '@supabase/storage-js'
  *
  * const client = new StorageVectorsClient('https://api.example.com', {
  *   headers: { 'Authorization': 'Bearer token' }
@@ -42,7 +57,7 @@ export interface StorageVectorsClientOptions {
  * await client.createVectorBucket('embeddings-prod')
  *
  * // Access index operations via buckets
- * const bucket = client.bucket('embeddings-prod')
+ * const bucket = client.from('embeddings-prod')
  * await bucket.createIndex({
  *   indexName: 'documents',
  *   dataType: 'float32',

@@ -202,19 +202,26 @@ Supabase Storage provides built-in support for storing and querying high-dimensi
 
 ### Quick Start
 
-```typescript
-import { StorageVectorsClient } from '@supabase/storage-js'
+#### Using with StorageClient (Recommended)
 
-// Initialize client
-const vectorClient = new StorageVectorsClient('https://your-project.supabase.co/storage/v1', {
-  headers: { Authorization: 'Bearer YOUR_TOKEN' },
+If you already have a `StorageClient` instance for regular file operations, access vector functionality through the `vectors` property:
+
+```typescript
+import { StorageClient } from '@supabase/storage-js'
+
+const storageClient = new StorageClient('https://your-project.supabase.co/storage/v1', {
+  apikey: 'YOUR_API_KEY',
+  Authorization: 'Bearer YOUR_TOKEN',
 })
 
+// Access vector operations
+const vectors = storageClient.vectors
+
 // Create a vector bucket
-await vectorClient.createVectorBucket('embeddings-prod')
+await vectors.createVectorBucket('embeddings-prod')
 
 // Create an index
-const bucket = vectorClient.from('embeddings-prod')
+const bucket = vectors.from('embeddings-prod')
 await bucket.createIndex({
   indexName: 'documents-openai',
   dataType: 'float32',
@@ -249,6 +256,28 @@ if (data) {
   })
 }
 ```
+
+#### Standalone Usage
+
+For vector-only applications that don't need regular file storage operations, you can create a dedicated vector client:
+
+```typescript
+import { StorageVectorsClient } from '@supabase/storage-js'
+
+// Initialize standalone vector client
+const vectorClient = new StorageVectorsClient('https://your-project.supabase.co/storage/v1', {
+  headers: { Authorization: 'Bearer YOUR_TOKEN' },
+})
+
+// Use the same API as shown above
+await vectorClient.createVectorBucket('embeddings-prod')
+const bucket = vectorClient.from('embeddings-prod')
+// ... rest of operations
+```
+
+> **When to use each pattern:**
+> - Use `storageClient.vectors` when working with both files and vectors in the same application
+> - Use `new StorageVectorsClient()` for applications that only need vector operations without file storage
 
 ### API Reference
 
