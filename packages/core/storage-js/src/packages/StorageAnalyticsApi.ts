@@ -14,6 +14,12 @@ export default class StorageAnalyticsApi {
   protected fetch: Fetch
   protected shouldThrowOnError = false
 
+  /**
+   * Creates a new StorageAnalyticsApi instance
+   * @param url - The base URL for the storage API
+   * @param headers - HTTP headers to include in requests
+   * @param fetch - Optional custom fetch implementation
+   */
   constructor(url: string, headers: { [key: string]: string } = {}, fetch?: Fetch) {
     this.url = url.replace(/\/$/, '')
     this.headers = { ...DEFAULT_HEADERS, ...headers }

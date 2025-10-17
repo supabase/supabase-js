@@ -49,7 +49,7 @@ export class StorageClient extends StorageBucketApi {
    * const analytics = client.storage.analytics
    *
    * // Create an analytics bucket
-   * await analytics.createBucket('my-analytics-bucket', { public: false })
+   * await analytics.createBucket('my-analytics-bucket')
    *
    * // List all analytics buckets
    * const { data: buckets } = await analytics.listBuckets()
