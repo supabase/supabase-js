@@ -26,7 +26,7 @@ import {
   OAuthClientResponse,
   OAuthClientListResponse,
 } from './lib/types'
-import { AuthError, isAuthError } from './lib/errors'
+import { AuthError, isAuthError, AuthApiError } from './lib/errors'
 
 export default class GoTrueAdminApi {
   /** Contains all MFA administration methods. */
@@ -194,15 +194,23 @@ export default class GoTrueAdminApi {
    * Get a list of users.
    *
    * This function should only be called on a server. Never expose your `service_role` key in the browser.
-   * @param params An object which supports `page` and `perPage` as numbers, to alter the paginated results.
+   * @param params An object which supports `page` and `perPage` as numbers, to alter the paginated results,
+   * and `filter` string to search for users by email address.
+   *
+   * @warning The filter parameter is provided for convenience but may have performance implications on large databases.
+   * Consider using pagination without filters for projects with many users.
    */
+
   async listUsers(
-    params?: PageParams
+    params?: PageParams & { filter?: string }
   ): Promise<
     | { data: { users: User[]; aud: string } & Pagination; error: null }
     | { data: { users: [] }; error: AuthError }
   > {
     try {
+      if (params?.filter && params.filter.trim().length < 3) {
+        throw new AuthApiError('Filter must be at least 3 characters', 400, 'invalid_request')
+      }
       const pagination: Pagination = { nextPage: null, lastPage: 0, total: 0 }
       const response = await _request(this.fetch, 'GET', `${this.url}/admin/users`, {
         headers: this.headers,
@@ -210,6 +218,7 @@ export default class GoTrueAdminApi {
         query: {
           page: params?.page?.toString() ?? '',
           per_page: params?.perPage?.toString() ?? '',
+          ...(params?.filter ? { filter: params.filter } : {}),
         },
         xform: _noResolveJsonResponse,
       })
@@ -220,8 +229,13 @@ export default class GoTrueAdminApi {
       const links = response.headers.get('link')?.split(',') ?? []
       if (links.length > 0) {
         links.forEach((link: string) => {
-          const page = parseInt(link.split(';')[0].split('=')[1].substring(0, 1))
-          const rel = JSON.parse(link.split(';')[1].split('=')[1])
+          const [urlPart, relPart] = link.split(';').map((part) => part.trim())
+          const url = urlPart.slice(1, -1) // Remove the leading "</" and trailing ">"
+
+          const searchParams = new URLSearchParams(url.split('?')[1])
+          const page = parseInt(searchParams.get('page') || '1', 10)
+          const rel = relPart.split('=')[1].replace(/"/g, '')
+
           pagination[`${rel}Page`] = page
         })
 
@@ -414,9 +428,7 @@ export default class GoTrueAdminApi {
    *
    * This function should only be called on a server. Never expose your `service_role` key in the browser.
    */
-  private async _createOAuthClient(
-    params: CreateOAuthClientParams
-  ): Promise<OAuthClientResponse> {
+  private async _createOAuthClient(params: CreateOAuthClientParams): Promise<OAuthClientResponse> {
     try {
       return await _request(this.fetch, 'POST', `${this.url}/admin/oauth/clients`, {
         body: params,
@@ -465,17 +477,12 @@ export default class GoTrueAdminApi {
    */
   private async _deleteOAuthClient(clientId: string): Promise<OAuthClientResponse> {
     try {
-      return await _request(
-        this.fetch,
-        'DELETE',
-        `${this.url}/admin/oauth/clients/${clientId}`,
-        {
-          headers: this.headers,
-          xform: (client: any) => {
-            return { data: client, error: null }
-          },
-        }
-      )
+      return await _request(this.fetch, 'DELETE', `${this.url}/admin/oauth/clients/${clientId}`, {
+        headers: this.headers,
+        xform: (client: any) => {
+          return { data: client, error: null }
+        },
+      })
     } catch (error) {
       if (isAuthError(error)) {
         return { data: null, error }
