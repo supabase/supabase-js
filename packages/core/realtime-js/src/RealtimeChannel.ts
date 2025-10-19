@@ -591,7 +591,7 @@ export default class RealtimeChannel {
       throw `tried to push '${event}' to '${this.topic}' before joining. Use channel.subscribe() before pushing events`
     }
 
-    var pushEvent = new Push(this, event, payload, timeout)
+    let pushEvent = new Push(this, event, payload, timeout)
 
     if (this._canPush()) {
       pushEvent.send()

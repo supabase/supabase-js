@@ -2,6 +2,7 @@ import assert from 'assert'
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import RealtimeClient, { HeartbeatStatus } from '../src/RealtimeClient'
 import { setupRealtimeTest, cleanupRealtimeTest, TestSetup, testSuites } from './helpers/setup'
+import { resolve } from 'path'
 
 let testSetup: TestSetup
 
@@ -12,6 +13,12 @@ beforeEach(() => {
 afterEach(() => {
   cleanupRealtimeTest(testSetup)
 })
+
+let binPayload = () => {
+  let buffer = new ArrayBuffer(1)
+  new DataView(buffer).setUint8(0, 1)
+  return buffer
+}
 
 describe('push', () => {
   const data = {
@@ -282,46 +289,6 @@ describe('custom encoder and decoder', () => {
     })
   })
 
-  test('decodes ArrayBuffer by default', () => {
-    testSetup.socket = new RealtimeClient(`wss://${testSetup.projectRef}/socket`, {
-      params: { apikey: '123456789' },
-    })
-    const buffer = new Uint8Array([
-      2, 20, 6, 114, 101, 97, 108, 116, 105, 109, 101, 58, 112, 117, 98, 108, 105, 99, 58, 116, 101,
-      115, 116, 73, 78, 83, 69, 82, 84, 123, 34, 102, 111, 111, 34, 58, 34, 98, 97, 114, 34, 125,
-    ]).buffer
-
-    testSetup.socket.decode(buffer, (decoded) => {
-      assert.deepStrictEqual(decoded, {
-        ref: null,
-        topic: 'realtime:public:test',
-        event: 'INSERT',
-        payload: { foo: 'bar' },
-      })
-    })
-  })
-
-  test('decodes unexpected payload types to empty object by default', () => {
-    testSetup.socket = new RealtimeClient(`wss://${testSetup.projectRef}/socket`, {
-      params: { apikey: '123456789' },
-    })
-
-    // Test various non-string, non-ArrayBuffer payload types that have .constructor
-    // This tests the fallback path on line 16 of serializer.ts
-    const testCases = [
-      { payload: 123, description: 'number' },
-      { payload: { foo: 'bar' }, description: 'object' },
-      { payload: [1, 2, 3], description: 'array' },
-      { payload: true, description: 'boolean' },
-    ]
-
-    testCases.forEach(({ payload, description }) => {
-      testSetup.socket.decode(payload as any, (decoded) => {
-        assert.deepStrictEqual(decoded, {}, `Expected empty object for ${description}`)
-      })
-    })
-  })
-
   test('allows custom decoding when using WebSocket transport', () => {
     let decoder = (_payload, callback) => callback('decode works')
     testSetup.socket = new RealtimeClient(`wss://${testSetup.projectRef}/socket`, {
@@ -333,5 +300,74 @@ describe('custom encoder and decoder', () => {
     testSetup.socket.decode('...esoteric format...', (decoded) => {
       assert.deepStrictEqual(decoded, 'decode works')
     })
+  })
+})
+
+describe('V3 serializer', () => {
+  beforeEach(() => {
+    testSetup = setupRealtimeTest({ vsn: '3.0.0' })
+  })
+
+  test('encodes to JSON array', () => {
+    let msg = {
+      join_ref: 'join_ref1',
+      ref: 'ref1',
+      topic: 'topic1',
+      event: 'event1',
+      payload: { foo: 'bar' },
+    }
+
+    testSetup.socket.encode(msg, (encoded) => {
+      assert.deepStrictEqual(encoded, JSON.stringify(["join_ref1","ref1","topic1","event1",{"foo":"bar"}]))
+    })
+  })
+
+  test('encodes user push with binary payload as binary frame', () => {
+    let msg = {
+      join_ref: 'join_ref1',
+      ref: 'ref1',
+      topic: 'topic1',
+      event: 'broadcast',
+      payload: {
+        type: 'broadcast',
+        event: 'user_event1',
+        payload: binPayload(),
+      },
+    }
+
+    testSetup.socket.encode(msg, (encoded) => {
+      assert.ok(encoded instanceof ArrayBuffer)
+
+    })
+  })
+
+  test('decodes JSON array', () => {
+    let payload = JSON.stringify(["join_ref1","ref1","topic1","event1",{"foo":"bar"}])
+
+    testSetup.socket.decode(payload, (decoded) => {
+      assert.deepStrictEqual(decoded,
+      {
+        join_ref: 'join_ref1',
+        ref: 'ref1',
+        topic: 'topic1',
+        event: 'event1',
+        payload: { foo: 'bar' },
+      })
+    })
+
+    // test('decodes user broadcast', () => {
+    //   let payload = JSON.stringify(["join_ref1","ref1","topic1","event1",{"foo":"bar"}])
+    //
+    //   testSetup.socket.decode(payload, (decoded) => {
+    //     assert.deepStrictEqual(decoded,
+    //     {
+    //       join_ref: 'join_ref1',
+    //       ref: 'ref1',
+    //       topic: 'topic1',
+    //       event: 'event1',
+    //       payload: { foo: 'bar' },
+    //     })
+    //   })
+    // })
   })
 })

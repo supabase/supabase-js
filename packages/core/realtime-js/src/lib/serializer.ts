@@ -2,7 +2,7 @@
 // License: https://github.com/phoenixframework/phoenix/blob/master/LICENSE.md
 import { CHANNEL_EVENTS } from '../lib/constants'
 
-type Msg<T> = {
+export type Msg<T> = {
   join_ref: string
   ref: string
   topic: string
@@ -12,25 +12,61 @@ type Msg<T> = {
 
 export default class Serializer {
   HEADER_LENGTH = 1
-  META_LENGTH = 6
+  META_LENGTH = 4
+  USER_PUSH_META_LENGTH = 6
   KINDS = { push: 0, reply: 1, broadcast: 2, userPush: 3, userBroadcast: 4 }
   BINARY_ENCODING = 0
   JSON_ENCODING = 1
   BROADCAST = 'broadcast'
-
-  encode(msg: Msg<{ [key: string]: any }>, callback: Function) {
-    if (msg.event === this.BROADCAST && typeof msg.payload?.event === 'string') {
-      console.log('Encoding binary frame', msg)
-      return callback(this._binaryEncode(msg as Msg<{ event: string } & { [key: string]: any }>))
+  encode(
+    msg: Msg<{ [key: string]: any } | ArrayBuffer>,
+    callback: (result: ArrayBuffer | string) => any
+  ) {
+    if (this._isArrayBuffer(msg.payload)) {
+      return callback(this._binaryEncodePush(msg as Msg<ArrayBuffer>))
     }
 
-    console.log('Encoding text frame', msg)
+    if (
+      msg.event === this.BROADCAST &&
+      !(msg.payload instanceof ArrayBuffer) &&
+      typeof msg.payload.event === 'string'
+    ) {
+      return callback(
+        this._binaryEncodeUserPush(msg as Msg<{ event: string } & { [key: string]: any }>)
+      )
+    }
+
     let payload = [msg.join_ref, msg.ref, msg.topic, msg.event, msg.payload]
     return callback(JSON.stringify(payload))
   }
 
-  private _binaryEncode(message: Msg<{ event: string } & { [key: string]: any }>) {
-    if (message.payload?.payload?.constructor === ArrayBuffer) {
+  private _binaryEncodePush(message: Msg<ArrayBuffer>) {
+    const { join_ref, ref, event, topic, payload } = message
+    const metaLength = this.META_LENGTH + join_ref.length + ref.length + topic.length + event.length
+
+    const header = new ArrayBuffer(this.HEADER_LENGTH + metaLength)
+    let view = new DataView(header)
+    let offset = 0
+
+    view.setUint8(offset++, this.KINDS.push) // kind
+    view.setUint8(offset++, join_ref.length)
+    view.setUint8(offset++, ref.length)
+    view.setUint8(offset++, topic.length)
+    view.setUint8(offset++, event.length)
+    Array.from(join_ref, (char) => view.setUint8(offset++, char.charCodeAt(0)))
+    Array.from(ref, (char) => view.setUint8(offset++, char.charCodeAt(0)))
+    Array.from(topic, (char) => view.setUint8(offset++, char.charCodeAt(0)))
+    Array.from(event, (char) => view.setUint8(offset++, char.charCodeAt(0)))
+
+    var combined = new Uint8Array(header.byteLength + payload.byteLength)
+    combined.set(new Uint8Array(header), 0)
+    combined.set(new Uint8Array(payload), header.byteLength)
+
+    return combined.buffer
+  }
+
+  private _binaryEncodeUserPush(message: Msg<{ event: string } & { [key: string]: any }>) {
+    if (this._isArrayBuffer(message.payload?.payload)) {
       return this._encodeBinaryPush(message)
     } else {
       return this._encodeJsonPush(message)
@@ -38,12 +74,12 @@ export default class Serializer {
   }
 
   private _encodeBinaryPush(message: Msg<{ event: string } & { [key: string]: any }>) {
-    const { join_ref, ref, event, topic, payload } = message
+    const { join_ref, ref, event, topic } = message
     const userEvent = message.payload.event
     const userPayload = message.payload?.payload ?? new ArrayBuffer(0)
 
     const metaLength =
-      this.META_LENGTH +
+      this.USER_PUSH_META_LENGTH +
       join_ref.length +
       ref.length +
       topic.length +
@@ -84,7 +120,7 @@ export default class Serializer {
     const encodedUserPayload = encoder.encode(JSON.stringify(userPayload)).buffer
 
     const metaLength =
-      this.META_LENGTH +
+      this.USER_PUSH_META_LENGTH +
       join_ref.length +
       ref.length +
       topic.length +
@@ -116,18 +152,18 @@ export default class Serializer {
   }
 
   decode(rawPayload: ArrayBuffer | string, callback: Function) {
-    if (rawPayload.constructor === ArrayBuffer) {
-      let result = this._binaryDecode(rawPayload)
-      console.log('Decoding binary message', result)
+    if (this._isArrayBuffer(rawPayload)) {
+      let result = this._binaryDecode(rawPayload as ArrayBuffer)
       return callback(result)
     }
 
     if (typeof rawPayload === 'string') {
-      console.log('Decoding text message', JSON.parse(rawPayload))
       const jsonPayload = JSON.parse(rawPayload)
       const [join_ref, ref, topic, event, payload] = jsonPayload
       return callback({ join_ref, ref, topic, event, payload })
     }
+
+    return callback({})
   }
 
   private _binaryDecode(buffer: ArrayBuffer) {
@@ -270,5 +306,9 @@ export default class Serializer {
     const data = { type: 'broadcast', event: userEvent, payload: parsedPayload }
 
     return { join_ref: null, ref: null, topic: topic, event: event, payload: data }
+  }
+
+  private _isArrayBuffer(buffer: any): boolean {
+    return buffer instanceof ArrayBuffer || buffer?.constructor?.name === 'ArrayBuffer'
   }
 }

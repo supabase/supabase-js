@@ -161,7 +161,6 @@ export default class RealtimeClient {
    * @param options.workerUrl The URL of the worker script. Defaults to https://realtime.supabase.com/worker.js that includes a heartbeat event call to keep the connection alive.
    */
   constructor(endPoint: string, options?: RealtimeClientOptions) {
-    console.log('YOOO')
     // Validate required parameters
     if (!options?.params?.apikey) {
       throw new Error('API key is required to connect to Realtime')
