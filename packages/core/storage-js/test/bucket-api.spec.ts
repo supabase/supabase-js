@@ -106,11 +106,11 @@ describe('VectorBucketApi Integration Tests', () => {
       const response = await client.listBuckets()
 
       const data = assertSuccessResponse(response)
-      expect(data.buckets).toBeDefined()
-      expect(Array.isArray(data.buckets)).toBe(true)
-      expect(data.buckets.length).toBeGreaterThanOrEqual(2)
+      expect(data.vectorBuckets).toBeDefined()
+      expect(Array.isArray(data.vectorBuckets)).toBe(true)
+      expect(data.vectorBuckets.length).toBeGreaterThanOrEqual(2)
 
-      const bucketNames = data.buckets.map((b) => b.vectorBucketName)
+      const bucketNames = data.vectorBuckets.map((b) => b.vectorBucketName)
       expect(bucketNames).toContain(bucket1)
       expect(bucketNames).toContain(bucket2)
     })
@@ -128,9 +128,9 @@ describe('VectorBucketApi Integration Tests', () => {
       const response = await client.listBuckets({ prefix })
 
       const data = assertSuccessResponse(response)
-      expect(data.buckets.length).toBeGreaterThanOrEqual(2)
+      expect(data.vectorBuckets.length).toBeGreaterThanOrEqual(2)
 
-      const bucketNames = data.buckets.map((b) => b.vectorBucketName)
+      const bucketNames = data.vectorBuckets.map((b) => b.vectorBucketName)
       expect(bucketNames).toContain(bucket1)
       expect(bucketNames).toContain(bucket2)
       // bucket3 should not be included as it doesn't match prefix
@@ -145,9 +145,9 @@ describe('VectorBucketApi Integration Tests', () => {
       const response = await client.listBuckets({ maxResults: 1 })
 
       const data = assertSuccessResponse(response)
-      expect(data.buckets.length).toBeLessThanOrEqual(1)
+      expect(data.vectorBuckets.length).toBeLessThanOrEqual(1)
 
-      if (data.buckets.length === 1 && data.nextToken) {
+      if (data.vectorBuckets.length === 1 && data.nextToken) {
         expect(data.nextToken).toBeDefined()
         expect(typeof data.nextToken).toBe('string')
       }
@@ -159,7 +159,7 @@ describe('VectorBucketApi Integration Tests', () => {
       })
 
       const data = assertSuccessResponse(response)
-      expect(data.buckets).toEqual([])
+      expect(data.vectorBuckets).toEqual([])
       expect(data.nextToken).toBeUndefined()
     })
   })

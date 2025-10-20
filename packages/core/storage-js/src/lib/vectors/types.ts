@@ -117,11 +117,11 @@ export interface ListVectorBucketsOptions {
 
 /**
  * Response from listing vector buckets
- * @property buckets - Array of bucket names
+ * @property vectorBuckets - Array of bucket names
  * @property nextToken - Token for fetching next page (if more results exist)
  */
 export interface ListVectorBucketsResponse {
-  buckets: { vectorBucketName: string }[]
+  vectorBuckets: { vectorBucketName: string }[]
   nextToken?: string
 }
 
