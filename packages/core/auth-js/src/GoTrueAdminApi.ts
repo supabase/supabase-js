@@ -465,17 +465,16 @@ export default class GoTrueAdminApi {
    */
   private async _deleteOAuthClient(clientId: string): Promise<OAuthClientResponse> {
     try {
-      return await _request(
+      await _request(
         this.fetch,
         'DELETE',
         `${this.url}/admin/oauth/clients/${clientId}`,
         {
           headers: this.headers,
-          xform: (client: any) => {
-            return { data: client, error: null }
-          },
+          noResolveJson: true,
         }
       )
+      return { data: {}, error: null }
     } catch (error) {
       if (isAuthError(error)) {
         return { data: null, error }
