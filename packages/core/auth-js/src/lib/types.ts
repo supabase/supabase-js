@@ -1580,7 +1580,7 @@ export interface GoTrueAdminOAuthApi {
    *
    * This function should only be called on a server. Never expose your `service_role` key in the browser.
    */
-  deleteClient(clientId: string): Promise<OAuthClientResponse>
+  deleteClient(clientId: string): Promise<{ data: null; error: AuthError | null }>
 
   /**
    * Regenerates the secret for an OAuth client.
