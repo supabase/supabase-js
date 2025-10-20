@@ -335,7 +335,7 @@ function handleListBuckets(body: any): MockResponse {
   return {
     status: 200,
     data: {
-      buckets: buckets.slice(0, maxResults).map((name) => ({ vectorBucketName: name })),
+      vectorBuckets: buckets.slice(0, maxResults).map((name) => ({ vectorBucketName: name })),
       nextToken: buckets.length > maxResults ? 'mock-next-token' : undefined,
     },
   }
