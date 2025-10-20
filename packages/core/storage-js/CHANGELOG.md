@@ -1,3 +1,22 @@
+## 2.76.0 (2025-10-20)
+
+### 🚀 Features
+
+- **storage:** storage vectors and analytics in storage-js ([#1752](https://github.com/supabase/supabase-js/pull/1752))
+
+### 🩹 Fixes
+
+- **storage:** api types ([#1784](https://github.com/supabase/supabase-js/pull/1784))
+- **repo:** convert postbuild to explicit codegen ([#1778](https://github.com/supabase/supabase-js/pull/1778))
+- **storage:** use backward compatible return type in download function ([#1750](https://github.com/supabase/supabase-js/pull/1750))
+- **storage:** correct list v2 types to correctly match data returned from api ([#1761](https://github.com/supabase/supabase-js/pull/1761))
+
+### ❤️ Thank You
+
+- Fabrizio @fenos
+- Katerina Skroumpelou @mandarini
+- Lenny @itslenny
+
 ## 2.75.1 (2025-10-17)
 
 ### 🩹 Fixes
