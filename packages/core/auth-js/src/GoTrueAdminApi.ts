@@ -474,7 +474,7 @@ export default class GoTrueAdminApi {
           noResolveJson: true,
         }
       )
-      return { data: {}, error: null }
+      return { data: null, error: null }
     } catch (error) {
       if (isAuthError(error)) {
         return { data: null, error }
