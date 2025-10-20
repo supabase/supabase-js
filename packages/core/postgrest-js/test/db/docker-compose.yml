@@ -39,7 +39,7 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
   pgmeta:
-    image: supabase/postgres-meta:v0.91.5
+    image: supabase/postgres-meta:v0.92.0
     ports:
       - '8080:8080'
     environment:
