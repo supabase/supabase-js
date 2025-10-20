@@ -1,3 +1,17 @@
+## 2.76.0 (2025-10-20)
+
+### 🚀 Features
+
+- **storage:** storage vectors and analytics in storage-js ([#1752](https://github.com/supabase/supabase-js/pull/1752))
+
+### 🩹 Fixes
+
+- **repo:** convert postbuild to explicit codegen ([#1778](https://github.com/supabase/supabase-js/pull/1778))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+
 ## 2.75.1 (2025-10-17)
 
 This was a version bump only for @supabase/supabase-js to align it with other projects, there were no code changes.

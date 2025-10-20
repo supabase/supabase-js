@@ -1,3 +1,20 @@
+## 2.76.0 (2025-10-20)
+
+### 🚀 Features
+
+- **realtime:** enhance RealtimeChannel type ([#1747](https://github.com/supabase/supabase-js/pull/1747))
+- **realtime:** realtime explicit REST call ([#1751](https://github.com/supabase/supabase-js/pull/1751))
+
+### 🩹 Fixes
+
+- **realtime:** manipulate URLs using URL object ([#1769](https://github.com/supabase/supabase-js/pull/1769))
+
+### ❤️ Thank You
+
+- Filipe Cabaço @filipecabaco
+- Guilherme Souza
+- Katerina Skroumpelou @mandarini
+
 ## 2.75.1 (2025-10-17)
 
 This was a version bump only for @supabase/realtime-js to align it with other projects, there were no code changes.

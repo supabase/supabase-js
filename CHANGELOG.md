@@ -1,3 +1,29 @@
+## 2.76.0 (2025-10-20)
+
+### 🚀 Features
+
+- **realtime:** realtime explicit REST call ([#1751](https://github.com/supabase/supabase-js/pull/1751))
+- **realtime:** enhance RealtimeChannel type ([#1747](https://github.com/supabase/supabase-js/pull/1747))
+- **storage:** storage vectors and analytics in storage-js ([#1752](https://github.com/supabase/supabase-js/pull/1752))
+
+### 🩹 Fixes
+
+- **functions:** missing body when Content-Type header supplied by dev ([#1758](https://github.com/supabase/supabase-js/pull/1758))
+- **functions:** add application/pdf response parsing to FunctionsClient ([#1757](https://github.com/supabase/supabase-js/pull/1757))
+- **realtime:** manipulate URLs using URL object ([#1769](https://github.com/supabase/supabase-js/pull/1769))
+- **repo:** convert postbuild to explicit codegen ([#1778](https://github.com/supabase/supabase-js/pull/1778))
+- **storage:** correct list v2 types to correctly match data returned from api ([#1761](https://github.com/supabase/supabase-js/pull/1761))
+- **storage:** use backward compatible return type in download function ([#1750](https://github.com/supabase/supabase-js/pull/1750))
+- **storage:** api types ([#1784](https://github.com/supabase/supabase-js/pull/1784))
+
+### ❤️ Thank You
+
+- Fabrizio @fenos
+- Filipe Cabaço @filipecabaco
+- Guilherme Souza
+- Katerina Skroumpelou @mandarini
+- Lenny @itslenny
+
 ## 2.75.1 (2025-10-17)
 
 ### 🩹 Fixes
