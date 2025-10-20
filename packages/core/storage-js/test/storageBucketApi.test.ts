@@ -142,6 +142,131 @@ describe('Bucket API Error Handling', () => {
       // Clean up
       mockFn.mockRestore()
     })
+
+    it('constructs query string with limit option', async () => {
+      const storage = new StorageClient(URL, { apikey: KEY })
+      const mockGet = jest.spyOn(require('../src/lib/fetch'), 'get').mockResolvedValue([])
+
+      await storage.listBuckets({ limit: 10 })
+
+      expect(mockGet).toHaveBeenCalledWith(
+        expect.any(Function),
+        `${URL}/bucket?limit=10`,
+        expect.objectContaining({
+          headers: expect.any(Object),
+        })
+      )
+
+      mockGet.mockRestore()
+    })
+
+    it('constructs query string with offset option', async () => {
+      const storage = new StorageClient(URL, { apikey: KEY })
+      const mockGet = jest.spyOn(require('../src/lib/fetch'), 'get').mockResolvedValue([])
+
+      await storage.listBuckets({ offset: 5 })
+
+      expect(mockGet).toHaveBeenCalledWith(
+        expect.any(Function),
+        `${URL}/bucket?offset=5`,
+        expect.objectContaining({
+          headers: expect.any(Object),
+        })
+      )
+
+      mockGet.mockRestore()
+    })
+
+    it('constructs query string with sortColumn option', async () => {
+      const storage = new StorageClient(URL, { apikey: KEY })
+      const mockGet = jest.spyOn(require('../src/lib/fetch'), 'get').mockResolvedValue([])
+
+      await storage.listBuckets({ sortColumn: 'name' })
+
+      expect(mockGet).toHaveBeenCalledWith(
+        expect.any(Function),
+        `${URL}/bucket?sortColumn=name`,
+        expect.objectContaining({
+          headers: expect.any(Object),
+        })
+      )
+
+      mockGet.mockRestore()
+    })
+
+    it('constructs query string with sortOrder option', async () => {
+      const storage = new StorageClient(URL, { apikey: KEY })
+      const mockGet = jest.spyOn(require('../src/lib/fetch'), 'get').mockResolvedValue([])
+
+      await storage.listBuckets({ sortOrder: 'desc' })
+
+      expect(mockGet).toHaveBeenCalledWith(
+        expect.any(Function),
+        `${URL}/bucket?sortOrder=desc`,
+        expect.objectContaining({
+          headers: expect.any(Object),
+        })
+      )
+
+      mockGet.mockRestore()
+    })
+
+    it('constructs query string with search option', async () => {
+      const storage = new StorageClient(URL, { apikey: KEY })
+      const mockGet = jest.spyOn(require('../src/lib/fetch'), 'get').mockResolvedValue([])
+
+      await storage.listBuckets({ search: 'test-bucket' })
+
+      expect(mockGet).toHaveBeenCalledWith(
+        expect.any(Function),
+        `${URL}/bucket?search=test-bucket`,
+        expect.objectContaining({
+          headers: expect.any(Object),
+        })
+      )
+
+      mockGet.mockRestore()
+    })
+
+    it('constructs query string with multiple options', async () => {
+      const storage = new StorageClient(URL, { apikey: KEY })
+      const mockGet = jest.spyOn(require('../src/lib/fetch'), 'get').mockResolvedValue([])
+
+      await storage.listBuckets({
+        limit: 20,
+        offset: 10,
+        sortColumn: 'created_at',
+        sortOrder: 'asc',
+        search: 'my-bucket',
+      })
+
+      expect(mockGet).toHaveBeenCalledWith(
+        expect.any(Function),
+        `${URL}/bucket?limit=20&offset=10&search=my-bucket&sortColumn=created_at&sortOrder=asc`,
+        expect.objectContaining({
+          headers: expect.any(Object),
+        })
+      )
+
+      mockGet.mockRestore()
+    })
+
+    it('handles empty options object', async () => {
+      const storage = new StorageClient(URL, { apikey: KEY })
+      const mockGet = jest.spyOn(require('../src/lib/fetch'), 'get').mockResolvedValue([])
+
+      await storage.listBuckets({})
+
+      expect(mockGet).toHaveBeenCalledWith(
+        expect.any(Function),
+        `${URL}/bucket`,
+        expect.objectContaining({
+          headers: expect.any(Object),
+        })
+      )
+
+      mockGet.mockRestore()
+    })
   })
 
   describe('getBucket', () => {
