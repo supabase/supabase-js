@@ -1,9 +1,9 @@
-import { PostgrestClient } from '../src/index'
-import { Database } from './types.override'
-import { TypeEqual, expectType } from './types'
-import { SelectQueryError } from '../src/select-query-parser/utils'
+import type { RequiredDeep } from 'type-fest'
 import { z } from 'zod'
-import { RequiredDeep } from 'type-fest'
+import { PostgrestClient } from '../src/index'
+import type { SelectQueryError } from '../src/select-query-parser/utils'
+import { expectType, type TypeEqual } from './types'
+import type { Database } from './types.override'
 
 const REST_URL = 'http://localhost:3000'
 const postgrest = new PostgrestClient<Database>(REST_URL)
@@ -442,8 +442,7 @@ describe('advanced rpc', () => {
       .select('channel_id, message, users(username, catchphrase)')
     let result: Exclude<typeof res.data, null>
     let expected: RequiredDeep<z.infer<typeof SelectWithUsersSchema>>[]
-    // TODO: works with latest postgrest-meta type introspection
-    // expectType<TypeEqual<typeof result, typeof expected>>(true)
+    expectType<TypeEqual<typeof result, typeof expected>>(true)
     expect(res).toMatchInlineSnapshot(`
       Object {
         "count": null,
@@ -503,8 +502,7 @@ describe('advanced rpc', () => {
       .select('id, username, users(username, catchphrase)')
     let result: Exclude<typeof res.data, null>
     let expected: RequiredDeep<z.infer<typeof SelectWithUsersProfileSchema>>
-    // TODO: works with latest postgrest-meta type introspection
-    // expectType<TypeEqual<typeof result, typeof expected>>(true)
+    expectType<TypeEqual<typeof result, typeof expected>>(true)
     expect(res).toMatchInlineSnapshot(`
       Object {
         "count": null,
@@ -547,8 +545,7 @@ describe('advanced rpc', () => {
     let result: Exclude<typeof res.data, null>
     // Should be an error response due to ambiguous function resolution
     let expected: SelectQueryError<'Could not choose the best candidate function between: public.postgrest_unresolvable_function(a => int4), public.postgrest_unresolvable_function(a => text). Try renaming the parameters or the function itself in the database so function overloading can be resolved'>
-    // TODO: works with latest postgrest-meta type introspection
-    // expectType<TypeEqual<typeof result, typeof expected>>(true)
+    expectType<TypeEqual<typeof result, typeof expected>>(true)
     expect(res).toMatchInlineSnapshot(`
       Object {
         "count": null,
@@ -572,8 +569,7 @@ describe('advanced rpc', () => {
     let result: Exclude<typeof res.data, null>
     // Should be an error response due to ambiguous function resolution
     let expected: SelectQueryError<'Could not choose the best candidate function between: public.postgrest_unresolvable_function(a => int4), public.postgrest_unresolvable_function(a => text). Try renaming the parameters or the function itself in the database so function overloading can be resolved'>
-    // TODO: works with latest postgrest-meta type introspection
-    // expectType<TypeEqual<typeof result, typeof expected>>(true)
+    expectType<TypeEqual<typeof result, typeof expected>>(true)
     expect(res).toMatchInlineSnapshot(`
       Object {
         "count": null,
@@ -612,8 +608,7 @@ describe('advanced rpc', () => {
     })
     let result: Exclude<typeof res.data, null>
     let expected: number
-    // TODO: works with latest postgrest-meta type introspection
-    // expectType<TypeEqual<typeof result, typeof expected>>(true)
+    expectType<TypeEqual<typeof result, typeof expected>>(true)
     expect(res).toMatchInlineSnapshot(`
       Object {
         "count": null,
@@ -631,8 +626,7 @@ describe('advanced rpc', () => {
     })
     let result: Exclude<typeof res.data, null>
     let expected: string
-    // TODO: works with latest postgrest-meta type introspection
-    // expectType<TypeEqual<typeof result, typeof expected>>(true)
+    expectType<TypeEqual<typeof result, typeof expected>>(true)
     expect(res).toMatchInlineSnapshot(`
       Object {
         "count": null,
@@ -650,8 +644,7 @@ describe('advanced rpc', () => {
     })
     let result: Exclude<typeof res.data, null>
     let expected: z.infer<typeof UserProfileSchema>[]
-    // TODO: works with latest postgrest-meta type introspection
-    // expectType<TypeEqual<typeof result, typeof expected>>(true)
+    expectType<TypeEqual<typeof result, typeof expected>>(true)
     expect(res).toMatchInlineSnapshot(`
       Object {
         "count": null,
@@ -677,8 +670,7 @@ describe('advanced rpc', () => {
     let result: Exclude<typeof res.data, null>
     const ExpectedSchema = z.array(MessagesWithoutBlurbSchema)
     let expected: RequiredDeep<z.infer<typeof ExpectedSchema>>
-    // TODO: works with latest postgrest-meta type introspection
-    // expectType<TypeEqual<typeof result, typeof expected>>(true)
+    expectType<TypeEqual<typeof result, typeof expected>>(true)
     expect(res).toMatchInlineSnapshot(`
       Object {
         "count": null,
@@ -712,8 +704,7 @@ describe('advanced rpc', () => {
     let result: Exclude<typeof res.data, null>
     const ExpectedSchema = z.array(MessagesWithoutBlurbSchema)
     let expected: RequiredDeep<z.infer<typeof ExpectedSchema>>
-    // TODO: works with latest postgrest-meta type introspection
-    // expectType<TypeEqual<typeof result, typeof expected>>(true)
+    expectType<TypeEqual<typeof result, typeof expected>>(true)
     expect(res).toMatchInlineSnapshot(`
       Object {
         "count": null,
@@ -761,8 +752,7 @@ describe('advanced rpc', () => {
     })
     let result: Exclude<typeof res.data, null>
     let expected: string
-    // TODO: works with latest postgrest-meta type introspection
-    // expectType<TypeEqual<typeof result, typeof expected>>(true)
+    expectType<TypeEqual<typeof result, typeof expected>>(true)
     expect(res).toMatchInlineSnapshot(`
       Object {
         "count": null,
@@ -776,12 +766,9 @@ describe('advanced rpc', () => {
 
   test('polymorphic function with bool param', async () => {
     const res = await postgrest.rpc('polymorphic_function_with_different_return', {
-      // TODO: works with latest postgrest-meta type introspection
-      ////@ts-expect-error Type 'boolean' is not assignable to type 'string'
+      // @ts-expect-error Type 'boolean' is not assignable to type 'string'
       '': true,
     })
-    // TODO: works with latest postgrest-meta type introspection
-    // expectType<TypeEqual<typeof result, typeof expected>>(true)
     expect(res).toMatchInlineSnapshot(`
       Object {
         "count": null,
@@ -795,8 +782,7 @@ describe('advanced rpc', () => {
 
   test('polymorphic function with unnamed int param', async () => {
     const res = await postgrest.rpc(
-      // TODO: works with latest postgrest-meta type introspection
-      ////@ts-expect-error Argument of type '"polymorphic_function_with_unnamed_integer"' is not assignable to parameter of type '"blurb_message" | "function_returning_row" | "function_returning_set_of_rows"
+      // @ts-expect-error Argument of type '"polymorphic_function_with_unnamed_integer"' is not assignable to parameter of type '"blurb_message" | "function_returning_row" | "function_returning_set_of_rows"
       'polymorphic_function_with_unnamed_integer',
       {
         '': 1,
@@ -894,8 +880,7 @@ describe('advanced rpc', () => {
     })
     let result: Exclude<typeof res.data, null>
     let expected: string
-    // TODO: works with latest postgrest-meta type introspection
-    // expectType<TypeEqual<typeof result, typeof expected>>(true)
+    expectType<TypeEqual<typeof result, typeof expected>>(true)
     expect(res).toMatchInlineSnapshot(`
       Object {
         "count": null,
@@ -913,8 +898,7 @@ describe('advanced rpc', () => {
     })
     let result: Exclude<typeof res.data, null>
     let expected: string
-    // TODO: works with latest postgrest-meta type introspection
-    // expectType<TypeEqual<typeof result, typeof expected>>(true)
+    expectType<TypeEqual<typeof result, typeof expected>>(true)
     expect(res).toMatchInlineSnapshot(`
       Object {
         "count": null,
@@ -930,8 +914,7 @@ describe('advanced rpc', () => {
     const res = await postgrest.rpc('polymorphic_function_with_unnamed_default')
     let result: Exclude<typeof res.data, null>
     let expected: SelectQueryError<'Could not choose the best candidate function between: public.polymorphic_function_with_unnamed_default(), public.polymorphic_function_with_unnamed_default( => text). Try renaming the parameters or the function itself in the database so function overloading can be resolved'>
-    // TODO: works with latest postgrest-meta type introspection
-    // expectType<TypeEqual<typeof result, typeof expected>>(true)
+    expectType<TypeEqual<typeof result, typeof expected>>(true)
     expect(res).toMatchInlineSnapshot(`
       Object {
         "count": null,
@@ -977,8 +960,7 @@ describe('advanced rpc', () => {
     })
     let result: Exclude<typeof res.data, null>
     let expected: string
-    // TODO: works with latest postgrest-meta type introspection
-    // expectType<TypeEqual<typeof result, typeof expected>>(true)
+    expectType<TypeEqual<typeof result, typeof expected>>(true)
     expect(res).toMatchInlineSnapshot(`
       Object {
         "count": null,
@@ -994,8 +976,7 @@ describe('advanced rpc', () => {
     const res = await postgrest.rpc('polymorphic_function_with_unnamed_default_overload')
     let result: Exclude<typeof res.data, null>
     let expected: SelectQueryError<'Could not choose the best candidate function between: public.polymorphic_function_with_unnamed_default_overload(), public.polymorphic_function_with_unnamed_default_overload( => text). Try renaming the parameters or the function itself in the database so function overloading can be resolved'>
-    // TODO: works with latest postgrest-meta type introspection
-    // expectType<TypeEqual<typeof result, typeof expected>>(true)
+    expectType<TypeEqual<typeof result, typeof expected>>(true)
     expect(res).toMatchInlineSnapshot(`
       Object {
         "count": null,
@@ -1041,8 +1022,7 @@ describe('advanced rpc', () => {
     })
     let result: Exclude<typeof res.data, null>
     let expected: string
-    // TODO: works with latest postgrest-meta type introspection
-    // expectType<TypeEqual<typeof result, typeof expected>>(true)
+    expectType<TypeEqual<typeof result, typeof expected>>(true)
     expect(res).toMatchInlineSnapshot(`
       Object {
         "count": null,
@@ -1056,14 +1036,12 @@ describe('advanced rpc', () => {
 
   test('polymorphic function with unnamed default overload bool param', async () => {
     const res = await postgrest.rpc('polymorphic_function_with_unnamed_default_overload', {
-      // TODO: works with latest postgrest-meta type introspection
-      ////@ts-expect-error Type 'boolean' is not assignable to type 'string'
+      // @ts-expect-error Type 'boolean' is not assignable to type 'string'
       '': true,
     })
     let result: Exclude<typeof res.data, null>
     let expected: string
-    // TODO: works with latest postgrest-meta type introspection
-    // expectType<TypeEqual<typeof result, typeof expected>>(true)
+    expectType<TypeEqual<typeof result, typeof expected>>(true)
     expect(res).toMatchInlineSnapshot(`
       Object {
         "count": null,
@@ -1078,9 +1056,8 @@ describe('advanced rpc', () => {
   test('function with blurb_message', async () => {
     const res = await postgrest.rpc('blurb_message')
     let result: Exclude<typeof res.data, null>
-    let expected: never
-    // TODO: works with latest postgrest-meta type introspection
-    // expectType<TypeEqual<typeof result, typeof expected>>(true)
+    let expected: SelectQueryError<'the function public.blurb_message with parameter or with a single unnamed json/jsonb parameter, but no matches were found in the schema cache'>
+    expectType<TypeEqual<typeof result, typeof expected>>(true)
     expect(res).toMatchInlineSnapshot(`
       Object {
         "count": null,
@@ -1110,8 +1087,7 @@ describe('advanced rpc', () => {
     })
     let result: Exclude<typeof res.data, null>
     let expected: SelectQueryError<'the function public.blurb_message with parameter or with a single unnamed json/jsonb parameter, but no matches were found in the schema cache'>
-    // TODO: works with latest postgrest-meta type introspection
-    // expectType<TypeEqual<typeof result, typeof expected>>(true)
+    expectType<TypeEqual<typeof result, typeof expected>>(true)
     expect(res).toMatchInlineSnapshot(`
       Object {
         "count": null,
@@ -1275,7 +1251,7 @@ describe('advanced rpc', () => {
 test('should be able to filter before and after select rpc', async () => {
   const res = await postgrest
     .rpc('get_user_profile', {
-      //@ts-expect-error Type '{ username: string; }' is missing the following properties from type '{ age_range: unknown; catchphrase: unknown; data: unknown; status: "ONLINE" | "OFFLINE" | null; username: string; }': age_range, catchphrase, data, status
+      // @ts-expect-error Type '{ username: string; }' is missing the following properties from type '{ age_range: unknown; catchphrase: unknown; data: unknown; status: "ONLINE" | "OFFLINE" | null; username: string; }': age_range, catchphrase, data, status
       user_row: { username: 'supabot' },
     })
     .select('id, username, users(username, catchphrase)')
@@ -1292,7 +1268,7 @@ test('should be able to filter before and after select rpc', async () => {
   `)
   const res2 = await postgrest
     .rpc('get_user_profile', {
-      //@ts-expect-error Type '{ username: string; }' is missing the following properties from type
+      // @ts-expect-error Type '{ username: string; }' is missing the following properties from type
       user_row: { username: 'supabot' },
     })
     // should also be able to fitler before the select
@@ -1310,7 +1286,7 @@ test('should be able to filter before and after select rpc', async () => {
   `)
   const res3 = await postgrest
     .rpc('get_user_profile', {
-      //@ts-expect-error Type '{ username: string; }' is missing the following properties from type
+      // @ts-expect-error Type '{ username: string; }' is missing the following properties from type
       user_row: { username: 'supabot' },
     })
     // should also be able to fitler before the select
@@ -1374,7 +1350,6 @@ test('RPC call with subselect and computed field', async () => {
     })
   )
   let expected: z.infer<typeof ExpectedSchema>
-  // TODO: works with latest postgrest-meta type introspection
-  // expectType<TypeEqual<typeof result, typeof expected>>(true)
+  expectType<TypeEqual<typeof result, typeof expected>>(true)
   ExpectedSchema.parse(res.data)
 })
