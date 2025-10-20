@@ -40,7 +40,8 @@
     "docs:json": "typedoc --json docs/v2/spec.json --excludeExternals --excludePrivate --excludeProtected src/index.ts"
   },
   "dependencies": {
-    "@supabase/node-fetch": "2.6.15"
+    "@supabase/node-fetch": "2.6.15",
+    "tslib": "2.8.1"
   },
   "devDependencies": {
     "jest": "^28.1.3",
