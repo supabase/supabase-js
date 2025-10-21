@@ -117,8 +117,6 @@ jobs:
     name: Deno Tests / ${{ matrix.deno }}
     runs-on: ubuntu-latest
     needs: build-package
-    env:
-      npm_config_registry: http://localhost:4873
     strategy:
       matrix:
         deno: ['1.x', '2.x']
@@ -178,6 +176,7 @@ jobs:
         if: ${{ matrix.deno == '1.x' }}
         env:
           STORAGE_JS_ENTRY: main
+          npm_config_registry: http://localhost:4873
         run: |
           cd packages/core/supabase-js/test/deno
           npm install
@@ -186,6 +185,8 @@ jobs:
 
       - name: Run Deno Tests
         if: ${{ matrix.deno == '2.x' }}
+        env:
+          npm_config_registry: http://localhost:4873
         run: |
           cd packages/core/supabase-js/test/deno
           npm install
@@ -271,8 +272,6 @@ jobs:
     name: Next.js Integration
     runs-on: ubuntu-latest
     needs: build-package
-    env:
-      npm_config_registry: http://localhost:4873
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -323,6 +322,8 @@ jobs:
         run: npx playwright install --with-deps
 
       - name: Run integration tests
+        env:
+          npm_config_registry: http://localhost:4873
         run: |
           cd packages/core/supabase-js/test/integration/next
           npm install --legacy-peer-deps
@@ -339,8 +340,6 @@ jobs:
     name: Expo Tests
     runs-on: ubuntu-latest
     needs: build-package
-    env:
-      npm_config_registry: http://localhost:4873
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -388,6 +387,8 @@ jobs:
           supabase db query "select id, name from storage.buckets where id = 'test-bucket';"
 
       - name: Install test dependencies and run tests
+        env:
+          npm_config_registry: http://localhost:4873
         run: |
           cd packages/core/supabase-js/test/integration/expo
           npm install
@@ -403,8 +404,6 @@ jobs:
     name: Bun Integration
     runs-on: ubuntu-latest
     needs: build-package
-    env:
-      npm_config_registry: http://localhost:4873
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -457,6 +456,8 @@ jobs:
           supabase db query "select id, name from storage.buckets where id = 'test-bucket';"
 
       - name: Install dependencies and run tests
+        env:
+          npm_config_registry: http://localhost:4873
         run: |
           cd packages/core/supabase-js/test/integration/bun
           bun install
