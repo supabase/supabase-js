@@ -25,8 +25,7 @@
     "directory": "packages/core/supabase-js"
   },
   "scripts": {
-    "clean": "rimraf dist docs/v2",
-    "build": "npm run clean && npm run build:main && npm run build:module && npm run build:umd",
+    "build": "npm run build:main && npm run build:module && npm run build:umd",
     "build:main": "tsc -p tsconfig.json",
     "build:module": "tsc -p tsconfig.module.json",
     "build:umd": "webpack --env mode=production",

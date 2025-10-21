@@ -33,8 +33,7 @@
     "directory": "packages/core/postgrest-js"
   },
   "scripts": {
-    "clean": "rimraf dist docs/v2",
-    "build": "npm run clean && npm run build:cjs && npm run build:esm",
+    "build": "npm run build:cjs && npm run build:esm",
     "build:cjs": "tsc -p tsconfig.json",
     "build:esm": "cpy wrapper.mjs dist/esm/",
     "build:module": "npm run build:cjs",

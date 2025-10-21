@@ -26,10 +26,9 @@
     "directory": "packages/core/auth-js"
   },
   "scripts": {
-    "clean": "rimraf dist docs",
     "coverage": "echo \"run npm test\"",
-    "build:node18": "npm run clean && npm run build:main && npm run build:module",
-    "build": "npm run clean && npm run build:main && npm run build:module",
+    "build:node18": "npm run build:main && npm run build:module",
+    "build": "npm run build:main && npm run build:module",
     "build:main": "tsc -p tsconfig.json",
     "build:module": "tsc -p tsconfig.module.json",
     "test:auth": "npm run test:clean && npm run test:infra && npm run test:suite && npm run test:clean",
