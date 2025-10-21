@@ -180,11 +180,18 @@ jobs:
           echo "Verifying storage bucket exists"
           supabase db query "select id, name from storage.buckets where id = 'test-bucket';"
 
+      - name: Verify packages in Verdaccio
+        run: |
+          echo "Verifying @supabase/supabase-js is available in Verdaccio..."
+          npm view @supabase/supabase-js version --registry http://localhost:4873
+          npm view @supabase/supabase-js --registry http://localhost:4873 | head -20
+
       - name: Run Deno Tests
         if: ${{ matrix.deno == '1.x' }}
         env:
           STORAGE_JS_ENTRY: main
           npm_config_registry: http://localhost:4873
+          DENO_NPM_REGISTRY: http://localhost:4873
         run: |
           cd packages/core/supabase-js/test/deno
           npm install
@@ -195,6 +202,7 @@ jobs:
         if: ${{ matrix.deno == '2.x' }}
         env:
           npm_config_registry: http://localhost:4873
+          DENO_NPM_REGISTRY: http://localhost:4873
         run: |
           cd packages/core/supabase-js/test/deno
           npm install
@@ -337,6 +345,12 @@ jobs:
       - name: Install Playwright browsers and dependencies
         run: npx playwright install --with-deps
 
+      - name: Verify packages in Verdaccio
+        run: |
+          echo "Verifying @supabase/supabase-js is available in Verdaccio..."
+          npm view @supabase/supabase-js version --registry http://localhost:4873
+          npm view @supabase/supabase-js --registry http://localhost:4873 | head -20
+
       - name: Run integration tests
         env:
           npm_config_registry: http://localhost:4873
@@ -409,6 +423,12 @@ jobs:
           supabase db query "select count(*) from public.todos;"
           echo "Verifying storage bucket exists"
           supabase db query "select id, name from storage.buckets where id = 'test-bucket';"
+
+      - name: Verify packages in Verdaccio
+        run: |
+          echo "Verifying @supabase/supabase-js is available in Verdaccio..."
+          npm view @supabase/supabase-js version --registry http://localhost:4873
+          npm view @supabase/supabase-js --registry http://localhost:4873 | head -20
 
       - name: Install test dependencies and run tests
         env:
@@ -486,6 +506,12 @@ jobs:
           supabase db query "select count(*) from public.todos;"
           echo "Verifying storage bucket exists"
           supabase db query "select id, name from storage.buckets where id = 'test-bucket';"
+
+      - name: Verify packages in Verdaccio
+        run: |
+          echo "Verifying @supabase/supabase-js is available in Verdaccio..."
+          npm view @supabase/supabase-js version --registry http://localhost:4873
+          npm view @supabase/supabase-js --registry http://localhost:4873 | head -20
 
       - name: Install dependencies and run tests
         env:
