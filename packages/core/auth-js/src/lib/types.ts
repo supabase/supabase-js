@@ -1590,3 +1590,103 @@ export interface GoTrueAdminOAuthApi {
    */
   regenerateClientSecret(clientId: string): Promise<OAuthClientResponse>
 }
+
+/**
+ * OAuth client details in an authorization request.
+ * Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
+ */
+export type OAuthAuthorizationClient = {
+  /** Unique identifier for the OAuth client (UUID) */
+  client_id: string
+  /** Human-readable name of the OAuth client */
+  client_name: string
+  /** URI of the OAuth client's website */
+  client_uri: string
+  /** URI of the OAuth client's logo */
+  logo_uri: string
+}
+
+/**
+ * OAuth authorization details for the consent flow.
+ * Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
+ */
+export type OAuthAuthorizationDetails = {
+  /** The authorization ID */
+  authorization_id: string
+  /** Redirect URI - present if user already consented (can be used to trigger immediate redirect) */
+  redirect_uri?: string
+  /** OAuth client requesting authorization */
+  client: OAuthAuthorizationClient
+  /** User object associated with the authorization */
+  user: {
+    /** User ID (UUID) */
+    id: string
+    /** User email */
+    email: string
+  }
+  /** Space-separated list of requested scopes */
+  scope: string
+}
+
+/**
+ * Response type for getting OAuth authorization details.
+ * Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
+ */
+export type AuthOAuthAuthorizationDetailsResponse = RequestResult<OAuthAuthorizationDetails>
+
+/**
+ * Response type for OAuth consent decision (approve/deny).
+ * Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
+ */
+export type AuthOAuthConsentResponse = RequestResult<{
+  /** URL to redirect the user back to the OAuth client */
+  redirect_url: string
+}>
+
+/**
+ * Contains all OAuth 2.1 authorization server user-facing methods.
+ * Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
+ *
+ * These methods are used to implement the consent page.
+ */
+export interface AuthOAuthServerApi {
+  /**
+   * Retrieves details about an OAuth authorization request.
+   * Used to display consent information to the user.
+   * Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
+   *
+   * @param authorizationId - The authorization ID from the authorization request
+   * @param options - Optional parameters including skipBrowserRedirect
+   * @returns Authorization details including client info and requested scopes
+   */
+  getAuthorizationDetails(
+    authorizationId: string,
+    options?: { skipBrowserRedirect?: boolean }
+  ): Promise<AuthOAuthAuthorizationDetailsResponse>
+
+  /**
+   * Approves an OAuth authorization request.
+   * Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
+   *
+   * @param authorizationId - The authorization ID to approve
+   * @param options - Optional parameters including skipBrowserRedirect
+   * @returns Redirect URL to send the user back to the OAuth client
+   */
+  approveAuthorization(
+    authorizationId: string,
+    options?: { skipBrowserRedirect?: boolean }
+  ): Promise<AuthOAuthConsentResponse>
+
+  /**
+   * Denies an OAuth authorization request.
+   * Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
+   *
+   * @param authorizationId - The authorization ID to deny
+   * @param options - Optional parameters including skipBrowserRedirect
+   * @returns Redirect URL to send the user back to the OAuth client
+   */
+  denyAuthorization(
+    authorizationId: string,
+    options?: { skipBrowserRedirect?: boolean }
+  ): Promise<AuthOAuthConsentResponse>
+}
