@@ -192,14 +192,9 @@ jobs:
           STORAGE_JS_ENTRY: main
           DENO_NPM_REGISTRY: http://localhost:4873
         run: |
-          # Pre-generate deno.json in workspace first
-          cd packages/core/supabase-js/test/deno
-          node setup-deps.js
-
-          # Then copy to isolated directory
           TEST_DIR="/tmp/test-deno-1x-${{ github.run_id }}"
           mkdir -p "$TEST_DIR"
-          cp -r * "$TEST_DIR/"
+          cp -r packages/core/supabase-js/test/deno/* "$TEST_DIR/"
           cd "$TEST_DIR"
           echo "registry=http://localhost:4873/" > .npmrc
           npm install
@@ -211,14 +206,9 @@ jobs:
         env:
           DENO_NPM_REGISTRY: http://localhost:4873
         run: |
-          # Pre-generate deno.json in workspace first
-          cd packages/core/supabase-js/test/deno
-          node setup-deps.js
-
-          # Then copy to isolated directory
           TEST_DIR="/tmp/test-deno-2x-${{ github.run_id }}"
           mkdir -p "$TEST_DIR"
-          cp -r * "$TEST_DIR/"
+          cp -r packages/core/supabase-js/test/deno/* "$TEST_DIR/"
           cd "$TEST_DIR"
           echo "registry=http://localhost:4873/" > .npmrc
           npm install
