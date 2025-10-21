@@ -158,6 +158,9 @@ jobs:
           npx verdaccio --config .verdaccio/config.yml &
           sleep 3
 
+      - name: Configure npm auth for Verdaccio
+        run: npm config set //localhost:4873/:_authToken "secretVerdaccioToken"
+
       - name: Publish packages to Verdaccio
         run: node scripts/populate-verdaccio.mjs
 
@@ -309,6 +312,9 @@ jobs:
           npx verdaccio --config .verdaccio/config.yml &
           sleep 3
 
+      - name: Configure npm auth for Verdaccio
+        run: npm config set //localhost:4873/:_authToken "secretVerdaccioToken"
+
       - name: Publish packages to Verdaccio
         run: node scripts/populate-verdaccio.mjs
 
@@ -381,6 +387,9 @@ jobs:
         run: |
           npx verdaccio --config .verdaccio/config.yml &
           sleep 3
+
+      - name: Configure npm auth for Verdaccio
+        run: npm config set //localhost:4873/:_authToken "secretVerdaccioToken"
 
       - name: Publish packages to Verdaccio
         run: node scripts/populate-verdaccio.mjs
@@ -455,6 +464,9 @@ jobs:
         run: |
           npx verdaccio --config .verdaccio/config.yml &
           sleep 3
+
+      - name: Configure npm auth for Verdaccio
+        run: npm config set //localhost:4873/:_authToken "secretVerdaccioToken"
 
       - name: Publish packages to Verdaccio
         run: node scripts/populate-verdaccio.mjs
