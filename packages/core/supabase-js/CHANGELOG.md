@@ -1,3 +1,7 @@
+## 2.76.1 (2025-10-21)
+
+This was a version bump only for @supabase/supabase-js to align it with other projects, there were no code changes.
+
 ## 2.76.0 (2025-10-20)
 
 ### 🚀 Features
