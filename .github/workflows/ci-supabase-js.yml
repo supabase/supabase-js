@@ -516,6 +516,7 @@ jobs:
       - name: Install dependencies and run tests
         env:
           npm_config_registry: http://localhost:4873
+          BUN_CONFIG_REGISTRY: http://localhost:4873
         run: |
           cd packages/core/supabase-js/test/integration/bun
           bun install
