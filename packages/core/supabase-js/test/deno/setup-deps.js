@@ -5,6 +5,21 @@ const path = require('node:path')
 
 // Get the directory of the script
 const scriptDir = __dirname
+
+// Check if deno.json already exists with valid imports (early exit for pre-generated case)
+const denoJsonPath = path.join(scriptDir, 'deno.json')
+if (fs.existsSync(denoJsonPath)) {
+  try {
+    const existing = JSON.parse(fs.readFileSync(denoJsonPath, 'utf8'))
+    if (existing.imports && Object.keys(existing.imports).length > 0) {
+      console.log('deno.json already exists with imports, skipping setup')
+      process.exit(0)
+    }
+  } catch (error) {
+    console.warn('Warning: Could not read existing deno.json, will regenerate')
+  }
+}
+
 const projectRoot = path.dirname(path.dirname(scriptDir))
 
 // Read package.json from main project
@@ -30,7 +45,6 @@ const versions = {
 }
 
 // Read or create deno.json
-const denoJsonPath = path.join(scriptDir, 'deno.json')
 let denoJson = {
   lock: false,
   imports: {},
