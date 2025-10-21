@@ -5,6 +5,10 @@ name: Publish releases
 on:
   push:
     branches: [master]
+    paths-ignore:
+      - '*.md'
+      - 'docs/**'
+      - '**/CHANGELOG.md'
   workflow_dispatch:
     inputs:
       version_specifier:
