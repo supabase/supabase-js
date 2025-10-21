@@ -463,19 +463,20 @@ export default class GoTrueAdminApi {
    *
    * This function should only be called on a server. Never expose your `service_role` key in the browser.
    */
-  private async _deleteOAuthClient(clientId: string): Promise<OAuthClientResponse> {
+  private async _deleteOAuthClient(
+    clientId: string
+  ): Promise<{ data: null; error: AuthError | null }> {
     try {
-      return await _request(
+      await _request(
         this.fetch,
         'DELETE',
         `${this.url}/admin/oauth/clients/${clientId}`,
         {
           headers: this.headers,
-          xform: (client: any) => {
-            return { data: client, error: null }
-          },
+          noResolveJson: true,
         }
       )
+      return { data: null, error: null }
     } catch (error) {
       if (isAuthError(error)) {
         return { data: null, error }
