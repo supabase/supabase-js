@@ -236,6 +236,9 @@ export default class RealtimeClient {
    * @param reason A custom reason for the disconnect.
    */
   disconnect(code?: number, reason?: string): void {
+    console.warn(
+      '🔴 VERDACCIO TEST REALTIME: This is the LOCAL BUILD from Verdaccio - if you see this, local packages are being used'
+    )
     if (this.isDisconnecting()) {
       return
     }
