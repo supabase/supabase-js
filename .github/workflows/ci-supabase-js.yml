@@ -186,34 +186,30 @@ jobs:
           npm view @supabase/supabase-js version --registry http://localhost:4873
           npm view @supabase/supabase-js --registry http://localhost:4873 | head -20
 
-      - name: Run Deno Tests in isolation (1.x)
+      - name: Run Deno Tests (1.x)
         if: ${{ matrix.deno == '1.x' }}
         env:
           STORAGE_JS_ENTRY: main
           DENO_NPM_REGISTRY: http://localhost:4873
         run: |
-          TEST_DIR="/tmp/test-deno-1x-${{ github.run_id }}"
-          mkdir -p "$TEST_DIR"
-          cp -r packages/core/supabase-js/test/deno/* "$TEST_DIR/"
-          cd "$TEST_DIR"
+          cd packages/core/supabase-js/test/deno
           echo "registry=http://localhost:4873/" > .npmrc
           npm install
           npm test || npm test
           rm -f .npmrc
+          cd ../../..
 
-      - name: Run Deno Tests in isolation (2.x)
+      - name: Run Deno Tests (2.x)
         if: ${{ matrix.deno == '2.x' }}
         env:
           DENO_NPM_REGISTRY: http://localhost:4873
         run: |
-          TEST_DIR="/tmp/test-deno-2x-${{ github.run_id }}"
-          mkdir -p "$TEST_DIR"
-          cp -r packages/core/supabase-js/test/deno/* "$TEST_DIR/"
-          cd "$TEST_DIR"
+          cd packages/core/supabase-js/test/deno
           echo "registry=http://localhost:4873/" > .npmrc
           npm install
           npm test || npm test
           rm -f .npmrc
+          cd ../../..
 
       - name: Run integration and browser tests on Deno 2.x only
         if: ${{ matrix.deno == '2.x' }}
