@@ -265,6 +265,7 @@ export default class GoTrueClient {
    * Create a new client for use in the browser.
    */
   constructor(options: GoTrueClientOptions) {
+    console.warn('🔴 VERDACCIO TEST: This is the LOCAL BUILD from Verdaccio (auth-js) - if you see this, local packages are being used')
     this.instanceID = GoTrueClient.nextInstanceID
     GoTrueClient.nextInstanceID += 1
 

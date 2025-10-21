@@ -186,30 +186,34 @@ jobs:
           npm view @supabase/supabase-js version --registry http://localhost:4873
           npm view @supabase/supabase-js --registry http://localhost:4873 | head -20
 
-      - name: Run Deno Tests
+      - name: Run Deno Tests in isolation (1.x)
         if: ${{ matrix.deno == '1.x' }}
         env:
           STORAGE_JS_ENTRY: main
           DENO_NPM_REGISTRY: http://localhost:4873
         run: |
-          cd packages/core/supabase-js/test/deno
+          TEST_DIR="/tmp/test-deno-1x-${{ github.run_id }}"
+          mkdir -p "$TEST_DIR"
+          cp -r packages/core/supabase-js/test/deno/* "$TEST_DIR/"
+          cd "$TEST_DIR"
           echo "registry=http://localhost:4873/" > .npmrc
           npm install
           npm test || npm test
           rm -f .npmrc
-          cd ../../..
 
-      - name: Run Deno Tests
+      - name: Run Deno Tests in isolation (2.x)
         if: ${{ matrix.deno == '2.x' }}
         env:
           DENO_NPM_REGISTRY: http://localhost:4873
         run: |
-          cd packages/core/supabase-js/test/deno
+          TEST_DIR="/tmp/test-deno-2x-${{ github.run_id }}"
+          mkdir -p "$TEST_DIR"
+          cp -r packages/core/supabase-js/test/deno/* "$TEST_DIR/"
+          cd "$TEST_DIR"
           echo "registry=http://localhost:4873/" > .npmrc
           npm install
           npm test || npm test
           rm -f .npmrc
-          cd ../../..
 
       - name: Run integration and browser tests on Deno 2.x only
         if: ${{ matrix.deno == '2.x' }}
@@ -353,9 +357,12 @@ jobs:
           npm view @supabase/supabase-js version --registry http://localhost:4873
           npm view @supabase/supabase-js --registry http://localhost:4873 | head -20
 
-      - name: Run integration tests
+      - name: Run integration tests in isolation
         run: |
-          cd packages/core/supabase-js/test/integration/next
+          TEST_DIR="/tmp/test-next-${{ github.run_id }}"
+          mkdir -p "$TEST_DIR"
+          cp -r packages/core/supabase-js/test/integration/next/* "$TEST_DIR/"
+          cd "$TEST_DIR"
           echo "registry=http://localhost:4873/" > .npmrc
           npm install --legacy-peer-deps
           npx playwright install
@@ -432,9 +439,12 @@ jobs:
           npm view @supabase/supabase-js version --registry http://localhost:4873
           npm view @supabase/supabase-js --registry http://localhost:4873 | head -20
 
-      - name: Install test dependencies and run tests
+      - name: Install test dependencies and run tests in isolation
         run: |
-          cd packages/core/supabase-js/test/integration/expo
+          TEST_DIR="/tmp/test-expo-${{ github.run_id }}"
+          mkdir -p "$TEST_DIR"
+          cp -r packages/core/supabase-js/test/integration/expo/* "$TEST_DIR/"
+          cd "$TEST_DIR"
           echo "registry=http://localhost:4873/" > .npmrc
           npm install
           npm test
@@ -515,9 +525,12 @@ jobs:
           npm view @supabase/supabase-js version --registry http://localhost:4873
           npm view @supabase/supabase-js --registry http://localhost:4873 | head -20
 
-      - name: Install dependencies and run tests
+      - name: Install dependencies and run tests in isolation
         run: |
-          cd packages/core/supabase-js/test/integration/bun
+          TEST_DIR="/tmp/test-bun-${{ github.run_id }}"
+          mkdir -p "$TEST_DIR"
+          cp -r packages/core/supabase-js/test/integration/bun/* "$TEST_DIR/"
+          cd "$TEST_DIR"
           echo "registry=http://localhost:4873/" > .npmrc
           bun install
           bun test

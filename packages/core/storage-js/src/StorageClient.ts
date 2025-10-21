@@ -16,6 +16,7 @@ export class StorageClient extends StorageBucketApi {
     opts?: StorageClientOptions
   ) {
     super(url, headers, fetch, opts)
+    console.warn('🔴 VERDACCIO TEST: This is the LOCAL BUILD from Verdaccio (storage-js) - if you see this, local packages are being used')
   }
 
   /**
