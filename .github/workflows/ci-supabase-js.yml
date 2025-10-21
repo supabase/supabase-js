@@ -190,23 +190,25 @@ jobs:
         if: ${{ matrix.deno == '1.x' }}
         env:
           STORAGE_JS_ENTRY: main
-          npm_config_registry: http://localhost:4873
           DENO_NPM_REGISTRY: http://localhost:4873
         run: |
           cd packages/core/supabase-js/test/deno
+          echo "registry=http://localhost:4873/" > .npmrc
           npm install
           npm test || npm test
+          rm -f .npmrc
           cd ../../..
 
       - name: Run Deno Tests
         if: ${{ matrix.deno == '2.x' }}
         env:
-          npm_config_registry: http://localhost:4873
           DENO_NPM_REGISTRY: http://localhost:4873
         run: |
           cd packages/core/supabase-js/test/deno
+          echo "registry=http://localhost:4873/" > .npmrc
           npm install
           npm test || npm test
+          rm -f .npmrc
           cd ../../..
 
       - name: Run integration and browser tests on Deno 2.x only
@@ -352,13 +354,13 @@ jobs:
           npm view @supabase/supabase-js --registry http://localhost:4873 | head -20
 
       - name: Run integration tests
-        env:
-          npm_config_registry: http://localhost:4873
         run: |
           cd packages/core/supabase-js/test/integration/next
+          echo "registry=http://localhost:4873/" > .npmrc
           npm install --legacy-peer-deps
           npx playwright install
           npm run test
+          rm -f .npmrc
 
       - name: Stop Supabase
         if: always()
@@ -431,12 +433,12 @@ jobs:
           npm view @supabase/supabase-js --registry http://localhost:4873 | head -20
 
       - name: Install test dependencies and run tests
-        env:
-          npm_config_registry: http://localhost:4873
         run: |
           cd packages/core/supabase-js/test/integration/expo
+          echo "registry=http://localhost:4873/" > .npmrc
           npm install
           npm test
+          rm -f .npmrc
 
       - name: Stop Supabase
         if: always()
@@ -514,13 +516,12 @@ jobs:
           npm view @supabase/supabase-js --registry http://localhost:4873 | head -20
 
       - name: Install dependencies and run tests
-        env:
-          npm_config_registry: http://localhost:4873
-          BUN_CONFIG_REGISTRY: http://localhost:4873
         run: |
           cd packages/core/supabase-js/test/integration/bun
+          echo "registry=http://localhost:4873/" > .npmrc
           bun install
           bun test
+          rm -f .npmrc
 
       - name: Stop Supabase
         if: always()

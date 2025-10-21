@@ -107,6 +107,7 @@ export default class SupabaseClient<
     protected supabaseKey: string,
     options?: SupabaseClientOptions<SchemaName>
   ) {
+    console.warn('🔴 VERDACCIO TEST: This is the LOCAL BUILD from Verdaccio - if you see this, local packages are being used')
     const baseUrl = validateSupabaseUrl(supabaseUrl)
     if (!supabaseKey) throw new Error('supabaseKey is required.')
 
