@@ -37,7 +37,8 @@
   },
   "homepage": "https://github.com/supabase/supabase-js/tree/master/packages/core/functions-js",
   "dependencies": {
-    "@supabase/node-fetch": "2.6.15"    
+    "@supabase/node-fetch": "2.6.15",
+    "tslib": "2.8.1"
   },
   "devDependencies": {
     "@sebbo2002/semantic-release-jsr": "^1.0.0",
