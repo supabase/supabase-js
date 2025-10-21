@@ -9,8 +9,15 @@
         "port": 4873,
         "config": ".verdaccio/config.yml",
         "storage": "tmp/local-registry/storage",
-        "clear": true
+        "clear": false
       }
+    },
+    "populate-local-registry": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "node scripts/populate-verdaccio.mjs"
+      },
+      "dependsOn": ["local-registry"]
     }
   }
 }
