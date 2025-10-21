@@ -45,18 +45,26 @@ jobs:
       - name: Start Verdaccio
         run: |
           npx verdaccio --config .verdaccio/config.yml &
-          sleep 5
-          echo "Verdaccio started on http://localhost:4873"
+          VERDACCIO_PID=$!
+          echo "Verdaccio started with PID: $VERDACCIO_PID"
+
+      - name: Wait for Verdaccio to be ready
+        run: |
+          echo "Waiting for Verdaccio to be ready..."
+          timeout 30 bash -c 'until curl -f http://localhost:4873 > /dev/null 2>&1; do sleep 1; done'
+          echo "✓ Verdaccio is ready!"
 
       - name: Configure npm to use Verdaccio
         run: npm set registry http://localhost:4873/
 
       - name: Publish packages to Verdaccio
         run: |
+          set -e
           for pkg in auth-js functions-js postgrest-js realtime-js storage-js supabase-js; do
             echo "Publishing @supabase/$pkg to Verdaccio..."
             cd packages/core/$pkg
-            npm publish --registry http://localhost:4873 || echo "Failed to publish $pkg"
+            npm publish --registry http://localhost:4873
+            echo "✓ Published @supabase/$pkg"
             cd ../../..
           done
 
@@ -173,12 +181,17 @@ jobs:
 
       - name: Start Verdaccio and publish packages
         run: |
+          set -e
           npx verdaccio --config .verdaccio/config.yml &
-          sleep 5
+          echo "Waiting for Verdaccio to be ready..."
+          timeout 30 bash -c 'until curl -f http://localhost:4873 > /dev/null 2>&1; do sleep 1; done'
+          echo "✓ Verdaccio is ready!"
           npm set registry http://localhost:4873/
           for pkg in auth-js functions-js postgrest-js realtime-js storage-js supabase-js; do
+            echo "Publishing @supabase/$pkg..."
             cd packages/core/$pkg
-            npm publish --registry http://localhost:4873 || echo "Failed to publish $pkg"
+            npm publish --registry http://localhost:4873
+            echo "✓ Published @supabase/$pkg"
             cd ../../..
           done
 
@@ -304,12 +317,17 @@ jobs:
 
       - name: Start Verdaccio and publish packages
         run: |
+          set -e
           npx verdaccio --config .verdaccio/config.yml &
-          sleep 5
+          echo "Waiting for Verdaccio to be ready..."
+          timeout 30 bash -c 'until curl -f http://localhost:4873 > /dev/null 2>&1; do sleep 1; done'
+          echo "✓ Verdaccio is ready!"
           npm set registry http://localhost:4873/
           for pkg in auth-js functions-js postgrest-js realtime-js storage-js supabase-js; do
+            echo "Publishing @supabase/$pkg..."
             cd packages/core/$pkg
-            npm publish --registry http://localhost:4873 || echo "Failed to publish $pkg"
+            npm publish --registry http://localhost:4873
+            echo "✓ Published @supabase/$pkg"
             cd ../../..
           done
 
@@ -374,12 +392,17 @@ jobs:
 
       - name: Start Verdaccio and publish packages
         run: |
+          set -e
           npx verdaccio --config .verdaccio/config.yml &
-          sleep 5
+          echo "Waiting for Verdaccio to be ready..."
+          timeout 30 bash -c 'until curl -f http://localhost:4873 > /dev/null 2>&1; do sleep 1; done'
+          echo "✓ Verdaccio is ready!"
           npm set registry http://localhost:4873/
           for pkg in auth-js functions-js postgrest-js realtime-js storage-js supabase-js; do
+            echo "Publishing @supabase/$pkg..."
             cd packages/core/$pkg
-            npm publish --registry http://localhost:4873 || echo "Failed to publish $pkg"
+            npm publish --registry http://localhost:4873
+            echo "✓ Published @supabase/$pkg"
             cd ../../..
           done
 
@@ -445,12 +468,17 @@ jobs:
 
       - name: Start Verdaccio and publish packages
         run: |
+          set -e
           npx verdaccio --config .verdaccio/config.yml &
-          sleep 5
+          echo "Waiting for Verdaccio to be ready..."
+          timeout 30 bash -c 'until curl -f http://localhost:4873 > /dev/null 2>&1; do sleep 1; done'
+          echo "✓ Verdaccio is ready!"
           npm set registry http://localhost:4873/
           for pkg in auth-js functions-js postgrest-js realtime-js storage-js supabase-js; do
+            echo "Publishing @supabase/$pkg..."
             cd packages/core/$pkg
-            npm publish --registry http://localhost:4873 || echo "Failed to publish $pkg"
+            npm publish --registry http://localhost:4873
+            echo "✓ Published @supabase/$pkg"
             cd ../../..
           done
 
