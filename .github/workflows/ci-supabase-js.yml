@@ -20,10 +20,8 @@ env:
 
 jobs:
   build-package:
-    name: Build supabase-js package
+    name: Build and publish to Verdaccio
     runs-on: ubuntu-latest
-    outputs:
-      tgz-name: ${{ steps.pack.outputs.filename }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -41,22 +39,26 @@ jobs:
 
       - uses: nrwl/nx-set-shas@v4
 
-      - name: Build
-        run: npx nx build supabase-js
+      - name: Build all packages
+        run: npx nx run-many --target=build --all
 
-      - name: Pack npm module
-        id: pack
+      - name: Start Verdaccio
         run: |
-          cd packages/core/supabase-js
-          PKG=$(npm pack)
-          echo "filename=$PKG" >> "$GITHUB_OUTPUT"
-          cd ../../..
+          npx verdaccio --config .verdaccio/config.yml &
+          sleep 5
+          echo "Verdaccio started on http://localhost:4873"
 
-      - name: Upload .tgz package
-        uses: actions/upload-artifact@v4
-        with:
-          name: supabase-tgz
-          path: packages/core/supabase-js/${{ steps.pack.outputs.filename }}
+      - name: Configure npm to use Verdaccio
+        run: npm set registry http://localhost:4873/
+
+      - name: Publish packages to Verdaccio
+        run: |
+          for pkg in auth-js functions-js postgrest-js realtime-js storage-js supabase-js; do
+            echo "Publishing @supabase/$pkg to Verdaccio..."
+            cd packages/core/$pkg
+            npm publish --registry http://localhost:4873 || echo "Failed to publish $pkg"
+            cd ../../..
+          done
 
       - name: Upload UMD build
         uses: actions/upload-artifact@v4
@@ -147,11 +149,6 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
-      - name: Download artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: supabase-tgz
-          path: ./packages/core/supabase-js/supabase-pkg
 
       - name: Start Supabase and apply migrations
         run: |
@@ -174,14 +171,24 @@ jobs:
           npm ci --legacy-peer-deps
           npx nx build supabase-js
 
+      - name: Start Verdaccio and publish packages
+        run: |
+          npx verdaccio --config .verdaccio/config.yml &
+          sleep 5
+          npm set registry http://localhost:4873/
+          for pkg in auth-js functions-js postgrest-js realtime-js storage-js supabase-js; do
+            cd packages/core/$pkg
+            npm publish --registry http://localhost:4873 || echo "Failed to publish $pkg"
+            cd ../../..
+          done
+
       - name: Run Deno Tests
         if: ${{ matrix.deno == '1.x' }}
         env:
           STORAGE_JS_ENTRY: main
         run: |
           cd packages/core/supabase-js/test/deno
-          cp ../../supabase-pkg/supabase-supabase-js-0.0.0-automated.tgz .
-          npm install
+          npm install --registry http://localhost:4873
           npm test || npm test
           cd ../../..
 
@@ -189,8 +196,7 @@ jobs:
         if: ${{ matrix.deno == '2.x' }}
         run: |
           cd packages/core/supabase-js/test/deno
-          cp ../../supabase-pkg/supabase-supabase-js-0.0.0-automated.tgz .
-          npm install
+          npm install --registry http://localhost:4873
           npm test || npm test
           cd ../../..
 
@@ -286,16 +292,26 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
 
-      - name: Download artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: supabase-tgz
-          path: ./packages/core/supabase-js/supabase-pkg
-
       - name: Setup Supabase CLI
         uses: supabase/setup-cli@v1
         with:
           version: latest
+
+      - name: Install dependencies and build
+        run: |
+          npm ci --legacy-peer-deps
+          npx nx build supabase-js
+
+      - name: Start Verdaccio and publish packages
+        run: |
+          npx verdaccio --config .verdaccio/config.yml &
+          sleep 5
+          npm set registry http://localhost:4873/
+          for pkg in auth-js functions-js postgrest-js realtime-js storage-js supabase-js; do
+            cd packages/core/$pkg
+            npm publish --registry http://localhost:4873 || echo "Failed to publish $pkg"
+            cd ../../..
+          done
 
       - name: Start Supabase and apply migrations
         run: |
@@ -319,8 +335,7 @@ jobs:
       - name: Run integration tests
         run: |
           cd packages/core/supabase-js/test/integration/next
-          cp ../../../supabase-pkg/supabase-supabase-js-0.0.0-automated.tgz .
-          npm install --legacy-peer-deps
+          npm install --registry http://localhost:4873 --legacy-peer-deps
           npx playwright install
           npm run test
 
@@ -352,11 +367,21 @@ jobs:
         with:
           version: latest
 
-      - name: Download artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: supabase-tgz
-          path: ./packages/core/supabase-js/supabase-pkg
+      - name: Install dependencies and build
+        run: |
+          npm ci --legacy-peer-deps
+          npx nx build supabase-js
+
+      - name: Start Verdaccio and publish packages
+        run: |
+          npx verdaccio --config .verdaccio/config.yml &
+          sleep 5
+          npm set registry http://localhost:4873/
+          for pkg in auth-js functions-js postgrest-js realtime-js storage-js supabase-js; do
+            cd packages/core/$pkg
+            npm publish --registry http://localhost:4873 || echo "Failed to publish $pkg"
+            cd ../../..
+          done
 
       - name: Start Supabase and apply migrations
         run: |
@@ -377,8 +402,7 @@ jobs:
       - name: Install dependencies and run tests
         run: |
           cd packages/core/supabase-js/test/integration/expo
-          cp ../../../supabase-pkg/supabase-supabase-js-0.0.0-automated.tgz .
-          npm install
+          npm install --registry http://localhost:4873
           npm test || npm test
 
       - name: Stop Supabase
@@ -403,16 +427,32 @@ jobs:
         with:
           bun-version: latest
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
       - name: Setup Supabase CLI
         uses: supabase/setup-cli@v1
         with:
           version: latest
 
-      - name: Download artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: supabase-tgz
-          path: ./packages/core/supabase-js/supabase-pkg
+      - name: Install dependencies and build
+        run: |
+          npm ci --legacy-peer-deps
+          npx nx build supabase-js
+
+      - name: Start Verdaccio and publish packages
+        run: |
+          npx verdaccio --config .verdaccio/config.yml &
+          sleep 5
+          npm set registry http://localhost:4873/
+          for pkg in auth-js functions-js postgrest-js realtime-js storage-js supabase-js; do
+            cd packages/core/$pkg
+            npm publish --registry http://localhost:4873 || echo "Failed to publish $pkg"
+            cd ../../..
+          done
 
       - name: Start Supabase and apply migrations
         run: |
@@ -433,7 +473,7 @@ jobs:
       - name: Install dependencies and run tests
         run: |
           cd packages/core/supabase-js/test/integration/bun
-          cp ../../../supabase-pkg/supabase-supabase-js-0.0.0-automated.tgz .
+          npm set registry http://localhost:4873/
           bun install
           bun test
 
