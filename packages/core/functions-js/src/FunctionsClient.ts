@@ -27,7 +27,6 @@ export class FunctionsClient {
       region?: FunctionRegion
     } = {}
   ) {
-    console.warn('🔴 VERDACCIO TEST: This is the LOCAL BUILD from Verdaccio (functions-js) - if you see this, local packages are being used')
     this.url = url
     this.headers = headers
     this.region = region

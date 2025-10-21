@@ -157,7 +157,6 @@ export default class RealtimeClient {
    * @param options.workerUrl The URL of the worker script. Defaults to https://realtime.supabase.com/worker.js that includes a heartbeat event call to keep the connection alive.
    */
   constructor(endPoint: string, options?: RealtimeClientOptions) {
-    console.warn('🔴 VERDACCIO TEST: This is the LOCAL BUILD from Verdaccio (realtime-js) - if you see this, local packages are being used')
     // Validate required parameters
     if (!options?.params?.apikey) {
       throw new Error('API key is required to connect to Realtime')
@@ -237,9 +236,6 @@ export default class RealtimeClient {
    * @param reason A custom reason for the disconnect.
    */
   disconnect(code?: number, reason?: string): void {
-    console.warn(
-      '🔴 VERDACCIO TEST REALTIME: This is the LOCAL BUILD from Verdaccio - if you see this, local packages are being used'
-    )
     if (this.isDisconnecting()) {
       return
     }

@@ -61,7 +61,6 @@ export default class PostgrestClient<
       fetch?: Fetch
     } = {}
   ) {
-    console.warn('🔴 VERDACCIO TEST: This is the LOCAL BUILD from Verdaccio (postgrest-js) - if you see this, local packages are being used')
     this.url = url
     this.headers = new Headers(headers)
     this.schemaName = schema
