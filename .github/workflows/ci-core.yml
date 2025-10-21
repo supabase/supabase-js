@@ -19,10 +19,6 @@ on:
       - '!packages/**/*ignore'
   workflow_call:
 
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
-
 permissions:
   actions: read
   contents: read
