@@ -20,10 +20,8 @@ env:
 
 jobs:
   build-package:
-    name: Build supabase-js package
+    name: Build all packages
     runs-on: ubuntu-latest
-    outputs:
-      tgz-name: ${{ steps.pack.outputs.filename }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -41,22 +39,20 @@ jobs:
 
       - uses: nrwl/nx-set-shas@v4
 
-      - name: Build
-        run: npx nx build supabase-js
+      - name: Build all packages
+        run: npx nx run-many --target=build --all
 
-      - name: Pack npm module
-        id: pack
-        run: |
-          cd packages/core/supabase-js
-          PKG=$(npm pack)
-          echo "filename=$PKG" >> "$GITHUB_OUTPUT"
-          cd ../../..
-
-      - name: Upload .tgz package
+      - name: Upload built packages
         uses: actions/upload-artifact@v4
         with:
-          name: supabase-tgz
-          path: packages/core/supabase-js/${{ steps.pack.outputs.filename }}
+          name: packages-dist
+          path: |
+            packages/core/auth-js/dist
+            packages/core/functions-js/dist
+            packages/core/postgrest-js/dist
+            packages/core/realtime-js/dist
+            packages/core/storage-js/dist
+            packages/core/supabase-js/dist
 
       - name: Upload UMD build
         uses: actions/upload-artifact@v4
@@ -147,11 +143,26 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
-      - name: Download artifact
+
+      - name: Download built packages
         uses: actions/download-artifact@v4
         with:
-          name: supabase-tgz
-          path: ./packages/core/supabase-js/supabase-pkg
+          name: packages-dist
+          path: packages/core
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Start Verdaccio
+        run: |
+          npx verdaccio --config .verdaccio/config.yml &
+          sleep 3
+
+      - name: Configure npm auth for Verdaccio
+        run: npm config set //localhost:4873/:_authToken "secretVerdaccioToken"
+
+      - name: Publish packages to Verdaccio
+        run: node scripts/populate-verdaccio.mjs
 
       - name: Start Supabase and apply migrations
         run: |
@@ -169,29 +180,35 @@ jobs:
           echo "Verifying storage bucket exists"
           supabase db query "select id, name from storage.buckets where id = 'test-bucket';"
 
-      - name: Install dependencies and build
+      - name: Verify packages in Verdaccio
         run: |
-          npm ci --legacy-peer-deps
-          npx nx build supabase-js
+          echo "Verifying @supabase/supabase-js is available in Verdaccio..."
+          npm view @supabase/supabase-js version --registry http://localhost:4873
+          npm view @supabase/supabase-js --registry http://localhost:4873 | head -20
 
-      - name: Run Deno Tests
+      - name: Run Deno Tests (1.x)
         if: ${{ matrix.deno == '1.x' }}
         env:
           STORAGE_JS_ENTRY: main
+          DENO_NPM_REGISTRY: http://localhost:4873
         run: |
           cd packages/core/supabase-js/test/deno
-          cp ../../supabase-pkg/supabase-supabase-js-0.0.0-automated.tgz .
+          echo "registry=http://localhost:4873/" > .npmrc
           npm install
           npm test || npm test
+          rm -f .npmrc
           cd ../../..
 
-      - name: Run Deno Tests
+      - name: Run Deno Tests (2.x)
         if: ${{ matrix.deno == '2.x' }}
+        env:
+          DENO_NPM_REGISTRY: http://localhost:4873
         run: |
           cd packages/core/supabase-js/test/deno
-          cp ../../supabase-pkg/supabase-supabase-js-0.0.0-automated.tgz .
+          echo "registry=http://localhost:4873/" > .npmrc
           npm install
           npm test || npm test
+          rm -f .npmrc
           cd ../../..
 
       - name: Run integration and browser tests on Deno 2.x only
@@ -286,16 +303,30 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
 
-      - name: Download artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: supabase-tgz
-          path: ./packages/core/supabase-js/supabase-pkg
-
       - name: Setup Supabase CLI
         uses: supabase/setup-cli@v1
         with:
           version: latest
+
+      - name: Download built packages
+        uses: actions/download-artifact@v4
+        with:
+          name: packages-dist
+          path: packages/core
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Start Verdaccio
+        run: |
+          npx verdaccio --config .verdaccio/config.yml &
+          sleep 3
+
+      - name: Configure npm auth for Verdaccio
+        run: npm config set //localhost:4873/:_authToken "secretVerdaccioToken"
+
+      - name: Publish packages to Verdaccio
+        run: node scripts/populate-verdaccio.mjs
 
       - name: Start Supabase and apply migrations
         run: |
@@ -316,13 +347,23 @@ jobs:
       - name: Install Playwright browsers and dependencies
         run: npx playwright install --with-deps
 
-      - name: Run integration tests
+      - name: Verify packages in Verdaccio
         run: |
-          cd packages/core/supabase-js/test/integration/next
-          cp ../../../supabase-pkg/supabase-supabase-js-0.0.0-automated.tgz .
+          echo "Verifying @supabase/supabase-js is available in Verdaccio..."
+          npm view @supabase/supabase-js version --registry http://localhost:4873
+          npm view @supabase/supabase-js --registry http://localhost:4873 | head -20
+
+      - name: Run integration tests in isolation
+        run: |
+          TEST_DIR="/tmp/test-next-${{ github.run_id }}"
+          mkdir -p "$TEST_DIR"
+          cp -r packages/core/supabase-js/test/integration/next/* "$TEST_DIR/"
+          cd "$TEST_DIR"
+          echo "registry=http://localhost:4873/" > .npmrc
           npm install --legacy-peer-deps
           npx playwright install
           npm run test
+          rm -f .npmrc
 
       - name: Stop Supabase
         if: always()
@@ -352,11 +393,25 @@ jobs:
         with:
           version: latest
 
-      - name: Download artifact
+      - name: Download built packages
         uses: actions/download-artifact@v4
         with:
-          name: supabase-tgz
-          path: ./packages/core/supabase-js/supabase-pkg
+          name: packages-dist
+          path: packages/core
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Start Verdaccio
+        run: |
+          npx verdaccio --config .verdaccio/config.yml &
+          sleep 3
+
+      - name: Configure npm auth for Verdaccio
+        run: npm config set //localhost:4873/:_authToken "secretVerdaccioToken"
+
+      - name: Publish packages to Verdaccio
+        run: node scripts/populate-verdaccio.mjs
 
       - name: Start Supabase and apply migrations
         run: |
@@ -374,12 +429,22 @@ jobs:
           echo "Verifying storage bucket exists"
           supabase db query "select id, name from storage.buckets where id = 'test-bucket';"
 
-      - name: Install dependencies and run tests
+      - name: Verify packages in Verdaccio
         run: |
-          cd packages/core/supabase-js/test/integration/expo
-          cp ../../../supabase-pkg/supabase-supabase-js-0.0.0-automated.tgz .
+          echo "Verifying @supabase/supabase-js is available in Verdaccio..."
+          npm view @supabase/supabase-js version --registry http://localhost:4873
+          npm view @supabase/supabase-js --registry http://localhost:4873 | head -20
+
+      - name: Install test dependencies and run tests in isolation
+        run: |
+          TEST_DIR="/tmp/test-expo-${{ github.run_id }}"
+          mkdir -p "$TEST_DIR"
+          cp -r packages/core/supabase-js/test/integration/expo/* "$TEST_DIR/"
+          cd "$TEST_DIR"
+          echo "registry=http://localhost:4873/" > .npmrc
           npm install
-          npm test || npm test
+          npm test
+          rm -f .npmrc
 
       - name: Stop Supabase
         if: always()
@@ -403,16 +468,36 @@ jobs:
         with:
           bun-version: latest
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
       - name: Setup Supabase CLI
         uses: supabase/setup-cli@v1
         with:
           version: latest
 
-      - name: Download artifact
+      - name: Download built packages
         uses: actions/download-artifact@v4
         with:
-          name: supabase-tgz
-          path: ./packages/core/supabase-js/supabase-pkg
+          name: packages-dist
+          path: packages/core
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Start Verdaccio
+        run: |
+          npx verdaccio --config .verdaccio/config.yml &
+          sleep 3
+
+      - name: Configure npm auth for Verdaccio
+        run: npm config set //localhost:4873/:_authToken "secretVerdaccioToken"
+
+      - name: Publish packages to Verdaccio
+        run: node scripts/populate-verdaccio.mjs
 
       - name: Start Supabase and apply migrations
         run: |
@@ -430,12 +515,22 @@ jobs:
           echo "Verifying storage bucket exists"
           supabase db query "select id, name from storage.buckets where id = 'test-bucket';"
 
-      - name: Install dependencies and run tests
+      - name: Verify packages in Verdaccio
         run: |
-          cd packages/core/supabase-js/test/integration/bun
-          cp ../../../supabase-pkg/supabase-supabase-js-0.0.0-automated.tgz .
+          echo "Verifying @supabase/supabase-js is available in Verdaccio..."
+          npm view @supabase/supabase-js version --registry http://localhost:4873
+          npm view @supabase/supabase-js --registry http://localhost:4873 | head -20
+
+      - name: Install dependencies and run tests in isolation
+        run: |
+          TEST_DIR="/tmp/test-bun-${{ github.run_id }}"
+          mkdir -p "$TEST_DIR"
+          cp -r packages/core/supabase-js/test/integration/bun/* "$TEST_DIR/"
+          cd "$TEST_DIR"
+          echo "registry=http://localhost:4873/" > .npmrc
           bun install
           bun test
+          rm -f .npmrc
 
       - name: Stop Supabase
         if: always()

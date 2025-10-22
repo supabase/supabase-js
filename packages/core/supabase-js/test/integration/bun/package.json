@@ -6,7 +6,7 @@
     "test:watch": "bun test --watch integration.test.ts"
   },
   "dependencies": {
-    "@supabase/supabase-js": "file:supabase-supabase-js-0.0.0-automated.tgz"
+    "@supabase/supabase-js": "*"
   },
   "devDependencies": {
     "bun-types": "latest"
