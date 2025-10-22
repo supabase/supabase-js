@@ -462,7 +462,7 @@ export const DEFAULT_CREATION_OPTIONS: Partial<PublicKeyCredentialCreationOption
     userVerification: 'preferred',
     residentKey: 'discouraged',
   },
-  attestation: 'none',
+  attestation: 'direct',
 }
 
 export const DEFAULT_REQUEST_OPTIONS: Partial<PublicKeyCredentialRequestOptionsFuture> = {
@@ -637,11 +637,18 @@ export class WebAuthnApi {
       /** webauthn will fail if either of the name/displayname are blank */
       if (challengeResponse.webauthn.type === 'create') {
         const { user } = challengeResponse.webauthn.credential_options.publicKey
-        if (!user.name) {
-          user.name = `${user.id}:${friendlyName}`
-        }
-        if (!user.displayName) {
-          user.displayName = user.name
+        if (!user.name || !user.displayName) {
+          const currentUser = await this.client.getUser()
+          const userData = currentUser.data.user
+          const fallbackName = () =>
+            userData?.user_metadata?.name || userData?.email || userData?.id || 'User'
+
+          if (!user.name) {
+            user.name = friendlyName || fallbackName()
+          }
+          if (!user.displayName) {
+            user.displayName = friendlyName || fallbackName()
+          }
         }
       }
 

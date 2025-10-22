@@ -38,6 +38,8 @@ services:
       GOTRUE_SMS_TWILIO_MESSAGE_SERVICE_SID: '${GOTRUE_SMS_TWILIO_MESSAGE_SERVICE_SID}'
       GOTRUE_SMS_AUTOCONFIRM: 'false'
       GOTRUE_COOKIE_KEY: 'sb'
+      GOTRUE_MFA_WEB_AUTHN_ENROLL_ENABLED: 'true'
+      GOTRUE_MFA_WEB_AUTHN_VERIFY_ENABLED: 'true'
     depends_on:
       - db
     restart: on-failure
@@ -69,6 +71,8 @@ services:
       GOTRUE_SMTP_ADMIN_EMAIL: admin@email.com
       GOTRUE_COOKIE_KEY: 'sb'
       GOTRUE_EXTERNAL_ANONYMOUS_USERS_ENABLED: 'true'
+      GOTRUE_MFA_WEB_AUTHN_ENROLL_ENABLED: 'true'
+      GOTRUE_MFA_WEB_AUTHN_VERIFY_ENABLED: 'true'
     depends_on:
       - db
     restart: on-failure
@@ -99,6 +103,8 @@ services:
       GOTRUE_SMTP_PASS: GOTRUE_SMTP_PASS
       GOTRUE_SMTP_ADMIN_EMAIL: admin@email.com
       GOTRUE_COOKIE_KEY: 'sb'
+      GOTRUE_MFA_WEB_AUTHN_ENROLL_ENABLED: 'true'
+      GOTRUE_MFA_WEB_AUTHN_VERIFY_ENABLED: 'true'
     depends_on:
       - db
     restart: on-failure
@@ -128,6 +134,8 @@ services:
       GOTRUE_SMTP_PASS: GOTRUE_SMTP_PASS
       GOTRUE_SMTP_ADMIN_EMAIL: admin@email.com
       GOTRUE_COOKIE_KEY: 'sb'
+      GOTRUE_MFA_WEB_AUTHN_ENROLL_ENABLED: 'true'
+      GOTRUE_MFA_WEB_AUTHN_VERIFY_ENABLED: 'true'
     depends_on:
       - db
     restart: on-failure
