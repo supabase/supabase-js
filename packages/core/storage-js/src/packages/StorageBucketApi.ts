@@ -2,7 +2,7 @@ import { DEFAULT_HEADERS } from '../lib/constants'
 import { isStorageError, StorageError } from '../lib/errors'
 import { Fetch, get, post, put, remove } from '../lib/fetch'
 import { resolveFetch } from '../lib/helpers'
-import { Bucket, BucketType } from '../lib/types'
+import { Bucket, BucketType, ListBucketOptions } from '../lib/types'
 import { StorageClientOptions } from '../StorageClient'
 
 export default class StorageBucketApi {
@@ -44,7 +44,7 @@ export default class StorageBucketApi {
   /**
    * Retrieves the details of all Storage buckets within an existing project.
    */
-  async listBuckets(): Promise<
+  async listBuckets(options?: ListBucketOptions): Promise<
     | {
         data: Bucket[]
         error: null
@@ -55,7 +55,10 @@ export default class StorageBucketApi {
       }
   > {
     try {
-      const data = await get(this.fetch, `${this.url}/bucket`, { headers: this.headers })
+      const queryString = this.listBucketOptionsToQueryString(options)
+      const data = await get(this.fetch, `${this.url}/bucket${queryString}`, {
+        headers: this.headers,
+      })
       return { data, error: null }
     } catch (error) {
       if (this.shouldThrowOnError) {
@@ -285,5 +288,27 @@ export default class StorageBucketApi {
 
       throw error
     }
+  }
+
+  private listBucketOptionsToQueryString(options?: ListBucketOptions): string {
+    const params: Record<string, string> = {}
+    if (options) {
+      if ('limit' in options) {
+        params.limit = String(options.limit)
+      }
+      if ('offset' in options) {
+        params.offset = String(options.offset)
+      }
+      if (options.search) {
+        params.search = options.search
+      }
+      if (options.sortColumn) {
+        params.sortColumn = options.sortColumn
+      }
+      if (options.sortOrder) {
+        params.sortOrder = options.sortOrder
+      }
+    }
+    return Object.keys(params).length > 0 ? '?' + new URLSearchParams(params).toString() : ''
   }
 }

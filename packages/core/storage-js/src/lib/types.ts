@@ -19,6 +19,14 @@ export interface Bucket {
   public: boolean
 }
 
+export interface ListBucketOptions {
+  limit?: number
+  offset?: number
+  sortColumn?: 'id' | 'name' | 'created_at' | 'updated_at'
+  sortOrder?: 'asc' | 'desc'
+  search?: string
+}
+
 /**
  * Represents an Analytics Bucket using Apache Iceberg table format.
  * Analytics buckets are optimized for analytical queries and data processing.
