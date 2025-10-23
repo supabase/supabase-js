@@ -9,7 +9,7 @@
         "port": 4873,
         "config": ".verdaccio/config.yml",
         "storage": "tmp/local-registry/storage",
-        "clear": false
+        "clear": true
       }
     },
     "populate-local-registry": {
