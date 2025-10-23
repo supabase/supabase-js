@@ -2,8 +2,8 @@
   "name": "test-deno",
   "private": true,
   "scripts": {
-    "test": "npm run setup-deps && deno test --allow-all --no-check --unstable-sloppy-imports integration.test.ts",
-    "test:edge-functions": "npm run setup-deps && deno test --allow-all --no-check --unstable-sloppy-imports edge-functions-integration.test.ts",
+    "test": "npm run setup-deps && node run-deno-test.js integration.test.ts",
+    "test:edge-functions": "npm run setup-deps && node run-deno-test.js edge-functions-integration.test.ts",
     "setup-deps": "node setup-deps.js"
   },
   "dependencies": {
