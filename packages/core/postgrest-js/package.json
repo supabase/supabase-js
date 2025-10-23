@@ -37,6 +37,7 @@
     "build": "npm run clean && npm run build:cjs && npm run build:esm",
     "build:cjs": "tsc -p tsconfig.json",
     "build:esm": "cpy wrapper.mjs dist/esm/",
+    "build:module": "npm run build:cjs",
     "docs": "typedoc src/index.ts --out docs/v2",
     "docs:json": "typedoc --json docs/v2/spec.json --excludeExternals src/index.ts",
     "test:ci:postgrest": "npm run db:clean && npm run db:run && npm run test:run && npm run db:clean && npm run test:smoke",

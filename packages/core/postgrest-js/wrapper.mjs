@@ -1,4 +1,4 @@
-import index from '../cjs/index.js'
+import * as index from '../cjs/index.js'
 const {
   PostgrestClient,
   PostgrestQueryBuilder,
@@ -6,7 +6,7 @@ const {
   PostgrestTransformBuilder,
   PostgrestBuilder,
   PostgrestError,
-} = index
+} = index.default || index
 
 export {
   PostgrestBuilder,
