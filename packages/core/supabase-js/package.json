@@ -42,14 +42,14 @@
     "test:node:playwright": "cd test/integration/node-browser && npm install && cp ../../../dist/umd/supabase.js . && npm run test",
     "test:bun": "cd test/integration/bun && bun install && bun test",
     "test:types": "tsd --files test/types/*.test-d.ts && jsr publish --dry-run --allow-dirty",
+    "test:verdaccio:bun": "cd test/integration/bun && echo 'registry=http://localhost:4873/' > .npmrc && bun install && bun test && rm .npmrc",
+    "test:verdaccio:expo": "cd test/integration/expo && echo 'registry=http://localhost:4873/' > .npmrc && npm install && npm test && rm .npmrc",
+    "test:verdaccio:next": "cd test/integration/next && echo 'registry=http://localhost:4873/' > .npmrc && npm install --legacy-peer-deps && npm test && rm .npmrc",
+    "test:verdaccio:deno": "cd test/deno && echo 'registry=http://localhost:4873/' > .npmrc && npm install && npm test && rm .npmrc",
+    "test:verdaccio:all": "npm run test:verdaccio:bun && npm run test:verdaccio:expo && npm run test:verdaccio:next && npm run test:verdaccio:deno",
     "docs": "typedoc --entryPoints src/index.ts --out docs/v2",
     "docs:json": "typedoc --entryPoints src/index.ts --json docs/v2/spec.json --excludeExternals",
-    "serve:coverage": "npx nx test:coverage supabase-js && serve test/coverage",
-    "update:test-deps": "npx nx build supabase-js && npm pack && cp supabase-supabase-js-*.tgz test/integration/expo/supabase-supabase-js-0.0.0-automated.tgz && cp supabase-supabase-js-*.tgz test/integration/next/supabase-supabase-js-0.0.0-automated.tgz && cp supabase-supabase-js-*.tgz test/deno/supabase-supabase-js-0.0.0-automated.tgz && cp supabase-supabase-js-*.tgz test/integration/bun/supabase-supabase-js-0.0.0-automated.tgz && cd test/integration/expo && npm install && cd ../next && npm install --legacy-peer-deps && cd ../../deno && npm install && cd ../integration/bun && bun install",
-    "update:test-deps:expo": "npx nx build supabase-js && npm pack && cp supabase-supabase-js-*.tgz test/integration/expo/supabase-supabase-js-0.0.0-automated.tgz && cd test/integration/expo && npm install",
-    "update:test-deps:next": "npx nx build supabase-js && npm pack && cp supabase-supabase-js-*.tgz test/integration/next/supabase-supabase-js-0.0.0-automated.tgz && cd test/integration/next && npm install --legacy-peer-deps",
-    "update:test-deps:deno": "npx nx build supabase-js && npm pack && cp supabase-supabase-js-*.tgz test/deno/supabase-supabase-js-0.0.0-automated.tgz && cd test/deno && npm install",
-    "update:test-deps:bun": "npx nx build supabase-js && npm pack && cp supabase-supabase-js-*.tgz test/integration/bun/supabase-supabase-js-0.0.0-automated.tgz && cd test/integration/bun && bun install"
+    "serve:coverage": "npx nx test:coverage supabase-js && serve test/coverage"
   },
   "dependencies": {
     "@supabase/auth-js": "*",
