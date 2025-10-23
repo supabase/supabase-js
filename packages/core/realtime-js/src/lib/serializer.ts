@@ -13,11 +13,12 @@ export type Msg<T> = {
 export default class Serializer {
   HEADER_LENGTH = 1
   META_LENGTH = 4
-  USER_PUSH_META_LENGTH = 6
-  KINDS = { push: 0, reply: 1, broadcast: 2, userPush: 3, userBroadcast: 4 }
+  USER_BROADCAST_PUSH_META_LENGTH = 5
+  KINDS = { push: 0, reply: 1, broadcast: 2, userBroadcastPush: 3, userBroadcast: 4 }
   BINARY_ENCODING = 0
   JSON_ENCODING = 1
   BROADCAST = 'broadcast'
+
   encode(
     msg: Msg<{ [key: string]: any } | ArrayBuffer>,
     callback: (result: ArrayBuffer | string) => any
@@ -32,7 +33,7 @@ export default class Serializer {
       typeof msg.payload.event === 'string'
     ) {
       return callback(
-        this._binaryEncodeUserPush(msg as Msg<{ event: string } & { [key: string]: any }>)
+        this._binaryEncodeUserBroadcastPush(msg as Msg<{ event: string } & { [key: string]: any }>)
       )
     }
 
@@ -65,42 +66,39 @@ export default class Serializer {
     return combined.buffer
   }
 
-  private _binaryEncodeUserPush(message: Msg<{ event: string } & { [key: string]: any }>) {
+  private _binaryEncodeUserBroadcastPush(message: Msg<{ event: string } & { [key: string]: any }>) {
     if (this._isArrayBuffer(message.payload?.payload)) {
-      return this._encodeBinaryPush(message)
+      return this._encodeBinaryUserBroadcastPush(message)
     } else {
-      return this._encodeJsonPush(message)
+      return this._encodeJsonUserBroadcastPush(message)
     }
   }
 
-  private _encodeBinaryPush(message: Msg<{ event: string } & { [key: string]: any }>) {
-    const { join_ref, ref, event, topic } = message
+  private _encodeBinaryUserBroadcastPush(message: Msg<{ event: string } & { [key: string]: any }>) {
+    const { join_ref, ref, topic } = message
     const userEvent = message.payload.event
     const userPayload = message.payload?.payload ?? new ArrayBuffer(0)
 
     const metaLength =
-      this.USER_PUSH_META_LENGTH +
+      this.USER_BROADCAST_PUSH_META_LENGTH +
       join_ref.length +
       ref.length +
       topic.length +
-      event.length +
       userEvent.length
 
     const header = new ArrayBuffer(this.HEADER_LENGTH + metaLength)
     let view = new DataView(header)
     let offset = 0
 
-    view.setUint8(offset++, this.KINDS.userPush) // kind
+    view.setUint8(offset++, this.KINDS.userBroadcastPush) // kind
     view.setUint8(offset++, join_ref.length)
     view.setUint8(offset++, ref.length)
     view.setUint8(offset++, topic.length)
-    view.setUint8(offset++, event.length)
     view.setUint8(offset++, userEvent.length)
     view.setUint8(offset++, this.BINARY_ENCODING)
     Array.from(join_ref, (char) => view.setUint8(offset++, char.charCodeAt(0)))
     Array.from(ref, (char) => view.setUint8(offset++, char.charCodeAt(0)))
     Array.from(topic, (char) => view.setUint8(offset++, char.charCodeAt(0)))
-    Array.from(event, (char) => view.setUint8(offset++, char.charCodeAt(0)))
     Array.from(userEvent, (char) => view.setUint8(offset++, char.charCodeAt(0)))
 
     var combined = new Uint8Array(header.byteLength + userPayload.byteLength)
@@ -110,9 +108,8 @@ export default class Serializer {
     return combined.buffer
   }
 
-  //
-  private _encodeJsonPush(message: Msg<{ event: string } & { [key: string]: any }>) {
-    const { join_ref, ref, event, topic } = message
+  private _encodeJsonUserBroadcastPush(message: Msg<{ event: string } & { [key: string]: any }>) {
+    const { join_ref, ref, topic } = message
     const userEvent = message.payload.event
     const userPayload = message.payload?.payload ?? {}
 
@@ -120,28 +117,25 @@ export default class Serializer {
     const encodedUserPayload = encoder.encode(JSON.stringify(userPayload)).buffer
 
     const metaLength =
-      this.USER_PUSH_META_LENGTH +
+      this.USER_BROADCAST_PUSH_META_LENGTH +
       join_ref.length +
       ref.length +
       topic.length +
-      event.length +
       userEvent.length
 
     const header = new ArrayBuffer(this.HEADER_LENGTH + metaLength)
     let view = new DataView(header)
     let offset = 0
 
-    view.setUint8(offset++, this.KINDS.userPush) // kind
+    view.setUint8(offset++, this.KINDS.userBroadcastPush) // kind
     view.setUint8(offset++, join_ref.length)
     view.setUint8(offset++, ref.length)
     view.setUint8(offset++, topic.length)
-    view.setUint8(offset++, event.length)
     view.setUint8(offset++, userEvent.length)
     view.setUint8(offset++, this.JSON_ENCODING)
     Array.from(join_ref, (char) => view.setUint8(offset++, char.charCodeAt(0)))
     Array.from(ref, (char) => view.setUint8(offset++, char.charCodeAt(0)))
     Array.from(topic, (char) => view.setUint8(offset++, char.charCodeAt(0)))
-    Array.from(event, (char) => view.setUint8(offset++, char.charCodeAt(0)))
     Array.from(userEvent, (char) => view.setUint8(offset++, char.charCodeAt(0)))
 
     var combined = new Uint8Array(header.byteLength + encodedUserPayload.byteLength)
@@ -283,29 +277,34 @@ export default class Serializer {
     payload: { [key: string]: any }
   } {
     const topicSize = view.getUint8(1)
-    const eventSize = view.getUint8(2)
-    const userEventSize = view.getUint8(3)
-    const encoding = view.getUint8(4)
+    const userEventSize = view.getUint8(2)
+    const metadataSize = view.getUint8(3)
+    const payloadEncoding = view.getUint8(4)
+
     let offset = this.HEADER_LENGTH + 4
     const topic = decoder.decode(buffer.slice(offset, offset + topicSize))
     offset = offset + topicSize
-    const event = decoder.decode(buffer.slice(offset, offset + eventSize))
-    offset = offset + eventSize
     const userEvent = decoder.decode(buffer.slice(offset, offset + userEventSize))
     offset = offset + userEventSize
+    const metadata = decoder.decode(buffer.slice(offset, offset + metadataSize))
+    offset = offset + metadataSize
 
     const payload = buffer.slice(offset, buffer.byteLength)
-    var parsedPayload
+    const parsedPayload =
+      payloadEncoding === this.JSON_ENCODING ? JSON.parse(decoder.decode(payload)) : payload
 
-    if (encoding === this.JSON_ENCODING) {
-      parsedPayload = JSON.parse(decoder.decode(payload))
-    } else {
-      parsedPayload = payload
+    const data: { [key: string]: any } = {
+      type: this.BROADCAST,
+      event: userEvent,
+      payload: parsedPayload,
     }
 
-    const data = { type: 'broadcast', event: userEvent, payload: parsedPayload }
+    // Metadata is optional and always JSON encoded
+    if (metadataSize > 0) {
+      data['meta'] = JSON.parse(metadata)
+    }
 
-    return { join_ref: null, ref: null, topic: topic, event: event, payload: data }
+    return { join_ref: null, ref: null, topic: topic, event: this.BROADCAST, payload: data }
   }
 
   private _isArrayBuffer(buffer: any): boolean {

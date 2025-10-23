@@ -47,7 +47,9 @@ describe('endpointURL', () => {
   })
 
   test('errors out with unsupported version', () => {
-    expect(() => new RealtimeClient(testSetup.url, { params: { apikey: '123456789' }, vsn: '4.0.0', })).toThrow(/Unsupported serializer/)
+    expect(
+      () => new RealtimeClient(testSetup.url, { params: { apikey: '123456789' }, vsn: '4.0.0' })
+    ).toThrow(/Unsupported serializer/)
   })
 
   test('returns endpoint with no params (empty params object)', () => {

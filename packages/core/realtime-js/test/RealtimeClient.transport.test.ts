@@ -318,7 +318,10 @@ describe('V3 serializer', () => {
     }
 
     testSetup.socket.encode(msg, (encoded) => {
-      assert.deepStrictEqual(encoded, JSON.stringify(["join_ref1","ref1","topic1","event1",{"foo":"bar"}]))
+      assert.deepStrictEqual(
+        encoded,
+        JSON.stringify(['join_ref1', 'ref1', 'topic1', 'event1', { foo: 'bar' }])
+      )
     })
   })
 
@@ -337,16 +340,14 @@ describe('V3 serializer', () => {
 
     testSetup.socket.encode(msg, (encoded) => {
       assert.ok(encoded instanceof ArrayBuffer)
-
     })
   })
 
   test('decodes JSON array', () => {
-    let payload = JSON.stringify(["join_ref1","ref1","topic1","event1",{"foo":"bar"}])
+    let payload = JSON.stringify(['join_ref1', 'ref1', 'topic1', 'event1', { foo: 'bar' }])
 
     testSetup.socket.decode(payload, (decoded) => {
-      assert.deepStrictEqual(decoded,
-      {
+      assert.deepStrictEqual(decoded, {
         join_ref: 'join_ref1',
         ref: 'ref1',
         topic: 'topic1',

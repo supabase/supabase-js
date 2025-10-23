@@ -35,7 +35,7 @@ let binPayload = () => {
 }
 
 describe('JSON', () => {
-  it('encodes general pushes', async () => {
+  it('encodes', async () => {
     const result = await encodeAsync(serializer, exampleMsg)
     expect(result).toBe('["0","1","t","e",{"foo":1}]')
   })
@@ -76,21 +76,19 @@ describe('binary', () => {
     expect(decoder.decode(result as ArrayBuffer)).toBe(bin)
   })
 
-  it('encodes user push with JSON broadcast', async () => {
-    // 3 -> user_push
+  it('encodes user broadcast push with JSON payload', async () => {
+    // 3 -> user_broadcast_push
     // 2 join_ref length
     // 1 for ref length
     // 3 for topic length
-    // 9 for event length
     // 10 for user event length
     // 1 for JSON encoding
     // actual join ref
     // actual ref
     // actual topic
-    // actual event
     // actual user event
     // actual payload
-    let bin = '\x03\x02\x01\x03\x09\x0a\x01101topbroadcastuser-event{"a":"b"}'
+    let bin = '\x03\x02\x01\x03\x0a\x01101topuser-event{"a":"b"}'
 
     let decoder = new TextDecoder()
     const result = await encodeAsync(serializer, {
@@ -101,12 +99,42 @@ describe('binary', () => {
       payload: {
         event: 'user-event',
         payload: {
-          a: 'b'
-        }
-      }
+          a: 'b',
+        },
+      },
     })
     expect(decoder.decode(result as ArrayBuffer)).toBe(bin)
+  })
 
+  it('encodes user broadcast push with Binary payload', async () => {
+    // 3 -> user_broadcast_push
+    // 2 join_ref length
+    // 1 for ref length
+    // 3 for topic length
+    // 10 for user event length
+    // 0 for Binary encoding
+    // actual join ref
+    // actual ref
+    // actual topic
+    // actual user event
+    // actual payload
+    const text = 'Hello, world!'
+    const encoder = new TextEncoder()
+    const binaryPayload = encoder.encode(text).buffer
+    let bin = '\x03\x02\x01\x03\x0a\x00101topuser-eventHello, world!'
+
+    let decoder = new TextDecoder()
+    const result = await encodeAsync(serializer, {
+      join_ref: '10',
+      ref: '1',
+      topic: 'top',
+      event: 'broadcast',
+      payload: {
+        event: 'user-event',
+        payload: binaryPayload,
+      },
+    })
+    expect(decoder.decode(result as ArrayBuffer)).toBe(bin)
   })
 
   it('decodes push payload as JSON', async () => {
@@ -150,5 +178,62 @@ describe('binary', () => {
     expect(result.event).toBe('some-event')
     expect(result.payload.constructor).toBe(Object)
     expect(result.payload).toStrictEqual({ a: 'b' })
+  })
+
+  it('decodes user broadcast with JSON payload and no metadata', async () => {
+    // 4 -> user_broadcast
+    // 3 for topic length
+    // 10 for user event length
+    // 0 for metadata length
+    // 1 for JSON encoding
+    // actual topic
+    // actual user event
+    // (no metadata)
+    // actual payload
+    let bin = '\x04\x03\x0a\x00\x01topuser-event{"a":"b"}'
+    let buffer = new TextEncoder().encode(bin).buffer
+
+    const result = await decodeAsync(serializer, buffer)
+    console.log(result)
+
+    expect(result.join_ref).toBeNull()
+    expect(result.ref).toBeNull()
+    expect(result.topic).toBe('top')
+    expect(result.event).toBe('broadcast')
+    expect(result.payload.constructor).toBe(Object)
+    expect(result.payload).toStrictEqual({
+      type: 'broadcast',
+      event: 'user-event',
+      payload: { a: 'b' },
+    })
+  })
+
+  it('decodes user broadcast with JSON payload and metadata', async () => {
+    // 4 -> user_broadcast
+    // 3 for topic length
+    // 10 for user event length
+    // 17 for metadata length 17 (\x11)
+    // 1 for JSON encoding
+    // actual topic
+    // actual user event
+    // (no metadata)
+    // actual payload
+    let bin = '\x04\x03\x0a\x11\x01topuser-event{"replayed":true}{"a":"b"}'
+    let buffer = new TextEncoder().encode(bin).buffer
+    ;('{"replayed":true}')
+    const result = await decodeAsync(serializer, buffer)
+    console.log(result)
+
+    expect(result.join_ref).toBeNull()
+    expect(result.ref).toBeNull()
+    expect(result.topic).toBe('top')
+    expect(result.event).toBe('broadcast')
+    expect(result.payload.constructor).toBe(Object)
+    expect(result.payload).toStrictEqual({
+      type: 'broadcast',
+      event: 'user-event',
+      meta: { replayed: true },
+      payload: { a: 'b' },
+    })
   })
 })
