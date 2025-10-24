@@ -2,30 +2,6 @@
 
 **Important:** The test suite includes tests for multiple runtime environments (Node.js, Deno, Bun, Expo, Next.js). Each environment has its own test runner and specific requirements.
 
-## Prerequisites for All Integration Tests
-
-1. **Docker** must be installed and running
-2. **Supabase CLI** must be installed (`npm install -g supabase` or via package manager)
-3. **Local Supabase instance** must be started:
-
-```bash
-# Navigate to the supabase-js package directory
-cd packages/core/supabase-js
-
-# Start Supabase (downloads and starts all required containers)
-npx supabase start
-
-# The output will show:
-# - API URL: http://127.0.0.1:54321
-# - Database URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
-# - Studio URL: http://127.0.0.1:54323
-# - Publishable key: [your-publishable-key]
-# - Secret key: [your-secret-key]  # Important for some tests!
-
-# Return to monorepo root for running tests
-cd ../../..
-```
-
 ## Test Scripts Overview
 
 | Script                     | Description                               | Requirements                            |
@@ -42,16 +18,42 @@ cd ../../..
 | `test:node:playwright`     | WebSocket browser tests                   | Supabase running + Playwright           |
 | `test:bun`                 | Bun runtime compatibility tests           | Supabase running + Bun installed        |
 | `test:types`               | Type testing                              | None                                    |
-| Deno (see section below)   | Deno runtime compatibility tests          | Supabase running + Deno installed       |
-| Expo (see section below)   | React Native/Expo tests                   | Supabase running + dependencies updated |
-| Next.js (see below)        | Next.js SSR tests                         | Supabase running + dependencies updated |
+| `test:deno`                | Deno runtime compatibility tests          | Supabase running + Deno installed       |
+| `test:expo`                | React Native/Expo tests                   | Supabase running + dependencies updated |
+| `test:next`                | Next.js SSR tests                         | Supabase running + dependencies updated |
+
+## Prerequisites for All Integration Tests
+
+1. **Docker** must be installed and running
+2. **Supabase CLI** must be installed (`brew install supabase/tap/supabase` - [for other platforms read here](https://supabase.com/docs/guides/local-development/cli/getting-started?queryGroups=platform&platform=macos#installing-the-supabase-cli))
+3. **Local Supabase instance** must be started:
+
+```bash
+# Navigate to the supabase-js package directory
+cd packages/core/supabase-js
+
+# Start Supabase (downloads and starts all required containers)
+npx supabase start
+
+# The output will show:
+# - API URL: http://127.0.0.1:54321
+# - Database URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
+# - Studio URL: http://127.0.0.1:54323
+# - Publishable key: [your-publishable-key]
+# - Secret key: [your-secret-key]
+# - Service role key: [your-service-role-key]  # Important for some tests!
+
+# Return to monorepo root for running tests
+cd ../../..
+```
+
+4. `SUPABASE_SERVICE_ROLE_KEY` env variable exported/available
 
 ## Unit Testing
 
-```bash
-# Run all unit tests (Jest)
-npx nx test supabase-js
+Run these from the root of the repo:
 
+```bash
 # Run only unit tests in test/unit directory
 npx nx test:unit supabase-js
 
@@ -64,21 +66,31 @@ npx nx test:coverage supabase-js
 
 ## Integration Testing
 
-```bash
-# Prerequisites: Start Supabase first (see above)
+### Exporting `SUPABASE_SERVICE_ROLE_KEY` environment variable:
 
-# Run Node.js integration tests
-# IMPORTANT: Requires SUPABASE_SERVICE_ROLE_KEY environment variable
+```bash
+# Prerequisites: Start Supabase first
 cd packages/core/supabase-js
 export SUPABASE_SERVICE_ROLE_KEY="$(npx supabase status --output json | jq -r '.SERVICE_ROLE_KEY')"
 cd ../../..
 npx nx test:integration supabase-js
+```
 
+To run these tests successfully, you also need to have the Supabase CLI installed. [Here are instructions](https://supabase.com/docs/guides/local-development/cli/getting-started?queryGroups=platform&platform=macos#installing-the-supabase-cli) on how you can install it. Then you can run these tests:
+
+```bash
 # Run browser-based integration tests (requires Deno)
 npx nx test:integration:browser supabase-js
 ```
 
 ## Running All Tests
+
+Checklist:
+
+- [ ] Docker running
+- [ ] Supabase local instance running
+- [ ] Supabase CLI installed on machine
+- [ ] `SUPABASE_SERVICE_ROLE_KEY` env var available/exported
 
 ```bash
 # This runs type checking, unit tests, and integration tests sequentially
@@ -90,59 +102,95 @@ npx nx test:all supabase-js
 
 | Issue                                        | Solution                                                        |
 | -------------------------------------------- | --------------------------------------------------------------- |
-| "Cannot find module 'https://deno.land/...'" | Deno tests incorrectly run by Jest - check `jest.config.ts`     |
 | "Port 54322 already allocated"               | Stop existing Supabase: `npx supabase stop --project-id <name>` |
 | "503 Service Unavailable" for Edge Functions | Supabase not running - start with `npx supabase start`          |
-| "Uncommitted changes" during type check      | Commit changes or add `--allow-dirty` to JSR publish            |
 | Integration tests fail with auth errors      | Export `SUPABASE_SERVICE_ROLE_KEY` (see Integration Testing)    |
 
 ## Platform-Specific Testing
 
-### Expo Testing (React Native)
+Platform tests verify that the SDK works correctly across different runtime environments (Node.js, Deno, Bun, Expo, Next.js). To do that, we use a tool called [Verdaccio](https://verdaccio.org/), which will run a local Node.js private proxy registry, where we will publish our `@supabase/*-js` packages, and then install them in the different environments.
+
+### Verdaccio Workflow
+
+#### Setup
+
+From the root of the workspace, run:
 
 ```bash
-# Prerequisites:
-# 1. Supabase must be running (see Prerequisites)
-# 2. Update test dependencies and pack current build
-cd packages/core/supabase-js
-npm run update:test-deps:expo
+# Terminal 1: Start local Verdaccio registry (stays running)
+npx nx local-registry
 
-# Run Expo tests from the Expo test project
-cd test/integration/expo
-npm install
-npm test
-cd ../../..
+# Terminal 2: Build and publish packages to local registry
+npx nx run-many --target=build --all
+npx nx populate-local-registry
+```
+
+**Important!**
+
+_After you finish_ testing, _reset_ your npm registry to point to npm:
+
+```bash
+npm config set registry https://registry.npmjs.org/
+```
+
+#### Update dependencies:
+
+```bash
+# This will run `npm i` in each of the intergration tests directories, 
+# fetching the locally published packages
+npx nx update:test-deps supabase-js
+```
+
+**Tips:**
+
+- Keep Verdaccio running in Terminal 1 for multiple test runs
+- Only rebuild/republish when you change source code
+- Registry runs on `http://localhost:4873/`
+- To stop Verdaccio: Ctrl+C in Terminal 1
+
+### Running the tests
+
+#### Expo Testing (React Native)
+
+```bash
+cd packages/core/supabase-js
+npx nx test:expo
+```
+
+or from the root of the workspace:
+
+```bash
+npx nx run @supabase/supabase-js:"test:expo"
 ```
 
 ### Next.js Testing (SSR)
 
 ```bash
-# Prerequisites:
-# 1. Supabase must be running (see Prerequisites)
-# 2. Update test dependencies and pack current build
-npx nx update:test-deps:next supabase-js
-
-# 3. Install Playwright browsers and dependencies
+cd packages/core/supabase-js
+# Install Playwright browsers and dependencies
 npx playwright install --with-deps
+# Run the tests
+npx nx test:next
+```
 
-# Run Next.js tests from the Next test project
-cd packages/core/supabase-js/test/integration/next
-npm install --legacy-peer-deps
-npm run test
-cd ../../..
+or from the root of the workspace:
+
+```bash
+npx nx run @supabase/supabase-js:"test:next"
 ```
 
 ### Deno Testing
 
 ```bash
-# Prerequisites:
-# 1. Deno must be installed (https://deno.land)
-# 2. Supabase must be running (see Prerequisites)
-# 3. Update test dependencies:
-npx nx update:test-deps:deno supabase-js
+cd packages/core/supabase-js
+# Deno must be installed (https://deno.land)
+npx nx test:deno
+```
 
-# Run Deno tests
-npx nx test:deno supabase-js
+or from the root of the workspace:
+
+```bash
+npx nx run @supabase/supabase-js:"test:deno"
 ```
 
 ## Edge Functions Testing
@@ -150,22 +198,14 @@ npx nx test:deno supabase-js
 The project includes Edge Functions integration tests that require a local Supabase instance to be running.
 
 ```bash
-# Prerequisites:
-# 1. Ensure Docker is installed and running
-# 2. Navigate to the supabase-js package directory
 cd packages/core/supabase-js
+npx nx test:edge-functions
+```
 
-# 3. Start Supabase locally (this will download and start all required containers)
-npx supabase start
+or from the root of the workspace:
 
-# Wait for the output showing all services are ready, including:
-# - API URL: http://127.0.0.1:54321
-# - Database URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
-# - Edge Runtime container
-
-# 4. Run the Edge Functions tests from the monorepo root
-cd ../../../  # Back to monorepo root
-npx nx test:edge-functions supabase-js
+```bash
+npx nx run @supabase/supabase-js:"test:edge-functions"
 ```
 
 **Important Notes:**
@@ -173,11 +213,11 @@ npx nx test:edge-functions supabase-js
 - The Edge Functions tests will fail with 503 errors if Supabase is not running
 - If you encounter port conflicts (e.g., "port 54322 already allocated"), stop any existing Supabase instances:
 
-  ```bash
-  npx supabase stop --project-id <project-name>
-  # Or stop all Docker containers if unsure:
-  docker ps | grep supabase  # List all Supabase containers
-  ```
+```bash
+npx supabase stop --project-id <project-name>
+# Or stop all Docker containers if unsure:
+docker ps | grep supabase  # List all Supabase containers
+```
 
 - The tests use the default local development credentials (anon key)
 - Edge Functions are automatically served when `supabase start` is run
@@ -185,74 +225,35 @@ npx nx test:edge-functions supabase-js
 ### Bun Testing
 
 ```bash
-# Prerequisites:
-# 1. Bun must be installed (https://bun.sh)
-# 2. Supabase must be running (see Prerequisites)
-# 3. Update test dependencies:
-npx nx update:test-deps:bun supabase-js
+cd packages/core/supabase-js
+npx nx test:bun
+```
 
-# Run Bun tests
-npx nx test:bun supabase-js
+or from the root of the workspace:
+
+```bash
+npx nx run @supabase/supabase-js:"test:bun"
 ```
 
 ### WebSocket Browser Testing
 
 ```bash
-# Prerequisites:
-# 1. Supabase must be running (see Prerequisites)
-# 2. Build the UMD bundle first:
-npx nx build supabase-js
-
-# Run WebSocket browser tests with Playwright
-cd packages/core/supabase-js/test/integration/node-browser
-npm install
-cp ../../../dist/umd/supabase.js .
-npm run test
-cd ../../..
+cd packages/core/supabase-js
+npx nx test:node:playwright
 ```
 
-### CI/CD Testing
-
-When running on CI, the tests automatically use the latest dependencies from the root project. The CI pipeline:
-
-1. Builds the main project with current dependencies
-2. Creates a package archive (`.tgz`) with the latest versions
-3. Uses this archive in Expo, Next.js, Deno, and Bun tests to ensure consistency
-
-## Updating Test Dependencies
-
-The platform-specific tests (Expo, Next.js, Deno, Bun) use a packaged version of supabase-js rather than directly importing from source. This ensures they test the actual built package as it would be consumed by users.
-
-### How It Works
-
-1. **Build** the current supabase-js package
-2. **Pack** it into a `.tgz` file (like `npm pack` does)
-3. **Copy** the `.tgz` to the test directory
-4. **Install** it in the test project
-
-This mimics how real users would install and use the package.
-
-### Update Scripts
+or from the root of the workspace:
 
 ```bash
-# Update ALL test environment dependencies at once
-# This builds, packs, and installs in all test directories
-npx nx update:test-deps supabase-js
-
-# Or update specific test environments:
-npx nx update:test-deps:expo supabase-js    # Expo/React Native only
-npx nx update:test-deps:next supabase-js    # Next.js only
-npx nx update:test-deps:deno supabase-js    # Deno only
-npx nx update:test-deps:bun supabase-js     # Bun only
+npx nx run @supabase/supabase-js:"test:node:playwright"
 ```
+**Important!**
 
-**When to Update:**
+After you finish testing, reset your npm registry to point to npm:
 
-- After making changes to the source code
-- Before running platform-specific tests locally
-- When debugging test failures that might be due to stale dependencies
-
-**Note:** CI automatically handles this, so manual updates are only needed for local development.
+```bash
+npm config set registry https://registry.npmjs.org/
+```
 
 ## Test Coverage
 
