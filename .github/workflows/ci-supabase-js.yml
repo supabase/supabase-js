@@ -42,6 +42,18 @@ jobs:
       - name: Build all packages
         run: npx nx run-many --target=build --all
 
+      - name: Upload built packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: packages-dist
+          path: |
+            packages/core/auth-js/dist
+            packages/core/functions-js/dist
+            packages/core/postgrest-js/dist
+            packages/core/realtime-js/dist
+            packages/core/storage-js/dist
+            packages/core/supabase-js/dist
+
       - name: Upload UMD build
         uses: actions/upload-artifact@v4
         with:
@@ -73,11 +85,8 @@ jobs:
       - name: Install dependencies
         run: npm ci --legacy-peer-deps
 
-      - name: Type Check
-        run: npx nx test:types supabase-js
-
-      - name: Run Unit Tests + Coverage
-        run: npx nx test:coverage supabase-js
+      - name: Type Check + Unit Tests + Coverage
+        run: npx nx run-many --targets=test:types,test:coverage --projects=supabase-js
 
       - name: Upload coverage results to Coveralls
         uses: coverallsapp/github-action@v2
@@ -207,7 +216,7 @@ jobs:
         if: ${{ matrix.deno == '2.x' }}
         run: |
           cd packages/core/supabase-js/test/deno
-          npx nx test:edge-functions supabase-js
+          npm run test:edge-functions
           cd ../../..
 
       - name: Stop Supabase
@@ -332,9 +341,6 @@ jobs:
           echo "Verifying storage bucket exists"
           supabase db query "select id, name from storage.buckets where id = 'test-bucket';"
 
-      - name: Install Playwright browsers and dependencies
-        run: npx playwright install --with-deps
-
       - name: Verify packages in Verdaccio
         run: |
           echo "Verifying @supabase/supabase-js is available in Verdaccio..."
@@ -349,7 +355,7 @@ jobs:
           cd "$TEST_DIR"
           echo "registry=http://localhost:4873/" > .npmrc
           npm install --legacy-peer-deps
-          npx playwright install
+          npx playwright install --with-deps
           npm run test
           rm -f .npmrc
 
