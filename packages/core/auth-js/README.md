@@ -27,6 +27,7 @@
 [![Package](https://img.shields.io/npm/v/@supabase/auth-js)](https://www.npmjs.com/package/@supabase/auth-js)
 [![License: MIT](https://img.shields.io/npm/l/@supabase/supabase-js)](#license)
 [![pkg.pr.new](https://pkg.pr.new/badge/supabase/auth-js)](https://pkg.pr.new/~/supabase/auth-js)
+
 </div>
 
 ## Quick start
@@ -81,8 +82,6 @@ npx nx build:main auth-js    # CommonJS build (dist/main/)
 npx nx build:module auth-js  # ES Modules build (dist/module/)
 
 # Other useful commands
-npx nx clean auth-js         # Clean build artifacts
-npx nx format auth-js        # Format code with Prettier
 npx nx lint auth-js          # Run ESLint
 npx nx typecheck auth-js     # TypeScript type checking
 npx nx docs auth-js          # Generate documentation

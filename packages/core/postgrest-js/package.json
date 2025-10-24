@@ -61,7 +61,6 @@
     "cpy-cli": "^5.0.0",
     "jest": "^28.1.0",
     "node-abort-controller": "^3.0.1",
-    "prettier": "^2.6.2",
     "ts-jest": "^28.0.3",
     "tstyche": "^4.3.0",
     "type-fest": "^4.32.0",

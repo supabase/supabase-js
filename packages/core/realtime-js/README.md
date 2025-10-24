@@ -267,7 +267,6 @@ npx nx build:module realtime-js  # ES Modules build (dist/module/)
 
 # Other useful commands
 npx nx clean realtime-js         # Clean build artifacts
-npx nx format realtime-js        # Format code with Prettier
 npx nx lint realtime-js          # Run ESLint
 npx nx typecheck realtime-js     # TypeScript type checking
 ```

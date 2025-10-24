@@ -77,7 +77,6 @@ npx nx build:module functions-js  # ES Modules build (dist/module/)
 
 # Other useful commands
 npx nx clean functions-js         # Clean build artifacts
-npx nx format functions-js        # Format code with Prettier
 npx nx typecheck functions-js     # TypeScript type checking
 npx nx docs functions-js          # Generate documentation
 ```

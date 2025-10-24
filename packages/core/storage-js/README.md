@@ -58,10 +58,7 @@ If you're already using `@supabase/supabase-js`, access storage through the clie
 ```js
 import { createClient } from '@supabase/supabase-js'
 
-const supabase = createClient(
-  'https://<project_ref>.supabase.co',
-  '<your-anon-key>'
-)
+const supabase = createClient('https://<project_ref>.supabase.co', '<your-anon-key>')
 
 // Access storage
 const storage = supabase.storage
@@ -94,6 +91,7 @@ const analyticsBucket = storageClient.analytics // Analytics API
 ```
 
 > **When to use each approach:**
+>
 > - Use `supabase.storage` when working with other Supabase features (auth, database, etc.)
 > - Use `new StorageClient()` for storage-only applications or when you need fine-grained control
 
@@ -108,7 +106,7 @@ Standard buckets for storing files, images, videos, and other assets.
 ```js
 // Create regular storage bucket
 const { data, error } = await storageClient.createBucket('my-files', {
-  public: false
+  public: false,
 })
 
 // Upload files
@@ -130,7 +128,7 @@ const bucket = storageClient.vectors.from('embeddings-prod')
 await bucket.createIndex({
   indexName: 'documents',
   dimension: 1536,
-  distanceMetric: 'cosine'
+  distanceMetric: 'cosine',
 })
 ```
 
@@ -290,6 +288,7 @@ Supabase Storage provides specialized analytics buckets using Apache Iceberg tab
 ### What are Analytics Buckets?
 
 Analytics buckets use the Apache Iceberg open table format, providing:
+
 - **ACID transactions** for data consistency
 - **Schema evolution** without data rewrites
 - **Time travel** to query historical data
@@ -299,6 +298,7 @@ Analytics buckets use the Apache Iceberg open table format, providing:
 ### When to Use Analytics Buckets
 
 **Use analytics buckets for:**
+
 - Time-series data (logs, metrics, events)
 - Data lake architectures
 - Business intelligence and reporting
@@ -306,6 +306,7 @@ Analytics buckets use the Apache Iceberg open table format, providing:
 - Analytical workloads requiring ACID guarantees
 
 **Use regular storage buckets for:**
+
 - User file uploads (images, documents, videos)
 - Individual file management
 - Content delivery
@@ -320,10 +321,7 @@ You can access analytics functionality through the `analytics` property on your 
 ```typescript
 import { createClient } from '@supabase/supabase-js'
 
-const supabase = createClient(
-  'https://your-project.supabase.co',
-  'your-anon-key'
-)
+const supabase = createClient('https://your-project.supabase.co', 'your-anon-key')
 
 // Access analytics operations
 const analytics = supabase.storage.analytics
@@ -371,6 +369,7 @@ if (error) {
 ```
 
 **Returns:**
+
 ```typescript
 {
   data: {
@@ -394,18 +393,19 @@ const { data, error } = await analytics.listBuckets({
   offset: 0,
   sortColumn: 'created_at',
   sortOrder: 'desc',
-  search: 'prod'
+  search: 'prod',
 })
 
 if (data) {
   console.log(`Found ${data.length} analytics buckets`)
-  data.forEach(bucket => {
+  data.forEach((bucket) => {
     console.log(`- ${bucket.id} (created: ${bucket.created_at})`)
   })
 }
 ```
 
 **Parameters:**
+
 - `limit?: number` - Maximum number of buckets to return
 - `offset?: number` - Number of buckets to skip (for pagination)
 - `sortColumn?: 'id' | 'name' | 'created_at' | 'updated_at'` - Column to sort by
@@ -413,6 +413,7 @@ if (data) {
 - `search?: string` - Search term to filter bucket names
 
 **Returns:**
+
 ```typescript
 {
   data: AnalyticBucket[] | null
@@ -428,7 +429,7 @@ const firstPage = await analytics.listBuckets({
   limit: 100,
   offset: 0,
   sortColumn: 'created_at',
-  sortOrder: 'desc'
+  sortOrder: 'desc',
 })
 
 // Fetch second page
@@ -436,7 +437,7 @@ const secondPage = await analytics.listBuckets({
   limit: 100,
   offset: 100,
   sortColumn: 'created_at',
-  sortOrder: 'desc'
+  sortOrder: 'desc',
 })
 ```
 
@@ -455,6 +456,7 @@ if (error) {
 ```
 
 **Returns:**
+
 ```typescript
 {
   data: { message: string } | null
@@ -503,11 +505,7 @@ try {
 The library exports TypeScript types for analytics buckets:
 
 ```typescript
-import type {
-  AnalyticBucket,
-  BucketType,
-  StorageError,
-} from '@supabase/storage-js'
+import type { AnalyticBucket, BucketType, StorageError } from '@supabase/storage-js'
 
 // AnalyticBucket type
 interface AnalyticBucket {
@@ -526,7 +524,7 @@ interface AnalyticBucket {
 ```typescript
 async function bucketExists(bucketName: string): Promise<boolean> {
   const { data, error } = await analytics.listBuckets({
-    search: bucketName
+    search: bucketName,
   })
 
   if (error) {
@@ -534,7 +532,7 @@ async function bucketExists(bucketName: string): Promise<boolean> {
     return false
   }
 
-  return data?.some(bucket => bucket.id === bucketName) ?? false
+  return data?.some((bucket) => bucket.id === bucketName) ?? false
 }
 ```
 
@@ -575,7 +573,7 @@ async function getAllAnalyticsBuckets() {
       limit,
       offset,
       sortColumn: 'created_at',
-      sortOrder: 'desc'
+      sortOrder: 'desc',
     })
 
     if (error) {
@@ -629,10 +627,7 @@ If you're using the full Supabase client:
 ```typescript
 import { createClient } from '@supabase/supabase-js'
 
-const supabase = createClient(
-  'https://your-project.supabase.co',
-  'your-anon-key'
-)
+const supabase = createClient('https://your-project.supabase.co', 'your-anon-key')
 
 // Access vector operations through storage
 const vectors = supabase.storage.vectors
@@ -1085,7 +1080,6 @@ The storage-js package uses multiple build scripts to generate different module 
 | `build:module` | **ES Modules build**        | `dist/module/` - Modern ES6 modules with TypeScript definitions |
 | `build:umd`    | **UMD build**               | `dist/umd/` - Universal Module Definition for browsers/CDN      |
 | `clean`        | **Clean build artifacts**   | Removes `dist/` and `docs/v2/` directories                      |
-| `format`       | **Format code**             | Runs Prettier on all TypeScript files                           |
 
 #### Running Builds
 
