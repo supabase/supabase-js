@@ -107,6 +107,11 @@ export type GoTrueClientOptions = {
    * @experimental
    */
   hasCustomAuthorizationHeader?: boolean
+  /**
+   * If there is an error with the query, throwOnError will reject the promise by
+   * throwing the error instead of returning it as part of a successful response.
+   */
+  throwOnError?: boolean
 }
 
 const WeakPasswordReasons = ['length', 'characters', 'pwned'] as const
