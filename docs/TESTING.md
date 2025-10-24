@@ -24,12 +24,12 @@ Each package has unique testing requirements. Please refer to the individual REA
 
 | Package          | Docker Required                          | Test Command                     | Documentation                                                 |
 | ---------------- | ---------------------------------------- | -------------------------------- | ------------------------------------------------------------- |
-| **auth-js**      | ✅ Yes (GoTrue + PostgreSQL)             | `npx nx test:auth auth-js`       | [Testing Guide](packages/core/auth-js/README.md#testing)      |
-| **functions-js** | ✅ Yes (Deno relay via testcontainers)   | `npx nx test functions-js`       | [Testing Guide](packages/core/functions-js/README.md#testing) |
-| **postgrest-js** | ✅ Yes (PostgREST + PostgreSQL)          | `npx nx test postgrest-js`       | [Testing Guide](packages/core/postgrest-js/README.md#testing) |
-| **realtime-js**  | ❌ No (uses mock WebSockets)             | `npx nx test realtime-js`        | [Testing Guide](packages/core/realtime-js/README.md#testing)  |
-| **storage-js**   | ✅ Yes (Storage API + PostgreSQL + Kong) | `npx nx test:storage storage-js` | [Testing Guide](packages/core/storage-js/README.md#testing)   |
-| **supabase-js**  | ❌ No (unit tests only)                  | `npx nx test supabase-js`        | [Testing Guide](packages/core/supabase-js/README.md#testing)  |
+| **auth-js**      | ✅ Yes (GoTrue + PostgreSQL)             | `npx nx test:auth auth-js`       | [Testing Guide](../packages/core/auth-js/README.md#testing)      |
+| **functions-js** | ✅ Yes (Deno relay via testcontainers)   | `npx nx test functions-js`       | [Testing Guide](../packages/core/functions-js/README.md#testing) |
+| **postgrest-js** | ✅ Yes (PostgREST + PostgreSQL)          | `npx nx test postgrest-js`       | [Testing Guide](../packages/core/postgrest-js/README.md#testing) |
+| **realtime-js**  | ❌ No (uses mock WebSockets)             | `npx nx test realtime-js`        | [Testing Guide](../packages/core/realtime-js/README.md#testing)  |
+| **storage-js**   | ✅ Yes (Storage API + PostgreSQL + Kong) | `npx nx test:storage storage-js` | [Testing Guide](../packages/core/storage-js/README.md#testing)   |
+| **supabase-js**  | ❌ No (unit tests only)                  | `npx nx test supabase-js`        | [Testing Guide](../packages/core/supabase-js/TESTING.md)  |
 
 ### Common Test Commands
 
@@ -78,4 +78,4 @@ When adding new features or fixing bugs:
 3. Update test documentation if you change testing infrastructure
 4. Follow the testing patterns established in each package
 
-For more details on contributing, see [CONTRIBUTING.md](./CONTRIBUTING.md).
+For more details on contributing, see [CONTRIBUTING.md](../CONTRIBUTING.md).
