@@ -1,3 +1,9 @@
+# Check code formatting
+echo "🔍 Checking code formatting..."
+npx nx format:check --verbose
+
+echo "✅ Code formatting check passed"
+
 # Check if postgrest-js test database schema was modified
 if git diff --name-only origin/master...HEAD 2>/dev/null | grep -q "packages/core/postgrest-js/test/db/"; then
   echo "📝 Detected changes in postgrest-js test database schema..."
