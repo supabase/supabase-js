@@ -1,7 +1,7 @@
 import PostgrestError from '../PostgrestError'
 import { ContainsNull } from '../select-query-parser/types'
 import { SelectQueryError } from '../select-query-parser/utils'
-import { ClientServerOptions } from './common/common'
+import { ClientServerOptions, Fetch } from './common/common'
 
 /**
  * Response format
@@ -29,6 +29,15 @@ export interface PostgrestResponseFailure extends PostgrestResponseBase {
 export type PostgrestSingleResponse<T> = PostgrestResponseSuccess<T> | PostgrestResponseFailure
 export type PostgrestMaybeSingleResponse<T> = PostgrestSingleResponse<T | null>
 export type PostgrestResponse<T> = PostgrestSingleResponse<T[]>
+
+export type PostgrestQueryBuilderOptions = {
+  headers?: HeadersInit
+  fetch?: Fetch
+}
+
+export type PostgrestQueryBuilderOptionsWithSchema<TSchema extends string> = PostgrestQueryBuilderOptions & {
+  schema?: TSchema
+}
 
 export type DatabaseWithOptions<Database, Options extends ClientServerOptions> = {
   db: Database
