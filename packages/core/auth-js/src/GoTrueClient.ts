@@ -105,6 +105,9 @@ import type {
   MFAVerifyWebauthnParamFields,
   MFAVerifyWebauthnParams,
   OAuthResponse,
+  AuthOAuthServerApi,
+  AuthOAuthAuthorizationDetailsResponse,
+  AuthOAuthConsentResponse,
   Prettify,
   Provider,
   ResendParams,
@@ -196,6 +199,12 @@ export default class GoTrueClient {
    * Namespace for the MFA methods.
    */
   mfa: GoTrueMFAApi
+  /**
+   * Namespace for the OAuth 2.1 authorization server methods.
+   * Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
+   * Used to implement the authorization code flow on the consent page.
+   */
+  oauth: AuthOAuthServerApi
   /**
    * The storage key used to identify the values saved in localStorage
    */
@@ -320,6 +329,12 @@ export default class GoTrueClient {
       challengeAndVerify: this._challengeAndVerify.bind(this),
       getAuthenticatorAssuranceLevel: this._getAuthenticatorAssuranceLevel.bind(this),
       webauthn: new WebAuthnApi(this),
+    }
+
+    this.oauth = {
+      getAuthorizationDetails: this._getAuthorizationDetails.bind(this),
+      approveAuthorization: this._approveAuthorization.bind(this),
+      denyAuthorization: this._denyAuthorization.bind(this),
     }
 
     if (this.persistSession) {
@@ -3342,6 +3357,165 @@ export default class GoTrueClient {
         return { data: { currentLevel, nextLevel, currentAuthenticationMethods }, error: null }
       })
     })
+  }
+
+  /**
+   * Retrieves details about an OAuth authorization request.
+   * Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
+   */
+  private async _getAuthorizationDetails(
+    authorizationId: string,
+    options?: { skipBrowserRedirect?: boolean }
+  ): Promise<AuthOAuthAuthorizationDetailsResponse> {
+    try {
+      return await this._useSession(async (result) => {
+        const {
+          data: { session },
+          error: sessionError,
+        } = result
+
+        if (sessionError) {
+          return { data: null, error: sessionError }
+        }
+
+        if (!session) {
+          return { data: null, error: new AuthSessionMissingError() }
+        }
+
+        return await _request(
+          this.fetch,
+          'GET',
+          `${this.url}/oauth/authorizations/${authorizationId}`,
+          {
+            headers: this.headers,
+            jwt: session.access_token,
+            xform: (data: any) => {
+              // If the API returns redirect_uri, it means consent was already given
+              if (data.redirect_uri) {
+                // Automatically redirect in browser unless skipBrowserRedirect is true
+                if (isBrowser() && !options?.skipBrowserRedirect) {
+                  window.location.assign(data.redirect_uri)
+                }
+              }
+
+              return { data, error: null }
+            },
+          }
+        )
+      })
+    } catch (error) {
+      if (isAuthError(error)) {
+        return { data: null, error }
+      }
+
+      throw error
+    }
+  }
+
+  /**
+   * Approves an OAuth authorization request.
+   * Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
+   */
+  private async _approveAuthorization(
+    authorizationId: string,
+    options?: { skipBrowserRedirect?: boolean }
+  ): Promise<AuthOAuthConsentResponse> {
+    try {
+      return await this._useSession(async (result) => {
+        const {
+          data: { session },
+          error: sessionError,
+        } = result
+
+        if (sessionError) {
+          return { data: null, error: sessionError }
+        }
+
+        if (!session) {
+          return { data: null, error: new AuthSessionMissingError() }
+        }
+
+        const response = await _request(
+          this.fetch,
+          'POST',
+          `${this.url}/oauth/authorizations/${authorizationId}/consent`,
+          {
+            headers: this.headers,
+            jwt: session.access_token,
+            body: { action: 'approve' },
+            xform: (data: any) => ({ data, error: null }),
+          }
+        )
+
+        if (response.data && response.data.redirect_url) {
+          // Automatically redirect in browser unless skipBrowserRedirect is true
+          if (isBrowser() && !options?.skipBrowserRedirect) {
+            window.location.assign(response.data.redirect_url)
+          }
+        }
+
+        return response
+      })
+    } catch (error) {
+      if (isAuthError(error)) {
+        return { data: null, error }
+      }
+
+      throw error
+    }
+  }
+
+  /**
+   * Denies an OAuth authorization request.
+   * Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
+   */
+  private async _denyAuthorization(
+    authorizationId: string,
+    options?: { skipBrowserRedirect?: boolean }
+  ): Promise<AuthOAuthConsentResponse> {
+    try {
+      return await this._useSession(async (result) => {
+        const {
+          data: { session },
+          error: sessionError,
+        } = result
+
+        if (sessionError) {
+          return { data: null, error: sessionError }
+        }
+
+        if (!session) {
+          return { data: null, error: new AuthSessionMissingError() }
+        }
+
+        const response = await _request(
+          this.fetch,
+          'POST',
+          `${this.url}/oauth/authorizations/${authorizationId}/consent`,
+          {
+            headers: this.headers,
+            jwt: session.access_token,
+            body: { action: 'deny' },
+            xform: (data: any) => ({ data, error: null }),
+          }
+        )
+
+        if (response.data && response.data.redirect_url) {
+          // Automatically redirect in browser unless skipBrowserRedirect is true
+          if (isBrowser() && !options?.skipBrowserRedirect) {
+            window.location.assign(response.data.redirect_url)
+          }
+        }
+
+        return response
+      })
+    } catch (error) {
+      if (isAuthError(error)) {
+        return { data: null, error }
+      }
+
+      throw error
+    }
   }
 
   private async fetchJwk(kid: string, jwks: { keys: JWK[] } = { keys: [] }): Promise<JWK | null> {
