@@ -136,7 +136,7 @@ npm config set registry https://registry.npmjs.org/
 #### Update dependencies:
 
 ```bash
-# This will run `npm i` in each of the intergration tests directories, 
+# This will run `npm i` in each of the intergration tests directories,
 # fetching the locally published packages
 npx nx update:test-deps supabase-js
 ```
@@ -247,6 +247,7 @@ or from the root of the workspace:
 ```bash
 npx nx run @supabase/supabase-js:"test:node:playwright"
 ```
+
 **Important!**
 
 After you finish testing, reset your npm registry to point to npm:
