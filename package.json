@@ -57,7 +57,6 @@
     "jsonwebtoken": "^9.0.0",
     "nx": "21.6.2",
     "prettier": "^3.6.2",
-    "rimraf": "^6.0.1",
     "semantic-release-plugin-update-version-in-files": "^1.1.0",
     "ts-node": "^10.9.1",
     "tslib": "^2.3.0",

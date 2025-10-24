@@ -245,14 +245,14 @@ All pull requests must meet these requirements:
 
 Each package has its own testing requirements and infrastructure. For comprehensive testing information, see:
 
-- **[TESTING.md](./TESTING.md)** - Overview of testing across all packages
+- **[TESTING.md](./docs/TESTING.md)** - Overview of testing across all packages
 - **Package-specific guides** - Detailed testing instructions in each package's README:
-  - [`supabase-js`](../packages/core/supabase-js/README.md)
-  - [`auth-js`](../packages/core/auth-js/README.md)
-  - [`functions-js`](../packages/core/functions-js/README.md)
-  - [`postgrest-js`](../packages/core/postgrest-js/README.md)
-  - [`realtime-js`](../packages/core/realtime-js/README.md)
-  - [`storage-js`](../packages/core/storage-js/README.md)
+  - [`supabase-js`](./packages/core/supabase-js/README.md)
+  - [`auth-js`](./packages/core/auth-js/README.md)
+  - [`functions-js`](./packages/core/functions-js/README.md)
+  - [`postgrest-js`](./packages/core/postgrest-js/README.md)
+  - [`realtime-js`](./packages/core/realtime-js/README.md)
+  - [`storage-js`](./packages/core/storage-js/README.md)
 
 ### Quick Testing Commands
 
@@ -360,7 +360,7 @@ We are committed to providing a welcoming and inspiring community for all. Pleas
 
 ## 📄 License
 
-By contributing to Supabase JS Libraries, you agree that your contributions will be licensed under the [MIT License](../LICENSE).
+By contributing to Supabase JS Libraries, you agree that your contributions will be licensed under the [MIT License](./LICENSE).
 
 ---
 
