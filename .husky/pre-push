@@ -1,18 +1,6 @@
 # Check code formatting
 echo "🔍 Checking code formatting..."
-npx nx format:check
-
-if [ $? -ne 0 ]; then
-  echo ""
-  echo "❌ Push blocked: Code is not properly formatted"
-  echo ""
-  echo "To fix this:"
-  echo "  1. Run: npx nx format"
-  echo "  2. Commit the formatted files"
-  echo "  3. Push again"
-  echo ""
-  exit 1
-fi
+npx nx format:check --verbose
 
 echo "✅ Code formatting check passed"
 
