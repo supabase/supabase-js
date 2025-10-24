@@ -1613,6 +1613,35 @@ describe('getClaims', () => {
     expect(authWithSession.getUser).toHaveBeenCalled()
   })
 
+  test('getClaims returns properly typed JwtPayload with documented fields', async () => {
+    const { email, password } = mockUserCredentials()
+    const {
+      data: { user },
+      error: initialError,
+    } = await authWithSession.signUp({
+      email,
+      password,
+    })
+    expect(initialError).toBeNull()
+    expect(user).not.toBeNull()
+
+    const { data, error } = await authWithSession.getClaims()
+    expect(error).toBeNull()
+    expect(data).not.toBeNull()
+    
+    const claims = data?.claims
+    expect(claims).toBeDefined()
+    
+    expect(typeof claims?.email).toBe('string')
+    expect(typeof claims?.user_metadata).toBe('object')
+    expect(typeof claims?.app_metadata).toBe('object')
+    expect(typeof claims?.is_anonymous).toBe('boolean')
+    expect(typeof claims?.is_sso_user).toBe('boolean')
+    expect(typeof claims?.id).toBe('string')
+    expect(typeof claims?.created_at).toBe('string')
+    expect(typeof claims?.role).toBe('string')
+  })
+
   test('getClaims fetches JWKS to verify asymmetric jwt', async () => {
     const fetchedUrls: any[] = []
     const fetchedResponse: any[] = []
