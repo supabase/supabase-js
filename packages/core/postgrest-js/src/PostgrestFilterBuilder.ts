@@ -30,6 +30,8 @@ export type IsStringOperator<Path extends string> = Path extends `${string}->>${
   ? true
   : false
 
+const PostgrestReservedCharsRegexp = new RegExp('[,()]')
+
 // Match relationship filters with `table.column` syntax and resolve underlying
 // column value. If not matched, fallback to generic type.
 // TODO: Validate the relationship itself ala select-query-parser. Currently we
@@ -316,7 +318,7 @@ export default class PostgrestFilterBuilder<
       .map((s) => {
         // handle postgrest reserved characters
         // https://postgrest.org/en/v7.0.0/api.html#reserved-characters
-        if (typeof s === 'string' && new RegExp('[,()]').test(s)) return `"${s}"`
+        if (typeof s === 'string' && PostgrestReservedCharsRegexp.test(s)) return `"${s}"`
         else return `${s}`
       })
       .join(',')
