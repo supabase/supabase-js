@@ -3,7 +3,7 @@ import { PostgrestClient, PostgrestError } from '../src/index'
 import { Prettify } from '../src/types/types'
 import { Json } from '../src/select-query-parser/types'
 import { Database } from './types.override'
-import { Database as DatabaseWithOptions } from './types.override-with-options-postgrest13'
+import { Database as DatabaseWithOptions } from './types.override-with-options-postgrest14'
 
 const REST_URL = 'http://localhost:3000'
 const postgrest = new PostgrestClient<Database>(REST_URL)

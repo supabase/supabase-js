@@ -5,7 +5,7 @@ export type Database = OriginalDatabase & {
   // This is a dummy non existent schema to allow automatically passing down options
   // to the instanciated client at type levels from the introspected database
   __InternalSupabase: {
-    PostgrestVersion: '13.0.12'
+    PostgrestVersion: '14.0'
   }
 }
 

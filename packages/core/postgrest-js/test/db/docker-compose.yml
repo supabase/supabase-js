@@ -1,7 +1,7 @@
 # docker-compose.yml
 services:
-  rest13:
-    image: postgrest/postgrest:v13.0.0
+  rest14:
+    image: postgrest/postgrest:v14.0
     ports:
       - '3001:3000'
     environment:
