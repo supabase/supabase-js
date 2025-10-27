@@ -1225,4 +1225,77 @@ describe('embeded functions select', () => {
     expectType<TypeEqual<typeof result, typeof expected>>(true)
     ExpectedSchema.parse(res.data)
   })
+
+  // test select the created_ago embeded function
+  test('select the created_ago embeded function', async () => {
+    const res = await postgrest.from('users_audit').select('id, created_ago')
+    expect(res).toMatchInlineSnapshot(`
+      Object {
+        "count": null,
+        "data": Array [
+          Object {
+            "created_ago": 7,
+            "id": 1,
+          },
+          Object {
+            "created_ago": 7,
+            "id": 2,
+          },
+          Object {
+            "created_ago": 7,
+            "id": 3,
+          },
+          Object {
+            "created_ago": 7,
+            "id": 4,
+          },
+          Object {
+            "created_ago": 7,
+            "id": 5,
+          },
+        ],
+        "error": null,
+        "status": 200,
+        "statusText": "OK",
+      }
+    `)
+    let result: Exclude<typeof res.data, null>
+    const ExpectedSchema = z.array(
+      z.object({
+        id: z.number(),
+        created_ago: z.number().nullable(),
+      })
+    )
+    let expected: z.infer<typeof ExpectedSchema>
+    expectType<TypeEqual<keyof (typeof expected)[number], keyof (typeof result)[number]>>(true)
+    expectType<TypeEqual<typeof result, typeof expected>>(true)
+    ExpectedSchema.parse(res.data)
+    const use_rpc_call = await postgrest.rpc('created_ago', {
+      // @ts-expect-error - id is not a parameter of the created_ago function
+      id: 1,
+    })
+    expect(use_rpc_call).toMatchInlineSnapshot(`
+      Object {
+        "count": null,
+        "data": null,
+        "error": Object {
+          "code": "PGRST202",
+          "details": "Searched for the function public.created_ago with parameter id or with a single unnamed json/jsonb parameter, but no matches were found in the schema cache.",
+          "hint": null,
+          "message": "Could not find the function public.created_ago(id) in the schema cache",
+        },
+        "status": 404,
+        "statusText": "Not Found",
+      }
+    `)
+    let result_rpc: Exclude<typeof use_rpc_call.data, null>
+    expectType<
+      TypeEqual<
+        typeof result_rpc,
+        {
+          error: true
+        } & 'the function public.created_ago with parameter or with a single unnamed json/jsonb parameter, but no matches were found in the schema cache'
+      >
+    >(true)
+  })
 })
