@@ -43,12 +43,12 @@ This monorepo contains the complete suite of Supabase JavaScript SDK:
 
 | Library                                                    | Description                              |
 | ---------------------------------------------------------- | ---------------------------------------- |
-| **[@supabase/supabase-js](./packages/core/supabase-js)**   | Main isomorphic sdk for Supabase      |
-| **[@supabase/auth-js](./packages/core/auth-js)**           | Authentication sdk                    |
-| **[@supabase/postgrest-js](./packages/core/postgrest-js)** | PostgREST sdk for database operations |
-| **[@supabase/realtime-js](./packages/core/realtime-js)**   | Real-time subscriptions sdk           |
-| **[@supabase/storage-js](./packages/core/storage-js)**     | File storage sdk                      |
-| **[@supabase/functions-js](./packages/core/functions-js)** | Edge Functions sdk                    |
+| **[@supabase/supabase-js](./packages/core/supabase-js)**   | Main isomorphic SDK for Supabase      |
+| **[@supabase/auth-js](./packages/core/auth-js)**           | Authentication SDK                    |
+| **[@supabase/postgrest-js](./packages/core/postgrest-js)** | PostgREST SDK for database operations |
+| **[@supabase/realtime-js](./packages/core/realtime-js)**   | Real-time subscriptions SDK           |
+| **[@supabase/storage-js](./packages/core/storage-js)**     | File storage SDK                      |
+| **[@supabase/functions-js](./packages/core/functions-js)** | Edge Functions SDK                    |
 
 > **💡 Note for Package Users:** If you install and use these packages, **nothing has changed**. Continue installing packages normally:
 >
@@ -150,12 +150,12 @@ npx nx test <package-name> --coverage
 
 ### API Documentation
 
-- **[Auth sdk](./packages/core/auth-js/README.md)** - Authentication and user management
-- **[Database sdk](./packages/core/postgrest-js/README.md)** - Database queries and operations
-- **[Realtime sdk](./packages/core/realtime-js/README.md)** - Real-time subscriptions
-- **[Storage sdk](./packages/core/storage-js/README.md)** - File upload and management
-- **[Functions sdk](./packages/core/functions-js/README.md)** - Edge Functions invocation
-- **[Main sdk](./packages/core/supabase-js/README.md)** - Combined sdk
+- **[Auth SDK](./packages/core/auth-js/README.md)** - Authentication and user management
+- **[Database SDK](./packages/core/postgrest-js/README.md)** - Database queries and operations
+- **[Realtime SDK](./packages/core/realtime-js/README.md)** - Real-time subscriptions
+- **[Storage SDK](./packages/core/storage-js/README.md)** - File upload and management
+- **[Functions SDK](./packages/core/functions-js/README.md)** - Edge Functions invocation
+- **[Main SDK](./packages/core/supabase-js/README.md)** - Combined SDK
 
 ### Architecture Documentation
 
@@ -197,12 +197,12 @@ Because provenance attestations are a new capability, security features may evol
 supabase-js/
 ├── packages/
 │   └── core/                  # Published libraries
-│       ├── auth-js/           # Authentication sdk
-│       ├── functions-js/      # Edge Functions sdk
-│       ├── postgrest-js/      # PostgREST database sdk
-│       ├── realtime-js/       # Real-time subscriptions sdk
-│       ├── storage-js/        # File storage sdk
-│       └── supabase-js/       # Main isomorphic sdk
+│       ├── auth-js/           # Authentication SDK
+│       ├── functions-js/      # Edge Functions SDK
+│       ├── postgrest-js/      # PostgREST database SDK
+│       ├── realtime-js/       # Real-time subscriptions SDK
+│       ├── storage-js/        # File storage SDK
+│       └── supabase-js/       # Main isomorphic SDK
 ├── nx.json                    # npx nx workspace configuration
 ├── package.json               # Root package.json and workspaces setup
 └── ...
