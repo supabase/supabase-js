@@ -120,3 +120,12 @@ VALUES
   (6, 1),                -- Third booking for Sunset Resort
   (7, NULL),             -- Another booking with no hotel
   (8, 4);                -- Booking for hotel with null name
+
+-- Insert users audit
+INSERT INTO public.users_audit (id, previous_value)
+VALUES
+  (1, 42),
+  (2, 42),
+  (3, 42),
+  (4, 42),
+  (5, 42);
