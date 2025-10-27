@@ -24,9 +24,7 @@ import {
   ResolveRelationship,
   SelectQueryError,
 } from './utils'
-
-export type SpreadOnManyEnabled<PostgrestVersion extends string | undefined> =
-  PostgrestVersion extends `13${string}` ? true : false
+import type { SpreadOnManyEnabled } from '../types/feature-flags'
 
 /**
  * Main entry point for constructing the result type of a PostgREST query.

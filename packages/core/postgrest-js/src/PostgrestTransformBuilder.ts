@@ -1,8 +1,9 @@
 import PostgrestBuilder from './PostgrestBuilder'
 import PostgrestFilterBuilder, { InvalidMethodError } from './PostgrestFilterBuilder'
 import { GetResult } from './select-query-parser/result'
-import { CheckMatchingArrayTypes, MaxAffectedEnabled } from './types/types'
+import { CheckMatchingArrayTypes } from './types/types'
 import { ClientServerOptions, GenericSchema } from './types/common/common'
+import type { MaxAffectedEnabled } from './types/feature-flags'
 
 export default class PostgrestTransformBuilder<
   ClientOptions extends ClientServerOptions,
