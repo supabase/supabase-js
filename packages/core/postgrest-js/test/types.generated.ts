@@ -275,6 +275,70 @@ export type Database = {
         }
         Relationships: []
       }
+      events: {
+        Row: {
+          created_at: string
+          data: Json | null
+          event_type: string | null
+          id: number
+          days_since_event: number | null
+        }
+        Insert: {
+          created_at?: string
+          data?: Json | null
+          event_type?: string | null
+          id?: number
+        }
+        Update: {
+          created_at?: string
+          data?: Json | null
+          event_type?: string | null
+          id?: number
+        }
+        Relationships: []
+      }
+      events_2024: {
+        Row: {
+          created_at: string
+          data: Json | null
+          event_type: string | null
+          id: number
+        }
+        Insert: {
+          created_at?: string
+          data?: Json | null
+          event_type?: string | null
+          id: number
+        }
+        Update: {
+          created_at?: string
+          data?: Json | null
+          event_type?: string | null
+          id?: number
+        }
+        Relationships: []
+      }
+      events_2025: {
+        Row: {
+          created_at: string
+          data: Json | null
+          event_type: string | null
+          id: number
+        }
+        Insert: {
+          created_at?: string
+          data?: Json | null
+          event_type?: string | null
+          id: number
+        }
+        Update: {
+          created_at?: string
+          data?: Json | null
+          event_type?: string | null
+          id?: number
+        }
+        Relationships: []
+      }
       hotel: {
         Row: {
           id: number
@@ -488,6 +552,25 @@ export type Database = {
         }
         Relationships: []
       }
+      users_audit: {
+        Row: {
+          created_at: string | null
+          id: number
+          previous_value: number | null
+          created_ago: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: number
+          previous_value?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: number
+          previous_value?: number | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       active_users: {
@@ -588,6 +671,18 @@ export type Database = {
         Returns: {
           error: true
         } & 'the function public.blurb_message with parameter or with a single unnamed json/jsonb parameter, but no matches were found in the schema cache'
+      }
+      created_ago: {
+        Args: { '': Database['public']['Tables']['users_audit']['Row'] }
+        Returns: {
+          error: true
+        } & 'the function public.created_ago with parameter or with a single unnamed json/jsonb parameter, but no matches were found in the schema cache'
+      }
+      days_since_event: {
+        Args: { '': Database['public']['Tables']['events']['Row'] }
+        Returns: {
+          error: true
+        } & 'the function public.days_since_event with parameter or with a single unnamed json/jsonb parameter, but no matches were found in the schema cache'
       }
       function_returning_row: {
         Args: never
