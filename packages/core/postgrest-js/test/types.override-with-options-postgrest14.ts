@@ -1,4 +1,4 @@
-import type { Database as GeneratedDatabase } from './types.generated-with-options-postgrest13'
+import type { Database as GeneratedDatabase } from './types.generated-with-options-postgrest14'
 import { MergeDeep } from 'type-fest'
 
 export type CustomUserDataType = {

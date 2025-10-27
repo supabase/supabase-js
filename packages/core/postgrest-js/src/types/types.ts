@@ -35,9 +35,6 @@ export type DatabaseWithOptions<Database, Options extends ClientServerOptions> =
   options: Options
 }
 
-export type MaxAffectedEnabled<PostgrestVersion extends string | undefined> =
-  PostgrestVersion extends `13${string}` ? true : false
-
 // https://twitter.com/mattpocockuk/status/1622730173446557697
 export type Prettify<T> = { [K in keyof T]: T[K] } & {}
 
