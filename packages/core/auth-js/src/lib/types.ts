@@ -1662,9 +1662,7 @@ export interface AuthOAuthServerApi {
    * @param authorizationId - The authorization ID from the authorization request
    * @returns Authorization details including client info and requested scopes
    */
-  getAuthorizationDetails(
-    authorizationId: string
-  ): Promise<AuthOAuthAuthorizationDetailsResponse>
+  getAuthorizationDetails(authorizationId: string): Promise<AuthOAuthAuthorizationDetailsResponse>
 
   /**
    * Approves an OAuth authorization request.
