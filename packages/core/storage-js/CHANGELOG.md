@@ -1,3 +1,20 @@
+## v2.77.0 (2025-10-29)
+
+### 🚀 Features
+
+- **storage:** add support for bucket pagination and sorting ([#1790](https://github.com/supabase/supabase-js/pull/1790))
+
+### 🩹 Fixes
+
+- **storage:** remove unnecessary filter ([#1809](https://github.com/supabase/supabase-js/pull/1809))
+- **repo:** add missing tslib dependency to core packages ([#1789](https://github.com/supabase/supabase-js/pull/1789))
+
+### ❤️ Thank You
+
+- Fabrizio @fenos
+- Katerina Skroumpelou @mandarini
+- Lenny @itslenny
+
 ## 2.76.1 (2025-10-21)
 
 ### 🩹 Fixes

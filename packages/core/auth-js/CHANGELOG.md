@@ -1,3 +1,21 @@
+## v2.77.0 (2025-10-29)
+
+### 🚀 Features
+
+- **auth:** add OAuth client update support ([#1812](https://github.com/supabase/supabase-js/pull/1812))
+- **auth:** add OAuth 2.1 authorization consent management API calls ([#1793](https://github.com/supabase/supabase-js/pull/1793))
+
+### 🩹 Fixes
+
+- **auth:** remove redirection in `getAuthorizationDetails` ([#1811](https://github.com/supabase/supabase-js/pull/1811))
+- **auth:** handle 204 No Content response in OAuth client delete ([#1786](https://github.com/supabase/supabase-js/pull/1786))
+- **repo:** add missing tslib dependency to core packages ([#1789](https://github.com/supabase/supabase-js/pull/1789))
+
+### ❤️ Thank You
+
+- Cemal Kılıç @cemalkilic
+- Katerina Skroumpelou @mandarini
+
 ## 2.76.1 (2025-10-21)
 
 ### 🩹 Fixes

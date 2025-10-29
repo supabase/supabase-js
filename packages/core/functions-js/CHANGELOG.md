@@ -1,3 +1,13 @@
+## v2.77.0 (2025-10-29)
+
+### 🩹 Fixes
+
+- **repo:** add missing tslib dependency to core packages ([#1789](https://github.com/supabase/supabase-js/pull/1789))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+
 ## 2.76.1 (2025-10-21)
 
 ### 🩹 Fixes
