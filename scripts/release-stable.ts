@@ -185,6 +185,10 @@ function safeExec(cmd: string, opts = {}) {
   const branchName = `release-${version}`
 
   try {
+    // Format generated changelogs before committing
+    console.log('\n✨ Formatting generated changelogs...')
+    safeExec('npx nx format:write')
+    console.log('✅ Changelogs formatted\n')
     safeExec(`git checkout -b ${branchName}`)
     safeExec('git add CHANGELOG.md || true')
     safeExec('git add packages/**/CHANGELOG.md || true')
