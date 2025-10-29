@@ -782,7 +782,7 @@ describe('advanced rpc', () => {
 
   test('polymorphic function with unnamed int param', async () => {
     const res = await postgrest.rpc(
-      // @ts-expect-error Argument of type '"polymorphic_function_with_unnamed_integer"' is not assignable to parameter of type '"blurb_message" | "function_returning_row" | "function_returning_set_of_rows"
+      // @ts-expect-error Argument of type '"polymorphic_function_with_unnamed_integer"' is not assignable to parameter of type '"blurb_message" | "created_ago" | "days_since_event" | "function_returning_row" | "function_returning_set_of_rows" | "function_returning_single_row" | "function_using_setof_rows_one" | ... 25 more ... | "void_func"'.
       'polymorphic_function_with_unnamed_integer',
       {
         '': 1,
