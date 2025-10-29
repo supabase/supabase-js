@@ -34,6 +34,8 @@
   },
   "scripts": {
     "build": "npm run build:cjs && npm run build:esm",
+    "format": "node scripts/format.js",
+    "format:check": "node scripts/format.js check",
     "build:cjs": "tsc -p tsconfig.json",
     "build:esm": "cpy wrapper.mjs dist/esm/",
     "build:module": "npm run build:cjs",
@@ -50,7 +52,7 @@
     "type-check:test": "tsc --noEmit --project tsconfig.test.json",
     "db:clean": "cd test/db && docker compose down --volumes",
     "db:run": "cd test/db && docker compose up --detach && wait-for-localhost 3000",
-    "db:generate-test-types": "cd test/db && docker compose up --detach && wait-for-localhost 8080 && wait-for-localhost 3000 && curl --location 'http://0.0.0.0:8080/generators/typescript?included_schemas=public,personal&detect_one_to_one_relationships=true' > ../types.generated.ts && node ../../scripts/update-json-type.js && cd ../../"
+    "db:generate-test-types": "cd test/db && docker compose up --detach && wait-for-localhost 8080 && wait-for-localhost 3000 && curl --location 'http://0.0.0.0:8080/generators/typescript?included_schemas=public,personal&detect_one_to_one_relationships=true' > ../types.generated.ts && node ../scripts/update-json-type.js && cd ../../ && npm run format"
   },
   "dependencies": {
     "@supabase/node-fetch": "2.6.15",
@@ -65,6 +67,7 @@
     "tstyche": "^4.3.0",
     "type-fest": "^4.32.0",
     "wait-for-localhost-cli": "^3.0.0",
-    "zod": "^3.25.76"
+    "zod": "^3.25.76",
+    "prettier": "^2.6.2"
   }
 }
