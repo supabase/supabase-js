@@ -1655,13 +1655,15 @@ export interface AuthOAuthServerApi {
    * Used to display consent information to the user.
    * Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
    *
+   * This method returns authorization details including client info, scopes, and user information.
+   * If the response includes a redirect_uri, it means consent was already given - the caller
+   * should handle the redirect manually if needed.
+   *
    * @param authorizationId - The authorization ID from the authorization request
-   * @param options - Optional parameters including skipBrowserRedirect
    * @returns Authorization details including client info and requested scopes
    */
   getAuthorizationDetails(
-    authorizationId: string,
-    options?: { skipBrowserRedirect?: boolean }
+    authorizationId: string
   ): Promise<AuthOAuthAuthorizationDetailsResponse>
 
   /**
