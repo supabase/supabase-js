@@ -38,6 +38,7 @@ import {
   getAlgorithm,
   getCodeChallengeAndMethod,
   getItemAsync,
+  insecureUserWarningProxy,
   isBrowser,
   parseParametersFromURL,
   removeItemAsync,
@@ -1600,22 +1601,20 @@ export default class GoTrueClient {
           }
         }
 
-        if (this.storage.isServer && currentSession.user) {
-          let suppressWarning = this.suppressGetSessionWarning
-          const proxySession: Session = new Proxy(currentSession, {
-            get: (target: any, prop: string, receiver: any) => {
-              if (!suppressWarning && prop === 'user') {
-                // only show warning when the user object is being accessed from the server
-                console.warn(
-                  'Using the user object as returned from supabase.auth.getSession() or from some supabase.auth.onAuthStateChange() events could be insecure! This value comes directly from the storage medium (usually cookies on the server) and may not be authentic. Use supabase.auth.getUser() instead which authenticates the data by contacting the Supabase Auth server.'
-                )
-                suppressWarning = true // keeps this proxy instance from logging additional warnings
-                this.suppressGetSessionWarning = true // keeps this client's future proxy instances from warning
-              }
-              return Reflect.get(target, prop, receiver)
-            },
-          })
-          currentSession = proxySession
+        // Wrap the user object with a warning proxy on the server
+        // This warns when properties of the user are accessed, not when session.user itself is accessed
+        if (
+          this.storage.isServer &&
+          currentSession.user &&
+          !(currentSession.user as any).__isUserNotAvailableProxy
+        ) {
+          const suppressWarningRef = { value: this.suppressGetSessionWarning }
+          currentSession.user = insecureUserWarningProxy(currentSession.user, suppressWarningRef)
+
+          // Update the client-level suppression flag when the proxy suppresses the warning
+          if (suppressWarningRef.value) {
+            this.suppressGetSessionWarning = true
+          }
         }
 
         return { data: { session: currentSession }, error: null }

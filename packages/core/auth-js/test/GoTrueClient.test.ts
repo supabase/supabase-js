@@ -1847,12 +1847,17 @@ describe('GoTrueClient with storageisServer = true', () => {
     const client = new GoTrueClient({
       storage,
     })
-    await client.getSession()
+    const {
+      data: { session },
+    } = await client.getSession()
 
+    // Accessing session.user should not emit a warning
+    const user = session?.user
+    expect(user).not.toBeNull()
     expect(warnings.length).toEqual(0)
   })
 
-  test('getSession() emits insecure warning, once per server client, when user object is accessed', async () => {
+  test('getSession() emits insecure warning, once per server client, when user properties are accessed', async () => {
     const storage = memoryLocalStorageAdapter({
       [STORAGE_KEY]: JSON.stringify({
         access_token: 'jwt.accesstoken.signature',
@@ -1862,6 +1867,7 @@ describe('GoTrueClient with storageisServer = true', () => {
         expires_at: Date.now() / 1000 + 1000,
         user: {
           id: 'random-user-id',
+          email: 'test@example.com',
         },
       }),
     })
@@ -1875,8 +1881,14 @@ describe('GoTrueClient with storageisServer = true', () => {
       data: { session },
     } = await client.getSession()
 
-    const user = session?.user // accessing the user object from getSession should emit a warning the first time
+    // Accessing session.user itself should not emit a warning
+    const user = session?.user
     expect(user).not.toBeNull()
+    expect(warnings.length).toEqual(0)
+
+    // Accessing a property of the user object should emit a warning the first time
+    const userId = user?.id
+    expect(userId).toEqual('random-user-id')
     expect(warnings.length).toEqual(1)
     expect(
       warnings[0][0].startsWith(
@@ -1884,16 +1896,18 @@ describe('GoTrueClient with storageisServer = true', () => {
       )
     ).toEqual(true)
 
-    const user2 = session?.user // accessing the user object further should not emit a warning
-    expect(user2).not.toBeNull()
+    // Accessing another property should not emit additional warnings
+    const userEmail = user?.email
+    expect(userEmail).toEqual('test@example.com')
     expect(warnings.length).toEqual(1)
 
     const {
       data: { session: session2 },
     } = await client.getSession() // create new proxy instance
 
-    const user3 = session2?.user // accessing the user object in subsequent proxy instances, for this client, should not emit a warning
-    expect(user3).not.toBeNull()
+    // Accessing properties in subsequent sessions should not emit warnings (suppression is client-wide)
+    const userId2 = session2?.user?.id
+    expect(userId2).toEqual('random-user-id')
     expect(warnings.length).toEqual(1)
   })
 
@@ -1921,9 +1935,132 @@ describe('GoTrueClient with storageisServer = true', () => {
       data: { session },
     } = await client.getSession()
 
-    const sessionUser = session?.user // accessing the user object from getSession shouldn't emit a warning
-    expect(sessionUser).not.toBeNull()
+    // Accessing user properties from getSession shouldn't emit a warning after getUser() was called
+    const sessionUserId = session?.user?.id
+    expect(sessionUserId).not.toBeNull()
     expect(warnings.length).toEqual(0)
+  })
+
+  test('getSession() with destructuring emits warning', async () => {
+    const storage = memoryLocalStorageAdapter({
+      [STORAGE_KEY]: JSON.stringify({
+        access_token: 'jwt.accesstoken.signature',
+        refresh_token: 'refresh-token',
+        token_type: 'bearer',
+        expires_in: 1000,
+        expires_at: Date.now() / 1000 + 1000,
+        user: {
+          id: 'random-user-id',
+          email: 'test@example.com',
+          role: 'user',
+        },
+      }),
+    })
+    storage.isServer = true
+
+    const client = new GoTrueClient({
+      storage,
+    })
+
+    const {
+      data: { session },
+    } = await client.getSession()
+
+    // Destructuring user properties should emit a warning
+    const { id, email } = session?.user || {}
+    expect(id).toEqual('random-user-id')
+    expect(email).toEqual('test@example.com')
+    expect(warnings.length).toEqual(1)
+  })
+
+  test('getSession() with spread operator emits warning', async () => {
+    const storage = memoryLocalStorageAdapter({
+      [STORAGE_KEY]: JSON.stringify({
+        access_token: 'jwt.accesstoken.signature',
+        refresh_token: 'refresh-token',
+        token_type: 'bearer',
+        expires_in: 1000,
+        expires_at: Date.now() / 1000 + 1000,
+        user: {
+          id: 'random-user-id',
+          email: 'test@example.com',
+        },
+      }),
+    })
+    storage.isServer = true
+
+    const client = new GoTrueClient({
+      storage,
+    })
+
+    const {
+      data: { session },
+    } = await client.getSession()
+
+    // Spread operator accesses properties, should emit a warning
+    const userData = { ...session?.user }
+    expect(userData.id).toEqual('random-user-id')
+    expect(warnings.length).toEqual(1)
+  })
+
+  test('getSession() with Object.keys() emits warning', async () => {
+    const storage = memoryLocalStorageAdapter({
+      [STORAGE_KEY]: JSON.stringify({
+        access_token: 'jwt.accesstoken.signature',
+        refresh_token: 'refresh-token',
+        token_type: 'bearer',
+        expires_in: 1000,
+        expires_at: Date.now() / 1000 + 1000,
+        user: {
+          id: 'random-user-id',
+          email: 'test@example.com',
+        },
+      }),
+    })
+    storage.isServer = true
+
+    const client = new GoTrueClient({
+      storage,
+    })
+
+    const {
+      data: { session },
+    } = await client.getSession()
+
+    // Object.keys() accesses properties, should emit a warning
+    const keys = Object.keys(session?.user || {})
+    expect(keys.length).toBeGreaterThan(0)
+    expect(warnings.length).toEqual(1)
+  })
+
+  test('getSession() with JSON.stringify() emits warning', async () => {
+    const storage = memoryLocalStorageAdapter({
+      [STORAGE_KEY]: JSON.stringify({
+        access_token: 'jwt.accesstoken.signature',
+        refresh_token: 'refresh-token',
+        token_type: 'bearer',
+        expires_in: 1000,
+        expires_at: Date.now() / 1000 + 1000,
+        user: {
+          id: 'random-user-id',
+          email: 'test@example.com',
+        },
+      }),
+    })
+    storage.isServer = true
+
+    const client = new GoTrueClient({
+      storage,
+    })
+
+    const {
+      data: { session },
+    } = await client.getSession()
+
+    // JSON.stringify() iterates over properties, should emit a warning
+    const serialized = JSON.stringify(session?.user)
+    expect(serialized).toContain('random-user-id')
+    expect(warnings.length).toEqual(1)
   })
 
   test('saveSession should overwrite the existing session', async () => {
