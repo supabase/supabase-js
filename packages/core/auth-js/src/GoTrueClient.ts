@@ -3362,10 +3362,13 @@ export default class GoTrueClient {
   /**
    * Retrieves details about an OAuth authorization request.
    * Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
+   *
+   * Returns authorization details including client info, scopes, and user information.
+   * If the API returns a redirect_uri, it means consent was already given - the caller
+   * should handle the redirect manually if needed.
    */
   private async _getAuthorizationDetails(
-    authorizationId: string,
-    options?: { skipBrowserRedirect?: boolean }
+    authorizationId: string
   ): Promise<AuthOAuthAuthorizationDetailsResponse> {
     try {
       return await this._useSession(async (result) => {
@@ -3389,17 +3392,7 @@ export default class GoTrueClient {
           {
             headers: this.headers,
             jwt: session.access_token,
-            xform: (data: any) => {
-              // If the API returns redirect_uri, it means consent was already given
-              if (data.redirect_uri) {
-                // Automatically redirect in browser unless skipBrowserRedirect is true
-                if (isBrowser() && !options?.skipBrowserRedirect) {
-                  window.location.assign(data.redirect_uri)
-                }
-              }
-
-              return { data, error: null }
-            },
+            xform: (data: any) => ({ data, error: null }),
           }
         )
       })
