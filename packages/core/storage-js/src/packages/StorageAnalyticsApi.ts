@@ -135,11 +135,8 @@ export default class StorageAnalyticsApi {
       const url = queryString ? `${this.url}/bucket?${queryString}` : `${this.url}/bucket`
 
       const data = await get(this.fetch, url, { headers: this.headers })
-      // Filter to only return analytics buckets
-      const analyticsBuckets = Array.isArray(data)
-        ? data.filter((bucket: Bucket) => bucket.type === 'ANALYTICS')
-        : []
-      return { data: analyticsBuckets, error: null }
+
+      return { data: data, error: null }
     } catch (error) {
       if (this.shouldThrowOnError) {
         throw error
