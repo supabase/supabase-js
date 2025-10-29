@@ -1309,7 +1309,7 @@ describe('embeded functions select', () => {
     expectType<TypeEqual<typeof result, typeof expected>>(true)
     ExpectedSchema.parse(res.data)
     const use_rpc_call = await postgrest.rpc('days_since_event', {
-      // @ts-expect-error Object literal may only specify known properties, and 'id' does not exist in type '{ '': { created_at: string; data: unknown; event_type: string | null; id: number; days_since_event: number | null; }; }'.
+      // @ts-expect-error Object literal may only specify known properties
       id: 1,
     })
     expect(use_rpc_call).toMatchInlineSnapshot(`
