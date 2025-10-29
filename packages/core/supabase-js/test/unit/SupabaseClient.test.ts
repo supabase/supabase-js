@@ -188,6 +188,113 @@ describe('SupabaseClient', () => {
     })
   })
 
+  describe('Realtime Headers in Params', () => {
+    test('should copy specified headers to realtime params', () => {
+      const client = createClient(URL, KEY, {
+        global: {
+          headers: {
+            'x-tenant-id': 'tenant-123',
+            'x-other-header': 'other-value',
+          },
+        },
+        realtime: {
+          includeHeadersInParams: ['x-tenant-id'],
+        },
+      })
+
+      // @ts-ignore - accessing private property
+      expect(client.realtime.params['x-tenant-id']).toBe('tenant-123')
+      // @ts-ignore - accessing private property
+      expect(client.realtime.params['x-other-header']).toBeUndefined()
+    })
+
+    test('should not copy headers if includeHeadersInParams is not specified', () => {
+      const client = createClient(URL, KEY, {
+        global: {
+          headers: {
+            'x-tenant-id': 'tenant-123',
+          },
+        },
+      })
+
+      // @ts-ignore - accessing private property
+      expect(client.realtime.params['x-tenant-id']).toBeUndefined()
+    })
+
+    test('should allow explicit realtime params to override headers', () => {
+      const client = createClient(URL, KEY, {
+        global: {
+          headers: {
+            'x-tenant-id': 'tenant-from-header',
+          },
+        },
+        realtime: {
+          includeHeadersInParams: ['x-tenant-id'],
+          params: {
+            'x-tenant-id': 'tenant-override',
+          },
+        },
+      })
+
+      // @ts-ignore - accessing private property
+      expect(client.realtime.params['x-tenant-id']).toBe('tenant-override')
+    })
+
+    test('should handle missing headers gracefully', () => {
+      const client = createClient(URL, KEY, {
+        global: {
+          headers: {
+            'x-existing': 'value',
+          },
+        },
+        realtime: {
+          includeHeadersInParams: ['x-non-existent', 'x-existing'],
+        },
+      })
+
+      // @ts-ignore - accessing private property
+      expect(client.realtime.params['x-non-existent']).toBeUndefined()
+      // @ts-ignore - accessing private property
+      expect(client.realtime.params['x-existing']).toBe('value')
+    })
+
+    test('should handle empty includeHeadersInParams array', () => {
+      const client = createClient(URL, KEY, {
+        global: {
+          headers: {
+            'x-tenant-id': 'tenant-123',
+          },
+        },
+        realtime: {
+          includeHeadersInParams: [],
+        },
+      })
+
+      // @ts-ignore - accessing private property
+      expect(client.realtime.params['x-tenant-id']).toBeUndefined()
+    })
+
+    test('should maintain backward compatibility when no includeHeadersInParams', () => {
+      const client = createClient(URL, KEY, {
+        global: {
+          headers: {
+            'x-tenant-id': 'tenant-123',
+          },
+        },
+        realtime: {
+          params: {
+            'custom-param': 'custom-value',
+          },
+        },
+      })
+
+      // @ts-ignore - accessing private property
+      expect(client.realtime.params['custom-param']).toBe('custom-value')
+      // @ts-ignore - accessing private property
+      expect(client.realtime.params['x-tenant-id']).toBeUndefined()
+    })
+  })
+
   describe('Schema Management', () => {
     test('should switch schema', () => {
       const client = createClient<Database>(URL, KEY)

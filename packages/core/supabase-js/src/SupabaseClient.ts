@@ -369,10 +369,29 @@ export default class SupabaseClient<
     })
   }
 
-  private _initRealtimeClient(options: RealtimeClientOptions) {
+  private _initRealtimeClient(
+    options: RealtimeClientOptions & { includeHeadersInParams?: string[] }
+  ) {
+    const { includeHeadersInParams, ...realtimeOptions } = options
+
+    // Copy specified headers to params for WebSocket handshake
+    const paramsFromHeaders: Record<string, string> = {}
+    if (includeHeadersInParams && Array.isArray(includeHeadersInParams)) {
+      includeHeadersInParams.forEach((headerName) => {
+        const headerValue = this.headers[headerName]
+        if (headerValue !== undefined) {
+          paramsFromHeaders[headerName] = headerValue
+        }
+      })
+    }
+
     return new RealtimeClient(this.realtimeUrl.href, {
-      ...options,
-      params: { ...{ apikey: this.supabaseKey }, ...options?.params },
+      ...realtimeOptions,
+      params: {
+        apikey: this.supabaseKey,
+        ...paramsFromHeaders,
+        ...realtimeOptions?.params, // User params can override
+      },
     })
   }
 

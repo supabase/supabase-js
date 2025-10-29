@@ -82,7 +82,23 @@ export type SupabaseClientOptions<SchemaName> = {
   /**
    * Options passed to the realtime-js instance
    */
-  realtime?: RealtimeClientOptions
+  realtime?: RealtimeClientOptions & {
+    /**
+     * Array of header names from `global.headers` to include as WebSocket query parameters.
+     * This enables RLS policies that check `request.headers` to work with realtime subscriptions.
+     *
+     * @example
+     * ```typescript
+     * createClient(url, key, {
+     *   global: { headers: { 'x-tenant-id': 'tenant-123' } },
+     *   realtime: { includeHeadersInParams: ['x-tenant-id'] }
+     * })
+     * ```
+     *
+     * Security: Only explicitly listed headers are included. Avoid including sensitive data.
+     */
+    includeHeadersInParams?: string[]
+  }
   storage?: StorageClientOptions
   global?: {
     /**
