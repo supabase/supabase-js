@@ -23,6 +23,7 @@ import {
   SignOutScope,
   GoTrueAdminOAuthApi,
   CreateOAuthClientParams,
+  UpdateOAuthClientParams,
   OAuthClientResponse,
   OAuthClientListResponse,
 } from './lib/types'
@@ -66,6 +67,7 @@ export default class GoTrueAdminApi {
       listClients: this._listOAuthClients.bind(this),
       createClient: this._createOAuthClient.bind(this),
       getClient: this._getOAuthClient.bind(this),
+      updateClient: this._updateOAuthClient.bind(this),
       deleteClient: this._deleteOAuthClient.bind(this),
       regenerateClientSecret: this._regenerateOAuthClientSecret.bind(this),
     }
@@ -414,9 +416,7 @@ export default class GoTrueAdminApi {
    *
    * This function should only be called on a server. Never expose your `service_role` key in the browser.
    */
-  private async _createOAuthClient(
-    params: CreateOAuthClientParams
-  ): Promise<OAuthClientResponse> {
+  private async _createOAuthClient(params: CreateOAuthClientParams): Promise<OAuthClientResponse> {
     try {
       return await _request(this.fetch, 'POST', `${this.url}/admin/oauth/clients`, {
         body: params,
@@ -458,6 +458,33 @@ export default class GoTrueAdminApi {
   }
 
   /**
+   * Updates an existing OAuth client.
+   * Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
+   *
+   * This function should only be called on a server. Never expose your `service_role` key in the browser.
+   */
+  private async _updateOAuthClient(
+    clientId: string,
+    params: UpdateOAuthClientParams
+  ): Promise<OAuthClientResponse> {
+    try {
+      return await _request(this.fetch, 'PUT', `${this.url}/admin/oauth/clients/${clientId}`, {
+        body: params,
+        headers: this.headers,
+        xform: (client: any) => {
+          return { data: client, error: null }
+        },
+      })
+    } catch (error) {
+      if (isAuthError(error)) {
+        return { data: null, error }
+      }
+
+      throw error
+    }
+  }
+
+  /**
    * Deletes an OAuth client.
    * Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
    *
@@ -467,15 +494,10 @@ export default class GoTrueAdminApi {
     clientId: string
   ): Promise<{ data: null; error: AuthError | null }> {
     try {
-      await _request(
-        this.fetch,
-        'DELETE',
-        `${this.url}/admin/oauth/clients/${clientId}`,
-        {
-          headers: this.headers,
-          noResolveJson: true,
-        }
-      )
+      await _request(this.fetch, 'DELETE', `${this.url}/admin/oauth/clients/${clientId}`, {
+        headers: this.headers,
+        noResolveJson: true,
+      })
       return { data: null, error: null }
     } catch (error) {
       if (isAuthError(error)) {

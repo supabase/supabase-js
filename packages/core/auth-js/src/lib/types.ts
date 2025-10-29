@@ -1492,6 +1492,8 @@ export type OAuthClient = {
   registration_type: OAuthClientRegistrationType
   /** URI of the OAuth client */
   client_uri?: string
+  /** URI of the OAuth client's logo */
+  logo_uri?: string
   /** Array of allowed redirect URIs */
   redirect_uris: string[]
   /** Array of allowed grant types */
@@ -1523,6 +1525,24 @@ export type CreateOAuthClientParams = {
   response_types?: OAuthClientResponseType[]
   /** Scope of the OAuth client */
   scope?: string
+}
+
+/**
+ * Parameters for updating an existing OAuth client.
+ * All fields are optional. Only provided fields will be updated.
+ * Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
+ */
+export type UpdateOAuthClientParams = {
+  /** Human-readable name of the OAuth client */
+  client_name?: string
+  /** URI of the OAuth client */
+  client_uri?: string
+  /** URI of the OAuth client's logo */
+  logo_uri?: string
+  /** Array of allowed redirect URIs */
+  redirect_uris?: string[]
+  /** Array of allowed grant types */
+  grant_types?: OAuthClientGrantType[]
 }
 
 /**
@@ -1573,6 +1593,14 @@ export interface GoTrueAdminOAuthApi {
    * This function should only be called on a server. Never expose your `service_role` key in the browser.
    */
   getClient(clientId: string): Promise<OAuthClientResponse>
+
+  /**
+   * Updates an existing OAuth client.
+   * Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
+   *
+   * This function should only be called on a server. Never expose your `service_role` key in the browser.
+   */
+  updateClient(clientId: string, params: UpdateOAuthClientParams): Promise<OAuthClientResponse>
 
   /**
    * Deletes an OAuth client.
