@@ -15,7 +15,11 @@ export interface FetchOptions {
 export type RequestMethodType = 'GET' | 'POST' | 'PUT' | 'DELETE' | 'HEAD'
 
 const _getErrorMessage = (err: any): string =>
-  err.msg || err.message || err.error_description || err.error || JSON.stringify(err)
+  err.msg ||
+  err.message ||
+  err.error_description ||
+  (typeof err.error === 'string' ? err.error : err.error?.message) ||
+  JSON.stringify(err)
 
 const handleError = async (
   error: unknown,
