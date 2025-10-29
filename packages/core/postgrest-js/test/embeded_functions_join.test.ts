@@ -1229,36 +1229,19 @@ describe('embeded functions select', () => {
   // test select the created_ago embeded function
   test('select the created_ago embeded function', async () => {
     const res = await postgrest.from('users_audit').select('id, created_ago')
-    expect(res).toMatchInlineSnapshot(`
-      Object {
-        "count": null,
-        "data": Array [
-          Object {
-            "created_ago": 7,
-            "id": 1,
-          },
-          Object {
-            "created_ago": 7,
-            "id": 2,
-          },
-          Object {
-            "created_ago": 7,
-            "id": 3,
-          },
-          Object {
-            "created_ago": 7,
-            "id": 4,
-          },
-          Object {
-            "created_ago": 7,
-            "id": 5,
-          },
-        ],
-        "error": null,
-        "status": 200,
-        "statusText": "OK",
-      }
-    `)
+    // Don't snapshot time-based values - they change daily and cause flaky tests
+    expect(res.error).toBeNull()
+    expect(res.status).toBe(200)
+    expect(res.statusText).toBe('OK')
+    expect(res.count).toBeNull()
+    expect(res.data).toHaveLength(5)
+    // Verify structure of each record
+    expect(res.data?.[0]).toMatchObject({
+      id: expect.any(Number),
+      created_ago: expect.any(Number),
+    })
+    // Verify time-based value is reasonable
+    expect(res.data?.[0].created_ago).toBeGreaterThanOrEqual(0)
     let result: Exclude<typeof res.data, null>
     const ExpectedSchema = z.array(
       z.object({
@@ -1271,7 +1254,7 @@ describe('embeded functions select', () => {
     expectType<TypeEqual<typeof result, typeof expected>>(true)
     ExpectedSchema.parse(res.data)
     const use_rpc_call = await postgrest.rpc('created_ago', {
-      // @ts-expect-error - id is not a parameter of the created_ago function
+      // @ts-expect-error Object literal may only specify known properties
       id: 1,
     })
     expect(use_rpc_call).toMatchInlineSnapshot(`
@@ -1301,24 +1284,19 @@ describe('embeded functions select', () => {
   // Test the days_since_event embeded function over partitioned table
   test('select the days_since_event embeded function over partitioned table', async () => {
     const res = await postgrest.from('events').select('id, days_since_event')
-    expect(res).toMatchInlineSnapshot(`
-      Object {
-        "count": null,
-        "data": Array [
-          Object {
-            "days_since_event": 500,
-            "id": 1,
-          },
-          Object {
-            "days_since_event": 222,
-            "id": 2,
-          },
-        ],
-        "error": null,
-        "status": 200,
-        "statusText": "OK",
-      }
-    `)
+    // Don't snapshot time-based values - they change daily and cause flaky tests
+    expect(res.error).toBeNull()
+    expect(res.status).toBe(200)
+    expect(res.statusText).toBe('OK')
+    expect(res.count).toBeNull()
+    expect(res.data).toHaveLength(2)
+    // Verify structure of each record
+    expect(res.data?.[0]).toMatchObject({
+      id: expect.any(Number),
+      days_since_event: expect.any(Number),
+    })
+    // Verify time-based value is reasonable
+    expect(res.data?.[0].days_since_event).toBeGreaterThanOrEqual(0)
     let result: Exclude<typeof res.data, null>
     const ExpectedSchema = z.array(
       z.object({
@@ -1331,7 +1309,7 @@ describe('embeded functions select', () => {
     expectType<TypeEqual<typeof result, typeof expected>>(true)
     ExpectedSchema.parse(res.data)
     const use_rpc_call = await postgrest.rpc('days_since_event', {
-      // @ts-expect-error - id is not a parameter of the days_since_event function
+      // @ts-expect-error Object literal may only specify known properties
       id: 1,
     })
     expect(use_rpc_call).toMatchInlineSnapshot(`
