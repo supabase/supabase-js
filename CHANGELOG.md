@@ -1,3 +1,33 @@
+## 2.77.0 (2025-10-29)
+
+### 🚀 Features
+
+- **auth:** add OAuth 2.1 authorization consent management API calls ([#1793](https://github.com/supabase/supabase-js/pull/1793))
+- **auth:** add OAuth client update support ([#1812](https://github.com/supabase/supabase-js/pull/1812))
+- **storage:** add support for bucket pagination and sorting ([#1790](https://github.com/supabase/supabase-js/pull/1790))
+
+### 🩹 Fixes
+
+- **auth:** handle 204 No Content response in OAuth client delete ([#1786](https://github.com/supabase/supabase-js/pull/1786))
+- **auth:** remove redirection in `getAuthorizationDetails` ([#1811](https://github.com/supabase/supabase-js/pull/1811))
+- **postgrest:** add incoming major 14 support ([#1807](https://github.com/supabase/supabase-js/pull/1807))
+- **repo:** add missing tslib dependency to core packages ([#1789](https://github.com/supabase/supabase-js/pull/1789))
+- **repo:** cleanup package-lock.json and bun.lock ([#1799](https://github.com/supabase/supabase-js/pull/1799))
+- **storage:** remove unnecessary filter ([#1809](https://github.com/supabase/supabase-js/pull/1809))
+
+### 🔥 Performance
+
+- precompile RegExp ([#1806](https://github.com/supabase/supabase-js/pull/1806))
+
+### ❤️ Thank You
+
+- Andrew Valleteau @avallete
+- Cemal Kılıç @cemalkilic
+- Fabrizio @fenos
+- Katerina Skroumpelou @mandarini
+- Kevin Grüneberg @kevcodez
+- Lenny @itslenny
+
 ## 2.76.1 (2025-10-21)
 
 ### 🩹 Fixes
