@@ -408,6 +408,50 @@ export function userNotAvailableProxy(): User {
 }
 
 /**
+ * Creates a proxy around a user object that warns when properties are accessed on the server.
+ * This is used to alert developers that using user data from getSession() on the server is insecure.
+ *
+ * @param user The actual user object to wrap
+ * @param suppressWarningRef An object with a 'value' property that controls warning suppression
+ * @returns A proxied user object that warns on property access
+ */
+export function insecureUserWarningProxy(user: User, suppressWarningRef: { value: boolean }): User {
+  return new Proxy(user, {
+    get: (target: any, prop: string | symbol, receiver: any) => {
+      // Allow internal checks without warning
+      if (prop === '__isInsecureUserWarningProxy') {
+        return true
+      }
+
+      // Preventative check for common problematic symbols during cloning/inspection
+      // These symbols might be accessed by structuredClone or other internal mechanisms
+      if (typeof prop === 'symbol') {
+        const sProp = prop.toString()
+        if (
+          sProp === 'Symbol(Symbol.toPrimitive)' ||
+          sProp === 'Symbol(Symbol.toStringTag)' ||
+          sProp === 'Symbol(util.inspect.custom)' ||
+          sProp === 'Symbol(nodejs.util.inspect.custom)'
+        ) {
+          // Return the actual value for these symbols to allow proper inspection
+          return Reflect.get(target, prop, receiver)
+        }
+      }
+
+      // Emit warning on first property access
+      if (!suppressWarningRef.value && typeof prop === 'string') {
+        console.warn(
+          'Using the user object as returned from supabase.auth.getSession() or from some supabase.auth.onAuthStateChange() events could be insecure! This value comes directly from the storage medium (usually cookies on the server) and may not be authentic. Use supabase.auth.getUser() instead which authenticates the data by contacting the Supabase Auth server.'
+        )
+        suppressWarningRef.value = true
+      }
+
+      return Reflect.get(target, prop, receiver)
+    },
+  })
+}
+
+/**
  * Deep clones a JSON-serializable object using JSON.parse(JSON.stringify(obj)).
  * Note: Only works for JSON-safe data.
  */
