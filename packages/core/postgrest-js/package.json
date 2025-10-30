@@ -42,7 +42,7 @@
     "docs": "typedoc src/index.ts --out docs/v2",
     "docs:json": "typedoc --json docs/v2/spec.json --excludeExternals src/index.ts",
     "test:ci:postgrest": "npm run db:clean && npm run db:run && npm run test:run && npm run db:clean && npm run test:smoke",
-    "test:run": "jest --runInBand --coverage",
+    "test:run": "jest --runInBand --coverage -u",
     "test:smoke": "node test/smoke.cjs && node test/smoke.mjs",
     "test:update": "npm run db:clean && npm run db:run && npm run db:generate-test-types && jest --runInBand --updateSnapshot && npm run db:clean",
     "test:types": "npm run build && tstyche",

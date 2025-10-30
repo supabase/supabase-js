@@ -17,24 +17,24 @@ test('select with aggregate count and spread', async () => {
     .limit(1)
     .single()
   expect(res).toMatchInlineSnapshot(`
-    Object {
+    {
       "count": null,
-      "data": Object {
-        "messages": Array [
-          Object {
-            "channels": Object {
+      "data": {
+        "messages": [
+          {
+            "channels": {
               "count": 1,
               "details": "Details for public channel",
             },
           },
-          Object {
-            "channels": Object {
+          {
+            "channels": {
               "count": 1,
               "details": "Details for random channel",
             },
           },
-          Object {
-            "channels": Object {
+          {
+            "channels": {
               "count": 1,
               "details": null,
             },
@@ -71,24 +71,24 @@ test('spread resource with single column in select query', async () => {
     .limit(1)
     .single()
   expect(res).toMatchInlineSnapshot(`
-    Object {
+    {
       "count": null,
-      "data": Object {
-        "messages": Array [
-          Object {
-            "channels": Object {
+      "data": {
+        "messages": [
+          {
+            "channels": {
               "count": 1,
               "details": "Details for public channel",
             },
           },
-          Object {
-            "channels": Object {
+          {
+            "channels": {
               "count": 1,
               "details": "Details for random channel",
             },
           },
-          Object {
-            "channels": Object {
+          {
+            "channels": {
               "count": 1,
               "details": null,
             },
@@ -125,26 +125,26 @@ test('spread resource with all columns in select query', async () => {
     .limit(1)
     .single()
   expect(res).toMatchInlineSnapshot(`
-    Object {
+    {
       "count": null,
-      "data": Object {
-        "messages": Array [
-          Object {
-            "channels": Object {
+      "data": {
+        "messages": [
+          {
+            "channels": {
               "count": 1,
               "details": "Details for public channel",
               "id": 1,
             },
           },
-          Object {
-            "channels": Object {
+          {
+            "channels": {
               "count": 1,
               "details": "Details for random channel",
               "id": 2,
             },
           },
-          Object {
-            "channels": Object {
+          {
+            "channels": {
               "count": 1,
               "details": null,
               "id": null,
@@ -183,24 +183,24 @@ test('select with aggregate sum and spread', async () => {
     .limit(1)
     .single()
   expect(res).toMatchInlineSnapshot(`
-    Object {
+    {
       "count": null,
-      "data": Object {
-        "messages": Array [
-          Object {
-            "channels": Object {
+      "data": {
+        "messages": [
+          {
+            "channels": {
               "details": "Details for public channel",
               "sum": 1,
             },
           },
-          Object {
-            "channels": Object {
+          {
+            "channels": {
               "details": "Details for random channel",
               "sum": 2,
             },
           },
-          Object {
-            "channels": Object {
+          {
+            "channels": {
               "details": null,
               "sum": 3,
             },
@@ -239,26 +239,26 @@ test('select with aggregate sum and spread on nested relation', async () => {
     .limit(1)
     .single()
   expect(res).toMatchInlineSnapshot(`
-    Object {
+    {
       "count": null,
-      "data": Object {
-        "messages": Array [
-          Object {
-            "channels": Object {
+      "data": {
+        "messages": [
+          {
+            "channels": {
               "details": "Details for public channel",
               "details_sum": 1,
               "sum": 1,
             },
           },
-          Object {
-            "channels": Object {
+          {
+            "channels": {
               "details": "Details for random channel",
               "details_sum": 2,
               "sum": 2,
             },
           },
-          Object {
-            "channels": Object {
+          {
+            "channels": {
               "details": null,
               "details_sum": null,
               "sum": 3,
@@ -297,10 +297,10 @@ test('select with spread on nested relation', async () => {
     .limit(1)
     .single()
   expect(res).toMatchInlineSnapshot(`
-    Object {
+    {
       "count": null,
-      "data": Object {
-        "channels": Object {
+      "data": {
+        "channels": {
           "details": "Details for public channel",
           "details_id": 1,
           "id": 1,
@@ -333,14 +333,14 @@ test('select spread on many relation postgrest14', async () => {
     .limit(1)
     .single()
   expect(res).toMatchInlineSnapshot(`
-    Object {
+    {
       "count": null,
-      "data": Object {
+      "data": {
         "channel_id": 1,
-        "id": Array [
+        "id": [
           1,
         ],
-        "message": Array [
+        "message": [
           "Hello World 👋",
         ],
       },
@@ -367,14 +367,14 @@ test('select spread on many relation postgrest14FromDatabaseTypes', async () => 
     .limit(1)
     .single()
   expect(res).toMatchInlineSnapshot(`
-    Object {
+    {
       "count": null,
-      "data": Object {
+      "data": {
         "channel_id": 1,
-        "id": Array [
+        "id": [
           1,
         ],
-        "message": Array [
+        "message": [
           "Hello World 👋",
         ],
       },
