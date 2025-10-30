@@ -1,3 +1,22 @@
+## 2.78.0 (2025-10-30)
+
+### 🚀 Features
+
+- **auth:** add OAuth 2.1 authorization consent management API calls ([#1793](https://github.com/supabase/supabase-js/pull/1793))
+- **auth:** add OAuth client update support ([#1812](https://github.com/supabase/supabase-js/pull/1812))
+- **auth:** refactor getAuthenticatorAssuranceLevel method ([#1822](https://github.com/supabase/supabase-js/pull/1822))
+
+### 🩹 Fixes
+
+- **auth:** remove redirection in `getAuthorizationDetails` ([#1811](https://github.com/supabase/supabase-js/pull/1811))
+- **auth:** move session warning proxy from session to user object ([#1817](https://github.com/supabase/supabase-js/pull/1817))
+
+### ❤️ Thank You
+
+- Cemal Kılıç @cemalkilic
+- Katerina Skroumpelou @mandarini
+- Stojan Dimitrovski @hf
+
 ## 2.77.0 (2025-10-29)
 
 ### 🚀 Features
