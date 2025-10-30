@@ -1817,6 +1817,7 @@ describe('GoTrueClient with storageisServer = true', () => {
   let warnings: any[][] = []
 
   beforeEach(() => {
+    warnings = []
     console.warn = (...args: any[]) => {
       console.log('WARN', ...args)
 
