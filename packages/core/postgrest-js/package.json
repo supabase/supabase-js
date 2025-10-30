@@ -60,9 +60,7 @@
   },
   "devDependencies": {
     "chokidar-cli": "^3.0.0",
-    "jest": "^28.1.0",
     "node-abort-controller": "^3.0.1",
-    "ts-jest": "^28.0.3",
     "tstyche": "^4.3.0",
     "type-fest": "^4.32.0",
     "wait-for-localhost-cli": "^4.0.0",
