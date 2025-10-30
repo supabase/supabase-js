@@ -15,6 +15,6 @@ module.exports = {
     '!**/node_modules/**',
     '!**/vendor/**',
   ],
-  rootDir: '..',
+  rootDir: '.',
   silent: true,
 }

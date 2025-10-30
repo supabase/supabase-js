@@ -26,13 +26,12 @@
     "directory": "packages/core/auth-js"
   },
   "scripts": {
-    "coverage": "echo \"run npm test\"",
     "build:node18": "npm run build:main && npm run build:module",
     "build": "npm run build:main && npm run build:module",
     "build:main": "tsc -p tsconfig.json",
     "build:module": "tsc -p tsconfig.module.json",
     "test:auth": "npm run test:clean && npm run test:infra && npm run test:suite && npm run test:clean",
-    "test:suite": "jest --runInBand --coverage --config ./test/jest.config.js",
+    "test:suite": "jest --runInBand --coverage",
     "test:infra": "cd infra && docker compose down && docker compose pull && docker compose up -d && sleep 30",
     "test:clean": "cd infra && docker compose down",
     "docs": "typedoc src/index.ts --out docs/v2 --excludePrivate --excludeProtected",
