@@ -386,7 +386,7 @@ export default class GoTrueClient {
    * and the provided result contains a non-nullish error, the error is thrown instead of
    * being returned. This ensures consistent behavior across all public API methods.
    */
-  private _returnResult<T extends { data: any; error: any }>(result: T): T {
+  private _returnResult<T extends { error: any }>(result: T): T {
     if (this.throwOnError && result && result.error) {
       throw result.error
     }
@@ -495,13 +495,12 @@ export default class GoTrueClient {
       return { error: null }
     } catch (error) {
       if (isAuthError(error)) {
-        if (this.throwOnError) throw error
-        return { error }
+        return this._returnResult({ error })
       }
 
-      return {
+      return this._returnResult({
         error: new AuthUnknownError('Unexpected error during initialization', error),
-      }
+      })
     } finally {
       await this._handleVisibilityChange()
       this._debug('#_initialize()', 'end')
@@ -1250,12 +1249,10 @@ export default class GoTrueClient {
       })
 
       if (error) {
-        if (this.throwOnError) throw error
         throw error
       }
       if (!data) {
         const tokenVerificationError = new Error('An error occurred on token verification.')
-        if (this.throwOnError) throw tokenVerificationError
         throw tokenVerificationError
       }
 
@@ -1403,8 +1400,7 @@ export default class GoTrueClient {
       )
     } catch (error) {
       if (isAuthError(error)) {
-        if (this.throwOnError) throw error
-        return { data: { user: null, session: null }, error }
+        return this._returnResult({ data: { user: null, session: null }, error })
       }
       throw error
     }
@@ -1647,11 +1643,10 @@ export default class GoTrueClient {
 
       const { data: session, error } = await this._callRefreshToken(currentSession.refresh_token)
       if (error) {
-        if (this.throwOnError) throw error
-        return { data: { session: null }, error }
+        return this._returnResult({ data: { session: null }, error })
       }
 
-      return { data: { session }, error: null }
+      return this._returnResult({ data: { session }, error: null })
     } finally {
       this._debug('#__loadSession()', 'end')
     }
@@ -1715,8 +1710,7 @@ export default class GoTrueClient {
           await removeItemAsync(this.storage, `${this.storageKey}-code-verifier`)
         }
 
-        if (this.throwOnError) throw error
-        return { data: { user: null }, error }
+        return this._returnResult({ data: { user: null }, error })
       }
 
       throw error
@@ -1856,11 +1850,10 @@ export default class GoTrueClient {
         await this._notifyAllSubscribers('SIGNED_IN', session)
       }
 
-      return { data: { user: session.user, session }, error: null }
+      return this._returnResult({ data: { user: session.user, session }, error: null })
     } catch (error) {
       if (isAuthError(error)) {
-        if (this.throwOnError) throw error
-        return { data: { session: null, user: null }, error }
+        return this._returnResult({ data: { session: null, user: null }, error })
       }
 
       throw error
@@ -1901,8 +1894,7 @@ export default class GoTrueClient {
 
         const { data: session, error } = await this._callRefreshToken(currentSession.refresh_token)
         if (error) {
-          if (this.throwOnError) throw error
-          return { data: { user: null, session: null }, error: error }
+          return this._returnResult({ data: { user: null, session: null }, error: error })
         }
 
         if (!session) {
@@ -2044,11 +2036,10 @@ export default class GoTrueClient {
       window.location.hash = ''
       this._debug('#_getSessionFromURL()', 'clearing window.location.hash')
 
-      return { data: { session, redirectType: params.type }, error: null }
+      return this._returnResult({ data: { session, redirectType: params.type }, error: null })
     } catch (error) {
       if (isAuthError(error)) {
-        if (this.throwOnError) throw error
-        return { data: { session: null, redirectType: null }, error }
+        return this._returnResult({ data: { session: null, redirectType: null }, error })
       }
 
       throw error
@@ -2096,8 +2087,7 @@ export default class GoTrueClient {
     return await this._useSession(async (result) => {
       const { data, error: sessionError } = result
       if (sessionError) {
-        if (this.throwOnError) throw sessionError
-        return { error: sessionError }
+        return this._returnResult({ error: sessionError })
       }
       const accessToken = data.session?.access_token
       if (accessToken) {
@@ -2111,8 +2101,7 @@ export default class GoTrueClient {
               (error.status === 404 || error.status === 401 || error.status === 403)
             )
           ) {
-            if (this.throwOnError) throw error
-            return { error }
+            return this._returnResult({ error })
           }
         }
       }
@@ -2120,7 +2109,7 @@ export default class GoTrueClient {
         await this._removeSession()
         await removeItemAsync(this.storage, `${this.storageKey}-code-verifier`)
       }
-      return { error: null }
+      return this._returnResult({ error: null })
     })
   }
 
@@ -2242,8 +2231,7 @@ export default class GoTrueClient {
       })
     } catch (error) {
       if (isAuthError(error)) {
-        if (this.throwOnError) throw error
-        return { data: null, error }
+        return this._returnResult({ data: null, error })
       }
 
       throw error
@@ -2265,11 +2253,10 @@ export default class GoTrueClient {
     try {
       const { data, error } = await this.getUser()
       if (error) throw error
-      return { data: { identities: data.user.identities ?? [] }, error: null }
+      return this._returnResult({ data: { identities: data.user.identities ?? [] }, error: null })
     } catch (error) {
       if (isAuthError(error)) {
-        if (this.throwOnError) throw error
-        return { data: null, error }
+        return this._returnResult({ data: null, error })
       }
       throw error
     }
@@ -2318,11 +2305,13 @@ export default class GoTrueClient {
       if (isBrowser() && !credentials.options?.skipBrowserRedirect) {
         window.location.assign(data?.url)
       }
-      return { data: { provider: credentials.provider, url: data?.url }, error: null }
+      return this._returnResult({
+        data: { provider: credentials.provider, url: data?.url },
+        error: null,
+      })
     } catch (error) {
       if (isAuthError(error)) {
-        if (this.throwOnError) throw error
-        return { data: { provider: credentials.provider, url: null }, error }
+        return this._returnResult({ data: { provider: credentials.provider, url: null }, error })
       }
       throw error
     }
@@ -2357,22 +2346,21 @@ export default class GoTrueClient {
 
         const { data, error } = res
         if (error) {
-          return { data: { user: null, session: null }, error }
+          return this._returnResult({ data: { user: null, session: null }, error })
         } else if (!data || !data.session || !data.user) {
-          return {
+          return this._returnResult({
             data: { user: null, session: null },
             error: new AuthInvalidTokenResponseError(),
-          }
+          })
         }
         if (data.session) {
           await this._saveSession(data.session)
           await this._notifyAllSubscribers('USER_UPDATED', data.session)
         }
-        return { data, error }
+        return this._returnResult({ data, error })
       } catch (error) {
         if (isAuthError(error)) {
-          if (this.throwOnError) throw error
-          return { data: { user: null, session: null }, error }
+          return this._returnResult({ data: { user: null, session: null }, error })
         }
         throw error
       }
@@ -2407,8 +2395,7 @@ export default class GoTrueClient {
       })
     } catch (error) {
       if (isAuthError(error)) {
-        if (this.throwOnError) throw error
-        return { data: null, error }
+        return this._returnResult({ data: null, error })
       }
       throw error
     }
@@ -2454,8 +2441,7 @@ export default class GoTrueClient {
       this._debug(debugName, 'error', error)
 
       if (isAuthError(error)) {
-        if (this.throwOnError) throw error
-        return { data: { session: null, user: null }, error }
+        return this._returnResult({ data: { session: null, user: null }, error })
       }
       throw error
     } finally {
@@ -3062,8 +3048,7 @@ export default class GoTrueClient {
       return await this._useSession(async (result) => {
         const { data: sessionData, error: sessionError } = result
         if (sessionError) {
-          if (this.throwOnError) throw sessionError
-          return { data: null, error: sessionError }
+          return this._returnResult({ data: null, error: sessionError })
         }
 
         return await _request(this.fetch, 'DELETE', `${this.url}/factors/${params.factorId}`, {
@@ -3073,8 +3058,7 @@ export default class GoTrueClient {
       })
     } catch (error) {
       if (isAuthError(error)) {
-        if (this.throwOnError) throw error
-        return { data: null, error }
+        return this._returnResult({ data: null, error })
       }
       throw error
     }
@@ -3091,8 +3075,7 @@ export default class GoTrueClient {
       return await this._useSession(async (result) => {
         const { data: sessionData, error: sessionError } = result
         if (sessionError) {
-          if (this.throwOnError) throw sessionError
-          return { data: null, error: sessionError }
+          return this._returnResult({ data: null, error: sessionError })
         }
 
         const body = {
@@ -3111,19 +3094,18 @@ export default class GoTrueClient {
           jwt: sessionData?.session?.access_token,
         })) as AuthMFAEnrollResponse
         if (error) {
-          return { data: null, error }
+          return this._returnResult({ data: null, error })
         }
 
         if (params.factorType === 'totp' && data.type === 'totp' && data?.totp?.qr_code) {
           data.totp.qr_code = `data:image/svg+xml;utf-8,${data.totp.qr_code}`
         }
 
-        return { data, error: null }
+        return this._returnResult({ data, error: null })
       })
     } catch (error) {
       if (isAuthError(error)) {
-        if (this.throwOnError) throw error
-        return { data: null, error }
+        return this._returnResult({ data: null, error })
       }
       throw error
     }
@@ -3143,8 +3125,7 @@ export default class GoTrueClient {
         return await this._useSession(async (result) => {
           const { data: sessionData, error: sessionError } = result
           if (sessionError) {
-            if (this.throwOnError) throw sessionError
-            return { data: null, error: sessionError }
+            return this._returnResult({ data: null, error: sessionError })
           }
 
           const body: StrictOmit<
@@ -3193,7 +3174,7 @@ export default class GoTrueClient {
             }
           )
           if (error) {
-            return { data: null, error }
+            return this._returnResult({ data: null, error })
           }
 
           await this._saveSession({
@@ -3202,12 +3183,11 @@ export default class GoTrueClient {
           })
           await this._notifyAllSubscribers('MFA_CHALLENGE_VERIFIED', data)
 
-          return { data, error }
+          return this._returnResult({ data, error })
         })
       } catch (error) {
         if (isAuthError(error)) {
-          if (this.throwOnError) throw error
-          return { data: null, error }
+          return this._returnResult({ data: null, error })
         }
         throw error
       }
@@ -3232,8 +3212,7 @@ export default class GoTrueClient {
         return await this._useSession(async (result) => {
           const { data: sessionData, error: sessionError } = result
           if (sessionError) {
-            if (this.throwOnError) throw sessionError
-            return { data: null, error: sessionError }
+            return this._returnResult({ data: null, error: sessionError })
           }
 
           const response = (await _request(
@@ -3297,8 +3276,7 @@ export default class GoTrueClient {
         })
       } catch (error) {
         if (isAuthError(error)) {
-          if (this.throwOnError) throw error
-          return { data: null, error }
+          return this._returnResult({ data: null, error })
         }
         throw error
       }
@@ -3318,7 +3296,7 @@ export default class GoTrueClient {
       factorId: params.factorId,
     })
     if (challengeError) {
-      return { data: null, error: challengeError }
+      return this._returnResult({ data: null, error: challengeError })
     }
 
     return await this._verify({
@@ -3372,7 +3350,7 @@ export default class GoTrueClient {
     } = await this.getSession()
 
     if (sessionError) {
-      return { data: null, error: sessionError }
+      return this._returnResult({ data: null, error: sessionError })
     }
     if (!session) {
       return {
@@ -3422,11 +3400,11 @@ export default class GoTrueClient {
         } = result
 
         if (sessionError) {
-          return { data: null, error: sessionError }
+          return this._returnResult({ data: null, error: sessionError })
         }
 
         if (!session) {
-          return { data: null, error: new AuthSessionMissingError() }
+          return this._returnResult({ data: null, error: new AuthSessionMissingError() })
         }
 
         return await _request(
@@ -3442,7 +3420,7 @@ export default class GoTrueClient {
       })
     } catch (error) {
       if (isAuthError(error)) {
-        return { data: null, error }
+        return this._returnResult({ data: null, error })
       }
 
       throw error
@@ -3465,11 +3443,11 @@ export default class GoTrueClient {
         } = result
 
         if (sessionError) {
-          return { data: null, error: sessionError }
+          return this._returnResult({ data: null, error: sessionError })
         }
 
         if (!session) {
-          return { data: null, error: new AuthSessionMissingError() }
+          return this._returnResult({ data: null, error: new AuthSessionMissingError() })
         }
 
         const response = await _request(
@@ -3495,7 +3473,7 @@ export default class GoTrueClient {
       })
     } catch (error) {
       if (isAuthError(error)) {
-        return { data: null, error }
+        return this._returnResult({ data: null, error })
       }
 
       throw error
@@ -3518,11 +3496,11 @@ export default class GoTrueClient {
         } = result
 
         if (sessionError) {
-          return { data: null, error: sessionError }
+          return this._returnResult({ data: null, error: sessionError })
         }
 
         if (!session) {
-          return { data: null, error: new AuthSessionMissingError() }
+          return this._returnResult({ data: null, error: new AuthSessionMissingError() })
         }
 
         const response = await _request(
@@ -3548,7 +3526,7 @@ export default class GoTrueClient {
       })
     } catch (error) {
       if (isAuthError(error)) {
-        return { data: null, error }
+        return this._returnResult({ data: null, error })
       }
 
       throw error
@@ -3636,7 +3614,7 @@ export default class GoTrueClient {
       if (!token) {
         const { data, error } = await this.getSession()
         if (error || !data.session) {
-          return { data: null, error }
+          return this._returnResult({ data: null, error })
         }
         token = data.session.access_token
       }
@@ -3708,8 +3686,7 @@ export default class GoTrueClient {
       }
     } catch (error) {
       if (isAuthError(error)) {
-        if (this.throwOnError) throw error
-        return { data: null, error }
+        return this._returnResult({ data: null, error })
       }
       throw error
     }
