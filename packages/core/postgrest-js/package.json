@@ -37,7 +37,7 @@
     "format": "node scripts/format.js",
     "format:check": "node scripts/format.js check",
     "build:cjs": "tsc -p tsconfig.json",
-    "build:esm": "cpy wrapper.mjs dist/esm/",
+    "build:esm": "node scripts/copy-wrapper.cjs",
     "build:module": "npm run build:cjs",
     "docs": "typedoc src/index.ts --out docs/v2",
     "docs:json": "typedoc --json docs/v2/spec.json --excludeExternals src/index.ts",
@@ -60,13 +60,12 @@
   },
   "devDependencies": {
     "chokidar-cli": "^3.0.0",
-    "cpy-cli": "^5.0.0",
     "jest": "^28.1.0",
     "node-abort-controller": "^3.0.1",
     "ts-jest": "^28.0.3",
     "tstyche": "^4.3.0",
     "type-fest": "^4.32.0",
-    "wait-for-localhost-cli": "^3.0.0",
+    "wait-for-localhost-cli": "^4.0.0",
     "zod": "^3.25.76",
     "prettier": "^2.6.2"
   }

@@ -42,18 +42,10 @@
   },
   "devDependencies": {
     "form-data": "^4.0.0",
-    "husky": "^4.3.0",
     "jest-environment-jsdom": "^29.5.0",
-    "pretty-quick": "^3.1.0",
-    "ts-jest": "^29.0.0",
     "ts-loader": "^9.4.2",
     "webpack": "^5.75.0",
     "webpack-cli": "^5.0.1"
-  },
-  "husky": {
-    "hooks": {
-      "pre-commit": "pretty-quick --staged"
-    }
   },
   "jsdelivr": "dist/umd/supabase.js",
   "unpkg": "dist/umd/supabase.js",
