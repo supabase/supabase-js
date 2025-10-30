@@ -28,19 +28,19 @@ test('nested query with selective fields', async () => {
     .limit(1)
     .single()
   expect(res).toMatchInlineSnapshot(`
-    Object {
+    {
       "count": null,
-      "data": Object {
-        "messages": Array [
-          Object {
+      "data": {
+        "messages": [
+          {
             "id": 1,
             "message": "Hello World 👋",
           },
-          Object {
+          {
             "id": 2,
             "message": "Perfection is attained, not when there is nothing more to add, but when there is nothing left to take away.",
           },
-          Object {
+          {
             "id": 4,
             "message": "Some message on channel wihtout details",
           },
@@ -74,28 +74,28 @@ test('nested query with multiple levels and selective fields', async () => {
     .limit(1)
     .single()
   expect(res).toMatchInlineSnapshot(`
-    Object {
+    {
       "count": null,
-      "data": Object {
-        "messages": Array [
-          Object {
-            "channels": Object {
+      "data": {
+        "messages": [
+          {
+            "channels": {
               "id": 1,
               "slug": "public",
             },
             "id": 1,
             "message": "Hello World 👋",
           },
-          Object {
-            "channels": Object {
+          {
+            "channels": {
               "id": 2,
               "slug": "random",
             },
             "id": 2,
             "message": "Perfection is attained, not when there is nothing more to add, but when there is nothing left to take away.",
           },
-          Object {
-            "channels": Object {
+          {
+            "channels": {
               "id": 3,
               "slug": "other",
             },
@@ -136,22 +136,22 @@ test('query with multiple one-to-many relationships', async () => {
     .limit(1)
     .single()
   expect(res).toMatchInlineSnapshot(`
-    Object {
+    {
       "count": null,
-      "data": Object {
-        "messages": Array [
-          Object {
+      "data": {
+        "messages": [
+          {
             "id": 1,
           },
-          Object {
+          {
             "id": 2,
           },
-          Object {
+          {
             "id": 4,
           },
         ],
-        "user_profiles": Array [
-          Object {
+        "user_profiles": [
+          {
             "id": 1,
           },
         ],
@@ -176,10 +176,10 @@ test('query with multiple one-to-many relationships', async () => {
 test('many-to-one relationship', async () => {
   const res = await postgrest.from('messages').select('user:users(*)').limit(1).single()
   expect(res).toMatchInlineSnapshot(`
-    Object {
+    {
       "count": null,
-      "data": Object {
-        "user": Object {
+      "data": {
+        "user": {
           "age_range": "[1,2)",
           "catchphrase": "'cat' 'fat'",
           "data": null,
@@ -204,25 +204,25 @@ test('many-to-one relationship', async () => {
 test('one-to-many relationship', async () => {
   const res = await postgrest.from('users').select('messages(*)').limit(1).single()
   expect(res).toMatchInlineSnapshot(`
-    Object {
+    {
       "count": null,
-      "data": Object {
-        "messages": Array [
-          Object {
+      "data": {
+        "messages": [
+          {
             "channel_id": 1,
             "data": null,
             "id": 1,
             "message": "Hello World 👋",
             "username": "supabot",
           },
-          Object {
+          {
             "channel_id": 2,
             "data": null,
             "id": 2,
             "message": "Perfection is attained, not when there is nothing more to add, but when there is nothing left to take away.",
             "username": "supabot",
           },
-          Object {
+          {
             "channel_id": 3,
             "data": null,
             "id": 4,
@@ -258,17 +258,17 @@ test('one-to-many relationship', async () => {
 test('one-to-many relationship with selective columns', async () => {
   const res = await postgrest.from('users').select('messages(data)').limit(1).single()
   expect(res).toMatchInlineSnapshot(`
-    Object {
+    {
       "count": null,
-      "data": Object {
-        "messages": Array [
-          Object {
+      "data": {
+        "messages": [
+          {
             "data": null,
           },
-          Object {
+          {
             "data": null,
           },
-          Object {
+          {
             "data": null,
           },
         ],
@@ -292,10 +292,10 @@ test('one-to-many relationship with selective columns', async () => {
 test('one-to-one relationship', async () => {
   const res = await postgrest.from('channels').select('channel_details(*)').limit(1).single()
   expect(res).toMatchInlineSnapshot(`
-    Object {
+    {
       "count": null,
-      "data": Object {
-        "channel_details": Object {
+      "data": {
+        "channel_details": {
           "details": "Details for public channel",
           "id": 1,
         },
@@ -317,9 +317,9 @@ test('one-to-one relationship', async () => {
 test('select with type casting query', async () => {
   const res = await postgrest.from('best_friends').select('id::text').limit(1).single()
   expect(res).toMatchInlineSnapshot(`
-    Object {
+    {
       "count": null,
-      "data": Object {
+      "data": {
         "id": "1",
       },
       "error": null,
@@ -337,9 +337,9 @@ test('select with type casting query', async () => {
 test('multiple times the same column in selection', async () => {
   const res = await postgrest.from('channels').select('id, id, id').limit(1).single()
   expect(res).toMatchInlineSnapshot(`
-    Object {
+    {
       "count": null,
-      "data": Object {
+      "data": {
         "id": 1,
       },
       "error": null,
@@ -357,9 +357,9 @@ test('multiple times the same column in selection', async () => {
 test('embed resource with no fields', async () => {
   const res = await postgrest.from('messages').select('message, users()').limit(1).single()
   expect(res).toMatchInlineSnapshot(`
-    Object {
+    {
       "count": null,
-      "data": Object {
+      "data": {
         "message": "Hello World 👋",
       },
       "error": null,
@@ -382,10 +382,10 @@ test('select JSON accessor', async () => {
     .filter('username', 'eq', 'jsonuser')
     .single()
   expect(res).toMatchInlineSnapshot(`
-    Object {
+    {
       "count": null,
-      "data": Object {
-        "bar": Object {
+      "data": {
+        "bar": {
           "nested": "value",
         },
         "baz": "string value",
@@ -413,16 +413,16 @@ test('select JSON accessor', async () => {
 test('self reference relation', async () => {
   const res = await postgrest.from('collections').select('*, collections(*)').limit(1).single()
   expect(res).toMatchInlineSnapshot(`
-    Object {
+    {
       "count": null,
-      "data": Object {
-        "collections": Array [
-          Object {
+      "data": {
+        "collections": [
+          {
             "description": "Child of Root",
             "id": 2,
             "parent_id": 1,
           },
-          Object {
+          {
             "description": "Another Child of Root",
             "id": 3,
             "parent_id": 1,
@@ -463,12 +463,12 @@ test('self reference relation via column', async () => {
     .limit(1)
     .single()
   expect(res).toMatchInlineSnapshot(`
-    Object {
+    {
       "count": null,
-      "data": Object {
+      "data": {
         "description": "Child of Root",
         "id": 2,
-        "parent_id": Object {
+        "parent_id": {
           "description": "Root Collection",
           "id": 1,
           "parent_id": null,
@@ -506,16 +506,16 @@ test('self reference relation via column', async () => {
 test('many-to-many with join table', async () => {
   const res = await postgrest.from('products').select('*, categories(*)').eq('id', 1).single()
   expect(res).toMatchInlineSnapshot(`
-    Object {
+    {
       "count": null,
-      "data": Object {
-        "categories": Array [
-          Object {
+      "data": {
+        "categories": [
+          {
             "description": "Electronic devices and gadgets",
             "id": 1,
             "name": "Electronics",
           },
-          Object {
+          {
             "description": "Computer and computer accessories",
             "id": 2,
             "name": "Computers",

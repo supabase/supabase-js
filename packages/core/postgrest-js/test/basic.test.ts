@@ -7,43 +7,43 @@ const postgrest = new PostgrestClient<Database>(REST_URL)
 test('basic select table', async () => {
   const res = await postgrest.from('users').select()
   expect(res).toMatchInlineSnapshot(`
-    Object {
+    {
       "count": null,
-      "data": Array [
-        Object {
+      "data": [
+        {
           "age_range": "[1,2)",
           "catchphrase": "'cat' 'fat'",
           "data": null,
           "status": "ONLINE",
           "username": "supabot",
         },
-        Object {
+        {
           "age_range": "[25,35)",
           "catchphrase": "'bat' 'cat'",
           "data": null,
           "status": "OFFLINE",
           "username": "kiwicopple",
         },
-        Object {
+        {
           "age_range": "[25,35)",
           "catchphrase": "'bat' 'rat'",
           "data": null,
           "status": "ONLINE",
           "username": "awailas",
         },
-        Object {
+        {
           "age_range": "[20,30)",
           "catchphrase": "'fat' 'rat'",
           "data": null,
           "status": "ONLINE",
           "username": "dragarcia",
         },
-        Object {
+        {
           "age_range": "[20,30)",
           "catchphrase": "'json' 'test'",
-          "data": Object {
-            "foo": Object {
-              "bar": Object {
+          "data": {
+            "foo": {
+              "bar": {
                 "nested": "value",
               },
               "baz": "string value",
@@ -63,43 +63,43 @@ test('basic select table', async () => {
 test('basic select returns types override', async () => {
   const res = await postgrest.from('users').select().returns<{ status: 'ONLINE' | 'OFFLINE' }>()
   expect(res).toMatchInlineSnapshot(`
-    Object {
+    {
       "count": null,
-      "data": Array [
-        Object {
+      "data": [
+        {
           "age_range": "[1,2)",
           "catchphrase": "'cat' 'fat'",
           "data": null,
           "status": "ONLINE",
           "username": "supabot",
         },
-        Object {
+        {
           "age_range": "[25,35)",
           "catchphrase": "'bat' 'cat'",
           "data": null,
           "status": "OFFLINE",
           "username": "kiwicopple",
         },
-        Object {
+        {
           "age_range": "[25,35)",
           "catchphrase": "'bat' 'rat'",
           "data": null,
           "status": "ONLINE",
           "username": "awailas",
         },
-        Object {
+        {
           "age_range": "[20,30)",
           "catchphrase": "'fat' 'rat'",
           "data": null,
           "status": "ONLINE",
           "username": "dragarcia",
         },
-        Object {
+        {
           "age_range": "[20,30)",
           "catchphrase": "'json' 'test'",
-          "data": Object {
-            "foo": Object {
-              "bar": Object {
+          "data": {
+            "foo": {
+              "bar": {
                 "nested": "value",
               },
               "baz": "string value",
@@ -124,9 +124,9 @@ test('basic select returns from builder', async () => {
     .single()
     .returns<{ status: 'ONLINE' | 'OFFLINE' }>()
   expect(res).toMatchInlineSnapshot(`
-    Object {
+    {
       "count": null,
-      "data": Object {
+      "data": {
         "age_range": "[1,2)",
         "catchphrase": "'cat' 'fat'",
         "data": null,
@@ -148,9 +148,9 @@ test('basic select overrideTypes from builder', async () => {
     .single()
     .overrideTypes<{ status: 'ONLINE' | 'OFFLINE' }>()
   expect(res).toMatchInlineSnapshot(`
-    Object {
+    {
       "count": null,
-      "data": Object {
+      "data": {
         "age_range": "[1,2)",
         "catchphrase": "'cat' 'fat'",
         "data": null,
@@ -167,10 +167,10 @@ test('basic select overrideTypes from builder', async () => {
 test('basic select with maybeSingle yielding more than one result', async () => {
   const res = await postgrest.from('users').select().maybeSingle()
   expect(res).toMatchInlineSnapshot(`
-    Object {
+    {
       "count": null,
       "data": null,
-      "error": Object {
+      "error": {
         "code": "PGRST116",
         "details": "Results contain 5 rows, application/vnd.pgrst.object+json requires 1 row",
         "hint": null,
@@ -185,10 +185,10 @@ test('basic select with maybeSingle yielding more than one result', async () => 
 test('basic select with single yielding more than one result', async () => {
   const res = await postgrest.from('users').select().single()
   expect(res).toMatchInlineSnapshot(`
-    Object {
+    {
       "count": null,
       "data": null,
-      "error": Object {
+      "error": {
         "code": "PGRST116",
         "details": "The result contains 5 rows",
         "hint": null,
@@ -203,26 +203,26 @@ test('basic select with single yielding more than one result', async () => {
 test('basic select view', async () => {
   const res = await postgrest.from('updatable_view').select()
   expect(res).toMatchInlineSnapshot(`
-    Object {
+    {
       "count": null,
-      "data": Array [
-        Object {
+      "data": [
+        {
           "non_updatable_column": 1,
           "username": "supabot",
         },
-        Object {
+        {
           "non_updatable_column": 1,
           "username": "kiwicopple",
         },
-        Object {
+        {
           "non_updatable_column": 1,
           "username": "awailas",
         },
-        Object {
+        {
           "non_updatable_column": 1,
           "username": "dragarcia",
         },
-        Object {
+        {
           "non_updatable_column": 1,
           "username": "jsonuser",
         },
@@ -237,7 +237,7 @@ test('basic select view', async () => {
 test('rpc', async () => {
   const res = await postgrest.rpc('get_status', { name_param: 'supabot' })
   expect(res).toMatchInlineSnapshot(`
-    Object {
+    {
       "count": null,
       "data": "ONLINE",
       "error": null,
@@ -250,7 +250,7 @@ test('rpc', async () => {
 test('rpc returns void', async () => {
   const res = await postgrest.rpc('void_func')
   expect(res).toMatchInlineSnapshot(`
-    Object {
+    {
       "count": null,
       "data": null,
       "error": null,
@@ -327,34 +327,34 @@ test('switch schema', async () => {
   )
   const res = await postgrest.from('users').select()
   expect(res).toMatchInlineSnapshot(`
-    Object {
+    {
       "count": null,
-      "data": Array [
-        Object {
+      "data": [
+        {
           "age_range": "[1,2)",
           "data": null,
           "status": "ONLINE",
           "username": "supabot",
         },
-        Object {
+        {
           "age_range": "[25,35)",
           "data": null,
           "status": "OFFLINE",
           "username": "kiwicopple",
         },
-        Object {
+        {
           "age_range": "[25,35)",
           "data": null,
           "status": "ONLINE",
           "username": "awailas",
         },
-        Object {
+        {
           "age_range": "[20,30)",
           "data": null,
           "status": "ONLINE",
           "username": "dragarcia",
         },
-        Object {
+        {
           "age_range": "[20,40)",
           "data": null,
           "status": "ONLINE",
@@ -372,34 +372,34 @@ test('dynamic schema', async () => {
   const postgrest = new PostgrestClient<Database>(REST_URL)
   const res = await postgrest.schema('personal').from('users').select()
   expect(res).toMatchInlineSnapshot(`
-    Object {
+    {
       "count": null,
-      "data": Array [
-        Object {
+      "data": [
+        {
           "age_range": "[1,2)",
           "data": null,
           "status": "ONLINE",
           "username": "supabot",
         },
-        Object {
+        {
           "age_range": "[25,35)",
           "data": null,
           "status": "OFFLINE",
           "username": "kiwicopple",
         },
-        Object {
+        {
           "age_range": "[25,35)",
           "data": null,
           "status": "ONLINE",
           "username": "awailas",
         },
-        Object {
+        {
           "age_range": "[20,30)",
           "data": null,
           "status": "ONLINE",
           "username": "dragarcia",
         },
-        Object {
+        {
           "age_range": "[20,40)",
           "data": null,
           "status": "ONLINE",
@@ -419,10 +419,10 @@ test('on_conflict insert', async () => {
     .upsert({ username: 'dragarcia' }, { onConflict: 'username' })
     .select()
   expect(res).toMatchInlineSnapshot(`
-    Object {
+    {
       "count": null,
-      "data": Array [
-        Object {
+      "data": [
+        {
           "age_range": "[20,30)",
           "catchphrase": "'fat' 'rat'",
           "data": null,
@@ -443,9 +443,9 @@ test('ignoreDuplicates upsert', async () => {
     .upsert({ username: 'dragarcia' }, { onConflict: 'username', ignoreDuplicates: true })
     .select()
   expect(res).toMatchInlineSnapshot(`
-    Object {
+    {
       "count": null,
-      "data": Array [],
+      "data": [],
       "error": null,
       "status": 201,
       "statusText": "Created",
@@ -460,10 +460,10 @@ describe('basic insert, update, delete', () => {
       .insert({ message: 'foo', username: 'supabot', channel_id: 1 })
       .select()
     expect(res).toMatchInlineSnapshot(`
-      Object {
+      {
         "count": null,
-        "data": Array [
-          Object {
+        "data": [
+          {
             "channel_id": 1,
             "data": null,
             "id": 5,
@@ -479,38 +479,38 @@ describe('basic insert, update, delete', () => {
 
     res = await postgrest.from('messages').select()
     expect(res).toMatchInlineSnapshot(`
-      Object {
+      {
         "count": null,
-        "data": Array [
-          Object {
+        "data": [
+          {
             "channel_id": 1,
             "data": null,
             "id": 1,
             "message": "Hello World 👋",
             "username": "supabot",
           },
-          Object {
+          {
             "channel_id": 2,
             "data": null,
             "id": 2,
             "message": "Perfection is attained, not when there is nothing more to add, but when there is nothing left to take away.",
             "username": "supabot",
           },
-          Object {
+          {
             "channel_id": 3,
             "data": null,
             "id": 3,
             "message": "Some message on channel wihtout details",
             "username": "supabot",
           },
-          Object {
+          {
             "channel_id": 3,
             "data": null,
             "id": 4,
             "message": "Some message on channel wihtout details",
             "username": "supabot",
           },
-          Object {
+          {
             "channel_id": 1,
             "data": null,
             "id": 5,
@@ -531,10 +531,10 @@ describe('basic insert, update, delete', () => {
       .upsert({ id: 3, message: 'foo', username: 'supabot', channel_id: 2 })
       .select()
     expect(res).toMatchInlineSnapshot(`
-      Object {
+      {
         "count": null,
-        "data": Array [
-          Object {
+        "data": [
+          {
             "channel_id": 2,
             "data": null,
             "id": 3,
@@ -550,38 +550,38 @@ describe('basic insert, update, delete', () => {
 
     res = await postgrest.from('messages').select()
     expect(res).toMatchInlineSnapshot(`
-      Object {
+      {
         "count": null,
-        "data": Array [
-          Object {
+        "data": [
+          {
             "channel_id": 1,
             "data": null,
             "id": 1,
             "message": "Hello World 👋",
             "username": "supabot",
           },
-          Object {
+          {
             "channel_id": 2,
             "data": null,
             "id": 2,
             "message": "Perfection is attained, not when there is nothing more to add, but when there is nothing left to take away.",
             "username": "supabot",
           },
-          Object {
+          {
             "channel_id": 3,
             "data": null,
             "id": 4,
             "message": "Some message on channel wihtout details",
             "username": "supabot",
           },
-          Object {
+          {
             "channel_id": 1,
             "data": null,
             "id": 5,
             "message": "foo",
             "username": "supabot",
           },
-          Object {
+          {
             "channel_id": 2,
             "data": null,
             "id": 3,
@@ -605,17 +605,17 @@ describe('basic insert, update, delete', () => {
       ])
       .select()
     expect(res).toMatchInlineSnapshot(`
-      Object {
+      {
         "count": null,
-        "data": Array [
-          Object {
+        "data": [
+          {
             "channel_id": 1,
             "data": null,
             "id": 6,
             "message": "foo",
             "username": "supabot",
           },
-          Object {
+          {
             "channel_id": 1,
             "data": null,
             "id": 7,
@@ -631,52 +631,52 @@ describe('basic insert, update, delete', () => {
 
     res = await postgrest.from('messages').select()
     expect(res).toMatchInlineSnapshot(`
-      Object {
+      {
         "count": null,
-        "data": Array [
-          Object {
+        "data": [
+          {
             "channel_id": 1,
             "data": null,
             "id": 1,
             "message": "Hello World 👋",
             "username": "supabot",
           },
-          Object {
+          {
             "channel_id": 2,
             "data": null,
             "id": 2,
             "message": "Perfection is attained, not when there is nothing more to add, but when there is nothing left to take away.",
             "username": "supabot",
           },
-          Object {
+          {
             "channel_id": 3,
             "data": null,
             "id": 4,
             "message": "Some message on channel wihtout details",
             "username": "supabot",
           },
-          Object {
+          {
             "channel_id": 1,
             "data": null,
             "id": 5,
             "message": "foo",
             "username": "supabot",
           },
-          Object {
+          {
             "channel_id": 2,
             "data": null,
             "id": 3,
             "message": "foo",
             "username": "supabot",
           },
-          Object {
+          {
             "channel_id": 1,
             "data": null,
             "id": 6,
             "message": "foo",
             "username": "supabot",
           },
-          Object {
+          {
             "channel_id": 1,
             "data": null,
             "id": 7,
@@ -698,14 +698,14 @@ describe('basic insert, update, delete', () => {
       .select('"column whitespace", id ')
 
     expect(res).toMatchInlineSnapshot(`
-      Object {
+      {
         "count": null,
         "data": null,
-        "error": Object {
+        "error": {
           "code": "23505",
           "details": "Key (id)=(1) already exists.",
           "hint": null,
-          "message": "duplicate key value violates unique constraint \\"cornercase_pkey\\"",
+          "message": "duplicate key value violates unique constraint "cornercase_pkey"",
         },
         "status": 409,
         "statusText": "Conflict",
@@ -720,31 +720,31 @@ describe('basic insert, update, delete', () => {
       .eq('message', 'foo')
       .select()
     expect(res).toMatchInlineSnapshot(`
-      Object {
+      {
         "count": null,
-        "data": Array [
-          Object {
+        "data": [
+          {
             "channel_id": 2,
             "data": null,
             "id": 5,
             "message": "foo",
             "username": "supabot",
           },
-          Object {
+          {
             "channel_id": 2,
             "data": null,
             "id": 3,
             "message": "foo",
             "username": "supabot",
           },
-          Object {
+          {
             "channel_id": 2,
             "data": null,
             "id": 6,
             "message": "foo",
             "username": "supabot",
           },
-          Object {
+          {
             "channel_id": 2,
             "data": null,
             "id": 7,
@@ -760,52 +760,52 @@ describe('basic insert, update, delete', () => {
 
     res = await postgrest.from('messages').select()
     expect(res).toMatchInlineSnapshot(`
-      Object {
+      {
         "count": null,
-        "data": Array [
-          Object {
+        "data": [
+          {
             "channel_id": 1,
             "data": null,
             "id": 1,
             "message": "Hello World 👋",
             "username": "supabot",
           },
-          Object {
+          {
             "channel_id": 2,
             "data": null,
             "id": 2,
             "message": "Perfection is attained, not when there is nothing more to add, but when there is nothing left to take away.",
             "username": "supabot",
           },
-          Object {
+          {
             "channel_id": 3,
             "data": null,
             "id": 4,
             "message": "Some message on channel wihtout details",
             "username": "supabot",
           },
-          Object {
+          {
             "channel_id": 2,
             "data": null,
             "id": 5,
             "message": "foo",
             "username": "supabot",
           },
-          Object {
+          {
             "channel_id": 2,
             "data": null,
             "id": 3,
             "message": "foo",
             "username": "supabot",
           },
-          Object {
+          {
             "channel_id": 2,
             "data": null,
             "id": 6,
             "message": "foo",
             "username": "supabot",
           },
-          Object {
+          {
             "channel_id": 2,
             "data": null,
             "id": 7,
@@ -823,31 +823,31 @@ describe('basic insert, update, delete', () => {
   test('basic delete', async () => {
     let res = await postgrest.from('messages').delete().eq('message', 'foo').select()
     expect(res).toMatchInlineSnapshot(`
-      Object {
+      {
         "count": null,
-        "data": Array [
-          Object {
+        "data": [
+          {
             "channel_id": 2,
             "data": null,
             "id": 5,
             "message": "foo",
             "username": "supabot",
           },
-          Object {
+          {
             "channel_id": 2,
             "data": null,
             "id": 3,
             "message": "foo",
             "username": "supabot",
           },
-          Object {
+          {
             "channel_id": 2,
             "data": null,
             "id": 6,
             "message": "foo",
             "username": "supabot",
           },
-          Object {
+          {
             "channel_id": 2,
             "data": null,
             "id": 7,
@@ -863,24 +863,24 @@ describe('basic insert, update, delete', () => {
 
     res = await postgrest.from('messages').select()
     expect(res).toMatchInlineSnapshot(`
-      Object {
+      {
         "count": null,
-        "data": Array [
-          Object {
+        "data": [
+          {
             "channel_id": 1,
             "data": null,
             "id": 1,
             "message": "Hello World 👋",
             "username": "supabot",
           },
-          Object {
+          {
             "channel_id": 2,
             "data": null,
             "id": 2,
             "message": "Perfection is attained, not when there is nothing more to add, but when there is nothing left to take away.",
             "username": "supabot",
           },
-          Object {
+          {
             "channel_id": 3,
             "data": null,
             "id": 4,
@@ -1013,34 +1013,34 @@ test('allow ordering on JSON column', async () => {
     .select()
     .order('data->something' as any)
   expect(data).toMatchInlineSnapshot(`
-    Array [
-      Object {
+    [
+      {
         "age_range": "[1,2)",
         "catchphrase": "'cat' 'fat'",
         "data": null,
         "status": "ONLINE",
         "username": "supabot",
       },
-      Object {
+      {
         "age_range": "[25,35)",
         "catchphrase": "'bat' 'cat'",
         "data": null,
         "status": "OFFLINE",
         "username": "kiwicopple",
       },
-      Object {
+      {
         "age_range": "[25,35)",
         "catchphrase": "'bat' 'rat'",
         "data": null,
         "status": "ONLINE",
         "username": "awailas",
       },
-      Object {
+      {
         "age_range": "[20,30)",
         "catchphrase": "'json' 'test'",
-        "data": Object {
-          "foo": Object {
-            "bar": Object {
+        "data": {
+          "foo": {
+            "bar": {
               "nested": "value",
             },
             "baz": "string value",
@@ -1049,7 +1049,7 @@ test('allow ordering on JSON column', async () => {
         "status": "ONLINE",
         "username": "jsonuser",
       },
-      Object {
+      {
         "age_range": "[20,30)",
         "catchphrase": "'fat' 'rat'",
         "data": null,
@@ -1070,7 +1070,7 @@ test('Prefer: return=minimal', async () => {
 test('select with head:true', async () => {
   const res = await postgrest.from('users').select('*', { head: true })
   expect(res).toMatchInlineSnapshot(`
-    Object {
+    {
       "count": null,
       "data": null,
       "error": null,
@@ -1083,7 +1083,7 @@ test('select with head:true', async () => {
 test('select with head:true, count:exact', async () => {
   const res = await postgrest.from('users').select('*', { head: true, count: 'exact' })
   expect(res).toMatchInlineSnapshot(`
-    Object {
+    {
       "count": 5,
       "data": null,
       "error": null,
@@ -1100,7 +1100,7 @@ test('select with head:true, count:planned', async () => {
       count: expect.any(Number),
     },
     `
-    Object {
+    {
       "count": Any<Number>,
       "data": null,
       "error": null,
@@ -1118,7 +1118,7 @@ test('select with head:true, count:estimated', async () => {
       count: expect.any(Number),
     },
     `
-    Object {
+    {
       "count": Any<Number>,
       "data": null,
       "error": null,
@@ -1132,36 +1132,36 @@ test('select with head:true, count:estimated', async () => {
 test('select with count:exact', async () => {
   const res = await postgrest.from('users').select('*', { count: 'exact' })
   expect(res).toMatchInlineSnapshot(`
-    Object {
+    {
       "count": 5,
-      "data": Array [
-        Object {
+      "data": [
+        {
           "age_range": "[1,2)",
           "catchphrase": "'cat' 'fat'",
           "data": null,
           "status": "ONLINE",
           "username": "supabot",
         },
-        Object {
+        {
           "age_range": "[25,35)",
           "catchphrase": "'bat' 'cat'",
           "data": null,
           "status": "OFFLINE",
           "username": "kiwicopple",
         },
-        Object {
+        {
           "age_range": "[25,35)",
           "catchphrase": "'bat' 'rat'",
           "data": null,
           "status": "ONLINE",
           "username": "awailas",
         },
-        Object {
+        {
           "age_range": "[20,30)",
           "catchphrase": "'json' 'test'",
-          "data": Object {
-            "foo": Object {
-              "bar": Object {
+          "data": {
+            "foo": {
+              "bar": {
                 "nested": "value",
               },
               "baz": "string value",
@@ -1170,7 +1170,7 @@ test('select with count:exact', async () => {
           "status": "ONLINE",
           "username": "jsonuser",
         },
-        Object {
+        {
           "age_range": "[20,30)",
           "catchphrase": "'fat' 'rat'",
           "data": null,
@@ -1188,7 +1188,7 @@ test('select with count:exact', async () => {
 test("rpc with count: 'exact'", async () => {
   const res = await postgrest.rpc('get_status', { name_param: 'supabot' }, { count: 'exact' })
   expect(res).toMatchInlineSnapshot(`
-    Object {
+    {
       "count": 1,
       "data": "ONLINE",
       "error": null,
@@ -1205,7 +1205,7 @@ test('rpc with head:true, count:exact', async () => {
     { head: true, count: 'exact' }
   )
   expect(res).toMatchInlineSnapshot(`
-    Object {
+    {
       "count": 1,
       "data": null,
       "error": null,
@@ -1222,7 +1222,7 @@ test('rpc with get:true, count:exact', async () => {
     { get: true, count: 'exact' }
   )
   expect(res).toMatchInlineSnapshot(`
-    Object {
+    {
       "count": 1,
       "data": "ONLINE",
       "error": null,
@@ -1239,7 +1239,7 @@ test('rpc with get:true, optional param', async () => {
     { get: true }
   )
   expect(res).toMatchInlineSnapshot(`
-    Object {
+    {
       "count": null,
       "data": "",
       "error": null,
@@ -1256,7 +1256,7 @@ test('rpc with get:true, array param', async () => {
     { get: true }
   )
   expect(res).toMatchInlineSnapshot(`
-    Object {
+    {
       "count": null,
       "data": null,
       "error": null,
@@ -1269,7 +1269,7 @@ test('rpc with get:true, array param', async () => {
 test('rpc with dynamic schema', async () => {
   const res = await postgrest.schema('personal').rpc('get_status', { name_param: 'kiwicopple' })
   expect(res).toMatchInlineSnapshot(`
-    Object {
+    {
       "count": null,
       "data": "OFFLINE",
       "error": null,
@@ -1286,10 +1286,10 @@ describe("insert, update, delete with count: 'exact'", () => {
       .insert({ message: 'foo', username: 'supabot', channel_id: 1 }, { count: 'exact' })
       .select()
     expect(res).toMatchInlineSnapshot(`
-      Object {
+      {
         "count": 1,
-        "data": Array [
-          Object {
+        "data": [
+          {
             "channel_id": 1,
             "data": null,
             "id": 8,
@@ -1305,31 +1305,31 @@ describe("insert, update, delete with count: 'exact'", () => {
 
     res = await postgrest.from('messages').select()
     expect(res).toMatchInlineSnapshot(`
-      Object {
+      {
         "count": null,
-        "data": Array [
-          Object {
+        "data": [
+          {
             "channel_id": 1,
             "data": null,
             "id": 1,
             "message": "Hello World 👋",
             "username": "supabot",
           },
-          Object {
+          {
             "channel_id": 2,
             "data": null,
             "id": 2,
             "message": "Perfection is attained, not when there is nothing more to add, but when there is nothing left to take away.",
             "username": "supabot",
           },
-          Object {
+          {
             "channel_id": 3,
             "data": null,
             "id": 4,
             "message": "Some message on channel wihtout details",
             "username": "supabot",
           },
-          Object {
+          {
             "channel_id": 1,
             "data": null,
             "id": 8,
@@ -1350,10 +1350,10 @@ describe("insert, update, delete with count: 'exact'", () => {
       .upsert({ id: 3, message: 'foo', username: 'supabot', channel_id: 2 }, { count: 'exact' })
       .select()
     expect(res).toMatchInlineSnapshot(`
-      Object {
+      {
         "count": 1,
-        "data": Array [
-          Object {
+        "data": [
+          {
             "channel_id": 2,
             "data": null,
             "id": 3,
@@ -1369,38 +1369,38 @@ describe("insert, update, delete with count: 'exact'", () => {
 
     res = await postgrest.from('messages').select()
     expect(res).toMatchInlineSnapshot(`
-      Object {
+      {
         "count": null,
-        "data": Array [
-          Object {
+        "data": [
+          {
             "channel_id": 1,
             "data": null,
             "id": 1,
             "message": "Hello World 👋",
             "username": "supabot",
           },
-          Object {
+          {
             "channel_id": 2,
             "data": null,
             "id": 2,
             "message": "Perfection is attained, not when there is nothing more to add, but when there is nothing left to take away.",
             "username": "supabot",
           },
-          Object {
+          {
             "channel_id": 3,
             "data": null,
             "id": 4,
             "message": "Some message on channel wihtout details",
             "username": "supabot",
           },
-          Object {
+          {
             "channel_id": 1,
             "data": null,
             "id": 8,
             "message": "foo",
             "username": "supabot",
           },
-          Object {
+          {
             "channel_id": 2,
             "data": null,
             "id": 3,
@@ -1427,17 +1427,17 @@ describe("insert, update, delete with count: 'exact'", () => {
       )
       .select()
     expect(res).toMatchInlineSnapshot(`
-      Object {
+      {
         "count": 2,
-        "data": Array [
-          Object {
+        "data": [
+          {
             "channel_id": 1,
             "data": null,
             "id": 9,
             "message": "foo",
             "username": "supabot",
           },
-          Object {
+          {
             "channel_id": 1,
             "data": null,
             "id": 10,
@@ -1453,52 +1453,52 @@ describe("insert, update, delete with count: 'exact'", () => {
 
     res = await postgrest.from('messages').select()
     expect(res).toMatchInlineSnapshot(`
-      Object {
+      {
         "count": null,
-        "data": Array [
-          Object {
+        "data": [
+          {
             "channel_id": 1,
             "data": null,
             "id": 1,
             "message": "Hello World 👋",
             "username": "supabot",
           },
-          Object {
+          {
             "channel_id": 2,
             "data": null,
             "id": 2,
             "message": "Perfection is attained, not when there is nothing more to add, but when there is nothing left to take away.",
             "username": "supabot",
           },
-          Object {
+          {
             "channel_id": 3,
             "data": null,
             "id": 4,
             "message": "Some message on channel wihtout details",
             "username": "supabot",
           },
-          Object {
+          {
             "channel_id": 1,
             "data": null,
             "id": 8,
             "message": "foo",
             "username": "supabot",
           },
-          Object {
+          {
             "channel_id": 2,
             "data": null,
             "id": 3,
             "message": "foo",
             "username": "supabot",
           },
-          Object {
+          {
             "channel_id": 1,
             "data": null,
             "id": 9,
             "message": "foo",
             "username": "supabot",
           },
-          Object {
+          {
             "channel_id": 1,
             "data": null,
             "id": 10,
@@ -1520,15 +1520,15 @@ describe("insert, update, delete with count: 'exact'", () => {
       .select()
       .rollback()
     expect(res).toMatchInlineSnapshot(`
-      Object {
+      {
         "count": null,
-        "data": Array [
-          Object {
+        "data": [
+          {
             "data": null,
             "id": 100,
             "slug": null,
           },
-          Object {
+          {
             "data": null,
             "id": 5,
             "slug": "test-slug",
@@ -1548,15 +1548,15 @@ describe("insert, update, delete with count: 'exact'", () => {
       .select()
       .rollback()
     expect(res).toMatchInlineSnapshot(`
-      Object {
+      {
         "count": null,
-        "data": Array [
-          Object {
+        "data": [
+          {
             "data": null,
             "id": 1,
             "slug": null,
           },
-          Object {
+          {
             "data": null,
             "id": 7,
             "slug": "test-slug",
@@ -1576,31 +1576,31 @@ describe("insert, update, delete with count: 'exact'", () => {
       .eq('message', 'foo')
       .select()
     expect(res).toMatchInlineSnapshot(`
-      Object {
+      {
         "count": 4,
-        "data": Array [
-          Object {
+        "data": [
+          {
             "channel_id": 2,
             "data": null,
             "id": 8,
             "message": "foo",
             "username": "supabot",
           },
-          Object {
+          {
             "channel_id": 2,
             "data": null,
             "id": 3,
             "message": "foo",
             "username": "supabot",
           },
-          Object {
+          {
             "channel_id": 2,
             "data": null,
             "id": 9,
             "message": "foo",
             "username": "supabot",
           },
-          Object {
+          {
             "channel_id": 2,
             "data": null,
             "id": 10,
@@ -1616,52 +1616,52 @@ describe("insert, update, delete with count: 'exact'", () => {
 
     res = await postgrest.from('messages').select()
     expect(res).toMatchInlineSnapshot(`
-      Object {
+      {
         "count": null,
-        "data": Array [
-          Object {
+        "data": [
+          {
             "channel_id": 1,
             "data": null,
             "id": 1,
             "message": "Hello World 👋",
             "username": "supabot",
           },
-          Object {
+          {
             "channel_id": 2,
             "data": null,
             "id": 2,
             "message": "Perfection is attained, not when there is nothing more to add, but when there is nothing left to take away.",
             "username": "supabot",
           },
-          Object {
+          {
             "channel_id": 3,
             "data": null,
             "id": 4,
             "message": "Some message on channel wihtout details",
             "username": "supabot",
           },
-          Object {
+          {
             "channel_id": 2,
             "data": null,
             "id": 8,
             "message": "foo",
             "username": "supabot",
           },
-          Object {
+          {
             "channel_id": 2,
             "data": null,
             "id": 3,
             "message": "foo",
             "username": "supabot",
           },
-          Object {
+          {
             "channel_id": 2,
             "data": null,
             "id": 9,
             "message": "foo",
             "username": "supabot",
           },
-          Object {
+          {
             "channel_id": 2,
             "data": null,
             "id": 10,
@@ -1683,31 +1683,31 @@ describe("insert, update, delete with count: 'exact'", () => {
       .eq('message', 'foo')
       .select()
     expect(res).toMatchInlineSnapshot(`
-      Object {
+      {
         "count": 4,
-        "data": Array [
-          Object {
+        "data": [
+          {
             "channel_id": 2,
             "data": null,
             "id": 8,
             "message": "foo",
             "username": "supabot",
           },
-          Object {
+          {
             "channel_id": 2,
             "data": null,
             "id": 3,
             "message": "foo",
             "username": "supabot",
           },
-          Object {
+          {
             "channel_id": 2,
             "data": null,
             "id": 9,
             "message": "foo",
             "username": "supabot",
           },
-          Object {
+          {
             "channel_id": 2,
             "data": null,
             "id": 10,
@@ -1723,24 +1723,24 @@ describe("insert, update, delete with count: 'exact'", () => {
 
     res = await postgrest.from('messages').select()
     expect(res).toMatchInlineSnapshot(`
-      Object {
+      {
         "count": null,
-        "data": Array [
-          Object {
+        "data": [
+          {
             "channel_id": 1,
             "data": null,
             "id": 1,
             "message": "Hello World 👋",
             "username": "supabot",
           },
-          Object {
+          {
             "channel_id": 2,
             "data": null,
             "id": 2,
             "message": "Perfection is attained, not when there is nothing more to add, but when there is nothing left to take away.",
             "username": "supabot",
           },
-          Object {
+          {
             "channel_id": 3,
             "data": null,
             "id": 4,
@@ -1758,9 +1758,7 @@ describe("insert, update, delete with count: 'exact'", () => {
 
 test('insert includes columns param', async () => {
   const client = postgrest.from('users').insert([{ foo: 1 }, { bar: 2 }] as any)
-  expect((client as any).url.searchParams.get('columns')).toMatchInlineSnapshot(
-    `"\\"foo\\",\\"bar\\""`
-  )
+  expect((client as any).url.searchParams.get('columns')).toMatchInlineSnapshot(`""foo","bar""`)
 })
 
 test('insert w/ empty body has no columns param', async () => {
@@ -1771,9 +1769,9 @@ test('insert w/ empty body has no columns param', async () => {
 test('select with no match', async () => {
   const res = await postgrest.from('users').select().eq('username', 'missing')
   expect(res).toMatchInlineSnapshot(`
-    Object {
+    {
       "count": null,
-      "data": Array [],
+      "data": [],
       "error": null,
       "status": 200,
       "statusText": "OK",
@@ -1787,7 +1785,7 @@ test('update with no match - return=minimal', async () => {
     .update({ data: '' as unknown as CustomUserDataType })
     .eq('username', 'missing')
   expect(res).toMatchInlineSnapshot(`
-    Object {
+    {
       "count": null,
       "data": null,
       "error": null,
@@ -1804,9 +1802,9 @@ test('update with no match - return=representation', async () => {
     .eq('username', 'missing')
     .select()
   expect(res).toMatchInlineSnapshot(`
-    Object {
+    {
       "count": null,
-      "data": Array [],
+      "data": [],
       "error": null,
       "status": 200,
       "statusText": "OK",
@@ -1820,10 +1818,10 @@ test('!left join on one to one relation', async () => {
   // TODO: This should not be nullable
   expect(res.data?.channels?.id).not.toBeNull()
   expect(res).toMatchInlineSnapshot(`
-    Object {
+    {
       "count": null,
-      "data": Object {
-        "channels": Object {
+      "data": {
+        "channels": {
           "id": 1,
         },
       },
@@ -1838,17 +1836,17 @@ test('!left join on one to many relation', async () => {
   const res = await postgrest.from('users').select('messages!left(username)').limit(1).single()
   expect(Array.isArray(res.data?.messages)).toBe(true)
   expect(res).toMatchInlineSnapshot(`
-    Object {
+    {
       "count": null,
-      "data": Object {
-        "messages": Array [
-          Object {
+      "data": {
+        "messages": [
+          {
             "username": "supabot",
           },
-          Object {
+          {
             "username": "supabot",
           },
-          Object {
+          {
             "username": "supabot",
           },
         ],
@@ -1870,11 +1868,11 @@ test('!left join on one to 0-1 non-empty relation', async () => {
   expect(Array.isArray(res.data?.user_profiles)).toBe(true)
   expect(res.data?.user_profiles[0].username).not.toBeNull()
   expect(res).toMatchInlineSnapshot(`
-    Object {
+    {
       "count": null,
-      "data": Object {
-        "user_profiles": Array [
-          Object {
+      "data": {
+        "user_profiles": [
+          {
             "username": "supabot",
           },
         ],
@@ -1897,9 +1895,9 @@ test('!left join on zero to one with null relation', async () => {
   expect(res.data?.users).toBeNull()
 
   expect(res).toMatchInlineSnapshot(`
-    Object {
+    {
       "count": null,
-      "data": Object {
+      "data": {
         "id": 2,
         "username": null,
         "users": null,
@@ -1923,12 +1921,12 @@ test('!left join on zero to one with valid relation', async () => {
   expect(res.data?.users?.status).not.toBeNull()
 
   expect(res).toMatchInlineSnapshot(`
-    Object {
+    {
       "count": null,
-      "data": Object {
+      "data": {
         "id": 1,
         "username": "supabot",
-        "users": Object {
+        "users": {
           "status": "ONLINE",
         },
       },
@@ -1948,10 +1946,10 @@ test('!left join on zero to one empty relation', async () => {
     .single()
   expect(Array.isArray(res.data?.user_profiles)).toBe(true)
   expect(res).toMatchInlineSnapshot(`
-    Object {
+    {
       "count": null,
-      "data": Object {
-        "user_profiles": Array [],
+      "data": {
+        "user_profiles": [],
       },
       "error": null,
       "status": 200,
@@ -1976,25 +1974,25 @@ test('join on 1-M relation', async () => {
   expect(Array.isArray(res.data?.second_friend_of)).toBe(true)
   expect(Array.isArray(res.data?.third_wheel_of)).toBe(true)
   expect(res).toMatchInlineSnapshot(`
-    Object {
+    {
       "count": null,
-      "data": Object {
-        "first_friend_of": Array [
-          Object {
+      "data": {
+        "first_friend_of": [
+          {
             "first_user": "supabot",
             "id": 1,
             "second_user": "kiwicopple",
             "third_wheel": "awailas",
           },
-          Object {
+          {
             "first_user": "supabot",
             "id": 2,
             "second_user": "awailas",
             "third_wheel": null,
           },
         ],
-        "second_friend_of": Array [],
-        "third_wheel_of": Array [],
+        "second_friend_of": [],
+        "third_wheel_of": [],
       },
       "error": null,
       "status": 200,
@@ -2021,24 +2019,24 @@ test('join on 1-1 relation with nullables', async () => {
   // TODO: This column however is nullable
   expect(res.data?.third_wheel?.username).not.toBeNull()
   expect(res).toMatchInlineSnapshot(`
-    Object {
+    {
       "count": null,
-      "data": Object {
-        "first_user": Object {
+      "data": {
+        "first_user": {
           "age_range": "[1,2)",
           "catchphrase": "'cat' 'fat'",
           "data": null,
           "status": "ONLINE",
           "username": "supabot",
         },
-        "second_user": Object {
+        "second_user": {
           "age_range": "[25,35)",
           "catchphrase": "'bat' 'cat'",
           "data": null,
           "status": "OFFLINE",
           "username": "kiwicopple",
         },
-        "third_wheel": Object {
+        "third_wheel": {
           "age_range": "[25,35)",
           "catchphrase": "'bat' 'rat'",
           "data": null,
@@ -2088,57 +2086,57 @@ test('handles undefined global fetch', async () => {
     const postgrestClient = new PostgrestClient<Database>(REST_URL)
     const result = await postgrestClient.from('users').select()
     expect(result).toMatchInlineSnapshot(`
-          Object {
-            "count": null,
-            "data": Array [
-              Object {
-                "age_range": "[1,2)",
-                "catchphrase": "'cat' 'fat'",
-                "data": null,
-                "status": "ONLINE",
-                "username": "supabot",
-              },
-              Object {
-                "age_range": "[25,35)",
-                "catchphrase": "'bat' 'cat'",
-                "data": null,
-                "status": "OFFLINE",
-                "username": "kiwicopple",
-              },
-              Object {
-                "age_range": "[25,35)",
-                "catchphrase": "'bat' 'rat'",
-                "data": null,
-                "status": "ONLINE",
-                "username": "awailas",
-              },
-              Object {
-                "age_range": "[20,30)",
-                "catchphrase": "'json' 'test'",
-                "data": Object {
-                  "foo": Object {
-                    "bar": Object {
-                      "nested": "value",
-                    },
-                    "baz": "string value",
-                  },
+      {
+        "count": null,
+        "data": [
+          {
+            "age_range": "[1,2)",
+            "catchphrase": "'cat' 'fat'",
+            "data": null,
+            "status": "ONLINE",
+            "username": "supabot",
+          },
+          {
+            "age_range": "[25,35)",
+            "catchphrase": "'bat' 'cat'",
+            "data": null,
+            "status": "OFFLINE",
+            "username": "kiwicopple",
+          },
+          {
+            "age_range": "[25,35)",
+            "catchphrase": "'bat' 'rat'",
+            "data": null,
+            "status": "ONLINE",
+            "username": "awailas",
+          },
+          {
+            "age_range": "[20,30)",
+            "catchphrase": "'json' 'test'",
+            "data": {
+              "foo": {
+                "bar": {
+                  "nested": "value",
                 },
-                "status": "ONLINE",
-                "username": "jsonuser",
+                "baz": "string value",
               },
-              Object {
-                "age_range": "[20,30)",
-                "catchphrase": "'fat' 'rat'",
-                "data": null,
-                "status": "ONLINE",
-                "username": "dragarcia",
-              },
-            ],
-            "error": null,
-            "status": 200,
-            "statusText": "OK",
-          }
-      `)
+            },
+            "status": "ONLINE",
+            "username": "jsonuser",
+          },
+          {
+            "age_range": "[20,30)",
+            "catchphrase": "'fat' 'rat'",
+            "data": null,
+            "status": "ONLINE",
+            "username": "dragarcia",
+          },
+        ],
+        "error": null,
+        "status": 200,
+        "statusText": "OK",
+      }
+    `)
     // Test passes if we reach here without errors, as it means nodeFetch was used
   } finally {
     // Restore original fetch
@@ -2164,14 +2162,14 @@ test('handles array error with 404 status', async () => {
   const res = await postgrestWithCustomFetch.from('users').select()
 
   expect(res).toMatchInlineSnapshot(`
-      Object {
-        "count": null,
-        "data": Array [],
-        "error": null,
-        "status": 200,
-        "statusText": "OK",
-      }
-    `)
+    {
+      "count": null,
+      "data": [],
+      "error": null,
+      "status": 200,
+      "statusText": "OK",
+    }
+  `)
 })
 
 test('handles empty body with 404 status', async () => {
@@ -2192,14 +2190,14 @@ test('handles empty body with 404 status', async () => {
   const res = await postgrestWithCustomFetch.from('users').select()
 
   expect(res).toMatchInlineSnapshot(`
-      Object {
-        "count": null,
-        "data": null,
-        "error": null,
-        "status": 204,
-        "statusText": "No Content",
-      }
-    `)
+    {
+      "count": null,
+      "data": null,
+      "error": null,
+      "status": 204,
+      "statusText": "No Content",
+    }
+  `)
 })
 
 test('maybeSingle handles zero rows error', async () => {
@@ -2227,7 +2225,7 @@ test('maybeSingle handles zero rows error', async () => {
   const res = await postgrestWithCustomFetch.from('users').select().maybeSingle()
 
   expect(res).toMatchInlineSnapshot(`
-    Object {
+    {
       "count": null,
       "data": null,
       "error": null,

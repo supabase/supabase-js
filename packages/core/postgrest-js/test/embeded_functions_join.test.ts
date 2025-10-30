@@ -11,12 +11,12 @@ describe('embeded functions select', () => {
   test('embeded_setof_function - function returning a setof embeded table', async () => {
     const res = await postgrest.from('channels').select('id, all_channels_messages:get_messages(*)')
     expect(res).toMatchInlineSnapshot(`
-      Object {
+      {
         "count": null,
-        "data": Array [
-          Object {
-            "all_channels_messages": Array [
-              Object {
+        "data": [
+          {
+            "all_channels_messages": [
+              {
                 "channel_id": 1,
                 "data": null,
                 "id": 1,
@@ -26,9 +26,9 @@ describe('embeded functions select', () => {
             ],
             "id": 1,
           },
-          Object {
-            "all_channels_messages": Array [
-              Object {
+          {
+            "all_channels_messages": [
+              {
                 "channel_id": 2,
                 "data": null,
                 "id": 2,
@@ -38,9 +38,9 @@ describe('embeded functions select', () => {
             ],
             "id": 2,
           },
-          Object {
-            "all_channels_messages": Array [
-              Object {
+          {
+            "all_channels_messages": [
+              {
                 "channel_id": 3,
                 "data": null,
                 "id": 4,
@@ -84,30 +84,30 @@ describe('embeded functions select', () => {
       .from('channels')
       .select('id, all_channels_messages:get_messages(id,message)')
     expect(res).toMatchInlineSnapshot(`
-      Object {
+      {
         "count": null,
-        "data": Array [
-          Object {
-            "all_channels_messages": Array [
-              Object {
+        "data": [
+          {
+            "all_channels_messages": [
+              {
                 "id": 1,
                 "message": "Hello World 👋",
               },
             ],
             "id": 1,
           },
-          Object {
-            "all_channels_messages": Array [
-              Object {
+          {
+            "all_channels_messages": [
+              {
                 "id": 2,
                 "message": "Perfection is attained, not when there is nothing more to add, but when there is nothing left to take away.",
               },
             ],
             "id": 2,
           },
-          Object {
-            "all_channels_messages": Array [
-              Object {
+          {
+            "all_channels_messages": [
+              {
                 "id": 4,
                 "message": "Some message on channel wihtout details",
               },
@@ -141,26 +141,26 @@ describe('embeded functions select', () => {
   test('embeded_setof_function_double_definition - function double definition returning a setof embeded table', async () => {
     const res = await postgrest.from('users').select('username, all_user_messages:get_messages(*)')
     expect(res).toMatchInlineSnapshot(`
-      Object {
+      {
         "count": null,
-        "data": Array [
-          Object {
-            "all_user_messages": Array [
-              Object {
+        "data": [
+          {
+            "all_user_messages": [
+              {
                 "channel_id": 1,
                 "data": null,
                 "id": 1,
                 "message": "Hello World 👋",
                 "username": "supabot",
               },
-              Object {
+              {
                 "channel_id": 2,
                 "data": null,
                 "id": 2,
                 "message": "Perfection is attained, not when there is nothing more to add, but when there is nothing left to take away.",
                 "username": "supabot",
               },
-              Object {
+              {
                 "channel_id": 3,
                 "data": null,
                 "id": 4,
@@ -170,20 +170,20 @@ describe('embeded functions select', () => {
             ],
             "username": "supabot",
           },
-          Object {
-            "all_user_messages": Array [],
+          {
+            "all_user_messages": [],
             "username": "kiwicopple",
           },
-          Object {
-            "all_user_messages": Array [],
+          {
+            "all_user_messages": [],
             "username": "awailas",
           },
-          Object {
-            "all_user_messages": Array [],
+          {
+            "all_user_messages": [],
             "username": "jsonuser",
           },
-          Object {
-            "all_user_messages": Array [],
+          {
+            "all_user_messages": [],
             "username": "dragarcia",
           },
         ],
@@ -218,40 +218,40 @@ describe('embeded functions select', () => {
       .from('users')
       .select('username, all_user_messages:get_messages(id,message)')
     expect(res).toMatchInlineSnapshot(`
-      Object {
+      {
         "count": null,
-        "data": Array [
-          Object {
-            "all_user_messages": Array [
-              Object {
+        "data": [
+          {
+            "all_user_messages": [
+              {
                 "id": 1,
                 "message": "Hello World 👋",
               },
-              Object {
+              {
                 "id": 2,
                 "message": "Perfection is attained, not when there is nothing more to add, but when there is nothing left to take away.",
               },
-              Object {
+              {
                 "id": 4,
                 "message": "Some message on channel wihtout details",
               },
             ],
             "username": "supabot",
           },
-          Object {
-            "all_user_messages": Array [],
+          {
+            "all_user_messages": [],
             "username": "kiwicopple",
           },
-          Object {
-            "all_user_messages": Array [],
+          {
+            "all_user_messages": [],
             "username": "awailas",
           },
-          Object {
-            "all_user_messages": Array [],
+          {
+            "all_user_messages": [],
             "username": "jsonuser",
           },
-          Object {
-            "all_user_messages": Array [],
+          {
+            "all_user_messages": [],
             "username": "dragarcia",
           },
         ],
@@ -283,22 +283,22 @@ describe('embeded functions select', () => {
       .from('users')
       .select('username, all_user_messages:get_messages(id,message, blurb_message)')
     expect(res).toMatchInlineSnapshot(`
-      Object {
+      {
         "count": null,
-        "data": Array [
-          Object {
-            "all_user_messages": Array [
-              Object {
+        "data": [
+          {
+            "all_user_messages": [
+              {
                 "blurb_message": "Hel",
                 "id": 1,
                 "message": "Hello World 👋",
               },
-              Object {
+              {
                 "blurb_message": "Per",
                 "id": 2,
                 "message": "Perfection is attained, not when there is nothing more to add, but when there is nothing left to take away.",
               },
-              Object {
+              {
                 "blurb_message": "Som",
                 "id": 4,
                 "message": "Some message on channel wihtout details",
@@ -306,20 +306,20 @@ describe('embeded functions select', () => {
             ],
             "username": "supabot",
           },
-          Object {
-            "all_user_messages": Array [],
+          {
+            "all_user_messages": [],
             "username": "kiwicopple",
           },
-          Object {
-            "all_user_messages": Array [],
+          {
+            "all_user_messages": [],
             "username": "awailas",
           },
-          Object {
-            "all_user_messages": Array [],
+          {
+            "all_user_messages": [],
             "username": "jsonuser",
           },
-          Object {
-            "all_user_messages": Array [],
+          {
+            "all_user_messages": [],
             "username": "dragarcia",
           },
         ],
@@ -352,29 +352,29 @@ describe('embeded functions select', () => {
       .from('users')
       .select('username, setof_rows_one:function_using_setof_rows_one(*)')
     expect(res).toMatchInlineSnapshot(`
-      Object {
+      {
         "count": null,
-        "data": Array [
-          Object {
-            "setof_rows_one": Object {
+        "data": [
+          {
+            "setof_rows_one": {
               "id": 1,
               "username": "supabot",
             },
             "username": "supabot",
           },
-          Object {
+          {
             "setof_rows_one": null,
             "username": "kiwicopple",
           },
-          Object {
+          {
             "setof_rows_one": null,
             "username": "awailas",
           },
-          Object {
+          {
             "setof_rows_one": null,
             "username": "jsonuser",
           },
-          Object {
+          {
             "setof_rows_one": null,
             "username": "dragarcia",
           },
@@ -407,39 +407,39 @@ describe('embeded functions select', () => {
       .from('users')
       .select('username, returns_row:function_using_table_returns(*)')
     expect(res).toMatchInlineSnapshot(`
-      Object {
+      {
         "count": null,
-        "data": Array [
-          Object {
-            "returns_row": Object {
+        "data": [
+          {
+            "returns_row": {
               "id": 1,
               "username": "supabot",
             },
             "username": "supabot",
           },
-          Object {
-            "returns_row": Object {
+          {
+            "returns_row": {
               "id": null,
               "username": null,
             },
             "username": "kiwicopple",
           },
-          Object {
-            "returns_row": Object {
+          {
+            "returns_row": {
               "id": null,
               "username": null,
             },
             "username": "awailas",
           },
-          Object {
-            "returns_row": Object {
+          {
+            "returns_row": {
               "id": null,
               "username": null,
             },
             "username": "jsonuser",
           },
-          Object {
-            "returns_row": Object {
+          {
+            "returns_row": {
               "id": null,
               "username": null,
             },
@@ -474,11 +474,11 @@ describe('embeded functions select', () => {
       // by setting isNotNullable for the function SetofOptions definition to true
       .select('username, user_called_profile_not_null:get_user_profile_non_nullable!inner(*)')
     expect(res).toMatchInlineSnapshot(`
-      Object {
+      {
         "count": null,
-        "data": Array [
-          Object {
-            "user_called_profile_not_null": Object {
+        "data": [
+          {
+            "user_called_profile_not_null": {
               "id": 1,
               "username": "supabot",
             },
@@ -515,35 +515,35 @@ describe('embeded functions select', () => {
       .from('users')
       .select('username, user_called_profile:get_user_profile(username)')
     expect(res).toMatchInlineSnapshot(`
-      Object {
+      {
         "count": null,
-        "data": Array [
-          Object {
-            "user_called_profile": Object {
+        "data": [
+          {
+            "user_called_profile": {
               "username": "supabot",
             },
             "username": "supabot",
           },
-          Object {
-            "user_called_profile": Object {
+          {
+            "user_called_profile": {
               "username": null,
             },
             "username": "kiwicopple",
           },
-          Object {
-            "user_called_profile": Object {
+          {
+            "user_called_profile": {
               "username": null,
             },
             "username": "awailas",
           },
-          Object {
-            "user_called_profile": Object {
+          {
+            "user_called_profile": {
               "username": null,
             },
             "username": "jsonuser",
           },
-          Object {
-            "user_called_profile": Object {
+          {
+            "user_called_profile": {
               "username": null,
             },
             "username": "dragarcia",
@@ -574,13 +574,13 @@ describe('embeded functions select', () => {
       .from('channels')
       .select('id, all_channels_messages:get_messages(id,message,channels(id,slug))')
     expect(res).toMatchInlineSnapshot(`
-      Object {
+      {
         "count": null,
-        "data": Array [
-          Object {
-            "all_channels_messages": Array [
-              Object {
-                "channels": Object {
+        "data": [
+          {
+            "all_channels_messages": [
+              {
+                "channels": {
                   "id": 1,
                   "slug": "public",
                 },
@@ -590,10 +590,10 @@ describe('embeded functions select', () => {
             ],
             "id": 1,
           },
-          Object {
-            "all_channels_messages": Array [
-              Object {
-                "channels": Object {
+          {
+            "all_channels_messages": [
+              {
+                "channels": {
                   "id": 2,
                   "slug": "random",
                 },
@@ -603,10 +603,10 @@ describe('embeded functions select', () => {
             ],
             "id": 2,
           },
-          Object {
-            "all_channels_messages": Array [
-              Object {
-                "channels": Object {
+          {
+            "all_channels_messages": [
+              {
+                "channels": {
                   "id": 3,
                   "slug": "other",
                 },
@@ -647,26 +647,26 @@ describe('embeded functions select', () => {
   test('embeded_function_with_table_row_input - function with table row input', async () => {
     const res = await postgrest.from('users').select('username, user_messages:get_user_messages(*)')
     expect(res).toMatchInlineSnapshot(`
-      Object {
+      {
         "count": null,
-        "data": Array [
-          Object {
-            "user_messages": Array [
-              Object {
+        "data": [
+          {
+            "user_messages": [
+              {
                 "channel_id": 1,
                 "data": null,
                 "id": 1,
                 "message": "Hello World 👋",
                 "username": "supabot",
               },
-              Object {
+              {
                 "channel_id": 2,
                 "data": null,
                 "id": 2,
                 "message": "Perfection is attained, not when there is nothing more to add, but when there is nothing left to take away.",
                 "username": "supabot",
               },
-              Object {
+              {
                 "channel_id": 3,
                 "data": null,
                 "id": 4,
@@ -676,20 +676,20 @@ describe('embeded functions select', () => {
             ],
             "username": "supabot",
           },
-          Object {
-            "user_messages": Array [],
+          {
+            "user_messages": [],
             "username": "kiwicopple",
           },
-          Object {
-            "user_messages": Array [],
+          {
+            "user_messages": [],
             "username": "awailas",
           },
-          Object {
-            "user_messages": Array [],
+          {
+            "user_messages": [],
             "username": "jsonuser",
           },
-          Object {
-            "user_messages": Array [],
+          {
+            "user_messages": [],
             "username": "dragarcia",
           },
         ],
@@ -724,26 +724,26 @@ describe('embeded functions select', () => {
       .from('active_users')
       .select('username, active_user_messages:get_active_user_messages(*)')
     expect(res).toMatchInlineSnapshot(`
-      Object {
+      {
         "count": null,
-        "data": Array [
-          Object {
-            "active_user_messages": Array [
-              Object {
+        "data": [
+          {
+            "active_user_messages": [
+              {
                 "channel_id": 1,
                 "data": null,
                 "id": 1,
                 "message": "Hello World 👋",
                 "username": "supabot",
               },
-              Object {
+              {
                 "channel_id": 2,
                 "data": null,
                 "id": 2,
                 "message": "Perfection is attained, not when there is nothing more to add, but when there is nothing left to take away.",
                 "username": "supabot",
               },
-              Object {
+              {
                 "channel_id": 3,
                 "data": null,
                 "id": 4,
@@ -753,16 +753,16 @@ describe('embeded functions select', () => {
             ],
             "username": "supabot",
           },
-          Object {
-            "active_user_messages": Array [],
+          {
+            "active_user_messages": [],
             "username": "awailas",
           },
-          Object {
-            "active_user_messages": Array [],
+          {
+            "active_user_messages": [],
             "username": "jsonuser",
           },
-          Object {
-            "active_user_messages": Array [],
+          {
+            "active_user_messages": [],
             "username": "dragarcia",
           },
         ],
@@ -797,26 +797,26 @@ describe('embeded functions select', () => {
       .from('users')
       .select('username, recent_messages:get_user_recent_messages(*)')
     expect(res).toMatchInlineSnapshot(`
-      Object {
+      {
         "count": null,
-        "data": Array [
-          Object {
-            "recent_messages": Array [
-              Object {
+        "data": [
+          {
+            "recent_messages": [
+              {
                 "channel_id": 3,
                 "data": null,
                 "id": 4,
                 "message": "Some message on channel wihtout details",
                 "username": "supabot",
               },
-              Object {
+              {
                 "channel_id": 2,
                 "data": null,
                 "id": 2,
                 "message": "Perfection is attained, not when there is nothing more to add, but when there is nothing left to take away.",
                 "username": "supabot",
               },
-              Object {
+              {
                 "channel_id": 1,
                 "data": null,
                 "id": 1,
@@ -826,20 +826,20 @@ describe('embeded functions select', () => {
             ],
             "username": "supabot",
           },
-          Object {
-            "recent_messages": Array [],
+          {
+            "recent_messages": [],
             "username": "kiwicopple",
           },
-          Object {
-            "recent_messages": Array [],
+          {
+            "recent_messages": [],
             "username": "awailas",
           },
-          Object {
-            "recent_messages": Array [],
+          {
+            "recent_messages": [],
             "username": "jsonuser",
           },
-          Object {
-            "recent_messages": Array [],
+          {
+            "recent_messages": [],
             "username": "dragarcia",
           },
         ],
@@ -874,26 +874,26 @@ describe('embeded functions select', () => {
       .from('active_users')
       .select('username, recent_messages:get_user_recent_messages(*)')
     expect(res).toMatchInlineSnapshot(`
-      Object {
+      {
         "count": null,
-        "data": Array [
-          Object {
-            "recent_messages": Array [
-              Object {
+        "data": [
+          {
+            "recent_messages": [
+              {
                 "channel_id": 3,
                 "data": null,
                 "id": 4,
                 "message": "Some message on channel wihtout details",
                 "username": "supabot",
               },
-              Object {
+              {
                 "channel_id": 2,
                 "data": null,
                 "id": 2,
                 "message": "Perfection is attained, not when there is nothing more to add, but when there is nothing left to take away.",
                 "username": "supabot",
               },
-              Object {
+              {
                 "channel_id": 1,
                 "data": null,
                 "id": 1,
@@ -903,16 +903,16 @@ describe('embeded functions select', () => {
             ],
             "username": "supabot",
           },
-          Object {
-            "recent_messages": Array [],
+          {
+            "recent_messages": [],
             "username": "awailas",
           },
-          Object {
-            "recent_messages": Array [],
+          {
+            "recent_messages": [],
             "username": "jsonuser",
           },
-          Object {
-            "recent_messages": Array [],
+          {
+            "recent_messages": [],
             "username": "dragarcia",
           },
         ],
@@ -947,22 +947,22 @@ describe('embeded functions select', () => {
       .from('users')
       .select('username, user_messages:get_user_messages(id,message,blurb_message)')
     expect(res).toMatchInlineSnapshot(`
-      Object {
+      {
         "count": null,
-        "data": Array [
-          Object {
-            "user_messages": Array [
-              Object {
+        "data": [
+          {
+            "user_messages": [
+              {
                 "blurb_message": "Hel",
                 "id": 1,
                 "message": "Hello World 👋",
               },
-              Object {
+              {
                 "blurb_message": "Per",
                 "id": 2,
                 "message": "Perfection is attained, not when there is nothing more to add, but when there is nothing left to take away.",
               },
-              Object {
+              {
                 "blurb_message": "Som",
                 "id": 4,
                 "message": "Some message on channel wihtout details",
@@ -970,20 +970,20 @@ describe('embeded functions select', () => {
             ],
             "username": "supabot",
           },
-          Object {
-            "user_messages": Array [],
+          {
+            "user_messages": [],
             "username": "kiwicopple",
           },
-          Object {
-            "user_messages": Array [],
+          {
+            "user_messages": [],
             "username": "awailas",
           },
-          Object {
-            "user_messages": Array [],
+          {
+            "user_messages": [],
             "username": "jsonuser",
           },
-          Object {
-            "user_messages": Array [],
+          {
+            "user_messages": [],
             "username": "dragarcia",
           },
         ],
@@ -1014,10 +1014,10 @@ describe('embeded functions select', () => {
   test('embeded_function_returning_row - Cannot embed an function that is not a setofOptions one', async () => {
     const res = await postgrest.from('channels').select('id, user:function_returning_row(*)')
     expect(res).toMatchInlineSnapshot(`
-      Object {
+      {
         "count": null,
         "data": null,
-        "error": Object {
+        "error": {
           "code": "PGRST200",
           "details": "Searched for a foreign key relationship between 'channels' and 'function_returning_row' in the schema 'public', but no matches were found.",
           "hint": null,
@@ -1037,26 +1037,26 @@ describe('embeded functions select', () => {
       .from('messages')
       .select('id, user:function_returning_single_row(status, username)')
     expect(res).toMatchInlineSnapshot(`
-      Object {
+      {
         "count": null,
-        "data": Array [
-          Object {
+        "data": [
+          {
             "id": 1,
-            "user": Object {
+            "user": {
               "status": "ONLINE",
               "username": "supabot",
             },
           },
-          Object {
+          {
             "id": 2,
-            "user": Object {
+            "user": {
               "status": "ONLINE",
               "username": "supabot",
             },
           },
-          Object {
+          {
             "id": 4,
-            "user": Object {
+            "user": {
               "status": "ONLINE",
               "username": "supabot",
             },
@@ -1088,10 +1088,10 @@ describe('embeded functions select', () => {
       .from('messages')
       .select('id, users:function_returning_set_of_rows(*)')
     expect(res).toMatchInlineSnapshot(`
-      Object {
+      {
         "count": null,
         "data": null,
-        "error": Object {
+        "error": {
           "code": "PGRST200",
           "details": "Searched for a foreign key relationship between 'messages' and 'function_returning_set_of_rows' in the schema 'public', but no matches were found.",
           "hint": null,
@@ -1111,39 +1111,39 @@ describe('embeded functions select', () => {
       .from('users')
       .select('username, profile:function_using_table_returns(*)')
     expect(res).toMatchInlineSnapshot(`
-      Object {
+      {
         "count": null,
-        "data": Array [
-          Object {
-            "profile": Object {
+        "data": [
+          {
+            "profile": {
               "id": 1,
               "username": "supabot",
             },
             "username": "supabot",
           },
-          Object {
-            "profile": Object {
+          {
+            "profile": {
               "id": null,
               "username": null,
             },
             "username": "kiwicopple",
           },
-          Object {
-            "profile": Object {
+          {
+            "profile": {
               "id": null,
               "username": null,
             },
             "username": "awailas",
           },
-          Object {
-            "profile": Object {
+          {
+            "profile": {
               "id": null,
               "username": null,
             },
             "username": "jsonuser",
           },
-          Object {
-            "profile": Object {
+          {
+            "profile": {
               "id": null,
               "username": null,
             },
@@ -1176,29 +1176,29 @@ describe('embeded functions select', () => {
       .from('users')
       .select('username, profile:function_using_setof_rows_one(*)')
     expect(res).toMatchInlineSnapshot(`
-      Object {
+      {
         "count": null,
-        "data": Array [
-          Object {
-            "profile": Object {
+        "data": [
+          {
+            "profile": {
               "id": 1,
               "username": "supabot",
             },
             "username": "supabot",
           },
-          Object {
+          {
             "profile": null,
             "username": "kiwicopple",
           },
-          Object {
+          {
             "profile": null,
             "username": "awailas",
           },
-          Object {
+          {
             "profile": null,
             "username": "jsonuser",
           },
-          Object {
+          {
             "profile": null,
             "username": "dragarcia",
           },
@@ -1258,10 +1258,10 @@ describe('embeded functions select', () => {
       id: 1,
     })
     expect(use_rpc_call).toMatchInlineSnapshot(`
-      Object {
+      {
         "count": null,
         "data": null,
-        "error": Object {
+        "error": {
           "code": "PGRST202",
           "details": "Searched for the function public.created_ago with parameter id or with a single unnamed json/jsonb parameter, but no matches were found in the schema cache.",
           "hint": null,
@@ -1313,10 +1313,10 @@ describe('embeded functions select', () => {
       id: 1,
     })
     expect(use_rpc_call).toMatchInlineSnapshot(`
-      Object {
+      {
         "count": null,
         "data": null,
-        "error": Object {
+        "error": {
           "code": "PGRST202",
           "details": "Searched for the function public.days_since_event with parameter id or with a single unnamed json/jsonb parameter, but no matches were found in the schema cache.",
           "hint": null,
