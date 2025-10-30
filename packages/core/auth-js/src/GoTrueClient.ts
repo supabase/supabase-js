@@ -3318,44 +3318,41 @@ export default class GoTrueClient {
    * {@see GoTrueMFAApi#getAuthenticatorAssuranceLevel}
    */
   private async _getAuthenticatorAssuranceLevel(): Promise<AuthMFAGetAuthenticatorAssuranceLevelResponse> {
-    return this._acquireLock(-1, async () => {
-      return await this._useSession(async (result) => {
-        const {
-          data: { session },
-          error: sessionError,
-        } = result
-        if (sessionError) {
-          return { data: null, error: sessionError }
-        }
-        if (!session) {
-          return {
-            data: { currentLevel: null, nextLevel: null, currentAuthenticationMethods: [] },
-            error: null,
-          }
-        }
+    const {
+      data: { session },
+      error: sessionError,
+    } = await this.getSession()
 
-        const { payload } = decodeJWT(session.access_token)
+    if (sessionError) {
+      return { data: null, error: sessionError }
+    }
+    if (!session) {
+      return {
+        data: { currentLevel: null, nextLevel: null, currentAuthenticationMethods: [] },
+        error: null,
+      }
+    }
 
-        let currentLevel: AuthenticatorAssuranceLevels | null = null
+    const { payload } = decodeJWT(session.access_token)
 
-        if (payload.aal) {
-          currentLevel = payload.aal
-        }
+    let currentLevel: AuthenticatorAssuranceLevels | null = null
 
-        let nextLevel: AuthenticatorAssuranceLevels | null = currentLevel
+    if (payload.aal) {
+      currentLevel = payload.aal
+    }
 
-        const verifiedFactors =
-          session.user.factors?.filter((factor: Factor) => factor.status === 'verified') ?? []
+    let nextLevel: AuthenticatorAssuranceLevels | null = currentLevel
 
-        if (verifiedFactors.length > 0) {
-          nextLevel = 'aal2'
-        }
+    const verifiedFactors =
+      session.user.factors?.filter((factor: Factor) => factor.status === 'verified') ?? []
 
-        const currentAuthenticationMethods = payload.amr || []
+    if (verifiedFactors.length > 0) {
+      nextLevel = 'aal2'
+    }
 
-        return { data: { currentLevel, nextLevel, currentAuthenticationMethods }, error: null }
-      })
-    })
+    const currentAuthenticationMethods = payload.amr || []
+
+    return { data: { currentLevel, nextLevel, currentAuthenticationMethods }, error: null }
   }
 
   /**
