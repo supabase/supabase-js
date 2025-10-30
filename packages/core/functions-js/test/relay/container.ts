@@ -27,6 +27,22 @@ export class Relay {
     this.execCache = execCache
     this.execRun = execRun
   }
+
+  /**
+   * Safely stops the relay container and cleans up exec processes
+   */
+  async stop(): Promise<void> {
+    try {
+      // Try to stop the container - this will trigger cleanup of exec instances
+      await this.container.stop({ timeout: 5000 })
+    } catch (error: any) {
+      // Ignore "no such exec" errors during cleanup - they're harmless
+      if (!error?.message?.includes('no such exec')) {
+        throw error
+      }
+      // Container is already stopped or exec instances are gone, which is fine
+    }
+  }
 }
 
 /**
@@ -100,7 +116,7 @@ export async function runRelay(
         log(`function started to serve: ${slug + '-' + id}`)
         // Add a small delay after health check passes to ensure full readiness
         await new Promise((resolve) => setTimeout(resolve, 1000))
-        return { container: startedRelay, id, execCache, execRun }
+        return new Relay(startedRelay, id, execCache, execRun)
       }
     } catch {
       /* we actually don't care about errors here */

@@ -18,7 +18,9 @@ describe('hijack connection', () => {
   })
 
   afterAll(async () => {
-    relay && relay.container && (await relay.container.stop())
+    if (relay) {
+      await relay.stop()
+    }
   })
 
   test('invoke func', async () => {
