@@ -382,6 +382,13 @@ export default class GoTrueClient {
   }
 
   /**
+   * Returns whether error throwing mode is enabled for this client.
+   */
+  public isThrowOnErrorEnabled(): boolean {
+    return this.throwOnError
+  }
+
+  /**
    * Centralizes return handling with optional error throwing. When `throwOnError` is enabled
    * and the provided result contains a non-nullish error, the error is thrown instead of
    * being returned. This ensures consistent behavior across all public API methods.

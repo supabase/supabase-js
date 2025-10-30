@@ -1,4 +1,4 @@
-import { AuthClient } from '@supabase/auth-js'
+import { GoTrueClientOptions } from '@supabase/auth-js'
 import { RealtimeClientOptions } from '@supabase/realtime-js'
 import { PostgrestError } from '@supabase/postgrest-js'
 import type { StorageClientOptions } from '@supabase/storage-js'
@@ -21,9 +21,7 @@ export type {
   GenericFunction,
 }
 
-type AuthClientOptions = ConstructorParameters<typeof AuthClient>[0]
-
-export interface SupabaseAuthClientOptions extends AuthClientOptions {}
+export interface SupabaseAuthClientOptions extends GoTrueClientOptions {}
 
 export type Fetch = typeof fetch
 
@@ -78,6 +76,11 @@ export type SupabaseClientOptions<SchemaName> = {
      * @experimental
      */
     lock?: SupabaseAuthClientOptions['lock']
+    /**
+     * If there is an error with the query, throwOnError will reject the promise by
+     * throwing the error instead of returning it as part of a successful response.
+     */
+    throwOnError?: SupabaseAuthClientOptions['throwOnError']
   }
   /**
    * Options passed to the realtime-js instance
