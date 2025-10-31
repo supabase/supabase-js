@@ -33,3 +33,21 @@ test('_initSupabaseAuthClient should overwrite authHeaders if headers are provid
   expect(authClient['headers']['Authorization']).toBe('Bearer custom-auth-header')
   expect(authClient['headers']['apikey']).toBe('supabaseKey')
 })
+
+test('_initSupabaseAuthClient should pass through throwOnError option', () => {
+  const client = new SupabaseClient('https://example.supabase.com', 'supabaseKey')
+  const authClient = client['_initSupabaseAuthClient'](
+    { ...authSettings, throwOnError: true },
+    undefined,
+    undefined
+  )
+
+  expect((authClient as any).isThrowOnErrorEnabled()).toBe(true)
+})
+
+test('createClient should accept auth.throwOnError and wire it to auth client', () => {
+  const supa = new SupabaseClient('https://example.supabase.com', 'supabaseKey', {
+    auth: { throwOnError: true },
+  })
+  expect((supa.auth as any).isThrowOnErrorEnabled()).toBe(true)
+})

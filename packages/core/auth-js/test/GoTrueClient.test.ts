@@ -3202,3 +3202,45 @@ describe('Branch Coverage Improvements', () => {
     })
   })
 })
+
+describe('GoTrueClient with throwOnError option', () => {
+  const store = memoryLocalStorageAdapter()
+  const client = new GoTrueClient({
+    url: GOTRUE_URL_SIGNUP_ENABLED_AUTO_CONFIRM_ON,
+    storageKey: 'test-storage-key',
+    autoRefreshToken: false,
+    persistSession: true,
+    storage: {
+      ...store,
+    },
+    throwOnError: true, // test that the client throws errors
+  })
+
+  test('signUp() should throw an error when throwOnError is true', async () => {
+    const { email, password } = mockUserCredentials()
+
+    await expect(client.signUp({ email, password: '' })).rejects.toThrow()
+  })
+
+  test('signInWithPassword() should throw an error when throwOnError is true', async () => {
+    const { email, password } = mockUserCredentials()
+
+    await expect(client.signInWithPassword({ email, password: '' })).rejects.toThrow()
+  })
+
+  test('updateUser() should throw an error when throwOnError is true', async () => {
+    const { email, password } = mockUserCredentials()
+
+    await client.signUp({ email, password })
+
+    await expect(client.updateUser({ email: 'invalid-email' })).rejects.toThrow()
+  })
+
+  test('signInWithOtp() should throw on invalid params when throwOnError is true', async () => {
+    await expect(client.signInWithOtp({ email: 'invalid', options: { captchaToken: 'x' } })).rejects.toThrow()
+  })
+
+  test('signInWithSSO() should throw on error when throwOnError is true', async () => {
+    await expect(client.signInWithSSO({ domain: 'nonexistent.example.com' })).rejects.toThrow()
+  })
+})
