@@ -3240,8 +3240,7 @@ describe('GoTrueClient with throwOnError option', () => {
     await expect(client.signInWithOtp({ email: 'invalid', options: { captchaToken: 'x' } })).rejects.toThrow()
   })
 
-  test('signInWithSSO() should return error shape; calling code can opt to throw', async () => {
-    const res = await client.signInWithSSO({ domain: 'nonexistent.example.com' })
-    expect(res.error).not.toBeNull()
+  test('signInWithSSO() should throw on error when throwOnError is true', async () => {
+    await expect(client.signInWithSSO({ domain: 'nonexistent.example.com' })).rejects.toThrow()
   })
 })

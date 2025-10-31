@@ -438,12 +438,16 @@ export default class GoTrueClient {
    */
   private async _initialize(): Promise<InitializeResult> {
     try {
-      const params = parseParametersFromURL(window.location.href)
+      let params: { [parameter: string]: string } = {}
       let callbackUrlType = 'none'
-      if (this._isImplicitGrantCallback(params)) {
-        callbackUrlType = 'implicit'
-      } else if (await this._isPKCECallback(params)) {
-        callbackUrlType = 'pkce'
+
+      if (isBrowser()) {
+        params = parseParametersFromURL(window.location.href)
+        if (this._isImplicitGrantCallback(params)) {
+          callbackUrlType = 'implicit'
+        } else if (await this._isPKCECallback(params)) {
+          callbackUrlType = 'pkce'
+        }
       }
 
       /**
