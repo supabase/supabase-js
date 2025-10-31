@@ -316,6 +316,52 @@ describe('Supabase Integration Tests', () => {
       expect(receivedMessage).toBeDefined()
       expect(supabase.realtime.getChannels().length).toBe(1)
     }, 10000)
+
+    test('should automatically set auth token when using custom JWT without manual setAuth()', async () => {
+      // Sign up a user with the normal client to get a real JWT token
+      await supabase.auth.signOut()
+      const email = `custom-jwt-${Date.now()}@example.com`
+      const password = 'password123'
+      const { data: signUpData } = await supabase.auth.signUp({ email, password })
+      expect(signUpData.session).toBeDefined()
+      const realJwtToken = signUpData.session!.access_token
+
+      const customJwtClient = createClient(SUPABASE_URL, ANON_KEY, {
+        accessToken: async () => realJwtToken,
+        realtime: {
+          heartbeatIntervalMs: 500,
+          ...(wsTransport && { transport: wsTransport }),
+        },
+      })
+
+      await new Promise((resolve) => setTimeout(resolve, 100))
+
+      expect((customJwtClient.realtime as any).accessTokenValue).toBe(realJwtToken)
+
+      const customChannelName = `custom-jwt-channel-${crypto.randomUUID()}`
+      const config = { broadcast: { self: true }, private: true }
+      const customChannel = customJwtClient.channel(customChannelName, { config })
+
+      expect((customChannel as any).joinPush.payload.access_token).toBe(realJwtToken)
+
+      let subscribed = false
+      let attempts = 0
+
+      customChannel.subscribe((status) => {
+        if (status == 'SUBSCRIBED') subscribed = true
+      })
+
+      while (!subscribed) {
+        if (attempts > 50) throw new Error('Timeout waiting for subscription')
+        await new Promise((resolve) => setTimeout(resolve, 100))
+        attempts++
+      }
+
+      expect(subscribed).toBe(true)
+      expect(customJwtClient.realtime.getChannels().length).toBe(1)
+
+      await customJwtClient.removeAllChannels()
+    }, 10000)
   })
 })
 

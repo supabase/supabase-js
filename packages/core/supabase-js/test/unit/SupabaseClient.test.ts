@@ -259,6 +259,61 @@ describe('SupabaseClient', () => {
     })
 
     describe('Realtime Authentication', () => {
+      test('should automatically call setAuth() when accessToken option is provided', async () => {
+        const customToken = 'custom-jwt-token'
+        const customAccessTokenFn = jest.fn().mockResolvedValue(customToken)
+        const client = createClient(URL, KEY, { accessToken: customAccessTokenFn })
+
+        await new Promise((resolve) => setTimeout(resolve, 0))
+
+        expect((client.realtime as any).accessTokenValue).toBe(customToken)
+        expect(customAccessTokenFn).toHaveBeenCalled()
+      })
+
+      test('should automatically populate token in channels when using custom JWT', async () => {
+        const customToken = 'custom-channel-token'
+        const customAccessTokenFn = jest.fn().mockResolvedValue(customToken)
+        const client = createClient(URL, KEY, { accessToken: customAccessTokenFn })
+
+        await new Promise((resolve) => setTimeout(resolve, 0))
+
+        const channel = client.channel('test-channel')
+        channel.subscribe()
+
+        expect((channel as any).joinPush.payload.access_token).toBe(customToken)
+        expect((client.realtime as any).accessTokenValue).toBe(customToken)
+      })
+
+      test('should handle errors gracefully when accessToken callback fails', async () => {
+        const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {})
+        const error = new Error('Token fetch failed')
+        const failingAccessTokenFn = jest.fn().mockRejectedValue(error)
+
+        const client = createClient(URL, KEY, { accessToken: failingAccessTokenFn })
+
+        await new Promise((resolve) => setTimeout(resolve, 0))
+
+        expect(consoleWarnSpy).toHaveBeenCalledWith(
+          'Failed to set initial Realtime auth token:',
+          error
+        )
+        expect(client).toBeDefined()
+        expect(client.realtime).toBeDefined()
+
+        consoleWarnSpy.mockRestore()
+      })
+
+      test('should not call setAuth() automatically in normal mode', async () => {
+        const client = createClient(URL, KEY)
+        const setAuthSpy = jest.spyOn(client.realtime, 'setAuth')
+
+        await new Promise((resolve) => setTimeout(resolve, 10))
+
+        expect(setAuthSpy).not.toHaveBeenCalled()
+
+        setAuthSpy.mockRestore()
+      })
+
       test('should provide access token to realtime client', async () => {
         const expectedToken = 'test-jwt-token'
         const client = createClient(URL, KEY)
