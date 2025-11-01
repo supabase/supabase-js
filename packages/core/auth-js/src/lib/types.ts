@@ -1439,7 +1439,21 @@ export type RequiredClaims = {
   session_id: string
 }
 
-export type JwtPayload = RequiredClaims & {
+export interface JwtPayload extends RequiredClaims {
+  email?: string
+  phone?: string
+  user_metadata?: UserMetadata
+  app_metadata?: UserAppMetadata
+  is_anonymous?: boolean
+  is_sso_user?: boolean
+  id?: string
+  created_at?: string
+  updated_at?: string
+  confirmed_at?: string
+  email_confirmed_at?: string
+  phone_confirmed_at?: string
+  last_sign_in_at?: string
+  identities?: UserIdentity[]
   [key: string]: any
 }
 
