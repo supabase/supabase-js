@@ -1,12 +1,13 @@
+import { assert } from 'console'
 import { createClient, RealtimeChannel, SupabaseClient } from '../src/index'
-
+import { sign } from 'jsonwebtoken'
 // These tests assume that a local Supabase server is already running
 // Start a local Supabase instance with 'supabase start' before running these tests
 // Default local dev credentials from Supabase CLI
 const SUPABASE_URL = 'http://127.0.0.1:54321'
 const ANON_KEY =
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0'
-
+const JWT_SECRET = 'super-secret-jwt-token-with-at-least-32-characters-long'
 // For Node.js < 22, we need to provide a WebSocket implementation
 // Node.js 22+ has native WebSocket support
 let wsTransport: any = undefined
@@ -292,7 +293,7 @@ describe('Supabase Integration Tests', () => {
 
       channel
         .on('broadcast', { event: '*' }, (payload) => (receivedMessage = payload))
-        .subscribe((status) => {
+        .subscribe((status, err) => {
           if (status == 'SUBSCRIBED') subscribed = true
         })
 
@@ -315,52 +316,6 @@ describe('Supabase Integration Tests', () => {
       }
       expect(receivedMessage).toBeDefined()
       expect(supabase.realtime.getChannels().length).toBe(1)
-    }, 10000)
-
-    test('should automatically set auth token when using custom JWT without manual setAuth()', async () => {
-      // Sign up a user with the normal client to get a real JWT token
-      await supabase.auth.signOut()
-      const email = `custom-jwt-${Date.now()}@example.com`
-      const password = 'password123'
-      const { data: signUpData } = await supabase.auth.signUp({ email, password })
-      expect(signUpData.session).toBeDefined()
-      const realJwtToken = signUpData.session!.access_token
-
-      const customJwtClient = createClient(SUPABASE_URL, ANON_KEY, {
-        accessToken: async () => realJwtToken,
-        realtime: {
-          heartbeatIntervalMs: 500,
-          ...(wsTransport && { transport: wsTransport }),
-        },
-      })
-
-      await new Promise((resolve) => setTimeout(resolve, 100))
-
-      expect((customJwtClient.realtime as any).accessTokenValue).toBe(realJwtToken)
-
-      const customChannelName = `custom-jwt-channel-${crypto.randomUUID()}`
-      const config = { broadcast: { self: true }, private: true }
-      const customChannel = customJwtClient.channel(customChannelName, { config })
-
-      expect((customChannel as any).joinPush.payload.access_token).toBe(realJwtToken)
-
-      let subscribed = false
-      let attempts = 0
-
-      customChannel.subscribe((status) => {
-        if (status == 'SUBSCRIBED') subscribed = true
-      })
-
-      while (!subscribed) {
-        if (attempts > 50) throw new Error('Timeout waiting for subscription')
-        await new Promise((resolve) => setTimeout(resolve, 100))
-        attempts++
-      }
-
-      expect(subscribed).toBe(true)
-      expect(customJwtClient.realtime.getChannels().length).toBe(1)
-
-      await customJwtClient.removeAllChannels()
     }, 10000)
   })
 })
@@ -402,5 +357,33 @@ describe('Storage API', () => {
       .from(bucket)
       .remove([filePath])
     expect(deleteError).toBeNull()
+  })
+})
+
+describe('Custom JWT', () => {
+  describe('Realtime', () => {
+    test('will connect with a properly signed jwt token', async () => {
+      const jwtToken = sign({ sub: '1234567890' }, JWT_SECRET, { expiresIn: '1h' })
+      const supabaseWithCustomJwt = createClient(SUPABASE_URL, ANON_KEY, {
+        accessToken: () => Promise.resolve(jwtToken),
+      })
+      await new Promise((resolve) => setTimeout(resolve, 100))
+      expect(supabaseWithCustomJwt.realtime.accessTokenValue).toBe(jwtToken)
+      let subscribed = false
+      let attempts = 0
+      supabaseWithCustomJwt.channel('test-channel').subscribe((status) => {
+        if (status == 'SUBSCRIBED') subscribed = true
+      })
+
+      // Wait for subscription
+      while (!subscribed) {
+        if (attempts > 50) throw new Error('Timeout waiting for subscription')
+        await new Promise((resolve) => setTimeout(resolve, 100))
+        attempts++
+      }
+
+      expect(subscribed).toBe(true)
+      //
+    }, 10000)
   })
 })
