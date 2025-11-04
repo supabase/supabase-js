@@ -85,7 +85,7 @@ npm install @supabase/supabase-js@2.XX.X
 
 ### Discussion
 
-For more details, see the [deprecation announcement](https://github.com/supabase/supabase-js/discussions/37217).
+For more details, see the [deprecation announcement](https://github.com/orgs/supabase/discussions/37217).
 
 ---
 

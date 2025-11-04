@@ -57,7 +57,7 @@ This monorepo contains the complete suite of Supabase JavaScript SDK:
 
 > ⚠️ **Node.js 18 Deprecation Notice**
 >
-> Node.js 18 reached end-of-life on April 30, 2025. As announced in [our deprecation notice](https://github.com/supabase/supabase-js/discussions/37217), support for Node.js 18 was dropped on October 31, 2025.
+> Node.js 18 reached end-of-life on April 30, 2025. As announced in [our deprecation notice](https://github.com/orgs/supabase/discussions/37217), support for Node.js 18 was dropped on October 31, 2025.
 >
 > If you must use Node.js 18, please use version `2.x.x` of these libraries where `x` is the last version that supported Node.js 18.
 
