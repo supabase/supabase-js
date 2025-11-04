@@ -2137,7 +2137,7 @@ test('handles undefined global fetch', async () => {
         "statusText": "OK",
       }
     `)
-    // Test passes if we reach here without errors, as it means nodeFetch was used
+    // Test passes if we reach here without errors, as it means native fetch was used
   } finally {
     // Restore original fetch
     globalThis.fetch = originalFetch

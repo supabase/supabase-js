@@ -40,17 +40,12 @@ describe('fetch module', () => {
   })
 
   describe('resolveHeadersConstructor', () => {
-    test('should use global Headers when available', () => {
+    test('should return native Headers', () => {
       const GlobalHeaders = jest.fn()
       ;(global as any).Headers = GlobalHeaders
 
       const result = resolveHeadersConstructor()
       expect(result).toBe(GlobalHeaders)
-    })
-
-    test('should fallback to NodeFetchHeaders when global Headers is undefined', () => {
-      const result = resolveHeadersConstructor()
-      expect(typeof result).toBe('function')
     })
   })
 

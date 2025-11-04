@@ -118,6 +118,7 @@
     },
     "test:unit": {
       "inputs": ["testing", "^production"],
+      "dependsOn": ["build"],
       "cache": true,
       "outputs": ["{projectRoot}/coverage"]
     },

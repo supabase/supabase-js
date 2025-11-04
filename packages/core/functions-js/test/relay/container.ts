@@ -101,7 +101,7 @@ export async function runRelay(
   log(`check function is healthy: ${slug + '-' + id}`)
   for (let ctr = 0; ctr < 60; ctr++) {
     try {
-      const healthCheck = await nodeFetch(
+      const healthCheck = await fetch(
         `http://localhost:${startedRelay.getMappedPort(8081)}/${slug}`,
         {
           method: 'POST',
