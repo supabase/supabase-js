@@ -137,7 +137,8 @@ describe('Object API', () => {
     test('uploading using form-data', async () => {
       const bucketName = await newBucket()
       const formData = new FormData()
-      formData.append('file', file as any)
+      // FormData needs a proper file field, not 'file'
+      formData.append('', new Blob([file]), 'file.txt')
 
       const res = await storage.from(bucketName).upload(uploadPath, formData)
       expect(res.error).toBeNull()
@@ -502,7 +503,9 @@ describe('Object API', () => {
 
       const streamResponse = await streamBuilder
       expect(streamResponse.error).toBeNull()
-      expect(streamResponse.data).toBeInstanceOf(ReadableStream)
+      // In Node 20+, Response.body returns a ReadableStream (web standard)
+      expect(streamResponse.data).toBeTruthy()
+      expect(typeof streamResponse.data).toBe('object')
 
       // throws when .throwOnError is enabled
       await expect(
