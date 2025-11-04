@@ -33,24 +33,19 @@ describe('fetch module', () => {
       expect(globalFetch).toHaveBeenCalledWith('test')
     })
 
-    test('should fallback to node-fetch when global fetch is undefined', () => {
+    test('should return native fetch when no custom fetch provided', () => {
       const result = resolveFetch()
       expect(typeof result).toBe('function')
     })
   })
 
   describe('resolveHeadersConstructor', () => {
-    test('should use global Headers when available', () => {
+    test('should return native Headers', () => {
       const GlobalHeaders = jest.fn()
       ;(global as any).Headers = GlobalHeaders
 
       const result = resolveHeadersConstructor()
       expect(result).toBe(GlobalHeaders)
-    })
-
-    test('should fallback to NodeFetchHeaders when global Headers is undefined', () => {
-      const result = resolveHeadersConstructor()
-      expect(typeof result).toBe('function')
     })
   })
 

@@ -26,7 +26,6 @@ const versions = {
   postgrest: getVersion('@supabase/postgrest-js'),
   auth: getVersion('@supabase/auth-js'),
   storage: getVersion('@supabase/storage-js'),
-  node_fetch: getVersion('@supabase/node-fetch'),
 }
 
 // Read or create deno.json
@@ -54,7 +53,6 @@ denoJson.imports = {
     process.env.STORAGE_JS_ENTRY === 'main'
       ? `npm:@supabase/storage-js@${versions.storage}/dist/main/index.js`
       : `npm:@supabase/storage-js@${versions.storage}/dist/module/index.js`,
-  '@supabase/node-fetch': `npm:@supabase/node-fetch@${versions.node_fetch}`,
 }
 
 // Ensure Node types are available for Deno type-checking of .d.ts files

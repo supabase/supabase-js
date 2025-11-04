@@ -136,37 +136,79 @@ describe('Additional Coverage Tests', () => {
         params: { apikey: '123456789' },
       })
 
-      // Access the _resolveFetch method to test Node.js fallback
+      // Access the _resolveFetch method to test native fetch usage
       const fetchFn = socket._resolveFetch()
 
-      // Test that it returns a function that would import node-fetch
+      // Test that it returns a function (should use native fetch)
       expect(typeof fetchFn).toBe('function')
 
       // Restore fetch
       global.fetch = originalFetch
     })
 
-    test('should handle node-fetch import failure', async () => {
-      // Mock environment without fetch
-      const originalFetch = global.fetch
-      // @ts-ignore
-      delete global.fetch
+    test('should use native fetch by default', () => {
+      // Verify fetch exists (Node 20+ requirement)
+      expect(typeof global.fetch).toBe('function')
 
       const socket = new RealtimeClient(testSetup.url, {
         params: { apikey: '123456789' },
       })
 
-      const fetchFn = socket._resolveFetch()
+      const resolvedFetch = socket._resolveFetch()
+      expect(typeof resolvedFetch).toBe('function')
+    })
 
-      // Try to call the fetch function (it should attempt to import node-fetch and fail)
-      try {
-        await fetchFn('http://example.com')
-      } catch (error) {
-        expect(error.message).toContain('Failed to load @supabase/node-fetch')
-      }
+    test('should use global fetch when available and no custom fetch provided', () => {
+      // Mock global fetch
+      const mockGlobalFetch = vi.fn().mockResolvedValue({ ok: true })
+      global.fetch = mockGlobalFetch
 
-      // Restore fetch
-      global.fetch = originalFetch
+      const socket = new RealtimeClient(testSetup.url, {
+        params: { apikey: '123456789' },
+      })
+
+      // The fetch property should be a function that wraps global fetch
+      expect(typeof socket.fetch).toBe('function')
+
+      // Call the fetch function
+      socket.fetch('https://example.com', { method: 'POST' })
+
+      // Verify global fetch was called
+      expect(mockGlobalFetch).toHaveBeenCalledWith('https://example.com', { method: 'POST' })
+
+      // Test _resolveFetch without custom fetch
+      const resolvedFetch = socket._resolveFetch()
+      resolvedFetch('https://test.com')
+      expect(mockGlobalFetch).toHaveBeenCalledWith('https://test.com')
+    })
+
+    test('should prioritize custom fetch over global fetch', () => {
+      // Mock both global and custom fetch
+      const mockGlobalFetch = vi.fn().mockResolvedValue({ ok: false })
+      const mockCustomFetch = vi.fn().mockResolvedValue({ ok: true })
+      global.fetch = mockGlobalFetch
+
+      const socket = new RealtimeClient(testSetup.url, {
+        params: { apikey: '123456789' },
+        fetch: mockCustomFetch,
+      })
+
+      // The fetch property should use custom fetch
+      socket.fetch('https://example.com')
+
+      // Verify custom fetch was called, not global
+      expect(mockCustomFetch).toHaveBeenCalledWith('https://example.com')
+      expect(mockGlobalFetch).not.toHaveBeenCalled()
+
+      // Test _resolveFetch with custom fetch parameter
+      const anotherCustomFetch = vi.fn().mockResolvedValue({ ok: true })
+      const resolvedFetch = socket._resolveFetch(anotherCustomFetch)
+      resolvedFetch('https://test.com')
+
+      // Should use the fetch passed to _resolveFetch
+      expect(anotherCustomFetch).toHaveBeenCalledWith('https://test.com')
+      expect(mockCustomFetch).toHaveBeenCalledTimes(1) // Only from earlier call
+      expect(mockGlobalFetch).not.toHaveBeenCalled()
     })
   })
 

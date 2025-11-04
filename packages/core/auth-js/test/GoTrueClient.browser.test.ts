@@ -80,6 +80,22 @@ describe('GoTrueClient in browser environment', () => {
   })
 
   it('should handle PKCE flow', async () => {
+    // Mock fetch since jsdom doesn't provide it, and we're testing browser behavior not HTTP
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        access_token: 'test-token',
+        refresh_token: 'test-refresh-token',
+        expires_in: 3600,
+        token_type: 'bearer',
+        user: {
+          id: 'test-user-id',
+          email: 'test@example.com',
+          created_at: new Date().toISOString(),
+        },
+      }),
+    })
+
     const { email, password } = mockUserCredentials()
     const pkceClient = getClientWithSpecificStorage({
       getItem: jest.fn(),

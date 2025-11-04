@@ -220,14 +220,6 @@ jobs:
       actions: read
       contents: read
 
-  ci-auth-js-node18:
-    if: ${{ github.event_name == 'push' }}
-    name: Auth-JS Node.js 18 Compatibility
-    uses: ./.github/workflows/ci-auth-js-node18.yml
-    permissions:
-      actions: read
-      contents: read
-
   # ==========================================
   # CANARY RELEASE (only on master, after all CI passes)
   # ==========================================
@@ -235,7 +227,7 @@ jobs:
   release-canary:
     name: Release Canary
     runs-on: ubuntu-latest
-    needs: [ci-core, ci-supabase-js, ci-auth-js-node18]
+    needs: [ci-core, ci-supabase-js]
     permissions:
       contents: read
       id-token: write
@@ -244,8 +236,7 @@ jobs:
       github.ref == 'refs/heads/master' &&
       github.event_name == 'push' &&
       needs.ci-core.result == 'success' &&
-      needs.ci-supabase-js.result == 'success' &&
-      needs.ci-auth-js-node18.result == 'success'
+      needs.ci-supabase-js.result == 'success'
     steps:
       - name: Generate token
         id: app-token

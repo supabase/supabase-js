@@ -110,8 +110,11 @@ export default class StorageFileApi {
         body.append('', fileBody)
       } else if (typeof FormData !== 'undefined' && fileBody instanceof FormData) {
         body = fileBody
-        body.append('cacheControl', options.cacheControl as string)
-        if (metadata) {
+        // Only append if not already present
+        if (!body.has('cacheControl')) {
+          body.append('cacheControl', options.cacheControl as string)
+        }
+        if (metadata && !body.has('metadata')) {
           body.append('metadata', this.encodeMetadata(metadata))
         }
       } else {
@@ -121,6 +124,16 @@ export default class StorageFileApi {
 
         if (metadata) {
           headers['x-metadata'] = this.toBase64(this.encodeMetadata(metadata))
+        }
+
+        // Node.js streams require duplex option for fetch in Node 20+
+        // Check for both web ReadableStream and Node.js streams
+        const isStream =
+          (typeof ReadableStream !== 'undefined' && body instanceof ReadableStream) ||
+          (body && typeof body === 'object' && 'pipe' in body && typeof body.pipe === 'function')
+
+        if (isStream && !options.duplex) {
+          options.duplex = 'half'
         }
       }
 

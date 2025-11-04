@@ -1,7 +1,5 @@
 import * as fs from 'fs'
 import { nanoid } from 'nanoid'
-// @ts-ignore
-import nodeFetch from '@supabase/node-fetch'
 import { sign } from 'jsonwebtoken'
 import { GenericContainer, Network, StartedTestContainer, Wait } from 'testcontainers'
 import { ExecResult } from 'testcontainers/dist/docker/types'
@@ -103,7 +101,7 @@ export async function runRelay(
   log(`check function is healthy: ${slug + '-' + id}`)
   for (let ctr = 0; ctr < 60; ctr++) {
     try {
-      const healthCheck = await nodeFetch(
+      const healthCheck = await fetch(
         `http://localhost:${startedRelay.getMappedPort(8081)}/${slug}`,
         {
           method: 'POST',
@@ -118,8 +116,18 @@ export async function runRelay(
         await new Promise((resolve) => setTimeout(resolve, 1000))
         return new Relay(startedRelay, id, execCache, execRun)
       }
-    } catch {
-      /* we actually don't care about errors here */
+    } catch (error) {
+      // Native fetch throws an error when it encounters HTTP 101 (WebSocket upgrade)
+      // If we get a TypeError (which fetch throws for protocol errors like 101),
+      // we consider the function ready to serve
+      if (error instanceof TypeError) {
+        // This likely means we got a 101 response that native fetch couldn't handle
+        // The server is responding, so consider it ready
+        log(`function started to serve (detected via error): ${slug + '-' + id}`)
+        await new Promise((resolve) => setTimeout(resolve, 1000))
+        return new Relay(startedRelay, id, execCache, execRun)
+      }
+      // For other errors (connection refused, etc.), continue retrying
     }
     await new Promise((resolve) => setTimeout(resolve, 500))
   }

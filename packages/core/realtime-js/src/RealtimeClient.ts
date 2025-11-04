@@ -465,24 +465,10 @@ export default class RealtimeClient {
    * @internal
    */
   _resolveFetch = (customFetch?: Fetch): Fetch => {
-    let _fetch: Fetch
     if (customFetch) {
-      _fetch = customFetch
-    } else if (typeof fetch === 'undefined') {
-      // Node.js environment without native fetch
-      _fetch = (...args) =>
-        import('@supabase/node-fetch' as any)
-          .then(({ default: fetch }) => fetch(...args))
-          .catch((error) => {
-            throw new Error(
-              `Failed to load @supabase/node-fetch: ${error.message}. ` +
-                `This is required for HTTP requests in Node.js environments without native fetch.`
-            )
-          })
-    } else {
-      _fetch = fetch
+      return (...args) => customFetch(...args)
     }
-    return (...args) => _fetch(...args)
+    return (...args) => fetch(...args)
   }
 
   /**

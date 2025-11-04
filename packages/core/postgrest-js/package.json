@@ -55,7 +55,6 @@
     "db:generate-test-types": "cd test/db && docker compose up --detach && wait-for-localhost 8080 && wait-for-localhost 3000 && curl --location 'http://0.0.0.0:8080/generators/typescript?included_schemas=public,personal&detect_one_to_one_relationships=true' > ../types.generated.ts && node ../scripts/update-json-type.js && cd ../../ && npm run format"
   },
   "dependencies": {
-    "@supabase/node-fetch": "2.6.15",
     "tslib": "2.8.1"
   },
   "devDependencies": {
@@ -66,5 +65,8 @@
     "wait-for-localhost-cli": "^4.0.0",
     "zod": "^3.25.76",
     "prettier": "^2.6.2"
+  },
+  "engines": {
+    "node": ">=20.0.0"
   }
 }

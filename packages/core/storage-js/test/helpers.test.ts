@@ -44,15 +44,11 @@ describe('Helpers', () => {
       global.Response = originalResponse
     })
 
-    test('returns dynamic import when Response is undefined', async () => {
-      const originalResponse = global.Response
-      // @ts-ignore
-      global.Response = undefined
-
+    test('returns Response when available in Node 20+', async () => {
+      // In Node 20+, Response is always available globally
       const result = await resolveResponse()
       expect(typeof result).toBe('function')
-
-      global.Response = originalResponse
+      expect(result).toBe(Response)
     })
   })
 
