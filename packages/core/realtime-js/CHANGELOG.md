@@ -1,3 +1,13 @@
+## 2.79.0 (2025-11-04)
+
+### 🚀 Features
+
+- **repo:** remove node-fetch dependency, require Node.js 20+ ([#1830](https://github.com/supabase/supabase-js/pull/1830))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+
 ## 2.78.0 (2025-10-30)
 
 This was a version bump only for @supabase/realtime-js to align it with other projects, there were no code changes.
