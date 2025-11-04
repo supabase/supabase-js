@@ -136,38 +136,16 @@ describe('Additional Coverage Tests', () => {
         params: { apikey: '123456789' },
       })
 
-      // Access the _resolveFetch method to test Node.js fallback
+      // Access the _resolveFetch method to test native fetch usage
       const fetchFn = socket._resolveFetch()
 
-      // Test that it returns a function that would import node-fetch
+      // Test that it returns a function (should use native fetch)
       expect(typeof fetchFn).toBe('function')
 
       // Restore fetch
       global.fetch = originalFetch
     })
 
-    test('should handle node-fetch import failure', async () => {
-      // Mock environment without fetch
-      const originalFetch = global.fetch
-      // @ts-ignore
-      delete global.fetch
-
-      const socket = new RealtimeClient(testSetup.url, {
-        params: { apikey: '123456789' },
-      })
-
-      const fetchFn = socket._resolveFetch()
-
-      // Try to call the fetch function (it should attempt to import node-fetch and fail)
-      try {
-        await fetchFn('http://example.com')
-      } catch (error) {
-        expect(error.message).toContain('Failed to load @supabase/node-fetch')
-      }
-
-      // Restore fetch
-      global.fetch = originalFetch
-    })
   })
 
   describe('_leaveOpenTopic', () => {

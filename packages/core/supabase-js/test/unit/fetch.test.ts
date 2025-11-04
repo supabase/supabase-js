@@ -33,7 +33,7 @@ describe('fetch module', () => {
       expect(globalFetch).toHaveBeenCalledWith('test')
     })
 
-    test('should fallback to node-fetch when global fetch is undefined', () => {
+    test('should return native fetch when no custom fetch provided', () => {
       const result = resolveFetch()
       expect(typeof result).toBe('function')
     })
