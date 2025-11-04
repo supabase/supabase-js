@@ -116,7 +116,7 @@ The `wrapper.mjs` file simply re-exports the CommonJS build, allowing the packag
 
 ```bash
 # Run all tests (from monorepo root)
-npx nx test postgrest-js
+npx nx test:ci:postgrest postgrest-js
 ```
 
 This single command automatically:

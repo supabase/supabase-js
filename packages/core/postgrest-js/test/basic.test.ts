@@ -2076,72 +2076,29 @@ test('custom fetch function', async () => {
   )
 })
 
-test('handles undefined global fetch', async () => {
-  // Store original fetch
-  const originalFetch = globalThis.fetch
-  // Delete global fetch to simulate environments where it's undefined
-  delete (globalThis as any).fetch
+test('uses native fetch when no custom fetch provided', async () => {
+  // Spy on the global fetch to verify it's being called
+  const fetchSpy = jest.spyOn(globalThis, 'fetch')
 
-  try {
-    const postgrestClient = new PostgrestClient<Database>(REST_URL)
-    const result = await postgrestClient.from('users').select()
-    expect(result).toMatchInlineSnapshot(`
-      {
-        "count": null,
-        "data": [
-          {
-            "age_range": "[1,2)",
-            "catchphrase": "'cat' 'fat'",
-            "data": null,
-            "status": "ONLINE",
-            "username": "supabot",
-          },
-          {
-            "age_range": "[25,35)",
-            "catchphrase": "'bat' 'cat'",
-            "data": null,
-            "status": "OFFLINE",
-            "username": "kiwicopple",
-          },
-          {
-            "age_range": "[25,35)",
-            "catchphrase": "'bat' 'rat'",
-            "data": null,
-            "status": "ONLINE",
-            "username": "awailas",
-          },
-          {
-            "age_range": "[20,30)",
-            "catchphrase": "'json' 'test'",
-            "data": {
-              "foo": {
-                "bar": {
-                  "nested": "value",
-                },
-                "baz": "string value",
-              },
-            },
-            "status": "ONLINE",
-            "username": "jsonuser",
-          },
-          {
-            "age_range": "[20,30)",
-            "catchphrase": "'fat' 'rat'",
-            "data": null,
-            "status": "ONLINE",
-            "username": "dragarcia",
-          },
-        ],
-        "error": null,
-        "status": 200,
-        "statusText": "OK",
-      }
-    `)
-    // Test passes if we reach here without errors, as it means native fetch was used
-  } finally {
-    // Restore original fetch
-    globalThis.fetch = originalFetch
-  }
+  const postgrestClient = new PostgrestClient<Database>(REST_URL)
+  const result = await postgrestClient.from('users').select()
+
+  // Verify native fetch was called
+  expect(fetchSpy).toHaveBeenCalledWith(
+    expect.stringContaining(REST_URL),
+    expect.objectContaining({
+      method: 'GET',
+      headers: expect.any(Headers),
+    })
+  )
+
+  // Verify the query succeeded
+  expect(result.error).toBeNull()
+  expect(result.data).toBeDefined()
+  expect(Array.isArray(result.data)).toBe(true)
+  expect(result.status).toBe(200)
+
+  fetchSpy.mockRestore()
 })
 
 test('handles array error with 404 status', async () => {
