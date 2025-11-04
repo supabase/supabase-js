@@ -2,39 +2,25 @@ type Fetch = typeof fetch
 
 /**
  * Resolves the fetch implementation to use
- * Uses custom fetch if provided, otherwise falls back to:
- * - Native fetch in browser/modern environments
- * - @supabase/node-fetch polyfill in Node.js environments without fetch
+ * Uses custom fetch if provided, otherwise uses native fetch
  *
  * @param customFetch - Optional custom fetch implementation
  * @returns Resolved fetch function
  */
 export const resolveFetch = (customFetch?: Fetch): Fetch => {
-  let _fetch: Fetch
   if (customFetch) {
-    _fetch = customFetch
-  } else if (typeof fetch === 'undefined') {
-    _fetch = (...args) =>
-      import('@supabase/node-fetch' as any).then(({ default: fetch }) => fetch(...args))
-  } else {
-    _fetch = fetch
+    return (...args) => customFetch(...args)
   }
-  return (...args) => _fetch(...args)
+  return (...args) => fetch(...args)
 }
 
 /**
  * Resolves the Response constructor to use
- * Uses native Response in browser/modern environments
- * Falls back to @supabase/node-fetch polyfill in Node.js environments
+ * Returns native Response constructor
  *
  * @returns Response constructor
  */
-export const resolveResponse = async (): Promise<typeof Response> => {
-  if (typeof Response === 'undefined') {
-    // @ts-ignore
-    return (await import('@supabase/node-fetch' as any)).Response
-  }
-
+export const resolveResponse = (): typeof Response => {
   return Response
 }
 

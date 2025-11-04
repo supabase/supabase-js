@@ -4,8 +4,6 @@ import * as fs from 'fs'
 import * as path from 'path'
 import assert from 'assert'
 import ReadableStream from 'node:stream'
-// @ts-ignore
-import fetch, { Response } from '@supabase/node-fetch'
 import { StorageApiError, StorageError } from '../src/lib/errors'
 import BlobDownloadBuilder from '../src/packages/BlobDownloadBuilder'
 import StreamDownloadBuilder from '../src/packages/StreamDownloadBuilder'

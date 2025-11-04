@@ -41,14 +41,25 @@
 
 This monorepo contains the complete suite of Supabase JavaScript SDK:
 
-| Library                                                    | Description                              |
-| ---------------------------------------------------------- | ---------------------------------------- |
+| Library                                                    | Description                           |
+| ---------------------------------------------------------- | ------------------------------------- |
 | **[@supabase/supabase-js](./packages/core/supabase-js)**   | Main isomorphic SDK for Supabase      |
 | **[@supabase/auth-js](./packages/core/auth-js)**           | Authentication SDK                    |
 | **[@supabase/postgrest-js](./packages/core/postgrest-js)** | PostgREST SDK for database operations |
 | **[@supabase/realtime-js](./packages/core/realtime-js)**   | Real-time subscriptions SDK           |
 | **[@supabase/storage-js](./packages/core/storage-js)**     | File storage SDK                      |
 | **[@supabase/functions-js](./packages/core/functions-js)** | Edge Functions SDK                    |
+
+## Requirements
+
+- **Node.js 20 or later** (Node.js 18 support was dropped as of October 31, 2025)
+- For browser support, all modern browsers are supported
+
+> ⚠️ **Node.js 18 Deprecation Notice**
+>
+> Node.js 18 reached end-of-life on April 30, 2025. As announced in [our deprecation notice](https://github.com/supabase/supabase-js/discussions/37217), support for Node.js 18 was dropped on October 31, 2025.
+>
+> If you must use Node.js 18, please use version `2.x.x` of these libraries where `x` is the last version that supported Node.js 18.
 
 > **💡 Note for Package Users:** If you install and use these packages, **nothing has changed**. Continue installing packages normally:
 >

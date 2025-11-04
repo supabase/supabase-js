@@ -58,8 +58,7 @@
     "@supabase/functions-js": "*",
     "@supabase/postgrest-js": "*",
     "@supabase/realtime-js": "*",
-    "@supabase/storage-js": "*",
-    "@supabase/node-fetch": "2.6.15"
+    "@supabase/storage-js": "*"
   },
   "devDependencies": {
     "jsr": "^0.13.5",
@@ -95,5 +94,8 @@
         ]
       }
     }
+  },
+  "engines": {
+    "node": ">=20.0.0"
   }
 }

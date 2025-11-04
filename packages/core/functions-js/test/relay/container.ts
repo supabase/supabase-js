@@ -1,7 +1,5 @@
 import * as fs from 'fs'
 import { nanoid } from 'nanoid'
-// @ts-ignore
-import nodeFetch from '@supabase/node-fetch'
 import { sign } from 'jsonwebtoken'
 import { GenericContainer, Network, StartedTestContainer, Wait } from 'testcontainers'
 import { ExecResult } from 'testcontainers/dist/docker/types'
