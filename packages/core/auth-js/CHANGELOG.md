@@ -1,3 +1,14 @@
+## 2.79.0 (2025-11-04)
+
+### 🚀 Features
+
+- **repo:** remove node-fetch dependency, require Node.js 20+ ([#1830](https://github.com/supabase/supabase-js/pull/1830))
+- **auth:** support throwing errors instead of returning them ([#1766](https://github.com/supabase/supabase-js/pull/1766))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+
 ## 2.78.0 (2025-10-30)
 
 ### 🚀 Features
