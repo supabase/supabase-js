@@ -30,15 +30,6 @@
 
 </div>
 
-## Requirements
-
-- **Node.js 20 or later** (Node.js 18 support dropped as of October 31, 2025)
-- For browser support, all modern browsers are supported
-
-> ⚠️ **Node.js 18 Deprecation Notice**
->
-> Node.js 18 reached end-of-life on April 30, 2025. As announced in [our deprecation notice](https://github.com/orgs/supabase/discussions/37217), support for Node.js 18 was dropped on October 31, 2025.
-
 ## Usage
 
 First of all, you need to install the library:
@@ -129,19 +120,43 @@ We only support Node.js versions that are in **Active LTS** or **Maintenance** s
 
 When a Node.js version reaches end-of-life and is no longer in Active LTS or Maintenance status, Supabase will drop it in a **minor release**, and **this won't be considered a breaking change**.
 
+> ⚠️ **Node.js 18 Deprecation Notice**
+>
+> Node.js 18 reached end-of-life on April 30, 2025. As announced in [our deprecation notice](https://github.com/orgs/supabase/discussions/37217), support for Node.js 18 was dropped in version `2.79.0`.
+>
+> If you must use Node.js 18, please use version `2.78.0`, which is the last version that supported Node.js 18.
+
 ### Deno
 
 We support Deno versions that are currently receiving active development and security updates. We follow the [official Deno release schedule](https://docs.deno.com/runtime/fundamentals/stability_and_releases/) and only support versions from the `stable` and `lts` release channels.
 
 When a Deno version reaches end-of-life and is no longer receiving security updates, Supabase will drop it in a **minor release**, and **this won't be considered a breaking change**.
 
+### Browsers
+
+All modern browsers are supported. We support browsers that provide native `fetch` API. For Realtime features, browsers must also support native `WebSocket` API.
+
+### Bun
+
+We support Bun runtime environments. Bun provides native fetch support and is compatible with Node.js APIs. Since Bun does not follow a structured release schedule like Node.js or Deno, we support current stable versions of Bun and may drop support for older versions in minor releases without considering it a breaking change.
+
+### React Native
+
+We support React Native environments with fetch polyfills provided by the framework. Since React Native does not follow a structured release schedule, we support current stable versions and may drop support for older versions in minor releases without considering it a breaking change.
+
+### Cloudflare Workers
+
+We support Cloudflare Workers runtime environments. Cloudflare Workers provides native fetch support. Since Cloudflare Workers does not follow a structured release schedule, we support current stable versions and may drop support for older versions in minor releases without considering it a breaking change.
+
 ### Important Notes
 
 - **Experimental features**: Features marked as experimental may be removed or changed without notice
 
-## Development
+## Contributing
 
-This package is part of the [Supabase JavaScript monorepo](https://github.com/supabase/supabase-js). To work on this package:
+We welcome contributions! Please see our [Contributing Guide](../../../CONTRIBUTING.md) for details on how to get started.
+
+For major changes or if you're unsure about something, please open an issue first to discuss your proposed changes.
 
 ### Building
 
@@ -156,12 +171,6 @@ npx nx build supabase-js --watch
 ### Testing
 
 There's a complete guide on how to set up your environment for running locally the `supabase-js` integration tests. Please refer to [TESTING.md](./TESTING.md).
-
-### Contributing
-
-We welcome contributions! Please see our [Contributing Guide](../../../CONTRIBUTING.md) for details on how to get started.
-
-For major changes or if you're unsure about something, please open an issue first to discuss your proposed changes.
 
 ## Badges
 

@@ -50,76 +50,57 @@ This monorepo contains the complete suite of Supabase JavaScript SDK:
 | **[@supabase/storage-js](./packages/core/storage-js)**     | File storage SDK                      |
 | **[@supabase/functions-js](./packages/core/functions-js)** | Edge Functions SDK                    |
 
-## Requirements
+## Support Policy
 
-- **Node.js 20 or later** (Node.js 18 support was dropped as of October 31, 2025)
-- For browser support, all modern browsers are supported
+This section outlines the scope of support for various runtime environments in Supabase JavaScript client.
+
+### Node.js
+
+We only support Node.js versions that are in **Active LTS** or **Maintenance** status as defined by the [official Node.js release schedule](https://nodejs.org/en/about/previous-releases#release-schedule). This means we support versions that are currently receiving long-term support and critical bug fixes.
+
+When a Node.js version reaches end-of-life and is no longer in Active LTS or Maintenance status, Supabase will drop it in a **minor release**, and **this won't be considered a breaking change**.
 
 > ⚠️ **Node.js 18 Deprecation Notice**
 >
-> Node.js 18 reached end-of-life on April 30, 2025. As announced in [our deprecation notice](https://github.com/orgs/supabase/discussions/37217), support for Node.js 18 was dropped on October 31, 2025.
+> Node.js 18 reached end-of-life on April 30, 2025. As announced in [our deprecation notice](https://github.com/orgs/supabase/discussions/37217), support for Node.js 18 was dropped in version `2.79.0`.
 >
-> If you must use Node.js 18, please use version `2.x.x` of these libraries where `x` is the last version that supported Node.js 18.
+> If you must use Node.js 18, please use version `2.78.0`, which is the last version that supported Node.js 18.
 
-> **💡 Note for Package Users:** If you install and use these packages, **nothing has changed**. Continue installing packages normally:
->
-> ```bash
-> npm install @supabase/supabase-js
-> npm install @supabase/auth-js
-> ```
->
-> The monorepo structure **only affects contributors**. This is how we develop and maintain the code, not how you use it.
+### Deno
+
+We support Deno versions that are currently receiving active development and security updates. We follow the [official Deno release schedule](https://docs.deno.com/runtime/fundamentals/stability_and_releases/) and only support versions from the `stable` and `lts` release channels.
+
+When a Deno version reaches end-of-life and is no longer receiving security updates, Supabase will drop it in a **minor release**, and **this won't be considered a breaking change**.
+
+### Browsers
+
+All modern browsers are supported. We support browsers that provide native `fetch` API. For Realtime features, browsers must also support native `WebSocket` API.
+
+### Bun
+
+We support Bun runtime environments. Bun provides native fetch support and is compatible with Node.js APIs. Since Bun does not follow a structured release schedule like Node.js or Deno, we support current stable versions of Bun and may drop support for older versions in minor releases without considering it a breaking change.
+
+### React Native
+
+We support React Native environments with fetch polyfills provided by the framework. Since React Native does not follow a structured release schedule, we support current stable versions and may drop support for older versions in minor releases without considering it a breaking change.
+
+### Cloudflare Workers
+
+We support Cloudflare Workers runtime environments. Cloudflare Workers provides native fetch support. Since Cloudflare Workers does not follow a structured release schedule, we support current stable versions and may drop support for older versions in minor releases without considering it a breaking change.
+
+### Important Notes
+
+- **Experimental features**: Features marked as experimental may be removed or changed without notice
 
 ## 🚀 Quick Start
 
 ### Installation
 
 ```bash
-# Clone the repository
-git clone https://github.com/supabase/supabase-js.git
-cd supabase-js
-
-# Install dependencies
-npm install
-
-# Build all packages
-npx nx run-many --target=build --all
-
+npm install @supabase/supabase-js
 ```
 
-## 🏗️ Development
-
-### Workspace Commands
-
-```bash
-# Build a specific library
-npx nx build auth-js
-
-# Test a specific library
-npx nx test postgrest-js
-
-# Build affected projects (only build what changed)
-npx nx affected --target=build
-
-# Generate dependency graph
-npx nx graph
-
-# Format all code
-npx nx format
-
-# Check code formatting
-npx nx format:check
-```
-
-### Working with Individual Libraries
-
-Each library can be developed independently:
-
-```bash
-# Start development with watch mode
-npx nx build auth-js --watch
-npx nx test auth-js --watch
-```
+Read more in each package's README file.
 
 ## 🤝 Contributing
 
@@ -146,16 +127,6 @@ We welcome contributions! Please see our [Contributing Guide](./CONTRIBUTING.md)
 ## 🧪 Testing
 
 Testing varies per package. See the top-level [TESTING.md](docs/TESTING.md) for an overview and links to package-specific guides.
-
-Quick examples:
-
-```bash
-# Run tests for a specific package
-npx nx test <package-name>
-
-# Run tests with coverage
-npx nx test <package-name> --coverage
-```
 
 ## 📚 Documentation
 
@@ -199,25 +170,6 @@ audited 1 package in 0s
 ```
 
 Because provenance attestations are a new capability, security features may evolve over time. Ensure you are using the latest npm CLI to verify attestation signatures reliably. This may require updating npm beyond the version bundled with Node.js.
-
-## 🏛️ Architecture
-
-### Monorepo Structure
-
-```tree
-supabase-js/
-├── packages/
-│   └── core/                  # Published libraries
-│       ├── auth-js/           # Authentication SDK
-│       ├── functions-js/      # Edge Functions SDK
-│       ├── postgrest-js/      # PostgREST database SDK
-│       ├── realtime-js/       # Real-time subscriptions SDK
-│       ├── storage-js/        # File storage SDK
-│       └── supabase-js/       # Main isomorphic SDK
-├── nx.json                    # npx nx workspace configuration
-├── package.json               # Root package.json and workspaces setup
-└── ...
-```
 
 ## 📄 License
 
