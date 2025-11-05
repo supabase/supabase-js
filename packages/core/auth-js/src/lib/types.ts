@@ -1772,8 +1772,9 @@ export interface AuthOAuthServerApi {
    * Revocation marks consent as revoked, deletes active sessions for that OAuth client,
    * and invalidates associated refresh tokens.
    *
-   * @param clientId - The OAuth client identifier (UUID) to revoke access for
+   * @param options - Revocation options
+   * @param options.clientId - The OAuth client identifier (UUID) to revoke access for
    * @returns Empty response on successful revocation
    */
-  revokeGrant(clientId: string): Promise<AuthOAuthRevokeGrantResponse>
+  revokeGrant(options: { clientId: string }): Promise<AuthOAuthRevokeGrantResponse>
 }
