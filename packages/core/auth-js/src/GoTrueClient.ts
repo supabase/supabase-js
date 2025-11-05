@@ -3587,7 +3587,9 @@ export default class GoTrueClient {
    * Revokes a user's OAuth grant for a specific client.
    * Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
    */
-  private async _revokeOAuthGrant(options: { clientId: string }): Promise<AuthOAuthRevokeGrantResponse> {
+  private async _revokeOAuthGrant(options: {
+    clientId: string
+  }): Promise<AuthOAuthRevokeGrantResponse> {
     try {
       return await this._useSession(async (result) => {
         const {
