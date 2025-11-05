@@ -12,7 +12,7 @@
 
 ### What Changed
 
-Starting with version `2.XX.0` (where XX is the version where this change is released), all Supabase JavaScript libraries require **Node.js 20 or later**. The `@supabase/node-fetch` polyfill has been removed, and native fetch support is now required.
+Starting with version `2.79.0`, all Supabase JavaScript libraries require **Node.js 20 or later**. The `@supabase/node-fetch` polyfill has been removed, and native fetch support is now required.
 
 ### Why?
 
@@ -55,12 +55,12 @@ npm install @supabase/auth-js@latest
 
 ### Supported Environments
 
-✅ **Node.js 20+** - Native fetch support
-✅ **Modern browsers** - Chrome 42+, Firefox 39+, Safari 10.1+, Edge 14+
-✅ **Deno 1.0+** - Native fetch built-in
-✅ **Bun 0.1+** - Native fetch built-in
-✅ **React Native** - With fetch polyfill provided by the framework
-✅ **Expo** - With fetch polyfill provided by the framework
+- **Node.js 20+** - Native fetch support
+- **Modern browsers** - All modern browsers
+- **Deno 1.0+** - Native fetch built-in
+- **Bun 0.1+** - Native fetch built-in
+- **React Native** - With fetch polyfill provided by the framework
+- **Expo** - With fetch polyfill provided by the framework
 
 ### Troubleshooting
 
@@ -76,9 +76,7 @@ This means you're running Node.js < 20. Solutions:
 If you must use Node.js 18, install the last version that supported it:
 
 ```bash
-# Find the last version that supported Node.js 18
-# (This will be version 2.XX.X where XX is one less than the version with this change)
-npm install @supabase/supabase-js@2.XX.X
+npm install @supabase/supabase-js@2.78.0
 ```
 
 ⚠️ **Warning:** Using Node.js 18 is not recommended as it no longer receives security updates.
