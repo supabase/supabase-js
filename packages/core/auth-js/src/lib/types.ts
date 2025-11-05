@@ -1681,14 +1681,8 @@ export type AuthOAuthConsentResponse = RequestResult<{
  * Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
  */
 export type OAuthGrant = {
-  /** OAuth client identifier (UUID) */
-  client_id: string
-  /** Human-readable name of the OAuth client */
-  client_name: string
-  /** URI of the OAuth client's website */
-  client_uri: string
-  /** URI of the OAuth client's logo */
-  logo_uri: string
+  /** OAuth client information */
+  client: OAuthAuthorizationClient
   /** Array of scopes granted to this client */
   scopes: string[]
   /** Timestamp when the grant was created (ISO 8601 date-time) */
