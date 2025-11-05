@@ -1628,18 +1628,70 @@ describe('getClaims', () => {
     const { data, error } = await authWithSession.getClaims()
     expect(error).toBeNull()
     expect(data).not.toBeNull()
-    
+
     const claims = data?.claims
     expect(claims).toBeDefined()
-    
-    expect(typeof claims?.email).toBe('string')
-    expect(typeof claims?.user_metadata).toBe('object')
-    expect(typeof claims?.app_metadata).toBe('object')
-    expect(typeof claims?.is_anonymous).toBe('boolean')
-    expect(typeof claims?.is_sso_user).toBe('boolean')
-    expect(typeof claims?.id).toBe('string')
-    expect(typeof claims?.created_at).toBe('string')
+
+    // Test core required claims that are always present
+    expect(typeof claims?.sub).toBe('string')
     expect(typeof claims?.role).toBe('string')
+
+    // Test standard optional claims
+    if (claims?.email !== undefined) {
+      expect(typeof claims.email).toBe('string')
+    }
+    if (claims?.phone !== undefined) {
+      expect(typeof claims.phone).toBe('string')
+    }
+    if (claims?.user_metadata !== undefined) {
+      expect(typeof claims.user_metadata).toBe('object')
+    }
+    if (claims?.app_metadata !== undefined) {
+      expect(typeof claims.app_metadata).toBe('object')
+    }
+    if (claims?.is_anonymous !== undefined) {
+      expect(typeof claims.is_anonymous).toBe('boolean')
+    }
+
+    // Test optional JWT standard claims if present
+    if (claims?.iss !== undefined) {
+      expect(typeof claims.iss).toBe('string')
+    }
+    if (claims?.aud !== undefined) {
+      expect(['string', 'object']).toContain(typeof claims.aud)
+    }
+    if (claims?.exp !== undefined) {
+      expect(typeof claims.exp).toBe('number')
+    }
+    if (claims?.iat !== undefined) {
+      expect(typeof claims.iat).toBe('number')
+    }
+    if (claims?.aal !== undefined) {
+      expect(typeof claims.aal).toBe('string')
+    }
+    if (claims?.session_id !== undefined) {
+      expect(typeof claims.session_id).toBe('string')
+    }
+    if (claims?.jti !== undefined) {
+      expect(typeof claims.jti).toBe('string')
+    }
+    if (claims?.nbf !== undefined) {
+      expect(typeof claims.nbf).toBe('number')
+    }
+
+    // Verify amr array structure if present
+    if (claims?.amr) {
+      expect(Array.isArray(claims.amr)).toBe(true)
+      if (claims.amr.length > 0) {
+        expect(typeof claims.amr[0].method).toBe('string')
+        expect(typeof claims.amr[0].timestamp).toBe('number')
+      }
+    }
+
+    // Verify ref claim if present (anon/service role tokens)
+    if (claims?.ref !== undefined) {
+      expect(typeof claims.ref).toBe('string')
+    }
   })
 
   test('getClaims fetches JWKS to verify asymmetric jwt', async () => {
