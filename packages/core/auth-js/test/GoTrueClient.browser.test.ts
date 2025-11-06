@@ -2,7 +2,12 @@
  * @jest-environment jsdom
  */
 
-import { autoRefreshClient, getClientWithSpecificStorage, pkceClient } from './lib/clients'
+import {
+  autoRefreshClient,
+  getClientWithSpecificStorage,
+  getClientWithSpecificStorageKey,
+  pkceClient,
+} from './lib/clients'
 import { mockUserCredentials } from './lib/utils'
 import {
   supportsLocalStorage,
@@ -189,6 +194,94 @@ describe('Fetch resolution in browser environment', () => {
     const customFetch = jest.fn()
     const resolvedFetch = resolveFetch(customFetch)
     expect(typeof resolvedFetch).toBe('function')
+  })
+
+  it('should warn when two clients are created with the same storage key', () => {
+    let consoleWarnSpy
+    let consoleTraceSpy
+    try {
+      consoleWarnSpy = jest.spyOn(console, 'warn')
+      consoleTraceSpy = jest.spyOn(console, 'trace')
+      getClientWithSpecificStorageKey('same-storage-key')
+      getClientWithSpecificStorageKey('same-storage-key')
+      expect(consoleWarnSpy).toHaveBeenCalledTimes(1)
+      expect(consoleWarnSpy).toHaveBeenCalledWith(
+        expect.stringMatching(
+          /GoTrueClient@same-storage-key:1 .* Multiple GoTrueClient instances detected in the same browser context. It is not an error, but this should be avoided as it may produce undefined behavior when used concurrently under the same storage key./
+        )
+      )
+      expect(consoleTraceSpy).not.toHaveBeenCalled()
+    } finally {
+      consoleWarnSpy?.mockRestore()
+      consoleTraceSpy?.mockRestore()
+    }
+  })
+
+  it('should warn & trace when two clients are created with the same storage key and debug is enabled', () => {
+    let consoleWarnSpy
+    let consoleTraceSpy
+    try {
+      consoleWarnSpy = jest.spyOn(console, 'warn')
+      consoleTraceSpy = jest.spyOn(console, 'trace')
+      getClientWithSpecificStorageKey('identical-storage-key')
+      getClientWithSpecificStorageKey('identical-storage-key', { debug: true })
+      expect(consoleWarnSpy).toHaveBeenCalledTimes(1)
+      expect(consoleWarnSpy).toHaveBeenCalledWith(
+        expect.stringMatching(
+          /GoTrueClient@identical-storage-key:1 .* Multiple GoTrueClient instances detected in the same browser context. It is not an error, but this should be avoided as it may produce undefined behavior when used concurrently under the same storage key./
+        )
+      )
+      expect(consoleTraceSpy).toHaveBeenCalledWith(
+        expect.stringMatching(
+          /GoTrueClient@identical-storage-key:1 .* Multiple GoTrueClient instances detected in the same browser context. It is not an error, but this should be avoided as it may produce undefined behavior when used concurrently under the same storage key./
+        )
+      )
+    } finally {
+      consoleWarnSpy?.mockRestore()
+      consoleTraceSpy?.mockRestore()
+    }
+  })
+
+  it('should not warn when two clients are created with differing storage keys', () => {
+    let consoleWarnSpy
+    let consoleTraceSpy
+    try {
+      consoleWarnSpy = jest.spyOn(console, 'warn')
+      consoleTraceSpy = jest.spyOn(console, 'trace')
+      getClientWithSpecificStorageKey('first-storage-key')
+      getClientWithSpecificStorageKey('second-storage-key')
+      expect(consoleWarnSpy).not.toHaveBeenCalled()
+      expect(consoleTraceSpy).not.toHaveBeenCalled()
+    } finally {
+      consoleWarnSpy?.mockRestore()
+      consoleTraceSpy?.mockRestore()
+    }
+  })
+
+  it('should warn only when a second client with a duplicate key is created', () => {
+    let consoleWarnSpy
+    let consoleTraceSpy
+    try {
+      consoleWarnSpy = jest.spyOn(console, 'warn')
+      consoleTraceSpy = jest.spyOn(console, 'trace')
+      getClientWithSpecificStorageKey('test-storage-key1')
+      expect(consoleWarnSpy).not.toHaveBeenCalled()
+      getClientWithSpecificStorageKey('test-storage-key2')
+      expect(consoleWarnSpy).not.toHaveBeenCalled()
+      getClientWithSpecificStorageKey('test-storage-key3')
+      expect(consoleWarnSpy).not.toHaveBeenCalled()
+      getClientWithSpecificStorageKey('test-storage-key2')
+      expect(consoleWarnSpy).toHaveBeenCalledTimes(1)
+      expect(consoleWarnSpy).toHaveBeenCalledWith(
+        expect.stringMatching(
+          /GoTrueClient@test-storage-key2:1 .* Multiple GoTrueClient instances detected in the same browser context. It is not an error, but this should be avoided as it may produce undefined behavior when used concurrently under the same storage key./
+        )
+      )
+      expect(consoleTraceSpy).not.toHaveBeenCalled()
+    } finally {
+      consoleWarnSpy?.mockRestore()
+      consoleTraceSpy?.mockRestore()
+    }
   })
 })
 

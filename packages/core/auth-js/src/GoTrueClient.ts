@@ -188,7 +188,7 @@ async function lockNoOp<R>(name: string, acquireTimeout: number, fn: () => Promi
 const GLOBAL_JWKS: { [storageKey: string]: { cachedAt: number; jwks: { keys: JWK[] } } } = {}
 
 export default class GoTrueClient {
-  private static nextInstanceID = 0
+  private static nextInstanceID: Record<string, number> = {}
 
   private instanceID: number
 
@@ -277,24 +277,26 @@ export default class GoTrueClient {
    * Create a new client for use in the browser.
    */
   constructor(options: GoTrueClientOptions) {
-    this.instanceID = GoTrueClient.nextInstanceID
-    GoTrueClient.nextInstanceID += 1
-
-    if (this.instanceID > 0 && isBrowser()) {
-      console.warn(
-        'Multiple GoTrueClient instances detected in the same browser context. It is not an error, but this should be avoided as it may produce undefined behavior when used concurrently under the same storage key.'
-      )
-    }
-
     const settings = { ...DEFAULT_OPTIONS, ...options }
+    this.storageKey = settings.storageKey
+
+    this.instanceID = GoTrueClient.nextInstanceID[this.storageKey] ?? 0
+    GoTrueClient.nextInstanceID[this.storageKey] = this.instanceID + 1
 
     this.logDebugMessages = !!settings.debug
     if (typeof settings.debug === 'function') {
       this.logger = settings.debug
     }
 
+    if (this.instanceID > 0 && isBrowser()) {
+      const message = `${this._logPrefix()} Multiple GoTrueClient instances detected in the same browser context. It is not an error, but this should be avoided as it may produce undefined behavior when used concurrently under the same storage key.`
+      console.warn(message)
+      if (this.logDebugMessages) {
+        console.trace(message)
+      }
+    }
+
     this.persistSession = settings.persistSession
-    this.storageKey = settings.storageKey
     this.autoRefreshToken = settings.autoRefreshToken
     this.admin = new GoTrueAdminApi({
       url: settings.url,
@@ -400,12 +402,16 @@ export default class GoTrueClient {
     return result
   }
 
+  private _logPrefix(): string {
+    return (
+      'GoTrueClient@' +
+      `${this.storageKey}:${this.instanceID} (${version}) ${new Date().toISOString()}`
+    )
+  }
+
   private _debug(...args: any[]): GoTrueClient {
     if (this.logDebugMessages) {
-      this.logger(
-        `GoTrueClient@${this.instanceID} (${version}) ${new Date().toISOString()}`,
-        ...args
-      )
+      this.logger(this._logPrefix(), ...args)
     }
 
     return this
