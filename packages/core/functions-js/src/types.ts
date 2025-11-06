@@ -88,4 +88,9 @@ export type FunctionInvokeOptions = {
    * The AbortSignal to use for the request.
    * */
   signal?: AbortSignal
+  /**
+   * The timeout for the request in milliseconds.
+   * If the function takes longer than this, the request will be aborted.
+   * */
+  timeout?: number
 }

@@ -50,8 +50,11 @@ export class FunctionsClient {
     functionName: string,
     options: FunctionInvokeOptions = {}
   ): Promise<FunctionsResponse<T>> {
+    let timeoutId: ReturnType<typeof setTimeout> | undefined
+    let timeoutController: AbortController | undefined
+
     try {
-      const { headers, method, body: functionArgs, signal } = options
+      const { headers, method, body: functionArgs, signal, timeout } = options
       let _headers: Record<string, string> = {}
       let { region } = options
       if (!region) {
@@ -94,6 +97,22 @@ export class FunctionsClient {
         body = functionArgs
       }
 
+      // Handle timeout by creating an AbortController
+      let effectiveSignal = signal
+      if (timeout) {
+        timeoutController = new AbortController()
+        timeoutId = setTimeout(() => timeoutController!.abort(), timeout)
+
+        // If user provided their own signal, we need to respect both
+        if (signal) {
+          effectiveSignal = timeoutController.signal
+          // If the user's signal is aborted, abort our timeout controller too
+          signal.addEventListener('abort', () => timeoutController!.abort())
+        } else {
+          effectiveSignal = timeoutController.signal
+        }
+      }
+
       const response = await this.fetch(url.toString(), {
         method: method || 'POST',
         // headers priority is (high to low):
@@ -102,11 +121,8 @@ export class FunctionsClient {
         // 3. default Content-Type header
         headers: { ..._headers, ...this.headers, ...headers },
         body,
-        signal,
+        signal: effectiveSignal,
       }).catch((fetchError) => {
-        if (fetchError.name === 'AbortError') {
-          throw fetchError
-        }
         throw new FunctionsFetchError(fetchError)
       })
 
@@ -139,9 +155,6 @@ export class FunctionsClient {
 
       return { data, error: null, response }
     } catch (error) {
-      if (error instanceof Error && error.name === 'AbortError') {
-        return { data: null, error: new FunctionsFetchError(error) }
-      }
       return {
         data: null,
         error,
@@ -149,6 +162,11 @@ export class FunctionsClient {
           error instanceof FunctionsHttpError || error instanceof FunctionsRelayError
             ? error.context
             : undefined,
+      }
+    } finally {
+      // Clear the timeout if it was set
+      if (timeoutId) {
+        clearTimeout(timeoutId)
       }
     }
   }
