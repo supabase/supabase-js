@@ -3571,24 +3571,7 @@ export default class GoTrueClient {
         return await _request(this.fetch, 'GET', `${this.url}/user/oauth/grants`, {
           headers: this.headers,
           jwt: session.access_token,
-          xform: (data: any) => {
-            // Transform flat API response to nested client structure
-            return {
-              data: {
-                grants: data.grants.map((grant: any) => ({
-                  client: {
-                    client_id: grant.client_id,
-                    client_name: grant.client_name,
-                    client_uri: grant.client_uri,
-                    logo_uri: grant.logo_uri,
-                  },
-                  scopes: grant.scopes,
-                  granted_at: grant.granted_at,
-                })),
-              },
-              error: null,
-            }
-          },
+          xform: (data: any) => ({ data, error: null }),
         })
       })
     } catch (error) {
