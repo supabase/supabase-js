@@ -1,3 +1,18 @@
+## 2.80.0 (2025-11-06)
+
+### 🚀 Features
+
+- **auth:** add TypeScript types for documented JWT claims fields ([#1802](https://github.com/supabase/supabase-js/pull/1802))
+
+### 🩹 Fixes
+
+- **auth:** only warn if multiple clients share a storage-key ([#1767](https://github.com/supabase/supabase-js/pull/1767))
+
+### ❤️ Thank You
+
+- Steve Hall @sh41
+- Sumit Kumar @Software-Engineering-Project-Team-Bob
+
 ## 2.79.0 (2025-11-04)
 
 ### 🚀 Features
