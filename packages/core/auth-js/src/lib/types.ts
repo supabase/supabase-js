@@ -1439,7 +1439,31 @@ export type RequiredClaims = {
   session_id: string
 }
 
-export type JwtPayload = RequiredClaims & {
+/**
+ * JWT Payload containing claims for Supabase authentication tokens.
+ *
+ * Required claims (iss, aud, exp, iat, sub, role, aal, session_id) are inherited from RequiredClaims.
+ * All other claims are optional as they can be customized via Custom Access Token Hooks.
+ *
+ * @see https://supabase.com/docs/guides/auth/jwt-fields
+ */
+export interface JwtPayload extends RequiredClaims {
+  // Standard optional claims (can be customized via custom access token hooks)
+  email?: string
+  phone?: string
+  is_anonymous?: boolean
+
+  // Optional claims
+  jti?: string
+  nbf?: number
+  app_metadata?: UserAppMetadata
+  user_metadata?: UserMetadata
+  amr?: AMREntry[]
+
+  // Special claims (only in anon/service role tokens)
+  ref?: string
+
+  // Allow custom claims via custom access token hooks
   [key: string]: any
 }
 
