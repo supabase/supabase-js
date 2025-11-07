@@ -1693,10 +1693,7 @@ export type OAuthGrant = {
  * Response type for listing user's OAuth grants.
  * Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
  */
-export type AuthOAuthGrantsResponse = RequestResult<{
-  /** Array of OAuth grants authorized by the user */
-  grants: OAuthGrant[]
-}>
+export type AuthOAuthGrantsResponse = RequestResult<OAuthGrant[]>
 
 /**
  * Response type for revoking an OAuth grant.
@@ -1755,7 +1752,7 @@ export interface AuthOAuthServerApi {
    * Lists all OAuth grants that the authenticated user has authorized.
    * Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
    *
-   * @returns Array of OAuth grants with client information and granted scopes
+   * @returns Response with array of OAuth grants with client information and granted scopes
    */
   listGrants(): Promise<AuthOAuthGrantsResponse>
 
