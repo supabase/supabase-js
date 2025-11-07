@@ -190,7 +190,13 @@ export default class RealtimeClient {
     }
 
     this._setConnectionState('connecting')
-    this._setAuthSafely('connect')
+
+    // Trigger auth if needed and not already in progress
+    // This ensures auth is called for standalone RealtimeClient usage
+    // while avoiding race conditions with SupabaseClient's immediate setAuth call
+    if (this.accessToken && !this._authPromise) {
+      this._setAuthSafely('connect')
+    }
 
     // Establish WebSocket connection
     if (this.transport) {
@@ -257,11 +263,13 @@ export default class RealtimeClient {
         this._setConnectionState('disconnected')
       }
 
-      // Close the WebSocket connection
-      if (code) {
-        this.conn.close(code, reason ?? '')
-      } else {
-        this.conn.close()
+      // Close the WebSocket connection if close method exists
+      if (typeof this.conn.close === 'function') {
+        if (code) {
+          this.conn.close(code, reason ?? '')
+        } else {
+          this.conn.close()
+        }
       }
 
       this._teardownConnection()
@@ -620,7 +628,23 @@ export default class RealtimeClient {
   private _onConnOpen() {
     this._setConnectionState('connected')
     this.log('transport', `connected to ${this.endpointURL()}`)
-    this.flushSendBuffer()
+
+    // Wait for any pending auth operations before flushing send buffer
+    // This ensures channel join messages include the correct access token
+    const authPromise =
+      this._authPromise ||
+      (this.accessToken && !this.accessTokenValue ? this.setAuth() : Promise.resolve())
+
+    authPromise
+      .then(() => {
+        this.flushSendBuffer()
+      })
+      .catch((e) => {
+        this.log('error', 'error waiting for auth on connect', e)
+        // Proceed anyway to avoid hanging connections
+        this.flushSendBuffer()
+      })
+
     this._clearTimer('reconnect')
 
     if (!this.worker) {

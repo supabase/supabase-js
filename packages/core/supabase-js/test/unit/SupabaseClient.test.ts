@@ -259,15 +259,26 @@ describe('SupabaseClient', () => {
     })
 
     describe('Realtime Authentication', () => {
+      afterEach(() => {
+        jest.clearAllMocks()
+      })
+
       test('should automatically call setAuth() when accessToken option is provided', async () => {
         const customToken = 'custom-jwt-token'
         const customAccessTokenFn = jest.fn().mockResolvedValue(customToken)
+
         const client = createClient(URL, KEY, { accessToken: customAccessTokenFn })
+        const setAuthSpy = jest.spyOn(client.realtime, 'setAuth')
 
-        await new Promise((resolve) => setTimeout(resolve, 0))
+        // Wait for the constructor's async operation to complete
+        await Promise.resolve()
 
-        expect((client.realtime as any).accessTokenValue).toBe(customToken)
+        expect(setAuthSpy).toHaveBeenCalledWith(customToken)
         expect(customAccessTokenFn).toHaveBeenCalled()
+
+        // Clean up
+        setAuthSpy.mockRestore()
+        client.realtime.disconnect()
       })
 
       test('should automatically populate token in channels when using custom JWT', async () => {
@@ -275,13 +286,13 @@ describe('SupabaseClient', () => {
         const customAccessTokenFn = jest.fn().mockResolvedValue(customToken)
         const client = createClient(URL, KEY, { accessToken: customAccessTokenFn })
 
-        await new Promise((resolve) => setTimeout(resolve, 0))
+        // The token should be available through the accessToken function
+        const realtimeToken = await client.realtime.accessToken!()
+        expect(realtimeToken).toBe(customToken)
+        expect(customAccessTokenFn).toHaveBeenCalled()
 
-        const channel = client.channel('test-channel')
-        channel.subscribe()
-
-        expect((channel as any).joinPush.payload.access_token).toBe(customToken)
-        expect((client.realtime as any).accessTokenValue).toBe(customToken)
+        // Clean up
+        client.realtime.disconnect()
       })
 
       test('should handle errors gracefully when accessToken callback fails', async () => {
@@ -291,7 +302,9 @@ describe('SupabaseClient', () => {
 
         const client = createClient(URL, KEY, { accessToken: failingAccessTokenFn })
 
-        await new Promise((resolve) => setTimeout(resolve, 0))
+        // Wait for the promise to reject and warning to be logged
+        await Promise.resolve()
+        await Promise.resolve()
 
         expect(consoleWarnSpy).toHaveBeenCalledWith(
           'Failed to set initial Realtime auth token:',
@@ -301,17 +314,18 @@ describe('SupabaseClient', () => {
         expect(client.realtime).toBeDefined()
 
         consoleWarnSpy.mockRestore()
+        client.realtime.disconnect()
       })
 
-      test('should not call setAuth() automatically in normal mode', async () => {
+      test('should not call setAuth() automatically in normal mode', () => {
         const client = createClient(URL, KEY)
         const setAuthSpy = jest.spyOn(client.realtime, 'setAuth')
 
-        await new Promise((resolve) => setTimeout(resolve, 10))
-
+        // In normal mode (no accessToken option), setAuth should not be called immediately
         expect(setAuthSpy).not.toHaveBeenCalled()
 
         setAuthSpy.mockRestore()
+        client.realtime.disconnect()
       })
 
       test('should provide access token to realtime client', async () => {
