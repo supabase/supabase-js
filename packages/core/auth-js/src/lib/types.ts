@@ -351,7 +351,14 @@ export type Factor<
 }
 
 export interface UserAppMetadata {
+  /**
+   * The first provider that the user used to sign up with.
+   */
   provider?: string
+  /**
+   * A list of all providers that the user has linked to their account.
+   */
+  providers?: string[]
   [key: string]: any
 }
 
