@@ -1,5 +1,5 @@
 import assert from 'assert'
-import { afterEach, beforeEach, describe, test } from 'vitest'
+import { afterEach, beforeEach, describe, expect, test } from 'vitest'
 import RealtimeClient from '../src/RealtimeClient'
 import { setupRealtimeTest, cleanupRealtimeTest, TestSetup } from './helpers/setup'
 
@@ -36,6 +36,20 @@ describe('endpointURL', () => {
       params: { apikey: '123456789' },
     })
     assert.equal(socket.endpointURL(), `${testSetup.url}/websocket?apikey=123456789&vsn=1.0.0`)
+  })
+
+  test('returns endpoint with valid vsn', () => {
+    const socket = new RealtimeClient(testSetup.url, {
+      params: { apikey: '123456789' },
+      vsn: '2.0.0',
+    })
+    assert.equal(socket.endpointURL(), `${testSetup.url}/websocket?apikey=123456789&vsn=2.0.0`)
+  })
+
+  test('errors out with unsupported version', () => {
+    expect(
+      () => new RealtimeClient(testSetup.url, { params: { apikey: '123456789' }, vsn: '4.0.0' })
+    ).toThrow(/Unsupported serializer/)
   })
 
   test('returns endpoint with no params (empty params object)', () => {
