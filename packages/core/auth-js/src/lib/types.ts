@@ -1630,11 +1630,11 @@ export interface GoTrueAdminOAuthApi {
  */
 export type OAuthAuthorizationClient = {
   /** Unique identifier for the OAuth client (UUID) */
-  client_id: string
+  id: string
   /** Human-readable name of the OAuth client */
-  client_name: string
+  name: string
   /** URI of the OAuth client's website */
-  client_uri: string
+  uri: string
   /** URI of the OAuth client's logo */
   logo_uri: string
 }
