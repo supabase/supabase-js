@@ -9,12 +9,24 @@ export function expiresAt(expiresIn: number) {
   return timeNow + expiresIn
 }
 
-export function uuid() {
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
-    const r = (Math.random() * 16) | 0,
-      v = c == 'x' ? r : (r & 0x3) | 0x8
-    return v.toString(16)
-  })
+export function uuid(): string {
+  const bytes = new Uint8Array(16)
+  if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
+    crypto.getRandomValues(bytes)
+  } else {
+    const cryptoNode = require('crypto')
+    cryptoNode.randomFillSync(bytes)
+  }
+  bytes[6] = (bytes[6] & 0x0f) | 0x40
+  bytes[8] = (bytes[8] & 0x3f) | 0x80
+
+  let i = 0
+  return bytes.reduce((uuid, byte) => {
+    const hex = byte.toString(16).padStart(2, '0')
+    if (i === 4 || i === 6 || i === 8 || i === 10) uuid += '-'
+    i++
+    return uuid + hex
+  }, '')
 }
 
 export const isBrowser = () => typeof window !== 'undefined' && typeof document !== 'undefined'
