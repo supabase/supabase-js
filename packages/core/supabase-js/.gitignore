@@ -114,3 +114,6 @@ test/integration/*/bun.lock
 .cursor/
 
 deno.lock
+
+supabase/.branches
+supabase/.temp
