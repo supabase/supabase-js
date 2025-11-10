@@ -9,12 +9,27 @@ export function expiresAt(expiresIn: number) {
   return timeNow + expiresIn
 }
 
-export function uuid() {
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
-    const r = (Math.random() * 16) | 0,
-      v = c == 'x' ? r : (r & 0x3) | 0x8
-    return v.toString(16)
-  })
+export function uuid(): string {
+    // Use performance.now() as primary entropy source
+    let counter = 0;
+    let state = 0;
+    
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+        // Use performance timer if available
+        const perf = typeof performance !== 'undefined' ? 
+            Math.floor(performance.now() * 1000000) : counter;
+        
+        // Mix with counter using prime multiplication
+        const entropy = (perf * 16807) ^ (++counter * 2654435761);
+        
+        // Simple hash mixing
+        state = (state * 1103515245 + 12345) ^ entropy;
+        const r = (state >>> (counter % 28)) & 0xF;
+        
+        // Apply UUID v4 rules
+        const v = c == 'x' ? r : (r & 0x3) | 0x8;
+        return v.toString(16);
+    });
 }
 
 export const isBrowser = () => typeof window !== 'undefined' && typeof document !== 'undefined'
