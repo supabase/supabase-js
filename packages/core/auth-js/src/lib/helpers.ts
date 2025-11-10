@@ -9,12 +9,46 @@ export function expiresAt(expiresIn: number) {
   return timeNow + expiresIn
 }
 
+// Counter for SSR-safe UUID generation
+let ssrUuidCounter = 0
+
+/**
+ * Generates a UUID v4 string.
+ *
+ * This function is SSR-aware to handle Next.js 16 pre-rendering constraints:
+ * - In browsers: Uses crypto.randomUUID() or crypto.getRandomValues() for cryptographic randomness
+ * - During SSR: Uses a deterministic fallback (timestamp + counter)
+ *
+ * Note: The SSR fallback is safe because:
+ * 1. UUIDs from this function are only used for internal subscription IDs, not security-critical operations
+ * 2. During SSR/pre-rendering, auth callbacks don't actually fire
+ * 3. Once in the browser, proper cryptographic APIs are always used
+ */
 export function uuid() {
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
-    const r = (Math.random() * 16) | 0,
-      v = c == 'x' ? r : (r & 0x3) | 0x8
-    return v.toString(16)
-  })
+  // Modern browsers and Node.js 19+ - use native crypto.randomUUID()
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID()
+  }
+
+  // Browsers with crypto.getRandomValues() support
+  if (typeof crypto !== 'undefined' && typeof crypto.getRandomValues === 'function') {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+      const array = new Uint8Array(1)
+      crypto.getRandomValues(array)
+      const r = array[0] % 16
+      const v = c == 'x' ? r : (r & 0x3) | 0x8
+      return v.toString(16)
+    })
+  }
+
+  // SSR/pre-render fallback - deterministic but unique within session
+  // This only generates subscription IDs during pre-render; real UUIDs use crypto in browser
+  const timestamp = Date.now()
+  const counter = ssrUuidCounter++
+  const random1 = Math.floor(timestamp / 1000000) % 10000
+  const random2 = (timestamp % 1000000) % 10000
+
+  return `ssr-${timestamp.toString(16)}-${counter.toString(16)}-${random1.toString(16)}-${random2.toString(16)}`
 }
 
 export const isBrowser = () => typeof window !== 'undefined' && typeof document !== 'undefined'
