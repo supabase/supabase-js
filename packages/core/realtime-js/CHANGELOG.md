@@ -1,3 +1,18 @@
+## 2.81.0 (2025-11-10)
+
+### 🚀 Features
+
+- **realtime:** implement V2 serializer ([#1829](https://github.com/supabase/supabase-js/pull/1829))
+
+### 🩹 Fixes
+
+- **realtime:** ensure WebSocket connections are properly closed in teardown ([#1841](https://github.com/supabase/supabase-js/pull/1841))
+
+### ❤️ Thank You
+
+- Eduardo Gurgel
+- Tanmay Sharma @tanmaysharma2001
+
 ## 2.80.0 (2025-11-06)
 
 This was a version bump only for @supabase/realtime-js to align it with other projects, there were no code changes.

@@ -1,3 +1,23 @@
+## 2.81.0 (2025-11-10)
+
+### 🚀 Features
+
+- **realtime:** implement V2 serializer ([#1829](https://github.com/supabase/supabase-js/pull/1829))
+
+### 🩹 Fixes
+
+- **auth:** make webauthn param optional and move register params to webauthn ([#1765](https://github.com/supabase/supabase-js/pull/1765))
+- **auth:** add providers type to UserAppMetadata interface ([#1760](https://github.com/supabase/supabase-js/pull/1760))
+- **auth:** use direct attestation for registration/authentication ([#1764](https://github.com/supabase/supabase-js/pull/1764))
+- **functions:** add configurable timeout and normalize abort/timeout errors as FunctionsFetchError ([#1837](https://github.com/supabase/supabase-js/pull/1837))
+- **realtime:** ensure WebSocket connections are properly closed in teardown ([#1841](https://github.com/supabase/supabase-js/pull/1841))
+
+### ❤️ Thank You
+
+- Eduardo Gurgel
+- Katerina Skroumpelou @mandarini
+- Tanmay Sharma @tanmaysharma2001
+
 ## 2.80.0 (2025-11-06)
 
 ### 🚀 Features
