@@ -7,9 +7,11 @@ out-tsc
 
 # dependencies
 node_modules
+deno.lock
 
 # IDEs and editors
 /.idea
+.idea/
 .project
 .classpath
 .c9/
@@ -24,16 +26,62 @@ node_modules
 !.vscode/launch.json
 !.vscode/extensions.json
 
+# Coverage directories (anywhere in tree)
+coverage/
+coverage
+.nyc_output
+*.lcov
+lib-cov
+
+# Logs (anywhere in tree)
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# Cache directories (anywhere in tree)
+.cache
+.cache/
+.eslintcache
+.rpt2_cache/
+.rts2_cache_cjs/
+.rts2_cache_es/
+.rts2_cache_umd/
+.npm
+.yarn-integrity
+
+# Runtime/build artifacts (anywhere in tree)
+pids
+*.pid
+*.pid.lock
+*.seed
+build/Release
+*.tgz
+report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
+
+# TypeScript v1 declarations (anywhere in tree)
+typings/
+/typings
+
 # misc
 /.sass-cache
 /connect.lock
-/coverage
 /libpeerconnection.log
-npm-debug.log
-yarn-error.log
 testem.log
-/typings
+
+# Environment files (anywhere in tree)
 .env
+.env.test
+.env*.local
+
+# TypeScript cache
+*.tsbuildinfo
+
+# Generated docs (anywhere in tree)
+**/docs/v2
+docs/v2
 
 # release artifacts
 .release-version
@@ -51,3 +99,6 @@ Thumbs.db
 vite.config.*.timestamp*
 vitest.config.*.timestamp*
 test-output
+
+supabase/.branches
+supabase/.temp
