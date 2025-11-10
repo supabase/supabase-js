@@ -595,6 +595,17 @@ export default class RealtimeClient {
    */
   private _teardownConnection(): void {
     if (this.conn) {
+      if (
+        this.conn.readyState === SOCKET_STATES.open ||
+        this.conn.readyState === SOCKET_STATES.connecting
+      ) {
+        try {
+          this.conn.close()
+        } catch (e) {
+          this.log('error', 'Error closing connection', e)
+        }
+      }
+
       this.conn.onopen = null
       this.conn.onerror = null
       this.conn.onmessage = null
