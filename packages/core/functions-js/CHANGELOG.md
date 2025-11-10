@@ -1,3 +1,13 @@
+## 2.81.0 (2025-11-10)
+
+### 🩹 Fixes
+
+- **functions:** add configurable timeout and normalize abort/timeout errors as FunctionsFetchError ([#1837](https://github.com/supabase/supabase-js/pull/1837))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+
 ## 2.80.0 (2025-11-06)
 
 This was a version bump only for @supabase/functions-js to align it with other projects, there were no code changes.
