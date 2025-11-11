@@ -3100,6 +3100,25 @@ describe('SSO Authentication', () => {
     expect(data).toBeNull()
   })
 
+  test('signInWithSSO should support skipBrowserRedirect option', async () => {
+    // Note: In a browser environment with SAML enabled, signInWithSSO would
+    // automatically redirect to the SSO provider unless skipBrowserRedirect is true.
+    // This test verifies the option is accepted (actual redirect behavior cannot
+    // be tested in Node.js environment)
+    const { data, error } = await pkceClient.signInWithSSO({
+      providerId: 'valid-provider-id',
+      options: {
+        redirectTo: 'http://localhost:3000/callback',
+        skipBrowserRedirect: true,
+      },
+    })
+
+    // SAML is disabled in test environment, so we expect an error
+    expect(error).not.toBeNull()
+    expect(error?.message).toContain('SAML 2.0 is disabled')
+    expect(data).toBeNull()
+  })
+
   test.each([
     {
       name: 'with empty options',

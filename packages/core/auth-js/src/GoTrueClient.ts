@@ -1334,6 +1334,12 @@ export default class GoTrueClient {
         headers: this.headers,
         xform: _ssoResponse,
       })
+
+      // Automatically redirect in browser unless skipBrowserRedirect is true
+      if (result.data?.url && isBrowser() && !params.options?.skipBrowserRedirect) {
+        window.location.assign(result.data.url)
+      }
+
       return this._returnResult(result)
     } catch (error) {
       if (isAuthError(error)) {

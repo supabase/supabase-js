@@ -788,6 +788,12 @@ export type SignInWithSSO =
         redirectTo?: string
         /** Verification token received when the user completes the captcha on the site. */
         captchaToken?: string
+        /**
+         * If set to true, the redirect will not happen on the client side.
+         * This parameter is used when you wish to handle the redirect yourself.
+         * Defaults to false.
+         */
+        skipBrowserRedirect?: boolean
       }
     }
   | {
@@ -799,6 +805,12 @@ export type SignInWithSSO =
         redirectTo?: string
         /** Verification token received when the user completes the captcha on the site. */
         captchaToken?: string
+        /**
+         * If set to true, the redirect will not happen on the client side.
+         * This parameter is used when you wish to handle the redirect yourself.
+         * Defaults to false.
+         */
+        skipBrowserRedirect?: boolean
       }
     }
 
