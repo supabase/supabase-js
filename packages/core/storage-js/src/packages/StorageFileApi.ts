@@ -638,7 +638,7 @@ export default class StorageFileApi {
     options?: { download?: string | boolean; transform?: TransformOptions }
   ): { data: { publicUrl: string } } {
     const _path = this._getFinalPath(path)
-    const _queryString = []
+    const _queryString: string[] = []
 
     const downloadQueryParam = options?.download
       ? `download=${options.download === true ? '' : options.download}`
@@ -865,7 +865,7 @@ export default class StorageFileApi {
   }
 
   private transformOptsToQueryString(transform: TransformOptions) {
-    const params = []
+    const params: string[] = []
     if (transform.width) {
       params.push(`width=${transform.width}`)
     }
