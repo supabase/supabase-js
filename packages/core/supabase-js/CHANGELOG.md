@@ -1,3 +1,13 @@
+## 2.81.1 (2025-11-11)
+
+### 🩹 Fixes
+
+- **realtime:** setAuth not required on custom jwt token ([#1826](https://github.com/supabase/supabase-js/pull/1826))
+
+### ❤️ Thank You
+
+- Filipe Cabaço @filipecabaco
+
 ## 2.81.0 (2025-11-10)
 
 This was a version bump only for @supabase/supabase-js to align it with other projects, there were no code changes.
