@@ -1,12 +1,52 @@
 import { AuthInvalidJwtError } from '../src'
 import {
   decodeJWT,
+  generateCallbackId,
   getAlgorithm,
   parseParametersFromURL,
   parseResponseAPIVersion,
   getCodeChallengeAndMethod,
   validateUUID,
 } from '../src/lib/helpers'
+
+describe('generateCallbackId', () => {
+  it('should return a Symbol', () => {
+    const id = generateCallbackId()
+    expect(typeof id).toBe('symbol')
+  })
+
+  it('should return unique Symbols on each call', () => {
+    const id1 = generateCallbackId()
+    const id2 = generateCallbackId()
+    const id3 = generateCallbackId()
+
+    expect(id1).not.toBe(id2)
+    expect(id2).not.toBe(id3)
+    expect(id1).not.toBe(id3)
+  })
+
+  it('should work as Map keys', () => {
+    const id1 = generateCallbackId()
+    const id2 = generateCallbackId()
+
+    const map = new Map()
+    map.set(id1, 'callback1')
+    map.set(id2, 'callback2')
+
+    expect(map.get(id1)).toBe('callback1')
+    expect(map.get(id2)).toBe('callback2')
+    expect(map.size).toBe(2)
+
+    map.delete(id1)
+    expect(map.has(id1)).toBe(false)
+    expect(map.has(id2)).toBe(true)
+  })
+
+  it('should have a description for debugging', () => {
+    const id = generateCallbackId()
+    expect(id.toString()).toBe('Symbol(auth-callback)')
+  })
+})
 
 describe('parseParametersFromURL', () => {
   it('should parse parameters from a URL with query params only', () => {
