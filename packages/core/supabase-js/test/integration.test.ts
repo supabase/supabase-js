@@ -1,12 +1,13 @@
+import { assert } from 'console'
 import { createClient, RealtimeChannel, SupabaseClient } from '../src/index'
-
+import { sign } from 'jsonwebtoken'
 // These tests assume that a local Supabase server is already running
 // Start a local Supabase instance with 'supabase start' before running these tests
 // Default local dev credentials from Supabase CLI
 const SUPABASE_URL = 'http://127.0.0.1:54321'
 const ANON_KEY =
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0'
-
+const JWT_SECRET = 'super-secret-jwt-token-with-at-least-32-characters-long'
 // For Node.js < 22, we need to provide a WebSocket implementation
 // Node.js 22+ has native WebSocket support
 let wsTransport: any = undefined
@@ -292,7 +293,7 @@ describe('Supabase Integration Tests', () => {
 
       channel
         .on('broadcast', { event: '*' }, (payload) => (receivedMessage = payload))
-        .subscribe((status) => {
+        .subscribe((status, err) => {
           if (status == 'SUBSCRIBED') subscribed = true
         })
 
@@ -356,5 +357,51 @@ describe('Storage API', () => {
       .from(bucket)
       .remove([filePath])
     expect(deleteError).toBeNull()
+  })
+})
+
+describe('Custom JWT', () => {
+  describe('Realtime', () => {
+    test('will connect with a properly signed jwt token', async () => {
+      const jwtToken = sign(
+        {
+          sub: '1234567890',
+          role: 'anon',
+          iss: 'supabase-demo',
+        },
+        JWT_SECRET,
+        { expiresIn: '1h' }
+      )
+      const supabaseWithCustomJwt = createClient(SUPABASE_URL, ANON_KEY, {
+        accessToken: () => Promise.resolve(jwtToken),
+        realtime: {
+          ...(wsTransport && { transport: wsTransport }),
+        },
+      })
+
+      try {
+        // Wait for subscription using Promise to avoid polling
+        await new Promise<void>((resolve, reject) => {
+          const timeout = setTimeout(() => {
+            reject(new Error('Timeout waiting for subscription'))
+          }, 4000)
+
+          supabaseWithCustomJwt.channel('test-channel').subscribe((status, err) => {
+            if (status === 'SUBSCRIBED') {
+              clearTimeout(timeout)
+              // Verify token was set
+              expect(supabaseWithCustomJwt.realtime.accessTokenValue).toBe(jwtToken)
+              resolve()
+            } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+              clearTimeout(timeout)
+              reject(err || new Error(`Subscription failed with status: ${status}`))
+            }
+          })
+        })
+      } finally {
+        // Always cleanup channels and connection, even if test fails
+        await supabaseWithCustomJwt.removeAllChannels()
+      }
+    }, 5000)
   })
 })

@@ -259,6 +259,75 @@ describe('SupabaseClient', () => {
     })
 
     describe('Realtime Authentication', () => {
+      afterEach(() => {
+        jest.clearAllMocks()
+      })
+
+      test('should automatically call setAuth() when accessToken option is provided', async () => {
+        const customToken = 'custom-jwt-token'
+        const customAccessTokenFn = jest.fn().mockResolvedValue(customToken)
+
+        const client = createClient(URL, KEY, { accessToken: customAccessTokenFn })
+        const setAuthSpy = jest.spyOn(client.realtime, 'setAuth')
+
+        // Wait for the constructor's async operation to complete
+        await Promise.resolve()
+
+        expect(setAuthSpy).toHaveBeenCalledWith(customToken)
+        expect(customAccessTokenFn).toHaveBeenCalled()
+
+        // Clean up
+        setAuthSpy.mockRestore()
+        client.realtime.disconnect()
+      })
+
+      test('should automatically populate token in channels when using custom JWT', async () => {
+        const customToken = 'custom-channel-token'
+        const customAccessTokenFn = jest.fn().mockResolvedValue(customToken)
+        const client = createClient(URL, KEY, { accessToken: customAccessTokenFn })
+
+        // The token should be available through the accessToken function
+        const realtimeToken = await client.realtime.accessToken!()
+        expect(realtimeToken).toBe(customToken)
+        expect(customAccessTokenFn).toHaveBeenCalled()
+
+        // Clean up
+        client.realtime.disconnect()
+      })
+
+      test('should handle errors gracefully when accessToken callback fails', async () => {
+        const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {})
+        const error = new Error('Token fetch failed')
+        const failingAccessTokenFn = jest.fn().mockRejectedValue(error)
+
+        const client = createClient(URL, KEY, { accessToken: failingAccessTokenFn })
+
+        // Wait for the promise to reject and warning to be logged
+        await Promise.resolve()
+        await Promise.resolve()
+
+        expect(consoleWarnSpy).toHaveBeenCalledWith(
+          'Failed to set initial Realtime auth token:',
+          error
+        )
+        expect(client).toBeDefined()
+        expect(client.realtime).toBeDefined()
+
+        consoleWarnSpy.mockRestore()
+        client.realtime.disconnect()
+      })
+
+      test('should not call setAuth() automatically in normal mode', () => {
+        const client = createClient(URL, KEY)
+        const setAuthSpy = jest.spyOn(client.realtime, 'setAuth')
+
+        // In normal mode (no accessToken option), setAuth should not be called immediately
+        expect(setAuthSpy).not.toHaveBeenCalled()
+
+        setAuthSpy.mockRestore()
+        client.realtime.disconnect()
+      })
+
       test('should provide access token to realtime client', async () => {
         const expectedToken = 'test-jwt-token'
         const client = createClient(URL, KEY)
