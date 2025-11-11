@@ -503,9 +503,11 @@ export interface AdminUserAttributes extends Omit<UserAttributes, 'data'> {
 
 export interface Subscription {
   /**
-   * The subscriber UUID. This will be set by the client.
+   * A unique identifier for this subscription, set by the client.
+   * This is an internal identifier used for managing callbacks and should not be
+   * relied upon by application code. Use the unsubscribe() method to remove listeners.
    */
-  id: string
+  id: string | symbol
   /**
    * The function to call every time there is an event. eg: (eventName) => {}
    */

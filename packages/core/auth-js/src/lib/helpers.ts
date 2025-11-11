@@ -9,12 +9,21 @@ export function expiresAt(expiresIn: number) {
   return timeNow + expiresIn
 }
 
-export function uuid() {
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
-    const r = (Math.random() * 16) | 0,
-      v = c == 'x' ? r : (r & 0x3) | 0x8
-    return v.toString(16)
-  })
+/**
+ * Generates a unique identifier for internal callback subscriptions.
+ *
+ * This function uses JavaScript Symbols to create guaranteed-unique identifiers
+ * for auth state change callbacks. Symbols are ideal for this use case because:
+ * - They are guaranteed unique by the JavaScript runtime
+ * - They work in all environments (browser, SSR, Node.js)
+ * - They avoid issues with Next.js 16 deterministic rendering requirements
+ * - They are perfect for internal, non-serializable identifiers
+ *
+ * Note: This function is only used for internal subscription management,
+ * not for security-critical operations like session tokens.
+ */
+export function generateCallbackId(): symbol {
+  return Symbol('auth-callback')
 }
 
 export const isBrowser = () => typeof window !== 'undefined' && typeof document !== 'undefined'

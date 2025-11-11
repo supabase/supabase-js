@@ -35,6 +35,7 @@ import {
   decodeJWT,
   deepClone,
   Deferred,
+  generateCallbackId,
   getAlgorithm,
   getCodeChallengeAndMethod,
   getItemAsync,
@@ -48,7 +49,6 @@ import {
   sleep,
   supportsLocalStorage,
   userNotAvailableProxy,
-  uuid,
   validateExp,
 } from './lib/helpers'
 import { memoryLocalStorageAdapter } from './lib/local-storage'
@@ -241,7 +241,7 @@ export default class GoTrueClient {
    */
   protected userStorage: SupportedStorage | null = null
   protected memoryStorage: { [key: string]: string } | null = null
-  protected stateChangeEmitters: Map<string, Subscription> = new Map()
+  protected stateChangeEmitters: Map<string | symbol, Subscription> = new Map()
   protected autoRefreshTicker: ReturnType<typeof setInterval> | null = null
   protected visibilityChangedCallback: (() => Promise<any>) | null = null
   protected refreshingDeferred: Deferred<CallRefreshTokenResult> | null = null
@@ -2161,7 +2161,7 @@ export default class GoTrueClient {
   ): {
     data: { subscription: Subscription }
   } {
-    const id: string = uuid()
+    const id: string | symbol = generateCallbackId()
     const subscription: Subscription = {
       id,
       callback,
@@ -2186,7 +2186,7 @@ export default class GoTrueClient {
     return { data: { subscription } }
   }
 
-  private async _emitInitialSession(id: string): Promise<void> {
+  private async _emitInitialSession(id: string | symbol): Promise<void> {
     return await this._useSession(async (result) => {
       try {
         const {
