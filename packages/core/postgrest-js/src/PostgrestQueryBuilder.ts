@@ -332,6 +332,13 @@ export default class PostgrestQueryBuilder<
       }
     }
 
+    // Automatically use RETURNING for inserts so `.select()` works without SELECT policy
+    if (!this.headers.has('Prefer')) {
+      this.headers.append('Prefer', 'return=representation')
+    } else if (![...this.headers.values()].some((h) => h.includes('return='))) {
+      this.headers.append('Prefer', 'return=representation')
+    }
+
     return new PostgrestFilterBuilder({
       method,
       url: this.url,
