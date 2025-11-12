@@ -49,10 +49,7 @@ denoJson.imports = {
   '@supabase/functions-js': `npm:@supabase/functions-js@${versions.functions}`,
   '@supabase/postgrest-js': `npm:@supabase/postgrest-js@${versions.postgrest}`,
   '@supabase/auth-js': `npm:@supabase/auth-js@${versions.auth}`,
-  '@supabase/storage-js':
-    process.env.STORAGE_JS_ENTRY === 'main'
-      ? `npm:@supabase/storage-js@${versions.storage}/dist/main/index.js`
-      : `npm:@supabase/storage-js@${versions.storage}/dist/module/index.js`,
+  '@supabase/storage-js': `npm:@supabase/storage-js@${versions.storage}/dist/module/index.js`,
 }
 
 // Ensure Node types are available for Deno type-checking of .d.ts files

@@ -111,13 +111,9 @@ jobs:
           fail-on-error: false
         continue-on-error: true
   deno-tests:
-    name: Deno Tests / ${{ matrix.deno }}
+    name: Deno Tests
     runs-on: ubuntu-latest
     needs: build-package
-    strategy:
-      matrix:
-        deno: ['1.x', '2.x']
-      fail-fast: false
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -128,7 +124,7 @@ jobs:
       - name: Setup Deno
         uses: denoland/setup-deno@v2
         with:
-          deno-version: ${{ matrix.deno }}
+          deno-version: '2.x'
 
       - name: Setup Supabase CLI
         uses: supabase/setup-cli@v1
@@ -183,21 +179,7 @@ jobs:
           npm view @supabase/supabase-js version --registry http://localhost:4873
           npm view @supabase/supabase-js --registry http://localhost:4873 | head -20
 
-      - name: Run Deno Tests (1.x)
-        if: ${{ matrix.deno == '1.x' }}
-        env:
-          STORAGE_JS_ENTRY: main
-          DENO_NPM_REGISTRY: http://localhost:4873
-        run: |
-          cd packages/core/supabase-js/test/deno
-          echo "registry=http://localhost:4873/" > .npmrc
-          npm install
-          npm test || npm test
-          rm -f .npmrc
-          cd ../../..
-
-      - name: Run Deno Tests (2.x)
-        if: ${{ matrix.deno == '2.x' }}
+      - name: Run Deno Tests
         env:
           DENO_NPM_REGISTRY: http://localhost:4873
         run: |
@@ -208,12 +190,10 @@ jobs:
           rm -f .npmrc
           cd ../../..
 
-      - name: Run integration and browser tests on Deno 2.x only
-        if: ${{ matrix.deno == '2.x' }}
+      - name: Run integration and browser tests
         run: npx nx test:integration:browser supabase-js
 
       - name: Run Edge Functions Tests
-        if: ${{ matrix.deno == '2.x' }}
         run: |
           cd packages/core/supabase-js/test/deno
           npm run test:edge-functions

@@ -57,7 +57,7 @@ npm install @supabase/auth-js@latest
 
 - **Node.js 20+** - Native fetch support
 - **Modern browsers** - All modern browsers
-- **Deno 1.0+** - Native fetch built-in
+- **Deno 2.x** - Native fetch built-in
 - **Bun 0.1+** - Native fetch built-in
 - **React Native** - With fetch polyfill provided by the framework
 - **Expo** - With fetch polyfill provided by the framework
