@@ -209,18 +209,44 @@ export default abstract class PostgrestBuilder<
       return postgrestResponse
     })
     if (!this.shouldThrowOnError) {
-      res = res.catch((fetchError) => ({
-        error: {
-          message: `${fetchError?.name ?? 'FetchError'}: ${fetchError?.message}`,
-          details: `${fetchError?.stack ?? ''}`,
-          hint: '',
-          code: `${fetchError?.code ?? ''}`,
-        },
-        data: null,
-        count: null,
-        status: 0,
-        statusText: '',
-      }))
+      res = res.catch((fetchError) => {
+        // Build detailed error information including cause if available
+        // Note: We don't populate code/hint for client-side network errors since those
+        // fields are meant for upstream service errors (PostgREST/PostgreSQL)
+        let errorDetails = ''
+
+        // Add cause information if available (e.g., DNS errors, network failures)
+        const cause = fetchError?.cause
+        if (cause) {
+          const causeMessage = cause?.message ?? ''
+          const causeCode = cause?.code ?? ''
+
+          errorDetails = `${fetchError?.name ?? 'FetchError'}: ${fetchError?.message}`
+          errorDetails += `\n\nCaused by: ${cause?.name ?? 'Error'}: ${causeMessage}`
+          if (causeCode) {
+            errorDetails += ` (${causeCode})`
+          }
+          if (cause?.stack) {
+            errorDetails += `\n${cause.stack}`
+          }
+        } else {
+          // No cause available, just include the error stack
+          errorDetails = fetchError?.stack ?? ''
+        }
+
+        return {
+          error: {
+            message: `${fetchError?.name ?? 'FetchError'}: ${fetchError?.message}`,
+            details: errorDetails,
+            hint: '',
+            code: '',
+          },
+          data: null,
+          count: null,
+          status: 0,
+          statusText: '',
+        }
+      })
     }
 
     return res.then(onfulfilled, onrejected)
