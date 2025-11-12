@@ -1,3 +1,14 @@
+## 2.81.1 (2025-11-11)
+
+### 🩹 Fixes
+
+- **auth:** add automatic browser redirect to signInWithSSO ([#1849](https://github.com/supabase/supabase-js/pull/1849))
+- **auth:** use Symbols for callback IDs to resolve Next.js 16 compatibility ([#1847](https://github.com/supabase/supabase-js/pull/1847))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+
 ## 2.81.0 (2025-11-10)
 
 ### 🩹 Fixes
