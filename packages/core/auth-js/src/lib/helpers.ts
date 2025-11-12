@@ -203,6 +203,18 @@ export function decodeJWT(token: string): {
       payload: parts[1],
     },
   }
+
+  const user_metadata: Record<string, any> = {}
+  for (const [key, value] of Object.entries(data.payload)) {
+    if (key.startsWith('https://') || key.startsWith('http://')) {
+      const claimName = key.split('/').pop() || key
+      user_metadata[claimName] = value
+    }
+  }
+  if (Object.keys(user_metadata).length > 0) {
+    data.payload.user_metadata = { ...(data.payload.user_metadata ?? {}), ...user_metadata }
+  }
+
   return data
 }
 
