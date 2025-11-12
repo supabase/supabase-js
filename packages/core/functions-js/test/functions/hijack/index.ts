@@ -1,4 +1,4 @@
-import { serve } from 'https://deno.land/std@0.130.0/http/server.ts'
+import { serve } from 'https://deno.land/std/http/server.ts'
 
 serve((req) => {
   // Decode JWT to check if this is a health check
