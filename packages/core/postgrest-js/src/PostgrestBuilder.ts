@@ -209,18 +209,40 @@ export default abstract class PostgrestBuilder<
       return postgrestResponse
     })
     if (!this.shouldThrowOnError) {
-      res = res.catch((fetchError) => ({
-        error: {
-          message: `${fetchError?.name ?? 'FetchError'}: ${fetchError?.message}`,
-          details: `${fetchError?.stack ?? ''}`,
-          hint: '',
-          code: `${fetchError?.code ?? ''}`,
-        },
-        data: null,
-        count: null,
-        status: 0,
-        statusText: '',
-      }))
+      res = res.catch((fetchError) => {
+        // Extract cause information if available (e.g., DNS errors, network failures)
+        const cause = fetchError?.cause
+        const causeCode = cause?.code ?? ''
+        const causeMessage = cause?.message ?? ''
+
+        // Prefer the underlying cause code (e.g., ENOTFOUND) over the wrapper error code
+        const errorCode = causeCode || fetchError?.code || ''
+
+        // Build a detailed error message that includes cause information
+        let errorDetails = fetchError?.stack ?? ''
+        if (cause) {
+          errorDetails += `\n\nCaused by: ${cause?.name ?? 'Error'}: ${causeMessage}`
+          if (cause?.stack) {
+            errorDetails += `\n${cause.stack}`
+          }
+          if (causeCode) {
+            errorDetails += `\nError code: ${causeCode}`
+          }
+        }
+
+        return {
+          error: {
+            message: `${fetchError?.name ?? 'FetchError'}: ${fetchError?.message}`,
+            details: errorDetails,
+            hint: causeMessage ? `Underlying cause: ${causeMessage}` : '',
+            code: errorCode,
+          },
+          data: null,
+          count: null,
+          status: 0,
+          statusText: '',
+        }
+      })
     }
 
     return res.then(onfulfilled, onrejected)
