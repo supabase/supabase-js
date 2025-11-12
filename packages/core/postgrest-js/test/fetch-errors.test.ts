@@ -2,7 +2,7 @@ import { PostgrestClient } from '../src/index'
 import { Database } from './types.override'
 
 describe('Fetch error handling', () => {
-  test('should bubble up DNS error code (ENOTFOUND or EAI_AGAIN) from fetch cause', async () => {
+  test('should bubble up DNS error cause in details', async () => {
     // Create a client with an invalid domain that will trigger DNS resolution error
     const postgrest = new PostgrestClient<Database>(
       'https://invalid-domain-that-does-not-exist.local'
@@ -15,21 +15,20 @@ describe('Fetch error handling', () => {
     expect(res.status).toBe(0)
     expect(res.statusText).toBe('')
 
-    // The error code should be a DNS error code from the cause
+    // Client-side network errors don't populate code/hint (those are for upstream service errors)
+    expect(res.error!.code).toBe('')
+    expect(res.error!.hint).toBe('')
+
+    // The message should contain the fetch error
+    expect(res.error!.message).toContain('fetch failed')
+
+    // The details should contain cause information with error code
     // Different environments return different DNS error codes:
     // - ENOTFOUND: Domain doesn't exist (most common)
     // - EAI_AGAIN: Temporary DNS failure (common in CI)
-    expect(['ENOTFOUND', 'EAI_AGAIN']).toContain(res.error!.code)
-
-    // The message should still contain the fetch error
-    expect(res.error!.message).toContain('fetch failed')
-
-    // The details should contain cause information
     expect(res.error!.details).toContain('Caused by:')
-    expect(res.error!.details).toMatch(/ENOTFOUND|EAI_AGAIN/)
-
-    // The hint should contain the underlying cause message with getaddrinfo
-    expect(res.error!.hint).toContain('getaddrinfo')
+    expect(res.error!.details).toContain('getaddrinfo')
+    expect(res.error!.details).toMatch(/\(ENOTFOUND\)|\(EAI_AGAIN\)/)
   })
 
   test('should handle network errors with custom fetch implementation', async () => {
@@ -52,12 +51,12 @@ describe('Fetch error handling', () => {
     const res = await postgrest.from('users').select()
 
     expect(res.error).toBeTruthy()
-    expect(res.error!.code).toBe('ENOTFOUND')
+    expect(res.error!.code).toBe('')
+    expect(res.error!.hint).toBe('')
     expect(res.error!.message).toBe('TypeError: fetch failed')
     expect(res.error!.details).toContain('Caused by:')
     expect(res.error!.details).toContain('getaddrinfo ENOTFOUND example.com')
-    expect(res.error!.details).toContain('Error code: ENOTFOUND')
-    expect(res.error!.hint).toContain('getaddrinfo ENOTFOUND example.com')
+    expect(res.error!.details).toContain('(ENOTFOUND)')
   })
 
   test('should handle connection refused errors', async () => {
@@ -81,9 +80,10 @@ describe('Fetch error handling', () => {
     const res = await postgrest.from('users').select()
 
     expect(res.error).toBeTruthy()
-    expect(res.error!.code).toBe('ECONNREFUSED')
+    expect(res.error!.code).toBe('')
+    expect(res.error!.hint).toBe('')
     expect(res.error!.details).toContain('connect ECONNREFUSED')
-    expect(res.error!.hint).toContain('connect ECONNREFUSED')
+    expect(res.error!.details).toContain('(ECONNREFUSED)')
   })
 
   test('should handle timeout errors', async () => {
@@ -105,8 +105,10 @@ describe('Fetch error handling', () => {
     const res = await postgrest.from('users').select()
 
     expect(res.error).toBeTruthy()
-    expect(res.error!.code).toBe('ETIMEDOUT')
+    expect(res.error!.code).toBe('')
+    expect(res.error!.hint).toBe('')
     expect(res.error!.details).toContain('request timeout')
+    expect(res.error!.details).toContain('(ETIMEDOUT)')
   })
 
   test('should handle fetch errors without cause gracefully', async () => {
@@ -124,9 +126,11 @@ describe('Fetch error handling', () => {
     const res = await postgrest.from('users').select()
 
     expect(res.error).toBeTruthy()
-    expect(res.error!.code).toBe('FETCH_ERROR')
-    expect(res.error!.message).toBe('TypeError: fetch failed')
+    expect(res.error!.code).toBe('')
     expect(res.error!.hint).toBe('')
+    expect(res.error!.message).toBe('TypeError: fetch failed')
+    // When no cause, details should still have the stack trace
+    expect(res.error!.details).toBeTruthy()
   })
 
   test('should handle generic errors without code', async () => {
@@ -141,6 +145,7 @@ describe('Fetch error handling', () => {
 
     expect(res.error).toBeTruthy()
     expect(res.error!.code).toBe('')
+    expect(res.error!.hint).toBe('')
     expect(res.error!.message).toBe('Error: Something went wrong')
   })
 

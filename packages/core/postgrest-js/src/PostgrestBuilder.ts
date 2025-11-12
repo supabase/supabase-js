@@ -210,32 +210,36 @@ export default abstract class PostgrestBuilder<
     })
     if (!this.shouldThrowOnError) {
       res = res.catch((fetchError) => {
-        // Extract cause information if available (e.g., DNS errors, network failures)
+        // Build detailed error information including cause if available
+        // Note: We don't populate code/hint for client-side network errors since those
+        // fields are meant for upstream service errors (PostgREST/PostgreSQL)
+        let errorDetails = ''
+
+        // Add cause information if available (e.g., DNS errors, network failures)
         const cause = fetchError?.cause
-        const causeCode = cause?.code ?? ''
-        const causeMessage = cause?.message ?? ''
-
-        // Prefer the underlying cause code (e.g., ENOTFOUND) over the wrapper error code
-        const errorCode = causeCode || fetchError?.code || ''
-
-        // Build a detailed error message that includes cause information
-        let errorDetails = fetchError?.stack ?? ''
         if (cause) {
+          const causeMessage = cause?.message ?? ''
+          const causeCode = cause?.code ?? ''
+
+          errorDetails = `${fetchError?.name ?? 'FetchError'}: ${fetchError?.message}`
           errorDetails += `\n\nCaused by: ${cause?.name ?? 'Error'}: ${causeMessage}`
+          if (causeCode) {
+            errorDetails += ` (${causeCode})`
+          }
           if (cause?.stack) {
             errorDetails += `\n${cause.stack}`
           }
-          if (causeCode) {
-            errorDetails += `\nError code: ${causeCode}`
-          }
+        } else {
+          // No cause available, just include the error stack
+          errorDetails = fetchError?.stack ?? ''
         }
 
         return {
           error: {
             message: `${fetchError?.name ?? 'FetchError'}: ${fetchError?.message}`,
             details: errorDetails,
-            hint: causeMessage ? `Underlying cause: ${causeMessage}` : '',
-            code: errorCode,
+            hint: '',
+            code: '',
           },
           data: null,
           count: null,
