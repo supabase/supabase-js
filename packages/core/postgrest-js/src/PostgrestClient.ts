@@ -48,6 +48,15 @@ export default class PostgrestClient<
    * @param options.headers - Custom headers
    * @param options.schema - Postgres schema to switch to
    * @param options.fetch - Custom fetch
+   * @example
+   * ```ts
+   * import PostgrestClient from '@supabase/postgrest-js'
+   *
+   * const postgrest = new PostgrestClient('https://xyzcompany.supabase.co/rest/v1', {
+   *   headers: { apikey: 'public-anon-key' },
+   *   schema: 'public',
+   * })
+   * ```
    */
   constructor(
     url: string,

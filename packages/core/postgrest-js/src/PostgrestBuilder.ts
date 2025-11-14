@@ -28,6 +28,19 @@ export default abstract class PostgrestBuilder<
   protected fetch: Fetch
   protected isMaybeSingle: boolean
 
+  /**
+   * Creates a builder configured for a specific PostgREST request.
+   *
+   * @example
+   * ```ts
+   * import PostgrestQueryBuilder from '@supabase/postgrest-js'
+   *
+   * const builder = new PostgrestQueryBuilder(
+   *   new URL('https://xyzcompany.supabase.co/rest/v1/users'),
+   *   { headers: new Headers({ apikey: 'public-anon-key' }) }
+   * )
+   * ```
+   */
   constructor(builder: {
     method: 'GET' | 'HEAD' | 'POST' | 'PATCH' | 'DELETE'
     url: URL

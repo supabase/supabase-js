@@ -45,6 +45,19 @@ export default class GoTrueAdminApi {
   }
   protected fetch: Fetch
 
+  /**
+   * Creates an admin API client that can be used to manage users and OAuth clients.
+   *
+   * @example
+   * ```ts
+   * import { GoTrueAdminApi } from '@supabase/auth-js'
+   *
+   * const admin = new GoTrueAdminApi({
+   *   url: 'https://xyzcompany.supabase.co/auth/v1',
+   *   headers: { Authorization: `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}` },
+   * })
+   * ```
+   */
   constructor({
     url = '',
     headers = {},

@@ -55,6 +55,10 @@ const CONNECTION_TIMEOUTS = {
 const RECONNECT_INTERVALS = [1000, 2000, 5000, 10000] as const
 const DEFAULT_RECONNECT_FALLBACK = 10000
 
+/**
+ * Minimal WebSocket constructor interface that RealtimeClient can work with.
+ * Supply a compatible implementation (native WebSocket, `ws`, etc) when running outside the browser.
+ */
 export interface WebSocketLikeConstructor {
   new (address: string | URL, subprotocols?: string | string[] | undefined): WebSocketLike
   // Allow additional properties that may exist on WebSocket constructors
@@ -159,6 +163,15 @@ export default class RealtimeClient {
    * @param options.reconnectAfterMs he optional function that returns the millsec reconnect interval. Defaults to stepped backoff off.
    * @param options.worker Use Web Worker to set a side flow. Defaults to false.
    * @param options.workerUrl The URL of the worker script. Defaults to https://realtime.supabase.com/worker.js that includes a heartbeat event call to keep the connection alive.
+   * @example
+   * ```ts
+   * import RealtimeClient from '@supabase/realtime-js'
+   *
+   * const client = new RealtimeClient('https://xyzcompany.supabase.co/realtime/v1', {
+   *   params: { apikey: 'public-anon-key' },
+   * })
+   * client.connect()
+   * ```
    */
   constructor(endPoint: string, options?: RealtimeClientOptions) {
     // Validate required parameters
@@ -355,6 +368,13 @@ export default class RealtimeClient {
     return this._connectionState === 'disconnecting'
   }
 
+  /**
+   * Creates (or reuses) a {@link RealtimeChannel} for the provided topic.
+   *
+   * Topics are automatically prefixed with `realtime:` to match the Realtime service.
+   * If a channel with the same topic already exists it will be returned instead of creating
+   * a duplicate connection.
+   */
   channel(topic: string, params: RealtimeChannelOptions = { config: {} }): RealtimeChannel {
     const realtimeTopic = `realtime:${topic}`
     const exists = this.getChannels().find((c: RealtimeChannel) => c.topic === realtimeTopic)
@@ -458,6 +478,10 @@ export default class RealtimeClient {
     this._setAuthSafely('heartbeat')
   }
 
+  /**
+   * Sets a callback that receives lifecycle events for internal heartbeat messages.
+   * Useful for instrumenting connection health (e.g. sent/ok/timeout/disconnected).
+   */
   onHeartbeat(callback: (status: HeartbeatStatus) => void): void {
     this.heartbeatCallback = callback
   }

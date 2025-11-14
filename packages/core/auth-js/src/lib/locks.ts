@@ -19,6 +19,17 @@ export const internals = {
  * An error thrown when a lock cannot be acquired after some amount of time.
  *
  * Use the {@link #isAcquireTimeout} property instead of checking with `instanceof`.
+ *
+ * @example
+ * ```ts
+ * import { LockAcquireTimeoutError } from '@supabase/auth-js'
+ *
+ * class CustomLockError extends LockAcquireTimeoutError {
+ *   constructor() {
+ *     super('Lock timed out')
+ *   }
+ * }
+ * ```
  */
 export abstract class LockAcquireTimeoutError extends Error {
   public readonly isAcquireTimeout = true
@@ -28,7 +39,27 @@ export abstract class LockAcquireTimeoutError extends Error {
   }
 }
 
+/**
+ * Error thrown when the browser Navigator Lock API fails to acquire a lock.
+ *
+ * @example
+ * ```ts
+ * import { NavigatorLockAcquireTimeoutError } from '@supabase/auth-js'
+ *
+ * throw new NavigatorLockAcquireTimeoutError('Lock timed out')
+ * ```
+ */
 export class NavigatorLockAcquireTimeoutError extends LockAcquireTimeoutError {}
+/**
+ * Error thrown when the process-level lock helper cannot acquire a lock.
+ *
+ * @example
+ * ```ts
+ * import { ProcessLockAcquireTimeoutError } from '@supabase/auth-js'
+ *
+ * throw new ProcessLockAcquireTimeoutError('Lock timed out')
+ * ```
+ */
 export class ProcessLockAcquireTimeoutError extends LockAcquireTimeoutError {}
 
 /**
@@ -55,6 +86,12 @@ export class ProcessLockAcquireTimeoutError extends LockAcquireTimeoutError {}
  *                       will time out after so many milliseconds. An error is
  *                       a timeout if it has `isAcquireTimeout` set to true.
  * @param fn The operation to run once the lock is acquired.
+ * @example
+ * ```ts
+ * await navigatorLock('sync-user', 1000, async () => {
+ *   await refreshSession()
+ * })
+ * ```
  */
 export async function navigatorLock<R>(
   name: string,
@@ -167,6 +204,12 @@ const PROCESS_LOCKS: { [name: string]: Promise<any> } = {}
  *                       will time out after so many milliseconds. An error is
  *                       a timeout if it has `isAcquireTimeout` set to true.
  * @param fn The operation to run once the lock is acquired.
+ * @example
+ * ```ts
+ * await processLock('migrate', 5000, async () => {
+ *   await runMigration()
+ * })
+ * ```
  */
 export async function processLock<R>(
   name: string,

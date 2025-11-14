@@ -181,6 +181,22 @@ export default class RealtimeChannel {
   subTopic: string
   private: boolean
 
+  /**
+   * Creates a channel that can broadcast messages, sync presence, and listen to Postgres changes.
+   *
+   * The topic determines which realtime stream you are subscribing to. Config options let you
+   * enable acknowledgement for broadcasts, presence tracking, or private channels.
+   *
+   * @example
+   * ```ts
+   * import RealtimeClient from '@supabase/realtime-js'
+   *
+   * const client = new RealtimeClient('https://xyzcompany.supabase.co/realtime/v1', {
+   *   params: { apikey: 'public-anon-key' },
+   * })
+   * const channel = new RealtimeChannel('realtime:public:messages', { config: {} }, client)
+   * ```
+   */
   constructor(
     /** Topic name can be any string. */
     public topic: string,
@@ -353,10 +369,20 @@ export default class RealtimeChannel {
     return this
   }
 
+  /**
+   * Returns the current presence state for this channel.
+   *
+   * The shape is a map keyed by presence key (for example a user id) where each entry contains the
+   * tracked metadata for that user.
+   */
   presenceState<T extends { [key: string]: any } = {}>(): RealtimePresenceState<T> {
     return this.presence.state as RealtimePresenceState<T>
   }
 
+  /**
+   * Sends the supplied payload to the presence tracker so other subscribers can see that this
+   * client is online. Use `untrack` to stop broadcasting presence for the same key.
+   */
   async track(
     payload: { [key: string]: any },
     opts: { [key: string]: any } = {}
@@ -371,6 +397,9 @@ export default class RealtimeChannel {
     )
   }
 
+  /**
+   * Removes the current presence state for this client.
+   */
   async untrack(opts: { [key: string]: any } = {}): Promise<RealtimeChannelSendResponse> {
     return await this.send(
       {
@@ -647,6 +676,10 @@ export default class RealtimeChannel {
     }
   }
 
+  /**
+   * Updates the payload that will be sent the next time the channel joins (reconnects).
+   * Useful for rotating access tokens or updating config without re-creating the channel.
+   */
   updateJoinPayload(payload: { [key: string]: any }): void {
     this.joinPush.updatePayload(payload)
   }

@@ -7,7 +7,13 @@ export interface WebSocketLike {
   readonly url: string
   readonly protocol: string
 
+  /**
+   * Closes the socket, optionally providing a close code and reason.
+   */
   close(code?: number, reason?: string): void
+  /**
+   * Sends data through the socket using the underlying implementation.
+   */
   send(data: string | ArrayBufferLike | Blob | ArrayBufferView): void
 
   onopen: ((this: any, ev: Event) => any) | null
@@ -15,7 +21,13 @@ export interface WebSocketLike {
   onclose: ((this: any, ev: CloseEvent) => any) | null
   onerror: ((this: any, ev: Event) => any) | null
 
+  /**
+   * Registers an event listener on the socket (compatible with browser WebSocket API).
+   */
   addEventListener(type: string, listener: EventListener): void
+  /**
+   * Removes a previously registered event listener.
+   */
   removeEventListener(type: string, listener: EventListener): void
 
   // Add additional properties that may exist on WebSocket implementations
@@ -32,7 +44,14 @@ export interface WebSocketEnvironment {
   workaround?: string
 }
 
+/**
+ * Utilities for creating WebSocket instances across runtimes.
+ */
 export class WebSocketFactory {
+  /**
+   * Static-only utility – prevent instantiation.
+   */
+  private constructor() {}
   private static detectEnvironment(): WebSocketEnvironment {
     if (typeof WebSocket !== 'undefined') {
       return { type: 'native', constructor: WebSocket }
@@ -115,6 +134,15 @@ export class WebSocketFactory {
     }
   }
 
+  /**
+   * Returns the best available WebSocket constructor for the current runtime.
+   *
+   * @example
+   * ```ts
+   * const WS = WebSocketFactory.getWebSocketConstructor()
+   * const socket = new WS('wss://realtime.supabase.co/socket')
+   * ```
+   */
   public static getWebSocketConstructor(): typeof WebSocket {
     const env = this.detectEnvironment()
     if (env.constructor) {
@@ -127,11 +155,29 @@ export class WebSocketFactory {
     throw new Error(errorMessage)
   }
 
+  /**
+   * Creates a WebSocket using the detected constructor.
+   *
+   * @example
+   * ```ts
+   * const socket = WebSocketFactory.createWebSocket('wss://realtime.supabase.co/socket')
+   * ```
+   */
   public static createWebSocket(url: string | URL, protocols?: string | string[]): WebSocketLike {
     const WS = this.getWebSocketConstructor()
     return new WS(url, protocols)
   }
 
+  /**
+   * Detects whether the runtime can establish WebSocket connections.
+   *
+   * @example
+   * ```ts
+   * if (!WebSocketFactory.isWebSocketSupported()) {
+   *   console.warn('Falling back to long polling')
+   * }
+   * ```
+   */
   public static isWebSocketSupported(): boolean {
     try {
       const env = this.detectEnvironment()

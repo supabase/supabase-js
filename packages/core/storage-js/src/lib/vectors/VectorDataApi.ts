@@ -17,6 +17,8 @@ import {
 /**
  * API class for managing Vector Data within Vector Indexes
  * Provides methods for inserting, querying, listing, and deleting vector embeddings
+ *
+ * **Private alpha:** Vector storage APIs are currently in private alpha and may not be accessible.
  */
 export default class VectorDataApi {
   protected url: string
@@ -24,6 +26,15 @@ export default class VectorDataApi {
   protected fetch: Fetch
   protected shouldThrowOnError = false
 
+  /**
+   * Creates a VectorDataApi bound to a Storage Vectors deployment.
+   *
+   * **Private alpha:** Vector storage APIs are currently in private alpha and may not be accessible.
+   *
+   * @param url - Base URL for the Storage Vectors API.
+   * @param headers - Default headers (for example authentication tokens).
+   * @param fetch - Optional custom `fetch` implementation for non-browser runtimes.
+   */
   constructor(url: string, headers: { [key: string]: string } = {}, fetch?: Fetch) {
     this.url = url.replace(/\/$/, '')
     this.headers = { ...DEFAULT_HEADERS, ...headers }
@@ -33,6 +44,8 @@ export default class VectorDataApi {
   /**
    * Enable throwing errors instead of returning them in the response
    * When enabled, failed operations will throw instead of returning { data: null, error }
+   *
+   * **Private alpha:** Vector storage APIs are currently in private alpha and may not be accessible.
    *
    * @returns This instance for method chaining
    * @example
@@ -50,6 +63,8 @@ export default class VectorDataApi {
   /**
    * Inserts or updates vectors in batch (upsert operation)
    * Accepts 1-500 vectors per request. Larger batches should be split
+   *
+   * **Private alpha:** Vector storage APIs are currently in private alpha and may not be accessible.
    *
    * @param options - Vector insertion options
    * @param options.vectorBucketName - Name of the parent vector bucket
@@ -109,6 +124,8 @@ export default class VectorDataApi {
    * Optionally includes vector data and/or metadata in response
    * Additional permissions required when returning data or metadata
    *
+   * **Private alpha:** Vector storage APIs are currently in private alpha and may not be accessible.
+   *
    * @param options - Vector retrieval options
    * @param options.vectorBucketName - Name of the parent vector bucket
    * @param options.indexName - Name of the index
@@ -156,6 +173,8 @@ export default class VectorDataApi {
    * Lists/scans vectors in an index with pagination
    * Supports parallel scanning via segment configuration for high-throughput scenarios
    * Additional permissions required when returning data or metadata
+   *
+   * **Private alpha:** Vector storage APIs are currently in private alpha and may not be accessible.
    *
    * @param options - Vector listing options
    * @param options.vectorBucketName - Name of the parent vector bucket
@@ -237,6 +256,8 @@ export default class VectorDataApi {
    * Returns top-K most similar vectors based on the configured distance metric
    * Supports optional metadata filtering (requires GetVectors permission)
    *
+   * **Private alpha:** Vector storage APIs are currently in private alpha and may not be accessible.
+   *
    * @param options - Query options
    * @param options.vectorBucketName - Name of the parent vector bucket
    * @param options.indexName - Name of the index
@@ -294,6 +315,8 @@ export default class VectorDataApi {
   /**
    * Deletes vectors by their keys in batch
    * Accepts 1-500 keys per request
+   *
+   * **Private alpha:** Vector storage APIs are currently in private alpha and may not be accessible.
    *
    * @param options - Vector deletion options
    * @param options.vectorBucketName - Name of the parent vector bucket
