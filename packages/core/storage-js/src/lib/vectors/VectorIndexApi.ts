@@ -34,6 +34,13 @@ export default class VectorIndexApi {
   protected fetch: Fetch
   protected shouldThrowOnError = false
 
+  /**
+   * Creates an API client for managing vector indexes.
+   *
+   * @param url - Base URL for the Storage Vectors API.
+   * @param headers - Default headers sent with each request.
+   * @param fetch - Optional custom `fetch` implementation for non-browser runtimes.
+   */
   constructor(url: string, headers: { [key: string]: string } = {}, fetch?: Fetch) {
     this.url = url.replace(/\/$/, '')
     this.headers = { ...DEFAULT_HEADERS, ...headers }

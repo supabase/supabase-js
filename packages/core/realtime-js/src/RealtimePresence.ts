@@ -72,13 +72,11 @@ export default class RealtimePresence {
   }
 
   /**
-   * Initializes the Presence.
+   * Creates a Presence helper that keeps the local presence state in sync with the server.
    *
-   * @param channel - The RealtimeChannel
-   * @param opts - The options,
-   *        for example `{events: {state: 'state', diff: 'diff'}}`
-   */
-  /**
+   * @param channel - The realtime channel to bind to.
+   * @param opts - Optional custom event names, e.g. `{ events: { state: 'state', diff: 'diff' } }`.
+   *
    * @example
    * ```ts
    * const presence = new RealtimePresence(channel)

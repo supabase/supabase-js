@@ -82,6 +82,13 @@ export interface StorageVectorsClientOptions {
  * ```
  */
 export class StorageVectorsClient extends VectorBucketApi {
+  /**
+   * Creates a StorageVectorsClient that can manage buckets, indexes, and vectors.
+   *
+   * @param url - Base URL of the Storage Vectors REST API.
+   * @param options.headers - Optional headers (for example `Authorization`) applied to every request.
+   * @param options.fetch - Optional custom `fetch` implementation for non-browser runtimes.
+   */
   constructor(url: string, options: StorageVectorsClientOptions = {}) {
     super(url, options.headers || {}, options.fetch)
   }
@@ -121,6 +128,9 @@ export class StorageVectorsClient extends VectorBucketApi {
 export class VectorBucketScope extends VectorIndexApi {
   private vectorBucketName: string
 
+  /**
+   * Creates a helper that automatically scopes all index operations to the provided bucket.
+   */
   constructor(
     url: string,
     headers: { [key: string]: string },
@@ -258,6 +268,9 @@ export class VectorIndexScope extends VectorDataApi {
   private vectorBucketName: string
   private indexName: string
 
+  /**
+   * Creates a helper that automatically scopes all vector operations to the provided bucket/index names.
+   */
   constructor(
     url: string,
     headers: { [key: string]: string },

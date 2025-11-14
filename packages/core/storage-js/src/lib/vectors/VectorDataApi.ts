@@ -24,6 +24,13 @@ export default class VectorDataApi {
   protected fetch: Fetch
   protected shouldThrowOnError = false
 
+  /**
+   * Creates a VectorDataApi bound to a Storage Vectors deployment.
+   *
+   * @param url - Base URL for the Storage Vectors API.
+   * @param headers - Default headers (for example authentication tokens).
+   * @param fetch - Optional custom `fetch` implementation for non-browser runtimes.
+   */
   constructor(url: string, headers: { [key: string]: string } = {}, fetch?: Fetch) {
     this.url = url.replace(/\/$/, '')
     this.headers = { ...DEFAULT_HEADERS, ...headers }

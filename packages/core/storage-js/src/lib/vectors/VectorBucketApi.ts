@@ -24,6 +24,11 @@ export default class VectorBucketApi {
    * @param url - The base URL for the storage vectors API
    * @param headers - HTTP headers to include in requests
    * @param fetch - Optional custom fetch implementation
+   *
+   * @example
+   * ```typescript
+   * const client = new VectorBucketApi(url, headers)
+   * ```
    */
   constructor(url: string, headers: { [key: string]: string } = {}, fetch?: Fetch) {
     this.url = url.replace(/\/$/, '')
@@ -107,9 +112,7 @@ export default class VectorBucketApi {
    * }
    * ```
    */
-  async getBucket(
-    vectorBucketName: string
-  ): Promise<ApiResponse<{ vectorBucket: VectorBucket }>> {
+  async getBucket(vectorBucketName: string): Promise<ApiResponse<{ vectorBucket: VectorBucket }>> {
     try {
       const data = await post(
         this.fetch,
