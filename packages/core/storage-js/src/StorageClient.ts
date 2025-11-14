@@ -43,6 +43,8 @@ export class StorageClient extends StorageBucketApi {
   /**
    * Access vector storage operations.
    *
+   * **Private alpha:** This API is part of a private alpha release and may change or be removed without notice.
+   *
    * @returns A StorageVectorsClient instance configured with the current storage settings.
    */
   get vectors(): StorageVectorsClient {

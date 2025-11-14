@@ -12,6 +12,8 @@ import {
 /**
  * API class for managing Vector Buckets
  * Provides methods for creating, reading, listing, and deleting vector buckets
+ *
+ * **Private alpha:** Vector storage APIs are currently in private alpha and may not be accessible.
  */
 export default class VectorBucketApi {
   protected url: string
@@ -21,6 +23,8 @@ export default class VectorBucketApi {
 
   /**
    * Creates a new VectorBucketApi instance
+   *
+   * **Private alpha:** Vector storage APIs are currently in private alpha and may not be accessible.
    * @param url - The base URL for the storage vectors API
    * @param headers - HTTP headers to include in requests
    * @param fetch - Optional custom fetch implementation
@@ -40,6 +44,8 @@ export default class VectorBucketApi {
    * Enable throwing errors instead of returning them in the response
    * When enabled, failed operations will throw instead of returning { data: null, error }
    *
+   * **Private alpha:** Vector storage APIs are currently in private alpha and may not be accessible.
+   *
    * @returns This instance for method chaining
    * @example
    * ```typescript
@@ -56,6 +62,8 @@ export default class VectorBucketApi {
   /**
    * Creates a new vector bucket
    * Vector buckets are containers for vector indexes and their data
+   *
+   * **Private alpha:** Vector storage APIs are currently in private alpha and may not be accessible.
    *
    * @param vectorBucketName - Unique name for the vector bucket
    * @returns Promise with empty response on success or error
@@ -97,6 +105,8 @@ export default class VectorBucketApi {
    * Retrieves metadata for a specific vector bucket
    * Returns bucket configuration including encryption settings and creation time
    *
+   * **Private alpha:** Vector storage APIs are currently in private alpha and may not be accessible.
+   *
    * @param vectorBucketName - Name of the vector bucket to retrieve
    * @returns Promise with bucket metadata or error
    *
@@ -135,6 +145,8 @@ export default class VectorBucketApi {
   /**
    * Lists vector buckets with optional filtering and pagination
    * Supports prefix-based filtering and paginated results
+   *
+   * **Private alpha:** Vector storage APIs are currently in private alpha and may not be accessible.
    *
    * @param options - Listing options
    * @param options.prefix - Filter buckets by name prefix
@@ -180,6 +192,8 @@ export default class VectorBucketApi {
   /**
    * Deletes a vector bucket
    * Bucket must be empty before deletion (all indexes must be removed first)
+   *
+   * **Private alpha:** Vector storage APIs are currently in private alpha and may not be accessible.
    *
    * @param vectorBucketName - Name of the vector bucket to delete
    * @returns Promise with empty response on success or error

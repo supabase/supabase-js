@@ -13,6 +13,8 @@ import {
 
 /**
  * Configuration options for the Storage Vectors client
+ *
+ * **Private alpha:** Vector storage APIs are currently in private alpha and may not be accessible.
  */
 export interface StorageVectorsClientOptions {
   /**
@@ -29,6 +31,8 @@ export interface StorageVectorsClientOptions {
 /**
  * Main client for interacting with S3 Vectors API
  * Provides access to bucket, index, and vector data operations
+ *
+ * **Private alpha:** Vector storage APIs are currently in private alpha and may not be accessible.
  *
  * **Usage Patterns:**
  *
@@ -85,6 +89,8 @@ export class StorageVectorsClient extends VectorBucketApi {
   /**
    * Creates a StorageVectorsClient that can manage buckets, indexes, and vectors.
    *
+   * **Private alpha:** Vector storage APIs are currently in private alpha and may not be accessible.
+   *
    * @param url - Base URL of the Storage Vectors REST API.
    * @param options.headers - Optional headers (for example `Authorization`) applied to every request.
    * @param options.fetch - Optional custom `fetch` implementation for non-browser runtimes.
@@ -96,6 +102,8 @@ export class StorageVectorsClient extends VectorBucketApi {
   /**
    * Access operations for a specific vector bucket
    * Returns a scoped client for index and vector operations within the bucket
+   *
+   * **Private alpha:** Vector storage APIs are currently in private alpha and may not be accessible.
    *
    * @param vectorBucketName - Name of the vector bucket
    * @returns Bucket-scoped client with index and vector operations
@@ -124,12 +132,16 @@ export class StorageVectorsClient extends VectorBucketApi {
 /**
  * Scoped client for operations within a specific vector bucket
  * Provides index management and access to vector operations
+ *
+ * **Private alpha:** Vector storage APIs are currently in private alpha and may not be accessible.
  */
 export class VectorBucketScope extends VectorIndexApi {
   private vectorBucketName: string
 
   /**
    * Creates a helper that automatically scopes all index operations to the provided bucket.
+   *
+   * **Private alpha:** Vector storage APIs are currently in private alpha and may not be accessible.
    */
   constructor(
     url: string,
@@ -144,6 +156,8 @@ export class VectorBucketScope extends VectorIndexApi {
   /**
    * Creates a new vector index in this bucket
    * Convenience method that automatically includes the bucket name
+   *
+   * **Private alpha:** Vector storage APIs are currently in private alpha and may not be accessible.
    *
    * @param options - Index configuration (vectorBucketName is automatically set)
    * @returns Promise with empty response on success or error
@@ -173,6 +187,8 @@ export class VectorBucketScope extends VectorIndexApi {
    * Lists indexes in this bucket
    * Convenience method that automatically includes the bucket name
    *
+   * **Private alpha:** Vector storage APIs are currently in private alpha and may not be accessible.
+   *
    * @param options - Listing options (vectorBucketName is automatically set)
    * @returns Promise with list of indexes or error
    *
@@ -193,6 +209,8 @@ export class VectorBucketScope extends VectorIndexApi {
    * Retrieves metadata for a specific index in this bucket
    * Convenience method that automatically includes the bucket name
    *
+   * **Private alpha:** Vector storage APIs are currently in private alpha and may not be accessible.
+   *
    * @param indexName - Name of the index to retrieve
    * @returns Promise with index metadata or error
    *
@@ -211,6 +229,8 @@ export class VectorBucketScope extends VectorIndexApi {
    * Deletes an index from this bucket
    * Convenience method that automatically includes the bucket name
    *
+   * **Private alpha:** Vector storage APIs are currently in private alpha and may not be accessible.
+   *
    * @param indexName - Name of the index to delete
    * @returns Promise with empty response on success or error
    *
@@ -227,6 +247,8 @@ export class VectorBucketScope extends VectorIndexApi {
   /**
    * Access operations for a specific index within this bucket
    * Returns a scoped client for vector data operations
+   *
+   * **Private alpha:** Vector storage APIs are currently in private alpha and may not be accessible.
    *
    * @param indexName - Name of the index
    * @returns Index-scoped client with vector data operations
@@ -263,6 +285,8 @@ export class VectorBucketScope extends VectorIndexApi {
 /**
  * Scoped client for operations within a specific vector index
  * Provides vector data operations (put, get, list, query, delete)
+ *
+ * **Private alpha:** Vector storage APIs are currently in private alpha and may not be accessible.
  */
 export class VectorIndexScope extends VectorDataApi {
   private vectorBucketName: string
@@ -270,6 +294,8 @@ export class VectorIndexScope extends VectorDataApi {
 
   /**
    * Creates a helper that automatically scopes all vector operations to the provided bucket/index names.
+   *
+   * **Private alpha:** Vector storage APIs are currently in private alpha and may not be accessible.
    */
   constructor(
     url: string,
@@ -286,6 +312,8 @@ export class VectorIndexScope extends VectorDataApi {
   /**
    * Inserts or updates vectors in this index
    * Convenience method that automatically includes bucket and index names
+   *
+   * **Private alpha:** Vector storage APIs are currently in private alpha and may not be accessible.
    *
    * @param options - Vector insertion options (bucket and index names automatically set)
    * @returns Promise with empty response on success or error
@@ -316,6 +344,8 @@ export class VectorIndexScope extends VectorDataApi {
    * Retrieves vectors by keys from this index
    * Convenience method that automatically includes bucket and index names
    *
+   * **Private alpha:** Vector storage APIs are currently in private alpha and may not be accessible.
+   *
    * @param options - Vector retrieval options (bucket and index names automatically set)
    * @returns Promise with array of vectors or error
    *
@@ -339,6 +369,8 @@ export class VectorIndexScope extends VectorDataApi {
   /**
    * Lists vectors in this index with pagination
    * Convenience method that automatically includes bucket and index names
+   *
+   * **Private alpha:** Vector storage APIs are currently in private alpha and may not be accessible.
    *
    * @param options - Listing options (bucket and index names automatically set)
    * @returns Promise with array of vectors and pagination token
@@ -365,6 +397,8 @@ export class VectorIndexScope extends VectorDataApi {
   /**
    * Queries for similar vectors in this index
    * Convenience method that automatically includes bucket and index names
+   *
+   * **Private alpha:** Vector storage APIs are currently in private alpha and may not be accessible.
    *
    * @param options - Query options (bucket and index names automatically set)
    * @returns Promise with array of similar vectors ordered by distance
@@ -394,6 +428,8 @@ export class VectorIndexScope extends VectorDataApi {
   /**
    * Deletes vectors by keys from this index
    * Convenience method that automatically includes bucket and index names
+   *
+   * **Private alpha:** Vector storage APIs are currently in private alpha and may not be accessible.
    *
    * @param options - Deletion options (bucket and index names automatically set)
    * @returns Promise with empty response on success or error
