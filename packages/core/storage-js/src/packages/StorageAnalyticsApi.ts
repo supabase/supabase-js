@@ -2,7 +2,7 @@ import { DEFAULT_HEADERS } from '../lib/constants'
 import { isStorageError, StorageError } from '../lib/errors'
 import { Fetch, get, post, remove } from '../lib/fetch'
 import { resolveFetch } from '../lib/helpers'
-import { AnalyticBucket, Bucket } from '../lib/types'
+import { AnalyticBucket } from '../lib/types'
 
 /**
  * API class for managing Analytics Buckets using Iceberg tables
@@ -154,7 +154,7 @@ export default class StorageAnalyticsApi {
    * A bucket can't be deleted with existing objects inside it
    * You must first empty the bucket before deletion
    *
-   * @param bucketId The unique identifier of the bucket you would like to delete
+   * @param bucketName The unique identifier of the bucket you would like to delete
    * @returns Promise with success message or error
    *
    * @example
@@ -167,7 +167,7 @@ export default class StorageAnalyticsApi {
    * }
    * ```
    */
-  async deleteBucket(bucketId: string): Promise<
+  async deleteBucket(bucketName: string): Promise<
     | {
         data: { message: string }
         error: null
@@ -180,7 +180,7 @@ export default class StorageAnalyticsApi {
     try {
       const data = await remove(
         this.fetch,
-        `${this.url}/bucket/${bucketId}`,
+        `${this.url}/bucket/${bucketName}`,
         {},
         { headers: this.headers }
       )

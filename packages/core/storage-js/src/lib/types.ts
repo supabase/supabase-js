@@ -33,7 +33,7 @@ export interface ListBucketOptions {
  */
 export interface AnalyticBucket {
   /** Unique identifier for the bucket */
-  id: string
+  name: string
   /** Bucket type - always 'ANALYTICS' for analytics buckets */
   type: 'ANALYTICS'
   /** Storage format used (e.g., 'iceberg') */
