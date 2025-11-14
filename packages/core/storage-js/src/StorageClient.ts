@@ -9,6 +9,19 @@ export interface StorageClientOptions {
 }
 
 export class StorageClient extends StorageBucketApi {
+  /**
+   * Creates a client for Storage buckets, files, analytics, and vectors.
+   *
+   * @example
+   * ```ts
+   * import { StorageClient } from '@supabase/storage-js'
+   *
+   * const storage = new StorageClient('https://xyzcompany.supabase.co/storage/v1', {
+   *   apikey: 'public-anon-key',
+   * })
+   * const avatars = storage.from('avatars')
+   * ```
+   */
   constructor(
     url: string,
     headers: { [key: string]: string } = {},

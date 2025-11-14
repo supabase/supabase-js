@@ -22,6 +22,8 @@ export default class PostgrestQueryBuilder<
   fetch?: Fetch
 
   /**
+   * Creates a query builder scoped to a Postgres table or view.
+   *
    * @example
    * ```ts
    * import PostgrestQueryBuilder from '@supabase/postgrest-js'

@@ -32,6 +32,9 @@ export interface WebSocketEnvironment {
   workaround?: string
 }
 
+/**
+ * Utilities for creating WebSocket instances across runtimes.
+ */
 export class WebSocketFactory {
   private static detectEnvironment(): WebSocketEnvironment {
     if (typeof WebSocket !== 'undefined') {
@@ -115,6 +118,15 @@ export class WebSocketFactory {
     }
   }
 
+  /**
+   * Returns the best available WebSocket constructor for the current runtime.
+   *
+   * @example
+   * ```ts
+   * const WS = WebSocketFactory.getWebSocketConstructor()
+   * const socket = new WS('wss://realtime.supabase.co/socket')
+   * ```
+   */
   public static getWebSocketConstructor(): typeof WebSocket {
     const env = this.detectEnvironment()
     if (env.constructor) {
@@ -127,11 +139,29 @@ export class WebSocketFactory {
     throw new Error(errorMessage)
   }
 
+  /**
+   * Creates a WebSocket using the detected constructor.
+   *
+   * @example
+   * ```ts
+   * const socket = WebSocketFactory.createWebSocket('wss://realtime.supabase.co/socket')
+   * ```
+   */
   public static createWebSocket(url: string | URL, protocols?: string | string[]): WebSocketLike {
     const WS = this.getWebSocketConstructor()
     return new WS(url, protocols)
   }
 
+  /**
+   * Detects whether the runtime can establish WebSocket connections.
+   *
+   * @example
+   * ```ts
+   * if (!WebSocketFactory.isWebSocketSupported()) {
+   *   console.warn('Falling back to long polling')
+   * }
+   * ```
+   */
   public static isWebSocketSupported(): boolean {
     try {
       const env = this.detectEnvironment()

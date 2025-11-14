@@ -86,6 +86,12 @@ export class ProcessLockAcquireTimeoutError extends LockAcquireTimeoutError {}
  *                       will time out after so many milliseconds. An error is
  *                       a timeout if it has `isAcquireTimeout` set to true.
  * @param fn The operation to run once the lock is acquired.
+ * @example
+ * ```ts
+ * await navigatorLock('sync-user', 1000, async () => {
+ *   await refreshSession()
+ * })
+ * ```
  */
 export async function navigatorLock<R>(
   name: string,
@@ -198,6 +204,12 @@ const PROCESS_LOCKS: { [name: string]: Promise<any> } = {}
  *                       will time out after so many milliseconds. An error is
  *                       a timeout if it has `isAcquireTimeout` set to true.
  * @param fn The operation to run once the lock is acquired.
+ * @example
+ * ```ts
+ * await processLock('migrate', 5000, async () => {
+ *   await runMigration()
+ * })
+ * ```
  */
 export async function processLock<R>(
   name: string,

@@ -29,6 +29,8 @@ export default abstract class PostgrestBuilder<
   protected isMaybeSingle: boolean
 
   /**
+   * Creates a builder configured for a specific PostgREST request.
+   *
    * @example
    * ```ts
    * import PostgrestQueryBuilder from '@supabase/postgrest-js'

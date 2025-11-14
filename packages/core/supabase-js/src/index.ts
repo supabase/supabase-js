@@ -23,6 +23,14 @@ export type { SupabaseClientOptions, QueryResult, QueryData, QueryError } from '
 
 /**
  * Creates a new Supabase Client.
+ *
+ * @example
+ * ```ts
+ * import { createClient } from '@supabase/supabase-js'
+ *
+ * const supabase = createClient('https://xyzcompany.supabase.co', 'public-anon-key')
+ * const { data, error } = await supabase.from('profiles').select('*')
+ * ```
  */
 export const createClient = <
   Database = any,
