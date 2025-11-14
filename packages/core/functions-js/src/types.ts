@@ -15,6 +15,18 @@ export interface FunctionsResponseFailure {
 }
 export type FunctionsResponse<T> = FunctionsResponseSuccess<T> | FunctionsResponseFailure
 
+/**
+ * Base error for Supabase Edge Function invocations.
+ *
+ * @example
+ * ```ts
+ * import { FunctionsError } from '@supabase/functions-js'
+ *
+ * throw new FunctionsError('Unexpected error invoking function', 'FunctionsError', {
+ *   requestId: 'abc123',
+ * })
+ * ```
+ */
 export class FunctionsError extends Error {
   context: any
   constructor(message: string, name = 'FunctionsError', context?: any) {
@@ -24,18 +36,48 @@ export class FunctionsError extends Error {
   }
 }
 
+/**
+ * Error thrown when the network request to an Edge Function fails.
+ *
+ * @example
+ * ```ts
+ * import { FunctionsFetchError } from '@supabase/functions-js'
+ *
+ * throw new FunctionsFetchError({ requestId: 'abc123' })
+ * ```
+ */
 export class FunctionsFetchError extends FunctionsError {
   constructor(context: any) {
     super('Failed to send a request to the Edge Function', 'FunctionsFetchError', context)
   }
 }
 
+/**
+ * Error thrown when the Supabase relay cannot reach the Edge Function.
+ *
+ * @example
+ * ```ts
+ * import { FunctionsRelayError } from '@supabase/functions-js'
+ *
+ * throw new FunctionsRelayError({ region: 'us-east-1' })
+ * ```
+ */
 export class FunctionsRelayError extends FunctionsError {
   constructor(context: any) {
     super('Relay Error invoking the Edge Function', 'FunctionsRelayError', context)
   }
 }
 
+/**
+ * Error thrown when the Edge Function returns a non-2xx status code.
+ *
+ * @example
+ * ```ts
+ * import { FunctionsHttpError } from '@supabase/functions-js'
+ *
+ * throw new FunctionsHttpError({ status: 500 })
+ * ```
+ */
 export class FunctionsHttpError extends FunctionsError {
   constructor(context: any) {
     super('Edge Function returned a non-2xx status code', 'FunctionsHttpError', context)

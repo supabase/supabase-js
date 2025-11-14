@@ -275,6 +275,17 @@ export default class GoTrueClient {
 
   /**
    * Create a new client for use in the browser.
+   *
+   * @example
+   * ```ts
+   * import { GoTrueClient } from '@supabase/auth-js'
+   *
+   * const auth = new GoTrueClient({
+   *   url: 'https://xyzcompany.supabase.co/auth/v1',
+   *   headers: { apikey: 'public-anon-key' },
+   *   storageKey: 'supabase-auth',
+   * })
+   * ```
    */
   constructor(options: GoTrueClientOptions) {
     const settings = { ...DEFAULT_OPTIONS, ...options }

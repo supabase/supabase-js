@@ -181,6 +181,17 @@ export default class RealtimeChannel {
   subTopic: string
   private: boolean
 
+  /**
+   * @example
+   * ```ts
+   * import RealtimeClient from '@supabase/realtime-js'
+   *
+   * const client = new RealtimeClient('https://xyzcompany.supabase.co/realtime/v1', {
+   *   params: { apikey: 'public-anon-key' },
+   * })
+   * const channel = new RealtimeChannel('realtime:public:messages', { config: {} }, client)
+   * ```
+   */
   constructor(
     /** Topic name can be any string. */
     public topic: string,

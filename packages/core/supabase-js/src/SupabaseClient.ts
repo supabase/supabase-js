@@ -101,6 +101,13 @@ export default class SupabaseClient<
    * @param options.storage Options passed along to the storage-js constructor.
    * @param options.global.fetch A custom fetch implementation.
    * @param options.global.headers Any additional headers to send with each network request.
+   * @example
+   * ```ts
+   * import { createClient } from '@supabase/supabase-js'
+   *
+   * const supabase = createClient('https://xyzcompany.supabase.co', 'public-anon-key')
+   * const { data } = await supabase.from('profiles').select('*')
+   * ```
    */
   constructor(
     protected supabaseUrl: string,

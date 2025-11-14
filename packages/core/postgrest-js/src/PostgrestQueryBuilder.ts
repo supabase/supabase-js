@@ -21,6 +21,17 @@ export default class PostgrestQueryBuilder<
   signal?: AbortSignal
   fetch?: Fetch
 
+  /**
+   * @example
+   * ```ts
+   * import PostgrestQueryBuilder from '@supabase/postgrest-js'
+   *
+   * const query = new PostgrestQueryBuilder(
+   *   new URL('https://xyzcompany.supabase.co/rest/v1/users'),
+   *   { headers: { apikey: 'public-anon-key' } }
+   * )
+   * ```
+   */
   constructor(
     url: URL,
     {

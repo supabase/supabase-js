@@ -8,6 +8,19 @@ export default class PostgrestError extends Error {
   hint: string
   code: string
 
+  /**
+   * @example
+   * ```ts
+   * import PostgrestError from '@supabase/postgrest-js'
+   *
+   * throw new PostgrestError({
+   *   message: 'Row level security prevented the request',
+   *   details: 'RLS denied the insert',
+   *   hint: 'Check your policies',
+   *   code: 'PGRST301',
+   * })
+   * ```
+   */
   constructor(context: { message: string; details: string; hint: string; code: string }) {
     super(context.message)
     this.name = 'PostgrestError'
