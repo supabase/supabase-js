@@ -28,6 +28,13 @@ const decodeAsync = (
 }
 
 let exampleMsg = { join_ref: '0', ref: '1', topic: 't', event: 'e', payload: { foo: 1 } }
+let missingRefExampleMsg = {
+  join_ref: null,
+  ref: null,
+  topic: 't',
+  event: 'e',
+  payload: { foo: 1 },
+}
 
 // \x01\x04
 let binPayload = () => {
@@ -43,9 +50,19 @@ describe('JSON', () => {
     expect(result).toBe('["0","1","t","e",{"foo":1}]')
   })
 
+  it('encodes missing refs', async () => {
+    const result = await encodeAsync(serializer, missingRefExampleMsg)
+    expect(result).toBe('[null,null,"t","e",{"foo":1}]')
+  })
+
   it('decodes', async () => {
     const result = await decodeAsync(serializer, '["0","1","t","e",{"foo":1}]')
     expect(result).toEqual(exampleMsg)
+  })
+
+  it('decodes missing refs', async () => {
+    const result = await decodeAsync(serializer, '[null,null,"t","e",{"foo":1}]')
+    expect(result).toEqual(missingRefExampleMsg)
   })
 })
 
@@ -56,6 +73,30 @@ describe('binary', () => {
     const result = await encodeAsync(serializer, {
       join_ref: '0',
       ref: '1',
+      topic: 't',
+      event: 'e',
+      payload: buffer,
+    })
+    expect(decoder.decode(result as ArrayBuffer)).toBe(bin)
+  })
+
+  it('encodes push with undefined join_ref and ref', async () => {
+    let buffer = binPayload()
+    let bin = '\0\x00\x00\x01\x01te\x01\x04'
+    const result = await encodeAsync(serializer, {
+      join_ref: undefined,
+      ref: undefined,
+      topic: 't',
+      event: 'e',
+      payload: buffer,
+    })
+    expect(decoder.decode(result as ArrayBuffer)).toBe(bin)
+  })
+
+  it('encodes push with no join_ref no ref', async () => {
+    let buffer = binPayload()
+    let bin = '\0\x00\x00\x01\x01te\x01\x04'
+    const result = await encodeAsync(serializer, {
       topic: 't',
       event: 'e',
       payload: buffer,
@@ -106,6 +147,33 @@ describe('binary', () => {
     expect(decoder.decode(result as ArrayBuffer)).toBe(bin)
   })
 
+  it('encodes user broadcast push with JSON payload no refs', async () => {
+    // 3 -> user_broadcast_push
+    // 0 join_ref length
+    // 0 for ref length
+    // 3 for topic length
+    // 10 for user event length
+    // 1 for JSON encoding
+    // actual join ref
+    // actual ref
+    // actual topic
+    // actual user event
+    // actual payload
+    let bin = '\x03\x00\x00\x03\x0a\x01topuser-event{"a":"b"}'
+
+    const result = await encodeAsync(serializer, {
+      topic: 'top',
+      event: 'broadcast',
+      payload: {
+        event: 'user-event',
+        payload: {
+          a: 'b',
+        },
+      },
+    })
+    expect(decoder.decode(result as ArrayBuffer)).toBe(bin)
+  })
+
   it('encodes user broadcast push with Binary payload', async () => {
     // 3 -> user_broadcast_push
     // 2 join_ref length
@@ -123,6 +191,31 @@ describe('binary', () => {
     const result = await encodeAsync(serializer, {
       join_ref: '10',
       ref: '1',
+      topic: 'top',
+      event: 'broadcast',
+      payload: {
+        event: 'user-event',
+        payload: binPayload(),
+      },
+    })
+    expect(decoder.decode(result as ArrayBuffer)).toBe(bin)
+  })
+
+  it('encodes user broadcast push with Binary payload no refs', async () => {
+    // 3 -> user_broadcast_push
+    // 0 join_ref length
+    // 0 for ref length
+    // 3 for topic length
+    // 10 for user event length
+    // 0 for Binary encoding
+    // actual join ref
+    // actual ref
+    // actual topic
+    // actual user event
+    // actual payload
+    let bin = '\x03\x00\x00\x03\x0a\x00topuser-event\x01\x04'
+
+    const result = await encodeAsync(serializer, {
       topic: 'top',
       event: 'broadcast',
       payload: {
