@@ -3,8 +3,8 @@
 import { CHANNEL_EVENTS } from '../lib/constants'
 
 export type Msg<T> = {
-  join_ref: string
-  ref: string
+  join_ref?: string | null
+  ref?: string | null
   topic: string
   event: string
   payload: T
@@ -42,19 +42,22 @@ export default class Serializer {
   }
 
   private _binaryEncodePush(message: Msg<ArrayBuffer>) {
-    const { join_ref, ref, event, topic, payload } = message
-    const metaLength = this.META_LENGTH + join_ref.length + ref.length + topic.length + event.length
+    const { event, topic, payload } = message
+    const ref = message.ref ?? ''
+    const joinRef = message.join_ref ?? ''
+
+    const metaLength = this.META_LENGTH + joinRef.length + ref.length + topic.length + event.length
 
     const header = new ArrayBuffer(this.HEADER_LENGTH + metaLength)
     let view = new DataView(header)
     let offset = 0
 
     view.setUint8(offset++, this.KINDS.push) // kind
-    view.setUint8(offset++, join_ref.length)
+    view.setUint8(offset++, joinRef.length)
     view.setUint8(offset++, ref.length)
     view.setUint8(offset++, topic.length)
     view.setUint8(offset++, event.length)
-    Array.from(join_ref, (char) => view.setUint8(offset++, char.charCodeAt(0)))
+    Array.from(joinRef, (char) => view.setUint8(offset++, char.charCodeAt(0)))
     Array.from(ref, (char) => view.setUint8(offset++, char.charCodeAt(0)))
     Array.from(topic, (char) => view.setUint8(offset++, char.charCodeAt(0)))
     Array.from(event, (char) => view.setUint8(offset++, char.charCodeAt(0)))
@@ -75,13 +78,15 @@ export default class Serializer {
   }
 
   private _encodeBinaryUserBroadcastPush(message: Msg<{ event: string } & { [key: string]: any }>) {
-    const { join_ref, ref, topic } = message
+    const topic = message.topic
+    const ref = message.ref ?? ''
+    const joinRef = message.join_ref ?? ''
     const userEvent = message.payload.event
     const userPayload = message.payload?.payload ?? new ArrayBuffer(0)
 
     const metaLength =
       this.USER_BROADCAST_PUSH_META_LENGTH +
-      join_ref.length +
+      joinRef.length +
       ref.length +
       topic.length +
       userEvent.length
@@ -91,12 +96,12 @@ export default class Serializer {
     let offset = 0
 
     view.setUint8(offset++, this.KINDS.userBroadcastPush) // kind
-    view.setUint8(offset++, join_ref.length)
+    view.setUint8(offset++, joinRef.length)
     view.setUint8(offset++, ref.length)
     view.setUint8(offset++, topic.length)
     view.setUint8(offset++, userEvent.length)
     view.setUint8(offset++, this.BINARY_ENCODING)
-    Array.from(join_ref, (char) => view.setUint8(offset++, char.charCodeAt(0)))
+    Array.from(joinRef, (char) => view.setUint8(offset++, char.charCodeAt(0)))
     Array.from(ref, (char) => view.setUint8(offset++, char.charCodeAt(0)))
     Array.from(topic, (char) => view.setUint8(offset++, char.charCodeAt(0)))
     Array.from(userEvent, (char) => view.setUint8(offset++, char.charCodeAt(0)))
@@ -109,7 +114,9 @@ export default class Serializer {
   }
 
   private _encodeJsonUserBroadcastPush(message: Msg<{ event: string } & { [key: string]: any }>) {
-    const { join_ref, ref, topic } = message
+    const topic = message.topic
+    const ref = message.ref ?? ''
+    const joinRef = message.join_ref ?? ''
     const userEvent = message.payload.event
     const userPayload = message.payload?.payload ?? {}
 
@@ -118,7 +125,7 @@ export default class Serializer {
 
     const metaLength =
       this.USER_BROADCAST_PUSH_META_LENGTH +
-      join_ref.length +
+      joinRef.length +
       ref.length +
       topic.length +
       userEvent.length
@@ -128,12 +135,12 @@ export default class Serializer {
     let offset = 0
 
     view.setUint8(offset++, this.KINDS.userBroadcastPush) // kind
-    view.setUint8(offset++, join_ref.length)
+    view.setUint8(offset++, joinRef.length)
     view.setUint8(offset++, ref.length)
     view.setUint8(offset++, topic.length)
     view.setUint8(offset++, userEvent.length)
     view.setUint8(offset++, this.JSON_ENCODING)
-    Array.from(join_ref, (char) => view.setUint8(offset++, char.charCodeAt(0)))
+    Array.from(joinRef, (char) => view.setUint8(offset++, char.charCodeAt(0)))
     Array.from(ref, (char) => view.setUint8(offset++, char.charCodeAt(0)))
     Array.from(topic, (char) => view.setUint8(offset++, char.charCodeAt(0)))
     Array.from(userEvent, (char) => view.setUint8(offset++, char.charCodeAt(0)))
