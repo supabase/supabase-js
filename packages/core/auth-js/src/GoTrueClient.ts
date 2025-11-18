@@ -109,6 +109,8 @@ import type {
   AuthOAuthServerApi,
   AuthOAuthAuthorizationDetailsResponse,
   AuthOAuthConsentResponse,
+  AuthOAuthGrantsResponse,
+  AuthOAuthRevokeGrantResponse,
   Prettify,
   Provider,
   ResendParams,
@@ -352,6 +354,8 @@ export default class GoTrueClient {
       getAuthorizationDetails: this._getAuthorizationDetails.bind(this),
       approveAuthorization: this._approveAuthorization.bind(this),
       denyAuthorization: this._denyAuthorization.bind(this),
+      listGrants: this._listOAuthGrants.bind(this),
+      revokeGrant: this._revokeOAuthGrant.bind(this),
     }
 
     if (this.persistSession) {
@@ -3557,6 +3561,79 @@ export default class GoTrueClient {
         }
 
         return response
+      })
+    } catch (error) {
+      if (isAuthError(error)) {
+        return this._returnResult({ data: null, error })
+      }
+
+      throw error
+    }
+  }
+
+  /**
+   * Lists all OAuth grants that the authenticated user has authorized.
+   * Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
+   */
+  private async _listOAuthGrants(): Promise<AuthOAuthGrantsResponse> {
+    try {
+      return await this._useSession(async (result) => {
+        const {
+          data: { session },
+          error: sessionError,
+        } = result
+
+        if (sessionError) {
+          return this._returnResult({ data: null, error: sessionError })
+        }
+
+        if (!session) {
+          return this._returnResult({ data: null, error: new AuthSessionMissingError() })
+        }
+
+        return await _request(this.fetch, 'GET', `${this.url}/user/oauth/grants`, {
+          headers: this.headers,
+          jwt: session.access_token,
+          xform: (data: any) => ({ data, error: null }),
+        })
+      })
+    } catch (error) {
+      if (isAuthError(error)) {
+        return this._returnResult({ data: null, error })
+      }
+
+      throw error
+    }
+  }
+
+  /**
+   * Revokes a user's OAuth grant for a specific client.
+   * Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
+   */
+  private async _revokeOAuthGrant(options: {
+    clientId: string
+  }): Promise<AuthOAuthRevokeGrantResponse> {
+    try {
+      return await this._useSession(async (result) => {
+        const {
+          data: { session },
+          error: sessionError,
+        } = result
+
+        if (sessionError) {
+          return this._returnResult({ data: null, error: sessionError })
+        }
+
+        if (!session) {
+          return this._returnResult({ data: null, error: new AuthSessionMissingError() })
+        }
+
+        return await _request(this.fetch, 'DELETE', `${this.url}/user/oauth/grants`, {
+          headers: this.headers,
+          jwt: session.access_token,
+          query: { client_id: options.clientId },
+          xform: () => ({ data: {}, error: null }),
+        })
       })
     } catch (error) {
       if (isAuthError(error)) {

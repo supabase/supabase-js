@@ -1675,11 +1675,11 @@ export interface GoTrueAdminOAuthApi {
  */
 export type OAuthAuthorizationClient = {
   /** Unique identifier for the OAuth client (UUID) */
-  client_id: string
+  id: string
   /** Human-readable name of the OAuth client */
-  client_name: string
+  name: string
   /** URI of the OAuth client's website */
-  client_uri: string
+  uri: string
   /** URI of the OAuth client's logo */
   logo_uri: string
 }
@@ -1720,6 +1720,31 @@ export type AuthOAuthConsentResponse = RequestResult<{
   /** URL to redirect the user back to the OAuth client */
   redirect_url: string
 }>
+
+/**
+ * An OAuth grant representing a user's authorization of an OAuth client.
+ * Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
+ */
+export type OAuthGrant = {
+  /** OAuth client information */
+  client: OAuthAuthorizationClient
+  /** Array of scopes granted to this client */
+  scopes: string[]
+  /** Timestamp when the grant was created (ISO 8601 date-time) */
+  granted_at: string
+}
+
+/**
+ * Response type for listing user's OAuth grants.
+ * Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
+ */
+export type AuthOAuthGrantsResponse = RequestResult<OAuthGrant[]>
+
+/**
+ * Response type for revoking an OAuth grant.
+ * Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
+ */
+export type AuthOAuthRevokeGrantResponse = RequestResult<{}>
 
 /**
  * Contains all OAuth 2.1 authorization server user-facing methods.
@@ -1767,4 +1792,25 @@ export interface AuthOAuthServerApi {
     authorizationId: string,
     options?: { skipBrowserRedirect?: boolean }
   ): Promise<AuthOAuthConsentResponse>
+
+  /**
+   * Lists all OAuth grants that the authenticated user has authorized.
+   * Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
+   *
+   * @returns Response with array of OAuth grants with client information and granted scopes
+   */
+  listGrants(): Promise<AuthOAuthGrantsResponse>
+
+  /**
+   * Revokes a user's OAuth grant for a specific client.
+   * Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
+   *
+   * Revocation marks consent as revoked, deletes active sessions for that OAuth client,
+   * and invalidates associated refresh tokens.
+   *
+   * @param options - Revocation options
+   * @param options.clientId - The OAuth client identifier (UUID) to revoke access for
+   * @returns Empty response on successful revocation
+   */
+  revokeGrant(options: { clientId: string }): Promise<AuthOAuthRevokeGrantResponse>
 }
