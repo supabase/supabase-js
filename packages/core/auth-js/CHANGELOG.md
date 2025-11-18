@@ -1,3 +1,7 @@
+## 2.83.0 (2025-11-18)
+
+This was a version bump only for @supabase/auth-js to align it with other projects, there were no code changes.
+
 ## 2.82.0 (2025-11-18)
 
 ### 🚀 Features
