@@ -1,3 +1,13 @@
+## 2.82.0 (2025-11-18)
+
+### 🩹 Fixes
+
+- **realtime:** account for null refs when encoding messages ([#1862](https://github.com/supabase/supabase-js/pull/1862))
+
+### ❤️ Thank You
+
+- Eduardo Gurgel
+
 ## 2.81.1 (2025-11-11)
 
 ### 🩹 Fixes

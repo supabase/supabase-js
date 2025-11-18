@@ -1,3 +1,13 @@
+## 2.82.0 (2025-11-18)
+
+### 🩹 Fixes
+
+- **storage:** analytics bucket prop ([#1852](https://github.com/supabase/supabase-js/pull/1852))
+
+### ❤️ Thank You
+
+- Fabrizio @fenos
+
 ## 2.81.1 (2025-11-11)
 
 This was a version bump only for @supabase/storage-js to align it with other projects, there were no code changes.

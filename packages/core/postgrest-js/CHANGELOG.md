@@ -1,3 +1,13 @@
+## 2.82.0 (2025-11-18)
+
+### 🩹 Fixes
+
+- **postgrest:** bubble up fetch error causes and codes ([#1856](https://github.com/supabase/supabase-js/pull/1856))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+
 ## 2.81.1 (2025-11-11)
 
 This was a version bump only for @supabase/postgrest-js to align it with other projects, there were no code changes.
