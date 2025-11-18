@@ -52,6 +52,7 @@ export default class VectorIndexApi {
    *
    * **Private alpha:** Vector storage APIs are currently in private alpha and may not be accessible.
    *
+   * @category Vector Buckets
    * @param url - Base URL for the Storage Vectors API.
    * @param headers - Default headers sent with each request.
    * @param fetch - Optional custom `fetch` implementation for non-browser runtimes.
@@ -76,6 +77,7 @@ export default class VectorIndexApi {
    *
    * **Private alpha:** Vector storage APIs are currently in private alpha and may not be accessible.
    *
+   * @category Vector Buckets
    * @returns This instance for method chaining
    * @example
    * ```typescript
@@ -98,6 +100,7 @@ export default class VectorIndexApi {
    *
    * **Private alpha:** Vector storage APIs are currently in private alpha and may not be accessible.
    *
+   * @category Vector Buckets
    * @param options - Index configuration
    * @param options.vectorBucketName - Name of the parent vector bucket
    * @param options.indexName - Unique name for the index within the bucket
@@ -153,6 +156,7 @@ export default class VectorIndexApi {
    *
    * **Private alpha:** Vector storage APIs are currently in private alpha and may not be accessible.
    *
+   * @category Vector Buckets
    * @param vectorBucketName - Name of the parent vector bucket
    * @param indexName - Name of the index to retrieve
    * @returns Promise with index metadata or error
@@ -202,6 +206,7 @@ export default class VectorIndexApi {
    *
    * **Private alpha:** Vector storage APIs are currently in private alpha and may not be accessible.
    *
+   * @category Vector Buckets
    * @param options - Listing options
    * @param options.vectorBucketName - Name of the parent vector bucket
    * @param options.prefix - Filter indexes by name prefix
@@ -258,6 +263,7 @@ export default class VectorIndexApi {
    *
    * **Private alpha:** Vector storage APIs are currently in private alpha and may not be accessible.
    *
+   * @category Vector Buckets
    * @param vectorBucketName - Name of the parent vector bucket
    * @param indexName - Name of the index to delete
    * @returns Promise with empty response on success or error

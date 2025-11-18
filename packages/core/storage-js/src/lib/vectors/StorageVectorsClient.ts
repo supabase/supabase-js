@@ -99,6 +99,7 @@ export class StorageVectorsClient extends VectorBucketApi {
    *
    * **Private alpha:** Vector storage APIs are currently in private alpha and may not be accessible.
    *
+   * @category Vector Buckets
    * @param url - Base URL of the Storage Vectors REST API.
    * @param options.headers - Optional headers (for example `Authorization`) applied to every request.
    * @param options.fetch - Optional custom `fetch` implementation for non-browser runtimes.
@@ -121,6 +122,7 @@ export class StorageVectorsClient extends VectorBucketApi {
    *
    * **Private alpha:** Vector storage APIs are currently in private alpha and may not be accessible.
    *
+   * @category Vector Buckets
    * @param vectorBucketName - Name of the vector bucket
    * @returns Bucket-scoped client with index and vector operations
    *
@@ -164,6 +166,7 @@ export class VectorBucketScope extends VectorIndexApi {
    *
    * **Private alpha:** Vector storage APIs are currently in private alpha and may not be accessible.
    *
+   * @category Vector Buckets
    * @example
    * ```typescript
    * const bucket = client.bucket('embeddings-prod')
@@ -188,6 +191,7 @@ export class VectorBucketScope extends VectorIndexApi {
    *
    * **Private alpha:** Vector storage APIs are currently in private alpha and may not be accessible.
    *
+   * @category Vector Buckets
    * @param options - Index configuration (vectorBucketName is automatically set)
    * @returns Promise with empty response on success or error
    *
@@ -221,6 +225,7 @@ export class VectorBucketScope extends VectorIndexApi {
    *
    * **Private alpha:** Vector storage APIs are currently in private alpha and may not be accessible.
    *
+   * @category Vector Buckets
    * @param options - Listing options (vectorBucketName is automatically set)
    * @returns Promise with list of indexes or error
    *
@@ -246,6 +251,7 @@ export class VectorBucketScope extends VectorIndexApi {
    *
    * **Private alpha:** Vector storage APIs are currently in private alpha and may not be accessible.
    *
+   * @category Vector Buckets
    * @param indexName - Name of the index to retrieve
    * @returns Promise with index metadata or error
    *
@@ -269,6 +275,7 @@ export class VectorBucketScope extends VectorIndexApi {
    *
    * **Private alpha:** Vector storage APIs are currently in private alpha and may not be accessible.
    *
+   * @category Vector Buckets
    * @param indexName - Name of the index to delete
    * @returns Promise with empty response on success or error
    *
@@ -291,6 +298,7 @@ export class VectorBucketScope extends VectorIndexApi {
    *
    * **Private alpha:** Vector storage APIs are currently in private alpha and may not be accessible.
    *
+   * @category Vector Buckets
    * @param indexName - Name of the index
    * @returns Index-scoped client with vector data operations
    *
@@ -344,6 +352,7 @@ export class VectorIndexScope extends VectorDataApi {
    *
    * **Private alpha:** Vector storage APIs are currently in private alpha and may not be accessible.
    *
+   * @category Vector Buckets
    * @example
    * ```typescript
    * const index = client.bucket('embeddings-prod').index('documents-openai')
@@ -370,6 +379,7 @@ export class VectorIndexScope extends VectorDataApi {
    *
    * **Private alpha:** Vector storage APIs are currently in private alpha and may not be accessible.
    *
+   * @category Vector Buckets
    * @param options - Vector insertion options (bucket and index names automatically set)
    * @returns Promise with empty response on success or error
    *
@@ -404,6 +414,7 @@ export class VectorIndexScope extends VectorDataApi {
    *
    * **Private alpha:** Vector storage APIs are currently in private alpha and may not be accessible.
    *
+   * @category Vector Buckets
    * @param options - Vector retrieval options (bucket and index names automatically set)
    * @returns Promise with array of vectors or error
    *
@@ -433,6 +444,7 @@ export class VectorIndexScope extends VectorDataApi {
    *
    * **Private alpha:** Vector storage APIs are currently in private alpha and may not be accessible.
    *
+   * @category Vector Buckets
    * @param options - Listing options (bucket and index names automatically set)
    * @returns Promise with array of vectors and pagination token
    *
@@ -464,6 +476,7 @@ export class VectorIndexScope extends VectorDataApi {
    *
    * **Private alpha:** Vector storage APIs are currently in private alpha and may not be accessible.
    *
+   * @category Vector Buckets
    * @param options - Query options (bucket and index names automatically set)
    * @returns Promise with array of similar vectors ordered by distance
    *
@@ -498,6 +511,7 @@ export class VectorIndexScope extends VectorDataApi {
    *
    * **Private alpha:** Vector storage APIs are currently in private alpha and may not be accessible.
    *
+   * @category Vector Buckets
    * @param options - Deletion options (bucket and index names automatically set)
    * @returns Promise with empty response on success or error
    *

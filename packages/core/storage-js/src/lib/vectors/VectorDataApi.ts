@@ -37,6 +37,7 @@ export default class VectorDataApi {
    *
    * **Private alpha:** Vector storage APIs are currently in private alpha and may not be accessible.
    *
+   * @category Vector Buckets
    * @param url - Base URL for the Storage Vectors API.
    * @param headers - Default headers (for example authentication tokens).
    * @param fetch - Optional custom `fetch` implementation for non-browser runtimes.
@@ -61,6 +62,7 @@ export default class VectorDataApi {
    *
    * **Private alpha:** Vector storage APIs are currently in private alpha and may not be accessible.
    *
+   * @category Vector Buckets
    * @returns This instance for method chaining
    * @example
    * ```typescript
@@ -83,6 +85,7 @@ export default class VectorDataApi {
    *
    * **Private alpha:** Vector storage APIs are currently in private alpha and may not be accessible.
    *
+   * @category Vector Buckets
    * @param options - Vector insertion options
    * @param options.vectorBucketName - Name of the parent vector bucket
    * @param options.indexName - Name of the target index
@@ -146,6 +149,7 @@ export default class VectorDataApi {
    *
    * **Private alpha:** Vector storage APIs are currently in private alpha and may not be accessible.
    *
+   * @category Vector Buckets
    * @param options - Vector retrieval options
    * @param options.vectorBucketName - Name of the parent vector bucket
    * @param options.indexName - Name of the index
@@ -199,6 +203,7 @@ export default class VectorDataApi {
    *
    * **Private alpha:** Vector storage APIs are currently in private alpha and may not be accessible.
    *
+   * @category Vector Buckets
    * @param options - Vector listing options
    * @param options.vectorBucketName - Name of the parent vector bucket
    * @param options.indexName - Name of the index
@@ -284,6 +289,7 @@ export default class VectorDataApi {
    *
    * **Private alpha:** Vector storage APIs are currently in private alpha and may not be accessible.
    *
+   * @category Vector Buckets
    * @param options - Query options
    * @param options.vectorBucketName - Name of the parent vector bucket
    * @param options.indexName - Name of the index
@@ -347,6 +353,7 @@ export default class VectorDataApi {
    *
    * **Private alpha:** Vector storage APIs are currently in private alpha and may not be accessible.
    *
+   * @category Vector Buckets
    * @param options - Vector deletion options
    * @param options.vectorBucketName - Name of the parent vector bucket
    * @param options.indexName - Name of the index

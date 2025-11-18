@@ -16,6 +16,8 @@ export default class StorageAnalyticsApi {
 
   /**
    * Creates a new StorageAnalyticsApi instance
+   *
+   * @category Analytics Buckets
    * @param url - The base URL for the storage API
    * @param headers - HTTP headers to include in requests
    * @param fetch - Optional custom fetch implementation
@@ -35,6 +37,7 @@ export default class StorageAnalyticsApi {
    * Enable throwing errors instead of returning them in the response
    * When enabled, failed operations will throw instead of returning { data: null, error }
    *
+   * @category Analytics Buckets
    * @returns This instance for method chaining
    */
   public throwOnError(): this {
@@ -46,6 +49,7 @@ export default class StorageAnalyticsApi {
    * Creates a new analytics bucket using Iceberg tables
    * Analytics buckets are optimized for analytical queries and data processing
    *
+   * @category Analytics Buckets
    * @param name A unique name for the bucket you are creating
    * @returns Promise with newly created bucket name or error
    *
@@ -88,6 +92,7 @@ export default class StorageAnalyticsApi {
    * Retrieves the details of all Analytics Storage buckets within an existing project
    * Only returns buckets of type 'ANALYTICS'
    *
+   * @category Analytics Buckets
    * @param options Query parameters for listing buckets
    * @param options.limit Maximum number of buckets to return
    * @param options.offset Number of buckets to skip
@@ -159,6 +164,7 @@ export default class StorageAnalyticsApi {
    * A bucket can't be deleted with existing objects inside it
    * You must first empty the bucket before deletion
    *
+   * @category Analytics Buckets
    * @param bucketName The unique identifier of the bucket you would like to delete
    * @returns Promise with success message or error
    *

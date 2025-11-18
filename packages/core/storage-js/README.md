@@ -218,7 +218,7 @@ await storageClient.analytics.deleteBucket('analytics-data')
     offset: 0,
     sortColumn: 'created_at',
     sortOrder: 'desc',
-    search: 'prod'
+    search: 'prod',
   })
   ```
 

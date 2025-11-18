@@ -31,6 +31,8 @@ export default class VectorBucketApi {
    * Creates a new VectorBucketApi instance
    *
    * **Private alpha:** Vector storage APIs are currently in private alpha and may not be accessible.
+   *
+   * @category Vector Buckets
    * @param url - The base URL for the storage vectors API
    * @param headers - HTTP headers to include in requests
    * @param fetch - Optional custom fetch implementation
@@ -55,6 +57,7 @@ export default class VectorBucketApi {
    *
    * **Private alpha:** Vector storage APIs are currently in private alpha and may not be accessible.
    *
+   * @category Vector Buckets
    * @returns This instance for method chaining
    * @example
    * ```typescript
@@ -77,6 +80,7 @@ export default class VectorBucketApi {
    *
    * **Private alpha:** Vector storage APIs are currently in private alpha and may not be accessible.
    *
+   * @category Vector Buckets
    * @param vectorBucketName - Unique name for the vector bucket
    * @returns Promise with empty response on success or error
    *
@@ -122,6 +126,7 @@ export default class VectorBucketApi {
    *
    * **Private alpha:** Vector storage APIs are currently in private alpha and may not be accessible.
    *
+   * @category Vector Buckets
    * @param vectorBucketName - Name of the vector bucket to retrieve
    * @returns Promise with bucket metadata or error
    *
@@ -166,6 +171,7 @@ export default class VectorBucketApi {
    *
    * **Private alpha:** Vector storage APIs are currently in private alpha and may not be accessible.
    *
+   * @category Vector Buckets
    * @param options - Listing options
    * @param options.prefix - Filter buckets by name prefix
    * @param options.maxResults - Maximum results per page (default: 100)
@@ -216,6 +222,7 @@ export default class VectorBucketApi {
    *
    * **Private alpha:** Vector storage APIs are currently in private alpha and may not be accessible.
    *
+   * @category Vector Buckets
    * @param vectorBucketName - Name of the vector bucket to delete
    * @returns Promise with empty response on success or error
    *
