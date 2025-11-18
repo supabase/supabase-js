@@ -1,3 +1,22 @@
+## 2.82.0 (2025-11-18)
+
+### 🚀 Features
+
+- **auth:** add OAuth grant listing and revocation endpoints ([#1833](https://github.com/supabase/supabase-js/pull/1833))
+
+### 🩹 Fixes
+
+- **postgrest:** bubble up fetch error causes and codes ([#1856](https://github.com/supabase/supabase-js/pull/1856))
+- **realtime:** account for null refs when encoding messages ([#1862](https://github.com/supabase/supabase-js/pull/1862))
+- **storage:** analytics bucket prop ([#1852](https://github.com/supabase/supabase-js/pull/1852))
+
+### ❤️ Thank You
+
+- Cemal Kılıç @cemalkilic
+- Eduardo Gurgel
+- Fabrizio @fenos
+- Katerina Skroumpelou @mandarini
+
 ## 2.81.1 (2025-11-11)
 
 ### 🩹 Fixes

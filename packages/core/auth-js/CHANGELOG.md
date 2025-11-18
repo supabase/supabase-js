@@ -1,3 +1,13 @@
+## 2.82.0 (2025-11-18)
+
+### 🚀 Features
+
+- **auth:** add OAuth grant listing and revocation endpoints ([#1833](https://github.com/supabase/supabase-js/pull/1833))
+
+### ❤️ Thank You
+
+- Cemal Kılıç @cemalkilic
+
 ## 2.81.1 (2025-11-11)
 
 ### 🩹 Fixes

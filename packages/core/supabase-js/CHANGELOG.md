@@ -1,3 +1,7 @@
+## 2.82.0 (2025-11-18)
+
+This was a version bump only for @supabase/supabase-js to align it with other projects, there were no code changes.
+
 ## 2.81.1 (2025-11-11)
 
 ### 🩹 Fixes
