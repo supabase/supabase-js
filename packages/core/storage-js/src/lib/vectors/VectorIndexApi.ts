@@ -13,6 +13,9 @@ import {
 } from './types'
 
 /**
+ *
+ * @alpha
+ *
  * Options for creating a vector index
  *
  * **Private alpha:** Vector storage APIs are currently in private alpha and may not be accessible.
@@ -27,6 +30,9 @@ export interface CreateIndexOptions {
 }
 
 /**
+ *
+ * @alpha
+ *
  * API class for managing Vector Indexes within Vector Buckets
  * Provides methods for creating, reading, listing, and deleting vector indexes
  *
@@ -39,6 +45,9 @@ export default class VectorIndexApi {
   protected shouldThrowOnError = false
 
   /**
+   *
+   * @alpha
+   *
    * Creates an API client for managing vector indexes.
    *
    * **Private alpha:** Vector storage APIs are currently in private alpha and may not be accessible.
@@ -46,6 +55,11 @@ export default class VectorIndexApi {
    * @param url - Base URL for the Storage Vectors API.
    * @param headers - Default headers sent with each request.
    * @param fetch - Optional custom `fetch` implementation for non-browser runtimes.
+   *
+   * @example
+   * ```typescript
+   * const client = new VectorIndexApi(url, headers)
+   * ```
    */
   constructor(url: string, headers: { [key: string]: string } = {}, fetch?: Fetch) {
     this.url = url.replace(/\/$/, '')
@@ -54,6 +68,9 @@ export default class VectorIndexApi {
   }
 
   /**
+   *
+   * @alpha
+   *
    * Enable throwing errors instead of returning them in the response
    * When enabled, failed operations will throw instead of returning { data: null, error }
    *
@@ -73,6 +90,9 @@ export default class VectorIndexApi {
   }
 
   /**
+   *
+   * @alpha
+   *
    * Creates a new vector index within a bucket
    * Defines the schema for vectors including dimensionality, distance metric, and metadata config
    *
@@ -125,6 +145,9 @@ export default class VectorIndexApi {
   }
 
   /**
+   *
+   * @alpha
+   *
    * Retrieves metadata for a specific vector index
    * Returns index configuration including dimension, distance metric, and metadata settings
    *
@@ -171,6 +194,9 @@ export default class VectorIndexApi {
   }
 
   /**
+   *
+   * @alpha
+   *
    * Lists vector indexes within a bucket with optional filtering and pagination
    * Supports prefix-based filtering and paginated results
    *
@@ -224,6 +250,9 @@ export default class VectorIndexApi {
   }
 
   /**
+   *
+   * @alpha
+   *
    * Deletes a vector index and all its data
    * This operation removes the index schema and all vectors stored in the index
    *

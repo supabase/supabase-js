@@ -19,6 +19,11 @@ export default class StorageAnalyticsApi {
    * @param url - The base URL for the storage API
    * @param headers - HTTP headers to include in requests
    * @param fetch - Optional custom fetch implementation
+   *
+   * @example
+   * ```typescript
+   * const client = new StorageAnalyticsApi(url, headers)
+   * ```
    */
   constructor(url: string, headers: { [key: string]: string } = {}, fetch?: Fetch) {
     this.url = url.replace(/\/$/, '')

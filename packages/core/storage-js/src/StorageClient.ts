@@ -35,12 +35,20 @@ export class StorageClient extends StorageBucketApi {
    * Perform file operation in a bucket.
    *
    * @param id The bucket id to operate on.
+   *
+   * @example
+   * ```typescript
+   * const avatars = storage.from('avatars')
+   * ```
    */
   from(id: string): StorageFileApi {
     return new StorageFileApi(this.url, this.headers, id, this.fetch)
   }
 
   /**
+   *
+   * @alpha
+   *
    * Access vector storage operations.
    *
    * **Private alpha:** This API is part of a private alpha release and may change or be removed without notice.

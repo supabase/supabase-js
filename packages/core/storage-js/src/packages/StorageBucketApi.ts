@@ -43,6 +43,33 @@ export default class StorageBucketApi {
 
   /**
    * Retrieves the details of all Storage buckets within an existing project.
+   *
+   * @param options Query parameters for listing buckets
+   * @param options.limit Maximum number of buckets to return
+   * @param options.offset Number of buckets to skip
+   * @param options.sortColumn Column to sort by ('id', 'name', 'created_at', 'updated_at')
+   * @param options.sortOrder Sort order ('asc' or 'desc')
+   * @param options.search Search term to filter bucket names
+   * @returns Promise with list of buckets or error
+   *
+   * @example
+   * ```typescript
+   * // List all buckets
+   * const { data, error } = await storageClient.listBuckets()
+   *
+   * // List buckets with options
+   * const { data, error } = await storageClient.listBuckets({
+   *   limit: 10,
+   *   offset: 0,
+   *   sortColumn: 'created_at',
+   *   sortOrder: 'desc',
+   *   search: 'prod'
+   * })
+   * if (data) {
+   *   console.log('Found buckets:', data.length)
+   *   data.forEach(bucket => console.log(`- ${bucket.name}`))
+   * }
+   * ```
    */
   async listBuckets(options?: ListBucketOptions): Promise<
     | {

@@ -10,6 +10,9 @@ import {
 } from './types'
 
 /**
+ *
+ * @alpha
+ *
  * API class for managing Vector Buckets
  * Provides methods for creating, reading, listing, and deleting vector buckets
  *
@@ -22,6 +25,9 @@ export default class VectorBucketApi {
   protected shouldThrowOnError = false
 
   /**
+   *
+   * @alpha
+   *
    * Creates a new VectorBucketApi instance
    *
    * **Private alpha:** Vector storage APIs are currently in private alpha and may not be accessible.
@@ -41,6 +47,9 @@ export default class VectorBucketApi {
   }
 
   /**
+   *
+   * @alpha
+   *
    * Enable throwing errors instead of returning them in the response
    * When enabled, failed operations will throw instead of returning { data: null, error }
    *
@@ -60,6 +69,9 @@ export default class VectorBucketApi {
   }
 
   /**
+   *
+   * @alpha
+   *
    * Creates a new vector bucket
    * Vector buckets are containers for vector indexes and their data
    *
@@ -102,6 +114,9 @@ export default class VectorBucketApi {
   }
 
   /**
+   *
+   * @alpha
+   *
    * Retrieves metadata for a specific vector bucket
    * Returns bucket configuration including encryption settings and creation time
    *
@@ -143,6 +158,9 @@ export default class VectorBucketApi {
   }
 
   /**
+   *
+   * @alpha
+   *
    * Lists vector buckets with optional filtering and pagination
    * Supports prefix-based filtering and paginated results
    *
@@ -190,6 +208,9 @@ export default class VectorBucketApi {
   }
 
   /**
+   *
+   * @alpha
+   *
    * Deletes a vector bucket
    * Bucket must be empty before deletion (all indexes must be removed first)
    *

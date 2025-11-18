@@ -15,6 +15,9 @@ import {
 } from './types'
 
 /**
+ *
+ * @alpha
+ *
  * API class for managing Vector Data within Vector Indexes
  * Provides methods for inserting, querying, listing, and deleting vector embeddings
  *
@@ -27,6 +30,9 @@ export default class VectorDataApi {
   protected shouldThrowOnError = false
 
   /**
+   *
+   * @alpha
+   *
    * Creates a VectorDataApi bound to a Storage Vectors deployment.
    *
    * **Private alpha:** Vector storage APIs are currently in private alpha and may not be accessible.
@@ -34,6 +40,11 @@ export default class VectorDataApi {
    * @param url - Base URL for the Storage Vectors API.
    * @param headers - Default headers (for example authentication tokens).
    * @param fetch - Optional custom `fetch` implementation for non-browser runtimes.
+   *
+   * @example
+   * ```typescript
+   * const client = new VectorDataApi(url, headers)
+   * ```
    */
   constructor(url: string, headers: { [key: string]: string } = {}, fetch?: Fetch) {
     this.url = url.replace(/\/$/, '')
@@ -42,6 +53,9 @@ export default class VectorDataApi {
   }
 
   /**
+   *
+   * @alpha
+   *
    * Enable throwing errors instead of returning them in the response
    * When enabled, failed operations will throw instead of returning { data: null, error }
    *
@@ -61,6 +75,9 @@ export default class VectorDataApi {
   }
 
   /**
+   *
+   * @alpha
+   *
    * Inserts or updates vectors in batch (upsert operation)
    * Accepts 1-500 vectors per request. Larger batches should be split
    *
@@ -120,6 +137,9 @@ export default class VectorDataApi {
   }
 
   /**
+   *
+   * @alpha
+   *
    * Retrieves vectors by their keys in batch
    * Optionally includes vector data and/or metadata in response
    * Additional permissions required when returning data or metadata
@@ -170,6 +190,9 @@ export default class VectorDataApi {
   }
 
   /**
+   *
+   * @alpha
+   *
    * Lists/scans vectors in an index with pagination
    * Supports parallel scanning via segment configuration for high-throughput scenarios
    * Additional permissions required when returning data or metadata
@@ -252,6 +275,9 @@ export default class VectorDataApi {
   }
 
   /**
+   *
+   * @alpha
+   *
    * Queries for similar vectors using approximate nearest neighbor (ANN) search
    * Returns top-K most similar vectors based on the configured distance metric
    * Supports optional metadata filtering (requires GetVectors permission)
@@ -313,6 +339,9 @@ export default class VectorDataApi {
   }
 
   /**
+   *
+   * @alpha
+   *
    * Deletes vectors by their keys in batch
    * Accepts 1-500 keys per request
    *
