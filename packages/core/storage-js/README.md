@@ -209,7 +209,17 @@ await storageClient.analytics.deleteBucket('analytics-data')
 - Retrieve the details of all Storage buckets within an existing project:
 
   ```js
+  // List all buckets
   const { data, error } = await storageClient.listBuckets()
+
+  // List buckets with options (pagination, sorting, search)
+  const { data, error } = await storageClient.listBuckets({
+    limit: 10,
+    offset: 0,
+    sortColumn: 'created_at',
+    sortOrder: 'desc',
+    search: 'prod',
+  })
   ```
 
 #### Handling Files
