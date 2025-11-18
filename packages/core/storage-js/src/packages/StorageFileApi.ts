@@ -189,6 +189,17 @@ export default class StorageFileApi {
    *   })
    * ```
    *
+   * Response:
+   * ```json
+   * {
+   *   "data": {
+   *     "path": "public/avatar1.png",
+   *     "fullPath": "avatars/public/avatar1.png"
+   *   },
+   *   "error": null
+   * }
+   * ```
+   *
    * @example Upload file using `ArrayBuffer` from base64 file data
    * ```js
    * import { decode } from 'base64-arraybuffer'
@@ -234,6 +245,17 @@ export default class StorageFileApi {
    *   .storage
    *   .from('avatars')
    *   .uploadToSignedUrl('folder/cat.jpg', 'token-from-createSignedUploadUrl', file)
+   * ```
+   *
+   * Response:
+   * ```json
+   * {
+   *   "data": {
+   *     "path": "folder/cat.jpg",
+   *     "fullPath": "avatars/folder/cat.jpg"
+   *   },
+   *   "error": null
+   * }
    * ```
    */
   async uploadToSignedUrl(
@@ -303,6 +325,18 @@ export default class StorageFileApi {
    *   .storage
    *   .from('avatars')
    *   .createSignedUploadUrl('folder/cat.jpg')
+   * ```
+   *
+   * Response:
+   * ```json
+   * {
+   *   "data": {
+   *     "signedUrl": "https://example.supabase.co/storage/v1/object/upload/sign/avatars/folder/cat.jpg?token=<TOKEN>",
+   *     "path": "folder/cat.jpg",
+   *     "token": "<TOKEN>"
+   *   },
+   *   "error": null
+   * }
    * ```
    */
   async createSignedUploadUrl(
@@ -376,6 +410,17 @@ export default class StorageFileApi {
    *   })
    * ```
    *
+   * Response:
+   * ```json
+   * {
+   *   "data": {
+   *     "path": "public/avatar1.png",
+   *     "fullPath": "avatars/public/avatar1.png"
+   *   },
+   *   "error": null
+   * }
+   * ```
+   *
    * @example Update file using `ArrayBuffer` from base64 file data
    * ```js
    * import {decode} from 'base64-arraybuffer'
@@ -430,6 +475,16 @@ export default class StorageFileApi {
    *   .storage
    *   .from('avatars')
    *   .move('public/avatar1.png', 'private/avatar2.png')
+   * ```
+   *
+   * Response:
+   * ```json
+   * {
+   *   "data": {
+   *     "message": "Successfully moved"
+   *   },
+   *   "error": null
+   * }
    * ```
    */
   async move(
@@ -487,6 +542,16 @@ export default class StorageFileApi {
    *   .from('avatars')
    *   .copy('public/avatar1.png', 'private/avatar2.png')
    * ```
+   *
+   * Response:
+   * ```json
+   * {
+   *   "data": {
+   *     "path": "avatars/private/avatar2.png"
+   *   },
+   *   "error": null
+   * }
+   * ```
    */
   async copy(
     fromPath: string,
@@ -543,6 +608,16 @@ export default class StorageFileApi {
    *   .storage
    *   .from('avatars')
    *   .createSignedUrl('folder/avatar1.png', 60)
+   * ```
+   *
+   * Response:
+   * ```json
+   * {
+   *   "data": {
+   *     "signedUrl": "https://example.supabase.co/storage/v1/object/sign/avatars/folder/avatar1.png?token=<TOKEN>"
+   *   },
+   *   "error": null
+   * }
    * ```
    *
    * @example Create a signed URL for an asset with transformations
@@ -625,6 +700,27 @@ export default class StorageFileApi {
    *   .from('avatars')
    *   .createSignedUrls(['folder/avatar1.png', 'folder/avatar2.png'], 60)
    * ```
+   *
+   * Response:
+   * ```json
+   * {
+   *   "data": [
+   *     {
+   *       "error": null,
+   *       "path": "folder/avatar1.png",
+   *       "signedURL": "/object/sign/avatars/folder/avatar1.png?token=<TOKEN>",
+   *       "signedUrl": "https://example.supabase.co/storage/v1/object/sign/avatars/folder/avatar1.png?token=<TOKEN>"
+   *     },
+   *     {
+   *       "error": null,
+   *       "path": "folder/avatar2.png",
+   *       "signedURL": "/object/sign/avatars/folder/avatar2.png?token=<TOKEN>",
+   *       "signedUrl": "https://example.supabase.co/storage/v1/object/sign/avatars/folder/avatar2.png?token=<TOKEN>"
+   *     }
+   *   ],
+   *   "error": null
+   * }
+   * ```
    */
   async createSignedUrls(
     paths: string[],
@@ -686,6 +782,14 @@ export default class StorageFileApi {
    *   .storage
    *   .from('avatars')
    *   .download('folder/avatar1.png')
+   * ```
+   *
+   * Response:
+   * ```json
+   * {
+   *   "data": <BLOB>,
+   *   "error": null
+   * }
    * ```
    *
    * @example Download file with transformations
@@ -831,6 +935,15 @@ export default class StorageFileApi {
    *   .getPublicUrl('folder/avatar1.png')
    * ```
    *
+   * Response:
+   * ```json
+   * {
+   *   "data": {
+   *     "publicUrl": "https://example.supabase.co/storage/v1/object/public/public-bucket/folder/avatar1.png"
+   *   }
+   * }
+   * ```
+   *
    * @example Returns the URL for an asset in a public bucket with transformations
    * ```js
    * const { data } = supabase
@@ -900,6 +1013,14 @@ export default class StorageFileApi {
    *   .storage
    *   .from('avatars')
    *   .remove(['folder/avatar1.png'])
+   * ```
+   *
+   * Response:
+   * ```json
+   * {
+   *   "data": [],
+   *   "error": null
+   * }
    * ```
    */
   async remove(paths: string[]): Promise<
@@ -1014,6 +1135,31 @@ export default class StorageFileApi {
    *     offset: 0,
    *     sortBy: { column: 'name', order: 'asc' },
    *   })
+   * ```
+   *
+   * Response:
+   * ```json
+   * {
+   *   "data": [
+   *     {
+   *       "name": "avatar1.png",
+   *       "id": "e668cf7f-821b-4a2f-9dce-7dfa5dd1cfd2",
+   *       "updated_at": "2024-05-22T23:06:05.580Z",
+   *       "created_at": "2024-05-22T23:04:34.443Z",
+   *       "last_accessed_at": "2024-05-22T23:04:34.443Z",
+   *       "metadata": {
+   *         "eTag": "\"c5e8c553235d9af30ef4f6e280790b92\"",
+   *         "size": 32175,
+   *         "mimetype": "image/png",
+   *         "cacheControl": "max-age=3600",
+   *         "lastModified": "2024-05-22T23:06:05.574Z",
+   *         "contentLength": 32175,
+   *         "httpStatusCode": 200
+   *       }
+   *     }
+   *   ],
+   *   "error": null
+   * }
    * ```
    *
    * @example Search files in a bucket

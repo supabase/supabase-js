@@ -53,13 +53,21 @@ export default class StorageAnalyticsApi {
    * @param name A unique name for the bucket you are creating
    * @returns Promise with newly created bucket name or error
    *
-   * @example
-   * ```typescript
-   * const { data, error } = await storage.analytics.createBucket('analytics-data')
-   * if (error) {
-   *   console.error('Failed to create analytics bucket:', error.message)
-   * } else {
-   *   console.log('Created bucket:', data.name)
+   * @example Create analytics bucket
+   * ```js
+   * const { data, error } = await supabase
+   *   .storage
+   *   .analytics
+   *   .createBucket('analytics-data')
+   * ```
+   *
+   * Response:
+   * ```json
+   * {
+   *   "data": {
+   *     "name": "analytics-data"
+   *   },
+   *   "error": null
    * }
    * ```
    */
@@ -101,18 +109,32 @@ export default class StorageAnalyticsApi {
    * @param options.search Search term to filter bucket names
    * @returns Promise with list of analytics buckets or error
    *
-   * @example
-   * ```typescript
-   * const { data, error } = await storage.analytics.listBuckets({
-   *   limit: 10,
-   *   offset: 0,
-   *   sortColumn: 'created_at',
-   *   sortOrder: 'desc',
-   *   search: 'analytics'
-   * })
-   * if (data) {
-   *   console.log('Found analytics buckets:', data.length)
-   *   data.forEach(bucket => console.log(`- ${bucket.name}`))
+   * @example List analytics buckets
+   * ```js
+   * const { data, error } = await supabase
+   *   .storage
+   *   .analytics
+   *   .listBuckets({
+   *     limit: 10,
+   *     offset: 0,
+   *     sortColumn: 'created_at',
+   *     sortOrder: 'desc'
+   *   })
+   * ```
+   *
+   * Response:
+   * ```json
+   * {
+   *   "data": [
+   *     {
+   *       "id": "analytics-data",
+   *       "name": "analytics-data",
+   *       "type": "ANALYTICS",
+   *       "created_at": "2024-05-22T22:26:05.100Z",
+   *       "updated_at": "2024-05-22T22:26:05.100Z"
+   *     }
+   *   ],
+   *   "error": null
    * }
    * ```
    */
@@ -168,13 +190,21 @@ export default class StorageAnalyticsApi {
    * @param bucketName The unique identifier of the bucket you would like to delete
    * @returns Promise with success message or error
    *
-   * @example
-   * ```typescript
-   * const { data, error } = await analyticsApi.deleteBucket('old-analytics-bucket')
-   * if (error) {
-   *   console.error('Failed to delete bucket:', error.message)
-   * } else {
-   *   console.log('Bucket deleted successfully:', data.message)
+   * @example Delete analytics bucket
+   * ```js
+   * const { data, error } = await supabase
+   *   .storage
+   *   .analytics
+   *   .deleteBucket('analytics-data')
+   * ```
+   *
+   * Response:
+   * ```json
+   * {
+   *   "data": {
+   *     "message": "Successfully deleted"
+   *   },
+   *   "error": null
    * }
    * ```
    */

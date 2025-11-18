@@ -116,6 +116,25 @@ export default class StorageBucketApi {
    *   .storage
    *   .getBucket('avatars')
    * ```
+   *
+   * Response:
+   * ```json
+   * {
+   *   "data": {
+   *     "id": "avatars",
+   *     "name": "avatars",
+   *     "owner": "",
+   *     "public": false,
+   *     "file_size_limit": 1024,
+   *     "allowed_mime_types": [
+   *       "image/png"
+   *     ],
+   *     "created_at": "2024-05-22T22:26:05.100Z",
+   *     "updated_at": "2024-05-22T22:26:05.100Z"
+   *   },
+   *   "error": null
+   * }
+   * ```
    */
   async getBucket(id: string): Promise<
     | {
@@ -167,6 +186,16 @@ export default class StorageBucketApi {
    *     allowedMimeTypes: ['image/png'],
    *     fileSizeLimit: 1024
    *   })
+   * ```
+   *
+   * Response:
+   * ```json
+   * {
+   *   "data": {
+   *     "name": "avatars"
+   *   },
+   *   "error": null
+   * }
    * ```
    */
   async createBucket(
@@ -240,6 +269,16 @@ export default class StorageBucketApi {
    *     fileSizeLimit: 1024
    *   })
    * ```
+   *
+   * Response:
+   * ```json
+   * {
+   *   "data": {
+   *     "message": "Successfully updated"
+   *   },
+   *   "error": null
+   * }
+   * ```
    */
   async updateBucket(
     id: string,
@@ -297,6 +336,16 @@ export default class StorageBucketApi {
    *   .storage
    *   .emptyBucket('avatars')
    * ```
+   *
+   * Response:
+   * ```json
+   * {
+   *   "data": {
+   *     "message": "Successfully emptied"
+   *   },
+   *   "error": null
+   * }
+   * ```
    */
   async emptyBucket(id: string): Promise<
     | {
@@ -341,6 +390,16 @@ export default class StorageBucketApi {
    * const { data, error } = await supabase
    *   .storage
    *   .deleteBucket('avatars')
+   * ```
+   *
+   * Response:
+   * ```json
+   * {
+   *   "data": {
+   *     "message": "Successfully deleted"
+   *   },
+   *   "error": null
+   * }
    * ```
    */
   async deleteBucket(id: string): Promise<
