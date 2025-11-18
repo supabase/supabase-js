@@ -16,7 +16,7 @@ import {
  * API class for managing Vector Buckets
  * Provides methods for creating, reading, listing, and deleting vector buckets
  *
- * **Private alpha:** Vector storage APIs are currently in private alpha and may not be accessible.
+ * **Public alpha:** This API is part of a public alpha release and may not be available to your account type.
  */
 export default class VectorBucketApi {
   protected url: string
@@ -30,7 +30,7 @@ export default class VectorBucketApi {
    *
    * Creates a new VectorBucketApi instance
    *
-   * **Private alpha:** Vector storage APIs are currently in private alpha and may not be accessible.
+   * **Public alpha:** This API is part of a public alpha release and may not be available to your account type.
    *
    * @category Vector Buckets
    * @param url - The base URL for the storage vectors API
@@ -55,7 +55,7 @@ export default class VectorBucketApi {
    * Enable throwing errors instead of returning them in the response
    * When enabled, failed operations will throw instead of returning { data: null, error }
    *
-   * **Private alpha:** Vector storage APIs are currently in private alpha and may not be accessible.
+   * **Public alpha:** This API is part of a public alpha release and may not be available to your account type.
    *
    * @category Vector Buckets
    * @returns This instance for method chaining
@@ -78,7 +78,7 @@ export default class VectorBucketApi {
    * Creates a new vector bucket
    * Vector buckets are containers for vector indexes and their data
    *
-   * **Private alpha:** Vector storage APIs are currently in private alpha and may not be accessible.
+   * **Public alpha:** This API is part of a public alpha release and may not be available to your account type.
    *
    * @category Vector Buckets
    * @param vectorBucketName - Unique name for the vector bucket
@@ -124,7 +124,7 @@ export default class VectorBucketApi {
    * Retrieves metadata for a specific vector bucket
    * Returns bucket configuration including encryption settings and creation time
    *
-   * **Private alpha:** Vector storage APIs are currently in private alpha and may not be accessible.
+   * **Public alpha:** This API is part of a public alpha release and may not be available to your account type.
    *
    * @category Vector Buckets
    * @param vectorBucketName - Name of the vector bucket to retrieve
@@ -169,7 +169,7 @@ export default class VectorBucketApi {
    * Lists vector buckets with optional filtering and pagination
    * Supports prefix-based filtering and paginated results
    *
-   * **Private alpha:** Vector storage APIs are currently in private alpha and may not be accessible.
+   * **Public alpha:** This API is part of a public alpha release and may not be available to your account type.
    *
    * @category Vector Buckets
    * @param options - Listing options
@@ -220,7 +220,7 @@ export default class VectorBucketApi {
    * Deletes a vector bucket
    * Bucket must be empty before deletion (all indexes must be removed first)
    *
-   * **Private alpha:** Vector storage APIs are currently in private alpha and may not be accessible.
+   * **Public alpha:** This API is part of a public alpha release and may not be available to your account type.
    *
    * @category Vector Buckets
    * @param vectorBucketName - Name of the vector bucket to delete

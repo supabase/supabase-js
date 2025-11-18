@@ -21,7 +21,7 @@ import {
  * API class for managing Vector Data within Vector Indexes
  * Provides methods for inserting, querying, listing, and deleting vector embeddings
  *
- * **Private alpha:** Vector storage APIs are currently in private alpha and may not be accessible.
+ * **Public alpha:** This API is part of a public alpha release and may not be available to your account type.
  */
 export default class VectorDataApi {
   protected url: string
@@ -35,7 +35,7 @@ export default class VectorDataApi {
    *
    * Creates a VectorDataApi bound to a Storage Vectors deployment.
    *
-   * **Private alpha:** Vector storage APIs are currently in private alpha and may not be accessible.
+   * **Public alpha:** This API is part of a public alpha release and may not be available to your account type.
    *
    * @category Vector Buckets
    * @param url - Base URL for the Storage Vectors API.
@@ -60,7 +60,7 @@ export default class VectorDataApi {
    * Enable throwing errors instead of returning them in the response
    * When enabled, failed operations will throw instead of returning { data: null, error }
    *
-   * **Private alpha:** Vector storage APIs are currently in private alpha and may not be accessible.
+   * **Public alpha:** This API is part of a public alpha release and may not be available to your account type.
    *
    * @category Vector Buckets
    * @returns This instance for method chaining
@@ -83,7 +83,7 @@ export default class VectorDataApi {
    * Inserts or updates vectors in batch (upsert operation)
    * Accepts 1-500 vectors per request. Larger batches should be split
    *
-   * **Private alpha:** Vector storage APIs are currently in private alpha and may not be accessible.
+   * **Public alpha:** This API is part of a public alpha release and may not be available to your account type.
    *
    * @category Vector Buckets
    * @param options - Vector insertion options
@@ -147,7 +147,7 @@ export default class VectorDataApi {
    * Optionally includes vector data and/or metadata in response
    * Additional permissions required when returning data or metadata
    *
-   * **Private alpha:** Vector storage APIs are currently in private alpha and may not be accessible.
+   * **Public alpha:** This API is part of a public alpha release and may not be available to your account type.
    *
    * @category Vector Buckets
    * @param options - Vector retrieval options
@@ -201,7 +201,7 @@ export default class VectorDataApi {
    * Supports parallel scanning via segment configuration for high-throughput scenarios
    * Additional permissions required when returning data or metadata
    *
-   * **Private alpha:** Vector storage APIs are currently in private alpha and may not be accessible.
+   * **Public alpha:** This API is part of a public alpha release and may not be available to your account type.
    *
    * @category Vector Buckets
    * @param options - Vector listing options
@@ -287,7 +287,7 @@ export default class VectorDataApi {
    * Returns top-K most similar vectors based on the configured distance metric
    * Supports optional metadata filtering (requires GetVectors permission)
    *
-   * **Private alpha:** Vector storage APIs are currently in private alpha and may not be accessible.
+   * **Public alpha:** This API is part of a public alpha release and may not be available to your account type.
    *
    * @category Vector Buckets
    * @param options - Query options
@@ -351,7 +351,7 @@ export default class VectorDataApi {
    * Deletes vectors by their keys in batch
    * Accepts 1-500 keys per request
    *
-   * **Private alpha:** Vector storage APIs are currently in private alpha and may not be accessible.
+   * **Public alpha:** This API is part of a public alpha release and may not be available to your account type.
    *
    * @category Vector Buckets
    * @param options - Vector deletion options

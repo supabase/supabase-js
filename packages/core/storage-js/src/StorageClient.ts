@@ -53,7 +53,7 @@ export class StorageClient extends StorageBucketApi {
    *
    * Access vector storage operations.
    *
-   * **Private alpha:** This API is part of a private alpha release and may change or be removed without notice.
+   * **Public alpha:** This API is part of a public alpha release and may not be available to your account type.
    *
    * @category Vector Buckets
    * @returns A StorageVectorsClient instance configured with the current storage settings.
@@ -67,6 +67,8 @@ export class StorageClient extends StorageBucketApi {
 
   /**
    * Access analytics storage operations using Iceberg tables.
+   *
+   * **Public alpha:** This API is part of a public alpha release and may not be available to your account type.
    *
    * @category Analytics Buckets
    * @returns A StorageAnalyticsApi instance configured with the current storage settings.

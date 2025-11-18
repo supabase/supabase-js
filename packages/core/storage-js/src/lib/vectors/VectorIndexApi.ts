@@ -18,7 +18,7 @@ import {
  *
  * Options for creating a vector index
  *
- * **Private alpha:** Vector storage APIs are currently in private alpha and may not be accessible.
+ * **Public alpha:** This API is part of a public alpha release and may not be available to your account type.
  */
 export interface CreateIndexOptions {
   vectorBucketName: string
@@ -36,7 +36,7 @@ export interface CreateIndexOptions {
  * API class for managing Vector Indexes within Vector Buckets
  * Provides methods for creating, reading, listing, and deleting vector indexes
  *
- * **Private alpha:** Vector storage APIs are currently in private alpha and may not be accessible.
+ * **Public alpha:** This API is part of a public alpha release and may not be available to your account type.
  */
 export default class VectorIndexApi {
   protected url: string
@@ -50,7 +50,7 @@ export default class VectorIndexApi {
    *
    * Creates an API client for managing vector indexes.
    *
-   * **Private alpha:** Vector storage APIs are currently in private alpha and may not be accessible.
+   * **Public alpha:** This API is part of a public alpha release and may not be available to your account type.
    *
    * @category Vector Buckets
    * @param url - Base URL for the Storage Vectors API.
@@ -75,7 +75,7 @@ export default class VectorIndexApi {
    * Enable throwing errors instead of returning them in the response
    * When enabled, failed operations will throw instead of returning { data: null, error }
    *
-   * **Private alpha:** Vector storage APIs are currently in private alpha and may not be accessible.
+   * **Public alpha:** This API is part of a public alpha release and may not be available to your account type.
    *
    * @category Vector Buckets
    * @returns This instance for method chaining
@@ -98,7 +98,7 @@ export default class VectorIndexApi {
    * Creates a new vector index within a bucket
    * Defines the schema for vectors including dimensionality, distance metric, and metadata config
    *
-   * **Private alpha:** Vector storage APIs are currently in private alpha and may not be accessible.
+   * **Public alpha:** This API is part of a public alpha release and may not be available to your account type.
    *
    * @category Vector Buckets
    * @param options - Index configuration
@@ -154,7 +154,7 @@ export default class VectorIndexApi {
    * Retrieves metadata for a specific vector index
    * Returns index configuration including dimension, distance metric, and metadata settings
    *
-   * **Private alpha:** Vector storage APIs are currently in private alpha and may not be accessible.
+   * **Public alpha:** This API is part of a public alpha release and may not be available to your account type.
    *
    * @category Vector Buckets
    * @param vectorBucketName - Name of the parent vector bucket
@@ -204,7 +204,7 @@ export default class VectorIndexApi {
    * Lists vector indexes within a bucket with optional filtering and pagination
    * Supports prefix-based filtering and paginated results
    *
-   * **Private alpha:** Vector storage APIs are currently in private alpha and may not be accessible.
+   * **Public alpha:** This API is part of a public alpha release and may not be available to your account type.
    *
    * @category Vector Buckets
    * @param options - Listing options
@@ -261,7 +261,7 @@ export default class VectorIndexApi {
    * Deletes a vector index and all its data
    * This operation removes the index schema and all vectors stored in the index
    *
-   * **Private alpha:** Vector storage APIs are currently in private alpha and may not be accessible.
+   * **Public alpha:** This API is part of a public alpha release and may not be available to your account type.
    *
    * @category Vector Buckets
    * @param vectorBucketName - Name of the parent vector bucket
