@@ -1,3 +1,13 @@
+## 2.83.0 (2025-11-18)
+
+### 🚀 Features
+
+- **storage:** rename StorageAnalyticsApi to StorageAnalyticsClient ([#1869](https://github.com/supabase/supabase-js/pull/1869))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+
 ## 2.82.0 (2025-11-18)
 
 ### 🩹 Fixes
