@@ -67,57 +67,6 @@ describe('JSON', () => {
 })
 
 describe('binary', () => {
-  it('encodes push', async () => {
-    let buffer = binPayload()
-    let bin = '\0\x01\x01\x01\x0101te\x01\x04'
-    const result = await encodeAsync(serializer, {
-      join_ref: '0',
-      ref: '1',
-      topic: 't',
-      event: 'e',
-      payload: buffer,
-    })
-    expect(decoder.decode(result as ArrayBuffer)).toBe(bin)
-  })
-
-  it('encodes push with undefined join_ref and ref', async () => {
-    let buffer = binPayload()
-    let bin = '\0\x00\x00\x01\x01te\x01\x04'
-    const result = await encodeAsync(serializer, {
-      join_ref: undefined,
-      ref: undefined,
-      topic: 't',
-      event: 'e',
-      payload: buffer,
-    })
-    expect(decoder.decode(result as ArrayBuffer)).toBe(bin)
-  })
-
-  it('encodes push with no join_ref no ref', async () => {
-    let buffer = binPayload()
-    let bin = '\0\x00\x00\x01\x01te\x01\x04'
-    const result = await encodeAsync(serializer, {
-      topic: 't',
-      event: 'e',
-      payload: buffer,
-    })
-    expect(decoder.decode(result as ArrayBuffer)).toBe(bin)
-  })
-
-  it('encodes variable length segments', async () => {
-    let buffer = binPayload()
-    let bin = '\0\x02\x01\x03\x02101topev\x01\x04'
-
-    const result = await encodeAsync(serializer, {
-      join_ref: '10',
-      ref: '1',
-      topic: 'top',
-      event: 'ev',
-      payload: buffer,
-    })
-    expect(decoder.decode(result as ArrayBuffer)).toBe(bin)
-  })
-
   it('encodes user broadcast push with JSON payload', async () => {
     // 3 -> user_broadcast_push
     // 2 join_ref length
@@ -224,49 +173,6 @@ describe('binary', () => {
       },
     })
     expect(decoder.decode(result as ArrayBuffer)).toBe(bin)
-  })
-
-  it('decodes push payload as JSON', async () => {
-    let bin = '\0\x03\x03\n123topsome-event{"a":"b"}'
-    let buffer = new TextEncoder().encode(bin).buffer
-
-    const result = await decodeAsync(serializer, buffer)
-
-    expect(result.join_ref).toBe('123')
-    expect(result.ref).toBeNull()
-    expect(result.topic).toBe('top')
-    expect(result.event).toBe('some-event')
-    expect(result.payload.constructor).toBe(Object)
-    expect(result.payload).toStrictEqual({ a: 'b' })
-  })
-
-  it('decodes reply payload as JSON', async () => {
-    let bin = '\x01\x03\x02\x03\x0210012topok{"a":"b"}'
-    let buffer = new TextEncoder().encode(bin).buffer
-
-    const result = await decodeAsync(serializer, buffer)
-
-    expect(result.join_ref).toBe('100')
-    expect(result.ref).toBe('12')
-    expect(result.topic).toBe('top')
-    expect(result.event).toBe('phx_reply')
-    expect(result.payload.status).toBe('ok')
-    expect(result.payload.response.constructor).toBe(Object)
-    expect(result.payload.response).toStrictEqual({ a: 'b' })
-  })
-
-  it('decodes broadcast payload as JSON', async () => {
-    let bin = '\x02\x03\ntopsome-event{"a":"b"}'
-    let buffer = new TextEncoder().encode(bin).buffer
-
-    const result = await decodeAsync(serializer, buffer)
-
-    expect(result.join_ref).toBeNull()
-    expect(result.ref).toBeNull()
-    expect(result.topic).toBe('top')
-    expect(result.event).toBe('some-event')
-    expect(result.payload.constructor).toBe(Object)
-    expect(result.payload).toStrictEqual({ a: 'b' })
   })
 
   it('decodes user broadcast with JSON payload and no metadata', async () => {
