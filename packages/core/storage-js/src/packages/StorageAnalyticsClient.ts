@@ -5,17 +5,19 @@ import { resolveFetch } from '../lib/helpers'
 import { AnalyticBucket } from '../lib/types'
 
 /**
- * API class for managing Analytics Buckets using Iceberg tables
+ * Client class for managing Analytics Buckets using Iceberg tables
  * Provides methods for creating, listing, and deleting analytics buckets
  */
-export default class StorageAnalyticsApi {
+export default class StorageAnalyticsClient {
   protected url: string
   protected headers: { [key: string]: string }
   protected fetch: Fetch
   protected shouldThrowOnError = false
 
   /**
-   * Creates a new StorageAnalyticsApi instance
+   * @alpha
+   *
+   * Creates a new StorageAnalyticsClient instance
    *
    * **Public alpha:** This API is part of a public alpha release and may not be available to your account type.
    *
@@ -26,7 +28,7 @@ export default class StorageAnalyticsApi {
    *
    * @example
    * ```typescript
-   * const client = new StorageAnalyticsApi(url, headers)
+   * const client = new StorageAnalyticsClient(url, headers)
    * ```
    */
   constructor(url: string, headers: { [key: string]: string } = {}, fetch?: Fetch) {
@@ -36,6 +38,8 @@ export default class StorageAnalyticsApi {
   }
 
   /**
+   * @alpha
+   *
    * Enable throwing errors instead of returning them in the response
    * When enabled, failed operations will throw instead of returning { data: null, error }
    *
@@ -50,6 +54,8 @@ export default class StorageAnalyticsApi {
   }
 
   /**
+   * @alpha
+   *
    * Creates a new analytics bucket using Iceberg tables
    * Analytics buckets are optimized for analytical queries and data processing
    *
@@ -103,6 +109,8 @@ export default class StorageAnalyticsApi {
   }
 
   /**
+   * @alpha
+   *
    * Retrieves the details of all Analytics Storage buckets within an existing project
    * Only returns buckets of type 'ANALYTICS'
    *
@@ -190,6 +198,8 @@ export default class StorageAnalyticsApi {
   }
 
   /**
+   * @alpha
+   *
    * Deletes an existing analytics bucket
    * A bucket can't be deleted with existing objects inside it
    * You must first empty the bucket before deletion
