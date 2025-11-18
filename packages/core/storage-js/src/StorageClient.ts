@@ -1,6 +1,6 @@
 import StorageFileApi from './packages/StorageFileApi'
 import StorageBucketApi from './packages/StorageBucketApi'
-import StorageAnalyticsApi from './packages/StorageAnalyticsApi'
+import StorageAnalyticsClient from './packages/StorageAnalyticsClient'
 import { Fetch } from './lib/fetch'
 import { StorageVectorsClient } from './lib/vectors'
 
@@ -66,12 +66,15 @@ export class StorageClient extends StorageBucketApi {
   }
 
   /**
+   *
+   * @alpha
+   *
    * Access analytics storage operations using Iceberg tables.
    *
    * **Public alpha:** This API is part of a public alpha release and may not be available to your account type.
    *
    * @category Analytics Buckets
-   * @returns A StorageAnalyticsApi instance configured with the current storage settings.
+   * @returns A StorageAnalyticsClient instance configured with the current storage settings.
    * @example
    * ```typescript
    * const client = createClient(url, key)
@@ -87,7 +90,7 @@ export class StorageClient extends StorageBucketApi {
    * await analytics.deleteBucket('old-analytics-bucket')
    * ```
    */
-  get analytics(): StorageAnalyticsApi {
-    return new StorageAnalyticsApi(this.url + '/iceberg', this.headers, this.fetch)
+  get analytics(): StorageAnalyticsClient {
+    return new StorageAnalyticsClient(this.url + '/iceberg', this.headers, this.fetch)
   }
 }
