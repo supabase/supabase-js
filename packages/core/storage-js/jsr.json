@@ -1,0 +1,6 @@
+{
+  "name": "@supabase/storage-js",
+  "version": "0.0.0",
+  "exports": "./src/index.ts",
+  "exclude": ["test", "infra"]
+}

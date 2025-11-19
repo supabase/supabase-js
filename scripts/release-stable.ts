@@ -142,6 +142,16 @@ function safeExec(cmd: string, opts = {}) {
     console.log('⚠️  Continuing with release despite gotrue-js publish failure')
   }
 
+  // Publish all packages to JSR
+  console.log('\n📦 Publishing packages to JSR...')
+  try {
+    safeExec('npx tsx scripts/publish-to-jsr.ts --tag=latest')
+  } catch (error) {
+    console.error('❌ Failed to publish to JSR:', error)
+    // Don't fail the entire release if JSR publishing fails
+    console.log('⚠️  Continuing with release despite JSR publish failure')
+  }
+
   // ---- CREATE RELEASE BRANCH + PR ----
   process.env.GITHUB_TOKEN = process.env.RELEASE_GITHUB_TOKEN
 

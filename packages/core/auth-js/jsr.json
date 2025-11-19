@@ -1,0 +1,6 @@
+{
+  "name": "@supabase/auth-js",
+  "version": "0.0.0",
+  "exports": "./src/index.ts",
+  "exclude": ["example", "test", "infra"]
+}
