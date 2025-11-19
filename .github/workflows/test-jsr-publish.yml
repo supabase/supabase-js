@@ -1,0 +1,48 @@
+# TEMPORARY TEST WORKFLOW - DO NOT MERGE
+# This workflow tests JSR publishing without affecting npm
+name: Test JSR Publishing
+
+on:
+  push:
+    branches: [chore/release-jsr]
+  pull_request:
+    branches: [chore/release-jsr]
+    types: [synchronize]
+  workflow_dispatch: # Manual trigger only
+
+env:
+  NODE_VERSION: '20'
+
+jobs:
+  test-jsr:
+    name: Test JSR Publish
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write # Required for JSR OIDC authentication
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Test JSR Publishing
+        run: npx tsx scripts/test-jsr-publish.ts
+
+      - name: Summary
+        run: |
+          echo "## 🧪 JSR Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "✅ JSR test publishing completed" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Check the logs above for details." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "View at: https://jsr.io/@supabase/functions-js/versions" >> $GITHUB_STEP_SUMMARY
