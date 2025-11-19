@@ -23,7 +23,17 @@ const tag = getArg('tag') || 'latest'
 const dryRun = process.argv.includes('--dry-run')
 
 // Packages that need --allow-slow-types due to missing explicit return types
-// These should be fixed in the future but for now we'll allow slow types
+// TODO: Remove --allow-slow-types once explicit return types are added to improve JSR performance
+//
+// Packages requiring --allow-slow-types:
+// - auth-js: Missing return types in auth client methods
+// - postgrest-js: Missing return types in query builder methods
+// - storage-js: Missing return types in storage methods
+// - realtime-js: Missing return types in channel and presence methods
+//
+// Packages NOT requiring --allow-slow-types:
+// - functions-js: Has explicit return types
+// - supabase-js: Has explicit return types (aggregates other packages)
 const packagesWithSlowTypes = ['auth-js', 'postgrest-js', 'storage-js', 'realtime-js']
 
 function safeExec(cmd: string, opts = {}) {
@@ -38,15 +48,12 @@ function safeExec(cmd: string, opts = {}) {
 async function publishToJsr() {
   console.log(`\n📦 Publishing packages to JSR (tag: ${tag})...\n`)
 
-  // Check if we have JSR token for authentication
-  const jsrToken = process.env.JSR_TOKEN
-  if (!jsrToken && !dryRun) {
-    console.warn('⚠️  JSR_TOKEN environment variable not set.')
-    console.warn('   Publishing will require interactive authentication or will fail in CI.')
-    console.warn('   To set up JSR publishing:')
-    console.warn('   1. Create a JSR access token at https://jsr.io/account/tokens')
-    console.warn('   2. Add JSR_TOKEN as a GitHub secret')
-    console.warn('   3. Pass it to the release script in the workflow')
+  // GitHub Actions uses OIDC authentication automatically via id-token: write permission
+  // No manual token setup required when running in CI with proper permissions
+  if (!process.env.GITHUB_ACTIONS && !dryRun) {
+    console.warn('⚠️  Not running in GitHub Actions.')
+    console.warn('   Local publishing will use interactive browser authentication.')
+    console.warn('   For CI/CD, ensure your workflow has "id-token: write" permission.')
   }
 
   let hasErrors = false
@@ -67,8 +74,11 @@ async function publishToJsr() {
     const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf-8'))
     const version = packageJson.version
 
+    // Read and backup the original jsr.json
+    const originalJsrContent = readFileSync(jsrPath, 'utf-8')
+    const jsrConfig = JSON.parse(originalJsrContent)
+
     // Update jsr.json with the current version
-    const jsrConfig = JSON.parse(readFileSync(jsrPath, 'utf-8'))
     jsrConfig.version = version
     writeFileSync(jsrPath, JSON.stringify(jsrConfig, null, 2) + '\n')
 
@@ -78,16 +88,16 @@ async function publishToJsr() {
       // Determine if we need to allow slow types for this package
       const allowSlowTypes = packagesWithSlowTypes.includes(pkg) ? ' --allow-slow-types' : ''
 
-      // Add authentication token if available
-      const tokenFlag = jsrToken && !dryRun ? ` --token ${jsrToken}` : ''
-
       // Add provenance flag if we're in GitHub Actions CI
+      // GitHub Actions OIDC automatically handles authentication via id-token: write
       const provenanceFlag = process.env.GITHUB_ACTIONS && !dryRun ? ' --provenance' : ''
 
       // Change to package directory and publish
+      // Note: In GitHub Actions, authentication happens automatically via OIDC
+      // Local publishing will prompt for interactive browser authentication
       const publishCmd = dryRun
         ? `cd "${packagePath}" && npx jsr publish --dry-run --allow-dirty${allowSlowTypes}`
-        : `cd "${packagePath}" && npx jsr publish --allow-dirty${allowSlowTypes}${tokenFlag}${provenanceFlag}`
+        : `cd "${packagePath}" && npx jsr publish --allow-dirty${allowSlowTypes}${provenanceFlag}`
 
       safeExec(publishCmd)
 
@@ -98,6 +108,9 @@ async function publishToJsr() {
       console.error(`❌ Failed to publish ${pkg} to JSR: ${errorMsg}`)
       results.push({ package: pkg, success: false, error: errorMsg })
       hasErrors = true
+    } finally {
+      // Restore original jsr.json to keep working directory clean
+      writeFileSync(jsrPath, originalJsrContent)
     }
   }
 

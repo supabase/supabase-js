@@ -111,7 +111,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           RELEASE_GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
-          JSR_TOKEN: ${{ secrets.JSR_TOKEN }}
         shell: bash
         run: npm run release-stable -- --versionSpecifier "${{ github.event.inputs.version_specifier }}"
 
@@ -277,7 +276,6 @@ jobs:
           NPM_CONFIG_PROVENANCE: true
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           RELEASE_GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
-          JSR_TOKEN: ${{ secrets.JSR_TOKEN }}
 
   notify-stable-failure:
     name: Notify Slack for Stable failure
