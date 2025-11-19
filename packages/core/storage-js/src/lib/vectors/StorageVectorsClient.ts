@@ -99,7 +99,9 @@ export class StorageVectorsClient extends VectorBucketApi {
    *
    * **Public alpha:** This API is part of a public alpha release and may not be available to your account type.
    *
-   * @category Vector Buckets
+   * @displayName Create a vectors client
+   *
+   * @group Vector Buckets
    * @param url - Base URL of the Storage Vectors REST API.
    * @param options.headers - Optional headers (for example `Authorization`) applied to every request.
    * @param options.fetch - Optional custom `fetch` implementation for non-browser runtimes.
@@ -122,7 +124,9 @@ export class StorageVectorsClient extends VectorBucketApi {
    *
    * **Public alpha:** This API is part of a public alpha release and may not be available to your account type.
    *
-   * @category Vector Buckets
+   * @displayName Access a vector bucket
+   *
+   * @group Vector Buckets
    * @param vectorBucketName - Name of the vector bucket
    * @returns Bucket-scoped client with index and vector operations
    *
@@ -166,7 +170,9 @@ export class VectorBucketScope extends VectorIndexApi {
    *
    * **Public alpha:** This API is part of a public alpha release and may not be available to your account type.
    *
-   * @category Vector Buckets
+   * @displayName Create a vector bucket scope
+   *
+   * @group Vector Buckets
    * @example
    * ```typescript
    * const bucket = client.bucket('embeddings-prod')
@@ -191,7 +197,9 @@ export class VectorBucketScope extends VectorIndexApi {
    *
    * **Public alpha:** This API is part of a public alpha release and may not be available to your account type.
    *
-   * @category Vector Buckets
+   * @displayName Create a vector index
+   *
+   * @group Vector Buckets
    * @param options - Index configuration (vectorBucketName is automatically set)
    * @returns Promise with empty response on success or error
    *
@@ -225,7 +233,9 @@ export class VectorBucketScope extends VectorIndexApi {
    *
    * **Public alpha:** This API is part of a public alpha release and may not be available to your account type.
    *
-   * @category Vector Buckets
+   * @displayName List all vector indexes
+   *
+   * @group Vector Buckets
    * @param options - Listing options (vectorBucketName is automatically set)
    * @returns Promise with list of indexes or error
    *
@@ -251,7 +261,9 @@ export class VectorBucketScope extends VectorIndexApi {
    *
    * **Public alpha:** This API is part of a public alpha release and may not be available to your account type.
    *
-   * @category Vector Buckets
+   * @displayName Retrieve a vector index
+   *
+   * @group Vector Buckets
    * @param indexName - Name of the index to retrieve
    * @returns Promise with index metadata or error
    *
@@ -275,7 +287,9 @@ export class VectorBucketScope extends VectorIndexApi {
    *
    * **Public alpha:** This API is part of a public alpha release and may not be available to your account type.
    *
-   * @category Vector Buckets
+   * @displayName Delete a vector index
+   *
+   * @group Vector Buckets
    * @param indexName - Name of the index to delete
    * @returns Promise with empty response on success or error
    *
@@ -298,7 +312,7 @@ export class VectorBucketScope extends VectorIndexApi {
    *
    * **Public alpha:** This API is part of a public alpha release and may not be available to your account type.
    *
-   * @category Vector Buckets
+   * @group Vector Buckets
    * @param indexName - Name of the index
    * @returns Index-scoped client with vector data operations
    *
@@ -352,7 +366,9 @@ export class VectorIndexScope extends VectorDataApi {
    *
    * **Public alpha:** This API is part of a public alpha release and may not be available to your account type.
    *
-   * @category Vector Buckets
+   * @displayName Create a vector index scope
+   *
+   * @group Vector Buckets
    * @example
    * ```typescript
    * const index = client.bucket('embeddings-prod').index('documents-openai')
@@ -379,7 +395,9 @@ export class VectorIndexScope extends VectorDataApi {
    *
    * **Public alpha:** This API is part of a public alpha release and may not be available to your account type.
    *
-   * @category Vector Buckets
+   * @displayName Add vectors to index
+   *
+   * @group Vector Buckets
    * @param options - Vector insertion options (bucket and index names automatically set)
    * @returns Promise with empty response on success or error
    *
@@ -414,7 +432,9 @@ export class VectorIndexScope extends VectorDataApi {
    *
    * **Public alpha:** This API is part of a public alpha release and may not be available to your account type.
    *
-   * @category Vector Buckets
+   * @displayName Retrieve vectors from index
+   *
+   * @group Vector Buckets
    * @param options - Vector retrieval options (bucket and index names automatically set)
    * @returns Promise with array of vectors or error
    *
@@ -444,7 +464,9 @@ export class VectorIndexScope extends VectorDataApi {
    *
    * **Public alpha:** This API is part of a public alpha release and may not be available to your account type.
    *
-   * @category Vector Buckets
+   * @displayName List vectors in index
+   *
+   * @group Vector Buckets
    * @param options - Listing options (bucket and index names automatically set)
    * @returns Promise with array of vectors and pagination token
    *
@@ -476,7 +498,9 @@ export class VectorIndexScope extends VectorDataApi {
    *
    * **Public alpha:** This API is part of a public alpha release and may not be available to your account type.
    *
-   * @category Vector Buckets
+   * @displayName Search vectors in index
+   *
+   * @group Vector Buckets
    * @param options - Query options (bucket and index names automatically set)
    * @returns Promise with array of similar vectors ordered by distance
    *
@@ -511,7 +535,9 @@ export class VectorIndexScope extends VectorDataApi {
    *
    * **Public alpha:** This API is part of a public alpha release and may not be available to your account type.
    *
-   * @category Vector Buckets
+   * @displayName Delete vectors from index
+   *
+   * @group Vector Buckets
    * @param options - Deletion options (bucket and index names automatically set)
    * @returns Promise with empty response on success or error
    *

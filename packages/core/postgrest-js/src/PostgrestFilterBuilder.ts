@@ -95,6 +95,8 @@ export default class PostgrestFilterBuilder<
    *
    * To check if the value of `column` is NULL, you should use `.is()` instead.
    *
+   * @displayName Column is equal to a value
+   *
    * @param column - The column to filter on
    * @param value - The value to filter with
    */
@@ -116,6 +118,8 @@ export default class PostgrestFilterBuilder<
   /**
    * Match only rows where `column` is not equal to `value`.
    *
+   * @displayName Column is not equal to a value
+   *
    * @param column - The column to filter on
    * @param value - The value to filter with
    */
@@ -136,6 +140,8 @@ export default class PostgrestFilterBuilder<
   /**
    * Match only rows where `column` is greater than `value`.
    *
+   * @displayName Column is greater than a value
+   *
    * @param column - The column to filter on
    * @param value - The value to filter with
    */
@@ -148,6 +154,8 @@ export default class PostgrestFilterBuilder<
   gte(column: string, value: unknown): this
   /**
    * Match only rows where `column` is greater than or equal to `value`.
+   *
+   * @displayName Column is greater than or equal to a value
    *
    * @param column - The column to filter on
    * @param value - The value to filter with
@@ -162,6 +170,8 @@ export default class PostgrestFilterBuilder<
   /**
    * Match only rows where `column` is less than `value`.
    *
+   * @displayName Column is less than a value
+   *
    * @param column - The column to filter on
    * @param value - The value to filter with
    */
@@ -175,6 +185,8 @@ export default class PostgrestFilterBuilder<
   /**
    * Match only rows where `column` is less than or equal to `value`.
    *
+   * @displayName Column is less than or equal to a value
+   *
    * @param column - The column to filter on
    * @param value - The value to filter with
    */
@@ -187,6 +199,8 @@ export default class PostgrestFilterBuilder<
   like(column: string, pattern: string): this
   /**
    * Match only rows where `column` matches `pattern` case-sensitively.
+   *
+   * @displayName Column matches a pattern
    *
    * @param column - The column to filter on
    * @param pattern - The pattern to match with
@@ -232,6 +246,8 @@ export default class PostgrestFilterBuilder<
   ilike(column: string, pattern: string): this
   /**
    * Match only rows where `column` matches `pattern` case-insensitively.
+   *
+   * @displayName Column matches a case-insensitive pattern
    *
    * @param column - The column to filter on
    * @param pattern - The pattern to match with
@@ -287,6 +303,8 @@ export default class PostgrestFilterBuilder<
    * For boolean columns, you can also set `value` to `true` or `false` and it
    * will behave the same way as `.eq()`.
    *
+   * @displayName Column is a value
+   *
    * @param column - The column to filter on
    * @param value - The value to filter with
    */
@@ -297,6 +315,8 @@ export default class PostgrestFilterBuilder<
 
   /**
    * Match only rows where `column` is included in the `values` array.
+   *
+   * @displayName Column is in an array
    *
    * @param column - The column to filter on
    * @param values - The values array to filter with
@@ -335,6 +355,8 @@ export default class PostgrestFilterBuilder<
    * Only relevant for jsonb, array, and range columns. Match only rows where
    * `column` contains every element appearing in `value`.
    *
+   * @displayName Column contains every element in a value
+   *
    * @param column - The jsonb, array, or range column to filter on
    * @param value - The jsonb, array, or range value to filter with
    */
@@ -362,6 +384,8 @@ export default class PostgrestFilterBuilder<
    * Only relevant for jsonb, array, and range columns. Match only rows where
    * every element appearing in `column` is contained by `value`.
    *
+   * @displayName Contained by value
+   *
    * @param column - The jsonb, array, or range column to filter on
    * @param value - The jsonb, array, or range value to filter with
    */
@@ -385,6 +409,8 @@ export default class PostgrestFilterBuilder<
    * Only relevant for range columns. Match only rows where every element in
    * `column` is greater than any element in `range`.
    *
+   * @displayName Greater than a range
+   *
    * @param column - The range column to filter on
    * @param range - The range to filter with
    */
@@ -400,6 +426,8 @@ export default class PostgrestFilterBuilder<
    * `column` is either contained in `range` or greater than any element in
    * `range`.
    *
+   * @displayName Greater than or equal to a range
+   *
    * @param column - The range column to filter on
    * @param range - The range to filter with
    */
@@ -413,6 +441,8 @@ export default class PostgrestFilterBuilder<
   /**
    * Only relevant for range columns. Match only rows where every element in
    * `column` is less than any element in `range`.
+   *
+   * @displayName Less than a range
    *
    * @param column - The range column to filter on
    * @param range - The range to filter with
@@ -429,6 +459,8 @@ export default class PostgrestFilterBuilder<
    * `column` is either contained in `range` or less than any element in
    * `range`.
    *
+   * @displayName Less than or equal to a range
+   *
    * @param column - The range column to filter on
    * @param range - The range to filter with
    */
@@ -443,6 +475,8 @@ export default class PostgrestFilterBuilder<
    * Only relevant for range columns. Match only rows where `column` is
    * mutually exclusive to `range` and there can be no element between the two
    * ranges.
+   *
+   * @displayName Mutually exclusive to a range
    *
    * @param column - The range column to filter on
    * @param range - The range to filter with
@@ -460,6 +494,8 @@ export default class PostgrestFilterBuilder<
   /**
    * Only relevant for array and range columns. Match only rows where
    * `column` and `value` have an element in common.
+   *
+   * @displayName With a common element
    *
    * @param column - The array or range column to filter on
    * @param value - The array or range value to filter with
@@ -488,6 +524,8 @@ export default class PostgrestFilterBuilder<
   /**
    * Only relevant for text and tsvector columns. Match only rows where
    * `column` matches the query string in `query`.
+   *
+   * @displayName Match a string
    *
    * @param column - The text or tsvector column to filter on
    * @param query - The query text to match with
@@ -519,6 +557,8 @@ export default class PostgrestFilterBuilder<
    * Match only rows where each column in `query` keys is equal to its
    * associated value. Shorthand for multiple `.eq()`s.
    *
+   * @displayName Match an associated value
+   *
    * @param query - The object to filter with, with column names as keys mapped
    * to their filter values
    */
@@ -543,6 +583,8 @@ export default class PostgrestFilterBuilder<
    * syntax](https://postgrest.org/en/stable/api.html#operators). You also need
    * to make sure they are properly sanitized.
    *
+   * @displayName Don't match the filter
+   *
    * @param column - The column to filter on
    * @param operator - The operator to be negated to filter with, following
    * PostgREST syntax
@@ -561,6 +603,8 @@ export default class PostgrestFilterBuilder<
    * to make sure it's properly sanitized.
    *
    * It's currently not possible to do an `.or()` filter across multiple tables.
+   *
+   * @displayName Match at least one filter
    *
    * @param filters - The filters to use, following PostgREST syntax
    * @param options - Named parameters
@@ -594,6 +638,8 @@ export default class PostgrestFilterBuilder<
    * follow [PostgREST
    * syntax](https://postgrest.org/en/stable/api.html#operators). You also need
    * to make sure they are properly sanitized.
+   *
+   * @displayName Match the filter
    *
    * @param column - The column to filter on
    * @param operator - The operator to filter with, following PostgREST syntax

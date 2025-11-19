@@ -36,7 +36,7 @@ export default class StorageBucketApi {
   /**
    * Enable throwing errors instead of returning them.
    *
-   * @category File Buckets
+   * @group File Buckets
    */
   public throwOnError(): this {
     this.shouldThrowOnError = true
@@ -46,7 +46,9 @@ export default class StorageBucketApi {
   /**
    * Retrieves the details of all Storage buckets within an existing project.
    *
-   * @category File Buckets
+   * @displayName List all buckets
+   *
+   * @group File Buckets
    * @param options Query parameters for listing buckets
    * @param options.limit Maximum number of buckets to return
    * @param options.offset Number of buckets to skip
@@ -106,7 +108,9 @@ export default class StorageBucketApi {
   /**
    * Retrieves the details of an existing Storage bucket.
    *
-   * @category File Buckets
+   * @displayName Retrieve a bucket
+   *
+   * @group File Buckets
    * @param id The unique identifier of the bucket you would like to retrieve.
    * @returns Promise with bucket details or error
    *
@@ -164,7 +168,9 @@ export default class StorageBucketApi {
   /**
    * Creates a new Storage bucket
    *
-   * @category File Buckets
+   * @displayName Create a bucket
+   *
+   * @group File Buckets
    * @param id A unique identifier for the bucket you are creating.
    * @param options.public The visibility of the bucket. Public buckets don't require an authorization token to download objects, but still require a valid token for all other operations. By default, buckets are private.
    * @param options.fileSizeLimit specifies the max file size in bytes that can be uploaded to this bucket.
@@ -248,7 +254,9 @@ export default class StorageBucketApi {
   /**
    * Updates a Storage bucket
    *
-   * @category File Buckets
+   * @displayName Update a bucket
+   *
+   * @group File Buckets
    * @param id A unique identifier for the bucket you are updating.
    * @param options.public The visibility of the bucket. Public buckets don't require an authorization token to download objects, but still require a valid token for all other operations.
    * @param options.fileSizeLimit specifies the max file size in bytes that can be uploaded to this bucket.
@@ -326,7 +334,9 @@ export default class StorageBucketApi {
   /**
    * Removes all objects inside a single bucket.
    *
-   * @category File Buckets
+   * @displayName Empty a bucket
+   *
+   * @group File Buckets
    * @param id The unique identifier of the bucket you would like to empty.
    * @returns Promise with success message or error
    *
@@ -381,7 +391,9 @@ export default class StorageBucketApi {
    * Deletes an existing bucket. A bucket can't be deleted with existing objects inside it.
    * You must first `empty()` the bucket.
    *
-   * @category File Buckets
+   * @displayName Delete a bucket
+   *
+   * @group File Buckets
    * @param id The unique identifier of the bucket you would like to delete.
    * @returns Promise with success message or error
    *

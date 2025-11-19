@@ -119,6 +119,9 @@ export default class GoTrueAdminApi {
 
   /**
    * Sends an invite link to an email address.
+   *
+   * @displayName Send an email invite link
+   *
    * @param email The email address of the user.
    * @param options Additional options to be included when inviting.
    */
@@ -150,6 +153,9 @@ export default class GoTrueAdminApi {
 
   /**
    * Generates email links and OTPs to be sent via a custom email provider.
+   *
+   * @displayName Generate an email link
+   *
    * @param email The user's email.
    * @param options.password User password. For signup only.
    * @param options.data Optional user metadata. For signup only.
@@ -188,6 +194,8 @@ export default class GoTrueAdminApi {
   /**
    * Creates a new user.
    * This function should only be called on a server. Never expose your `service_role` key in the browser.
+   *
+   * @displayName Create a user
    */
   async createUser(attributes: AdminUserAttributes): Promise<UserResponse> {
     try {
@@ -209,6 +217,9 @@ export default class GoTrueAdminApi {
    * Get a list of users.
    *
    * This function should only be called on a server. Never expose your `service_role` key in the browser.
+   *
+   * @displayName List all users
+   *
    * @param params An object which supports `page` and `perPage` as numbers, to alter the paginated results.
    */
   async listUsers(
@@ -254,9 +265,11 @@ export default class GoTrueAdminApi {
   /**
    * Get user by id.
    *
-   * @param uid The user's unique identifier
-   *
    * This function should only be called on a server. Never expose your `service_role` key in the browser.
+   *
+   * @displayName Retrieve a user
+   *
+   * @param uid The user's unique identifier
    */
   async getUserById(uid: string): Promise<UserResponse> {
     validateUUID(uid)
@@ -278,9 +291,12 @@ export default class GoTrueAdminApi {
   /**
    * Updates the user data.
    *
-   * @param attributes The data you want to update.
-   *
    * This function should only be called on a server. Never expose your `service_role` key in the browser.
+   *
+   * @displayName Update a user
+   *
+   * @param uid The user's unique identifier
+   * @param attributes The data you want to update.
    */
   async updateUserById(uid: string, attributes: AdminUserAttributes): Promise<UserResponse> {
     validateUUID(uid)
@@ -303,11 +319,13 @@ export default class GoTrueAdminApi {
   /**
    * Delete a user. Requires a `service_role` key.
    *
+   * This function should only be called on a server. Never expose your `service_role` key in the browser.
+   *
+   * @displayName Delete a user
+   *
    * @param id The user id you want to remove.
    * @param shouldSoftDelete If true, then the user will be soft-deleted from the auth schema. Soft deletion allows user identification from the hashed user ID but is not reversible.
    * Defaults to false for backward compatibility.
-   *
-   * This function should only be called on a server. Never expose your `service_role` key in the browser.
    */
   async deleteUser(id: string, shouldSoftDelete = false): Promise<UserResponse> {
     validateUUID(id)

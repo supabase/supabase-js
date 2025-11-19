@@ -1176,6 +1176,8 @@ export interface GoTrueMFAApi {
    * The user has to enter the code from their authenticator app to verify it.
    *
    * Upon verifying a factor, all other sessions are logged out and the current session's authenticator level is promoted to `aal2`.
+   *
+   * @displayName Enroll a factor
    */
   enroll(params: MFAEnrollTOTPParams): Promise<AuthMFAEnrollTOTPResponse>
   enroll(params: MFAEnrollPhoneParams): Promise<AuthMFAEnrollPhoneResponse>
@@ -1185,6 +1187,8 @@ export interface GoTrueMFAApi {
   /**
    * Prepares a challenge used to verify that a user has access to a MFA
    * factor.
+   *
+   * @displayName Create a challenge
    */
   challenge(params: MFAChallengeTOTPParams): Promise<Prettify<AuthMFAChallengeTOTPResponse>>
   challenge(params: MFAChallengePhoneParams): Promise<Prettify<AuthMFAChallengePhoneResponse>>
@@ -1194,6 +1198,8 @@ export interface GoTrueMFAApi {
   /**
    * Verifies a code against a challenge. The verification code is
    * provided by the user by entering a code seen in their authenticator app.
+   *
+   * @displayName Verify a challenge
    */
   verify(params: MFAVerifyTOTPParams): Promise<AuthMFAVerifyResponse>
   verify(params: MFAVerifyPhoneParams): Promise<AuthMFAVerifyResponse>
@@ -1203,12 +1209,16 @@ export interface GoTrueMFAApi {
   /**
    * Unenroll removes a MFA factor.
    * A user has to have an `aal2` authenticator level in order to unenroll a `verified` factor.
+   *
+   * @displayName Unenroll a factor
    */
   unenroll(params: MFAUnenrollParams): Promise<AuthMFAUnenrollResponse>
 
   /**
    * Helper method which creates a challenge and immediately uses the given code to verify against it thereafter. The verification code is
    * provided by the user by entering a code seen in their authenticator app.
+   *
+   * @displayName Create and verify a challenge
    */
   challengeAndVerify(params: MFAChallengeAndVerifyParams): Promise<AuthMFAVerifyResponse>
 
@@ -1234,6 +1244,7 @@ export interface GoTrueMFAApi {
    * and rarely uses the network. You can use this to check whether the current
    * user needs to be shown a screen to verify their MFA factors.
    *
+   * @displayName Get Authenticator Assurance Level
    */
   getAuthenticatorAssuranceLevel(): Promise<AuthMFAGetAuthenticatorAssuranceLevelResponse>
 
@@ -1242,14 +1253,14 @@ export interface GoTrueMFAApi {
 }
 
 /**
- * @expermental
+ * @experimental
  */
 export type AuthMFAAdminDeleteFactorResponse = RequestResult<{
   /** ID of the factor that was successfully deleted. */
   id: string
 }>
 /**
- * @expermental
+ * @experimental
  */
 export type AuthMFAAdminDeleteFactorParams = {
   /** ID of the MFA factor to delete. */
@@ -1260,7 +1271,7 @@ export type AuthMFAAdminDeleteFactorParams = {
 }
 
 /**
- * @expermental
+ * @experimental
  */
 export type AuthMFAAdminListFactorsResponse = RequestResult<{
   /** All factors attached to the user. */
@@ -1268,7 +1279,7 @@ export type AuthMFAAdminListFactorsResponse = RequestResult<{
 }>
 
 /**
- * @expermental
+ * @experimental
  */
 export type AuthMFAAdminListFactorsParams = {
   /** ID of the user. */
@@ -1278,7 +1289,7 @@ export type AuthMFAAdminListFactorsParams = {
 /**
  * Contains the full multi-factor authentication administration API.
  *
- * @expermental
+ * @experimental
  */
 export interface GoTrueAdminMFAApi {
   /**
@@ -1291,9 +1302,11 @@ export interface GoTrueAdminMFAApi {
    * Deletes a factor on a user. This will log the user out of all active
    * sessions if the deleted factor was verified.
    *
+   * @displayName Delete a factor for a user
+   *
    * @see {@link GoTrueMFAApi#unenroll}
    *
-   * @expermental
+   * @experimental
    */
   deleteFactor(params: AuthMFAAdminDeleteFactorParams): Promise<AuthMFAAdminDeleteFactorResponse>
 }

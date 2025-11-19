@@ -21,7 +21,7 @@ export default class StorageAnalyticsClient {
    *
    * **Public alpha:** This API is part of a public alpha release and may not be available to your account type.
    *
-   * @category Analytics Buckets
+   * @group Analytics Buckets
    * @param url - The base URL for the storage API
    * @param headers - HTTP headers to include in requests
    * @param fetch - Optional custom fetch implementation
@@ -45,7 +45,7 @@ export default class StorageAnalyticsClient {
    *
    * **Public alpha:** This API is part of a public alpha release and may not be available to your account type.
    *
-   * @category Analytics Buckets
+   * @group Analytics Buckets
    * @returns This instance for method chaining
    */
   public throwOnError(): this {
@@ -61,7 +61,9 @@ export default class StorageAnalyticsClient {
    *
    * **Public alpha:** This API is part of a public alpha release and may not be available to your account type.
    *
-   * @category Analytics Buckets
+   * @displayName Create a new analytics bucket
+   *
+   * @group Analytics Buckets
    * @param name A unique name for the bucket you are creating
    * @returns Promise with newly created bucket name or error
    *
@@ -116,7 +118,9 @@ export default class StorageAnalyticsClient {
    *
    * **Public alpha:** This API is part of a public alpha release and may not be available to your account type.
    *
-   * @category Analytics Buckets
+   * @displayName List analytics buckets
+   *
+   * @group Analytics Buckets
    * @param options Query parameters for listing buckets
    * @param options.limit Maximum number of buckets to return
    * @param options.offset Number of buckets to skip
@@ -206,7 +210,9 @@ export default class StorageAnalyticsClient {
    *
    * **Public alpha:** This API is part of a public alpha release and may not be available to your account type.
    *
-   * @category Analytics Buckets
+   * @displayName Delete an analytics bucket
+   *
+   * @group Analytics Buckets
    * @param bucketName The unique identifier of the bucket you would like to delete
    * @returns Promise with success message or error
    *

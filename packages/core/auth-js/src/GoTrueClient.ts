@@ -542,6 +542,8 @@ export default class GoTrueClient {
   /**
    * Creates a new anonymous user.
    *
+   * @displayName Create an anonymous user
+   *
    * @returns A session where the is_anonymous claim in the access token JWT set to true
    */
   async signInAnonymously(credentials?: SignInAnonymouslyCredentials): Promise<AuthResponse> {
@@ -583,6 +585,8 @@ export default class GoTrueClient {
    * Be aware that if a user account exists in the system you may get back an
    * error message that attempts to hide this information from the user.
    * This method has support for PKCE via email signups. The PKCE flow cannot be used when autoconfirm is enabled.
+   *
+   * @displayName Create a new user
    *
    * @returns A logged-in session if the server has "autoconfirm" ON
    * @returns A user if the server has "autoconfirm" OFF
@@ -663,6 +667,8 @@ export default class GoTrueClient {
    * between the cases where the account does not exist or that the
    * email/phone and password combination is wrong or that the account can only
    * be accessed via social login.
+   *
+   * @displayName Sign in a user
    */
   async signInWithPassword(
     credentials: SignInWithPasswordCredentials
@@ -727,6 +733,8 @@ export default class GoTrueClient {
   /**
    * Log in an existing user via a third-party provider.
    * This method supports the PKCE flow.
+   *
+   * @displayName Sign in a user through OAuth
    */
   async signInWithOAuth(credentials: SignInWithOAuthCredentials): Promise<OAuthResponse> {
     return await this._handleProviderSignIn(credentials.provider, {
@@ -739,6 +747,8 @@ export default class GoTrueClient {
 
   /**
    * Log in an existing user by exchanging an Auth Code issued during the PKCE flow.
+   *
+   * @displayName Exchange an auth code for a session
    */
   async exchangeCodeForSession(authCode: string): Promise<AuthTokenResponse> {
     await this.initializePromise
@@ -754,6 +764,8 @@ export default class GoTrueClient {
    * both of which derive from the EIP-4361 standard
    * With slight variation on Solana's side.
    * @reference https://eips.ethereum.org/EIPS/eip-4361
+   *
+   * @displayName Sign in a user through Web3 (Solana, Ethereum)
    */
   async signInWithWeb3(credentials: Web3Credentials): Promise<
     | {
@@ -1152,6 +1164,8 @@ export default class GoTrueClient {
   /**
    * Allows signing in with an OIDC ID token. The authentication provider used
    * should be enabled and configured.
+   *
+   * @displayName Sign in with ID token (native sign-in)
    */
   async signInWithIdToken(credentials: SignInWithIdTokenCredentials): Promise<AuthTokenResponse> {
     try {
@@ -1205,6 +1219,8 @@ export default class GoTrueClient {
    * channel is not supported on other providers
    * at this time.
    * This method supports PKCE when an email is passed.
+   *
+   * @displayName Sign in a user through OTP
    */
   async signInWithOtp(credentials: SignInWithPasswordlessCredentials): Promise<AuthOtpResponse> {
     try {
@@ -1261,6 +1277,8 @@ export default class GoTrueClient {
 
   /**
    * Log in a user given a User supplied OTP or TokenHash received through mobile or email.
+   *
+   * @displayName Verify and log in through OTP
    */
   async verifyOtp(params: VerifyOtpParams): Promise<AuthResponse> {
     try {
@@ -1322,6 +1340,8 @@ export default class GoTrueClient {
    *
    * If you have built an organization-specific login page, you can use the
    * organization's SSO Identity Provider UUID directly instead.
+   *
+   * @displayName Sign in a user through SSO
    */
   async signInWithSSO(params: SignInWithSSO): Promise<SSOResponse> {
     try {
@@ -1367,6 +1387,8 @@ export default class GoTrueClient {
   /**
    * Sends a reauthentication OTP to the user's email or phone number.
    * Requires the user to be signed-in.
+   *
+   * @displayName Send a password reauthentication nonce
    */
   async reauthenticate(): Promise<AuthResponse> {
     await this.initializePromise
@@ -1402,6 +1424,8 @@ export default class GoTrueClient {
 
   /**
    * Resends an existing signup confirmation email, email change email, SMS OTP or phone change OTP.
+   *
+   * @displayName Resend an OTP
    */
   async resend(credentials: ResendParams): Promise<AuthOtpResponse> {
     try {
@@ -1454,6 +1478,8 @@ export default class GoTrueClient {
    * the values in it may not be authentic and therefore it's strongly advised
    * against using this method and its results in such circumstances. A warning
    * will be emitted if this is detected. Use {@link #getUser()} instead.
+   *
+   * @displayName Retrieve a session
    */
   async getSession() {
     await this.initializePromise
@@ -1695,6 +1721,8 @@ export default class GoTrueClient {
    * performs a network request to the Supabase Auth server, so the returned
    * value is authentic and can be used to base authorization rules on.
    *
+   * @displayName Retrieve a user
+   *
    * @param jwt Takes in an optional access token JWT. If no JWT is provided, the JWT from the current session is used.
    */
   async getUser(jwt?: string): Promise<UserResponse> {
@@ -1757,6 +1785,8 @@ export default class GoTrueClient {
 
   /**
    * Updates user data for a logged in user.
+   *
+   * @displayName Update a user
    */
   async updateUser(
     attributes: UserAttributes,
@@ -1827,6 +1857,9 @@ export default class GoTrueClient {
   /**
    * Sets the session data from the current session. If the current session is expired, setSession will take care of refreshing it to obtain a new session.
    * If the refresh token or access token in the current session is invalid, an error will be thrown.
+   *
+   * @displayName Set the session data
+   *
    * @param currentSession The current session that minimally contains an access token and refresh token.
    */
   async setSession(currentSession: {
@@ -1902,6 +1935,9 @@ export default class GoTrueClient {
    * Returns a new session, regardless of expiry status.
    * Takes in an optional current session. If not passed in, then refreshSession() will attempt to retrieve it from getSession().
    * If the current session's refresh token is invalid, an error will be thrown.
+   *
+   * @displayName Retrieve a new session
+   *
    * @param currentSession The current session. If passed in, it must contain a refresh token.
    */
   async refreshSession(currentSession?: { refresh_token: string }): Promise<AuthResponse> {
@@ -2110,6 +2146,8 @@ export default class GoTrueClient {
    * There is no way to revoke a user's access token jwt until it expires. It is recommended to set a shorter expiry on the jwt for this reason.
    *
    * If using `others` scope, no `SIGNED_OUT` event is fired!
+   *
+   * @displayName Sign out a user
    */
   async signOut(options: SignOut = { scope: 'global' }): Promise<{ error: AuthError | null }> {
     await this.initializePromise
@@ -2154,6 +2192,8 @@ export default class GoTrueClient {
   /**
    * Receive a notification every time an auth event happens.
    * Safe to use without an async function as callback.
+   *
+   * @displayName Listen to auth events
    *
    * @param callback A callback function to be invoked when an auth event happens.
    */
@@ -2229,6 +2269,8 @@ export default class GoTrueClient {
   /**
    * Sends a password reset request to an email address. This method supports the PKCE flow.
    *
+   * @displayName Send a password reset request
+   *
    * @param email The email address of the user.
    * @param options.redirectTo The URL to send the user to after they click the password reset link.
    * @param options.captchaToken Verification token received when the user completes the captcha on the site.
@@ -2278,6 +2320,8 @@ export default class GoTrueClient {
 
   /**
    * Gets all the identities linked to a user.
+   *
+   * @displayName Retrieve identities linked to a user
    */
   async getUserIdentities(): Promise<
     | {
@@ -2303,6 +2347,8 @@ export default class GoTrueClient {
   /**
    * Links an oauth identity to an existing user.
    * This method supports the PKCE flow.
+   *
+   * @displayName Link an identity to a user
    */
   async linkIdentity(credentials: SignInWithOAuthCredentials): Promise<OAuthResponse>
 
@@ -2407,6 +2453,8 @@ export default class GoTrueClient {
 
   /**
    * Unlinks an identity from a user by deleting it. The user will no longer be able to sign in with that identity once it's unlinked.
+   *
+   * @displayName Unlink an identity from a user
    */
   async unlinkIdentity(identity: UserIdentity): Promise<
     | {
@@ -2887,6 +2935,8 @@ export default class GoTrueClient {
    * platform's foreground indication mechanism and call these methods
    * appropriately to conserve resources.
    *
+   * @displayName Start auto-refresh session (non-browser)
+   *
    * {@see #stopAutoRefresh}
    */
   async startAutoRefresh() {
@@ -2899,6 +2949,8 @@ export default class GoTrueClient {
    *
    * If you call this method any managed visibility change callback will be
    * removed and you must manage visibility changes on your own.
+   *
+   * @displayName Stop auto-refresh session (non-browser)
    *
    * See {@link #startAutoRefresh} for more details.
    */
@@ -3692,6 +3744,8 @@ export default class GoTrueClient {
    * If the project is not using an asymmetric JWT signing key (like ECC or
    * RSA) it always sends a request to the Auth server (similar to {@link
    * #getUser}) to verify the JWT.
+   *
+   * @displayName Get user claims from verified JWT
    *
    * @param jwt An optional specific JWT you wish to verify, not the one you
    *            can obtain from {@link #getSession}.

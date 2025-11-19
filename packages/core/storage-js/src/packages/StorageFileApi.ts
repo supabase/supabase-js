@@ -64,7 +64,7 @@ export default class StorageFileApi {
   /**
    * Enable throwing errors instead of returning them.
    *
-   * @category File Buckets
+   * @group File Buckets
    */
   public throwOnError(): this {
     this.shouldThrowOnError = true
@@ -171,7 +171,9 @@ export default class StorageFileApi {
   /**
    * Uploads a file to an existing bucket.
    *
-   * @category File Buckets
+   * @displayName Upload a file
+   *
+   * @group File Buckets
    * @param path The file path, including the file name. Should be of the format `folder/subfolder/filename.png`. The bucket must already exist before attempting to upload.
    * @param fileBody The body of the file to be stored in the bucket.
    * @param fileOptions Optional file upload options including cacheControl, contentType, upsert, and metadata.
@@ -232,7 +234,7 @@ export default class StorageFileApi {
   /**
    * Upload a file with a token generated from `createSignedUploadUrl`.
    *
-   * @category File Buckets
+   * @group File Buckets
    * @param path The file path, including the file name. Should be of the format `folder/subfolder/filename.png`. The bucket must already exist before attempting to upload.
    * @param token The token generated from `createSignedUploadUrl`
    * @param fileBody The body of the file to be stored in the bucket.
@@ -314,7 +316,9 @@ export default class StorageFileApi {
    * Signed upload URLs can be used to upload files to the bucket without further authentication.
    * They are valid for 2 hours.
    *
-   * @category File Buckets
+   * @displayName Create signed upload URL
+   *
+   * @group File Buckets
    * @param path The file path, including the current file name. For example `folder/image.png`.
    * @param options.upsert If set to true, allows the file to be overwritten if it already exists.
    * @returns Promise with signed upload URL, token, and path or error
@@ -392,7 +396,9 @@ export default class StorageFileApi {
   /**
    * Replaces an existing file at the specified path with a new one.
    *
-   * @category File Buckets
+   * @displayName Replace an existing file
+   *
+   * @group File Buckets
    * @param path The relative file path. Should be of the format `folder/subfolder/filename.png`. The bucket must already exist before attempting to update.
    * @param fileBody The body of the file to be stored in the bucket.
    * @param fileOptions Optional file upload options including cacheControl, contentType, upsert, and metadata.
@@ -463,7 +469,9 @@ export default class StorageFileApi {
   /**
    * Moves an existing file to a new path in the same bucket.
    *
-   * @category File Buckets
+   * @displayName Move an existing file
+   *
+   * @group File Buckets
    * @param fromPath The original file path, including the current file name. For example `folder/image.png`.
    * @param toPath The new file path, including the new file name. For example `folder/image-new.png`.
    * @param options The destination options.
@@ -529,7 +537,9 @@ export default class StorageFileApi {
   /**
    * Copies an existing file to a new path in the same bucket.
    *
-   * @category File Buckets
+   * @displayName Copy an existing file
+   *
+   * @group File Buckets
    * @param fromPath The original file path, including the current file name. For example `folder/image.png`.
    * @param toPath The new file path, including the new file name. For example `folder/image-copy.png`.
    * @param options The destination options.
@@ -595,7 +605,9 @@ export default class StorageFileApi {
   /**
    * Creates a signed URL. Use a signed URL to share a file for a fixed amount of time.
    *
-   * @category File Buckets
+   * @displayName Create a signed URL
+   *
+   * @group File Buckets
    * @param path The file path, including the current file name. For example `folder/image.png`.
    * @param expiresIn The number of seconds until the signed URL expires. For example, `60` for a URL which is valid for one minute.
    * @param options.download triggers the file as a download if set to true. Set this parameter as the name of the file if you want to trigger the download with a different filename.
@@ -687,7 +699,9 @@ export default class StorageFileApi {
   /**
    * Creates multiple signed URLs. Use a signed URL to share a file for a fixed amount of time.
    *
-   * @category File Buckets
+   * @displayName Create signed URLs
+   *
+   * @group File Buckets
    * @param paths The file paths to be downloaded, including the current file names. For example `['folder/image.png', 'folder2/image2.png']`.
    * @param expiresIn The number of seconds until the signed URLs expire. For example, `60` for URLs which are valid for one minute.
    * @param options.download triggers the file as a download if set to true. Set this parameter as the name of the file if you want to trigger the download with a different filename.
@@ -771,7 +785,9 @@ export default class StorageFileApi {
   /**
    * Downloads a file from a private bucket. For public buckets, make a request to the URL returned from `getPublicUrl` instead.
    *
-   * @category File Buckets
+   * @displayName Download a file
+   *
+   * @group File Buckets
    * @param path The full path and file name of the file to be downloaded. For example `folder/image.png`.
    * @param options.transform Transform the asset before serving it to the client.
    * @returns BlobDownloadBuilder instance for downloading the file
@@ -826,7 +842,7 @@ export default class StorageFileApi {
   /**
    * Retrieves the details of an existing file.
    *
-   * @category File Buckets
+   * @group File Buckets
    * @param path The file path, including the file name. For example `folder/image.png`.
    * @returns Promise with file metadata or error
    *
@@ -871,7 +887,7 @@ export default class StorageFileApi {
   /**
    * Checks the existence of a file.
    *
-   * @category File Buckets
+   * @group File Buckets
    * @param path The file path, including the file name. For example `folder/image.png`.
    * @returns Promise with boolean indicating file existence or error
    *
@@ -921,7 +937,9 @@ export default class StorageFileApi {
    * A simple convenience function to get the URL for an asset in a public bucket. If you do not want to use this function, you can construct the public URL by concatenating the bucket URL with the path to the asset.
    * This function does not verify if the bucket is public. If a public URL is created for a bucket which is not public, you will not be able to download the asset.
    *
-   * @category File Buckets
+   * @displayName Retrieve public URL
+   *
+   * @group File Buckets
    * @param path The path and name of the file to generate the public URL for. For example `folder/image.png`.
    * @param options.download Triggers the file as a download if set to true. Set this parameter as the name of the file if you want to trigger the download with a different filename.
    * @param options.transform Transform the asset before serving it to the client.
@@ -1003,7 +1021,9 @@ export default class StorageFileApi {
   /**
    * Deletes files within the same bucket
    *
-   * @category File Buckets
+   * @displayName Delete files in a bucket
+   *
+   * @group File Buckets
    * @param paths An array of files to delete, including the path and file name. For example [`'folder/image.png'`].
    * @returns Promise with list of deleted files or error
    *
@@ -1119,7 +1139,9 @@ export default class StorageFileApi {
   /**
    * Lists all the files and folders within a path of the bucket.
    *
-   * @category File Buckets
+   * @displayName List all files in a bucket
+   *
+   * @group File Buckets
    * @param path The folder path.
    * @param options Search options including limit (defaults to 100), offset, sortBy, and search
    * @param parameters Optional fetch parameters including signal for cancellation
@@ -1214,7 +1236,7 @@ export default class StorageFileApi {
   /**
    * @experimental this method signature might change in the future
    *
-   * @category File Buckets
+   * @group File Buckets
    * @param options search options
    * @param parameters
    */

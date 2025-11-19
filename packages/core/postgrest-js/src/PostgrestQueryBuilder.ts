@@ -53,7 +53,10 @@ export default class PostgrestQueryBuilder<
   }
 
   /**
+   *
    * Perform a SELECT query on the table or view.
+   *
+   * @displayName Fetch data
    *
    * @param columns - The columns to retrieve, separated by commas. Columns can be renamed when returned with `customName:columnName`
    *
@@ -166,6 +169,8 @@ export default class PostgrestQueryBuilder<
    * By default, inserted rows are not returned. To return it, chain the call
    * with `.select()`.
    *
+   * @displayName Insert data
+   *
    * @param values - The values to insert. Pass an object to insert a single row
    * or an array to insert multiple rows.
    *
@@ -275,6 +280,8 @@ export default class PostgrestQueryBuilder<
    * By default, upserted rows are not returned. To return it, chain the call
    * with `.select()`.
    *
+   * @displayName Upsert data
+   *
    * @param values - The values to upsert with. Pass an object to upsert a
    * single row or an array to upsert multiple rows.
    *
@@ -361,6 +368,8 @@ export default class PostgrestQueryBuilder<
    * By default, updated rows are not returned. To return it, chain the call
    * with `.select()` after filters.
    *
+   * @displayName Update data
+   *
    * @param values - The values to update with
    *
    * @param options - Named parameters
@@ -412,6 +421,8 @@ export default class PostgrestQueryBuilder<
    *
    * By default, deleted rows are not returned. To return it, chain the call
    * with `.select()` after filters.
+   *
+   * @displayName Delete data
    *
    * @param options - Named parameters
    *

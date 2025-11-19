@@ -91,6 +91,9 @@ export default class SupabaseClient<
 
   /**
    * Create a new client for use in the browser.
+   *
+   * @displayName Initializing
+   *
    * @param supabaseUrl The unique Supabase URL which is supplied when you create a new project in your project dashboard.
    * @param supabaseKey The unique Supabase Key which is supplied when you create a new project in your project dashboard.
    * @param options.db.schema You can switch in between schemas. The schema needs to be on the list of exposed schemas inside Supabase.
@@ -311,6 +314,8 @@ export default class SupabaseClient<
 
   /**
    * Returns all Realtime channels.
+   *
+   * @displayName Retrieve all channels
    */
   getChannels(): RealtimeChannel[] {
     return this.realtime.getChannels()
@@ -318,6 +323,8 @@ export default class SupabaseClient<
 
   /**
    * Unsubscribes and removes Realtime channel from Realtime client.
+   *
+   * @displayName Unsubscribe from a channel
    *
    * @param {RealtimeChannel} channel - The name of the Realtime channel.
    *
@@ -328,6 +335,8 @@ export default class SupabaseClient<
 
   /**
    * Unsubscribes and removes all Realtime channels from Realtime client.
+   *
+   * @displayName Unsubscribe from all channels
    */
   removeAllChannels(): Promise<('ok' | 'timed out' | 'error')[]> {
     return this.realtime.removeAllChannels()

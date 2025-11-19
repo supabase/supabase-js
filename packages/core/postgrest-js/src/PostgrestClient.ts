@@ -125,6 +125,8 @@ export default class PostgrestClient<
   /**
    * Perform a function call.
    *
+   * @displayName Call a Postgres function
+   *
    * @param fn - The function name to call
    * @param args - The arguments to pass to the function call
    * @param options - Named parameters

@@ -37,7 +37,9 @@ export default class VectorDataApi {
    *
    * **Public alpha:** This API is part of a public alpha release and may not be available to your account type.
    *
-   * @category Vector Buckets
+   * @displayName Create a vector data API instance
+   *
+   * @group Vector Buckets
    * @param url - Base URL for the Storage Vectors API.
    * @param headers - Default headers (for example authentication tokens).
    * @param fetch - Optional custom `fetch` implementation for non-browser runtimes.
@@ -62,7 +64,9 @@ export default class VectorDataApi {
    *
    * **Public alpha:** This API is part of a public alpha release and may not be available to your account type.
    *
-   * @category Vector Buckets
+   * @displayName Enable error throwing
+   *
+   * @group Vector Buckets
    * @returns This instance for method chaining
    * @example
    * ```typescript
@@ -85,7 +89,9 @@ export default class VectorDataApi {
    *
    * **Public alpha:** This API is part of a public alpha release and may not be available to your account type.
    *
-   * @category Vector Buckets
+   * @displayName Insert or update vectors
+   *
+   * @group Vector Buckets
    * @param options - Vector insertion options
    * @param options.vectorBucketName - Name of the parent vector bucket
    * @param options.indexName - Name of the target index
@@ -149,7 +155,9 @@ export default class VectorDataApi {
    *
    * **Public alpha:** This API is part of a public alpha release and may not be available to your account type.
    *
-   * @category Vector Buckets
+   * @displayName Retrieve vectors
+   *
+   * @group Vector Buckets
    * @param options - Vector retrieval options
    * @param options.vectorBucketName - Name of the parent vector bucket
    * @param options.indexName - Name of the index
@@ -203,7 +211,9 @@ export default class VectorDataApi {
    *
    * **Public alpha:** This API is part of a public alpha release and may not be available to your account type.
    *
-   * @category Vector Buckets
+   * @displayName List all vectors
+   *
+   * @group Vector Buckets
    * @param options - Vector listing options
    * @param options.vectorBucketName - Name of the parent vector bucket
    * @param options.indexName - Name of the index
@@ -289,7 +299,9 @@ export default class VectorDataApi {
    *
    * **Public alpha:** This API is part of a public alpha release and may not be available to your account type.
    *
-   * @category Vector Buckets
+   * @displayName Query vectors
+   *
+   * @group Vector Buckets
    * @param options - Query options
    * @param options.vectorBucketName - Name of the parent vector bucket
    * @param options.indexName - Name of the index
@@ -353,7 +365,9 @@ export default class VectorDataApi {
    *
    * **Public alpha:** This API is part of a public alpha release and may not be available to your account type.
    *
-   * @category Vector Buckets
+   * @displayName Delete vectors
+   *
+   * @group Vector Buckets
    * @param options - Vector deletion options
    * @param options.vectorBucketName - Name of the parent vector bucket
    * @param options.indexName - Name of the index

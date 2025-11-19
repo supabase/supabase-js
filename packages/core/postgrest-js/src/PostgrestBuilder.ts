@@ -287,6 +287,8 @@ export default abstract class PostgrestBuilder<
   /**
    * Override the type of the returned `data` field in the response.
    *
+   * @displayName Partially override or replace type of successful response
+   *
    * @typeParam NewResult - The new type to cast the response data to
    * @typeParam Options - Optional type configuration (defaults to { merge: true })
    * @typeParam Options.merge - When true, merges the new type with existing return type. When false, replaces the existing types entirely (defaults to true)

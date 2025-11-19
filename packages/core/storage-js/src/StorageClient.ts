@@ -12,7 +12,9 @@ export class StorageClient extends StorageBucketApi {
   /**
    * Creates a client for Storage buckets, files, analytics, and vectors.
    *
-   * @category File Buckets
+   * @displayName Create a storage client
+   *
+   * @group File Buckets
    * @example
    * ```ts
    * import { StorageClient } from '@supabase/storage-js'
@@ -35,7 +37,9 @@ export class StorageClient extends StorageBucketApi {
   /**
    * Perform file operation in a bucket.
    *
-   * @category File Buckets
+   * @displayName Access a storage bucket
+   *
+   * @group File Buckets
    * @param id The bucket id to operate on.
    *
    * @example
@@ -55,7 +59,7 @@ export class StorageClient extends StorageBucketApi {
    *
    * **Public alpha:** This API is part of a public alpha release and may not be available to your account type.
    *
-   * @category Vector Buckets
+   * @group Vector Buckets
    * @returns A StorageVectorsClient instance configured with the current storage settings.
    */
   get vectors(): StorageVectorsClient {
@@ -73,7 +77,7 @@ export class StorageClient extends StorageBucketApi {
    *
    * **Public alpha:** This API is part of a public alpha release and may not be available to your account type.
    *
-   * @category Analytics Buckets
+   * @group Analytics Buckets
    * @returns A StorageAnalyticsClient instance configured with the current storage settings.
    * @example
    * ```typescript

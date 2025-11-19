@@ -412,6 +412,8 @@ export default class RealtimeChannel {
 
   /**
    * Creates an event handler that listens to changes.
+   *
+   * @displayName Subscribe to channel
    */
   on(
     type: `${REALTIME_LISTEN_TYPES.PRESENCE}`,
@@ -599,6 +601,8 @@ export default class RealtimeChannel {
 
   /**
    * Sends a message into the channel.
+   *
+   * @displayName Broadcast a message
    *
    * @param args Arguments to send to channel
    * @param args.type The type of event to send

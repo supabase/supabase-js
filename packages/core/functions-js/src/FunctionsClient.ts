@@ -63,6 +63,9 @@ export class FunctionsClient {
 
   /**
    * Invokes a function
+   *
+   * @displayName Invokes a Supabase Edge Function.
+   *
    * @param functionName - The name of the Function to invoke.
    * @param options - Options for invoking the Function.
    * @example

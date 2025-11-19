@@ -21,6 +21,8 @@ export default class PostgrestTransformBuilder<
    * return modified rows. By calling this method, modified rows are returned in
    * `data`.
    *
+   * @displayName Return data after inserting
+   *
    * @param columns - The columns to retrieve, separated by commas
    */
   select<
@@ -102,6 +104,8 @@ export default class PostgrestTransformBuilder<
    * You can order referenced tables, but it only affects the ordering of the
    * parent table if you use `!inner` in the query.
    *
+   * @displayName Order the results
+   *
    * @param column - The column to order by
    * @param options - Named parameters
    * @param options.ascending - If `true`, the result will be in ascending order
@@ -141,6 +145,8 @@ export default class PostgrestTransformBuilder<
   /**
    * Limit the query result by `count`.
    *
+   * @displayName Limit the number of rows returned
+   *
    * @param count - The maximum number of rows to return
    * @param options - Named parameters
    * @param options.referencedTable - Set this to limit rows of referenced
@@ -166,6 +172,8 @@ export default class PostgrestTransformBuilder<
    * This respects the query order and if there is no order clause the range could behave unexpectedly.
    * The `from` and `to` values are 0-based and inclusive: `range(1, 3)` will include the second, third
    * and fourth rows of the query.
+   *
+   * @displayName Limit the query to a range
    *
    * @param from - The starting index from which to limit the result
    * @param to - The last index to which to limit the result
@@ -195,6 +203,8 @@ export default class PostgrestTransformBuilder<
   /**
    * Set the AbortSignal for the fetch request.
    *
+   * @displayName Set an abort signal
+   *
    * @param signal - The AbortSignal to use for the fetch request
    */
   abortSignal(signal: AbortSignal): this {
@@ -207,6 +217,8 @@ export default class PostgrestTransformBuilder<
    *
    * Query result must be one row (e.g. using `.limit(1)`), otherwise this
    * returns an error.
+   *
+   * @displayName Retrieve one row of data
    */
   single<ResultOne = Result extends (infer ResultOne)[] ? ResultOne : never>(): PostgrestBuilder<
     ClientOptions,
@@ -221,6 +233,8 @@ export default class PostgrestTransformBuilder<
    *
    * Query result must be zero or one row (e.g. using `.limit(1)`), otherwise
    * this returns an error.
+   *
+   * @displayName Retrieve zero or one row of data
    */
   maybeSingle<
     ResultOne = Result extends (infer ResultOne)[] ? ResultOne : never,
@@ -238,6 +252,8 @@ export default class PostgrestTransformBuilder<
 
   /**
    * Return `data` as a string in CSV format.
+   *
+   * @displayName Retrieve as a CSV
    */
   csv(): PostgrestBuilder<ClientOptions, string> {
     this.headers.set('Accept', 'text/csv')
@@ -258,6 +274,8 @@ export default class PostgrestTransformBuilder<
    * You need to enable the
    * [db_plan_enabled](https://supabase.com/docs/guides/database/debugging-performance#enabling-explain)
    * setting before using this method.
+   *
+   * @displayName Using explain
    *
    * @param options - Named parameters
    *
@@ -326,6 +344,8 @@ export default class PostgrestTransformBuilder<
 
   /**
    * Override the type of the returned `data`.
+   *
+   * @displayName Override type of successful response
    *
    * @typeParam NewResult - The new result type to override with
    * @deprecated Use overrideTypes<yourType, { merge: false }>() method at the end of your call chain instead
