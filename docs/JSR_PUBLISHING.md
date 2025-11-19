@@ -10,28 +10,21 @@ Currently, only packages with complete TypeScript typing (explicit return types)
 
 ## Current Status
 
-✅ **JSR publishing is configured for packages with explicit return types**
+**JSR publishing is configured for packages with explicit return types**
 
 The following packages are currently published to JSR:
 
-- @supabase/functions-js ✅ (has explicit return types)
-- @supabase/supabase-js ✅ (has explicit return types)
-
-The following packages are **not yet published to JSR** (pending explicit return types):
-
-- @supabase/auth-js ⏳ (needs explicit return types)
-- @supabase/postgrest-js ⏳ (needs explicit return types)
-- @supabase/realtime-js ⏳ (needs explicit return types)
-- @supabase/storage-js ⏳ (needs explicit return types)
+- @supabase/functions-js (has explicit return types)
+- @supabase/supabase-js (has explicit return types)
 
 ## Authentication
 
 JSR publishing uses **OpenID Connect (OIDC)** authentication from GitHub Actions, which is the recommended approach by JSR. This means:
 
-- ✅ No secrets to manage or rotate
-- ✅ Automatic authentication via GitHub
-- ✅ Short-lived tokens for enhanced security
-- ✅ Works automatically when `id-token: write` permission is set
+- No secrets to manage or rotate
+- Automatic authentication via GitHub
+- Short-lived tokens for enhanced security
+- Works automatically when `id-token: write` permission is set
 
 The workflow already has the required permissions configured:
 
@@ -51,15 +44,10 @@ permissions:
 
 3. **Type Checking**: Only packages with explicit return types are published to JSR. This ensures optimal performance and aligns with JSR's quality standards.
 
-   Currently published packages (with explicit return types):
-   - `functions-js` - Has explicit return types
-   - `supabase-js` - Has explicit return types (aggregates other packages)
+Published packages (with explicit return types):
 
-   Not yet published (pending explicit return types):
-   - `auth-js` - Needs explicit return types in auth client methods
-   - `postgrest-js` - Needs explicit return types in query builder methods
-   - `storage-js` - Needs explicit return types in storage methods
-   - `realtime-js` - Needs explicit return types in channel and presence methods
+- `functions-js` - Has explicit return types
+- `supabase-js` - Has explicit return types (aggregates other packages)
 
 4. **Failure Handling**: JSR publishing failures don't fail the entire release - npm releases will still succeed.
 
@@ -70,43 +58,3 @@ permissions:
 - `scripts/release-canary.ts` - Calls JSR publish after canary npm release
 - `packages/core/*/jsr.json` - JSR configuration for each package
 - `.github/workflows/publish.yml` - GitHub Actions workflow with OIDC permissions
-
-## Testing Locally
-
-To test JSR publishing locally:
-
-```bash
-# Dry run (no authentication needed)
-npx tsx scripts/publish-to-jsr.ts --dry-run
-
-# Actual publish (uses interactive browser authentication)
-npx tsx scripts/publish-to-jsr.ts
-```
-
-When running locally, JSR will open your browser for interactive authentication. You don't need to set up any tokens manually.
-
-## Troubleshooting
-
-### Publishing fails with authentication error in GitHub Actions
-
-Ensure your workflow has the `id-token: write` permission:
-
-```yaml
-permissions:
-  contents: read
-  id-token: write
-```
-
-### Publishing fails with "slow types" error
-
-This means a package is missing explicit return types. To publish to JSR:
-
-1. Add explicit return types to all public APIs
-2. Update the `packages` array in `scripts/publish-to-jsr.ts` to include the package
-3. Update this documentation to reflect the change
-
-We intentionally avoid using the `--allow-slow-types` flag to maintain JSR quality standards.
-
-### Working directory is dirty after publish
-
-The publish script automatically restores the original `jsr.json` files after publishing. If you see uncommitted changes, this indicates a bug in the cleanup logic.

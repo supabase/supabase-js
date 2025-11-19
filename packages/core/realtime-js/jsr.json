@@ -1,6 +1,0 @@
-{
-  "name": "@supabase/realtime-js",
-  "version": "0.0.0-automated",
-  "exports": "./src/index.ts",
-  "exclude": ["example", "test"]
-}
