@@ -778,3 +778,54 @@ test('filter on rpc', async () => {
     }
   `)
 })
+
+test('isDistinct', async () => {
+  const res = await postgrest.from('users').select('username').isDistinct('status', 'ONLINE')
+  expect(res).toMatchInlineSnapshot(`
+    {
+      "count": null,
+      "data": [
+        {
+          "username": "kiwicopple",
+        },
+      ],
+      "error": null,
+      "status": 200,
+      "statusText": "OK",
+    }
+  `)
+})
+
+test('regexMatch', async () => {
+  const res = await postgrest.from('users').select('username').regexMatch('username', '^sup')
+  expect(res).toMatchInlineSnapshot(`
+    {
+      "count": null,
+      "data": [
+        {
+          "username": "supabot",
+        },
+      ],
+      "error": null,
+      "status": 200,
+      "statusText": "OK",
+    }
+  `)
+})
+
+test('regexIMatch', async () => {
+  const res = await postgrest.from('users').select('username').regexIMatch('username', '^SUP')
+  expect(res).toMatchInlineSnapshot(`
+    {
+      "count": null,
+      "data": [
+        {
+          "username": "supabot",
+        },
+      ],
+      "error": null,
+      "status": 200,
+      "statusText": "OK",
+    }
+  `)
+})

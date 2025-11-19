@@ -12,6 +12,7 @@ type FilterOperator =
   | 'like'
   | 'ilike'
   | 'is'
+  | 'isdistinct'
   | 'in'
   | 'cs'
   | 'cd'
@@ -25,6 +26,8 @@ type FilterOperator =
   | 'plfts'
   | 'phfts'
   | 'wfts'
+  | 'match'
+  | 'imatch'
 
 export type IsStringOperator<Path extends string> = Path extends `${string}->>${string}`
   ? true
@@ -273,6 +276,34 @@ export default class PostgrestFilterBuilder<
     return this
   }
 
+  regexMatch<ColumnName extends string & keyof Row>(column: ColumnName, pattern: string): this
+  regexMatch(column: string, pattern: string): this
+  /**
+   * Match only rows where `column` matches the PostgreSQL regex `pattern`
+   * case-sensitively (using the `~` operator).
+   *
+   * @param column - The column to filter on
+   * @param pattern - The PostgreSQL regular expression pattern to match with
+   */
+  regexMatch(column: string, pattern: string): this {
+    this.url.searchParams.append(column, `match.${pattern}`)
+    return this
+  }
+
+  regexIMatch<ColumnName extends string & keyof Row>(column: ColumnName, pattern: string): this
+  regexIMatch(column: string, pattern: string): this
+  /**
+   * Match only rows where `column` matches the PostgreSQL regex `pattern`
+   * case-insensitively (using the `~*` operator).
+   *
+   * @param column - The column to filter on
+   * @param pattern - The PostgreSQL regular expression pattern to match with
+   */
+  regexIMatch(column: string, pattern: string): this {
+    this.url.searchParams.append(column, `imatch.${pattern}`)
+    return this
+  }
+
   is<ColumnName extends string & keyof Row>(
     column: ColumnName,
     value: Row[ColumnName] & (boolean | null)
@@ -292,6 +323,28 @@ export default class PostgrestFilterBuilder<
    */
   is(column: string, value: boolean | null): this {
     this.url.searchParams.append(column, `is.${value}`)
+    return this
+  }
+
+  /**
+   * Match only rows where `column` IS DISTINCT FROM `value`.
+   *
+   * Unlike `.neq()`, this treats `NULL` as a comparable value. Two `NULL` values
+   * are considered equal (not distinct), and comparing `NULL` with any non-NULL
+   * value returns true (distinct).
+   *
+   * @param column - The column to filter on
+   * @param value - The value to filter with
+   */
+  isDistinct<ColumnName extends string>(
+    column: ColumnName,
+    value: ResolveFilterValue<Schema, Row, ColumnName> extends never
+      ? unknown
+      : ResolveFilterValue<Schema, Row, ColumnName> extends infer ResolvedFilterValue
+        ? ResolvedFilterValue
+        : never
+  ): this {
+    this.url.searchParams.append(column, `isdistinct.${value}`)
     return this
   }
 
