@@ -2,14 +2,11 @@ import { execSync } from 'child_process'
 import { readFileSync, writeFileSync, existsSync } from 'fs'
 import { join } from 'path'
 
-const packages = [
-  'auth-js',
-  'functions-js',
-  'postgrest-js',
-  'realtime-js',
-  'storage-js',
-  'supabase-js',
-]
+// Only publishing packages with explicit return types to JSR
+// Other packages (auth-js, postgrest-js, storage-js, realtime-js) require
+// explicit return types to be added before they can be published to JSR
+// without the --allow-slow-types flag
+const packages = ['functions-js', 'supabase-js']
 
 function getArg(name: string): string | undefined {
   const idx = process.argv.findIndex((a) => a === `--${name}` || a.startsWith(`--${name}=`))
@@ -21,20 +18,6 @@ function getArg(name: string): string | undefined {
 
 const tag = getArg('tag') || 'latest'
 const dryRun = process.argv.includes('--dry-run')
-
-// Packages that need --allow-slow-types due to missing explicit return types
-// TODO: Remove --allow-slow-types once explicit return types are added to improve JSR performance
-//
-// Packages requiring --allow-slow-types:
-// - auth-js: Missing return types in auth client methods
-// - postgrest-js: Missing return types in query builder methods
-// - storage-js: Missing return types in storage methods
-// - realtime-js: Missing return types in channel and presence methods
-//
-// Packages NOT requiring --allow-slow-types:
-// - functions-js: Has explicit return types
-// - supabase-js: Has explicit return types (aggregates other packages)
-const packagesWithSlowTypes = ['auth-js', 'postgrest-js', 'storage-js', 'realtime-js']
 
 function safeExec(cmd: string, opts = {}) {
   try {
@@ -85,19 +68,13 @@ async function publishToJsr() {
     console.log(`\n📤 Publishing @supabase/${pkg}@${version} to JSR...`)
 
     try {
-      // Determine if we need to allow slow types for this package
-      const allowSlowTypes = packagesWithSlowTypes.includes(pkg) ? ' --allow-slow-types' : ''
-
-      // Add provenance flag if we're in GitHub Actions CI
-      // GitHub Actions OIDC automatically handles authentication via id-token: write
-      const provenanceFlag = process.env.GITHUB_ACTIONS && !dryRun ? ' --provenance' : ''
-
       // Change to package directory and publish
       // Note: In GitHub Actions, authentication happens automatically via OIDC
+      // Provenance is automatically enabled when using OIDC (no flag needed)
       // Local publishing will prompt for interactive browser authentication
       const publishCmd = dryRun
-        ? `cd "${packagePath}" && npx jsr publish --dry-run --allow-dirty${allowSlowTypes}`
-        : `cd "${packagePath}" && npx jsr publish --allow-dirty${allowSlowTypes}${provenanceFlag}`
+        ? `cd "${packagePath}" && npx jsr publish --dry-run --allow-dirty`
+        : `cd "${packagePath}" && npx jsr publish --allow-dirty`
 
       safeExec(publishCmd)
 

@@ -61,11 +61,9 @@ async function testJsrPublish() {
       // Determine if we need to allow slow types for this package
       const allowSlowTypes = packagesWithSlowTypes.includes(pkg) ? ' --allow-slow-types' : ''
 
-      // Add provenance flag if we're in GitHub Actions CI
-      const provenanceFlag = process.env.GITHUB_ACTIONS ? ' --provenance' : ''
-
       // Change to package directory and publish
-      const publishCmd = `cd "${packagePath}" && npx jsr publish --allow-dirty${allowSlowTypes}${provenanceFlag}`
+      // Note: Provenance is automatically enabled in GitHub Actions via OIDC (no flag needed)
+      const publishCmd = `cd "${packagePath}" && npx jsr publish --allow-dirty${allowSlowTypes}`
 
       console.log(`Running: ${publishCmd}`)
       safeExec(publishCmd)

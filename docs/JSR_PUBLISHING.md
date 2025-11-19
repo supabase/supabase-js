@@ -4,20 +4,25 @@ This document explains how JSR (JavaScript Registry) publishing is configured in
 
 ## Overview
 
-All Supabase JavaScript packages are published to both npm and JSR. JSR publishing happens automatically after npm publishing in both stable and canary releases.
+Supabase JavaScript packages are published to npm, and select packages with explicit return types are also published to JSR. JSR publishing happens automatically after npm publishing in both stable and canary releases.
+
+Currently, only packages with complete TypeScript typing (explicit return types) are published to JSR to maintain high quality standards and optimal type-checking performance.
 
 ## Current Status
 
-✅ **JSR publishing is fully configured and ready to use**
+✅ **JSR publishing is configured for packages with explicit return types**
 
-The following packages are configured for JSR publishing:
+The following packages are currently published to JSR:
 
-- @supabase/auth-js
-- @supabase/functions-js
-- @supabase/postgrest-js
-- @supabase/realtime-js
-- @supabase/storage-js
-- @supabase/supabase-js
+- @supabase/functions-js ✅ (has explicit return types)
+- @supabase/supabase-js ✅ (has explicit return types)
+
+The following packages are **not yet published to JSR** (pending explicit return types):
+
+- @supabase/auth-js ⏳ (needs explicit return types)
+- @supabase/postgrest-js ⏳ (needs explicit return types)
+- @supabase/realtime-js ⏳ (needs explicit return types)
+- @supabase/storage-js ⏳ (needs explicit return types)
 
 ## Authentication
 
@@ -44,21 +49,19 @@ permissions:
 
 2. **OIDC Authentication**: When running in GitHub Actions with `id-token: write` permission, JSR automatically authenticates using GitHub's OIDC tokens. No manual token management is required.
 
-3. **Type Checking**: Some packages have missing explicit return types and use the `--allow-slow-types` flag temporarily. Future improvements should add explicit return types to improve performance.
+3. **Type Checking**: Only packages with explicit return types are published to JSR. This ensures optimal performance and aligns with JSR's quality standards.
 
-   Packages requiring `--allow-slow-types`:
-   - `auth-js` - Missing return types in auth client methods
-   - `postgrest-js` - Missing return types in query builder methods
-   - `storage-js` - Missing return types in storage methods
-   - `realtime-js` - Missing return types in channel and presence methods
-
-   Packages with explicit return types (no flag needed):
+   Currently published packages (with explicit return types):
    - `functions-js` - Has explicit return types
    - `supabase-js` - Has explicit return types (aggregates other packages)
 
-4. **Provenance**: When running in GitHub Actions, the `--provenance` flag is added for trusted publishing, linking packages to their source repository.
+   Not yet published (pending explicit return types):
+   - `auth-js` - Needs explicit return types in auth client methods
+   - `postgrest-js` - Needs explicit return types in query builder methods
+   - `storage-js` - Needs explicit return types in storage methods
+   - `realtime-js` - Needs explicit return types in channel and presence methods
 
-5. **Failure Handling**: JSR publishing failures don't fail the entire release - npm releases will still succeed.
+4. **Failure Handling**: JSR publishing failures don't fail the entire release - npm releases will still succeed.
 
 ## Files Involved
 
@@ -96,10 +99,13 @@ permissions:
 
 ### Publishing fails with "slow types" error
 
-This means a package is missing explicit return types. Either:
+This means a package is missing explicit return types. To publish to JSR:
 
-1. Add explicit return types to the code (recommended)
-2. Temporarily use `--allow-slow-types` flag (already configured for affected packages)
+1. Add explicit return types to all public APIs
+2. Update the `packages` array in `scripts/publish-to-jsr.ts` to include the package
+3. Update this documentation to reflect the change
+
+We intentionally avoid using the `--allow-slow-types` flag to maintain JSR quality standards.
 
 ### Working directory is dirty after publish
 
