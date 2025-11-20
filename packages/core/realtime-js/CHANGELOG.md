@@ -1,3 +1,13 @@
+## 2.84.0 (2025-11-20)
+
+### 🩹 Fixes
+
+- **realtime:** simplify serializer by removing unnecessary types of messages ([#1871](https://github.com/supabase/supabase-js/pull/1871))
+
+### ❤️ Thank You
+
+- Eduardo Gurgel
+
 ## 2.83.0 (2025-11-18)
 
 This was a version bump only for @supabase/realtime-js to align it with other projects, there were no code changes.

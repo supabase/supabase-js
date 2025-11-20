@@ -1,3 +1,18 @@
+## 2.84.0 (2025-11-20)
+
+### 🚀 Features
+
+- **postgrest:** add isdistinct and regex pattern matching operators ([#1875](https://github.com/supabase/supabase-js/pull/1875))
+
+### 🩹 Fixes
+
+- **postgrest:** validate empty or invalid relation names in Postgrest… ([#1863](https://github.com/supabase/supabase-js/pull/1863))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+- Soufiane Radouane @sofmega
+
 ## 2.83.0 (2025-11-18)
 
 This was a version bump only for @supabase/postgrest-js to align it with other projects, there were no code changes.
