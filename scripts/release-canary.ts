@@ -78,5 +78,15 @@ import { execSync } from 'child_process'
     console.log('⚠️  Continuing with release despite gotrue-js publish failure')
   }
 
+  // Publish all packages to JSR
+  console.log('\n📦 Publishing packages to JSR (canary)...')
+  try {
+    execSync('npx tsx scripts/publish-to-jsr.ts --tag=canary', { stdio: 'inherit' })
+  } catch (error) {
+    console.error('❌ Failed to publish to JSR:', error)
+    // Don't fail the entire release if JSR publishing fails
+    console.log('⚠️  Continuing with release despite JSR publish failure')
+  }
+
   process.exit(Object.values(publishResult).every((result) => result.code === 0) ? 0 : 1)
 })()
