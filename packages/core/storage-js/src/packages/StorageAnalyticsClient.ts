@@ -399,6 +399,11 @@ export default class StorageAnalyticsClient {
    * the `iceberg-js` package directly with manual configuration.
    */
   fromCatalog(bucketName: string): IcebergRestCatalog {
+    // Validate bucket name to prevent path traversal attacks
+    if (bucketName.includes('..') || bucketName.includes('/') || bucketName.includes('\\')) {
+      throw new StorageError('Invalid bucket name: must not contain path traversal sequences')
+    }
+    
     // Construct the Iceberg REST Catalog URL
     // The base URL is /storage/v1/iceberg
     // Note: IcebergRestCatalog from iceberg-js automatically adds /v1/ prefix to API paths
@@ -406,6 +411,13 @@ export default class StorageAnalyticsClient {
     return new IcebergRestCatalog({
       baseUrl: this.url,
       catalogName: bucketName, // Maps to the warehouse parameter in Supabase's implementation
+      auth: {
+        type: 'custom',
+        getHeaders: async () => this.headers,
+      },
+      fetch: this.fetch,
+    })
+  }
       auth: {
         type: 'custom',
         getHeaders: async () => this.headers,
