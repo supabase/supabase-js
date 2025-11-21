@@ -2,7 +2,7 @@ import { IcebergRestCatalog } from 'iceberg-js'
 import { DEFAULT_HEADERS } from '../lib/constants'
 import { isStorageError, StorageError } from '../lib/errors'
 import { Fetch, get, post, remove } from '../lib/fetch'
-import { resolveFetch } from '../lib/helpers'
+import { isValidBucketName, resolveFetch } from '../lib/helpers'
 import { AnalyticBucket } from '../lib/types'
 
 /**
@@ -393,17 +393,20 @@ export default class StorageAnalyticsClient {
    *
    * **Library Dependency**: The returned catalog is an instance of `IcebergRestCatalog`
    * from iceberg-js. For complete API documentation and advanced usage, refer to the
-   * [iceberg-js documentation](https://github.com/apache/iceberg-javascript).
+   * [iceberg-js documentation](https://supabase.github.io/iceberg-js/).
    *
    * For advanced Iceberg operations beyond bucket management, you can also install and use
    * the `iceberg-js` package directly with manual configuration.
    */
   fromCatalog(bucketName: string): IcebergRestCatalog {
-    // Validate bucket name to prevent path traversal attacks
-    if (bucketName.includes('..') || bucketName.includes('/') || bucketName.includes('\\')) {
-      throw new StorageError('Invalid bucket name: must not contain path traversal sequences')
+    // Validate bucket name using same rules as Supabase Storage API backend
+    if (!isValidBucketName(bucketName)) {
+      throw new StorageError(
+        'Invalid bucket name: File, folder, and bucket names must follow AWS object key naming guidelines ' +
+          'and should avoid the use of any other characters.'
+      )
     }
-    
+
     // Construct the Iceberg REST Catalog URL
     // The base URL is /storage/v1/iceberg
     // Note: IcebergRestCatalog from iceberg-js automatically adds /v1/ prefix to API paths
@@ -411,13 +414,6 @@ export default class StorageAnalyticsClient {
     return new IcebergRestCatalog({
       baseUrl: this.url,
       catalogName: bucketName, // Maps to the warehouse parameter in Supabase's implementation
-      auth: {
-        type: 'custom',
-        getHeaders: async () => this.headers,
-      },
-      fetch: this.fetch,
-    })
-  }
       auth: {
         type: 'custom',
         getHeaders: async () => this.headers,
