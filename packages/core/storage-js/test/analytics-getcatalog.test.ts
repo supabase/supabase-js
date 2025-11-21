@@ -8,12 +8,9 @@ import StorageAnalyticsClient from '../src/packages/StorageAnalyticsClient'
 
 describe('StorageAnalyticsClient.getCatalog()', () => {
   it('should return an IcebergRestCatalog instance', () => {
-    const client = new StorageAnalyticsClient(
-      'https://example.supabase.co/storage/v1/iceberg',
-      {
-        Authorization: 'Bearer test-token',
-      }
-    )
+    const client = new StorageAnalyticsClient('https://example.supabase.co/storage/v1/iceberg', {
+      Authorization: 'Bearer test-token',
+    })
 
     const catalog = client.getCatalog('my-analytics-bucket')
 
