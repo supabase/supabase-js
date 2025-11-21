@@ -265,7 +265,7 @@ export default class PostgrestQueryBuilder<
     Relationships,
     'POST'
   >
-  /**
+    /**
    * Perform an UPSERT on the table or view. Depending on the column(s) passed
    * to `onConflict`, `.upsert()` allows you to perform the equivalent of
    * `.insert()` if a row with the corresponding `onConflict` columns doesn't
@@ -302,7 +302,56 @@ export default class PostgrestQueryBuilder<
    * Otherwise, use the default value for the column. This only applies when
    * inserting new rows, not when merging with existing rows under
    * `ignoreDuplicates: false`. This also only applies when doing bulk upserts.
+   *
+   * @example Upsert a single row using a unique key
+   * ```ts
+   * // Upserting a single row, overwriting based on the 'username' unique column
+   * const { data, error } = await supabase
+   *   .from('users')
+   *   .upsert({ username: 'supabot' }, { onConflict: 'username' })
+   *
+   * // Example response:
+   * // {
+   * //   data: [
+   * //     { id: 4, message: 'bar', username: 'supabot' }
+   * //   ],
+   * //   error: null
+   * // }
+   * ```
+   *
+   * @example Upsert with conflict resolution and exact row counting
+   * ```ts
+   * // Upserting and returning exact count
+   * const { data, error, count } = await supabase
+   *   .from('users')
+   *   .upsert(
+   *     {
+   *       id: 3,
+   *       message: 'foo',
+   *       username: 'supabot'
+   *     },
+   *     {
+   *       onConflict: 'username',
+   *       count: 'exact'
+   *     }
+   *   )
+   *
+   * // Example response:
+   * // {
+   * //   data: [
+   * //     {
+   * //       id: 42,
+   * //       handle: "saoirse",
+   * //       display_name: "Saoirse"
+   * //     }
+   * //   ],
+   * //   count: 1,
+   * //   error: null
+   * // }
+   * ```
    */
+
+
   upsert<Row extends Relation extends { Insert: unknown } ? Relation['Insert'] : never>(
     values: Row | Row[],
     {
