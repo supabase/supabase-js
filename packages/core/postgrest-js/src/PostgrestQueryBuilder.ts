@@ -303,7 +303,7 @@ export default class PostgrestQueryBuilder<
    * inserting new rows, not when merging with existing rows under
    * `ignoreDuplicates: false`. This also only applies when doing bulk upserts.
    *
-   * @example
+   * @example Upsert a single row using a unique key
    * ```ts
    * // Upserting a single row, overwriting based on the 'username' unique column
    * const { data, error } = await supabase
@@ -319,7 +319,7 @@ export default class PostgrestQueryBuilder<
    * // }
    * ```
    *
-   * @example
+   * @example Upsert with conflict resolution and exact row counting
    * ```ts
    * // Upserting and returning exact count
    * const { data, error, count } = await supabase
