@@ -1,3 +1,4 @@
+import { IcebergRestCatalog } from 'iceberg-js'
 import { DEFAULT_HEADERS } from '../lib/constants'
 import { isStorageError, StorageError } from '../lib/errors'
 import { Fetch, get, post, remove } from '../lib/fetch'
@@ -260,5 +261,95 @@ export default class StorageAnalyticsClient {
 
       throw error
     }
+  }
+
+  /**
+   * @alpha
+   *
+   * Get an Iceberg REST Catalog client configured for a specific analytics bucket
+   * Use this to perform advanced table and namespace operations within the bucket
+   * The returned client provides full access to the Apache Iceberg REST Catalog API
+   *
+   * **Public alpha:** This API is part of a public alpha release and may not be available to your account type.
+   *
+   * @category Analytics Buckets
+   * @param bucketName - The name of the analytics bucket (warehouse) to connect to
+   * @returns Configured IcebergRestCatalog instance for advanced Iceberg operations
+   *
+   * @example Get catalog and create table
+   * ```js
+   * // First, create an analytics bucket
+   * const { data: bucket, error: bucketError } = await supabase
+   *   .storage
+   *   .analytics
+   *   .createBucket('analytics-data')
+   *
+   * // Get the Iceberg catalog for that bucket
+   * const catalog = supabase.storage.analytics.getCatalog('analytics-data')
+   *
+   * // Create a namespace
+   * await catalog.createNamespace({ namespace: ['default'] })
+   *
+   * // Create a table with schema
+   * await catalog.createTable(
+   *   { namespace: ['default'] },
+   *   {
+   *     name: 'events',
+   *     schema: {
+   *       type: 'struct',
+   *       fields: [
+   *         { id: 1, name: 'id', type: 'long', required: true },
+   *         { id: 2, name: 'timestamp', type: 'timestamp', required: true },
+   *         { id: 3, name: 'user_id', type: 'string', required: false }
+   *       ],
+   *       'schema-id': 0,
+   *       'identifier-field-ids': [1]
+   *     },
+   *     'partition-spec': {
+   *       'spec-id': 0,
+   *       fields: []
+   *     },
+   *     'write-order': {
+   *       'order-id': 0,
+   *       fields: []
+   *     },
+   *     properties: {
+   *       'write.format.default': 'parquet'
+   *     }
+   *   }
+   * )
+   * ```
+   *
+   * @example List tables in namespace
+   * ```js
+   * const catalog = supabase.storage.analytics.getCatalog('analytics-data')
+   *
+   * // List all tables in the default namespace
+   * const tables = await catalog.listTables({ namespace: ['default'] })
+   * console.log(tables) // [{ namespace: ['default'], name: 'events' }]
+   * ```
+   *
+   * @remarks
+   * This method provides a bridge between Supabase's bucket management and the standard
+   * Apache Iceberg REST Catalog API. The bucket name maps to the Iceberg warehouse parameter.
+   * All authentication and configuration is handled automatically using your Supabase credentials.
+   *
+   * For advanced Iceberg operations beyond bucket management, you can also install and use
+   * the `iceberg-js` package directly with manual configuration.
+   */
+  getCatalog(bucketName: string): IcebergRestCatalog {
+    // Construct the Iceberg REST Catalog URL
+    // The base URL is /storage/v1/iceberg, we need /storage/v1/iceberg/v1 for the catalog API
+    const catalogUrl = `${this.url}/v1`
+
+    return new IcebergRestCatalog({
+      baseUrl: catalogUrl,
+      catalogName: bucketName, // Maps to the warehouse parameter in Supabase's implementation
+      auth: {
+        type: 'custom',
+        getHeaders: async () => this.headers,
+      },
+      fetch: this.fetch,
+    })
   }
 }
