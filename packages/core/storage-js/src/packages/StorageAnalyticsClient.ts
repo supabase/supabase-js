@@ -285,7 +285,7 @@ export default class StorageAnalyticsClient {
    *   .createBucket('analytics-data')
    *
    * // Get the Iceberg catalog for that bucket
-   * const catalog = supabase.storage.analytics.getCatalog('analytics-data')
+   * const catalog = supabase.storage.analytics.fromCatalog('analytics-data')
    *
    * // Create a namespace
    * await catalog.createNamespace({ namespace: ['default'] })
@@ -322,7 +322,7 @@ export default class StorageAnalyticsClient {
    *
    * @example List tables in namespace
    * ```js
-   * const catalog = supabase.storage.analytics.getCatalog('analytics-data')
+   * const catalog = supabase.storage.analytics.fromCatalog('analytics-data')
    *
    * // List all tables in the default namespace
    * const tables = await catalog.listTables({ namespace: ['default'] })
@@ -331,7 +331,7 @@ export default class StorageAnalyticsClient {
    *
    * @example Working with namespaces
    * ```js
-   * const catalog = supabase.storage.analytics.getCatalog('analytics-data')
+   * const catalog = supabase.storage.analytics.fromCatalog('analytics-data')
    *
    * // List all namespaces
    * const namespaces = await catalog.listNamespaces()
@@ -345,7 +345,7 @@ export default class StorageAnalyticsClient {
    *
    * @example Cleanup operations
    * ```js
-   * const catalog = supabase.storage.analytics.getCatalog('analytics-data')
+   * const catalog = supabase.storage.analytics.fromCatalog('analytics-data')
    *
    * // Drop table with purge option (removes all data)
    * await catalog.dropTable(
@@ -361,7 +361,7 @@ export default class StorageAnalyticsClient {
    * ```js
    * import { IcebergError } from 'iceberg-js'
    *
-   * const catalog = supabase.storage.analytics.getCatalog('analytics-data')
+   * const catalog = supabase.storage.analytics.fromCatalog('analytics-data')
    *
    * try {
    *   await catalog.dropTable({ namespace: ['default'], name: 'events' }, { purge: true })
@@ -398,7 +398,7 @@ export default class StorageAnalyticsClient {
    * For advanced Iceberg operations beyond bucket management, you can also install and use
    * the `iceberg-js` package directly with manual configuration.
    */
-  getCatalog(bucketName: string): IcebergRestCatalog {
+  fromCatalog(bucketName: string): IcebergRestCatalog {
     // Construct the Iceberg REST Catalog URL
     // The base URL is /storage/v1/iceberg
     // Note: IcebergRestCatalog from iceberg-js automatically adds /v1/ prefix to API paths
