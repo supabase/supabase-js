@@ -329,10 +329,71 @@ export default class StorageAnalyticsClient {
    * console.log(tables) // [{ namespace: ['default'], name: 'events' }]
    * ```
    *
+   * @example Working with namespaces
+   * ```js
+   * const catalog = supabase.storage.analytics.getCatalog('analytics-data')
+   *
+   * // List all namespaces
+   * const namespaces = await catalog.listNamespaces()
+   *
+   * // Create namespace with properties
+   * await catalog.createNamespace(
+   *   { namespace: ['production'] },
+   *   { properties: { owner: 'data-team', env: 'prod' } }
+   * )
+   * ```
+   *
+   * @example Cleanup operations
+   * ```js
+   * const catalog = supabase.storage.analytics.getCatalog('analytics-data')
+   *
+   * // Drop table with purge option (removes all data)
+   * await catalog.dropTable(
+   *   { namespace: ['default'], name: 'events' },
+   *   { purge: true }
+   * )
+   *
+   * // Drop namespace (must be empty)
+   * await catalog.dropNamespace({ namespace: ['default'] })
+   * ```
+   *
+   * @example Error handling with catalog operations
+   * ```js
+   * import { IcebergError } from 'iceberg-js'
+   *
+   * const catalog = supabase.storage.analytics.getCatalog('analytics-data')
+   *
+   * try {
+   *   await catalog.dropTable({ namespace: ['default'], name: 'events' }, { purge: true })
+   * } catch (error) {
+   *   // Handle 404 errors (resource not found)
+   *   const is404 =
+   *     (error instanceof IcebergError && error.status === 404) ||
+   *     error?.status === 404 ||
+   *     error?.details?.error?.code === 404
+   *
+   *   if (is404) {
+   *     console.log('Table does not exist')
+   *   } else {
+   *     throw error // Re-throw other errors
+   *   }
+   * }
+   * ```
+   *
    * @remarks
    * This method provides a bridge between Supabase's bucket management and the standard
    * Apache Iceberg REST Catalog API. The bucket name maps to the Iceberg warehouse parameter.
    * All authentication and configuration is handled automatically using your Supabase credentials.
+   *
+   * **Error Handling**: Operations may throw `IcebergError` from the iceberg-js library.
+   * Always handle 404 errors gracefully when checking for resource existence.
+   *
+   * **Cleanup Operations**: When using `dropTable`, the `purge: true` option permanently
+   * deletes all table data. Without it, the table is marked as deleted but data remains.
+   *
+   * **Library Dependency**: The returned catalog is an instance of `IcebergRestCatalog`
+   * from iceberg-js. For complete API documentation and advanced usage, refer to the
+   * [iceberg-js documentation](https://github.com/apache/iceberg-javascript).
    *
    * For advanced Iceberg operations beyond bucket management, you can also install and use
    * the `iceberg-js` package directly with manual configuration.
