@@ -487,11 +487,11 @@ if (error) {
 
 #### Get Iceberg Catalog for Advanced Operations
 
-For advanced operations like creating tables, namespaces, and querying Iceberg metadata, use the `getCatalog()` method to get a configured [iceberg-js](https://github.com/supabase/iceberg-js) client:
+For advanced operations like creating tables, namespaces, and querying Iceberg metadata, use the `fromCatalog()` method to get a configured [iceberg-js](https://github.com/supabase/iceberg-js) client:
 
 ```typescript
 // Get an Iceberg REST Catalog client for your analytics bucket
-const catalog = analytics.getCatalog('analytics-data')
+const catalog = analytics.fromCatalog('analytics-data')
 
 // Create a namespace
 await catalog.createNamespace({ namespace: ['default'] }, { properties: { owner: 'data-team' } })
@@ -547,7 +547,7 @@ await catalog.dropNamespace({ namespace: ['default'] })
 
 **Returns:** `IcebergRestCatalog` instance from [iceberg-js](https://github.com/supabase/iceberg-js)
 
-> **Note:** The `getCatalog()` method returns an Iceberg REST Catalog client that provides full access to the Apache Iceberg REST API. For complete documentation of available operations, see the [iceberg-js documentation](https://supabase.github.io/iceberg-js/).
+> **Note:** The `fromCatalog()` method returns an Iceberg REST Catalog client that provides full access to the Apache Iceberg REST API. For complete documentation of available operations, see the [iceberg-js documentation](https://supabase.github.io/iceberg-js/).
 
 ### Error Handling
 

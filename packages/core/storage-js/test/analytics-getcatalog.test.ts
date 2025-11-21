@@ -1,18 +1,18 @@
 /**
- * Unit tests for StorageAnalyticsClient.getCatalog() method
+ * Unit tests for StorageAnalyticsClient.fromCatalog() method
  * Tests that the method returns a properly configured IcebergRestCatalog instance
  */
 
 import { IcebergRestCatalog } from 'iceberg-js'
 import StorageAnalyticsClient from '../src/packages/StorageAnalyticsClient'
 
-describe('StorageAnalyticsClient.getCatalog()', () => {
+describe('StorageAnalyticsClient.fromCatalog()', () => {
   it('should return an IcebergRestCatalog instance', () => {
     const client = new StorageAnalyticsClient('https://example.supabase.co/storage/v1/iceberg', {
       Authorization: 'Bearer test-token',
     })
 
-    const catalog = client.getCatalog('my-analytics-bucket')
+    const catalog = client.fromCatalog('my-analytics-bucket')
 
     expect(catalog).toBeInstanceOf(IcebergRestCatalog)
   })
@@ -20,8 +20,8 @@ describe('StorageAnalyticsClient.getCatalog()', () => {
   it('should return different instances for different bucket names', () => {
     const client = new StorageAnalyticsClient('https://example.supabase.co/storage/v1/iceberg', {})
 
-    const catalog1 = client.getCatalog('bucket-1')
-    const catalog2 = client.getCatalog('bucket-2')
+    const catalog1 = client.fromCatalog('bucket-1')
+    const catalog2 = client.fromCatalog('bucket-2')
 
     expect(catalog1).toBeInstanceOf(IcebergRestCatalog)
     expect(catalog2).toBeInstanceOf(IcebergRestCatalog)
@@ -31,7 +31,7 @@ describe('StorageAnalyticsClient.getCatalog()', () => {
   it('should work with minimal configuration', () => {
     const client = new StorageAnalyticsClient('http://localhost:8181', {})
 
-    const catalog = client.getCatalog('test-warehouse')
+    const catalog = client.fromCatalog('test-warehouse')
 
     expect(catalog).toBeInstanceOf(IcebergRestCatalog)
     expect(typeof catalog.listNamespaces).toBe('function')
@@ -47,7 +47,7 @@ describe('StorageAnalyticsClient.getCatalog()', () => {
   it('should work when called from throwOnError chain', () => {
     const client = new StorageAnalyticsClient('https://example.supabase.co/storage/v1/iceberg', {})
 
-    const catalog = client.throwOnError().getCatalog('my-bucket')
+    const catalog = client.throwOnError().fromCatalog('my-bucket')
 
     expect(catalog).toBeInstanceOf(IcebergRestCatalog)
   })
