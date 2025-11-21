@@ -5,6 +5,7 @@
 /// <reference types="jest" />
 
 import { StorageVectorsClient } from '../src/lib/vectors'
+import StorageAnalyticsClient from '../src/packages/StorageAnalyticsClient'
 import { createMockFetch, resetMockStorage } from './mock-server'
 import { getTestConfig } from './setup'
 
@@ -29,6 +30,18 @@ export function createTestClient(): StorageVectorsClient {
 
   return new StorageVectorsClient(config.apiUrl, {
     headers: config.headers,
+  })
+}
+
+/**
+ * Create a StorageAnalyticsClient for testing analytics buckets with Iceberg
+ * Points directly to the Iceberg REST Catalog at http://localhost:8181
+ */
+export function createAnalyticsTestClient(): StorageAnalyticsClient {
+  // For analytics tests, we always use the Docker infrastructure (no mock server)
+  // The Iceberg REST Catalog runs at http://localhost:8181
+  return new StorageAnalyticsClient('http://localhost:8181', {
+    // No authentication required for local Iceberg REST Catalog
   })
 }
 
