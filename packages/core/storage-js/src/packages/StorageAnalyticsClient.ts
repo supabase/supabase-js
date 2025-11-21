@@ -339,11 +339,11 @@ export default class StorageAnalyticsClient {
    */
   getCatalog(bucketName: string): IcebergRestCatalog {
     // Construct the Iceberg REST Catalog URL
-    // The base URL is /storage/v1/iceberg, we need /storage/v1/iceberg/v1 for the catalog API
-    const catalogUrl = `${this.url}/v1`
-
+    // The base URL is /storage/v1/iceberg
+    // Note: IcebergRestCatalog from iceberg-js automatically adds /v1/ prefix to API paths
+    // so we should NOT append /v1 here (it would cause double /v1/v1/ in the URL)
     return new IcebergRestCatalog({
-      baseUrl: catalogUrl,
+      baseUrl: this.url,
       catalogName: bucketName, // Maps to the warehouse parameter in Supabase's implementation
       auth: {
         type: 'custom',
