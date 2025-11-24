@@ -3628,12 +3628,13 @@ export default class GoTrueClient {
           return this._returnResult({ data: null, error: new AuthSessionMissingError() })
         }
 
-        return await _request(this.fetch, 'DELETE', `${this.url}/user/oauth/grants`, {
+        await _request(this.fetch, 'DELETE', `${this.url}/user/oauth/grants`, {
           headers: this.headers,
           jwt: session.access_token,
           query: { client_id: options.clientId },
-          xform: () => ({ data: {}, error: null }),
+          noResolveJson: true,
         })
+        return { data: {}, error: null }
       })
     } catch (error) {
       if (isAuthError(error)) {
