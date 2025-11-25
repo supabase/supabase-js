@@ -77,7 +77,11 @@ export default class StorageAnalyticsClient {
    * ```json
    * {
    *   "data": {
-   *     "name": "analytics-data"
+   *     "name": "analytics-data",
+   *     "type": "ANALYTICS",
+   *     "format": "iceberg",
+   *     "created_at": "2024-05-22T22:26:05.100Z",
+   *     "updated_at": "2024-05-22T22:26:05.100Z"
    *   },
    *   "error": null
    * }
@@ -143,9 +147,9 @@ export default class StorageAnalyticsClient {
    * {
    *   "data": [
    *     {
-   *       "id": "analytics-data",
    *       "name": "analytics-data",
    *       "type": "ANALYTICS",
+   *       "format": "iceberg",
    *       "created_at": "2024-05-22T22:26:05.100Z",
    *       "updated_at": "2024-05-22T22:26:05.100Z"
    *     }

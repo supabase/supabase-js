@@ -40,7 +40,7 @@ export class StorageClient extends StorageBucketApi {
    *
    * @example
    * ```typescript
-   * const avatars = storage.from('avatars')
+   * const avatars = supabase.storage.from('avatars')
    * ```
    */
   from(id: string): StorageFileApi {
@@ -75,20 +75,6 @@ export class StorageClient extends StorageBucketApi {
    *
    * @category Analytics Buckets
    * @returns A StorageAnalyticsClient instance configured with the current storage settings.
-   * @example
-   * ```typescript
-   * const client = createClient(url, key)
-   * const analytics = client.storage.analytics
-   *
-   * // Create an analytics bucket
-   * await analytics.createBucket('my-analytics-bucket')
-   *
-   * // List all analytics buckets
-   * const { data: buckets } = await analytics.listBuckets()
-   *
-   * // Delete an analytics bucket
-   * await analytics.deleteBucket('old-analytics-bucket')
-   * ```
    */
   get analytics(): StorageAnalyticsClient {
     return new StorageAnalyticsClient(this.url + '/iceberg', this.headers, this.fetch)
