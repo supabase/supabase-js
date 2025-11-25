@@ -1,5 +1,5 @@
 /**
- * Unit tests for StorageAnalyticsClient.fromCatalog() method
+ * Unit tests for StorageAnalyticsClient.from() method
  * Tests that the method returns a properly configured IcebergRestCatalog instance
  */
 
@@ -7,13 +7,13 @@ import { IcebergRestCatalog } from 'iceberg-js'
 import StorageAnalyticsClient from '../src/packages/StorageAnalyticsClient'
 import { StorageError } from '../src/lib/errors'
 
-describe('StorageAnalyticsClient.fromCatalog()', () => {
+describe('StorageAnalyticsClient.from()', () => {
   it('should return an IcebergRestCatalog instance', () => {
     const client = new StorageAnalyticsClient('https://example.supabase.co/storage/v1/iceberg', {
       Authorization: 'Bearer test-token',
     })
 
-    const catalog = client.fromCatalog('my-analytics-bucket')
+    const catalog = client.from('my-analytics-bucket')
 
     expect(catalog).toBeInstanceOf(IcebergRestCatalog)
   })
@@ -21,8 +21,8 @@ describe('StorageAnalyticsClient.fromCatalog()', () => {
   it('should return different instances for different bucket names', () => {
     const client = new StorageAnalyticsClient('https://example.supabase.co/storage/v1/iceberg', {})
 
-    const catalog1 = client.fromCatalog('bucket-1')
-    const catalog2 = client.fromCatalog('bucket-2')
+    const catalog1 = client.from('bucket-1')
+    const catalog2 = client.from('bucket-2')
 
     expect(catalog1).toBeInstanceOf(IcebergRestCatalog)
     expect(catalog2).toBeInstanceOf(IcebergRestCatalog)
@@ -32,7 +32,7 @@ describe('StorageAnalyticsClient.fromCatalog()', () => {
   it('should work with minimal configuration', () => {
     const client = new StorageAnalyticsClient('http://localhost:8181', {})
 
-    const catalog = client.fromCatalog('test-warehouse')
+    const catalog = client.from('test-warehouse')
 
     expect(catalog).toBeInstanceOf(IcebergRestCatalog)
     expect(typeof catalog.listNamespaces).toBe('function')
@@ -48,7 +48,7 @@ describe('StorageAnalyticsClient.fromCatalog()', () => {
   it('should work when called from throwOnError chain', () => {
     const client = new StorageAnalyticsClient('https://example.supabase.co/storage/v1/iceberg', {})
 
-    const catalog = client.throwOnError().fromCatalog('my-bucket')
+    const catalog = client.throwOnError().from('my-bucket')
 
     expect(catalog).toBeInstanceOf(IcebergRestCatalog)
   })
@@ -62,68 +62,68 @@ describe('StorageAnalyticsClient.fromCatalog()', () => {
 
     describe('valid bucket names', () => {
       it('should accept simple alphanumeric names', () => {
-        expect(() => client.fromCatalog('analytics-data')).not.toThrow()
-        expect(() => client.fromCatalog('bucket123')).not.toThrow()
-        expect(() => client.fromCatalog('MyBucket')).not.toThrow()
+        expect(() => client.from('analytics-data')).not.toThrow()
+        expect(() => client.from('bucket123')).not.toThrow()
+        expect(() => client.from('MyBucket')).not.toThrow()
       })
 
       it('should accept names with safe special characters', () => {
-        expect(() => client.fromCatalog('my-bucket_2024')).not.toThrow()
-        expect(() => client.fromCatalog('data.backup')).not.toThrow()
-        expect(() => client.fromCatalog("bucket's-data")).not.toThrow()
-        expect(() => client.fromCatalog('bucket (2024)')).not.toThrow()
+        expect(() => client.from('my-bucket_2024')).not.toThrow()
+        expect(() => client.from('data.backup')).not.toThrow()
+        expect(() => client.from("bucket's-data")).not.toThrow()
+        expect(() => client.from('bucket (2024)')).not.toThrow()
       })
 
       it('should accept real-world bucket names from examples', () => {
-        expect(() => client.fromCatalog('embeddings-prod')).not.toThrow()
-        expect(() => client.fromCatalog('user_uploads')).not.toThrow()
-        expect(() => client.fromCatalog('public-assets')).not.toThrow()
+        expect(() => client.from('embeddings-prod')).not.toThrow()
+        expect(() => client.from('user_uploads')).not.toThrow()
+        expect(() => client.from('public-assets')).not.toThrow()
       })
     })
 
     describe('invalid bucket names', () => {
       it('should reject empty or null bucket names', () => {
-        expect(() => client.fromCatalog('')).toThrow(StorageError)
-        expect(() => client.fromCatalog(null as any)).toThrow(StorageError)
-        expect(() => client.fromCatalog(undefined as any)).toThrow(StorageError)
+        expect(() => client.from('')).toThrow(StorageError)
+        expect(() => client.from(null as any)).toThrow(StorageError)
+        expect(() => client.from(undefined as any)).toThrow(StorageError)
       })
 
       it('should reject path traversal with slashes', () => {
-        expect(() => client.fromCatalog('../etc/passwd')).toThrow(StorageError)
-        expect(() => client.fromCatalog('bucket/../other')).toThrow(StorageError)
+        expect(() => client.from('../etc/passwd')).toThrow(StorageError)
+        expect(() => client.from('bucket/../other')).toThrow(StorageError)
         // Note: '..' alone is valid (just two periods), only with slashes is it path traversal
       })
 
       it('should reject names with path separators', () => {
-        expect(() => client.fromCatalog('bucket/nested')).toThrow(StorageError)
-        expect(() => client.fromCatalog('/bucket')).toThrow(StorageError)
-        expect(() => client.fromCatalog('bucket/')).toThrow(StorageError)
-        expect(() => client.fromCatalog('bucket\\nested')).toThrow(StorageError)
-        expect(() => client.fromCatalog('path\\to\\bucket')).toThrow(StorageError)
+        expect(() => client.from('bucket/nested')).toThrow(StorageError)
+        expect(() => client.from('/bucket')).toThrow(StorageError)
+        expect(() => client.from('bucket/')).toThrow(StorageError)
+        expect(() => client.from('bucket\\nested')).toThrow(StorageError)
+        expect(() => client.from('path\\to\\bucket')).toThrow(StorageError)
       })
 
       it('should reject names with leading or trailing whitespace', () => {
-        expect(() => client.fromCatalog(' bucket')).toThrow(StorageError)
-        expect(() => client.fromCatalog('bucket ')).toThrow(StorageError)
-        expect(() => client.fromCatalog(' bucket ')).toThrow(StorageError)
+        expect(() => client.from(' bucket')).toThrow(StorageError)
+        expect(() => client.from('bucket ')).toThrow(StorageError)
+        expect(() => client.from(' bucket ')).toThrow(StorageError)
       })
 
       it('should reject names exceeding 100 characters', () => {
         const tooLongName = 'a'.repeat(101)
-        expect(() => client.fromCatalog(tooLongName)).toThrow(StorageError)
+        expect(() => client.from(tooLongName)).toThrow(StorageError)
       })
 
       it('should reject names with unsafe special characters', () => {
-        expect(() => client.fromCatalog('bucket{name}')).toThrow(StorageError)
-        expect(() => client.fromCatalog('bucket[name]')).toThrow(StorageError)
-        expect(() => client.fromCatalog('bucket<name>')).toThrow(StorageError)
-        expect(() => client.fromCatalog('bucket#name')).toThrow(StorageError)
-        expect(() => client.fromCatalog('bucket%name')).toThrow(StorageError)
+        expect(() => client.from('bucket{name}')).toThrow(StorageError)
+        expect(() => client.from('bucket[name]')).toThrow(StorageError)
+        expect(() => client.from('bucket<name>')).toThrow(StorageError)
+        expect(() => client.from('bucket#name')).toThrow(StorageError)
+        expect(() => client.from('bucket%name')).toThrow(StorageError)
       })
 
       it('should provide clear error messages', () => {
         try {
-          client.fromCatalog('bucket/nested')
+          client.from('bucket/nested')
           fail('Should have thrown an error')
         } catch (error) {
           expect(error).toBeInstanceOf(StorageError)
@@ -139,7 +139,7 @@ describe('StorageAnalyticsClient.fromCatalog()', () => {
         // strings will be rejected. This is correct behavior - users should
         // pass unencoded bucket names.
         const encodedSlash = 'bucket%2Fnested'
-        expect(() => client.fromCatalog(encodedSlash)).toThrow(StorageError)
+        expect(() => client.from(encodedSlash)).toThrow(StorageError)
       })
     })
   })
