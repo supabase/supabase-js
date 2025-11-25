@@ -42,32 +42,14 @@ export interface StorageVectorsClientOptions {
  *
  * **Usage Patterns:**
  *
- * 1. **Via StorageClient (recommended for most use cases):**
  * ```typescript
- * import { StorageClient } from '@supabase/storage-js'
- *
- * const storageClient = new StorageClient(url, headers)
- * const vectors = storageClient.vectors
- *
- * // Use vector operations
- * await vectors.createBucket('embeddings-prod')
- * const bucket = vectors.from('embeddings-prod')
- * await bucket.createIndex({ ... })
- * ```
- *
- * 2. **Standalone (for vector-only applications):**
- * ```typescript
- * import { StorageVectorsClient } from '@supabase/storage-js'
- *
- * const vectorsClient = new StorageVectorsClient('https://api.example.com', {
- *   headers: { 'Authorization': 'Bearer token' }
- * })
- *
- * // Access bucket operations
- * await vectorsClient.createBucket('embeddings-prod')
+ * const { data, error } = await supabase
+ *  .storage
+ *  .vectors
+ *  .createBucket('embeddings-prod')
  *
  * // Access index operations via buckets
- * const bucket = vectorsClient.from('embeddings-prod')
+ * const bucket = supabase.storage.vectors.from('embeddings-prod')
  * await bucket.createIndex({
  *   indexName: 'documents',
  *   dataType: 'float32',
@@ -128,18 +110,7 @@ export class StorageVectorsClient extends VectorBucketApi {
    *
    * @example
    * ```typescript
-   * const bucket = client.bucket('embeddings-prod')
-   *
-   * // Create an index in this bucket
-   * await bucket.createIndex({
-   *   indexName: 'documents-openai',
-   *   dataType: 'float32',
-   *   dimension: 1536,
-   *   distanceMetric: 'cosine'
-   * })
-   *
-   * // List indexes in this bucket
-   * const { data } = await bucket.listIndexes()
+   * const bucket = supabase.storage.vectors.from('embeddings-prod')
    * ```
    */
   from(vectorBucketName: string): VectorBucketScope {
@@ -169,7 +140,7 @@ export class VectorBucketScope extends VectorIndexApi {
    * @category Vector Buckets
    * @example
    * ```typescript
-   * const bucket = client.bucket('embeddings-prod')
+   * const bucket = supabase.storage.vectors.from('embeddings-prod')
    * ```
    */
   constructor(
@@ -197,7 +168,7 @@ export class VectorBucketScope extends VectorIndexApi {
    *
    * @example
    * ```typescript
-   * const bucket = client.bucket('embeddings-prod')
+   * const bucket = supabase.storage.vectors.from('embeddings-prod')
    * await bucket.createIndex({
    *   indexName: 'documents-openai',
    *   dataType: 'float32',
@@ -231,7 +202,7 @@ export class VectorBucketScope extends VectorIndexApi {
    *
    * @example
    * ```typescript
-   * const bucket = client.bucket('embeddings-prod')
+   * const bucket = supabase.storage.vectors.from('embeddings-prod')
    * const { data } = await bucket.listIndexes({ prefix: 'documents-' })
    * ```
    */
@@ -257,7 +228,7 @@ export class VectorBucketScope extends VectorIndexApi {
    *
    * @example
    * ```typescript
-   * const bucket = client.bucket('embeddings-prod')
+   * const bucket = supabase.storage.vectors.from('embeddings-prod')
    * const { data } = await bucket.getIndex('documents-openai')
    * console.log('Dimension:', data?.index.dimension)
    * ```
@@ -281,7 +252,7 @@ export class VectorBucketScope extends VectorIndexApi {
    *
    * @example
    * ```typescript
-   * const bucket = client.bucket('embeddings-prod')
+   * const bucket = supabase.storage.vectors.from('embeddings-prod')
    * await bucket.deleteIndex('old-index')
    * ```
    */
@@ -304,7 +275,7 @@ export class VectorBucketScope extends VectorIndexApi {
    *
    * @example
    * ```typescript
-   * const index = client.bucket('embeddings-prod').index('documents-openai')
+   * const index = supabase.storage.vectors.from('embeddings-prod').index('documents-openai')
    *
    * // Insert vectors
    * await index.putVectors({
@@ -355,7 +326,7 @@ export class VectorIndexScope extends VectorDataApi {
    * @category Vector Buckets
    * @example
    * ```typescript
-   * const index = client.bucket('embeddings-prod').index('documents-openai')
+   * const index = supabase.storage.vectors.from('embeddings-prod').index('documents-openai')
    * ```
    */
   constructor(
@@ -385,7 +356,7 @@ export class VectorIndexScope extends VectorDataApi {
    *
    * @example
    * ```typescript
-   * const index = client.bucket('embeddings-prod').index('documents-openai')
+   * const index = supabase.storage.vectors.from('embeddings-prod').index('documents-openai')
    * await index.putVectors({
    *   vectors: [
    *     {
@@ -420,7 +391,7 @@ export class VectorIndexScope extends VectorDataApi {
    *
    * @example
    * ```typescript
-   * const index = client.bucket('embeddings-prod').index('documents-openai')
+   * const index = supabase.storage.vectors.from('embeddings-prod').index('documents-openai')
    * const { data } = await index.getVectors({
    *   keys: ['doc-1', 'doc-2'],
    *   returnMetadata: true
@@ -450,7 +421,7 @@ export class VectorIndexScope extends VectorDataApi {
    *
    * @example
    * ```typescript
-   * const index = client.bucket('embeddings-prod').index('documents-openai')
+   * const index = supabase.storage.vectors.from('embeddings-prod').index('documents-openai')
    * const { data } = await index.listVectors({
    *   maxResults: 500,
    *   returnMetadata: true
@@ -482,7 +453,7 @@ export class VectorIndexScope extends VectorDataApi {
    *
    * @example
    * ```typescript
-   * const index = client.bucket('embeddings-prod').index('documents-openai')
+   * const index = supabase.storage.vectors.from('embeddings-prod').index('documents-openai')
    * const { data } = await index.queryVectors({
    *   queryVector: { float32: [0.1, 0.2, ...] },
    *   topK: 5,
@@ -517,7 +488,7 @@ export class VectorIndexScope extends VectorDataApi {
    *
    * @example
    * ```typescript
-   * const index = client.bucket('embeddings-prod').index('documents-openai')
+   * const index = supabase.storage.vectors.from('embeddings-prod').index('documents-openai')
    * await index.deleteVectors({
    *   keys: ['doc-1', 'doc-2', 'doc-3']
    * })
