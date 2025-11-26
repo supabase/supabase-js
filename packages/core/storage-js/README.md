@@ -488,6 +488,70 @@ if (error) {
 
 > **Note:** A bucket cannot be deleted if it contains data. You must empty the bucket first.
 
+#### Get Iceberg Catalog for Advanced Operations
+
+For advanced operations like creating tables, namespaces, and querying Iceberg metadata, use the `from()` method to get a configured [iceberg-js](https://github.com/supabase/iceberg-js) client:
+
+```typescript
+// Get an Iceberg REST Catalog client for your analytics bucket
+const catalog = analytics.from('analytics-data')
+
+// Create a namespace
+await catalog.createNamespace({ namespace: ['default'] }, { properties: { owner: 'data-team' } })
+
+// Create a table with schema
+await catalog.createTable(
+  { namespace: ['default'] },
+  {
+    name: 'events',
+    schema: {
+      type: 'struct',
+      fields: [
+        { id: 1, name: 'id', type: 'long', required: true },
+        { id: 2, name: 'timestamp', type: 'timestamp', required: true },
+        { id: 3, name: 'user_id', type: 'string', required: false },
+      ],
+      'schema-id': 0,
+      'identifier-field-ids': [1],
+    },
+    'partition-spec': {
+      'spec-id': 0,
+      fields: [],
+    },
+    'write-order': {
+      'order-id': 0,
+      fields: [],
+    },
+    properties: {
+      'write.format.default': 'parquet',
+    },
+  }
+)
+
+// List tables in namespace
+const tables = await catalog.listTables({ namespace: ['default'] })
+console.log(tables) // [{ namespace: ['default'], name: 'events' }]
+
+// Load table metadata
+const table = await catalog.loadTable({ namespace: ['default'], name: 'events' })
+
+// Update table properties
+await catalog.updateTable(
+  { namespace: ['default'], name: 'events' },
+  { properties: { 'read.split.target-size': '134217728' } }
+)
+
+// Drop table
+await catalog.dropTable({ namespace: ['default'], name: 'events' })
+
+// Drop namespace
+await catalog.dropNamespace({ namespace: ['default'] })
+```
+
+**Returns:** `IcebergRestCatalog` instance from [iceberg-js](https://github.com/supabase/iceberg-js)
+
+> **Note:** The `from()` method returns an Iceberg REST Catalog client that provides full access to the Apache Iceberg REST API. For complete documentation of available operations, see the [iceberg-js documentation](https://supabase.github.io/iceberg-js/).
+
 ### Error Handling
 
 Analytics buckets use the same error handling pattern as the rest of the Storage SDK:
