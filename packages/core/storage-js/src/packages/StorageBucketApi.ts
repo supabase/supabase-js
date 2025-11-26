@@ -53,7 +53,7 @@ export default class StorageBucketApi {
    * @param options.sortColumn Column to sort by ('id', 'name', 'created_at', 'updated_at')
    * @param options.sortOrder Sort order ('asc' or 'desc')
    * @param options.search Search term to filter bucket names
-   * @returns Promise with list of buckets or error
+   * @returns Promise with response containing array of buckets or error
    *
    * @example List buckets
    * ```js
@@ -108,7 +108,7 @@ export default class StorageBucketApi {
    *
    * @category File Buckets
    * @param id The unique identifier of the bucket you would like to retrieve.
-   * @returns Promise with bucket details or error
+   * @returns Promise with response containing bucket details or error
    *
    * @example Get bucket
    * ```js
@@ -175,7 +175,7 @@ export default class StorageBucketApi {
    * Each mime type specified can be a wildcard, e.g. image/*, or a specific mime type, e.g. image/png.
    * @param options.type (private-beta) specifies the bucket type. see `BucketType` for more details.
    *   - default bucket type is `STANDARD`
-   * @returns Promise with newly created bucket id or error
+   * @returns Promise with response containing newly created bucket name or error
    *
    * @example Create bucket
    * ```js
@@ -257,7 +257,7 @@ export default class StorageBucketApi {
    * @param options.allowedMimeTypes specifies the allowed mime types that this bucket can accept during upload.
    * The default value is null, which allows files with all mime types to be uploaded.
    * Each mime type specified can be a wildcard, e.g. image/*, or a specific mime type, e.g. image/png.
-   * @returns Promise with success message or error
+   * @returns Promise with response containing success message or error
    *
    * @example Update bucket
    * ```js

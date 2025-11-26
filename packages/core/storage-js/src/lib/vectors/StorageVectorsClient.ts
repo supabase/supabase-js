@@ -165,7 +165,7 @@ export class StorageVectorsClient extends VectorBucketApi {
    *   .vectors
    *   .getBucket('embeddings-prod')
    *
-   * console.log('Bucket created:', data?.vectorBucket.createdAt)
+   * console.log('Bucket created:', data?.vectorBucket.creationTime)
    * ```
    */
   async getBucket(vectorBucketName: string): Promise<ApiResponse<{ vectorBucket: VectorBucket }>> {
@@ -181,7 +181,7 @@ export class StorageVectorsClient extends VectorBucketApi {
    * **Public alpha:** This API is part of a public alpha release and may not be available to your account type.
    *
    * @category Vector Buckets
-   * @param options - Optional filters (prefix, maxResults, pageToken)
+   * @param options - Optional filters (prefix, maxResults, nextToken)
    * @returns Promise with list of buckets or error
    *
    * @example
@@ -308,7 +308,7 @@ export class VectorBucketScope extends VectorIndexApi {
    *
    * @category Vector Buckets
    * @param options - Listing options (vectorBucketName is automatically set)
-   * @returns Promise with list of indexes or error
+   * @returns Promise with response containing indexes array and pagination token or error
    *
    * @example
    * ```typescript
@@ -497,7 +497,7 @@ export class VectorIndexScope extends VectorDataApi {
    *
    * @category Vector Buckets
    * @param options - Vector retrieval options (bucket and index names automatically set)
-   * @returns Promise with array of vectors or error
+   * @returns Promise with response containing vectors array or error
    *
    * @example
    * ```typescript
@@ -527,7 +527,7 @@ export class VectorIndexScope extends VectorDataApi {
    *
    * @category Vector Buckets
    * @param options - Listing options (bucket and index names automatically set)
-   * @returns Promise with array of vectors and pagination token
+   * @returns Promise with response containing vectors array and pagination token or error
    *
    * @example
    * ```typescript
@@ -559,7 +559,7 @@ export class VectorIndexScope extends VectorDataApi {
    *
    * @category Vector Buckets
    * @param options - Query options (bucket and index names automatically set)
-   * @returns Promise with array of similar vectors ordered by distance
+   * @returns Promise with response containing matches array of similar vectors ordered by distance or error
    *
    * @example
    * ```typescript

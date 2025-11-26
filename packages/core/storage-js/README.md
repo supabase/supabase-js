@@ -105,73 +105,7 @@ const analyticsBucket = storageClient.analytics // Analytics API
 > - Use `supabase.storage` when working with other Supabase features (auth, database, etc.) in frontend applications
 > - Use `new StorageClient()` for backend applications, Edge Functions, or when you need to bypass RLS policies
 
-### Understanding API Keys
-
-Supabase provides different types of API keys for different use cases:
-
-| Key Type               | Format               | Privileges | Use Case                                                                 |
-| ---------------------- | -------------------- | ---------- | ------------------------------------------------------------------------ |
-| **Publishable key**    | `sb_publishable_...` | Low        | Frontend applications (web pages, mobile apps) - works with RLS policies |
-| **Secret key**         | `sb_secret_...`      | Elevated   | Backend applications (servers, Edge Functions) - bypasses RLS            |
-| **anon** (JWT)         | JWT format           | Low        | Legacy - use publishable key instead                                     |
-| **service_role** (JWT) | JWT format           | Elevated   | Legacy - use secret key instead                                          |
-
-**For frontend applications:**
-
-- Use **publishable keys** (`sb_publishable_...`) or `anon` JWT keys
-- These keys work with Row Level Security (RLS) policies
-- Safe to expose in client-side code
-- Access is controlled by RLS policies you define
-
-**For backend applications:**
-
-- Use **secret keys** (`sb_secret_...`) or `service_role` JWT keys
-- These keys bypass all RLS policies
-- **Never expose these keys** in client-side code
-- Use only in secure, server-side environments
-
-> **⚠️ Security Warning:** Never use secret keys or `service_role` keys in frontend code, mobile apps, or any publicly accessible location. They provide full access to your project's data and bypass all security policies.
-
-### Access Control and Row Level Security
-
-Supabase Storage uses Postgres [Row Level Security (RLS)](/docs/guides/database/postgres/row-level-security) to control access to buckets and files. By default, Storage blocks all operations unless you create RLS policies.
-
-#### How RLS Works with Storage
-
-- **Publishable/anon keys**: Operations are controlled by RLS policies on the `storage.objects` and `storage.buckets` tables
-- **Secret/service_role keys**: Operations bypass RLS entirely (use with caution)
-
-#### Required RLS Permissions
-
-Different operations require different RLS policy permissions:
-
-| Operation           | `buckets` table    | `objects` table              |
-| ------------------- | ------------------ | ---------------------------- |
-| `createBucket`      | `INSERT`           | None                         |
-| `updateBucket`      | `SELECT`, `UPDATE` | None                         |
-| `deleteBucket`      | `SELECT`, `DELETE` | None                         |
-| `emptyBucket`       | `SELECT`           | `SELECT`, `DELETE`           |
-| `upload` (new file) | None               | `INSERT`                     |
-| `upload` (upsert)   | None               | `SELECT`, `INSERT`, `UPDATE` |
-| `download`          | None               | `SELECT`                     |
-| `list`              | None               | `SELECT`                     |
-| `remove`            | None               | `DELETE`                     |
-
 > **Note:** Refer to the [Storage Access Control guide](https://supabase.com/docs/guides/storage/access-control) for detailed information on creating RLS policies.
-
-#### Example RLS Policy
-
-Allow authenticated users to upload files to a specific bucket:
-
-```sql
-CREATE POLICY "Allow authenticated uploads"
-ON storage.objects
-FOR INSERT
-TO authenticated
-WITH CHECK (
-  bucket_id = 'my-bucket-id'
-);
-```
 
 ### Understanding Bucket Types
 
