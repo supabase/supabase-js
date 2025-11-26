@@ -1,3 +1,13 @@
+## 2.86.0 (2025-11-26)
+
+### 🚀 Features
+
+- **storage:** install iceberg-js and add from method ([#1881](https://github.com/supabase/supabase-js/pull/1881))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+
 ## 2.85.0 (2025-11-26)
 
 This was a version bump only for @supabase/storage-js to align it with other projects, there were no code changes.
