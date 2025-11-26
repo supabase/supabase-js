@@ -63,7 +63,7 @@ export default class StorageAnalyticsClient {
    *
    * @category Analytics Buckets
    * @param name A unique name for the bucket you are creating
-   * @returns Promise with newly created bucket name or error
+   * @returns Promise with response containing newly created analytics bucket or error
    *
    * @example Create analytics bucket
    * ```js
@@ -124,10 +124,10 @@ export default class StorageAnalyticsClient {
    * @param options Query parameters for listing buckets
    * @param options.limit Maximum number of buckets to return
    * @param options.offset Number of buckets to skip
-   * @param options.sortColumn Column to sort by ('id', 'name', 'created_at', 'updated_at')
+   * @param options.sortColumn Column to sort by ('name', 'created_at', 'updated_at')
    * @param options.sortOrder Sort order ('asc' or 'desc')
    * @param options.search Search term to filter bucket names
-   * @returns Promise with list of analytics buckets or error
+   * @returns Promise with response containing array of analytics buckets or error
    *
    * @example List analytics buckets
    * ```js
@@ -161,7 +161,7 @@ export default class StorageAnalyticsClient {
   async listBuckets(options?: {
     limit?: number
     offset?: number
-    sortColumn?: 'id' | 'name' | 'created_at' | 'updated_at'
+    sortColumn?: 'name' | 'created_at' | 'updated_at'
     sortOrder?: 'asc' | 'desc'
     search?: string
   }): Promise<
@@ -212,7 +212,7 @@ export default class StorageAnalyticsClient {
    *
    * @category Analytics Buckets
    * @param bucketName The unique identifier of the bucket you would like to delete
-   * @returns Promise with success message or error
+   * @returns Promise with response containing success message or error
    *
    * @example Delete analytics bucket
    * ```js

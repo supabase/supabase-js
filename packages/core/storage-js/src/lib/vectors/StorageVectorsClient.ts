@@ -3,12 +3,16 @@ import VectorDataApi from './VectorDataApi'
 import { Fetch } from './fetch'
 import VectorBucketApi from './VectorBucketApi'
 import {
+  ApiResponse,
   DeleteVectorsOptions,
   GetVectorsOptions,
   ListIndexesOptions,
   ListVectorsOptions,
+  ListVectorBucketsOptions,
+  ListVectorBucketsResponse,
   PutVectorsOptions,
   QueryVectorsOptions,
+  VectorBucket,
 } from './types'
 
 /**
@@ -116,6 +120,112 @@ export class StorageVectorsClient extends VectorBucketApi {
   from(vectorBucketName: string): VectorBucketScope {
     return new VectorBucketScope(this.url, this.headers, vectorBucketName, this.fetch)
   }
+
+  /**
+   *
+   * @alpha
+   *
+   * Creates a new vector bucket
+   * Vector buckets are containers for vector indexes and their data
+   *
+   * **Public alpha:** This API is part of a public alpha release and may not be available to your account type.
+   *
+   * @category Vector Buckets
+   * @param vectorBucketName - Unique name for the vector bucket
+   * @returns Promise with empty response on success or error
+   *
+   * @example
+   * ```typescript
+   * const { data, error } = await supabase
+   *   .storage
+   *   .vectors
+   *   .createBucket('embeddings-prod')
+   * ```
+   */
+  async createBucket(vectorBucketName: string): Promise<ApiResponse<undefined>> {
+    return super.createBucket(vectorBucketName)
+  }
+
+  /**
+   *
+   * @alpha
+   *
+   * Retrieves metadata for a specific vector bucket
+   *
+   * **Public alpha:** This API is part of a public alpha release and may not be available to your account type.
+   *
+   * @category Vector Buckets
+   * @param vectorBucketName - Name of the vector bucket
+   * @returns Promise with bucket metadata or error
+   *
+   * @example
+   * ```typescript
+   * const { data, error } = await supabase
+   *   .storage
+   *   .vectors
+   *   .getBucket('embeddings-prod')
+   *
+   * console.log('Bucket created:', data?.vectorBucket.creationTime)
+   * ```
+   */
+  async getBucket(vectorBucketName: string): Promise<ApiResponse<{ vectorBucket: VectorBucket }>> {
+    return super.getBucket(vectorBucketName)
+  }
+
+  /**
+   *
+   * @alpha
+   *
+   * Lists all vector buckets with optional filtering and pagination
+   *
+   * **Public alpha:** This API is part of a public alpha release and may not be available to your account type.
+   *
+   * @category Vector Buckets
+   * @param options - Optional filters (prefix, maxResults, nextToken)
+   * @returns Promise with list of buckets or error
+   *
+   * @example
+   * ```typescript
+   * const { data, error } = await supabase
+   *   .storage
+   *   .vectors
+   *   .listBuckets({ prefix: 'embeddings-' })
+   *
+   * data?.vectorBuckets.forEach(bucket => {
+   *   console.log(bucket.vectorBucketName)
+   * })
+   * ```
+   */
+  async listBuckets(
+    options: ListVectorBucketsOptions = {}
+  ): Promise<ApiResponse<ListVectorBucketsResponse>> {
+    return super.listBuckets(options)
+  }
+
+  /**
+   *
+   * @alpha
+   *
+   * Deletes a vector bucket (bucket must be empty)
+   * All indexes must be deleted before deleting the bucket
+   *
+   * **Public alpha:** This API is part of a public alpha release and may not be available to your account type.
+   *
+   * @category Vector Buckets
+   * @param vectorBucketName - Name of the vector bucket to delete
+   * @returns Promise with empty response on success or error
+   *
+   * @example
+   * ```typescript
+   * const { data, error } = await supabase
+   *   .storage
+   *   .vectors
+   *   .deleteBucket('embeddings-old')
+   * ```
+   */
+  async deleteBucket(vectorBucketName: string): Promise<ApiResponse<undefined>> {
+    return super.deleteBucket(vectorBucketName)
+  }
 }
 
 /**
@@ -198,7 +308,7 @@ export class VectorBucketScope extends VectorIndexApi {
    *
    * @category Vector Buckets
    * @param options - Listing options (vectorBucketName is automatically set)
-   * @returns Promise with list of indexes or error
+   * @returns Promise with response containing indexes array and pagination token or error
    *
    * @example
    * ```typescript
@@ -387,7 +497,7 @@ export class VectorIndexScope extends VectorDataApi {
    *
    * @category Vector Buckets
    * @param options - Vector retrieval options (bucket and index names automatically set)
-   * @returns Promise with array of vectors or error
+   * @returns Promise with response containing vectors array or error
    *
    * @example
    * ```typescript
@@ -417,7 +527,7 @@ export class VectorIndexScope extends VectorDataApi {
    *
    * @category Vector Buckets
    * @param options - Listing options (bucket and index names automatically set)
-   * @returns Promise with array of vectors and pagination token
+   * @returns Promise with response containing vectors array and pagination token or error
    *
    * @example
    * ```typescript
@@ -449,7 +559,7 @@ export class VectorIndexScope extends VectorDataApi {
    *
    * @category Vector Buckets
    * @param options - Query options (bucket and index names automatically set)
-   * @returns Promise with array of similar vectors ordered by distance
+   * @returns Promise with response containing matches array of similar vectors ordered by distance or error
    *
    * @example
    * ```typescript

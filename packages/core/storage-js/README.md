@@ -67,7 +67,8 @@ If you're already using `@supabase/supabase-js`, access storage through the clie
 ```js
 import { createClient } from '@supabase/supabase-js'
 
-const supabase = createClient('https://<project_ref>.supabase.co', '<your-anon-key>')
+// Use publishable/anon key for frontend applications
+const supabase = createClient('https://<project_ref>.supabase.co', '<your-publishable-key>')
 
 // Access storage
 const storage = supabase.storage
@@ -80,13 +81,13 @@ const analyticsBucket = storage.analytics // Analytics API
 
 #### Option 2: Standalone StorageClient
 
-For applications that only need storage functionality:
+For backend applications or when you need to bypass Row Level Security:
 
 ```js
 import { StorageClient } from '@supabase/storage-js'
 
 const STORAGE_URL = 'https://<project_ref>.supabase.co/storage/v1'
-const SERVICE_KEY = '<service_role>' //! service key, not anon key
+const SERVICE_KEY = '<your-secret-key>' // Use secret key for backend operations
 
 const storageClient = new StorageClient(STORAGE_URL, {
   apikey: SERVICE_KEY,
@@ -101,8 +102,10 @@ const analyticsBucket = storageClient.analytics // Analytics API
 
 > **When to use each approach:**
 >
-> - Use `supabase.storage` when working with other Supabase features (auth, database, etc.)
-> - Use `new StorageClient()` for storage-only applications or when you need fine-grained control
+> - Use `supabase.storage` when working with other Supabase features (auth, database, etc.) in frontend applications
+> - Use `new StorageClient()` for backend applications, Edge Functions, or when you need to bypass RLS policies
+
+> **Note:** Refer to the [Storage Access Control guide](https://supabase.com/docs/guides/storage/access-control) for detailed information on creating RLS policies.
 
 ### Understanding Bucket Types
 
@@ -340,7 +343,7 @@ You can access analytics functionality through the `analytics` property on your 
 ```typescript
 import { createClient } from '@supabase/supabase-js'
 
-const supabase = createClient('https://your-project.supabase.co', 'your-anon-key')
+const supabase = createClient('https://your-project.supabase.co', 'your-publishable-key')
 
 // Access analytics operations
 const analytics = supabase.storage.analytics
@@ -646,7 +649,7 @@ If you're using the full Supabase client:
 ```typescript
 import { createClient } from '@supabase/supabase-js'
 
-const supabase = createClient('https://your-project.supabase.co', 'your-anon-key')
+const supabase = createClient('https://your-project.supabase.co', 'your-publishable-key')
 
 // Access vector operations through storage
 const vectors = supabase.storage.vectors

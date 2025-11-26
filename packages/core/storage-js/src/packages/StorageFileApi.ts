@@ -175,7 +175,7 @@ export default class StorageFileApi {
    * @param path The file path, including the file name. Should be of the format `folder/subfolder/filename.png`. The bucket must already exist before attempting to upload.
    * @param fileBody The body of the file to be stored in the bucket.
    * @param fileOptions Optional file upload options including cacheControl, contentType, upsert, and metadata.
-   * @returns Promise with file path and id or error
+   * @returns Promise with response containing file path, id, and fullPath or error
    *
    * @example Upload file
    * ```js
@@ -237,7 +237,7 @@ export default class StorageFileApi {
    * @param token The token generated from `createSignedUploadUrl`
    * @param fileBody The body of the file to be stored in the bucket.
    * @param fileOptions Optional file upload options including cacheControl and contentType.
-   * @returns Promise with file path and full path or error
+   * @returns Promise with response containing file path and fullPath or error
    *
    * @example Upload to a signed URL
    * ```js
@@ -317,7 +317,7 @@ export default class StorageFileApi {
    * @category File Buckets
    * @param path The file path, including the current file name. For example `folder/image.png`.
    * @param options.upsert If set to true, allows the file to be overwritten if it already exists.
-   * @returns Promise with signed upload URL, token, and path or error
+   * @returns Promise with response containing signed upload URL, token, and path or error
    *
    * @example Create Signed Upload URL
    * ```js
@@ -396,7 +396,7 @@ export default class StorageFileApi {
    * @param path The relative file path. Should be of the format `folder/subfolder/filename.png`. The bucket must already exist before attempting to update.
    * @param fileBody The body of the file to be stored in the bucket.
    * @param fileOptions Optional file upload options including cacheControl, contentType, upsert, and metadata.
-   * @returns Promise with file path and id or error
+   * @returns Promise with response containing file path, id, and fullPath or error
    *
    * @example Update file
    * ```js
@@ -467,7 +467,7 @@ export default class StorageFileApi {
    * @param fromPath The original file path, including the current file name. For example `folder/image.png`.
    * @param toPath The new file path, including the new file name. For example `folder/image-new.png`.
    * @param options The destination options.
-   * @returns Promise with success message or error
+   * @returns Promise with response containing success message or error
    *
    * @example Move file
    * ```js
@@ -533,7 +533,7 @@ export default class StorageFileApi {
    * @param fromPath The original file path, including the current file name. For example `folder/image.png`.
    * @param toPath The new file path, including the new file name. For example `folder/image-copy.png`.
    * @param options The destination options.
-   * @returns Promise with copied file path or error
+   * @returns Promise with response containing copied file path or error
    *
    * @example Copy file
    * ```js
@@ -600,7 +600,7 @@ export default class StorageFileApi {
    * @param expiresIn The number of seconds until the signed URL expires. For example, `60` for a URL which is valid for one minute.
    * @param options.download triggers the file as a download if set to true. Set this parameter as the name of the file if you want to trigger the download with a different filename.
    * @param options.transform Transform the asset before serving it to the client.
-   * @returns Promise with signed URL or error
+   * @returns Promise with response containing signed URL or error
    *
    * @example Create Signed URL
    * ```js
@@ -691,7 +691,7 @@ export default class StorageFileApi {
    * @param paths The file paths to be downloaded, including the current file names. For example `['folder/image.png', 'folder2/image2.png']`.
    * @param expiresIn The number of seconds until the signed URLs expire. For example, `60` for URLs which are valid for one minute.
    * @param options.download triggers the file as a download if set to true. Set this parameter as the name of the file if you want to trigger the download with a different filename.
-   * @returns Promise with array of signed URLs or error
+   * @returns Promise with response containing array of objects with signedUrl, path, and error or error
    *
    * @example Create Signed URLs
    * ```js
@@ -828,7 +828,7 @@ export default class StorageFileApi {
    *
    * @category File Buckets
    * @param path The file path, including the file name. For example `folder/image.png`.
-   * @returns Promise with file metadata or error
+   * @returns Promise with response containing file metadata or error
    *
    * @example Get file info
    * ```js
@@ -873,7 +873,7 @@ export default class StorageFileApi {
    *
    * @category File Buckets
    * @param path The file path, including the file name. For example `folder/image.png`.
-   * @returns Promise with boolean indicating file existence or error
+   * @returns Promise with response containing boolean indicating file existence or error
    *
    * @example Check file existence
    * ```js
@@ -1005,7 +1005,7 @@ export default class StorageFileApi {
    *
    * @category File Buckets
    * @param paths An array of files to delete, including the path and file name. For example [`'folder/image.png'`].
-   * @returns Promise with list of deleted files or error
+   * @returns Promise with response containing array of deleted file objects or error
    *
    * @example Delete file
    * ```js
@@ -1123,7 +1123,7 @@ export default class StorageFileApi {
    * @param path The folder path.
    * @param options Search options including limit (defaults to 100), offset, sortBy, and search
    * @param parameters Optional fetch parameters including signal for cancellation
-   * @returns Promise with list of files or error
+   * @returns Promise with response containing array of files or error
    *
    * @example List files in a bucket
    * ```js
