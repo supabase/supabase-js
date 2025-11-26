@@ -1691,8 +1691,8 @@ export type OAuthAuthorizationClient = {
 export type OAuthAuthorizationDetails = {
   /** The authorization ID */
   authorization_id: string
-  /** Redirect URI - present if user already consented (can be used to trigger immediate redirect) */
-  redirect_uri?: string
+  /** Redirect URL - present if user already consented (can be used to trigger immediate redirect) */
+  redirect_url?: string
   /** OAuth client requesting authorization */
   client: OAuthAuthorizationClient
   /** User object associated with the authorization */
