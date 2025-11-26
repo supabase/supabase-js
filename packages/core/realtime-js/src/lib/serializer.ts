@@ -16,6 +16,12 @@ export default class Serializer {
   JSON_ENCODING = 1
   BROADCAST_EVENT = 'broadcast'
 
+  allowedMetadataKeys: string[] = []
+
+  constructor(allowedMetadataKeys?: string[] | null) {
+    this.allowedMetadataKeys = allowedMetadataKeys ?? []
+  }
+
   encode(msg: Msg<{ [key: string]: any }>, callback: (result: ArrayBuffer | string) => any) {
     if (
       msg.event === this.BROADCAST_EVENT &&
@@ -60,7 +66,11 @@ export default class Serializer {
     const ref = message.ref ?? ''
     const joinRef = message.join_ref ?? ''
     const userEvent = message.payload.event
-    const rest = this._omit(message.payload, ['type', 'event', 'payload'])
+
+    // Filter metadata based on allowed keys
+    const rest = this.allowedMetadataKeys
+      ? this._pick(message.payload, this.allowedMetadataKeys)
+      : {}
 
     const metadata = Object.keys(rest).length === 0 ? '' : JSON.stringify(rest)
 
@@ -184,10 +194,10 @@ export default class Serializer {
     return buffer instanceof ArrayBuffer || buffer?.constructor?.name === 'ArrayBuffer'
   }
 
-  private _omit(obj: Record<string, any> | null | undefined, keys: string[]): Record<string, any> {
+  private _pick(obj: Record<string, any> | null | undefined, keys: string[]): Record<string, any> {
     if (!obj || typeof obj !== 'object') {
       return {}
     }
-    return Object.fromEntries(Object.entries(obj).filter(([key]) => !keys.includes(key)))
+    return Object.fromEntries(Object.entries(obj).filter(([key]) => keys.includes(key)))
   }
 }

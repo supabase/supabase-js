@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest'
 import Serializer from '../src/lib/serializer'
 import type { Msg } from '../src/lib/serializer'
 
-let serializer = new Serializer()
 let decoder = new TextDecoder()
 
 const encodeAsync = (
@@ -46,21 +45,25 @@ let binPayload = () => {
 
 describe('JSON', () => {
   it('encodes', async () => {
+    const serializer = new Serializer()
     const result = await encodeAsync(serializer, exampleMsg)
     expect(result).toBe('["0","1","t","e",{"foo":1}]')
   })
 
   it('encodes missing refs', async () => {
+    const serializer = new Serializer()
     const result = await encodeAsync(serializer, missingRefExampleMsg)
     expect(result).toBe('[null,null,"t","e",{"foo":1}]')
   })
 
   it('decodes', async () => {
+    const serializer = new Serializer()
     const result = await decodeAsync(serializer, '["0","1","t","e",{"foo":1}]')
     expect(result).toEqual(exampleMsg)
   })
 
   it('decodes missing refs', async () => {
+    const serializer = new Serializer()
     const result = await decodeAsync(serializer, '[null,null,"t","e",{"foo":1}]')
     expect(result).toEqual(missingRefExampleMsg)
   })
@@ -68,6 +71,7 @@ describe('JSON', () => {
 
 describe('binary', () => {
   it('encodes user broadcast push with JSON payload no metadata', async () => {
+    const serializer = new Serializer()
     // 3 -> user_broadcast_push
     // 2 join_ref length
     // 1 for ref length
@@ -99,7 +103,9 @@ describe('binary', () => {
     expect(decoder.decode(result as ArrayBuffer)).toBe(bin)
   })
 
-  it('encodes user broadcast push with JSON payload', async () => {
+  it('encodes user broadcast push with JSON payload with allowed metadata', async () => {
+    const serializer = new Serializer(['extra'])
+
     // 3 -> user_broadcast_push
     // 2 join_ref length
     // 1 for ref length
@@ -124,6 +130,8 @@ describe('binary', () => {
         type: 'broadcast',
         event: 'user-event',
         extra: 'bit',
+        // store field is not included into metadata
+        store: true,
         payload: {
           a: 'b',
         },
@@ -133,6 +141,7 @@ describe('binary', () => {
   })
 
   it('encodes user broadcast push with JSON payload no refs', async () => {
+    const serializer = new Serializer()
     // 3 -> user_broadcast_push
     // 0 join_ref length
     // 0 for ref length
@@ -161,6 +170,7 @@ describe('binary', () => {
   })
 
   it('throws error when joinRef exceeds 255 characters with JSON payload', async () => {
+    const serializer = new Serializer()
     const longJoinRef = 'a'.repeat(256)
 
     await expect(
@@ -181,6 +191,7 @@ describe('binary', () => {
   })
 
   it('throws error when ref exceeds 255 characters with JSON payload', async () => {
+    const serializer = new Serializer()
     const longRef = 'a'.repeat(256)
 
     await expect(
@@ -201,6 +212,7 @@ describe('binary', () => {
   })
 
   it('throws error when topic exceeds 255 characters with JSON payload', async () => {
+    const serializer = new Serializer()
     const longTopic = 'a'.repeat(256)
 
     await expect(
@@ -221,6 +233,7 @@ describe('binary', () => {
   })
 
   it('throws error when user event exceeds 255 characters with JSON payload', async () => {
+    const serializer = new Serializer()
     const longUserEvent = 'a'.repeat(256)
 
     await expect(
@@ -241,6 +254,7 @@ describe('binary', () => {
   })
 
   it('throws error when metadata exceeds 255 characters with JSON payload', async () => {
+    const serializer = new Serializer(['extraField'])
     // Create metadata that will exceed 255 chars when JSON.stringify'd
     const longValue = 'a'.repeat(240)
 
@@ -263,6 +277,7 @@ describe('binary', () => {
   })
 
   it('encodes user broadcast push with Binary payload', async () => {
+    const serializer = new Serializer()
     // 3 -> user_broadcast_push
     // 2 join_ref length
     // 1 for ref length
@@ -292,6 +307,7 @@ describe('binary', () => {
   })
 
   it('encodes user broadcast push with Binary payload no refs', async () => {
+    const serializer = new Serializer()
     // 3 -> user_broadcast_push
     // 0 join_ref length
     // 0 for ref length
@@ -319,6 +335,7 @@ describe('binary', () => {
   })
 
   it('throws error when joinRef exceeds 255 characters', async () => {
+    const serializer = new Serializer()
     const longJoinRef = 'a'.repeat(256)
 
     await expect(
@@ -335,6 +352,7 @@ describe('binary', () => {
   })
 
   it('throws error when ref exceeds 255 characters', async () => {
+    const serializer = new Serializer()
     const longRef = 'a'.repeat(256)
 
     await expect(
@@ -351,6 +369,7 @@ describe('binary', () => {
   })
 
   it('throws error when topic exceeds 255 characters', async () => {
+    const serializer = new Serializer()
     const longTopic = 'a'.repeat(256)
 
     await expect(
@@ -366,6 +385,7 @@ describe('binary', () => {
   })
 
   it('throws error when user event exceeds 255 characters', async () => {
+    const serializer = new Serializer()
     const longUserEvent = 'a'.repeat(256)
 
     await expect(
@@ -381,6 +401,7 @@ describe('binary', () => {
   })
 
   it('throws error when metadata exceeds 255 characters', async () => {
+    const serializer = new Serializer(['extraField'])
     // Create metadata that will exceed 255 chars when JSON.stringify'd
     // JSON.stringify will add quotes and colons, so we need a bit less than 256
     const longValue = 'a'.repeat(240)
@@ -400,6 +421,7 @@ describe('binary', () => {
   })
 
   it('decodes user broadcast with JSON payload and no metadata', async () => {
+    const serializer = new Serializer()
     // 4 -> user_broadcast
     // 3 for topic length
     // 10 for user event length
@@ -427,6 +449,7 @@ describe('binary', () => {
   })
 
   it('decodes user broadcast with JSON payload and metadata', async () => {
+    const serializer = new Serializer()
     // 4 -> user_broadcast
     // 3 for topic length
     // 10 for user event length (\x0a)
@@ -455,6 +478,7 @@ describe('binary', () => {
   })
 
   it('decodes user broadcast with binary payload and no metadata', async () => {
+    const serializer = new Serializer()
     // 4 -> user_broadcast
     // 3 for topic length
     // 10 for user event length (\x0a)
@@ -481,6 +505,7 @@ describe('binary', () => {
   })
 
   it('decodes user broadcast with binary payload and metadata', async () => {
+    const serializer = new Serializer()
     // 4 -> user_broadcast
     // 3 for topic length
     // 10 for user event length (\x0a)
