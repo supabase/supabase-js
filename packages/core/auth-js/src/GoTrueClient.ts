@@ -1708,6 +1708,10 @@ export default class GoTrueClient {
       return await this._getUser()
     })
 
+    if (result.data.user) {
+      this.suppressGetSessionWarning = true
+    }
+
     return result
   }
 
