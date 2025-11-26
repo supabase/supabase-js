@@ -67,19 +67,21 @@ describe('JSON', () => {
 })
 
 describe('binary', () => {
-  it('encodes user broadcast push with JSON payload', async () => {
+  it('encodes user broadcast push with JSON payload no metadata', async () => {
     // 3 -> user_broadcast_push
     // 2 join_ref length
     // 1 for ref length
     // 3 for topic length
     // 10 for user event length
+    // 0 for metadata length
     // 1 for JSON encoding
     // actual join ref
     // actual ref
     // actual topic
     // actual user event
+    // no actual metadata
     // actual payload
-    let bin = '\x03\x02\x01\x03\x0a\x01101topuser-event{"a":"b"}'
+    let bin = '\x03\x02\x01\x03\x0a\x00\x01101topuser-event{"a":"b"}'
 
     const result = await encodeAsync(serializer, {
       join_ref: '10',
@@ -87,7 +89,41 @@ describe('binary', () => {
       topic: 'top',
       event: 'broadcast',
       payload: {
+        type: 'broadcast',
         event: 'user-event',
+        payload: {
+          a: 'b',
+        },
+      },
+    })
+    expect(decoder.decode(result as ArrayBuffer)).toBe(bin)
+  })
+
+  it('encodes user broadcast push with JSON payload', async () => {
+    // 3 -> user_broadcast_push
+    // 2 join_ref length
+    // 1 for ref length
+    // 3 for topic length
+    // 10 for user event length
+    // 15 for metadata length
+    // 1 for JSON encoding
+    // actual join ref
+    // actual ref
+    // actual topic
+    // actual user event
+    // actual metadata
+    // actual payload
+    let bin = '\x03\x02\x01\x03\x0a\x0f\x01101topuser-event{"extra":"bit"}{"a":"b"}'
+
+    const result = await encodeAsync(serializer, {
+      join_ref: '10',
+      ref: '1',
+      topic: 'top',
+      event: 'broadcast',
+      payload: {
+        type: 'broadcast',
+        event: 'user-event',
+        extra: "bit",
         payload: {
           a: 'b',
         },
@@ -102,13 +138,14 @@ describe('binary', () => {
     // 0 for ref length
     // 3 for topic length
     // 10 for user event length
+    // 0 for metadata length
     // 1 for JSON encoding
     // actual join ref
     // actual ref
     // actual topic
     // actual user event
     // actual payload
-    let bin = '\x03\x00\x00\x03\x0a\x01topuser-event{"a":"b"}'
+    let bin = '\x03\x00\x00\x03\x0a\x00\x01topuser-event{"a":"b"}'
 
     const result = await encodeAsync(serializer, {
       topic: 'top',
@@ -129,13 +166,15 @@ describe('binary', () => {
     // 1 for ref length
     // 3 for topic length
     // 10 for user event length
+    // 0 for metadata length
     // 0 for Binary encoding
     // actual join ref
     // actual ref
     // actual topic
     // actual user event
+    // no actual metadata
     // actual payload
-    let bin = '\x03\x02\x01\x03\x0a\x00101topuser-event\x01\x04'
+    let bin = '\x03\x02\x01\x03\x0a\x00\x00101topuser-event\x01\x04'
 
     const result = await encodeAsync(serializer, {
       join_ref: '10',
@@ -156,13 +195,15 @@ describe('binary', () => {
     // 0 for ref length
     // 3 for topic length
     // 10 for user event length
+    // 0 for metadata length
     // 0 for Binary encoding
     // actual join ref
     // actual ref
     // actual topic
     // actual user event
+    // no actual metadata
     // actual payload
-    let bin = '\x03\x00\x00\x03\x0a\x00topuser-event\x01\x04'
+    let bin = '\x03\x00\x00\x03\x0a\x00\x00topuser-event\x01\x04'
 
     const result = await encodeAsync(serializer, {
       topic: 'top',

@@ -10,8 +10,7 @@ export type Msg<T> = {
 
 export default class Serializer {
   HEADER_LENGTH = 1
-  META_LENGTH = 4
-  USER_BROADCAST_PUSH_META_LENGTH = 5
+  USER_BROADCAST_PUSH_META_LENGTH = 6
   KINDS = { userBroadcastPush: 3, userBroadcast: 4 }
   BINARY_ENCODING = 0
   JSON_ENCODING = 1
@@ -46,13 +45,17 @@ export default class Serializer {
     const joinRef = message.join_ref ?? ''
     const userEvent = message.payload.event
     const userPayload = message.payload?.payload ?? new ArrayBuffer(0)
+    const rest = this._omit(message.payload, ['type', 'event', 'payload'])
+
+    const metadata = Object.keys(rest).length === 0 ? '' : JSON.stringify(rest)
 
     const metaLength =
       this.USER_BROADCAST_PUSH_META_LENGTH +
       joinRef.length +
       ref.length +
       topic.length +
-      userEvent.length
+      userEvent.length +
+      metadata.length
 
     const header = new ArrayBuffer(this.HEADER_LENGTH + metaLength)
     let view = new DataView(header)
@@ -63,11 +66,13 @@ export default class Serializer {
     view.setUint8(offset++, ref.length)
     view.setUint8(offset++, topic.length)
     view.setUint8(offset++, userEvent.length)
+    view.setUint8(offset++, metadata.length)
     view.setUint8(offset++, this.BINARY_ENCODING)
     Array.from(joinRef, (char) => view.setUint8(offset++, char.charCodeAt(0)))
     Array.from(ref, (char) => view.setUint8(offset++, char.charCodeAt(0)))
     Array.from(topic, (char) => view.setUint8(offset++, char.charCodeAt(0)))
     Array.from(userEvent, (char) => view.setUint8(offset++, char.charCodeAt(0)))
+    Array.from(metadata, (char) => view.setUint8(offset++, char.charCodeAt(0)))
 
     var combined = new Uint8Array(header.byteLength + userPayload.byteLength)
     combined.set(new Uint8Array(header), 0)
@@ -81,7 +86,10 @@ export default class Serializer {
     const ref = message.ref ?? ''
     const joinRef = message.join_ref ?? ''
     const userEvent = message.payload.event
+    const rest = this._omit(message.payload, ['type', 'event', 'payload'])
     const userPayload = message.payload?.payload ?? {}
+
+    const metadata = Object.keys(rest).length === 0 ? '' : JSON.stringify(rest)
 
     const encoder = new TextEncoder() // Encodes to UTF-8
     const encodedUserPayload = encoder.encode(JSON.stringify(userPayload)).buffer
@@ -91,7 +99,8 @@ export default class Serializer {
       joinRef.length +
       ref.length +
       topic.length +
-      userEvent.length
+      userEvent.length +
+      metadata.length
 
     const header = new ArrayBuffer(this.HEADER_LENGTH + metaLength)
     let view = new DataView(header)
@@ -102,11 +111,13 @@ export default class Serializer {
     view.setUint8(offset++, ref.length)
     view.setUint8(offset++, topic.length)
     view.setUint8(offset++, userEvent.length)
+    view.setUint8(offset++, metadata.length)
     view.setUint8(offset++, this.JSON_ENCODING)
     Array.from(joinRef, (char) => view.setUint8(offset++, char.charCodeAt(0)))
     Array.from(ref, (char) => view.setUint8(offset++, char.charCodeAt(0)))
     Array.from(topic, (char) => view.setUint8(offset++, char.charCodeAt(0)))
     Array.from(userEvent, (char) => view.setUint8(offset++, char.charCodeAt(0)))
+    Array.from(metadata, (char) => view.setUint8(offset++, char.charCodeAt(0)))
 
     var combined = new Uint8Array(header.byteLength + encodedUserPayload.byteLength)
     combined.set(new Uint8Array(header), 0)
@@ -184,5 +195,14 @@ export default class Serializer {
 
   private _isArrayBuffer(buffer: any): boolean {
     return buffer instanceof ArrayBuffer || buffer?.constructor?.name === 'ArrayBuffer'
+  }
+
+  private _omit(obj: Record<string, any> | null | undefined, keys: string[]): Record<string, any> {
+    if (!obj || typeof obj !== 'object') {
+      return {};
+    }
+    return Object.fromEntries(
+      Object.entries(obj).filter(([key]) => !keys.includes(key))
+    );
   }
 }
