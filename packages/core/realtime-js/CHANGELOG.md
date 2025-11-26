@@ -1,3 +1,13 @@
+## 2.85.0 (2025-11-26)
+
+### 🚀 Features
+
+- **realtime:** add metadata to realtime user broadcast push ([#1894](https://github.com/supabase/supabase-js/pull/1894))
+
+### ❤️ Thank You
+
+- Eduardo Gurgel
+
 ## 2.84.0 (2025-11-20)
 
 ### 🩹 Fixes
