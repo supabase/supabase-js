@@ -48,6 +48,22 @@ export default class Serializer {
     const rest = this._omit(message.payload, ['type', 'event', 'payload'])
 
     const metadata = Object.keys(rest).length === 0 ? '' : JSON.stringify(rest)
+    // Validate lengths don't exceed uint8 max value (255)
+    if (joinRef.length > 255) {
+      throw new Error(`joinRef length ${joinRef.length} exceeds maximum of 255`)
+    }
+    if (ref.length > 255) {
+      throw new Error(`ref length ${ref.length} exceeds maximum of 255`)
+    }
+    if (topic.length > 255) {
+      throw new Error(`topic length ${topic.length} exceeds maximum of 255`)
+    }
+    if (userEvent.length > 255) {
+      throw new Error(`userEvent length ${userEvent.length} exceeds maximum of 255`)
+    }
+    if (metadata.length > 255) {
+      throw new Error(`metadata length ${metadata.length} exceeds maximum of 255`)
+    }
 
     const metaLength =
       this.USER_BROADCAST_PUSH_META_LENGTH +
@@ -90,6 +106,23 @@ export default class Serializer {
     const userPayload = message.payload?.payload ?? {}
 
     const metadata = Object.keys(rest).length === 0 ? '' : JSON.stringify(rest)
+
+    // Validate lengths don't exceed uint8 max value (255)
+    if (joinRef.length > 255) {
+      throw new Error(`joinRef length ${joinRef.length} exceeds maximum of 255`)
+    }
+    if (ref.length > 255) {
+      throw new Error(`ref length ${ref.length} exceeds maximum of 255`)
+    }
+    if (topic.length > 255) {
+      throw new Error(`topic length ${topic.length} exceeds maximum of 255`)
+    }
+    if (userEvent.length > 255) {
+      throw new Error(`userEvent length ${userEvent.length} exceeds maximum of 255`)
+    }
+    if (metadata.length > 255) {
+      throw new Error(`metadata length ${metadata.length} exceeds maximum of 255`)
+    }
 
     const encoder = new TextEncoder() // Encodes to UTF-8
     const encodedUserPayload = encoder.encode(JSON.stringify(userPayload)).buffer
@@ -199,10 +232,8 @@ export default class Serializer {
 
   private _omit(obj: Record<string, any> | null | undefined, keys: string[]): Record<string, any> {
     if (!obj || typeof obj !== 'object') {
-      return {};
+      return {}
     }
-    return Object.fromEntries(
-      Object.entries(obj).filter(([key]) => !keys.includes(key))
-    );
+    return Object.fromEntries(Object.entries(obj).filter(([key]) => !keys.includes(key)))
   }
 }

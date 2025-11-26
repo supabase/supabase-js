@@ -123,7 +123,7 @@ describe('binary', () => {
       payload: {
         type: 'broadcast',
         event: 'user-event',
-        extra: "bit",
+        extra: 'bit',
         payload: {
           a: 'b',
         },
@@ -158,6 +158,108 @@ describe('binary', () => {
       },
     })
     expect(decoder.decode(result as ArrayBuffer)).toBe(bin)
+  })
+
+  it('throws error when joinRef exceeds 255 characters with JSON payload', async () => {
+    const longJoinRef = 'a'.repeat(256)
+
+    await expect(
+      encodeAsync(serializer, {
+        join_ref: longJoinRef,
+        ref: '1',
+        topic: 'top',
+        event: 'broadcast',
+        payload: {
+          type: 'broadcast',
+          event: 'user-event',
+          payload: {
+            a: 'b',
+          },
+        },
+      })
+    ).rejects.toThrow('joinRef length 256 exceeds maximum of 255')
+  })
+
+  it('throws error when ref exceeds 255 characters with JSON payload', async () => {
+    const longRef = 'a'.repeat(256)
+
+    await expect(
+      encodeAsync(serializer, {
+        join_ref: '10',
+        ref: longRef,
+        topic: 'top',
+        event: 'broadcast',
+        payload: {
+          type: 'broadcast',
+          event: 'user-event',
+          payload: {
+            a: 'b',
+          },
+        },
+      })
+    ).rejects.toThrow('ref length 256 exceeds maximum of 255')
+  })
+
+  it('throws error when topic exceeds 255 characters with JSON payload', async () => {
+    const longTopic = 'a'.repeat(256)
+
+    await expect(
+      encodeAsync(serializer, {
+        join_ref: '10',
+        ref: '1',
+        topic: longTopic,
+        event: 'broadcast',
+        payload: {
+          type: 'broadcast',
+          event: 'user-event',
+          payload: {
+            a: 'b',
+          },
+        },
+      })
+    ).rejects.toThrow('topic length 256 exceeds maximum of 255')
+  })
+
+  it('throws error when user event exceeds 255 characters with JSON payload', async () => {
+    const longUserEvent = 'a'.repeat(256)
+
+    await expect(
+      encodeAsync(serializer, {
+        join_ref: '10',
+        ref: '1',
+        topic: 'top',
+        event: 'broadcast',
+        payload: {
+          type: 'broadcast',
+          event: longUserEvent,
+          payload: {
+            a: 'b',
+          },
+        },
+      })
+    ).rejects.toThrow('userEvent length 256 exceeds maximum of 255')
+  })
+
+  it('throws error when metadata exceeds 255 characters with JSON payload', async () => {
+    // Create metadata that will exceed 255 chars when JSON.stringify'd
+    const longValue = 'a'.repeat(240)
+
+    await expect(
+      encodeAsync(serializer, {
+        join_ref: '10',
+        ref: '1',
+        topic: 'top',
+        event: 'broadcast',
+        payload: {
+          type: 'broadcast',
+          event: 'user-event',
+          payload: {
+            a: 'b',
+          },
+          extraField: longValue, // This will be in the metadata (rest)
+        },
+      })
+    ).rejects.toThrow('metadata length')
   })
 
   it('encodes user broadcast push with Binary payload', async () => {
@@ -214,6 +316,87 @@ describe('binary', () => {
       },
     })
     expect(decoder.decode(result as ArrayBuffer)).toBe(bin)
+  })
+
+  it('throws error when joinRef exceeds 255 characters', async () => {
+    const longJoinRef = 'a'.repeat(256)
+
+    await expect(
+      encodeAsync(serializer, {
+        topic: 'top',
+        event: 'broadcast',
+        join_ref: longJoinRef,
+        payload: {
+          event: 'user-event',
+          payload: binPayload(),
+        },
+      })
+    ).rejects.toThrow('joinRef length 256 exceeds maximum of 255')
+  })
+
+  it('throws error when ref exceeds 255 characters', async () => {
+    const longRef = 'a'.repeat(256)
+
+    await expect(
+      encodeAsync(serializer, {
+        topic: 'top',
+        event: 'broadcast',
+        ref: longRef,
+        payload: {
+          event: 'user-event',
+          payload: binPayload(),
+        },
+      })
+    ).rejects.toThrow('ref length 256 exceeds maximum of 255')
+  })
+
+  it('throws error when topic exceeds 255 characters', async () => {
+    const longTopic = 'a'.repeat(256)
+
+    await expect(
+      encodeAsync(serializer, {
+        topic: longTopic,
+        event: 'broadcast',
+        payload: {
+          event: 'user-event',
+          payload: binPayload(),
+        },
+      })
+    ).rejects.toThrow('topic length 256 exceeds maximum of 255')
+  })
+
+  it('throws error when user event exceeds 255 characters', async () => {
+    const longUserEvent = 'a'.repeat(256)
+
+    await expect(
+      encodeAsync(serializer, {
+        topic: 'top',
+        event: 'broadcast',
+        payload: {
+          event: longUserEvent,
+          payload: binPayload(),
+        },
+      })
+    ).rejects.toThrow('userEvent length 256 exceeds maximum of 255')
+  })
+
+  it('throws error when metadata exceeds 255 characters', async () => {
+    // Create metadata that will exceed 255 chars when JSON.stringify'd
+    // JSON.stringify will add quotes and colons, so we need a bit less than 256
+    const longValue = 'a'.repeat(240)
+
+    await expect(
+      encodeAsync(serializer, {
+        topic: 'top',
+        event: 'broadcast',
+        payload: {
+          event: 'user-event',
+          payload: binPayload(),
+          extraField: longValue, // This will be in the metadata
+        },
+      })
+    ).rejects.toThrow('metadata length')
+    // Note: The exact length will depend on JSON.stringify output
   })
 
   it('decodes user broadcast with JSON payload and no metadata', async () => {
