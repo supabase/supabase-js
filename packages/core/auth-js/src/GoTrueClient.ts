@@ -2787,6 +2787,8 @@ export default class GoTrueClient {
   private async _removeSession() {
     this._debug('#_removeSession()')
 
+    this.suppressGetSessionWarning = false
+
     await removeItemAsync(this.storage, this.storageKey)
     await removeItemAsync(this.storage, this.storageKey + '-code-verifier')
     await removeItemAsync(this.storage, this.storageKey + '-user')
