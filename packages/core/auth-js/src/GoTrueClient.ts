@@ -3738,8 +3738,8 @@ export default class GoTrueClient {
         raw: { header: rawHeader, payload: rawPayload },
       } = decodeJWT(token)
 
-      if (!options?.allowExpired) {
-        // Reject expired JWTs should only happen if jwt argument was passed
+      // Only validate expiration if allowExpired is NOT true
+      if (options?.allowExpired !== true) {
         validateExp(payload.exp)
       }
 
