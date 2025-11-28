@@ -645,7 +645,25 @@ export default class RealtimeClient {
       this.conn = null
     }
     this._clearAllTimers()
+    this._terminateWorker()
     this.channels.forEach((channel) => channel.teardown())
+  }
+
+  /**
+   * Terminate worker with proper cleanup
+   * @internal
+   */
+  private _terminateWorker(): void {
+    if (this.workerRef) {
+      try {
+        this.workerRef.terminate()
+        this.log('worker', 'worker terminated')
+      } catch (e) {
+        this.log('error', 'Error terminating worker', e)
+      } finally {
+        this.workerRef = undefined
+      }
+    }
   }
 
   /** @internal */
