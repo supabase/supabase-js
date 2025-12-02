@@ -62,7 +62,7 @@
     "tslib": "^2.3.0",
     "typedoc": "^0.27.9",
     "typescript": "~5.8.3",
-    "verdaccio": "^6.0.5",
+    "verdaccio": "^6.2.4",
     "vite": "7.1.11",
     "vitest": "^3.2.4",
     "webpack-cli": "^5.1.4"
