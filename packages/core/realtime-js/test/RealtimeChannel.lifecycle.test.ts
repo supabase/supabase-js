@@ -549,7 +549,7 @@ describe('Channel Lifecycle Management', () => {
       const resendSpy = vi.spyOn(channel.joinPush, 'resend')
 
       // Call _rejoin - should return early due to leaving state
-      channel['_rejoin']()
+      channel._rejoin()
 
       // Verify no actions were taken
       expect(leaveOpenTopicSpy).not.toHaveBeenCalled()
