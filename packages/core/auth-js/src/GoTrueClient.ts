@@ -635,6 +635,7 @@ export default class GoTrueClient {
       const { data, error } = res
 
       if (error || !data) {
+        await removeItemAsync(this.storage, `${this.storageKey}-code-verifier`)
         return this._returnResult({ data: { user: null, session: null }, error: error })
       }
 
@@ -648,6 +649,7 @@ export default class GoTrueClient {
 
       return this._returnResult({ data: { user, session }, error: null })
     } catch (error) {
+      await removeItemAsync(this.storage, `${this.storageKey}-code-verifier`)
       if (isAuthError(error)) {
         return this._returnResult({ data: { user: null, session: null }, error })
       }
@@ -1138,13 +1140,13 @@ export default class GoTrueClient {
       }
       return this._returnResult({ data: { ...data, redirectType: redirectType ?? null }, error })
     } catch (error) {
+      await removeItemAsync(this.storage, `${this.storageKey}-code-verifier`)
       if (isAuthError(error)) {
         return this._returnResult({
           data: { user: null, session: null, redirectType: null },
           error,
         })
       }
-
       throw error
     }
   }
@@ -1251,6 +1253,7 @@ export default class GoTrueClient {
       }
       throw new AuthInvalidCredentialsError('You must provide either an email or phone number.')
     } catch (error) {
+      await removeItemAsync(this.storage, `${this.storageKey}-code-verifier`)
       if (isAuthError(error)) {
         return this._returnResult({ data: { user: null, session: null }, error })
       }
@@ -1357,6 +1360,7 @@ export default class GoTrueClient {
 
       return this._returnResult(result)
     } catch (error) {
+      await removeItemAsync(this.storage, `${this.storageKey}-code-verifier`)
       if (isAuthError(error)) {
         return this._returnResult({ data: null, error })
       }
@@ -1820,6 +1824,7 @@ export default class GoTrueClient {
         return this._returnResult({ data: { user: session.user }, error: null })
       })
     } catch (error) {
+      await removeItemAsync(this.storage, `${this.storageKey}-code-verifier`)
       if (isAuthError(error)) {
         return this._returnResult({ data: { user: null }, error })
       }
@@ -2272,6 +2277,7 @@ export default class GoTrueClient {
         redirectTo: options.redirectTo,
       })
     } catch (error) {
+      await removeItemAsync(this.storage, `${this.storageKey}-code-verifier`)
       if (isAuthError(error)) {
         return this._returnResult({ data: null, error })
       }
@@ -2401,6 +2407,7 @@ export default class GoTrueClient {
         }
         return this._returnResult({ data, error })
       } catch (error) {
+        await removeItemAsync(this.storage, `${this.storageKey}-code-verifier`)
         if (isAuthError(error)) {
           return this._returnResult({ data: { user: null, session: null }, error })
         }
@@ -2749,7 +2756,7 @@ export default class GoTrueClient {
     // _saveSession is always called whenever a new session has been acquired
     // so we can safely suppress the warning returned by future getSession calls
     this.suppressGetSessionWarning = true
-
+    await removeItemAsync(this.storage, `${this.storageKey}-code-verifier`)
     // Create a shallow copy to work with, to avoid mutating the original session object if it's used elsewhere
     const sessionToProcess = { ...session }
 
