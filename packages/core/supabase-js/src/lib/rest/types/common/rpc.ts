@@ -74,7 +74,7 @@ type RpcFunctionNotFound<FnName> = {
 
 type CrossSchemaError<TableRef extends string> = {
   error: true
-} & `Function returns SETOF from a different schema ('${TableRef}'). Use .rpc<YourReturnType>() to specify the return type explicitly.`
+} & `Function returns SETOF from a different schema ('${TableRef}'). Use .overrideTypes<YourReturnType>() to specify the return type explicitly.`
 
 export type GetRpcFunctionFilterBuilderByArgs<
   Schema extends GenericSchema,
