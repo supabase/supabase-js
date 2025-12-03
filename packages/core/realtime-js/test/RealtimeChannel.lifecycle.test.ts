@@ -229,10 +229,10 @@ describe('Channel Lifecycle Management', () => {
       assert.equal(channel.state, CHANNEL_STATES.joining)
     })
 
-    test('updates join push payload access token', () => {
+    test('updates join push payload access token', async () => {
       testSetup.socket.accessTokenValue = 'token123'
 
-      channel.subscribe()
+      await channel.subscribe()
 
       assert.deepEqual(channel.joinPush.payload, {
         access_token: 'token123',
@@ -257,7 +257,7 @@ describe('Channel Lifecycle Management', () => {
       })
       const channel = testSocket.channel('topic')
 
-      channel.subscribe()
+      await channel.subscribe()
       await new Promise((resolve) => setTimeout(resolve, 50))
       assert.equal(channel.socket.accessTokenValue, tokens[0])
 
@@ -265,7 +265,7 @@ describe('Channel Lifecycle Management', () => {
       // Wait for disconnect to complete (including fallback timer)
       await new Promise((resolve) => setTimeout(resolve, 150))
 
-      channel.subscribe()
+      await channel.subscribe()
       await new Promise((resolve) => setTimeout(resolve, 50))
       assert.equal(channel.socket.accessTokenValue, tokens[1])
     })
@@ -549,7 +549,7 @@ describe('Channel Lifecycle Management', () => {
       const resendSpy = vi.spyOn(channel.joinPush, 'resend')
 
       // Call _rejoin - should return early due to leaving state
-      channel._rejoin()
+      channel['_rejoin']()
 
       // Verify no actions were taken
       expect(leaveOpenTopicSpy).not.toHaveBeenCalled()
