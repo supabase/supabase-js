@@ -1708,6 +1708,10 @@ export default class GoTrueClient {
       return await this._getUser()
     })
 
+    if (result.data.user) {
+      this.suppressGetSessionWarning = true
+    }
+
     return result
   }
 
@@ -2782,6 +2786,8 @@ export default class GoTrueClient {
 
   private async _removeSession() {
     this._debug('#_removeSession()')
+
+    this.suppressGetSessionWarning = false
 
     await removeItemAsync(this.storage, this.storageKey)
     await removeItemAsync(this.storage, this.storageKey + '-code-verifier')
