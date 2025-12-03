@@ -88,6 +88,7 @@ export default class SupabaseClient<
   protected accessToken?: () => Promise<string | null>
 
   protected headers: Record<string, string>
+  protected failOnNetworkError: boolean
 
   /**
    * Create a new client for use in the browser.
@@ -136,6 +137,7 @@ export default class SupabaseClient<
 
     this.storageKey = settings.auth.storageKey ?? ''
     this.headers = settings.global.headers ?? {}
+    this.failOnNetworkError = settings.auth.failOnNetworkError ?? false
 
     if (!settings.accessToken) {
       this.auth = this._initSupabaseAuthClient(
@@ -338,7 +340,14 @@ export default class SupabaseClient<
       return await this.accessToken()
     }
 
-    const { data } = await this.auth.getSession()
+    const { data, error } = await this.auth.getSession()
+
+    // If failOnNetworkError is enabled and there's a retryable error (network failure),
+    // throw instead of silently falling back to anon key.
+    // status === 0 indicates a network error (AuthRetryableFetchError)
+    if (this.failOnNetworkError && error && error.status === 0) {
+      throw error
+    }
 
     return data.session?.access_token ?? this.supabaseKey
   }

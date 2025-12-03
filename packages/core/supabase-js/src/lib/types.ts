@@ -81,6 +81,16 @@ export type SupabaseClientOptions<SchemaName> = {
      * throwing the error instead of returning it as part of a successful response.
      */
     throwOnError?: SupabaseAuthClientOptions['throwOnError']
+    /**
+     * When true, throws an error if session retrieval fails due to network issues
+     * instead of silently falling back to the anonymous API key.
+     *
+     * This prevents RLS policies from silently failing when `auth.uid()` returns null
+     * due to network errors during token refresh.
+     *
+     * @default false
+     */
+    failOnNetworkError?: boolean
   }
   /**
    * Options passed to the realtime-js instance

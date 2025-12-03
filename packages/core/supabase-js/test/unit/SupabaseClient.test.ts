@@ -256,6 +256,68 @@ describe('SupabaseClient', () => {
         const token = await client._getAccessToken()
         expect(token).toBe(KEY)
       })
+
+      test('should fallback to supabaseKey on network error by default', async () => {
+        const client = createClient(URL, KEY)
+
+        // Mock network error (status 0 indicates AuthRetryableFetchError)
+        const networkError = { message: 'Network error', status: 0 }
+        client.auth.getSession = jest.fn().mockResolvedValue({
+          data: { session: null },
+          error: networkError,
+        })
+
+        // @ts-ignore - accessing private method
+        const token = await client._getAccessToken()
+        // Should fallback to KEY, not throw
+        expect(token).toBe(KEY)
+      })
+
+      test('should throw on network error when failOnNetworkError is true', async () => {
+        const client = createClient(URL, KEY, {
+          auth: { failOnNetworkError: true },
+        })
+
+        // Mock network error (status 0 indicates AuthRetryableFetchError)
+        const networkError = { message: 'Network error', status: 0 }
+        client.auth.getSession = jest.fn().mockResolvedValue({
+          data: { session: null },
+          error: networkError,
+        })
+
+        // @ts-ignore - accessing private method
+        await expect(client._getAccessToken()).rejects.toEqual(networkError)
+      })
+
+      test('should not throw on non-network auth errors even when failOnNetworkError is true', async () => {
+        const client = createClient(URL, KEY, {
+          auth: { failOnNetworkError: true },
+        })
+
+        // Mock non-network auth error (e.g., session expired - status 401)
+        const authError = { message: 'Session expired', status: 401 }
+        client.auth.getSession = jest.fn().mockResolvedValue({
+          data: { session: null },
+          error: authError,
+        })
+
+        // @ts-ignore - accessing private method
+        const token = await client._getAccessToken()
+        // Should fallback to KEY, not throw (status !== 0)
+        expect(token).toBe(KEY)
+      })
+
+      test('should store failOnNetworkError setting', () => {
+        const clientWithOption = createClient(URL, KEY, {
+          auth: { failOnNetworkError: true },
+        })
+        // @ts-ignore - accessing protected property
+        expect(clientWithOption.failOnNetworkError).toBe(true)
+
+        const clientWithoutOption = createClient(URL, KEY)
+        // @ts-ignore - accessing protected property
+        expect(clientWithoutOption.failOnNetworkError).toBe(false)
+      })
     })
 
     describe('Realtime Authentication', () => {
