@@ -72,6 +72,10 @@ type RpcFunctionNotFound<FnName> = {
   Relationships: null
 }
 
+type CrossSchemaError<TableRef extends string> = {
+  error: true
+} & `Function returns SETOF from a different schema ('${TableRef}'). Use .overrideTypes<YourReturnType>() to specify the return type explicitly.`
+
 export type GetRpcFunctionFilterBuilderByArgs<
   Schema extends GenericSchema,
   FnName extends string & keyof Schema['Functions'],
@@ -108,13 +112,20 @@ export type GetRpcFunctionFilterBuilderByArgs<
   ? // If we are dealing with an non-typed client everything is any
     IsAny<Fn> extends true
     ? { Row: any; Result: any; RelationName: FnName; Relationships: null }
-    : // Otherwise, we use the arguments based function definition narrowing to get the rigt value
+    : // Otherwise, we use the arguments based function definition narrowing to get the right value
       Fn extends GenericFunction
       ? {
           Row: Fn['SetofOptions'] extends GenericSetofOption
-            ? Fn['SetofOptions']['isSetofReturn'] extends true
+            ? Fn['SetofOptions']['to'] extends keyof TablesAndViews<Schema>
               ? TablesAndViews<Schema>[Fn['SetofOptions']['to']]['Row']
-              : TablesAndViews<Schema>[Fn['SetofOptions']['to']]['Row']
+              : // Cross-schema fallback: use Returns type when table is not in current schema
+                Fn['Returns'] extends any[]
+                ? Fn['Returns'][number] extends Record<string, unknown>
+                  ? Fn['Returns'][number]
+                  : CrossSchemaError<Fn['SetofOptions']['to'] & string>
+                : Fn['Returns'] extends Record<string, unknown>
+                  ? Fn['Returns']
+                  : CrossSchemaError<Fn['SetofOptions']['to'] & string>
             : Fn['Returns'] extends any[]
               ? Fn['Returns'][number] extends Record<string, unknown>
                 ? Fn['Returns'][number]
@@ -135,7 +146,9 @@ export type GetRpcFunctionFilterBuilderByArgs<
           Relationships: Fn['SetofOptions'] extends GenericSetofOption
             ? Fn['SetofOptions']['to'] extends keyof Schema['Tables']
               ? Schema['Tables'][Fn['SetofOptions']['to']]['Relationships']
-              : Schema['Views'][Fn['SetofOptions']['to']]['Relationships']
+              : Fn['SetofOptions']['to'] extends keyof Schema['Views']
+                ? Schema['Views'][Fn['SetofOptions']['to']]['Relationships']
+                : null
             : null
         }
       : // If we failed to find the function by argument, we still pass with any but also add an overridable

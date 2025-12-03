@@ -32,6 +32,18 @@ export type Database = MergeDeep<
           }
         }
       }
+      Functions: {
+        get_public_users: {
+          Args: Record<PropertyKey, never>
+          Returns: { id: string; user_id: string }[]
+          SetofOptions: {
+            from: '*'
+            to: 'public.users'
+            isOneToOne: false
+            isSetofReturn: true
+          }
+        }
+      }
       Views: {}
       Enums: {}
       CompositeTypes: {}

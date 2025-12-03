@@ -144,6 +144,15 @@ export default class PostgrestClient<
    *
    * `"estimated"`: Uses exact count for low numbers and planned count for high
    * numbers.
+   *
+   * @example
+   * ```ts
+   * // For cross-schema functions where type inference fails, use overrideTypes:
+   * const { data } = await supabase
+   *   .schema('schema_b')
+   *   .rpc('function_a', {})
+   *   .overrideTypes<{ id: string; user_id: string }[]>()
+   * ```
    */
   rpc<
     FnName extends string & keyof Schema['Functions'],
