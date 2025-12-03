@@ -236,7 +236,9 @@ export default class StorageFileApi {
    * @param path The file path, including the file name. Should be of the format `folder/subfolder/filename.png`. The bucket must already exist before attempting to upload.
    * @param token The token generated from `createSignedUploadUrl`
    * @param fileBody The body of the file to be stored in the bucket.
-   * @param fileOptions Optional file upload options including cacheControl and contentType.
+   * @param fileOptions HTTP headers (cacheControl, contentType, etc.).
+   * **Note:** The `upsert` option has no effect here. To enable upsert behavior,
+   * pass `{ upsert: true }` when calling `createSignedUploadUrl()` instead.
    * @returns Promise with response containing file path and fullPath or error
    *
    * @example Upload to a signed URL
