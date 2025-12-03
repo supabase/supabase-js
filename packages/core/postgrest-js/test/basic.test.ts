@@ -1569,6 +1569,52 @@ describe("insert, update, delete with count: 'exact'", () => {
     `)
   })
 
+  test('single upsert with column defaults', async () => {
+    let res = await postgrest
+      .from('channels')
+      .upsert({ slug: 'test-single-upsert' }, { defaultToNull: false })
+      .select()
+      .rollback()
+    expect(res).toMatchInlineSnapshot(`
+      {
+        "count": null,
+        "data": [
+          {
+            "data": null,
+            "id": 8,
+            "slug": "test-single-upsert",
+          },
+        ],
+        "error": null,
+        "status": 201,
+        "statusText": "Created",
+      }
+    `)
+  })
+
+  test('single insert with column defaults', async () => {
+    let res = await postgrest
+      .from('channels')
+      .insert({ slug: 'test-single-insert' }, { defaultToNull: false })
+      .select()
+      .rollback()
+    expect(res).toMatchInlineSnapshot(`
+      {
+        "count": null,
+        "data": [
+          {
+            "data": null,
+            "id": 9,
+            "slug": "test-single-insert",
+          },
+        ],
+        "error": null,
+        "status": 201,
+        "statusText": "Created",
+      }
+    `)
+  })
+
   test("update with count: 'exact'", async () => {
     let res = await postgrest
       .from('messages')

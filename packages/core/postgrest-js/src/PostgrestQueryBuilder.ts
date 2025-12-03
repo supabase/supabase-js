@@ -130,11 +130,11 @@ export default class PostgrestQueryBuilder<
     })
   }
 
-  // TODO(v3): Make `defaultToNull` consistent for both single & bulk inserts.
   insert<Row extends Relation extends { Insert: unknown } ? Relation['Insert'] : never>(
     values: Row,
     options?: {
       count?: 'exact' | 'planned' | 'estimated'
+      defaultToNull?: boolean
     }
   ): PostgrestFilterBuilder<
     ClientOptions,
@@ -183,8 +183,7 @@ export default class PostgrestQueryBuilder<
    * numbers.
    *
    * @param options.defaultToNull - Make missing fields default to `null`.
-   * Otherwise, use the default value for the column. Only applies for bulk
-   * inserts.
+   * Otherwise, use the default value for the column.
    */
   insert<Row extends Relation extends { Insert: unknown } ? Relation['Insert'] : never>(
     values: Row | Row[],
@@ -213,12 +212,12 @@ export default class PostgrestQueryBuilder<
       this.headers.append('Prefer', `missing=default`)
     }
 
-    if (Array.isArray(values)) {
-      const columns = values.reduce((acc, x) => acc.concat(Object.keys(x)), [] as string[])
-      if (columns.length > 0) {
-        const uniqueColumns = [...new Set(columns)].map((column) => `"${column}"`)
-        this.url.searchParams.set('columns', uniqueColumns.join(','))
-      }
+    const columns = Array.isArray(values)
+      ? values.reduce((acc, x) => acc.concat(Object.keys(x)), [] as string[])
+      : Object.keys(values)
+    if (columns.length > 0) {
+      const uniqueColumns = [...new Set(columns)].map((column) => `"${column}"`)
+      this.url.searchParams.set('columns', uniqueColumns.join(','))
     }
 
     return new PostgrestFilterBuilder({
@@ -231,13 +230,13 @@ export default class PostgrestQueryBuilder<
     })
   }
 
-  // TODO(v3): Make `defaultToNull` consistent for both single & bulk upserts.
   upsert<Row extends Relation extends { Insert: unknown } ? Relation['Insert'] : never>(
     values: Row,
     options?: {
       onConflict?: string
       ignoreDuplicates?: boolean
       count?: 'exact' | 'planned' | 'estimated'
+      defaultToNull?: boolean
     }
   ): PostgrestFilterBuilder<
     ClientOptions,
@@ -265,7 +264,7 @@ export default class PostgrestQueryBuilder<
     Relationships,
     'POST'
   >
-    /**
+  /**
    * Perform an UPSERT on the table or view. Depending on the column(s) passed
    * to `onConflict`, `.upsert()` allows you to perform the equivalent of
    * `.insert()` if a row with the corresponding `onConflict` columns doesn't
@@ -301,7 +300,7 @@ export default class PostgrestQueryBuilder<
    * @param options.defaultToNull - Make missing fields default to `null`.
    * Otherwise, use the default value for the column. This only applies when
    * inserting new rows, not when merging with existing rows under
-   * `ignoreDuplicates: false`. This also only applies when doing bulk upserts.
+   * `ignoreDuplicates: false`.
    *
    * @example Upsert a single row using a unique key
    * ```ts
@@ -351,7 +350,6 @@ export default class PostgrestQueryBuilder<
    * ```
    */
 
-
   upsert<Row extends Relation extends { Insert: unknown } ? Relation['Insert'] : never>(
     values: Row | Row[],
     {
@@ -386,12 +384,12 @@ export default class PostgrestQueryBuilder<
       this.headers.append('Prefer', 'missing=default')
     }
 
-    if (Array.isArray(values)) {
-      const columns = values.reduce((acc, x) => acc.concat(Object.keys(x)), [] as string[])
-      if (columns.length > 0) {
-        const uniqueColumns = [...new Set(columns)].map((column) => `"${column}"`)
-        this.url.searchParams.set('columns', uniqueColumns.join(','))
-      }
+    const columns = Array.isArray(values)
+      ? values.reduce((acc, x) => acc.concat(Object.keys(x)), [] as string[])
+      : Object.keys(values)
+    if (columns.length > 0) {
+      const uniqueColumns = [...new Set(columns)].map((column) => `"${column}"`)
+      this.url.searchParams.set('columns', uniqueColumns.join(','))
     }
 
     return new PostgrestFilterBuilder({
