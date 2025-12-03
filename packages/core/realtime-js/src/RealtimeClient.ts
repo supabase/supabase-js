@@ -645,6 +645,7 @@ export default class RealtimeClient {
       this.conn = null
     }
     this._clearAllTimers()
+    this._terminateWorker()
     this.channels.forEach((channel) => channel.teardown())
   }
 
@@ -709,6 +710,18 @@ export default class RealtimeClient {
       event: 'start',
       interval: this.heartbeatIntervalMs,
     })
+  }
+
+  /**
+   * Terminate the Web Worker and clear the reference
+   * @internal
+   */
+  private _terminateWorker(): void {
+    if (this.workerRef) {
+      this.log('worker', 'terminating worker')
+      this.workerRef.terminate()
+      this.workerRef = undefined
+    }
   }
   /** @internal */
   private _onConnClose(event: any) {
