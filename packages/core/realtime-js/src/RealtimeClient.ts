@@ -699,7 +699,7 @@ export default class RealtimeClient {
     this.workerRef = new Worker(objectUrl)
     this.workerRef.onerror = (error) => {
       this.log('worker', 'worker error', (error as ErrorEvent).message)
-      this.workerRef!.terminate()
+      this._terminateWorker()
     }
     this.workerRef.onmessage = (event) => {
       if (event.data.event === 'keepAlive') {
