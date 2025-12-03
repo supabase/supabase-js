@@ -16,8 +16,17 @@
     "src"
   ],
   "main": "dist/main/index.js",
-  "module": "dist/module/index.js",
+  "module": "dist/esm/wrapper.mjs",
   "types": "dist/module/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/module/index.d.ts",
+      "import": "./dist/esm/wrapper.mjs",
+      "require": "./dist/main/index.js"
+    },
+    "./dist/module/*": "./dist/module/*",
+    "./package.json": "./package.json"
+  },
   "sideEffects": false,
   "repository": {
     "type": "git",
@@ -25,9 +34,10 @@
     "directory": "packages/core/supabase-js"
   },
   "scripts": {
-    "build": "npm run build:main && npm run build:module && npm run build:umd",
+    "build": "npm run build:main && npm run build:module && npm run build:esm && npm run build:umd",
     "build:main": "tsc -p tsconfig.json",
     "build:module": "tsc -p tsconfig.module.json",
+    "build:esm": "node scripts/copy-wrapper.cjs",
     "build:umd": "webpack --env mode=production",
     "test": "npm run test:types && npm run test:run",
     "test:all": "npm run test:types && npm run test:run && npm run test:integration && npm run test:integration:browser",
