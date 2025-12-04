@@ -83,7 +83,7 @@ jobs:
         run: npm install -g npm@latest
 
       - name: Install dependencies
-        run: npm ci --legacy-peer-deps
+        run: npm ci
 
       - name: Configure git
         run: |
@@ -261,7 +261,7 @@ jobs:
       - name: Update npm
         run: npm install -g npm@latest
       - name: Install dependencies
-        run: npm ci --legacy-peer-deps
+        run: npm ci
       - name: Configure git
         run: |
           git config --global user.name "supabase-releaser[bot]"
