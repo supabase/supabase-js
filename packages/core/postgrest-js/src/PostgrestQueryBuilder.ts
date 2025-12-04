@@ -21,7 +21,8 @@ export default class PostgrestQueryBuilder<
   signal?: AbortSignal
   fetch?: Fetch
 
-  /**
+  /** @hidden
+   *
    * Creates a query builder scoped to a Postgres table or view.
    *
    * @example
@@ -265,7 +266,7 @@ export default class PostgrestQueryBuilder<
     Relationships,
     'POST'
   >
-    /**
+  /**
    * Perform an UPSERT on the table or view. Depending on the column(s) passed
    * to `onConflict`, `.upsert()` allows you to perform the equivalent of
    * `.insert()` if a row with the corresponding `onConflict` columns doesn't
@@ -350,7 +351,6 @@ export default class PostgrestQueryBuilder<
    * // }
    * ```
    */
-
 
   upsert<Row extends Relation extends { Insert: unknown } ? Relation['Insert'] : never>(
     values: Row | Row[],
