@@ -1,3 +1,13 @@
+## 2.86.2 (2025-12-04)
+
+### 🩹 Fixes
+
+- **storage:** correct QueryVectorsResponse to use vectors instead of matches ([#1922](https://github.com/supabase/supabase-js/pull/1922))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+
 ## 2.86.1 (2025-12-04)
 
 This was a version bump only for @supabase/storage-js to align it with other projects, there were no code changes.
