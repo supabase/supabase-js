@@ -662,7 +662,7 @@ function handleQueryVectors(body: any): MockResponse {
   }
 
   // Calculate cosine similarity (simplified mock)
-  const matches = allVectors
+  const vectors = allVectors
     .map((vector, index) => {
       const result: any = { key: vector.key }
       if (returnDistance) {
@@ -676,7 +676,7 @@ function handleQueryVectors(body: any): MockResponse {
 
   return {
     status: 200,
-    data: { matches },
+    data: { vectors, distanceMetric: 'cosine' },
   }
 }
 

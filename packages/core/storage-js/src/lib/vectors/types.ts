@@ -258,10 +258,12 @@ export interface QueryVectorsOptions {
 
 /**
  * Response from vector similarity query
- * @property matches - Array of similar vectors ordered by distance
+ * @property vectors - Array of similar vectors ordered by distance
+ * @property distanceMetric - The distance metric used for the similarity search
  */
 export interface QueryVectorsResponse {
-  matches: VectorMatch[]
+  vectors: VectorMatch[]
+  distanceMetric?: DistanceMetric
 }
 
 /**
