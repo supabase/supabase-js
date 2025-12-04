@@ -327,9 +327,9 @@ export default class RealtimeChannel {
               if (
                 serverPostgresFilter &&
                 serverPostgresFilter.event === event &&
-                serverPostgresFilter.schema === schema &&
-                serverPostgresFilter.table === table &&
-                serverPostgresFilter.filter === filter
+                RealtimeChannel.isFilterValueEqual(serverPostgresFilter.schema, schema) &&
+                RealtimeChannel.isFilterValueEqual(serverPostgresFilter.table, table) &&
+                RealtimeChannel.isFilterValueEqual(serverPostgresFilter.filter, filter)
               ) {
                 newPostgresBindings.push({
                   ...clientPostgresBinding,
@@ -947,6 +947,20 @@ export default class RealtimeChannel {
     }
 
     return true
+  }
+
+  /**
+   * Compares two optional filter values for equality.
+   * Treats undefined, null, and empty string as equivalent empty values.
+   * @internal
+   */
+  private static isFilterValueEqual(
+    serverValue: string | undefined | null,
+    clientValue: string | undefined
+  ): boolean {
+    const normalizedServer = serverValue ?? undefined
+    const normalizedClient = clientValue ?? undefined
+    return normalizedServer === normalizedClient
   }
 
   /** @internal */
