@@ -1,3 +1,15 @@
+## 2.86.1 (2025-12-04)
+
+### 🩹 Fixes
+
+- **auth:** code verifier remains in storage during edge cases ([#1759](https://github.com/supabase/supabase-js/pull/1759))
+- **auth:** suppress getsession warning when getuser is called first ([#1898](https://github.com/supabase/supabase-js/pull/1898))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+- Vaibhav @7ttp
+
 ## 2.86.0 (2025-11-26)
 
 This was a version bump only for @supabase/auth-js to align it with other projects, there were no code changes.

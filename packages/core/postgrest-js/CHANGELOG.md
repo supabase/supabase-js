@@ -1,3 +1,13 @@
+## 2.86.1 (2025-12-04)
+
+### 🩹 Fixes
+
+- **postgrest:** cross-schema rpc setof type inference ([#1900](https://github.com/supabase/supabase-js/pull/1900))
+
+### ❤️ Thank You
+
+- Vaibhav @7ttp
+
 ## 2.86.0 (2025-11-26)
 
 This was a version bump only for @supabase/postgrest-js to align it with other projects, there were no code changes.

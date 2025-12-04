@@ -1,3 +1,16 @@
+## 2.86.1 (2025-12-04)
+
+### 🩹 Fixes
+
+- **repo:** update npm and install again ([#1920](https://github.com/supabase/supabase-js/pull/1920))
+- **supabase:** add esm wrapper to resolve module not found error in nuxt ([#1914](https://github.com/supabase/supabase-js/pull/1914))
+- **postgrest:** cross-schema rpc setof type inference ([#1900](https://github.com/supabase/supabase-js/pull/1900))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+- Vaibhav @7ttp
+
 ## 2.86.0 (2025-11-26)
 
 This was a version bump only for @supabase/supabase-js to align it with other projects, there were no code changes.
