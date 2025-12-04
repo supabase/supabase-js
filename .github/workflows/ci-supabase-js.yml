@@ -35,7 +35,7 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm ci --legacy-peer-deps
+        run: npm ci
 
       - uses: nrwl/nx-set-shas@v4
 
@@ -83,7 +83,7 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm ci --legacy-peer-deps
+        run: npm ci
 
       - name: Type Check + Unit Tests + Coverage
         run: npx nx run-many --targets=test:types,test:coverage --projects=supabase-js
@@ -144,7 +144,7 @@ jobs:
           path: packages/core
 
       - name: Install dependencies
-        run: npm ci --legacy-peer-deps
+        run: npm ci
 
       - name: Start Verdaccio
         run: |
@@ -244,7 +244,7 @@ jobs:
 
       - name: Install dependencies and build
         run: |
-          npm ci --legacy-peer-deps
+          npm ci
           npx nx build supabase-js
 
       - name: Install jq
@@ -292,7 +292,7 @@ jobs:
           path: packages/core
 
       - name: Install dependencies
-        run: npm ci --legacy-peer-deps
+        run: npm ci
 
       - name: Start Verdaccio
         run: |
@@ -334,7 +334,7 @@ jobs:
           cp -r packages/core/supabase-js/test/integration/next/* "$TEST_DIR/"
           cd "$TEST_DIR"
           echo "registry=http://localhost:4873/" > .npmrc
-          npm install --legacy-peer-deps
+          npm install
           npx playwright install --with-deps
           npm run test
           rm -f .npmrc
@@ -374,7 +374,7 @@ jobs:
           path: packages/core
 
       - name: Install dependencies
-        run: npm ci --legacy-peer-deps
+        run: npm ci
 
       - name: Start Verdaccio
         run: |
@@ -460,7 +460,7 @@ jobs:
           path: packages/core
 
       - name: Install dependencies
-        run: npm ci --legacy-peer-deps
+        run: npm ci
 
       - name: Start Verdaccio
         run: |

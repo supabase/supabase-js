@@ -59,7 +59,7 @@
     "serve:coverage": "npx nx test:coverage supabase-js && serve test/coverage",
     "update:test-deps": "npm run update:test-deps:expo && npm run update:test-deps:next && npm run update:test-deps:deno && npm run update:test-deps:bun",
     "update:test-deps:expo": "cd test/integration/expo && npm install",
-    "update:test-deps:next": "cd test/integration/next && npm install --legacy-peer-deps",
+    "update:test-deps:next": "cd test/integration/next && npm install",
     "update:test-deps:deno": "cd test/deno && npm install",
     "update:test-deps:bun": "cd test/integration/bun && bun install"
   },
