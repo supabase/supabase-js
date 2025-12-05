@@ -135,8 +135,9 @@ describe('Presence message filtering', () => {
 })
 
 describe('Presence helper methods', () => {
-  test('gets presence state', () => {
-    channel.presence.state = { u1: [{ id: 1, presence_ref: '1' }] }
+  test('gets transformed presence state', () => {
+    // @ts-ignore - accessing private fields for testing
+    channel.presence.presenceAdapter.presence.state = { u1: { metas: [{ id: 1, phx_ref: '1' }] } }
     assert.deepEqual(channel.presenceState(), {
       u1: [{ id: 1, presence_ref: '1' }],
     })
