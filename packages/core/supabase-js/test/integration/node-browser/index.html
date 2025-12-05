@@ -96,7 +96,7 @@
 
         log('Creating channel...')
         const channel = supabase.channel('realtime:public:todos-' + vsn, {
-          config: { broadcast: { ack: true, self: true } }
+          config: { broadcast: { ack: true, self: true } },
         })
 
         // Set up broadcast listener
@@ -114,7 +114,7 @@
             await channel.send({
               type: 'broadcast',
               event: 'test-event',
-              payload: { message: 'Hello from browser!' }
+              payload: { message: 'Hello from browser!' },
             })
           }
         })
