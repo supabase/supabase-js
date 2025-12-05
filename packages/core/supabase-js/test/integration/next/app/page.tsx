@@ -2,19 +2,52 @@
 
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { useSearchParams } from 'next/navigation'
 
 export default function Home() {
-  const supabase = createClient()
+  const searchParams = useSearchParams()
+  const vsn = searchParams.get('vsn') || '1.0.0'
+
+  const supabase = createClient(vsn)
   const [realtimeStatus, setRealtimeStatus] = useState<string | null>(null)
-  const channel = supabase.channel('realtime:public:test')
+  const [receivedMessage, setReceivedMessage] = useState<string | null>(null)
 
   useEffect(() => {
-    channel.subscribe((status) => setRealtimeStatus(status))
+    const channel = supabase.channel(`realtime:public:test-${vsn}`, {
+      config: { broadcast: { ack: true, self: true } }
+    })
+
+    // Listen for broadcast messages
+    channel.on('broadcast', { event: 'test-event' }, (payload) => {
+      setReceivedMessage(payload.payload.message)
+    })
+
+    // Subscribe to the channel
+    channel.subscribe(async (status) => {
+      setRealtimeStatus(status)
+
+      // Send broadcast message after successful subscription
+      if (status === 'SUBSCRIBED') {
+        await channel.send({
+          type: 'broadcast',
+          event: 'test-event',
+          payload: { message: 'Hello from Next.js!' }
+        })
+      }
+    })
 
     return () => {
       channel.unsubscribe()
     }
-  }, [])
+  }, [vsn])
 
-  return <div data-testid="realtime_status">{realtimeStatus}</div>
+  return (
+    <div>
+      <div data-testid="vsn">{vsn}</div>
+      <div data-testid="realtime_status">{realtimeStatus}</div>
+      {receivedMessage && (
+        <div data-testid="received_message">{receivedMessage}</div>
+      )}
+    </div>
+  )
 }

@@ -9,7 +9,11 @@
         console.log(msg)
       }
 
-      log('Starting WebSocket test (Playwright)...')
+      // Get vsn from query params
+      const urlParams = new URLSearchParams(window.location.search)
+      const vsn = urlParams.get('vsn') || '1.0.0'
+
+      log('Starting WebSocket test with vsn: ' + vsn + ' (Playwright)...')
 
       // Add global error handler
       window.addEventListener('error', (event) => {
@@ -77,7 +81,7 @@
           return originalSetInterval.apply(this, [fn, delay, ...args])
         }
 
-        log('Creating Supabase client with WebSocket transport...')
+        log('Creating Supabase client with WebSocket transport and vsn: ' + vsn + '...')
         const supabase = createClient(
           'http://127.0.0.1:54321',
           'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0',
@@ -85,16 +89,34 @@
             realtime: {
               transport: window.WebSocket,
               heartbeatIntervalMs: 500,
+              vsn: vsn,
             },
           }
         )
 
         log('Creating channel...')
-        const channel = supabase.channel('realtime:public:todos')
+        const channel = supabase.channel('realtime:public:todos-' + vsn, {
+          config: { broadcast: { ack: true, self: true } },
+        })
+
+        // Set up broadcast listener
+        channel.on('broadcast', { event: 'test-event' }, (payload) => {
+          log('Broadcast message received: ' + JSON.stringify(payload.payload))
+        })
 
         log('Subscribing to channel...')
-        channel.subscribe((status) => {
+        channel.subscribe(async (status) => {
           log('WebSocket subscribe callback called with: ' + status)
+
+          // Send broadcast message after successful subscription
+          if (status === 'SUBSCRIBED') {
+            log('Sending broadcast message...')
+            await channel.send({
+              type: 'broadcast',
+              event: 'test-event',
+              payload: { message: 'Hello from browser!' },
+            })
+          }
         })
 
         setTimeout(() => {

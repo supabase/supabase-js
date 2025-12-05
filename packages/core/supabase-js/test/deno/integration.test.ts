@@ -16,9 +16,7 @@ Deno.test(
     const ANON_KEY =
       'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0'
 
-    const supabase = createClient(SUPABASE_URL, ANON_KEY, {
-      realtime: { heartbeatIntervalMs: 500 },
-    })
+    const supabase = createClient(SUPABASE_URL, ANON_KEY)
 
     // Cleanup function to be called after all tests
     const cleanup = async () => {
@@ -147,56 +145,61 @@ Deno.test(
         assertEquals(data.user, null)
       })
 
-      await t.step('Realtime - is able to connect and broadcast', async () => {
-        const channelName = `channel-${crypto.randomUUID()}`
-        let channel: RealtimeChannel
-        const email = `test-${Date.now()}@example.com`
-        const password = 'password123'
-
-        // Sign up and create channel
-        await supabase.auth.signUp({ email, password })
-        const config = { broadcast: { self: true }, private: true }
-        channel = supabase.channel(channelName, { config })
-
-        const testMessage = { message: 'test' }
-        let receivedMessage: any
-        let subscribed = false
-        let attempts = 0
-
-        channel
-          .on('broadcast', { event: '*' }, (payload: unknown) => (receivedMessage = payload))
-          .subscribe((status: string) => {
-            if (status == 'SUBSCRIBED') subscribed = true
+      // Run realtime tests for both versions
+      const versions = ['1.0.0', '2.0.0']
+      for (const vsn of versions) {
+        await t.step(`Realtime v${vsn} - is able to connect and broadcast`, async () => {
+          const supabaseRealtime = createClient(SUPABASE_URL, ANON_KEY, {
+            realtime: { heartbeatIntervalMs: 500, vsn },
           })
 
-        // Wait for subscription
-        while (!subscribed) {
-          if (attempts > 50) throw new Error('Timeout waiting for subscription')
-          await new Promise((resolve) => setTimeout(resolve, 100))
-          attempts++
-        }
+          const channelName = `channel-${crypto.randomUUID()}`
+          let channel: RealtimeChannel
+          const email = `test-${Date.now()}@example.com`
+          const password = 'password123'
 
-        attempts = 0
+          // Sign up and create channel
+          await supabaseRealtime.auth.signUp({ email, password })
+          const config = { broadcast: { self: true, ack: true }, private: true }
+          channel = supabaseRealtime.channel(channelName, { config })
 
-        channel.send({
-          type: 'broadcast',
-          event: 'test-event',
-          payload: testMessage,
+          const testMessage = { message: 'test' }
+          let receivedMessage: any
+          let subscribed = false
+          let attempts = 0
+
+          channel
+            .on('broadcast', { event: 'test-event' }, (payload: unknown) => (receivedMessage = payload))
+            .subscribe((status: string) => {
+              if (status == 'SUBSCRIBED') subscribed = true
+            })
+
+          // Wait for subscription
+          while (!subscribed) {
+            if (attempts > 50) throw new Error('Timeout waiting for subscription')
+            await new Promise((resolve) => setTimeout(resolve, 100))
+            attempts++
+          }
+
+          attempts = 0
+
+          await channel.send({ type: 'broadcast', event: 'test-event', payload: testMessage })
+
+          // Wait on message
+          while (!receivedMessage) {
+            if (attempts > 50) throw new Error('Timeout waiting for message')
+            await new Promise((resolve) => setTimeout(resolve, 100))
+            attempts++
+          }
+
+          assertExists(receivedMessage)
+          assertEquals(supabaseRealtime.realtime.getChannels().length, 1)
+
+          // Cleanup channel
+          await channel.unsubscribe()
+          await supabaseRealtime.removeAllChannels()
         })
-
-        // Wait on message
-        while (!receivedMessage) {
-          if (attempts > 50) throw new Error('Timeout waiting for message')
-          await new Promise((resolve) => setTimeout(resolve, 100))
-          attempts++
-        }
-
-        assertExists(receivedMessage)
-        assertEquals(supabase.realtime.getChannels().length, 1)
-
-        // Cleanup channel
-        await channel.unsubscribe()
-      })
+      }
 
       await t.step('Storage - should upload and list file in bucket', async () => {
         const bucket = 'test-bucket'

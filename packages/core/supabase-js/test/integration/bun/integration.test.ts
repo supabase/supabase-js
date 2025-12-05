@@ -1,47 +1,73 @@
-import { test, expect } from 'bun:test'
+import { test, expect, describe } from 'bun:test'
 import { createClient } from '@supabase/supabase-js'
 
 const SUPABASE_URL = 'http://127.0.0.1:54321'
 const ANON_KEY =
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0'
+const SERVICE_ROLE_KEY =
+  process.env.SUPABASE_SERVICE_ROLE_KEY ||
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU'
 
 const supabase = createClient(SUPABASE_URL, ANON_KEY, {
   realtime: { heartbeatIntervalMs: 500 },
 })
 
-test('should subscribe to realtime channel', async () => {
-  await supabase.auth.signOut()
-  const email = `bun-test-${Date.now()}@example.com`
-  const password = 'password123'
-  await supabase.auth.signUp({ email, password })
-  await supabase.realtime.setAuth()
+const versions = ['1.0.0', '2.0.0']
 
-  const channelName = `bun-channel-${crypto.randomUUID()}`
-  const config = { broadcast: { self: true }, private: true }
-  const channel = supabase.channel(channelName, { config })
+versions.forEach((vsn) => {
+  describe(`Realtime v${vsn}`, () => {
+    const supabaseRealtime = createClient(SUPABASE_URL, ANON_KEY, {
+      realtime: { heartbeatIntervalMs: 500, vsn },
+    })
 
-  let subscribed = false
-  let attempts = 0
+    test('should subscribe to realtime channel and broadcast', async () => {
+      await supabaseRealtime.auth.signOut()
+      const email = `bun-test-${Date.now()}@example.com`
+      const password = 'password123'
+      await supabaseRealtime.auth.signUp({ email, password })
 
-  channel.subscribe((status) => {
-    if (status === 'SUBSCRIBED') {
-      subscribed = true
-    }
+      const channelName = `bun-channel-${crypto.randomUUID()}`
+      const config = { broadcast: { self: true, ack: true }, private: true }
+      const channel = supabaseRealtime.channel(channelName, { config })
+      const testMessage = { message: 'test' }
+
+      let subscribed = false
+      let attempts = 0
+      let receivedMessage: any
+
+      channel
+        .on('broadcast', { event: 'test-event' }, (payload) => (receivedMessage = payload))
+        .subscribe((status) => {
+          if (status == 'SUBSCRIBED') subscribed = true
+        })
+
+      // Wait for subscription
+      while (!subscribed) {
+        if (attempts > 100) throw new Error('Timeout waiting for subscription')
+        await new Promise((resolve) => setTimeout(resolve, 100))
+        attempts++
+      }
+
+      expect(subscribed).toBe(true)
+
+      attempts = 0
+
+      await channel.send({ type: 'broadcast', event: 'test-event', payload: testMessage })
+
+      // Wait on message
+      while (!receivedMessage) {
+        if (attempts > 50) throw new Error('Timeout waiting for message')
+        await new Promise((resolve) => setTimeout(resolve, 100))
+        attempts++
+      }
+      expect(receivedMessage).toBeDefined()
+      expect(supabaseRealtime.realtime.getChannels().length).toBe(1)
+
+      // Cleanup
+      await supabaseRealtime.removeAllChannels()
+    }, 10000)
   })
-
-  // Wait for subscription
-  while (!subscribed) {
-    if (attempts > 100) throw new Error('Timeout waiting for subscription')
-    await new Promise((resolve) => setTimeout(resolve, 100))
-    attempts++
-  }
-
-  expect(subscribed).toBe(true)
-  expect(supabase.realtime.getChannels().length).toBe(1)
-
-  // Cleanup
-  await supabase.removeAllChannels()
-}, 10000)
+})
 
 test('should sign up a user', async () => {
   await supabase.auth.signOut()
@@ -115,10 +141,6 @@ test('should upload and list file in bucket', async () => {
   const filePath = 'test-file.txt'
   const fileContent = new Blob(['Hello, Supabase Storage!'], { type: 'text/plain' })
 
-  // use service_role key for bypass RLS
-  const SERVICE_ROLE_KEY =
-    process.env.SUPABASE_SERVICE_ROLE_KEY ||
-    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU'
   const supabaseWithServiceRole = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
     realtime: { heartbeatIntervalMs: 500 },
   })
