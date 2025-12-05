@@ -160,7 +160,7 @@ Deno.test(
 
           // Sign up and create channel
           await supabaseRealtime.auth.signUp({ email, password })
-          const config = { broadcast: { self: true }, private: true }
+          const config = { broadcast: { self: true, ack: true }, private: true }
           channel = supabaseRealtime.channel(channelName, { config })
 
           const testMessage = { message: 'test' }
@@ -169,7 +169,7 @@ Deno.test(
           let attempts = 0
 
           channel
-            .on('broadcast', { event: '*' }, (payload: unknown) => (receivedMessage = payload))
+            .on('broadcast', { event: 'test-event' }, (payload: unknown) => (receivedMessage = payload))
             .subscribe((status: string) => {
               if (status == 'SUBSCRIBED') subscribed = true
             })
@@ -183,11 +183,7 @@ Deno.test(
 
           attempts = 0
 
-          channel.send({
-            type: 'broadcast',
-            event: 'test-event',
-            payload: testMessage,
-          })
+          await channel.send({ type: 'broadcast', event: 'test-event', payload: testMessage })
 
           // Wait on message
           while (!receivedMessage) {
