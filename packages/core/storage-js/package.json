@@ -37,7 +37,7 @@
     "docs:json": "typedoc --json docs/v2/spec.json --entryPoints src/index.ts --entryPoints src/packages/* --excludePrivate --excludeExternals --excludeProtected"
   },
   "dependencies": {
-    "iceberg-js": "^0.8.0",
+    "iceberg-js": "^0.8.1",
     "tslib": "2.8.1"
   },
   "devDependencies": {

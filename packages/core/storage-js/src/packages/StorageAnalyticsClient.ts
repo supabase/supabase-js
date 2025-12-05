@@ -1,9 +1,17 @@
-import { IcebergRestCatalog } from 'iceberg-js'
+import { IcebergRestCatalog, IcebergError } from 'iceberg-js'
 import { DEFAULT_HEADERS } from '../lib/constants'
 import { isStorageError, StorageError } from '../lib/errors'
 import { Fetch, get, post, remove } from '../lib/fetch'
 import { isValidBucketName, resolveFetch } from '../lib/helpers'
 import { AnalyticBucket } from '../lib/types'
+
+type WrapAsyncMethod<T> = T extends (...args: infer A) => Promise<infer R>
+  ? (...args: A) => Promise<{ data: R; error: null } | { data: null; error: IcebergError }>
+  : T
+
+export type WrappedIcebergRestCatalog = {
+  [K in keyof IcebergRestCatalog]: WrapAsyncMethod<IcebergRestCatalog[K]>
+}
 
 /**
  * Client class for managing Analytics Buckets using Iceberg tables
@@ -269,12 +277,14 @@ export default class StorageAnalyticsClient {
    * Get an Iceberg REST Catalog client configured for a specific analytics bucket
    * Use this to perform advanced table and namespace operations within the bucket
    * The returned client provides full access to the Apache Iceberg REST Catalog API
+   * with the Supabase `{ data, error }` pattern for consistent error handling on all operations.
    *
    * **Public alpha:** This API is part of a public alpha release and may not be available to your account type.
    *
    * @category Analytics Buckets
    * @param bucketName - The name of the analytics bucket (warehouse) to connect to
-   * @returns Configured IcebergRestCatalog instance for advanced Iceberg operations
+   * @returns The wrapped Iceberg catalog client
+   * @throws {StorageError} If the bucket name is invalid
    *
    * @example Get catalog and create table
    * ```js
@@ -288,10 +298,10 @@ export default class StorageAnalyticsClient {
    * const catalog = supabase.storage.analytics.from('analytics-data')
    *
    * // Create a namespace
-   * await catalog.createNamespace({ namespace: ['default'] })
+   * const { error: nsError } = await catalog.createNamespace({ namespace: ['default'] })
    *
    * // Create a table with schema
-   * await catalog.createTable(
+   * const { data: tableMetadata, error: tableError } = await catalog.createTable(
    *   { namespace: ['default'] },
    *   {
    *     name: 'events',
@@ -325,7 +335,13 @@ export default class StorageAnalyticsClient {
    * const catalog = supabase.storage.analytics.from('analytics-data')
    *
    * // List all tables in the default namespace
-   * const tables = await catalog.listTables({ namespace: ['default'] })
+   * const { data: tables, error: listError } = await catalog.listTables({ namespace: ['default'] })
+   * if (listError) {
+   *   if (listError.isNotFound()) {
+   *     console.log('Namespace not found')
+   *   }
+   *   return
+   * }
    * console.log(tables) // [{ namespace: ['default'], name: 'events' }]
    * ```
    *
@@ -334,7 +350,7 @@ export default class StorageAnalyticsClient {
    * const catalog = supabase.storage.analytics.from('analytics-data')
    *
    * // List all namespaces
-   * const namespaces = await catalog.listNamespaces()
+   * const { data: namespaces } = await catalog.listNamespaces()
    *
    * // Create namespace with properties
    * await catalog.createNamespace(
@@ -348,36 +364,17 @@ export default class StorageAnalyticsClient {
    * const catalog = supabase.storage.analytics.from('analytics-data')
    *
    * // Drop table with purge option (removes all data)
-   * await catalog.dropTable(
+   * const { error: dropError } = await catalog.dropTable(
    *   { namespace: ['default'], name: 'events' },
    *   { purge: true }
    * )
    *
+   * if (dropError?.isNotFound()) {
+   *   console.log('Table does not exist')
+   * }
+   *
    * // Drop namespace (must be empty)
    * await catalog.dropNamespace({ namespace: ['default'] })
-   * ```
-   *
-   * @example Error handling with catalog operations
-   * ```js
-   * import { IcebergError } from 'iceberg-js'
-   *
-   * const catalog = supabase.storage.analytics.from('analytics-data')
-   *
-   * try {
-   *   await catalog.dropTable({ namespace: ['default'], name: 'events' }, { purge: true })
-   * } catch (error) {
-   *   // Handle 404 errors (resource not found)
-   *   const is404 =
-   *     (error instanceof IcebergError && error.status === 404) ||
-   *     error?.status === 404 ||
-   *     error?.details?.error?.code === 404
-   *
-   *   if (is404) {
-   *     console.log('Table does not exist')
-   *   } else {
-   *     throw error // Re-throw other errors
-   *   }
-   * }
    * ```
    *
    * @remarks
@@ -385,20 +382,19 @@ export default class StorageAnalyticsClient {
    * Apache Iceberg REST Catalog API. The bucket name maps to the Iceberg warehouse parameter.
    * All authentication and configuration is handled automatically using your Supabase credentials.
    *
-   * **Error Handling**: Operations may throw `IcebergError` from the iceberg-js library.
-   * Always handle 404 errors gracefully when checking for resource existence.
+   * **Error Handling**: Invalid bucket names throw immediately. All catalog
+   * operations return `{ data, error }` where errors are `IcebergError` instances from iceberg-js.
+   * Use helper methods like `error.isNotFound()` or check `error.status` for specific error handling.
+   * Use `.throwOnError()` on the analytics client if you prefer exceptions for catalog operations.
    *
    * **Cleanup Operations**: When using `dropTable`, the `purge: true` option permanently
    * deletes all table data. Without it, the table is marked as deleted but data remains.
    *
-   * **Library Dependency**: The returned catalog is an instance of `IcebergRestCatalog`
-   * from iceberg-js. For complete API documentation and advanced usage, refer to the
+   * **Library Dependency**: The returned catalog wraps `IcebergRestCatalog` from iceberg-js.
+   * For complete API documentation and advanced usage, refer to the
    * [iceberg-js documentation](https://supabase.github.io/iceberg-js/).
-   *
-   * For advanced Iceberg operations beyond bucket management, you can also install and use
-   * the `iceberg-js` package directly with manual configuration.
    */
-  from(bucketName: string): IcebergRestCatalog {
+  from(bucketName: string): WrappedIcebergRestCatalog {
     // Validate bucket name using same rules as Supabase Storage API backend
     if (!isValidBucketName(bucketName)) {
       throw new StorageError(
@@ -411,7 +407,7 @@ export default class StorageAnalyticsClient {
     // The base URL is /storage/v1/iceberg
     // Note: IcebergRestCatalog from iceberg-js automatically adds /v1/ prefix to API paths
     // so we should NOT append /v1 here (it would cause double /v1/v1/ in the URL)
-    return new IcebergRestCatalog({
+    const catalog = new IcebergRestCatalog({
       baseUrl: this.url,
       catalogName: bucketName, // Maps to the warehouse parameter in Supabase's implementation
       auth: {
@@ -420,5 +416,30 @@ export default class StorageAnalyticsClient {
       },
       fetch: this.fetch,
     })
+
+    const shouldThrowOnError = this.shouldThrowOnError
+
+    const wrappedCatalog = new Proxy(catalog, {
+      get(target, prop: keyof IcebergRestCatalog) {
+        const value = target[prop]
+        if (typeof value !== 'function') {
+          return value
+        }
+
+        return async (...args: unknown[]) => {
+          try {
+            const data = await (value as Function).apply(target, args)
+            return { data, error: null }
+          } catch (error) {
+            if (shouldThrowOnError) {
+              throw error
+            }
+            return { data: null, error: error as IcebergError }
+          }
+        }
+      },
+    }) as unknown as WrappedIcebergRestCatalog
+
+    return wrappedCatalog
   }
 }
