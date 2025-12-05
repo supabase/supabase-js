@@ -20,25 +20,26 @@ versions.forEach((vsn) => {
       realtime: { heartbeatIntervalMs: 500, vsn },
     })
 
-    test('should subscribe to realtime channel', async () => {
+    test('should subscribe to realtime channel and broadcast', async () => {
       await supabaseRealtime.auth.signOut()
       const email = `bun-test-${Date.now()}@example.com`
       const password = 'password123'
       await supabaseRealtime.auth.signUp({ email, password })
-      await supabaseRealtime.realtime.setAuth()
 
       const channelName = `bun-channel-${crypto.randomUUID()}`
-      const config = { broadcast: { self: true }, private: true }
+      const config = { broadcast: { self: true, ack: true }, private: true }
       const channel = supabaseRealtime.channel(channelName, { config })
+      const testMessage = { message: 'test' }
 
       let subscribed = false
       let attempts = 0
+      let receivedMessage: any
 
-      channel.subscribe((status) => {
-        if (status === 'SUBSCRIBED') {
-          subscribed = true
-        }
-      })
+      channel
+        .on('broadcast', { event: 'test-event' }, (payload) => (receivedMessage = payload))
+        .subscribe((status) => {
+          if (status == 'SUBSCRIBED') subscribed = true
+        })
 
       // Wait for subscription
       while (!subscribed) {
@@ -48,6 +49,18 @@ versions.forEach((vsn) => {
       }
 
       expect(subscribed).toBe(true)
+
+      attempts = 0
+
+      await channel.send({ type: 'broadcast', event: 'test-event', payload: testMessage })
+
+      // Wait on message
+      while (!receivedMessage) {
+        if (attempts > 50) throw new Error('Timeout waiting for message')
+        await new Promise((resolve) => setTimeout(resolve, 100))
+        attempts++
+      }
+      expect(receivedMessage).toBeDefined()
       expect(supabaseRealtime.realtime.getChannels().length).toBe(1)
 
       // Cleanup

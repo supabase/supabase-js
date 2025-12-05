@@ -290,7 +290,7 @@ describe('Supabase Integration Tests', () => {
         password = 'password123'
         await supabase.auth.signUp({ email, password })
 
-        const config = { broadcast: { self: true }, private: true }
+        const config = { broadcast: { ack: true, self: true }, private: true }
         channel = supabase.channel(channelName, { config })
       })
 
@@ -305,8 +305,8 @@ describe('Supabase Integration Tests', () => {
         let attempts = 0
 
         channel
-          .on('broadcast', { event: '*' }, (payload) => (receivedMessage = payload))
-          .subscribe((status, err) => {
+          .on('broadcast', { event: 'test-event' }, (payload) => (receivedMessage = payload))
+          .subscribe((status) => {
             if (status == 'SUBSCRIBED') subscribed = true
           })
 
@@ -319,7 +319,7 @@ describe('Supabase Integration Tests', () => {
 
         attempts = 0
 
-        channel.send({ type: 'broadcast', event: 'test-event', payload: testMessage })
+        await channel.send({ type: 'broadcast', event: 'test-event', payload: testMessage })
 
         // Wait on message
         while (!receivedMessage) {
