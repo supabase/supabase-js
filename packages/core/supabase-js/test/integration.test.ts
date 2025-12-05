@@ -265,44 +265,41 @@ describe('Supabase Integration Tests', () => {
     })
   })
 
-  describe.each([
-    { vsn: '1.0.0' },
-    { vsn: '2.0.0' }
-  ])('Realtime with vsn: $vsn', ({ vsn }) => {
-      const channelName = `channel-${crypto.randomUUID()}`
-      let channel: RealtimeChannel
-      let email: string
-      let password: string
-      let supabase: SupabaseClient
+  describe.each([{ vsn: '1.0.0' }, { vsn: '2.0.0' }])('Realtime with vsn: $vsn', ({ vsn }) => {
+    const channelName = `channel-${crypto.randomUUID()}`
+    let channel: RealtimeChannel
+    let email: string
+    let password: string
+    let supabase: SupabaseClient
 
-      beforeEach(async () => {
-        // Create client with specific version
-        supabase = createClient(SUPABASE_URL, ANON_KEY, {
-          realtime: {
-            heartbeatIntervalMs: 500,
-            vsn,
-            ...(wsTransport && { transport: wsTransport }),
-          },
-        })
+    beforeEach(async () => {
+      // Create client with specific version
+      supabase = createClient(SUPABASE_URL, ANON_KEY, {
+        realtime: {
+          heartbeatIntervalMs: 500,
+          vsn,
+          ...(wsTransport && { transport: wsTransport }),
+        },
+      })
 
-        await supabase.auth.signOut()
-        email = `test-${Date.now()}@example.com`
-        password = 'password123'
-        await supabase.auth.signUp({ email, password })
+      await supabase.auth.signOut()
+      email = `test-${Date.now()}@example.com`
+      password = 'password123'
+      await supabase.auth.signUp({ email, password })
 
       const config = { broadcast: { ack: true, self: true }, private: true }
       channel = supabase.channel(channelName, { config })
     })
 
-      afterEach(async () => {
-        await supabase.removeAllChannels()
-      })
+    afterEach(async () => {
+      await supabase.removeAllChannels()
+    })
 
-      test('is able to connect and broadcast', async () => {
-        const testMessage = { message: 'test' }
-        let receivedMessage: any
-        let subscribed = false
-        let attempts = 0
+    test('is able to connect and broadcast', async () => {
+      const testMessage = { message: 'test' }
+      let receivedMessage: any
+      let subscribed = false
+      let attempts = 0
 
       channel
         .on('broadcast', { event: 'test-event' }, (payload) => (receivedMessage = payload))
