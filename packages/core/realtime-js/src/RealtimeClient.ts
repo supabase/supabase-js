@@ -19,6 +19,7 @@ import Timer from './lib/timer'
 import { httpEndpointURL } from './lib/transformers'
 import RealtimeChannel from './RealtimeChannel'
 import type { RealtimeChannelOptions } from './RealtimeChannel'
+import SocketAdapter from './phoenix/socketAdapter'
 
 type Fetch = typeof fetch
 
@@ -100,6 +101,7 @@ const WORKER_SCRIPT = `
   });`
 
 export default class RealtimeClient {
+  socketAdapter: SocketAdapter
   accessTokenValue: string | null = null
   apiKey: string | null = null
   private _manuallySetToken: boolean = false
@@ -188,6 +190,7 @@ export default class RealtimeClient {
     this._initializeOptions(options)
     this._setupReconnectionTimer()
     this.fetch = this._resolveFetch(options?.fetch)
+    this.socketAdapter = new SocketAdapter(endPoint, options)
   }
 
   /**
@@ -335,16 +338,16 @@ export default class RealtimeClient {
   /**
    * Returns the current state of the socket.
    */
-  connectionState(): CONNECTION_STATE {
+  connectionState() {
     switch (this.conn && this.conn.readyState) {
       case SOCKET_STATES.connecting:
-        return CONNECTION_STATE.Connecting
+        return CONNECTION_STATE.connecting
       case SOCKET_STATES.open:
-        return CONNECTION_STATE.Open
+        return CONNECTION_STATE.open
       case SOCKET_STATES.closing:
-        return CONNECTION_STATE.Closing
+        return CONNECTION_STATE.closing
       default:
-        return CONNECTION_STATE.Closed
+        return CONNECTION_STATE.closed
     }
   }
 
@@ -352,7 +355,7 @@ export default class RealtimeClient {
    * Returns `true` is the connection is open.
    */
   isConnected(): boolean {
-    return this.connectionState() === CONNECTION_STATE.Open
+    return this.connectionState() === CONNECTION_STATE.open
   }
 
   /**

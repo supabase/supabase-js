@@ -1,4 +1,5 @@
 import { CHANNEL_EVENTS, CHANNEL_STATES, MAX_PUSH_BUFFER_SIZE } from './lib/constants'
+import type { ChannelState } from './lib/constants'
 import Push from './lib/push'
 import type RealtimeClient from './RealtimeClient'
 import Timer from './lib/timer'
@@ -10,6 +11,7 @@ import type {
 } from './RealtimePresence'
 import * as Transformers from './lib/transformers'
 import { httpEndpointURL } from './lib/transformers'
+import ChannelAdapter from './phoenix/channelAdapter'
 
 type ReplayOption = {
   since: number
@@ -171,7 +173,7 @@ export default class RealtimeChannel {
     }[]
   } = {}
   timeout: number
-  state: CHANNEL_STATES = CHANNEL_STATES.closed
+  state: ChannelState = CHANNEL_STATES.closed
   joinedOnce = false
   joinPush: Push
   rejoinTimer: Timer
@@ -180,6 +182,7 @@ export default class RealtimeChannel {
   broadcastEndpointURL: string
   subTopic: string
   private: boolean
+  channelAdapter: ChannelAdapter
 
   /**
    * Creates a channel that can broadcast messages, sync presence, and listen to Postgres changes.
@@ -256,6 +259,7 @@ export default class RealtimeChannel {
       this._trigger(this._replyEventName(ref), payload)
     })
 
+    this.channelAdapter = new ChannelAdapter(this.socket.socketAdapter, this.subTopic, this.params)
     this.presence = new RealtimePresence(this)
 
     this.broadcastEndpointURL = httpEndpointURL(this.socket.endPoint)
