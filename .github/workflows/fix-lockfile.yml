@@ -1,0 +1,38 @@
+name: Fix Dependabot lockfile
+
+on:
+  pull_request:
+    paths:
+      - 'package-lock.json'
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    if: github.actor == 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Upgrade to latest
+        run: npm install -g npm@latest
+
+      # This is needed to match the npm version used when publishing
+      - name: Regenerate lockfile
+        run: npm install --package-lock-only
+
+      - name: Commit fixed lockfile
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add package-lock.json
+          git diff --staged --quiet || git commit -m "chore(deps): regenerate lockfile with latest npm"
+          git push
