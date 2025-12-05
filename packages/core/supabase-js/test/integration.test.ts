@@ -290,9 +290,9 @@ describe('Supabase Integration Tests', () => {
         password = 'password123'
         await supabase.auth.signUp({ email, password })
 
-        const config = { broadcast: { ack: true, self: true }, private: true }
-        channel = supabase.channel(channelName, { config })
-      })
+      const config = { broadcast: { ack: true, self: true }, private: true }
+      channel = supabase.channel(channelName, { config })
+    })
 
       afterEach(async () => {
         await supabase.removeAllChannels()
@@ -304,33 +304,33 @@ describe('Supabase Integration Tests', () => {
         let subscribed = false
         let attempts = 0
 
-        channel
-          .on('broadcast', { event: 'test-event' }, (payload) => (receivedMessage = payload))
-          .subscribe((status) => {
-            if (status == 'SUBSCRIBED') subscribed = true
-          })
+      channel
+        .on('broadcast', { event: 'test-event' }, (payload) => (receivedMessage = payload))
+        .subscribe((status) => {
+          if (status == 'SUBSCRIBED') subscribed = true
+        })
 
-        // Wait for subscription
-        while (!subscribed) {
-          if (attempts > 50) throw new Error('Timeout waiting for subscription')
-          await new Promise((resolve) => setTimeout(resolve, 100))
-          attempts++
-        }
+      // Wait for subscription
+      while (!subscribed) {
+        if (attempts > 50) throw new Error('Timeout waiting for subscription')
+        await new Promise((resolve) => setTimeout(resolve, 100))
+        attempts++
+      }
 
-        attempts = 0
+      attempts = 0
 
-        await channel.send({ type: 'broadcast', event: 'test-event', payload: testMessage })
+      await channel.send({ type: 'broadcast', event: 'test-event', payload: testMessage })
 
-        // Wait on message
-        while (!receivedMessage) {
-          if (attempts > 50) throw new Error('Timeout waiting for message')
-          await new Promise((resolve) => setTimeout(resolve, 100))
-          attempts++
-        }
-        expect(receivedMessage).toBeDefined()
-        expect(supabase.realtime.getChannels().length).toBe(1)
-      }, 10000)
-    })
+      // Wait on message
+      while (!receivedMessage) {
+        if (attempts > 50) throw new Error('Timeout waiting for message')
+        await new Promise((resolve) => setTimeout(resolve, 100))
+        attempts++
+      }
+      expect(receivedMessage).toBeDefined()
+      expect(supabase.realtime.getChannels().length).toBe(1)
+    }, 10000)
+  })
 })
 
 describe('Storage API', () => {
