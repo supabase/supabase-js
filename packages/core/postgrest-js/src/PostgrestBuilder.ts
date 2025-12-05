@@ -28,7 +28,8 @@ export default abstract class PostgrestBuilder<
   protected fetch: Fetch
   protected isMaybeSingle: boolean
 
-  /**
+  /** @hidden
+   *
    * Creates a builder configured for a specific PostgREST request.
    *
    * @example
