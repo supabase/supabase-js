@@ -265,59 +265,72 @@ describe('Supabase Integration Tests', () => {
     })
   })
 
-  describe('Realtime', () => {
-    const channelName = `channel-${crypto.randomUUID()}`
-    let channel: RealtimeChannel
-    let email: string
-    let password: string
+  describe.each([
+    { vsn: '1.0.0' },
+    { vsn: '2.0.0' }
+  ])('Realtime with vsn: $vsn', ({ vsn }) => {
+      const channelName = `channel-${crypto.randomUUID()}`
+      let channel: RealtimeChannel
+      let email: string
+      let password: string
+      let supabase: SupabaseClient
 
-    beforeEach(async () => {
-      await supabase.auth.signOut()
-      email = `test-${Date.now()}@example.com`
-      password = 'password123'
-      await supabase.auth.signUp({ email, password })
-
-      const config = { broadcast: { self: true }, private: true }
-      channel = supabase.channel(channelName, { config })
-    })
-
-    afterEach(async () => {
-      await supabase.removeAllChannels()
-    })
-
-    test('is able to connect and broadcast', async () => {
-      const testMessage = { message: 'test' }
-      let receivedMessage: any
-      let subscribed = false
-      let attempts = 0
-
-      channel
-        .on('broadcast', { event: '*' }, (payload) => (receivedMessage = payload))
-        .subscribe((status, err) => {
-          if (status == 'SUBSCRIBED') subscribed = true
+      beforeEach(async () => {
+        // Create client with specific version
+        supabase = createClient(SUPABASE_URL, ANON_KEY, {
+          realtime: {
+            heartbeatIntervalMs: 500,
+            vsn,
+            ...(wsTransport && { transport: wsTransport }),
+          },
         })
 
-      // Wait for subscription
-      while (!subscribed) {
-        if (attempts > 50) throw new Error('Timeout waiting for subscription')
-        await new Promise((resolve) => setTimeout(resolve, 100))
-        attempts++
-      }
+        await supabase.auth.signOut()
+        email = `test-${Date.now()}@example.com`
+        password = 'password123'
+        await supabase.auth.signUp({ email, password })
 
-      attempts = 0
+        const config = { broadcast: { self: true }, private: true }
+        channel = supabase.channel(channelName, { config })
+      })
 
-      channel.send({ type: 'broadcast', event: 'test-event', payload: testMessage })
+      afterEach(async () => {
+        await supabase.removeAllChannels()
+      })
 
-      // Wait on message
-      while (!receivedMessage) {
-        if (attempts > 50) throw new Error('Timeout waiting for message')
-        await new Promise((resolve) => setTimeout(resolve, 100))
-        attempts++
-      }
-      expect(receivedMessage).toBeDefined()
-      expect(supabase.realtime.getChannels().length).toBe(1)
-    }, 10000)
-  })
+      test('is able to connect and broadcast', async () => {
+        const testMessage = { message: 'test' }
+        let receivedMessage: any
+        let subscribed = false
+        let attempts = 0
+
+        channel
+          .on('broadcast', { event: '*' }, (payload) => (receivedMessage = payload))
+          .subscribe((status, err) => {
+            if (status == 'SUBSCRIBED') subscribed = true
+          })
+
+        // Wait for subscription
+        while (!subscribed) {
+          if (attempts > 50) throw new Error('Timeout waiting for subscription')
+          await new Promise((resolve) => setTimeout(resolve, 100))
+          attempts++
+        }
+
+        attempts = 0
+
+        channel.send({ type: 'broadcast', event: 'test-event', payload: testMessage })
+
+        // Wait on message
+        while (!receivedMessage) {
+          if (attempts > 50) throw new Error('Timeout waiting for message')
+          await new Promise((resolve) => setTimeout(resolve, 100))
+          attempts++
+        }
+        expect(receivedMessage).toBeDefined()
+        expect(supabase.realtime.getChannels().length).toBe(1)
+      }, 10000)
+    })
 })
 
 describe('Storage API', () => {
