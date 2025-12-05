@@ -140,8 +140,12 @@ describe('auth during connection states', () => {
 
     await new Promise((resolve) => setTimeout(() => resolve(undefined), 100))
 
-    // Verify that the error was logged
-    expect(logSpy).toHaveBeenCalledWith('error', 'error setting auth in connect', expect.any(Error))
+    // Verify that the error was logged with more specific message
+    expect(logSpy).toHaveBeenCalledWith(
+      'error',
+      'Error fetching access token from callback',
+      expect.any(Error)
+    )
 
     // Verify that the connection was still established despite the error
     assert.ok(socketWithError.conn, 'connection should still exist')
@@ -199,7 +203,7 @@ describe('auth during connection states', () => {
     expect(socket.accessTokenValue).toBe(tokens[0])
 
     // Call the callback and wait for async operations to complete
-    await socket.reconnectTimer.callback()
+    await socket.reconnectTimer?.callback()
     await new Promise((resolve) => setTimeout(resolve, 100))
     expect(socket.accessTokenValue).toBe(tokens[1])
     expect(accessToken).toHaveBeenCalledTimes(2)

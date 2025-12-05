@@ -308,7 +308,10 @@ export default class RealtimeChannel {
 
       this.joinPush
         .receive('ok', async ({ postgres_changes }: PostgresChangesFilters) => {
-          this.socket.setAuth()
+          // Only refresh auth if using callback-based tokens
+          if (!this.socket._isManualToken()) {
+            this.socket.setAuth()
+          }
           if (postgres_changes === undefined) {
             callback?.(REALTIME_SUBSCRIBE_STATES.SUBSCRIBED)
             return
@@ -531,7 +534,7 @@ export default class RealtimeChannel {
         'channel',
         `resubscribe to ${this.topic} due to change in presence callbacks on joined channel`
       )
-      this.unsubscribe().then(() => this.subscribe())
+      this.unsubscribe().then(async () => await this.subscribe())
     }
     return this._on(type, filter, callback)
   }

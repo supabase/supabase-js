@@ -104,7 +104,8 @@ describe('channel', () => {
     const connectStub = vi.spyOn(testSetup.socket, 'connect')
     const disconnectStub = vi.spyOn(testSetup.socket, 'disconnect')
 
-    channel = testSetup.socket.channel('topic').subscribe()
+    channel = testSetup.socket.channel('topic')
+    await channel.subscribe()
 
     assert.equal(testSetup.socket.getChannels().length, 1)
     expect(connectStub).toHaveBeenCalled()
@@ -118,11 +119,11 @@ describe('channel', () => {
   test('does not remove other channels when removing one', async () => {
     const connectStub = vi.spyOn(testSetup.socket, 'connect')
     const disconnectStub = vi.spyOn(testSetup.socket, 'disconnect')
-    const channel1 = testSetup.socket.channel('chan1').subscribe()
-    const channel2 = testSetup.socket.channel('chan2').subscribe()
+    const channel1 = testSetup.socket.channel('chan1')
+    const channel2 = testSetup.socket.channel('chan2')
 
-    channel1.subscribe()
-    channel2.subscribe()
+    await channel1.subscribe()
+    await channel2.subscribe()
     assert.equal(testSetup.socket.getChannels().length, 2)
     expect(connectStub).toHaveBeenCalled()
 
