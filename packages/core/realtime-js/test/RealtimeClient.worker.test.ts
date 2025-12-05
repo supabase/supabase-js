@@ -98,3 +98,27 @@ test('creates worker with blob URL when no workerUrl provided', () => {
     global.URL.createObjectURL = originalCreateObjectURL
   }
 })
+
+test('terminates worker on disconnect', () => {
+  // Establish connection first
+  client.connect()
+
+  // Trigger worker creation
+  client._onConnOpen()
+
+  // Verify worker was created
+  assert.ok(client.workerRef)
+  const worker = client.workerRef
+
+  // Spy on worker terminate method
+  const terminateSpy = vi.spyOn(worker, 'terminate')
+
+  // Disconnect the client
+  client.disconnect()
+
+  // Verify worker was terminated
+  expect(terminateSpy).toHaveBeenCalled()
+
+  // Verify workerRef was cleared
+  assert.equal(client.workerRef, undefined)
+})
