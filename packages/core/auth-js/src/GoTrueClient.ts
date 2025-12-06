@@ -328,7 +328,7 @@ export default class GoTrueClient {
 
     if (settings.lock) {
       this.lock = settings.lock
-    } else if (isBrowser() && globalThis?.navigator?.locks) {
+    } else if (this.persistSession && isBrowser() && globalThis?.navigator?.locks) {
       this.lock = navigatorLock
     } else {
       this.lock = lockNoOp
