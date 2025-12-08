@@ -17,7 +17,7 @@ This monorepo contains 6 JavaScript/TypeScript libraries previously maintained a
 1. **Zero Breaking Changes**: All migrations and changes must maintain full backward compatibility for consumers
 2. **Fixed Version Mode**: All packages share the same version number and are released together
 3. **Workspace Dependencies**: Internal dependencies use `*` which Nx replaces with actual versions during release
-4. **Affected Testing**: Always use `nx affected` commands to test only what changed
+4. **Complete Test Suites**: Use complete test suites for packages individually (`nx test:auth auth-js`, `nx test:storage storage-js`, etc.)
 5. **Conventional Commits**: Use conventional commit format for automated versioning and changelogs
 
 ## Common Commands
@@ -29,12 +29,14 @@ This monorepo contains 6 JavaScript/TypeScript libraries previously maintained a
 - Watch mode: `nx build auth-js --watch`
 
 ### Testing
-- Test all: `nx run-many --target=test --all`
-- Test specific: `nx test auth-js` (some packages may have special targets like `nx test:auth auth-js` or `nx test:storage storage-js`)
-- Test affected: `nx affected --target=test` (recommended for efficiency)
-- Integration tests: `nx run-many --target=test:integration --all`
-- Watch mode: `nx test <package> --watch`
-- Coverage: `nx test <package> --coverage`
+- Test specific (complete suites with Docker setup/cleanup):
+  - `nx test:auth auth-js` - Complete auth-js test suite
+  - `nx test:storage storage-js` - Complete storage-js test suite
+  - `nx test:ci:postgrest postgrest-js` - Complete postgrest-js test suite
+  - `nx test functions-js` - Standard test (uses testcontainers)
+  - `nx test realtime-js` - Standard test (no Docker)
+  - `nx test supabase-js` - Standard test (unit tests only)
+- supabase-js additional: `nx test:all`, `nx test:unit`, `nx test:integration`, `nx test:integration:browser`, `nx test:edge-functions`, `nx test:deno`, `nx test:bun`, `nx test:expo`, `nx test:next`, `nx test:node:playwright`, `nx test:types`
 
 ### Code Quality
 - Lint all: `nx run-many --target=lint --all`
@@ -52,20 +54,20 @@ This monorepo contains 6 JavaScript/TypeScript libraries previously maintained a
 When making changes that affect multiple libraries:
 1. Make all changes in a single PR
 2. Update tests in both source library and integration tests in supabase-js
-3. Use `nx affected --target=test` to verify all impacts
+3. Run complete test suites for affected packages to verify all impacts
 4. Commit with clear scope: `fix(realtime-js): resolve connection issue`
 
 ### Adding New Features
 1. Implement in the specific library under `packages/core/[library-name]`
 2. Add comprehensive unit tests in the library's `test/` directory
 3. If it affects supabase-js, add integration tests there
-4. Run `nx affected --target=test` before committing
+4. Run complete test suite for the package before committing
 
 ### Quick Fixes
 Even for single-library fixes:
 1. Use conventional commit: `fix(storage-js): correct upload timeout`
 2. All packages will be versioned together (fixed mode)
-3. Run `nx affected --target=test`
+3. Run complete test suite for the package
 4. Changes ship together in next release
 
 ## TypeScript Configuration
@@ -85,9 +87,15 @@ The workspace uses strict TypeScript settings:
 - Mock external dependencies
 
 ### Integration Tests
-- Libraries with external services (auth-js, storage-js) use Docker
-- Docker Compose configs in `infra/` directories
-- Run with: `npm run test:infra` from library directory
+- Libraries with external services (auth-js, storage-js, postgrest-js, functions-js) use Docker
+- Complete test suites handle Docker setup/cleanup automatically:
+  - `nx test:auth auth-js` - Handles Docker lifecycle
+  - `nx test:storage storage-js` - Handles Docker lifecycle
+  - `nx test:ci:postgrest postgrest-js` - Handles Docker lifecycle
+- Manual infrastructure management available:
+  - `nx test:infra auth-js` / `nx test:suite auth-js` / `nx test:clean auth-js`
+  - `nx test:infra storage-js` / `nx test:suite storage-js` / `nx test:clean storage-js`
+  - `nx db:run postgrest-js` / `nx test:run postgrest-js` / `nx db:clean postgrest-js`
 
 ### Cross-Platform Tests
 The main supabase-js tests against:
@@ -116,7 +124,12 @@ packages/core/[library-name]/
 - **Package Names**: All packages maintain original npm names (@supabase/[package-name])
 - **Shared Code**: Extract common patterns (HTTP client, error handling) to shared packages when identified
 - **Docker Required**: Integration tests for auth-js, functions-js, postgrest-js, and storage-js require Docker to be running
-- **Special Test Commands**: Some packages may use special test targets (check individual package READMEs)
+- **Complete Test Commands**: Use complete test suites that handle Docker automatically:
+  - `nx test:auth auth-js` - Complete auth-js test suite
+  - `nx test:storage storage-js` - Complete storage-js test suite
+  - `nx test:ci:postgrest postgrest-js` - Complete postgrest-js test suite
+  - `nx test functions-js` - Standard test (uses testcontainers)
+- **Individual Commands**: Available for manual infrastructure management (see package READMEs)
 
 ## Release Process
 
@@ -160,10 +173,11 @@ The `*` is replaced with actual version during release.
 
 1. Always consider the monorepo structure - changes might affect multiple packages
 2. Use Nx commands rather than npm/yarn directly for workspace operations
-3. Suggest running affected tests (`nx affected --target=test`), not all tests, for better performance
+3. Suggest running complete test suites for affected packages individually
 4. Remember that all packages version together in fixed mode - no independent versioning
 5. Consider Docker requirements for integration tests (auth-js, functions-js, postgrest-js, storage-js)
 6. Maintain backward compatibility at all costs - breaking changes require special process
-7. Check for special test commands in package READMEs (some may use `test:auth`, `test:storage`, etc.)
+7. Use complete test suites for packages with Docker: `nx test:auth auth-js`, `nx test:storage storage-js`, `nx test:ci:postgrest postgrest-js`
+8. Check package READMEs for all available test commands and individual infrastructure management options
 8. Always suggest conventional commit format with proper scope
-9. Prefer `nx affected` commands over `nx run-many` for efficiency
+9. Run complete test suites for packages individually rather than trying to run all tests together

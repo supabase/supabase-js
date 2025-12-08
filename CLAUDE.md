@@ -124,28 +124,48 @@ nx build auth-js --watch                 # Development mode
 ### Testing
 
 ```bash
-nx run-many --target=test --all          # Test all packages
-nx test auth-js                          # Test specific package
-nx test postgrest-js                     # Test specific package
-nx test functions-js                     # Test specific package
-nx test realtime-js                      # Test specific package
-nx test storage-js                       # Test specific package (may use special test:storage target)
-nx test supabase-js                      # Test specific package
-nx affected --target=test                # Test only affected (recommended)
-nx test auth-js --watch                  # Watch mode
-nx test supabase-js --coverage           # Test with coverage
+# Test specific packages (complete test suites with Docker setup/cleanup)
+nx test:auth auth-js                    # Complete auth-js test suite (handles Docker)
+nx test:storage storage-js              # Complete storage-js test suite (handles Docker)
+nx test:ci:postgrest postgrest-js      # Complete postgrest-js test suite (handles Docker)
+nx test functions-js                    # Standard test (uses testcontainers)
+nx test realtime-js                     # Standard test (no Docker needed)
+nx test supabase-js                     # Standard test (unit tests only)
+
+# Coverage reports
+nx test supabase-js --coverage
+nx test:coverage realtime-js
+nx test:ci functions-js                 # Includes coverage
 ```
 
 **Docker Requirements:**
 
-| Package      | Docker Required | Infrastructure                  | Special Commands                     |
-| ------------ | --------------- | ------------------------------- | ------------------------------------ |
-| auth-js      | ✅ Yes          | Auth Server + Postgres          | May use `nx test:auth auth-js`       |
-| functions-js | ✅ Yes          | Deno relay (testcontainers)     | Standard `nx test functions-js`      |
-| postgrest-js | ✅ Yes          | PostgREST + PostgreSQL          | Standard `nx test postgrest-js`      |
-| storage-js   | ✅ Yes          | Storage API + PostgreSQL + Kong | May use `nx test:storage storage-js` |
-| realtime-js  | ❌ No           | Mock WebSockets                 | Standard `nx test realtime-js`       |
-| supabase-js  | ❌ No           | Unit tests only                 | Standard `nx test supabase-js`       |
+| Package      | Docker Required | Infrastructure                  | Complete Test Command               | Individual Commands                                                                       |
+| ------------ | --------------- | ------------------------------- | ----------------------------------- | ----------------------------------------------------------------------------------------- |
+| auth-js      | ✅ Yes          | Auth Server + Postgres          | `nx test:auth auth-js`              | `nx test:suite auth-js`, `nx test:infra auth-js`, `nx test:clean auth-js`                 |
+| storage-js   | ✅ Yes          | Storage API + PostgreSQL + Kong | `nx test:storage storage-js`        | `nx test:suite storage-js`, `nx test:infra storage-js`, `nx test:clean storage-js`        |
+| postgrest-js | ✅ Yes          | PostgREST + PostgreSQL          | `nx test:ci:postgrest postgrest-js` | `nx test:run postgrest-js`, `nx test:update postgrest-js`, `nx test:types postgrest-js`   |
+| functions-js | ✅ Yes          | Deno relay (testcontainers)     | `nx test functions-js`              | `nx test:ci functions-js` (with coverage)                                                 |
+| realtime-js  | ❌ No           | Mock WebSockets                 | `nx test realtime-js`               | `nx test:coverage realtime-js`, `nx test:watch realtime-js`                               |
+| supabase-js  | ❌ No           | Unit tests only                 | `nx test supabase-js`               | `nx test:all`, `nx test:unit`, `nx test:integration`, `nx test:coverage`, `nx test:watch` |
+
+**supabase-js Additional Test Commands:**
+
+```bash
+nx test:all supabase-js                  # Unit + integration + browser tests
+nx test:unit supabase-js                # Jest unit tests only
+nx test:integration supabase-js         # Node.js integration tests
+nx test:integration:browser supabase-js # Browser tests (requires Deno)
+nx test:edge-functions supabase-js      # Edge Functions tests
+nx test:deno supabase-js                # Deno runtime tests
+nx test:bun supabase-js                 # Bun runtime tests
+nx test:expo supabase-js                # React Native/Expo tests
+nx test:next supabase-js                # Next.js SSR tests
+nx test:node:playwright supabase-js     # WebSocket browser tests
+nx test:types supabase-js               # TypeScript type checking
+nx test:coverage supabase-js            # Coverage report
+nx test:watch supabase-js               # Watch mode
+```
 
 > **📖 See [TESTING.md](docs/TESTING.md) for complete testing guide and troubleshooting**
 
@@ -177,7 +197,7 @@ nx affected --graph                       # Visualize affected projects
 1. Fix root cause in `packages/core/realtime-js/src/`
 2. Add unit test in `packages/core/realtime-js/test/`
 3. Add integration test in `packages/core/supabase-js/test/`
-4. Run `nx affected --target=test` to verify both packages
+4. Run complete test suites for both packages to verify impacts
 5. Commit: `fix(realtime-js): resolve reconnection logic affecting supabase-js`
 6. Single PR, single review, single release - all packages version together
 
@@ -187,7 +207,7 @@ nx affected --graph                       # Visualize affected projects
 2. Write comprehensive unit tests in `packages/core/[library]/test/`
 3. If feature affects supabase-js, add integration tests there
 4. Update TypeScript types if needed
-5. Run `nx affected --target=test` before committing
+5. Run complete test suite for the package before committing
 6. Use conventional commit: `feat(storage-js): add resumable uploads`
 
 ### Quick Fix Workflow
@@ -197,7 +217,8 @@ nx affected --graph                       # Visualize affected projects
 git add .
 git commit -m "fix(auth-js): correct session expiry calculation"
 # → Automatic canary: 2.80.1-canary.0 published to 'canary' dist-tag
-nx affected --target=test
+# Run complete test suite for the package:
+nx test:auth auth-js
 # After validation, manual promotion:
 nx release --tag=latest --yes  # Promotes to stable with same version for ALL packages
 ```
@@ -289,13 +310,36 @@ This repository uses TypeScript project references for incremental builds and be
 
 ### Integration Tests (Docker-based)
 
-**Auth-JS & Storage-JS**:
+**Complete Test Suites (Recommended)**:
 
 ```bash
-cd packages/core/auth-js
-npm run test:infra   # Start Docker containers
-npm run test:suite   # Run tests
-npm run test:clean   # Cleanup
+# Auth-js: Complete test suite (handles Docker setup/cleanup automatically)
+nx test:auth auth-js
+
+# Storage-js: Complete test suite (handles Docker setup/cleanup automatically)
+nx test:storage storage-js
+
+# Postgrest-js: Complete test suite (handles Docker setup/cleanup automatically)
+nx test:ci:postgrest postgrest-js
+```
+
+**Manual Infrastructure Management** (for development):
+
+```bash
+# Auth-js
+nx test:infra auth-js   # Start Docker containers
+nx test:suite auth-js   # Run tests (can run multiple times)
+nx test:clean auth-js   # Cleanup
+
+# Storage-js
+nx test:infra storage-js   # Start Docker containers
+nx test:suite storage-js   # Run tests (can run multiple times)
+nx test:clean storage-js   # Cleanup
+
+# Postgrest-js
+nx db:run postgrest-js      # Start containers
+nx test:run postgrest-js    # Run tests
+nx db:clean postgrest-js    # Cleanup
 ```
 
 ### Cross-Platform Tests (supabase-js)
@@ -443,7 +487,7 @@ cd packages/core/auth-js && npm test
 ✅ Correct:
 
 ```bash
-nx test auth-js
+nx test:auth auth-js
 ```
 
 ### Pitfall 3: Testing Everything
@@ -451,13 +495,19 @@ nx test auth-js
 ❌ Wrong:
 
 ```bash
-nx run-many --target=test --all  # Slow, tests unchanged code
+nx run-many --target=test --all  # Won't work - no standard test target for all packages
 ```
 
 ✅ Correct:
 
 ```bash
-nx affected --target=test  # Fast, tests only changes
+# Run complete test suite for the specific package
+nx test:auth auth-js
+nx test:storage storage-js
+nx test:ci:postgrest postgrest-js
+nx test functions-js
+nx test realtime-js
+nx test supabase-js
 ```
 
 ### Pitfall 4: Breaking Changes
@@ -505,7 +555,7 @@ npm run build
 ✅ Correct: Use Nx commands from repository root
 
 ```bash
-nx test auth-js
+nx test:auth auth-js
 nx build auth-js --watch
 ```
 
@@ -528,7 +578,7 @@ npm run commit  # Guides you through proper format
 ❌ Wrong: Assuming you know how to run tests without checking
 
 ```bash
-nx test storage-js  # Might fail if Docker isn't running
+nx test storage-js  # Wrong - should use nx test:storage storage-js
 ```
 
 ✅ Correct: Check library README and TESTING.md first
@@ -559,7 +609,10 @@ cat docs/TESTING.md
 
    ```bash
    nx format                    # Format code
-   nx affected --target=test    # Test affected packages
+   # Run complete test suite for affected packages individually
+   nx test:auth auth-js         # If auth-js changed
+   nx test:storage storage-js   # If storage-js changed
+   # ... etc for other packages
    nx affected --target=lint    # Lint affected packages
    nx affected --target=build   # Build affected packages
    ```
@@ -601,7 +654,7 @@ Brief description of what this PR does
 ## Checklist
 
 - [ ] Code formatted (`nx format`)
-- [ ] Tests passing (`nx affected --target=test`)
+- [ ] Tests passing (run complete test suites for affected packages)
 - [ ] Builds passing (`nx affected --target=build`)
 - [ ] Used conventional commits
 - [ ] Documentation updated (if needed)
@@ -655,7 +708,10 @@ nx format
 npm run commit
 
 # 6. Before pushing
-nx affected --target=test
+# Run complete test suite for the package you changed
+nx test:auth auth-js         # If auth-js changed
+nx test:storage storage-js   # If storage-js changed
+# ... etc
 nx affected --target=build
 nx format:check
 
@@ -677,8 +733,9 @@ npm install
 # Check for errors
 nx run-many --target=lint --all
 
-# Run specific test file
-nx test auth-js --testFile=GoTrueClient.test.ts
+# Run specific test file (for packages with standard test target)
+nx test realtime-js --testFile=RealtimeClient.test.ts
+nx test supabase-js --testFile=client.test.ts
 ```
 
 ## Additional Resources
@@ -715,7 +772,7 @@ git commit -m "fix(auth): resolve token issue"
 
 ```bash
 # 1. Validate canary version
-nx affected --target=test
+# Run complete test suites for packages individually
 
 # 2. Preview stable promotion
 nx release --dry-run
@@ -805,7 +862,7 @@ _No user-facing changes in this release._
 
 1. **Consider Monorepo Impact**: Changes might affect multiple packages - always check dependencies
 2. **Use Nx Commands**: Always prefer `nx` over direct `npm` for workspace operations
-3. **Suggest Affected Testing**: Use `nx affected --target=test` over full test suite for efficiency
+3. **Suggest Complete Test Suites**: Use complete test suites (`nx test:auth auth-js`, `nx test:storage storage-js`, etc.) for packages individually
 4. **Respect Fixed Versioning**: All packages version together - no independent versioning
 5. **Maintain Compatibility**: Never introduce breaking changes without proper process
 6. **Check Testing Requirements**: Be aware of Docker requirements for integration tests
@@ -830,8 +887,14 @@ _No user-facing changes in this release._
 
 1. Unit test in source library
 2. Integration test in supabase-js if affects it
-3. Run `nx affected --target=test`
-4. Check if Docker needed (auth-js, storage-js)
+3. Run complete test suite for the package:
+   - `nx test:auth auth-js` (handles Docker automatically)
+   - `nx test:storage storage-js` (handles Docker automatically)
+   - `nx test:ci:postgrest postgrest-js` (handles Docker automatically)
+   - `nx test functions-js` (uses testcontainers)
+   - `nx test realtime-js` (no Docker needed)
+   - `nx test supabase-js` (unit tests only)
+4. Run complete test suites for all affected packages individually
 
 **Q: How will this release?**
 

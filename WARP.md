@@ -92,37 +92,48 @@ nx affected --target=build
 > **📖 For detailed testing information, see [TESTING.md](docs/TESTING.md)**
 
 ```bash
-# Run all unit tests
-nx run-many --target=test --all
-
-# Run tests for a specific library
-nx test auth-js                  # May also use: nx test:auth auth-js
-nx test postgrest-js
-nx test functions-js
-nx test realtime-js
-nx test storage-js               # May also use: nx test:storage storage-js
-nx test supabase-js
-
-# Run only affected tests (recommended during development)
-nx affected --target=test
-
-# Run tests in watch mode for a specific library
-nx test auth-js --watch
+# Run complete test suites (handles Docker setup/cleanup automatically)
+nx test:auth auth-js                    # Complete auth-js test suite
+nx test:storage storage-js              # Complete storage-js test suite
+nx test:ci:postgrest postgrest-js      # Complete postgrest-js test suite
+nx test functions-js                    # Standard test (uses testcontainers)
+nx test realtime-js                     # Standard test (no Docker needed)
+nx test supabase-js                     # Standard test (unit tests only)
 
 # Run tests with coverage
-nx test auth-js --coverage
+nx test supabase-js --coverage
+nx test:coverage realtime-js
+nx test:ci functions-js                 # Includes coverage
 ```
 
 **Docker Requirements for Integration Tests:**
 
-| Package      | Docker Required | Notes                           | Special Commands |
-| ------------ | --------------- | ------------------------------- | ---------------- |
-| auth-js      | ✅ Yes          | Requires GoTrue + PostgreSQL    | May use `nx test:auth auth-js` |
-| functions-js | ✅ Yes          | Uses testcontainers for Deno    | Standard `nx test functions-js` |
-| postgrest-js | ✅ Yes          | Requires PostgREST + PostgreSQL | Standard `nx test postgrest-js` |
-| storage-js   | ✅ Yes          | Requires Storage API + Kong     | May use `nx test:storage storage-js` |
-| realtime-js  | ❌ No           | Uses mock WebSockets            | Standard `nx test realtime-js` |
-| supabase-js  | ❌ No           | Unit tests only                 | Standard `nx test supabase-js` |
+| Package      | Docker Required | Infrastructure                  | Complete Test Command               | Individual Commands                                                                       |
+| ------------ | --------------- | ------------------------------- | ----------------------------------- | ----------------------------------------------------------------------------------------- |
+| auth-js      | ✅ Yes          | GoTrue + PostgreSQL             | `nx test:auth auth-js`              | `nx test:suite auth-js`, `nx test:infra auth-js`, `nx test:clean auth-js`                 |
+| storage-js   | ✅ Yes          | Storage API + PostgreSQL + Kong | `nx test:storage storage-js`        | `nx test:suite storage-js`, `nx test:infra storage-js`, `nx test:clean storage-js`        |
+| postgrest-js | ✅ Yes          | PostgREST + PostgreSQL          | `nx test:ci:postgrest postgrest-js` | `nx test:run postgrest-js`, `nx test:update postgrest-js`, `nx test:types postgrest-js`   |
+| functions-js | ✅ Yes          | Deno relay (testcontainers)     | `nx test functions-js`              | `nx test:ci functions-js` (with coverage)                                                 |
+| realtime-js  | ❌ No           | Mock WebSockets                 | `nx test realtime-js`               | `nx test:coverage realtime-js`, `nx test:watch realtime-js`                               |
+| supabase-js  | ❌ No           | Unit tests only                 | `nx test supabase-js`               | `nx test:all`, `nx test:unit`, `nx test:integration`, `nx test:coverage`, `nx test:watch` |
+
+**supabase-js Additional Test Commands:**
+
+```bash
+nx test:all supabase-js                  # Unit + integration + browser tests
+nx test:unit supabase-js                # Jest unit tests only
+nx test:integration supabase-js         # Node.js integration tests
+nx test:integration:browser supabase-js # Browser tests (requires Deno)
+nx test:edge-functions supabase-js      # Edge Functions tests
+nx test:deno supabase-js                # Deno runtime tests
+nx test:bun supabase-js                 # Bun runtime tests
+nx test:expo supabase-js                # React Native/Expo tests
+nx test:next supabase-js                # Next.js SSR tests
+nx test:node:playwright supabase-js     # WebSocket browser tests
+nx test:types supabase-js               # TypeScript type checking
+nx test:coverage supabase-js            # Coverage report
+nx test:watch supabase-js               # Watch mode
+```
 
 ### Code Quality
 
@@ -159,7 +170,7 @@ nx affected --graph
 
 ```bash
 # ✅ Correct: Use Nx from root
-nx test auth-js
+nx test:auth auth-js
 nx build postgrest-js --watch
 
 # ❌ Avoid: Don't run npm directly in library directories
@@ -230,18 +241,27 @@ The main `supabase-js` library includes integration tests for multiple environme
 
 ### Running Tests
 
+**Complete Test Suites (Recommended - handles Docker automatically):**
+
 ```bash
-# Test specific package
-nx test [package-name]
+# Packages with Docker requirements
+nx test:auth auth-js                    # Complete auth-js test suite
+nx test:storage storage-js              # Complete storage-js test suite
+nx test:ci:postgrest postgrest-js      # Complete postgrest-js test suite
 
+# Packages without Docker requirements
+nx test functions-js                    # Standard test (uses testcontainers)
+nx test realtime-js                     # Standard test
+nx test supabase-js                     # Standard test
+```
+
+**Coverage Commands:**
+
+```bash
 # Test with coverage
-nx test [package-name] --coverage
-
-# Test in watch mode
-nx test [package-name] --watch
-
-# Test only what changed (recommended)
-nx affected --target=test
+nx test supabase-js --coverage
+nx test:coverage realtime-js
+nx test:ci functions-js                 # Includes coverage
 ```
 
 ## Working with Individual Libraries
@@ -259,7 +279,7 @@ nx affected --target=test
 
 | Library      | Docker Required | Primary Use Case           |
 | ------------ | --------------- | -------------------------- |
-| supabase-js  | ❌ No           | Main isomorphic SDK     |
+| supabase-js  | ❌ No           | Main isomorphic SDK        |
 | auth-js      | ✅ Yes          | Authentication & user mgmt |
 | postgrest-js | ✅ Yes          | Database queries           |
 | realtime-js  | ❌ No           | Real-time subscriptions    |
@@ -294,7 +314,7 @@ Nx automatically handles task dependencies. Building a library will first build 
 
 1. Make changes in the relevant library under `packages/core/[library]/src/`
 2. Add unit tests in `packages/core/[library]/test/`
-3. Run affected tests: `nx affected --target=test`
+3. Run complete test suite for the package
 4. Build affected libraries: `nx affected --target=build`
 5. Format code: `nx format`
 6. Commit using conventional commits: `npm run commit`
@@ -306,23 +326,28 @@ When a bug spans multiple libraries (e.g., issue in supabase-js caused by realti
 1. Fix the root cause in the source library (e.g., `packages/core/realtime-js/src/`)
 2. Add/update unit tests in the source library
 3. Add integration tests in `packages/core/supabase-js/test/` if needed
-4. Run: `nx affected --target=test` to verify all affected packages
+4. Run complete test suites for all affected packages individually
 5. Commit with clear message: `fix(realtime-js): resolve connection issue affecting supabase-js`
 6. All changes ship together in the next release - no manual coordination needed
 
 ### Debugging Test Failures
 
-1. Run tests for specific library: `nx test [library-name]`
-2. Run with watch mode: `nx test [library-name] --watch`
-3. Check if Docker is required and running (see [TESTING.md](docs/TESTING.md))
-4. Review test output and error messages
-5. Use `nx graph` to understand dependencies
+1. Run complete test suite for specific library:
+   - `nx test:auth auth-js`
+   - `nx test:storage storage-js`
+   - `nx test:ci:postgrest postgrest-js`
+   - `nx test functions-js`
+   - `nx test realtime-js`
+   - `nx test supabase-js`
+2. Check if Docker is required and running (see [TESTING.md](docs/TESTING.md))
+3. Review test output and error messages
+4. Use `nx graph` to understand dependencies
 
 ### Preparing Changes for PR
 
 1. Format all code: `nx format`
 2. Check formatting: `nx format:check`
-3. Run affected tests: `nx affected --target=test`
+3. Run complete test suites for affected packages individually
 4. Run affected linting: `nx affected --target=lint`
 5. Build affected packages: `nx affected --target=build`
 6. Use interactive commit tool: `npm run commit`
@@ -552,7 +577,7 @@ packages/core/[library]/
 ### Do's ✅
 
 - **Use Nx commands** from repository root
-- **Run affected commands** to save time (`nx affected --target=test`)
+- **Run complete test suites** for packages individually
 - **Use interactive commit tool** (`npm run commit`)
 - **Format code** before committing (`nx format`)
 - **Read package READMEs** for library-specific details and special test commands
@@ -565,7 +590,7 @@ packages/core/[library]/
 - **Don't run npm commands** directly in library directories
 - **Don't skip commit message validation** (use `npm run commit`)
 - **Don't hardcode internal versions** (use `*` protocol)
-- **Don't test everything** when only some packages changed (use `nx affected`)
+- **Don't try to run all tests together** - use complete test suites for packages individually
 - **Don't make breaking changes** without discussion and proper commit format
 - **Don't assume all packages use standard test commands** (check for special targets)
 
