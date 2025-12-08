@@ -247,6 +247,77 @@ describe('PostgreSQL binding matching behavior', () => {
     assert.equal(channel.bindings.postgres_changes[0].id, 'server-id-1')
   })
 
+  test('should match postgres changes when server returns null for optional fields', () => {
+    const callbackSpy = vi.fn()
+
+    channel.on(
+      'postgres_changes',
+      {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'notifications',
+      },
+      callbackSpy
+    )
+
+    channel.subscribe()
+
+    const mockServerResponse = {
+      postgres_changes: [
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'notifications',
+          filter: null,
+          id: 'server-id-1',
+        },
+      ],
+    }
+
+    channel.joinPush._matchReceive({
+      status: 'ok',
+      response: mockServerResponse,
+    })
+
+    assert.equal(channel.state, CHANNEL_STATES.joined)
+    assert.equal(channel.bindings.postgres_changes[0].id, 'server-id-1')
+  })
+
+  test('should match postgres changes when server omits optional filter field', () => {
+    const callbackSpy = vi.fn()
+
+    channel.on(
+      'postgres_changes',
+      {
+        event: '*',
+        schema: 'public',
+        table: 'notifications',
+      },
+      callbackSpy
+    )
+
+    channel.subscribe()
+
+    const mockServerResponse = {
+      postgres_changes: [
+        {
+          event: '*',
+          schema: 'public',
+          table: 'notifications',
+          id: 'server-id-1',
+        },
+      ],
+    }
+
+    channel.joinPush._matchReceive({
+      status: 'ok',
+      response: mockServerResponse,
+    })
+
+    assert.equal(channel.state, CHANNEL_STATES.joined)
+    assert.equal(channel.bindings.postgres_changes[0].id, 'server-id-1')
+  })
+
   test.each([
     {
       description: 'should fail when event differs',
