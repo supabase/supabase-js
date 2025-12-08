@@ -1,3 +1,17 @@
+## 2.87.0 (2025-12-08)
+
+### 🚀 Features
+
+- **storage:** align analytics from method with { data, error } pattern ([#1927](https://github.com/supabase/supabase-js/pull/1927))
+
+### 🩹 Fixes
+
+- **repo:** update lock file after dependabot to use npm 11 ([#1926](https://github.com/supabase/supabase-js/pull/1926))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+
 ## 2.86.2 (2025-12-04)
 
 ### 🩹 Fixes
