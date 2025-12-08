@@ -54,7 +54,7 @@ export default class PresenceAdapter {
  * })
  *
  */
-function transformState(state: State): RealtimePresenceState {
+export function transformState(state: State): RealtimePresenceState {
   state = cloneState(state)
 
   return Object.getOwnPropertyNames(state).reduce((newState, key) => {
