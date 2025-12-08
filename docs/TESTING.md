@@ -7,13 +7,13 @@ This monorepo uses Nx for orchestrating tests across all packages. Each package 
 To run tests for any package:
 
 ```bash
-# Basic pattern
-npx nx test <package-name>
-
-# Examples
-npx nx test auth-js
-npx nx test:storage storage-js  # Special command for storage-js
-npx nx test postgrest-js
+# Complete test suites (recommended - handles Docker automatically)
+npx nx test:auth auth-js                    # Complete auth-js test suite
+npx nx test:storage storage-js              # Complete storage-js test suite
+npx nx test:ci:postgrest postgrest-js      # Complete postgrest-js test suite
+npx nx test functions-js                    # Standard test (uses testcontainers)
+npx nx test realtime-js                     # Standard test (no Docker needed)
+npx nx test supabase-js                    # Standard test (unit tests only)
 ```
 
 ## Package-Specific Testing Guides
@@ -22,31 +22,27 @@ Each package has unique testing requirements. Please refer to the individual REA
 
 ### Core Packages
 
-| Package          | Docker Required                          | Test Command                     | Documentation                                                    |
-| ---------------- | ---------------------------------------- | -------------------------------- | ---------------------------------------------------------------- |
-| **auth-js**      | ✅ Yes (GoTrue + PostgreSQL)             | `npx nx test:auth auth-js`       | [Testing Guide](../packages/core/auth-js/README.md#testing)      |
-| **functions-js** | ✅ Yes (Deno relay via testcontainers)   | `npx nx test functions-js`       | [Testing Guide](../packages/core/functions-js/README.md#testing) |
-| **postgrest-js** | ✅ Yes (PostgREST + PostgreSQL)          | `npx nx test postgrest-js`       | [Testing Guide](../packages/core/postgrest-js/README.md#testing) |
-| **realtime-js**  | ❌ No (uses mock WebSockets)             | `npx nx test realtime-js`        | [Testing Guide](../packages/core/realtime-js/README.md#testing)  |
-| **storage-js**   | ✅ Yes (Storage API + PostgreSQL + Kong) | `npx nx test:storage storage-js` | [Testing Guide](../packages/core/storage-js/README.md#testing)   |
-| **supabase-js**  | ❌ No (unit tests only)                  | `npx nx test supabase-js`        | [Testing Guide](../packages/core/supabase-js/TESTING.md)         |
+| Package          | Docker Required                          | Test Command                            | Documentation                                                    |
+| ---------------- | ---------------------------------------- | --------------------------------------- | ---------------------------------------------------------------- |
+| **auth-js**      | ✅ Yes (GoTrue + PostgreSQL)             | `npx nx test:auth auth-js`              | [Testing Guide](../packages/core/auth-js/README.md#testing)      |
+| **functions-js** | ✅ Yes (Deno relay via testcontainers)   | `npx nx test functions-js`              | [Testing Guide](../packages/core/functions-js/README.md#testing) |
+| **postgrest-js** | ✅ Yes (PostgREST + PostgreSQL)          | `npx nx test:ci:postgrest postgrest-js` | [Testing Guide](../packages/core/postgrest-js/README.md#testing) |
+| **realtime-js**  | ❌ No (uses mock WebSockets)             | `npx nx test realtime-js`               | [Testing Guide](../packages/core/realtime-js/README.md#testing)  |
+| **storage-js**   | ✅ Yes (Storage API + PostgreSQL + Kong) | `npx nx test:storage storage-js`        | [Testing Guide](../packages/core/storage-js/README.md#testing)   |
+| **supabase-js**  | ❌ No (unit tests only)                  | `npx nx test supabase-js`               | [Testing Guide](../packages/core/supabase-js/TESTING.md)         |
 
-### Common Test Commands
+### Coverage Commands
 
 ```bash
 # Run tests with coverage
-npx nx test <package> --coverage
-
-# Run tests in watch mode
-npx nx test <package> --watch
-
-# Run all tests across the monorepo
-npx nx run-many --target=test --all
+npx nx test supabase-js --coverage
+npx nx test:coverage realtime-js
+npx nx test:ci functions-js                 # Includes coverage
 ```
 
 ## Prerequisites
 
-- **Node.js 18+** - Required for all packages
+- **Node.js 20+** - Required for all packages
 - **Docker** - Required for auth-js, functions-js, postgrest-js, and storage-js
 - **Ports** - Various packages use different ports for test infrastructure (see individual READMEs)
 
