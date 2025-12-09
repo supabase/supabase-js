@@ -224,6 +224,38 @@ export class AuthPKCEGrantCodeExchangeError extends CustomAuthError {
 }
 
 /**
+ * Error thrown when the PKCE code verifier is not found in storage.
+ * This typically happens when the auth flow was initiated in a different
+ * browser, device, or the storage was cleared.
+ *
+ * @example
+ * ```ts
+ * import { AuthPKCECodeVerifierMissingError } from '@supabase/auth-js'
+ *
+ * throw new AuthPKCECodeVerifierMissingError()
+ * ```
+ */
+export class AuthPKCECodeVerifierMissingError extends CustomAuthError {
+  constructor() {
+    super(
+      'PKCE code verifier not found in storage. ' +
+        'This can happen if the auth flow was initiated in a different browser or device, ' +
+        'or if the storage was cleared. For SSR frameworks (Next.js, SvelteKit, etc.), ' +
+        'use @supabase/ssr on both the server and client to store the code verifier in cookies.',
+      'AuthPKCECodeVerifierMissingError',
+      400,
+      'pkce_code_verifier_not_found'
+    )
+  }
+}
+
+export function isAuthPKCECodeVerifierMissingError(
+  error: unknown
+): error is AuthPKCECodeVerifierMissingError {
+  return isAuthError(error) && error.name === 'AuthPKCECodeVerifierMissingError'
+}
+
+/**
  * Error thrown when a transient fetch issue occurs.
  *
  * @example

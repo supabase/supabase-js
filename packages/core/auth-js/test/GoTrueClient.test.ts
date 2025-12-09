@@ -1,4 +1,4 @@
-import { AuthError } from '../src/lib/errors'
+import { AuthError, AuthPKCECodeVerifierMissingError } from '../src/lib/errors'
 import { STORAGE_KEY } from '../src/lib/constants'
 import { memoryLocalStorageAdapter } from '../src/lib/local-storage'
 import GoTrueClient from '../src/GoTrueClient'
@@ -455,10 +455,58 @@ describe('GoTrueClient', () => {
     })
 
     test('exchangeCodeForSession() should fail with invalid authCode', async () => {
-      const { error } = await pkceClient.exchangeCodeForSession('mock_code')
+      // Mock fetch to return a 400 error for invalid auth code
+      const mockFetch = jest.fn().mockResolvedValue({
+        ok: false,
+        status: 400,
+        headers: new Headers(),
+        json: () =>
+          Promise.resolve({
+            error: 'invalid_grant',
+            error_description: 'Invalid auth code',
+          }),
+      })
+
+      const storage = memoryLocalStorageAdapter()
+      const client = new GoTrueClient({
+        url: GOTRUE_URL_SIGNUP_ENABLED_AUTO_CONFIRM_ON,
+        autoRefreshToken: false,
+        persistSession: true,
+        storage,
+        flowType: 'pkce',
+        fetch: mockFetch,
+      })
+
+      // Set up a code verifier so we can test the invalid auth code error
+      // @ts-expect-error 'Allow access to protected storageKey'
+      const storageKey = client.storageKey
+      await storage.setItem(`${storageKey}-code-verifier`, 'mock-verifier')
+
+      const { error } = await client.exchangeCodeForSession('mock_code')
 
       expect(error).not.toBeNull()
       expect(error?.status).toEqual(400)
+    })
+
+    test('exchangeCodeForSession() should throw helpful error when code verifier is missing', async () => {
+      const storage = memoryLocalStorageAdapter()
+      // Don't set a code verifier - this simulates the common issue where
+      // the auth flow was initiated in a different browser/device
+
+      const client = new GoTrueClient({
+        url: GOTRUE_URL_SIGNUP_ENABLED_AUTO_CONFIRM_ON,
+        autoRefreshToken: false,
+        persistSession: true,
+        storage,
+        flowType: 'pkce',
+      })
+
+      const { error } = await client.exchangeCodeForSession('some-auth-code')
+
+      expect(error).toBeInstanceOf(AuthPKCECodeVerifierMissingError)
+      expect(error?.message).toContain('PKCE code verifier not found in storage')
+      expect(error?.message).toContain('@supabase/ssr')
+      expect(error?.code).toEqual('pkce_code_verifier_not_found')
     })
   })
 

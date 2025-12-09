@@ -14,6 +14,7 @@ import {
   AuthInvalidCredentialsError,
   AuthInvalidJwtError,
   AuthInvalidTokenResponseError,
+  AuthPKCECodeVerifierMissingError,
   AuthPKCEGrantCodeExchangeError,
   AuthSessionMissingError,
   AuthUnknownError,
@@ -1110,6 +1111,10 @@ export default class GoTrueClient {
     const [codeVerifier, redirectType] = ((storageItem ?? '') as string).split('/')
 
     try {
+      if (!codeVerifier && this.flowType === 'pkce') {
+        throw new AuthPKCECodeVerifierMissingError()
+      }
+
       const { data, error } = await _request(
         this.fetch,
         'POST',
