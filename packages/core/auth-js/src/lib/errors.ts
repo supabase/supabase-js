@@ -240,8 +240,8 @@ export class AuthPKCECodeVerifierMissingError extends CustomAuthError {
     super(
       'PKCE code verifier not found in storage. ' +
         'This can happen if the auth flow was initiated in a different browser or device, ' +
-        'or if the storage was cleared. For server-side auth, ensure you are using ' +
-        '@supabase/ssr with cookie-based storage.',
+        'or if the storage was cleared. For SSR frameworks (Next.js, SvelteKit, etc.), ' +
+        'use @supabase/ssr on both the server and client to store the code verifier in cookies.',
       'AuthPKCECodeVerifierMissingError',
       400,
       'pkce_code_verifier_not_found'
