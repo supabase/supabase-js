@@ -14,6 +14,7 @@ export {
   PostgrestBuilder,
   PostgrestError,
 }
+/** @hidden */
 export default {
   PostgrestClient,
   PostgrestQueryBuilder,
