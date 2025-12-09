@@ -1,3 +1,13 @@
+## 2.87.1 (2025-12-09)
+
+### 🩹 Fixes
+
+- **auth:** skip navigator lock when persistSession is false ([#1928](https://github.com/supabase/supabase-js/pull/1928))
+
+### ❤️ Thank You
+
+- Vaibhav @7ttp
+
 ## 2.87.0 (2025-12-08)
 
 This was a version bump only for @supabase/auth-js to align it with other projects, there were no code changes.

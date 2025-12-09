@@ -1,3 +1,15 @@
+## 2.87.1 (2025-12-09)
+
+### 🩹 Fixes
+
+- **realtime:** handle null values in postgres changes filter comparison ([#1918](https://github.com/supabase/supabase-js/pull/1918))
+- **realtime:** preserve custom JWT tokens across channel resubscribe ([#1908](https://github.com/supabase/supabase-js/pull/1908))
+
+### ❤️ Thank You
+
+- Liam
+- Vaibhav @7ttp
+
 ## 2.87.0 (2025-12-08)
 
 This was a version bump only for @supabase/realtime-js to align it with other projects, there were no code changes.

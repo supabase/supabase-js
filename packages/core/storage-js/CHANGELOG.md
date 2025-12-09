@@ -1,3 +1,7 @@
+## 2.87.1 (2025-12-09)
+
+This was a version bump only for @supabase/storage-js to align it with other projects, there were no code changes.
+
 ## 2.87.0 (2025-12-08)
 
 ### 🚀 Features
