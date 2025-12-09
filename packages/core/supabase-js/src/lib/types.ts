@@ -135,3 +135,9 @@ export type SupabaseClientOptions<SchemaName> = {
 export type QueryResult<T> = T extends PromiseLike<infer U> ? U : never
 export type QueryData<T> = T extends PromiseLike<{ data: infer U }> ? Exclude<U, null> : never
 export type QueryError = PostgrestError
+
+/**
+ * Strips internal Supabase metadata from Database types.
+ * Useful for libraries defining generic constraints on Database types.
+ */
+export type DatabaseWithoutInternals<DB> = Omit<DB, '__InternalSupabase'>
