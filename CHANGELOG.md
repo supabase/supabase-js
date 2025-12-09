@@ -1,3 +1,16 @@
+## 2.87.1 (2025-12-09)
+
+### 🩹 Fixes
+
+- **auth:** skip navigator lock when persistSession is false ([#1928](https://github.com/supabase/supabase-js/pull/1928))
+- **realtime:** preserve custom JWT tokens across channel resubscribe ([#1908](https://github.com/supabase/supabase-js/pull/1908))
+- **realtime:** handle null values in postgres changes filter comparison ([#1918](https://github.com/supabase/supabase-js/pull/1918))
+
+### ❤️ Thank You
+
+- Liam
+- Vaibhav @7ttp
+
 ## 2.87.0 (2025-12-08)
 
 ### 🚀 Features
