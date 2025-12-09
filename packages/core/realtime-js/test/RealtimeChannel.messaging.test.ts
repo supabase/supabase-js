@@ -330,7 +330,7 @@ describe('send', () => {
       {
         description: 'without access token',
         accessToken: undefined,
-        expectedAuth: '',
+        expectedAuth: undefined,
       },
       {
         description: 'with access token',
@@ -363,13 +363,17 @@ describe('send', () => {
           config: { private: true },
         })
 
+        const expectedHeaders: Record<string, string> = {
+          apikey: 'abc123',
+          'Content-Type': 'application/json',
+        }
+        if (expectedAuth) {
+          expectedHeaders['Authorization'] = expectedAuth
+        }
+
         const expectedBody = {
           method: 'POST',
-          headers: {
-            Authorization: expectedAuth,
-            apikey: 'abc123',
-            'Content-Type': 'application/json',
-          },
+          headers: expectedHeaders,
           body: '{"messages":[{"topic":"topic","event":"test","private":true}]}',
           signal: new AbortController().signal,
         }
@@ -498,12 +502,12 @@ describe('httpSend', () => {
     {
       name: 'without access token',
       hasToken: false,
-      expectedAuth: '',
+      expectedAuth: undefined as string | undefined,
     },
     {
       name: 'with access token',
       hasToken: true,
-      expectedAuth: 'Bearer token123',
+      expectedAuth: 'Bearer token123' as string | undefined,
     },
   ]
 

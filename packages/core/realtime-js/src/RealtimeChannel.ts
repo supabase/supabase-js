@@ -554,21 +554,22 @@ export default class RealtimeChannel {
     payload: any,
     opts: { timeout?: number } = {}
   ): Promise<{ success: true } | { success: false; status: number; error: string }> {
-    const authorization = this.socket.accessTokenValue
-      ? `Bearer ${this.socket.accessTokenValue}`
-      : ''
-
     if (payload === undefined || payload === null) {
       return Promise.reject('Payload is required for httpSend()')
     }
 
+    const headers: Record<string, string> = {
+      apikey: this.socket.apiKey ? this.socket.apiKey : '',
+      'Content-Type': 'application/json',
+    }
+
+    if (this.socket.accessTokenValue) {
+      headers['Authorization'] = `Bearer ${this.socket.accessTokenValue}`
+    }
+
     const options = {
       method: 'POST',
-      headers: {
-        Authorization: authorization,
-        apikey: this.socket.apiKey ? this.socket.apiKey : '',
-        'Content-Type': 'application/json',
-      },
+      headers,
       body: JSON.stringify({
         messages: [
           {
@@ -626,16 +627,18 @@ export default class RealtimeChannel {
       )
 
       const { event, payload: endpoint_payload } = args
-      const authorization = this.socket.accessTokenValue
-        ? `Bearer ${this.socket.accessTokenValue}`
-        : ''
+      const headers: Record<string, string> = {
+        apikey: this.socket.apiKey ? this.socket.apiKey : '',
+        'Content-Type': 'application/json',
+      }
+
+      if (this.socket.accessTokenValue) {
+        headers['Authorization'] = `Bearer ${this.socket.accessTokenValue}`
+      }
+
       const options = {
         method: 'POST',
-        headers: {
-          Authorization: authorization,
-          apikey: this.socket.apiKey ? this.socket.apiKey : '',
-          'Content-Type': 'application/json',
-        },
+        headers,
         body: JSON.stringify({
           messages: [
             {
