@@ -1,7 +1,7 @@
 import { describe, test, assert } from 'vitest'
-import { transformState } from '../../src/phoenix/presenceAdapter'
 import { State } from 'phoenix'
-import { RealtimePresenceState } from '../../src/RealtimePresence'
+import type { RealtimePresenceState } from '../../src/RealtimePresence'
+import PresenceAdapter from '../../src/phoenix/presenceAdapter'
 
 describe('transformState', () => {
   test.each([
@@ -90,7 +90,7 @@ describe('transformState', () => {
       },
     },
   ] as { name: string, curState: State, expectedState: RealtimePresenceState }[])('transforms $name state', ({ curState, expectedState }) => {
-    assert.deepEqual(transformState(curState), expectedState)
+    assert.deepEqual(PresenceAdapter.transformState(curState), expectedState)
   })
 
   test('does not mutate original state', () => {
@@ -101,7 +101,7 @@ describe('transformState', () => {
     }
     const originalStateDeepCopy = JSON.parse(JSON.stringify(originalState))
 
-    transformState(originalState)
+    PresenceAdapter.transformState(originalState)
 
     assert.deepEqual(originalState, originalStateDeepCopy)
   })
