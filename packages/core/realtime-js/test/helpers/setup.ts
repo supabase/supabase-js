@@ -132,7 +132,7 @@ export const testSuites = {
 
 // Channel Helper Functions
 export function setupJoinedChannel(channel: RealtimeChannel): void {
-  channel.joinedOnce = true
+  channel.channelAdapter.getChannel().joinedOnce = true
   channel.state = 'joined' as any
 }
 

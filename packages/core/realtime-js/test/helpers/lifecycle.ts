@@ -137,6 +137,8 @@ export const mocks = {
    * Mock connection readyState
    */
   connectionState(socket: RealtimeClient, state: number) {
-    return vi.spyOn(socket.conn!, 'readyState', 'get').mockReturnValue(state)
+    return vi
+      .spyOn(socket.socketAdapter.getSocket().conn!, 'readyState', 'get')
+      .mockReturnValue(state)
   },
 }

@@ -49,9 +49,9 @@ export const authHelpers = {
     channel2.state = 'closed' as any
     channel3.state = 'joined' as any
 
-    channel1.joinedOnce = true
-    channel2.joinedOnce = false
-    channel3.joinedOnce = true
+    channel1.channelAdapter.getChannel().joinedOnce = true
+    channel2.channelAdapter.getChannel().joinedOnce = false
+    channel3.channelAdapter.getChannel().joinedOnce = true
 
     return { channel1, channel2, channel3 }
   },
@@ -124,7 +124,7 @@ export const authHelpers = {
   setupSingleAuthTestChannel(socket: RealtimeClient) {
     const channel = socket.channel('test-topic')
     channel.state = 'joined' as any
-    channel.joinedOnce = true
+    channel.channelAdapter.getChannel().joinedOnce = true
     return channel
   },
 }
