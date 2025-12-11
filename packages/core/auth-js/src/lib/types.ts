@@ -1303,8 +1303,11 @@ export interface GoTrueMFAApi {
    * and rarely uses the network. You can use this to check whether the current
    * user needs to be shown a screen to verify their MFA factors.
    *
+   * @param jwt Takes in an optional access token JWT. If no JWT is provided, the JWT from the current session is used.
    */
-  getAuthenticatorAssuranceLevel(): Promise<AuthMFAGetAuthenticatorAssuranceLevelResponse>
+  getAuthenticatorAssuranceLevel(
+    jwt?: string
+  ): Promise<AuthMFAGetAuthenticatorAssuranceLevelResponse>
 
   // namespace for the webauthn methods
   webauthn: WebAuthnApi
