@@ -1,10 +1,8 @@
 import { Channel } from 'phoenix'
-import type { BindingCallback } from 'phoenix'
 import { CHANNEL_STATES, ChannelState } from '../lib/constants'
 import type { RealtimeChannelOptions } from '../RealtimeChannel'
 import SocketAdapter from './socketAdapter'
-
-type Push = ReturnType<Channel['push']>
+import type { BindingCallback, ChanelOnErrorCallback, Params } from './types'
 
 export default class ChannelAdapter {
   private channel: Channel
@@ -16,64 +14,119 @@ export default class ChannelAdapter {
     this.socket = socket
   }
 
-  get state(): ChannelState {
-    return this.channel.state as ChannelState
+  get state() {
+    return this.channel.state
   }
 
-  set state(state: ChannelState) {
+  set state(state) {
     this.channel.state = state
   }
 
-  on(event: string, callback: BindingCallback): number {
+  get joinedOnce() {
+    return this.channel.joinedOnce
+  }
+
+  get joinPush() {
+    return this.channel.joinPush
+  }
+
+  get rejoinTimer() {
+    return this.channel.rejoinTimer
+  }
+
+  on(event: string, callback: BindingCallback) {
     return this.channel.on(event, callback)
   }
 
-  off(event: string, refNumber?: number): void {
+  off(event: string, refNumber?: number) {
     this.channel.off(event, refNumber)
   }
 
-  trigger(type: string, payload: object, ref?: string): void {
-    //@ts-ignore - trigger should be public
-    this.channel.trigger(type, payload, ref, this.joinRef())
-  }
-
-  subscribe(timeout?: number): Push {
+  subscribe(timeout?: number) {
     return this.channel.join(timeout)
   }
 
-  unsubscribe(timeout?: number): Push {
+  unsubscribe(timeout?: number) {
     return this.channel.leave(timeout)
   }
 
-  send(event: string, payload: object, timeout?: number): void {
+  send(event: string, payload: object, timeout?: number) {
     this.channel.push(event, payload, timeout)
   }
 
-  push(event: string, payload: { [key: string]: any }, timeout?: number): Push {
+  onClose(callback: BindingCallback) {
+    this.channel.onClose(callback)
+  }
+
+  onError(callback: ChanelOnErrorCallback) {
+    return this.channel.onError(callback)
+  }
+
+  push(event: string, payload: { [key: string]: any }, timeout?: number) {
     try {
       return this.channel.push(event, payload, timeout)
     } catch (error) {
       throw `tried to push '${event}' to '${this.channel.topic}' before joining. Use channel.subscribe() before pushing events`
     }
   }
-  canSend(): boolean {
+
+  updateJoinPayload(payload: Record<string, any>) {
+    this.channel.joinPush.payload = () => payload
+  }
+
+  joinRef() {
+    if (!this.channel.joinPush.ref) {
+      throw new Error('Join push reference not found')
+    }
+
+    return this.channel.joinPush.ref
+  }
+
+  canPush() {
     return this.socket.isConnected() && this.state === CHANNEL_STATES.joined
   }
 
-  joinRef(): string {
-    //@ts-ignore - `joinRef()` will be public
-    return this.channel.joinPush.ref
+  isJoined() {
+    return this.state === CHANNEL_STATES.joined
+  }
+
+  isJoining() {
+    return this.state === CHANNEL_STATES.joining
+  }
+
+  isClosed() {
+    return this.state === CHANNEL_STATES.closed
+  }
+
+  isLeaving() {
+    return this.state === CHANNEL_STATES.leaving
+  }
+
+  updateFilterMessage(
+    filterMessage: (
+      event: string,
+      payload: object,
+      ref: number | undefined,
+      bind: { event: string; ref: number }
+    ) => boolean
+  ) {
+    // @ts-ignore - it does not exist yet in phoenix
+    this.channel.filterMessage = filterMessage
+  }
+
+  updatePayloadTransform(callback: (event: string, payload: unknown, ref: number) => unknown) {
+    this.channel.onMessage = callback
   }
 
   /**
    * @internal
    */
-  getChannel(): Channel {
+  getChannel() {
     return this.channel
   }
 }
 
-function phoenixChannelParams(options: RealtimeChannelOptions): Record<string, unknown> {
+function phoenixChannelParams(options: RealtimeChannelOptions): Params {
   return {
     config: {
       ...{

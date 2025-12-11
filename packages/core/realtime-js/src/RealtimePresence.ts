@@ -39,6 +39,10 @@ export type RealtimePresenceOptions = {
 }
 
 export default class RealtimePresence {
+  get state() {
+    return this.presenceAdapter.state
+  }
+
   private presenceAdapter: PresenceAdapter
 
   /**
@@ -61,31 +65,5 @@ export default class RealtimePresence {
     opts?: RealtimePresenceOptions
   ) {
     this.presenceAdapter = new PresenceAdapter(this.channel.channelAdapter, opts)
-
-    this.presenceAdapter.onJoin((key, currentPresences, newPresences) => {
-      this.channel._trigger('presence', {
-        event: 'join',
-        key,
-        currentPresences,
-        newPresences,
-      })
-    })
-
-    this.presenceAdapter.onLeave((key, currentPresences, leftPresences) => {
-      this.channel._trigger('presence', {
-        event: 'leave',
-        key,
-        currentPresences,
-        leftPresences,
-      })
-    })
-
-    this.presenceAdapter.onSync(() => {
-      this.channel._trigger('presence', { event: 'sync' })
-    })
-  }
-
-  get state(): RealtimePresenceState {
-    return this.presenceAdapter.state
   }
 }

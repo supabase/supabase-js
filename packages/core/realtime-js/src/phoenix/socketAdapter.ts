@@ -6,9 +6,13 @@ import type {
   OnMessageCallback,
   OnOpenCallback,
   SocketOptions,
-} from 'phoenix'
-import { ConnectionState } from '../lib/constants'
-import type { RealtimeClientOptions } from '../RealtimeClient'
+} from './types'
+import { CONNECTION_STATE, ConnectionState } from '../lib/constants'
+import type {
+  HeartbeatTimer,
+  RealtimeClientOptions,
+  WebSocketLikeConstructor,
+} from '../RealtimeClient'
 
 export default class SocketAdapter {
   private socket: Socket
@@ -17,14 +21,55 @@ export default class SocketAdapter {
     this.socket = new Socket(endPoint, options as SocketOptions)
   }
 
-  get timeout(): number {
+  get timeout() {
     return this.socket.timeout
   }
-  set timeout(timeout: number) {
-    this.socket.timeout = timeout
+
+  get endPoint() {
+    return this.socket.endPoint
   }
 
-  connect(): void {
+  get transport() {
+    return this.socket.transport as WebSocketLikeConstructor
+  }
+
+  get heartbeatIntervalMs() {
+    return this.socket.heartbeatIntervalMs
+  }
+
+  get heartbeatTimer() {
+    return this.socket.heartbeatTimer as HeartbeatTimer
+  }
+
+  get pendingHeartbeatRef() {
+    return this.socket.pendingHeartbeatRef
+  }
+
+  get vsn() {
+    return this.socket.vsn
+  }
+
+  get encode() {
+    return this.socket.encode
+  }
+
+  get decode() {
+    return this.socket.decode
+  }
+
+  get reconnectAfterMs() {
+    return this.socket.reconnectAfterMs
+  }
+
+  get sendBuffer() {
+    return this.socket.sendBuffer
+  }
+
+  get stateChangeCallbacks() {
+    return this.socket.stateChangeCallbacks
+  }
+
+  connect() {
     this.socket.connect()
   }
 
@@ -40,7 +85,7 @@ export default class SocketAdapter {
     this.socket.log(kind, msg, data)
   }
 
-  makeRef(): string {
+  makeRef() {
     return this.socket.makeRef()
   }
 
@@ -60,22 +105,31 @@ export default class SocketAdapter {
     this.socket.onMessage(callback)
   }
 
-  isConnected(): boolean {
+  isConnected() {
     return this.socket.isConnected()
   }
 
-  connectionState(): ConnectionState {
-    return this.socket.connectionState() as ConnectionState
+  isConnecting() {
+    return this.socket.connectionState() == CONNECTION_STATE.connecting
   }
 
-  endPointURL(): string {
+  isDisconnecting() {
+    return this.socket.connectionState() == CONNECTION_STATE.closing
+  }
+
+  connectionState(): ConnectionState {
+    // @ts-ignore - requires better typing and exposing type in phoenix
+    return this.socket.connectionState()
+  }
+
+  endPointURL() {
     return this.socket.endPointURL()
   }
 
   /**
    * @internal
    */
-  getSocket(): Socket {
+  getSocket() {
     return this.socket
   }
 }
