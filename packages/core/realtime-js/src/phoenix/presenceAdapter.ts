@@ -16,7 +16,7 @@ export default class PresenceAdapter {
   }
 
   get state(): RealtimePresenceState {
-    return transformState(this.presence.state)
+    return PresenceAdapter.transformState(this.presence.state)
   }
 
   onJoin(callback: OnJoin): void {
@@ -30,48 +30,50 @@ export default class PresenceAdapter {
   onSync(callback: OnSync): void {
     this.presence.onSync(callback)
   }
+
+  /**
+   * @private
+   * Remove 'metas' key
+   * Change 'phx_ref' to 'presence_ref'
+   * Remove 'phx_ref' and 'phx_ref_prev'
+   *
+   * @example
+   * // returns {
+   *  abc123: [
+   *    { presence_ref: '2', user_id: 1 },
+   *    { presence_ref: '3', user_id: 2 }
+   *  ]
+   * }
+   * RealtimePresence.transformState({
+   *  abc123: {
+   *    metas: [
+   *      { phx_ref: '2', phx_ref_prev: '1' user_id: 1 },
+   *      { phx_ref: '3', user_id: 2 }
+   *    ]
+   *  }
+   * })
+   *
+   */
+  static transformState(state: State): RealtimePresenceState {
+    state = cloneState(state)
+
+    return Object.getOwnPropertyNames(state).reduce((newState, key) => {
+      const presences = state[key]
+
+      newState[key] = presences.metas.map((presence) => {
+        presence['presence_ref'] = presence['phx_ref']
+
+        delete presence['phx_ref']
+        delete presence['phx_ref_prev']
+
+        return presence
+      }) as RealtimePresenceType[]
+
+      return newState
+    }, {} as RealtimePresenceState)
+  }
 }
 
-/**
- * Remove 'metas' key
- * Change 'phx_ref' to 'presence_ref'
- * Remove 'phx_ref' and 'phx_ref_prev'
- *
- * @example
- * // returns {
- *  abc123: [
- *    { presence_ref: '2', user_id: 1 },
- *    { presence_ref: '3', user_id: 2 }
- *  ]
- * }
- * RealtimePresence.transformState({
- *  abc123: {
- *    metas: [
- *      { phx_ref: '2', phx_ref_prev: '1' user_id: 1 },
- *      { phx_ref: '3', user_id: 2 }
- *    ]
- *  }
- * })
- *
- */
-function transformState(state: State): RealtimePresenceState {
-  state = cloneState(state)
-
-  return Object.getOwnPropertyNames(state).reduce((newState, key) => {
-    const presences = state[key]
-
-    newState[key] = presences.metas.map((presence) => {
-      presence['presence_ref'] = presence['phx_ref']
-
-      delete presence['phx_ref']
-      delete presence['phx_ref_prev']
-
-      return presence
-    }) as RealtimePresenceType[]
-
-    return newState
-  }, {} as RealtimePresenceState)
-}
 
 function cloneState(state: State): State {
   return JSON.parse(JSON.stringify(state))
