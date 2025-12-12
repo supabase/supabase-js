@@ -229,7 +229,7 @@ export async function processLock<R>(
             setTimeout(() => {
               reject(
                 new ProcessLockAcquireTimeoutError(
-                  `Acquring process lock with name "${name}" timed out`
+                  `Acquiring process lock with name "${name}" timed out`
                 )
               )
             }, acquireTimeout)
