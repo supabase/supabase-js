@@ -1,4 +1,4 @@
-import * as index from '../main/index.js'
+import * as index from '../module/index.js'
 const {
   PostgrestError,
   FunctionsHttpError,
