@@ -3033,6 +3033,24 @@ describe('Storage adapter edge cases', () => {
     expect(client._isImplicitGrantCallback({})).toBe(false)
   })
 
+  test('should accept suppressedPaths configuration option', () => {
+    const client = new GoTrueClient({
+      url: GOTRUE_URL_SIGNUP_ENABLED_AUTO_CONFIRM_ON,
+      suppressedPaths: ['/facebook/redirect', '/custom/oauth'],
+    })
+    // Verify the client accepts the suppressedPaths option without error
+    // @ts-expect-error accessing private property
+    expect(client.suppressedPaths).toEqual(['/facebook/redirect', '/custom/oauth'])
+  })
+
+  test('should default suppressedPaths to empty array', () => {
+    const client = new GoTrueClient({
+      url: GOTRUE_URL_SIGNUP_ENABLED_AUTO_CONFIRM_ON,
+    })
+    // @ts-expect-error accessing private property
+    expect(client.suppressedPaths).toEqual([])
+  })
+
   test('should return false for _isPKCECallback with missing params', async () => {
     const client = getClientWithSpecificStorage(memoryLocalStorageAdapter())
     // @ts-expect-error private method

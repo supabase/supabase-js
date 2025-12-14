@@ -51,6 +51,11 @@ export type SupabaseClientOptions<SchemaName> = {
      */
     detectSessionInUrl?: boolean
     /**
+     * Array of URL paths where session detection should be suppressed.
+     * Useful when using non-Supabase OAuth flows that return tokens in the URL.
+     */
+    suppressedPaths?: SupabaseAuthClientOptions['suppressedPaths']
+    /**
      * A storage provider. Used to store the logged-in session.
      */
     storage?: SupabaseAuthClientOptions['storage']
