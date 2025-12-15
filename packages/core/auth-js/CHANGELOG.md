@@ -1,3 +1,13 @@
+## 2.87.2 (2025-12-15)
+
+### 🩹 Fixes
+
+- **auth:** add helpful error when PKCE code verifier is missing ([#1931](https://github.com/supabase/supabase-js/pull/1931))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+
 ## 2.87.1 (2025-12-09)
 
 ### 🩹 Fixes
