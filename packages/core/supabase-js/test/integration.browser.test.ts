@@ -140,18 +140,22 @@ describe('Realtime integration test', () => {
           timeout: 60000,
         })
 
+        // Debug: Check what's on the page IMMEDIATELY after load
+        const html = await page.content()
+        console.log('PAGE HTML (first 1000 chars):', html.substring(0, 1000))
+
+        // Check if supabase.js loaded
+        const supabaseExists = await page.evaluate(`typeof window.supabase !== 'undefined'`)
+        console.log('window.supabase exists:', supabaseExists)
+
         // Wait for vsn to be populated (indicates supabase.js loaded and ran)
-        await page.waitForFunction(() => document.getElementById('vsn')?.textContent !== '', {
+        await page.waitForFunction(`document.getElementById('vsn')?.textContent !== ''`, {
           timeout: 30000,
         })
 
-        // Debug: Check what's on the page
-        const html = await page.content()
-        console.log('PAGE HTML (first 500 chars):', html.substring(0, 500))
-
         // Wait for realtime_status to be populated
         await page.waitForFunction(
-          () => document.getElementById('realtime_status')?.textContent === 'SUBSCRIBED',
+          `document.getElementById('realtime_status')?.textContent === 'SUBSCRIBED'`,
           { timeout: 30000 }
         )
         const realtimeStatus = await page.$eval('#realtime_status', (el) => el.textContent)
@@ -169,19 +173,19 @@ describe('Realtime integration test', () => {
         })
 
         // Wait for vsn to be populated
-        await page.waitForFunction(() => document.getElementById('vsn')?.textContent !== '', {
+        await page.waitForFunction(`document.getElementById('vsn')?.textContent !== ''`, {
           timeout: 30000,
         })
 
         // Wait for subscription
         await page.waitForFunction(
-          () => document.getElementById('realtime_status')?.textContent === 'SUBSCRIBED',
+          `document.getElementById('realtime_status')?.textContent === 'SUBSCRIBED'`,
           { timeout: 30000 }
         )
 
         // Wait for the broadcast message to be received
         await page.waitForFunction(
-          () => document.getElementById('received_message')?.textContent === 'Hello from browser!',
+          `document.getElementById('received_message')?.textContent === 'Hello from browser!'`,
           { timeout: 30000 }
         )
         const receivedMessage = await page.$eval('#received_message', (el) => el.textContent)
