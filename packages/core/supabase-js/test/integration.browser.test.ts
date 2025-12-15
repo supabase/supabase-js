@@ -12,13 +12,13 @@ let browser: Browser
 const port = 8000
 const content = `<html>
 <body>
-    <div id="output"></div>
-    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <div id="output">
+        <div id="vsn"></div>
+        <div id="realtime_status"></div>
+        <div id="received_message"></div>
+    </div>
     <script src="http://localhost:${port}/supabase.js"></script>
-
-    <script type="text/babel" data-presets="env,react">
+    <script>
         const SUPABASE_URL = 'http://127.0.0.1:54321'
         const ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0'
 
@@ -26,64 +26,40 @@ const content = `<html>
         const urlParams = new URLSearchParams(window.location.search)
         const vsn = urlParams.get('vsn') || '1.0.0'
 
-        const supabase = window.supabase.createClient(SUPABASE_URL, ANON_KEY, {
+        // Display vsn immediately
+        document.getElementById('vsn').textContent = vsn
+
+        const client = window.supabase.createClient(SUPABASE_URL, ANON_KEY, {
             realtime: {
                 heartbeatIntervalMs: 500,
                 vsn: vsn
             }
         })
 
-        const App = () => {
-            const [realtimeStatus, setRealtimeStatus] = React.useState(null)
-            const [receivedMessage, setReceivedMessage] = React.useState(null)
-            const channelRef = React.useRef(null)
+        const channelName = 'test-broadcast-channel-' + vsn
+        const channel = client.channel(channelName, {
+            config: { broadcast: { ack: true, self: true } }
+        })
 
-            React.useEffect(() => {
-                const channelName = \`test-broadcast-channel-\${vsn}\`
-                const channel = supabase.channel(channelName, {
-                    config: { broadcast: { ack: true, self: true } }
+        // Listen for broadcast messages
+        channel.on('broadcast', { event: 'test-event' }, (payload) => {
+            document.getElementById('received_message').textContent = payload.payload.message
+        })
+
+        // Subscribe to the channel
+        channel.subscribe(async (status) => {
+            console.log('Channel status:', status)
+            if (status === 'SUBSCRIBED') {
+                document.getElementById('realtime_status').textContent = status
+
+                // Send a test message after subscribing
+                await channel.send({
+                    type: 'broadcast',
+                    event: 'test-event',
+                    payload: { message: 'Hello from browser!' }
                 })
-
-                channelRef.current = channel
-
-                // Listen for broadcast messages
-                channel.on('broadcast', { event: 'test-event' }, (payload) => {
-                    setReceivedMessage(payload.payload)
-                })
-
-                // Subscribe to the channel
-                channel.subscribe(async (status) => {
-                    if (status === 'SUBSCRIBED') {
-                        setRealtimeStatus(status)
-
-                        // Send a test message after subscribing
-                        await channel.send({
-                            type: 'broadcast',
-                            event: 'test-event',
-                            payload: { message: 'Hello from browser!' }
-                        })
-                    }
-                })
-
-                return () => {
-                    channel.unsubscribe()
-                }
-            }, [])
-
-            return (
-                <div>
-                    <div id='vsn'>{vsn}</div>
-                    {realtimeStatus && (
-                        <div id='realtime_status'>{realtimeStatus}</div>
-                    )}
-                    {receivedMessage && (
-                        <div id='received_message'>{receivedMessage.message}</div>
-                    )}
-                </div>
-            )
-        }
-
-        ReactDOM.render(<App />, document.getElementById('output'));
+            }
+        })
     </script>
 </body>
 </html>
@@ -164,19 +140,25 @@ describe('Realtime integration test', () => {
           timeout: 60000,
         })
 
-        // Wait for React to render the vsn element (indicates scripts loaded)
-        await page.waitForSelector('#vsn', { timeout: 30000 })
+        // Wait for vsn to be populated (indicates supabase.js loaded and ran)
+        await page.waitForFunction(() => document.getElementById('vsn')?.textContent !== '', {
+          timeout: 30000,
+        })
 
         // Debug: Check what's on the page
         const html = await page.content()
         console.log('PAGE HTML (first 500 chars):', html.substring(0, 500))
 
-        await page.waitForSelector('#realtime_status', { timeout: 30000 })
-        const realtimeStatus = await page.$eval('#realtime_status', (el) => el.innerHTML)
+        // Wait for realtime_status to be populated
+        await page.waitForFunction(
+          () => document.getElementById('realtime_status')?.textContent === 'SUBSCRIBED',
+          { timeout: 30000 }
+        )
+        const realtimeStatus = await page.$eval('#realtime_status', (el) => el.textContent)
         assertEquals(realtimeStatus, 'SUBSCRIBED')
 
         // Verify correct version is being used
-        const displayedVsn = await page.$eval('#vsn', (el) => el.innerHTML)
+        const displayedVsn = await page.$eval('#vsn', (el) => el.textContent)
         assertEquals(displayedVsn, vsn)
       })
 
@@ -186,15 +168,23 @@ describe('Realtime integration test', () => {
           timeout: 60000,
         })
 
-        // Wait for React to render
-        await page.waitForSelector('#vsn', { timeout: 30000 })
+        // Wait for vsn to be populated
+        await page.waitForFunction(() => document.getElementById('vsn')?.textContent !== '', {
+          timeout: 30000,
+        })
 
         // Wait for subscription
-        await page.waitForSelector('#realtime_status', { timeout: 30000 })
+        await page.waitForFunction(
+          () => document.getElementById('realtime_status')?.textContent === 'SUBSCRIBED',
+          { timeout: 30000 }
+        )
 
         // Wait for the broadcast message to be received
-        await page.waitForSelector('#received_message', { timeout: 30000 })
-        const receivedMessage = await page.$eval('#received_message', (el) => el.innerHTML)
+        await page.waitForFunction(
+          () => document.getElementById('received_message')?.textContent === 'Hello from browser!',
+          { timeout: 30000 }
+        )
+        const receivedMessage = await page.$eval('#received_message', (el) => el.textContent)
 
         assertEquals(receivedMessage, 'Hello from browser!')
       })
