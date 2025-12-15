@@ -125,6 +125,7 @@
         "npm:jiti@2.4.2",
         "npm:jsonc-eslint-parser@^2.1.0",
         "npm:jsonwebtoken@9",
+        "npm:jsr@~0.13.5",
         "npm:nx@21.6.2",
         "npm:prettier@^3.6.2",
         "npm:ts-jest@^29.4.2",
@@ -132,7 +133,7 @@
         "npm:tslib@^2.3.0",
         "npm:typedoc@~0.27.9",
         "npm:typescript@~5.8.3",
-        "npm:verdaccio@^6.0.5",
+        "npm:verdaccio@^6.2.4",
         "npm:vite@7.1.11",
         "npm:vitest@^3.2.4",
         "npm:webpack-cli@^5.1.4"
@@ -194,6 +195,7 @@
         "packageJson": {
           "dependencies": [
             "npm:form-data@4",
+            "npm:iceberg-js@~0.8.1",
             "npm:ts-loader@^9.4.2",
             "npm:tslib@2.8.1",
             "npm:webpack-cli@^5.0.1",

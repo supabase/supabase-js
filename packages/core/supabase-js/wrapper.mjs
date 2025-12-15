@@ -1,94 +1,22 @@
-import * as index from '../main/index.js'
-const {
-  PostgrestError,
-  FunctionsHttpError,
-  FunctionsFetchError,
-  FunctionsRelayError,
-  FunctionsError,
-  FunctionRegion,
-  SupabaseClient,
-  createClient,
-  GoTrueAdminApi,
-  GoTrueClient,
-  AuthAdminApi,
-  AuthClient,
-  navigatorLock,
-  NavigatorLockAcquireTimeoutError,
-  lockInternals,
-  processLock,
-  SIGN_OUT_SCOPES,
-  AuthError,
-  AuthApiError,
-  AuthUnknownError,
-  CustomAuthError,
-  AuthSessionMissingError,
-  AuthInvalidTokenResponseError,
-  AuthInvalidCredentialsError,
-  AuthImplicitGrantRedirectError,
-  AuthPKCEGrantCodeExchangeError,
-  AuthRetryableFetchError,
-  AuthWeakPasswordError,
-  AuthInvalidJwtError,
-  isAuthError,
-  isAuthApiError,
-  isAuthSessionMissingError,
-  isAuthImplicitGrantRedirectError,
-  isAuthRetryableFetchError,
-  isAuthWeakPasswordError,
-  RealtimePresence,
-  RealtimeChannel,
-  RealtimeClient,
-  REALTIME_LISTEN_TYPES,
-  REALTIME_POSTGRES_CHANGES_LISTEN_EVENT,
-  REALTIME_PRESENCE_LISTEN_EVENTS,
-  REALTIME_SUBSCRIBE_STATES,
-  REALTIME_CHANNEL_STATES,
-} = index.default || index
-
+// Direct package re-exports - these work correctly in:
+// - Node.js (resolves via node_modules)
+// - jsDelivr (bundles with named exports)
+// - esm.sh (bundles correctly)
+// - Bundlers (webpack, vite, etc.)
+export * from '@supabase/auth-js'
+export { PostgrestError } from '@supabase/postgrest-js'
 export {
-  PostgrestError,
   FunctionsHttpError,
   FunctionsFetchError,
   FunctionsRelayError,
   FunctionsError,
   FunctionRegion,
-  SupabaseClient,
-  createClient,
-  GoTrueAdminApi,
-  GoTrueClient,
-  AuthAdminApi,
-  AuthClient,
-  navigatorLock,
-  NavigatorLockAcquireTimeoutError,
-  lockInternals,
-  processLock,
-  SIGN_OUT_SCOPES,
-  AuthError,
-  AuthApiError,
-  AuthUnknownError,
-  CustomAuthError,
-  AuthSessionMissingError,
-  AuthInvalidTokenResponseError,
-  AuthInvalidCredentialsError,
-  AuthImplicitGrantRedirectError,
-  AuthPKCEGrantCodeExchangeError,
-  AuthRetryableFetchError,
-  AuthWeakPasswordError,
-  AuthInvalidJwtError,
-  isAuthError,
-  isAuthApiError,
-  isAuthSessionMissingError,
-  isAuthImplicitGrantRedirectError,
-  isAuthRetryableFetchError,
-  isAuthWeakPasswordError,
-  RealtimePresence,
-  RealtimeChannel,
-  RealtimeClient,
-  REALTIME_LISTEN_TYPES,
-  REALTIME_POSTGRES_CHANGES_LISTEN_EVENT,
-  REALTIME_PRESENCE_LISTEN_EVENTS,
-  REALTIME_SUBSCRIBE_STATES,
-  REALTIME_CHANNEL_STATES,
-}
+} from '@supabase/functions-js'
+export * from '@supabase/realtime-js'
 
-export default index.default || index
+// Local exports from CJS build (Node.js can import CJS from ESM)
+import main from '../main/index.js'
+export const { SupabaseClient, createClient } = main
+
+// Default export
+export default main
