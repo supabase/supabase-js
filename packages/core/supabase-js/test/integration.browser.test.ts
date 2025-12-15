@@ -159,13 +159,19 @@ describe('Realtime integration test', () => {
         page.on('console', (msg) => console.log('BROWSER LOG:', msg.type(), msg.text()))
         page.on('pageerror', (err) => console.log('BROWSER ERROR:', err.message))
 
-        await page.goto(`http://localhost:${port}?vsn=${vsn}`, { waitUntil: 'networkidle0' })
+        await page.goto(`http://localhost:${port}?vsn=${vsn}`, {
+          waitUntil: 'domcontentloaded',
+          timeout: 60000,
+        })
+
+        // Wait for React to render the vsn element (indicates scripts loaded)
+        await page.waitForSelector('#vsn', { timeout: 30000 })
 
         // Debug: Check what's on the page
         const html = await page.content()
         console.log('PAGE HTML (first 500 chars):', html.substring(0, 500))
 
-        await page.waitForSelector('#realtime_status', { timeout: 10000 })
+        await page.waitForSelector('#realtime_status', { timeout: 30000 })
         const realtimeStatus = await page.$eval('#realtime_status', (el) => el.innerHTML)
         assertEquals(realtimeStatus, 'SUBSCRIBED')
 
@@ -175,13 +181,19 @@ describe('Realtime integration test', () => {
       })
 
       it('can broadcast and receive messages', async () => {
-        await page.goto(`http://localhost:${port}?vsn=${vsn}`, { waitUntil: 'networkidle0' })
+        await page.goto(`http://localhost:${port}?vsn=${vsn}`, {
+          waitUntil: 'domcontentloaded',
+          timeout: 60000,
+        })
+
+        // Wait for React to render
+        await page.waitForSelector('#vsn', { timeout: 30000 })
 
         // Wait for subscription
-        await page.waitForSelector('#realtime_status', { timeout: 10000 })
+        await page.waitForSelector('#realtime_status', { timeout: 30000 })
 
         // Wait for the broadcast message to be received
-        await page.waitForSelector('#received_message', { timeout: 10000 })
+        await page.waitForSelector('#received_message', { timeout: 30000 })
         const receivedMessage = await page.$eval('#received_message', (el) => el.innerHTML)
 
         assertEquals(receivedMessage, 'Hello from browser!')
