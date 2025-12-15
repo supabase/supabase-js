@@ -91,6 +91,8 @@ const content = `<html>
 
 beforeAll(async () => {
   await new Deno.Command('supabase', { args: ['start'], stderr }).output()
+  // Wait for Realtime WebSocket service to be fully ready (CI can be slow)
+  await sleep(5)
   await new Deno.Command('npm', { args: ['install'], stderr }).output()
   await new Deno.Command('npm', {
     args: ['run', 'build:umd', '--', '--mode', 'production'],
@@ -153,7 +155,16 @@ describe('Realtime integration test', () => {
       })
 
       it('connects to realtime', async () => {
-        await page.goto(`http://localhost:${port}?vsn=${vsn}`)
+        // Capture console logs and errors from the browser
+        page.on('console', (msg) => console.log('BROWSER LOG:', msg.type(), msg.text()))
+        page.on('pageerror', (err) => console.log('BROWSER ERROR:', err.message))
+
+        await page.goto(`http://localhost:${port}?vsn=${vsn}`, { waitUntil: 'networkidle0' })
+
+        // Debug: Check what's on the page
+        const html = await page.content()
+        console.log('PAGE HTML (first 500 chars):', html.substring(0, 500))
+
         await page.waitForSelector('#realtime_status', { timeout: 10000 })
         const realtimeStatus = await page.$eval('#realtime_status', (el) => el.innerHTML)
         assertEquals(realtimeStatus, 'SUBSCRIBED')
@@ -164,7 +175,7 @@ describe('Realtime integration test', () => {
       })
 
       it('can broadcast and receive messages', async () => {
-        await page.goto(`http://localhost:${port}?vsn=${vsn}`)
+        await page.goto(`http://localhost:${port}?vsn=${vsn}`, { waitUntil: 'networkidle0' })
 
         // Wait for subscription
         await page.waitForSelector('#realtime_status', { timeout: 10000 })
