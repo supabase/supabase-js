@@ -35,8 +35,6 @@ const findOrCreateBucket = async (name: string, isPublic = true) => {
 
 const uploadFilePath = (fileName: string) => path.resolve(__dirname, 'fixtures', 'upload', fileName)
 
-
-
 describe('Object API', () => {
   let bucketName: string
   let file: Buffer
@@ -856,12 +854,10 @@ describe('StorageFileApi Edge Cases', () => {
     })
 
     test('upload sets Content-Encoding when provided', async () => {
-      await storage
-        .from('test-bucket')
-        .upload('test-path', new Uint8Array([1, 2, 3]), {
-          contentType: 'application/octet-stream',
-          contentEncoding: 'gzip',
-        })
+      await storage.from('test-bucket').upload('test-path', new Uint8Array([1, 2, 3]), {
+        contentType: 'application/octet-stream',
+        contentEncoding: 'gzip',
+      })
 
       expect(mockPost).toHaveBeenCalled()
       const [, , body, { headers }] = mockPost.mock.calls[0]
