@@ -641,6 +641,10 @@ export default class RealtimeClient {
     this.conn.onerror = (error: Event) => this._onConnError(error)
     this.conn.onmessage = (event: any) => this._onConnMessage(event)
     this.conn.onclose = (event: any) => this._onConnClose(event)
+
+    if (this.conn.readyState === SOCKET_STATES.open) {
+      this._onConnOpen()
+    }
   }
 
   /**
