@@ -232,8 +232,9 @@ jobs:
       contents: read
       id-token: write
     # Only run on master branch pushes, and only if all CI jobs succeeded
+    # TEMPORARY: Also allow fix/jsdelivr-issue branch for testing (REVERT AFTER TESTING)
     if: |
-      github.ref == 'refs/heads/master' &&
+      (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/fix/jsdelivr-issue') &&
       github.event_name == 'push' &&
       needs.ci-core.result == 'success' &&
       needs.ci-supabase-js.result == 'success'
