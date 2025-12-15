@@ -1,3 +1,13 @@
+## 2.87.2 (2025-12-15)
+
+### 🩹 Fixes
+
+- **realtime:** terminate web worker on disconnect to prevent memory leak ([#1907](https://github.com/supabase/supabase-js/pull/1907))
+
+### ❤️ Thank You
+
+- Tanmay Sharma @tanmaysharma2001
+
 ## 2.87.1 (2025-12-09)
 
 ### 🩹 Fixes

@@ -1,3 +1,16 @@
+## 2.87.2 (2025-12-15)
+
+### 🩹 Fixes
+
+- **auth:** add helpful error when PKCE code verifier is missing ([#1931](https://github.com/supabase/supabase-js/pull/1931))
+- **realtime:** terminate web worker on disconnect to prevent memory leak ([#1907](https://github.com/supabase/supabase-js/pull/1907))
+- **supabase:** resolve jsDelivr CDN ESM import failure ([#1950](https://github.com/supabase/supabase-js/pull/1950))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+- Tanmay Sharma @tanmaysharma2001
+
 ## 2.87.1 (2025-12-09)
 
 ### 🩹 Fixes
