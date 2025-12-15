@@ -132,21 +132,37 @@ describe('Realtime integration test', () => {
 
       it('connects to realtime', async () => {
         // Capture console logs and errors from the browser
-        page.on('console', (msg) => console.log('BROWSER LOG:', msg.type(), msg.text()))
-        page.on('pageerror', (err) => console.log('BROWSER ERROR:', err.message))
+        page.on('console', (msg) =>
+          Deno.stderr.writeSync(new TextEncoder().encode(`BROWSER: ${msg.type()} ${msg.text()}\n`))
+        )
+        page.on('pageerror', (err) =>
+          Deno.stderr.writeSync(new TextEncoder().encode(`BROWSER ERROR: ${err.message}\n`))
+        )
+
+        Deno.stderr.writeSync(new TextEncoder().encode(`\n=== Starting test for vsn ${vsn} ===\n`))
 
         await page.goto(`http://localhost:${port}?vsn=${vsn}`, {
           waitUntil: 'domcontentloaded',
           timeout: 60000,
         })
 
+        Deno.stderr.writeSync(new TextEncoder().encode(`Page loaded\n`))
+
         // Debug: Check what's on the page IMMEDIATELY after load
         const html = await page.content()
-        console.log('PAGE HTML (first 1000 chars):', html.substring(0, 1000))
+        Deno.stderr.writeSync(
+          new TextEncoder().encode(`PAGE HTML (first 500 chars): ${html.substring(0, 500)}\n`)
+        )
 
         // Check if supabase.js loaded
         const supabaseExists = await page.evaluate(`typeof window.supabase !== 'undefined'`)
-        console.log('window.supabase exists:', supabaseExists)
+        Deno.stderr.writeSync(
+          new TextEncoder().encode(`window.supabase exists: ${supabaseExists}\n`)
+        )
+
+        // Check vsn element content
+        const vsnContent = await page.evaluate(`document.getElementById('vsn')?.textContent`)
+        Deno.stderr.writeSync(new TextEncoder().encode(`vsn element content: "${vsnContent}"\n`))
 
         // Wait for vsn to be populated (indicates supabase.js loaded and ran)
         await page.waitForFunction(`document.getElementById('vsn')?.textContent !== ''`, {
