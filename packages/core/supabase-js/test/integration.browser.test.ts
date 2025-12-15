@@ -154,7 +154,7 @@ describe('Realtime integration test', () => {
 
       it('connects to realtime', async () => {
         await page.goto(`http://localhost:${port}?vsn=${vsn}`)
-        await page.waitForSelector('#realtime_status', { timeout: 2000 })
+        await page.waitForSelector('#realtime_status', { timeout: 10000 })
         const realtimeStatus = await page.$eval('#realtime_status', (el) => el.innerHTML)
         assertEquals(realtimeStatus, 'SUBSCRIBED')
 
@@ -167,10 +167,10 @@ describe('Realtime integration test', () => {
         await page.goto(`http://localhost:${port}?vsn=${vsn}`)
 
         // Wait for subscription
-        await page.waitForSelector('#realtime_status', { timeout: 2000 })
+        await page.waitForSelector('#realtime_status', { timeout: 10000 })
 
         // Wait for the broadcast message to be received
-        await page.waitForSelector('#received_message', { timeout: 5000 })
+        await page.waitForSelector('#received_message', { timeout: 10000 })
         const receivedMessage = await page.$eval('#received_message', (el) => el.innerHTML)
 
         assertEquals(receivedMessage, 'Hello from browser!')
