@@ -1,3 +1,13 @@
+## 2.87.3 (2025-12-15)
+
+### 🩹 Fixes
+
+- **supabase:** resolve jsDelivr CDN ESM import failure with .js extensions ([#1953](https://github.com/supabase/supabase-js/pull/1953))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+
 ## 2.87.2 (2025-12-15)
 
 ### 🩹 Fixes
