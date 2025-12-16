@@ -31,5 +31,10 @@ export default defineConfig([
     noExternal: [/.*/],
     minify: true,
     platform: 'browser',
+    // Rename to supabase.js for backward compatibility (can remove in v3)
+    onSuccess: async () => {
+      const { rename } = await import('fs/promises')
+      await rename('dist/umd/supabase.iife.js', 'dist/umd/supabase.js')
+    },
   },
 ])

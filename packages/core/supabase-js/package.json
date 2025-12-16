@@ -78,8 +78,8 @@
     "serve": "^14.2.1",
     "tsd": "^0.33.0"
   },
-  "jsdelivr": "dist/umd/supabase.iife.js",
-  "unpkg": "dist/umd/supabase.iife.js",
+  "jsdelivr": "dist/umd/supabase.js",
+  "unpkg": "dist/umd/supabase.js",
   "nx": {
     "targets": {
       "test:integration:browser": {
