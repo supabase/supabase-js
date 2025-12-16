@@ -1,3 +1,21 @@
+## 2.88.0 (2025-12-16)
+
+### 🚀 Features
+
+- **auth:** allow custom predicate for detectSessionInUrl option ([#1958](https://github.com/supabase/supabase-js/pull/1958))
+- **postgrest:** add notin filter ([#1957](https://github.com/supabase/supabase-js/pull/1957))
+- **repo:** migrate build system to tsdown for proper ESM/CJS support ([#1961](https://github.com/supabase/supabase-js/pull/1961))
+
+### 🩹 Fixes
+
+- **realtime:** handle websocket race condition in node.js ([#1946](https://github.com/supabase/supabase-js/pull/1946))
+- **realtime:** omit authorization header when no access token exists ([#1937](https://github.com/supabase/supabase-js/pull/1937))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+- Vaibhav @7ttp
+
 ## 2.87.3 (2025-12-15)
 
 ### 🩹 Fixes
