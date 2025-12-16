@@ -4,6 +4,8 @@ name: Publish CDN Test Release
 # NEVER publishes to npm registry
 
 on:
+  push:
+    branches: [ci/allow-test-publishing-cdn]
   workflow_dispatch:
     inputs:
       test_identifier:
@@ -81,7 +83,7 @@ jobs:
 
       - name: Validate test identifier
         run: |
-          IDENTIFIER="${{ github.event.inputs.test_identifier }}"
+          IDENTIFIER="pr-123"
           echo "Validating test identifier: $IDENTIFIER"
 
           # Check for valid characters (alphanumeric, hyphens, underscores)
@@ -101,7 +103,7 @@ jobs:
       - name: Create test version and build
         id: version-and-build
         run: |
-          IDENTIFIER="${{ github.event.inputs.test_identifier }}"
+          IDENTIFIER="pr-123"
 
           echo "Creating test version with identifier: test-${IDENTIFIER}"
 
@@ -127,14 +129,14 @@ jobs:
           echo "📦 Publishing to JSR (CDN-only test version)..."
 
           # Publish with test tag to JSR only (no npm, no git tags)
-          npx tsx scripts/publish-to-jsr.ts --tag="test-${{ github.event.inputs.test_identifier }}"
+          npx tsx scripts/publish-to-jsr.ts --tag="test-pr-123"
         env:
           JSR_TOKEN: ${{ secrets.JSR_TOKEN }}
 
       - name: Summary
         if: ${{ success() }}
         run: |
-          IDENTIFIER="${{ github.event.inputs.test_identifier }}"
+          IDENTIFIER="pr-123"
           echo "## CDN Test Release Published to JSR" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Test Identifier" >> $GITHUB_STEP_SUMMARY
