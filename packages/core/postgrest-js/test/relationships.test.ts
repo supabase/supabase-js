@@ -397,13 +397,13 @@ test('select JSON accessor', async () => {
   `)
   let result: Exclude<typeof res.data, null>
   const ExpectedSchema = z.object({
-    bar: z.unknown(),
+    bar: z.record(z.string(), z.unknown()).nullable(),
     baz: z.string(),
   })
   // Cannot have a zod schema that match the Json type
   // TODO: refactor the Json type to be unknown
   let expected: {
-    bar: Json
+    bar: Record<string, unknown> | null
     baz: string
   }
   expectType<TypeEqual<typeof result, typeof expected>>(true)

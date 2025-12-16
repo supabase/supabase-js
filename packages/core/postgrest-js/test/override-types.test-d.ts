@@ -343,7 +343,7 @@ const postgrest = new PostgrestClient<Database>(REST_URL)
       {
         username: string
         data: {
-          foo: string
+          foo: { bar: Record<string, unknown> }
           bar: { baz: number; newBaz: string }
           en: 'FOUR' // Overridden enum value
           record: Record<string, Json | undefined> | null
@@ -373,7 +373,7 @@ const postgrest = new PostgrestClient<Database>(REST_URL)
       {
         username: string
         data: {
-          foo: string
+          foo: { bar: Record<string, unknown> }
           bar: {
             baz: number
           }
