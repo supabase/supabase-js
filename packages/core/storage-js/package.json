@@ -29,6 +29,7 @@
         "default": "./dist/index.cjs"
       }
     },
+    "./dist/*": "./dist/*",
     "./package.json": "./package.json"
   },
   "sideEffects": false,
