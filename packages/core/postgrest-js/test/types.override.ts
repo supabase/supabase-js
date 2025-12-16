@@ -4,7 +4,7 @@ import { MergeDeep } from 'type-fest'
 import { z } from 'zod'
 
 export const CustomUserDataTypeSchema = z.object({
-  foo: z.string(),
+  foo: z.object({ bar: z.record(z.string(), z.unknown()) }),
   bar: z.object({
     baz: z.number(),
   }),
