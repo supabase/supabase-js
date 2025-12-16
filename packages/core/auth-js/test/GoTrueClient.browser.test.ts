@@ -519,7 +519,7 @@ describe('Callback URL handling', () => {
     expect(data.session?.access_token).toBe('supabase-token')
   })
 
-  it('should handle errors in custom detectSessionInUrl function gracefully', async () => {
+  it('should return error when custom detectSessionInUrl function throws', async () => {
     window.location.href = 'http://localhost:9999/callback#access_token=test-token'
 
     // Reset storage state from previous tests
@@ -537,15 +537,13 @@ describe('Callback URL handling', () => {
       storage: mockStorage,
     })
 
-    // Should not throw, should handle gracefully
-    await client.initialize()
+    // initialize() catches errors and returns them wrapped in AuthUnknownError
+    const { error } = await client.initialize()
 
     expect(detectSessionInUrlFn).toHaveBeenCalled()
-
-    // Session should be null because the error caused the check to return false
-    // and there's no existing session in storage
-    const { data } = await client.getSession()
-    expect(data.session).toBeNull()
+    expect(error).toBeDefined()
+    expect(error?.message).toBe('Unexpected error during initialization')
+    expect(error?.originalError?.message).toBe('Custom predicate error')
   })
 
   it('should use default behavior when detectSessionInUrl is true (boolean)', async () => {

@@ -2109,12 +2109,7 @@ export default class GoTrueClient {
    */
   private _isImplicitGrantCallback(params: { [parameter: string]: string }): boolean {
     if (typeof this.detectSessionInUrl === 'function') {
-      try {
-        return this.detectSessionInUrl(new URL(window.location.href), params)
-      } catch (e) {
-        this._debug('_isImplicitGrantCallback', 'error in detectSessionInUrl function', e)
-        return false
-      }
+      return this.detectSessionInUrl(new URL(window.location.href), params)
     }
     return Boolean(params.access_token || params.error_description)
   }
