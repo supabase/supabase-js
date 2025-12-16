@@ -255,7 +255,9 @@ export default class GoTrueClient {
    * Keep extra care to never reject or throw uncaught errors
    */
   protected initializePromise: Promise<InitializeResult> | null = null
-  protected detectSessionInUrl = true
+  protected detectSessionInUrl:
+    | boolean
+    | ((url: URL, params: { [parameter: string]: string }) => boolean) = true
   protected url: string
   protected headers: {
     [key: string]: string
@@ -2100,8 +2102,15 @@ export default class GoTrueClient {
 
   /**
    * Checks if the current URL contains parameters given by an implicit oauth grant flow (https://www.rfc-editor.org/rfc/rfc6749.html#section-4.2)
+   *
+   * If `detectSessionInUrl` is a function, it will be called with the URL and params to determine
+   * if the URL should be processed as a Supabase auth callback. This allows users to exclude
+   * URLs from other OAuth providers (e.g., Facebook Login) that also return access_token in the fragment.
    */
   private _isImplicitGrantCallback(params: { [parameter: string]: string }): boolean {
+    if (typeof this.detectSessionInUrl === 'function') {
+      return this.detectSessionInUrl(new URL(window.location.href), params)
+    }
     return Boolean(params.access_token || params.error_description)
   }
 
