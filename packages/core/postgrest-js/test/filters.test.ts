@@ -353,6 +353,20 @@ test('in', async () => {
   `)
 })
 
+test('notIn', async () => {
+  const statuses = ['ONLINE', 'OFFLINE'] as const
+  const res = await postgrest.from('users').select('status').notIn('status', statuses)
+  expect(res).toMatchInlineSnapshot(`
+    {
+      "count": null,
+      "data": [],
+      "error": null,
+      "status": 200,
+      "statusText": "OK",
+    }
+  `)
+})
+
 test('contains', async () => {
   const res = await postgrest.from('users').select('age_range').contains('age_range', '[1,2)')
   expect(res).toMatchInlineSnapshot(`
