@@ -74,8 +74,27 @@ export type GoTrueClientOptions = {
   headers?: { [key: string]: string }
   /* Optional key name used for storing tokens in local storage. */
   storageKey?: string
-  /* Set to "true" if you want to automatically detects OAuth grants in the URL and signs in the user. */
-  detectSessionInUrl?: boolean
+  /**
+   * Set to "true" if you want to automatically detect OAuth grants in the URL and sign in the user.
+   * Set to "false" to disable automatic detection.
+   * Set to a function to provide custom logic for determining if a URL contains a Supabase auth callback.
+   * The function receives the current URL and parsed parameters, and should return true if the URL
+   * should be processed as a Supabase auth callback, or false to ignore it.
+   *
+   * This is useful when your app uses other OAuth providers (e.g., Facebook Login) that also return
+   * access_token in the URL fragment, which would otherwise be incorrectly intercepted by Supabase Auth.
+   *
+   * @example
+   * ```ts
+   * detectSessionInUrl: (url, params) => {
+   *   // Ignore Facebook OAuth redirects
+   *   if (url.pathname === '/facebook/redirect') return false
+   *   // Use default detection for other URLs
+   *   return Boolean(params.access_token || params.error_description)
+   * }
+   * ```
+   */
+  detectSessionInUrl?: boolean | ((url: URL, params: { [parameter: string]: string }) => boolean)
   /* Set to "true" if you want to automatically refresh the token before expiring. */
   autoRefreshToken?: boolean
   /* Set to "true" if you want to automatically save the user session into local storage. If set to false, session will just be saved in memory. */
