@@ -27,8 +27,12 @@ export interface PostgrestResponseFailure extends PostgrestResponseBase {
 // - remove PostgrestResponse and PostgrestMaybeSingleResponse
 // - rename PostgrestSingleResponse to PostgrestResponse
 export type PostgrestSingleResponse<T> = PostgrestResponseSuccess<T> | PostgrestResponseFailure
-export type PostgrestMaybeSingleResponse<T> = PostgrestSingleResponse<T | null>
 export type PostgrestResponse<T> = PostgrestSingleResponse<T[]>
+export type PostgrestMaybeSingleResponse<T> =
+  | PostgrestResponseSuccess<T | null>
+  | PostgrestResponseFailure
+
+
 
 export type DatabaseWithOptions<Database, Options extends ClientServerOptions> = {
   db: Database
