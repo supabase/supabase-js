@@ -58,7 +58,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: supabase-umd
-          path: packages/core/supabase-js/dist/umd/supabase.js
+          path: packages/core/supabase-js/dist/umd/supabase.iife.js
 
   test:
     name: Unit + Type Check / Node.js ${{ matrix.node }} / OS ${{ matrix.os }}
@@ -563,7 +563,7 @@ jobs:
         run: |
           cd packages/core/supabase-js/test/integration/node-browser
           npm install
-          cp ../../../dist/umd/supabase.js .
+          cp ../../../dist/umd/supabase.iife.js supabase.js
           npm run test
 
       - name: Stop Supabase
