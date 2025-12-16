@@ -1,3 +1,13 @@
+## 2.88.0 (2025-12-16)
+
+### 🚀 Features
+
+- **auth:** allow custom predicate for detectSessionInUrl option ([#1958](https://github.com/supabase/supabase-js/pull/1958))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+
 ## 2.87.3 (2025-12-15)
 
 This was a version bump only for @supabase/auth-js to align it with other projects, there were no code changes.

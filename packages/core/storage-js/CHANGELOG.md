@@ -1,3 +1,13 @@
+## 2.88.0 (2025-12-16)
+
+### 🚀 Features
+
+- **repo:** migrate build system to tsdown for proper ESM/CJS support ([#1961](https://github.com/supabase/supabase-js/pull/1961))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+
 ## 2.87.3 (2025-12-15)
 
 This was a version bump only for @supabase/storage-js to align it with other projects, there were no code changes.
