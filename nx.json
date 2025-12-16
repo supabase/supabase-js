@@ -107,7 +107,7 @@
     },
     "test:types": {
       "inputs": ["testing", "^production"],
-      "dependsOn": ["build:module"],
+      "dependsOn": ["build"],
       "cache": true,
       "outputs": []
     },
