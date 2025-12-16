@@ -2,6 +2,7 @@ import type {
   PostgrestSingleResponse,
   PostgrestResponseSuccess,
   CheckMatchingArrayTypes,
+  PostgrestMaybeSingleResponse,
   MergePartialResult,
   IsValidResultOverride,
 } from './types/types'
@@ -13,11 +14,9 @@ export default abstract class PostgrestBuilder<
   ClientOptions extends ClientServerOptions,
   Result,
   ThrowOnError extends boolean = false,
-> implements
-    PromiseLike<
-      ThrowOnError extends true ? PostgrestResponseSuccess<Result> : PostgrestSingleResponse<Result>
-    >
-{
+> implements PromiseLike<
+  ThrowOnError extends true ? PostgrestResponseSuccess<Result> : PostgrestSingleResponse<Result>
+> {
   protected method: 'GET' | 'HEAD' | 'POST' | 'PATCH' | 'DELETE'
   protected url: URL
   protected headers: Headers
