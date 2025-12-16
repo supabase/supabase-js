@@ -1,16 +1,11 @@
-import { defineConfig } from 'tsup'
+import { defineConfig } from 'tsdown'
 
 export default defineConfig([
   // CJS and ESM builds - keep @supabase/* external
   {
     entry: ['src/index.ts'],
     format: ['cjs', 'esm'],
-    dts: {
-      compilerOptions: {
-        composite: false,
-        incremental: false,
-      },
-    },
+    dts: true,
     sourcemap: true,
     clean: true,
     outDir: 'dist',
@@ -22,7 +17,8 @@ export default defineConfig([
       '@supabase/realtime-js',
       '@supabase/storage-js',
     ],
-    outExtension: ({ format }) => ({ js: format === 'esm' ? '.mjs' : '.cjs' }),
+    fixedExtension: true,
+    hash: false,
     target: 'es2017',
   },
   // IIFE build for CDN (jsdelivr/unpkg) - bundles EVERYTHING
@@ -31,7 +27,6 @@ export default defineConfig([
     format: ['iife'],
     globalName: 'supabase',
     outDir: 'dist/umd',
-    outExtension: () => ({ js: '.js' }),
     // Bundle all dependencies including @supabase/*
     noExternal: [/.*/],
     minify: true,

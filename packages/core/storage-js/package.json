@@ -17,7 +17,7 @@
   ],
   "main": "dist/index.cjs",
   "module": "dist/index.mjs",
-  "types": "dist/index.d.ts",
+  "types": "dist/index.d.cts",
   "exports": {
     ".": {
       "import": {
@@ -25,7 +25,7 @@
         "default": "./dist/index.mjs"
       },
       "require": {
-        "types": "./dist/index.d.ts",
+        "types": "./dist/index.d.cts",
         "default": "./dist/index.cjs"
       }
     },
@@ -39,8 +39,8 @@
     "directory": "packages/core/storage-js"
   },
   "scripts": {
-    "build": "tsup",
-    "build:watch": "tsup --watch",
+    "build": "tsdown",
+    "build:watch": "tsdown --watch",
     "test:storage": "npx nx test:clean storage-js && npx nx test:infra storage-js && npx nx test:suite storage-js && npx nx test:clean storage-js",
     "test:suite": "jest --runInBand --coverage",
     "test:infra": "cd infra && docker compose down && docker compose up -d --build && sleep 10",
@@ -55,8 +55,8 @@
   "devDependencies": {
     "form-data": "^4.0.0"
   },
-  "jsdelivr": "dist/umd/supabase.js",
-  "unpkg": "dist/umd/supabase.js",
+  "jsdelivr": "dist/umd/supabase.iife.js",
+  "unpkg": "dist/umd/supabase.iife.js",
   "publishConfig": {
     "access": "public"
   },

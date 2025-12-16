@@ -1222,56 +1222,6 @@ npx nx typecheck storage-js
 npx nx docs storage-js
 ```
 
-#### Build Outputs Explained
-
-##### CommonJS (`dist/main/`)
-
-- **Used by:** Node.js applications, older build tools
-- **Entry point:** `dist/main/index.js`
-- **Module format:** `require()` and `module.exports`
-- **TypeScript definitions:** Included
-
-##### ES Modules (`dist/module/`)
-
-- **Used by:** Modern bundlers (Webpack, Rollup, Vite)
-- **Entry point:** `dist/module/index.js`
-- **Module format:** `import` and `export`
-- **TypeScript definitions:** `dist/module/index.d.ts`
-- **Benefits:** Tree-shaking, better static analysis
-
-##### UMD (`dist/umd/`)
-
-- **Used by:** Browser `<script>` tags, CDNs
-- **Entry point:** `dist/umd/supabase.js`
-- **Global variable:** `window.supabase`
-- **Size:** Larger (includes all dependencies)
-- **Usage example:**
-  ```html
-  <script src="https://unpkg.com/@supabase/storage-js/dist/umd/supabase.js"></script>
-  <script>
-    const { StorageClient } = window.supabase
-  </script>
-  ```
-
-#### Package Exports
-
-The package.json exports are configured to provide the right format for each environment:
-
-```json
-{
-  "main": "dist/main/index.js",
-  "module": "dist/module/index.js",
-  "types": "dist/module/index.d.ts",
-  "jsdelivr": "dist/umd/supabase.js",
-  "unpkg": "dist/umd/supabase.js"
-}
-```
-
-- **main** → Node.js environments (CommonJS format)
-- **module** → Modern bundlers like Webpack, Vite, Rollup (ES Modules)
-- **types** → TypeScript type definitions
-- **jsdelivr/unpkg** → CDN usage via `<script>` tags (UMD format)
-
 ### Testing
 
 **Important:** The storage-js tests require a local test infrastructure running in Docker. This is **NOT** the same as a regular Supabase instance - it's a specialized test setup with its own storage API, database, and Kong gateway.
