@@ -112,6 +112,12 @@ export type GoTrueClientOptions = {
    * throwing the error instead of returning it as part of a successful response.
    */
   throwOnError?: boolean
+  /**
+   * The maximum time in milliseconds to wait for a lock to be acquired.
+   * If the lock cannot be acquired within this time, an error with `isAcquireTimeout` set to true is thrown.
+   * Defaults to 60000 (1 minute). Set to a negative value to wait indefinitely (not recommended).
+   */
+  lockAcquireTimeout?: number
 }
 
 const WeakPasswordReasons = ['length', 'characters', 'pwned'] as const
