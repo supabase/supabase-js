@@ -110,6 +110,42 @@ jobs:
           parallel-finished: true
           fail-on-error: false
         continue-on-error: true
+
+  module-resolution:
+    name: Module Resolution Tests
+    runs-on: ubuntu-latest
+    needs: build-package
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          filter: tree:0
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: packages-dist
+          path: ./packages/core
+
+      - name: Validate package exports (attw)
+        run: npx nx test:exports supabase-js
+
+      - name: Test ESM imports
+        run: npx nx test:esm supabase-js
+
+      - name: Test CJS requires
+        run: npx nx test:cjs supabase-js
+
   deno-tests:
     name: Deno Tests
     runs-on: ubuntu-latest

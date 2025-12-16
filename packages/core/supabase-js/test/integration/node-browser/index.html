@@ -81,6 +81,19 @@
           return originalSetInterval.apply(this, [fn, delay, ...args])
         }
 
+        // Verify all clients are bundled (catches AuthClient null bug from 2.86.1)
+        log('Verifying bundled clients...')
+        const testClient = createClient('https://example.supabase.co', 'test-key')
+        if (!testClient.auth) throw new Error('auth client missing (AuthClient null bug)')
+        if (typeof testClient.auth.signUp !== 'function') throw new Error('auth.signUp missing')
+        if (typeof testClient.auth.getSession !== 'function')
+          throw new Error('auth.getSession missing')
+        if (!testClient.storage) throw new Error('storage client missing')
+        if (!testClient.functions) throw new Error('functions client missing')
+        if (typeof testClient.from !== 'function') throw new Error('postgrest client missing')
+        if (typeof testClient.channel !== 'function') throw new Error('realtime client missing')
+        log('All clients bundled correctly')
+
         log('Creating Supabase client with WebSocket transport and vsn: ' + vsn + '...')
         const supabase = createClient(
           'http://127.0.0.1:54321',
