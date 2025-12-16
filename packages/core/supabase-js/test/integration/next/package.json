@@ -9,7 +9,7 @@
     "test": "playwright test",
     "test:ui": "playwright test --ui",
     "test:debug": "playwright test --debug",
-    "test:types": "npx tsd --files tests/types/*.test-d.ts"
+    "test:types": "tsd --files tests/types/*.test-d.ts"
   },
   "dependencies": {
     "@radix-ui/react-checkbox": "^1.3.1",
