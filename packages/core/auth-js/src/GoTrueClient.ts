@@ -169,6 +169,7 @@ const DEFAULT_OPTIONS: Omit<
   autoRefreshToken: true,
   persistSession: true,
   detectSessionInUrl: true,
+  suppressedPaths: [],
   headers: DEFAULT_HEADERS,
   flowType: 'implicit',
   debug: false,
@@ -256,6 +257,7 @@ export default class GoTrueClient {
    */
   protected initializePromise: Promise<InitializeResult> | null = null
   protected detectSessionInUrl = true
+  protected suppressedPaths: string[] = []
   protected url: string
   protected headers: {
     [key: string]: string
@@ -323,6 +325,7 @@ export default class GoTrueClient {
     this.fetch = resolveFetch(settings.fetch)
     this.lock = settings.lock || lockNoOp
     this.detectSessionInUrl = settings.detectSessionInUrl
+    this.suppressedPaths = settings.suppressedPaths
     this.flowType = settings.flowType
     this.hasCustomAuthorizationHeader = settings.hasCustomAuthorizationHeader
     this.throwOnError = settings.throwOnError
@@ -2102,6 +2105,12 @@ export default class GoTrueClient {
    * Checks if the current URL contains parameters given by an implicit oauth grant flow (https://www.rfc-editor.org/rfc/rfc6749.html#section-4.2)
    */
   private _isImplicitGrantCallback(params: { [parameter: string]: string }): boolean {
+    if (isBrowser() && this.suppressedPaths.length > 0) {
+      const currentPath = window.location.pathname
+      if (this.suppressedPaths.includes(currentPath)) {
+        return false
+      }
+    }
     return Boolean(params.access_token || params.error_description)
   }
 
