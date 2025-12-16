@@ -32,8 +32,6 @@ export type PostgrestMaybeSingleResponse<T> =
   | PostgrestResponseSuccess<T | null>
   | PostgrestResponseFailure
 
-
-
 export type DatabaseWithOptions<Database, Options extends ClientServerOptions> = {
   db: Database
   options: Options
