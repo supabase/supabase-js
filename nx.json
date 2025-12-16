@@ -50,6 +50,7 @@
       "{projectRoot}/webpack.config.[jt]s",
       "{projectRoot}/vite.config.[jt]s",
       "{projectRoot}/rollup.config.[jt]s",
+      "{projectRoot}/tsup.config.[jt]s",
       "{projectRoot}/tsconfig*.json",
       "{projectRoot}/package.json",
       "sharedGlobals"

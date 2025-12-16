@@ -14,31 +14,32 @@
     "dist",
     "src"
   ],
-  "main": "dist/cjs/index.js",
-  "module": "dist/esm/wrapper.mjs",
+  "main": "dist/index.cjs",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
   "exports": {
-    "import": {
-      "types": "./dist/cjs/index.d.ts",
-      "default": "./dist/esm/wrapper.mjs"
+    ".": {
+      "import": {
+        "types": "./dist/index.d.mts",
+        "default": "./dist/index.mjs"
+      },
+      "require": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.cjs"
+      }
     },
-    "require": {
-      "types": "./dist/cjs/index.d.ts",
-      "default": "./dist/cjs/index.js"
-    }
+    "./package.json": "./package.json"
   },
-  "types": "./dist/cjs/index.d.ts",
   "repository": {
     "type": "git",
     "url": "https://github.com/supabase/supabase-js.git",
     "directory": "packages/core/postgrest-js"
   },
   "scripts": {
-    "build": "npm run build:cjs && npm run build:esm",
+    "build": "tsup",
+    "build:watch": "tsup --watch",
     "format": "node scripts/format.js",
     "format:check": "node scripts/format.js check",
-    "build:cjs": "tsc -p tsconfig.json",
-    "build:esm": "node scripts/copy-wrapper.cjs",
-    "build:module": "npm run build:cjs",
     "docs": "typedoc src/index.ts --out docs/v2",
     "docs:json": "typedoc --json docs/v2/spec.json --excludeExternals src/index.ts",
     "test:ci:postgrest": "npm run db:clean && npm run db:run && npm run test:run && npm run db:clean && npm run test:smoke",
