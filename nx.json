@@ -75,30 +75,6 @@
       "cache": true,
       "outputs": ["{projectRoot}/dist"]
     },
-    "build:main": {
-      "inputs": ["production", "^production", "buildConfig"],
-      "dependsOn": ["^build:main"],
-      "cache": true,
-      "outputs": ["{projectRoot}/dist/main", "{projectRoot}/dist/tsconfig.tsbuildinfo"]
-    },
-    "build:module": {
-      "inputs": ["production", "^production", "buildConfig"],
-      "dependsOn": ["^build:module"],
-      "cache": true,
-      "outputs": ["{projectRoot}/dist/module", "{projectRoot}/dist/tsconfig.module.tsbuildinfo"]
-    },
-    "build:umd": {
-      "inputs": ["production", "^production", "buildConfig"],
-      "dependsOn": ["^build:umd"],
-      "cache": true,
-      "outputs": ["{projectRoot}/dist/umd"]
-    },
-    "webpack:build": {
-      "inputs": ["production", "^production", "buildConfig"],
-      "dependsOn": ["^webpack:build"],
-      "cache": true,
-      "outputs": ["{projectRoot}/dist"]
-    },
     "test": {
       "inputs": ["testing", "^production"],
       "dependsOn": ["^build"],

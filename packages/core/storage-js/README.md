@@ -1157,66 +1157,12 @@ This package is part of the [Supabase JavaScript monorepo](https://github.com/su
 
 #### Build Scripts Overview
 
-The storage-js package uses multiple build scripts to generate different module formats for various JavaScript environments:
-
-| Script         | Description                 | Output                                                          |
-| -------------- | --------------------------- | --------------------------------------------------------------- |
-| `build`        | **Complete build pipeline** | Runs all build steps in sequence                                |
-| `build:main`   | **CommonJS build**          | `dist/main/` - Node.js compatible CommonJS modules              |
-| `build:module` | **ES Modules build**        | `dist/module/` - Modern ES6 modules with TypeScript definitions |
-| `build:umd`    | **UMD build**               | `dist/umd/` - Universal Module Definition for browsers/CDN      |
-| `clean`        | **Clean build artifacts**   | Removes `dist/` and `docs/v2/` directories                      |
-
-#### Running Builds
-
-##### Complete Build (Recommended)
-
 ```bash
-# From the monorepo root
+# Build the package
 npx nx build storage-js
-```
 
-This command executes the full build pipeline:
-
-1. **Cleans** - Removes any existing build artifacts
-2. **Formats** - Ensures consistent code formatting
-3. **Builds CommonJS** - For Node.js environments (`dist/main/`)
-4. **Builds ES Modules** - For modern bundlers (`dist/module/`)
-5. **Builds UMD** - For browser script tags (`dist/umd/`)
-
-##### Development Build with Watch Mode
-
-```bash
-# Continuously rebuild on file changes (from monorepo root)
+# Watch mode for development
 npx nx build storage-js --watch
-```
-
-##### Individual Build Targets
-
-For specific build outputs during development:
-
-```bash
-# Build CommonJS only (Node.js)
-npx nx build:main storage-js
-
-# Build ES Modules only (Modern bundlers)
-npx nx build:module storage-js
-
-# Build UMD only (Browser/CDN)
-npx nx build:umd storage-js
-```
-
-##### Other Useful Commands
-
-```bash
-# Clean build artifacts
-npx nx clean storage-js
-
-# Format code
-npx nx format storage-js
-
-# Type checking
-npx nx typecheck storage-js
 
 # Generate documentation
 npx nx docs storage-js
