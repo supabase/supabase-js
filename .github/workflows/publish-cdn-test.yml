@@ -1,0 +1,163 @@
+name: Publish CDN Test Release
+# Manual-only workflow for publishing test versions to CDNs via JSR
+# Restricted to admin and SDK team members
+# NEVER publishes to npm registry
+
+on:
+  workflow_dispatch:
+    inputs:
+      test_identifier:
+        description: 'Test identifier (e.g., "auth-fix", "pr-123", "experiment-1")'
+        required: true
+        type: string
+
+env:
+  NODE_VERSION: '20'
+
+jobs:
+  publish-cdn-test:
+    name: Publish CDN Test Release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Generate token
+        id: app-token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ secrets.APP_ID }}
+          private-key: ${{ secrets.PRIVATE_KEY }}
+
+      - name: Check if actor is member of admin or sdk team
+        id: team-check
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ steps.app-token.outputs.token }}
+          script: |
+            const org = 'supabase'
+            const { actor } = context
+
+            async function isTeamMember(team_slug) {
+              try {
+                const res = await github.rest.teams.getMembershipForUserInOrg({
+                  org,
+                  team_slug,
+                  username: actor,
+                })
+                return res && res.status === 200
+              } catch (_) {
+                return false
+              }
+            }
+            const isAdmin = await isTeamMember('admin')
+            const isSdk = await isTeamMember('sdk')
+            const isMember = isAdmin || isSdk
+            core.setOutput('is_team_member', isMember ? 'true' : 'false')
+
+      - name: Fail if not authorized
+        if: ${{ steps.team-check.outputs.is_team_member != 'true' }}
+        run: |
+          echo "You must be a member of @supabase/admin or @supabase/sdk."
+          exit 1
+
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          registry-url: 'https://registry.npmjs.org'
+
+      # Ensure npm 11.5.1 or later is installed for trusted publishing support
+      - name: Update npm
+        run: npm install -g npm@latest
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Validate test identifier
+        run: |
+          IDENTIFIER="${{ github.event.inputs.test_identifier }}"
+          echo "Validating test identifier: $IDENTIFIER"
+
+          # Check for valid characters (alphanumeric, hyphens, underscores)
+          if ! [[ "$IDENTIFIER" =~ ^[a-zA-Z0-9_-]+$ ]]; then
+            echo "❌ Invalid test identifier. Use only letters, numbers, hyphens, and underscores."
+            exit 1
+          fi
+
+          # Check length (max 30 characters)
+          if [ ${#IDENTIFIER} -gt 30 ]; then
+            echo "❌ Test identifier too long (max 30 characters)"
+            exit 1
+          fi
+
+          echo "✅ Valid test identifier"
+
+      - name: Create test version and build
+        id: version-and-build
+        run: |
+          IDENTIFIER="${{ github.event.inputs.test_identifier }}"
+
+          echo "Creating test version with identifier: test-${IDENTIFIER}"
+
+          # Create a prerelease version without any git operations
+          npx nx release version \
+            --specifier=prerelease \
+            --preid="test-${IDENTIFIER}" \
+            --git-commit=false \
+            --git-tag=false \
+            --stage-changes=false
+
+          # Update version.ts files
+          echo "Updating version files..."
+          npx tsx scripts/update-version-files.ts
+
+          # Build all packages
+          echo "Building all packages..."
+          npx nx run-many --target=build --all
+
+      - name: Publish to JSR for CDN access
+        id: publish-jsr
+        run: |
+          echo "📦 Publishing to JSR (CDN-only test version)..."
+
+          # Publish with test tag to JSR only (no npm, no git tags)
+          npx tsx scripts/publish-to-jsr.ts --tag="test-${{ github.event.inputs.test_identifier }}"
+        env:
+          JSR_TOKEN: ${{ secrets.JSR_TOKEN }}
+
+      - name: Summary
+        if: ${{ success() }}
+        run: |
+          IDENTIFIER="${{ github.event.inputs.test_identifier }}"
+          echo "## CDN Test Release Published to JSR" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Test Identifier" >> $GITHUB_STEP_SUMMARY
+          echo "\`test-${IDENTIFIER}\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Published To" >> $GITHUB_STEP_SUMMARY
+          echo "- JSR Registry (CDN-only distribution)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### CDN Usage Examples" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`html" >> $GITHUB_STEP_SUMMARY
+          echo "<!-- Via esm.sh -->" >> $GITHUB_STEP_SUMMARY
+          echo "<script type=\"module\">" >> $GITHUB_STEP_SUMMARY
+          echo "  import { createClient } from 'https://esm.sh/@supabase/supabase-js@test-${IDENTIFIER}'" >> $GITHUB_STEP_SUMMARY
+          echo "</script>" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`javascript" >> $GITHUB_STEP_SUMMARY
+          echo "// Deno usage" >> $GITHUB_STEP_SUMMARY
+          echo "import { createClient } from 'https://deno.land/x/supabase@test-${IDENTIFIER}/mod.ts'" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Important Notes" >> $GITHUB_STEP_SUMMARY
+          echo "- ⚠️ This is a **test release** for CDN testing only" >> $GITHUB_STEP_SUMMARY
+          echo "- 🚫 **NOT published to npm** - CDN access only via JSR" >> $GITHUB_STEP_SUMMARY
+          echo "- 🔧 For testing CDN behavior and edge cases" >> $GITHUB_STEP_SUMMARY
+          echo "- ⏰ Temporary release - do not use in production" >> $GITHUB_STEP_SUMMARY
