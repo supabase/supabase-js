@@ -291,15 +291,20 @@ const AMRMethods = [
   'sso/saml',
   'magiclink',
   'web3',
+  'oauth_provider/authorization_code',
 ] as const
 
 export type AMRMethod = (typeof AMRMethods)[number] | (string & {})
 
 /**
- * An authentication methord reference (AMR) entry.
+ * An authentication method reference (AMR) entry.
  *
  * An entry designates what method was used by the user to verify their
  * identity and at what time.
+ *
+ * Note: Custom access token hooks can return AMR claims as either:
+ * - An array of AMREntry objects (detailed format with timestamps)
+ * - An array of strings (RFC-8176 compliant format)
  *
  * @see {@link GoTrueMFAApi#getAuthenticatorAssuranceLevel}.
  */
@@ -1181,8 +1186,12 @@ export type AuthMFAGetAuthenticatorAssuranceLevelResponse = RequestResult<{
    * A list of all authentication methods attached to this session. Use
    * the information here to detect the last time a user verified a
    * factor, for example if implementing a step-up scenario.
+   *
+   * Supports both RFC-8176 compliant format (string[]) and detailed format (AMREntry[]).
+   * - String format: ['password', 'otp'] - RFC-8176 compliant
+   * - Object format: [{ method: 'password', timestamp: 1234567890 }] - includes timestamps
    */
-  currentAuthenticationMethods: AMREntry[]
+  currentAuthenticationMethods: AMREntry[] | string[]
 }>
 
 /**
@@ -1501,7 +1510,13 @@ export interface JwtPayload extends RequiredClaims {
   nbf?: number
   app_metadata?: UserAppMetadata
   user_metadata?: UserMetadata
-  amr?: AMREntry[]
+  /**
+   * Authentication Method References.
+   * Supports both RFC-8176 compliant format (string[]) and detailed format (AMREntry[]).
+   * - String format: ['password', 'otp'] - RFC-8176 compliant
+   * - Object format: [{ method: 'password', timestamp: 1234567890 }] - includes timestamps
+   */
+  amr?: AMREntry[] | string[]
 
   // Special claims (only in anon/service role tokens)
   ref?: string
