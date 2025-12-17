@@ -2111,6 +2111,11 @@ export default class GoTrueClient {
     if (typeof this.detectSessionInUrl === 'function') {
       return this.detectSessionInUrl(new URL(window.location.href), params)
     }
+    // Check for Supabase Auth identifier
+    // Fall back to legacy detection for backwards compatibility with older Auth servers
+    if ('sb' in params) {
+      return true
+    }
     return Boolean(params.access_token || params.error_description)
   }
 

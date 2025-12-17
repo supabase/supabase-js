@@ -84,15 +84,20 @@ export type GoTrueClientOptions = {
    * The function receives the current URL and parsed parameters, and should return true if the URL
    * should be processed as a Supabase auth callback, or false to ignore it.
    *
+   * By default, the client checks for the `sb` parameter (added by Supabase Auth server) to identify
+   * Supabase callbacks, with a fallback to legacy detection for older Auth server versions.
+   *
    * This is useful when your app uses other OAuth providers (e.g., Facebook Login) that also return
    * access_token in the URL fragment, which would otherwise be incorrectly intercepted by Supabase Auth.
    *
    * @example
    * ```ts
    * detectSessionInUrl: (url, params) => {
-   *   // Ignore Facebook OAuth redirects
+   *   // Prefer sb identifier (available on newer Auth servers)
+   *   if ('sb' in params) return true
+   *   // Ignore known third-party OAuth paths
    *   if (url.pathname === '/facebook/redirect') return false
-   *   // Use default detection for other URLs
+   *   // Fall back to legacy detection for older Auth servers
    *   return Boolean(params.access_token || params.error_description)
    * }
    * ```

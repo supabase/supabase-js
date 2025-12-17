@@ -580,6 +580,97 @@ describe('Callback URL handling', () => {
     expect(data.session).toBeDefined()
     expect(data.session?.access_token).toBe('test-token')
   })
+
+  it('should detect Supabase callback with sb parameter', async () => {
+    // Simulate Supabase OAuth redirect with sb identifier
+    window.location.href =
+      'http://localhost:9999/callback#access_token=test-token&refresh_token=test-refresh&expires_in=3600&token_type=bearer&sb'
+
+    // Mock fetch for user info
+    mockFetch.mockImplementation((url: string) => {
+      if (url.includes('/user')) {
+        return Promise.resolve({
+          ok: true,
+          json: () =>
+            Promise.resolve({
+              id: 'test-user',
+              email: 'test@example.com',
+              created_at: new Date().toISOString(),
+            }),
+        })
+      }
+      return Promise.resolve({ ok: true, json: () => Promise.resolve({}) })
+    })
+
+    const client = new (require('../src/GoTrueClient').default)({
+      url: 'http://localhost:9999',
+      detectSessionInUrl: true,
+      autoRefreshToken: false,
+      storage: mockStorage,
+    })
+
+    await client.initialize()
+
+    // Should process the callback because sb parameter is present
+    const { data } = await client.getSession()
+    expect(data.session).toBeDefined()
+    expect(data.session?.access_token).toBe('test-token')
+  })
+
+  it('should detect legacy callbacks without sb parameter for backwards compatibility', async () => {
+    // Simulate legacy Supabase OAuth redirect without sb identifier
+    window.location.href =
+      'http://localhost:9999/callback#access_token=test-token&refresh_token=test-refresh&expires_in=3600&token_type=bearer'
+
+    // Mock fetch for user info
+    mockFetch.mockImplementation((url: string) => {
+      if (url.includes('/user')) {
+        return Promise.resolve({
+          ok: true,
+          json: () =>
+            Promise.resolve({
+              id: 'test-user',
+              email: 'test@example.com',
+              created_at: new Date().toISOString(),
+            }),
+        })
+      }
+      return Promise.resolve({ ok: true, json: () => Promise.resolve({}) })
+    })
+
+    const client = new (require('../src/GoTrueClient').default)({
+      url: 'http://localhost:9999',
+      detectSessionInUrl: true,
+      autoRefreshToken: false,
+      storage: mockStorage,
+    })
+
+    await client.initialize()
+
+    // Should still process the callback for backwards compatibility
+    const { data } = await client.getSession()
+    expect(data.session).toBeDefined()
+    expect(data.session?.access_token).toBe('test-token')
+  })
+
+  it('should detect error callbacks with sb parameter', async () => {
+    // Simulate Supabase OAuth error redirect with sb identifier
+    window.location.href =
+      'http://localhost:9999/callback#error=access_denied&error_description=User%20denied%20access&sb'
+
+    const client = new (require('../src/GoTrueClient').default)({
+      url: 'http://localhost:9999',
+      detectSessionInUrl: true,
+      autoRefreshToken: false,
+      storage: mockStorage,
+    })
+
+    const { error } = await client.initialize()
+
+    // Should detect and process the error callback
+    expect(error).toBeDefined()
+    expect(error?.message).toContain('access_denied')
+  })
 })
 
 describe('GoTrueClient BroadcastChannel', () => {
