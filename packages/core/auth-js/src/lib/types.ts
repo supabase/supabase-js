@@ -34,7 +34,10 @@ export type Provider =
   | 'slack_oidc'
   | 'spotify'
   | 'twitch'
+  /** Uses OAuth 1.0a */
   | 'twitter'
+  /** Uses OAuth 2.0 */
+  | 'x'
   | 'workos'
   | 'zoom'
   | 'fly'
