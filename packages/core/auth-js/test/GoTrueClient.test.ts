@@ -1728,11 +1728,19 @@ describe('getClaims', () => {
     }
 
     // Verify amr array structure if present
+    // AMR can be either string[] (RFC-8176 compliant) or AMREntry[] (detailed format)
     if (claims?.amr) {
       expect(Array.isArray(claims.amr)).toBe(true)
       if (claims.amr.length > 0) {
-        expect(typeof claims.amr[0].method).toBe('string')
-        expect(typeof claims.amr[0].timestamp).toBe('number')
+        const firstEntry = claims.amr[0]
+        if (typeof firstEntry === 'string') {
+          // RFC-8176 compliant format: array of strings
+          expect(typeof firstEntry).toBe('string')
+        } else {
+          // Detailed format: array of objects with method and timestamp
+          expect(typeof firstEntry.method).toBe('string')
+          expect(typeof firstEntry.timestamp).toBe('number')
+        }
       }
     }
 
