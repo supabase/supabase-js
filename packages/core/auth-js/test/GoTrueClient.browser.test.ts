@@ -669,7 +669,7 @@ describe('Callback URL handling', () => {
 
     // Should detect and process the error callback
     expect(error).toBeDefined()
-    expect(error?.message).toContain('access_denied')
+    expect(error?.message).toContain('User denied access')
   })
 })
 

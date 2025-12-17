@@ -93,10 +93,13 @@ export type GoTrueClientOptions = {
    * @example
    * ```ts
    * detectSessionInUrl: (url, params) => {
-   *   // Prefer sb identifier (available on newer Auth servers)
-   *   if ('sb' in params) return true
    *   // Ignore known third-party OAuth paths
    *   if (url.pathname === '/facebook/redirect') return false
+   *   // Check for sb identifier (available on newer Auth servers)
+   *   // Still require OAuth params to prevent issues with crafted URLs
+   *   if ('sb' in params) {
+   *     return Boolean(params.access_token || params.error || params.error_description)
+   *   }
    *   // Fall back to legacy detection for older Auth servers
    *   return Boolean(params.access_token || params.error_description)
    * }
