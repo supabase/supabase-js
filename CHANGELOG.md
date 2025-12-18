@@ -1,3 +1,17 @@
+## 2.89.0 (2025-12-18)
+
+### 🚀 Features
+
+- **auth:** add X (OAuth 2.0) provider ([#1960](https://github.com/supabase/supabase-js/pull/1960))
+- **auth:** add string array support for AMR claims ([#1967](https://github.com/supabase/supabase-js/pull/1967))
+- **supabase:** export DatabaseWithoutInternals utility type ([#1935](https://github.com/supabase/supabase-js/pull/1935))
+
+### ❤️ Thank You
+
+- Cemal Kılıç @cemalkilic
+- issuedat @issuedat
+- Vaibhav @7ttp
+
 ## 2.88.0 (2025-12-16)
 
 ### 🚀 Features
