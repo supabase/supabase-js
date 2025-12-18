@@ -1,3 +1,13 @@
+## 2.89.0 (2025-12-18)
+
+### 🚀 Features
+
+- **supabase:** export DatabaseWithoutInternals utility type ([#1935](https://github.com/supabase/supabase-js/pull/1935))
+
+### ❤️ Thank You
+
+- Vaibhav @7ttp
+
 ## 2.88.0 (2025-12-16)
 
 ### 🚀 Features
