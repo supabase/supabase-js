@@ -529,10 +529,11 @@ export default class RealtimeChannel {
     filter: { event: string; [key: string]: string },
     callback: (payload: any) => void
   ): RealtimeChannel {
+    console.log('Katerina is here to test 3')
     if (this.state === CHANNEL_STATES.joined && type === REALTIME_LISTEN_TYPES.PRESENCE) {
       this.socket.log(
         'channel',
-        `resubscribe to ${this.topic} due to change in presence callbacks on joined channel`
+        `resubscribe to ${this.topic} due to change in presence callbacks on joined channel katerinahaha`
       )
       this.unsubscribe().then(async () => await this.subscribe())
     }
