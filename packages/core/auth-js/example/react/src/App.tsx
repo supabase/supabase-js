@@ -1,43 +1,64 @@
-import React, { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { AuthClient } from '@supabase/auth-js'
-import './tailwind.output.css'
+import type { Session, UserIdentity, Provider } from '@supabase/auth-js'
 
-const supabaseURL = process.env.REACT_APP_SUPABASE_URL
-const supabaseAnon = process.env.REACT_APP_SUPABASE_ANON_KEY
+const supabaseURL = import.meta.env.VITE_SUPABASE_URL
+const supabasePublishableKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_DEFAULT_KEY
 
 const auth = new AuthClient({
   url: `${supabaseURL}/auth/v1`,
   headers: {
     accept: 'json',
-    apikey: supabaseAnon,
+    apikey: supabasePublishableKey,
   },
 })
 
 function App() {
-  let [session, setSession] = useState()
-  let [email, setEmail] = useState(localStorage.getItem('email') ?? '')
-  let [phone, setPhone] = useState(localStorage.getItem('phone') ?? '')
-  let [password, setPassword] = useState('')
-  let [otp, setOtp] = useState('')
-  let [rememberMe, setRememberMe] = useState(false)
+  const [session, setSession] = useState<Session | null>(null)
+  const [email, setEmail] = useState(localStorage.getItem('email') ?? '')
+  const [phone, setPhone] = useState(localStorage.getItem('phone') ?? '')
+  const [password, setPassword] = useState('')
+  const [otp, setOtp] = useState('')
+  const [rememberMe, setRememberMe] = useState(false)
 
-  const modalRef = useRef(null)
-  let [showModal, setShowModal] = useState(false)
+  const modalRef = useRef<HTMLDialogElement>(null)
+  const [showModal, setShowModal] = useState(false)
 
   async function getSession() {
     const { data, error } = await auth.getSession()
-    if (error | !data) {
-      setSession('')
+    if (error || !data) {
+      setSession(null)
     } else {
       setSession(data.session)
     }
   }
+
   useEffect(() => {
+    // Check for token_hash in URL (magic link callback)
+    const params = new URLSearchParams(window.location.search)
+    const token_hash = params.get('token_hash')
+    const type = params.get('type')
+
+    if (token_hash) {
+      auth
+        .verifyOtp({
+          token_hash,
+          type: (type as 'signup' | 'invite' | 'magiclink' | 'recovery' | 'email_change' | 'email') || 'email',
+        })
+        .then(({ error }) => {
+          if (error) {
+            console.error('Error verifying token:', error.message)
+          }
+          // Clear URL params
+          window.history.replaceState({}, document.title, '/')
+        })
+    }
+
     getSession()
   }, [])
 
   useEffect(() => {
-    let { data: subscription } = auth.onAuthStateChange((event, session) => {
+    const { data: subscription } = auth.onAuthStateChange((event, session) => {
       console.log(event, session)
       if (event === 'SIGNED_OUT' || event === 'SIGNED_IN') {
         setSession(session)
@@ -45,28 +66,28 @@ function App() {
     })
 
     return () => {
-      if (subscription.subscription) {
-        subscription.unsubscribe()
-      }
+      subscription.subscription.unsubscribe()
     }
   }, [])
 
-  async function handleOAuthLogin(provider) {
-    let { error } = await auth.signInWithOAuth({
+  async function handleOAuthLogin(provider: Provider) {
+    const { error } = await auth.signInWithOAuth({
       provider,
       options: {
-        redirectTo: 'http://localhost:3001/welcome',
+        redirectTo: `${window.location.origin}/welcome`,
       },
     })
     if (error) console.log('Error: ', error.message)
   }
+
   async function handleVerifyOtp() {
-    await auth.verifyOTP({ phone: phone, token: otp, type: 'sms' })
+    await auth.verifyOtp({ phone: phone, token: otp, type: 'sms' })
   }
 
   async function handleSendOtp() {
-    await auth.signInWithOtp({ phone: phone, type: 'sms' })
+    await auth.signInWithOtp({ phone: phone })
   }
+
   async function handleEmailSignIn() {
     if (rememberMe) {
       localStorage.setItem('email', email)
@@ -74,34 +95,38 @@ function App() {
       localStorage.removeItem('email')
     }
 
-    let { error, data } = password
+    const { error, data } = password
       ? await auth.signInWithPassword({ email, password })
       : await auth.signInWithOtp({ email })
     if (!error && !data) alert('Check your email for the login link!')
     if (error) console.log('Error: ', error.message)
   }
+
   async function handleEmailSignUp() {
-    let { error } = await auth.signUp({
+    const { error } = await auth.signUp({
       email,
       password,
-      options: { emailRedirectTo: 'http://localhost:3001/welcome' },
+      options: { emailRedirectTo: `${window.location.origin}/welcome` },
     })
     if (error) console.log('Error: ', error.message)
   }
+
   async function handleSignOut() {
-    let { error } = await auth.signOut()
+    const { error } = await auth.signOut()
     if (error) console.log('Error: ', error)
   }
-  async function handleSignInAnonymously(data) {
-    let { error } = await auth.signInAnonymously({ options: { data } })
+
+  async function handleSignInAnonymously(data: Record<string, unknown>) {
+    const { error } = await auth.signInAnonymously({ options: { data } })
     if (error) alert(error.message)
   }
+
   async function forgotPassword() {
-    var email = prompt('Please enter your email:')
-    if (email === null || email === '') {
+    const userEmail = prompt('Please enter your email:')
+    if (userEmail === null || userEmail === '') {
       window.alert('You must enter your email.')
     } else {
-      let { error } = await auth.resetPasswordForEmail(email)
+      const { error } = await auth.resetPasswordForEmail(userEmail)
       if (error) {
         console.log('Error: ', error.message)
       } else {
@@ -111,19 +136,16 @@ function App() {
   }
 
   const showIdentities = () => {
-    return session?.user?.identities?.map((identity) => {
+    return session?.user?.identities?.map((identity: UserIdentity) => {
       return (
-        <div
-          key={identity.identity_id}
-          className="flex flex-row p-2 my-2 bg-gray-200 max-h-100 rounded"
-        >
+        <div key={identity.identity_id} className="flex flex-row p-2 my-2 bg-gray-200 max-h-100 rounded">
           <div className="basis-1/4 p-2">
             {identity.provider[0].toUpperCase() + identity.provider.slice(1)}
           </div>
           <div className="w-full basis-1/2 p-2">{identity?.identity_data?.email}</div>
           <div>
             <button
-              className="w-full basis-1/4 p-2 font-medium rounded-md text-white bg-gray-600 hover:bg-gray-500 focus:outline-none focus:border-gray-700 focus:shadow-outline-gray active:bg-gray-700 transition duration-150 ease-in-out"
+              className="w-full basis-1/4 p-2 font-medium rounded-md text-white bg-gray-600 hover:bg-gray-500 focus:outline-none focus:border-gray-700 active:bg-gray-700 transition duration-150 ease-in-out"
               onClick={() => handleUnlinkIdentity(identity)}
               type="button"
             >
@@ -154,7 +176,7 @@ function App() {
               <button
                 onClick={() => auth.linkIdentity({ provider: 'github' })}
                 type="button"
-                className="w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-500 focus:outline-none focus:border-indigo-700 focus:shadow-outline-indigo active:bg-indigo-700 transition duration-150 ease-in-out"
+                className="w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-500 focus:outline-none focus:border-indigo-700 active:bg-indigo-700 transition duration-150 ease-in-out"
               >
                 GitHub
               </button>
@@ -165,7 +187,7 @@ function App() {
               <button
                 onClick={() => auth.linkIdentity({ provider: 'google' })}
                 type="button"
-                className="w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-500 focus:outline-none focus:border-indigo-700 focus:shadow-outline-indigo active:bg-indigo-700 transition duration-150 ease-in-out"
+                className="w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-500 focus:outline-none focus:border-indigo-700 active:bg-indigo-700 transition duration-150 ease-in-out"
               >
                 Google
               </button>
@@ -183,8 +205,8 @@ function App() {
     )
   }
 
-  async function handleUnlinkIdentity(identity) {
-    let { error } = await auth.unlinkIdentity(identity)
+  async function handleUnlinkIdentity(identity: UserIdentity) {
+    const { error } = await auth.unlinkIdentity(identity)
     if (error) {
       alert(error.message)
     } else {
@@ -194,10 +216,11 @@ function App() {
       setSession(data.session)
     }
   }
+
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="bg-white p-4 shadow sm:rounded-lg  mb-10">
+        <div className="bg-white p-4 shadow sm:rounded-lg mb-10">
           <p className="block text-sm font-medium leading-5 text-gray-700">Active session</p>
           <pre
             className="p-2 text-xs overflow-scroll bg-gray-200 max-h-100 rounded"
@@ -211,7 +234,7 @@ function App() {
                 <button
                   onClick={() => handleSignOut()}
                   type="button"
-                  className="w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-gray-600 hover:bg-gray-500 focus:outline-none focus:border-gray-700 focus:shadow-outline-gray active:bg-gray-700 transition duration-150 ease-in-out"
+                  className="w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-gray-600 hover:bg-gray-500 focus:outline-none focus:border-gray-700 active:bg-gray-700 transition duration-150 ease-in-out"
                 >
                   Sign out
                 </button>
@@ -220,11 +243,11 @@ function App() {
           )}
         </div>
 
-        <div className="bg-white p-4 shadow sm:rounded-lg  mb-10">
+        <div className="bg-white p-4 shadow sm:rounded-lg mb-10">
           <p className="block text-sm font-medium leading-5 text-gray-700">Identities</p>
           {showIdentities()}
           <button
-            className="w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-gray-600 hover:bg-gray-500 focus:outline-none focus:border-gray-700 focus:shadow-outline-gray active:bg-gray-700 transition duration-150 ease-in-out"
+            className="w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-gray-600 hover:bg-gray-500 focus:outline-none focus:border-gray-700 active:bg-gray-700 transition duration-150 ease-in-out"
             type="button"
             onClick={showLinkingOptions}
           >
@@ -245,7 +268,7 @@ function App() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md placeholder-gray-400 focus:outline-none focus:shadow-outline-blue focus:border-blue-300 transition duration-150 ease-in-out sm:text-sm sm:leading-5"
+                className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md placeholder-gray-400 focus:outline-none focus:border-blue-300 transition duration-150 ease-in-out sm:text-sm sm:leading-5"
               />
             </div>
           </div>
@@ -261,39 +284,39 @@ function App() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md placeholder-gray-400 focus:outline-none focus:shadow-outline-blue focus:border-blue-300 transition duration-150 ease-in-out sm:text-sm sm:leading-5"
+                className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md placeholder-gray-400 focus:outline-none focus:border-blue-300 transition duration-150 ease-in-out sm:text-sm sm:leading-5"
               />
             </div>
           </div>
 
           <div className="mt-6">
-            <label htmlFor="password" className="block text-sm font-medium leading-5 text-gray-700">
-              Send OTP
+            <label htmlFor="phone" className="block text-sm font-medium leading-5 text-gray-700">
+              Phone (for OTP)
             </label>
             <div className="mt-1 rounded-md shadow-sm">
               <input
                 id="phone"
-                type="phone"
+                type="tel"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
                 required
-                className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md placeholder-gray-400 focus:outline-none focus:shadow-outline-blue focus:border-blue-300 transition duration-150 ease-in-out sm:text-sm sm:leading-5"
+                className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md placeholder-gray-400 focus:outline-none focus:border-blue-300 transition duration-150 ease-in-out sm:text-sm sm:leading-5"
               />
             </div>
           </div>
 
           <div className="mt-6">
-            <label htmlFor="password" className="block text-sm font-medium leading-5 text-gray-700">
-              Verify OTP
+            <label htmlFor="otp" className="block text-sm font-medium leading-5 text-gray-700">
+              OTP Code
             </label>
             <div className="mt-1 rounded-md shadow-sm">
               <input
                 id="otp"
-                type="otp"
+                type="text"
                 value={otp}
                 onChange={(e) => setOtp(e.target.value)}
                 required
-                className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md placeholder-gray-400 focus:outline-none focus:shadow-outline-blue focus:border-blue-300 transition duration-150 ease-in-out sm:text-sm sm:leading-5"
+                className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md placeholder-gray-400 focus:outline-none focus:border-blue-300 transition duration-150 ease-in-out sm:text-sm sm:leading-5"
               />
             </div>
           </div>
@@ -303,8 +326,9 @@ function App() {
               <input
                 id="remember_me"
                 type="checkbox"
+                checked={rememberMe}
                 onChange={() => setRememberMe(!rememberMe)}
-                className="form-checkbox h-4 w-4 text-indigo-600 transition duration-150 ease-in-out"
+                className="h-4 w-4 text-indigo-600 transition duration-150 ease-in-out"
               />
               <label htmlFor="remember_me" className="ml-2 block text-sm leading-5 text-gray-900">
                 Remember me
@@ -312,14 +336,13 @@ function App() {
             </div>
 
             <div className="text-sm leading-5">
-              {/* eslint-disable-next-line */}
-              <a
+              <button
                 onClick={forgotPassword}
-                href="/"
+                type="button"
                 className="font-medium text-indigo-600 hover:text-indigo-500 focus:outline-none focus:underline transition ease-in-out duration-150"
               >
                 Forgot your password?
-              </a>
+              </button>
             </div>
           </div>
 
@@ -328,7 +351,7 @@ function App() {
               <button
                 onClick={() => handleEmailSignIn()}
                 type="button"
-                className="w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-500 focus:outline-none focus:border-indigo-700 focus:shadow-outline-indigo active:bg-indigo-700 transition duration-150 ease-in-out"
+                className="w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-500 focus:outline-none focus:border-indigo-700 active:bg-indigo-700 transition duration-150 ease-in-out"
               >
                 {password.length ? 'Sign in' : 'Send magic link'}
               </button>
@@ -337,7 +360,7 @@ function App() {
               <button
                 onClick={() => handleEmailSignUp()}
                 type="button"
-                className="w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-500 focus:outline-none focus:border-indigo-700 focus:shadow-outline-indigo active:bg-indigo-700 transition duration-150 ease-in-out"
+                className="w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-500 focus:outline-none focus:border-indigo-700 active:bg-indigo-700 transition duration-150 ease-in-out"
               >
                 Sign Up
               </button>
@@ -346,18 +369,18 @@ function App() {
               <button
                 onClick={() => handleSendOtp()}
                 type="button"
-                className="w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-500 focus:outline-none focus:border-indigo-700 focus:shadow-outline-indigo active:bg-indigo-700 transition duration-150 ease-in-out"
+                className="w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-500 focus:outline-none focus:border-indigo-700 active:bg-indigo-700 transition duration-150 ease-in-out"
               >
-                Send Otp
+                Send OTP
               </button>
             </span>
             <span className="block w-full rounded-md shadow-sm">
               <button
                 onClick={() => handleVerifyOtp()}
                 type="button"
-                className="w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-500 focus:outline-none focus:border-indigo-700 focus:shadow-outline-indigo active:bg-indigo-700 transition duration-150 ease-in-out"
+                className="w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-500 focus:outline-none focus:border-indigo-700 active:bg-indigo-700 transition duration-150 ease-in-out"
               >
-                Verify Otp
+                Verify OTP
               </button>
             </span>
           </div>
@@ -372,40 +395,34 @@ function App() {
               </div>
             </div>
 
-            <div className="mt-6">
-              <div className="mt-6">
-                <span className="block w-full rounded-md shadow-sm">
-                  <button
-                    onClick={() => handleOAuthLogin('github')}
-                    type="button"
-                    className="w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-500 focus:outline-none focus:border-indigo-700 focus:shadow-outline-indigo active:bg-indigo-700 transition duration-150 ease-in-out"
-                  >
-                    GitHub
-                  </button>
-                </span>
-              </div>
-              <div className="mt-6">
-                <span className="block w-full rounded-md shadow-sm">
-                  <button
-                    onClick={() => handleOAuthLogin('google')}
-                    type="button"
-                    className="w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-500 focus:outline-none focus:border-indigo-700 focus:shadow-outline-indigo active:bg-indigo-700 transition duration-150 ease-in-out"
-                  >
-                    Google
-                  </button>
-                </span>
-              </div>
-              <div className="mt-6">
-                <span className="block w-full rounded-md shadow-sm">
-                  <button
-                    onClick={() => handleSignInAnonymously({ color: 'blue' })}
-                    type="button"
-                    className="w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-500 focus:outline-none focus:border-indigo-700 focus:shadow-outline-indigo active:bg-indigo-700 transition duration-150 ease-in-out"
-                  >
-                    Sign In Anonymously
-                  </button>
-                </span>
-              </div>
+            <div className="mt-6 space-y-4">
+              <span className="block w-full rounded-md shadow-sm">
+                <button
+                  onClick={() => handleOAuthLogin('github')}
+                  type="button"
+                  className="w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-500 focus:outline-none focus:border-indigo-700 active:bg-indigo-700 transition duration-150 ease-in-out"
+                >
+                  GitHub
+                </button>
+              </span>
+              <span className="block w-full rounded-md shadow-sm">
+                <button
+                  onClick={() => handleOAuthLogin('google')}
+                  type="button"
+                  className="w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-500 focus:outline-none focus:border-indigo-700 active:bg-indigo-700 transition duration-150 ease-in-out"
+                >
+                  Google
+                </button>
+              </span>
+              <span className="block w-full rounded-md shadow-sm">
+                <button
+                  onClick={() => handleSignInAnonymously({ color: 'blue' })}
+                  type="button"
+                  className="w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-500 focus:outline-none focus:border-indigo-700 active:bg-indigo-700 transition duration-150 ease-in-out"
+                >
+                  Sign In Anonymously
+                </button>
+              </span>
             </div>
           </div>
         </div>
