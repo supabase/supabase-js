@@ -1,10 +1,10 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { Suspense, useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useSearchParams } from 'next/navigation'
 
-export default function Home() {
+function HomeContent() {
   const searchParams = useSearchParams()
   const vsn = searchParams.get('vsn') || '1.0.0'
 
@@ -49,5 +49,13 @@ export default function Home() {
         <div data-testid="received_message">{receivedMessage}</div>
       )}
     </div>
+  )
+}
+
+export default function Home() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <HomeContent />
+    </Suspense>
   )
 }
