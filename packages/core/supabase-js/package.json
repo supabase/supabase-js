@@ -62,7 +62,7 @@
     "test:module-resolution": "npm run test:exports && npm run test:esm && npm run test:cjs",
     "docs": "typedoc --entryPoints src/index.ts --out docs/v2",
     "docs:json": "typedoc --entryPoints src/index.ts --json docs/v2/spec.json --excludeExternals",
-    "serve:coverage": "npx nx test:coverage supabase-js && serve test/coverage",
+    "serve:coverage": "npx nx test:coverage supabase-js && npx --yes serve test/coverage",
     "update:test-deps": "npm run update:test-deps:expo && npm run update:test-deps:next && npm run update:test-deps:deno && npm run update:test-deps:bun",
     "update:test-deps:expo": "cd test/integration/expo && npm install",
     "update:test-deps:next": "cd test/integration/next && npm install",
@@ -79,7 +79,6 @@
   "devDependencies": {
     "jsr": "^0.13.5",
     "puppeteer": "^24.9.0",
-    "serve": "^14.2.1",
     "tsd": "^0.33.0"
   },
   "jsdelivr": "dist/umd/supabase.js",
