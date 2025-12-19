@@ -1,109 +1,119 @@
-<a href="https://demo-nextjs-with-supabase.vercel.app/">
-  <img alt="Next.js and Supabase Starter Kit - the fastest way to build apps with Next.js and Supabase" src="https://demo-nextjs-with-supabase.vercel.app/opengraph-image.png">
-  <h1 align="center">Next.js and Supabase Starter Kit</h1>
-</a>
+# Realtime Chat Example
 
-<p align="center">
- The fastest way to build apps with Next.js and Supabase
-</p>
+A minimal anonymous chat app showcasing Supabase Realtime features:
 
-<p align="center">
-  <a href="#features"><strong>Features</strong></a> ·
-  <a href="#demo"><strong>Demo</strong></a> ·
-  <a href="#deploy-to-vercel"><strong>Deploy to Vercel</strong></a> ·
-  <a href="#clone-and-run-locally"><strong>Clone and run locally</strong></a> ·
-  <a href="#feedback-and-issues"><strong>Feedback and issues</strong></a>
-  <a href="#more-supabase-examples"><strong>More Examples</strong></a>
-</p>
-<br/>
+- **Broadcast** - Real-time message delivery
+- **Presence** - Online user indicators
+- **Database** - Message persistence
 
 ## Features
 
-- Works across the entire [Next.js](https://nextjs.org) stack
-  - App Router
-  - Pages Router
-  - Proxy
-  - Client
-  - Server
-  - It just works!
-- supabase-ssr. A package to configure Supabase Auth to use cookies
-- Password-based authentication block installed via the [Supabase UI Library](https://supabase.com/ui/docs/nextjs/password-based-auth)
-- Styling with [Tailwind CSS](https://tailwindcss.com)
-- Components with [shadcn/ui](https://ui.shadcn.com/)
-- Optional deployment with [Supabase Vercel Integration and Vercel deploy](#deploy-your-own)
-  - Environment variables automatically assigned to Vercel project
+- Anonymous users with random usernames (stored in localStorage)
+- 4 chat rooms: General, Random, Tech, Off-Topic
+- Real-time messages
+- Online users per room
+- Message history on join
 
-## Demo
+## Setup
 
-You can view a fully working demo at [demo-nextjs-with-supabase.vercel.app](https://demo-nextjs-with-supabase.vercel.app/).
+### 1. Create a Supabase Project
 
-## Deploy to Vercel
+Create a new project at [database.new](https://database.new)
 
-Vercel deployment will guide you through creating a Supabase account and project.
+### 2. Run the Database Migration
 
-After installation of the Supabase integration, all relevant environment variables will be assigned to the project so the deployment is fully functioning.
+Go to the [SQL Editor](https://supabase.com/dashboard/project/_/sql) in your Supabase dashboard and run the migration:
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fvercel%2Fnext.js%2Ftree%2Fcanary%2Fexamples%2Fwith-supabase&project-name=nextjs-with-supabase&repository-name=nextjs-with-supabase&demo-title=nextjs-with-supabase&demo-description=This+starter+configures+Supabase+Auth+to+use+cookies%2C+making+the+user%27s+session+available+throughout+the+entire+Next.js+app+-+Client+Components%2C+Server+Components%2C+Route+Handlers%2C+Server+Actions+and+Middleware.&demo-url=https%3A%2F%2Fdemo-nextjs-with-supabase.vercel.app%2F&external-id=https%3A%2F%2Fgithub.com%2Fvercel%2Fnext.js%2Ftree%2Fcanary%2Fexamples%2Fwith-supabase&demo-image=https%3A%2F%2Fdemo-nextjs-with-supabase.vercel.app%2Fopengraph-image.png)
+```sql
+-- Copy contents from: supabase/migrations/001_create_messages_table.sql
 
-The above will also clone the Starter kit to your GitHub, you can clone that locally and develop locally.
+CREATE TABLE public.messages (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  room TEXT NOT NULL,
+  username TEXT NOT NULL,
+  content TEXT NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
 
-If you wish to just develop locally and not deploy to Vercel, [follow the steps below](#clone-and-run-locally).
+ALTER TABLE public.messages ENABLE ROW LEVEL SECURITY;
 
-## Clone and run locally
+CREATE POLICY "Anyone can read messages" ON public.messages
+  FOR SELECT USING (true);
 
-1. You'll first need a Supabase project which can be made [via the Supabase dashboard](https://database.new)
+CREATE POLICY "Anyone can insert messages" ON public.messages
+  FOR INSERT WITH CHECK (true);
 
-2. Create a Next.js app using the Supabase Starter template npx command
+CREATE INDEX idx_messages_room ON public.messages(room, created_at DESC);
 
-   ```bash
-   npx create-next-app --example with-supabase with-supabase-app
-   ```
+-- Enable Realtime on the messages table
+ALTER PUBLICATION supabase_realtime ADD TABLE public.messages;
+```
 
-   ```bash
-   yarn create next-app --example with-supabase with-supabase-app
-   ```
+### 3. Configure Environment Variables
 
-   ```bash
-   pnpm create next-app --example with-supabase with-supabase-app
-   ```
+Copy `.env.example` to `.env.local` and fill in your Supabase credentials:
 
-3. Use `cd` to change into the app's directory
+```bash
+cp .env.example .env.local
+```
 
-   ```bash
-   cd with-supabase-app
-   ```
+Update the values:
 
-4. Rename `.env.example` to `.env.local` and update the following:
+```env
+NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=your-publishable-key
+```
 
-  ```env
-  NEXT_PUBLIC_SUPABASE_URL=[INSERT SUPABASE PROJECT URL]
-  NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=[INSERT SUPABASE PROJECT API PUBLISHABLE OR ANON KEY]
-  ```
-  > [!NOTE]
-  > This example uses `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, which refers to Supabase's new **publishable** key format.
-  > Both legacy **anon** keys and new **publishable** keys can be used with this variable name during the transition period. Supabase's dashboard may show `NEXT_PUBLIC_SUPABASE_ANON_KEY`; its value can be used in this example.
-  > See the [full announcement](https://github.com/orgs/supabase/discussions/29260) for more information.
+Find these in your [Supabase project settings](https://supabase.com/dashboard/project/_/settings/api).
 
-  Both `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` can be found in [your Supabase project's API settings](https://supabase.com/dashboard/project/_?showConnect=true)
+### 4. Install Dependencies
 
-5. You can now run the Next.js local development server:
+```bash
+npm install
+```
 
-   ```bash
-   npm run dev
-   ```
+### 5. Run the App
 
-   The starter kit should now be running on [localhost:3000](http://localhost:3000/).
+```bash
+npm run dev
+```
 
-6. This template comes with the default shadcn/ui style initialized. If you instead want other ui.shadcn styles, delete `components.json` and [re-install shadcn/ui](https://ui.shadcn.com/docs/installation/next)
+Open [http://localhost:3000](http://localhost:3000) to start chatting.
 
-> Check out [the docs for Local Development](https://supabase.com/docs/guides/getting-started/local-development) to also run Supabase locally.
+## How It Works
 
-## Feedback and issues
+### Broadcast
 
-Please file feedback and issues over on the [Supabase GitHub org](https://github.com/supabase/supabase/issues/new/choose).
+Messages are instantly delivered to all connected clients via Supabase Realtime Broadcast:
 
-## More Supabase examples
+```typescript
+channel.send({
+  type: 'broadcast',
+  event: 'message',
+  payload: message,
+})
+```
 
-- [Next.js Subscription Payments Starter](https://github.com/vercel/nextjs-subscription-payments)
-- [Cookie-based Auth and the Next.js 13 App Router (free course)](https://youtube.com/playlist?list=PL5S4mPUpp4OtMhpnp93EFSo42iQ40XjbF)
-- [Supabase Auth and the Next.js App Router](https://github.com/supabase/supabase/tree/master/examples/auth/nextjs)
+### Presence
+
+Online users are tracked using Supabase Realtime Presence:
+
+```typescript
+channel.on('presence', { event: 'sync' }, () => {
+  const users = Object.values(channel.presenceState()).flat()
+  setOnlineUsers(users)
+})
+```
+
+### Persistence
+
+Messages are also stored in the database so users see history when joining:
+
+```typescript
+const { data } = await supabase
+  .from('messages')
+  .select('*')
+  .eq('room', room)
+  .order('created_at', { ascending: true })
+  .limit(50)
+```
