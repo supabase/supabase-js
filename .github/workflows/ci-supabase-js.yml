@@ -336,6 +336,8 @@ jobs:
           cd "$TEST_DIR"
           echo "registry=http://localhost:4873/" > .npmrc
           npm install
+          echo "Building Next.js app (catches production build errors)"
+          npm run build
           npx playwright install --with-deps
           npm run test
           rm -f .npmrc
@@ -418,6 +420,8 @@ jobs:
           cd "$TEST_DIR"
           echo "registry=http://localhost:4873/" > .npmrc
           npm install
+          echo "Building Expo app with Metro (catches bundler errors)"
+          npx expo export --platform web
           npm test
           rm -f .npmrc
 
