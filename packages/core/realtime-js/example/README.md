@@ -51,10 +51,10 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.messages;
 
 ### 3. Configure Environment Variables
 
-Copy `.env.example` to `.env.local` and fill in your Supabase credentials:
+Copy `.env.example` to `.env` and fill in your Supabase credentials:
 
 ```bash
-cp .env.example .env.local
+cp .env.example .env
 ```
 
 Update the values:
@@ -131,13 +131,7 @@ You can run Supabase locally using the Supabase CLI and Docker.
 npm install -g supabase
 ```
 
-### 1. Initialize Supabase
-
-```bash
-supabase init
-```
-
-### 2. Start Supabase
+### 1. Start Supabase
 
 ```bash
 supabase start
@@ -146,11 +140,33 @@ supabase start
 This will start all Supabase services locally. Once started, you'll see output with your local credentials:
 
 ```
-API URL: http://127.0.0.1:54321
-publishable key: sb_publishable...
-service_role key: eyJhbG...
-Studio URL: http://127.0.0.1:54323
+         API URL: http://127.0.0.1:54321
+     GraphQL URL: http://127.0.0.1:54321/graphql/v1
+  S3 Storage URL: http://127.0.0.1:54321/storage/v1/s3
+         MCP URL: http://127.0.0.1:54321/mcp
+    Database URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
+      Studio URL: http://127.0.0.1:54323
+     Mailpit URL: http://127.0.0.1:54324
+ Publishable key: sb_publishable_..........
+      Secret key: sb_secret_.........
+   S3 Access Key: .....
+   S3 Secret Key: .....
+       S3 Region: local
 ```
+
+### 2. Configure Environment
+
+Copy `.env.example` to `.env.local`:
+
+```bash
+cp .env.example .env.local
+```
+
+Update the values:
+
+````env
+NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=<your-local-publishable-key>
 
 ### 3. Run Migrations
 
@@ -158,18 +174,11 @@ Apply the database migration:
 
 ```bash
 supabase db reset
-```
+````
 
 This will apply all migrations from `supabase/migrations/`.
 
-### 4. Configure Environment
-
-Update `.env.local` with local credentials:
-
-```env
-NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321
-NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=<your-local-publishable-key>
-```
+````
 
 ### 5. Access Local Dashboard
 
@@ -184,4 +193,4 @@ Open [http://127.0.0.1:54323](http://127.0.0.1:54323) to access Supabase Studio 
 
 ```bash
 supabase stop
-```
+````
