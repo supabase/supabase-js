@@ -20,8 +20,8 @@ class MockResponse {
   }
 }
 
-// Mock URL and credentials for testing
-const URL = 'http://localhost:8000/storage/v1'
+// Supabase CLI local development defaults
+const URL = 'http://127.0.0.1:54321/storage/v1'
 const KEY = 'test-api-key'
 
 describe('Bucket API Error Handling', () => {
@@ -85,12 +85,11 @@ describe('Bucket API Error Handling', () => {
       const { data, error } = await storage.listBuckets()
       expect(data).toBeNull()
       expect(error).not.toBeNull()
-      expect(error?.message).toBe(`headers must have required property 'authorization'`)
+      // Supabase CLI returns "Invalid Compact JWS" when no auth header is provided
+      expect(error?.message).toBe('Invalid Compact JWS')
 
       // throws when .throwOnError is enabled
-      await expect(storage.throwOnError().listBuckets()).rejects.toThrowError(
-        "headers must have required property 'authorization'"
-      )
+      await expect(storage.throwOnError().listBuckets()).rejects.toThrowError('Invalid Compact JWS')
     })
 
     it('handles network errors', async () => {
