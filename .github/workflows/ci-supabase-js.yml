@@ -226,9 +226,8 @@ jobs:
           rm -f .npmrc
           cd ../../..
 
-      # Temporarily disable this test until root cause is found
-      # - name: Run integration and browser tests
-      #   run: npx nx test:integration:browser supabase-js
+      - name: Run integration and browser tests
+        run: npx nx test:integration:browser supabase-js
 
       - name: Run Edge Functions Tests
         run: |
