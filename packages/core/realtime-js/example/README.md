@@ -117,3 +117,71 @@ const { data } = await supabase
   .order('created_at', { ascending: true })
   .limit(50)
 ```
+
+## Local Development (Optional)
+
+You can run Supabase locally using the Supabase CLI and Docker.
+
+### Prerequisites
+
+- [Docker](https://docs.docker.com/get-docker/) installed and running
+- [Supabase CLI](https://supabase.com/docs/guides/cli) installed
+
+```bash
+npm install -g supabase
+```
+
+### 1. Initialize Supabase
+
+```bash
+supabase init
+```
+
+### 2. Start Supabase
+
+```bash
+supabase start
+```
+
+This will start all Supabase services locally. Once started, you'll see output with your local credentials:
+
+```
+API URL: http://127.0.0.1:54321
+publishable key: sb_publishable...
+service_role key: eyJhbG...
+Studio URL: http://127.0.0.1:54323
+```
+
+### 3. Run Migrations
+
+Apply the database migration:
+
+```bash
+supabase db reset
+```
+
+This will apply all migrations from `supabase/migrations/`.
+
+### 4. Configure Environment
+
+Update `.env.local` with local credentials:
+
+```env
+NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=<your-local-publishable-key>
+```
+
+### 5. Access Local Dashboard
+
+Open [http://127.0.0.1:54323](http://127.0.0.1:54323) to access Supabase Studio locally. Here you can:
+
+- View and edit data in the Table Editor
+- Run SQL queries
+- Monitor Realtime connections
+- Check logs
+
+### Stopping Supabase
+
+```bash
+supabase stop
+```
