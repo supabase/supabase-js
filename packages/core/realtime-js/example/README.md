@@ -22,32 +22,7 @@ Create a new project at [database.new](https://database.new)
 
 ### 2. Run the Database Migration
 
-Go to the [SQL Editor](https://supabase.com/dashboard/project/_/sql) in your Supabase dashboard and run the migration:
-
-```sql
--- Copy contents from: supabase/migrations/001_create_messages_table.sql
-
-CREATE TABLE public.messages (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  room TEXT NOT NULL,
-  username TEXT NOT NULL,
-  content TEXT NOT NULL,
-  created_at TIMESTAMPTZ DEFAULT now()
-);
-
-ALTER TABLE public.messages ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY "Anyone can read messages" ON public.messages
-  FOR SELECT USING (true);
-
-CREATE POLICY "Anyone can insert messages" ON public.messages
-  FOR INSERT WITH CHECK (true);
-
-CREATE INDEX idx_messages_room ON public.messages(room, created_at DESC);
-
--- Enable Realtime on the messages table
-ALTER PUBLICATION supabase_realtime ADD TABLE public.messages;
-```
+Go to the [SQL Editor](https://supabase.com/dashboard/project/_/sql) in your Supabase dashboard and run the migration you find in [supabase/migrations/001_create_messages_table.sql](packages/core/realtime-js/example/supabase/migrations/001_create_messages_table.sql).
 
 ### 3. Configure Environment Variables
 
@@ -118,40 +93,45 @@ const { data } = await supabase
   .limit(50)
 ```
 
-## Local Development (Optional)
+## Local Development
 
 You can run Supabase locally using the Supabase CLI and Docker.
 
 ### Prerequisites
 
 - [Docker](https://docs.docker.com/get-docker/) installed and running
-- [Supabase CLI](https://supabase.com/docs/guides/cli) installed
-
-```bash
-npm install -g supabase
-```
+- [Supabase CLI](https://supabase.com/docs/guides/cli) (installed or used through `npx`)
 
 ### 1. Start Supabase
 
 ```bash
-supabase start
+npx supabase start
 ```
 
 This will start all Supabase services locally. Once started, you'll see output with your local credentials:
 
 ```
-         API URL: http://127.0.0.1:54321
-     GraphQL URL: http://127.0.0.1:54321/graphql/v1
-  S3 Storage URL: http://127.0.0.1:54321/storage/v1/s3
-         MCP URL: http://127.0.0.1:54321/mcp
-    Database URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
-      Studio URL: http://127.0.0.1:54323
-     Mailpit URL: http://127.0.0.1:54324
- Publishable key: sb_publishable_..........
-      Secret key: sb_secret_.........
-   S3 Access Key: .....
-   S3 Secret Key: .....
-       S3 Region: local
+╭──────────────────────────────────────╮
+│ 🔧 Development Tools                 │
+├─────────┬────────────────────────────┤
+│ Studio  │ http://127.0.0.1:54323     │
+│ ...     │ ...                        │
+╰─────────┴────────────────────────────╯
+
+╭──────────────────────────────────────────────╮
+│ 🌐 APIs                                      │
+├────────────────┬─────────────────────────────┤
+│ Project URL    │ http://127.0.0.1:54321      │
+│ ...            │ ...                         │
+╰────────────────┴─────────────────────────────╯
+...
+╭──────────────────────────────────────────────────╮
+│ 🔑 Authentication Keys                           │
+├─────────────┬────────────────────────────────────┤
+│ Publishable │ sb_publishable_...                 │
+│ Secret      │ sb_secret_...                      │
+╰─────────────┴────────────────────────────────────╯
+...
 ```
 
 ### 2. Configure Environment
@@ -164,21 +144,20 @@ cp .env.example .env.local
 
 Update the values:
 
-````env
+```env
 NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321
-NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=<your-local-publishable-key>
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_....
+```
 
 ### 3. Run Migrations
 
 Apply the database migration:
 
 ```bash
-supabase db reset
-````
+npx supabase db reset
+```
 
 This will apply all migrations from `supabase/migrations/`.
-
-````
 
 ### 5. Access Local Dashboard
 
@@ -192,5 +171,5 @@ Open [http://127.0.0.1:54323](http://127.0.0.1:54323) to access Supabase Studio 
 ### Stopping Supabase
 
 ```bash
-supabase stop
-````
+npx supabase stop
+```
