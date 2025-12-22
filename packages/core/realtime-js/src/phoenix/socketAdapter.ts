@@ -1,10 +1,10 @@
 import { Socket } from 'phoenix'
 import type {
   Message,
-  OnCloseCallback,
-  OnErrorCallback,
-  OnMessageCallback,
-  OnOpenCallback,
+  SocketOnClose,
+  SocketOnMessage,
+  SocketOnOpen,
+  SocketOnError,
   SocketOptions,
 } from './types'
 import { CONNECTION_STATE, ConnectionState } from '../lib/constants'
@@ -89,19 +89,19 @@ export default class SocketAdapter {
     return this.socket.makeRef()
   }
 
-  onOpen(callback: OnOpenCallback) {
+  onOpen(callback: SocketOnOpen) {
     this.socket.onOpen(callback)
   }
 
-  onClose(callback: OnCloseCallback) {
+  onClose(callback: SocketOnClose) {
     this.socket.onClose(callback)
   }
 
-  onError(callback: OnErrorCallback) {
+  onError(callback: SocketOnError) {
     this.socket.onError(callback)
   }
 
-  onMessage(callback: OnMessageCallback) {
+  onMessage(callback: SocketOnMessage) {
     this.socket.onMessage(callback)
   }
 

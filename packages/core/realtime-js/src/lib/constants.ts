@@ -4,7 +4,7 @@ import type {
   ChannelState,
   ChannelEvent as PhoenixChannelEvent,
   Transport,
-} from 'phoenix'
+} from '../phoenix/types'
 
 export type { SocketState, ChannelState, Transport }
 

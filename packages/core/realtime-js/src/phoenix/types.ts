@@ -1,21 +1,24 @@
 export type {
   Socket,
+  SocketOptions,
+  SocketState,
+  SocketOnOpen,
+  SocketOnError,
+  SocketOnMessage,
+  SocketOnClose,
   Channel,
+  ChannelState,
+  ChannelEvent,
+  ChannelBindingCallback,
+  ChannelOnMessage,
+  ChannelOnErrorCallback,
+  PresenceState,
   Message,
   Params,
-  OnCloseCallback,
-  OnErrorCallback,
-  OnMessageCallback,
-  OnOpenCallback,
-  OnSync,
-  State,
-  SocketOptions,
-  BindingCallback,
+  Transport,
 } from 'phoenix'
 
-import type { Channel } from 'phoenix'
+import type { Channel, PresenceState } from 'phoenix'
 
 export type Push = ReturnType<Channel['push']>
-
-// TODO: Maybe it should be exported in `phoenix`
-export type ChanelOnErrorCallback = (reason: any) => void
+export type PresenceStates = Record<string, PresenceState>

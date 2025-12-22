@@ -1,8 +1,13 @@
 import { Channel } from 'phoenix'
-import { CHANNEL_STATES, ChannelState } from '../lib/constants'
+import { CHANNEL_STATES } from '../lib/constants'
 import type { RealtimeChannelOptions } from '../RealtimeChannel'
 import SocketAdapter from './socketAdapter'
-import type { BindingCallback, ChanelOnErrorCallback, Params } from './types'
+import type {
+  ChannelBindingCallback,
+  ChannelOnMessage,
+  ChannelOnErrorCallback,
+  Params,
+} from './types'
 
 export default class ChannelAdapter {
   private channel: Channel
@@ -34,7 +39,7 @@ export default class ChannelAdapter {
     return this.channel.rejoinTimer
   }
 
-  on(event: string, callback: BindingCallback) {
+  on(event: string, callback: ChannelBindingCallback) {
     return this.channel.on(event, callback)
   }
 
@@ -54,11 +59,11 @@ export default class ChannelAdapter {
     this.channel.push(event, payload, timeout)
   }
 
-  onClose(callback: BindingCallback) {
+  onClose(callback: ChannelBindingCallback) {
     this.channel.onClose(callback)
   }
 
-  onError(callback: ChanelOnErrorCallback) {
+  onError(callback: ChannelOnErrorCallback) {
     return this.channel.onError(callback)
   }
 
@@ -114,7 +119,7 @@ export default class ChannelAdapter {
     this.channel.filterMessage = filterMessage
   }
 
-  updatePayloadTransform(callback: (event: string, payload: unknown, ref: number) => unknown) {
+  updatePayloadTransform(callback: ChannelOnMessage) {
     this.channel.onMessage = callback
   }
 
