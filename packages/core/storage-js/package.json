@@ -41,10 +41,6 @@
   "scripts": {
     "build": "tsdown",
     "build:watch": "tsdown --watch",
-    "test:storage": "npx nx test:clean storage-js && npx nx test:infra storage-js && npx nx test:suite storage-js && npx nx test:clean storage-js",
-    "test:suite": "jest --runInBand --coverage",
-    "test:infra": "cd test && supabase start && supabase db reset",
-    "test:clean": "cd test && supabase stop --no-backup || true",
     "docs": "typedoc --entryPoints src/index.ts --out docs/v2 --entryPoints src/packages/* --excludePrivate --excludeProtected",
     "docs:json": "typedoc --json docs/v2/spec.json --entryPoints src/index.ts --entryPoints src/packages/* --excludePrivate --excludeExternals --excludeProtected"
   },

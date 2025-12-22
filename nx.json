@@ -122,6 +122,23 @@
       "cache": true,
       "outputs": ["{projectRoot}/coverage"]
     },
+    "test:storage": {
+      "cache": false
+    },
+    "test:suite": {
+      "inputs": ["testing", "^production"],
+      "cache": false,
+      "outputs": ["{projectRoot}/coverage"]
+    },
+    "test:infra": {
+      "cache": false
+    },
+    "test:clean-pre": {
+      "cache": false
+    },
+    "test:clean-post": {
+      "cache": false
+    },
     "vite:test": {
       "inputs": ["testing", "^production"],
       "cache": true,
