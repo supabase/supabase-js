@@ -2,7 +2,6 @@ import { PostgrestClient } from '../src/index'
 import { CustomUserDataTypeSchema, Database } from './types.override'
 import { expectType, TypeEqual } from './types'
 import { z } from 'zod'
-import { Json } from '../src/select-query-parser/types'
 import { RequiredDeep } from 'type-fest'
 
 const REST_URL = 'http://localhost:3000'
@@ -374,7 +373,7 @@ test('embed resource with no fields', async () => {
   ExpectedSchema.parse(res.data)
 })
 
-test('select JSON accessor', async () => {
+test('select JSON object accessor on non-object fields (->)', async () => {
   const res = await postgrest
     .from('users')
     .select('data->foo->bar, data->foo->>baz')
@@ -385,10 +384,182 @@ test('select JSON accessor', async () => {
     {
       "count": null,
       "data": {
+        "bar": null,
+        "baz": null,
+      },
+      "error": null,
+      "status": 200,
+      "statusText": "OK",
+    }
+  `)
+  let result: Exclude<typeof res.data, null>
+  const ExpectedSchema = z.object({
+    baz: z.null(),
+    bar: z.null(),
+  })
+  let expected: z.infer<typeof ExpectedSchema>
+  expectType<TypeEqual<typeof result, typeof expected>>(true)
+  ExpectedSchema.parse(res.data)
+})
+
+test('select JSON string accessor on non-object fields (->>)', async () => {
+  const res = await postgrest
+    .from('users')
+    .select('data->>foo, foo_json:data->foo')
+    .limit(1)
+    .filter('username', 'eq', 'jsonuser')
+    .single()
+  expect(res).toMatchInlineSnapshot(`
+    {
+      "count": null,
+      "data": {
+        "foo": "string value",
+        "foo_json": "string value",
+      },
+      "error": null,
+      "status": 200,
+      "statusText": "OK",
+    }
+  `)
+  let result: Exclude<typeof res.data, null>
+  const ExpectedSchema = z.object({
+    foo: z.string().nullable(),
+    foo_json: z.string().nullable(),
+  })
+  let expected: z.infer<typeof ExpectedSchema>
+  expectType<TypeEqual<typeof result, typeof expected>>(true)
+  ExpectedSchema.parse(res.data)
+})
+
+test('select JSON object accessor on object fields (->)', async () => {
+  const res = await postgrest
+    .from('users')
+    .select('data->bar, bar_nested:data->fooRecord->bar, data->fooRecord')
+    .limit(1)
+    .filter('username', 'eq', 'jsonuserobj')
+    .single()
+  expect(res).toMatchInlineSnapshot(`
+    {
+      "count": null,
+      "data": {
         "bar": {
-          "nested": "value",
+          "baz": 42,
         },
+        "bar_nested": {
+          "nested": "deep",
+        },
+        "fooRecord": {
+          "bar": {
+            "nested": "deep",
+          },
+          "baz": "test",
+        },
+      },
+      "error": null,
+      "status": 200,
+      "statusText": "OK",
+    }
+  `)
+  let result: Exclude<typeof res.data, null>
+  const ExpectedSchema = z.object({
+    bar: z
+      .object({
+        baz: z.number(),
+      })
+      .nullable(),
+    bar_nested: z.record(z.string(), z.unknown()).nullable(),
+    fooRecord: z
+      .object({
+        bar: z.record(z.string(), z.unknown()),
+        baz: z.string(),
+      })
+      .nullable(),
+  })
+  let expected: z.infer<typeof ExpectedSchema>
+  expectType<TypeEqual<typeof result, typeof expected>>(true)
+  ExpectedSchema.parse(res.data)
+})
+
+test('select JSON string accessor on object fields (->>)', async () => {
+  const res = await postgrest
+    .from('users')
+    .select('data->bar->>baz, data->>en, baz_nested:data->fooRecord->>baz')
+    .limit(1)
+    .filter('username', 'eq', 'jsonuserobj')
+    .single()
+  expect(res).toMatchInlineSnapshot(`
+    {
+      "count": null,
+      "data": {
+        "baz": "42",
+        "baz_nested": "test",
+        "en": "TWO",
+      },
+      "error": null,
+      "status": 200,
+      "statusText": "OK",
+    }
+  `)
+  let result: Exclude<typeof res.data, null>
+  const ExpectedSchema = z.object({
+    baz: z.string().nullable(),
+    en: z.enum(['ONE', 'TWO', 'THREE']).nullable(),
+    baz_nested: z.string().nullable(),
+  })
+  let expected: z.infer<typeof ExpectedSchema>
+  expectType<TypeEqual<typeof result, typeof expected>>(true)
+  ExpectedSchema.parse(res.data)
+})
+
+test('select JSON accessor with null fields', async () => {
+  const res = await postgrest
+    .from('users')
+    .select('data->bar->baz, data->en, data->bar')
+    .limit(1)
+    .filter('username', 'eq', 'jsonusernull')
+    .single()
+  expect(res).toMatchInlineSnapshot(`
+    {
+      "count": null,
+      "data": {
+        "bar": null,
+        "baz": null,
+        "en": "ONE",
+      },
+      "error": null,
+      "status": 200,
+      "statusText": "OK",
+    }
+  `)
+  let result: Exclude<typeof res.data, null>
+  const ExpectedSchema = z.object({
+    baz: z.number().nullable(),
+    en: z.enum(['ONE', 'TWO', 'THREE']).nullable(),
+    bar: z
+      .object({
+        baz: z.number(),
+      })
+      .nullable(),
+  })
+  let expected: z.infer<typeof ExpectedSchema>
+  expectType<TypeEqual<typeof result, typeof expected>>(true)
+  ExpectedSchema.parse(res.data)
+})
+
+test('select JSON accessor with null nested object fields', async () => {
+  const res = await postgrest
+    .from('users')
+    .select('data->fooRecord->bar, data->fooRecord->bar->nested, data->fooRecord->>baz')
+    .limit(1)
+    .filter('username', 'eq', 'jsonusernull')
+    .single()
+  expect(res).toMatchInlineSnapshot(`
+    {
+      "count": null,
+      "data": {
+        "bar": null,
         "baz": "string value",
+        "nested": null,
       },
       "error": null,
       "status": 200,
@@ -398,14 +569,83 @@ test('select JSON accessor', async () => {
   let result: Exclude<typeof res.data, null>
   const ExpectedSchema = z.object({
     bar: z.record(z.string(), z.unknown()).nullable(),
-    baz: z.string(),
+    nested: z.unknown(),
+    baz: z.string().nullable(),
   })
-  // Cannot have a zod schema that match the Json type
-  // TODO: refactor the Json type to be unknown
-  let expected: {
-    bar: Record<string, unknown> | null
-    baz: string
-  }
+  // unknown get infered to `nested?: unknown` by zod, so we need to make it required
+  let expected: Required<z.infer<typeof ExpectedSchema>>
+  expectType<TypeEqual<typeof result, typeof expected>>(true)
+  ExpectedSchema.parse(res.data)
+})
+
+test('select JSON accessor with missing properties', async () => {
+  const res = await postgrest
+    .from('users')
+    .select('data->bar->baz, data->missing->field, data->>missing, data->bar')
+    .limit(1)
+    .filter('username', 'eq', 'jsonusermissing')
+    .single()
+  expect(res).toMatchInlineSnapshot(`
+    {
+      "count": null,
+      "data": {
+        "bar": null,
+        "baz": null,
+        "field": null,
+        "missing": null,
+      },
+      "error": null,
+      "status": 200,
+      "statusText": "OK",
+    }
+  `)
+  let result: Exclude<typeof res.data, null>
+  const ExpectedSchema = z.object({
+    baz: z.number().nullable(),
+    field: z.null(),
+    missing: z.null(),
+    bar: z
+      .object({
+        baz: z.number(),
+      })
+      .nullable(),
+  })
+  let expected: z.infer<typeof ExpectedSchema>
+  expectType<TypeEqual<typeof result, typeof expected>>(true)
+  ExpectedSchema.parse(res.data)
+})
+
+test('select JSON accessor with null data field', async () => {
+  const res = await postgrest
+    .from('users')
+    .select('data->bar->baz, data->en, data->bar')
+    .limit(1)
+    .is('data', null)
+    .single()
+  expect(res).toMatchInlineSnapshot(`
+    {
+      "count": null,
+      "data": {
+        "bar": null,
+        "baz": null,
+        "en": null,
+      },
+      "error": null,
+      "status": 200,
+      "statusText": "OK",
+    }
+  `)
+  let result: Exclude<typeof res.data, null>
+  const ExpectedSchema = z.object({
+    baz: z.number().nullable(),
+    en: z.enum(['ONE', 'TWO', 'THREE']).nullable(),
+    bar: z
+      .object({
+        baz: z.number(),
+      })
+      .nullable(),
+  })
+  let expected: z.infer<typeof ExpectedSchema>
   expectType<TypeEqual<typeof result, typeof expected>>(true)
   ExpectedSchema.parse(res.data)
 })

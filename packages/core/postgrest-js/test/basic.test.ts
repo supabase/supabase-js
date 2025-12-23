@@ -42,7 +42,8 @@ test('basic select table', async () => {
           "age_range": "[20,30)",
           "catchphrase": "'json' 'test'",
           "data": {
-            "foo": {
+            "foo": "string value",
+            "fooRecord": {
               "bar": {
                 "nested": "value",
               },
@@ -51,6 +52,49 @@ test('basic select table', async () => {
           },
           "status": "ONLINE",
           "username": "jsonuser",
+        },
+        {
+          "age_range": "[20,30)",
+          "catchphrase": "'json' 'null' 'test'",
+          "data": {
+            "bar": null,
+            "en": "ONE",
+            "foo": "string value",
+            "fooRecord": {
+              "bar": null,
+              "baz": "string value",
+            },
+          },
+          "status": "ONLINE",
+          "username": "jsonusernull",
+        },
+        {
+          "age_range": "[20,30)",
+          "catchphrase": "'json' 'obj' 'test'",
+          "data": {
+            "bar": {
+              "baz": 42,
+            },
+            "en": "TWO",
+            "fooRecord": {
+              "bar": {
+                "nested": "deep",
+              },
+              "baz": "test",
+            },
+          },
+          "status": "ONLINE",
+          "username": "jsonuserobj",
+        },
+        {
+          "age_range": "[20,30)",
+          "catchphrase": "'json' 'missing' 'test'",
+          "data": {
+            "en": "THREE",
+            "foo": "string",
+          },
+          "status": "ONLINE",
+          "username": "jsonusermissing",
         },
       ],
       "error": null,
@@ -98,7 +142,8 @@ test('basic select returns types override', async () => {
           "age_range": "[20,30)",
           "catchphrase": "'json' 'test'",
           "data": {
-            "foo": {
+            "foo": "string value",
+            "fooRecord": {
               "bar": {
                 "nested": "value",
               },
@@ -107,6 +152,49 @@ test('basic select returns types override', async () => {
           },
           "status": "ONLINE",
           "username": "jsonuser",
+        },
+        {
+          "age_range": "[20,30)",
+          "catchphrase": "'json' 'null' 'test'",
+          "data": {
+            "bar": null,
+            "en": "ONE",
+            "foo": "string value",
+            "fooRecord": {
+              "bar": null,
+              "baz": "string value",
+            },
+          },
+          "status": "ONLINE",
+          "username": "jsonusernull",
+        },
+        {
+          "age_range": "[20,30)",
+          "catchphrase": "'json' 'obj' 'test'",
+          "data": {
+            "bar": {
+              "baz": 42,
+            },
+            "en": "TWO",
+            "fooRecord": {
+              "bar": {
+                "nested": "deep",
+              },
+              "baz": "test",
+            },
+          },
+          "status": "ONLINE",
+          "username": "jsonuserobj",
+        },
+        {
+          "age_range": "[20,30)",
+          "catchphrase": "'json' 'missing' 'test'",
+          "data": {
+            "en": "THREE",
+            "foo": "string",
+          },
+          "status": "ONLINE",
+          "username": "jsonusermissing",
         },
       ],
       "error": null,
@@ -172,7 +260,7 @@ test('basic select with maybeSingle yielding more than one result', async () => 
       "data": null,
       "error": {
         "code": "PGRST116",
-        "details": "Results contain 5 rows, application/vnd.pgrst.object+json requires 1 row",
+        "details": "Results contain 8 rows, application/vnd.pgrst.object+json requires 1 row",
         "hint": null,
         "message": "JSON object requested, multiple (or no) rows returned",
       },
@@ -190,7 +278,7 @@ test('basic select with single yielding more than one result', async () => {
       "data": null,
       "error": {
         "code": "PGRST116",
-        "details": "The result contains 5 rows",
+        "details": "The result contains 8 rows",
         "hint": null,
         "message": "JSON object requested, multiple (or no) rows returned",
       },
@@ -225,6 +313,18 @@ test('basic select view', async () => {
         {
           "non_updatable_column": 1,
           "username": "jsonuser",
+        },
+        {
+          "non_updatable_column": 1,
+          "username": "jsonusernull",
+        },
+        {
+          "non_updatable_column": 1,
+          "username": "jsonuserobj",
+        },
+        {
+          "non_updatable_column": 1,
+          "username": "jsonusermissing",
         },
       ],
       "error": null,
@@ -1039,7 +1139,8 @@ test('allow ordering on JSON column', async () => {
         "age_range": "[20,30)",
         "catchphrase": "'json' 'test'",
         "data": {
-          "foo": {
+          "foo": "string value",
+          "fooRecord": {
             "bar": {
               "nested": "value",
             },
@@ -1048,6 +1149,49 @@ test('allow ordering on JSON column', async () => {
         },
         "status": "ONLINE",
         "username": "jsonuser",
+      },
+      {
+        "age_range": "[20,30)",
+        "catchphrase": "'json' 'null' 'test'",
+        "data": {
+          "bar": null,
+          "en": "ONE",
+          "foo": "string value",
+          "fooRecord": {
+            "bar": null,
+            "baz": "string value",
+          },
+        },
+        "status": "ONLINE",
+        "username": "jsonusernull",
+      },
+      {
+        "age_range": "[20,30)",
+        "catchphrase": "'json' 'obj' 'test'",
+        "data": {
+          "bar": {
+            "baz": 42,
+          },
+          "en": "TWO",
+          "fooRecord": {
+            "bar": {
+              "nested": "deep",
+            },
+            "baz": "test",
+          },
+        },
+        "status": "ONLINE",
+        "username": "jsonuserobj",
+      },
+      {
+        "age_range": "[20,30)",
+        "catchphrase": "'json' 'missing' 'test'",
+        "data": {
+          "en": "THREE",
+          "foo": "string",
+        },
+        "status": "ONLINE",
+        "username": "jsonusermissing",
       },
       {
         "age_range": "[20,30)",
@@ -1084,7 +1228,7 @@ test('select with head:true, count:exact', async () => {
   const res = await postgrest.from('users').select('*', { head: true, count: 'exact' })
   expect(res).toMatchInlineSnapshot(`
     {
-      "count": 5,
+      "count": 8,
       "data": null,
       "error": null,
       "status": 200,
@@ -1133,7 +1277,7 @@ test('select with count:exact', async () => {
   const res = await postgrest.from('users').select('*', { count: 'exact' })
   expect(res).toMatchInlineSnapshot(`
     {
-      "count": 5,
+      "count": 8,
       "data": [
         {
           "age_range": "[1,2)",
@@ -1160,7 +1304,8 @@ test('select with count:exact', async () => {
           "age_range": "[20,30)",
           "catchphrase": "'json' 'test'",
           "data": {
-            "foo": {
+            "foo": "string value",
+            "fooRecord": {
               "bar": {
                 "nested": "value",
               },
@@ -1169,6 +1314,49 @@ test('select with count:exact', async () => {
           },
           "status": "ONLINE",
           "username": "jsonuser",
+        },
+        {
+          "age_range": "[20,30)",
+          "catchphrase": "'json' 'null' 'test'",
+          "data": {
+            "bar": null,
+            "en": "ONE",
+            "foo": "string value",
+            "fooRecord": {
+              "bar": null,
+              "baz": "string value",
+            },
+          },
+          "status": "ONLINE",
+          "username": "jsonusernull",
+        },
+        {
+          "age_range": "[20,30)",
+          "catchphrase": "'json' 'obj' 'test'",
+          "data": {
+            "bar": {
+              "baz": 42,
+            },
+            "en": "TWO",
+            "fooRecord": {
+              "bar": {
+                "nested": "deep",
+              },
+              "baz": "test",
+            },
+          },
+          "status": "ONLINE",
+          "username": "jsonuserobj",
+        },
+        {
+          "age_range": "[20,30)",
+          "catchphrase": "'json' 'missing' 'test'",
+          "data": {
+            "en": "THREE",
+            "foo": "string",
+          },
+          "status": "ONLINE",
+          "username": "jsonusermissing",
         },
         {
           "age_range": "[20,30)",

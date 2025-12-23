@@ -21,6 +21,15 @@ test('not', async () => {
         {
           "status": "ONLINE",
         },
+        {
+          "status": "ONLINE",
+        },
+        {
+          "status": "ONLINE",
+        },
+        {
+          "status": "ONLINE",
+        },
       ],
       "error": null,
       "status": 200,
@@ -85,6 +94,15 @@ test('neq', async () => {
         },
         {
           "username": "jsonuser",
+        },
+        {
+          "username": "jsonusernull",
+        },
+        {
+          "username": "jsonuserobj",
+        },
+        {
+          "username": "jsonusermissing",
         },
         {
           "username": "dragarcia",
@@ -345,6 +363,15 @@ test('in', async () => {
         {
           "status": "ONLINE",
         },
+        {
+          "status": "ONLINE",
+        },
+        {
+          "status": "ONLINE",
+        },
+        {
+          "status": "ONLINE",
+        },
       ],
       "error": null,
       "status": 200,
@@ -378,18 +405,7 @@ test('contains with json', async () => {
   expect(res).toMatchInlineSnapshot(`
     {
       "count": null,
-      "data": [
-        {
-          "data": {
-            "foo": {
-              "bar": {
-                "nested": "value",
-              },
-              "baz": "string value",
-            },
-          },
-        },
-      ],
+      "data": [],
       "error": null,
       "status": 200,
       "statusText": "OK",
@@ -524,6 +540,15 @@ test('rangeGte', async () => {
         {
           "age_range": "[20,30)",
         },
+        {
+          "age_range": "[20,30)",
+        },
+        {
+          "age_range": "[20,30)",
+        },
+        {
+          "age_range": "[20,30)",
+        },
       ],
       "error": null,
       "status": 200,
@@ -578,6 +603,15 @@ test('overlaps', async () => {
     {
       "count": null,
       "data": [
+        {
+          "age_range": "[20,30)",
+        },
+        {
+          "age_range": "[20,30)",
+        },
+        {
+          "age_range": "[20,30)",
+        },
         {
           "age_range": "[20,30)",
         },

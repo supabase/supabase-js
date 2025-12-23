@@ -1,7 +1,6 @@
 import { expectType, TypeEqual } from './types'
 import { PostgrestClient, PostgrestError } from '../src/index'
 import { Prettify } from '../src/types/types'
-import { Json } from '../src/select-query-parser/types'
 import { Database } from './types.override'
 import { Database as DatabaseWithOptions } from './types.override-with-options-postgrest14'
 
@@ -191,7 +190,10 @@ const postgrestWithOptions = new PostgrestClient<DatabaseWithOptions>(REST_URL)
 
 // json accessor in select query
 {
-  const result = await postgrest.from('users').select('data->foo->bar, data->foo->>baz').single()
+  const result = await postgrest
+    .from('users')
+    .select('data->fooRecord->bar, data->fooRecord->>baz')
+    .single()
   if (result.error) {
     throw new Error(result.error.message)
   }
@@ -311,9 +313,9 @@ const postgrestWithOptions = new PostgrestClient<DatabaseWithOptions>(REST_URL)
   }
   expectType<
     {
-      baz: string
-      en: string
-      bar: string
+      baz: string | null
+      en: 'ONE' | 'TWO' | 'THREE' | null
+      bar: string | null
     }[]
   >(result.data)
 }
