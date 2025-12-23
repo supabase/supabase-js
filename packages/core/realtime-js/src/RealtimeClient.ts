@@ -75,7 +75,7 @@ export type RealtimeClientOptions = {
   transport?: WebSocketLikeConstructor
   timeout?: number
   heartbeatIntervalMs?: number
-  heartbeatCallback?: (status: HeartbeatStatus) => void
+  heartbeatCallback?: (status: HeartbeatStatus, latency?: number) => void
   vsn?: string
   logger?: Function
   encode?: Function
@@ -114,7 +114,7 @@ export default class RealtimeClient {
   heartbeatIntervalMs: number = CONNECTION_TIMEOUTS.HEARTBEAT_INTERVAL
   heartbeatTimer: ReturnType<typeof setInterval> | undefined = undefined
   pendingHeartbeatRef: string | null = null
-  heartbeatCallback: (status: HeartbeatStatus) => void = noop
+  heartbeatCallback: (status: HeartbeatStatus, latency?: number) => void = noop
   ref: number = 0
   reconnectTimer: Timer | null = null
   vsn: string = DEFAULT_VSN
@@ -145,6 +145,7 @@ export default class RealtimeClient {
   private _connectionState: RealtimeClientState = 'disconnected'
   private _wasManualDisconnect: boolean = false
   private _authPromise: Promise<void> | null = null
+  private _heartbeatSentAt: number | null = null
 
   /**
    * Initializes the Socket.
@@ -156,7 +157,7 @@ export default class RealtimeClient {
    * @param options.params The optional params to pass when connecting.
    * @param options.headers Deprecated: headers cannot be set on websocket connections and this option will be removed in the future.
    * @param options.heartbeatIntervalMs The millisec interval to send a heartbeat message.
-   * @param options.heartbeatCallback The optional function to handle heartbeat status.
+   * @param options.heartbeatCallback The optional function to handle heartbeat status and latency.
    * @param options.logger The optional function for specialized logging, ie: logger: (kind, msg, data) => { console.log(`${kind}: ${msg}`, data) }
    * @param options.logLevel Sets the log level for Realtime
    * @param options.encode The function to encode outgoing messages. Defaults to JSON: (payload, callback) => callback(JSON.stringify(payload))
@@ -464,6 +465,7 @@ export default class RealtimeClient {
     // Handle heartbeat timeout and force reconnection if needed
     if (this.pendingHeartbeatRef) {
       this.pendingHeartbeatRef = null
+      this._heartbeatSentAt = null
       this.log('transport', 'heartbeat timeout. Attempting to re-establish connection')
       try {
         this.heartbeatCallback('timeout')
@@ -484,6 +486,7 @@ export default class RealtimeClient {
     }
 
     // Send heartbeat message to server
+    this._heartbeatSentAt = Date.now()
     this.pendingHeartbeatRef = this._makeRef()
     this.push({
       topic: 'phoenix',
@@ -504,7 +507,7 @@ export default class RealtimeClient {
    * Sets a callback that receives lifecycle events for internal heartbeat messages.
    * Useful for instrumenting connection health (e.g. sent/ok/timeout/disconnected).
    */
-  onHeartbeat(callback: (status: HeartbeatStatus) => void): void {
+  onHeartbeat(callback: (status: HeartbeatStatus, latency?: number) => void): void {
     this.heartbeatCallback = callback
   }
   /**
@@ -575,16 +578,19 @@ export default class RealtimeClient {
   private _onConnMessage(rawMessage: { data: any }) {
     this.decode(rawMessage.data, (msg: RealtimeMessage) => {
       // Handle heartbeat responses
-      if (msg.topic === 'phoenix' && msg.event === 'phx_reply') {
+      if (
+        msg.topic === 'phoenix' &&
+        msg.event === 'phx_reply' &&
+        msg.ref &&
+        msg.ref === this.pendingHeartbeatRef
+      ) {
+        const latency = this._heartbeatSentAt ? Date.now() - this._heartbeatSentAt : undefined
         try {
-          this.heartbeatCallback(msg.payload.status === 'ok' ? 'ok' : 'error')
+          this.heartbeatCallback(msg.payload.status === 'ok' ? 'ok' : 'error', latency)
         } catch (e) {
           this.log('error', 'error in heartbeat callback', e)
         }
-      }
-
-      // Handle pending heartbeat reference cleanup
-      if (msg.ref && msg.ref === this.pendingHeartbeatRef) {
+        this._heartbeatSentAt = null
         this.pendingHeartbeatRef = null
       }
 
