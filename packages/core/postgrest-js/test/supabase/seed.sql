@@ -11,6 +11,13 @@ VALUES
     ('jsonusermissing', 'ONLINE', '[20,30)'::int4range, 'json missing test'::tsvector, '{"foo": "string", "en": "THREE"}'::jsonb);
 
 INSERT INTO
+    public.users_with_required_json (username, required_data)
+VALUES
+    ('testuser1', '{"id": 1, "name": "testuser1", "nested": {"value": "test", "count": 10}, "status": "ACTIVE"}'::jsonb),
+    ('testuser2', '{"id": 2, "name": "testuser2", "nested": {"value": "data", "count": 20}, "status": "INACTIVE"}'::jsonb),
+    ('testuser3', '{"id": 3, "name": "testuser3", "nested": {"value": "info", "count": 30}, "status": "ACTIVE"}'::jsonb);
+
+INSERT INTO
     public.channels (slug)
 VALUES
     ('public'),
