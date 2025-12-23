@@ -123,6 +123,11 @@ jobs:
         run: npm ci
       - uses: nrwl/nx-set-shas@v4
 
+      - name: Setup Supabase CLI (for postgrest-js tests)
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
       - name: Run postgrest-js integration tests (if affected)
         run: npx nx affected --target=test:ci:postgrest
         timeout-minutes: 10
@@ -156,6 +161,11 @@ jobs:
           cache: 'npm'
       - name: Install dependencies
         run: npm ci
+
+      - name: Setup Supabase CLI (for checking generated types)
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
 
       - name: Check if database schema changed
         id: check_changes

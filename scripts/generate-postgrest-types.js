@@ -3,7 +3,7 @@
 /**
  * Generate TypeScript types for postgrest-js tests from the test database
  *
- * This script spins up the Docker test infrastructure, generates types
+ * This script uses Supabase CLI to spin up the test infrastructure, generates types
  * from the database schema, and writes them to test/types.generated.ts
  */
 
@@ -11,7 +11,7 @@ const { execSync } = require('child_process')
 const path = require('path')
 
 const POSTGREST_DIR = path.join(__dirname, '../packages/core/postgrest-js')
-const DB_DIR = path.join(POSTGREST_DIR, 'test/db')
+const TEST_DIR = path.join(POSTGREST_DIR, 'test')
 const OUTPUT_FILE = path.join(POSTGREST_DIR, 'test/types.generated.ts')
 
 function exec(command, options = {}) {
@@ -26,24 +26,34 @@ function exec(command, options = {}) {
   }
 }
 
+function execAllowFail(command, options = {}) {
+  try {
+    return execSync(command, {
+      stdio: 'inherit',
+      ...options,
+    })
+  } catch (error) {
+    // Allow failure (e.g., when stopping containers that aren't running)
+  }
+}
+
 function main() {
   console.log('🔄 Generating postgrest-js test types...\n')
 
-  // Start Docker containers
-  console.log('📦 Starting Docker containers...')
-  exec('docker compose up --detach', { cwd: DB_DIR })
+  // Clean up any existing containers
+  console.log('🧹 Cleaning up existing containers...')
+  execAllowFail('supabase stop --no-backup', { cwd: TEST_DIR })
 
-  // Wait for services to be ready
-  console.log('⏳ Waiting for services to be ready...')
-  exec('npx wait-for-localhost 8080')
-  exec('npx wait-for-localhost 3000')
+  // Start Supabase (blocks until ready)
+  console.log('📦 Starting Supabase...')
+  exec('supabase start', { cwd: TEST_DIR })
 
-  // Generate types from database
+  // Generate types from database using Supabase CLI
   console.log('🔧 Generating types from database...')
-  exec(
-    `curl --location 'http://0.0.0.0:8080/generators/typescript?included_schemas=public,personal&detect_one_to_one_relationships=true' > ${OUTPUT_FILE}`,
-    { cwd: POSTGREST_DIR, stdio: 'inherit' }
-  )
+  exec(`supabase gen types typescript --local --schema public,personal > ${OUTPUT_FILE}`, {
+    cwd: TEST_DIR,
+    shell: true,
+  })
 
   // Run post-generation script to update JSON type
   console.log('🔧 Post-processing generated types...')
@@ -53,9 +63,9 @@ function main() {
   console.log('💅 Formatting generated types with Prettier...')
   exec(`npx nx format`, { cwd: path.join(__dirname, '..') })
 
-  // Clean up Docker containers
-  console.log('🧹 Cleaning up Docker containers...')
-  exec('docker compose down --volumes', { cwd: DB_DIR })
+  // Clean up Supabase containers
+  console.log('🧹 Cleaning up Supabase...')
+  execAllowFail('supabase stop --no-backup', { cwd: TEST_DIR })
 
   console.log('\n✅ Type generation complete!')
   console.log(`   Output: ${OUTPUT_FILE}`)
