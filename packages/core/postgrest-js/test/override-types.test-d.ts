@@ -244,6 +244,12 @@ const postgrest = new PostgrestClient<Database>(REST_URL)
         username: string
         data: {
           foo: number
+          fooRecord: {
+            bar: {
+              [x: string]: unknown
+            }
+            baz: string
+          }
           bar: { baz: number }
           en: 'ONE' | 'TWO' | 'THREE'
           record: Record<string, Json | undefined> | null
@@ -275,6 +281,12 @@ const postgrest = new PostgrestClient<Database>(REST_URL)
         username: string
         data: {
           foo: number
+          fooRecord: {
+            bar: {
+              [x: string]: unknown
+            }
+            baz: string
+          }
           bar: { baz: number }
           en: 'ONE' | 'TWO' | 'THREE'
           record: Record<string, Json | undefined> | null
@@ -343,7 +355,13 @@ const postgrest = new PostgrestClient<Database>(REST_URL)
       {
         username: string
         data: {
-          foo: { bar: Record<string, unknown> }
+          foo: string
+          fooRecord: {
+            bar: {
+              [x: string]: unknown
+            }
+            baz: string
+          }
           bar: { baz: number; newBaz: string }
           en: 'FOUR' // Overridden enum value
           record: Record<string, Json | undefined> | null
@@ -373,7 +391,13 @@ const postgrest = new PostgrestClient<Database>(REST_URL)
       {
         username: string
         data: {
-          foo: { bar: Record<string, unknown> }
+          foo: string
+          fooRecord: {
+            bar: {
+              [x: string]: unknown
+            }
+            baz: string
+          }
           bar: {
             baz: number
           }
