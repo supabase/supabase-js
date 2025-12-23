@@ -650,6 +650,162 @@ test('select JSON accessor with null data field', async () => {
   ExpectedSchema.parse(res.data)
 })
 
+test('select JSON accessor on required (non-nullable) field - direct accessor', async () => {
+  const res = await postgrest
+    .from('users_with_required_json')
+    .select('required_data->id, required_data->name, required_data->nested')
+    .limit(1)
+    .filter('username', 'eq', 'testuser1')
+    .single()
+  expect(res).toMatchInlineSnapshot(`
+    {
+      "count": null,
+      "data": {
+        "id": 1,
+        "name": "testuser1",
+        "nested": {
+          "count": 10,
+          "value": "test",
+        },
+      },
+      "error": null,
+      "status": 200,
+      "statusText": "OK",
+    }
+  `)
+  let result: Exclude<typeof res.data, null>
+  const ExpectedSchema = z.object({
+    id: z.number(),
+    name: z.string(),
+    nested: z.object({
+      value: z.string(),
+      count: z.number(),
+    }),
+  })
+  let expected: z.infer<typeof ExpectedSchema>
+  expectType<TypeEqual<typeof result, typeof expected>>(true)
+  ExpectedSchema.parse(res.data)
+})
+
+test('select JSON accessor on required (non-nullable) field - string accessor', async () => {
+  const res = await postgrest
+    .from('users_with_required_json')
+    .select('required_data->>id, required_data->>name, required_data->>status')
+    .limit(1)
+    .filter('username', 'eq', 'testuser1')
+    .single()
+  expect(res).toMatchInlineSnapshot(`
+    {
+      "count": null,
+      "data": {
+        "id": "1",
+        "name": "testuser1",
+        "status": "ACTIVE",
+      },
+      "error": null,
+      "status": 200,
+      "statusText": "OK",
+    }
+  `)
+  let result: Exclude<typeof res.data, null>
+  const ExpectedSchema = z.object({
+    id: z.string(),
+    name: z.string(),
+    status: z.enum(['ACTIVE', 'INACTIVE']),
+  })
+  let expected: z.infer<typeof ExpectedSchema>
+  expectType<TypeEqual<typeof result, typeof expected>>(true)
+  ExpectedSchema.parse(res.data)
+})
+
+test('select JSON accessor on required (non-nullable) field - nested paths', async () => {
+  const res = await postgrest
+    .from('users_with_required_json')
+    .select('required_data->nested->value, required_data->nested->>count, required_data->nested')
+    .limit(1)
+    .filter('username', 'eq', 'testuser1')
+    .single()
+  expect(res).toMatchInlineSnapshot(`
+    {
+      "count": null,
+      "data": {
+        "count": "10",
+        "nested": {
+          "count": 10,
+          "value": "test",
+        },
+        "value": "test",
+      },
+      "error": null,
+      "status": 200,
+      "statusText": "OK",
+    }
+  `)
+  let result: Exclude<typeof res.data, null>
+  const ExpectedSchema = z.object({
+    value: z.string(),
+    count: z.string(),
+    nested: z.object({
+      value: z.string(),
+      count: z.number(),
+    }),
+  })
+  let expected: z.infer<typeof ExpectedSchema>
+  expectType<TypeEqual<typeof result, typeof expected>>(true)
+  ExpectedSchema.parse(res.data)
+})
+
+test('select JSON accessor - compare nullable vs required fields', async () => {
+  const resNullable = await postgrest
+    .from('users')
+    .select('data->en')
+    .limit(1)
+    .filter('username', 'eq', 'jsonuser')
+    .single()
+  const resRequired = await postgrest
+    .from('users_with_required_json')
+    .select('required_data->>status')
+    .limit(1)
+    .filter('username', 'eq', 'testuser1')
+    .single()
+  expect(resNullable).toMatchInlineSnapshot(`
+    {
+      "count": null,
+      "data": {
+        "en": null,
+      },
+      "error": null,
+      "status": 200,
+      "statusText": "OK",
+    }
+  `)
+  expect(resRequired).toMatchInlineSnapshot(`
+    {
+      "count": null,
+      "data": {
+        "status": "ACTIVE",
+      },
+      "error": null,
+      "status": 200,
+      "statusText": "OK",
+    }
+  `)
+  let resultNullable: Exclude<typeof resNullable.data, null>
+  let resultRequired: Exclude<typeof resRequired.data, null>
+  const ExpectedSchemaNullable = z.object({
+    en: z.enum(['ONE', 'TWO', 'THREE']).nullable(),
+  })
+  const ExpectedSchemaRequired = z.object({
+    status: z.enum(['ACTIVE', 'INACTIVE']),
+  })
+  let expectedNullable: z.infer<typeof ExpectedSchemaNullable>
+  let expectedRequired: z.infer<typeof ExpectedSchemaRequired>
+  expectType<TypeEqual<typeof resultNullable, typeof expectedNullable>>(true)
+  expectType<TypeEqual<typeof resultRequired, typeof expectedRequired>>(true)
+  ExpectedSchemaNullable.parse(resNullable.data)
+  ExpectedSchemaRequired.parse(resRequired.data)
+})
+
 test('self reference relation', async () => {
   const res = await postgrest.from('collections').select('*, collections(*)').limit(1).single()
   expect(res).toMatchInlineSnapshot(`
