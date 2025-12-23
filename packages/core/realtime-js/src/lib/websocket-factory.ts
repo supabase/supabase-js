@@ -156,19 +156,6 @@ export class WebSocketFactory {
   }
 
   /**
-   * Creates a WebSocket using the detected constructor.
-   *
-   * @example
-   * ```ts
-   * const socket = WebSocketFactory.createWebSocket('wss://realtime.supabase.co/socket')
-   * ```
-   */
-  public static createWebSocket(url: string | URL, protocols?: string | string[]): WebSocketLike {
-    const WS = this.getWebSocketConstructor()
-    return new WS(url, protocols)
-  }
-
-  /**
    * Detects whether the runtime can establish WebSocket connections.
    *
    * @example

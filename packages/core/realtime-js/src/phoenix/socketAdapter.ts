@@ -73,8 +73,17 @@ export default class SocketAdapter {
     this.socket.connect()
   }
 
-  disconnect(code?: number, reason?: string) {
-    this.socket.disconnect(() => {}, code, reason)
+  disconnect(code?: number, reason?: string, timeout: number = 10000): Promise<'ok' | 'timeout'> {
+    return new Promise((resolve) => {
+      setTimeout(() => resolve('timeout'), timeout)
+      this.socket.disconnect(
+        () => {
+          resolve('ok')
+        },
+        code,
+        reason
+      )
+    })
   }
 
   push(data: Message<Record<string, unknown>>) {

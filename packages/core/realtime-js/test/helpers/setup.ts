@@ -18,7 +18,8 @@ export interface TestContext {
 export interface TestSetup {
   socket: RealtimeClient
   mockServer: Server
-  url: string
+  realtimeUrl: string
+  wssUrl: string
   projectRef: string
   clock?: any
 }
@@ -30,6 +31,7 @@ export interface EnhancedTestSetup extends TestSetup {
 }
 
 export interface BuilderOptions extends Omit<RealtimeClientOptions, 'params'> {
+  preparation?: (server: Server) => void
   useFakeTimers?: boolean
   apikey?: string
   params?: Record<string, any>
@@ -42,10 +44,13 @@ export const randomProjectRef = () => crypto.randomUUID()
 // Core Setup Functions
 export function setupRealtimeTest(options: BuilderOptions = {}): TestSetup {
   const projectRef = randomProjectRef()
-  const url = `wss://${projectRef}/socket`
-  const mockServer = new Server(url)
+  const wssUrl = `wss://${projectRef}/websocket`
+  const realtimeUrl = `wss://${projectRef}`
+  const mockServer = new Server(wssUrl)
 
-  const socket = new RealtimeClient(url, {
+  options.preparation?.(mockServer)
+
+  const socket = new RealtimeClient(realtimeUrl, {
     transport: MockWebSocket,
     timeout: options.timeout || 1000,
     heartbeatIntervalMs: options.heartbeatIntervalMs || 25000,
@@ -53,7 +58,7 @@ export function setupRealtimeTest(options: BuilderOptions = {}): TestSetup {
     ...options,
   })
 
-  const setup: TestSetup = { socket, mockServer, url, projectRef }
+  const setup: TestSetup = { socket, mockServer, realtimeUrl, wssUrl, projectRef }
 
   if (options.useFakeTimers) {
     setup.clock = vi.useFakeTimers({ shouldAdvanceTime: true })
