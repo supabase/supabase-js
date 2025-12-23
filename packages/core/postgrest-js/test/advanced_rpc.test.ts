@@ -1169,7 +1169,8 @@ describe('advanced rpc', () => {
             "age_range": "[20,30)",
             "catchphrase": "'json' 'test'",
             "data": {
-              "foo": {
+              "foo": "string value",
+              "fooRecord": {
                 "bar": {
                   "nested": "value",
                 },
@@ -1178,6 +1179,49 @@ describe('advanced rpc', () => {
             },
             "status": "ONLINE",
             "username": "jsonuser",
+          },
+          {
+            "age_range": "[20,30)",
+            "catchphrase": "'json' 'null' 'test'",
+            "data": {
+              "bar": null,
+              "en": "ONE",
+              "foo": "string value",
+              "fooRecord": {
+                "bar": null,
+                "baz": "string value",
+              },
+            },
+            "status": "ONLINE",
+            "username": "jsonusernull",
+          },
+          {
+            "age_range": "[20,30)",
+            "catchphrase": "'json' 'obj' 'test'",
+            "data": {
+              "bar": {
+                "baz": 42,
+              },
+              "en": "TWO",
+              "fooRecord": {
+                "bar": {
+                  "nested": "deep",
+                },
+                "baz": "test",
+              },
+            },
+            "status": "ONLINE",
+            "username": "jsonuserobj",
+          },
+          {
+            "age_range": "[20,30)",
+            "catchphrase": "'json' 'missing' 'test'",
+            "data": {
+              "en": "THREE",
+              "foo": "string",
+            },
+            "status": "ONLINE",
+            "username": "jsonusermissing",
           },
         ],
         "error": null,

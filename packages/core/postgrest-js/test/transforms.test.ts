@@ -27,9 +27,53 @@ test('order', async () => {
         },
         {
           "age_range": "[20,30)",
+          "catchphrase": "'json' 'obj' 'test'",
+          "data": {
+            "bar": {
+              "baz": 42,
+            },
+            "en": "TWO",
+            "fooRecord": {
+              "bar": {
+                "nested": "deep",
+              },
+              "baz": "test",
+            },
+          },
+          "status": "ONLINE",
+          "username": "jsonuserobj",
+        },
+        {
+          "age_range": "[20,30)",
+          "catchphrase": "'json' 'null' 'test'",
+          "data": {
+            "bar": null,
+            "en": "ONE",
+            "foo": "string value",
+            "fooRecord": {
+              "bar": null,
+              "baz": "string value",
+            },
+          },
+          "status": "ONLINE",
+          "username": "jsonusernull",
+        },
+        {
+          "age_range": "[20,30)",
+          "catchphrase": "'json' 'missing' 'test'",
+          "data": {
+            "en": "THREE",
+            "foo": "string",
+          },
+          "status": "ONLINE",
+          "username": "jsonusermissing",
+        },
+        {
+          "age_range": "[20,30)",
           "catchphrase": "'json' 'test'",
           "data": {
-            "foo": {
+            "foo": "string value",
+            "fooRecord": {
               "bar": {
                 "nested": "value",
               },
@@ -145,7 +189,8 @@ test('range', async () => {
           "age_range": "[20,30)",
           "catchphrase": "'json' 'test'",
           "data": {
-            "foo": {
+            "foo": "string value",
+            "fooRecord": {
               "bar": {
                 "nested": "value",
               },
@@ -285,7 +330,10 @@ test('csv', async () => {
     supabot,,"[1,2)",ONLINE,"'cat' 'fat'"
     kiwicopple,,"[25,35)",OFFLINE,"'bat' 'cat'"
     awailas,,"[25,35)",ONLINE,"'bat' 'rat'"
-    jsonuser,"{""foo"": {""bar"": {""nested"": ""value""}, ""baz"": ""string value""}}","[20,30)",ONLINE,"'json' 'test'"
+    jsonuser,"{""foo"": ""string value"", ""fooRecord"": {""bar"": {""nested"": ""value""}, ""baz"": ""string value""}}","[20,30)",ONLINE,"'json' 'test'"
+    jsonusernull,"{""en"": ""ONE"", ""bar"": null, ""foo"": ""string value"", ""fooRecord"": {""bar"": null, ""baz"": ""string value""}}","[20,30)",ONLINE,"'json' 'null' 'test'"
+    jsonuserobj,"{""en"": ""TWO"", ""bar"": {""baz"": 42}, ""fooRecord"": {""bar"": {""nested"": ""deep""}, ""baz"": ""test""}}","[20,30)",ONLINE,"'json' 'obj' 'test'"
+    jsonusermissing,"{""en"": ""THREE"", ""foo"": ""string""}","[20,30)",ONLINE,"'json' 'missing' 'test'"
     dragarcia,,"[20,30)",ONLINE,"'fat' 'rat'"",
       "error": null,
       "status": 200,

@@ -618,7 +618,7 @@ export type JsonPathToAccessor<Path extends string> = Path extends `${infer P1}-
 export type JsonPathToType<T, Path extends string> = Path extends ''
   ? T
   : ContainsNull<T> extends true
-    ? JsonPathToType<Exclude<T, null>, Path>
+    ? JsonPathToType<Exclude<T, null>, Path> | null
     : Path extends `${infer Key}.${infer Rest}`
       ? Key extends keyof T
         ? JsonPathToType<T[Key], Rest>

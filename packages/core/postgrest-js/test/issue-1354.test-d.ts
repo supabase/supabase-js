@@ -10,7 +10,7 @@ export type Database = {
       foo: {
         Row: {
           created_at: string | null
-          bar: Json
+          bar: Record<string, unknown>
           id: string
           baz: Json
           game_id: string
@@ -19,7 +19,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string | null
-          bar: Json
+          bar: Record<string, unknown>
           id?: string
           baz: Json
           game_id: string
@@ -28,7 +28,7 @@ export type Database = {
         }
         Update: {
           created_at?: string | null
-          bar?: Json
+          bar?: Record<string, unknown>
           id?: string
           baz?: Json
           game_id?: string
@@ -195,7 +195,7 @@ const postgrestOverrideTypes = new PostgrestClient<DatabaseOverride>('http://loc
 {
   const res = await postgrest.from('foo').select('id, bar, baz').eq('bar->version', 31).single()
 
-  const bar = {} as Json
+  const bar = {} as Record<string, unknown>
   const baz = {} as Json
   if (res.error) {
     throw new Error(res.error.message)
@@ -217,7 +217,7 @@ const postgrestOverrideTypes = new PostgrestClient<DatabaseOverride>('http://loc
   if (resIn.error) {
     throw new Error(resIn.error.message)
   }
-  expectType<{ id: string; bar: Json; baz: Json }>(resIn.data)
+  expectType<{ id: string; bar: Record<string, unknown>; baz: Json }>(resIn.data)
 }
 
 // extended types
