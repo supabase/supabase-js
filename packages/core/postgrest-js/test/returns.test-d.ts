@@ -374,7 +374,7 @@ const postgrest = new PostgrestClient<Database>(REST_URL)
   let resultType: Exclude<typeof result.data, null>
   let resultFifty: (typeof resultType)['fifty']
   let resultUsernameNested: (typeof resultType)['messages'][0]['username']
-  let expected: string
+  let expected: null
   expectType<TypeEqual<typeof resultFifty, typeof expected>>(true)
-  expectType<TypeEqual<typeof resultUsernameNested, typeof expected>>(true)
+  expectType<TypeEqual<typeof resultUsernameNested, string>>(true)
 }
