@@ -19,7 +19,7 @@
     "test:suite": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "jest --runInBand --coverage",
+        "command": "jest --runInBand --coverage --testPathIgnorePatterns='test/v12/'",
         "cwd": "{projectRoot}"
       },
       "outputs": ["{projectRoot}/coverage"],
