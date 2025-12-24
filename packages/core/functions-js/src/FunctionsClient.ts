@@ -119,8 +119,17 @@ export class FunctionsClient {
           body = JSON.stringify(functionArgs)
         }
       } else {
-        // if the Content-Type was supplied, simply set the body
-        body = functionArgs
+        if (
+          functionArgs &&
+          typeof functionArgs !== 'string' &&
+          !(typeof Blob !== 'undefined' && functionArgs instanceof Blob) &&
+          !(functionArgs instanceof ArrayBuffer) &&
+          !(typeof FormData !== 'undefined' && functionArgs instanceof FormData)
+        ) {
+          body = JSON.stringify(functionArgs)
+        } else {
+          body = functionArgs
+        }
       }
 
       // Handle timeout by creating an AbortController
