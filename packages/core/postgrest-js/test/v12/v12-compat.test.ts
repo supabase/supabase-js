@@ -53,7 +53,11 @@ test('nested relations work', async () => {
 
 // Test 4: Spread on one-to-one relation works (both v12 and v14+)
 test('spread on one-to-one relation works in v12', async () => {
-  const res = await postgrest.from('channels').select('id, ...channel_details(details)').limit(1).single()
+  const res = await postgrest
+    .from('channels')
+    .select('id, ...channel_details(details)')
+    .limit(1)
+    .single()
 
   // This should work in both v12 and v14+
   expect(res.error).toBeNull()

@@ -183,10 +183,33 @@ It performs these steps:
 #### Prerequisites
 
 - **Docker** must be installed and running
-- **Port 3000** - PostgREST server (API)
-- **Port 8080** - Database schema endpoint (for type generation)
+- **Port 54321** - Supabase CLI PostgREST server (API)
+- **Port 54322** - Supabase CLI PostgreSQL database
 
-**Note:** Unlike a full Supabase instance, this uses a minimal PostgREST setup specifically for testing the SDK.
+**Note:** Tests use the Supabase CLI to run a local PostgREST instance.
+
+#### PostgREST v12 Backward Compatibility Tests
+
+We maintain backward compatibility tests for PostgREST v12 (the current Supabase CLI uses v14+). These tests ensure the SDK works correctly for users still running older PostgREST versions.
+
+```bash
+# Run v12 compatibility tests (requires Docker)
+npx nx test:ci:v12 postgrest-js
+```
+
+This command:
+
+1. Starts PostgREST v12 + PostgreSQL in Docker (ports 3012/5433)
+2. Runs runtime tests that verify v12-specific behavior
+3. Cleans up containers
+
+**Type-only tests** for v12 compatibility also run as part of the regular type tests:
+
+```bash
+npx nx test:types postgrest-js  # Includes v12-compat.test-d.ts
+```
+
+**Note:** These v12 tests will be removed when v3 ships (sometime in 2026).
 
 ### Contributing
 
