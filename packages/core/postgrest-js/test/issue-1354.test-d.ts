@@ -168,9 +168,11 @@ export type DatabaseOverride = MergeDeep<
   }
 >
 
-const postgrest = new PostgrestClient<Database>('http://localhost:3000')
+const postgrest = new PostgrestClient<Database>('http://localhost:54321/rest/v1')
 
-const postgrestOverrideTypes = new PostgrestClient<DatabaseOverride>('http://localhost:3000')
+const postgrestOverrideTypes = new PostgrestClient<DatabaseOverride>(
+  'http://localhost:54321/rest/v1'
+)
 
 // Basic types
 {

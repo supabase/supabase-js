@@ -1,0 +1,84 @@
+{
+  "name": "@supabase/postgrest-js",
+  "targets": {
+    "test:clean-pre": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "supabase stop --no-backup || true",
+        "cwd": "{projectRoot}/test"
+      }
+    },
+    "test:infra": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "supabase start && supabase db reset",
+        "cwd": "{projectRoot}/test"
+      },
+      "dependsOn": ["test:clean-pre"]
+    },
+    "test:suite": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "jest --runInBand --coverage --testPathIgnorePatterns='test/v12/'",
+        "cwd": "{projectRoot}"
+      },
+      "outputs": ["{projectRoot}/coverage"],
+      "dependsOn": ["test:infra"]
+    },
+    "test:clean-post": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "supabase stop --no-backup || true",
+        "cwd": "{projectRoot}/test"
+      },
+      "dependsOn": ["test:suite"]
+    },
+    "test:ci:postgrest": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "echo 'PostgREST tests complete'",
+        "cwd": "{projectRoot}"
+      },
+      "dependsOn": ["test:clean-post"]
+    },
+    "test:v12:clean-pre": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "docker compose -f test/v12/docker-compose.yml down -v || true",
+        "cwd": "{projectRoot}"
+      }
+    },
+    "test:v12:infra": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "docker compose -f test/v12/docker-compose.yml up -d --wait",
+        "cwd": "{projectRoot}"
+      },
+      "dependsOn": ["test:v12:clean-pre"]
+    },
+    "test:v12:run": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "jest test/v12/v12-compat.test.ts --runInBand",
+        "cwd": "{projectRoot}"
+      },
+      "dependsOn": ["test:v12:infra"]
+    },
+    "test:v12:clean-post": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "docker compose -f test/v12/docker-compose.yml down -v || true",
+        "cwd": "{projectRoot}"
+      },
+      "dependsOn": ["test:v12:run"]
+    },
+    "test:ci:v12": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "echo 'PostgREST v12 compat tests complete'",
+        "cwd": "{projectRoot}"
+      },
+      "dependsOn": ["test:v12:clean-post"]
+    }
+  }
+}

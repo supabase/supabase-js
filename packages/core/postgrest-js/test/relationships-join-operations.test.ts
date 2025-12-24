@@ -4,7 +4,7 @@ import { expectType, TypeEqual } from './types'
 import { z } from 'zod'
 import { RequiredDeep } from 'type-fest'
 
-const REST_URL = 'http://localhost:3000'
+const REST_URL = 'http://localhost:54321/rest/v1'
 const postgrest = new PostgrestClient<Database>(REST_URL)
 const userColumn: 'catchphrase' | 'username' = 'username'
 
@@ -205,7 +205,7 @@ test('!left oneToMany', async () => {
             "channel_id": 3,
             "data": null,
             "id": 4,
-            "message": "Some message on channel wihtout details",
+            "message": "Some message on channel without details",
             "username": "supabot",
           },
         ],

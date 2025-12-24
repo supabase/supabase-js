@@ -3,7 +3,7 @@ import { Database } from './types.override'
 
 import { AbortController } from 'node-abort-controller'
 
-const postgrest = new PostgrestClient<Database>('http://localhost:3000')
+const postgrest = new PostgrestClient<Database>('http://localhost:54321/rest/v1')
 
 test('order', async () => {
   const res = await postgrest.from('users').select().order('username', { ascending: false })
@@ -75,7 +75,7 @@ test('order on multiple columns', async () => {
           "channel_id": 3,
           "data": null,
           "id": 4,
-          "message": "Some message on channel wihtout details",
+          "message": "Some message on channel without details",
           "username": "supabot",
         },
         {
@@ -230,7 +230,7 @@ test('maybeSingle', async () => {
         "code": "PGRST116",
         "details": "The result contains 2 rows",
         "hint": null,
-        "message": "JSON object requested, multiple (or no) rows returned",
+        "message": "Cannot coerce the result to a single JSON object",
       },
       "status": 406,
       "statusText": "Not Acceptable",
@@ -406,7 +406,7 @@ test('explain with options', async () => {
           "Query Identifier": Any<Number>,
           "Settings": {
             "effective_cache_size": "128MB",
-            "search_path": ""public", "extensions"",
+            "search_path": ""public", "public", "extensions"",
           },
         },
       ],
