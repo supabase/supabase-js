@@ -419,6 +419,7 @@ export interface User {
   is_sso_user?: boolean
   factors?: (Factor<FactorType, 'verified'> | Factor<FactorType, 'unverified'>)[]
   deleted_at?: string
+  banned_until?: string
 }
 
 export interface UserAttributes {
