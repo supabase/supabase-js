@@ -249,6 +249,16 @@ export default class GoTrueClient {
   protected visibilityChangedCallback: (() => Promise<any>) | null = null
   protected refreshingDeferred: Deferred<CallRefreshTokenResult> | null = null
   /**
+   * Keeps track of the in-flight getSession request.
+   * Used to deduplicate concurrent getSession calls.
+   */
+  protected getSessionDeferred: Deferred<any> | null = null
+  /**
+   * Keeps track of the in-flight _recoverAndRefresh operation.
+   * Used to deduplicate concurrent recovery operations during initialization.
+   */
+  protected recoveringDeferred: Deferred<void> | null = null
+  /**
    * Keeps track of the async client initialization.
    * When null or not yet resolved the auth state is `unknown`
    * Once resolved the auth state is known and it's safe to call any further client methods.
@@ -1469,13 +1479,28 @@ export default class GoTrueClient {
   async getSession() {
     await this.initializePromise
 
-    const result = await this._acquireLock(-1, async () => {
-      return this._useSession(async (result) => {
-        return result
-      })
-    })
+    // Return existing promise if getSession is already in progress
+    if (this.getSessionDeferred) {
+      return this.getSessionDeferred.promise
+    }
 
-    return result
+    try {
+      this.getSessionDeferred = new Deferred<any>()
+
+      const result = await this._acquireLock(-1, async () => {
+        return this._useSession(async (result) => {
+          return result
+        })
+      })
+
+      this.getSessionDeferred.resolve(result)
+      return result
+    } catch (error) {
+      this.getSessionDeferred?.reject(error)
+      throw error
+    } finally {
+      this.getSessionDeferred = null
+    }
   }
 
   /**
@@ -2556,7 +2581,14 @@ export default class GoTrueClient {
     const debugName = '#_recoverAndRefresh()'
     this._debug(debugName, 'begin')
 
+    // Return existing promise if recovery is already in progress
+    if (this.recoveringDeferred) {
+      return this.recoveringDeferred.promise
+    }
+
     try {
+      this.recoveringDeferred = new Deferred<void>()
+
       const currentSession = (await getItemAsync(this.storage, this.storageKey)) as Session | null
 
       if (currentSession && this.userStorage) {
@@ -2606,6 +2638,7 @@ export default class GoTrueClient {
           await this._removeSession()
         }
 
+        this.recoveringDeferred.resolve()
         return
       }
 
@@ -2663,12 +2696,15 @@ export default class GoTrueClient {
         // another client with access to the same local storage
         await this._notifyAllSubscribers('SIGNED_IN', currentSession)
       }
+
+      this.recoveringDeferred.resolve()
     } catch (err) {
       this._debug(debugName, 'error', err)
 
       console.error(err)
-      return
+      this.recoveringDeferred?.reject(err)
     } finally {
+      this.recoveringDeferred = null
       this._debug(debugName, 'end')
     }
   }
