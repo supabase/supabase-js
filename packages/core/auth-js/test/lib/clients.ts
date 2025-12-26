@@ -2,26 +2,19 @@ import jwt from 'jsonwebtoken'
 import { GoTrueAdminApi, GoTrueClient, type GoTrueClientOptions } from '../../src/index'
 import { SupportedStorage } from '../../src/lib/types'
 
-export const SIGNUP_ENABLED_AUTO_CONFIRM_OFF_PORT = 9999
+// Supabase CLI Auth endpoint
+export const GOTRUE_URL_SIGNUP_ENABLED_AUTO_CONFIRM_ON = 'http://127.0.0.1:54321/auth/v1'
 
-export const SIGNUP_ENABLED_AUTO_CONFIRM_ON_PORT = 9998
-export const SIGNUP_DISABLED_AUTO_CONFIRM_OFF_PORT = 9997
-export const SIGNUP_ENABLED_ASYMMETRIC_AUTO_CONFIRM_ON_PORT = 9996
+// Supabase CLI JWT secret
+export const GOTRUE_JWT_SECRET = 'super-secret-jwt-token-with-at-least-32-characters-long'
 
-export const GOTRUE_URL_SIGNUP_ENABLED_AUTO_CONFIRM_OFF = `http://localhost:${SIGNUP_ENABLED_AUTO_CONFIRM_OFF_PORT}`
-export const GOTRUE_URL_SIGNUP_ENABLED_AUTO_CONFIRM_ON = `http://localhost:${SIGNUP_ENABLED_AUTO_CONFIRM_ON_PORT}`
-export const GOTRUE_URL_SIGNUP_ENABLED_ASYMMETRIC_AUTO_CONFIRM_ON = `http://localhost:${SIGNUP_ENABLED_ASYMMETRIC_AUTO_CONFIRM_ON_PORT}`
-export const GOTRUE_URL_SIGNUP_DISABLED_AUTO_CONFIRM_OFF = `http://localhost:${SIGNUP_DISABLED_AUTO_CONFIRM_OFF_PORT}`
+// Supabase CLI default anon key (required for API gateway)
+const SUPABASE_ANON_KEY =
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0'
 
-export const GOTRUE_JWT_SECRET = '37c304f8-51aa-419a-a1af-06154e63707a'
-
-const AUTH_ADMIN_JWT = jwt.sign(
-  {
-    sub: '1234567890',
-    role: 'supabase_admin',
-  },
-  GOTRUE_JWT_SECRET
-)
+// Supabase CLI default service role key
+const SUPABASE_SERVICE_ROLE_KEY =
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU'
 
 class MemoryStorage {
   private _storage: { [name: string]: string } = {}
@@ -39,8 +32,17 @@ class MemoryStorage {
   }
 }
 
+const AUTH_ADMIN_JWT = jwt.sign(
+  {
+    sub: '1234567890',
+    role: 'supabase_admin',
+  },
+  GOTRUE_JWT_SECRET
+)
+
 export const authClient = new GoTrueClient({
   url: GOTRUE_URL_SIGNUP_ENABLED_AUTO_CONFIRM_ON,
+  headers: { apikey: SUPABASE_ANON_KEY },
   autoRefreshToken: false,
   persistSession: true,
   storage: new MemoryStorage(),
@@ -48,13 +50,7 @@ export const authClient = new GoTrueClient({
 
 export const authClientWithSession = new GoTrueClient({
   url: GOTRUE_URL_SIGNUP_ENABLED_AUTO_CONFIRM_ON,
-  autoRefreshToken: false,
-  persistSession: true,
-  storage: new MemoryStorage(),
-})
-
-export const authClientWithAsymmetricSession = new GoTrueClient({
-  url: GOTRUE_URL_SIGNUP_ENABLED_ASYMMETRIC_AUTO_CONFIRM_ON,
+  headers: { apikey: SUPABASE_ANON_KEY },
   autoRefreshToken: false,
   persistSession: true,
   storage: new MemoryStorage(),
@@ -62,6 +58,7 @@ export const authClientWithAsymmetricSession = new GoTrueClient({
 
 export const authSubscriptionClient = new GoTrueClient({
   url: GOTRUE_URL_SIGNUP_ENABLED_AUTO_CONFIRM_ON,
+  headers: { apikey: SUPABASE_ANON_KEY },
   autoRefreshToken: false,
   persistSession: true,
   storage: new MemoryStorage(),
@@ -69,20 +66,7 @@ export const authSubscriptionClient = new GoTrueClient({
 
 export const clientApiAutoConfirmEnabledClient = new GoTrueClient({
   url: GOTRUE_URL_SIGNUP_ENABLED_AUTO_CONFIRM_ON,
-  autoRefreshToken: false,
-  persistSession: true,
-  storage: new MemoryStorage(),
-})
-
-export const clientApiAutoConfirmOffSignupsEnabledClient = new GoTrueClient({
-  url: GOTRUE_URL_SIGNUP_ENABLED_AUTO_CONFIRM_OFF,
-  autoRefreshToken: false,
-  persistSession: true,
-  storage: new MemoryStorage(),
-})
-
-export const clientApiAutoConfirmDisabledClient = new GoTrueClient({
-  url: GOTRUE_URL_SIGNUP_DISABLED_AUTO_CONFIRM_OFF,
+  headers: { apikey: SUPABASE_ANON_KEY },
   autoRefreshToken: false,
   persistSession: true,
   storage: new MemoryStorage(),
@@ -90,6 +74,7 @@ export const clientApiAutoConfirmDisabledClient = new GoTrueClient({
 
 export const pkceClient = new GoTrueClient({
   url: GOTRUE_URL_SIGNUP_ENABLED_AUTO_CONFIRM_ON,
+  headers: { apikey: SUPABASE_ANON_KEY },
   autoRefreshToken: false,
   persistSession: true,
   storage: new MemoryStorage(),
@@ -98,6 +83,7 @@ export const pkceClient = new GoTrueClient({
 
 export const autoRefreshClient = new GoTrueClient({
   url: GOTRUE_URL_SIGNUP_ENABLED_AUTO_CONFIRM_ON,
+  headers: { apikey: SUPABASE_ANON_KEY },
   autoRefreshToken: true,
   persistSession: true,
 })
@@ -105,51 +91,23 @@ export const autoRefreshClient = new GoTrueClient({
 export const authAdminApiAutoConfirmEnabledClient = new GoTrueAdminApi({
   url: GOTRUE_URL_SIGNUP_ENABLED_AUTO_CONFIRM_ON,
   headers: {
+    apikey: SUPABASE_SERVICE_ROLE_KEY,
     Authorization: `Bearer ${AUTH_ADMIN_JWT}`,
   },
 })
-
-export const authAdminApiAutoConfirmDisabledClient = new GoTrueAdminApi({
-  url: GOTRUE_URL_SIGNUP_ENABLED_AUTO_CONFIRM_OFF,
-  headers: {
-    Authorization: `Bearer ${AUTH_ADMIN_JWT}`,
-  },
-})
-
-const SERVICE_ROLE_JWT = jwt.sign(
-  {
-    role: 'service_role',
-    // Set issued at to 1 minute ago to fix flacky tests because of
-    // invalid JWT: unable to parse or verify signature, Token used before issued
-    iat: Math.floor(Date.now() / 1000) - 60,
-  },
-  GOTRUE_JWT_SECRET
-)
 
 export const serviceRoleApiClient = new GoTrueAdminApi({
   url: GOTRUE_URL_SIGNUP_ENABLED_AUTO_CONFIRM_ON,
   headers: {
-    Authorization: `Bearer ${SERVICE_ROLE_JWT}`,
-  },
-})
-
-export const serviceRoleApiClientWithSms = new GoTrueAdminApi({
-  url: GOTRUE_URL_SIGNUP_ENABLED_AUTO_CONFIRM_OFF,
-  headers: {
-    Authorization: `Bearer ${SERVICE_ROLE_JWT}`,
-  },
-})
-
-export const serviceRoleApiClientNoSms = new GoTrueAdminApi({
-  url: GOTRUE_URL_SIGNUP_DISABLED_AUTO_CONFIRM_OFF,
-  headers: {
-    Authorization: `Bearer ${SERVICE_ROLE_JWT}`,
+    apikey: SUPABASE_SERVICE_ROLE_KEY,
+    Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
   },
 })
 
 export function getClientWithSpecificStorage(storage: SupportedStorage) {
   return new GoTrueClient({
     url: GOTRUE_URL_SIGNUP_ENABLED_AUTO_CONFIRM_ON,
+    headers: { apikey: SUPABASE_ANON_KEY },
     storageKey: 'test-specific-storage',
     autoRefreshToken: false,
     persistSession: true,
@@ -163,6 +121,7 @@ export function getClientWithSpecificStorageKey(
 ) {
   return new GoTrueClient({
     url: GOTRUE_URL_SIGNUP_ENABLED_AUTO_CONFIRM_ON,
+    headers: { apikey: SUPABASE_ANON_KEY },
     autoRefreshToken: false,
     persistSession: true,
     storageKey,
