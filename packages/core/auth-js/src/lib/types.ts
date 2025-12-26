@@ -375,6 +375,7 @@ export type Factor<
 
   created_at: string
   updated_at: string
+  last_challenged_at?: string
 }
 
 export interface UserAppMetadata {
