@@ -136,9 +136,6 @@ export type QueryResult<T> = T extends PromiseLike<infer U> ? U : never
 export type QueryData<T> = T extends PromiseLike<{ data: infer U }> ? Exclude<U, null> : never
 export type QueryError = PostgrestError
 
-/** @internal Key used for Supabase internal metadata in Database types. */
-type InternalSupabaseKey = '__InternalSupabase'
-
 /**
  * Strips internal Supabase metadata from Database types.
  * Useful for libraries defining generic constraints on Database types.
@@ -148,4 +145,4 @@ type InternalSupabaseKey = '__InternalSupabase'
  * type CleanDB = DatabaseWithoutInternals<Database>
  * ```
  */
-export type DatabaseWithoutInternals<DB> = Omit<DB, InternalSupabaseKey>
+export type DatabaseWithoutInternals<DB> = Omit<DB, '__InternalSupabase'>
