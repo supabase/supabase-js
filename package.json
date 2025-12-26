@@ -19,6 +19,7 @@
   },
   "private": true,
   "devDependencies": {
+    "@arethetypeswrong/cli": "^0.18.2",
     "@commitlint/cli": "^19.8.1",
     "@commitlint/config-conventional": "^19.8.1",
     "@commitlint/cz-commitlint": "^19.8.1",
@@ -59,6 +60,7 @@
     "prettier": "^3.6.2",
     "ts-jest": "^29.4.2",
     "ts-node": "^10.9.1",
+    "tsdown": "^0.18.0",
     "tslib": "^2.3.0",
     "typedoc": "^0.27.9",
     "typescript": "~5.8.3",

@@ -1,14 +1,10 @@
 import { PostgrestClient } from '../src/index'
-import { Database } from './types.override'
 import { Database as DatabaseWithOptions13 } from './types.override-with-options-postgrest14'
 import { expectType, TypeEqual } from './types'
 import { z } from 'zod'
 
-const REST_URL = 'http://localhost:3000'
-const postgrest = new PostgrestClient<Database>(REST_URL)
-const REST_URL_14 = 'http://localhost:3001'
-const postgrest14 = new PostgrestClient<Database, { PostgrestVersion: '13' }>(REST_URL_14)
-const postgrest14FromDatabaseTypes = new PostgrestClient<DatabaseWithOptions13>(REST_URL_14)
+const REST_URL = 'http://localhost:54321/rest/v1'
+const postgrest = new PostgrestClient<DatabaseWithOptions13>(REST_URL)
 
 test('select with aggregate count and spread', async () => {
   const res = await postgrest
@@ -326,42 +322,8 @@ test('select with spread on nested relation', async () => {
   ExpectedSchema.parse(res.data)
 })
 
-test('select spread on many relation postgrest14', async () => {
-  const res = await postgrest14
-    .from('channels')
-    .select('channel_id:id, ...messages(id, message)')
-    .limit(1)
-    .single()
-  expect(res).toMatchInlineSnapshot(`
-    {
-      "count": null,
-      "data": {
-        "channel_id": 1,
-        "id": [
-          1,
-        ],
-        "message": [
-          "Hello World 👋",
-        ],
-      },
-      "error": null,
-      "status": 200,
-      "statusText": "OK",
-    }
-  `)
-  let result: Exclude<typeof res.data, null>
-  const ExpectedSchema = z.object({
-    channel_id: z.number(),
-    id: z.array(z.number()),
-    message: z.array(z.string().nullable()),
-  })
-  let expected: z.infer<typeof ExpectedSchema>
-  expectType<TypeEqual<typeof result, typeof expected>>(true)
-  ExpectedSchema.parse(res.data)
-})
-
-test('select spread on many relation postgrest14FromDatabaseTypes', async () => {
-  const res = await postgrest14FromDatabaseTypes
+test('select spread on many relation', async () => {
+  const res = await postgrest
     .from('channels')
     .select('channel_id:id, ...messages(id, message)')
     .limit(1)

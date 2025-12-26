@@ -4,7 +4,7 @@ import { PostgrestClient } from '../src/index'
 import { expectType, type TypeEqual } from './types'
 import type { Database } from './types.override'
 
-const REST_URL = 'http://localhost:3000'
+const REST_URL = 'http://localhost:54321/rest/v1'
 const postgrest = new PostgrestClient<Database>(REST_URL)
 
 describe('embeded functions select', () => {
@@ -44,7 +44,7 @@ describe('embeded functions select', () => {
                 "channel_id": 3,
                 "data": null,
                 "id": 4,
-                "message": "Some message on channel wihtout details",
+                "message": "Some message on channel without details",
                 "username": "supabot",
               },
             ],
@@ -109,7 +109,7 @@ describe('embeded functions select', () => {
             "all_channels_messages": [
               {
                 "id": 4,
-                "message": "Some message on channel wihtout details",
+                "message": "Some message on channel without details",
               },
             ],
             "id": 3,
@@ -164,7 +164,7 @@ describe('embeded functions select', () => {
                 "channel_id": 3,
                 "data": null,
                 "id": 4,
-                "message": "Some message on channel wihtout details",
+                "message": "Some message on channel without details",
                 "username": "supabot",
               },
             ],
@@ -245,7 +245,7 @@ describe('embeded functions select', () => {
               },
               {
                 "id": 4,
-                "message": "Some message on channel wihtout details",
+                "message": "Some message on channel without details",
               },
             ],
             "username": "supabot",
@@ -325,7 +325,7 @@ describe('embeded functions select', () => {
               {
                 "blurb_message": "Som",
                 "id": 4,
-                "message": "Some message on channel wihtout details",
+                "message": "Some message on channel without details",
               },
             ],
             "username": "supabot",
@@ -698,7 +698,7 @@ describe('embeded functions select', () => {
                   "slug": "other",
                 },
                 "id": 4,
-                "message": "Some message on channel wihtout details",
+                "message": "Some message on channel without details",
               },
             ],
             "id": 3,
@@ -757,7 +757,7 @@ describe('embeded functions select', () => {
                 "channel_id": 3,
                 "data": null,
                 "id": 4,
-                "message": "Some message on channel wihtout details",
+                "message": "Some message on channel without details",
                 "username": "supabot",
               },
             ],
@@ -846,7 +846,7 @@ describe('embeded functions select', () => {
                 "channel_id": 3,
                 "data": null,
                 "id": 4,
-                "message": "Some message on channel wihtout details",
+                "message": "Some message on channel without details",
                 "username": "supabot",
               },
             ],
@@ -917,7 +917,7 @@ describe('embeded functions select', () => {
                 "channel_id": 3,
                 "data": null,
                 "id": 4,
-                "message": "Some message on channel wihtout details",
+                "message": "Some message on channel without details",
                 "username": "supabot",
               },
               {
@@ -1006,7 +1006,7 @@ describe('embeded functions select', () => {
                 "channel_id": 3,
                 "data": null,
                 "id": 4,
-                "message": "Some message on channel wihtout details",
+                "message": "Some message on channel without details",
                 "username": "supabot",
               },
               {
@@ -1100,7 +1100,7 @@ describe('embeded functions select', () => {
               {
                 "blurb_message": "Som",
                 "id": 4,
-                "message": "Some message on channel wihtout details",
+                "message": "Some message on channel without details",
               },
             ],
             "username": "supabot",

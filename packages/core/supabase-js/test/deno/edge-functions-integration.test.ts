@@ -1,6 +1,6 @@
 import 'node:buffer'
 import { assertEquals, assertExists } from 'https://deno.land/std@0.220.1/assert/mod.ts'
-import { createClient } from '../../dist/module/index.js'
+import { createClient } from '../../dist/index.mjs'
 
 // These tests are for integration testing with actual deployed edge functions
 // To run these tests, you need to:

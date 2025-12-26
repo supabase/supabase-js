@@ -1,0 +1,45 @@
+{
+  "name": "@supabase/storage-js",
+  "targets": {
+    "test:clean-pre": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "supabase stop --no-backup || true",
+        "cwd": "{projectRoot}/test"
+      }
+    },
+    "test:infra": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "supabase start && supabase db reset",
+        "cwd": "{projectRoot}/test"
+      },
+      "dependsOn": ["test:clean-pre"]
+    },
+    "test:suite": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "jest --runInBand --coverage",
+        "cwd": "{projectRoot}"
+      },
+      "outputs": ["{projectRoot}/coverage"],
+      "dependsOn": ["test:infra"]
+    },
+    "test:clean-post": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "supabase stop --no-backup || true",
+        "cwd": "{projectRoot}/test"
+      },
+      "dependsOn": ["test:suite"]
+    },
+    "test:storage": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "echo 'Storage tests complete'",
+        "cwd": "{projectRoot}"
+      },
+      "dependsOn": ["test:clean-post"]
+    }
+  }
+}

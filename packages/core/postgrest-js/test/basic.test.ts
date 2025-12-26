@@ -1,7 +1,7 @@
 import { PostgrestClient } from '../src/index'
 import { CustomUserDataType, Database } from './types.override'
 
-const REST_URL = 'http://localhost:3000'
+const REST_URL = 'http://localhost:54321/rest/v1'
 const postgrest = new PostgrestClient<Database>(REST_URL)
 
 test('basic select table', async () => {
@@ -280,7 +280,7 @@ test('basic select with single yielding more than one result', async () => {
         "code": "PGRST116",
         "details": "The result contains 8 rows",
         "hint": null,
-        "message": "JSON object requested, multiple (or no) rows returned",
+        "message": "Cannot coerce the result to a single JSON object",
       },
       "status": 406,
       "statusText": "Not Acceptable",
@@ -600,14 +600,14 @@ describe('basic insert, update, delete', () => {
             "channel_id": 3,
             "data": null,
             "id": 3,
-            "message": "Some message on channel wihtout details",
+            "message": "Some message on channel without details",
             "username": "supabot",
           },
           {
             "channel_id": 3,
             "data": null,
             "id": 4,
-            "message": "Some message on channel wihtout details",
+            "message": "Some message on channel without details",
             "username": "supabot",
           },
           {
@@ -671,7 +671,7 @@ describe('basic insert, update, delete', () => {
             "channel_id": 3,
             "data": null,
             "id": 4,
-            "message": "Some message on channel wihtout details",
+            "message": "Some message on channel without details",
             "username": "supabot",
           },
           {
@@ -752,7 +752,7 @@ describe('basic insert, update, delete', () => {
             "channel_id": 3,
             "data": null,
             "id": 4,
-            "message": "Some message on channel wihtout details",
+            "message": "Some message on channel without details",
             "username": "supabot",
           },
           {
@@ -881,7 +881,7 @@ describe('basic insert, update, delete', () => {
             "channel_id": 3,
             "data": null,
             "id": 4,
-            "message": "Some message on channel wihtout details",
+            "message": "Some message on channel without details",
             "username": "supabot",
           },
           {
@@ -984,7 +984,7 @@ describe('basic insert, update, delete', () => {
             "channel_id": 3,
             "data": null,
             "id": 4,
-            "message": "Some message on channel wihtout details",
+            "message": "Some message on channel without details",
             "username": "supabot",
           },
         ],
@@ -1004,7 +1004,7 @@ test('throwOnError throws errors instead of returning them', async () => {
     await postgrest.from('missing_table').select().throwOnError()
   } catch (error) {
     expect(error).toMatchInlineSnapshot(
-      `[PostgrestError: relation "public.missing_table" does not exist]`
+      `[PostgrestError: Could not find the table 'public.missing_table' in the schema cache]`
     )
     isErrorCaught = true
   }
@@ -1266,8 +1266,8 @@ test('select with head:true, count:estimated', async () => {
       "count": Any<Number>,
       "data": null,
       "error": null,
-      "status": 206,
-      "statusText": "Partial Content",
+      "status": 200,
+      "statusText": "OK",
     }
   `
   )
@@ -1514,7 +1514,7 @@ describe("insert, update, delete with count: 'exact'", () => {
             "channel_id": 3,
             "data": null,
             "id": 4,
-            "message": "Some message on channel wihtout details",
+            "message": "Some message on channel without details",
             "username": "supabot",
           },
           {
@@ -1578,7 +1578,7 @@ describe("insert, update, delete with count: 'exact'", () => {
             "channel_id": 3,
             "data": null,
             "id": 4,
-            "message": "Some message on channel wihtout details",
+            "message": "Some message on channel without details",
             "username": "supabot",
           },
           {
@@ -1662,7 +1662,7 @@ describe("insert, update, delete with count: 'exact'", () => {
             "channel_id": 3,
             "data": null,
             "id": 4,
-            "message": "Some message on channel wihtout details",
+            "message": "Some message on channel without details",
             "username": "supabot",
           },
           {
@@ -1825,7 +1825,7 @@ describe("insert, update, delete with count: 'exact'", () => {
             "channel_id": 3,
             "data": null,
             "id": 4,
-            "message": "Some message on channel wihtout details",
+            "message": "Some message on channel without details",
             "username": "supabot",
           },
           {
@@ -1932,7 +1932,7 @@ describe("insert, update, delete with count: 'exact'", () => {
             "channel_id": 3,
             "data": null,
             "id": 4,
-            "message": "Some message on channel wihtout details",
+            "message": "Some message on channel without details",
             "username": "supabot",
           },
         ],

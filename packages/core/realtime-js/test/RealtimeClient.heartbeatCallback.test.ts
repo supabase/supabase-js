@@ -104,6 +104,9 @@ describe('heartbeatCallback option', () => {
       readyState: MockWebSocket.OPEN,
     }
     socket.conn = mockConn as any
+    socket.pendingHeartbeatRef = '1'
+    // One minute ago
+    socket['_heartbeatSentAt'] = Date.now() - 60000
 
     // Simulate heartbeat response message
     const heartbeatResponse = {
@@ -116,7 +119,10 @@ describe('heartbeatCallback option', () => {
     // Trigger message handling
     socket['_onConnMessage']({ data: JSON.stringify(heartbeatResponse) })
 
-    expect(mockCallback).toHaveBeenCalledWith('ok')
+    expect(mockCallback).toHaveBeenCalledWith('ok', expect.any(Number))
+    const latency = mockCallback.mock.calls[0][1]
+    expect(latency).toBeGreaterThanOrEqual(60000)
+    expect(latency).toBeLessThan(61000)
   })
 
   test('should call heartbeatCallback with "error" when heartbeat response indicates error', () => {
@@ -134,6 +140,7 @@ describe('heartbeatCallback option', () => {
       readyState: MockWebSocket.OPEN,
     }
     socket.conn = mockConn as any
+    socket.pendingHeartbeatRef = '1'
 
     // Simulate heartbeat error response message
     const heartbeatResponse = {
@@ -146,7 +153,7 @@ describe('heartbeatCallback option', () => {
     // Trigger message handling
     socket['_onConnMessage']({ data: JSON.stringify(heartbeatResponse) })
 
-    expect(mockCallback).toHaveBeenCalledWith('error')
+    expect(mockCallback).toHaveBeenCalledWith('error', undefined)
   })
 
   test('should call heartbeatCallback multiple times for different heartbeat events', async () => {
@@ -187,7 +194,7 @@ describe('heartbeatCallback option', () => {
     // Verify both calls were made
     expect(mockCallback).toHaveBeenCalledTimes(2)
     expect(mockCallback).toHaveBeenNthCalledWith(1, 'sent')
-    expect(mockCallback).toHaveBeenNthCalledWith(2, 'ok')
+    expect(mockCallback).toHaveBeenNthCalledWith(2, 'ok', expect.any(Number))
   })
 
   test('should handle heartbeatCallback errors gracefully in sendHeartbeat', async () => {
@@ -239,6 +246,7 @@ describe('heartbeatCallback option', () => {
       readyState: MockWebSocket.OPEN,
     }
     socket.conn = mockConn as any
+    socket.pendingHeartbeatRef = '1'
 
     // Mock the log method to verify error logging
     const logSpy = vi.spyOn(socket, 'log')
@@ -256,7 +264,7 @@ describe('heartbeatCallback option', () => {
     }).not.toThrow()
 
     // Callback should still be called
-    expect(errorCallback).toHaveBeenCalledWith('ok')
+    expect(errorCallback).toHaveBeenCalledWith('ok', undefined)
 
     // Error should be logged
     expect(logSpy).toHaveBeenCalledWith('error', 'error in heartbeat callback', expect.any(Error))

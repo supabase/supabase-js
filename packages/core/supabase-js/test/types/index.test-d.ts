@@ -1,5 +1,10 @@
 import { expectError, expectType } from 'tsd'
-import { PostgrestSingleResponse, SupabaseClient, createClient } from '../../src/index'
+import {
+  PostgrestSingleResponse,
+  SupabaseClient,
+  createClient,
+  DatabaseWithoutInternals,
+} from '../../src/index'
 import { Database, Json } from '../types'
 
 const URL = 'http://localhost:3000'
@@ -264,4 +269,43 @@ const supabase = createClient<Database>(URL, KEY)
   pg12CustomSchemaClient.from('channels_details')
   // @ts-expect-error should raise error if providing table name not in the schema
   pg13CustomSchemaClient.from('channels_details')
+}
+
+// DatabaseWithoutInternals utility type
+{
+  type TestDatabaseWithInternals = {
+    __InternalSupabase: {
+      PostgrestVersion: '14'
+    }
+    public: {
+      Tables: {
+        users: {
+          Row: { id: number }
+          Insert: { id: number }
+          Update: { id?: number }
+          Relationships: []
+        }
+      }
+      Views: { [_ in never]: never }
+      Functions: { [_ in never]: never }
+      Enums: { [_ in never]: never }
+      CompositeTypes: { [_ in never]: never }
+    }
+  }
+
+  type CleanedDatabase = DatabaseWithoutInternals<TestDatabaseWithInternals>
+
+  // Should have 'public' schema
+  expectType<CleanedDatabase['public']>({} as TestDatabaseWithInternals['public'])
+
+  // Should not have '__InternalSupabase' key
+  type HasInternalKey = '__InternalSupabase' extends keyof CleanedDatabase ? true : false
+  expectType<HasInternalKey>(false)
+
+  // Should work with databases that don't have __InternalSupabase
+  type PlainDatabase = {
+    public: { Tables: {}; Views: {}; Functions: {}; Enums: {}; CompositeTypes: {} }
+  }
+  type CleanedPlainDatabase = DatabaseWithoutInternals<PlainDatabase>
+  expectType<CleanedPlainDatabase>({} as PlainDatabase)
 }

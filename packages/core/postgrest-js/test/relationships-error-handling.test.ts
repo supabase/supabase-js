@@ -3,7 +3,7 @@ import { Database } from './types.override'
 import { expectType, TypeEqual } from './types'
 import { SelectQueryError } from '../src/select-query-parser/utils'
 
-const REST_URL = 'http://localhost:3000'
+const REST_URL = 'http://localhost:54321/rest/v1'
 const postgrest = new PostgrestClient<Database>(REST_URL)
 
 test('join over a 1-1 relation with both nullables and non-nullables fields with no hinting', async () => {
@@ -261,33 +261,6 @@ test('typecasting and aggregate', async () => {
   expectType<TypeEqual<typeof result, typeof expected>>(true)
 })
 
-test('select spread on many relation', async () => {
-  const res = await postgrest
-    .from('channels')
-    .select('channel_id:id, ...messages(id, message)')
-    .limit(1)
-    .single()
-  expect(res).toMatchInlineSnapshot(`
-    {
-      "count": null,
-      "data": null,
-      "error": {
-        "code": "PGRST119",
-        "details": "'channels' and 'messages' do not form a many-to-one or one-to-one relationship",
-        "hint": null,
-        "message": "A spread operation on 'messages' is not possible",
-      },
-      "status": 400,
-      "statusText": "Bad Request",
-    }
-  `)
-  let result: Exclude<typeof res.data, null>
-  let expected: {
-    channel_id: number
-    messages: SelectQueryError<'"channels" and "messages" do not form a many-to-one or one-to-one relationship spread not possible'>
-  }
-  expectType<TypeEqual<typeof result, typeof expected>>(true)
-})
 test('select with aggregate sum function without column should error', async () => {
   const res = await postgrest.from('users').select('username, messages(sum)').limit(1).single()
   expect(res).toMatchInlineSnapshot(`

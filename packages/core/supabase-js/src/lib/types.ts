@@ -48,8 +48,26 @@ export type SupabaseClientOptions<SchemaName> = {
     persistSession?: boolean
     /**
      * Detect a session from the URL. Used for OAuth login callbacks. Defaults to true.
+     *
+     * Can be set to a function to provide custom logic for determining if a URL contains
+     * a Supabase auth callback. The function receives the current URL and parsed parameters,
+     * and should return true if the URL should be processed as a Supabase auth callback.
+     *
+     * This is useful when your app uses other OAuth providers (e.g., Facebook Login) that
+     * also return access_token in the URL fragment, which would otherwise be incorrectly
+     * intercepted by Supabase Auth.
+     *
+     * @example
+     * ```ts
+     * detectSessionInUrl: (url, params) => {
+     *   // Ignore Facebook OAuth redirects
+     *   if (url.pathname === '/facebook/redirect') return false
+     *   // Use default detection for other URLs
+     *   return Boolean(params.access_token || params.error_description)
+     * }
+     * ```
      */
-    detectSessionInUrl?: boolean
+    detectSessionInUrl?: boolean | ((url: URL, params: { [parameter: string]: string }) => boolean)
     /**
      * A storage provider. Used to store the logged-in session.
      */
@@ -117,3 +135,17 @@ export type SupabaseClientOptions<SchemaName> = {
 export type QueryResult<T> = T extends PromiseLike<infer U> ? U : never
 export type QueryData<T> = T extends PromiseLike<{ data: infer U }> ? Exclude<U, null> : never
 export type QueryError = PostgrestError
+
+/** @internal Key used for Supabase internal metadata in Database types. */
+type InternalSupabaseKey = '__InternalSupabase'
+
+/**
+ * Strips internal Supabase metadata from Database types.
+ * Useful for libraries defining generic constraints on Database types.
+ *
+ * @example
+ * ```typescript
+ * type CleanDB = DatabaseWithoutInternals<Database>
+ * ```
+ */
+export type DatabaseWithoutInternals<DB> = Omit<DB, InternalSupabaseKey>

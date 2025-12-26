@@ -189,8 +189,7 @@ export const toJson = (value: RecordValue): RecordValue => {
   if (typeof value === 'string') {
     try {
       return JSON.parse(value)
-    } catch (error) {
-      console.log(`JSON parse error: ${error}`)
+    } catch {
       return value
     }
   }

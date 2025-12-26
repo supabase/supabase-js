@@ -3,7 +3,7 @@ import { Database } from './types.override'
 import { expectType, TypeEqual } from './types'
 import { z } from 'zod'
 
-const REST_URL = 'http://localhost:3000'
+const REST_URL = 'http://localhost:54321/rest/v1'
 const postgrest = new PostgrestClient<Database>(REST_URL)
 
 test('select with aggregate count function', async () => {
