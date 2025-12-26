@@ -246,6 +246,7 @@ export default class GoTrueClient {
   protected memoryStorage: { [key: string]: string } | null = null
   protected stateChangeEmitters: Map<string | symbol, Subscription> = new Map()
   protected autoRefreshTicker: ReturnType<typeof setInterval> | null = null
+  protected autoRefreshTickTimeout: ReturnType<typeof setTimeout> | null = null
   protected visibilityChangedCallback: (() => Promise<any>) | null = null
   protected refreshingDeferred: Deferred<CallRefreshTokenResult> | null = null
   /**
@@ -2873,10 +2874,19 @@ export default class GoTrueClient {
     // run the tick immediately, but in the next pass of the event loop so that
     // #_initialize can be allowed to complete without recursively waiting on
     // itself
-    setTimeout(async () => {
+    const timeout = setTimeout(async () => {
       await this.initializePromise
       await this._autoRefreshTokenTick()
     }, 0)
+    this.autoRefreshTickTimeout = timeout
+
+    if (timeout && typeof timeout === 'object' && typeof timeout.unref === 'function') {
+      timeout.unref()
+      // @ts-expect-error TS has no context of Deno
+    } else if (typeof Deno !== 'undefined' && typeof Deno.unrefTimer === 'function') {
+      // @ts-expect-error TS has no context of Deno
+      Deno.unrefTimer(timeout)
+    }
   }
 
   /**
@@ -2891,6 +2901,13 @@ export default class GoTrueClient {
 
     if (ticker) {
       clearInterval(ticker)
+    }
+
+    const timeout = this.autoRefreshTickTimeout
+    this.autoRefreshTickTimeout = null
+
+    if (timeout) {
+      clearTimeout(timeout)
     }
   }
 
