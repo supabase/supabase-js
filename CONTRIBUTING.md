@@ -86,7 +86,7 @@ Thank you for your interest in contributing to the Supabase JavaScript SDK! This
    npx nx test <package-name>
    ```
 
-   For detailed testing instructions, see [TESTING.md](./TESTING.md) and the README in each package directory.
+   For detailed testing instructions, see [TESTING.md](./docs/TESTING.md) and the README in each package directory.
 
 5. **Format your code**:
 
