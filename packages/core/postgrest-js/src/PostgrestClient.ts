@@ -186,7 +186,14 @@ export default class PostgrestClient<
     let method: 'HEAD' | 'GET' | 'POST'
     const url = new URL(`${this.url}/rpc/${fn}`)
     let body: unknown | undefined
-    if (head || get) {
+    // objects/arrays-of-objects can't be serialized to URL params, use POST + return=minimal instead
+    const _isObject = (v: unknown): boolean =>
+      v !== null && typeof v === 'object' && (!Array.isArray(v) || v.some(_isObject))
+    const _hasObjectArg = head && Object.values(args as object).some(_isObject)
+    if (_hasObjectArg) {
+      method = 'POST'
+      body = args
+    } else if (head || get) {
       method = head ? 'HEAD' : 'GET'
       Object.entries(args)
         // params with undefined value needs to be filtered out, otherwise it'll
@@ -203,7 +210,9 @@ export default class PostgrestClient<
     }
 
     const headers = new Headers(this.headers)
-    if (count) {
+    if (_hasObjectArg) {
+      headers.set('Prefer', count ? `count=${count},return=minimal` : 'return=minimal')
+    } else if (count) {
       headers.set('Prefer', `count=${count}`)
     }
 
