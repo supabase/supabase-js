@@ -496,9 +496,8 @@ export default class GoTrueClient {
             }
           }
 
-          // failed login attempt via url,
-          // remove old session as in verifyOtp, signUp and signInWith*
-          await this._removeSession()
+          // Don't remove existing session on URL login failure.
+          // A failed attempt (e.g. reused magic link) shouldn't invalidate a valid session.
 
           return { error }
         }
