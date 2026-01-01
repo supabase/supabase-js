@@ -287,7 +287,7 @@ describe('Fetch resolution in browser environment', () => {
 
 describe('Callback URL handling', () => {
   let mockFetch: jest.Mock
-  let storedSession: string | null
+  let storedSession: string | null = null
   const mockStorage = {
     getItem: jest.fn(() => storedSession),
     setItem: jest.fn((key: string, value: string) => {
@@ -301,6 +301,7 @@ describe('Callback URL handling', () => {
   beforeEach(() => {
     mockFetch = jest.fn()
     global.fetch = mockFetch
+    storedSession = null
   })
 
   it('should handle implicit grant callback', async () => {
