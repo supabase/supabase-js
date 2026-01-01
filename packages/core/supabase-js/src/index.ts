@@ -25,6 +25,7 @@ export type {
   QueryData,
   QueryError,
   DatabaseWithoutInternals,
+  SupabaseError,
 } from './lib/types'
 
 /**

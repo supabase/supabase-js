@@ -1,7 +1,8 @@
-import { GoTrueClientOptions } from '@supabase/auth-js'
+import { GoTrueClientOptions, AuthError } from '@supabase/auth-js'
 import { RealtimeClientOptions } from '@supabase/realtime-js'
 import { PostgrestError } from '@supabase/postgrest-js'
-import type { StorageClientOptions } from '@supabase/storage-js'
+import { FunctionsError } from '@supabase/functions-js'
+import type { StorageClientOptions, StorageError } from '@supabase/storage-js'
 import type {
   GenericSchema,
   GenericRelationship,
@@ -20,6 +21,19 @@ export type {
   GenericView,
   GenericFunction,
 }
+
+/**
+ * Union type of all Supabase error types.
+ * Useful for generic error handling across all Supabase operations.
+ *
+ * @example
+ * ```ts
+ * function handleError(error: SupabaseError) {
+ *   console.error(error.message)
+ * }
+ * ```
+ */
+export type SupabaseError = AuthError | PostgrestError | FunctionsError | StorageError
 
 export interface SupabaseAuthClientOptions extends GoTrueClientOptions {}
 
