@@ -19,6 +19,7 @@ export {
 } from '@supabase/functions-js'
 export * from '@supabase/realtime-js'
 export { default as SupabaseClient } from './SupabaseClient'
+export type { SupabaseClientAPI } from './SupabaseClient'
 export type {
   SupabaseClientOptions,
   QueryResult,

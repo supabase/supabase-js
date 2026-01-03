@@ -30,6 +30,89 @@ import type {
 import { GetRpcFunctionFilterBuilderByArgs } from './lib/rest/types/common/rpc'
 
 /**
+ * Structural interface for SupabaseClient that avoids nominal typing issues.
+ *
+ * This interface provides structural typing for SupabaseClient, allowing it to be
+ * passed between packages in monorepos without TypeScript's nominal typing conflicts.
+ * It includes the most commonly used methods with proper return types.
+ *
+ * @example
+ * ```typescript
+ * import type { SupabaseClientAPI } from '@supabase/supabase-js'
+ *
+ * export function myLibrary(client: SupabaseClientAPI) {
+ *   return client.from('users').select('*')
+ * }
+ * ```
+ */
+export interface SupabaseClientAPI<
+  Database,
+  Schema extends GenericSchema,
+  ClientOptions extends { PostgrestVersion: string },
+> {
+  /* ---------- core clients ---------- */
+
+  readonly auth: SupabaseAuthClient
+  readonly realtime: RealtimeClient
+  readonly storage: SupabaseStorageClient
+  readonly functions: FunctionsClient
+
+  /* ---------- database ---------- */
+
+  from<
+    TableName extends keyof Schema['Tables'] & string,
+    Table extends Schema['Tables'][TableName],
+  >(
+    relation: TableName
+  ): PostgrestQueryBuilder<any, Schema, Table, TableName>
+
+  from<ViewName extends keyof Schema['Views'] & string, View extends Schema['Views'][ViewName]>(
+    relation: ViewName
+  ): PostgrestQueryBuilder<any, Schema, View, ViewName>
+
+  schema<DynamicSchema extends string & keyof Omit<Database, '__InternalSupabase'>>(
+    schema: DynamicSchema
+  ): PostgrestClient<
+    Database,
+    ClientOptions,
+    DynamicSchema,
+    Database[DynamicSchema] extends GenericSchema ? Database[DynamicSchema] : any
+  >
+
+  rpc<
+    FnName extends keyof Schema['Functions'] & string,
+    Args extends Schema['Functions'][FnName]['Args'],
+    Builder extends GetRpcFunctionFilterBuilderByArgs<Schema, FnName, Args>,
+  >(
+    fn: FnName,
+    args?: Args,
+    options?: {
+      head?: boolean
+      get?: boolean
+      count?: 'exact' | 'planned' | 'estimated'
+    }
+  ): PostgrestFilterBuilder<
+    any,
+    Schema,
+    Builder['Row'],
+    Builder['Result'],
+    Builder['RelationName'],
+    Builder['Relationships'],
+    'RPC'
+  >
+
+  /* ---------- realtime ---------- */
+
+  channel(name: string, opts?: RealtimeChannelOptions): RealtimeChannel
+
+  getChannels(): RealtimeChannel[]
+
+  removeChannel(channel: RealtimeChannel): Promise<'ok' | 'timed out' | 'error'>
+
+  removeAllChannels(): Promise<('ok' | 'timed out' | 'error')[]>
+}
+
+/**
  * Supabase Client.
  *
  * An isomorphic Javascript client for interacting with Postgres.
@@ -66,7 +149,8 @@ export default class SupabaseClient<
     : SchemaNameOrClientOptions extends { PostgrestVersion: string }
       ? SchemaNameOrClientOptions
       : never,
-> {
+> implements SupabaseClientAPI<Database, Schema, ClientOptions>
+{
   /**
    * Supabase Auth allows you to create and manage user sessions for access to data that is secured by access policies.
    */
