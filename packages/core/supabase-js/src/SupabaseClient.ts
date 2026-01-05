@@ -32,10 +32,6 @@ import { GetRpcFunctionFilterBuilderByArgs } from './lib/rest/types/common/rpc'
 /**
  * Structural interface for SupabaseClient that avoids nominal typing issues.
  *
- * This interface provides structural typing for SupabaseClient, allowing it to be
- * passed between packages in monorepos without TypeScript's nominal typing conflicts.
- * It includes the most commonly used methods with proper return types.
- *
  * @example
  * ```typescript
  * import type { SupabaseClientAPI } from '@supabase/supabase-js'
@@ -46,18 +42,14 @@ import { GetRpcFunctionFilterBuilderByArgs } from './lib/rest/types/common/rpc'
  * ```
  */
 export interface SupabaseClientAPI<
-  Database,
-  Schema extends GenericSchema,
-  ClientOptions extends { PostgrestVersion: string },
+  Database = any,
+  Schema extends GenericSchema = any,
+  ClientOptions extends { PostgrestVersion: string } = { PostgrestVersion: '12' },
 > {
-  /* ---------- core clients ---------- */
-
   readonly auth: SupabaseAuthClient
   readonly realtime: RealtimeClient
   readonly storage: SupabaseStorageClient
   readonly functions: FunctionsClient
-
-  /* ---------- database ---------- */
 
   from<
     TableName extends keyof Schema['Tables'] & string,
@@ -100,8 +92,6 @@ export interface SupabaseClientAPI<
     Builder['Relationships'],
     'RPC'
   >
-
-  /* ---------- realtime ---------- */
 
   channel(name: string, opts?: RealtimeChannelOptions): RealtimeChannel
 
