@@ -2,7 +2,7 @@ import type {
   PostgrestSingleResponse,
   PostgrestResponseSuccess,
   CheckMatchingArrayTypes,
-  PostgrestMaybeSingleResponse, 
+  PostgrestMaybeSingleResponse,
   MergePartialResult,
   IsValidResultOverride,
 } from './types/types'
