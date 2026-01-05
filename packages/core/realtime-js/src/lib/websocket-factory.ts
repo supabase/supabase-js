@@ -92,9 +92,10 @@ export class WebSocketFactory {
       }
     }
 
-    if (typeof process !== 'undefined') {
-      // Use dynamic property access to avoid Next.js Edge Runtime static analysis warnings
-      const processVersions = (process as any)['versions']
+    // Use dynamic property access to avoid Next.js Edge Runtime static analysis warnings
+    const _process = (globalThis as any)['process']
+    if (_process) {
+      const processVersions = _process['versions']
       if (processVersions && processVersions['node']) {
         // Remove 'v' prefix if present and parse the major version
         const versionString = processVersions['node']
