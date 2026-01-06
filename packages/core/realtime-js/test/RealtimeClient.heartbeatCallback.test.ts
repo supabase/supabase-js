@@ -109,12 +109,7 @@ describe('heartbeatCallback option', () => {
     socket['_heartbeatSentAt'] = Date.now() - 60000
 
     // Simulate heartbeat response message
-    const heartbeatResponse = {
-      topic: 'phoenix',
-      event: 'phx_reply',
-      payload: { status: 'ok' },
-      ref: '1',
-    }
+    const heartbeatResponse = [null, '1', 'phoenix', 'phx_reply', { status: 'ok' }]
 
     // Trigger message handling
     socket['_onConnMessage']({ data: JSON.stringify(heartbeatResponse) })
@@ -143,12 +138,7 @@ describe('heartbeatCallback option', () => {
     socket.pendingHeartbeatRef = '1'
 
     // Simulate heartbeat error response message
-    const heartbeatResponse = {
-      topic: 'phoenix',
-      event: 'phx_reply',
-      payload: { status: 'error' },
-      ref: '1',
-    }
+    const heartbeatResponse = [null, '1', 'phoenix', 'phx_reply', { status: 'error' }]
 
     // Trigger message handling
     socket['_onConnMessage']({ data: JSON.stringify(heartbeatResponse) })
@@ -182,12 +172,7 @@ describe('heartbeatCallback option', () => {
     socket.conn = mockConn as any
 
     // Simulate successful heartbeat response (should call with 'ok')
-    const heartbeatResponse = {
-      topic: 'phoenix',
-      event: 'phx_reply',
-      payload: { status: 'ok' },
-      ref: '1',
-    }
+    const heartbeatResponse = [null, '1', 'phoenix', 'phx_reply', { status: 'ok' }]
 
     socket['_onConnMessage']({ data: JSON.stringify(heartbeatResponse) })
 
@@ -252,12 +237,7 @@ describe('heartbeatCallback option', () => {
     const logSpy = vi.spyOn(socket, 'log')
 
     // Simulate heartbeat response message - should not throw despite callback error
-    const heartbeatResponse = {
-      topic: 'phoenix',
-      event: 'phx_reply',
-      payload: { status: 'ok' },
-      ref: '1',
-    }
+    const heartbeatResponse = [null, '1', 'phoenix', 'phx_reply', { status: 'ok' }]
 
     expect(() => {
       socket['_onConnMessage']({ data: JSON.stringify(heartbeatResponse) })

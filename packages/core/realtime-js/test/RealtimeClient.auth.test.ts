@@ -172,7 +172,7 @@ describe('auth during connection states', () => {
       .spyOn(connectedSetup.socket, 'accessTokenValue', 'get')
       .mockReturnValue(token)
 
-    const heartbeatData = '{"topic":"phoenix","event":"heartbeat","payload":{},"ref":"1"}'
+    const heartbeatData = JSON.stringify([null, '1', 'phoenix', 'heartbeat', {}])
 
     await connectedSetup.socket.sendHeartbeat()
 
