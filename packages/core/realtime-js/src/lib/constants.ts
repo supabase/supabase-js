@@ -4,7 +4,7 @@ export const DEFAULT_VERSION = `realtime-js/${version}`
 
 export const VSN_1_0_0: string = '1.0.0'
 export const VSN_2_0_0: string = '2.0.0'
-export const DEFAULT_VSN: string = VSN_1_0_0
+export const DEFAULT_VSN: string = VSN_2_0_0
 
 export const VERSION = version
 

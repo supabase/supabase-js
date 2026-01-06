@@ -88,7 +88,7 @@ describe('log operations', () => {
     assert.equal(testSetup.socket.logLevel, 'warn')
     assert.equal(
       testSetup.socket.endpointURL(),
-      `${testSetup.url}/websocket?apikey=123456789&log_level=warn&vsn=1.0.0`
+      `${testSetup.url}/websocket?apikey=123456789&log_level=warn&vsn=2.0.0`
     )
   })
 
@@ -101,7 +101,7 @@ describe('log operations', () => {
     assert.equal(testSetup.socket.logLevel, 'warn')
     assert.equal(
       testSetup.socket.endpointURL(),
-      `${testSetup.url}/websocket?apikey=123456789&log_level=warn&vsn=1.0.0`
+      `${testSetup.url}/websocket?apikey=123456789&log_level=warn&vsn=2.0.0`
     )
   })
 })

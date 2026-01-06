@@ -270,12 +270,7 @@ describe('Additional Coverage Tests', () => {
       testSetup.socket.pendingHeartbeatRef = 'test-ref-123'
 
       const message = {
-        data: JSON.stringify({
-          topic: 'phoenix',
-          event: 'phx_reply',
-          payload: { status: 'ok' },
-          ref: 'test-ref-123',
-        }),
+        data: JSON.stringify([null, 'test-ref-123', 'phoenix', 'phx_reply', { status: 'ok' }]),
       }
 
       ;(testSetup.socket as any)._onConnMessage(message)
@@ -287,12 +282,7 @@ describe('Additional Coverage Tests', () => {
       testSetup.socket.pendingHeartbeatRef = 'test-ref-123'
 
       const message = {
-        data: JSON.stringify({
-          topic: 'phoenix',
-          event: 'phx_reply',
-          payload: { status: 'ok' },
-          ref: 'different-ref',
-        }),
+        data: JSON.stringify([null, 'different-ref', 'phoenix', 'phx_reply', { status: 'ok' }]),
       }
 
       ;(testSetup.socket as any)._onConnMessage(message)
@@ -304,12 +294,7 @@ describe('Additional Coverage Tests', () => {
       const logSpy = vi.spyOn(testSetup.socket, 'log')
 
       const message = {
-        data: JSON.stringify({
-          topic: 'test-topic',
-          event: 'test-event',
-          payload: { data: 'test' },
-          // No ref field
-        }),
+        data: JSON.stringify([null, null, 'test-topic', 'test-event', { data: 'test' }]),
       }
 
       ;(testSetup.socket as any)._onConnMessage(message)
@@ -468,12 +453,7 @@ describe('Additional Coverage Tests', () => {
       const logSpy = vi.spyOn(testSetup.socket, 'log')
 
       const message = {
-        data: JSON.stringify({
-          topic: 'test-topic',
-          event: 'test-event',
-          payload: { data: 'test' },
-          ref: '123',
-        }),
+        data: JSON.stringify([null, '123', 'test-topic', 'test-event', { data: 'test' }]),
       }
 
       ;(testSetup.socket as any)._onConnMessage(message)
