@@ -3232,6 +3232,80 @@ describe('Lock functionality', () => {
     await expect(client._acquireLock(1000, mockFn)).rejects.toThrow('Lock acquisition timeout')
     expect(mockFn).not.toHaveBeenCalled()
   })
+
+  test('should use custom lockAcquireTimeout when provided', async () => {
+    const capturedTimeouts: number[] = []
+    const mockLock = jest
+      .fn()
+      .mockImplementation(async (name: string, timeout: number, fn: () => Promise<unknown>) => {
+        capturedTimeouts.push(timeout)
+        return fn()
+      })
+
+    const customTimeout = 20000 // 20 seconds (different from default 10s)
+
+    const client = new GoTrueClient({
+      url: GOTRUE_URL_SIGNUP_ENABLED_AUTO_CONFIRM_ON,
+      lock: mockLock,
+      autoRefreshToken: false,
+      persistSession: false,
+      lockAcquireTimeout: customTimeout,
+    })
+
+    await client.initialize()
+
+    // Verify that the custom timeout was passed to the lock function
+    expect(mockLock).toHaveBeenCalled()
+    expect(capturedTimeouts).toContain(customTimeout)
+  })
+
+  test('should use default lockAcquireTimeout (10000ms) when not provided', async () => {
+    const capturedTimeouts: number[] = []
+    const mockLock = jest
+      .fn()
+      .mockImplementation(async (name: string, timeout: number, fn: () => Promise<unknown>) => {
+        capturedTimeouts.push(timeout)
+        return fn()
+      })
+
+    const client = new GoTrueClient({
+      url: GOTRUE_URL_SIGNUP_ENABLED_AUTO_CONFIRM_ON,
+      lock: mockLock,
+      autoRefreshToken: false,
+      persistSession: false,
+      // lockAcquireTimeout not provided, should default to 10000
+    })
+
+    await client.initialize()
+
+    // Verify that the default timeout (10000ms = 10 seconds) was used
+    expect(mockLock).toHaveBeenCalled()
+    expect(capturedTimeouts).toContain(10000)
+  })
+
+  test('should pass negative timeout to lock for indefinite wait', async () => {
+    const capturedTimeouts: number[] = []
+    const mockLock = jest
+      .fn()
+      .mockImplementation(async (name: string, timeout: number, fn: () => Promise<unknown>) => {
+        capturedTimeouts.push(timeout)
+        return fn()
+      })
+
+    const client = new GoTrueClient({
+      url: GOTRUE_URL_SIGNUP_ENABLED_AUTO_CONFIRM_ON,
+      lock: mockLock,
+      autoRefreshToken: false,
+      persistSession: false,
+      lockAcquireTimeout: -1, // Indefinite wait (not recommended)
+    })
+
+    await client.initialize()
+
+    // Verify that negative timeout was passed through
+    expect(mockLock).toHaveBeenCalled()
+    expect(capturedTimeouts).toContain(-1)
+  })
 })
 
 describe('userNotAvailableProxy behavior', () => {
@@ -3385,7 +3459,9 @@ describe('GoTrueClient with throwOnError option', () => {
   })
 
   test('signInWithOtp() should throw on invalid params when throwOnError is true', async () => {
-    await expect(client.signInWithOtp({ email: 'invalid', options: { captchaToken: 'x' } })).rejects.toThrow()
+    await expect(
+      client.signInWithOtp({ email: 'invalid', options: { captchaToken: 'x' } })
+    ).rejects.toThrow()
   })
 
   test('signInWithSSO() should throw on error when throwOnError is true', async () => {

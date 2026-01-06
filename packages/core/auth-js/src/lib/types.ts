@@ -113,9 +113,39 @@ export type GoTrueClientOptions = {
    */
   throwOnError?: boolean
   /**
-   * The maximum time in milliseconds to wait for a lock to be acquired.
-   * If the lock cannot be acquired within this time, an error with `isAcquireTimeout` set to true is thrown.
-   * Defaults to 60000 (1 minute). Set to a negative value to wait indefinitely (not recommended).
+   * The maximum time in milliseconds to wait for acquiring a cross-tab synchronization lock.
+   *
+   * When multiple browser tabs or windows use the auth client simultaneously, they coordinate
+   * via the Web Locks API to prevent race conditions during session refresh and other operations.
+   * This timeout controls how long to wait for the lock before failing.
+   *
+   * If the lock cannot be acquired within this time, a `LockAcquireTimeoutError` is thrown.
+   * You can catch this by checking `error.isAcquireTimeout === true`.
+   *
+   * - **Positive value**: Wait up to this many milliseconds before timing out
+   * - **Zero (0)**: Fail immediately if the lock is unavailable
+   * - **Negative value**: Wait indefinitely (not recommended - can cause deadlocks)
+   *
+   * @default 10000
+   *
+   * @example
+   * ```ts
+   * const client = createClient(url, key, {
+   *   auth: {
+   *     lockAcquireTimeout: 10000, // 10 seconds
+   *   },
+   * })
+   *
+   * try {
+   *   await client.auth.getSession()
+   * } catch (error) {
+   *   if (error.isAcquireTimeout) {
+   *     // Lock held by another tab/instance, or a previous operation is stuck.
+   *     // Consider: closing other tabs, increasing timeout, or restarting the browser.
+   *     console.error('Could not acquire lock within timeout period.')
+   *   }
+   * }
+   * ```
    */
   lockAcquireTimeout?: number
 }
