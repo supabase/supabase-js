@@ -19,7 +19,7 @@ import {
   getClientWithSpecificStorage,
 } from './lib/clients'
 import { mockUserCredentials } from './lib/utils'
-import { JWK, Session } from '../src'
+import { JWK, Session, UserIdentity } from '../src'
 import { setItemAsync } from '../src/lib/helpers'
 
 const TEST_USER_DATA = { info: 'some info' }
@@ -97,12 +97,12 @@ describe('GoTrueClient', () => {
       })
       expect(refreshSessionError).toBeNull()
       expect(session).not.toBeNull()
-      expect(session!.user).not.toBeNull()
-      expect(session!.expires_in).not.toBeNull()
-      expect(session!.expires_at).not.toBeNull()
-      expect(session!.access_token).not.toBeNull()
-      expect(session!.refresh_token).not.toBeNull()
-      expect(session!.token_type).toStrictEqual('bearer')
+      expect(session?.user).not.toBeNull()
+      expect(session?.expires_in).not.toBeNull()
+      expect(session?.expires_at).not.toBeNull()
+      expect(session?.access_token).not.toBeNull()
+      expect(session?.refresh_token).not.toBeNull()
+      expect(session?.token_type).toStrictEqual('bearer')
       expect(refreshAccessTokenSpy).toBeCalledTimes(1)
       // @ts-expect-error 'data.session and session should not be null because of the assertion above'
       expect(data.session.refresh_token).not.toEqual(session.refresh_token)
@@ -129,12 +129,12 @@ describe('GoTrueClient', () => {
       } = await authWithSession.refreshSession()
       expect(refreshSessionError).toBeNull()
       expect(session).not.toBeNull()
-      expect(session!.user).not.toBeNull()
-      expect(session!.expires_in).not.toBeNull()
-      expect(session!.expires_at).not.toBeNull()
-      expect(session!.access_token).not.toBeNull()
-      expect(session!.refresh_token).not.toBeNull()
-      expect(session!.token_type).toStrictEqual('bearer')
+      expect(session?.user).not.toBeNull()
+      expect(session?.expires_in).not.toBeNull()
+      expect(session?.expires_at).not.toBeNull()
+      expect(session?.access_token).not.toBeNull()
+      expect(session?.refresh_token).not.toBeNull()
+      expect(session?.token_type).toStrictEqual('bearer')
       expect(refreshAccessTokenSpy).toBeCalledTimes(1)
       // @ts-expect-error 'data.session and session should not be null because of the assertion above'
       expect(data.session.refresh_token).not.toEqual(session.refresh_token)
@@ -161,12 +161,12 @@ describe('GoTrueClient', () => {
       })
       expect(setSessionError).toBeNull()
       expect(session).not.toBeNull()
-      expect(session!.user).not.toBeNull()
-      expect(session!.expires_in).not.toBeNull()
-      expect(session!.expires_at).not.toBeNull()
-      expect(session!.access_token).not.toBeNull()
-      expect(session!.refresh_token).not.toBeNull()
-      expect(session!.token_type).toStrictEqual('bearer')
+      expect(session?.user).not.toBeNull()
+      expect(session?.expires_in).not.toBeNull()
+      expect(session?.expires_at).not.toBeNull()
+      expect(session?.access_token).not.toBeNull()
+      expect(session?.refresh_token).not.toBeNull()
+      expect(session?.token_type).toStrictEqual('bearer')
 
       /**
        * getSession has been added to verify setSession is also saving
@@ -394,7 +394,7 @@ describe('GoTrueClient', () => {
       // verify the deferred has been reset and successive calls can be made
       // @ts-expect-error 'Allow access to private _callRefreshToken()'
       const { data: session3, error: error3 } = await authWithSession._callRefreshToken(
-        data.session!.refresh_token
+        data.session?.refresh_token || ''
       )
 
       expect(error3).toBeNull()
@@ -436,7 +436,7 @@ describe('GoTrueClient', () => {
       // vreify the deferred has been reset and successive calls can be made
       // @ts-expect-error 'Allow access to private _callRefreshToken()'
       const { data: session3, error: error3 } = await authWithSession._callRefreshToken(
-        data.session!.refresh_token
+        data.session?.refresh_token || ''
       )
 
       expect(error3).toBeNull()
@@ -1543,12 +1543,12 @@ describe('MFA', () => {
       factorType: 'totp',
     })
     expect(enrollError).toBeNull()
-    expect(enrollData!.totp).not.toBeNull()
+    expect(enrollData?.totp).not.toBeNull()
 
     return {
       ...credentials,
-      factorId: enrollData!.id,
-      totp: enrollData!.totp,
+      factorId: enrollData?.id || '',
+      totp: (enrollData as any)?.totp,
     }
   }
 
@@ -1559,7 +1559,7 @@ describe('MFA', () => {
     })
 
     expect(error).toBeNull()
-    expect(data!.totp.qr_code).not.toBeNull()
+    expect(data?.totp.qr_code).not.toBeNull()
   })
 
   test('enroll({factorType: "totp"}) should fail without session', async () => {
@@ -1581,8 +1581,8 @@ describe('MFA', () => {
     })
 
     expect(challengeError).toBeNull()
-    expect(data!.id).not.toBeNull()
-    expect(data!.expires_at).not.toBeNull()
+    expect((data as any)?.id).not.toBeNull()
+    expect((data as any)?.expires_at).not.toBeNull()
   })
 
   test('verify should verify MFA challenge', async () => {
@@ -1595,7 +1595,7 @@ describe('MFA', () => {
 
     const { data: verifyData, error: verifyError } = await authWithSession.mfa.verify({
       factorId,
-      challengeId: challengeData!.id,
+      challengeId: challengeData?.id || '',
       code: '123456',
     })
 
@@ -1631,8 +1631,8 @@ describe('MFA', () => {
 
     // Verify factor was removed
     const { data: factorsData } = await authWithSession.mfa.listFactors()
-    expect(factorsData!.all).toHaveLength(0)
-    expect(factorsData!.totp).toHaveLength(0)
+    expect(factorsData?.all).toHaveLength(0)
+    expect(factorsData?.totp).toHaveLength(0)
   })
 
   test('getAuthenticatorAssuranceLevel should return current AAL', async () => {
@@ -1642,9 +1642,9 @@ describe('MFA', () => {
       await authWithSession.mfa.getAuthenticatorAssuranceLevel()
 
     expect(aalError).toBeNull()
-    expect(aalData!.currentLevel).toBeDefined()
-    expect(aalData!.nextLevel).toBeDefined()
-    expect(aalData!.currentAuthenticationMethods).toBeDefined()
+    expect(aalData?.currentLevel).toBeDefined()
+    expect(aalData?.nextLevel).toBeDefined()
+    expect(aalData?.currentAuthenticationMethods).toBeDefined()
   })
 
   test('_listFactors returns correct factor lists', async () => {
@@ -2751,7 +2751,9 @@ describe('Identity Management', () => {
     expect(identitiesData?.identities).toBeDefined()
     expect(identitiesData?.identities.length).toBeGreaterThan(0)
 
-    const { error } = await authWithSession.unlinkIdentity(identitiesData!.identities[0])
+    const { error } = await authWithSession.unlinkIdentity(
+        (identitiesData?.identities[0] as UserIdentity) || ({} as UserIdentity)
+    )
     expect(error).not.toBeNull()
     expect(error?.message).toContain('Manual linking is disabled')
   })
