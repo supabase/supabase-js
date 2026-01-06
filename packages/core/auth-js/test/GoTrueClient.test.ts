@@ -508,6 +508,86 @@ describe('GoTrueClient', () => {
       expect(error?.message).toContain('@supabase/ssr')
       expect(error?.code).toEqual('pkce_code_verifier_not_found')
     })
+
+    describe('getSession request deduplication', () => {
+      afterEach(() => {
+        jest.restoreAllMocks()
+      })
+
+      test('should deduplicate concurrent getSession calls', async () => {
+        const mockSession: Session = {
+          access_token: 'access-token',
+          refresh_token: 'refresh-token',
+          expires_in: 3600,
+          token_type: 'bearer',
+          user: {
+            id: 'user-id',
+            aud: 'authenticated',
+            created_at: new Date().toISOString(),
+            app_metadata: {},
+            user_metadata: {},
+            role: 'authenticated',
+          },
+        }
+
+        const useSessionSpy = jest.spyOn(authWithSession as any, '_useSession')
+        
+        useSessionSpy.mockImplementationOnce(async (_fn: any) => {
+          await new Promise((resolve) => setTimeout(resolve, 50))
+          return { data: { session: mockSession, user: mockSession.user }, error: null }
+        })
+
+        const results = await Promise.all([
+          authWithSession.getSession(),
+          authWithSession.getSession(),
+          authWithSession.getSession(),
+        ])
+
+        expect(useSessionSpy).toHaveBeenCalledTimes(1)
+        expect(results[0].data.session).not.toBeNull()
+        expect(results[0].data.session).toEqual(mockSession)
+        expect(results[1].data.session).toEqual(results[0].data.session)
+        expect(results[2].data.session).toEqual(results[0].data.session)
+      })
+
+      test('should propagate errors to all concurrent callers', async () => {
+        const mockError = new AuthError('Network failure')
+
+        const useSessionSpy = jest.spyOn(authWithSession as any, '_useSession')
+
+        useSessionSpy.mockImplementationOnce(async (_fn: any) => {
+          await new Promise((resolve) => setTimeout(resolve, 50))
+          return { data: { session: null, user: null }, error: mockError }
+        })
+
+        const results = await Promise.all([
+          authWithSession.getSession(),
+          authWithSession.getSession(),
+        ])
+
+        expect(results[0].error).toEqual(mockError)
+        expect(results[1].error).toEqual(mockError)
+        expect(useSessionSpy).toHaveBeenCalledTimes(1)
+      })
+
+      test('should reset getSessionDeferred after completion', async () => {
+         const { email, password } = mockUserCredentials()
+         await authWithSession.signUp({ email, password })
+
+         // First call
+         await authWithSession.getSession()
+         
+         // @ts-expect-error 'Check private property'
+         expect(authWithSession.getSessionDeferred).toBeNull()
+
+         // Second call - should trigger new request
+
+         const useSessionSpy = jest.spyOn(authWithSession as any, '_useSession')
+         
+         await authWithSession.getSession()
+         expect(useSessionSpy).toHaveBeenCalledTimes(1)
+      })
+    })
   })
 
   describe('Email Auth', () => {

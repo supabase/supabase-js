@@ -252,7 +252,7 @@ export default class GoTrueClient {
    * Keeps track of the in-flight getSession request.
    * Used to deduplicate concurrent getSession calls.
    */
-  protected getSessionDeferred: Deferred<any> | null = null
+  protected getSessionDeferred: Deferred<AuthResponse> | null = null
   /**
    * Keeps track of the in-flight _recoverAndRefresh operation.
    * Used to deduplicate concurrent recovery operations during initialization.
@@ -1485,13 +1485,23 @@ export default class GoTrueClient {
     }
 
     try {
-      this.getSessionDeferred = new Deferred<any>()
+      this.getSessionDeferred = new Deferred<AuthResponse>()
 
       const result = await this._acquireLock(-1, async () => {
         return this._useSession(async (result) => {
-          return result
-        })
+        const {
+          data: { session },
+          error,
+        } = result
+        if (error) {
+          return { data: { session: null, user: null }, error }
+        }
+        if (!session) {
+          return { data: { session: null, user: null }, error: null }
+        }
+        return { data: { session, user: session.user }, error: null }
       })
+    })
 
       this.getSessionDeferred.resolve(result)
       return result
