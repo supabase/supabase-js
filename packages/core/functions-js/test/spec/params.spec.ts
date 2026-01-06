@@ -491,3 +491,56 @@ describe('params reached to function', () => {
     expect(data).toMatchObject(expected)
   })
 })
+
+describe('body stringify with custom headers', () => {
+  test('should stringify object body when custom Content-Type is provided', async () => {
+    const mockFetch = jest.fn().mockResolvedValue(new Response('ok'))
+    const client = new FunctionsClient('http://localhost', { customFetch: mockFetch })
+
+    await client.invoke('test-fn', {
+      body: { foo: 'bar' },
+      headers: { 'Content-Type': 'application/json' },
+    })
+
+    expect(mockFetch).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({
+        body: '{"foo":"bar"}', // not '[object Object]'
+      })
+    )
+  })
+
+  test('should stringify nested object body when custom headers are provided', async () => {
+    const mockFetch = jest.fn().mockResolvedValue(new Response('ok'))
+    const client = new FunctionsClient('http://localhost', { customFetch: mockFetch })
+
+    await client.invoke('test-fn', {
+      body: { nested: { deep: { value: 123 } }, array: [1, 2, 3] },
+      headers: { 'Content-Type': 'application/json', 'X-Custom': 'header' },
+    })
+
+    expect(mockFetch).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({
+        body: '{"nested":{"deep":{"value":123}},"array":[1,2,3]}',
+      })
+    )
+  })
+
+  test('should not double-stringify string body when custom Content-Type is provided', async () => {
+    const mockFetch = jest.fn().mockResolvedValue(new Response('ok'))
+    const client = new FunctionsClient('http://localhost', { customFetch: mockFetch })
+
+    await client.invoke('test-fn', {
+      body: '{"already":"stringified"}',
+      headers: { 'Content-Type': 'application/json' },
+    })
+
+    expect(mockFetch).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({
+        body: '{"already":"stringified"}',
+      })
+    )
+  })
+})
