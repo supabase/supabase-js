@@ -173,17 +173,17 @@ jobs:
         run: |
           cd packages/core/supabase-js
           echo "Starting Supabase from packages/core/supabase-js directory"
-          supabase start
+          npx supabase start
           echo "Resetting database to apply migrations"
-          supabase db reset --no-seed
+          npx supabase db reset --no-seed
           echo "Waiting for PostgREST schema cache to refresh"
           sleep 5
           echo "Creating storage bucket"
-          supabase db query "insert into storage.buckets (id, name, public) values ('test-bucket','test-bucket', false) on conflict (id) do nothing;"
+          npx supabase db query "insert into storage.buckets (id, name, public) values ('test-bucket','test-bucket', false) on conflict (id) do nothing;"
           echo "Verifying todos table exists"
-          supabase db query "select count(*) from public.todos;"
+          npx supabase db query "select count(*) from public.todos;"
           echo "Verifying storage bucket exists"
-          supabase db query "select id, name from storage.buckets where id = 'test-bucket';"
+          npx supabase db query "select id, name from storage.buckets where id = 'test-bucket';"
 
       - name: Verify packages in Verdaccio
         run: |
@@ -215,7 +215,7 @@ jobs:
         if: always()
         run: |
           cd packages/core/supabase-js
-          supabase stop
+          npx supabase stop
   node-integration:
     name: Node Integration
     runs-on: ubuntu-latest
@@ -242,17 +242,17 @@ jobs:
         run: |
           cd packages/core/supabase-js
           echo "Starting Supabase from packages/core/supabase-js directory"
-          supabase start
+          npx supabase start
           echo "Resetting database to apply migrations"
-          supabase db reset --no-seed
+          npx supabase db reset --no-seed
           echo "Waiting for PostgREST schema cache to refresh"
           sleep 5
           echo "Creating storage bucket"
-          supabase db query "insert into storage.buckets (id, name, public) values ('test-bucket','test-bucket', false) on conflict (id) do nothing;"
+          npx supabase db query "insert into storage.buckets (id, name, public) values ('test-bucket','test-bucket', false) on conflict (id) do nothing;"
           echo "Verifying todos table exists"
-          supabase db query "select count(*) from public.todos;"
+          npx supabase db query "select count(*) from public.todos;"
           echo "Verifying storage bucket exists"
-          supabase db query "select id, name from storage.buckets where id = 'test-bucket';"
+          npx supabase db query "select id, name from storage.buckets where id = 'test-bucket';"
 
       - name: Install dependencies and build
         run: |
@@ -273,7 +273,7 @@ jobs:
         if: always()
         run: |
           cd packages/core/supabase-js
-          supabase stop
+          npx supabase stop
 
   next-integration:
     name: Next.js Integration
@@ -321,17 +321,17 @@ jobs:
         run: |
           cd packages/core/supabase-js
           echo "Starting Supabase from packages/core/supabase-js directory"
-          supabase start
+          npx supabase start
           echo "Resetting database to apply migrations"
-          supabase db reset --no-seed
+          npx supabase db reset --no-seed
           echo "Waiting for PostgREST schema cache to refresh"
           sleep 5
           echo "Creating storage bucket"
-          supabase db query "insert into storage.buckets (id, name, public) values ('test-bucket','test-bucket', false) on conflict (id) do nothing;"
+          npx supabase db query "insert into storage.buckets (id, name, public) values ('test-bucket','test-bucket', false) on conflict (id) do nothing;"
           echo "Verifying todos table exists"
-          supabase db query "select count(*) from public.todos;"
+          npx supabase db query "select count(*) from public.todos;"
           echo "Verifying storage bucket exists"
-          supabase db query "select id, name from storage.buckets where id = 'test-bucket';"
+          npx supabase db query "select id, name from storage.buckets where id = 'test-bucket';"
 
       - name: Verify packages in Verdaccio
         run: |
@@ -357,7 +357,7 @@ jobs:
         if: always()
         run: |
           cd packages/core/supabase-js
-          supabase stop
+          npx supabase stop
 
   expo-tests:
     name: Expo Tests
@@ -405,17 +405,17 @@ jobs:
         run: |
           cd packages/core/supabase-js
           echo "Starting Supabase from packages/core/supabase-js directory"
-          supabase start
+          npx supabase start
           echo "Resetting database to apply migrations"
-          supabase db reset --no-seed
+          npx supabase db reset --no-seed
           echo "Waiting for PostgREST schema cache to refresh"
           sleep 5
           echo "Creating storage bucket"
-          supabase db query "insert into storage.buckets (id, name, public) values ('test-bucket','test-bucket', false) on conflict (id) do nothing;"
+          npx supabase db query "insert into storage.buckets (id, name, public) values ('test-bucket','test-bucket', false) on conflict (id) do nothing;"
           echo "Verifying todos table exists"
-          supabase db query "select count(*) from public.todos;"
+          npx supabase db query "select count(*) from public.todos;"
           echo "Verifying storage bucket exists"
-          supabase db query "select id, name from storage.buckets where id = 'test-bucket';"
+          npx supabase db query "select id, name from storage.buckets where id = 'test-bucket';"
 
       - name: Verify packages in Verdaccio
         run: |
@@ -440,7 +440,7 @@ jobs:
         if: always()
         run: |
           cd packages/core/supabase-js
-          supabase stop
+          npx supabase stop
 
   bun-integration:
     name: Bun Integration
@@ -493,17 +493,17 @@ jobs:
         run: |
           cd packages/core/supabase-js
           echo "Starting Supabase from packages/core/supabase-js directory"
-          supabase start
+          npx supabase start
           echo "Resetting database to apply migrations"
-          supabase db reset --no-seed
+          npx supabase db reset --no-seed
           echo "Waiting for PostgREST schema cache to refresh"
           sleep 5
           echo "Creating storage bucket"
-          supabase db query "insert into storage.buckets (id, name, public) values ('test-bucket','test-bucket', false) on conflict (id) do nothing;"
+          npx supabase db query "insert into storage.buckets (id, name, public) values ('test-bucket','test-bucket', false) on conflict (id) do nothing;"
           echo "Verifying todos table exists"
-          supabase db query "select count(*) from public.todos;"
+          npx supabase db query "select count(*) from public.todos;"
           echo "Verifying storage bucket exists"
-          supabase db query "select id, name from storage.buckets where id = 'test-bucket';"
+          npx supabase db query "select id, name from storage.buckets where id = 'test-bucket';"
 
       - name: Verify packages in Verdaccio
         run: |
@@ -526,7 +526,7 @@ jobs:
         if: always()
         run: |
           cd packages/core/supabase-js
-          supabase stop
+          npx supabase stop
 
   websocket-browser-tests:
     name: WebSocket Browser Tests
@@ -562,17 +562,17 @@ jobs:
         run: |
           cd packages/core/supabase-js
           echo "Starting Supabase from packages/core/supabase-js directory"
-          supabase start
+          npx supabase start
           echo "Resetting database to apply migrations"
-          supabase db reset --no-seed
+          npx supabase db reset --no-seed
           echo "Waiting for PostgREST schema cache to refresh"
           sleep 5
           echo "Creating storage bucket"
-          supabase db query "insert into storage.buckets (id, name, public) values ('test-bucket','test-bucket', false) on conflict (id) do nothing;"
+          npx supabase db query "insert into storage.buckets (id, name, public) values ('test-bucket','test-bucket', false) on conflict (id) do nothing;"
           echo "Verifying todos table exists"
-          supabase db query "select count(*) from public.todos;"
+          npx supabase db query "select count(*) from public.todos;"
           echo "Verifying storage bucket exists"
-          supabase db query "select id, name from storage.buckets where id = 'test-bucket';"
+          npx supabase db query "select id, name from storage.buckets where id = 'test-bucket';"
 
       - name: Run WebSocket tests
         run: |
@@ -585,4 +585,4 @@ jobs:
         if: always()
         run: |
           cd packages/core/supabase-js
-          supabase stop
+          npx supabase stop

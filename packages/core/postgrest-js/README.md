@@ -140,9 +140,9 @@ Or directly via Supabase CLI:
 
 ```bash
 cd packages/core/postgrest-js/test
-supabase start        # Start all services
-supabase db reset     # Reset and seed database
-supabase stop         # Stop all services
+npx supabase start        # Start all services
+npx supabase db reset     # Reset and seed database
+npx supabase stop         # Stop all services
 ```
 
 #### Regenerating TypeScript Types

@@ -42,11 +42,11 @@ function main() {
 
   // Clean up any existing containers
   console.log('🧹 Cleaning up existing containers...')
-  execAllowFail('supabase stop --no-backup', { cwd: TEST_DIR })
+  execAllowFail('npx supabase stop --no-backup', { cwd: TEST_DIR })
 
   // Start Supabase (blocks until ready)
   console.log('📦 Starting Supabase...')
-  exec('supabase start', { cwd: TEST_DIR })
+  exec('npx supabase start', { cwd: TEST_DIR })
 
   // Generate types from database using Supabase CLI
   console.log('🔧 Generating types from database...')
@@ -65,7 +65,7 @@ function main() {
 
   // Clean up Supabase containers
   console.log('🧹 Cleaning up Supabase...')
-  execAllowFail('supabase stop --no-backup', { cwd: TEST_DIR })
+  execAllowFail('npx supabase stop --no-backup', { cwd: TEST_DIR })
 
   console.log('\n✅ Type generation complete!')
   console.log(`   Output: ${OUTPUT_FILE}`)
