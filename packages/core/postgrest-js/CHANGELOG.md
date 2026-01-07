@@ -1,3 +1,13 @@
+## 2.90.0 (2026-01-07)
+
+### 🩹 Fixes
+
+- **postgrest:** use post with return minimal for rpc head requests with object args ([#1994](https://github.com/supabase/supabase-js/pull/1994))
+
+### ❤️ Thank You
+
+- Vaibhav @7ttp
+
 ## 2.89.0 (2025-12-18)
 
 This was a version bump only for @supabase/postgrest-js to align it with other projects, there were no code changes.

@@ -1,3 +1,18 @@
+## 2.90.0 (2026-01-07)
+
+### 🚀 Features
+
+- **realtime:** expose heartbeat latency on heartbeat callback ([#1982](https://github.com/supabase/supabase-js/pull/1982))
+
+### 🩹 Fixes
+
+- **supabase:** avoid edge runtime warnings in next.js ([#1998](https://github.com/supabase/supabase-js/pull/1998))
+
+### ❤️ Thank You
+
+- Eduardo Gurgel
+- Vaibhav @7ttp
+
 ## 2.89.0 (2025-12-18)
 
 This was a version bump only for @supabase/realtime-js to align it with other projects, there were no code changes.
