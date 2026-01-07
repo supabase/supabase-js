@@ -11,8 +11,9 @@ const { execSync } = require('child_process')
 const path = require('path')
 
 const POSTGREST_DIR = path.join(__dirname, '../packages/core/postgrest-js')
-const TEST_DIR = path.join(POSTGREST_DIR, 'test')
-const OUTPUT_FILE = path.join(POSTGREST_DIR, 'test/types.generated.ts')
+const TEST_DIR_NAME = 'test'
+const TEST_DIR = path.join(POSTGREST_DIR, TEST_DIR_NAME)
+const OUTPUT_FILE = path.join(POSTGREST_DIR, TEST_DIR_NAME, 'types.generated.ts')
 
 function exec(command, options = {}) {
   try {
@@ -42,18 +43,23 @@ function main() {
 
   // Clean up any existing containers
   console.log('🧹 Cleaning up existing containers...')
-  execAllowFail('npx supabase stop --no-backup', { cwd: TEST_DIR })
+  // When running `npx` with workspaces enabled, the cwd is changed to the directory of the package.json file.
+  // So we need to pass the workdir relative to the package.json file to supabase cli.
+  execAllowFail(`npx supabase --workdir ${TEST_DIR_NAME} stop --no-backup`, { cwd: TEST_DIR })
 
   // Start Supabase (blocks until ready)
   console.log('📦 Starting Supabase...')
-  exec('npx supabase start', { cwd: TEST_DIR })
+  exec(`npx supabase --workdir ${TEST_DIR_NAME} start`, { cwd: TEST_DIR })
 
   // Generate types from database using Supabase CLI
   console.log('🔧 Generating types from database...')
-  exec(`supabase gen types typescript --local --schema public,personal > ${OUTPUT_FILE}`, {
-    cwd: TEST_DIR,
-    shell: true,
-  })
+  exec(
+    `npx supabase --workdir ${TEST_DIR_NAME} gen types typescript --local --schema public,personal > ${OUTPUT_FILE}`,
+    {
+      cwd: TEST_DIR,
+      shell: true,
+    }
+  )
 
   // Run post-generation script to update JSON type
   console.log('🔧 Post-processing generated types...')
@@ -65,7 +71,7 @@ function main() {
 
   // Clean up Supabase containers
   console.log('🧹 Cleaning up Supabase...')
-  execAllowFail('npx supabase stop --no-backup', { cwd: TEST_DIR })
+  execAllowFail(`npx supabase --workdir ${TEST_DIR_NAME} stop --no-backup`, { cwd: TEST_DIR })
 
   console.log('\n✅ Type generation complete!')
   console.log(`   Output: ${OUTPUT_FILE}`)

@@ -139,10 +139,10 @@ npx nx test:clean-pre postgrest-js  # Stop and remove containers
 Or directly via Supabase CLI:
 
 ```bash
-cd packages/core/postgrest-js/test
-npx supabase start        # Start all services
-npx supabase db reset     # Reset and seed database
-npx supabase stop         # Stop all services
+cd packages/core/postgrest-js
+npx supabase --workdir ./test start        # Start all services
+npx supabase --workdir ./test db reset     # Reset and seed database
+npx supabase --workdir ./test stop         # Stop all services
 ```
 
 #### Regenerating TypeScript Types
