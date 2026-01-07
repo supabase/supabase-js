@@ -1,0 +1,50 @@
+name: CI (Pull Requests)
+# This workflow runs on pull requests only.
+# For master branch CI, see publish.yml which calls the same reusable workflows.
+
+on:
+  pull_request:
+    paths-ignore:
+      # Documentation
+      - '**/*.md'
+      - '**/docs/**'
+      - 'LICENSE'
+
+      # Editor/formatting configs
+      - '**/.prettierrc'
+      - '**/.prettierignore'
+      - '**/.editorconfig'
+      - '.vscode/**'
+
+      # Git configs
+      - '**/.gitignore'
+      - '**/.gitattributes'
+
+jobs:
+  ci-core:
+    name: Core Packages CI
+    uses: ./.github/workflows/ci-core.yml
+    permissions:
+      actions: read
+      contents: read
+
+  ci-supabase-js:
+    name: Supabase-JS Integration CI
+    uses: ./.github/workflows/ci-supabase-js.yml
+    permissions:
+      actions: read
+      contents: read
+
+  coveralls-finish:
+    name: Coveralls Finished
+    runs-on: ubuntu-latest
+    needs: [ci-core, ci-supabase-js]
+    steps:
+      - name: Coveralls Finished
+        uses: coverallsapp/github-action@v2
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          parallel-finished: true
+          carryforward: 'auth-js,functions-js,postgrest-js,realtime-js,storage-js,supabase-js'
+          fail-on-error: false
+        continue-on-error: true
