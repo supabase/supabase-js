@@ -49,8 +49,7 @@
     "test:types:ci": "tstyche --target '4.7,5.5,latest'",
     "test:types:watch": "chokidar 'src/**/*.ts' 'test/**/*.ts' -c 'npm run test:types'",
     "type-check": "tsc --noEmit --project tsconfig.json",
-    "type-check:test": "tsc --noEmit --project tsconfig.test.json",
-    "db:generate-test-types": "cd test && npx supabase --workdir ./test start && curl --location 'http://localhost:54323/generators/typescript?included_schemas=public,personal&detect_one_to_one_relationships=true' > types.generated.ts && node scripts/update-json-type.js && cd .. && npm run format"
+    "type-check:test": "tsc --noEmit --project tsconfig.test.json"
   },
   "dependencies": {
     "tslib": "2.8.1"

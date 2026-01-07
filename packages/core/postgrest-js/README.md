@@ -150,10 +150,20 @@ npx supabase --workdir ./test stop         # Stop all services
 When the database schema changes, regenerate TypeScript types from the actual database:
 
 ```bash
-npx nx db:generate-test-types postgrest-js
+# From the monorepo root
+npm run codegen:postgrest
 ```
 
-This connects to the running Supabase instance and generates types in `test/types.generated.ts`.
+This command automatically:
+
+1. Cleans up any existing Supabase containers
+2. Starts Supabase (PostgreSQL, PostgREST, and all services)
+3. Generates TypeScript types from the database schema
+4. Post-processes the generated types (updates JSON type definitions)
+5. Formats the generated file with Prettier
+6. Cleans up Supabase containers
+
+The generated types are written to `test/types.generated.ts`.
 
 #### Test Types Explained
 
