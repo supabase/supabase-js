@@ -1,3 +1,18 @@
+## 2.90.0 (2026-01-07)
+
+### 🩹 Fixes
+
+- **auth:** add configurable lock acquisition timeout to prevent deadlocks ([#1962](https://github.com/supabase/supabase-js/pull/1962))
+- **auth:** preserve session when magic link is clicked twice ([#1996](https://github.com/supabase/supabase-js/pull/1996))
+- **auth:** clear initial setTimeout in stopAutoRefresh ([#1993](https://github.com/supabase/supabase-js/pull/1993))
+- **auth:** add last_challenged_at property to factor type ([#1990](https://github.com/supabase/supabase-js/pull/1990))
+- **auth:** add banned_until property to user type ([#1989](https://github.com/supabase/supabase-js/pull/1989))
+
+### ❤️ Thank You
+
+- Vaibhav @7ttp
+- yoshifumi kondo @yoshifumi-kondo
+
 ## 2.89.0 (2025-12-18)
 
 ### 🚀 Features

@@ -1,3 +1,29 @@
+## 2.90.0 (2026-01-07)
+
+### 🚀 Features
+
+- **realtime:** expose heartbeat latency on heartbeat callback ([#1982](https://github.com/supabase/supabase-js/pull/1982))
+
+### 🩹 Fixes
+
+- **auth:** add banned_until property to user type ([#1989](https://github.com/supabase/supabase-js/pull/1989))
+- **auth:** add last_challenged_at property to factor type ([#1990](https://github.com/supabase/supabase-js/pull/1990))
+- **auth:** clear initial setTimeout in stopAutoRefresh ([#1993](https://github.com/supabase/supabase-js/pull/1993))
+- **auth:** preserve session when magic link is clicked twice ([#1996](https://github.com/supabase/supabase-js/pull/1996))
+- **auth:** add configurable lock acquisition timeout to prevent deadlocks ([#1962](https://github.com/supabase/supabase-js/pull/1962))
+- **functions:** auto-stringify object body when custom Content-Type header is provided ([#1988](https://github.com/supabase/supabase-js/pull/1988))
+- **postgrest:** use post with return minimal for rpc head requests with object args ([#1994](https://github.com/supabase/supabase-js/pull/1994))
+- **supabase:** split type-only exports to avoid unused import warnings ([#1979](https://github.com/supabase/supabase-js/pull/1979))
+- **supabase:** inline string literal in databasewithoutinternals type ([#1986](https://github.com/supabase/supabase-js/pull/1986))
+- **supabase:** avoid edge runtime warnings in next.js ([#1998](https://github.com/supabase/supabase-js/pull/1998))
+
+### ❤️ Thank You
+
+- Eduardo Gurgel
+- Nico Kempe @nicokempe
+- Vaibhav @7ttp
+- yoshifumi kondo @yoshifumi-kondo
+
 ## 2.89.0 (2025-12-18)
 
 ### 🚀 Features
