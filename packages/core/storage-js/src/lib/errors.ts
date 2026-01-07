@@ -41,3 +41,5 @@ export class StorageUnknownError extends StorageError {
     this.originalError = originalError
   }
 }
+
+console.log('hello')
