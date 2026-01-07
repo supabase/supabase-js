@@ -101,16 +101,35 @@ describe('processLock', () => {
     }
   }, 15_000)
 
-  it('should handle timeout correctly', async () => {
+  it('should throw LockAcquireTimeoutError when lock acquisition times out', async () => {
+    // Start an operation that holds the lock for 200ms
     const operation1 = processLock('timeout-test', -1, async () => {
       await new Promise((resolve) => setTimeout(resolve, 200))
       return 'success'
     })
 
-    // Try to acquire same lock with timeout
+    // Try to acquire same lock with 100ms timeout - should fail
     const operation2 = processLock('timeout-test', 100, async () => 'should timeout')
 
-    await expect(operation2).rejects.toThrow()
+    // Verify the error is a LockAcquireTimeoutError (identified by isAcquireTimeout property)
+    await expect(operation2).rejects.toMatchObject({
+      isAcquireTimeout: true,
+    })
+    await expect(operation1).resolves.toBe('success')
+  })
+
+  it('should fail immediately when acquireTimeout is 0 and lock is held', async () => {
+    const operation1 = processLock('immediate-test', -1, async () => {
+      await new Promise((resolve) => setTimeout(resolve, 100))
+      return 'success'
+    })
+
+    // Try to acquire same lock with timeout=0 (fail immediately)
+    const operation2 = processLock('immediate-test', 0, async () => 'should fail immediately')
+
+    await expect(operation2).rejects.toMatchObject({
+      isAcquireTimeout: true,
+    })
     await expect(operation1).resolves.toBe('success')
   })
 
