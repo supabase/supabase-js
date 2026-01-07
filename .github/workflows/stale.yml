@@ -10,17 +10,71 @@ permissions:
   pull-requests: write
 
 jobs:
+  # Fast stale for issues awaiting reporter response
+  awaiting-response:
+    runs-on: ubuntu-latest
+    steps:
+      # needs more info / repro needed: 2 months stale, 1 month close
+      - uses: actions/stale@v9
+        with:
+          days-before-stale: 60
+          days-before-close: 30
+          days-before-pr-stale: -1
+          days-before-pr-close: -1
+          only-labels: 'needs more info,repro needed'
+          stale-issue-message: |
+            This issue has been marked as stale because it requires additional information that hasn't been provided.
+
+            Please provide the requested details to keep this issue open. It will be closed in 30 days if no update is provided.
+          stale-issue-label: 'stale'
+          close-issue-message: 'Closed due to missing information. Please open a new issue with the requested details if this is still relevant.'
+          remove-stale-when-updated: true
+          operations-per-run: 30
+
+      # retry with latest: 1 month stale, 1 month close
+      - uses: actions/stale@v9
+        with:
+          days-before-stale: 30
+          days-before-close: 30
+          days-before-pr-stale: -1
+          days-before-pr-close: -1
+          only-labels: 'retry with latest'
+          stale-issue-message: |
+            This issue has been marked as stale. Please confirm if the issue still occurs with the latest SDK version.
+
+            It will be closed in 30 days if no update is provided.
+          stale-issue-label: 'stale'
+          close-issue-message: 'Closed due to inactivity. Please open a new issue if this still occurs with the latest SDK version.'
+          remove-stale-when-updated: true
+          operations-per-run: 30
+
+  # Standard stale handling for regular issues and PRs
   stale:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/stale@v9
         with:
-          days-before-stale: 365
-          days-before-close: 180
-          stale-issue-message: 'This issue has been automatically marked as stale because it has not had any activity for 1 year. It will be closed in 6 months if no further activity occurs. If this issue is still relevant, please comment to keep it open.'
-          close-issue-message: 'This issue has been automatically closed due to inactivity. If you believe this is still relevant, please reopen or create a new issue.'
+          days-before-stale: 180
+          days-before-close: 30
+          days-before-pr-stale: 90
+          days-before-pr-close: 14
+          stale-issue-message: |
+            This issue has been automatically marked as stale because it has not had any activity for 6 months.
+            It will be closed in 30 days if no further activity occurs.
+
+            If this is still relevant, please comment to keep it open.
+          stale-pr-message: |
+            This PR has been marked as stale because it has not had activity for 90 days.
+            It will be closed in 14 days if no further activity occurs.
+
+            Please rebase and update if this is still needed.
+          close-issue-message: 'Closed due to inactivity. Please open a new issue if this is still relevant.'
+          close-pr-message: 'Closed due to inactivity. Please open a new PR if these changes are still needed.'
           stale-issue-label: 'stale'
-          exempt-issue-labels: 'security,needs-discussion,pinned'
+          stale-pr-label: 'stale'
+          # Exempt: manually handled, priority, planned, contributor-seeking, and awaiting-response labels
+          exempt-issue-labels: 'security,pinned,p1,p2,p3,planned,v3,help wanted,good first issue,needs server code,needs more info,repro needed,retry with latest'
+          exempt-pr-labels: 'security,p1,p2,p3,planned,v3,do-not-merge,needs server code'
           exempt-all-assignees: true
           remove-stale-when-updated: true
           operations-per-run: 100

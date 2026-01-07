@@ -134,6 +134,42 @@ export type GoTrueClientOptions = {
    * throwing the error instead of returning it as part of a successful response.
    */
   throwOnError?: boolean
+  /**
+   * The maximum time in milliseconds to wait for acquiring a cross-tab synchronization lock.
+   *
+   * When multiple browser tabs or windows use the auth client simultaneously, they coordinate
+   * via the Web Locks API to prevent race conditions during session refresh and other operations.
+   * This timeout controls how long to wait for the lock before failing.
+   *
+   * If the lock cannot be acquired within this time, a `LockAcquireTimeoutError` is thrown.
+   * You can catch this by checking `error.isAcquireTimeout === true`.
+   *
+   * - **Positive value**: Wait up to this many milliseconds before timing out
+   * - **Zero (0)**: Fail immediately if the lock is unavailable
+   * - **Negative value**: Wait indefinitely (not recommended - can cause deadlocks)
+   *
+   * @default 10000
+   *
+   * @example
+   * ```ts
+   * const client = createClient(url, key, {
+   *   auth: {
+   *     lockAcquireTimeout: 10000, // 10 seconds
+   *   },
+   * })
+   *
+   * try {
+   *   await client.auth.getSession()
+   * } catch (error) {
+   *   if (error.isAcquireTimeout) {
+   *     // Lock held by another tab/instance, or a previous operation is stuck.
+   *     // Consider: closing other tabs, increasing timeout, or restarting the browser.
+   *     console.error('Could not acquire lock within timeout period.')
+   *   }
+   * }
+   * ```
+   */
+  lockAcquireTimeout?: number
 }
 
 const WeakPasswordReasons = ['length', 'characters', 'pwned'] as const
@@ -375,6 +411,7 @@ export type Factor<
 
   created_at: string
   updated_at: string
+  last_challenged_at?: string
 }
 
 export interface UserAppMetadata {
@@ -419,6 +456,7 @@ export interface User {
   is_sso_user?: boolean
   factors?: (Factor<FactorType, 'verified'> | Factor<FactorType, 'unverified'>)[]
   deleted_at?: string
+  banned_until?: string
 }
 
 export interface UserAttributes {

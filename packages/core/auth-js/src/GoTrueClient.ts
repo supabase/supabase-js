@@ -174,6 +174,7 @@ const DEFAULT_OPTIONS: Omit<
   debug: false,
   hasCustomAuthorizationHeader: false,
   throwOnError: false,
+  lockAcquireTimeout: 10000, // 10 seconds
 }
 
 async function lockNoOp<R>(name: string, acquireTimeout: number, fn: () => Promise<R>): Promise<R> {
@@ -246,6 +247,7 @@ export default class GoTrueClient {
   protected memoryStorage: { [key: string]: string } | null = null
   protected stateChangeEmitters: Map<string | symbol, Subscription> = new Map()
   protected autoRefreshTicker: ReturnType<typeof setInterval> | null = null
+  protected autoRefreshTickTimeout: ReturnType<typeof setTimeout> | null = null
   protected visibilityChangedCallback: (() => Promise<any>) | null = null
   protected refreshingDeferred: Deferred<CallRefreshTokenResult> | null = null
   /**
@@ -269,6 +271,7 @@ export default class GoTrueClient {
   protected lockAcquired = false
   protected pendingInLock: Promise<any>[] = []
   protected throwOnError: boolean
+  protected lockAcquireTimeout: number
 
   /**
    * Used to broadcast state change events to other tabs listening.
@@ -328,6 +331,7 @@ export default class GoTrueClient {
     this.flowType = settings.flowType
     this.hasCustomAuthorizationHeader = settings.hasCustomAuthorizationHeader
     this.throwOnError = settings.throwOnError
+    this.lockAcquireTimeout = settings.lockAcquireTimeout
 
     if (settings.lock) {
       this.lock = settings.lock
@@ -446,7 +450,7 @@ export default class GoTrueClient {
     }
 
     this.initializePromise = (async () => {
-      return await this._acquireLock(-1, async () => {
+      return await this._acquireLock(this.lockAcquireTimeout, async () => {
         return await this._initialize()
       })
     })()
@@ -496,9 +500,8 @@ export default class GoTrueClient {
             }
           }
 
-          // failed login attempt via url,
-          // remove old session as in verifyOtp, signUp and signInWith*
-          await this._removeSession()
+          // Don't remove existing session on URL login failure.
+          // A failed attempt (e.g. reused magic link) shouldn't invalidate a valid session.
 
           return { error }
         }
@@ -748,7 +751,7 @@ export default class GoTrueClient {
   async exchangeCodeForSession(authCode: string): Promise<AuthTokenResponse> {
     await this.initializePromise
 
-    return this._acquireLock(-1, async () => {
+    return this._acquireLock(this.lockAcquireTimeout, async () => {
       return this._exchangeCodeForSession(authCode)
     })
   }
@@ -1382,7 +1385,7 @@ export default class GoTrueClient {
   async reauthenticate(): Promise<AuthResponse> {
     await this.initializePromise
 
-    return await this._acquireLock(-1, async () => {
+    return await this._acquireLock(this.lockAcquireTimeout, async () => {
       return await this._reauthenticate()
     })
   }
@@ -1469,7 +1472,7 @@ export default class GoTrueClient {
   async getSession() {
     await this.initializePromise
 
-    const result = await this._acquireLock(-1, async () => {
+    const result = await this._acquireLock(this.lockAcquireTimeout, async () => {
       return this._useSession(async (result) => {
         return result
       })
@@ -1715,7 +1718,7 @@ export default class GoTrueClient {
 
     await this.initializePromise
 
-    const result = await this._acquireLock(-1, async () => {
+    const result = await this._acquireLock(this.lockAcquireTimeout, async () => {
       return await this._getUser()
     })
 
@@ -1781,7 +1784,7 @@ export default class GoTrueClient {
   ): Promise<UserResponse> {
     await this.initializePromise
 
-    return await this._acquireLock(-1, async () => {
+    return await this._acquireLock(this.lockAcquireTimeout, async () => {
       return await this._updateUser(attributes, options)
     })
   }
@@ -1851,7 +1854,7 @@ export default class GoTrueClient {
   }): Promise<AuthResponse> {
     await this.initializePromise
 
-    return await this._acquireLock(-1, async () => {
+    return await this._acquireLock(this.lockAcquireTimeout, async () => {
       return await this._setSession(currentSession)
     })
   }
@@ -1923,7 +1926,7 @@ export default class GoTrueClient {
   async refreshSession(currentSession?: { refresh_token: string }): Promise<AuthResponse> {
     await this.initializePromise
 
-    return await this._acquireLock(-1, async () => {
+    return await this._acquireLock(this.lockAcquireTimeout, async () => {
       return await this._refreshSession(currentSession)
     })
   }
@@ -2137,7 +2140,7 @@ export default class GoTrueClient {
   async signOut(options: SignOut = { scope: 'global' }): Promise<{ error: AuthError | null }> {
     await this.initializePromise
 
-    return await this._acquireLock(-1, async () => {
+    return await this._acquireLock(this.lockAcquireTimeout, async () => {
       return await this._signOut(options)
     })
   }
@@ -2222,7 +2225,7 @@ export default class GoTrueClient {
     ;(async () => {
       await this.initializePromise
 
-      await this._acquireLock(-1, async () => {
+      await this._acquireLock(this.lockAcquireTimeout, async () => {
         this._emitInitialSession(id)
       })
     })()
@@ -2873,10 +2876,19 @@ export default class GoTrueClient {
     // run the tick immediately, but in the next pass of the event loop so that
     // #_initialize can be allowed to complete without recursively waiting on
     // itself
-    setTimeout(async () => {
+    const timeout = setTimeout(async () => {
       await this.initializePromise
       await this._autoRefreshTokenTick()
     }, 0)
+    this.autoRefreshTickTimeout = timeout
+
+    if (timeout && typeof timeout === 'object' && typeof timeout.unref === 'function') {
+      timeout.unref()
+      // @ts-expect-error TS has no context of Deno
+    } else if (typeof Deno !== 'undefined' && typeof Deno.unrefTimer === 'function') {
+      // @ts-expect-error TS has no context of Deno
+      Deno.unrefTimer(timeout)
+    }
   }
 
   /**
@@ -2891,6 +2903,13 @@ export default class GoTrueClient {
 
     if (ticker) {
       clearInterval(ticker)
+    }
+
+    const timeout = this.autoRefreshTickTimeout
+    this.autoRefreshTickTimeout = null
+
+    if (timeout) {
+      clearTimeout(timeout)
     }
   }
 
@@ -3040,7 +3059,7 @@ export default class GoTrueClient {
         // the lock first asynchronously
         await this.initializePromise
 
-        await this._acquireLock(-1, async () => {
+        await this._acquireLock(this.lockAcquireTimeout, async () => {
           if (document.visibilityState !== 'visible') {
             this._debug(
               methodName,
@@ -3185,7 +3204,7 @@ export default class GoTrueClient {
     params: MFAVerifyWebauthnParams<T>
   ): Promise<AuthMFAVerifyResponse>
   private async _verify(params: MFAVerifyParams): Promise<AuthMFAVerifyResponse> {
-    return this._acquireLock(-1, async () => {
+    return this._acquireLock(this.lockAcquireTimeout, async () => {
       try {
         return await this._useSession(async (result) => {
           const { data: sessionData, error: sessionError } = result
@@ -3272,7 +3291,7 @@ export default class GoTrueClient {
     params: MFAChallengeWebauthnParams
   ): Promise<Prettify<AuthMFAChallengeWebauthnResponse>>
   private async _challenge(params: MFAChallengeParams): Promise<AuthMFAChallengeResponse> {
-    return this._acquireLock(-1, async () => {
+    return this._acquireLock(this.lockAcquireTimeout, async () => {
       try {
         return await this._useSession(async (result) => {
           const { data: sessionData, error: sessionError } = result

@@ -72,12 +72,13 @@ function shouldShowDeprecationWarning(): boolean {
   }
 
   // Skip if process is not available (e.g., Edge Runtime)
-  if (typeof process === 'undefined') {
+  // Use dynamic property access to avoid Next.js Edge Runtime static analysis warnings
+  const _process = (globalThis as any)['process']
+  if (!_process) {
     return false
   }
 
-  // Use dynamic property access to avoid Next.js Edge Runtime static analysis warnings
-  const processVersion = (process as any)['version']
+  const processVersion = _process['version']
   if (processVersion === undefined || processVersion === null) {
     return false
   }

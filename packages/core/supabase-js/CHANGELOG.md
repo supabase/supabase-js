@@ -1,3 +1,16 @@
+## 2.90.0 (2026-01-07)
+
+### 🩹 Fixes
+
+- **supabase:** avoid edge runtime warnings in next.js ([#1998](https://github.com/supabase/supabase-js/pull/1998))
+- **supabase:** inline string literal in databasewithoutinternals type ([#1986](https://github.com/supabase/supabase-js/pull/1986))
+- **supabase:** split type-only exports to avoid unused import warnings ([#1979](https://github.com/supabase/supabase-js/pull/1979))
+
+### ❤️ Thank You
+
+- Nico Kempe @nicokempe
+- Vaibhav @7ttp
+
 ## 2.89.0 (2025-12-18)
 
 ### 🚀 Features

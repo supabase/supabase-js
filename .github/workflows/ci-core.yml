@@ -1,22 +1,7 @@
 name: Core packages tests
+# Reusable workflow - called by ci.yml (PRs) and publish.yml (master)
 
 on:
-  pull_request:
-    paths:
-      - 'packages/core/auth-js/**'
-      - 'packages/core/functions-js/**'
-      - 'packages/core/postgrest-js/**'
-      - 'packages/core/realtime-js/**'
-      - 'packages/core/storage-js/**'
-      - 'package.json'
-      - 'package-lock.json'
-      - 'nx.json'
-      - 'tsconfig.base.json'
-      - '.github/workflows/ci-core.yml'
-      - '!packages/**/*.md'
-      - '!packages/**/docs/**'
-      - '!packages/**/.prettierrc'
-      - '!packages/**/*ignore'
   workflow_call:
 
 permissions:
@@ -222,16 +207,3 @@ jobs:
     steps:
       - name: Summary
         run: echo "✅ All core package tests passed successfully!"
-
-  coveralls-finish:
-    name: Coveralls Finished
-    runs-on: ubuntu-latest
-    needs: [setup-build-test-node-20, test-postgrest-js]
-    steps:
-      - name: Coveralls Finished
-        uses: coverallsapp/github-action@v2
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          parallel-finished: true
-          fail-on-error: false
-        continue-on-error: true
