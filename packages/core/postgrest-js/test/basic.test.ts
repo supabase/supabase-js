@@ -2191,3 +2191,15 @@ test('maybeSingle handles zero rows error', async () => {
     }
   `)
 })
+
+test('should not share state between operations on same query builder', async () => {
+  const table = postgrest.from('users')
+  const q1 = table.select('*').eq('status', 'ONLINE')
+  const q2 = table.select('*').eq('status', 'OFFLINE')
+
+  // Verify URLs don't contain each other's filters
+  expect((q1 as any).url.toString()).not.toContain('status=eq.OFFLINE')
+  expect((q2 as any).url.toString()).not.toContain('status=eq.ONLINE')
+  expect((q1 as any).url.toString()).toContain('status=eq.ONLINE')
+  expect((q2 as any).url.toString()).toContain('status=eq.OFFLINE')
+})
