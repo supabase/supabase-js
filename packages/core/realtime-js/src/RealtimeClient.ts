@@ -8,7 +8,6 @@ import {
   DEFAULT_VSN,
   VSN_1_0_0,
   VSN_2_0_0,
-  WS_CLOSE_NORMAL,
 } from './lib/constants'
 
 import Serializer from './lib/serializer'
@@ -17,7 +16,7 @@ import { httpEndpointURL } from './lib/transformers'
 import RealtimeChannel from './RealtimeChannel'
 import type { RealtimeChannelOptions } from './RealtimeChannel'
 import SocketAdapter from './phoenix/socketAdapter'
-import type { Message } from './phoenix/types'
+import type { Message, SocketOptions } from './phoenix/types'
 
 type Fetch = typeof fetch
 
@@ -421,51 +420,7 @@ export default class RealtimeClient {
    * Sends a heartbeat message if the socket is connected.
    */
   async sendHeartbeat() {
-    if (!this.isConnected()) {
-      try {
-        this.heartbeatCallback('disconnected')
-      } catch (e) {
-        this.log('error', 'error in heartbeat callback', e)
-      }
-      return
-    }
-
-    // Handle heartbeat timeout and force reconnection if needed
-    if (this._pendingWorkerHeartbeatRef) {
-      this._pendingWorkerHeartbeatRef = null
-      this.log('transport', 'heartbeat timeout. Attempting to re-establish connection')
-      try {
-        this.heartbeatCallback('timeout')
-      } catch (e) {
-        this.log('error', 'error in heartbeat callback', e)
-      }
-
-      // Force reconnection after heartbeat timeout
-      this.socketAdapter.disconnect(WS_CLOSE_NORMAL, 'heartbeat timeout')
-
-      setTimeout(() => {
-        if (!this.isConnected()) {
-          this.reconnectTimer?.scheduleTimeout()
-        }
-      }, CONNECTION_TIMEOUTS.HEARTBEAT_TIMEOUT_FALLBACK)
-      return
-    }
-
-    // Send heartbeat message to server
-    this._pendingWorkerHeartbeatRef = this._makeRef()
-    this.push({
-      topic: 'phoenix',
-      event: 'heartbeat',
-      payload: {},
-      ref: this._pendingWorkerHeartbeatRef,
-    })
-    try {
-      this.heartbeatCallback('sent')
-    } catch (e) {
-      this.log('error', 'error in heartbeat callback', e)
-    }
-
-    this._setAuthSafely('heartbeat')
+    this.socketAdapter.sendHeartbeat();
   }
 
   /**
@@ -643,7 +598,7 @@ export default class RealtimeClient {
     }
     this.workerRef.onmessage = (event) => {
       if (event.data.event === 'keepAlive') {
-        this.sendHeartbeat()
+        this.socketAdapter.sendHeartbeat()
       }
     }
     this.workerRef.postMessage({
@@ -673,10 +628,10 @@ export default class RealtimeClient {
   }
 
   /**
-   * Initialize client options with defaults
+   * Initialize socket options with defaults
    * @internal
    */
-  private _initializeOptions(options?: RealtimeClientOptions): RealtimeClientOptions {
+  private _initializeOptions(options?: RealtimeClientOptions): SocketOptions {
     // Set defaults
 
     const timeout = options?.timeout ?? DEFAULT_TIMEOUT
@@ -733,6 +688,7 @@ export default class RealtimeClient {
       this.workerUrl = options?.workerUrl
     }
 
+    // @ts-ignore FIXME: align supabase types with phoenix types
     return {
       ...options,
       timeout,
@@ -743,6 +699,7 @@ export default class RealtimeClient {
       encode,
       decode,
       reconnectAfterMs,
-    }
+      autoSendHeartbeat: !options?.worker
+    } as any
   }
 }

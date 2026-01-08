@@ -10,15 +10,14 @@ import type {
 import { CONNECTION_STATE, ConnectionState } from '../lib/constants'
 import type {
   HeartbeatTimer,
-  RealtimeClientOptions,
   WebSocketLikeConstructor,
 } from '../RealtimeClient'
 
 export default class SocketAdapter {
   private socket: Socket
 
-  constructor(endPoint: string, options: RealtimeClientOptions) {
-    this.socket = new Socket(endPoint, options as SocketOptions)
+  constructor(endPoint: string, options: SocketOptions) {
+    this.socket = new Socket(endPoint, options)
   }
 
   get timeout() {
@@ -133,6 +132,10 @@ export default class SocketAdapter {
 
   endPointURL() {
     return this.socket.endPointURL()
+  }
+
+  sendHeartbeat() {
+    return this.socket.sendHeartbeat()
   }
 
   /**
