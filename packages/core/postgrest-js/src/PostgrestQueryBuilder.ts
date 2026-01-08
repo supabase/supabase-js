@@ -21,7 +21,8 @@ export default class PostgrestQueryBuilder<
   signal?: AbortSignal
   fetch?: Fetch
 
-  /**
+  /** @hidden
+   *
    * Creates a query builder scoped to a Postgres table or view.
    *
    * @example
