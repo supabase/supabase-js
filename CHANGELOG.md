@@ -1,3 +1,14 @@
+## 2.90.1 (2026-01-08)
+
+### 🩹 Fixes
+
+- **postgrest:** prevent shared state between query builder operations ([#1978](https://github.com/supabase/supabase-js/pull/1978))
+- **realtime:** validate table filter in postgres_changes event dispatch ([#1999](https://github.com/supabase/supabase-js/pull/1999))
+
+### ❤️ Thank You
+
+- Vaibhav @7ttp
+
 ## 2.90.0 (2026-01-07)
 
 ### 🚀 Features
