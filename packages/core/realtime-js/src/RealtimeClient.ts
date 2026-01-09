@@ -16,7 +16,7 @@ import { httpEndpointURL } from './lib/transformers'
 import RealtimeChannel from './RealtimeChannel'
 import type { RealtimeChannelOptions } from './RealtimeChannel'
 import SocketAdapter from './phoenix/socketAdapter'
-import type { Message, SocketOptions } from './phoenix/types'
+import type { Message, SocketOptions, HeartbeatCallback } from './phoenix/types'
 
 type Fetch = typeof fetch
 
@@ -33,8 +33,6 @@ export type RealtimeMessage = {
 export type RealtimeRemoveChannelResponse = 'ok' | 'timed out' | 'error'
 export type HeartbeatStatus = 'sent' | 'ok' | 'error' | 'timeout' | 'disconnected'
 export type HeartbeatTimer = ReturnType<typeof setInterval> | undefined
-
-const noop = () => {}
 
 // Connection-related constants
 const CONNECTION_TIMEOUTS = {
@@ -97,7 +95,6 @@ export default class RealtimeClient {
   headers?: { [key: string]: string } = {}
   params?: { [key: string]: string } = {}
 
-  heartbeatCallback: (status: HeartbeatStatus) => void = noop
   ref: number = 0
   reconnectTimer: Timer | null = null
 
@@ -120,6 +117,10 @@ export default class RealtimeClient {
 
   get transport(): WebSocketLikeConstructor {
     return this.socketAdapter.transport
+  }
+
+  get heartbeatCallback(): HeartbeatCallback {
+    return this.socketAdapter.heartbeatCallback
   }
 
   get heartbeatIntervalMs(): number {
@@ -420,15 +421,15 @@ export default class RealtimeClient {
    * Sends a heartbeat message if the socket is connected.
    */
   async sendHeartbeat() {
-    this.socketAdapter.sendHeartbeat();
+    this.socketAdapter.sendHeartbeat()
   }
 
   /**
    * Sets a callback that receives lifecycle events for internal heartbeat messages.
    * Useful for instrumenting connection health (e.g. sent/ok/timeout/disconnected).
    */
-  onHeartbeat(callback: (status: HeartbeatStatus) => void): void {
-    this.heartbeatCallback = callback
+  onHeartbeat(callback: HeartbeatCallback): void {
+    this.socketAdapter.heartbeatCallback = this._wrapHeartbeatCallback(callback)
   }
 
   /**
@@ -583,6 +584,13 @@ export default class RealtimeClient {
     })
   }
 
+  private _wrapHeartbeatCallback(heartbeatCallback?: HeartbeatCallback) {
+    return (status: HeartbeatStatus) => {
+      if (status == 'sent') this._setAuthSafely()
+      if (heartbeatCallback) heartbeatCallback(status)
+    }
+  }
+
   /** @internal */
   private _startWorkerHeartbeat() {
     if (this.workerUrl) {
@@ -598,7 +606,7 @@ export default class RealtimeClient {
     }
     this.workerRef.onmessage = (event) => {
       if (event.data.event === 'keepAlive') {
-        this.socketAdapter.sendHeartbeat()
+        this.sendHeartbeat()
       }
     }
     this.workerRef.postMessage({
@@ -646,7 +654,9 @@ export default class RealtimeClient {
     this.worker = options?.worker ?? false
 
     this.accessToken = options?.accessToken ?? null
-    this.heartbeatCallback = options?.heartbeatCallback ?? noop
+
+    const heartbeatCallback = this._wrapHeartbeatCallback(options?.heartbeatCallback)
+
     if (options?.logLevel || options?.log_level) {
       this.logLevel = options.logLevel || options.log_level
       params = { ...params, log_level: this.logLevel as string }
@@ -694,12 +704,13 @@ export default class RealtimeClient {
       timeout,
       transport,
       heartbeatIntervalMs,
+      heartbeatCallback,
       vsn,
       params,
       encode,
       decode,
       reconnectAfterMs,
-      autoSendHeartbeat: !options?.worker
+      autoSendHeartbeat: !options?.worker,
     } as any
   }
 }

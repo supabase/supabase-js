@@ -16,6 +16,8 @@ export type {
   Message,
   Params,
   Transport,
+  HeartbeatCallback,
+  HeartbeatStatus,
 } from 'phoenix'
 
 import type { Channel, PresenceState } from 'phoenix'

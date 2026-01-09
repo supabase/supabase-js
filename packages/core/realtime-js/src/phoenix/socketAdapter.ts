@@ -6,12 +6,10 @@ import type {
   SocketOnOpen,
   SocketOnError,
   SocketOptions,
+  HeartbeatCallback,
 } from './types'
 import { CONNECTION_STATE, ConnectionState } from '../lib/constants'
-import type {
-  HeartbeatTimer,
-  WebSocketLikeConstructor,
-} from '../RealtimeClient'
+import type { HeartbeatTimer, WebSocketLikeConstructor } from '../RealtimeClient'
 
 export default class SocketAdapter {
   private socket: Socket
@@ -34,6 +32,14 @@ export default class SocketAdapter {
 
   get heartbeatIntervalMs() {
     return this.socket.heartbeatIntervalMs
+  }
+
+  get heartbeatCallback() {
+    return this.socket.heartbeatCallback
+  }
+
+  set heartbeatCallback(callback: HeartbeatCallback) {
+    this.socket.heartbeatCallback = callback
   }
 
   get heartbeatTimer() {
