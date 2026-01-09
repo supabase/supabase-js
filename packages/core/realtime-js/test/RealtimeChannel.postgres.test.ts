@@ -612,6 +612,25 @@ describe('PostgreSQL table filter validation', () => {
   })
 })
 
+describe('Generic event type overload', () => {
+  test('should accept generic event type parameter without type errors', () => {
+    const event: '*' | 'INSERT' | 'UPDATE' | 'DELETE' = 'INSERT'
+
+    channel.on(
+      'postgres_changes',
+      {
+        event,
+        schema: 'public',
+        table: 'users',
+      },
+      () => {}
+    )
+
+    expect(channel.bindings.postgres_changes.length).toBe(1)
+    expect(channel.bindings.postgres_changes[0].filter.event).toBe('INSERT')
+  })
+})
+
 describe('PostgreSQL payload transformation', () => {
   test('should transform postgres_changes payload when triggered', () => {
     const callbackSpy = vi.fn()
