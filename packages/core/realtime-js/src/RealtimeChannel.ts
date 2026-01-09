@@ -451,6 +451,11 @@ export default class RealtimeChannel {
     filter: RealtimePostgresChangesFilter<`${REALTIME_POSTGRES_CHANGES_LISTEN_EVENT.DELETE}`>,
     callback: (payload: RealtimePostgresDeletePayload<T>) => void
   ): RealtimeChannel
+  on<T extends { [key: string]: any }>(
+    type: `${REALTIME_LISTEN_TYPES.POSTGRES_CHANGES}`,
+    filter: RealtimePostgresChangesFilter<`${REALTIME_POSTGRES_CHANGES_LISTEN_EVENT}`>,
+    callback: (payload: RealtimePostgresChangesPayload<T>) => void
+  ): RealtimeChannel
   /**
    * The following is placed here to display on supabase.com/docs/reference/javascript/subscribe.
    * @param type One of "broadcast", "presence", or "postgres_changes".
