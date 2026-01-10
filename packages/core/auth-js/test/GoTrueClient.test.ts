@@ -1422,6 +1422,135 @@ describe('MFA', () => {
     expect(aalData!.currentAuthenticationMethods).toBeDefined()
   })
 
+  describe('getAuthenticatorAssuranceLevel with JWT parameter', () => {
+    test('JWT with aal1 and no verified factors returns aal1/aal1', async () => {
+      // Create a valid JWT with aal1
+      const jwt = require('jsonwebtoken')
+      const { GOTRUE_JWT_SECRET } = require('./lib/clients')
+      
+      const testJwt = jwt.sign(
+        {
+          sub: 'test-user-id',
+          aud: 'authenticated',
+          aal: 'aal1',
+          amr: [{ method: 'password', timestamp: Math.floor(Date.now() / 1000) }],
+          exp: Math.floor(Date.now() / 1000) + 3600,
+          iat: Math.floor(Date.now() / 1000),
+        },
+        GOTRUE_JWT_SECRET
+      )
+
+      // Mock getUser to return a user with no factors
+      const originalGetUser = pkceClient.getUser
+      pkceClient.getUser = jest.fn().mockResolvedValue({
+        data: {
+          user: {
+            id: 'test-user-id',
+            factors: [],
+          },
+        },
+        error: null,
+      })
+
+      const { data, error } = await pkceClient.mfa.getAuthenticatorAssuranceLevel(testJwt)
+
+      expect(error).toBeNull()
+      expect(data).not.toBeNull()
+      expect(data!.currentLevel).toBe('aal1')
+      expect(data!.nextLevel).toBe('aal1')
+      expect(data!.currentAuthenticationMethods).toHaveLength(1)
+
+      // Restore original getUser
+      pkceClient.getUser = originalGetUser
+    })
+
+    test('JWT with aal1 and verified factors returns aal1/aal2', async () => {
+      // Create a valid JWT with aal1
+      const jwt = require('jsonwebtoken')
+      const { GOTRUE_JWT_SECRET } = require('./lib/clients')
+      
+      const testJwt = jwt.sign(
+        {
+          sub: 'test-user-id',
+          aud: 'authenticated',
+          aal: 'aal1',
+          amr: [{ method: 'password', timestamp: Math.floor(Date.now() / 1000) }],
+          exp: Math.floor(Date.now() / 1000) + 3600,
+          iat: Math.floor(Date.now() / 1000),
+        },
+        GOTRUE_JWT_SECRET
+      )
+
+      // Mock getUser to return a user with verified factors
+      const originalGetUser = pkceClient.getUser
+      pkceClient.getUser = jest.fn().mockResolvedValue({
+        data: {
+          user: {
+            id: 'test-user-id',
+            factors: [
+              { factor_type: 'totp', status: 'verified' },
+            ],
+          },
+        },
+        error: null,
+      })
+
+      const { data, error } = await pkceClient.mfa.getAuthenticatorAssuranceLevel(testJwt)
+
+      expect(error).toBeNull()
+      expect(data).not.toBeNull()
+      expect(data!.currentLevel).toBe('aal1')
+      expect(data!.nextLevel).toBe('aal2')
+      expect(data!.currentAuthenticationMethods).toHaveLength(1)
+
+      // Restore original getUser
+      pkceClient.getUser = originalGetUser
+    })
+
+    test('invalid JWT returns error', async () => {
+      const invalidJwt = 'invalid-jwt-token'
+
+      const { data, error } = await pkceClient.mfa.getAuthenticatorAssuranceLevel(invalidJwt)
+
+      expect(error).not.toBeNull()
+      expect(error!.message).toContain('Invalid JWT')
+      expect(data).toBeNull()
+    })
+
+    test('JWT where getUser fails returns error', async () => {
+      // Create a valid JWT structure
+      const jwt = require('jsonwebtoken')
+      const { GOTRUE_JWT_SECRET } = require('./lib/clients')
+      
+      const testJwt = jwt.sign(
+        {
+          sub: 'nonexistent-user-id',
+          aud: 'authenticated',
+          aal: 'aal1',
+          amr: [{ method: 'password', timestamp: Math.floor(Date.now() / 1000) }],
+          exp: Math.floor(Date.now() / 1000) + 3600,
+          iat: Math.floor(Date.now() / 1000),
+        },
+        GOTRUE_JWT_SECRET
+      )
+
+      // Mock getUser to return an error
+      const originalGetUser = pkceClient.getUser
+      pkceClient.getUser = jest.fn().mockResolvedValue({
+        data: { user: null },
+        error: { message: 'User not found', status: 404 },
+      })
+
+      const { data, error } = await pkceClient.mfa.getAuthenticatorAssuranceLevel(testJwt)
+
+      expect(error).not.toBeNull()
+      expect(data).toBeNull()
+
+      // Restore original getUser
+      pkceClient.getUser = originalGetUser
+    })
+  })
+
   test('_listFactors returns correct factor lists', async () => {
     // Mock getUser
     pkceClient.getUser = jest.fn().mockResolvedValue({
