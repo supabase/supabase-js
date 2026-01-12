@@ -7,7 +7,6 @@ describe('log operations', () => {
     const mockLogger = vi.fn()
     const testSetup = setupRealtimeTest({
       logger: mockLogger,
-      params: { apikey: '123456789' },
     })
 
     testSetup.client.log('testKind', 'testMessage', { testData: 'test' })
@@ -22,7 +21,6 @@ describe('log operations', () => {
   test('changing log_level sends proper params in URL', () => {
     const testSetup = setupRealtimeTest({
       log_level: 'warn',
-      params: { apikey: '123456789' },
     })
 
     assert.equal(testSetup.client.logLevel, 'warn')
@@ -36,7 +34,6 @@ describe('log operations', () => {
   test('changing logLevel sends proper params in URL', () => {
     const testSetup = setupRealtimeTest({
       logLevel: 'warn',
-      params: { apikey: '123456789' },
     })
 
     assert.equal(testSetup.client.logLevel, 'warn')

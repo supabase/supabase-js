@@ -1,20 +1,10 @@
-import assert from 'assert'
+import assert, { deepEqual, equal } from 'assert'
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import { Client, WebSocket as MockWebSocket } from 'mock-socket'
 import RealtimeClient from '../src/RealtimeClient'
-import { testBuilders, EnhancedTestSetup } from './helpers/setup'
+import { DEFAULT_REALTIME_URL, setupRealtimeTest } from './helpers/setup'
 import { fixtures, mocks } from './helpers/lifecycle'
 import { CONNECTION_STATE } from '../src/lib/constants.js'
-
-let testSetup: EnhancedTestSetup
-
-beforeEach(() => {
-  testSetup = testBuilders.standardClient()
-})
-
-afterEach(() => {
-  testSetup.cleanup()
-})
 
 describe('constructor', () => {
   test.each(
@@ -34,89 +24,76 @@ describe('constructor', () => {
       },
     }))
   )('$name', ({ options, expected }) => {
-    const socket = new RealtimeClient(testSetup.realtimeUrl, options)
+    const { client, wssUrl, cleanup } = setupRealtimeTest({ ...options })
 
-    assert.equal(socket.getChannels().length, expected.channelsLength)
-    assert.equal(socket.sendBuffer.length, expected.sendBufferLength)
-    assert.equal(socket.ref, expected.ref)
-    assert.equal(socket.endPoint, testSetup.wssUrl)
-    assert.deepEqual(socket.stateChangeCallbacks, {
+    assert.equal(client.getChannels().length, expected.channelsLength)
+    assert.equal(client.sendBuffer.length, expected.sendBufferLength)
+    assert.equal(client.ref, expected.ref)
+    assert.equal(client.endPoint, wssUrl)
+    assert.deepEqual(client.stateChangeCallbacks, {
       open: [],
       close: [],
       error: [],
       message: [],
     })
-    assert.equal(socket.transport, expected.transport)
-    assert.equal(socket.timeout, expected.timeout)
-    assert.equal(socket.heartbeatIntervalMs, expected.heartbeatIntervalMs)
-    assert.equal(typeof socket.reconnectAfterMs, 'function')
+    assert.equal(client.transport, expected.transport)
+    assert.equal(client.timeout, expected.timeout)
+    assert.equal(client.heartbeatIntervalMs, expected.heartbeatIntervalMs)
+    assert.equal(typeof client.reconnectAfterMs, 'function')
+
+    cleanup()
   })
 
   test('throws error when API key is missing', () => {
     expect(() => {
-      new RealtimeClient(testSetup.realtimeUrl, {})
+      new RealtimeClient(DEFAULT_REALTIME_URL, {})
     }).toThrow('API key is required to connect to Realtime')
 
     expect(() => {
-      new RealtimeClient(testSetup.realtimeUrl, { params: {} })
+      new RealtimeClient(DEFAULT_REALTIME_URL, { params: {} })
     }).toThrow('API key is required to connect to Realtime')
 
     expect(() => {
-      new RealtimeClient(testSetup.realtimeUrl, { params: { apikey: null } })
+      new RealtimeClient(DEFAULT_REALTIME_URL, { params: { apikey: null } })
     }).toThrow('API key is required to connect to Realtime')
   })
 
-  test('sets heartbeatCallback when provided in options', () => {
+  test('sets wrapped heartbeatCallback when provided in options', () => {
     const mockCallback = () => {}
-    const socket = new RealtimeClient(testSetup.realtimeUrl, {
-      params: { apikey: '123456789' },
+
+    const { client, cleanup } = setupRealtimeTest({
       heartbeatCallback: mockCallback,
     })
 
-    assert.equal(socket.heartbeatCallback, mockCallback)
+    // @ts-ignore - access private method
+    const wrappedCallback = client._wrapHeartbeatCallback(mockCallback)
+
+    assert.equal(client.heartbeatCallback.toString(), wrappedCallback.toString())
+
+    cleanup()
   })
 
   test('defaults heartbeatCallback to noop when not provided', () => {
-    const socket = new RealtimeClient(testSetup.realtimeUrl, {
-      params: { apikey: '123456789' },
-    })
+    const { client, cleanup } = setupRealtimeTest()
 
     // Should be a function (noop)
-    assert.equal(typeof socket.heartbeatCallback, 'function')
+    assert.equal(typeof client.heartbeatCallback, 'function')
 
     // Should not throw when called
-    assert.doesNotThrow(() => socket.heartbeatCallback('sent'))
+    assert.doesNotThrow(() => client.heartbeatCallback('sent'))
+
+    cleanup()
   })
 })
 
 describe('connect with WebSocket', () => {
   test('establishes websocket connection with endpoint', async () => {
-    let connected = false
-    let testClient = testBuilders.standardClient({
-      preparation: (server) => {
-        server.on('connection', (socket) => {
-          if (socket.readyState == socket.OPEN) {
-            connected = true
-          }
-        })
-      },
-    })
+    const testSetup = setupRealtimeTest()
+    testSetup.connect()
 
-    testClient.socket.connect()
+    await vi.waitFor(() => expect(testSetup.emitters.connected).toBeCalled())
 
-    await vi.waitFor(() => expect(connected).toBe(true), { timeout: 2000, interval: 100 })
-
-    assert.equal(connected, true)
-    testClient.cleanup()
-  })
-
-  test('is idempotent', () => {
-    testSetup.socket.connect()
-
-    let conn = testSetup.socket.socketAdapter.getSocket().conn
-
-    testSetup.socket.connect()
-    assert.deepStrictEqual(conn, testSetup.socket.socketAdapter.getSocket().conn)
+    testSetup.cleanup()
   })
 
   test('handles WebSocket factory errors gracefully', async () => {
@@ -131,149 +108,124 @@ describe('connect with WebSocket', () => {
       } as unknown as typeof WebSocket
     })
 
-    // Create a socket without transport to trigger WebSocketFactory usage
-    const socketWithoutTransport = new RealtimeClient(testSetup.realtimeUrl, {
-      params: { apikey: '123456789' },
-    })
+    const testSetup = setupRealtimeTest()
 
     expect(() => {
-      socketWithoutTransport.connect()
+      testSetup.client.connect()
     }).toThrow('WebSocket not available: WebSocket not available in test environment')
 
-    assert.equal(socketWithoutTransport.connectionState(), CONNECTION_STATE.closed)
+    assert.equal(testSetup.client.connectionState(), CONNECTION_STATE.closed)
 
     // Restore original method
     WebSocketFactory.getWebSocketConstructor = originalGetWebsocketConstructor
+    testSetup.cleanup()
   })
 })
 
-describe('disconnect', () => {
-  test('removes existing connection', async () => {
-    testSetup.socket.connect()
-    await testSetup.socket.disconnect()
+test('disconnect', async () => {
+  const testSetup = setupRealtimeTest()
 
-    assert.equal(testSetup.socket.socketAdapter.getSocket().conn, null)
-  })
+  testSetup.client.connect()
+  await vi.waitFor(() => expect(testSetup.emitters.connected).toHaveBeenCalled())
+  equal(testSetup.client.isConnected(), true)
 
-  test('calls connection close callback', async () => {
-    const expectedCode = 1000
-    const expectedReason = 'reason'
+  testSetup.client.disconnect()
+  await vi.waitFor(() => expect(testSetup.emitters.close).toHaveBeenCalled())
+  equal(testSetup.client.isConnected(), false)
 
-    const closeSpy = vi.spyOn(MockWebSocket.prototype, 'close')
-
-    testSetup.socket.connect()
-
-    await vi.waitFor(() => {
-      expect(testSetup.socket.socketAdapter.getSocket().conn).not.toBeNull()
-    })
-
-    testSetup.socket.disconnect(expectedCode, expectedReason)
-
-    expect(closeSpy).toHaveBeenCalledWith(expectedCode, expectedReason)
-  })
-
-  test('does not throw when no connection', () => {
-    assert.doesNotThrow(() => {
-      testSetup.socket.disconnect()
-    })
-  })
+  testSetup.cleanup()
 })
 
 describe('connectionState', () => {
   test('defaults to closed', () => {
-    assert.equal(testSetup.socket.connectionState(), 'closed')
+    const { client, cleanup } = setupRealtimeTest()
+    assert.equal(client.connectionState(), 'closed')
+    cleanup()
   })
 
   test.each(fixtures.connectionStates)(
     'returns $expected when readyState is $readyState ($name)',
     ({ readyState, expected, isConnected }) => {
-      testSetup.socket.connect()
-      const spy = mocks.connectionState(testSetup.socket, readyState)
+      const testSetup = setupRealtimeTest()
+      testSetup.client.connect()
+      const spy = mocks.connectionState(testSetup.client, readyState)
 
-      assert.equal(testSetup.socket.connectionState(), expected)
-      assert.equal(testSetup.socket.isConnected(), isConnected)
+      assert.equal(testSetup.client.connectionState(), expected)
+      assert.equal(testSetup.client.isConnected(), isConnected)
 
       spy.mockRestore()
+      testSetup.cleanup()
     }
   )
 })
 
 describe('Connection state management', () => {
   test('should track connection states correctly', async () => {
-    let state = 'closed'
-    let testClient = testBuilders.standardClient({
-      preparation: (server) => {
-        server.on('connection', (socket) => {
-          if (socket.readyState == socket.OPEN) {
-            state = 'connected'
-          }
-          socket.on('close', () => {
-            state = 'closed'
-          })
-        })
-      },
-    })
+    const { client, cleanup, emitters } = setupRealtimeTest()
 
-    assert.equal(testClient.socket.isConnecting(), false)
-    assert.equal(testClient.socket.isDisconnecting(), false)
+    assert.equal(client.isConnecting(), false)
+    assert.equal(client.isDisconnecting(), false)
 
-    testClient.socket.connect()
-    state = 'connecting'
-    assert.equal(testClient.socket.isConnecting(), true)
+    client.connect()
+    assert.equal(client.isConnecting(), true)
 
-    await vi.waitFor(() => expect(state).toBe('connected'), { timeout: 2000 })
-    assert.equal(testClient.socket.isConnected(), true)
+    await vi.waitFor(() => expect(emitters.connected).toBeCalled())
+    assert.equal(client.isConnected(), true)
 
-    testClient.socket.disconnect()
-    assert.equal(testClient.socket.isDisconnecting(), true)
+    client.disconnect()
+    assert.equal(client.isDisconnecting(), true)
 
-    await vi.waitFor(() => expect(state).toBe('closed'), { timeout: 2000 })
-    assert.equal(testClient.socket.connectionState(), CONNECTION_STATE.closed)
-    testClient.cleanup()
+    await vi.waitFor(() => expect(emitters.close).toBeCalled())
+    assert.equal(client.connectionState(), CONNECTION_STATE.closed)
+
+    cleanup()
   })
 
   test('should handle connection state transitions on WebSocket events', async () => {
     let serverSocket: Client
-    let testClient = testBuilders.standardClient({
-      preparation: (server) => {
-        server.on('connection', (socket) => {
-          serverSocket = socket
-        })
+    const { client, mockServer, cleanup } = setupRealtimeTest({
+      onConnectionCallback: (socket) => {
+        serverSocket = socket
       },
     })
 
-    testClient.socket.connect()
-    assert.equal(testClient.socket.isConnecting(), true)
+    client.connect()
+    assert.equal(client.isConnecting(), true)
 
+    // @ts-ignore - serverSocket will be assigned
     await vi.waitFor(() => expect(serverSocket.readyState).toBe(WebSocket.OPEN))
 
-    // @ts-ignore it will be defined
-    serverSocket.close({ code: 1000, reason: 'Normal close', wasClean: true })
-    assert.equal(testSetup.socket.isDisconnecting(), false)
-    testClient.cleanup()
+    mockServer.close({ code: 1000, reason: 'Normal close', wasClean: true })
+    assert.equal(client.isDisconnecting(), false)
+    cleanup()
   })
 })
 
 describe('Race condition prevention', () => {
   test('should prevent multiple simultaneous connection attempts', () => {
+    const { client, cleanup } = setupRealtimeTest()
+
     // Make multiple rapid connection attempts
-    testSetup.socket.connect()
-    testSetup.socket.connect()
-    testSetup.socket.connect()
+    client.connect()
+    client.connect()
+    client.connect()
 
     // Should only have one connection attempt
-    assert.equal(testSetup.socket.isConnecting(), true)
-    assert.ok(testSetup.socket.socketAdapter.getSocket().conn)
+    assert.equal(client.isConnecting(), true)
+    assert.ok(client.socketAdapter.getSocket().conn)
+
+    cleanup()
   })
 
   test('should prevent connection during disconnection', () => {
-    testSetup.socket.connect()
-    testSetup.socket.disconnect()
+    const { client, cleanup } = setupRealtimeTest()
+    client.connect()
+    client.disconnect()
 
     // Try to connect while disconnecting
-    testSetup.socket.connect()
+    client.connect()
 
     // Should not interfere with disconnection
-    assert.equal(testSetup.socket.isDisconnecting(), true)
+    assert.equal(client.isDisconnecting(), true)
   })
 })

@@ -2,7 +2,6 @@ import { Mock, vi } from 'vitest'
 import crypto from 'crypto'
 import { Server, WebSocket as MockWebSocket, Client } from 'mock-socket'
 import RealtimeClient, { RealtimeClientOptions } from '../../src/RealtimeClient'
-import RealtimeChannel from '../../src/RealtimeChannel'
 
 // Constants
 export const DEFAULT_REALTIME_URL = 'localhost:4000'
@@ -65,7 +64,10 @@ export function setupRealtimeTest(options: BuilderOptions = {}): TestSetup {
   const onConnection =
     options.onConnectionCallback ??
     ((socket: Client) => {
-      emitters.connected()
+      if (socket.readyState == socket.OPEN) {
+        emitters.connected()
+      }
+
       socket.on('message', (message) => {
         const msg = JSON.parse(message as string)
         emitters.message(msg.topic, msg.event, msg.payload)
@@ -100,9 +102,6 @@ export function setupRealtimeTest(options: BuilderOptions = {}): TestSetup {
   mockServer.on('connection', onConnection)
 
   const client = new RealtimeClient(realtimeUrl, {
-    transport: MockWebSocket,
-    timeout: options.timeout || 1000,
-    heartbeatIntervalMs: options.heartbeatIntervalMs || 25000,
     params: { apikey: options.apikey || DEFAULT_API_KEY, ...options.params },
     ...options,
   })
@@ -113,7 +112,7 @@ export function setupRealtimeTest(options: BuilderOptions = {}): TestSetup {
   }
 
   const connect = () => client.connect()
-  const disconnect = () => client.disconnect()
+  const disconnect = async () => client.disconnect()
   const cleanup = () => cleanupRealtimeTest(client, mockServer, clock)
 
   return {
