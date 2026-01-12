@@ -2730,40 +2730,24 @@ export default class GoTrueClient {
     }
   }
 
-  private async _notifyAllSubscribers(
-    event: AuthChangeEvent,
-    session: Session | null,
-    broadcast = true
-  ) {
+  private _notifyAllSubscribers(event: AuthChangeEvent, session: Session | null, broadcast = true) {
     const debugName = `#_notifyAllSubscribers(${event})`
     this._debug(debugName, 'begin', session, `broadcast = ${broadcast}`)
 
-    try {
-      if (this.broadcastChannel && broadcast) {
-        this.broadcastChannel.postMessage({ event, session })
-      }
-
-      const errors: any[] = []
-      const promises = Array.from(this.stateChangeEmitters.values()).map(async (x) => {
-        try {
-          await x.callback(event, session)
-        } catch (e: any) {
-          errors.push(e)
-        }
-      })
-
-      await Promise.all(promises)
-
-      if (errors.length > 0) {
-        for (let i = 0; i < errors.length; i += 1) {
-          console.error(errors[i])
-        }
-
-        throw errors[0]
-      }
-    } finally {
-      this._debug(debugName, 'end')
+    if (this.broadcastChannel && broadcast) {
+      this.broadcastChannel.postMessage({ event, session })
     }
+
+    Array.from(this.stateChangeEmitters.values()).forEach((x) => {
+      try {
+        const result: unknown = x.callback(event, session)
+        if (result instanceof Promise) result.catch(console.error)
+      } catch (e) {
+        console.error(e)
+      }
+    })
+
+    this._debug(debugName, 'end')
   }
 
   /**
