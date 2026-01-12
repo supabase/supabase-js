@@ -304,9 +304,25 @@ export default abstract class PostgrestBuilder<
       let attemptCount = 0
 
       while (true) {
-        const requestHeaders = new Headers(this.headers)
+        const headers: Record<string, string> = {}
+        this.headers.forEach((value, key) => {
+          headers[key] = value
+        })
         if (attemptCount > 0) {
-          requestHeaders.set('X-Retry-Count', String(attemptCount))
+          headers['X-Retry-Count'] = String(attemptCount)
+        }
+
+        let body
+        if (
+          (this.body === undefined || this.body === null) &&
+          this.method !== 'GET' &&
+          this.method !== 'HEAD'
+        ) {
+          body = '{}'
+        } else {
+          body = JSON.stringify(this.body, (_, value) =>
+            typeof value === 'bigint' ? value.toString() : value
+          )
         }
 
         // Only wrap the fetch call itself — processResponse errors must never trigger retries
@@ -314,10 +330,8 @@ export default abstract class PostgrestBuilder<
         try {
           res = await _fetch(this.url.toString(), {
             method: this.method,
-            headers: requestHeaders,
-            body: JSON.stringify(this.body, (_, value) =>
-              typeof value === 'bigint' ? value.toString() : value
-            ),
+            headers,
+            body,
             signal: this.signal,
           })
           // JS allows throwing any value, and serverless or realm-crossing fetch
