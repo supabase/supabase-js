@@ -6,6 +6,10 @@ import type {
   SocketOnOpen,
   SocketOnError,
   SocketOptions,
+  SocketStateChangeCallbacks,
+  Vsn,
+  Encode,
+  Decode,
   HeartbeatCallback,
 } from './types'
 import { CONNECTION_STATE, ConnectionState } from '../lib/constants'
@@ -18,23 +22,23 @@ export default class SocketAdapter {
     this.socket = new Socket(endPoint, options)
   }
 
-  get timeout() {
+  get timeout(): number {
     return this.socket.timeout
   }
 
-  get endPoint() {
+  get endPoint(): string {
     return this.socket.endPoint
   }
 
-  get transport() {
+  get transport(): WebSocketLikeConstructor {
     return this.socket.transport as WebSocketLikeConstructor
   }
 
-  get heartbeatIntervalMs() {
+  get heartbeatIntervalMs(): number {
     return this.socket.heartbeatIntervalMs
   }
 
-  get heartbeatCallback() {
+  get heartbeatCallback(): HeartbeatCallback {
     return this.socket.heartbeatCallback
   }
 
@@ -42,35 +46,35 @@ export default class SocketAdapter {
     this.socket.heartbeatCallback = callback
   }
 
-  get heartbeatTimer() {
-    return this.socket.heartbeatTimer as HeartbeatTimer
+  get heartbeatTimer(): HeartbeatTimer {
+    return this.socket.heartbeatTimer
   }
 
-  get pendingHeartbeatRef() {
+  get pendingHeartbeatRef(): string | null {
     return this.socket.pendingHeartbeatRef
   }
 
-  get vsn() {
+  get vsn(): Vsn {
     return this.socket.vsn
   }
 
-  get encode() {
+  get encode(): Encode<void> {
     return this.socket.encode
   }
 
-  get decode() {
+  get decode(): Decode<void> {
     return this.socket.decode
   }
 
-  get reconnectAfterMs() {
+  get reconnectAfterMs(): (tries: number) => number {
     return this.socket.reconnectAfterMs
   }
 
-  get sendBuffer() {
+  get sendBuffer(): (() => void)[] {
     return this.socket.sendBuffer
   }
 
-  get stateChangeCallbacks() {
+  get stateChangeCallbacks(): SocketStateChangeCallbacks {
     return this.socket.stateChangeCallbacks
   }
 
@@ -99,7 +103,7 @@ export default class SocketAdapter {
     this.socket.log(kind, msg, data)
   }
 
-  makeRef() {
+  makeRef(): string {
     return this.socket.makeRef()
   }
 
@@ -136,12 +140,12 @@ export default class SocketAdapter {
     return this.socket.connectionState()
   }
 
-  endPointURL() {
+  endPointURL(): string {
     return this.socket.endPointURL()
   }
 
   sendHeartbeat() {
-    return this.socket.sendHeartbeat()
+    this.socket.sendHeartbeat()
   }
 
   /**

@@ -107,57 +107,57 @@ export default class RealtimeClient {
 
   serializer: Serializer = new Serializer()
 
-  get endPoint(): string {
+  get endPoint() {
     return this.socketAdapter.endPoint
   }
 
-  get timeout(): number {
+  get timeout() {
     return this.socketAdapter.timeout
   }
 
-  get transport(): WebSocketLikeConstructor {
+  get transport() {
     return this.socketAdapter.transport
   }
 
-  get heartbeatCallback(): HeartbeatCallback {
+  get heartbeatCallback() {
     return this.socketAdapter.heartbeatCallback
   }
 
-  get heartbeatIntervalMs(): number {
+  get heartbeatIntervalMs() {
     return this.socketAdapter.heartbeatIntervalMs
   }
 
-  get heartbeatTimer(): HeartbeatTimer {
+  get heartbeatTimer() {
     if (this.worker) {
       return this._workerHeartbeatTimer
     }
     return this.socketAdapter.heartbeatTimer
   }
 
-  get pendingHeartbeatRef(): string | null {
+  get pendingHeartbeatRef() {
     if (this.worker) {
       return this._pendingWorkerHeartbeatRef
     }
     return this.socketAdapter.pendingHeartbeatRef
   }
 
-  get vsn(): string {
+  get vsn() {
     return this.socketAdapter.vsn
   }
 
-  get encode(): Function {
+  get encode() {
     return this.socketAdapter.encode
   }
 
-  get decode(): Function {
+  get decode() {
     return this.socketAdapter.decode
   }
 
-  get reconnectAfterMs(): (tries: number) => number {
+  get reconnectAfterMs() {
     return this.socketAdapter.reconnectAfterMs
   }
 
-  get sendBuffer(): Function[] {
+  get sendBuffer() {
     return this.socketAdapter.sendBuffer
   }
 

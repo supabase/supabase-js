@@ -6,7 +6,11 @@ import type {
   ChannelBindingCallback,
   ChannelOnMessage,
   ChannelOnErrorCallback,
+  ChannelFilterBindings,
   Params,
+  ChannelState,
+  Push,
+  Timer,
 } from './types'
 
 export default class ChannelAdapter {
@@ -19,27 +23,27 @@ export default class ChannelAdapter {
     this.socket = socket
   }
 
-  get state() {
+  get state(): ChannelState {
     return this.channel.state
   }
 
-  set state(state) {
+  set state(state: ChannelState) {
     this.channel.state = state
   }
 
-  get joinedOnce() {
+  get joinedOnce(): boolean {
     return this.channel.joinedOnce
   }
 
-  get joinPush() {
+  get joinPush(): Push {
     return this.channel.joinPush
   }
 
-  get rejoinTimer() {
+  get rejoinTimer(): Timer {
     return this.channel.rejoinTimer
   }
 
-  on(event: string, callback: ChannelBindingCallback) {
+  on(event: string, callback: ChannelBindingCallback): number {
     return this.channel.on(event, callback)
   }
 
@@ -47,11 +51,11 @@ export default class ChannelAdapter {
     this.channel.off(event, refNumber)
   }
 
-  subscribe(timeout?: number) {
+  subscribe(timeout?: number): Push {
     return this.channel.join(timeout)
   }
 
-  unsubscribe(timeout?: number) {
+  unsubscribe(timeout?: number): Push {
     return this.channel.leave(timeout)
   }
 
@@ -63,11 +67,11 @@ export default class ChannelAdapter {
     this.channel.onClose(callback)
   }
 
-  onError(callback: ChannelOnErrorCallback) {
+  onError(callback: ChannelOnErrorCallback): number {
     return this.channel.onError(callback)
   }
 
-  push(event: string, payload: { [key: string]: any }, timeout?: number) {
+  push(event: string, payload: { [key: string]: any }, timeout?: number): Push {
     try {
       return this.channel.push(event, payload, timeout)
     } catch (error) {
@@ -79,7 +83,7 @@ export default class ChannelAdapter {
     this.channel.joinPush.payload = () => payload
   }
 
-  joinRef() {
+  joinRef(): string {
     if (!this.channel.joinPush.ref) {
       throw new Error('Join push reference not found')
     }
@@ -107,16 +111,8 @@ export default class ChannelAdapter {
     return this.state === CHANNEL_STATES.leaving
   }
 
-  updateFilterMessage(
-    filterMessage: (
-      event: string,
-      payload: object,
-      ref: number | undefined,
-      bind: { event: string; ref: number }
-    ) => boolean
-  ) {
-    // @ts-ignore - it does not exist yet in phoenix
-    this.channel.filterMessage = filterMessage
+  updateFilterBindings(filterBindings: ChannelFilterBindings) {
+    this.channel.filterBindings = filterBindings
   }
 
   updatePayloadTransform(callback: ChannelOnMessage) {

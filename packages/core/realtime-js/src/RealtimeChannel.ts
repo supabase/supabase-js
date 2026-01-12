@@ -200,7 +200,7 @@ export default class RealtimeChannel {
     return this.channelAdapter.joinPush
   }
 
-  get rejoinTimer(): Timer {
+  get rejoinTimer() {
     return this.channelAdapter.rejoinTimer
   }
 
@@ -756,9 +756,9 @@ export default class RealtimeChannel {
 
   /** @internal */
   private _updateFilterMessage() {
-    this.channelAdapter.updateFilterMessage((event, payload: any, messageRef, phoenixBind) => {
-      const typeLower = event.toLocaleLowerCase()
-      const bind = this.bindings[typeLower]?.find((bind) => bind.ref === phoenixBind.ref)
+    this.channelAdapter.updateFilterBindings((binding, payload: any, ref) => {
+      const typeLower = binding.event.toLocaleLowerCase()
+      const bind = this.bindings[typeLower]?.find((bind) => bind.ref === binding.ref)
 
       if (!bind) {
         return true
