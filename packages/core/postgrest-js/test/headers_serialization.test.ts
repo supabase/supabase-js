@@ -1,4 +1,3 @@
-
 import { PostgrestClient } from '../src/index'
 
 const REST_URL = 'http://localhost:3000'
@@ -22,7 +21,7 @@ test('fetch receives headers as plain object', async () => {
   expect(mockFetch).toHaveBeenCalledTimes(1)
   const args = mockFetch.mock.calls[0]
   const options = args[1]
-  
+
   // Verify headers is a plain object and contains expected values
   expect(options.headers).not.toBeInstanceOf(Headers)
   expect(Object.getPrototypeOf(options.headers)).toBe(Object.prototype)
