@@ -28,7 +28,7 @@ describe('log operations', () => {
     assert.equal(testSetup.client.logLevel, 'warn')
 
     const url = new URL(testSetup.client.endpointURL())
-    assert.equal(url.searchParams.get("log_level"), "warn")
+    assert.equal(url.searchParams.get('log_level'), 'warn')
 
     testSetup.cleanup()
   })
@@ -42,7 +42,7 @@ describe('log operations', () => {
     assert.equal(testSetup.client.logLevel, 'warn')
 
     const url = new URL(testSetup.client.endpointURL())
-    assert.equal(url.searchParams.get("log_level"), "warn")
+    assert.equal(url.searchParams.get('log_level'), 'warn')
 
     testSetup.cleanup()
   })

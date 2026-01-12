@@ -89,9 +89,12 @@ describe('transformState', () => {
         abc123: [{ presence_ref: '2', user_id: 1, details: { mood: 'happy' } }],
       },
     },
-  ] as { name: string, curState: State, expectedState: RealtimePresenceState }[])('transforms $name state', ({ curState, expectedState }) => {
-    assert.deepEqual(PresenceAdapter.transformState(curState), expectedState)
-  })
+  ] as { name: string; curState: State; expectedState: RealtimePresenceState }[])(
+    'transforms $name state',
+    ({ curState, expectedState }) => {
+      assert.deepEqual(PresenceAdapter.transformState(curState), expectedState)
+    }
+  )
 
   test('does not mutate original state', () => {
     const originalState = {

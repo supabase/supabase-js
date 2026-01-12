@@ -1,8 +1,8 @@
-import assert from "assert";
-import { type Client } from "mock-socket"
-import { beforeEach, afterEach, vi, describe, test, expect } from "vitest"
-import { type EnhancedTestSetup, testBuilders } from "./helpers/setup"
-import { CHANNEL_EVENTS, CHANNEL_STATES } from "../src/lib/constants";
+import assert from 'assert'
+import { type Client } from 'mock-socket'
+import { beforeEach, afterEach, vi, describe, test, expect } from 'vitest'
+import { type EnhancedTestSetup, testBuilders } from './helpers/setup'
+import { CHANNEL_EVENTS, CHANNEL_STATES } from '../src/lib/constants'
 
 let serverSocket: Client
 let testClient: EnhancedTestSetup
@@ -13,11 +13,11 @@ beforeEach(() => {
   testClient = testBuilders.standardClient({
     preparation: (server) => {
       server.on('connection', (socket) => {
-        serverSocket = socket;
-        connected = true;
+        serverSocket = socket
+        connected = true
       })
       server.on('close', () => {
-        connected = false;
+        connected = false
       })
     },
   })
@@ -117,7 +117,10 @@ describe('socket close event', () => {
   })
 
   test('schedules reconnectTimer timeout', async () => {
-    const spy = vi.spyOn(testClient.socket.socketAdapter.getSocket().reconnectTimer, 'scheduleTimeout')
+    const spy = vi.spyOn(
+      testClient.socket.socketAdapter.getSocket().reconnectTimer,
+      'scheduleTimeout'
+    )
 
     serverSocket.close({ code: 1000, reason: '', wasClean: true })
     await vi.waitFor(() => expect(connected).toBe(false))
@@ -127,7 +130,7 @@ describe('socket close event', () => {
 
   test('triggers channel error', async () => {
     const channel = testClient.socket.channel('topic')
-    channel.state = CHANNEL_STATES.joined;
+    channel.state = CHANNEL_STATES.joined
     const spy = vi.spyOn(channel.channelAdapter.getChannel(), 'trigger')
 
     serverSocket.close({ code: 1000, reason: '', wasClean: true })
@@ -144,7 +147,7 @@ describe('_onConnError', () => {
 
   test('triggers channel error', () => {
     const channel = testClient.socket.channel('topic')
-    channel.state = CHANNEL_STATES.joined;
+    channel.state = CHANNEL_STATES.joined
     const spy = vi.spyOn(channel.channelAdapter.getChannel(), 'trigger')
     testClient.mockServer.simulate('error')
 

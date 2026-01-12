@@ -238,4 +238,3 @@ describe('Presence configuration override', () => {
     channelWithPresenceEnabled.unsubscribe()
   })
 })
-
