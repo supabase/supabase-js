@@ -227,9 +227,15 @@ export async function processLock<R>(
       acquireTimeout >= 0
         ? new Promise((_, reject) => {
             setTimeout(() => {
+              console.warn(
+                `@supabase/gotrue-js: Lock "${name}" acquisition timed out after ${acquireTimeout}ms. ` +
+                  'This may be caused by another operation holding the lock. ' +
+                  'Consider increasing lockAcquireTimeout or checking for stuck operations.'
+              )
+
               reject(
                 new ProcessLockAcquireTimeoutError(
-                  `Acquring process lock with name "${name}" timed out`
+                  `Acquiring process lock with name "${name}" timed out`
                 )
               )
             }, acquireTimeout)

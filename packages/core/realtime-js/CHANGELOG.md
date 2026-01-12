@@ -1,3 +1,62 @@
+## 2.90.1 (2026-01-08)
+
+### 🩹 Fixes
+
+- **realtime:** validate table filter in postgres_changes event dispatch ([#1999](https://github.com/supabase/supabase-js/pull/1999))
+
+### ❤️ Thank You
+
+- Vaibhav @7ttp
+
+## 2.90.0 (2026-01-07)
+
+### 🚀 Features
+
+- **realtime:** expose heartbeat latency on heartbeat callback ([#1982](https://github.com/supabase/supabase-js/pull/1982))
+
+### 🩹 Fixes
+
+- **supabase:** avoid edge runtime warnings in next.js ([#1998](https://github.com/supabase/supabase-js/pull/1998))
+
+### ❤️ Thank You
+
+- Eduardo Gurgel
+- Vaibhav @7ttp
+
+## 2.89.0 (2025-12-18)
+
+This was a version bump only for @supabase/realtime-js to align it with other projects, there were no code changes.
+
+## 2.88.0 (2025-12-16)
+
+### 🚀 Features
+
+- **repo:** migrate build system to tsdown for proper ESM/CJS support ([#1961](https://github.com/supabase/supabase-js/pull/1961))
+
+### 🩹 Fixes
+
+- **realtime:** omit authorization header when no access token exists ([#1937](https://github.com/supabase/supabase-js/pull/1937))
+- **realtime:** handle websocket race condition in node.js ([#1946](https://github.com/supabase/supabase-js/pull/1946))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+- Vaibhav @7ttp
+
+## 2.87.3 (2025-12-15)
+
+This was a version bump only for @supabase/realtime-js to align it with other projects, there were no code changes.
+
+## 2.87.2 (2025-12-15)
+
+### 🩹 Fixes
+
+- **realtime:** terminate web worker on disconnect to prevent memory leak ([#1907](https://github.com/supabase/supabase-js/pull/1907))
+
+### ❤️ Thank You
+
+- Tanmay Sharma @tanmaysharma2001
+
 ## 2.87.1 (2025-12-09)
 
 ### 🩹 Fixes

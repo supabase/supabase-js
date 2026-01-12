@@ -1,3 +1,46 @@
+## 2.90.1 (2026-01-08)
+
+### 🩹 Fixes
+
+- **postgrest:** prevent shared state between query builder operations ([#1978](https://github.com/supabase/supabase-js/pull/1978))
+
+### ❤️ Thank You
+
+- Vaibhav @7ttp
+
+## 2.90.0 (2026-01-07)
+
+### 🩹 Fixes
+
+- **postgrest:** use post with return minimal for rpc head requests with object args ([#1994](https://github.com/supabase/supabase-js/pull/1994))
+
+### ❤️ Thank You
+
+- Vaibhav @7ttp
+
+## 2.89.0 (2025-12-18)
+
+This was a version bump only for @supabase/postgrest-js to align it with other projects, there were no code changes.
+
+## 2.88.0 (2025-12-16)
+
+### 🚀 Features
+
+- **repo:** migrate build system to tsdown for proper ESM/CJS support ([#1961](https://github.com/supabase/supabase-js/pull/1961))
+- **postgrest:** add notin filter ([#1957](https://github.com/supabase/supabase-js/pull/1957))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+
+## 2.87.3 (2025-12-15)
+
+This was a version bump only for @supabase/postgrest-js to align it with other projects, there were no code changes.
+
+## 2.87.2 (2025-12-15)
+
+This was a version bump only for @supabase/postgrest-js to align it with other projects, there were no code changes.
+
 ## 2.87.1 (2025-12-09)
 
 This was a version bump only for @supabase/postgrest-js to align it with other projects, there were no code changes.

@@ -1,3 +1,33 @@
+## 2.90.1 (2026-01-08)
+
+This was a version bump only for @supabase/functions-js to align it with other projects, there were no code changes.
+
+## 2.90.0 (2026-01-07)
+
+### 🩹 Fixes
+
+- **functions:** auto-stringify object body when custom Content-Type header is provided ([#1988](https://github.com/supabase/supabase-js/pull/1988))
+
+### ❤️ Thank You
+
+- Vaibhav @7ttp
+
+## 2.89.0 (2025-12-18)
+
+This was a version bump only for @supabase/functions-js to align it with other projects, there were no code changes.
+
+## 2.88.0 (2025-12-16)
+
+This was a version bump only for @supabase/functions-js to align it with other projects, there were no code changes.
+
+## 2.87.3 (2025-12-15)
+
+This was a version bump only for @supabase/functions-js to align it with other projects, there were no code changes.
+
+## 2.87.2 (2025-12-15)
+
+This was a version bump only for @supabase/functions-js to align it with other projects, there were no code changes.
+
 ## 2.87.1 (2025-12-09)
 
 This was a version bump only for @supabase/functions-js to align it with other projects, there were no code changes.

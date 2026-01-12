@@ -287,7 +287,7 @@ describe('Fetch resolution in browser environment', () => {
 
 describe('Callback URL handling', () => {
   let mockFetch: jest.Mock
-  let storedSession: string | null
+  let storedSession: string | null = null
   const mockStorage = {
     getItem: jest.fn(() => storedSession),
     setItem: jest.fn((key: string, value: string) => {
@@ -301,6 +301,7 @@ describe('Callback URL handling', () => {
   beforeEach(() => {
     mockFetch = jest.fn()
     global.fetch = mockFetch
+    storedSession = null
   })
 
   it('should handle implicit grant callback', async () => {
@@ -427,6 +428,158 @@ describe('Callback URL handling', () => {
     await client.initialize()
 
     expect(client).toBeDefined()
+  })
+
+  it('should use custom detectSessionInUrl function to filter out non-Supabase OAuth callbacks', async () => {
+    // Simulate Facebook OAuth redirect with access_token in fragment
+    window.location.href =
+      'http://localhost:9999/facebook/redirect#access_token=facebook-token&data_access_expiration_time=1658889585'
+
+    // Custom predicate to ignore Facebook OAuth redirects
+    const detectSessionInUrlFn = jest.fn((url: URL, params: { [key: string]: string }) => {
+      // Ignore Facebook OAuth redirects
+      if (url.pathname === '/facebook/redirect') return false
+      // Default behavior for other URLs
+      return Boolean(params.access_token || params.error_description)
+    })
+
+    const client = new (require('../src/GoTrueClient').default)({
+      url: 'http://localhost:9999',
+      detectSessionInUrl: detectSessionInUrlFn,
+      autoRefreshToken: false,
+      storage: mockStorage,
+    })
+
+    await client.initialize()
+
+    // The custom function should have been called
+    expect(detectSessionInUrlFn).toHaveBeenCalled()
+    expect(detectSessionInUrlFn).toHaveBeenCalledWith(
+      expect.any(URL),
+      expect.objectContaining({ access_token: 'facebook-token' })
+    )
+
+    // Session should be null because we filtered out the Facebook callback
+    const { data } = await client.getSession()
+    expect(data.session).toBeNull()
+  })
+
+  it('should process Supabase callbacks when custom detectSessionInUrl returns true', async () => {
+    // Simulate Supabase OAuth redirect
+    window.location.href =
+      'http://localhost:9999/auth/callback#access_token=supabase-token&refresh_token=test-refresh&expires_in=3600&token_type=bearer&type=implicit'
+
+    // Mock fetch for user info
+    mockFetch.mockImplementation((url: string) => {
+      if (url.includes('/user')) {
+        return Promise.resolve({
+          ok: true,
+          json: () =>
+            Promise.resolve({
+              id: 'test-user',
+              email: 'test@example.com',
+              created_at: new Date().toISOString(),
+            }),
+        })
+      }
+      return Promise.resolve({
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            access_token: 'supabase-token',
+            refresh_token: 'test-refresh',
+            expires_in: 3600,
+            token_type: 'bearer',
+            user: { id: 'test-user' },
+          }),
+      })
+    })
+
+    // Custom predicate that allows Supabase callbacks but not Facebook
+    const detectSessionInUrlFn = jest.fn((url: URL, params: { [key: string]: string }) => {
+      if (url.pathname === '/facebook/redirect') return false
+      return Boolean(params.access_token || params.error_description)
+    })
+
+    const client = new (require('../src/GoTrueClient').default)({
+      url: 'http://localhost:9999',
+      detectSessionInUrl: detectSessionInUrlFn,
+      autoRefreshToken: false,
+      storage: mockStorage,
+    })
+
+    await client.initialize()
+
+    // The custom function should have been called and returned true
+    expect(detectSessionInUrlFn).toHaveBeenCalled()
+    expect(detectSessionInUrlFn.mock.results[0].value).toBe(true)
+
+    // Session should be set because we allowed this callback
+    const { data } = await client.getSession()
+    expect(data.session).toBeDefined()
+    expect(data.session?.access_token).toBe('supabase-token')
+  })
+
+  it('should return error when custom detectSessionInUrl function throws', async () => {
+    window.location.href = 'http://localhost:9999/callback#access_token=test-token'
+
+    // Reset storage state from previous tests
+    storedSession = null
+
+    // Custom predicate that throws an error
+    const detectSessionInUrlFn = jest.fn(() => {
+      throw new Error('Custom predicate error')
+    })
+
+    const client = new (require('../src/GoTrueClient').default)({
+      url: 'http://localhost:9999',
+      detectSessionInUrl: detectSessionInUrlFn,
+      autoRefreshToken: false,
+      storage: mockStorage,
+    })
+
+    // initialize() catches errors and returns them wrapped in AuthUnknownError
+    const { error } = await client.initialize()
+
+    expect(detectSessionInUrlFn).toHaveBeenCalled()
+    expect(error).toBeDefined()
+    expect(error?.message).toBe('Unexpected error during initialization')
+    expect(error?.originalError?.message).toBe('Custom predicate error')
+  })
+
+  it('should use default behavior when detectSessionInUrl is true (boolean)', async () => {
+    window.location.href =
+      'http://localhost:9999/callback#access_token=test-token&refresh_token=test-refresh&expires_in=3600&token_type=bearer&type=implicit'
+
+    // Mock fetch for user info
+    mockFetch.mockImplementation((url: string) => {
+      if (url.includes('/user')) {
+        return Promise.resolve({
+          ok: true,
+          json: () =>
+            Promise.resolve({
+              id: 'test-user',
+              email: 'test@example.com',
+              created_at: new Date().toISOString(),
+            }),
+        })
+      }
+      return Promise.resolve({ ok: true, json: () => Promise.resolve({}) })
+    })
+
+    const client = new (require('../src/GoTrueClient').default)({
+      url: 'http://localhost:9999',
+      detectSessionInUrl: true, // Boolean true - use default behavior
+      autoRefreshToken: false,
+      storage: mockStorage,
+    })
+
+    await client.initialize()
+
+    // Should process the callback with default behavior
+    const { data } = await client.getSession()
+    expect(data.session).toBeDefined()
+    expect(data.session?.access_token).toBe('test-token')
   })
 })
 

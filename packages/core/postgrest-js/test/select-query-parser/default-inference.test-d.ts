@@ -1,7 +1,7 @@
 import { PostgrestClient } from '../../src/index'
 import { expectType, TypeEqual } from '../types'
 
-const REST_URL = 'http://localhost:3000'
+const REST_URL = 'http://localhost:54321/rest/v1'
 
 // Check for PostgrestClient without types provided to the client
 {

@@ -1,4 +1,4 @@
-import { AuthError } from '../src/lib/errors'
+import { AuthError, AuthPKCECodeVerifierMissingError } from '../src/lib/errors'
 import { STORAGE_KEY } from '../src/lib/constants'
 import { memoryLocalStorageAdapter } from '../src/lib/local-storage'
 import GoTrueClient from '../src/GoTrueClient'
@@ -455,10 +455,58 @@ describe('GoTrueClient', () => {
     })
 
     test('exchangeCodeForSession() should fail with invalid authCode', async () => {
-      const { error } = await pkceClient.exchangeCodeForSession('mock_code')
+      // Mock fetch to return a 400 error for invalid auth code
+      const mockFetch = jest.fn().mockResolvedValue({
+        ok: false,
+        status: 400,
+        headers: new Headers(),
+        json: () =>
+          Promise.resolve({
+            error: 'invalid_grant',
+            error_description: 'Invalid auth code',
+          }),
+      })
+
+      const storage = memoryLocalStorageAdapter()
+      const client = new GoTrueClient({
+        url: GOTRUE_URL_SIGNUP_ENABLED_AUTO_CONFIRM_ON,
+        autoRefreshToken: false,
+        persistSession: true,
+        storage,
+        flowType: 'pkce',
+        fetch: mockFetch,
+      })
+
+      // Set up a code verifier so we can test the invalid auth code error
+      // @ts-expect-error 'Allow access to protected storageKey'
+      const storageKey = client.storageKey
+      await storage.setItem(`${storageKey}-code-verifier`, 'mock-verifier')
+
+      const { error } = await client.exchangeCodeForSession('mock_code')
 
       expect(error).not.toBeNull()
       expect(error?.status).toEqual(400)
+    })
+
+    test('exchangeCodeForSession() should throw helpful error when code verifier is missing', async () => {
+      const storage = memoryLocalStorageAdapter()
+      // Don't set a code verifier - this simulates the common issue where
+      // the auth flow was initiated in a different browser/device
+
+      const client = new GoTrueClient({
+        url: GOTRUE_URL_SIGNUP_ENABLED_AUTO_CONFIRM_ON,
+        autoRefreshToken: false,
+        persistSession: true,
+        storage,
+        flowType: 'pkce',
+      })
+
+      const { error } = await client.exchangeCodeForSession('some-auth-code')
+
+      expect(error).toBeInstanceOf(AuthPKCECodeVerifierMissingError)
+      expect(error?.message).toContain('PKCE code verifier not found in storage')
+      expect(error?.message).toContain('@supabase/ssr')
+      expect(error?.code).toEqual('pkce_code_verifier_not_found')
     })
   })
 
@@ -1680,11 +1728,19 @@ describe('getClaims', () => {
     }
 
     // Verify amr array structure if present
+    // AMR can be either string[] (RFC-8176 compliant) or AMREntry[] (detailed format)
     if (claims?.amr) {
       expect(Array.isArray(claims.amr)).toBe(true)
       if (claims.amr.length > 0) {
-        expect(typeof claims.amr[0].method).toBe('string')
-        expect(typeof claims.amr[0].timestamp).toBe('number')
+        const firstEntry = claims.amr[0]
+        if (typeof firstEntry === 'string') {
+          // RFC-8176 compliant format: array of strings
+          expect(typeof firstEntry).toBe('string')
+        } else {
+          // Detailed format: array of objects with method and timestamp
+          expect(typeof firstEntry.method).toBe('string')
+          expect(typeof firstEntry.timestamp).toBe('number')
+        }
       }
     }
 
@@ -3184,6 +3240,80 @@ describe('Lock functionality', () => {
     await expect(client._acquireLock(1000, mockFn)).rejects.toThrow('Lock acquisition timeout')
     expect(mockFn).not.toHaveBeenCalled()
   })
+
+  test('should use custom lockAcquireTimeout when provided', async () => {
+    const capturedTimeouts: number[] = []
+    const mockLock = jest
+      .fn()
+      .mockImplementation(async (name: string, timeout: number, fn: () => Promise<unknown>) => {
+        capturedTimeouts.push(timeout)
+        return fn()
+      })
+
+    const customTimeout = 20000 // 20 seconds (different from default 10s)
+
+    const client = new GoTrueClient({
+      url: GOTRUE_URL_SIGNUP_ENABLED_AUTO_CONFIRM_ON,
+      lock: mockLock,
+      autoRefreshToken: false,
+      persistSession: false,
+      lockAcquireTimeout: customTimeout,
+    })
+
+    await client.initialize()
+
+    // Verify that the custom timeout was passed to the lock function
+    expect(mockLock).toHaveBeenCalled()
+    expect(capturedTimeouts).toContain(customTimeout)
+  })
+
+  test('should use default lockAcquireTimeout (10000ms) when not provided', async () => {
+    const capturedTimeouts: number[] = []
+    const mockLock = jest
+      .fn()
+      .mockImplementation(async (name: string, timeout: number, fn: () => Promise<unknown>) => {
+        capturedTimeouts.push(timeout)
+        return fn()
+      })
+
+    const client = new GoTrueClient({
+      url: GOTRUE_URL_SIGNUP_ENABLED_AUTO_CONFIRM_ON,
+      lock: mockLock,
+      autoRefreshToken: false,
+      persistSession: false,
+      // lockAcquireTimeout not provided, should default to 10000
+    })
+
+    await client.initialize()
+
+    // Verify that the default timeout (10000ms = 10 seconds) was used
+    expect(mockLock).toHaveBeenCalled()
+    expect(capturedTimeouts).toContain(10000)
+  })
+
+  test('should pass negative timeout to lock for indefinite wait', async () => {
+    const capturedTimeouts: number[] = []
+    const mockLock = jest
+      .fn()
+      .mockImplementation(async (name: string, timeout: number, fn: () => Promise<unknown>) => {
+        capturedTimeouts.push(timeout)
+        return fn()
+      })
+
+    const client = new GoTrueClient({
+      url: GOTRUE_URL_SIGNUP_ENABLED_AUTO_CONFIRM_ON,
+      lock: mockLock,
+      autoRefreshToken: false,
+      persistSession: false,
+      lockAcquireTimeout: -1, // Indefinite wait (not recommended)
+    })
+
+    await client.initialize()
+
+    // Verify that negative timeout was passed through
+    expect(mockLock).toHaveBeenCalled()
+    expect(capturedTimeouts).toContain(-1)
+  })
 })
 
 describe('userNotAvailableProxy behavior', () => {
@@ -3337,7 +3467,9 @@ describe('GoTrueClient with throwOnError option', () => {
   })
 
   test('signInWithOtp() should throw on invalid params when throwOnError is true', async () => {
-    await expect(client.signInWithOtp({ email: 'invalid', options: { captchaToken: 'x' } })).rejects.toThrow()
+    await expect(
+      client.signInWithOtp({ email: 'invalid', options: { captchaToken: 'x' } })
+    ).rejects.toThrow()
   })
 
   test('signInWithSSO() should throw on error when throwOnError is true', async () => {

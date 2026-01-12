@@ -1,14 +1,12 @@
 import { PostgrestClient } from '../src/index'
-import { Database } from './types.override'
 import { Database as DatabasePostgrest14 } from './types.override-with-options-postgrest14'
 import { expectType, TypeEqual } from './types'
 import { InvalidMethodError } from '../src/PostgrestFilterBuilder'
 import { z } from 'zod'
 import { RequiredDeep } from 'type-fest'
 
-const REST_URL_14 = 'http://localhost:3001'
-const postgrest14 = new PostgrestClient<DatabasePostgrest14>(REST_URL_14)
-const postgrest12 = new PostgrestClient<Database>(REST_URL_14)
+const REST_URL = 'http://localhost:54321/rest/v1'
+const postgrest = new PostgrestClient<DatabasePostgrest14>(REST_URL)
 
 const MessageRowSchema = z.object({
   channel_id: z.number(),
@@ -19,31 +17,23 @@ const MessageRowSchema = z.object({
 })
 
 describe('maxAffected', () => {
-  test('types: maxAffected should show type warning on postgrest 12 clients', async () => {
-    const resUpdate = await postgrest12
-      .from('messages')
-      .update({ channel_id: 2 })
-      .eq('message', 'foo')
-      .maxAffected(1)
-    expectType<InvalidMethodError<'maxAffected method only available on postgrest 13+'>>(resUpdate)
-  })
   test('types: maxAffected should show type warning on non update / delete', async () => {
-    const resSelect = postgrest14.from('messages').select('*').maxAffected(10)
-    const resInsert = postgrest14
+    const resSelect = postgrest.from('messages').select('*').maxAffected(10)
+    const resInsert = postgrest
       .from('messages')
       .insert({ message: 'foo', username: 'supabot', channel_id: 1 })
       .maxAffected(10)
-    const resUpsert = postgrest14
+    const resUpsert = postgrest
       .from('messages')
       .upsert({ id: 3, message: 'foo', username: 'supabot', channel_id: 2 })
       .maxAffected(10)
-    const resUpdate = postgrest14
+    const resUpdate = postgrest
       .from('messages')
       .update({ channel_id: 2 })
       .eq('message', 'foo')
       .maxAffected(1)
       .select()
-    const resDelete = postgrest14
+    const resDelete = postgrest
       .from('messages')
       .delete()
       .eq('message', 'foo')
@@ -70,14 +60,14 @@ describe('maxAffected', () => {
 
   test('update should fail when maxAffected is exceeded', async () => {
     // First create multiple rows
-    await postgrest14.from('messages').insert([
+    await postgrest.from('messages').insert([
       { message: 'test1', username: 'supabot', channel_id: 1 },
       { message: 'test1', username: 'supabot', channel_id: 1 },
       { message: 'test1', username: 'supabot', channel_id: 1 },
     ])
 
     // Try to update all rows with maxAffected=2
-    const result = await postgrest14
+    const result = await postgrest
       .from('messages')
       .update({ message: 'updated' })
       .eq('message', 'test1')
@@ -88,17 +78,17 @@ describe('maxAffected', () => {
     expect(error?.code).toBe('PGRST124')
 
     // cleanup
-    await postgrest14.from('messages').delete().eq('message', 'test1')
+    await postgrest.from('messages').delete().eq('message', 'test1')
   })
 
   test('update should succeed when within maxAffected limit', async () => {
     // First create a single row
-    await postgrest14
+    await postgrest
       .from('messages')
       .insert([{ message: 'test2', username: 'supabot', channel_id: 1 }])
 
     // Try to update with maxAffected=2
-    const { data, error } = await postgrest14
+    const { data, error } = await postgrest
       .from('messages')
       .update({ message: 'updated' })
       .eq('message', 'test2')
@@ -116,19 +106,19 @@ describe('maxAffected', () => {
     expect(data?.[0].message).toBe('updated')
 
     // cleanup
-    await postgrest14.from('messages').delete().eq('message', 'updated')
+    await postgrest.from('messages').delete().eq('message', 'updated')
   })
 
   test('delete should fail when maxAffected is exceeded', async () => {
     // First create multiple rows
-    await postgrest14.from('messages').insert([
+    await postgrest.from('messages').insert([
       { message: 'test3', username: 'supabot', channel_id: 1 },
       { message: 'test3', username: 'supabot', channel_id: 1 },
       { message: 'test3', username: 'supabot', channel_id: 1 },
     ])
 
     // Try to delete all rows with maxAffected=2
-    const { error } = await postgrest14
+    const { error } = await postgrest
       .from('messages')
       .delete()
       .eq('message', 'test3')
@@ -138,17 +128,17 @@ describe('maxAffected', () => {
     expect(error?.code).toBe('PGRST124')
 
     // cleanup
-    await postgrest14.from('messages').delete().eq('message', 'test3')
+    await postgrest.from('messages').delete().eq('message', 'test3')
   })
 
   test('delete should succeed when within maxAffected limit', async () => {
     // First create a single row
-    await postgrest14
+    await postgrest
       .from('messages')
       .insert([{ message: 'test4', username: 'supabot', channel_id: 1 }])
 
     // Try to delete with maxAffected=2
-    const { data, error } = await postgrest14
+    const { data, error } = await postgrest
       .from('messages')
       .delete()
       .eq('message', 'test4')
@@ -162,9 +152,9 @@ describe('maxAffected', () => {
 
   test('should be able to use .maxAffected with setof records returning rpc', async () => {
     // First create a user that will be returned by the RPC
-    await postgrest14.from('users').insert([{ username: 'testuser', status: 'ONLINE' }])
+    await postgrest.from('users').insert([{ username: 'testuser', status: 'ONLINE' }])
     // Call the RPC function that returns a set of records
-    const { data, error } = await postgrest14
+    const { data, error } = await postgrest
       .rpc('set_users_offline', { name_param: 'testuser' })
       .maxAffected(1)
       .select()
@@ -182,19 +172,19 @@ describe('maxAffected', () => {
     ])
 
     // cleanup
-    await postgrest14.from('users').delete().eq('username', 'testuser')
+    await postgrest.from('users').delete().eq('username', 'testuser')
   })
 
   test('should fail when rpc returns more results than maxAffected', async () => {
     // First create multiple users that will be returned by the RPC
-    await postgrest14.from('users').insert([
+    await postgrest.from('users').insert([
       { username: 'testuser1', status: 'ONLINE' },
       { username: 'testuser2', status: 'ONLINE' },
       { username: 'testuser3', status: 'ONLINE' },
     ])
 
     // Call the RPC function that returns a set of records
-    const { data, error } = await postgrest14
+    const { data, error } = await postgrest
       .rpc('set_users_offline', { name_param: 'testuser%' })
       .maxAffected(1)
       .select()
@@ -204,6 +194,6 @@ describe('maxAffected', () => {
     expect(data).toBeNull()
 
     // cleanup
-    await postgrest14.from('users').delete().in('username', ['testuser1', 'testuser2', 'testuser3'])
+    await postgrest.from('users').delete().in('username', ['testuser1', 'testuser2', 'testuser3'])
   })
 })

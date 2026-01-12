@@ -3,23 +3,29 @@ import type { SupabaseClientOptions } from './lib/types'
 
 export * from '@supabase/auth-js'
 export type { User as AuthUser, Session as AuthSession } from '@supabase/auth-js'
-export {
-  type PostgrestResponse,
-  type PostgrestSingleResponse,
-  type PostgrestMaybeSingleResponse,
-  PostgrestError,
+export type {
+  PostgrestResponse,
+  PostgrestSingleResponse,
+  PostgrestMaybeSingleResponse,
 } from '@supabase/postgrest-js'
+export { PostgrestError } from '@supabase/postgrest-js'
+export type { FunctionInvokeOptions } from '@supabase/functions-js'
 export {
   FunctionsHttpError,
   FunctionsFetchError,
   FunctionsRelayError,
   FunctionsError,
-  type FunctionInvokeOptions,
   FunctionRegion,
 } from '@supabase/functions-js'
 export * from '@supabase/realtime-js'
 export { default as SupabaseClient } from './SupabaseClient'
-export type { SupabaseClientOptions, QueryResult, QueryData, QueryError } from './lib/types'
+export type {
+  SupabaseClientOptions,
+  QueryResult,
+  QueryData,
+  QueryError,
+  DatabaseWithoutInternals,
+} from './lib/types'
 
 /**
  * Creates a new Supabase Client.
@@ -66,12 +72,13 @@ function shouldShowDeprecationWarning(): boolean {
   }
 
   // Skip if process is not available (e.g., Edge Runtime)
-  if (typeof process === 'undefined') {
+  // Use dynamic property access to avoid Next.js Edge Runtime static analysis warnings
+  const _process = (globalThis as any)['process']
+  if (!_process) {
     return false
   }
 
-  // Use dynamic property access to avoid Next.js Edge Runtime static analysis warnings
-  const processVersion = (process as any)['version']
+  const processVersion = _process['version']
   if (processVersion === undefined || processVersion === null) {
     return false
   }
