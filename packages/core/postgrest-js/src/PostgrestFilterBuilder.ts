@@ -379,6 +379,34 @@ export default class PostgrestFilterBuilder<
     return this
   }
 
+  /**
+   * Match only rows where `column` is NOT included in the `values` array.
+   *
+   * @param column - The column to filter on
+   * @param values - The values array to filter with
+   */
+  notIn<ColumnName extends string>(
+    column: ColumnName,
+    values: ReadonlyArray<
+      ResolveFilterValue<Schema, Row, ColumnName> extends never
+        ? unknown
+        : ResolveFilterValue<Schema, Row, ColumnName> extends infer ResolvedFilterValue
+          ? ResolvedFilterValue
+          : never
+    >
+  ): this {
+    const cleanedValues = Array.from(new Set(values))
+      .map((s) => {
+        // handle postgrest reserved characters
+        // https://postgrest.org/en/v7.0.0/api.html#reserved-characters
+        if (typeof s === 'string' && PostgrestReservedCharsRegexp.test(s)) return `"${s}"`
+        else return `${s}`
+      })
+      .join(',')
+    this.url.searchParams.append(column, `not.in.(${cleanedValues})`)
+    return this
+  }
+
   contains<ColumnName extends string & keyof Row>(
     column: ColumnName,
     value: string | ReadonlyArray<Row[ColumnName]> | Record<string, unknown>

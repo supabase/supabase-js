@@ -50,6 +50,7 @@
       "{projectRoot}/webpack.config.[jt]s",
       "{projectRoot}/vite.config.[jt]s",
       "{projectRoot}/rollup.config.[jt]s",
+      "{projectRoot}/tsdown.config.[jt]s",
       "{projectRoot}/tsconfig*.json",
       "{projectRoot}/package.json",
       "sharedGlobals"
@@ -74,30 +75,6 @@
       "cache": true,
       "outputs": ["{projectRoot}/dist"]
     },
-    "build:main": {
-      "inputs": ["production", "^production", "buildConfig"],
-      "dependsOn": ["^build:main"],
-      "cache": true,
-      "outputs": ["{projectRoot}/dist/main", "{projectRoot}/dist/tsconfig.tsbuildinfo"]
-    },
-    "build:module": {
-      "inputs": ["production", "^production", "buildConfig"],
-      "dependsOn": ["^build:module"],
-      "cache": true,
-      "outputs": ["{projectRoot}/dist/module", "{projectRoot}/dist/tsconfig.module.tsbuildinfo"]
-    },
-    "build:umd": {
-      "inputs": ["production", "^production", "buildConfig"],
-      "dependsOn": ["^build:umd"],
-      "cache": true,
-      "outputs": ["{projectRoot}/dist/umd"]
-    },
-    "webpack:build": {
-      "inputs": ["production", "^production", "buildConfig"],
-      "dependsOn": ["^webpack:build"],
-      "cache": true,
-      "outputs": ["{projectRoot}/dist"]
-    },
     "test": {
       "inputs": ["testing", "^production"],
       "dependsOn": ["^build"],
@@ -106,7 +83,7 @@
     },
     "test:types": {
       "inputs": ["testing", "^production"],
-      "dependsOn": ["build:module"],
+      "dependsOn": ["build"],
       "cache": true,
       "outputs": []
     },
@@ -144,6 +121,23 @@
       "dependsOn": ["build"],
       "cache": true,
       "outputs": ["{projectRoot}/coverage"]
+    },
+    "test:storage": {
+      "cache": false
+    },
+    "test:suite": {
+      "inputs": ["testing", "^production"],
+      "cache": false,
+      "outputs": ["{projectRoot}/coverage"]
+    },
+    "test:infra": {
+      "cache": false
+    },
+    "test:clean-pre": {
+      "cache": false
+    },
+    "test:clean-post": {
+      "cache": false
     },
     "vite:test": {
       "inputs": ["testing", "^production"],

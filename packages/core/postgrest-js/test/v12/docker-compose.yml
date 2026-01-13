@@ -1,0 +1,27 @@
+# PostgREST v12 backward compatibility tests
+# TODO (@mandarini): Remove this file when v3 ships (early 2025)
+services:
+  rest12:
+    image: postgrest/postgrest:v12.2.0
+    ports:
+      - '3012:3000'
+    environment:
+      PGRST_DB_URI: postgres://postgres:postgres@db:5432/postgres
+      PGRST_DB_SCHEMAS: public,personal
+      PGRST_DB_EXTRA_SEARCH_PATH: extensions
+      PGRST_DB_ANON_ROLE: postgres
+      PGRST_DB_PLAN_ENABLED: 1
+      PGRST_DB_TX_END: commit-allow-override
+      PGRST_DB_AGGREGATES_ENABLED: true
+    depends_on:
+      - db
+  db:
+    image: supabase/postgres:15.1.0.37
+    ports:
+      - '5433:5432'
+    volumes:
+      - .:/docker-entrypoint-initdb.d/
+    environment:
+      POSTGRES_DB: postgres
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres

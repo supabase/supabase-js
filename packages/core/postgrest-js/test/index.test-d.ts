@@ -5,7 +5,7 @@ import { Json } from '../src/select-query-parser/types'
 import { Database } from './types.override'
 import { Database as DatabaseWithOptions } from './types.override-with-options-postgrest14'
 
-const REST_URL = 'http://localhost:3000'
+const REST_URL = 'http://localhost:54321/rest/v1'
 const postgrest = new PostgrestClient<Database>(REST_URL)
 const postgrestWithOptions = new PostgrestClient<DatabaseWithOptions>(REST_URL)
 

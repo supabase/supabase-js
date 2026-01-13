@@ -58,7 +58,7 @@ export type RealtimeClientOptions = {
   transport?: WebSocketLikeConstructor
   timeout?: number
   heartbeatIntervalMs?: number
-  heartbeatCallback?: (status: HeartbeatStatus) => void
+  heartbeatCallback?: (status: HeartbeatStatus, latency?: number) => void
   vsn?: string
   logger?: Function
   encode?: Function
@@ -174,6 +174,7 @@ export default class RealtimeClient {
   private _authPromise: Promise<void> | null = null
   private _workerHeartbeatTimer: HeartbeatTimer = undefined
   private _pendingWorkerHeartbeatRef: string | null = null
+
   /**
    * Initializes the Socket.
    *
@@ -184,7 +185,7 @@ export default class RealtimeClient {
    * @param options.params The optional params to pass when connecting.
    * @param options.headers Deprecated: headers cannot be set on websocket connections and this option will be removed in the future.
    * @param options.heartbeatIntervalMs The millisec interval to send a heartbeat message.
-   * @param options.heartbeatCallback The optional function to handle heartbeat status.
+   * @param options.heartbeatCallback The optional function to handle heartbeat status and latency.
    * @param options.logger The optional function for specialized logging, ie: logger: (kind, msg, data) => { console.log(`${kind}: ${msg}`, data) }
    * @param options.logLevel Sets the log level for Realtime
    * @param options.encode The function to encode outgoing messages. Defaults to JSON: (payload, callback) => callback(JSON.stringify(payload))
@@ -258,6 +259,8 @@ export default class RealtimeClient {
       }
       throw new Error(`WebSocket not available: ${errorMessage}`)
     }
+
+    this._handleNodeJsRaceCondition()
   }
 
   /**
@@ -278,7 +281,13 @@ export default class RealtimeClient {
     if (this.isDisconnecting()) {
       return 'ok'
     }
-    return await this.socketAdapter.disconnect(code, reason)
+    return await this.socketAdapter.disconnect(
+      () => {
+        this._terminateWorker()
+      },
+      code,
+      reason
+    )
   }
 
   /**
@@ -428,7 +437,7 @@ export default class RealtimeClient {
    * Sets a callback that receives lifecycle events for internal heartbeat messages.
    * Useful for instrumenting connection health (e.g. sent/ok/timeout/disconnected).
    */
-  onHeartbeat(callback: HeartbeatCallback): void {
+  onHeartbeat(callback: HeartbeatCallback) {
     this.socketAdapter.heartbeatCallback = this._wrapHeartbeatCallback(callback)
   }
 
@@ -574,7 +583,7 @@ export default class RealtimeClient {
     })
     this.socketAdapter.onClose(() => {
       if (this.worker && this.workerRef) {
-        this._stopWorkerHeartbeat()
+        this._terminateWorker()
       }
     })
     this.socketAdapter.onMessage((message: Message<any>) => {
@@ -582,6 +591,12 @@ export default class RealtimeClient {
         this._pendingWorkerHeartbeatRef = null
       }
     })
+  }
+
+  private _handleNodeJsRaceCondition() {
+    if (this.socketAdapter.isConnected()) {
+      this.socketAdapter.getSocket().onConnOpen()
+    }
   }
 
   private _wrapHeartbeatCallback(heartbeatCallback?: HeartbeatCallback) {
@@ -602,7 +617,7 @@ export default class RealtimeClient {
     this.workerRef = new Worker(objectUrl)
     this.workerRef.onerror = (error) => {
       this.log('worker', 'worker error', (error as ErrorEvent).message)
-      this.workerRef!.terminate()
+      this._terminateWorker()
     }
     this.workerRef.onmessage = (event) => {
       if (event.data.event === 'keepAlive') {
@@ -615,9 +630,13 @@ export default class RealtimeClient {
     })
   }
 
-  /** @internal */
-  private _stopWorkerHeartbeat() {
+  /**
+   * Terminate the Web Worker and clear the reference
+   * @internal
+   */
+  private _terminateWorker(): void {
     if (this.workerRef) {
+      this.log('worker', 'terminating worker')
       this.workerRef.terminate()
       this.workerRef = undefined
     }

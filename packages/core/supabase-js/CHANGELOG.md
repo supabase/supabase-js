@@ -1,3 +1,61 @@
+## 2.90.1 (2026-01-08)
+
+This was a version bump only for @supabase/supabase-js to align it with other projects, there were no code changes.
+
+## 2.90.0 (2026-01-07)
+
+### 🩹 Fixes
+
+- **supabase:** avoid edge runtime warnings in next.js ([#1998](https://github.com/supabase/supabase-js/pull/1998))
+- **supabase:** inline string literal in databasewithoutinternals type ([#1986](https://github.com/supabase/supabase-js/pull/1986))
+- **supabase:** split type-only exports to avoid unused import warnings ([#1979](https://github.com/supabase/supabase-js/pull/1979))
+
+### ❤️ Thank You
+
+- Nico Kempe @nicokempe
+- Vaibhav @7ttp
+
+## 2.89.0 (2025-12-18)
+
+### 🚀 Features
+
+- **supabase:** export DatabaseWithoutInternals utility type ([#1935](https://github.com/supabase/supabase-js/pull/1935))
+
+### ❤️ Thank You
+
+- Vaibhav @7ttp
+
+## 2.88.0 (2025-12-16)
+
+### 🚀 Features
+
+- **repo:** migrate build system to tsdown for proper ESM/CJS support ([#1961](https://github.com/supabase/supabase-js/pull/1961))
+- **auth:** allow custom predicate for detectSessionInUrl option ([#1958](https://github.com/supabase/supabase-js/pull/1958))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+
+## 2.87.3 (2025-12-15)
+
+### 🩹 Fixes
+
+- **supabase:** resolve jsDelivr CDN ESM import failure with .js extensions ([#1953](https://github.com/supabase/supabase-js/pull/1953))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+
+## 2.87.2 (2025-12-15)
+
+### 🩹 Fixes
+
+- **supabase:** resolve jsDelivr CDN ESM import failure ([#1950](https://github.com/supabase/supabase-js/pull/1950))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+
 ## 2.87.1 (2025-12-09)
 
 This was a version bump only for @supabase/supabase-js to align it with other projects, there were no code changes.

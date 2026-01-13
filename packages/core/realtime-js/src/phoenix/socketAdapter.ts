@@ -82,11 +82,17 @@ export default class SocketAdapter {
     this.socket.connect()
   }
 
-  disconnect(code?: number, reason?: string, timeout: number = 10000): Promise<'ok' | 'timeout'> {
+  disconnect(
+    callback: () => void,
+    code?: number,
+    reason?: string,
+    timeout: number = 10000
+  ): Promise<'ok' | 'timeout'> {
     return new Promise((resolve) => {
       setTimeout(() => resolve('timeout'), timeout)
       this.socket.disconnect(
         () => {
+          callback()
           resolve('ok')
         },
         code,

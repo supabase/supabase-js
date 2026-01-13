@@ -1,3 +1,95 @@
+## 2.90.1 (2026-01-08)
+
+### 🩹 Fixes
+
+- **postgrest:** prevent shared state between query builder operations ([#1978](https://github.com/supabase/supabase-js/pull/1978))
+- **realtime:** validate table filter in postgres_changes event dispatch ([#1999](https://github.com/supabase/supabase-js/pull/1999))
+
+### ❤️ Thank You
+
+- Vaibhav @7ttp
+
+## 2.90.0 (2026-01-07)
+
+### 🚀 Features
+
+- **realtime:** expose heartbeat latency on heartbeat callback ([#1982](https://github.com/supabase/supabase-js/pull/1982))
+
+### 🩹 Fixes
+
+- **auth:** add banned_until property to user type ([#1989](https://github.com/supabase/supabase-js/pull/1989))
+- **auth:** add last_challenged_at property to factor type ([#1990](https://github.com/supabase/supabase-js/pull/1990))
+- **auth:** clear initial setTimeout in stopAutoRefresh ([#1993](https://github.com/supabase/supabase-js/pull/1993))
+- **auth:** preserve session when magic link is clicked twice ([#1996](https://github.com/supabase/supabase-js/pull/1996))
+- **auth:** add configurable lock acquisition timeout to prevent deadlocks ([#1962](https://github.com/supabase/supabase-js/pull/1962))
+- **functions:** auto-stringify object body when custom Content-Type header is provided ([#1988](https://github.com/supabase/supabase-js/pull/1988))
+- **postgrest:** use post with return minimal for rpc head requests with object args ([#1994](https://github.com/supabase/supabase-js/pull/1994))
+- **supabase:** split type-only exports to avoid unused import warnings ([#1979](https://github.com/supabase/supabase-js/pull/1979))
+- **supabase:** inline string literal in databasewithoutinternals type ([#1986](https://github.com/supabase/supabase-js/pull/1986))
+- **supabase:** avoid edge runtime warnings in next.js ([#1998](https://github.com/supabase/supabase-js/pull/1998))
+
+### ❤️ Thank You
+
+- Eduardo Gurgel
+- Nico Kempe @nicokempe
+- Vaibhav @7ttp
+- yoshifumi kondo @yoshifumi-kondo
+
+## 2.89.0 (2025-12-18)
+
+### 🚀 Features
+
+- **auth:** add X (OAuth 2.0) provider ([#1960](https://github.com/supabase/supabase-js/pull/1960))
+- **auth:** add string array support for AMR claims ([#1967](https://github.com/supabase/supabase-js/pull/1967))
+- **supabase:** export DatabaseWithoutInternals utility type ([#1935](https://github.com/supabase/supabase-js/pull/1935))
+
+### ❤️ Thank You
+
+- Cemal Kılıç @cemalkilic
+- issuedat @issuedat
+- Vaibhav @7ttp
+
+## 2.88.0 (2025-12-16)
+
+### 🚀 Features
+
+- **auth:** allow custom predicate for detectSessionInUrl option ([#1958](https://github.com/supabase/supabase-js/pull/1958))
+- **postgrest:** add notin filter ([#1957](https://github.com/supabase/supabase-js/pull/1957))
+- **repo:** migrate build system to tsdown for proper ESM/CJS support ([#1961](https://github.com/supabase/supabase-js/pull/1961))
+
+### 🩹 Fixes
+
+- **realtime:** handle websocket race condition in node.js ([#1946](https://github.com/supabase/supabase-js/pull/1946))
+- **realtime:** omit authorization header when no access token exists ([#1937](https://github.com/supabase/supabase-js/pull/1937))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+- Vaibhav @7ttp
+
+## 2.87.3 (2025-12-15)
+
+### 🩹 Fixes
+
+- **supabase:** resolve jsDelivr CDN ESM import failure with .js extensions ([#1953](https://github.com/supabase/supabase-js/pull/1953))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+
+## 2.87.2 (2025-12-15)
+
+### 🩹 Fixes
+
+- **auth:** add helpful error when PKCE code verifier is missing ([#1931](https://github.com/supabase/supabase-js/pull/1931))
+- **realtime:** terminate web worker on disconnect to prevent memory leak ([#1907](https://github.com/supabase/supabase-js/pull/1907))
+- **supabase:** resolve jsDelivr CDN ESM import failure ([#1950](https://github.com/supabase/supabase-js/pull/1950))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+- Tanmay Sharma @tanmaysharma2001
+
 ## 2.87.1 (2025-12-09)
 
 ### 🩹 Fixes

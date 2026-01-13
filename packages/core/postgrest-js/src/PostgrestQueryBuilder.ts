@@ -53,6 +53,16 @@ export default class PostgrestQueryBuilder<
   }
 
   /**
+   * Clone URL and headers to prevent shared state between operations.
+   */
+  private cloneRequestState(): { url: URL; headers: Headers } {
+    return {
+      url: new URL(this.url.toString()),
+      headers: new Headers(this.headers),
+    }
+  }
+
+  /**
    * Perform a SELECT query on the table or view.
    *
    * @param columns - The columns to retrieve, separated by commas. Columns can be renamed when returned with `customName:columnName`
@@ -115,16 +125,18 @@ export default class PostgrestQueryBuilder<
         return c
       })
       .join('')
-    this.url.searchParams.set('select', cleanedColumns)
+
+    const { url, headers } = this.cloneRequestState()
+    url.searchParams.set('select', cleanedColumns)
 
     if (count) {
-      this.headers.append('Prefer', `count=${count}`)
+      headers.append('Prefer', `count=${count}`)
     }
 
     return new PostgrestFilterBuilder({
       method,
-      url: this.url,
-      headers: this.headers,
+      url,
+      headers,
       schema: this.schema,
       fetch: this.fetch,
     })
@@ -205,26 +217,27 @@ export default class PostgrestQueryBuilder<
     'POST'
   > {
     const method = 'POST'
+    const { url, headers } = this.cloneRequestState()
 
     if (count) {
-      this.headers.append('Prefer', `count=${count}`)
+      headers.append('Prefer', `count=${count}`)
     }
     if (!defaultToNull) {
-      this.headers.append('Prefer', `missing=default`)
+      headers.append('Prefer', `missing=default`)
     }
 
     if (Array.isArray(values)) {
       const columns = values.reduce((acc, x) => acc.concat(Object.keys(x)), [] as string[])
       if (columns.length > 0) {
         const uniqueColumns = [...new Set(columns)].map((column) => `"${column}"`)
-        this.url.searchParams.set('columns', uniqueColumns.join(','))
+        url.searchParams.set('columns', uniqueColumns.join(','))
       }
     }
 
     return new PostgrestFilterBuilder({
       method,
-      url: this.url,
-      headers: this.headers,
+      url,
+      headers,
       schema: this.schema,
       body: values,
       fetch: this.fetch ?? fetch,
@@ -265,7 +278,7 @@ export default class PostgrestQueryBuilder<
     Relationships,
     'POST'
   >
-    /**
+  /**
    * Perform an UPSERT on the table or view. Depending on the column(s) passed
    * to `onConflict`, `.upsert()` allows you to perform the equivalent of
    * `.insert()` if a row with the corresponding `onConflict` columns doesn't
@@ -351,7 +364,6 @@ export default class PostgrestQueryBuilder<
    * ```
    */
 
-
   upsert<Row extends Relation extends { Insert: unknown } ? Relation['Insert'] : never>(
     values: Row | Row[],
     {
@@ -375,29 +387,30 @@ export default class PostgrestQueryBuilder<
     'POST'
   > {
     const method = 'POST'
+    const { url, headers } = this.cloneRequestState()
 
-    this.headers.append('Prefer', `resolution=${ignoreDuplicates ? 'ignore' : 'merge'}-duplicates`)
+    headers.append('Prefer', `resolution=${ignoreDuplicates ? 'ignore' : 'merge'}-duplicates`)
 
-    if (onConflict !== undefined) this.url.searchParams.set('on_conflict', onConflict)
+    if (onConflict !== undefined) url.searchParams.set('on_conflict', onConflict)
     if (count) {
-      this.headers.append('Prefer', `count=${count}`)
+      headers.append('Prefer', `count=${count}`)
     }
     if (!defaultToNull) {
-      this.headers.append('Prefer', 'missing=default')
+      headers.append('Prefer', 'missing=default')
     }
 
     if (Array.isArray(values)) {
       const columns = values.reduce((acc, x) => acc.concat(Object.keys(x)), [] as string[])
       if (columns.length > 0) {
         const uniqueColumns = [...new Set(columns)].map((column) => `"${column}"`)
-        this.url.searchParams.set('columns', uniqueColumns.join(','))
+        url.searchParams.set('columns', uniqueColumns.join(','))
       }
     }
 
     return new PostgrestFilterBuilder({
       method,
-      url: this.url,
-      headers: this.headers,
+      url,
+      headers,
       schema: this.schema,
       body: values,
       fetch: this.fetch ?? fetch,
@@ -442,14 +455,16 @@ export default class PostgrestQueryBuilder<
     'PATCH'
   > {
     const method = 'PATCH'
+    const { url, headers } = this.cloneRequestState()
+
     if (count) {
-      this.headers.append('Prefer', `count=${count}`)
+      headers.append('Prefer', `count=${count}`)
     }
 
     return new PostgrestFilterBuilder({
       method,
-      url: this.url,
-      headers: this.headers,
+      url,
+      headers,
       schema: this.schema,
       body: values,
       fetch: this.fetch ?? fetch,
@@ -489,14 +504,16 @@ export default class PostgrestQueryBuilder<
     'DELETE'
   > {
     const method = 'DELETE'
+    const { url, headers } = this.cloneRequestState()
+
     if (count) {
-      this.headers.append('Prefer', `count=${count}`)
+      headers.append('Prefer', `count=${count}`)
     }
 
     return new PostgrestFilterBuilder({
       method,
-      url: this.url,
-      headers: this.headers,
+      url,
+      headers,
       schema: this.schema,
       fetch: this.fetch ?? fetch,
     })

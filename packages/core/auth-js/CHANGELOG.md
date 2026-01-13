@@ -1,3 +1,58 @@
+## 2.90.1 (2026-01-08)
+
+This was a version bump only for @supabase/auth-js to align it with other projects, there were no code changes.
+
+## 2.90.0 (2026-01-07)
+
+### 🩹 Fixes
+
+- **auth:** add configurable lock acquisition timeout to prevent deadlocks ([#1962](https://github.com/supabase/supabase-js/pull/1962))
+- **auth:** preserve session when magic link is clicked twice ([#1996](https://github.com/supabase/supabase-js/pull/1996))
+- **auth:** clear initial setTimeout in stopAutoRefresh ([#1993](https://github.com/supabase/supabase-js/pull/1993))
+- **auth:** add last_challenged_at property to factor type ([#1990](https://github.com/supabase/supabase-js/pull/1990))
+- **auth:** add banned_until property to user type ([#1989](https://github.com/supabase/supabase-js/pull/1989))
+
+### ❤️ Thank You
+
+- Vaibhav @7ttp
+- yoshifumi kondo @yoshifumi-kondo
+
+## 2.89.0 (2025-12-18)
+
+### 🚀 Features
+
+- **auth:** add string array support for AMR claims ([#1967](https://github.com/supabase/supabase-js/pull/1967))
+- **auth:** add X (OAuth 2.0) provider ([#1960](https://github.com/supabase/supabase-js/pull/1960))
+
+### ❤️ Thank You
+
+- Cemal Kılıç @cemalkilic
+- issuedat @issuedat
+
+## 2.88.0 (2025-12-16)
+
+### 🚀 Features
+
+- **auth:** allow custom predicate for detectSessionInUrl option ([#1958](https://github.com/supabase/supabase-js/pull/1958))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+
+## 2.87.3 (2025-12-15)
+
+This was a version bump only for @supabase/auth-js to align it with other projects, there were no code changes.
+
+## 2.87.2 (2025-12-15)
+
+### 🩹 Fixes
+
+- **auth:** add helpful error when PKCE code verifier is missing ([#1931](https://github.com/supabase/supabase-js/pull/1931))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+
 ## 2.87.1 (2025-12-09)
 
 ### 🩹 Fixes

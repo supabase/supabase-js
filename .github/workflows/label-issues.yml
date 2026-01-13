@@ -86,10 +86,21 @@ jobs:
             labels = [...new Set(labels)];
 
             if (labels.length > 0) {
-              await github.rest.issues.addLabels({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: itemNumber,
-                labels,
-              });
+              try {
+                await github.rest.issues.addLabels({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: itemNumber,
+                  labels,
+                });
+                console.log(`Successfully added labels: ${labels.join(', ')}`);
+              } catch (error) {
+                // PRs from forks don't have write permissions, which is expected
+                if (error.status === 403) {
+                  console.log(`Unable to add labels for PR from fork: ${labels.join(', ')}`);
+                  console.log('(Labels will need to be added manually by maintainers)');
+                } else {
+                  throw error;
+                }
+              }
             }

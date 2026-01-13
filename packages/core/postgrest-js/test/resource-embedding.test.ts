@@ -4,7 +4,7 @@ import { expectType, TypeEqual } from './types'
 import { z } from 'zod'
 import { RequiredDeep } from 'type-fest'
 
-const postgrest = new PostgrestClient<Database>('http://localhost:3000')
+const postgrest = new PostgrestClient<Database>('http://localhost:54321/rest/v1')
 
 test('embedded select', async () => {
   // By default postgrest will omit computed field from "star" selector
@@ -33,7 +33,7 @@ test('embedded select', async () => {
               "channel_id": 3,
               "data": null,
               "id": 4,
-              "message": "Some message on channel wihtout details",
+              "message": "Some message on channel without details",
               "username": "supabot",
             },
           ],
@@ -107,7 +107,7 @@ test('embedded select with computed field explicit selection', async () => {
               "channel_id": 3,
               "data": null,
               "id": 4,
-              "message": "Some message on channel wihtout details",
+              "message": "Some message on channel without details",
               "username": "supabot",
             },
           ],
@@ -362,7 +362,7 @@ describe('embedded transforms', () => {
                 "channel_id": 3,
                 "data": null,
                 "id": 4,
-                "message": "Some message on channel wihtout details",
+                "message": "Some message on channel without details",
                 "username": "supabot",
               },
               {
@@ -436,7 +436,7 @@ describe('embedded transforms', () => {
                 "channel_id": 3,
                 "data": null,
                 "id": 4,
-                "message": "Some message on channel wihtout details",
+                "message": "Some message on channel without details",
                 "username": "supabot",
               },
               {

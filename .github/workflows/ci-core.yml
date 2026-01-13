@@ -1,22 +1,7 @@
 name: Core packages tests
+# Reusable workflow - called by ci.yml (PRs) and publish.yml (master)
 
 on:
-  pull_request:
-    paths:
-      - 'packages/core/auth-js/**'
-      - 'packages/core/functions-js/**'
-      - 'packages/core/postgrest-js/**'
-      - 'packages/core/realtime-js/**'
-      - 'packages/core/storage-js/**'
-      - 'package.json'
-      - 'package-lock.json'
-      - 'nx.json'
-      - 'tsconfig.base.json'
-      - '.github/workflows/ci-core.yml'
-      - '!packages/**/*.md'
-      - '!packages/**/docs/**'
-      - '!packages/**/.prettierrc'
-      - '!packages/**/*ignore'
   workflow_call:
 
 permissions:
@@ -88,6 +73,12 @@ jobs:
           flag-name: auth-js
           fail-on-error: false
         continue-on-error: true
+
+      - name: Setup Supabase CLI (for storage-js tests)
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
       - name: Run storage-js tests (if affected)
         run: npx nx affected --target=test:storage
 
@@ -116,6 +107,11 @@ jobs:
       - name: Install dependencies
         run: npm ci
       - uses: nrwl/nx-set-shas@v4
+
+      - name: Setup Supabase CLI (for postgrest-js tests)
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
 
       - name: Run postgrest-js integration tests (if affected)
         run: npx nx affected --target=test:ci:postgrest
@@ -151,6 +147,11 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Setup Supabase CLI (for checking generated types)
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
       - name: Check if database schema changed
         id: check_changes
         run: |
@@ -170,24 +171,39 @@ jobs:
         if: steps.check_changes.outputs.changed != 'true'
         run: echo "⏭️  Skipping - no database schema changes detected"
 
+  # PostgREST v12 backward compatibility tests
+  # TODO (@mandarini): Remove this job when v3 ships (early 2025)
+  test-postgrest-js-v12:
+    name: Test postgrest-js v12 compat
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          filter: tree:0
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+      - name: Install dependencies
+        run: npm ci
+      - uses: nrwl/nx-set-shas@v4
+
+      - name: Run v12 compat tests (if affected)
+        run: npx nx affected --target=test:ci:v12
+        timeout-minutes: 5
+
   # SUMMARY JOB
   all-core-tests-pass:
     name: All Core Package Tests Pass
     runs-on: ubuntu-latest
-    needs: [setup-build-test-node-20, test-postgrest-js, check-postgrest-generated-types]
+    needs:
+      [
+        setup-build-test-node-20,
+        test-postgrest-js,
+        check-postgrest-generated-types,
+        test-postgrest-js-v12,
+      ]
     steps:
       - name: Summary
         run: echo "✅ All core package tests passed successfully!"
-
-  coveralls-finish:
-    name: Coveralls Finished
-    runs-on: ubuntu-latest
-    needs: [setup-build-test-node-20, test-postgrest-js]
-    steps:
-      - name: Coveralls Finished
-        uses: coverallsapp/github-action@v2
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          parallel-finished: true
-          fail-on-error: false
-        continue-on-error: true

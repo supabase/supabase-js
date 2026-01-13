@@ -93,7 +93,7 @@ beforeAll(async () => {
   await new Deno.Command('supabase', { args: ['start'], stderr }).output()
   await new Deno.Command('npm', { args: ['install'], stderr }).output()
   await new Deno.Command('npm', {
-    args: ['run', 'build:umd', '--', '--mode', 'production'],
+    args: ['run', 'build'],
     stderr,
   }).output()
 

@@ -191,7 +191,6 @@ describe('onConnMessage', () => {
   test('parses raw message and triggers channel event', () => {
     const message =
       '{"topic":"realtime:topic","event":"INSERT","payload":{"type":"INSERT"},"ref":"ref"}'
-    const data = { data: message }
 
     const targetChannel = testSetup.socket.channel('topic')
     const otherChannel = testSetup.socket.channel('off-topic')
@@ -218,14 +217,42 @@ describe('onConnMessage', () => {
     socket.connect()
 
     const message =
-      '{"ref":"1","event":"phx_reply","payload":{"status":"ok","response":{}},"topic":"phoenix"}'
-    const data = { data: message }
+      '{"ref":"3","event":"phx_reply","payload":{"status":"ok","response":{}},"topic":"phoenix"}'
 
     socket.pendingHeartbeatRef = '3'
     const messageEvent = new MessageEvent('message', { data: message })
     socket.conn?.onmessage?.(messageEvent)
 
     assert.strictEqual(called, true)
+    assert.strictEqual(socket.pendingHeartbeatRef, null)
+  })
+
+  test("on heartbeat events from the 'phoenix' topic, callback is called with latency", async () => {
+    let called = false
+    let calledLatency: number | undefined = undefined
+    let socket = new RealtimeClient(testSetup.url, {
+      params: { apikey: '123456789' },
+    })
+    socket.onHeartbeat((message: HeartbeatStatus, latency?: number) => {
+      called = message == 'ok'
+      calledLatency = latency
+    })
+
+    socket.connect()
+
+    const message =
+      '{"ref":"3","event":"phx_reply","payload":{"status":"ok","response":{}},"topic":"phoenix"}'
+
+    socket.pendingHeartbeatRef = '3'
+    // One minute ago
+    socket['_heartbeatSentAt'] = Date.now() - 60000
+    const messageEvent = new MessageEvent('message', { data: message })
+    socket.conn?.onmessage?.(messageEvent)
+
+    assert.strictEqual(called, true)
+    assert.strictEqual(socket.pendingHeartbeatRef, null)
+    expect(calledLatency).toBeGreaterThanOrEqual(60000)
+    expect(calledLatency).toBeLessThan(61000)
   })
 
   test("on heartbeat events from the 'phoenix' topic, callback is called with error", async () => {
@@ -238,14 +265,14 @@ describe('onConnMessage', () => {
     socket.connect()
 
     const message =
-      '{"ref":"1","event":"phx_reply","payload":{"status":"error","response":{}},"topic":"phoenix"}'
-    const data = { data: message }
+      '{"ref":"3","event":"phx_reply","payload":{"status":"error","response":{}},"topic":"phoenix"}'
 
     socket.pendingHeartbeatRef = '3'
     const messageEvent = new MessageEvent('message', { data: message })
     socket.conn?.onmessage?.(messageEvent)
 
     assert.strictEqual(called, true)
+    assert.strictEqual(socket.pendingHeartbeatRef, null)
   })
 })
 

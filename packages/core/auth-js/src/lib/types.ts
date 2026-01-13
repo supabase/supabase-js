@@ -34,7 +34,10 @@ export type Provider =
   | 'slack_oidc'
   | 'spotify'
   | 'twitch'
+  /** Uses OAuth 1.0a */
   | 'twitter'
+  /** Uses OAuth 2.0 */
+  | 'x'
   | 'workos'
   | 'zoom'
   | 'fly'
@@ -74,8 +77,27 @@ export type GoTrueClientOptions = {
   headers?: { [key: string]: string }
   /* Optional key name used for storing tokens in local storage. */
   storageKey?: string
-  /* Set to "true" if you want to automatically detects OAuth grants in the URL and signs in the user. */
-  detectSessionInUrl?: boolean
+  /**
+   * Set to "true" if you want to automatically detect OAuth grants in the URL and sign in the user.
+   * Set to "false" to disable automatic detection.
+   * Set to a function to provide custom logic for determining if a URL contains a Supabase auth callback.
+   * The function receives the current URL and parsed parameters, and should return true if the URL
+   * should be processed as a Supabase auth callback, or false to ignore it.
+   *
+   * This is useful when your app uses other OAuth providers (e.g., Facebook Login) that also return
+   * access_token in the URL fragment, which would otherwise be incorrectly intercepted by Supabase Auth.
+   *
+   * @example
+   * ```ts
+   * detectSessionInUrl: (url, params) => {
+   *   // Ignore Facebook OAuth redirects
+   *   if (url.pathname === '/facebook/redirect') return false
+   *   // Use default detection for other URLs
+   *   return Boolean(params.access_token || params.error_description)
+   * }
+   * ```
+   */
+  detectSessionInUrl?: boolean | ((url: URL, params: { [parameter: string]: string }) => boolean)
   /* Set to "true" if you want to automatically refresh the token before expiring. */
   autoRefreshToken?: boolean
   /* Set to "true" if you want to automatically save the user session into local storage. If set to false, session will just be saved in memory. */
@@ -112,6 +134,42 @@ export type GoTrueClientOptions = {
    * throwing the error instead of returning it as part of a successful response.
    */
   throwOnError?: boolean
+  /**
+   * The maximum time in milliseconds to wait for acquiring a cross-tab synchronization lock.
+   *
+   * When multiple browser tabs or windows use the auth client simultaneously, they coordinate
+   * via the Web Locks API to prevent race conditions during session refresh and other operations.
+   * This timeout controls how long to wait for the lock before failing.
+   *
+   * If the lock cannot be acquired within this time, a `LockAcquireTimeoutError` is thrown.
+   * You can catch this by checking `error.isAcquireTimeout === true`.
+   *
+   * - **Positive value**: Wait up to this many milliseconds before timing out
+   * - **Zero (0)**: Fail immediately if the lock is unavailable
+   * - **Negative value**: Wait indefinitely (not recommended - can cause deadlocks)
+   *
+   * @default 10000
+   *
+   * @example
+   * ```ts
+   * const client = createClient(url, key, {
+   *   auth: {
+   *     lockAcquireTimeout: 10000, // 10 seconds
+   *   },
+   * })
+   *
+   * try {
+   *   await client.auth.getSession()
+   * } catch (error) {
+   *   if (error.isAcquireTimeout) {
+   *     // Lock held by another tab/instance, or a previous operation is stuck.
+   *     // Consider: closing other tabs, increasing timeout, or restarting the browser.
+   *     console.error('Could not acquire lock within timeout period.')
+   *   }
+   * }
+   * ```
+   */
+  lockAcquireTimeout?: number
 }
 
 const WeakPasswordReasons = ['length', 'characters', 'pwned'] as const
@@ -269,15 +327,20 @@ const AMRMethods = [
   'sso/saml',
   'magiclink',
   'web3',
+  'oauth_provider/authorization_code',
 ] as const
 
 export type AMRMethod = (typeof AMRMethods)[number] | (string & {})
 
 /**
- * An authentication methord reference (AMR) entry.
+ * An authentication method reference (AMR) entry.
  *
  * An entry designates what method was used by the user to verify their
  * identity and at what time.
+ *
+ * Note: Custom access token hooks can return AMR claims as either:
+ * - An array of AMREntry objects (detailed format with timestamps)
+ * - An array of strings (RFC-8176 compliant format)
  *
  * @see {@link GoTrueMFAApi#getAuthenticatorAssuranceLevel}.
  */
@@ -348,6 +411,7 @@ export type Factor<
 
   created_at: string
   updated_at: string
+  last_challenged_at?: string
 }
 
 export interface UserAppMetadata {
@@ -392,6 +456,7 @@ export interface User {
   is_sso_user?: boolean
   factors?: (Factor<FactorType, 'verified'> | Factor<FactorType, 'unverified'>)[]
   deleted_at?: string
+  banned_until?: string
 }
 
 export interface UserAttributes {
@@ -1159,8 +1224,12 @@ export type AuthMFAGetAuthenticatorAssuranceLevelResponse = RequestResult<{
    * A list of all authentication methods attached to this session. Use
    * the information here to detect the last time a user verified a
    * factor, for example if implementing a step-up scenario.
+   *
+   * Supports both RFC-8176 compliant format (string[]) and detailed format (AMREntry[]).
+   * - String format: ['password', 'otp'] - RFC-8176 compliant
+   * - Object format: [{ method: 'password', timestamp: 1234567890 }] - includes timestamps
    */
-  currentAuthenticationMethods: AMREntry[]
+  currentAuthenticationMethods: AMREntry[] | string[]
 }>
 
 /**
@@ -1479,7 +1548,13 @@ export interface JwtPayload extends RequiredClaims {
   nbf?: number
   app_metadata?: UserAppMetadata
   user_metadata?: UserMetadata
-  amr?: AMREntry[]
+  /**
+   * Authentication Method References.
+   * Supports both RFC-8176 compliant format (string[]) and detailed format (AMREntry[]).
+   * - String format: ['password', 'otp'] - RFC-8176 compliant
+   * - Object format: [{ method: 'password', timestamp: 1234567890 }] - includes timestamps
+   */
+  amr?: AMREntry[] | string[]
 
   // Special claims (only in anon/service role tokens)
   ref?: string

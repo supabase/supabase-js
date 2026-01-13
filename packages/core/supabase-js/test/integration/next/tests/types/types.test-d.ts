@@ -81,7 +81,9 @@ type Database = {
 
 {
   // createServerClient should return a typed client
-  const pg12Server = createServerClient<Database>('HTTP://localhost:3000', '')
+  const pg12Server = createServerClient<Database>('HTTP://localhost:3000', '', {
+    cookies: { getAll: () => [], setAll: () => {} },
+  })
   const res12 = await pg12Server.from('shops').select('*')
   expectType<
     TypeEqual<
@@ -98,7 +100,9 @@ type Database = {
 
 {
   // createServerClient should infer everything to any without types provided
-  const pg12Server = createServerClient('HTTP://localhost:3000', '')
+  const pg12Server = createServerClient('HTTP://localhost:3000', '', {
+    cookies: { getAll: () => [], setAll: () => {} },
+  })
   const res12 = await pg12Server.from('shops').select('address, id, relation(field)')
   expectType<
     TypeEqual<

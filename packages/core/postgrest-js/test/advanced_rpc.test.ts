@@ -5,7 +5,7 @@ import type { SelectQueryError } from '../src/select-query-parser/utils'
 import { expectType, type TypeEqual } from './types'
 import type { Database } from './types.override'
 
-const REST_URL = 'http://localhost:3000'
+const REST_URL = 'http://localhost:54321/rest/v1'
 const postgrest = new PostgrestClient<Database>(REST_URL)
 
 const MessagesWithoutBlurbSchema = z.object({
@@ -124,14 +124,14 @@ describe('advanced rpc', () => {
             "channel_id": 3,
             "data": null,
             "id": 3,
-            "message": "Some message on channel wihtout details",
+            "message": "Some message on channel without details",
             "username": "supabot",
           },
           {
             "channel_id": 3,
             "data": null,
             "id": 4,
-            "message": "Some message on channel wihtout details",
+            "message": "Some message on channel without details",
             "username": "supabot",
           },
         ],
@@ -203,14 +203,14 @@ describe('advanced rpc', () => {
             "channel_id": 3,
             "data": null,
             "id": 3,
-            "message": "Some message on channel wihtout details",
+            "message": "Some message on channel without details",
             "username": "supabot",
           },
           {
             "channel_id": 3,
             "data": null,
             "id": 4,
-            "message": "Some message on channel wihtout details",
+            "message": "Some message on channel without details",
             "username": "supabot",
           },
         ],
@@ -258,14 +258,14 @@ describe('advanced rpc', () => {
             "channel_id": 3,
             "data": null,
             "id": 3,
-            "message": "Some message on channel wihtout details",
+            "message": "Some message on channel without details",
             "username": "supabot",
           },
           {
             "channel_id": 3,
             "data": null,
             "id": 4,
-            "message": "Some message on channel wihtout details",
+            "message": "Some message on channel without details",
             "username": "supabot",
           },
         ],
@@ -313,14 +313,14 @@ describe('advanced rpc', () => {
             "channel_id": 3,
             "data": null,
             "id": 3,
-            "message": "Some message on channel wihtout details",
+            "message": "Some message on channel without details",
             "username": "supabot",
           },
           {
             "channel_id": 3,
             "data": null,
             "id": 4,
-            "message": "Some message on channel wihtout details",
+            "message": "Some message on channel without details",
             "username": "supabot",
           },
         ],
@@ -353,14 +353,14 @@ describe('advanced rpc', () => {
             "channel_id": 3,
             "data": null,
             "id": 4,
-            "message": "Some message on channel wihtout details",
+            "message": "Some message on channel without details",
             "username": "supabot",
           },
           {
             "channel_id": 3,
             "data": null,
             "id": 3,
-            "message": "Some message on channel wihtout details",
+            "message": "Some message on channel without details",
             "username": "supabot",
           },
           {
@@ -401,14 +401,14 @@ describe('advanced rpc', () => {
             "channel_id": 3,
             "data": null,
             "id": 4,
-            "message": "Some message on channel wihtout details",
+            "message": "Some message on channel without details",
             "username": "supabot",
           },
           {
             "channel_id": 3,
             "data": null,
             "id": 3,
-            "message": "Some message on channel wihtout details",
+            "message": "Some message on channel without details",
             "username": "supabot",
           },
           {
@@ -449,7 +449,7 @@ describe('advanced rpc', () => {
         "data": [
           {
             "channel_id": 3,
-            "message": "Some message on channel wihtout details",
+            "message": "Some message on channel without details",
             "users": {
               "catchphrase": "'cat' 'fat'",
               "username": "supabot",
@@ -457,7 +457,7 @@ describe('advanced rpc', () => {
           },
           {
             "channel_id": 3,
-            "message": "Some message on channel wihtout details",
+            "message": "Some message on channel without details",
             "users": {
               "catchphrase": "'cat' 'fat'",
               "username": "supabot",
@@ -727,14 +727,14 @@ describe('advanced rpc', () => {
             "channel_id": 3,
             "data": null,
             "id": 3,
-            "message": "Some message on channel wihtout details",
+            "message": "Some message on channel without details",
             "username": "supabot",
           },
           {
             "channel_id": 3,
             "data": null,
             "id": 4,
-            "message": "Some message on channel wihtout details",
+            "message": "Some message on channel without details",
             "username": "supabot",
           },
         ],
@@ -1330,11 +1330,11 @@ test('RPC call with subselect and computed field', async () => {
         },
         {
           "blurb_message": "Som",
-          "message": "Some message on channel wihtout details",
+          "message": "Some message on channel without details",
         },
         {
           "blurb_message": "Som",
-          "message": "Some message on channel wihtout details",
+          "message": "Some message on channel without details",
         },
       ],
       "error": null,
