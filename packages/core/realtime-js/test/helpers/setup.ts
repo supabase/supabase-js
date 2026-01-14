@@ -102,8 +102,8 @@ export function setupRealtimeTest(options: BuilderOptions = {}): TestSetup {
   mockServer.on('connection', onConnection)
 
   const client = new RealtimeClient(realtimeUrl, {
-    params: { apikey: options.apikey || DEFAULT_API_KEY, ...options.params },
     ...options,
+    params: { ...options.params, apikey: options.apikey || DEFAULT_API_KEY },
   })
 
   let clock = undefined
