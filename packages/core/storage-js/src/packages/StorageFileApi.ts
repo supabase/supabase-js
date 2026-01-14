@@ -70,13 +70,13 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
     fileOptions?: FileOptions
   ): Promise<
     | {
-      data: { id: string; path: string; fullPath: string }
-      error: null
-    }
+        data: { id: string; path: string; fullPath: string }
+        error: null
+      }
     | {
-      data: null
-      error: StorageError
-    }
+        data: null
+        error: StorageError
+      }
   > {
     return this.handleOperation(async () => {
       let body
@@ -191,13 +191,13 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
     fileOptions?: FileOptions
   ): Promise<
     | {
-      data: { id: string; path: string; fullPath: string }
-      error: null
-    }
+        data: { id: string; path: string; fullPath: string }
+        error: null
+      }
     | {
-      data: null
-      error: StorageError
-    }
+        data: null
+        error: StorageError
+      }
   > {
     return this.uploadOrUpdate('POST', path, fileBody, fileOptions)
   }
@@ -307,13 +307,13 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
     options?: { upsert: boolean }
   ): Promise<
     | {
-      data: { signedUrl: string; token: string; path: string }
-      error: null
-    }
+        data: { signedUrl: string; token: string; path: string }
+        error: null
+      }
     | {
-      data: null
-      error: StorageError
-    }
+        data: null
+        error: StorageError
+      }
   > {
     return this.handleOperation(async () => {
       let _path = this._getFinalPath(path)
@@ -403,13 +403,13 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
     fileOptions?: FileOptions
   ): Promise<
     | {
-      data: { id: string; path: string; fullPath: string }
-      error: null
-    }
+        data: { id: string; path: string; fullPath: string }
+        error: null
+      }
     | {
-      data: null
-      error: StorageError
-    }
+        data: null
+        error: StorageError
+      }
   > {
     return this.uploadOrUpdate('PUT', path, fileBody, fileOptions)
   }
@@ -447,13 +447,13 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
     options?: DestinationOptions
   ): Promise<
     | {
-      data: { message: string }
-      error: null
-    }
+        data: { message: string }
+        error: null
+      }
     | {
-      data: null
-      error: StorageError
-    }
+        data: null
+        error: StorageError
+      }
   > {
     return this.handleOperation(async () => {
       return await post(
@@ -503,13 +503,13 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
     options?: DestinationOptions
   ): Promise<
     | {
-      data: { path: string }
-      error: null
-    }
+        data: { path: string }
+        error: null
+      }
     | {
-      data: null
-      error: StorageError
-    }
+        data: null
+        error: StorageError
+      }
   > {
     return this.handleOperation(async () => {
       const data = await post(
@@ -584,13 +584,13 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
     options?: { download?: string | boolean; transform?: TransformOptions }
   ): Promise<
     | {
-      data: { signedUrl: string }
-      error: null
-    }
+        data: { signedUrl: string }
+        error: null
+      }
     | {
-      data: null
-      error: StorageError
-    }
+        data: null
+        error: StorageError
+      }
   > {
     return this.handleOperation(async () => {
       let _path = this._getFinalPath(path)
@@ -653,13 +653,13 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
     options?: { download: string | boolean }
   ): Promise<
     | {
-      data: { error: string | null; path: string | null; signedUrl: string }[]
-      error: null
-    }
+        data: { error: string | null; path: string | null; signedUrl: string }[]
+        error: null
+      }
     | {
-      data: null
-      error: StorageError
-    }
+        data: null
+        error: StorageError
+      }
   > {
     return this.handleOperation(async () => {
       const data = await post(
@@ -753,13 +753,13 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
    */
   async info(path: string): Promise<
     | {
-      data: Camelize<FileObjectV2>
-      error: null
-    }
+        data: Camelize<FileObjectV2>
+        error: null
+      }
     | {
-      data: null
-      error: StorageError
-    }
+        data: null
+        error: StorageError
+      }
   > {
     const _path = this._getFinalPath(path)
 
@@ -789,13 +789,13 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
    */
   async exists(path: string): Promise<
     | {
-      data: boolean
-      error: null
-    }
+        data: boolean
+        error: null
+      }
     | {
-      data: boolean
-      error: StorageError
-    }
+        data: boolean
+        error: StorageError
+      }
   > {
     const _path = this._getFinalPath(path)
 
@@ -929,13 +929,13 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
    */
   async remove(paths: string[]): Promise<
     | {
-      data: FileObject[]
-      error: null
-    }
+        data: FileObject[]
+        error: null
+      }
     | {
-      data: null
-      error: StorageError
-    }
+        data: null
+        error: StorageError
+      }
   > {
     return this.handleOperation(async () => {
       return await remove(
@@ -1075,13 +1075,13 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
     parameters?: FetchParameters
   ): Promise<
     | {
-      data: FileObject[]
-      error: null
-    }
+        data: FileObject[]
+        error: null
+      }
     | {
-      data: null
-      error: StorageError
-    }
+        data: null
+        error: StorageError
+      }
   > {
     return this.handleOperation(async () => {
       const body = { ...DEFAULT_SEARCH_OPTIONS, ...options, prefix: path || '' }
@@ -1107,13 +1107,13 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
     parameters?: FetchParameters
   ): Promise<
     | {
-      data: SearchV2Result
-      error: null
-    }
+        data: SearchV2Result
+        error: null
+      }
     | {
-      data: null
-      error: StorageError
-    }
+        data: null
+        error: StorageError
+      }
   > {
     return this.handleOperation(async () => {
       const body = { ...options }
