@@ -1371,3 +1371,30 @@ describe('MFA Complex Branches', () => {
     expect(mockFetch).toHaveBeenCalled()
   })
 })
+
+describe('GoTrueClient dispose', () => {
+  it('should clean up BroadcastChannel when dispose is called', async () => {
+    const mockClose = jest.fn()
+    const mockRemoveEventListener = jest.fn()
+    Object.defineProperty(window, 'BroadcastChannel', {
+      value: jest.fn().mockImplementation(() => ({
+        postMessage: jest.fn(),
+        addEventListener: jest.fn(),
+        removeEventListener: mockRemoveEventListener,
+        close: mockClose,
+      })),
+      writable: true,
+    })
+
+    const client = getClientWithSpecificStorage({
+      getItem: jest.fn(),
+      setItem: jest.fn(),
+      removeItem: jest.fn(),
+    })
+
+    await client.dispose()
+
+    expect(mockRemoveEventListener).toHaveBeenCalledWith('message', expect.any(Function))
+    expect(mockClose).toHaveBeenCalled()
+  })
+})

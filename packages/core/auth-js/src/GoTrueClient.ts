@@ -277,6 +277,7 @@ export default class GoTrueClient {
    * Used to broadcast state change events to other tabs listening.
    */
   protected broadcastChannel: BroadcastChannel | null = null
+  protected broadcastChannelCallback: ((event: MessageEvent) => Promise<void>) | null = null
 
   protected logDebugMessages: boolean
   protected logger: (message: string, ...args: any[]) => void = console.log
@@ -395,7 +396,7 @@ export default class GoTrueClient {
         )
       }
 
-      this.broadcastChannel?.addEventListener('message', async (event) => {
+      this.broadcastChannelCallback = async (event) => {
         this._debug('received broadcast notification from other tab or client', event)
 
         try {
@@ -403,13 +404,16 @@ export default class GoTrueClient {
         } catch (error) {
           this._debug('#broadcastChannel', 'error', error)
         }
-      })
+      }
+
+      this.broadcastChannel?.addEventListener('message', this.broadcastChannelCallback)
     }
 
     this.initialize().catch((error) => {
       this._debug('#initialize()', 'error', error)
     })
   }
+
 
   /**
    * Returns whether error throwing mode is enabled for this client.
@@ -2853,6 +2857,20 @@ export default class GoTrueClient {
   }
 
   /**
+   * Removes the BroadcastChannel event listener and closes the channel.
+   */
+  private _removeBroadcastChannel() {
+    if (this.broadcastChannel) {
+      if (this.broadcastChannelCallback) {
+        this.broadcastChannel.removeEventListener('message', this.broadcastChannelCallback)
+      }
+      this.broadcastChannel.close()
+    }
+    this.broadcastChannel = null
+    this.broadcastChannelCallback = null
+  }
+
+  /**
    * This is the private implementation of {@link #startAutoRefresh}. Use this
    * within the library.
    */
@@ -2958,6 +2976,15 @@ export default class GoTrueClient {
   async stopAutoRefresh() {
     this._removeVisibilityChangedCallback()
     await this._stopAutoRefresh()
+  }
+
+  /**
+   * Cleans up resources used by the client.
+   */
+  async dispose() {
+    await this._stopAutoRefresh()
+    this._removeVisibilityChangedCallback()
+    this._removeBroadcastChannel()
   }
 
   /**
