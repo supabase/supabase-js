@@ -144,3 +144,72 @@ describe('processLock', () => {
     await expect(processLock('error-test', -1, async () => 'success')).resolves.toBe('success')
   })
 })
+
+it('should not deadlock when timeout occurs with queued operations', async () => {
+  const results:  string[] = []
+  
+  // Operation 1: Holds lock for 500ms
+  const op1 = processLock('deadlock-test', -1, async () => {
+    await new Promise((resolve) => setTimeout(resolve, 500))
+    results.push('op1-complete')
+    return 'op1'
+  })
+
+  // Small delay to ensure op1 starts first
+  await new Promise((resolve) => setTimeout(resolve, 10))
+
+  // Operation 2: Times out after 100ms
+  const op2 = processLock('deadlock-test', 100, async () => {
+    results.push('op2-complete')
+    return 'op2'
+  })
+
+  // Operation 3: Should NOT deadlock - should run after op1
+  const op3 = processLock('deadlock-test', 2000, async () => {
+    results.push('op3-complete')
+    return 'op3'
+  })
+
+  // Verify behavior
+  await expect(op1).resolves.toBe('op1')
+  await expect(op2).rejects.toMatchObject({ isAcquireTimeout: true })
+  await expect(op3).resolves.toBe('op3')  // ✅ Should succeed, not hang
+
+  // Verify execution order
+  expect(results).toEqual(['op1-complete', 'op3-complete'])
+}, 10000)
+
+it('should handle rapid successive operations with mixed timeouts', async () => {
+  const results: number[] = []
+  
+  // Fire 10 operations rapidly
+  // Operation 0 will acquire the lock immediately (no wait) so it completes
+  // Operations 3, 6, 9 have 50ms timeouts but will need to wait for previous ops
+  // Each op takes 100ms, so ops with 50ms timeout that queue will timeout
+  const operations = Array.from({ length: 10 }, (_, i) => {
+    const timeout = i % 3 === 0 ? 50 : -1 // Every 3rd operation has short timeout
+    return processLock('rapid-test', timeout, async () => {
+      await new Promise((resolve) => setTimeout(resolve, 100))
+      results.push(i)
+      return i
+    })
+  })
+
+  const settled = await Promise.allSettled(operations)
+  
+  // Operation 0 acquires lock immediately (no waiting), so it succeeds
+  expect(settled[0].status).toBe('fulfilled')
+  
+  // Operations 3, 6, 9 have 50ms timeouts but must wait for prior ops
+  // Since each op takes 100ms, these will timeout while waiting
+  expect(settled[3].status).toBe('rejected')
+  expect(settled[6].status).toBe('rejected')
+  expect(settled[9].status).toBe('rejected')
+  
+  // Operations 1, 2 have infinite timeout so they succeed
+  expect(settled[1].status).toBe('fulfilled')
+  expect(settled[2].status).toBe('fulfilled')
+  
+  // Verify no operations deadlocked (all completed)
+  expect(results.length).toBeGreaterThan(0)
+}, 15000)

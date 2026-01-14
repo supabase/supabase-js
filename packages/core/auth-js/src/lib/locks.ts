@@ -196,20 +196,11 @@ const PROCESS_LOCKS: { [name: string]: Promise<any> } = {}
  * Useful for environments like React Native or other non-browser
  * single-process (i.e. no concept of "tabs") environments.
  *
- * Use {@link #navigatorLock} in browser environments.
- *
  * @param name Name of the lock to be acquired.
  * @param acquireTimeout If negative, no timeout. If 0 an error is thrown if
  *                       the lock can't be acquired without waiting. If positive, the lock acquire
- *                       will time out after so many milliseconds. An error is
- *                       a timeout if it has `isAcquireTimeout` set to true.
+ *                       will time out after so many milliseconds.
  * @param fn The operation to run once the lock is acquired.
- * @example
- * ```ts
- * await processLock('migrate', 5000, async () => {
- *   await runMigration()
- * })
- * ```
  */
 export async function processLock<R>(
   name: string,
@@ -218,57 +209,57 @@ export async function processLock<R>(
 ): Promise<R> {
   const previousOperation = PROCESS_LOCKS[name] ?? Promise.resolve()
 
-  const currentOperation = Promise.race(
-    [
-      previousOperation.catch(() => {
-        // ignore error of previous operation that we're waiting to finish
-        return null
-      }),
-      acquireTimeout >= 0
-        ? new Promise((_, reject) => {
-            setTimeout(() => {
-              console.warn(
-                `@supabase/gotrue-js: Lock "${name}" acquisition timed out after ${acquireTimeout}ms. ` +
-                  'This may be caused by another operation holding the lock. ' +
-                  'Consider increasing lockAcquireTimeout or checking for stuck operations.'
-              )
+  let timeoutId: ReturnType<typeof setTimeout> | null = null
+  let timeoutError: ProcessLockAcquireTimeoutError | null = null
 
-              reject(
-                new ProcessLockAcquireTimeoutError(
-                  `Acquiring process lock with name "${name}" timed out`
-                )
-              )
-            }, acquireTimeout)
-          })
-        : null,
-    ].filter((x) => x)
-  )
-    .catch((e: any) => {
-      if (e && e.isAcquireTimeout) {
-        throw e
+  // Set up timeout handling
+  if (acquireTimeout >= 0) {
+    timeoutId = setTimeout(() => {
+      if (!timeoutError) {
+        console.warn(
+          `@supabase/gotrue-js: Lock "${name}" acquisition timed out after ${acquireTimeout}ms. ` +
+            'This may be caused by another operation holding the lock. ' +
+            'Consider increasing lockAcquireTimeout or checking for stuck operations.'
+        )
+        timeoutError = new ProcessLockAcquireTimeoutError(
+          `Acquiring process lock with name "${name}" timed out`
+        )
       }
+    }, acquireTimeout)
+  }
 
-      return null
+  // Create the actual operation that waits for previous lock then runs fn
+  const lockOperation = async (): Promise<R> => {
+    // Wait for previous operation to complete (ignore its result/error)
+    await previousOperation.catch(() => {
+      // Intentionally ignore errors from previous operation
     })
-    .then(async () => {
-      // previous operations finished and we didn't get a race on the acquire
-      // timeout, so the current operation can finally start
-      return await fn()
-    })
 
-  PROCESS_LOCKS[name] = currentOperation.catch(async (e: any) => {
-    if (e && e.isAcquireTimeout) {
-      // if the current operation timed out, it doesn't mean that the previous
-      // operation finished, so we need contnue waiting for it to finish
-      await previousOperation
-
-      return null
+    // Clear timeout now that we've acquired the lock
+    if (timeoutId !== null) {
+      clearTimeout(timeoutId)
+      timeoutId = null
     }
 
-    throw e
+    // Check if timeout already fired while we were waiting
+    if (timeoutError) {
+      throw timeoutError
+    }
+
+    // Now we have the lock - run the function
+    return await fn()
+  }
+
+  const currentOperation = lockOperation()
+
+  // Store in PROCESS_LOCKS for next operation to wait on
+  // Important: Handle errors to avoid unhandled rejections - always resolve
+  // so subsequent operations can proceed
+  PROCESS_LOCKS[name] = currentOperation.catch(() => {
+    // On any error (timeout or fn error), wait for previous op to complete
+    return previousOperation.catch(() => null)
   })
 
-  // finally wait for the current operation to finish successfully, with an
-  // error or with an acquire timeout error
+  // Return the result (or throw timeout/error)
   return await currentOperation
 }
