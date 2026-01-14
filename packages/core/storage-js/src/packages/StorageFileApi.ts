@@ -85,13 +85,13 @@ export default class StorageFileApi {
     fileOptions?: FileOptions
   ): Promise<
     | {
-        data: { id: string; path: string; fullPath: string }
-        error: null
-      }
+      data: { id: string; path: string; fullPath: string }
+      error: null
+    }
     | {
-        data: null
-        error: StorageError
-      }
+      data: null
+      error: StorageError
+    }
   > {
     try {
       let body
@@ -218,13 +218,13 @@ export default class StorageFileApi {
     fileOptions?: FileOptions
   ): Promise<
     | {
-        data: { id: string; path: string; fullPath: string }
-        error: null
-      }
+      data: { id: string; path: string; fullPath: string }
+      error: null
+    }
     | {
-        data: null
-        error: StorageError
-      }
+      data: null
+      error: StorageError
+    }
   > {
     return this.uploadOrUpdate('POST', path, fileBody, fileOptions)
   }
@@ -346,13 +346,13 @@ export default class StorageFileApi {
     options?: { upsert: boolean }
   ): Promise<
     | {
-        data: { signedUrl: string; token: string; path: string }
-        error: null
-      }
+      data: { signedUrl: string; token: string; path: string }
+      error: null
+    }
     | {
-        data: null
-        error: StorageError
-      }
+      data: null
+      error: StorageError
+    }
   > {
     try {
       let _path = this._getFinalPath(path)
@@ -451,13 +451,13 @@ export default class StorageFileApi {
     fileOptions?: FileOptions
   ): Promise<
     | {
-        data: { id: string; path: string; fullPath: string }
-        error: null
-      }
+      data: { id: string; path: string; fullPath: string }
+      error: null
+    }
     | {
-        data: null
-        error: StorageError
-      }
+      data: null
+      error: StorageError
+    }
   > {
     return this.uploadOrUpdate('PUT', path, fileBody, fileOptions)
   }
@@ -495,13 +495,13 @@ export default class StorageFileApi {
     options?: DestinationOptions
   ): Promise<
     | {
-        data: { message: string }
-        error: null
-      }
+      data: { message: string }
+      error: null
+    }
     | {
-        data: null
-        error: StorageError
-      }
+      data: null
+      error: StorageError
+    }
   > {
     try {
       const data = await post(
@@ -561,13 +561,13 @@ export default class StorageFileApi {
     options?: DestinationOptions
   ): Promise<
     | {
-        data: { path: string }
-        error: null
-      }
+      data: { path: string }
+      error: null
+    }
     | {
-        data: null
-        error: StorageError
-      }
+      data: null
+      error: StorageError
+    }
   > {
     try {
       const data = await post(
@@ -651,13 +651,13 @@ export default class StorageFileApi {
     options?: { download?: string | boolean; transform?: TransformOptions }
   ): Promise<
     | {
-        data: { signedUrl: string }
-        error: null
-      }
+      data: { signedUrl: string }
+      error: null
+    }
     | {
-        data: null
-        error: StorageError
-      }
+      data: null
+      error: StorageError
+    }
   > {
     try {
       let _path = this._getFinalPath(path)
@@ -730,13 +730,13 @@ export default class StorageFileApi {
     options?: { download: string | boolean }
   ): Promise<
     | {
-        data: { error: string | null; path: string | null; signedUrl: string }[]
-        error: null
-      }
+      data: { error: string | null; path: string | null; signedUrl: string }[]
+      error: null
+    }
     | {
-        data: null
-        error: StorageError
-      }
+      data: null
+      error: StorageError
+    }
   > {
     try {
       const data = await post(
@@ -819,7 +819,7 @@ export default class StorageFileApi {
     const _path = this._getFinalPath(path)
     const downloadFn = () =>
       get(this.fetch, `${this.url}/${renderPath}/${_path}${queryString}`, {
-        headers: this.headers,
+        headers: { ...this.headers, 'Cache-Control': 'no-store' },
         noResolveJson: true,
       })
     return new BlobDownloadBuilder(downloadFn, this.shouldThrowOnError)
@@ -842,13 +842,13 @@ export default class StorageFileApi {
    */
   async info(path: string): Promise<
     | {
-        data: Camelize<FileObjectV2>
-        error: null
-      }
+      data: Camelize<FileObjectV2>
+      error: null
+    }
     | {
-        data: null
-        error: StorageError
-      }
+      data: null
+      error: StorageError
+    }
   > {
     const _path = this._getFinalPath(path)
 
@@ -887,13 +887,13 @@ export default class StorageFileApi {
    */
   async exists(path: string): Promise<
     | {
-        data: boolean
-        error: null
-      }
+      data: boolean
+      error: null
+    }
     | {
-        data: boolean
-        error: StorageError
-      }
+      data: boolean
+      error: StorageError
+    }
   > {
     const _path = this._getFinalPath(path)
 
@@ -1027,13 +1027,13 @@ export default class StorageFileApi {
    */
   async remove(paths: string[]): Promise<
     | {
-        data: FileObject[]
-        error: null
-      }
+      data: FileObject[]
+      error: null
+    }
     | {
-        data: null
-        error: StorageError
-      }
+      data: null
+      error: StorageError
+    }
   > {
     try {
       const data = await remove(
@@ -1183,13 +1183,13 @@ export default class StorageFileApi {
     parameters?: FetchParameters
   ): Promise<
     | {
-        data: FileObject[]
-        error: null
-      }
+      data: FileObject[]
+      error: null
+    }
     | {
-        data: null
-        error: StorageError
-      }
+      data: null
+      error: StorageError
+    }
   > {
     try {
       const body = { ...DEFAULT_SEARCH_OPTIONS, ...options, prefix: path || '' }
@@ -1225,13 +1225,13 @@ export default class StorageFileApi {
     parameters?: FetchParameters
   ): Promise<
     | {
-        data: SearchV2Result
-        error: null
-      }
+      data: SearchV2Result
+      error: null
+    }
     | {
-        data: null
-        error: StorageError
-      }
+      data: null
+      error: StorageError
+    }
   > {
     try {
       const body = { ...options }
