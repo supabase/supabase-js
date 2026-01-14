@@ -7,6 +7,21 @@ import RealtimeClient, { RealtimeClientOptions } from '../../src/RealtimeClient'
 export const DEFAULT_REALTIME_URL = 'localhost:4000'
 export const DEFAULT_WSS_URL = 'ws://localhost:4000/socket'
 export const DEFAULT_API_KEY = '123456789'
+export const DEFAULT_PHX_JOIN_PAYLOAD = {
+  access_token: DEFAULT_API_KEY,
+  config: {
+    broadcast: {
+      ack: false,
+      self: false,
+    },
+    postgres_changes: [],
+    presence: {
+      enabled: false,
+      key: '',
+    },
+    private: true,
+  },
+}
 
 export type ClientOnHandler = (socket: Client, msg: any) => void
 export type ServerOnCallback = (socket: Client) => void

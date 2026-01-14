@@ -1,10 +1,9 @@
 import assert from 'assert'
-import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
+import { describe, expect, test, vi } from 'vitest'
 import { WebSocket as MockWebSocket } from 'mock-socket'
-import RealtimeClient from '../src/RealtimeClient'
 import { DEFAULT_VERSION } from '../src/lib/constants'
-import { DataSpy, setupRealtimeTest } from './helpers/setup'
-import { utils, authHelpers as testHelpers, setupAuthTest } from './helpers/auth'
+import { setupRealtimeTest } from './helpers/setup'
+import { utils, authHelpers as testHelpers } from './helpers/auth'
 
 describe('token setting and updates', () => {
   test("sets access token, updates channels' join payload, and pushes token to channels", async () => {
