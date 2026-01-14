@@ -196,11 +196,20 @@ const PROCESS_LOCKS: { [name: string]: Promise<any> } = {}
  * Useful for environments like React Native or other non-browser
  * single-process (i.e. no concept of "tabs") environments.
  *
+ * Use {@link #navigatorLock} in browser environments.
+ *
  * @param name Name of the lock to be acquired.
  * @param acquireTimeout If negative, no timeout. If 0 an error is thrown if
  *                       the lock can't be acquired without waiting. If positive, the lock acquire
- *                       will time out after so many milliseconds.
+ *                       will time out after so many milliseconds. An error is
+ *                       a timeout if it has `isAcquireTimeout` set to true.
  * @param fn The operation to run once the lock is acquired.
+ * @example
+ * ```ts
+ * await processLock('migrate', 5000, async () => {
+ *   await runMigration()
+ * })
+ * ```
  */
 export async function processLock<R>(
   name: string,
@@ -215,16 +224,14 @@ export async function processLock<R>(
   // Set up timeout handling
   if (acquireTimeout >= 0) {
     timeoutId = setTimeout(() => {
-      if (!timeoutError) {
-        console.warn(
-          `@supabase/gotrue-js: Lock "${name}" acquisition timed out after ${acquireTimeout}ms. ` +
-            'This may be caused by another operation holding the lock. ' +
-            'Consider increasing lockAcquireTimeout or checking for stuck operations.'
-        )
-        timeoutError = new ProcessLockAcquireTimeoutError(
-          `Acquiring process lock with name "${name}" timed out`
-        )
-      }
+      console.warn(
+        `@supabase/gotrue-js: Lock "${name}" acquisition timed out after ${acquireTimeout}ms. ` +
+          'This may be caused by another operation holding the lock. ' +
+          'Consider increasing lockAcquireTimeout or checking for stuck operations.'
+      )
+      timeoutError = new ProcessLockAcquireTimeoutError(
+        `Acquiring process lock with name "${name}" timed out`
+      )
     }, acquireTimeout)
   }
 
