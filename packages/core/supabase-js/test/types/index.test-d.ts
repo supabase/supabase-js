@@ -71,7 +71,7 @@ const supabase = createClient<Database>(URL, KEY)
   // getting this w/o the cast, not sure why:
   // Parameter type Json is declared too wide for argument type Json
   expectType<Json>(data.bar as Json)
-  expectType<null>(data.baz)
+  expectType<string>(data.baz)
 }
 
 // rpc return type
