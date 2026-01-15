@@ -627,13 +627,13 @@ export type JsonPathToType<T, Path extends string> = Path extends ''
         ? T[Path]
         : never
 
-export type IsStringUnion<T> = string extends T
+export type IsStringUnion<T> = [T] extends [never]
   ? false
-  : T extends string
-    ? [T] extends [never]
-      ? false
-      : true
-    : false
+  : string extends T
+    ? false
+    : T extends string
+      ? true
+      : false
 
 type MatchingFunctionBySetofFrom<
   Fn extends GenericFunction,
