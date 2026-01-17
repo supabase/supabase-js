@@ -349,6 +349,8 @@ describe('Channel Lifecycle Management', () => {
           },
         })
 
+        channel._trigger('system', { extension: 'postgres_changes', status: 'ok' })
+
         expect(spy).toHaveBeenCalledTimes(1)
         expect(spy).toHaveBeenCalledWith({
           topic: 'realtime:topic',
