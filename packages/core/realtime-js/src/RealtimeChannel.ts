@@ -355,8 +355,12 @@ export default class RealtimeChannel {
 
             this.bindings.postgres_changes = newPostgresBindings
 
-            this._subscribeCallback = callback || null
-            this._pendingSystemReady.add('postgres_changes')
+            if (bindingsLen > 0) {
+              this._subscribeCallback = callback || null
+              this._pendingSystemReady.add('postgres_changes')
+            } else {
+              callback?.(REALTIME_SUBSCRIBE_STATES.SUBSCRIBED)
+            }
             return
           }
         })
