@@ -515,14 +515,14 @@ export interface AdminUserAttributes extends Omit<UserAttributes, 'data'> {
   app_metadata?: object
 
   /**
-   * Confirms the user's email address if set to true.
+   * Sets the user's email as confirmed when true, or unconfirmed when false.
    *
    * Only a service role can modify.
    */
   email_confirm?: boolean
 
   /**
-   * Confirms the user's phone number if set to true.
+   * Sets the user's phone as confirmed when true, or unconfirmed when false.
    *
    * Only a service role can modify.
    */
