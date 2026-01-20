@@ -551,6 +551,96 @@ describe('GoTrueClient', () => {
 
       subscription?.unsubscribe()
     })
+
+    test('exchangeCodeForSession() does not notify SIGNED_IN on error', async () => {
+      const mockFetch = jest.fn().mockResolvedValue({
+        ok: false,
+        status: 400,
+        headers: new Headers(),
+        json: () =>
+          Promise.resolve({
+            error: 'invalid_grant',
+            error_description: 'Invalid auth code',
+          }),
+      })
+
+      const storage = memoryLocalStorageAdapter()
+      const client = new GoTrueClient({
+        url: GOTRUE_URL_SIGNUP_ENABLED_AUTO_CONFIRM_ON,
+        autoRefreshToken: false,
+        persistSession: true,
+        storage,
+        flowType: 'pkce',
+        fetch: mockFetch,
+      })
+
+      const mockCallback = jest.fn()
+      const {
+        data: { subscription },
+      } = client.onAuthStateChange(mockCallback)
+
+      // @ts-expect-error 'Allow access to protected storageKey'
+      const storageKey = client.storageKey
+      await storage.setItem(`${storageKey}-code-verifier`, 'mock-verifier')
+
+      const { error } = await client.exchangeCodeForSession('mock_code')
+
+      expect(error).not.toBeNull()
+      const signedInCalls = mockCallback.mock.calls.filter(([event]) => event === 'SIGNED_IN')
+      expect(signedInCalls.length).toBe(0)
+
+      subscription?.unsubscribe()
+    })
+
+    test('exchangeCodeForSession() notifies outside the auth lock', async () => {
+      const mockFetch = jest.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        headers: new Headers(),
+        json: () =>
+          Promise.resolve({
+            access_token: 'test-access-token',
+            refresh_token: 'test-refresh-token',
+            expires_in: 3600,
+            token_type: 'bearer',
+            user: { id: 'test-user' },
+          }),
+      })
+
+      const storage = memoryLocalStorageAdapter()
+      const client = new GoTrueClient({
+        url: GOTRUE_URL_SIGNUP_ENABLED_AUTO_CONFIRM_ON,
+        autoRefreshToken: false,
+        persistSession: true,
+        storage,
+        flowType: 'pkce',
+        fetch: mockFetch,
+      })
+
+      const {
+        data: { subscription },
+      } = client.onAuthStateChange(async (event) => {
+        if (event !== 'SIGNED_IN') {
+          return
+        }
+
+        // @ts-expect-error 'Allow access to protected lockAcquired'
+        expect(client.lockAcquired).toBe(false)
+        const { data, error } = await client.getSession()
+        expect(error).toBeNull()
+        expect(data.session).not.toBeNull()
+      })
+
+      // @ts-expect-error 'Allow access to protected storageKey'
+      const storageKey = client.storageKey
+      await storage.setItem(`${storageKey}-code-verifier`, 'mock-verifier')
+
+      const { error } = await client.exchangeCodeForSession('mock_code')
+
+      expect(error).toBeNull()
+
+      subscription?.unsubscribe()
+    })
   })
 
   describe('Email Auth', () => {
