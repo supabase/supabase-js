@@ -508,6 +508,49 @@ describe('GoTrueClient', () => {
       expect(error?.message).toContain('@supabase/ssr')
       expect(error?.code).toEqual('pkce_code_verifier_not_found')
     })
+
+    test('exchangeCodeForSession() notifies subscribers before resolving', async () => {
+      const mockFetch = jest.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        headers: new Headers(),
+        json: () =>
+          Promise.resolve({
+            access_token: 'test-access-token',
+            refresh_token: 'test-refresh-token',
+            expires_in: 3600,
+            token_type: 'bearer',
+            user: { id: 'test-user' },
+          }),
+      })
+
+      const storage = memoryLocalStorageAdapter()
+      const client = new GoTrueClient({
+        url: GOTRUE_URL_SIGNUP_ENABLED_AUTO_CONFIRM_ON,
+        autoRefreshToken: false,
+        persistSession: true,
+        storage,
+        flowType: 'pkce',
+        fetch: mockFetch,
+      })
+
+      const mockCallback = jest.fn()
+      const {
+        data: { subscription },
+      } = client.onAuthStateChange(mockCallback)
+
+      // @ts-expect-error 'Allow access to protected storageKey'
+      const storageKey = client.storageKey
+      await storage.setItem(`${storageKey}-code-verifier`, 'mock-verifier')
+
+      const { data, error } = await client.exchangeCodeForSession('mock_code')
+
+      expect(error).toBeNull()
+      expect(data.session).not.toBeNull()
+      expect(mockCallback).toHaveBeenCalledWith('SIGNED_IN', data.session)
+
+      subscription?.unsubscribe()
+    })
   })
 
   describe('Email Auth', () => {
