@@ -115,6 +115,16 @@ jobs:
         run: npx nx affected --target=test:docker --projects=@supabase/auth-js
         timeout-minutes: 10
 
+      - name: Upload coverage for auth-js Docker tests (if affected)
+        uses: coverallsapp/github-action@v2
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path-to-lcov: ./packages/core/auth-js/coverage-docker/lcov.info
+          parallel: true
+          flag-name: auth-js-docker
+          fail-on-error: false
+        continue-on-error: true
+
   # Separate job for postgrest-js tests (Docker-based, retriable)
   test-postgrest-js:
     name: Test postgrest-js
