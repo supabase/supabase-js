@@ -67,9 +67,10 @@
     "test:docker:suite": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "jest --runInBand --testPathPattern=docker-tests",
+        "command": "jest --runInBand --coverage --coverageDirectory=coverage-docker --testPathPattern=docker-tests",
         "cwd": "{projectRoot}"
       },
+      "outputs": ["{projectRoot}/coverage-docker"],
       "dependsOn": ["test:docker:infra"]
     },
     "test:docker:clean-post": {
