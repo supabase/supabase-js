@@ -210,7 +210,7 @@ describe('Memory Management', () => {
       channel.teardown()
 
       // Verify push buffer is cleaned up
-      assert.equal(channel.pushBuffer.length, 0)
+      assert.deepEqual(channel.bindings, {})
     })
 
     test('should clean up timers on teardown', () => {
