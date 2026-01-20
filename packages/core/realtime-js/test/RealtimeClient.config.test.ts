@@ -17,7 +17,7 @@ describe('endpointURL', () => {
   test('returns endpoint for given full url', () => {
     assert.equal(
       testSetup.socket.endpointURL(),
-      `${testSetup.url}/websocket?apikey=123456789&vsn=1.0.0`
+      `${testSetup.url}/websocket?apikey=123456789&vsn=2.0.0`
     )
   })
 
@@ -27,7 +27,7 @@ describe('endpointURL', () => {
     })
     assert.equal(
       socket.endpointURL(),
-      `${testSetup.url}/websocket?foo=bar&apikey=123456789&vsn=1.0.0`
+      `${testSetup.url}/websocket?foo=bar&apikey=123456789&vsn=2.0.0`
     )
   })
 
@@ -35,15 +35,15 @@ describe('endpointURL', () => {
     const socket = new RealtimeClient(testSetup.url, {
       params: { apikey: '123456789' },
     })
-    assert.equal(socket.endpointURL(), `${testSetup.url}/websocket?apikey=123456789&vsn=1.0.0`)
+    assert.equal(socket.endpointURL(), `${testSetup.url}/websocket?apikey=123456789&vsn=2.0.0`)
   })
 
   test('returns endpoint with valid vsn', () => {
     const socket = new RealtimeClient(testSetup.url, {
       params: { apikey: '123456789' },
-      vsn: '2.0.0',
+      vsn: '1.0.0',
     })
-    assert.equal(socket.endpointURL(), `${testSetup.url}/websocket?apikey=123456789&vsn=2.0.0`)
+    assert.equal(socket.endpointURL(), `${testSetup.url}/websocket?apikey=123456789&vsn=1.0.0`)
   })
 
   test('errors out with unsupported version', () => {
@@ -58,6 +58,6 @@ describe('endpointURL', () => {
     })
     // Clear params after construction to test empty params scenario
     socket.params = {}
-    assert.equal(socket.endpointURL(), `${testSetup.url}/websocket?vsn=1.0.0`)
+    assert.equal(socket.endpointURL(), `${testSetup.url}/websocket?vsn=2.0.0`)
   })
 })

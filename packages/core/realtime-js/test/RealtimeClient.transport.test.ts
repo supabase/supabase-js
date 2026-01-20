@@ -20,7 +20,7 @@ describe('push', () => {
     payload: 'payload',
     ref: 'ref',
   }
-  const json = '{"topic":"topic","event":"event","payload":"payload","ref":"ref"}'
+  const json = '[null,"ref","topic","event","payload"]'
 
   test('sends data to connection when connected', () => {
     testSetup.socket.connect()
@@ -96,7 +96,7 @@ describe('sendHeartbeat', () => {
     const readyStateSpy = vi.spyOn(testSetup.socket.conn!, 'readyState', 'get').mockReturnValue(1) // open
 
     const spy = vi.spyOn(testSetup.socket.conn!, 'send')
-    const data = '{"topic":"phoenix","event":"heartbeat","payload":{},"ref":"1"}'
+    const data = '[null,"1","phoenix","heartbeat",{}]'
 
     testSetup.socket.sendHeartbeat()
     expect(spy).toHaveBeenCalledWith(data)
@@ -107,7 +107,7 @@ describe('sendHeartbeat', () => {
     const readyStateSpy = vi.spyOn(testSetup.socket.conn!, 'readyState', 'get').mockReturnValue(0) // connecting
 
     const spy = vi.spyOn(testSetup.socket.conn!, 'send')
-    const data = '{"topic":"phoenix","event":"heartbeat","payload":{},"ref":"1"}'
+    const data = '[null,"1","phoenix","heartbeat",{}]'
 
     testSetup.socket.sendHeartbeat()
     expect(spy).not.toHaveBeenCalledWith(data)
@@ -189,8 +189,7 @@ describe('onConnMessage', () => {
   })
 
   test('parses raw message and triggers channel event', () => {
-    const message =
-      '{"topic":"realtime:topic","event":"INSERT","payload":{"type":"INSERT"},"ref":"ref"}'
+    const message = '[null,"ref","realtime:topic","INSERT",{}]'
 
     const targetChannel = testSetup.socket.channel('topic')
     const otherChannel = testSetup.socket.channel('off-topic')
@@ -202,7 +201,6 @@ describe('onConnMessage', () => {
     const messageEvent = new MessageEvent('message', { data: message })
     testSetup.socket.conn?.onmessage?.(messageEvent)
 
-    // expect(targetSpy).toHaveBeenCalledWith('INSERT', {type: 'INSERT'}, 'ref')
     expect(targetSpy).toHaveBeenCalledTimes(1)
     expect(otherSpy).toHaveBeenCalledTimes(0)
   })
@@ -216,8 +214,13 @@ describe('onConnMessage', () => {
 
     socket.connect()
 
-    const message =
-      '{"ref":"3","event":"phx_reply","payload":{"status":"ok","response":{}},"topic":"phoenix"}'
+    const message = JSON.stringify([
+      null,
+      '3',
+      'phoenix',
+      'phx_reply',
+      { status: 'ok', response: {} },
+    ])
 
     socket.pendingHeartbeatRef = '3'
     const messageEvent = new MessageEvent('message', { data: message })
@@ -240,8 +243,13 @@ describe('onConnMessage', () => {
 
     socket.connect()
 
-    const message =
-      '{"ref":"3","event":"phx_reply","payload":{"status":"ok","response":{}},"topic":"phoenix"}'
+    const message = JSON.stringify([
+      null,
+      '3',
+      'phoenix',
+      'phx_reply',
+      { status: 'ok', response: {} },
+    ])
 
     socket.pendingHeartbeatRef = '3'
     // One minute ago
@@ -264,8 +272,13 @@ describe('onConnMessage', () => {
 
     socket.connect()
 
-    const message =
-      '{"ref":"3","event":"phx_reply","payload":{"status":"error","response":{}},"topic":"phoenix"}'
+    const message = JSON.stringify([
+      null,
+      '3',
+      'phoenix',
+      'phx_reply',
+      { status: 'error', response: {} },
+    ])
 
     socket.pendingHeartbeatRef = '3'
     const messageEvent = new MessageEvent('message', { data: message })
@@ -277,11 +290,20 @@ describe('onConnMessage', () => {
 })
 
 describe('custom encoder and decoder', () => {
-  test('encodes to JSON by default', () => {
-    let payload = { foo: 'bar' }
+  test('encodes to array JSON by default', () => {
+    let payload = {
+      ref: '1',
+      join_ref: '2',
+      topic: 'test-topic',
+      event: 'test-event',
+      payload: { key: 'value' },
+    }
 
     testSetup.socket.encode(payload, (encoded) => {
-      assert.deepStrictEqual(encoded, JSON.stringify(payload))
+      assert.deepStrictEqual(
+        encoded,
+        JSON.stringify(['2', '1', 'test-topic', 'test-event', { key: 'value' }])
+      )
     })
   })
 
@@ -302,10 +324,16 @@ describe('custom encoder and decoder', () => {
     testSetup.socket = new RealtimeClient(`wss://${testSetup.projectRef}/socket`, {
       params: { apikey: '123456789' },
     })
-    let payload = JSON.stringify({ foo: 'bar' })
+    let payload = JSON.stringify(['2', '1', 'test-topic', 'test-event', { key: 'value' }])
 
     testSetup.socket.decode(payload, (decoded) => {
-      assert.deepStrictEqual(decoded, { foo: 'bar' })
+      assert.deepStrictEqual(decoded, {
+        ref: '1',
+        join_ref: '2',
+        topic: 'test-topic',
+        event: 'test-event',
+        payload: { key: 'value' },
+      })
     })
   })
 
