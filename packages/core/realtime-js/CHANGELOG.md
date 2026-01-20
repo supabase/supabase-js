@@ -1,3 +1,13 @@
+## 2.91.0 (2026-01-20)
+
+### 🚀 Features
+
+- **realtime:** set default serializer to 2.0.0 ([#2034](https://github.com/supabase/supabase-js/pull/2034))
+
+### ❤️ Thank You
+
+- Eduardo Gurgel
+
 ## 2.90.1 (2026-01-08)
 
 ### 🩹 Fixes

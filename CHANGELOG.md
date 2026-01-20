@@ -1,3 +1,20 @@
+## 2.91.0 (2026-01-20)
+
+### 🚀 Features
+
+- **realtime:** set default serializer to 2.0.0 ([#2034](https://github.com/supabase/supabase-js/pull/2034))
+
+### 🩹 Fixes
+
+- **auth:** defer subscriber notification in exchangeCodeForSession to prevent deadlock ([#2014](https://github.com/supabase/supabase-js/pull/2014))
+- **auth:** clarify updateUserById applies changes directly ([#2031](https://github.com/supabase/supabase-js/pull/2031))
+- **supabase:** resolve Firefox extension cross-context Promise error ([#2033](https://github.com/supabase/supabase-js/pull/2033))
+
+### ❤️ Thank You
+
+- Eduardo Gurgel
+- Vaibhav @7ttp
+
 ## 2.90.1 (2026-01-08)
 
 ### 🩹 Fixes
