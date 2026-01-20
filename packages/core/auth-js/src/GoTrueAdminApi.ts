@@ -276,7 +276,7 @@ export default class GoTrueAdminApi {
   }
 
   /**
-   * Updates the user data.
+   * Updates the user data. Changes are applied directly without confirmation flows.
    *
    * @param attributes The data you want to update.
    *
