@@ -617,19 +617,43 @@ describe('GoTrueClient', () => {
         fetch: mockFetch,
       })
 
+      let resolveInitialSession: (() => void) | null = null
+      const initialSessionReady = new Promise<void>((resolve) => {
+        resolveInitialSession = resolve
+      })
+
+      let resolveSignedIn: (() => void) | null = null
+      let rejectSignedIn: ((error: unknown) => void) | null = null
+      const signedInReady = new Promise<void>((resolve, reject) => {
+        resolveSignedIn = resolve
+        rejectSignedIn = reject
+      })
+
       const {
         data: { subscription },
       } = client.onAuthStateChange(async (event) => {
+        if (event === 'INITIAL_SESSION') {
+          resolveInitialSession?.()
+          return
+        }
+
         if (event !== 'SIGNED_IN') {
           return
         }
 
-        // @ts-expect-error 'Allow access to protected lockAcquired'
-        expect(client.lockAcquired).toBe(false)
-        const { data, error } = await client.getSession()
-        expect(error).toBeNull()
-        expect(data.session).not.toBeNull()
+        try {
+          // @ts-expect-error 'Allow access to protected lockAcquired'
+          expect(client.lockAcquired).toBe(false)
+          const { data, error } = await client.getSession()
+          expect(error).toBeNull()
+          expect(data.session).not.toBeNull()
+          resolveSignedIn?.()
+        } catch (error) {
+          rejectSignedIn?.(error)
+        }
       })
+
+      await initialSessionReady
 
       // @ts-expect-error 'Allow access to protected storageKey'
       const storageKey = client.storageKey
@@ -638,6 +662,7 @@ describe('GoTrueClient', () => {
       const { error } = await client.exchangeCodeForSession('mock_code')
 
       expect(error).toBeNull()
+      await signedInReady
 
       subscription?.unsubscribe()
     })
