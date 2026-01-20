@@ -1782,10 +1782,21 @@ export type OAuthAuthorizationDetails = {
 }
 
 /**
+ * OAuth authorization details when user has already consented.
+ * Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
+ */
+export type OAuthAlreadyConsentedDetails = {
+  /** URL to redirect the user back to the OAuth client */
+  redirect_url: string
+}
+
+/**
  * Response type for getting OAuth authorization details.
  * Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
  */
-export type AuthOAuthAuthorizationDetailsResponse = RequestResult<OAuthAuthorizationDetails>
+export type AuthOAuthAuthorizationDetailsResponse = RequestResult<
+  OAuthAuthorizationDetails | OAuthAlreadyConsentedDetails
+>
 
 /**
  * Response type for OAuth consent decision (approve/deny).
@@ -1834,7 +1845,7 @@ export interface AuthOAuthServerApi {
    * Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
    *
    * This method returns authorization details including client info, scopes, and user information.
-   * If the response includes a redirect_uri, it means consent was already given - the caller
+   * If the response includes a redirect_url, it means consent was already given - the caller
    * should handle the redirect manually if needed.
    *
    * @param authorizationId - The authorization ID from the authorization request
