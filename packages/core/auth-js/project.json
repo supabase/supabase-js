@@ -4,14 +4,14 @@
     "test:clean-pre": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "supabase stop --no-backup || true",
+        "command": "npx supabase stop --no-backup || true",
         "cwd": "{projectRoot}/test/supabase"
       }
     },
     "test:infra": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "supabase start",
+        "command": "npx supabase start",
         "cwd": "{projectRoot}/test/supabase"
       },
       "dependsOn": ["test:clean-pre"]
@@ -28,7 +28,7 @@
     "test:clean-post": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "supabase stop --no-backup || true",
+        "command": "npx supabase stop --no-backup || true",
         "cwd": "{projectRoot}/test/supabase"
       },
       "dependsOn": ["test:suite"]

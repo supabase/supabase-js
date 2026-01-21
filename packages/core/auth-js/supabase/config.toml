@@ -110,8 +110,7 @@ jwt_expiry = 3600
 jwt_secret = "super-secret-jwt-token-with-at-least-32-characters-long"
 # JWT issuer URL. If not set, defaults to the local API URL (http://127.0.0.1:<port>/auth/v1).
 # jwt_issuer = ""
-# Path to JWT signing key. DO NOT commit your signing keys file to git in production.
-# Note: The test signing_keys.json IS committed for local test infrastructure.
+# Path to JWT signing key. DO NOT commit your signing keys file to git.
 signing_keys_path = "./signing_keys.json"
 # If disabled, the refresh token will never expire.
 enable_refresh_token_rotation = true
