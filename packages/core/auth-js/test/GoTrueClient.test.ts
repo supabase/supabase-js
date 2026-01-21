@@ -1497,7 +1497,7 @@ describe('getClaims', () => {
     expect(error).toBeNull()
   })
 
-  test('getClaims calls getUser if symmetric jwt is present', async () => {
+  test('getClaims verifies RS256 jwt without calling getUser', async () => {
     const { email, password } = mockUserCredentials()
     jest.spyOn(authWithSession, 'getUser')
     const {
@@ -1513,7 +1513,8 @@ describe('getClaims', () => {
     const { data, error } = await authWithSession.getClaims()
     expect(error).toBeNull()
     expect(data?.claims.email).toEqual(user?.email)
-    expect(authWithSession.getUser).toHaveBeenCalled()
+    // With RS256 tokens, getClaims verifies the signature directly without calling getUser
+    expect(authWithSession.getUser).not.toHaveBeenCalled()
   })
 
   test('getClaims returns properly typed JwtPayload with documented fields', async () => {
