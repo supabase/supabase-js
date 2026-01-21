@@ -3,6 +3,7 @@ import { describe, beforeEach, afterEach, test, vi, expect } from 'vitest'
 import RealtimeClient from '../src/RealtimeClient'
 import RealtimeChannel from '../src/RealtimeChannel'
 import { setupRealtimeTest, cleanupRealtimeTest, TestSetup } from './helpers/setup'
+import { CHANNEL_STATES } from '../src/lib/constants'
 
 const defaultRef = '1'
 const defaultTimeout = 1000
@@ -139,6 +140,8 @@ describe('on', () => {
         private: false,
       },
     })
+
+    await vi.waitFor(() => expect(channel.state).toBe(CHANNEL_STATES.joined))
   })
 
   describe('off', () => {

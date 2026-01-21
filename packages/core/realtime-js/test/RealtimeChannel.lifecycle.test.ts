@@ -216,7 +216,7 @@ describe('Channel Lifecycle Management', () => {
       assert.equal(channel.state, state)
     })
 
-    test('if subscription closed and then subscribe, it will rejoin', () => {
+    test('if subscription closed and then subscribe, it will rejoin', async () => {
       channel.subscribe()
       while (channel.state == CHANNEL_STATES.closed) vi.advanceTimersByTime(100)
 
@@ -226,7 +226,7 @@ describe('Channel Lifecycle Management', () => {
       }
       channel.subscribe()
 
-      assert.equal(channel.state, CHANNEL_STATES.joining)
+      await vi.waitFor(() => expect(channel.state).toBe(CHANNEL_STATES.joined))
     })
 
     test('updates join push payload access token', async () => {
