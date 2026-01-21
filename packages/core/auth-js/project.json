@@ -77,10 +77,9 @@
     "test:docker:suite": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "jest --config jest.config.docker.js --runInBand --coverage",
+        "command": "jest --config jest.config.docker.js --runInBand",
         "cwd": "{projectRoot}"
       },
-      "outputs": ["{projectRoot}/coverage-docker"],
       "dependsOn": ["test:docker:infra"]
     },
     "test:docker:clean-post": {

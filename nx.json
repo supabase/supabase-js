@@ -15,7 +15,6 @@
       "!{projectRoot}/**/*.md",
       "!{projectRoot}/docs/**/*",
       "!{projectRoot}/coverage/**/*",
-      "!{projectRoot}/coverage-docker/**/*",
       "sharedGlobals",
       "!{projectRoot}/.eslintrc.json",
       "!{projectRoot}/eslint.config.mjs",
@@ -147,8 +146,7 @@
     },
     "test:docker": {
       "inputs": ["testing", "^production"],
-      "cache": false,
-      "outputs": ["{projectRoot}/coverage-docker"]
+      "cache": false
     },
     "test:docker:clean-pre": {
       "cache": false
@@ -158,8 +156,7 @@
     },
     "test:docker:suite": {
       "inputs": ["testing", "^production"],
-      "cache": false,
-      "outputs": ["{projectRoot}/coverage-docker"]
+      "cache": false
     },
     "test:docker:clean-post": {
       "cache": false
