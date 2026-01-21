@@ -23,7 +23,7 @@
         "cwd": "{projectRoot}"
       },
       "outputs": ["{projectRoot}/coverage"],
-      "dependsOn": ["test:infra"]
+      "dependsOn": ["^build", "test:infra"]
     },
     "test:clean-post": {
       "executor": "nx:run-commands",
@@ -62,7 +62,7 @@
         "command": "jest test/v12/v12-compat.test.ts --runInBand",
         "cwd": "{projectRoot}"
       },
-      "dependsOn": ["test:v12:infra"]
+      "dependsOn": ["^build", "test:v12:infra"]
     },
     "test:v12:clean-post": {
       "executor": "nx:run-commands",
