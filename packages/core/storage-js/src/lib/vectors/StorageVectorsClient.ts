@@ -1,6 +1,6 @@
 import VectorIndexApi, { CreateIndexOptions } from './VectorIndexApi'
 import VectorDataApi from './VectorDataApi'
-import { Fetch } from './fetch'
+import { Fetch } from '../common/fetch'
 import VectorBucketApi from './VectorBucketApi'
 import {
   ApiResponse,

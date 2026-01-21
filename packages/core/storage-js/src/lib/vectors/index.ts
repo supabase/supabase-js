@@ -51,10 +51,10 @@ export {
   StorageVectorsUnknownError,
   StorageVectorsErrorCode,
   isStorageVectorsError,
-} from './errors'
+} from '../common/errors'
 
 // Fetch utilities (for custom implementations)
-export type { Fetch, FetchOptions, RequestMethodType } from './fetch'
+export type { Fetch, FetchOptions, RequestMethodType } from '../common/fetch'
 
 // Helper utilities
 export {
@@ -63,4 +63,4 @@ export {
   isPlainObject,
   normalizeToFloat32,
   validateVectorDimension,
-} from './helpers'
+} from '../common/helpers'

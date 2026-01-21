@@ -1,4 +1,4 @@
-import { StorageError } from './errors'
+import { StorageError } from './common/errors'
 
 /**
  * Type of storage bucket

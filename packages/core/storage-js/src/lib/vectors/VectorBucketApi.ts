@@ -1,7 +1,7 @@
 import { DEFAULT_HEADERS } from './constants'
-import { isStorageVectorsError } from './errors'
-import { Fetch, post } from './fetch'
-import { resolveFetch } from './helpers'
+import { isStorageVectorsError } from '../common/errors'
+import { Fetch, post } from '../common/fetch'
+import { resolveFetch } from '../common/helpers'
 import {
   ApiResponse,
   VectorBucket,

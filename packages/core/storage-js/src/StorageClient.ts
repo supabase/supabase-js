@@ -1,7 +1,7 @@
 import StorageFileApi from './packages/StorageFileApi'
 import StorageBucketApi from './packages/StorageBucketApi'
 import StorageAnalyticsClient from './packages/StorageAnalyticsClient'
-import { Fetch } from './lib/fetch'
+import { Fetch } from './lib/common/fetch'
 import { StorageVectorsClient } from './lib/vectors'
 
 export interface StorageClientOptions {

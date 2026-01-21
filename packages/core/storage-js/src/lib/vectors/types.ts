@@ -1,4 +1,4 @@
-import { StorageVectorsError } from './errors'
+import { StorageVectorsError } from '../common/errors'
 
 /**
  * Configuration for encryption at rest
