@@ -8,6 +8,7 @@ import type {
 import { ClientServerOptions, Fetch } from './types/common/common'
 import PostgrestError from './PostgrestError'
 import { ContainsNull } from './select-query-parser/types'
+import { resolveFetch } from '@supabase/utils-fetch'
 
 export default abstract class PostgrestBuilder<
   ClientOptions extends ClientServerOptions,
@@ -61,11 +62,7 @@ export default abstract class PostgrestBuilder<
     this.signal = builder.signal
     this.isMaybeSingle = builder.isMaybeSingle ?? false
 
-    if (builder.fetch) {
-      this.fetch = builder.fetch
-    } else {
-      this.fetch = fetch
-    }
+    this.fetch = resolveFetch(builder.fetch)
   }
 
   /**

@@ -20,5 +20,8 @@
     "stripInternal": true,
     "noImplicitOverride": false,
     "isolatedModules": false
-  }
+  },
+  "references": [
+    { "path": "../../shared/utils/fetch" }
+  ]
 }
