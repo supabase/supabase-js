@@ -3,8 +3,7 @@ import * as fsp from 'fs/promises'
 import * as fs from 'fs'
 import * as path from 'path'
 import assert from 'assert'
-import ReadableStream from 'node:stream'
-import { StorageApiError, StorageError } from '../src/lib/errors'
+import { StorageApiError, StorageError } from '../src/lib/common/errors'
 import BlobDownloadBuilder from '../src/packages/BlobDownloadBuilder'
 import StreamDownloadBuilder from '../src/packages/StreamDownloadBuilder'
 
@@ -773,7 +772,7 @@ describe('StorageFileApi Edge Cases', () => {
     let mockPost: jest.SpyInstance
 
     beforeEach(() => {
-      const fetchLib = require('../src/lib/fetch')
+      const fetchLib = require('../src/lib/common/fetch')
       mockPut = jest.spyOn(fetchLib, 'put').mockResolvedValue({
         id: 'test-id',
         path: 'test-path',

@@ -1,6 +1,6 @@
 import { DEFAULT_HEADERS } from '../lib/constants'
 import { StorageError } from '../lib/common/errors'
-import { get, post, put, remove } from '../lib/common/fetch'
+import { Fetch, get, post, put, remove } from '../lib/common/fetch'
 import BaseApiClient from '../lib/common/BaseApiClient'
 import { Bucket, BucketType, ListBucketOptions } from '../lib/types'
 import { StorageClientOptions } from '../StorageClient'
@@ -9,7 +9,7 @@ export default class StorageBucketApi extends BaseApiClient<StorageError> {
   constructor(
     url: string,
     headers: { [key: string]: string } = {},
-    fetch?: any,
+    fetch?: Fetch,
     opts?: StorageClientOptions
   ) {
     const baseUrl = new URL(url)
@@ -303,24 +303,9 @@ export default class StorageBucketApi extends BaseApiClient<StorageError> {
         error: StorageError
       }
   > {
-    try {
-      const data = await post(
-        this.fetch,
-        `${this.url}/bucket/${id}/empty`,
-        {},
-        { headers: this.headers }
-      )
-      return { data, error: null }
-    } catch (error) {
-      if (this.shouldThrowOnError) {
-        throw error
-      }
-      if (isStorageError(error)) {
-        return { data: null, error }
-      }
-
-      throw error
-    }
+    return this.handleOperation(async () => {
+      return await post(this.fetch, `${this.url}/bucket/${id}/empty`, {}, { headers: this.headers })
+    })
   }
 
   /**
@@ -358,24 +343,9 @@ export default class StorageBucketApi extends BaseApiClient<StorageError> {
         error: StorageError
       }
   > {
-    try {
-      const data = await remove(
-        this.fetch,
-        `${this.url}/bucket/${id}`,
-        {},
-        { headers: this.headers }
-      )
-      return { data, error: null }
-    } catch (error) {
-      if (this.shouldThrowOnError) {
-        throw error
-      }
-      if (isStorageError(error)) {
-        return { data: null, error }
-      }
-
-      throw error
-    }
+    return this.handleOperation(async () => {
+      return await remove(this.fetch, `${this.url}/bucket/${id}`, {}, { headers: this.headers })
+    })
   }
 
   private listBucketOptionsToQueryString(options?: ListBucketOptions): string {

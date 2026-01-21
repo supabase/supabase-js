@@ -201,12 +201,8 @@ describe('Common Errors', () => {
       expect(StorageVectorsErrorCode.S3VectorConflictException).toBe('S3VectorConflictException')
       expect(StorageVectorsErrorCode.S3VectorNotFoundException).toBe('S3VectorNotFoundException')
       expect(StorageVectorsErrorCode.S3VectorBucketNotEmpty).toBe('S3VectorBucketNotEmpty')
-      expect(StorageVectorsErrorCode.S3VectorMaxBucketsExceeded).toBe(
-        'S3VectorMaxBucketsExceeded'
-      )
-      expect(StorageVectorsErrorCode.S3VectorMaxIndexesExceeded).toBe(
-        'S3VectorMaxIndexesExceeded'
-      )
+      expect(StorageVectorsErrorCode.S3VectorMaxBucketsExceeded).toBe('S3VectorMaxBucketsExceeded')
+      expect(StorageVectorsErrorCode.S3VectorMaxIndexesExceeded).toBe('S3VectorMaxIndexesExceeded')
     })
   })
 })

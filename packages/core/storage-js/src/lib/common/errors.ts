@@ -36,7 +36,12 @@ export class StorageApiError extends StorageError {
   status: number
   statusCode: string
 
-  constructor(message: string, status: number, statusCode: string, namespace: ErrorNamespace = 'storage') {
+  constructor(
+    message: string,
+    status: number,
+    statusCode: string,
+    namespace: ErrorNamespace = 'storage'
+  ) {
     super(message, namespace)
     this.name = namespace === 'vectors' ? 'StorageVectorsApiError' : 'StorageApiError'
     this.status = status

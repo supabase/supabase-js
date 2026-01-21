@@ -49,22 +49,13 @@ describe('BaseApiClient', () => {
     })
 
     it('should initialize with vectors namespace', () => {
-      const vectorClient = new TestApiClient(
-        'http://test.com',
-        {},
-        undefined,
-        'vectors'
-      )
+      const vectorClient = new TestApiClient('http://test.com', {}, undefined, 'vectors')
       expect(vectorClient['namespace']).toBe('vectors')
     })
 
     it('should use custom fetch if provided', () => {
       const customFetch = jest.fn()
-      const clientWithFetch = new TestApiClient(
-        'http://test.com',
-        {},
-        customFetch
-      )
+      const clientWithFetch = new TestApiClient('http://test.com', {}, customFetch)
       expect(clientWithFetch['fetch']).toBeDefined()
     })
 
@@ -249,8 +240,7 @@ describe('BaseApiClient', () => {
 
       const typedClient = new (class extends BaseApiClient {
         async getCustomData(): Promise<
-          | { data: CustomData; error: null }
-          | { data: null; error: StorageError }
+          { data: CustomData; error: null } | { data: null; error: StorageError }
         > {
           return this.handleOperation<CustomData>(async () => {
             return { id: '123', name: 'test' }

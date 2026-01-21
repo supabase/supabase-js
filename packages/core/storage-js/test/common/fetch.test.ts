@@ -1,15 +1,5 @@
-import {
-  createFetchApi,
-  get,
-  post,
-  put,
-  head,
-  remove,
-} from '../../src/lib/common/fetch'
-import {
-  StorageApiError,
-  StorageUnknownError,
-} from '../../src/lib/common/errors'
+import { createFetchApi, get, post, put, head, remove } from '../../src/lib/common/fetch'
+import { StorageApiError, StorageUnknownError } from '../../src/lib/common/errors'
 
 // Mock Response class for testing
 class MockResponse {
@@ -19,7 +9,10 @@ class MockResponse {
   private body: string
   private _headers: Map<string, string>
 
-  constructor(body: string, options: { status: number; statusText: string; headers?: Record<string, string> }) {
+  constructor(
+    body: string,
+    options: { status: number; statusText: string; headers?: Record<string, string> }
+  ) {
     this.body = body
     this.status = options.status
     this.statusText = options.statusText
