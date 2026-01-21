@@ -1,11 +1,25 @@
-# fetch
+# @supabase/utils-fetch
 
-This library was generated with [Nx](https://nx.dev).
+Internal shared library providing fetch utilities for Supabase JavaScript SDKs.
 
-## Building
+## Purpose
 
-Run `nx build fetch` to build the library.
+Eliminates code duplication of `resolveFetch()`, `resolveResponse()`, and `resolveHeadersConstructor()` across all client libraries.
 
-## Running unit tests
+## Usage
 
-Run `nx test fetch` to execute the unit tests via [Jest](https://jestjs.io).
+```typescript
+import {
+  Fetch,
+  resolveFetch,
+  resolveResponse,
+  resolveHeadersConstructor,
+} from '@supabase/utils-fetch'
+```
+
+**Note:** This is an internal workspace library. Client libraries reference it via TypeScript project references.
+
+## Development
+
+- Build: `nx build fetch`
+- Test: `nx test fetch`

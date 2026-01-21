@@ -16,11 +16,7 @@ const config: Config.InitialOptions = {
     ],
   },
   moduleFileExtensions: ['ts', 'js', 'json', 'node'],
-  collectCoverageFrom: [
-    '!**/node_modules/**',
-    'src/**/*.ts',
-    '!**/*.d.ts',
-  ],
+  collectCoverageFrom: ['!**/node_modules/**', 'src/**/*.ts', '!**/*.d.ts'],
   coverageProvider: 'v8',
 }
 

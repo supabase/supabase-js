@@ -167,6 +167,7 @@ All commits must follow this format:
 - `docs` - Documentation
 - `scripts` - Build/dev scripts
 - `misc` - Miscellaneous
+- `utils` - Utils
 
 ### Commit Examples
 

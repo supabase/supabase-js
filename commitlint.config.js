@@ -40,6 +40,7 @@ module.exports = {
         'docs',
         'scripts',
         'misc',
+        'utils',
       ],
     ],
 
@@ -120,6 +121,7 @@ module.exports = {
           docs: { description: 'Documentation' },
           scripts: { description: 'Build/dev scripts' },
           misc: { description: 'Miscellaneous' },
+          utils: { description: 'Utils' },
         },
       },
       subject: {

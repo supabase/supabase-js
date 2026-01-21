@@ -24,7 +24,5 @@
     "isolatedModules": false
   },
   "typeRoots": ["./src/types"],
-  "references": [
-    { "path": "../../shared/utils/fetch" }
-  ]
+  "references": [{ "path": "../../shared/utils/fetch" }]
 }
