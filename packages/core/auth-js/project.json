@@ -1,25 +1,35 @@
 {
   "name": "@supabase/auth-js",
   "targets": {
+    "test:generate-keys": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "node test/generate-signing-keys.js",
+        "cwd": "{projectRoot}"
+      },
+      "metadata": {
+        "description": "Generate RSA signing keys for tests (not committed to git)"
+      }
+    },
     "test:clean-pre": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "supabase stop --no-backup || true",
-        "cwd": "{projectRoot}/test/supabase"
+        "command": "npx supabase stop --no-backup --workdir test || true",
+        "cwd": "{projectRoot}"
       }
     },
     "test:infra": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "supabase start",
-        "cwd": "{projectRoot}/test/supabase"
+        "command": "npx supabase start --workdir test",
+        "cwd": "{projectRoot}"
       },
-      "dependsOn": ["test:clean-pre"]
+      "dependsOn": ["test:generate-keys", "test:clean-pre"]
     },
     "test:suite": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "jest --runInBand --coverage --testPathIgnorePatterns=docker-tests",
+        "command": "jest --config jest.config.cli.js --runInBand --coverage --testPathIgnorePatterns=docker-tests",
         "cwd": "{projectRoot}"
       },
       "outputs": ["{projectRoot}/coverage"],
@@ -28,8 +38,8 @@
     "test:clean-post": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "supabase stop --no-backup || true",
-        "cwd": "{projectRoot}/test/supabase"
+        "command": "npx supabase stop --no-backup --workdir test || true",
+        "cwd": "{projectRoot}"
       },
       "dependsOn": ["test:suite"]
     },
@@ -62,12 +72,12 @@
         "cwd": "{projectRoot}",
         "parallel": false
       },
-      "dependsOn": ["test:docker:clean-pre"]
+      "dependsOn": ["test:generate-keys", "test:docker:clean-pre"]
     },
     "test:docker:suite": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "jest --runInBand --coverage --coverageDirectory=coverage-docker --testPathPattern=docker-tests",
+        "command": "jest --config jest.config.docker.js --runInBand --coverage",
         "cwd": "{projectRoot}"
       },
       "outputs": ["{projectRoot}/coverage-docker"],

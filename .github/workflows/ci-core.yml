@@ -62,6 +62,9 @@ jobs:
           fail-on-error: false
         continue-on-error: true
 
+      - name: Generate RSA signing keys for auth-js tests
+        run: node packages/core/auth-js/test/generate-signing-keys.js
+
       - name: Run auth-js tests with Supabase CLI (if affected)
         run: npx nx affected --target=test:auth
         timeout-minutes: 10
@@ -111,19 +114,16 @@ jobs:
         run: npm ci
       - uses: nrwl/nx-set-shas@v4
 
+      - name: Generate RSA signing keys for auth-js Docker tests
+        run: node packages/core/auth-js/test/generate-signing-keys.js
+
       - name: Run auth-js Docker tests (if affected)
         run: npx nx affected --target=test:docker --projects=@supabase/auth-js
         timeout-minutes: 10
 
-      - name: Upload coverage for auth-js Docker tests (if affected)
-        uses: coverallsapp/github-action@v2
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          path-to-lcov: ./packages/core/auth-js/coverage-docker/lcov.info
-          parallel: true
-          flag-name: auth-js-docker
-          fail-on-error: false
-        continue-on-error: true
+      # Note: Docker test coverage is not uploaded to Coveralls
+      # The regular auth-js tests provide comprehensive coverage reporting
+      # Docker tests verify integration scenarios but don't need separate coverage tracking
 
   # Separate job for postgrest-js tests (Docker-based, retriable)
   test-postgrest-js:

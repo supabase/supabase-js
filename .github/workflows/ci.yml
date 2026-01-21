@@ -45,6 +45,6 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           parallel-finished: true
-          carryforward: 'auth-js,auth-js-docker,functions-js,postgrest-js,realtime-js,storage-js,supabase-js'
+          carryforward: 'auth-js,functions-js,postgrest-js,realtime-js,storage-js,supabase-js'
           fail-on-error: false
         continue-on-error: true

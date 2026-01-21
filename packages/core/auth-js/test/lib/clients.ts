@@ -1,4 +1,7 @@
 import jwt from 'jsonwebtoken'
+import crypto from 'crypto'
+import fs from 'fs'
+import path from 'path'
 import { GoTrueAdminApi, GoTrueClient, type GoTrueClientOptions } from '../../src/index'
 import { SupportedStorage } from '../../src/lib/types'
 
@@ -7,14 +10,6 @@ export const GOTRUE_URL_SIGNUP_ENABLED_AUTO_CONFIRM_ON = 'http://127.0.0.1:54321
 
 // Supabase CLI JWT secret
 export const GOTRUE_JWT_SECRET = 'super-secret-jwt-token-with-at-least-32-characters-long'
-
-// Supabase CLI default anon key (required for API gateway)
-const SUPABASE_ANON_KEY =
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0'
-
-// Supabase CLI default service role key
-const SUPABASE_SERVICE_ROLE_KEY =
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU'
 
 class MemoryStorage {
   private _storage: { [name: string]: string } = {}
@@ -32,12 +27,48 @@ class MemoryStorage {
   }
 }
 
+// Load RSA private key from signing_keys.json and generate JWTs dynamically
+const signingKeysPath = path.join(__dirname, '../supabase/signing_keys.json')
+const signingKeys = JSON.parse(fs.readFileSync(signingKeysPath, 'utf8'))
+const rsaKey = signingKeys[0]
+const privateKeyObject = crypto.createPrivateKey({
+  key: rsaKey,
+  format: 'jwk'
+})
+const privateKey = privateKeyObject.export({ type: 'pkcs8', format: 'pem' })
+
+// Generate anon key dynamically from signing keys (RS256-signed, required for API gateway)
+const SUPABASE_ANON_KEY = jwt.sign(
+  {
+    iss: 'supabase-demo',
+    role: 'anon',
+    exp: 1983812996,
+    iat: 1768925145
+  },
+  privateKey,
+  { algorithm: 'RS256', keyid: rsaKey.kid }
+)
+
+// Generate service role key dynamically from signing keys (RS256-signed)
+const SUPABASE_SERVICE_ROLE_KEY = jwt.sign(
+  {
+    iss: 'supabase-demo',
+    role: 'service_role',
+    exp: 1983812996,
+    iat: 1768925145
+  },
+  privateKey,
+  { algorithm: 'RS256', keyid: rsaKey.kid }
+)
+
+// Generate admin JWT dynamically from signing keys
 const AUTH_ADMIN_JWT = jwt.sign(
   {
     sub: '1234567890',
     role: 'supabase_admin',
   },
-  GOTRUE_JWT_SECRET
+  privateKey,
+  { algorithm: 'RS256', keyid: rsaKey.kid }
 )
 
 export const authClient = new GoTrueClient({
