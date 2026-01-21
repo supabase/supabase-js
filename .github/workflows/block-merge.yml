@@ -6,7 +6,7 @@ on:
 
 jobs:
   block-merge:
-    uses: supabase/actions/.github/workflows/block-merge.yml@feat/reusable-workflows
+    uses: supabase/actions/.github/workflows/block-merge.yml@659b3cd74a64ee2f1ca0a527922f134707e54671
     with:
       block_labels: 'do-not-merge'
       block_keywords: 'wip,do not merge'

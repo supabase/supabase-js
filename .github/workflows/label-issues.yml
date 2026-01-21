@@ -12,7 +12,7 @@ permissions:
 
 jobs:
   label:
-    uses: supabase/actions/.github/workflows/label-issues.yml@feat/reusable-workflows
+    uses: supabase/actions/.github/workflows/label-issues.yml@659b3cd74a64ee2f1ca0a527922f134707e54671
     with:
       label_mappings: |
         {
