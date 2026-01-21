@@ -1,4 +1,4 @@
-export type Fetch = typeof fetch
+export type { Fetch } from '@supabase/utils-fetch'
 
 /**
  * Response format

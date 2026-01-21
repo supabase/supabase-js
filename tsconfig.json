@@ -17,6 +17,9 @@
     },
     {
       "path": "./packages/core/auth-js"
+    },
+    {
+      "path": "./packages/shared/utils/fetch"
     }
   ]
 }

@@ -23,5 +23,8 @@
     "noImplicitOverride": false,
     "isolatedModules": false
   },
-  "typeRoots": ["./src/types"]
+  "typeRoots": ["./src/types"],
+  "references": [
+    { "path": "../../shared/utils/fetch" }
+  ]
 }
