@@ -19,8 +19,7 @@ import Timer from './lib/timer'
 import { httpEndpointURL } from './lib/transformers'
 import RealtimeChannel from './RealtimeChannel'
 import type { RealtimeChannelOptions } from './RealtimeChannel'
-
-type Fetch = typeof fetch
+import { Fetch, resolveFetch } from '@supabase/utils-fetch'
 
 export type Channel = {
   name: string
@@ -189,7 +188,7 @@ export default class RealtimeClient {
 
     this._initializeOptions(options)
     this._setupReconnectionTimer()
-    this.fetch = this._resolveFetch(options?.fetch)
+    this.fetch = resolveFetch(options?.fetch)
   }
 
   /**
@@ -519,18 +518,6 @@ export default class RealtimeClient {
       this.sendBuffer.forEach((callback) => callback())
       this.sendBuffer = []
     }
-  }
-
-  /**
-   * Use either custom fetch, if provided, or default fetch to make HTTP requests
-   *
-   * @internal
-   */
-  _resolveFetch = (customFetch?: Fetch): Fetch => {
-    if (customFetch) {
-      return (...args) => customFetch(...args)
-    }
-    return (...args) => fetch(...args)
   }
 
   /**

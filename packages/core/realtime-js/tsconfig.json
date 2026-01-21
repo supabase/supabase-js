@@ -17,5 +17,5 @@
     "stripInternal": true,
     "isolatedModules": false
   },
-  "references": []
+  "references": [{ "path": "../../shared/utils/fetch" }]
 }
