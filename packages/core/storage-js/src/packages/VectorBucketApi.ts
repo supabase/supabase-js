@@ -18,7 +18,7 @@ export default class VectorBucketApi extends BaseApiClient<StorageError> {
   /** Creates a new VectorBucketApi instance */
   constructor(url: string, headers: { [key: string]: string } = {}, fetch?: Fetch) {
     const finalUrl = url.replace(/\/$/, '')
-    const finalHeaders = { ...DEFAULT_HEADERS, ...headers }
+    const finalHeaders = { ...DEFAULT_HEADERS, 'Content-Type': 'application/json', ...headers }
     super(finalUrl, finalHeaders, fetch, 'vectors')
   }
 

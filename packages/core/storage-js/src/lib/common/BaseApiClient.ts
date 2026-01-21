@@ -3,6 +3,7 @@ import { Fetch } from './fetch'
 import { resolveFetch } from './helpers'
 
 /**
+ * @ignore
  * Base API client class for all Storage API classes
  * Provides common infrastructure for error handling and configuration
  *

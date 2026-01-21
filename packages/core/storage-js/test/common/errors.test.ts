@@ -105,6 +105,12 @@ describe('Common Errors', () => {
       expect(error.originalError).toBe(originalError)
       expect(error['namespace']).toBe('vectors')
     })
+
+    it('should preserve original error of any type', () => {
+      const originalError = { custom: 'error object' }
+      const error = new StorageUnknownError('Unknown error', originalError)
+      expect(error.originalError).toBe(originalError)
+    })
   })
 
   describe('isStorageError', () => {
@@ -139,6 +145,11 @@ describe('Common Errors', () => {
       expect(isStorageError('error')).toBe(false)
       expect(isStorageError(42)).toBe(false)
       expect(isStorageError({})).toBe(false)
+    })
+
+    it('should return false for objects without __isStorageError', () => {
+      const obj = { name: 'Error', message: 'test' }
+      expect(isStorageError(obj)).toBe(false)
     })
   })
 
