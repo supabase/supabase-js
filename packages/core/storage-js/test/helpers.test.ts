@@ -4,7 +4,7 @@ import {
   recursiveToCamel,
   isPlainObject,
   isValidBucketName,
-} from '../src/lib/helpers'
+} from '../src/lib/common/helpers'
 
 describe('Helpers', () => {
   describe('resolveFetch', () => {

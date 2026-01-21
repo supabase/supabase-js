@@ -3,7 +3,7 @@ import {
   StorageApiError,
   StorageUnknownError,
   isStorageError,
-} from '../src/lib/errors'
+} from '../src/lib/common/errors'
 
 describe('Storage Errors', () => {
   describe('StorageError', () => {

@@ -6,7 +6,7 @@
 /// <reference types="jest" />
 
 import { testData } from './setup'
-import type { Fetch } from '../src/lib/vectors'
+import type { Fetch } from '../src/lib/common/fetch'
 
 interface MockResponse {
   status: number
