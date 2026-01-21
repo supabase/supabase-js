@@ -183,6 +183,34 @@ npx nx test:clean-post auth-js
 | CLI Tests    | Supabase CLI   | `test/supabase/config.toml` |
 | Docker Tests | Docker Compose | `infra/docker-compose.yml`  |
 
+#### Coverage Reports
+
+The auth-js package uses **two complementary test suites** that are merged into a single coverage report:
+
+**1. CLI Tests (331 tests)**
+
+- Tests core authentication functionality via Supabase CLI
+- Covers email/password auth, OAuth providers, session management, MFA, SSO, and more
+- Represents features used by 90% of applications
+
+**2. Docker Tests (11 tests)**
+
+- Tests edge cases requiring custom GoTrue configurations
+- Covers signup-disabled, anonymous-disabled, asymmetric JWT (RS256), and phone/SMS flows
+- Complements CLI tests with scenarios requiring specific server settings
+
+**Coverage Strategy**: Both test suites collect coverage data that is automatically merged to provide a comprehensive view of total code coverage. You can generate the merged coverage report locally:
+
+```bash
+# Run both test suites and merge coverage
+npx nx test:all auth-js
+
+# Or merge existing coverage reports
+npx nx test:merge-coverage auth-js
+```
+
+The merged coverage report is located at `coverage-merged/lcov.info`.
+
 ### Contributing
 
 We welcome contributions! Please see our [Contributing Guide](../../../CONTRIBUTING.md) for details on how to get started.

@@ -66,14 +66,12 @@ jobs:
         run: npx nx affected --target=test:auth
         timeout-minutes: 10
 
-      - name: Upload coverage for auth-js (if affected)
-        uses: coverallsapp/github-action@v2
+      - name: Upload auth-js CLI coverage artifact
+        uses: actions/upload-artifact@v4
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          path-to-lcov: ./packages/core/auth-js/coverage/lcov.info
-          parallel: true
-          flag-name: auth-js
-          fail-on-error: false
+          name: auth-js-coverage
+          path: packages/core/auth-js/coverage/lcov.info
+          if-no-files-found: ignore
         continue-on-error: true
 
       - name: Setup Supabase CLI (for storage-js tests)
@@ -115,13 +113,51 @@ jobs:
         run: npx nx affected --target=test:docker --projects=@supabase/auth-js
         timeout-minutes: 10
 
-      - name: Upload coverage for auth-js Docker tests (if affected)
+      - name: Upload auth-js Docker coverage artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: auth-js-docker-coverage
+          path: packages/core/auth-js/coverage-docker/lcov.info
+          if-no-files-found: ignore
+        continue-on-error: true
+
+  # Merge auth-js coverage reports from both test suites
+  merge-auth-js-coverage:
+    name: Merge auth-js coverage
+    runs-on: ubuntu-latest
+    needs: [setup-build-test-node-20, test-auth-js-docker]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Download CLI coverage artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: auth-js-coverage
+          path: packages/core/auth-js/coverage
+        continue-on-error: true
+
+      - name: Download Docker coverage artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: auth-js-docker-coverage
+          path: packages/core/auth-js/coverage-docker
+        continue-on-error: true
+
+      - name: Merge coverage reports
+        run: node packages/core/auth-js/merge-coverage.js
+        continue-on-error: true
+
+      - name: Upload merged coverage to Coveralls
         uses: coverallsapp/github-action@v2
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          path-to-lcov: ./packages/core/auth-js/coverage-docker/lcov.info
+          path-to-lcov: ./packages/core/auth-js/coverage-merged/lcov.info
           parallel: true
-          flag-name: auth-js-docker
+          flag-name: auth-js
           fail-on-error: false
         continue-on-error: true
 
@@ -235,6 +271,7 @@ jobs:
       [
         setup-build-test-node-20,
         test-auth-js-docker,
+        merge-auth-js-coverage,
         test-postgrest-js,
         check-postgrest-generated-types,
         test-postgrest-js-v12,

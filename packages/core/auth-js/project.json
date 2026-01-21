@@ -41,7 +41,7 @@
       },
       "dependsOn": ["test:clean-post"],
       "metadata": {
-        "description": "Run auth-js tests with Supabase CLI (excludes docker-tests folder)"
+        "description": "Run auth-js CLI tests - core auth functionality (email, OAuth, sessions, MFA, SSO) with coverage report"
       }
     },
     "test:docker:clean-pre": {
@@ -89,7 +89,29 @@
       },
       "dependsOn": ["test:docker:clean-post"],
       "metadata": {
-        "description": "Run Docker-only tests (signup-disabled, asymmetric-jwt, phone-otp, anonymous-disabled)"
+        "description": "Run auth-js Docker tests - edge cases requiring custom GoTrue config (signup-disabled, asymmetric-jwt, phone-otp, anonymous-disabled) with separate coverage report"
+      }
+    },
+    "test:merge-coverage": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "node merge-coverage.js",
+        "cwd": "{projectRoot}"
+      },
+      "outputs": ["{projectRoot}/coverage-merged"],
+      "metadata": {
+        "description": "Merge coverage reports from CLI and Docker test suites into a single report"
+      }
+    },
+    "test:all": {
+      "executor": "nx:run-commands",
+      "options": {
+        "commands": ["nx test:auth auth-js", "nx test:docker auth-js", "node merge-coverage.js"],
+        "cwd": "{projectRoot}",
+        "parallel": false
+      },
+      "metadata": {
+        "description": "Run both CLI and Docker test suites, then merge coverage reports"
       }
     }
   }
