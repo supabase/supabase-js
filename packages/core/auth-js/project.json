@@ -98,7 +98,9 @@
         "command": "node merge-coverage.js",
         "cwd": "{projectRoot}"
       },
+      "inputs": ["{projectRoot}/coverage", "{projectRoot}/coverage-docker"],
       "outputs": ["{projectRoot}/coverage-merged"],
+      "dependsOn": ["test:auth", "test:docker"],
       "metadata": {
         "description": "Merge coverage reports from CLI and Docker test suites into a single report"
       }
@@ -106,10 +108,10 @@
     "test:all": {
       "executor": "nx:run-commands",
       "options": {
-        "commands": ["nx test:auth auth-js", "nx test:docker auth-js", "node merge-coverage.js"],
-        "cwd": "{projectRoot}",
-        "parallel": false
+        "command": "echo 'Auth-js complete test suite finished (CLI + Docker + merged coverage)'",
+        "cwd": "{projectRoot}"
       },
+      "dependsOn": ["test:merge-coverage"],
       "metadata": {
         "description": "Run both CLI and Docker test suites, then merge coverage reports"
       }

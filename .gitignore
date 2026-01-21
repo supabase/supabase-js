@@ -30,6 +30,7 @@ deno.lock
 coverage/
 coverage
 coverage-docker/
+coverage-merged/
 .nyc_output
 *.lcov
 lib-cov
