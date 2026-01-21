@@ -62,11 +62,6 @@ jobs:
           fail-on-error: false
         continue-on-error: true
 
-      - name: Setup Supabase CLI (for auth-js and storage-js tests)
-        uses: supabase/setup-cli@v1
-        with:
-          version: latest
-
       - name: Run auth-js tests with Supabase CLI (if affected)
         run: npx nx affected --target=test:auth
         timeout-minutes: 10
@@ -80,6 +75,11 @@ jobs:
           flag-name: auth-js
           fail-on-error: false
         continue-on-error: true
+
+      - name: Setup Supabase CLI (for storage-js tests)
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
 
       - name: Run storage-js tests (if affected)
         run: npx nx affected --target=test:storage
