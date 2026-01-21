@@ -1146,9 +1146,7 @@ export default class GoTrueClient {
       }
       if (data.session) {
         await this._saveSession(data.session)
-        setTimeout(async () => {
-          await this._notifyAllSubscribers('SIGNED_IN', data.session)
-        }, 0)
+        await this._notifyAllSubscribers('SIGNED_IN', data.session)
       }
       return this._returnResult({ data: { ...data, redirectType: redirectType ?? null }, error })
     } catch (error) {
