@@ -146,6 +146,71 @@ describe('heartbeatCallback option', () => {
     expect(mockCallback).toHaveBeenCalledWith('error', undefined)
   })
 
+  test('should call heartbeatCallback with "error" when connection error occurs', () => {
+    const mockCallback = vi.fn()
+    const socket = new RealtimeClient(testSetup.url, {
+      params: { apikey: '123456789' },
+      heartbeatCallback: mockCallback,
+    })
+
+    socket.connect()
+
+    // Mock the connection
+    const mockConn = {
+      onerror: null as any,
+      readyState: MockWebSocket.OPEN,
+    }
+    socket.conn = mockConn as any
+
+    // Clear any previous calls from connection setup
+    mockCallback.mockClear()
+
+    // Simulate connection error event
+    const errorEvent = new Event('error')
+    socket['_onConnError'](errorEvent)
+
+    expect(mockCallback).toHaveBeenCalledWith('error')
+  })
+
+  test('should handle heartbeatCallback errors gracefully in connection error', () => {
+    const errorCallback = vi.fn().mockImplementation(() => {
+      throw new Error('Callback error')
+    })
+
+    const socket = new RealtimeClient(testSetup.url, {
+      params: { apikey: '123456789' },
+      heartbeatCallback: errorCallback,
+    })
+
+    socket.connect()
+
+    // Mock the connection
+    const mockConn = {
+      onerror: null as any,
+      readyState: MockWebSocket.OPEN,
+    }
+    socket.conn = mockConn as any
+
+    // Mock the log method to verify error logging
+    const logSpy = vi.spyOn(socket, 'log')
+
+    // Clear any previous calls
+    errorCallback.mockClear()
+    logSpy.mockClear()
+
+    // Simulate connection error event - should not throw despite callback error
+    const errorEvent = new Event('error')
+    expect(() => {
+      socket['_onConnError'](errorEvent)
+    }).not.toThrow()
+
+    // Callback should still be called
+    expect(errorCallback).toHaveBeenCalledWith('error')
+
+    // Error should be logged
+    expect(logSpy).toHaveBeenCalledWith('error', 'error in heartbeat callback', expect.any(Error))
+  })
+
   test('should call heartbeatCallback multiple times for different heartbeat events', async () => {
     const mockCallback = vi.fn()
     const socket = new RealtimeClient(testSetup.url, {
@@ -157,6 +222,9 @@ describe('heartbeatCallback option', () => {
 
     // Wait for connection to be established
     await new Promise((resolve) => setTimeout(resolve, 50))
+
+    // Clear any callback calls that occurred during connection setup
+    mockCallback.mockClear()
 
     // Mock the connection as connected
     vi.spyOn(socket, 'isConnected').mockReturnValue(true)
