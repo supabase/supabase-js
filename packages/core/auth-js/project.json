@@ -1,0 +1,105 @@
+{
+  "name": "@supabase/auth-js",
+  "targets": {
+    "test:generate-keys": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "node test/generate-signing-keys.js",
+        "cwd": "{projectRoot}"
+      },
+      "metadata": {
+        "description": "Generate RSA signing keys for tests (not committed to git)"
+      }
+    },
+    "test:clean-pre": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "npx supabase stop --no-backup --workdir test || true",
+        "cwd": "{projectRoot}"
+      }
+    },
+    "test:infra": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "npx supabase start --workdir test",
+        "cwd": "{projectRoot}"
+      },
+      "dependsOn": ["test:generate-keys", "test:clean-pre"]
+    },
+    "test:suite": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "jest --config jest.config.cli.js --runInBand --coverage --testPathIgnorePatterns=docker-tests",
+        "cwd": "{projectRoot}"
+      },
+      "outputs": ["{projectRoot}/coverage"],
+      "dependsOn": ["test:infra"]
+    },
+    "test:clean-post": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "npx supabase stop --no-backup --workdir test || true",
+        "cwd": "{projectRoot}"
+      },
+      "dependsOn": ["test:suite"]
+    },
+    "test:auth": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "echo 'Auth-js CLI tests complete'",
+        "cwd": "{projectRoot}"
+      },
+      "dependsOn": ["test:clean-post"],
+      "metadata": {
+        "description": "Run auth-js tests with Supabase CLI (excludes docker-tests folder)"
+      }
+    },
+    "test:docker:clean-pre": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "docker compose -f infra/docker-compose.yml down || true",
+        "cwd": "{projectRoot}"
+      }
+    },
+    "test:docker:infra": {
+      "executor": "nx:run-commands",
+      "options": {
+        "commands": [
+          "docker compose -f infra/docker-compose.yml pull",
+          "docker compose -f infra/docker-compose.yml up -d",
+          "sleep 30"
+        ],
+        "cwd": "{projectRoot}",
+        "parallel": false
+      },
+      "dependsOn": ["test:generate-keys", "test:docker:clean-pre"]
+    },
+    "test:docker:suite": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "jest --config jest.config.docker.js --runInBand",
+        "cwd": "{projectRoot}"
+      },
+      "dependsOn": ["test:docker:infra"]
+    },
+    "test:docker:clean-post": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "docker compose -f infra/docker-compose.yml down",
+        "cwd": "{projectRoot}"
+      },
+      "dependsOn": ["test:docker:suite"]
+    },
+    "test:docker": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "echo 'Auth-js Docker tests complete'",
+        "cwd": "{projectRoot}"
+      },
+      "dependsOn": ["test:docker:clean-post"],
+      "metadata": {
+        "description": "Run Docker-only tests (signup-disabled, asymmetric-jwt, phone-otp, anonymous-disabled)"
+      }
+    }
+  }
+}

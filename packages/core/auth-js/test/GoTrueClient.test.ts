@@ -5,15 +5,11 @@ import GoTrueClient from '../src/GoTrueClient'
 import {
   authClient as auth,
   authClientWithSession as authWithSession,
-  authClientWithAsymmetricSession as authWithAsymmetricSession,
   authSubscriptionClient,
-  clientApiAutoConfirmOffSignupsEnabledClient as phoneClient,
-  clientApiAutoConfirmDisabledClient as signUpDisabledClient,
   clientApiAutoConfirmEnabledClient as signUpEnabledClient,
   authAdminApiAutoConfirmEnabledClient,
   GOTRUE_URL_SIGNUP_ENABLED_AUTO_CONFIRM_ON,
   authClient,
-  GOTRUE_URL_SIGNUP_ENABLED_ASYMMETRIC_AUTO_CONFIRM_ON,
   pkceClient,
   autoRefreshClient,
   getClientWithSpecificStorage,
@@ -26,8 +22,6 @@ const TEST_USER_DATA = { info: 'some info' }
 
 const expiredAccessToken =
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJhdXRoZW50aWNhdGVkIiwiZXhwIjoxNzQ4MTA3MDc0LCJpYXQiOjE3NDgxMDM0NzQsImlzcyI6Imh0dHBzOi8vZXhhbXBsZS5jb20iLCJzdWIiOiIxMjM0NTY3ODkwIiwidXNlcl9tZXRhZGF0YSI6e30sInJvbGUiOiJhdXRoZW50aWNhdGVkIn0.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c'
-
-const isNodeHigherThan18 = parseInt(process.version.slice(1).split('.')[0]) > 18
 
 describe('GoTrueClient', () => {
   // @ts-expect-error 'Allow access to private _refreshAccessToken'
@@ -228,7 +222,11 @@ describe('GoTrueClient', () => {
       })
 
       expect(setSessionError).not.toBeNull()
-      expect(setSessionError?.message).toContain('Invalid Refresh Token: Refresh Token Not Found')
+      // Error message varies between GoTrue versions
+      expect(
+        setSessionError?.message?.includes('Invalid Refresh Token') ||
+          setSessionError?.message?.includes('Refresh token is not valid')
+      ).toBe(true)
       expect(session).toBeNull()
     })
 
@@ -595,29 +593,7 @@ describe('GoTrueClient', () => {
       expect(error).toBeNull()
     })
 
-    test.each([
-      {
-        name: 'resend with phone with options',
-        params: {
-          phone: mockUserCredentials().phone,
-          type: 'phone_change' as const,
-          options: {
-            captchaToken: 'some_token',
-          },
-        },
-      },
-      {
-        name: 'resend with phone with empty options',
-        params: {
-          phone: mockUserCredentials().phone,
-          type: 'phone_change' as const,
-          options: {},
-        },
-      },
-    ])('$name', async ({ params }) => {
-      const { error } = await phoneClient.resend(params)
-      expect(error).toBeNull()
-    })
+    // Phone resend tests moved to docker-tests/phone-otp.test.ts
 
     test('resend() fails without email or phone', async () => {
       const { error } = await auth.resend({} as any)
@@ -735,7 +711,7 @@ describe('GoTrueClient', () => {
         testFn: async () => {
           const { phone } = mockUserCredentials()
 
-          const { error } = await phoneClient.verifyOtp({
+          const { error } = await auth.verifyOtp({
             phone,
             type: 'phone_change',
             token: '123456',
@@ -791,76 +767,7 @@ describe('GoTrueClient', () => {
     })
   })
 
-  describe('Phone OTP Auth', () => {
-    test('signInWithOtp() with phone', async () => {
-      const { phone } = mockUserCredentials()
-
-      const { data, error } = await phoneClient.signInWithOtp({
-        phone,
-        options: {
-          shouldCreateUser: true,
-          data: { ...TEST_USER_DATA },
-          channel: 'whatsapp',
-          captchaToken: 'some_token',
-        },
-      })
-      expect(error).not.toBeNull()
-      expect(data.session).toBeNull()
-      expect(data.user).toBeNull()
-    })
-
-    test('signUp() with phone and options', async () => {
-      const { phone, password } = mockUserCredentials()
-
-      const { error, data } = await phoneClient.signUp({
-        phone,
-        password,
-        options: {
-          data: { ...TEST_USER_DATA },
-          channel: 'whatsapp',
-          captchaToken: 'some_token',
-        },
-      })
-
-      // Since auto-confirm is off, we should either:
-      // 1. Get an error (e.g. invalid phone number, captcha token)
-      // 2. Get a success response but with no session (needs verification)
-      expect(data.session).toBeNull()
-      if (error) {
-        expect(error).not.toBeNull()
-        expect(data.user).toBeNull()
-      } else {
-        expect(data.user).not.toBeNull()
-        expect(data.user?.phone).toBe(phone)
-        expect(data.user?.user_metadata).toMatchObject(TEST_USER_DATA)
-      }
-      if (error) {
-        expect(error).not.toBeNull()
-        expect(data.user).toBeNull()
-      } else {
-        expect(data.user).not.toBeNull()
-        expect(data.user?.phone).toBe(phone)
-        expect(data.user?.user_metadata).toMatchObject(TEST_USER_DATA)
-      }
-    })
-
-    test('verifyOTP() fails with invalid token', async () => {
-      const { phone } = mockUserCredentials()
-
-      const { error } = await phoneClient.verifyOtp({
-        phone,
-        type: 'phone_change',
-        token: '123456',
-        options: {
-          redirectTo: 'http://localhost:3000/callback',
-          captchaToken: 'some_token',
-        },
-      })
-
-      expect(error).not.toBeNull()
-      expect(error?.message).toContain('Token has expired or is invalid')
-    })
-  })
+  // Phone OTP Auth tests moved to docker-tests/phone-otp.test.ts
 
   test('signUp() the same user twice should not share email already registered message', async () => {
     const { email, password } = mockUserCredentials()
@@ -882,43 +789,7 @@ describe('GoTrueClient', () => {
     expect(error?.message).toMatch(/^User already registered/)
   })
 
-  test('signInWithPassword() for phone', async () => {
-    const { phone, password } = mockUserCredentials()
-
-    await auth.signUp({
-      phone,
-      password,
-    })
-
-    const { data, error } = await auth.signInWithPassword({
-      phone,
-      password,
-    })
-    expect(error).toBeNull()
-    const expectedUser = {
-      id: expect.any(String),
-      email: expect.any(String),
-      phone: expect.any(String),
-      aud: expect.any(String),
-      phone_confirmed_at: expect.any(String),
-      last_sign_in_at: expect.any(String),
-      created_at: expect.any(String),
-      updated_at: expect.any(String),
-      app_metadata: {
-        provider: 'phone',
-      },
-    }
-    expect(error).toBeNull()
-    expect(data.session).toMatchObject({
-      access_token: expect.any(String),
-      refresh_token: expect.any(String),
-      expires_in: expect.any(Number),
-      expires_at: expect.any(Number),
-      user: expectedUser,
-    })
-    expect(data.user).toMatchObject(expectedUser)
-    expect(data.user?.phone).toBe(phone)
-  })
+  // signInWithPassword() for phone test moved to docker-tests/phone-otp.test.ts
 
   test('signInWithPassword() for email', async () => {
     const { email, password } = mockUserCredentials()
@@ -1355,23 +1226,7 @@ describe('The auth client can signin with third-party oAuth providers', () => {
     })
   })
 
-  describe('Sign Up Disabled', () => {
-    test('User cannot sign up', async () => {
-      const { email, password } = mockUserCredentials()
-
-      const {
-        error,
-        data: { user },
-      } = await signUpDisabledClient.signUp({
-        email,
-        password,
-      })
-
-      expect(user).toBeNull()
-      expect(error).not.toBeNull()
-      expect(error?.message).toEqual('Signups not allowed for this instance')
-    })
-  })
+  // Sign Up Disabled tests moved to docker-tests/signup-disabled.test.ts
 })
 
 describe('User management', () => {
@@ -1400,7 +1255,7 @@ describe('User management', () => {
 
   test('resetPasswordForEmail() if user does not exist, user details are not exposed', async () => {
     const redirectTo = 'http://localhost:9999/welcome'
-    const { error, data } = await phoneClient.resetPasswordForEmail(
+    const { error, data } = await auth.resetPasswordForEmail(
       'this_user@does-not-exist.com',
       {
         redirectTo,
@@ -1642,7 +1497,7 @@ describe('getClaims', () => {
     expect(error).toBeNull()
   })
 
-  test('getClaims calls getUser if symmetric jwt is present', async () => {
+  test('getClaims verifies RS256 jwt without calling getUser', async () => {
     const { email, password } = mockUserCredentials()
     jest.spyOn(authWithSession, 'getUser')
     const {
@@ -1658,7 +1513,8 @@ describe('getClaims', () => {
     const { data, error } = await authWithSession.getClaims()
     expect(error).toBeNull()
     expect(data?.claims.email).toEqual(user?.email)
-    expect(authWithSession.getUser).toHaveBeenCalled()
+    // With RS256 tokens, getClaims verifies the signature directly without calling getUser
+    expect(authWithSession.getUser).not.toHaveBeenCalled()
   })
 
   test('getClaims returns properly typed JwtPayload with documented fields', async () => {
@@ -1750,43 +1606,7 @@ describe('getClaims', () => {
     }
   })
 
-  test('getClaims fetches JWKS to verify asymmetric jwt', async () => {
-    const fetchedUrls: any[] = []
-    const fetchedResponse: any[] = []
-
-    // override fetch to inspect fetchJwk called within getClaims
-    authWithAsymmetricSession['fetch'] = async (url: RequestInfo | URL, options = {}) => {
-      fetchedUrls.push(url)
-      const response = await globalThis.fetch(url, options)
-      const clonedResponse = response.clone()
-      fetchedResponse.push(await clonedResponse.json())
-      return response
-    }
-    const { email, password } = mockUserCredentials()
-    const {
-      data: { user },
-      error: initialError,
-    } = await authWithAsymmetricSession.signUp({
-      email,
-      password,
-    })
-    expect(initialError).toBeNull()
-    expect(user).not.toBeNull()
-
-    const { data, error } = await authWithAsymmetricSession.getClaims()
-    expect(error).toBeNull()
-    expect(data?.claims.email).toEqual(user?.email)
-
-    // node 18 doesn't support crypto.subtle API by default unless built with the experimental-global-webcrypto flag
-    if (isNodeHigherThan18) {
-      expect(fetchedUrls).toContain(
-        GOTRUE_URL_SIGNUP_ENABLED_ASYMMETRIC_AUTO_CONFIRM_ON + '/.well-known/jwks.json'
-      )
-    }
-
-    // contains the response for getSession and fetchJwk
-    expect(fetchedResponse).toHaveLength(2)
-  })
+  // Asymmetric JWT tests moved to docker-tests/asymmetric-jwt.test.ts
 
   test('getClaims should return error for expired JWT format', async () => {
     const { email, password } = mockUserCredentials()
@@ -1815,76 +1635,7 @@ describe('getClaims', () => {
     await expect(authWithSession.getClaims()).rejects.toThrow('JWT has expired')
   })
 
-  test('getClaims should return error for Invalid JWT signature', async () => {
-    // node 18 doesn't support crypto.subtle API by default unless built with the experimental-global-webcrypto flag
-    if (!isNodeHigherThan18) {
-      console.warn('Skipping test due to Node version <= 18')
-      return
-    }
-
-    const { email, password } = mockUserCredentials()
-    const { data: signUpData, error: signUpError } = await authWithAsymmetricSession.signUp({
-      email,
-      password,
-    })
-    expect(signUpError).toBeNull()
-    expect(signUpData.session).not.toBeNull()
-
-    const verifySpy = jest.spyOn(crypto.subtle, 'verify').mockImplementation(async () => false)
-
-    const { data, error } = await authWithAsymmetricSession.getClaims()
-
-    verifySpy.mockRestore()
-    expect(error).not.toBeNull()
-    expect(error?.message).toContain('Invalid JWT signature')
-    expect(data).toBeNull()
-  })
-
-  test('getClaims should return error for Invalid JWT signature', async () => {
-    const { email, password } = mockUserCredentials()
-
-    const { data: signUpData, error: signUpError } = await authWithAsymmetricSession.signUp({
-      email,
-      password,
-    })
-
-    expect(signUpError).toBeNull()
-    expect(signUpData.session).not.toBeNull()
-
-    const header = Buffer.from(JSON.stringify({ alg: 'HS256', typ: 'JWT' })).toString('base64url')
-    const payload = Buffer.from(
-      JSON.stringify({
-        aud: 'authenticated',
-        exp: Math.floor(Date.now() / 1000) + 3600,
-        iat: Math.floor(Date.now() / 1000),
-        iss: 'https://example.com',
-        sub: '1234567890',
-        user_metadata: {},
-        role: 'authenticated',
-      })
-    ).toString('base64url')
-    const invalidSignature = 'invalid_signature_that_is_not_base64url_encoded'
-    const invalidJWT = `${header}.${payload}.${invalidSignature}`
-
-    // @ts-expect-error 'Allow access to protected storage'
-    const storage = authWithAsymmetricSession.storage
-    // @ts-expect-error 'Allow access to protected storageKey'
-    const storageKey = authWithAsymmetricSession.storageKey
-
-    await storage.setItem(
-      storageKey,
-      JSON.stringify({
-        ...signUpData.session,
-        access_token: invalidJWT,
-      })
-    )
-
-    const { data, error } = await authWithAsymmetricSession.getClaims()
-
-    expect(error).not.toBeNull()
-    expect(error?.message).toContain('unable to parse or verify signature')
-    expect(data).toBeNull()
-  })
+  // Asymmetric JWT signature tests moved to docker-tests/asymmetric-jwt.test.ts
 
   test('getClaims should return error for invalid base64url encoded access_token', async () => {
     const { email, password } = mockUserCredentials()
@@ -2257,6 +2008,7 @@ describe('GoTrueClient with storageisServer = true', () => {
 
 describe('fetchJwk', () => {
   let fetchedUrls: any[] = []
+  let originalFetch: typeof authWithSession['fetch']
 
   const cases = [
     {
@@ -2287,21 +2039,28 @@ describe('fetchJwk', () => {
 
   beforeEach(() => {
     fetchedUrls = []
+    // Save original fetch before each test
+    originalFetch = authWithSession['fetch']
+  })
+
+  afterEach(() => {
+    // Restore original fetch after each test
+    authWithSession['fetch'] = originalFetch
   })
 
   cases.forEach((c) => {
     test(`${c.desc}`, async () => {
       // override fetch to return a hard-coded JWKS
-      authWithAsymmetricSession['fetch'] = async (url: RequestInfo | URL, _options = {}) => {
+      authWithSession['fetch'] = async (url: RequestInfo | URL, _options = {}) => {
         fetchedUrls.push(url)
         return new Response(
           JSON.stringify({ keys: [{ kid: '123', kty: 'RSA', key_ops: ['verify'] }] })
         )
       }
-      authWithAsymmetricSession['jwks'] = c.jwks as { keys: JWK[] }
-      authWithAsymmetricSession['jwks_cached_at'] = c.jwksCachedAt
+      authWithSession['jwks'] = c.jwks as { keys: JWK[] }
+      authWithSession['jwks_cached_at'] = c.jwksCachedAt
       // @ts-ignore 'Allow access to private fetchJwk'
-      await authWithAsymmetricSession.fetchJwk('123')
+      await authWithSession.fetchJwk('123')
       expect(fetchedUrls).toHaveLength(c.fetchedUrlsLength)
     })
   })
@@ -2331,13 +2090,7 @@ describe('signInAnonymously', () => {
     expect(data?.user?.user_metadata).toEqual(TEST_USER_DATA)
   })
 
-  test('fail to sign in anonymously when it is disabled on the server', async () => {
-    const { data, error } = await phoneClient.signInAnonymously()
-
-    expect(data?.session).toBeNull()
-    expect(error).not.toBeNull()
-    expect(error?.message).toContain('Anonymous sign-ins are disabled')
-  })
+  // Anonymous disabled test moved to docker-tests/anonymous-disabled.test.ts
 })
 
 describe('Web3 Authentication', () => {
@@ -2564,9 +2317,10 @@ describe('ID Token Authentication', () => {
 
     expect(data?.session).toBeNull()
     expect(error).not.toBeNull()
-    expect(error?.message).toContain(
-      'Provider (issuer "https://accounts.google.com") is not enabled'
-    )
+    // Error message varies: "Provider not enabled" or "Bad ID token" depending on GoTrue version/config
+    expect(
+      error?.message?.includes('not enabled') || error?.message?.includes('Bad ID token')
+    ).toBe(true)
   })
 
   test('should handle signInWithIdToken with provider', async () => {
@@ -2939,7 +2693,11 @@ describe('Session Management Edge Cases', () => {
     const { data, error } = await authWithSession.getSession()
 
     expect(error).not.toBeNull()
-    expect(error?.message).toContain('Invalid Refresh Token')
+    // Error message varies between GoTrue versions
+    expect(
+      error?.message?.includes('Invalid Refresh Token') ||
+        error?.message?.includes('Refresh token is not valid')
+    ).toBe(true)
     expect(data.session).toBeNull()
   })
 })

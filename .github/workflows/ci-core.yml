@@ -61,14 +61,19 @@ jobs:
           flag-name: realtime-js
           fail-on-error: false
         continue-on-error: true
-      - name: Run auth-js tests (if affected)
+
+      - name: Generate RSA signing keys for auth-js tests
+        run: node packages/core/auth-js/test/generate-signing-keys.js
+
+      - name: Run auth-js tests with Supabase CLI (if affected)
         run: npx nx affected --target=test:auth
+        timeout-minutes: 10
 
       - name: Upload coverage for auth-js (if affected)
         uses: coverallsapp/github-action@5cbfd81b66ca5d10c19b062c04de0199c215fb6e # v2.3.7
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          path-to-lcov: ./packages/core/auth-js/test/coverage/lcov.info
+          path-to-lcov: ./packages/core/auth-js/coverage/lcov.info
           parallel: true
           flag-name: auth-js
           fail-on-error: false
@@ -91,6 +96,35 @@ jobs:
           flag-name: storage-js
           fail-on-error: false
         continue-on-error: true
+
+  # Separate job for auth-js Docker tests (full coverage including edge cases)
+  test-auth-js-docker:
+    name: Test auth-js (Docker - Full Coverage)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          filter: tree:0
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+      - name: Install dependencies
+        run: npm ci
+      - uses: nrwl/nx-set-shas@v4
+
+      - name: Generate RSA signing keys for auth-js Docker tests
+        run: node packages/core/auth-js/test/generate-signing-keys.js
+
+      - name: Run auth-js Docker tests (if affected)
+        run: npx nx affected --target=test:docker --projects=@supabase/auth-js
+        timeout-minutes: 10
+
+      # Note: Docker test coverage is not uploaded to Coveralls
+      # The regular auth-js tests provide comprehensive coverage reporting
+      # Docker tests verify integration scenarios but don't need separate coverage tracking
+
   # Separate job for postgrest-js tests (Docker-based, retriable)
   test-postgrest-js:
     name: Test postgrest-js
@@ -200,6 +234,7 @@ jobs:
     needs:
       [
         setup-build-test-node-20,
+        test-auth-js-docker,
         test-postgrest-js,
         check-postgrest-generated-types,
         test-postgrest-js-v12,
