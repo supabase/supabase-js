@@ -777,6 +777,11 @@ export default class RealtimeClient {
     this.log('transport', `${error}`)
     this._triggerChanError()
     this._triggerStateCallbacks('error', error)
+    try {
+      this.heartbeatCallback('error')
+    } catch (e) {
+      this.log('error', 'error in heartbeat callback', e)
+    }
   }
 
   /** @internal */
