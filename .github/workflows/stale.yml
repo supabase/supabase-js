@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       # needs more info / repro needed: 2 months stale, 1 month close
-      - uses: actions/stale@v9
+      - uses: actions/stale@5bef64f19d7facfb25b37b414482c7164d639639 # v9.1.0
         with:
           days-before-stale: 60
           days-before-close: 30
@@ -32,7 +32,7 @@ jobs:
           operations-per-run: 30
 
       # retry with latest: 1 month stale, 1 month close
-      - uses: actions/stale@v9
+      - uses: actions/stale@5bef64f19d7facfb25b37b414482c7164d639639 # v9.1.0
         with:
           days-before-stale: 30
           days-before-close: 30
@@ -52,7 +52,7 @@ jobs:
   stale:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/stale@v9
+      - uses: actions/stale@5bef64f19d7facfb25b37b414482c7164d639639 # v9.1.0
         with:
           days-before-stale: 180
           days-before-close: 30
