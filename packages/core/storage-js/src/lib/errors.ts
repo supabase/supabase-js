@@ -1,9 +1,13 @@
 export class StorageError extends Error {
   protected __isStorageError = true
+  status?: number
+  statusCode?: string
 
-  constructor(message: string) {
+  constructor(message: string, status?: number, statusCode?: string) {
     super(message)
     this.name = 'StorageError'
+    this.status = status
+    this.statusCode = statusCode
   }
 }
 
@@ -12,11 +16,11 @@ export function isStorageError(error: unknown): error is StorageError {
 }
 
 export class StorageApiError extends StorageError {
-  status: number
-  statusCode: string
+  override status: number
+  override statusCode: string
 
   constructor(message: string, status: number, statusCode: string) {
-    super(message)
+    super(message, status, statusCode)
     this.name = 'StorageApiError'
     this.status = status
     this.statusCode = statusCode
