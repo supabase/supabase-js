@@ -14,7 +14,6 @@ import {
   validateExp,
   sleep,
   userNotAvailableProxy,
-  resolveFetch,
 } from '../src/lib/helpers'
 import type { SolanaWeb3Credentials } from '../src/lib/types'
 
@@ -190,12 +189,6 @@ describe('User proxy and deep clone functions in browser', () => {
 })
 
 describe('Fetch resolution in browser environment', () => {
-  it('should resolve fetch correctly', () => {
-    const customFetch = jest.fn()
-    const resolvedFetch = resolveFetch(customFetch)
-    expect(typeof resolvedFetch).toBe('function')
-  })
-
   it('should warn when two clients are created with the same storage key', () => {
     let consoleWarnSpy
     let consoleTraceSpy

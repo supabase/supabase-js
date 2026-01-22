@@ -1,52 +1,11 @@
-import { resolveFetch, resolveHeadersConstructor, fetchWithAuth } from '../../src/lib/fetch'
-
-// Mock fetch for testing
-const mockFetch = jest.fn()
-const mockHeaders = jest.fn()
+import { fetchWithAuth } from '../../src/lib/fetch'
 
 describe('fetch module', () => {
   beforeEach(() => {
     jest.clearAllMocks()
-    // Reset global fetch
+    // Reset global fetch and Headers
     delete (global as any).fetch
     delete (global as any).Headers
-  })
-
-  describe('resolveFetch', () => {
-    test('should use custom fetch when provided', () => {
-      const customFetch = jest.fn()
-      const result = resolveFetch(customFetch)
-      expect(typeof result).toBe('function')
-      // Test that it actually calls the custom fetch
-      result('test')
-      expect(customFetch).toHaveBeenCalledWith('test')
-    })
-
-    test('should use global fetch when available', () => {
-      const globalFetch = jest.fn()
-      ;(global as any).fetch = globalFetch
-
-      const result = resolveFetch()
-      expect(typeof result).toBe('function')
-      // Test that it actually calls the global fetch
-      result('test')
-      expect(globalFetch).toHaveBeenCalledWith('test')
-    })
-
-    test('should return native fetch when no custom fetch provided', () => {
-      const result = resolveFetch()
-      expect(typeof result).toBe('function')
-    })
-  })
-
-  describe('resolveHeadersConstructor', () => {
-    test('should return native Headers', () => {
-      const GlobalHeaders = jest.fn()
-      ;(global as any).Headers = GlobalHeaders
-
-      const result = resolveHeadersConstructor()
-      expect(result).toBe(GlobalHeaders)
-    })
   })
 
   describe('fetchWithAuth', () => {

@@ -1,63 +1,6 @@
-import {
-  resolveFetch,
-  resolveResponse,
-  recursiveToCamel,
-  isPlainObject,
-  isValidBucketName,
-} from '../src/lib/helpers'
+import { recursiveToCamel, isPlainObject, isValidBucketName } from '../src/lib/helpers'
 
 describe('Helpers', () => {
-  describe('resolveFetch', () => {
-    test('returns wrapper function with custom fetch', () => {
-      const customFetch = jest.fn()
-      const result = resolveFetch(customFetch)
-      expect(typeof result).toBe('function')
-    })
-
-    test('returns wrapper function with global fetch', () => {
-      const originalFetch = global.fetch
-      const mockFetch = jest.fn()
-      global.fetch = mockFetch
-
-      const result = resolveFetch()
-      expect(typeof result).toBe('function')
-
-      global.fetch = originalFetch
-    })
-
-    test('returns dynamic import when fetch is undefined', async () => {
-      const originalFetch = global.fetch
-      // @ts-ignore
-      global.fetch = undefined
-
-      const result = resolveFetch()
-      expect(typeof result).toBe('function')
-
-      global.fetch = originalFetch
-    })
-  })
-
-  describe('resolveResponse', () => {
-    test('returns Response constructor when available', async () => {
-      // In Node.js, Response might not be globally available
-      const originalResponse = global.Response
-      // @ts-ignore
-      global.Response = class MockResponse {}
-
-      const result = await resolveResponse()
-      expect(typeof result).toBe('function')
-
-      global.Response = originalResponse
-    })
-
-    test('returns Response when available in Node 20+', async () => {
-      // In Node 20+, Response is always available globally
-      const result = await resolveResponse()
-      expect(typeof result).toBe('function')
-      expect(result).toBe(Response)
-    })
-  })
-
   describe('recursiveToCamel', () => {
     test('converts snake_case to camelCase', () => {
       const input = { snake_case: 'value', another_key: 'test' }
