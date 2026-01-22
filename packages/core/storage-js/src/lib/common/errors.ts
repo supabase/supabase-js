@@ -11,11 +11,20 @@ export type ErrorNamespace = 'storage' | 'vectors'
 export class StorageError extends Error {
   protected __isStorageError = true
   protected namespace: ErrorNamespace
+  status?: number
+  statusCode?: string
 
-  constructor(message: string, namespace: ErrorNamespace = 'storage') {
+  constructor(
+    message: string,
+    namespace: ErrorNamespace = 'storage',
+    status?: number,
+    statusCode?: string
+  ) {
     super(message)
     this.namespace = namespace
     this.name = namespace === 'vectors' ? 'StorageVectorsError' : 'StorageError'
+    this.status = status
+    this.statusCode = statusCode
   }
 }
 
@@ -33,8 +42,8 @@ export function isStorageError(error: unknown): error is StorageError {
  * Includes HTTP status code and service-specific error code
  */
 export class StorageApiError extends StorageError {
-  status: number
-  statusCode: string
+  override status: number
+  override statusCode: string
 
   constructor(
     message: string,
@@ -42,7 +51,7 @@ export class StorageApiError extends StorageError {
     statusCode: string,
     namespace: ErrorNamespace = 'storage'
   ) {
-    super(message, namespace)
+    super(message, namespace, status, statusCode)
     this.name = namespace === 'vectors' ? 'StorageVectorsApiError' : 'StorageApiError'
     this.status = status
     this.statusCode = statusCode
