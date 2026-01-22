@@ -20,9 +20,6 @@
   },
   "references": [
     {
-      "path": "../../shared/utils/fetch"
-    },
-    {
       "path": "../storage-js"
     },
     {
