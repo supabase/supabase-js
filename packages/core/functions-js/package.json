@@ -2,14 +2,26 @@
   "name": "@supabase/functions-js",
   "version": "0.0.0-automated",
   "description": "JS SDK to interact with Supabase Functions.",
-  "main": "dist/main/index.js",
-  "module": "dist/module/index.js",
-  "types": "dist/module/index.d.ts",
+  "main": "dist/index.cjs",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.cts",
   "sideEffects": false,
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.mts",
+        "default": "./dist/index.mjs"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    },
+    "./package.json": "./package.json"
+  },
   "scripts": {
-    "build": "npm run build:main && npm run build:module",
-    "build:main": "tsc -p tsconfig.json",
-    "build:module": "tsc -p tsconfig.module.json",
+    "build": "tsdown",
+    "build:watch": "tsdown --watch",
     "docs": "typedoc src/index.ts --out docs/v2",
     "docs:json": "typedoc --json docs/v2/spec.json --excludeExternals src/index.ts",
     "test": "jest",
@@ -41,7 +53,8 @@
     "bs-logger": "^0.2.6",
     "nanoid": "^3.3.1",
     "openai": "^4.52.5",
-    "testcontainers": "^8.5.1"
+    "testcontainers": "^8.5.1",
+    "tsdown": "^0.18.0"
   },
   "publishConfig": {
     "access": "public"

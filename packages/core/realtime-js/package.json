@@ -17,9 +17,22 @@
     "dist",
     "src"
   ],
-  "main": "dist/main/index.js",
-  "module": "dist/module/index.js",
-  "types": "dist/module/index.d.ts",
+  "main": "dist/index.cjs",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.cts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.mts",
+        "default": "./dist/index.mjs"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    },
+    "./package.json": "./package.json"
+  },
   "repository": {
     "type": "git",
     "url": "https://github.com/supabase/supabase-js.git",
@@ -28,9 +41,8 @@
   "author": "Supabase",
   "license": "MIT",
   "scripts": {
-    "build": "npm run build:main && npm run build:module",
-    "build:main": "tsc -p tsconfig.json",
-    "build:module": "tsc -p tsconfig.module.json",
+    "build": "tsdown",
+    "build:watch": "tsdown --watch",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage.enabled true --coverage.reporter=text",
@@ -52,6 +64,7 @@
     "jsdom-global": "3.0.0",
     "mock-socket": "^9.3.1",
     "nyc": "^15.1.0",
+    "tsdown": "^0.18.0",
     "web-worker": "1.2.0"
   },
   "engines": {

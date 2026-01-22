@@ -57,7 +57,7 @@ export class FunctionsClient {
    * functions.setAuth(session.access_token)
    * ```
    */
-  setAuth(token: string) {
+  setAuth(token: string): void {
     this.headers.Authorization = `Bearer ${token}`
   }
 
