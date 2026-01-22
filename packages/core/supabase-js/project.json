@@ -15,6 +15,21 @@
     },
     "test:all": {
       "inputs": ["testing", "^production"]
+    },
+    "test:esm": {
+      "inputs": ["testing", "^production"],
+      "dependsOn": ["build", "^build"],
+      "cache": true
+    },
+    "test:cjs": {
+      "inputs": ["testing", "^production"],
+      "dependsOn": ["build", "^build"],
+      "cache": true
+    },
+    "test:exports": {
+      "inputs": ["testing", "^production"],
+      "dependsOn": ["build", "^build"],
+      "cache": true
     }
   }
 }

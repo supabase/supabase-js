@@ -42,6 +42,7 @@ jobs:
             packages/core/realtime-js/dist
             packages/core/storage-js/dist
             packages/core/supabase-js/dist
+            packages/shared/utils/fetch/dist
 
       - name: Upload UMD build
         uses: actions/upload-artifact@v4
@@ -111,7 +112,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: packages-dist
-          path: ./packages/core
+          path: ./packages
 
       - name: Validate package exports (attw)
         run: npx nx test:exports supabase-js
@@ -153,7 +154,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: packages-dist
-          path: packages/core
+          path: ./packages
 
       - name: Install dependencies
         run: npm ci
@@ -301,7 +302,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: packages-dist
-          path: packages/core
+          path: ./packages
 
       - name: Install dependencies
         run: npm ci
@@ -385,7 +386,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: packages-dist
-          path: packages/core
+          path: ./packages
 
       - name: Install dependencies
         run: npm ci
@@ -473,7 +474,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: packages-dist
-          path: packages/core
+          path: ./packages
 
       - name: Install dependencies
         run: npm ci
