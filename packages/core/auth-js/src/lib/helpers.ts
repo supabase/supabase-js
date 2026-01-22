@@ -100,14 +100,9 @@ export function parseParametersFromURL(href: string) {
   return result
 }
 
-type Fetch = typeof fetch
+import { resolveFetch } from '@supabase/utils-fetch'
 
-export const resolveFetch = (customFetch?: Fetch): Fetch => {
-  if (customFetch) {
-    return (...args) => customFetch(...args)
-  }
-  return (...args) => fetch(...args)
-}
+export { resolveFetch }
 
 export const looksLikeFetchResponse = (maybeResponse: unknown): maybeResponse is Response => {
   return (

@@ -17,6 +17,8 @@ export default defineConfig([
       '@supabase/realtime-js',
       '@supabase/storage-js',
     ],
+    // Bundle internal utils-fetch since it's not published
+    noExternal: ['@supabase/utils-fetch'],
     fixedExtension: true,
     hash: false,
     target: 'es2017',

@@ -6,6 +6,9 @@ module.exports = {
   transform: {
     '^.+\\.tsx?$': ['ts-jest', { tsconfig: '<rootDir>/tsconfig.test.json' }],
   },
+  moduleNameMapper: {
+    '^@supabase/utils-fetch$': '<rootDir>/../../shared/utils/fetch/src/index.ts',
+  },
   collectCoverage: true,
   coverageDirectory: 'test/coverage',
   coverageReporters: ['json', 'html', 'lcov'],

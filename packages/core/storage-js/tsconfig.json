@@ -23,5 +23,7 @@
     "noImplicitOverride": false,
     "isolatedModules": false
   },
-  "references": []
+  "references": [
+    { "path": "../../shared/utils/fetch" }
+  ]
 }

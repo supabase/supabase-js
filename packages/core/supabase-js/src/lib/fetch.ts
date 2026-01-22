@@ -1,15 +1,8 @@
+import { resolveFetch, resolveHeadersConstructor } from '@supabase/utils-fetch'
+
+export { resolveFetch, resolveHeadersConstructor }
+
 type Fetch = typeof fetch
-
-export const resolveFetch = (customFetch?: Fetch): Fetch => {
-  if (customFetch) {
-    return (...args: Parameters<Fetch>) => customFetch(...args)
-  }
-  return (...args: Parameters<Fetch>) => fetch(...args)
-}
-
-export const resolveHeadersConstructor = () => {
-  return Headers
-}
 
 export const fetchWithAuth = (
   supabaseKey: string,

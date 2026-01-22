@@ -6,17 +6,14 @@ const config: Config.InitialOptions = {
     '^.+\\.ts?$': [
       'ts-jest',
       {
-        tsconfig: {
-          // Override tsconfig for tests without creating a separate file
-          composite: false,
-          outDir: '$$ts-jest$$', // Use ts-jest's internal temp directory
-          rootDir: '.',
-          // Inherit other settings from main tsconfig.json
-        },
+        tsconfig: 'tsconfig.test.json',
       },
     ],
   },
   moduleFileExtensions: ['ts', 'js', 'cjs', 'json', 'node'],
+  moduleNameMapper: {
+    '^@supabase/utils-fetch$': '<rootDir>/../../shared/utils/fetch/src/lib/fetch.ts',
+  },
   setupFilesAfterEnv: ['./test/utils/jest-custom-reporter.ts'],
   testTimeout: 60000,
   // Retry failed tests up to 3 times in CI

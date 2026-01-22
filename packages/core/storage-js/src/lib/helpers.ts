@@ -1,15 +1,6 @@
-type Fetch = typeof fetch
+import { resolveFetch, resolveResponse } from '@supabase/utils-fetch'
 
-export const resolveFetch = (customFetch?: Fetch): Fetch => {
-  if (customFetch) {
-    return (...args) => customFetch(...args)
-  }
-  return (...args) => fetch(...args)
-}
-
-export const resolveResponse = (): typeof Response => {
-  return Response
-}
+export { resolveFetch, resolveResponse }
 
 export const recursiveToCamel = (item: Record<string, any>): unknown => {
   if (Array.isArray(item)) {

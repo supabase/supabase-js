@@ -10,6 +10,7 @@ export default defineConfig([
     clean: true,
     outDir: 'dist',
     external: ['iceberg-js'],
+    noExternal: ['@supabase/utils-fetch'],
     fixedExtension: true,
     hash: false,
     target: 'es2017',

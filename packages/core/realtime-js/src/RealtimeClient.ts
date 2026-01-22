@@ -1,4 +1,5 @@
 import WebSocketFactory, { WebSocketLike } from './lib/websocket-factory'
+import { resolveFetch as sharedResolveFetch } from '@supabase/utils-fetch'
 
 import {
   CHANNEL_EVENTS,
@@ -527,10 +528,7 @@ export default class RealtimeClient {
    * @internal
    */
   _resolveFetch = (customFetch?: Fetch): Fetch => {
-    if (customFetch) {
-      return (...args) => customFetch(...args)
-    }
-    return (...args) => fetch(...args)
+    return sharedResolveFetch(customFetch)
   }
 
   /**
