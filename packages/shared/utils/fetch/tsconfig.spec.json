@@ -6,12 +6,6 @@
     "module": "ES2022",
     "moduleResolution": "Bundler"
   },
-  "include": [
-    "vite.config.ts",
-    "src/**/*.test.ts",
-    "src/**/*.spec.ts"
-  ],
-  "references": [
-    { "path": "./tsconfig.lib.json" }
-  ]
+  "include": ["vite.config.ts", "src/**/*.test.ts", "src/**/*.spec.ts"],
+  "references": [{ "path": "./tsconfig.lib.json" }]
 }
