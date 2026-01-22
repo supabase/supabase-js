@@ -25,12 +25,23 @@ import RealtimePresence, {
 } from './RealtimePresence'
 import WebSocketFactory, { WebSocketLike } from './lib/websocket-factory'
 
+// Export classes and functions (runtime values)
 export {
   RealtimePresence,
   RealtimeChannel,
+  RealtimeClient,
+  REALTIME_LISTEN_TYPES,
+  REALTIME_POSTGRES_CHANGES_LISTEN_EVENT,
+  REALTIME_PRESENCE_LISTEN_EVENTS,
+  REALTIME_SUBSCRIBE_STATES,
+  REALTIME_CHANNEL_STATES,
+  WebSocketFactory,
+}
+
+// Export types only (no runtime values)
+export type {
   RealtimeChannelOptions,
   RealtimeChannelSendResponse,
-  RealtimeClient,
   RealtimeClientOptions,
   RealtimeMessage,
   RealtimePostgresChangesFilter,
@@ -42,12 +53,6 @@ export {
   RealtimePresenceLeavePayload,
   RealtimePresenceState,
   RealtimeRemoveChannelResponse,
-  REALTIME_LISTEN_TYPES,
-  REALTIME_POSTGRES_CHANGES_LISTEN_EVENT,
-  REALTIME_PRESENCE_LISTEN_EVENTS,
-  REALTIME_SUBSCRIBE_STATES,
-  REALTIME_CHANNEL_STATES,
-  WebSocketFactory,
   WebSocketLike,
   WebSocketLikeConstructor,
 }

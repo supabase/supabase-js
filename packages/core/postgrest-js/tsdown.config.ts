@@ -8,6 +8,7 @@ export default defineConfig({
   clean: true,
   outDir: 'dist',
   external: ['tslib'],
+  noExternal: ['@supabase/utils-fetch'], // Force bundling of internal workspace library
   fixedExtension: true,
   hash: false,
   target: 'es2017',

@@ -19,7 +19,10 @@ import Timer from './lib/timer'
 import { httpEndpointURL } from './lib/transformers'
 import RealtimeChannel from './RealtimeChannel'
 import type { RealtimeChannelOptions } from './RealtimeChannel'
-import { Fetch, resolveFetch } from '@supabase/utils-fetch'
+import { resolveFetch } from '@supabase/utils-fetch'
+
+// Type alias for the native fetch function (inlined to avoid external import in declarations)
+type Fetch = typeof fetch
 
 export type Channel = {
   name: string

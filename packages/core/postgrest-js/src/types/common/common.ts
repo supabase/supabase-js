@@ -1,6 +1,7 @@
 // Types that are shared between supabase-js and postgrest-js
 
-export type { Fetch } from '@supabase/utils-fetch'
+// Type alias for the native fetch function (inlined to avoid external import in declarations)
+export type Fetch = typeof fetch
 
 export type GenericRelationship = {
   foreignKeyName: string
