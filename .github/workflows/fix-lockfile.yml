@@ -27,7 +27,7 @@ jobs:
 
       # This is needed to match the npm version used when publishing
       - name: Regenerate lockfile
-        run: npm install --package-lock-only
+        run: npm install --package-lock-only --ignore-scripts
 
       - name: Commit fixed lockfile
         run: |
