@@ -12,7 +12,9 @@
     "module": "ES2020",
     "moduleResolution": "Bundler",
     "forceConsistentCasingInFileNames": true,
-    "types": ["node"]
+    "types": ["node"],
+    "allowImportingTsExtensions": false,
+    "resolveJsonModule": true
   },
   "include": ["src/**/*.ts"],
   "exclude": ["src/**/*.spec.ts", "src/**/*.test.ts"]
