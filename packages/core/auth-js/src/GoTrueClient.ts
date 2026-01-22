@@ -398,11 +398,17 @@ export default class GoTrueClient {
       this.broadcastChannel?.addEventListener('message', async (event) => {
         this._debug('received broadcast notification from other tab or client', event)
 
-        await this._notifyAllSubscribers(event.data.event, event.data.session, false) // broadcast = false so we don't get an endless loop of messages
+        try {
+          await this._notifyAllSubscribers(event.data.event, event.data.session, false) // broadcast = false so we don't get an endless loop of messages
+        } catch (error) {
+          this._debug('#broadcastChannel', 'error', error)
+        }
       })
     }
 
-    this.initialize()
+    this.initialize().catch((error) => {
+      this._debug('#initialize()', 'error', error)
+    })
   }
 
   /**
@@ -3026,7 +3032,13 @@ export default class GoTrueClient {
     }
 
     try {
-      this.visibilityChangedCallback = async () => await this._onVisibilityChanged(false)
+      this.visibilityChangedCallback = async () => {
+        try {
+          await this._onVisibilityChanged(false)
+        } catch (error) {
+          this._debug('#visibilityChangedCallback', 'error', error)
+        }
+      }
 
       window?.addEventListener('visibilitychange', this.visibilityChangedCallback)
 
