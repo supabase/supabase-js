@@ -1,5 +1,6 @@
 import { StorageApiError, StorageUnknownError } from './errors'
-import { isPlainObject, resolveResponse } from './helpers'
+import { resolveResponse } from '@supabase/utils-fetch'
+import { isPlainObject } from './helpers'
 import { FetchParameters } from './types'
 
 export type Fetch = typeof fetch

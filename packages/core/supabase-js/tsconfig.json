@@ -33,6 +33,9 @@
     },
     {
       "path": "../auth-js"
+    },
+    {
+      "path": "../../shared/utils/fetch"
     }
   ]
 }

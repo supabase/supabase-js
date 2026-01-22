@@ -2,7 +2,8 @@ import { IcebergRestCatalog, IcebergError } from 'iceberg-js'
 import { DEFAULT_HEADERS } from '../lib/constants'
 import { isStorageError, StorageError } from '../lib/errors'
 import { Fetch, get, post, remove } from '../lib/fetch'
-import { isValidBucketName, resolveFetch } from '../lib/helpers'
+import { resolveFetch } from '@supabase/utils-fetch'
+import { isValidBucketName } from '../lib/helpers'
 import { AnalyticBucket } from '../lib/types'
 
 type WrapAsyncMethod<T> = T extends (...args: infer A) => Promise<infer R>

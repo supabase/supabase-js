@@ -5,7 +5,8 @@ import {
   _request,
   _userResponse,
 } from './lib/fetch'
-import { resolveFetch, validateUUID } from './lib/helpers'
+import { resolveFetch } from '@supabase/utils-fetch'
+import { validateUUID } from './lib/helpers'
 import {
   AdminUserAttributes,
   GenerateLinkParams,

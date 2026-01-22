@@ -4,6 +4,9 @@ const config: Config.InitialOptions = {
   preset: 'ts-jest',
   testEnvironment: 'node',
   collectCoverageFrom: ['src/**/*', '!src/types.ts'],
+  moduleNameMapper: {
+    '^@supabase/utils-fetch$': '<rootDir>/../../shared/utils/fetch/src/index.ts',
+  },
   // Run tests sequentially to prevent database side effects
   maxWorkers: 1,
   // Ensure deterministic test order

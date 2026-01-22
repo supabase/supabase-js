@@ -14,6 +14,9 @@ const config: Config.InitialOptions = {
     '!**/vendor/**',
     '!**/vendor/**',
   ],
+  moduleNameMapper: {
+    '^@supabase/utils-fetch$': '<rootDir>/../../shared/utils/fetch/src/index.ts',
+  },
   testPathIgnorePatterns: [
     '/node_modules/',
     '/dist/',

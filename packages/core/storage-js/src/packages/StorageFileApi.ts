@@ -1,6 +1,7 @@
 import { isStorageError, StorageError, StorageUnknownError } from '../lib/errors'
 import { Fetch, get, head, post, put, remove } from '../lib/fetch'
-import { recursiveToCamel, resolveFetch } from '../lib/helpers'
+import { resolveFetch } from '@supabase/utils-fetch'
+import { recursiveToCamel } from '../lib/helpers'
 import {
   FileObject,
   FileOptions,

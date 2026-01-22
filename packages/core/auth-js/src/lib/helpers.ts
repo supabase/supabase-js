@@ -100,15 +100,6 @@ export function parseParametersFromURL(href: string) {
   return result
 }
 
-type Fetch = typeof fetch
-
-export const resolveFetch = (customFetch?: Fetch): Fetch => {
-  if (customFetch) {
-    return (...args) => customFetch(...args)
-  }
-  return (...args) => fetch(...args)
-}
-
 export const looksLikeFetchResponse = (maybeResponse: unknown): maybeResponse is Response => {
   return (
     typeof maybeResponse === 'object' &&

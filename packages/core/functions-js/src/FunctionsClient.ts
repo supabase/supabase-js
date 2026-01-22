@@ -1,4 +1,4 @@
-import { resolveFetch } from './helper'
+import { resolveFetch } from '@supabase/utils-fetch'
 import {
   Fetch,
   FunctionInvokeOptions,

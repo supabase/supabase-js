@@ -57,10 +57,5 @@ export {
 export type { Fetch, FetchOptions, RequestMethodType } from './fetch'
 
 // Helper utilities
-export {
-  resolveFetch,
-  resolveResponse,
-  isPlainObject,
-  normalizeToFloat32,
-  validateVectorDimension,
-} from './helpers'
+export { resolveFetch, resolveResponse } from '@supabase/utils-fetch'
+export { isPlainObject, normalizeToFloat32, validateVectorDimension } from './helpers'

@@ -1,29 +1,3 @@
-type Fetch = typeof fetch
-
-/**
- * Resolves the fetch implementation to use
- * Uses custom fetch if provided, otherwise uses native fetch
- *
- * @param customFetch - Optional custom fetch implementation
- * @returns Resolved fetch function
- */
-export const resolveFetch = (customFetch?: Fetch): Fetch => {
-  if (customFetch) {
-    return (...args) => customFetch(...args)
-  }
-  return (...args) => fetch(...args)
-}
-
-/**
- * Resolves the Response constructor to use
- * Returns native Response constructor
- *
- * @returns Response constructor
- */
-export const resolveResponse = (): typeof Response => {
-  return Response
-}
-
 /**
  * Determine if input is a plain object
  * An object is plain if it's created by either {}, new Object(), or Object.create(null)

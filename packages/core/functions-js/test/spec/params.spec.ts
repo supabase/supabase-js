@@ -1,7 +1,7 @@
 import { Blob } from 'buffer'
 import querystring from 'querystring'
 
-import 'jest'
+import { vi } from 'vitest'
 import { nanoid } from 'nanoid'
 import { sign } from 'jsonwebtoken'
 
@@ -494,7 +494,7 @@ describe('params reached to function', () => {
 
 describe('body stringify with custom headers', () => {
   test('should stringify object body when custom Content-Type is provided', async () => {
-    const mockFetch = jest.fn().mockResolvedValue(new Response('ok'))
+    const mockFetch = vi.fn().mockResolvedValue(new Response('ok'))
     const client = new FunctionsClient('http://localhost', { customFetch: mockFetch })
 
     await client.invoke('test-fn', {
@@ -511,7 +511,7 @@ describe('body stringify with custom headers', () => {
   })
 
   test('should stringify nested object body when custom headers are provided', async () => {
-    const mockFetch = jest.fn().mockResolvedValue(new Response('ok'))
+    const mockFetch = vi.fn().mockResolvedValue(new Response('ok'))
     const client = new FunctionsClient('http://localhost', { customFetch: mockFetch })
 
     await client.invoke('test-fn', {
@@ -528,7 +528,7 @@ describe('body stringify with custom headers', () => {
   })
 
   test('should not double-stringify string body when custom Content-Type is provided', async () => {
-    const mockFetch = jest.fn().mockResolvedValue(new Response('ok'))
+    const mockFetch = vi.fn().mockResolvedValue(new Response('ok'))
     const client = new FunctionsClient('http://localhost', { customFetch: mockFetch })
 
     await client.invoke('test-fn', {

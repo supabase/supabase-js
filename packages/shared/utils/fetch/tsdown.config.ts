@@ -8,8 +8,7 @@ export default defineConfig({
   clean: true,
   outDir: 'dist',
   external: ['tslib'],
-  noExternal: ['@supabase/utils-fetch'],
-  fixedExtension: true,
+  fixedExtension: true, // Automatically adds .js/.mjs extensions to all imports
   hash: false,
   target: 'es2017',
 })
