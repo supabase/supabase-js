@@ -2156,7 +2156,7 @@ export default class GoTrueClient {
   ): Promise<{ error: AuthError | null }> {
     return await this._useSession(async (result) => {
       const { data, error: sessionError } = result
-      if (sessionError) {
+      if (sessionError && !isAuthSessionMissingError(sessionError)) {
         return this._returnResult({ error: sessionError })
       }
       const accessToken = data.session?.access_token
@@ -2167,8 +2167,9 @@ export default class GoTrueClient {
           // ignore 401s since an invalid or expired JWT should sign out the current session
           if (
             !(
-              isAuthApiError(error) &&
-              (error.status === 404 || error.status === 401 || error.status === 403)
+              (isAuthApiError(error) &&
+                (error.status === 404 || error.status === 401 || error.status === 403)) ||
+              isAuthSessionMissingError(error)
             )
           ) {
             return this._returnResult({ error })
