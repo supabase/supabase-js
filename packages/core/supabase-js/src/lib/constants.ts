@@ -45,12 +45,30 @@ export function getClientPlatform(): string | null {
 }
 
 export function getClientPlatformVersion(): string | null {
+  // Node.js / Bun environment
   // @ts-ignore
-  if (typeof process !== 'undefined' && process.version) {
-    // @ts-ignore
-    return process.version.slice(1)
+  if (typeof process !== 'undefined' && process.versions && process.versions.node) {
+    try {
+      // @ts-ignore
+      const os = require('os')
+      return os.release()
+    } catch (error) {
+      return null
+    }
   }
 
+  // Deno environment
+  // @ts-ignore
+  if (typeof Deno !== 'undefined' && Deno.osRelease) {
+    try {
+      // @ts-ignore
+      return Deno.osRelease()
+    } catch (error) {
+      return null
+    }
+  }
+
+  // Browser environment
   // @ts-ignore
   if (typeof navigator !== 'undefined') {
     // Modern User-Agent Client Hints API

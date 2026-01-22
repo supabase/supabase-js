@@ -113,6 +113,59 @@ describe('constants', () => {
           expect(version.length).toBeGreaterThan(0)
         }
       })
+
+      test('getClientPlatformVersion returns OS version, not runtime version in Node.js', () => {
+        // Only run this test in Node.js environment
+        if (typeof process !== 'undefined' && process.versions && process.versions.node) {
+          const platformVersion = getClientPlatformVersion()
+          const runtimeVersion = getClientRuntimeVersion()
+
+          // Both should exist in Node.js environment
+          expect(platformVersion).not.toBeNull()
+          expect(runtimeVersion).not.toBeNull()
+
+          // They should be DIFFERENT values
+          if (platformVersion && runtimeVersion) {
+            expect(platformVersion).not.toBe(runtimeVersion)
+
+            // Platform version should NOT match Node.js version format
+            expect(platformVersion).not.toBe(process.version.slice(1))
+            expect(platformVersion).not.toBe(process.versions.node)
+          }
+        }
+      })
+
+      test('getClientPlatformVersion uses os.release() in Node.js', () => {
+        // Only run this test in Node.js environment
+        if (typeof process !== 'undefined' && process.versions && process.versions.node) {
+          const platformVersion = getClientPlatformVersion()
+          const os = require('os')
+          const expectedVersion = os.release()
+
+          expect(platformVersion).toBe(expectedVersion)
+        }
+      })
+
+      test('X-Supabase-Client-Platform-Version header contains OS version, not runtime version', () => {
+        const headers = DEFAULT_HEADERS
+
+        if (
+          headers['X-Supabase-Client-Platform-Version'] &&
+          headers['X-Supabase-Client-Runtime-Version']
+        ) {
+          const platformVersion = headers['X-Supabase-Client-Platform-Version']
+          const runtimeVersion = headers['X-Supabase-Client-Runtime-Version']
+
+          // Platform version should be different from runtime version
+          expect(platformVersion).not.toBe(runtimeVersion)
+
+          // In Node.js, ensure platform version is not the Node.js version
+          if (typeof process !== 'undefined' && process.versions && process.versions.node) {
+            expect(platformVersion).not.toBe(process.version.slice(1))
+            expect(platformVersion).not.toBe(process.versions.node)
+          }
+        }
+      })
     })
 
     describe('Client Runtime Detection', () => {
