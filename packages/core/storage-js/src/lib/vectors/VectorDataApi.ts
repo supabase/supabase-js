@@ -1,7 +1,7 @@
 import { DEFAULT_HEADERS } from './constants'
 import { isStorageVectorsError } from './errors'
 import { Fetch, post } from './fetch'
-import { resolveFetch } from './helpers'
+import { resolveFetch } from '@supabase/utils-fetch'
 import {
   ApiResponse,
   PutVectorsOptions,

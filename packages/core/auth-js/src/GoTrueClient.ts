@@ -32,6 +32,7 @@ import {
   _ssoResponse,
   _userResponse,
 } from './lib/fetch'
+import { resolveFetch } from '@supabase/utils-fetch'
 import {
   decodeJWT,
   deepClone,
@@ -44,7 +45,6 @@ import {
   isBrowser,
   parseParametersFromURL,
   removeItemAsync,
-  resolveFetch,
   retryable,
   setItemAsync,
   sleep,

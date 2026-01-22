@@ -100,10 +100,6 @@ export function parseParametersFromURL(href: string) {
   return result
 }
 
-import { resolveFetch } from '@supabase/utils-fetch'
-
-export { resolveFetch }
-
 export const looksLikeFetchResponse = (maybeResponse: unknown): maybeResponse is Response => {
   return (
     typeof maybeResponse === 'object' &&

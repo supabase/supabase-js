@@ -1,5 +1,6 @@
 import { StorageVectorsApiError, StorageVectorsUnknownError } from './errors'
-import { isPlainObject, resolveResponse } from './helpers'
+import { resolveResponse } from '@supabase/utils-fetch'
+import { isPlainObject } from './helpers'
 import { VectorFetchParameters } from './types'
 
 export type Fetch = typeof fetch

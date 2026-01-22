@@ -1,7 +1,3 @@
-import { resolveFetch, resolveResponse } from '@supabase/utils-fetch'
-
-export { resolveFetch, resolveResponse }
-
 /**
  * Determine if input is a plain object
  * An object is plain if it's created by either {}, new Object(), or Object.create(null)

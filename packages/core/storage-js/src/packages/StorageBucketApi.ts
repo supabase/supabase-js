@@ -1,7 +1,7 @@
 import { DEFAULT_HEADERS } from '../lib/constants'
 import { isStorageError, StorageError } from '../lib/errors'
 import { Fetch, get, post, put, remove } from '../lib/fetch'
-import { resolveFetch } from '../lib/helpers'
+import { resolveFetch } from '@supabase/utils-fetch'
 import { Bucket, BucketType, ListBucketOptions } from '../lib/types'
 import { StorageClientOptions } from '../StorageClient'
 

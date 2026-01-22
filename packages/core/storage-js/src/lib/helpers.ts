@@ -1,7 +1,3 @@
-import { resolveFetch, resolveResponse } from '@supabase/utils-fetch'
-
-export { resolveFetch, resolveResponse }
-
 export const recursiveToCamel = (item: Record<string, any>): unknown => {
   if (Array.isArray(item)) {
     return item.map((el) => recursiveToCamel(el))
