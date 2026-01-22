@@ -1,57 +1,80 @@
-import assert from 'assert'
-import path from 'path'
-import { afterAll, afterEach, beforeAll, beforeEach, expect, test, vi } from 'vitest'
-import { Server } from 'mock-socket'
-import RealtimeClient from '../src/RealtimeClient'
-import { setupRealtimeTest, cleanupRealtimeTest, TestSetup } from './helpers/setup'
-import Worker from 'web-worker'
+import { beforeAll, beforeEach, afterEach, test, expect, vi } from "vitest"
+import { type TestSetup, setupRealtimeTest } from "./helpers/setup"
+import Worker from "web-worker";
+import path from "path";
+import RealtimeClient from "../src/RealtimeClient";
 
 let testSetup: TestSetup
-let mockServer: Server
-let client: RealtimeClient
 
 beforeAll(() => {
   window.Worker = Worker
-  const projectRef = testSetup?.projectRef || 'test-project'
-  const url = `wss://${projectRef}/socket`
-  mockServer = new Server(url)
 })
 
-afterAll(() => {
-  vi.stubGlobal('Worker', Worker)
-  mockServer.close()
-})
+const workerUrl = path.join(__dirname, "/helpers/test_worker.js")
 
 beforeEach(() => {
-  testSetup = setupRealtimeTest()
-  const workerPath = path.join(__dirname, '/helpers/test_worker.js')
-  client = new RealtimeClient('ws://localhost:8080/socket', {
+  testSetup = setupRealtimeTest({
     worker: true,
-    workerUrl: workerPath,
-    heartbeatIntervalMs: 10,
-    params: { apikey: '123456789' },
+    workerUrl
   })
 })
 
 afterEach(() => {
-  cleanupRealtimeTest(testSetup)
+  testSetup.cleanup()
 })
 
-test('sets worker flag', () => {
-  assert.ok(client.worker)
+test("sets worker flag", () => {
+  expect(testSetup.client.worker).toBeTruthy()
+})
+
+test("disables autoStartHeartbeat in socket", () => {
+  expect(testSetup.client.socketAdapter.getSocket().autoSendHeartbeat).toBeFalsy()
 })
 
 test('sets worker URL', () => {
-  const workerPath = path.join(__dirname, '/helpers/test_worker.js')
-  assert.equal(client.workerUrl, workerPath)
+  expect(testSetup.client.workerUrl).toBe(workerUrl)
 })
 
-test('ensures single worker ref is started even with multiple connect calls', () => {
-  client._onConnOpen()
-  let ref = client.workerRef
+test('creates worker with blob URL when no workerUrl provided', async () => {
+  // Mock URL.createObjectURL to return a valid file URL for Node.js web-worker polyfill
+  const mockObjectURL = `file://${workerUrl}`
+  const originalCreateObjectURL = global.URL.createObjectURL
+  global.URL.createObjectURL = vi.fn(() => mockObjectURL)
 
-  client._onConnOpen()
-  assert.ok(ref === client.workerRef)
+  testSetup.cleanup()
+  testSetup = setupRealtimeTest({
+    worker: true
+  })
+
+  testSetup.connect()
+  await vi.waitFor(() => expect(testSetup.emitters.connected).toBeCalled())
+
+  // Verify worker was created (workerRef should exist)
+  expect(testSetup.client.workerRef).toBeTruthy()
+  expect(testSetup.client.workerRef instanceof Worker).toBeTruthy()
+
+  // Verify createObjectURL was called (this exercises the blob creation path)
+  expect(global.URL.createObjectURL).toHaveBeenCalled()
+  global.URL.createObjectURL = originalCreateObjectURL
+})
+
+
+test("starts worker on conenction open", async () => {
+  expect(testSetup.client.workerRef).toBeFalsy()
+  testSetup.connect()
+  await vi.waitFor(() => expect(testSetup.emitters.connected).toBeCalled())
+  expect(testSetup.client.workerRef).toBeTruthy()
+})
+
+test('ensures single worker ref is started even with multiple connect calls', async () => {
+  testSetup.connect()
+  await vi.waitFor(() => expect(testSetup.emitters.connected).toBeCalled())
+  const ref = testSetup.client.workerRef
+
+  // @ts-ignore - simulate another onOpen call
+  testSetup.client.socketAdapter.getSocket().triggerStateCallbacks("open")
+
+  expect(testSetup.client.workerRef).toBe(ref)
 })
 
 test('throws error when Web Worker is not supported', () => {
@@ -71,54 +94,15 @@ test('throws error when Web Worker is not supported', () => {
   window.Worker = originalWorker
 })
 
-test('creates worker with blob URL when no workerUrl provided', () => {
-  // Mock URL.createObjectURL to return a valid file URL for Node.js web-worker polyfill
-  const workerPath = path.join(__dirname, '/helpers/test_worker.js')
-  const mockObjectURL = `file://${workerPath}`
-  const originalCreateObjectURL = global.URL.createObjectURL
-  global.URL.createObjectURL = vi.fn(() => mockObjectURL)
+test('terminates worker on disconnect', async () => {
+  testSetup.connect()
+  await vi.waitFor(() => expect(testSetup.emitters.connected).toBeCalled())
+  expect(testSetup.client.workerRef).toBeTruthy()
+  const ref = testSetup.client.workerRef!
 
-  try {
-    const client = new RealtimeClient('ws://localhost:8080/socket', {
-      worker: true,
-      params: { apikey: '123456789' },
-    })
-
-    // Trigger worker creation by calling _onConnOpen
-    client._onConnOpen()
-
-    // Verify worker was created (workerRef should exist)
-    assert.ok(client.workerRef)
-    assert.ok(client.workerRef instanceof Worker)
-
-    // Verify createObjectURL was called (this exercises the blob creation path)
-    expect(global.URL.createObjectURL).toHaveBeenCalled()
-  } finally {
-    // Restore original function
-    global.URL.createObjectURL = originalCreateObjectURL
-  }
-})
-
-test('terminates worker on disconnect', () => {
-  // Establish connection first
-  client.connect()
-
-  // Trigger worker creation
-  client._onConnOpen()
-
-  // Verify worker was created
-  assert.ok(client.workerRef)
-  const worker = client.workerRef
-
-  // Spy on worker terminate method
-  const terminateSpy = vi.spyOn(worker, 'terminate')
-
-  // Disconnect the client
-  client.disconnect()
-
-  // Verify worker was terminated
-  expect(terminateSpy).toHaveBeenCalled()
-
-  // Verify workerRef was cleared
-  assert.equal(client.workerRef, undefined)
+  const spy = vi.spyOn(ref, "terminate")
+  testSetup.disconnect()
+  await vi.waitFor(() => expect(testSetup.emitters.close).toBeCalled())
+  expect(spy).toHaveBeenCalled()
+  expect(testSetup.client.workerRef).toBeFalsy()
 })
