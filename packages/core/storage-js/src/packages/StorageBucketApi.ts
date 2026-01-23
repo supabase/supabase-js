@@ -1,16 +1,11 @@
 import { DEFAULT_HEADERS } from '../lib/constants'
-import { isStorageError, StorageError } from '../lib/errors'
-import { Fetch, get, post, put, remove } from '../lib/fetch'
-import { resolveFetch } from '../lib/helpers'
+import { StorageError } from '../lib/common/errors'
+import { Fetch, get, post, put, remove } from '../lib/common/fetch'
+import BaseApiClient from '../lib/common/BaseApiClient'
 import { Bucket, BucketType, ListBucketOptions } from '../lib/types'
 import { StorageClientOptions } from '../StorageClient'
 
-export default class StorageBucketApi {
-  protected url: string
-  protected headers: { [key: string]: string }
-  protected fetch: Fetch
-  protected shouldThrowOnError = false
-
+export default class StorageBucketApi extends BaseApiClient<StorageError> {
   constructor(
     url: string,
     headers: { [key: string]: string } = {},
@@ -28,19 +23,10 @@ export default class StorageBucketApi {
       }
     }
 
-    this.url = baseUrl.href.replace(/\/$/, '')
-    this.headers = { ...DEFAULT_HEADERS, ...headers }
-    this.fetch = resolveFetch(fetch)
-  }
+    const finalUrl = baseUrl.href.replace(/\/$/, '')
+    const finalHeaders = { ...DEFAULT_HEADERS, ...headers }
 
-  /**
-   * Enable throwing errors instead of returning them.
-   *
-   * @category File Buckets
-   */
-  public throwOnError(): this {
-    this.shouldThrowOnError = true
-    return this
+    super(finalUrl, finalHeaders, fetch, 'storage')
   }
 
   /**
@@ -85,22 +71,12 @@ export default class StorageBucketApi {
         error: StorageError
       }
   > {
-    try {
+    return this.handleOperation(async () => {
       const queryString = this.listBucketOptionsToQueryString(options)
-      const data = await get(this.fetch, `${this.url}/bucket${queryString}`, {
+      return await get(this.fetch, `${this.url}/bucket${queryString}`, {
         headers: this.headers,
       })
-      return { data, error: null }
-    } catch (error) {
-      if (this.shouldThrowOnError) {
-        throw error
-      }
-      if (isStorageError(error)) {
-        return { data: null, error }
-      }
-
-      throw error
-    }
+    })
   }
 
   /**
@@ -146,19 +122,9 @@ export default class StorageBucketApi {
         error: StorageError
       }
   > {
-    try {
-      const data = await get(this.fetch, `${this.url}/bucket/${id}`, { headers: this.headers })
-      return { data, error: null }
-    } catch (error) {
-      if (this.shouldThrowOnError) {
-        throw error
-      }
-      if (isStorageError(error)) {
-        return { data: null, error }
-      }
-
-      throw error
-    }
+    return this.handleOperation(async () => {
+      return await get(this.fetch, `${this.url}/bucket/${id}`, { headers: this.headers })
+    })
   }
 
   /**
@@ -218,8 +184,8 @@ export default class StorageBucketApi {
         error: StorageError
       }
   > {
-    try {
-      const data = await post(
+    return this.handleOperation(async () => {
+      return await post(
         this.fetch,
         `${this.url}/bucket`,
         {
@@ -232,17 +198,7 @@ export default class StorageBucketApi {
         },
         { headers: this.headers }
       )
-      return { data, error: null }
-    } catch (error) {
-      if (this.shouldThrowOnError) {
-        throw error
-      }
-      if (isStorageError(error)) {
-        return { data: null, error }
-      }
-
-      throw error
-    }
+    })
   }
 
   /**
@@ -297,8 +253,8 @@ export default class StorageBucketApi {
         error: StorageError
       }
   > {
-    try {
-      const data = await put(
+    return this.handleOperation(async () => {
+      return await put(
         this.fetch,
         `${this.url}/bucket/${id}`,
         {
@@ -310,17 +266,7 @@ export default class StorageBucketApi {
         },
         { headers: this.headers }
       )
-      return { data, error: null }
-    } catch (error) {
-      if (this.shouldThrowOnError) {
-        throw error
-      }
-      if (isStorageError(error)) {
-        return { data: null, error }
-      }
-
-      throw error
-    }
+    })
   }
 
   /**
@@ -357,24 +303,9 @@ export default class StorageBucketApi {
         error: StorageError
       }
   > {
-    try {
-      const data = await post(
-        this.fetch,
-        `${this.url}/bucket/${id}/empty`,
-        {},
-        { headers: this.headers }
-      )
-      return { data, error: null }
-    } catch (error) {
-      if (this.shouldThrowOnError) {
-        throw error
-      }
-      if (isStorageError(error)) {
-        return { data: null, error }
-      }
-
-      throw error
-    }
+    return this.handleOperation(async () => {
+      return await post(this.fetch, `${this.url}/bucket/${id}/empty`, {}, { headers: this.headers })
+    })
   }
 
   /**
@@ -412,24 +343,9 @@ export default class StorageBucketApi {
         error: StorageError
       }
   > {
-    try {
-      const data = await remove(
-        this.fetch,
-        `${this.url}/bucket/${id}`,
-        {},
-        { headers: this.headers }
-      )
-      return { data, error: null }
-    } catch (error) {
-      if (this.shouldThrowOnError) {
-        throw error
-      }
-      if (isStorageError(error)) {
-        return { data: null, error }
-      }
-
-      throw error
-    }
+    return this.handleOperation(async () => {
+      return await remove(this.fetch, `${this.url}/bucket/${id}`, {}, { headers: this.headers })
+    })
   }
 
   private listBucketOptionsToQueryString(options?: ListBucketOptions): string {

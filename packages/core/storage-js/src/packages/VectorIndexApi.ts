@@ -1,7 +1,7 @@
-import { DEFAULT_HEADERS } from './constants'
-import { isStorageVectorsError } from './errors'
-import { Fetch, post } from './fetch'
-import { resolveFetch } from './helpers'
+import { DEFAULT_HEADERS } from '../lib/constants'
+import { StorageError } from '../lib/common/errors'
+import { Fetch, post } from '../lib/common/fetch'
+import BaseApiClient from '../lib/common/BaseApiClient'
 import {
   ApiResponse,
   VectorIndex,
@@ -10,7 +10,7 @@ import {
   VectorDataType,
   DistanceMetric,
   MetadataConfiguration,
-} from './types'
+} from '../lib/types'
 
 /**
  * @alpha
@@ -33,41 +33,22 @@ export interface CreateIndexOptions {
  * Base implementation for vector index operations.
  * Use {@link VectorBucketScope} via `supabase.storage.vectors.from('bucket')` instead.
  */
-export default class VectorIndexApi {
-  protected url: string
-  protected headers: { [key: string]: string }
-  protected fetch: Fetch
-  protected shouldThrowOnError = false
-
+export default class VectorIndexApi extends BaseApiClient<StorageError> {
   /** Creates a new VectorIndexApi instance */
   constructor(url: string, headers: { [key: string]: string } = {}, fetch?: Fetch) {
-    this.url = url.replace(/\/$/, '')
-    this.headers = { ...DEFAULT_HEADERS, ...headers }
-    this.fetch = resolveFetch(fetch)
-  }
-
-  /** Enable throwing errors instead of returning them in the response */
-  public throwOnError(): this {
-    this.shouldThrowOnError = true
-    return this
+    const finalUrl = url.replace(/\/$/, '')
+    const finalHeaders = { ...DEFAULT_HEADERS, 'Content-Type': 'application/json', ...headers }
+    super(finalUrl, finalHeaders, fetch, 'vectors')
   }
 
   /** Creates a new vector index within a bucket */
   async createIndex(options: CreateIndexOptions): Promise<ApiResponse<undefined>> {
-    try {
+    return this.handleOperation(async () => {
       const data = await post(this.fetch, `${this.url}/CreateIndex`, options, {
         headers: this.headers,
       })
-      return { data: data || {}, error: null }
-    } catch (error) {
-      if (this.shouldThrowOnError) {
-        throw error
-      }
-      if (isStorageVectorsError(error)) {
-        return { data: null, error }
-      }
-      throw error
-    }
+      return data || {}
+    })
   }
 
   /** Retrieves metadata for a specific vector index */
@@ -75,61 +56,35 @@ export default class VectorIndexApi {
     vectorBucketName: string,
     indexName: string
   ): Promise<ApiResponse<{ index: VectorIndex }>> {
-    try {
-      const data = await post(
+    return this.handleOperation(async () => {
+      return await post(
         this.fetch,
         `${this.url}/GetIndex`,
         { vectorBucketName, indexName },
         { headers: this.headers }
       )
-      return { data, error: null }
-    } catch (error) {
-      if (this.shouldThrowOnError) {
-        throw error
-      }
-      if (isStorageVectorsError(error)) {
-        return { data: null, error }
-      }
-      throw error
-    }
+    })
   }
 
   /** Lists vector indexes within a bucket with optional filtering and pagination */
   async listIndexes(options: ListIndexesOptions): Promise<ApiResponse<ListIndexesResponse>> {
-    try {
-      const data = await post(this.fetch, `${this.url}/ListIndexes`, options, {
+    return this.handleOperation(async () => {
+      return await post(this.fetch, `${this.url}/ListIndexes`, options, {
         headers: this.headers,
       })
-      return { data, error: null }
-    } catch (error) {
-      if (this.shouldThrowOnError) {
-        throw error
-      }
-      if (isStorageVectorsError(error)) {
-        return { data: null, error }
-      }
-      throw error
-    }
+    })
   }
 
   /** Deletes a vector index and all its data */
   async deleteIndex(vectorBucketName: string, indexName: string): Promise<ApiResponse<undefined>> {
-    try {
+    return this.handleOperation(async () => {
       const data = await post(
         this.fetch,
         `${this.url}/DeleteIndex`,
         { vectorBucketName, indexName },
         { headers: this.headers }
       )
-      return { data: data || {}, error: null }
-    } catch (error) {
-      if (this.shouldThrowOnError) {
-        throw error
-      }
-      if (isStorageVectorsError(error)) {
-        return { data: null, error }
-      }
-      throw error
-    }
+      return data || {}
+    })
   }
 }

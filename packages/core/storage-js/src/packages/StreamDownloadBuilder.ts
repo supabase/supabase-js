@@ -1,4 +1,4 @@
-import { isStorageError } from '../lib/errors'
+import { isStorageError } from '../lib/common/errors'
 import { DownloadResult } from '../lib/types'
 
 export default class StreamDownloadBuilder implements PromiseLike<DownloadResult<ReadableStream>> {
