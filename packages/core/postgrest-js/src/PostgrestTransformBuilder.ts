@@ -72,20 +72,9 @@ export default class PostgrestTransformBuilder<
     >
   }
 
-  order<ColumnName extends string & keyof Row>(
-    column: ColumnName,
-    options?: { ascending?: boolean; nullsFirst?: boolean; referencedTable?: undefined }
-  ): this
   order(
     column: string,
     options?: { ascending?: boolean; nullsFirst?: boolean; referencedTable?: string }
-  ): this
-  /**
-   * @deprecated Use `options.referencedTable` instead of `options.foreignTable`
-   */
-  order<ColumnName extends string & keyof Row>(
-    column: ColumnName,
-    options?: { ascending?: boolean; nullsFirst?: boolean; foreignTable?: undefined }
   ): this
   /**
    * @deprecated Use `options.referencedTable` instead of `options.foreignTable`
