@@ -29,6 +29,7 @@ jobs:
 
           STATUS_ICON=""
           STATUS_PREFIX=""
+          MENTION_TAG=""
           case "$STATUS" in
             success)
               STATUS_ICON="✅";
@@ -37,6 +38,7 @@ jobs:
             failure)
               STATUS_ICON="❌";
               STATUS_PREFIX="failed";
+              MENTION_TAG=" @group-sdk";
               ;;
             *)
               STATUS_ICON="ℹ️";
@@ -56,7 +58,7 @@ jobs:
               },
               {
                 "type": "section",
-                "text": { "type": "mrkdwn", "text": "See workflow details below. @group-sdk" }
+                "text": { "type": "mrkdwn", "text": "See workflow details below.${MENTION_TAG}" }
               },
               {
                 "type": "section",
