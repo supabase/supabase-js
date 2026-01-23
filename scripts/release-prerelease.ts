@@ -113,9 +113,9 @@ if (isRC) {
   execSync('npx nx run-many --target=build --all', { stdio: 'inherit' })
   console.log('✅ Build complete\n')
 
-  // --- CHANGELOG (canary only) ---
+  // --- CHANGELOG (canary and RC) ---
 
-  if (isCanary) {
+  if (isCanary || isRC) {
     const gh_token_bak = process.env.GITHUB_TOKEN
     process.env.GITHUB_TOKEN = process.env.RELEASE_GITHUB_TOKEN
 
@@ -181,7 +181,13 @@ if (isRC) {
   console.log(`📦 Published version: ${workspaceVersion}`)
   console.log(`🏷️  Dist-tag: ${releaseType}`)
   if (isRC) {
-    console.log(`📥 Install command: npm install @supabase/supabase-js@rc\n`)
+    console.log(`📥 Install command: npm install @supabase/supabase-js@rc`)
+    console.log(`🏷️  Git tag created: v${workspaceVersion}`)
+    console.log(
+      `🚀 GitHub release: https://github.com/supabase/supabase-js/releases/tag/v${workspaceVersion}\n`
+    )
+  } else if (isCanary) {
+    console.log(`🏷️  Git tag created: v${workspaceVersion}\n`)
   }
 
   process.exit(Object.values(publishResult).every((result) => result.code === 0) ? 0 : 1)
