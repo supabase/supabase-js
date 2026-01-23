@@ -56,12 +56,10 @@ export function getClientPlatformVersion(): string | null {
       // @ts-ignore
       if (typeof window === 'undefined') {
         try {
-          // Access require dynamically using computed property to hide from bundler
-          // Split the string to prevent bundlers from detecting and polyfilling
-          const reqKey = 'req' + 'uire'
-          const req = (globalThis as any)[reqKey]
-          if (req) {
-            const os = req('os')
+          // Use bracket notation to avoid bundler static analysis (same pattern as process)
+          const _require = (globalThis as any)['require']
+          if (_require) {
+            const os = _require('os')
             return os.release()
           }
         } catch (error) {
