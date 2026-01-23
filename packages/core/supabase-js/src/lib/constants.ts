@@ -3,12 +3,6 @@ import { RealtimeClientOptions } from '@supabase/realtime-js'
 import { SupabaseAuthClientOptions } from './types'
 import { version } from './version'
 
-// Capture require at module level for Node.js environments
-// Using bracket notation to avoid bundler static analysis
-// @ts-ignore
-const _require =
-  (globalThis as any)['require'] || (typeof require !== 'undefined' ? require : undefined)
-
 let JS_ENV = ''
 // @ts-ignore
 if (typeof Deno !== 'undefined') {
@@ -60,11 +54,16 @@ export function getClientPlatformVersion(): string | null {
     if (processVersions && processVersions['node']) {
       // Check if we're in a true server-side Node.js environment (not a browser bundle)
       // @ts-ignore
-      if (typeof window === 'undefined' && _require) {
+      if (typeof window === 'undefined') {
         try {
-          // Use module-level captured require to load 'os'
-          const os = _require('os')
-          return os.release()
+          // Access require dynamically using computed property to hide from bundler
+          // Split the string to prevent bundlers from detecting and polyfilling
+          const reqKey = 'req' + 'uire'
+          const req = (globalThis as any)[reqKey]
+          if (req) {
+            const os = req('os')
+            return os.release()
+          }
         } catch (error) {
           return null
         }
