@@ -1,30 +1,21 @@
-name: Publish releases
-# Consolidates canary and stable releases into single workflow
-# Trusted workflow for publishing to npm
+name: Unpublish 2.92.0
+# Temporary workflow to unpublish version 2.92.0
 
 on:
-  push:
-    branches: [master]
-    paths-ignore:
-      - '*.md'
-      - 'docs/**'
-      - '**/CHANGELOG.md'
   workflow_dispatch:
     inputs:
-      version_specifier:
-        description: 'Semver bump (patch|minor|major|pre*) or exact version (v1.2.3)'
+      version:
+        description: 'Version to unpublish (e.g., 2.92.0)'
         required: true
         type: string
+        default: '2.92.0'
 
 env:
   NODE_VERSION: '20'
 
 jobs:
-  release-stable: # stable releases can only be manually triggered
-    if: ${{ github.event_name == 'workflow_dispatch' }}
+  unpublish:
     runs-on: ubuntu-latest
-    outputs:
-      released_version: ${{ steps.extract-version.outputs.version }}
     permissions:
       contents: read
       id-token: write
@@ -36,6 +27,7 @@ jobs:
         with:
           app-id: ${{ secrets.APP_ID }}
           private-key: ${{ secrets.PRIVATE_KEY }}
+
       - name: Check if actor is member of admin or sdk team
         id: team-check
         uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7.1.0
@@ -69,260 +61,76 @@ jobs:
           exit 1
 
       - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
-        with:
-          fetch-depth: 0
 
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
           registry-url: 'https://registry.npmjs.org'
 
-      # Ensure npm 11.5.1 or later is installed for trusted publishing support
       - name: Update npm
         run: npm install -g npm@latest
 
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Configure git
+      - name: Validate version
         run: |
-          git config --global user.name "supabase-releaser[bot]"
-          git config --global user.email "supabase-releaser[bot]@users.noreply.github.com"
+          VERSION="${{ github.event.inputs.version }}"
+          # Remove 'v' prefix if present
+          VERSION="${VERSION#v}"
 
-      - name: Validate input
-        run: |
-          VS="${{ github.event.inputs.version_specifier }}"
-          echo "Validating: $VS"
-
-          if [[ "$VS" =~ ^(patch|minor|major|prepatch|preminor|premajor|prerelease)$ ]]; then
-            echo "✔ bump keyword"
-          elif [[ "$VS" =~ ^v?[0-9]+\.[0-9]+\.[0-9]+([.-][0-9A-Za-z.-]+)?$ ]]; then
-            echo "✔ explicit version"
-          else
-            echo "❌ Invalid version_specifier: '$VS'"
-            echo "   Use: patch|minor|major|pre*, or v1.2.3"
+          if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "❌ Invalid version format: $VERSION"
+            echo "Must be in format X.Y.Z (e.g., 2.92.0)"
             exit 1
           fi
 
-      - name: Release stable version
+          echo "CLEAN_VERSION=$VERSION" >> $GITHUB_ENV
+
+      - name: Unpublish packages
         env:
           NPM_CONFIG_PROVENANCE: true
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          RELEASE_GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
-          GH_TOKEN: ${{ steps.app-token.outputs.token }}
-        shell: bash
-        run: npm run release-stable -- --versionSpecifier "${{ github.event.inputs.version_specifier }}"
-
-      - name: Extract released version
-        id: extract-version
-        shell: bash
         run: |
-          set -euo pipefail
-          VERSION=$(cat .release-version)
-          if [[ -z "$VERSION" ]]; then
-            exit 1
+          VERSION="${{ env.CLEAN_VERSION }}"
+          PACKAGES="supabase-js auth-js postgrest-js realtime-js storage-js functions-js gotrue-js"
+
+          echo "⚠️  Unpublishing version $VERSION from all packages..."
+          echo ""
+
+          FAILED=()
+          SUCCEEDED=()
+
+          for pkg in $PACKAGES; do
+            echo "📦 Unpublishing @supabase/$pkg@$VERSION..."
+            if npm unpublish @supabase/$pkg@$VERSION --force 2>&1; then
+              echo "✅ @supabase/$pkg@$VERSION unpublished"
+              SUCCEEDED+=("$pkg")
+            else
+              echo "⚠️  Failed to unpublish @supabase/$pkg@$VERSION (may not exist)"
+              FAILED+=("$pkg")
+            fi
+            echo ""
+          done
+
+          echo "========================================="
+          echo "SUMMARY"
+          echo "========================================="
+          echo "✅ Succeeded: ${#SUCCEEDED[@]} packages"
+          for pkg in "${SUCCEEDED[@]}"; do
+            echo "   - @supabase/$pkg"
+          done
+
+          if [ ${#FAILED[@]} -gt 0 ]; then
+            echo ""
+            echo "⚠️  Failed/Skipped: ${#FAILED[@]} packages"
+            for pkg in "${FAILED[@]}"; do
+              echo "   - @supabase/$pkg"
+            done
           fi
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
 
       - name: Summary
         if: ${{ success() }}
         run: |
-          echo "## ✅ Stable Release" >> $GITHUB_STEP_SUMMARY
-          echo "- **Version specifier:** \`${{ github.event.inputs.version_specifier }}\`" >> $GITHUB_STEP_SUMMARY
-          echo "- **Source commit:** HEAD of the checked-out branch" >> $GITHUB_STEP_SUMMARY
-          echo "- **Dist-tag:** \`latest\`" >> $GITHUB_STEP_SUMMARY
-
-  docs-after-stable-release:
-    name: Generate Documentation
-    needs: release-stable
-    if: ${{ github.event_name == 'workflow_dispatch' && needs.release-stable.result == 'success' }}
-    uses: ./.github/workflows/docs.yml
-    permissions:
-      actions: read
-      contents: write
-
-  trigger-update-js-libs:
-    name: Trigger Update JS Libs
-    runs-on: ubuntu-latest
-    needs: release-stable
-    if: ${{ github.event_name == 'workflow_dispatch' && needs.release-stable.result == 'success' }}
-    steps:
-      - name: Generate token
-        id: app-token
-        uses: actions/create-github-app-token@29824e69f54612133e76f7eaac726eef6c875baf
-        with:
-          app-id: ${{ secrets.APP_ID }}
-          private-key: ${{ secrets.PRIVATE_KEY }}
-          owner: supabase
-          repositories: supabase, supabase-js
-      - name: Trigger supabase/supabase update-js-libs workflow
-        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7.1.0
-        with:
-          github-token: ${{ steps.app-token.outputs.token }}
-          script: |
-            await github.rest.actions.createWorkflowDispatch({
-              owner: 'supabase',
-              repo: 'supabase',
-              workflow_id: 'update-js-libs.yml',
-              ref: 'master',
-              inputs: {
-                version: '${{ needs.release-stable.outputs.released_version }}',
-                source: 'supabase-js-stable-release'
-              }
-            });
-
-  trigger-supabase-docs-update:
-    name: Trigger Supabase Docs Update
-    runs-on: ubuntu-latest
-    needs: [release-stable, docs-after-stable-release]
-    if: ${{ github.event_name == 'workflow_dispatch' && needs.release-stable.result == 'success' && needs.docs-after-stable-release.result == 'success' }}
-    steps:
-      - name: Generate token
-        id: app-token
-        uses: actions/create-github-app-token@29824e69f54612133e76f7eaac726eef6c875baf
-        with:
-          app-id: ${{ secrets.APP_ID }}
-          private-key: ${{ secrets.PRIVATE_KEY }}
-          owner: supabase
-          repositories: supabase, supabase-js
-
-      - name: Trigger supabase/supabase docs workflow
-        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7.1.0
-        with:
-          github-token: ${{ steps.app-token.outputs.token }}
-          script: |
-            await github.rest.actions.createWorkflowDispatch({
-              owner: 'supabase',
-              repo: 'supabase',
-              workflow_id: 'docs-js-libs-update.yml',
-              ref: 'master',
-              inputs: {
-                version: '${{ needs.release-stable.outputs.released_version }}',
-                source: 'supabase-js-stable-release'
-              }
-            });
-
-  # preview jobs
-  ci-core:
-    if: ${{ github.event_name == 'push' }}
-    name: Core Packages CI
-    uses: ./.github/workflows/ci-core.yml
-    permissions:
-      actions: read
-      contents: read
-
-  ci-supabase-js:
-    if: ${{ github.event_name == 'push' }}
-    name: Supabase-JS Integration CI
-    uses: ./.github/workflows/ci-supabase-js.yml
-    permissions:
-      actions: read
-      contents: read
-
-  # ==========================================
-  # COVERALLS FINISH (aggregates coverage from all packages)
-  # ==========================================
-
-  coveralls-finish:
-    name: Coveralls Finished
-    runs-on: ubuntu-latest
-    needs: [ci-core, ci-supabase-js]
-    if: github.event_name == 'push'
-    steps:
-      - name: Coveralls Finished
-        uses: coverallsapp/github-action@5cbfd81b66ca5d10c19b062c04de0199c215fb6e # v2.3.7
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          parallel-finished: true
-          carryforward: 'auth-js,functions-js,postgrest-js,realtime-js,storage-js,supabase-js'
-          fail-on-error: false
-        continue-on-error: true
-
-  # ==========================================
-  # CANARY RELEASE (only on master, after all CI passes)
-  # ==========================================
-
-  release-canary:
-    name: Release Canary
-    runs-on: ubuntu-latest
-    needs: [ci-core, ci-supabase-js]
-    permissions:
-      contents: read
-      id-token: write
-    # Only run on master branch pushes, and only if all CI jobs succeeded
-    if: |
-      github.ref == 'refs/heads/master' &&
-      github.event_name == 'push' &&
-      needs.ci-core.result == 'success' &&
-      needs.ci-supabase-js.result == 'success'
-    steps:
-      - name: Generate token
-        id: app-token
-        uses: actions/create-github-app-token@29824e69f54612133e76f7eaac726eef6c875baf
-        with:
-          app-id: ${{ secrets.APP_ID }}
-          private-key: ${{ secrets.PRIVATE_KEY }}
-
-      - name: Checkout code
-        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
-        with:
-          fetch-depth: 0
-
-      - name: Setup Node.js
-        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-          registry-url: 'https://registry.npmjs.org'
-
-      # Ensure npm 11.5.1 or later is installed for trusted publishing support
-      - name: Update npm
-        run: npm install -g npm@latest
-      - name: Install dependencies
-        run: npm ci
-      - name: Configure git
-        run: |
-          git config --global user.name "supabase-releaser[bot]"
-          git config --global user.email "supabase-releaser[bot]@users.noreply.github.com"
-
-      - name: Release canary version
-        id: release
-        run: |
-          echo "Running nx release..."
-          npm run release-canary
-        env:
-          NPM_CONFIG_PROVENANCE: true
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          RELEASE_GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
-
-  notify-stable-failure:
-    name: Notify Slack for Stable failure
-    needs: release-stable
-    if: ${{ always() && github.event_name == 'workflow_dispatch' && needs.release-stable.result == 'failure' }}
-    uses: ./.github/workflows/slack-notify.yml
-    secrets: inherit
-    with:
-      title: 'Stable Release'
-      status: 'failure'
-
-  notify-stable-success:
-    name: Notify Slack for Stable success
-    needs: release-stable
-    if: ${{ github.event_name == 'workflow_dispatch' && needs.release-stable.result == 'success' }}
-    uses: ./.github/workflows/slack-notify.yml
-    secrets: inherit
-    with:
-      title: 'Stable Release'
-      status: 'success'
-      version: ${{ needs.release-stable.outputs.released_version }}
-
-  notify-canary-failure:
-    name: Notify Slack for Canary failure
-    needs: release-canary
-    if: ${{ always() && github.event_name == 'push' && needs.release-canary.result == 'failure' }}
-    uses: ./.github/workflows/slack-notify.yml
-    secrets: inherit
-    with:
-      title: 'Canary Release'
-      status: 'failure'
+          echo "## ✅ Unpublish Complete" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Version unpublished:** \`${{ env.CLEAN_VERSION }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Packages processed:** All @supabase/* packages" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "⚠️ **Note:** This branch should be deleted after this workflow completes." >> $GITHUB_STEP_SUMMARY
