@@ -15,13 +15,21 @@ on:
         description: 'Semver bump (patch|minor|major|pre*) or exact version (v1.2.3)'
         required: true
         type: string
+      release_type:
+        description: 'Release type'
+        required: true
+        type: choice
+        options:
+          - stable
+          - rc
+        default: stable
 
 env:
   NODE_VERSION: '20'
 
 jobs:
   release-stable: # stable releases can only be manually triggered
-    if: ${{ github.event_name == 'workflow_dispatch' }}
+    if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.release_type == 'stable' }}
     runs-on: ubuntu-latest
     outputs:
       released_version: ${{ steps.extract-version.outputs.version }}
@@ -133,6 +141,120 @@ jobs:
           echo "- **Source commit:** HEAD of the checked-out branch" >> $GITHUB_STEP_SUMMARY
           echo "- **Dist-tag:** \`latest\`" >> $GITHUB_STEP_SUMMARY
 
+  release-rc:
+    if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.release_type == 'rc' }}
+    runs-on: ubuntu-latest
+    outputs:
+      released_version: ${{ steps.extract-version.outputs.version }}
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Generate token
+        id: app-token
+        uses: actions/create-github-app-token@29824e69f54612133e76f7eaac726eef6c875baf
+        with:
+          app-id: ${{ secrets.APP_ID }}
+          private-key: ${{ secrets.PRIVATE_KEY }}
+
+      - name: Check if actor is member of admin or sdk team
+        id: team-check
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7.1.0
+        with:
+          github-token: ${{ steps.app-token.outputs.token }}
+          script: |
+            const org = 'supabase'
+            const { actor } = context
+
+            async function isTeamMember(team_slug) {
+              try {
+                const res = await github.rest.teams.getMembershipForUserInOrg({
+                  org,
+                  team_slug,
+                  username: actor,
+                })
+                return res && res.status === 200
+              } catch (_) {
+                return false
+              }
+            }
+            const isAdmin = await isTeamMember('admin')
+            const isSdk = await isTeamMember('sdk')
+            const isMember = isAdmin || isSdk
+            core.setOutput('is_team_member', isMember ? 'true' : 'false')
+
+      - name: Fail if not authorized
+        if: ${{ steps.team-check.outputs.is_team_member != 'true' }}
+        run: |
+          echo "You must be a member of @supabase/admin or @supabase/sdk."
+          exit 1
+
+      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Update npm
+        run: npm install -g npm@latest
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Configure git
+        run: |
+          git config --global user.name "supabase-releaser[bot]"
+          git config --global user.email "supabase-releaser[bot]@users.noreply.github.com"
+
+      - name: Validate input
+        run: |
+          VS="${{ github.event.inputs.version_specifier }}"
+          echo "Validating: $VS"
+
+          if [[ "$VS" =~ ^(patch|minor|major|prepatch|preminor|premajor|prerelease)$ ]]; then
+            echo "✔ bump keyword"
+          elif [[ "$VS" =~ ^v?[0-9]+\.[0-9]+\.[0-9]+(-rc\.[0-9]+)?$ ]]; then
+            echo "✔ explicit RC version"
+          else
+            echo "❌ Invalid version_specifier: '$VS'"
+            echo "   Use: patch|minor|major|pre*, or v1.2.3, or v1.2.3-rc.0"
+            exit 1
+          fi
+
+      - name: Release RC version
+        env:
+          NPM_CONFIG_PROVENANCE: true
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        shell: bash
+        run: npm run release-rc -- --versionSpecifier "${{ github.event.inputs.version_specifier }}"
+
+      - name: Extract released version
+        id: extract-version
+        shell: bash
+        run: |
+          set -euo pipefail
+          VERSION=$(cat .release-version)
+          if [[ -z "$VERSION" ]]; then
+            exit 1
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Summary
+        if: ${{ success() }}
+        run: |
+          echo "## ✅ RC Release" >> $GITHUB_STEP_SUMMARY
+          echo "- **Version specifier:** \`${{ github.event.inputs.version_specifier }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Released version:** \`${{ steps.extract-version.outputs.version }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Dist-tag:** \`rc\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Install command:** \`npm install @supabase/supabase-js@rc\`" >> $GITHUB_STEP_SUMMARY
+
   docs-after-stable-release:
     name: Generate Documentation
     needs: release-stable
@@ -145,8 +267,13 @@ jobs:
   trigger-update-js-libs:
     name: Trigger Update JS Libs
     runs-on: ubuntu-latest
-    needs: release-stable
-    if: ${{ github.event_name == 'workflow_dispatch' && needs.release-stable.result == 'success' }}
+    needs: [release-stable, release-rc]
+    # Note: needs is AND (waits for both), but only one will run (other is skipped)
+    # Use always() to run even when one job is skipped
+    if: |
+      github.event_name == 'workflow_dispatch' &&
+      always() &&
+      (needs.release-stable.result == 'success' || needs.release-rc.result == 'success')
     steps:
       - name: Generate token
         id: app-token
@@ -156,6 +283,18 @@ jobs:
           private-key: ${{ secrets.PRIVATE_KEY }}
           owner: supabase
           repositories: supabase, supabase-js
+
+      - name: Determine release type and version
+        id: release-info
+        run: |
+          if [ "${{ needs.release-stable.result }}" == "success" ]; then
+            echo "version=${{ needs.release-stable.outputs.released_version }}" >> $GITHUB_OUTPUT
+            echo "source=supabase-js-stable-release" >> $GITHUB_OUTPUT
+          elif [ "${{ needs.release-rc.result }}" == "success" ]; then
+            echo "version=${{ needs.release-rc.outputs.released_version }}" >> $GITHUB_OUTPUT
+            echo "source=supabase-js-rc-release" >> $GITHUB_OUTPUT
+          fi
+
       - name: Trigger supabase/supabase update-js-libs workflow
         uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7.1.0
         with:
@@ -167,8 +306,8 @@ jobs:
               workflow_id: 'update-js-libs.yml',
               ref: 'master',
               inputs: {
-                version: '${{ needs.release-stable.outputs.released_version }}',
-                source: 'supabase-js-stable-release'
+                version: '${{ steps.release-info.outputs.version }}',
+                source: '${{ steps.release-info.outputs.source }}'
               }
             });
 
@@ -316,6 +455,27 @@ jobs:
       title: 'Stable Release'
       status: 'success'
       version: ${{ needs.release-stable.outputs.released_version }}
+
+  notify-rc-failure:
+    name: Notify Slack for RC failure
+    needs: release-rc
+    if: ${{ always() && github.event_name == 'workflow_dispatch' && needs.release-rc.result == 'failure' }}
+    uses: ./.github/workflows/slack-notify.yml
+    secrets: inherit
+    with:
+      title: 'RC Release'
+      status: 'failure'
+
+  notify-rc-success:
+    name: Notify Slack for RC success
+    needs: release-rc
+    if: ${{ github.event_name == 'workflow_dispatch' && needs.release-rc.result == 'success' }}
+    uses: ./.github/workflows/slack-notify.yml
+    secrets: inherit
+    with:
+      title: 'RC Release'
+      status: 'success'
+      version: ${{ needs.release-rc.outputs.released_version }}
 
   notify-canary-failure:
     name: Notify Slack for Canary failure
