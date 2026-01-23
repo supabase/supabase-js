@@ -114,30 +114,35 @@ describe('constants', () => {
         }
       })
 
-      test('getClientPlatformVersion returns OS version, not runtime version in Node.js', () => {
+      test('getClientPlatformVersion returns OS version in Node.js server environments', () => {
         // Only run this test in Node.js environment
         if (typeof process !== 'undefined' && process.versions && process.versions.node) {
           const platformVersion = getClientPlatformVersion()
           const runtimeVersion = getClientRuntimeVersion()
 
-          // Both should exist in Node.js environment
-          expect(platformVersion).not.toBeNull()
-          expect(runtimeVersion).not.toBeNull()
+          // In server-side Node.js (typeof window === 'undefined'), platform version should exist
+          if (typeof window === 'undefined') {
+            expect(platformVersion).not.toBeNull()
+            expect(runtimeVersion).not.toBeNull()
 
-          // They should be DIFFERENT values
-          if (platformVersion && runtimeVersion) {
-            expect(platformVersion).not.toBe(runtimeVersion)
-
-            // Platform version should NOT match Node.js version format
-            expect(platformVersion).not.toBe(process.version.slice(1))
-            expect(platformVersion).not.toBe(process.versions.node)
+            // They should be DIFFERENT values
+            if (platformVersion && runtimeVersion) {
+              expect(platformVersion).not.toBe(runtimeVersion)
+              // Platform version should NOT match Node.js version format
+              expect(platformVersion).not.toBe(process.versions.node)
+            }
           }
         }
       })
 
       test('getClientPlatformVersion uses os.release() in Node.js', () => {
-        // Only run this test in Node.js environment
-        if (typeof process !== 'undefined' && process.versions && process.versions.node) {
+        // Only run this test in server-side Node.js environment
+        if (
+          typeof process !== 'undefined' &&
+          process.versions &&
+          process.versions.node &&
+          typeof window === 'undefined'
+        ) {
           const platformVersion = getClientPlatformVersion()
           const os = require('os')
           const expectedVersion = os.release()

@@ -16,10 +16,10 @@ if (typeof Deno !== 'undefined') {
 }
 
 export function getClientPlatform(): string | null {
-  // @ts-ignore
-  if (typeof process !== 'undefined' && process.platform) {
-    // @ts-ignore
-    const platform = process.platform
+  // Use dynamic property access to avoid bundler static analysis warnings
+  const _process = (globalThis as any)['process']
+  if (_process && _process['platform']) {
+    const platform = _process['platform']
     if (platform === 'darwin') return 'macOS'
     if (platform === 'win32') return 'Windows'
     if (platform === 'linux') return 'Linux'
@@ -46,14 +46,26 @@ export function getClientPlatform(): string | null {
 
 export function getClientPlatformVersion(): string | null {
   // Node.js / Bun environment
-  // @ts-ignore
-  if (typeof process !== 'undefined' && process.versions && process.versions.node) {
-    try {
+  // Use dynamic property access to avoid Next.js Edge Runtime static analysis warnings
+  // (pattern from realtime-js websocket-factory.ts)
+  const _process = (globalThis as any)['process']
+  if (_process) {
+    const processVersions = _process['versions']
+    if (processVersions && processVersions['node']) {
+      // Check if we're in a true server-side Node.js environment (not a browser bundle)
       // @ts-ignore
-      const os = require('os')
-      return os.release()
-    } catch (error) {
-      return null
+      if (typeof window === 'undefined') {
+        try {
+          // Use bracket notation to avoid bundler static analysis (same pattern as process)
+          const _require = (globalThis as any)['require']
+          if (_require) {
+            const os = _require('os')
+            return os.release()
+          }
+        } catch (error) {
+          return null
+        }
+      }
     }
   }
 
@@ -91,9 +103,13 @@ export function getClientRuntime(): string | null {
   if (typeof Bun !== 'undefined') {
     return 'bun'
   }
-  // @ts-ignore
-  if (typeof process !== 'undefined' && process.versions && process.versions.node) {
-    return 'node'
+  // Use dynamic property access to avoid bundler static analysis warnings
+  const _process = (globalThis as any)['process']
+  if (_process) {
+    const processVersions = _process['versions']
+    if (processVersions && processVersions['node']) {
+      return 'node'
+    }
   }
   return null
 }
@@ -109,10 +125,13 @@ export function getClientRuntimeVersion(): string | null {
     // @ts-ignore
     return Bun.version
   }
-  // @ts-ignore
-  if (typeof process !== 'undefined' && process.versions && process.versions.node) {
-    // @ts-ignore
-    return process.versions.node
+  // Use dynamic property access to avoid bundler static analysis warnings
+  const _process = (globalThis as any)['process']
+  if (_process) {
+    const processVersions = _process['versions']
+    if (processVersions && processVersions['node']) {
+      return processVersions['node']
+    }
   }
   return null
 }
