@@ -87,43 +87,36 @@ jobs:
       - name: Unpublish packages
         env:
           NPM_CONFIG_PROVENANCE: true
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           VERSION="${{ env.CLEAN_VERSION }}"
-          PACKAGES="supabase-js auth-js postgrest-js realtime-js storage-js functions-js gotrue-js"
 
           echo "⚠️  Unpublishing version $VERSION from all packages..."
           echo ""
 
-          FAILED=()
-          SUCCEEDED=()
+          echo "📦 Unpublishing @supabase/supabase-js@$VERSION..."
+          npm unpublish @supabase/supabase-js@$VERSION --force
 
-          for pkg in $PACKAGES; do
-            echo "📦 Unpublishing @supabase/$pkg@$VERSION..."
-            if npm unpublish @supabase/$pkg@$VERSION --force 2>&1; then
-              echo "✅ @supabase/$pkg@$VERSION unpublished"
-              SUCCEEDED+=("$pkg")
-            else
-              echo "⚠️  Failed to unpublish @supabase/$pkg@$VERSION (may not exist)"
-              FAILED+=("$pkg")
-            fi
-            echo ""
-          done
+          echo "📦 Unpublishing @supabase/auth-js@$VERSION..."
+          npm unpublish @supabase/auth-js@$VERSION --force
 
-          echo "========================================="
-          echo "SUMMARY"
-          echo "========================================="
-          echo "✅ Succeeded: ${#SUCCEEDED[@]} packages"
-          for pkg in "${SUCCEEDED[@]}"; do
-            echo "   - @supabase/$pkg"
-          done
+          echo "📦 Unpublishing @supabase/postgrest-js@$VERSION..."
+          npm unpublish @supabase/postgrest-js@$VERSION --force
 
-          if [ ${#FAILED[@]} -gt 0 ]; then
-            echo ""
-            echo "⚠️  Failed/Skipped: ${#FAILED[@]} packages"
-            for pkg in "${FAILED[@]}"; do
-              echo "   - @supabase/$pkg"
-            done
-          fi
+          echo "📦 Unpublishing @supabase/realtime-js@$VERSION..."
+          npm unpublish @supabase/realtime-js@$VERSION --force
+
+          echo "📦 Unpublishing @supabase/storage-js@$VERSION..."
+          npm unpublish @supabase/storage-js@$VERSION --force
+
+          echo "📦 Unpublishing @supabase/functions-js@$VERSION..."
+          npm unpublish @supabase/functions-js@$VERSION --force
+
+          echo "📦 Unpublishing @supabase/gotrue-js@$VERSION..."
+          npm unpublish @supabase/gotrue-js@$VERSION --force
+
+          echo ""
+          echo "✅ All packages unpublished"
 
       - name: Summary
         if: ${{ success() }}
