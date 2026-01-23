@@ -147,7 +147,7 @@ jobs:
     outputs:
       released_version: ${{ steps.extract-version.outputs.version }}
     permissions:
-      contents: read
+      contents: write # Changed from 'read' to allow git tag and release creation
       id-token: write
 
     steps:
