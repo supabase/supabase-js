@@ -214,15 +214,19 @@ jobs:
       - name: Validate input
         run: |
           VS="${{ github.event.inputs.version_specifier }}"
-          echo "Validating: $VS"
+          echo "Validating RC version specifier: $VS"
 
           if [[ "$VS" =~ ^(patch|minor|major|prepatch|preminor|premajor|prerelease)$ ]]; then
-            echo "✔ bump keyword"
-          elif [[ "$VS" =~ ^v?[0-9]+\.[0-9]+\.[0-9]+(-rc\.[0-9]+)?$ ]]; then
-            echo "✔ explicit RC version"
+            echo "✔ bump keyword (will generate -rc.N suffix)"
+          elif [[ "$VS" =~ ^v?[0-9]+\.[0-9]+\.[0-9]+-rc\.[0-9]+$ ]]; then
+            echo "✔ explicit RC version with suffix"
+          elif [[ "$VS" =~ ^v?[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "❌ Invalid: explicit versions must include -rc.N suffix"
+            echo "   Use: $VS-rc.0 or keywords (patch|minor|major|prepatch|preminor|premajor|prerelease)"
+            exit 1
           else
             echo "❌ Invalid version_specifier: '$VS'"
-            echo "   Use: patch|minor|major|pre*, or v1.2.3, or v1.2.3-rc.0"
+            echo "   Use: patch|minor|major|pre*, or v1.2.3-rc.0"
             exit 1
           fi
 
