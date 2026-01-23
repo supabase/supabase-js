@@ -3440,7 +3440,47 @@ export default class GoTrueClient {
   /**
    * {@see GoTrueMFAApi#getAuthenticatorAssuranceLevel}
    */
-  private async _getAuthenticatorAssuranceLevel(): Promise<AuthMFAGetAuthenticatorAssuranceLevelResponse> {
+  private async _getAuthenticatorAssuranceLevel(
+    jwt?: string
+  ): Promise<AuthMFAGetAuthenticatorAssuranceLevelResponse> {
+    if (jwt) {
+      try {
+        const { payload } = decodeJWT(jwt)
+
+        let currentLevel: AuthenticatorAssuranceLevels | null = null
+        if (payload.aal) {
+          currentLevel = payload.aal
+        }
+
+        let nextLevel: AuthenticatorAssuranceLevels | null = currentLevel
+
+        const {
+          data: { user },
+          error: userError,
+        } = await this.getUser(jwt)
+
+        if (userError) {
+          return this._returnResult({ data: null, error: userError })
+        }
+
+        const verifiedFactors =
+          user?.factors?.filter((factor: Factor) => factor.status === 'verified') ?? []
+
+        if (verifiedFactors.length > 0) {
+          nextLevel = 'aal2'
+        }
+
+        const currentAuthenticationMethods = payload.amr || []
+
+        return { data: { currentLevel, nextLevel, currentAuthenticationMethods }, error: null }
+      } catch (error) {
+        if (isAuthError(error)) {
+          return this._returnResult({ data: null, error })
+        }
+        throw error
+      }
+    }
+
     const {
       data: { session },
       error: sessionError,
