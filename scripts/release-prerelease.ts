@@ -132,6 +132,7 @@ if (isRC) {
       verbose: true,
       gitCommit: false,
       stageChanges: false,
+      gitPush: false,
     })
 
     execSync(`git config --local http.https://github.com/.extraheader "${originalAuth}"`)
