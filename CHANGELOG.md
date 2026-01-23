@@ -1,3 +1,13 @@
+## 2.91.1 (2026-01-23)
+
+### 🩹 Fixes
+
+- **auth:** restore SSR OAuth functionality broken in v2.91.0 ([#2039](https://github.com/supabase/supabase-js/pull/2039))
+
+### ❤️ Thank You
+
+- Vaibhav @7ttp
+
 ## 2.91.0 (2026-01-20)
 
 ### 🚀 Features
