@@ -82,6 +82,10 @@ export default class PostgrestQueryBuilder<
    *
    * `"estimated"`: Uses exact count for low numbers and planned count for high
    * numbers.
+   *
+   * @remarks
+   * When using `count` with `.range()` or `.limit()`, the returned `count` is the total number of rows
+   * that match your filters, not the number of rows in the current page. Use this to build pagination UI.
    */
   select<
     Query extends string = '*',
