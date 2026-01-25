@@ -1899,7 +1899,7 @@ export default class GoTrueClient {
       } else {
         const { data, error } = await this._getUser(currentSession.access_token)
         if (error) {
-          throw error
+          return this._returnResult({ data: { user: null, session: null }, error })
         }
         session = {
           access_token: currentSession.access_token,
