@@ -3,12 +3,6 @@ import { RealtimeClientOptions } from '@supabase/realtime-js'
 import { SupabaseAuthClientOptions } from './types'
 import { version } from './version'
 
-// Capture require at module level for Node.js environments
-// Using bracket notation to avoid bundler static analysis
-// @ts-ignore
-const _require =
-  (globalThis as any)['require'] || (typeof require !== 'undefined' ? require : undefined)
-
 let JS_ENV = ''
 // @ts-ignore
 if (typeof Deno !== 'undefined') {
