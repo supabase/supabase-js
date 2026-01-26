@@ -1,3 +1,18 @@
+## 2.93.0 (2026-01-26)
+
+### 🚀 Features
+
+- **auth:** add optional jwt parameter to getAuthenticatorAssuranceLevel ([#1940](https://github.com/supabase/supabase-js/pull/1940))
+
+### 🩹 Fixes
+
+- **auth:** clear local storage on signOut when session is already missing ([#2026](https://github.com/supabase/supabase-js/pull/2026))
+- **auth:** handle uncaught promise rejections during initialization ([#2032](https://github.com/supabase/supabase-js/pull/2032))
+
+### ❤️ Thank You
+
+- Vaibhav @7ttp
+
 ## 2.91.1 (2026-01-23)
 
 ### 🩹 Fixes
