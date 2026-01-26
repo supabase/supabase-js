@@ -854,8 +854,7 @@ export default class RealtimeChannel {
                 bindId &&
                 payload.ids?.includes(bindId) &&
                 (bindEvent === '*' ||
-                  bindEvent?.toLocaleLowerCase() === payload.data?.type.toLocaleLowerCase()) &&
-                (!bind.filter?.table || bind.filter.table === payload.data?.table)
+                  bindEvent?.toLocaleLowerCase() === payload.data?.type.toLocaleLowerCase())
               )
             } else {
               const bindEvent = bind?.filter?.event?.toLocaleLowerCase()
