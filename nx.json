@@ -122,6 +122,11 @@
       "cache": true,
       "outputs": ["{projectRoot}/coverage"]
     },
+    "test:auth": {
+      "inputs": ["testing", "^production"],
+      "cache": true,
+      "outputs": ["{projectRoot}/coverage"]
+    },
     "test:storage": {
       "cache": false
     },
@@ -137,6 +142,23 @@
       "cache": false
     },
     "test:clean-post": {
+      "cache": false
+    },
+    "test:docker": {
+      "inputs": ["testing", "^production"],
+      "cache": false
+    },
+    "test:docker:clean-pre": {
+      "cache": false
+    },
+    "test:docker:infra": {
+      "cache": false
+    },
+    "test:docker:suite": {
+      "inputs": ["testing", "^production"],
+      "cache": false
+    },
+    "test:docker:clean-post": {
       "cache": false
     },
     "vite:test": {

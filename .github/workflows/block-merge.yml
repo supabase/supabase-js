@@ -4,31 +4,9 @@ on:
   pull_request:
     types: [opened, synchronize, reopened, labeled, unlabeled, ready_for_review]
 
-permissions:
-  pull-requests: write
-  checks: write
-
 jobs:
   block-merge:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Check if PR should be blocked
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const pr = context.payload.pull_request;
-            const title = pr.title || '';
-            const isDraft = pr.draft;
-            const labels = pr.labels.map(l => l.name);
-
-            const hasDoNotMerge = labels.includes('do-not-merge');
-            const hasWIPInTitle = /\b(wip|do not merge)\b/i.test(title);
-
-            const shouldBlock = isDraft || hasDoNotMerge || hasWIPInTitle;
-
-            if (shouldBlock) {
-              core.setFailed('This PR is blocked from merging: ' +
-                (isDraft ? 'Draft PR' : '') +
-                (hasDoNotMerge ? ' do-not-merge label' : '') +
-                (hasWIPInTitle ? ' WIP in title' : ''));
-            }
+    uses: supabase/actions/.github/workflows/block-merge.yml@659b3cd74a64ee2f1ca0a527922f134707e54671
+    with:
+      block_labels: 'do-not-merge'
+      block_keywords: 'wip,do not merge'

@@ -1,8 +1,8 @@
 import StorageFileApi from './packages/StorageFileApi'
 import StorageBucketApi from './packages/StorageBucketApi'
 import StorageAnalyticsClient from './packages/StorageAnalyticsClient'
-import { Fetch } from './lib/fetch'
-import { StorageVectorsClient } from './lib/vectors'
+import { Fetch } from './lib/common/fetch'
+import { StorageVectorsClient } from './packages/StorageVectorsClient'
 
 export interface StorageClientOptions {
   useNewHostname?: boolean

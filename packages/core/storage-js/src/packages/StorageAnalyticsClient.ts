@@ -1,8 +1,9 @@
 import { IcebergRestCatalog, IcebergError } from 'iceberg-js'
 import { DEFAULT_HEADERS } from '../lib/constants'
-import { isStorageError, StorageError } from '../lib/errors'
-import { Fetch, get, post, remove } from '../lib/fetch'
-import { isValidBucketName, resolveFetch } from '../lib/helpers'
+import { StorageError } from '../lib/common/errors'
+import { Fetch, get, post, remove } from '../lib/common/fetch'
+import { isValidBucketName } from '../lib/common/helpers'
+import BaseApiClient from '../lib/common/BaseApiClient'
 import { AnalyticBucket } from '../lib/types'
 
 type WrapAsyncMethod<T> = T extends (...args: infer A) => Promise<infer R>
@@ -17,12 +18,7 @@ export type WrappedIcebergRestCatalog = {
  * Client class for managing Analytics Buckets using Iceberg tables
  * Provides methods for creating, listing, and deleting analytics buckets
  */
-export default class StorageAnalyticsClient {
-  protected url: string
-  protected headers: { [key: string]: string }
-  protected fetch: Fetch
-  protected shouldThrowOnError = false
-
+export default class StorageAnalyticsClient extends BaseApiClient<StorageError> {
   /**
    * @alpha
    *
@@ -41,25 +37,9 @@ export default class StorageAnalyticsClient {
    * ```
    */
   constructor(url: string, headers: { [key: string]: string } = {}, fetch?: Fetch) {
-    this.url = url.replace(/\/$/, '')
-    this.headers = { ...DEFAULT_HEADERS, ...headers }
-    this.fetch = resolveFetch(fetch)
-  }
-
-  /**
-   * @alpha
-   *
-   * Enable throwing errors instead of returning them in the response
-   * When enabled, failed operations will throw instead of returning { data: null, error }
-   *
-   * **Public alpha:** This API is part of a public alpha release and may not be available to your account type.
-   *
-   * @category Analytics Buckets
-   * @returns This instance for method chaining
-   */
-  public throwOnError(): this {
-    this.shouldThrowOnError = true
-    return this
+    const finalUrl = url.replace(/\/$/, '')
+    const finalHeaders = { ...DEFAULT_HEADERS, ...headers }
+    super(finalUrl, finalHeaders, fetch, 'storage')
   }
 
   /**
@@ -106,19 +86,9 @@ export default class StorageAnalyticsClient {
         error: StorageError
       }
   > {
-    try {
-      const data = await post(this.fetch, `${this.url}/bucket`, { name }, { headers: this.headers })
-      return { data, error: null }
-    } catch (error) {
-      if (this.shouldThrowOnError) {
-        throw error
-      }
-      if (isStorageError(error)) {
-        return { data: null, error }
-      }
-
-      throw error
-    }
+    return this.handleOperation(async () => {
+      return await post(this.fetch, `${this.url}/bucket`, { name }, { headers: this.headers })
+    })
   }
 
   /**
@@ -183,7 +153,7 @@ export default class StorageAnalyticsClient {
         error: StorageError
       }
   > {
-    try {
+    return this.handleOperation(async () => {
       // Build query string from options
       const queryParams = new URLSearchParams()
       if (options?.limit !== undefined) queryParams.set('limit', options.limit.toString())
@@ -195,19 +165,8 @@ export default class StorageAnalyticsClient {
       const queryString = queryParams.toString()
       const url = queryString ? `${this.url}/bucket?${queryString}` : `${this.url}/bucket`
 
-      const data = await get(this.fetch, url, { headers: this.headers })
-
-      return { data: data, error: null }
-    } catch (error) {
-      if (this.shouldThrowOnError) {
-        throw error
-      }
-      if (isStorageError(error)) {
-        return { data: null, error }
-      }
-
-      throw error
-    }
+      return await get(this.fetch, url, { headers: this.headers })
+    })
   }
 
   /**
@@ -251,24 +210,14 @@ export default class StorageAnalyticsClient {
         error: StorageError
       }
   > {
-    try {
-      const data = await remove(
+    return this.handleOperation(async () => {
+      return await remove(
         this.fetch,
         `${this.url}/bucket/${bucketName}`,
         {},
         { headers: this.headers }
       )
-      return { data, error: null }
-    } catch (error) {
-      if (this.shouldThrowOnError) {
-        throw error
-      }
-      if (isStorageError(error)) {
-        return { data: null, error }
-      }
-
-      throw error
-    }
+    })
   }
 
   /**

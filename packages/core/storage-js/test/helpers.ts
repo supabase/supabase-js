@@ -4,7 +4,7 @@
 
 /// <reference types="jest" />
 
-import { StorageVectorsClient } from '../src/lib/vectors'
+import { StorageVectorsClient } from '../src/packages/StorageVectorsClient'
 import { createMockFetch, resetMockStorage } from './mock-server'
 import { getTestConfig } from './setup'
 

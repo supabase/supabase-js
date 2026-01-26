@@ -5,9 +5,9 @@ describe('Module Exports', () => {
     expect(typeof mainExports).toBe('object')
   })
 
-  test('can import lib module successfully', () => {
-    const libExports = require('../src/lib/index')
-    expect(typeof libExports).toBe('object')
+  test('can import types successfully', () => {
+    const types = require('../src/lib/types')
+    expect(typeof types).toBe('object')
   })
 
   test('constants are accessible', () => {

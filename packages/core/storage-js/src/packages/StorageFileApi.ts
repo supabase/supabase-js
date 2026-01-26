@@ -1,6 +1,7 @@
-import { isStorageError, StorageError, StorageUnknownError } from '../lib/errors'
-import { Fetch, get, head, post, put, remove } from '../lib/fetch'
-import { recursiveToCamel, resolveFetch } from '../lib/helpers'
+import { StorageError, StorageUnknownError, isStorageError } from '../lib/common/errors'
+import { get, head, post, put, remove, Fetch } from '../lib/common/fetch'
+import { recursiveToCamel } from '../lib/common/helpers'
+import BaseApiClient from '../lib/common/BaseApiClient'
 import {
   FileObject,
   FileOptions,
@@ -42,12 +43,8 @@ type FileBody =
   | URLSearchParams
   | string
 
-export default class StorageFileApi {
-  protected url: string
-  protected headers: { [key: string]: string }
+export default class StorageFileApi extends BaseApiClient<StorageError> {
   protected bucketId?: string
-  protected fetch: Fetch
-  protected shouldThrowOnError = false
 
   constructor(
     url: string,
@@ -55,20 +52,8 @@ export default class StorageFileApi {
     bucketId?: string,
     fetch?: Fetch
   ) {
-    this.url = url
-    this.headers = headers
+    super(url, headers, fetch, 'storage')
     this.bucketId = bucketId
-    this.fetch = resolveFetch(fetch)
-  }
-
-  /**
-   * Enable throwing errors instead of returning them.
-   *
-   * @category File Buckets
-   */
-  public throwOnError(): this {
-    this.shouldThrowOnError = true
-    return this
   }
 
   /**
@@ -93,7 +78,7 @@ export default class StorageFileApi {
         error: StorageError
       }
   > {
-    try {
+    return this.handleOperation(async () => {
       let body
       const options = { ...DEFAULT_FILE_OPTIONS, ...fileOptions }
       let headers: Record<string, string> = {
@@ -152,20 +137,8 @@ export default class StorageFileApi {
         { headers, ...(options?.duplex ? { duplex: options.duplex } : {}) }
       )
 
-      return {
-        data: { path: cleanPath, id: data.Id, fullPath: data.Key },
-        error: null,
-      }
-    } catch (error) {
-      if (this.shouldThrowOnError) {
-        throw error
-      }
-      if (isStorageError(error)) {
-        return { data: null, error }
-      }
-
-      throw error
-    }
+      return { path: cleanPath, id: data.Id, fullPath: data.Key }
+    })
   }
 
   /**
@@ -272,7 +245,7 @@ export default class StorageFileApi {
     const url = new URL(this.url + `/object/upload/sign/${_path}`)
     url.searchParams.set('token', token)
 
-    try {
+    return this.handleOperation(async () => {
       let body
       const options = { upsert: DEFAULT_FILE_OPTIONS.upsert, ...fileOptions }
       const headers: Record<string, string> = {
@@ -295,20 +268,8 @@ export default class StorageFileApi {
 
       const data = await put(this.fetch, url.toString(), body as object, { headers })
 
-      return {
-        data: { path: cleanPath, fullPath: data.Key },
-        error: null,
-      }
-    } catch (error) {
-      if (this.shouldThrowOnError) {
-        throw error
-      }
-      if (isStorageError(error)) {
-        return { data: null, error }
-      }
-
-      throw error
-    }
+      return { path: cleanPath, fullPath: data.Key }
+    })
   }
 
   /**
@@ -354,7 +315,7 @@ export default class StorageFileApi {
         error: StorageError
       }
   > {
-    try {
+    return this.handleOperation(async () => {
       let _path = this._getFinalPath(path)
 
       const headers = { ...this.headers }
@@ -378,17 +339,8 @@ export default class StorageFileApi {
         throw new StorageError('No token returned by API')
       }
 
-      return { data: { signedUrl: url.toString(), path, token }, error: null }
-    } catch (error) {
-      if (this.shouldThrowOnError) {
-        throw error
-      }
-      if (isStorageError(error)) {
-        return { data: null, error }
-      }
-
-      throw error
-    }
+      return { signedUrl: url.toString(), path, token }
+    })
   }
 
   /**
@@ -503,8 +455,8 @@ export default class StorageFileApi {
         error: StorageError
       }
   > {
-    try {
-      const data = await post(
+    return this.handleOperation(async () => {
+      return await post(
         this.fetch,
         `${this.url}/object/move`,
         {
@@ -515,17 +467,7 @@ export default class StorageFileApi {
         },
         { headers: this.headers }
       )
-      return { data, error: null }
-    } catch (error) {
-      if (this.shouldThrowOnError) {
-        throw error
-      }
-      if (isStorageError(error)) {
-        return { data: null, error }
-      }
-
-      throw error
-    }
+    })
   }
 
   /**
@@ -569,7 +511,7 @@ export default class StorageFileApi {
         error: StorageError
       }
   > {
-    try {
+    return this.handleOperation(async () => {
       const data = await post(
         this.fetch,
         `${this.url}/object/copy`,
@@ -581,17 +523,8 @@ export default class StorageFileApi {
         },
         { headers: this.headers }
       )
-      return { data: { path: data.Key }, error: null }
-    } catch (error) {
-      if (this.shouldThrowOnError) {
-        throw error
-      }
-      if (isStorageError(error)) {
-        return { data: null, error }
-      }
-
-      throw error
-    }
+      return { path: data.Key }
+    })
   }
 
   /**
@@ -659,7 +592,7 @@ export default class StorageFileApi {
         error: StorageError
       }
   > {
-    try {
+    return this.handleOperation(async () => {
       let _path = this._getFinalPath(path)
 
       let data = await post(
@@ -672,18 +605,8 @@ export default class StorageFileApi {
         ? `&download=${options.download === true ? '' : options.download}`
         : ''
       const signedUrl = encodeURI(`${this.url}${data.signedURL}${downloadQueryParam}`)
-      data = { signedUrl }
-      return { data, error: null }
-    } catch (error) {
-      if (this.shouldThrowOnError) {
-        throw error
-      }
-      if (isStorageError(error)) {
-        return { data: null, error }
-      }
-
-      throw error
-    }
+      return { signedUrl }
+    })
   }
 
   /**
@@ -738,7 +661,7 @@ export default class StorageFileApi {
         error: StorageError
       }
   > {
-    try {
+    return this.handleOperation(async () => {
       const data = await post(
         this.fetch,
         `${this.url}/object/sign/${this.bucketId}`,
@@ -749,25 +672,13 @@ export default class StorageFileApi {
       const downloadQueryParam = options?.download
         ? `&download=${options.download === true ? '' : options.download}`
         : ''
-      return {
-        data: data.map((datum: { signedURL: string }) => ({
-          ...datum,
-          signedUrl: datum.signedURL
-            ? encodeURI(`${this.url}${datum.signedURL}${downloadQueryParam}`)
-            : null,
-        })),
-        error: null,
-      }
-    } catch (error) {
-      if (this.shouldThrowOnError) {
-        throw error
-      }
-      if (isStorageError(error)) {
-        return { data: null, error }
-      }
-
-      throw error
-    }
+      return data.map((datum: { signedURL: string }) => ({
+        ...datum,
+        signedUrl: datum.signedURL
+          ? encodeURI(`${this.url}${datum.signedURL}${downloadQueryParam}`)
+          : null,
+      }))
+    })
   }
 
   /**
@@ -852,22 +763,13 @@ export default class StorageFileApi {
   > {
     const _path = this._getFinalPath(path)
 
-    try {
+    return this.handleOperation(async () => {
       const data = await get(this.fetch, `${this.url}/object/info/${_path}`, {
         headers: this.headers,
       })
 
-      return { data: recursiveToCamel(data) as Camelize<FileObjectV2>, error: null }
-    } catch (error) {
-      if (this.shouldThrowOnError) {
-        throw error
-      }
-      if (isStorageError(error)) {
-        return { data: null, error }
-      }
-
-      throw error
-    }
+      return recursiveToCamel(data) as Camelize<FileObjectV2>
+    })
   }
 
   /**
@@ -1035,24 +937,14 @@ export default class StorageFileApi {
         error: StorageError
       }
   > {
-    try {
-      const data = await remove(
+    return this.handleOperation(async () => {
+      return await remove(
         this.fetch,
         `${this.url}/object/${this.bucketId}`,
         { prefixes: paths },
         { headers: this.headers }
       )
-      return { data, error: null }
-    } catch (error) {
-      if (this.shouldThrowOnError) {
-        throw error
-      }
-      if (isStorageError(error)) {
-        return { data: null, error }
-      }
-
-      throw error
-    }
+    })
   }
 
   /**
@@ -1191,26 +1083,16 @@ export default class StorageFileApi {
         error: StorageError
       }
   > {
-    try {
+    return this.handleOperation(async () => {
       const body = { ...DEFAULT_SEARCH_OPTIONS, ...options, prefix: path || '' }
-      const data = await post(
+      return await post(
         this.fetch,
         `${this.url}/object/list/${this.bucketId}`,
         body,
         { headers: this.headers },
         parameters
       )
-      return { data, error: null }
-    } catch (error) {
-      if (this.shouldThrowOnError) {
-        throw error
-      }
-      if (isStorageError(error)) {
-        return { data: null, error }
-      }
-
-      throw error
-    }
+    })
   }
 
   /**
@@ -1233,26 +1115,16 @@ export default class StorageFileApi {
         error: StorageError
       }
   > {
-    try {
+    return this.handleOperation(async () => {
       const body = { ...options }
-      const data = await post(
+      return await post(
         this.fetch,
         `${this.url}/object/list-v2/${this.bucketId}`,
         body,
         { headers: this.headers },
         parameters
       )
-      return { data, error: null }
-    } catch (error) {
-      if (this.shouldThrowOnError) {
-        throw error
-      }
-      if (isStorageError(error)) {
-        return { data: null, error }
-      }
-
-      throw error
-    }
+    })
   }
 
   protected encodeMetadata(metadata: Record<string, any>) {

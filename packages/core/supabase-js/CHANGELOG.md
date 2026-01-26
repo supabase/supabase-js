@@ -1,3 +1,17 @@
+## 2.91.1 (2026-01-23)
+
+This was a version bump only for @supabase/supabase-js to align it with other projects, there were no code changes.
+
+## 2.91.0 (2026-01-20)
+
+### 🩹 Fixes
+
+- **supabase:** resolve Firefox extension cross-context Promise error ([#2033](https://github.com/supabase/supabase-js/pull/2033))
+
+### ❤️ Thank You
+
+- Vaibhav @7ttp
+
 ## 2.90.1 (2026-01-08)
 
 This was a version bump only for @supabase/supabase-js to align it with other projects, there were no code changes.
