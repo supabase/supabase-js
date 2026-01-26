@@ -1,3 +1,17 @@
+## 2.93.0 (2026-01-26)
+
+### 🚀 Features
+
+- **supabase:** add missing HTTP headers for client platform and runtime detection ([#2046](https://github.com/supabase/supabase-js/pull/2046))
+
+### 🩹 Fixes
+
+- **supabase:** safe environment detection node v browser ([#2053](https://github.com/supabase/supabase-js/pull/2053))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+
 ## 2.91.1 (2026-01-23)
 
 This was a version bump only for @supabase/supabase-js to align it with other projects, there were no code changes.
