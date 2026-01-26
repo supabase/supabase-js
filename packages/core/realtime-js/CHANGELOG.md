@@ -1,3 +1,13 @@
+## 2.93.1 (2026-01-26)
+
+### 🩹 Fixes
+
+- **realtime:** revert validate table filter in postgres_changes event dispatch ([#2060](https://github.com/supabase/supabase-js/pull/2060))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+
 ## 2.93.0 (2026-01-26)
 
 ### 🩹 Fixes
