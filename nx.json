@@ -59,7 +59,7 @@
       "{workspaceRoot}/.github/workflows/**/*",
       "{workspaceRoot}/nx.json",
       "{workspaceRoot}/package.json",
-      "{workspaceRoot}/package-lock.json",
+      "{workspaceRoot}/pnpm-lock.yaml",
       "{workspaceRoot}/tsconfig.base.json",
       "{workspaceRoot}/tsconfig.json",
       "{workspaceRoot}/.prettierrc*",
