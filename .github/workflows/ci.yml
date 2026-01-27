@@ -4,6 +4,21 @@ name: CI (Pull Requests)
 
 on:
   pull_request:
+    paths-ignore:
+      # Documentation
+      - '**/*.md'
+      - '**/docs/**'
+      - 'LICENSE'
+
+      # Editor/formatting configs
+      - '**/.prettierrc'
+      - '**/.prettierignore'
+      - '**/.editorconfig'
+      - '.vscode/**'
+
+      # Git configs
+      - '**/.gitignore'
+      - '**/.gitattributes'
 
 jobs:
   ci-core:
