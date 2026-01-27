@@ -237,7 +237,6 @@
       "plugin": "@nx/vite/plugin",
       "options": {
         "buildTargetName": "build",
-        "testTargetName": "vite:test",
         "serveTargetName": "serve",
         "devTargetName": "dev",
         "previewTargetName": "preview",
@@ -263,12 +262,17 @@
         "targetName": "lint",
         "exclude": ["**/example/**/*", "**/examples/**/*"]
       }
+    },
+    {
+      "plugin": "@nx/vitest",
+      "options": {
+        "testTargetName": "vite:test"
+      }
     }
   ],
   "release": {
     "projects": ["packages/core/*"],
     "projectsRelationship": "fixed",
-    "releaseTagPatternCheckAllBranchesWhen": true,
     "version": {
       "conventionalCommits": true
     },
@@ -290,6 +294,9 @@
           "commitReferences": true
         }
       }
+    },
+    "releaseTag": {
+      "checkAllBranchesWhen": true
     }
   }
 }

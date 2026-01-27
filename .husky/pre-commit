@@ -3,7 +3,7 @@ if git diff --cached --name-only | grep -q "packages/core/postgrest-js/src/types
   echo "📝 Detected changes in postgrest-js common types..."
   echo "🔄 Running codegen to sync types..."
 
-  npm run codegen
+  pnpm run codegen
 
   # Add the generated files to the commit
   git add packages/core/supabase-js/src/lib/rest/types/common/
