@@ -30,7 +30,8 @@
     "build:main": "tsc -p tsconfig.json",
     "build:module": "tsc -p tsconfig.module.json",
     "docs": "typedoc src/index.ts --out docs/v2 --excludePrivate --excludeProtected",
-    "docs:json": "typedoc --json docs/v2/spec.json --excludeExternals --excludePrivate --excludeProtected src/index.ts"
+    "docs:json": "typedoc --json docs/v2/spec.json --excludeExternals --excludePrivate --excludeProtected src/index.ts",
+    "just": "echo 'Hello, world!'"
   },
   "dependencies": {
     "tslib": "2.8.1"
