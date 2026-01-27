@@ -183,6 +183,9 @@ importers:
         specifier: 2.8.1
         version: 2.8.1
     devDependencies:
+      '@jest/types':
+        specifier: 30.0.0
+        version: 30.0.0
       bs-logger:
         specifier: ^0.2.6
         version: 0.2.6
@@ -202,6 +205,9 @@ importers:
         specifier: 2.8.1
         version: 2.8.1
     devDependencies:
+      '@jest/types':
+        specifier: 30.0.0
+        version: 30.0.0
       chokidar-cli:
         specifier: ^3.0.0
         version: 3.0.0
@@ -292,6 +298,9 @@ importers:
         specifier: '*'
         version: 2.93.1
     devDependencies:
+      '@jest/types':
+        specifier: 30.0.0
+        version: 30.0.0
       jsr:
         specifier: ^0.13.5
         version: 0.13.5
@@ -1979,6 +1988,13 @@ packages:
       }
     engines: { node: ^18.14.0 || ^20.0.0 || ^22.0.0 || >=24.0.0 }
 
+  '@jest/pattern@30.0.0':
+    resolution:
+      {
+        integrity: sha512-k+TpEThzLVXMkbdxf8KHjZ83Wl+G54ytVJoDIGWwS96Ql4xyASRjc6SU1hs5jHVql+hpyK9G8N7WuFhLpGHRpQ==,
+      }
+    engines: { node: ^18.14.0 || ^20.0.0 || ^22.0.0 || >=24.0.0 }
+
   '@jest/pattern@30.0.1':
     resolution:
       {
@@ -2004,6 +2020,13 @@ packages:
         integrity: sha512-mo5j5X+jIZmJQveBKeS/clAueipV7KgiX1vMgCxam1RNYiqE1w62n0/tJJnHtjW8ZHcQco5gY85jA3mi0L+nSA==,
       }
     engines: { node: ^14.15.0 || ^16.10.0 || >=18.0.0 }
+
+  '@jest/schemas@30.0.0':
+    resolution:
+      {
+        integrity: sha512-NID2VRyaEkevCRz6badhfqYwri/RvMbiHY81rk3AkK/LaiB0LSxi1RdVZ7MpZdTjNugtZeGfpL0mLs9Kp3MrQw==,
+      }
+    engines: { node: ^18.14.0 || ^20.0.0 || ^22.0.0 || >=24.0.0 }
 
   '@jest/schemas@30.0.5':
     resolution:
@@ -2053,6 +2076,13 @@ packages:
         integrity: sha512-u3UPsIilWKOM3F9CXtrG8LEJmNxwoCQC/XVj4IKYXvvpx7QIi/Kg1LI5uDmDpKlac62NUtX7eLjRh+jVZcLOzw==,
       }
     engines: { node: ^14.15.0 || ^16.10.0 || >=18.0.0 }
+
+  '@jest/types@30.0.0':
+    resolution:
+      {
+        integrity: sha512-1Nox8mAL52PKPfEnUQWBvKU/bp8FTT6AiDu76bFDEJj/qsRFSAVSldfCH3XYMqialti2zHXKvD5gN0AaHc0yKA==,
+      }
+    engines: { node: ^18.14.0 || ^20.0.0 || ^22.0.0 || >=24.0.0 }
 
   '@jest/types@30.2.0':
     resolution:
@@ -9447,6 +9477,13 @@ packages:
       jest-resolve:
         optional: true
 
+  jest-regex-util@30.0.0:
+    resolution:
+      {
+        integrity: sha512-rT84010qRu/5OOU7a9TeidC2Tp3Qgt9Sty4pOZ/VSDuEmRupIjKZAb53gU3jr4ooMlhwScrgC9UixJxWzVu9oQ==,
+      }
+    engines: { node: ^18.14.0 || ^20.0.0 || ^22.0.0 || >=24.0.0 }
+
   jest-regex-util@30.0.1:
     resolution:
       {
@@ -16195,6 +16232,11 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
+  '@jest/pattern@30.0.0':
+    dependencies:
+      '@types/node': 20.19.9
+      jest-regex-util: 30.0.0
+
   '@jest/pattern@30.0.1':
     dependencies:
       '@types/node': 20.19.9
@@ -16231,6 +16273,10 @@ snapshots:
   '@jest/schemas@29.6.3':
     dependencies:
       '@sinclair/typebox': 0.27.8
+
+  '@jest/schemas@30.0.0':
+    dependencies:
+      '@sinclair/typebox': 0.34.48
 
   '@jest/schemas@30.0.5':
     dependencies:
@@ -16286,6 +16332,16 @@ snapshots:
   '@jest/types@29.6.3':
     dependencies:
       '@jest/schemas': 29.6.3
+      '@types/istanbul-lib-coverage': 2.0.6
+      '@types/istanbul-reports': 3.0.4
+      '@types/node': 20.19.9
+      '@types/yargs': 17.0.35
+      chalk: 4.1.2
+
+  '@jest/types@30.0.0':
+    dependencies:
+      '@jest/pattern': 30.0.0
+      '@jest/schemas': 30.0.0
       '@types/istanbul-lib-coverage': 2.0.6
       '@types/istanbul-reports': 3.0.4
       '@types/node': 20.19.9
@@ -21332,6 +21388,8 @@ snapshots:
   jest-pnp-resolver@1.2.3(jest-resolve@30.2.0):
     optionalDependencies:
       jest-resolve: 30.2.0
+
+  jest-regex-util@30.0.0: {}
 
   jest-regex-util@30.0.1: {}
 

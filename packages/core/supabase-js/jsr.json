@@ -1,6 +1,7 @@
 {
   "name": "@supabase/supabase-js",
   "version": "0.0.0-automated",
+  "license": "MIT",
   "exports": "./src/index.ts",
   "exclude": ["examples"]
 }
