@@ -317,7 +317,11 @@ describe('Additional Coverage Tests', () => {
 
       // Mock window.Worker
       const originalWorker = global.Worker
-      global.Worker = vi.fn(() => mockWorker) as any
+      global.Worker = class {
+        constructor() {
+          return mockWorker
+        }
+      } as any
 
       // Mock URL.createObjectURL
       const originalCreateObjectURL = global.URL.createObjectURL
@@ -362,7 +366,11 @@ describe('Additional Coverage Tests', () => {
 
       // Mock window.Worker
       const originalWorker = global.Worker
-      global.Worker = vi.fn(() => mockWorker) as any
+      global.Worker = class {
+        constructor() {
+          return mockWorker
+        }
+      } as any
 
       // Mock URL.createObjectURL
       const originalCreateObjectURL = global.URL.createObjectURL
