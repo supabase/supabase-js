@@ -2,6 +2,7 @@
   "name": "@supabase-js/source",
   "version": "0.0.0",
   "license": "MIT",
+  "packageManager": "pnpm@10.24.0",
   "scripts": {
     "commit": "cz",
     "prepare": "husky",
