@@ -7,9 +7,9 @@
     "commit": "cz",
     "prepare": "husky",
     "codegen": "node scripts/sync-common-types.js",
-    "codegen:check": "node scripts/sync-common-types.js && git diff --exit-code packages/core/supabase-js/src/lib/rest/types/common && echo '\n✅ Generated types are in sync!' || (echo '\n❌ Generated types are out of sync.\n   Run: npm run codegen\n   Then commit the changes.\n' && exit 1)",
+    "codegen:check": "node scripts/sync-common-types.js && git diff --exit-code packages/core/supabase-js/src/lib/rest/types/common && echo '\n✅ Generated types are in sync!' || (echo '\n❌ Generated types are out of sync.\n   Run: pnpm run codegen\n   Then commit the changes.\n' && exit 1)",
     "codegen:postgrest": "node scripts/generate-postgrest-types.js",
-    "codegen:check:postgrest": "node scripts/generate-postgrest-types.js && git diff --exit-code packages/core/postgrest-js/test/types.generated.ts && echo '\n✅ Postgrest generated types are in sync!' || (echo '\n❌ Postgrest generated types are out of sync.\n   Run: npm run codegen:postgrest\n   Then commit the changes.\n' && exit 1)",
+    "codegen:check:postgrest": "node scripts/generate-postgrest-types.js && git diff --exit-code packages/core/postgrest-js/test/types.generated.ts && echo '\n✅ Postgrest generated types are in sync!' || (echo '\n❌ Postgrest generated types are out of sync.\n   Run: pnpm run codegen:postgrest\n   Then commit the changes.\n' && exit 1)",
     "release-canary": "npx tsx scripts/release-canary.ts",
     "release-stable": "npx tsx scripts/release-stable.ts"
   },
@@ -72,15 +72,6 @@
     "vitest": "^3.2.4",
     "webpack-cli": "^5.1.4"
   },
-  "workspaces": [
-    "packages/*",
-    "packages/core/auth-js",
-    "packages/core/functions-js",
-    "packages/core/postgrest-js",
-    "packages/core/realtime-js",
-    "packages/core/storage-js",
-    "packages/core/supabase-js"
-  ],
   "nx": {
     "includedScripts": [],
     "targets": {
