@@ -371,13 +371,6 @@ describe('send', () => {
           expectedHeaders['Authorization'] = expectedAuth
         }
 
-        const expectedBody = {
-          method: 'POST',
-          headers: expectedHeaders,
-          body: '{"messages":[{"topic":"topic","event":"test","private":true}]}',
-          signal: new AbortController().signal,
-        }
-
         const expectedUrl = testSetup.url
           .replace('/socket', '')
           .replace('wss', 'https')
@@ -390,7 +383,15 @@ describe('send', () => {
 
         assert.equal(res, 'ok')
         expect(fetchStub).toHaveBeenCalledTimes(1)
-        expect(fetchStub).toHaveBeenCalledWith(expectedUrl, expectedBody)
+        expect(fetchStub).toHaveBeenCalledWith(
+          expectedUrl,
+          expect.objectContaining({
+            method: 'POST',
+            headers: expectedHeaders,
+            body: '{"messages":[{"topic":"topic","event":"test","private":true}]}',
+            signal: expect.any(AbortSignal),
+          })
+        )
       }
     )
   })
