@@ -9,7 +9,7 @@ on:
     paths:
       - 'packages/core/**'
       - 'package.json'
-      - 'package-lock.json'
+      - 'pnpm-lock.yaml'
       - 'nx.json'
       - 'tsconfig.base.json'
       - '.github/workflows/preview-release.yml'
