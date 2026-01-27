@@ -1,8 +1,8 @@
-import { vi, beforeEach, afterEach, describe, test, expect } from "vitest"
-import { setupRealtimeTest, type TestSetup } from "./helpers/setup";
-import assert from "assert";
-import { LongPoll } from "phoenix";
-import { WebSocketLike } from "../src/lib/websocket-factory";
+import { vi, beforeEach, afterEach, describe, test, expect } from 'vitest'
+import { setupRealtimeTest, type TestSetup } from './helpers/setup'
+import assert from 'assert'
+import { LongPoll } from 'phoenix'
+import { WebSocketLike } from '../src/lib/websocket-factory'
 
 let testSetup: TestSetup
 
@@ -21,13 +21,13 @@ describe('push', () => {
     payload: 'payload',
     ref: 'ref',
   }
-  const json = '{"topic":"topic","event":"event","payload":"payload","ref":"ref"}'
+  const json = '[null,"ref","topic","event","payload"]'
 
   test('sends data to connection when connected', async () => {
     testSetup.connect()
     await vi.waitFor(() => expect(testSetup.emitters.connected).toHaveBeenCalled())
 
-    const spy = vi.spyOn(testSetup.client.socketAdapter.getSocket().conn!, "send")
+    const spy = vi.spyOn(testSetup.client.socketAdapter.getSocket().conn!, 'send')
     testSetup.client.push(data)
     expect(spy).toHaveBeenCalledWith(json)
   })
@@ -38,28 +38,42 @@ describe('push', () => {
     assert.equal(testSetup.client.socketAdapter.getSocket().sendBuffer.length, 1)
 
     testSetup.connect()
-    const spy = vi.spyOn(testSetup.client.socketAdapter.getSocket().conn!, "send")
+    const spy = vi.spyOn(testSetup.client.socketAdapter.getSocket().conn!, 'send')
     await vi.waitFor(() => expect(spy).toHaveBeenCalledWith(json))
     assert.equal(testSetup.client.socketAdapter.getSocket().sendBuffer.length, 0)
   })
 })
 
 describe('custom encoder and decoder', () => {
-  test('encodes to JSON by default', () => {
+  test('encodes to array JSON by default', () => {
     testSetup = setupRealtimeTest()
-    let payload = { foo: 'bar' }
-
+    let payload = {
+      ref: '1',
+      join_ref: '2',
+      topic: 'test-topic',
+      event: 'test-event',
+      payload: { key: 'value' },
+    }
     testSetup.client.encode(payload, (encoded: string) => {
-      assert.deepStrictEqual(encoded, JSON.stringify(payload))
+      assert.deepStrictEqual(
+        encoded,
+        JSON.stringify(['2', '1', 'test-topic', 'test-event', { key: 'value' }])
+      )
     })
   })
 
   test('decodes JSON by default', () => {
     testSetup = setupRealtimeTest()
-    let payload = JSON.stringify({ foo: 'bar' })
+    let payload = JSON.stringify(['2', '1', 'test-topic', 'test-event', { key: 'value' }])
 
     testSetup.client.decode(payload, (decoded: any) => {
-      assert.deepStrictEqual(decoded, { foo: 'bar' })
+      assert.deepStrictEqual(decoded, {
+        ref: '1',
+        join_ref: '2',
+        topic: 'test-topic',
+        event: 'test-event',
+        payload: { key: 'value' },
+      })
     })
   })
 
@@ -68,7 +82,7 @@ describe('custom encoder and decoder', () => {
 
     testSetup = setupRealtimeTest({
       transport: WebSocket,
-      encode: encoder
+      encode: encoder,
     })
 
     testSetup.client.encode({ foo: 'bar' }, (encoded) => {
@@ -80,7 +94,7 @@ describe('custom encoder and decoder', () => {
     let decoder = (_payload, callback) => callback('decode works')
     testSetup = setupRealtimeTest({
       transport: WebSocket,
-      decode: decoder
+      decode: decoder,
     })
 
     testSetup.client.decode('...esoteric format...', (decoded) => {

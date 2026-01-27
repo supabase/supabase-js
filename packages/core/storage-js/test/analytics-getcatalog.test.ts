@@ -4,7 +4,7 @@
  */
 
 import StorageAnalyticsClient from '../src/packages/StorageAnalyticsClient'
-import { StorageError } from '../src/lib/errors'
+import { StorageError } from '../src/lib/common/errors'
 
 describe('StorageAnalyticsClient.from()', () => {
   it('should return catalog directly for valid bucket name', () => {

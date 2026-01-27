@@ -515,14 +515,14 @@ export interface AdminUserAttributes extends Omit<UserAttributes, 'data'> {
   app_metadata?: object
 
   /**
-   * Confirms the user's email address if set to true.
+   * Sets the user's email as confirmed when true, or unconfirmed when false.
    *
    * Only a service role can modify.
    */
   email_confirm?: boolean
 
   /**
-   * Confirms the user's phone number if set to true.
+   * Sets the user's phone as confirmed when true, or unconfirmed when false.
    *
    * Only a service role can modify.
    */
@@ -1299,12 +1299,16 @@ export interface GoTrueMFAApi {
    * etc.).
    * - `aal2` means that the user's identity has been verified both with a conventional login and at least one MFA factor.
    *
-   * Although this method returns a promise, it's fairly quick (microseconds)
-   * and rarely uses the network. You can use this to check whether the current
-   * user needs to be shown a screen to verify their MFA factors.
+   * When called without a JWT parameter, this method is fairly quick (microseconds)
+   * and rarely uses the network. When a JWT is provided (useful in server-side
+   * environments like Edge Functions where no session is stored), this method
+   * will make a network request to validate the user and fetch their MFA factors.
    *
+   * @param jwt Takes in an optional access token JWT. If no JWT is provided, the JWT from the current session is used.
    */
-  getAuthenticatorAssuranceLevel(): Promise<AuthMFAGetAuthenticatorAssuranceLevelResponse>
+  getAuthenticatorAssuranceLevel(
+    jwt?: string
+  ): Promise<AuthMFAGetAuthenticatorAssuranceLevelResponse>
 
   // namespace for the webauthn methods
   webauthn: WebAuthnApi

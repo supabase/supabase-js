@@ -1,17 +1,18 @@
 import assert from 'assert'
-import { describe, test, beforeEach, afterEach, vi, expect } from "vitest";
-import type RealtimeChannel from "../src/RealtimeChannel";
-import { DEFAULT_API_KEY, setupRealtimeTest, type TestSetup } from "./helpers/setup";
-import { VSN_1_0_0 } from '../src/lib/constants';
+import { describe, test, beforeEach, afterEach, vi, expect } from 'vitest'
+import type RealtimeChannel from '../src/RealtimeChannel'
+import { DEFAULT_API_KEY, setupRealtimeTest, type TestSetup } from './helpers/setup'
+import { VSN_1_0_0 } from '../src/lib/constants'
 let testSetup: TestSetup
-
 
 describe('on', () => {
   let channel: RealtimeChannel
 
   beforeEach(() => {
-    testSetup = setupRealtimeTest()
-    channel = testSetup.client.channel("some-channel")
+    testSetup = setupRealtimeTest({
+      vsn: VSN_1_0_0,
+    })
+    channel = testSetup.client.channel('some-channel')
   })
 
   afterEach(() => {
@@ -45,7 +46,7 @@ describe('on', () => {
         otherEventCount++
       })
 
-      channel.on('broadcast', {event: "*"}, () => {
+      channel.on('broadcast', { event: '*' }, () => {
         wildcardEventCount++
       })
 
@@ -153,8 +154,10 @@ describe('trigger', () => {
   let channel: RealtimeChannel
 
   beforeEach(() => {
-    testSetup = setupRealtimeTest()
-    channel = testSetup.client.channel("some-channel")
+    testSetup = setupRealtimeTest({
+      vsn: VSN_1_0_0,
+    })
+    channel = testSetup.client.channel('some-channel')
   })
 
   afterEach(() => {
@@ -165,8 +168,8 @@ describe('trigger', () => {
   test('triggers when type is broadcast', () => {
     const spy = vi.fn()
 
-    channel.on('broadcast', { event: '*' }, spy )
-    channel.on('broadcast', { event: 'test' }, spy )
+    channel.on('broadcast', { event: '*' }, spy)
+    channel.on('broadcast', { event: 'test' }, spy)
 
     channel.channelAdapter.getChannel().trigger('broadcast', { event: 'test', id: '123' }, '1')
 
@@ -192,7 +195,9 @@ describe('trigger', () => {
 describe('send', () => {
   describe('WebSocket connection scenarios', () => {
     beforeEach(async () => {
-      testSetup = setupRealtimeTest()
+      testSetup = setupRealtimeTest({
+        vsn: VSN_1_0_0,
+      })
       testSetup.connect()
       await vi.waitFor(() => expect(testSetup.emitters.connected).toHaveBeenCalled())
     })
@@ -215,7 +220,11 @@ describe('send', () => {
       new_channel.send({ type: 'broadcast', event: 'test' })
 
       expect(pushStub).toHaveBeenCalledTimes(1)
-      expect(pushStub).toHaveBeenCalledWith('broadcast', { type: 'broadcast', event: 'test' }, 10000)
+      expect(pushStub).toHaveBeenCalledWith(
+        'broadcast',
+        { type: 'broadcast', event: 'test' },
+        10000
+      )
     })
 
     test('cannot send via ws conn when subscription times out', () => {
@@ -258,6 +267,7 @@ describe('send', () => {
         })
 
         testSetup = setupRealtimeTest({
+          vsn: VSN_1_0_0,
           fetch: fetchStub as unknown as typeof fetch,
           ...(accessToken && { accessToken }),
         })
@@ -307,6 +317,7 @@ describe('send', () => {
       )
 
       testSetup = setupRealtimeTest({
+        vsn: VSN_1_0_0,
         fetch: fetchStub as unknown as typeof fetch,
         params: { apikey: 'abc123' },
       })
@@ -324,6 +335,7 @@ describe('send', () => {
       const fetchStub = vi.fn().mockRejectedValue(new Error('Network error'))
 
       testSetup = setupRealtimeTest({
+        vsn: VSN_1_0_0,
         fetch: fetchStub as unknown as typeof fetch,
         params: { apikey: 'abc123' },
       })
@@ -345,6 +357,7 @@ describe('send', () => {
       })
 
       testSetup = setupRealtimeTest({
+        vsn: VSN_1_0_0,
         fetch: fetchStub as unknown as typeof fetch,
         params: { apikey: 'abc123' },
       })
@@ -366,6 +379,7 @@ describe('send', () => {
       const fetchStub = vi.fn().mockRejectedValue(timeoutError)
 
       testSetup = setupRealtimeTest({
+        vsn: VSN_1_0_0,
         fetch: fetchStub as unknown as typeof fetch,
         params: { apikey: 'abc123' },
       })
@@ -393,6 +407,7 @@ describe('httpSend', () => {
 
   const createSocket = (hasToken = false, fetchMock?: any) => {
     const config: any = {
+      vsn: VSN_1_0_0,
       fetch: fetchMock,
       params: { apikey: '123456789' },
     }
@@ -523,7 +538,7 @@ describe('httpSend', () => {
       const channel = testSetup.client.channel('topic', { config: { private: true } })
 
       const result = await channel.httpSend('test-explicit', { data: 'explicit' })
-      const expectedApiKey = "123456789"
+      const expectedApiKey = '123456789'
 
       expect(result).toEqual({ success: true })
       const expectedUrl = testSetup.wssUrl
@@ -546,6 +561,7 @@ describe('httpSend', () => {
       const mockResponse = createMockResponse(202)
       const fetchStub = vi.fn().mockResolvedValue(mockResponse)
       const testSetup = setupRealtimeTest({
+        vsn: VSN_1_0_0,
         fetch: fetchStub,
         timeout: 5000,
         params: { apikey: 'abc123' },

@@ -34,3 +34,47 @@ npm run test:suite
 ```
 
 All emails will appear in the mock mail server.
+
+## RSA Signing Keys
+
+### Security Model
+
+The auth-js tests require RSA signing keys to verify RS256 JWT tokens. **These keys are NEVER committed to the repository** for security reasons.
+
+### Key Generation
+
+Keys are automatically generated before tests run:
+
+- **Locally**: `nx test:auth auth-js` or `nx test:docker auth-js` automatically generates keys via the `test:generate-keys` target
+- **CI**: GitHub Actions generates fresh keys before each test run
+
+### Manual Key Generation
+
+If you need to generate keys manually:
+
+```bash
+cd packages/core/auth-js/test
+node generate-signing-keys.js
+```
+
+This creates `test/supabase/signing_keys.json` (gitignored).
+
+### JWT Token Generation
+
+JWT tokens (anon, service_role, admin) are **automatically generated** at runtime from the signing keys in `test/lib/clients.ts`. No manual updates needed!
+
+For debugging/inspection only:
+```bash
+cd packages/core/auth-js/test
+node generate-jwt.js
+```
+
+This displays the tokens but you don't need to copy them anywhere - they're generated automatically.
+
+## Important Notes
+
+⚠️ **NEVER commit `signing_keys.json`** - It's in `.gitignore` for security
+
+⚠️ **These are TEST KEYS only** - Never use in production
+
+✅ **Fresh keys per test run** - CI generates new keys every time for maximum security

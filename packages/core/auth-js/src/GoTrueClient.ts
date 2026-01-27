@@ -398,11 +398,17 @@ export default class GoTrueClient {
       this.broadcastChannel?.addEventListener('message', async (event) => {
         this._debug('received broadcast notification from other tab or client', event)
 
-        await this._notifyAllSubscribers(event.data.event, event.data.session, false) // broadcast = false so we don't get an endless loop of messages
+        try {
+          await this._notifyAllSubscribers(event.data.event, event.data.session, false) // broadcast = false so we don't get an endless loop of messages
+        } catch (error) {
+          this._debug('#broadcastChannel', 'error', error)
+        }
       })
     }
 
-    this.initialize()
+    this.initialize().catch((error) => {
+      this._debug('#initialize()', 'error', error)
+    })
   }
 
   /**
@@ -1146,9 +1152,7 @@ export default class GoTrueClient {
       }
       if (data.session) {
         await this._saveSession(data.session)
-        setTimeout(async () => {
-          await this._notifyAllSubscribers('SIGNED_IN', data.session)
-        }, 0)
+        await this._notifyAllSubscribers('SIGNED_IN', data.session)
       }
       return this._returnResult({ data: { ...data, redirectType: redirectType ?? null }, error })
     } catch (error) {
@@ -2152,7 +2156,7 @@ export default class GoTrueClient {
   ): Promise<{ error: AuthError | null }> {
     return await this._useSession(async (result) => {
       const { data, error: sessionError } = result
-      if (sessionError) {
+      if (sessionError && !isAuthSessionMissingError(sessionError)) {
         return this._returnResult({ error: sessionError })
       }
       const accessToken = data.session?.access_token
@@ -2163,8 +2167,9 @@ export default class GoTrueClient {
           // ignore 401s since an invalid or expired JWT should sign out the current session
           if (
             !(
-              isAuthApiError(error) &&
-              (error.status === 404 || error.status === 401 || error.status === 403)
+              (isAuthApiError(error) &&
+                (error.status === 404 || error.status === 401 || error.status === 403)) ||
+              isAuthSessionMissingError(error)
             )
           ) {
             return this._returnResult({ error })
@@ -3028,7 +3033,13 @@ export default class GoTrueClient {
     }
 
     try {
-      this.visibilityChangedCallback = async () => await this._onVisibilityChanged(false)
+      this.visibilityChangedCallback = async () => {
+        try {
+          await this._onVisibilityChanged(false)
+        } catch (error) {
+          this._debug('#visibilityChangedCallback', 'error', error)
+        }
+      }
 
       window?.addEventListener('visibilitychange', this.visibilityChangedCallback)
 
@@ -3429,7 +3440,47 @@ export default class GoTrueClient {
   /**
    * {@see GoTrueMFAApi#getAuthenticatorAssuranceLevel}
    */
-  private async _getAuthenticatorAssuranceLevel(): Promise<AuthMFAGetAuthenticatorAssuranceLevelResponse> {
+  private async _getAuthenticatorAssuranceLevel(
+    jwt?: string
+  ): Promise<AuthMFAGetAuthenticatorAssuranceLevelResponse> {
+    if (jwt) {
+      try {
+        const { payload } = decodeJWT(jwt)
+
+        let currentLevel: AuthenticatorAssuranceLevels | null = null
+        if (payload.aal) {
+          currentLevel = payload.aal
+        }
+
+        let nextLevel: AuthenticatorAssuranceLevels | null = currentLevel
+
+        const {
+          data: { user },
+          error: userError,
+        } = await this.getUser(jwt)
+
+        if (userError) {
+          return this._returnResult({ data: null, error: userError })
+        }
+
+        const verifiedFactors =
+          user?.factors?.filter((factor: Factor) => factor.status === 'verified') ?? []
+
+        if (verifiedFactors.length > 0) {
+          nextLevel = 'aal2'
+        }
+
+        const currentAuthenticationMethods = payload.amr || []
+
+        return { data: { currentLevel, nextLevel, currentAuthenticationMethods }, error: null }
+      } catch (error) {
+        if (isAuthError(error)) {
+          return this._returnResult({ data: null, error })
+        }
+        throw error
+      }
+    }
+
     const {
       data: { session },
       error: sessionError,

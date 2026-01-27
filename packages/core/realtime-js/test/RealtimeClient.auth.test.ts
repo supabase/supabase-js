@@ -1,13 +1,15 @@
 import assert from 'assert'
 import { describe, expect, test, vi } from 'vitest'
 import { WebSocket as MockWebSocket } from 'mock-socket'
-import { DEFAULT_VERSION } from '../src/lib/constants'
+import { DEFAULT_VERSION, VSN_1_0_0 } from '../src/lib/constants'
 import { setupRealtimeTest } from './helpers/setup'
 import { utils, authHelpers as testHelpers } from './helpers/auth'
 
 describe('token setting and updates', () => {
   test("sets access token, updates channels' join payload, and pushes token to channels", async () => {
-    const testSetup = setupRealtimeTest()
+    const testSetup = setupRealtimeTest({
+      vsn: VSN_1_0_0,
+    })
     const {
       channels: [channel1, channel2, channel3],
     } = await testHelpers.setupAuthTestChannels(testSetup.client)
@@ -44,7 +46,9 @@ describe('token setting and updates', () => {
   })
 
   test("does not send message if token hasn't changed", async () => {
-    const testSetup = setupRealtimeTest()
+    const testSetup = setupRealtimeTest({
+      vsn: VSN_1_0_0,
+    })
     const channel = await testHelpers.setupAuthTestChannel(testSetup.client)
 
     testSetup.emitters.message.mockClear()
@@ -62,7 +66,9 @@ describe('token setting and updates', () => {
   })
 
   test("sets access token, updates channels' join payload, and pushes token to channels if is not a jwt", async () => {
-    const testSetup = setupRealtimeTest()
+    const testSetup = setupRealtimeTest({
+      vsn: VSN_1_0_0,
+    })
     await testHelpers.setupAuthTestChannels(testSetup.client)
 
     testSetup.emitters.message.mockClear()
@@ -84,6 +90,7 @@ describe('token setting and updates', () => {
     const new_token = utils.generateJWT('3h')
 
     const testSetup = setupRealtimeTest({
+      vsn: VSN_1_0_0,
       accessToken: () => Promise.resolve(new_token),
     })
 
@@ -114,7 +121,9 @@ describe('token setting and updates', () => {
   })
 
   test("overrides access token, updates channels' join payload, and pushes token to channels", async () => {
-    const testSetup = setupRealtimeTest()
+    const testSetup = setupRealtimeTest({
+      vsn: VSN_1_0_0,
+    })
 
     await testHelpers.setupAuthTestChannels(testSetup.client)
 
@@ -141,6 +150,7 @@ describe('auth during connection states', () => {
     const logSpy = vi.fn()
 
     const testSetup = setupRealtimeTest({
+      vsn: VSN_1_0_0,
       transport: MockWebSocket,
       accessToken,
       logger: logSpy,
@@ -170,6 +180,7 @@ describe('auth during connection states', () => {
     // Use a mutable token that we can change between heartbeats
     let currentToken = initialToken
     const heartbeatSetup = setupRealtimeTest({
+      vsn: VSN_1_0_0,
       accessToken: () => Promise.resolve(currentToken),
     })
 
@@ -209,6 +220,7 @@ describe('auth during connection states', () => {
     const accessToken = vi.fn(() => Promise.resolve(tokens[callCount++]))
 
     const testSetup = setupRealtimeTest({
+      vsn: VSN_1_0_0,
       accessToken,
       onConnectionCallback: (socket) => {
         console.log('CLOSING SOCKET')

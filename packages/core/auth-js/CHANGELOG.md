@@ -1,3 +1,24 @@
+## 2.91.1 (2026-01-23)
+
+### 🩹 Fixes
+
+- **auth:** restore SSR OAuth functionality broken in v2.91.0 ([#2039](https://github.com/supabase/supabase-js/pull/2039))
+
+### ❤️ Thank You
+
+- Vaibhav @7ttp
+
+## 2.91.0 (2026-01-20)
+
+### 🩹 Fixes
+
+- **auth:** clarify updateUserById applies changes directly ([#2031](https://github.com/supabase/supabase-js/pull/2031))
+- **auth:** defer subscriber notification in exchangeCodeForSession to prevent deadlock ([#2014](https://github.com/supabase/supabase-js/pull/2014))
+
+### ❤️ Thank You
+
+- Vaibhav @7ttp
+
 ## 2.90.1 (2026-01-08)
 
 This was a version bump only for @supabase/auth-js to align it with other projects, there were no code changes.

@@ -29,6 +29,7 @@ deno.lock
 # Coverage directories (anywhere in tree)
 coverage/
 coverage
+coverage-docker/
 .nyc_output
 *.lcov
 lib-cov
@@ -100,5 +101,8 @@ vite.config.*.timestamp*
 vitest.config.*.timestamp*
 test-output
 
-supabase/.branches
-supabase/.temp
+supabase/.branches/*
+supabase/.temp/*
+
+# Test signing keys (generated at test runtime)
+**/signing_keys.json

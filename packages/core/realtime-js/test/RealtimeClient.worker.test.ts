@@ -1,8 +1,8 @@
-import { beforeAll, beforeEach, afterEach, test, expect, vi } from "vitest"
-import { type TestSetup, setupRealtimeTest } from "./helpers/setup"
-import Worker from "web-worker";
-import path from "path";
-import RealtimeClient from "../src/RealtimeClient";
+import { beforeAll, beforeEach, afterEach, test, expect, vi } from 'vitest'
+import { type TestSetup, setupRealtimeTest } from './helpers/setup'
+import Worker from 'web-worker'
+import path from 'path'
+import RealtimeClient from '../src/RealtimeClient'
 
 let testSetup: TestSetup
 
@@ -10,12 +10,12 @@ beforeAll(() => {
   window.Worker = Worker
 })
 
-const workerUrl = path.join(__dirname, "/helpers/test_worker.js")
+const workerUrl = path.join(__dirname, '/helpers/test_worker.js')
 
 beforeEach(() => {
   testSetup = setupRealtimeTest({
     worker: true,
-    workerUrl
+    workerUrl,
   })
 })
 
@@ -23,11 +23,11 @@ afterEach(() => {
   testSetup.cleanup()
 })
 
-test("sets worker flag", () => {
+test('sets worker flag', () => {
   expect(testSetup.client.worker).toBeTruthy()
 })
 
-test("disables autoStartHeartbeat in socket", () => {
+test('disables autoStartHeartbeat in socket', () => {
   expect(testSetup.client.socketAdapter.getSocket().autoSendHeartbeat).toBeFalsy()
 })
 
@@ -43,7 +43,7 @@ test('creates worker with blob URL when no workerUrl provided', async () => {
 
   testSetup.cleanup()
   testSetup = setupRealtimeTest({
-    worker: true
+    worker: true,
   })
 
   testSetup.connect()
@@ -58,8 +58,7 @@ test('creates worker with blob URL when no workerUrl provided', async () => {
   global.URL.createObjectURL = originalCreateObjectURL
 })
 
-
-test("starts worker on conenction open", async () => {
+test('starts worker on conenction open', async () => {
   expect(testSetup.client.workerRef).toBeFalsy()
   testSetup.connect()
   await vi.waitFor(() => expect(testSetup.emitters.connected).toBeCalled())
@@ -72,7 +71,7 @@ test('ensures single worker ref is started even with multiple connect calls', as
   const ref = testSetup.client.workerRef
 
   // @ts-ignore - simulate another onOpen call
-  testSetup.client.socketAdapter.getSocket().triggerStateCallbacks("open")
+  testSetup.client.socketAdapter.getSocket().triggerStateCallbacks('open')
 
   expect(testSetup.client.workerRef).toBe(ref)
 })
@@ -100,7 +99,7 @@ test('terminates worker on disconnect', async () => {
   expect(testSetup.client.workerRef).toBeTruthy()
   const ref = testSetup.client.workerRef!
 
-  const spy = vi.spyOn(ref, "terminate")
+  const spy = vi.spyOn(ref, 'terminate')
   testSetup.disconnect()
   await vi.waitFor(() => expect(testSetup.emitters.close).toBeCalled())
   expect(spy).toHaveBeenCalled()
