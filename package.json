@@ -42,7 +42,7 @@
     "@types/node": "20.19.9",
     "@typescript-eslint/eslint-plugin": "^7.18.0",
     "@typescript-eslint/parser": "^7.18.0",
-    "@vitest/ui": "4.0.9",
+    "@vitest/ui": "4.0.18",
     "commitizen": "^4.3.1",
     "eslint": "^8.57.1",
     "eslint-config-prettier": "^10.1.8",
@@ -71,7 +71,7 @@
     "typescript": "~5.8.3",
     "verdaccio": "^6.2.4",
     "vite": "7.1.11",
-    "vitest": "4.0.9",
+    "vitest": "4.0.18",
     "webpack-cli": "^5.1.4"
   },
   "nx": {
