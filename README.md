@@ -26,7 +26,7 @@
 
 </div>
 
-> **For contributors: Repository Structure Changed**
+> **For contributors: Repository structure changed**
 >
 > This repository has been restructured as a monorepo. All libraries, including `supabase-js` itself, have moved to `packages/core/`:
 >
