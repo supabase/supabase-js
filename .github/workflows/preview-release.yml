@@ -49,7 +49,7 @@ jobs:
 
       - name: Publish preview packages
         run: |
-          npx pkg-pr-new@latest publish --compact \
+          npx pkg-pr-new@latest publish --pnpm --compact \
             ./packages/core/auth-js \
             ./packages/core/functions-js \
             ./packages/core/postgrest-js \
