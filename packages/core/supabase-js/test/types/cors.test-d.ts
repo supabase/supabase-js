@@ -47,8 +47,8 @@ expectType<CorsHeaders>(createCorsHeaders({}))
 // Test: createCorsHeaders with single origin
 expectType<CorsHeaders>(createCorsHeaders({ origin: 'https://myapp.com' }))
 
-// Test: createCorsHeaders with array of origins
-expectType<CorsHeaders>(createCorsHeaders({ origin: ['https://app1.com', 'https://app2.com'] }))
+// Test: createCorsHeaders with array of origins should error
+expectError(createCorsHeaders({ origin: ['https://app1.com', 'https://app2.com'] }))
 
 // Test: createCorsHeaders with credentials
 expectType<CorsHeaders>(createCorsHeaders({ credentials: true }))
@@ -73,13 +73,13 @@ expectType<CorsHeaders>(
 expectAssignable<CorsOptions>({})
 expectAssignable<CorsOptions>({ origin: '*' })
 expectAssignable<CorsOptions>({ origin: 'https://myapp.com' })
-expectAssignable<CorsOptions>({ origin: ['https://app1.com'] })
 expectAssignable<CorsOptions>({ credentials: false })
 expectAssignable<CorsOptions>({ additionalHeaders: [] })
 expectAssignable<CorsOptions>({ additionalMethods: [] })
 
 // Test: CorsOptions validates property types
 expectNotAssignable<CorsOptions>({ origin: 123 })
+expectNotAssignable<CorsOptions>({ origin: ['https://app1.com'] })
 expectNotAssignable<CorsOptions>({ credentials: 'true' })
 expectNotAssignable<CorsOptions>({ additionalHeaders: 'x-custom' })
 expectNotAssignable<CorsOptions>({ additionalMethods: 'GET' })
@@ -150,9 +150,9 @@ function handleRequest(req: Request): Response {
 }
 expectType<(req: Request) => Response>(handleRequest)
 
-// Pattern 6: Custom CORS configuration
+// Pattern 6: Custom CORS configuration with additional headers and methods
 const advancedHeaders = createCorsHeaders({
-  origin: ['https://app1.com', 'https://app2.com'],
+  origin: 'https://app1.com',
   credentials: true,
   additionalHeaders: ['x-custom-header', 'x-api-key'],
   additionalMethods: ['HEAD', 'TRACE'],
