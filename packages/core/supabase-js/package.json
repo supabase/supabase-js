@@ -66,7 +66,7 @@
     "test:expo": "cd test/integration/expo && npm test",
     "test:next": "cd test/integration/next && npm test",
     "test:types": "tsd --files test/types/*.test-d.ts && jsr publish --dry-run --allow-dirty",
-    "test:exports": "attw --pack .",
+    "test:exports": "attw --pack . --ignore-rules no-resolution",
     "test:esm": "node test/module-resolution.test.mjs && node test/module-resolution-cors.test.mjs",
     "test:cjs": "node test/module-resolution.test.cjs && node test/module-resolution-cors.test.cjs",
     "test:module-resolution": "npm run test:exports && npm run test:esm && npm run test:cjs",
