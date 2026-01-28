@@ -346,6 +346,32 @@ describe('Callback URL handling', () => {
     expect(session?.refresh_token).toBe('test-refresh-token')
   })
 
+  it('should attach provider token when callback only includes provider tokens', async () => {
+    window.location.href =
+      'http://localhost:9999/callback#provider_token=provider-token&provider_refresh_token=provider-refresh&type=link'
+
+    const expiresAt = Math.floor(Date.now() / 1000) + 3600
+    storedSession = JSON.stringify({
+      access_token: 'existing-access-token',
+      refresh_token: 'existing-refresh-token',
+      expires_in: 3600,
+      expires_at: expiresAt,
+      token_type: 'bearer',
+      user: { id: 'test-user' },
+    })
+
+    const client = getClientWithSpecificStorage(mockStorage)
+    await client.initialize()
+
+    const {
+      data: { session },
+    } = await client.getSession()
+    expect(session).toBeDefined()
+    expect(session?.access_token).toBe('existing-access-token')
+    expect(session?.provider_token).toBe('provider-token')
+    expect(session?.provider_refresh_token).toBe('provider-refresh')
+  })
+
   it('should handle error in callback URL', async () => {
     // Set up URL with error parameters
     window.location.href =
