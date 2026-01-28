@@ -25,7 +25,7 @@ Deno.test(
         },
       })
 
-      assertEquals(response.status, 204)
+      assertEquals(response.status, 200)
     })
 
     await t.step('OPTIONS preflight - should include Access-Control-Allow-Origin', async () => {

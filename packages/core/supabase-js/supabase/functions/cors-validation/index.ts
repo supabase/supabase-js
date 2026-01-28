@@ -4,10 +4,7 @@ import { corsHeaders } from '../../../src/cors.ts'
 serve(async (req) => {
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
-    return new Response('ok', {
-      status: 204,
-      headers: corsHeaders,
-    })
+    return new Response('ok', { headers: corsHeaders })
   }
 
   // Handle POST request
