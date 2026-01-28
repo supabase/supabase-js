@@ -1,4 +1,3 @@
-import 'node:buffer'
 import { assertEquals, assertExists } from 'https://deno.land/std@0.220.1/assert/mod.ts'
 
 // These tests validate CORS behavior with direct HTTP requests

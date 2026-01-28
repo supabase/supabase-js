@@ -78,14 +78,16 @@ export type CorsHeaders = Record<string, string>
  */
 export interface CorsOptions {
   /**
-   * Allowed origin(s). Can be:
+   * Allowed origin. Must be:
    * - '*' for any origin (default)
-   * - A specific origin like 'https://myapp.com'
-   * - An array of origins like ['https://app1.com', 'https://app2.com']
+   * - A single specific origin like 'https://myapp.com'
    *
    * Note: Cannot use credentials: true with origin: '*'
+   *
+   * For multiple origins, use validateOrigin() to check the request origin
+   * against an allowlist and pass the validated origin to createCorsHeaders().
    */
-  origin?: string | string[]
+  origin?: string
 
   /**
    * Whether to allow credentials (cookies, authorization headers)
@@ -152,10 +154,14 @@ export const corsHeaders: CorsHeaders = {
  * })
  * ```
  *
- * @example Allow multiple origins
+ * @example Handle multiple origins with dynamic validation
  * ```typescript
+ * const allowedOrigins = ['https://app1.com', 'https://app2.com']
+ * const requestOrigin = req.headers.get('Origin')
+ * const validatedOrigin = validateOrigin(requestOrigin, allowedOrigins)
+ *
  * const corsHeaders = createCorsHeaders({
- *   origin: ['https://app1.com', 'https://app2.com']
+ *   origin: validatedOrigin || '*'
  * })
  * ```
  *
@@ -174,6 +180,14 @@ export function createCorsHeaders(options: CorsOptions = {}): CorsHeaders {
     additionalMethods = [],
   } = options
 
+  // Validate origin type
+  if (Array.isArray(origin)) {
+    throw new Error(
+      'Access-Control-Allow-Origin does not support multiple origins. ' +
+        'Use validateOrigin() to implement dynamic origin validation instead.'
+    )
+  }
+
   // Validate credentials + wildcard combination
   if (credentials && origin === '*') {
     throw new Error(
@@ -190,8 +204,7 @@ export function createCorsHeaders(options: CorsOptions = {}): CorsHeaders {
   const allMethods =
     SUPABASE_METHODS + (additionalMethods.length > 0 ? ', ' + additionalMethods.join(', ') : '')
 
-  // Handle multiple origins by joining with comma
-  const originValue = Array.isArray(origin) ? origin.join(', ') : origin
+  const originValue = origin
 
   const headers: CorsHeaders = {
     'Access-Control-Allow-Origin': originValue,

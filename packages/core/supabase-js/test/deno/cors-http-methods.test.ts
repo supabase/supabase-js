@@ -1,4 +1,3 @@
-import 'node:buffer'
 import { assertEquals, assertExists } from 'https://deno.land/std@0.220.1/assert/mod.ts'
 
 Deno.test(
@@ -9,15 +8,14 @@ Deno.test(
     const functionUrl = `${FUNCTIONS_URL}/cors-http-methods`
 
     // Test simple methods (should work without explicit Access-Control-Allow-Methods)
+    // Note: For POST to be CORS-simple, we use text/plain content type
     const simpleMethods = ['GET', 'POST']
     for (const method of simpleMethods) {
       await t.step(`${method} request - simple method should work`, async () => {
         const response = await fetch(functionUrl, {
           method,
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: method === 'POST' ? JSON.stringify({ test: 'data' }) : undefined,
+          headers: method === 'POST' ? { 'Content-Type': 'text/plain' } : {},
+          body: method === 'POST' ? 'test data' : undefined,
         })
 
         assertEquals(response.status, 200)

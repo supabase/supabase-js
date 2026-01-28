@@ -47,8 +47,11 @@ const requiredHeaders = [
 ]
 
 const allowedHeaders = corsHeaders['Access-Control-Allow-Headers']
+// Split by comma and normalize for exact token matching
+const allowedHeaderTokens = allowedHeaders.split(',').map((h) => h.trim().toLowerCase())
+
 for (const header of requiredHeaders) {
-  if (!allowedHeaders.includes(header)) {
+  if (!allowedHeaderTokens.includes(header.toLowerCase())) {
     throw new Error(`corsHeaders missing required header: ${header}`)
   }
 }
