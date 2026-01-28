@@ -2046,6 +2046,26 @@ export default class GoTrueClient {
       } = params
 
       if (!access_token || !expires_in || !refresh_token || !token_type) {
+        if (provider_token || provider_refresh_token) {
+          const { data: sessionData, error: sessionError } = await this.__loadSession()
+          if (sessionError) throw sessionError
+          if (!sessionData.session) {
+            throw new AuthImplicitGrantRedirectError('No session defined in URL')
+          }
+
+          const session: Session = {
+            ...sessionData.session,
+            provider_token,
+            provider_refresh_token,
+          }
+
+          // Remove tokens from URL
+          window.location.hash = ''
+          this._debug('#_getSessionFromURL()', 'clearing window.location.hash')
+
+          return this._returnResult({ data: { session, redirectType: params.type }, error: null })
+        }
+
         throw new AuthImplicitGrantRedirectError('No session defined in URL')
       }
 
@@ -2120,7 +2140,12 @@ export default class GoTrueClient {
     if (typeof this.detectSessionInUrl === 'function') {
       return this.detectSessionInUrl(new URL(window.location.href), params)
     }
-    return Boolean(params.access_token || params.error_description)
+    return Boolean(
+      params.access_token ||
+        params.error_description ||
+        params.provider_token ||
+        params.provider_refresh_token
+    )
   }
 
   /**
