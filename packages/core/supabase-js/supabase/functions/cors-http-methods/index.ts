@@ -4,7 +4,21 @@ import { corsHeaders } from '../../../src/cors.ts'
 serve(async (req) => {
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
+    return new Response(null, {
+      status: 204,
+      headers: corsHeaders
+    })
+  }
+
+  // Handle HEAD properly
+  if (req.method === 'HEAD') {
+    return new Response(null, {
+      status: 200,
+      headers: {
+        ...corsHeaders,
+        'Content-Type': 'application/json'
+      }
+    })
   }
 
   const timestamp = new Date().toISOString()
