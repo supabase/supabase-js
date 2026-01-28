@@ -195,13 +195,9 @@ jobs:
         env:
           DENO_NPM_REGISTRY: http://localhost:4873
         run: |
-          cd packages/core/supabase-js/test/deno
-          echo "registry=http://localhost:4873/" > .npmrc
-          cd ../..
+          echo "registry=http://localhost:4873/" > packages/core/supabase-js/test/deno/.npmrc
           npx nx test:deno:all supabase-js
-          cd test/deno
-          rm -f .npmrc
-          cd ../../..
+          rm -f packages/core/supabase-js/test/deno/.npmrc
 
       - name: Run integration and browser tests
         run: npx nx test:integration:browser supabase-js
