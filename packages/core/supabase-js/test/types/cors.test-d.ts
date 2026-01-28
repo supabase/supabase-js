@@ -123,7 +123,8 @@ const mergedHeaders = {
   ...corsHeaders,
   'Content-Type': 'application/json',
 }
-expectType<{ [x: string]: string; 'Content-Type': string }>(mergedHeaders)
+expectAssignable<Record<string, string>>(mergedHeaders)
+expectType<string>(mergedHeaders['Content-Type'])
 
 // Pattern 4: Dynamic CORS validation
 const requestOrigin: string | null = 'https://myapp.com'
