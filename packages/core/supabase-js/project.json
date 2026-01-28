@@ -15,6 +15,27 @@
     },
     "test:all": {
       "inputs": ["testing", "^production"]
+    },
+    "test:esm": {
+      "executor": "nx:run-script",
+      "options": {
+        "script": "test:esm"
+      },
+      "dependsOn": ["build"]
+    },
+    "test:cjs": {
+      "executor": "nx:run-script",
+      "options": {
+        "script": "test:cjs"
+      },
+      "dependsOn": ["build"]
+    },
+    "test:exports": {
+      "executor": "nx:run-script",
+      "options": {
+        "script": "test:exports"
+      },
+      "dependsOn": ["build"]
     }
   }
 }
