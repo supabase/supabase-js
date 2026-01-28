@@ -242,9 +242,9 @@ template = "Your code is {{ .Code }}"
 max_frequency = "1s"
 
 # Configure MFA via WebAuthn
-# [auth.mfa.web_authn]
-# enroll_enabled = true
-# verify_enabled = true
+[auth.mfa.web_authn]
+enroll_enabled = true
+verify_enabled = true
 
 # Use an external OAuth provider. The full list of providers are: `apple`, `azure`, `bitbucket`,
 # `discord`, `facebook`, `github`, `gitlab`, `google`, `keycloak`, `linkedin_oidc`, `notion`, `twitch`,
