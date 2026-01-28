@@ -1,0 +1,11 @@
+# Supabase Edge Functions Configuration
+# https://supabase.com/docs/guides/functions/deploy#verifying-jwts
+
+[functions.cors-validation]
+verify_jwt = false
+
+[functions.cors-http-methods]
+verify_jwt = false
+
+[functions.cors-errors]
+verify_jwt = false
