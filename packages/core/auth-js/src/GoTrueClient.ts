@@ -3311,13 +3311,13 @@ export default class GoTrueClient {
           if (sessionError) {
             return this._returnResult({ data: null, error: sessionError })
           }
-          const { factorId, ...bodyParams } = params
+
           const response = (await _request(
             this.fetch,
             'POST',
-            `${this.url}/factors/${factorId}/challenge`,
+            `${this.url}/factors/${params.factorId}/challenge`,
             {
-              body: bodyParams,
+              body: params,
               headers: this.headers,
               jwt: sessionData?.session?.access_token,
             }
