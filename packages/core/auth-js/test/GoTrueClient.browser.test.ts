@@ -373,6 +373,7 @@ describe('Callback URL handling', () => {
 
   it('should handle _initialize with detectSessionInUrl', async () => {
     // Mock window.location with session parameters
+    delete (window as any).location
     Object.defineProperty(window, 'location', {
       value: {
         href: 'http://localhost:9999/callback?access_token=test&refresh_token=test&expires_in=3600&token_type=bearer&type=recovery',
@@ -398,6 +399,7 @@ describe('Callback URL handling', () => {
 
   it('should handle _initialize with PKCE flow mismatch', async () => {
     // Mock window.location with PKCE parameters
+    delete (window as any).location
     Object.defineProperty(window, 'location', {
       value: {
         href: 'http://localhost:9999/callback?code=test-code',
@@ -827,6 +829,7 @@ describe('GoTrueClient constructor edge cases', () => {
 
 describe('linkIdentity with skipBrowserRedirect false', () => {
   it('should linkIdentity with skipBrowserRedirect false', async () => {
+    delete (window as any).location
     Object.defineProperty(window, 'location', {
       value: {
         href: 'http://localhost:9999',
@@ -873,6 +876,7 @@ describe('linkIdentity with skipBrowserRedirect false', () => {
 
     // Mock window.location.assign
     const mockAssign = jest.fn()
+    delete (window as any).location
     Object.defineProperty(window, 'location', {
       value: {
         href: 'http://localhost:9999',
@@ -1091,6 +1095,7 @@ describe('Additional Tests', () => {
 
   it('should handle _initialize with expires_at parameter', async () => {
     // Mock window.location with expires_at parameter
+    delete (window as any).location
     Object.defineProperty(window, 'location', {
       value: {
         href: 'http://localhost:9999/callback?access_token=test&refresh_token=test&expires_in=3600&expires_at=1234567890&token_type=bearer',
@@ -1123,6 +1128,7 @@ describe('Additional Tests', () => {
     })
 
     const mockAssign = jest.fn()
+    delete (window as any).location
     Object.defineProperty(window, 'location', {
       value: {
         href: 'http://localhost:9999',
@@ -1162,6 +1168,7 @@ describe('OAuth and Sign-in Branch Testing', () => {
     })
 
     const mockAssign = jest.fn()
+    delete (window as any).location
     Object.defineProperty(window, 'location', {
       value: {
         href: 'http://localhost:9999',

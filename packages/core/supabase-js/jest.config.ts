@@ -26,6 +26,8 @@ const config: Config.InitialOptions = {
     '/test/integration/node-browser/', // Playwright tests
     '\.spec\.ts$', // Playwright spec files
     'integration\.browser\.test\.ts', // Browser integration tests for Deno
+    'module-resolution\.test\.mjs$', // ESM module tests run via Nx test:esm target
+    'module-resolution\.test\.cjs$', // CJS module tests run via Nx test:cjs target
   ],
 }
 export default config
