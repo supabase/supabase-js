@@ -2047,7 +2047,9 @@ export default class GoTrueClient {
 
       if (!access_token || !expires_in || !refresh_token || !token_type) {
         if (provider_token || provider_refresh_token) {
-          const { data: sessionData, error: sessionError } = await this.__loadSession()
+          const { data: sessionData, error: sessionError } = await this._useSession(
+            async (result) => result
+          )
           if (sessionError) throw sessionError
           if (!sessionData.session) {
             throw new AuthImplicitGrantRedirectError('No session defined in URL')
