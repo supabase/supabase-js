@@ -3,7 +3,7 @@ import { defineConfig } from 'tsdown'
 export default defineConfig([
   // CJS and ESM builds - keep @supabase/* external
   {
-    entry: ['src/index.ts'],
+    entry: ['src/index.ts', 'src/cors.ts'],
     format: ['cjs', 'esm'],
     dts: true,
     sourcemap: true,
