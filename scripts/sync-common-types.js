@@ -13,7 +13,7 @@
 
 const fs = require('fs')
 const path = require('path')
-console.log('hello')
+
 const SOURCE_DIR = path.join(__dirname, '../packages/core/postgrest-js/src/types/common')
 const DEST_DIR = path.join(__dirname, '../packages/core/supabase-js/src/lib/rest/types/common')
 
