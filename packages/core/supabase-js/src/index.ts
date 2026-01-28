@@ -8,14 +8,14 @@ export type {
   PostgrestSingleResponse,
   PostgrestMaybeSingleResponse,
 } from '@supabase/postgrest-js'
-export { PostgrestError } from '@supabase/postgrest-js'
+export type { PostgrestError } from '@supabase/postgrest-js'
 export type { FunctionInvokeOptions } from '@supabase/functions-js'
-export {
-  FunctionsHttpError,
-  FunctionsFetchError,
-  FunctionsRelayError,
-  FunctionsError,
+export type {
   FunctionRegion,
+  FunctionsError,
+  FunctionsFetchError,
+  FunctionsHttpError,
+  FunctionsRelayError,
 } from '@supabase/functions-js'
 export * from '@supabase/realtime-js'
 export { default as SupabaseClient } from './SupabaseClient'
@@ -45,13 +45,12 @@ export const createClient = <
     | { PostgrestVersion: string } = 'public' extends keyof Omit<Database, '__InternalSupabase'>
     ? 'public'
     : string & keyof Omit<Database, '__InternalSupabase'>,
-  SchemaName extends string &
-    keyof Omit<Database, '__InternalSupabase'> = SchemaNameOrClientOptions extends string &
-    keyof Omit<Database, '__InternalSupabase'>
-    ? SchemaNameOrClientOptions
-    : 'public' extends keyof Omit<Database, '__InternalSupabase'>
-      ? 'public'
-      : string & keyof Omit<Omit<Database, '__InternalSupabase'>, '__InternalSupabase'>,
+  SchemaName extends string & keyof Omit<Database, '__InternalSupabase'> =
+    SchemaNameOrClientOptions extends string & keyof Omit<Database, '__InternalSupabase'>
+      ? SchemaNameOrClientOptions
+      : 'public' extends keyof Omit<Database, '__InternalSupabase'>
+        ? 'public'
+        : string & keyof Omit<Omit<Database, '__InternalSupabase'>, '__InternalSupabase'>,
 >(
   supabaseUrl: string,
   supabaseKey: string,
