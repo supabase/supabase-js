@@ -1,12 +1,10 @@
 import { beforeEach, afterEach, expect, describe, test, vi } from 'vitest'
 import { type TestSetup, setupRealtimeTest } from './helpers/setup'
-import { CHANNEL_STATES, VSN_1_0_0 } from '../src/lib/constants'
+import { CHANNEL_STATES } from '../src/lib/constants'
 let testSetup: TestSetup
 
 beforeEach(() => {
-  testSetup = setupRealtimeTest({
-    vsn: VSN_1_0_0,
-  })
+  testSetup = setupRealtimeTest()
 })
 
 afterEach(() => {

@@ -1,8 +1,6 @@
 import { vi, beforeEach, afterEach, describe, test, expect } from 'vitest'
 import { setupRealtimeTest, type TestSetup } from './helpers/setup'
 import assert from 'assert'
-import { LongPoll } from 'phoenix'
-import { WebSocketLike } from '../src/lib/websocket-factory'
 
 let testSetup: TestSetup
 
@@ -21,7 +19,7 @@ describe('push', () => {
     payload: 'payload',
     ref: 'ref',
   }
-  const json = '[null,"ref","topic","event","payload"]'
+  const json = JSON.stringify(data)
 
   test('sends data to connection when connected', async () => {
     testSetup.connect()
@@ -46,7 +44,9 @@ describe('push', () => {
 
 describe('custom encoder and decoder', () => {
   test('encodes to array JSON by default', () => {
-    testSetup = setupRealtimeTest()
+    testSetup = setupRealtimeTest({
+      encode: undefined,
+    })
     let payload = {
       ref: '1',
       join_ref: '2',
@@ -63,7 +63,9 @@ describe('custom encoder and decoder', () => {
   })
 
   test('decodes JSON by default', () => {
-    testSetup = setupRealtimeTest()
+    testSetup = setupRealtimeTest({
+      decode: undefined,
+    })
     let payload = JSON.stringify(['2', '1', 'test-topic', 'test-event', { key: 'value' }])
 
     testSetup.client.decode(payload, (decoded: any) => {

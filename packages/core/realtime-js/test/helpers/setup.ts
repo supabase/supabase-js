@@ -1,6 +1,6 @@
 import { Mock, vi } from 'vitest'
 import crypto from 'crypto'
-import { Server, WebSocket as MockWebSocket, Client } from 'mock-socket'
+import { Server, Client } from 'mock-socket'
 import RealtimeClient, { RealtimeClientOptions } from '../../src/RealtimeClient'
 
 // Constants
@@ -117,6 +117,8 @@ export function setupRealtimeTest(options: BuilderOptions = {}): TestSetup {
   mockServer.on('connection', onConnection)
 
   const client = new RealtimeClient(realtimeUrl, {
+    decode: (msg, callback) => callback(JSON.parse(msg)),
+    encode: (msg, callback) => callback(JSON.stringify(msg)),
     ...options,
     params: { ...options.params, apikey: options.apikey || DEFAULT_API_KEY },
   })

@@ -2,7 +2,6 @@ import assert from 'assert'
 import { describe, expect, test, vi } from 'vitest'
 import { DEFAULT_PHX_JOIN_PAYLOAD, setupRealtimeTest } from './helpers/setup'
 import { utils } from './helpers/auth'
-import { VSN_1_0_0 } from '../src/lib/constants'
 
 describe('Custom JWT token preservation', () => {
   test('preserves access token when resubscribing after removeChannel', async () => {
@@ -15,9 +14,7 @@ describe('Custom JWT token preservation', () => {
     const topic = 'conversation:dc3fb8c1-ceef-4c00-9f92-e496acd03593'
     const customToken = utils.generateJWT('1h')
 
-    const testSetup = setupRealtimeTest({
-      vsn: VSN_1_0_0,
-    })
+    const testSetup = setupRealtimeTest()
 
     // Step 1: Set auth with custom token (mimics user's setup)
     await testSetup.client.setAuth(customToken)
@@ -78,7 +75,6 @@ describe('Custom JWT token preservation', () => {
     let callCount = 0
 
     const clientWithCallback = setupRealtimeTest({
-      vsn: VSN_1_0_0,
       accessToken: async () => {
         callCount++
         return customToken
@@ -141,9 +137,7 @@ describe('Custom JWT token preservation', () => {
   })
 
   test('preserves token when subscribing to different topics', async () => {
-    const testSetup = setupRealtimeTest({
-      vsn: VSN_1_0_0,
-    })
+    const testSetup = setupRealtimeTest()
 
     const customToken = utils.generateJWT('1h')
     await testSetup.client.setAuth(customToken)
@@ -199,7 +193,6 @@ describe('Custom JWT token preservation', () => {
     const logSpy = vi.fn()
 
     const testSetup = setupRealtimeTest({
-      vsn: VSN_1_0_0,
       accessToken,
       logger: logSpy,
     })

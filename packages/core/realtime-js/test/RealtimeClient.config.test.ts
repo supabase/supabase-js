@@ -2,7 +2,7 @@ import assert from 'assert'
 import { afterEach, beforeEach, describe, expect, test } from 'vitest'
 import RealtimeClient from '../src/RealtimeClient'
 import { setupRealtimeTest, TestSetup, DEFAULT_API_KEY } from './helpers/setup'
-import { VSN_1_0_0, VSN_2_0_0 } from '../src/lib/constants'
+import { VSN_1_0_0, VSN_2_0_0, DEFAULT_VSN } from '../src/lib/constants'
 import Serializer from '../src/lib/serializer'
 
 let testSetup: TestSetup
@@ -19,7 +19,7 @@ describe('endpointURL', () => {
   test('returns endpoint for given full url', () => {
     assert.equal(
       testSetup.client.endpointURL(),
-      `${testSetup.wssUrl}?apikey=${DEFAULT_API_KEY}&vsn=2.0.0`
+      `${testSetup.wssUrl}?apikey=${DEFAULT_API_KEY}&vsn=${DEFAULT_VSN}`
     )
   })
 
@@ -29,7 +29,7 @@ describe('endpointURL', () => {
     })
     assert.equal(
       client.endpointURL(),
-      `${testSetup.wssUrl}?foo=bar&apikey=${DEFAULT_API_KEY}&vsn=2.0.0`
+      `${testSetup.wssUrl}?foo=bar&apikey=${DEFAULT_API_KEY}&vsn=${DEFAULT_VSN}`
     )
   })
 
@@ -37,7 +37,10 @@ describe('endpointURL', () => {
     const client = new RealtimeClient(testSetup.realtimeUrl, {
       params: { apikey: DEFAULT_API_KEY },
     })
-    assert.equal(client.endpointURL(), `${testSetup.wssUrl}?apikey=${DEFAULT_API_KEY}&vsn=2.0.0`)
+    assert.equal(
+      client.endpointURL(),
+      `${testSetup.wssUrl}?apikey=${DEFAULT_API_KEY}&vsn=${DEFAULT_VSN}`
+    )
   })
 
   test('returns endpoint with valid vsn', () => {
