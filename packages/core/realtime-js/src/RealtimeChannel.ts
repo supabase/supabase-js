@@ -423,6 +423,11 @@ export default class RealtimeChannel {
     callback: (payload: RealtimePresenceLeavePayload<T>) => void
   ): RealtimeChannel
   on<T extends { [key: string]: any }>(
+    type: `${REALTIME_LISTEN_TYPES.PRESENCE}`,
+    filter: { event: '*' },
+    callback: (payload?: RealtimePresenceJoinPayload<T> | RealtimePresenceLeavePayload<T>) => void
+  ): RealtimeChannel
+  on<T extends { [key: string]: any }>(
     type: `${REALTIME_LISTEN_TYPES.POSTGRES_CHANGES}`,
     filter: RealtimePostgresChangesFilter<`${REALTIME_POSTGRES_CHANGES_LISTEN_EVENT.ALL}`>,
     callback: (payload: RealtimePostgresChangesPayload<T>) => void
