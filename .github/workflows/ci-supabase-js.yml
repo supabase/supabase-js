@@ -191,25 +191,20 @@ jobs:
           npm view @supabase/supabase-js version --registry http://localhost:4873
           npm view @supabase/supabase-js --registry http://localhost:4873 | head -20
 
-      - name: Run Deno Tests
+      - name: Run All Deno Tests
         env:
           DENO_NPM_REGISTRY: http://localhost:4873
         run: |
           cd packages/core/supabase-js/test/deno
           echo "registry=http://localhost:4873/" > .npmrc
-          npm install
-          npm test || npm test
+          cd ../..
+          npx nx test:deno:all supabase-js
+          cd test/deno
           rm -f .npmrc
           cd ../../..
 
       - name: Run integration and browser tests
         run: npx nx test:integration:browser supabase-js
-
-      - name: Run Edge Functions Tests
-        run: |
-          cd packages/core/supabase-js/test/deno
-          npm run test:edge-functions
-          cd ../../..
 
       - name: Stop Supabase
         if: always()
@@ -454,7 +449,7 @@ jobs:
           fetch-depth: 0
 
       - name: Setup Bun
-        uses: oven-sh/setup-bun@3d267786b128fe76c2f16a390aa2448b815359f3  # v2.1.2
+        uses: oven-sh/setup-bun@3d267786b128fe76c2f16a390aa2448b815359f3 # v2.1.2
         with:
           bun-version: latest
 
