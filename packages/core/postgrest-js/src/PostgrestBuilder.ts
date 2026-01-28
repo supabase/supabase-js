@@ -119,10 +119,27 @@ export default abstract class PostgrestBuilder<
     // NOTE: Invoke w/o `this` to avoid illegal invocation error.
     // https://github.com/supabase/postgrest-js/pull/247
     const _fetch = this.fetch
+
+    const headers: Record<string, string> = {}
+    this.headers.forEach((value, key) => {
+      headers[key] = value
+    })
+
+    let body
+    if (
+      (this.body === undefined || this.body === null) &&
+      this.method !== 'GET' &&
+      this.method !== 'HEAD'
+    ) {
+      body = '{}'
+    } else {
+      body = JSON.stringify(this.body)
+    }
+
     let res = _fetch(this.url.toString(), {
       method: this.method,
-      headers: this.headers,
-      body: JSON.stringify(this.body),
+      headers,
+      body,
       signal: this.signal,
     }).then(async (res) => {
       let error = null
