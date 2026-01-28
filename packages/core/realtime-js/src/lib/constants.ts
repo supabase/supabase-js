@@ -28,7 +28,7 @@ export const SOCKET_STATES = {
   closed: 3,
 } as const
 
-export const CHANNEL_STATES: Record<string, ChannelState> = {
+export const CHANNEL_STATES = {
   closed: 'closed',
   errored: 'errored',
   joined: 'joined',

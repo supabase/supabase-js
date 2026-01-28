@@ -16,7 +16,7 @@ import { httpEndpointURL } from './lib/transformers'
 import RealtimeChannel from './RealtimeChannel'
 import type { RealtimeChannelOptions } from './RealtimeChannel'
 import SocketAdapter from './phoenix/socketAdapter'
-import type { Message, SocketOptions, HeartbeatCallback } from './phoenix/types'
+import type { Message, SocketOptions, HeartbeatCallback, Encode, Decode } from './phoenix/types'
 
 type Fetch = typeof fetch
 
@@ -60,9 +60,9 @@ export type RealtimeClientOptions = {
   heartbeatIntervalMs?: number
   heartbeatCallback?: (status: HeartbeatStatus, latency?: number) => void
   vsn?: string
-  logger?: Function
-  encode?: Function
-  decode?: Function
+  logger?: (kind: string, msg: string, data?: any) => void
+  encode?: Encode<void>
+  decode?: Decode<void>
   reconnectAfterMs?: Function
   headers?: { [key: string]: string }
   params?: { [key: string]: any }
@@ -692,14 +692,14 @@ export default class RealtimeClient {
       case VSN_1_0_0:
         encode =
           encode ??
-          ((payload: JSON, callback: Function) => {
+          ((payload, callback) => {
             return callback(JSON.stringify(payload))
           })
 
         decode =
           decode ??
-          ((payload: string, callback: Function) => {
-            return callback(JSON.parse(payload))
+          ((payload, callback) => {
+            return callback(JSON.parse(payload as string))
           })
         break
       case VSN_2_0_0:
