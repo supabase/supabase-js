@@ -639,7 +639,19 @@ export class WebAuthnApi {
       if (challengeResponse.webauthn.type === 'create') {
         const { user } = challengeResponse.webauthn.credential_options.publicKey
         if (!user.name) {
-          user.name = `${user.id}:${friendlyName}`
+          // Preserve original format: use friendlyName if provided, otherwise fetch fallback
+          // This maintains backward compatibility with the ${user.id}:${name} format
+          const nameToUse = friendlyName
+          if (!nameToUse) {
+            // Only fetch user data if friendlyName is not provided (bug fix for null friendlyName)
+            const currentUser = await this.client.getUser()
+            const userData = currentUser.data.user
+            const fallbackName =
+              userData?.user_metadata?.name || userData?.email || userData?.id || 'User'
+            user.name = `${user.id}:${fallbackName}`
+          } else {
+            user.name = `${user.id}:${nameToUse}`
+          }
         }
         if (!user.displayName) {
           user.displayName = user.name
