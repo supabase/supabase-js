@@ -13,14 +13,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6.0.1
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
         with:
           filter: tree:0
           fetch-depth: 0
 
       - uses: pnpm/action-setup@41ff72655975bd51cab0327fa583b6e92b6d3061
 
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+      - uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238 # v6.2.0
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'pnpm'
@@ -34,7 +34,7 @@ jobs:
         run: npx nx run-many --target=build --all
 
       - name: Upload built packages
-        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f  # v6.0.0
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
         with:
           name: packages-dist
           path: |
@@ -46,7 +46,7 @@ jobs:
             packages/core/supabase-js/dist
 
       - name: Upload UMD build
-        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f  # v6.0.0
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
         with:
           name: supabase-umd
           path: packages/core/supabase-js/dist/umd/supabase.js
@@ -62,7 +62,7 @@ jobs:
       fail-fast: false
     steps:
       - name: Checkout code
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6.0.1
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
         with:
           filter: tree:0
           fetch-depth: 0
@@ -70,7 +70,7 @@ jobs:
       - uses: pnpm/action-setup@41ff72655975bd51cab0327fa583b6e92b6d3061
 
       - name: Setup Node.js
-        uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238  # v6.2.0
+        uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238 # v6.2.0
         with:
           node-version: ${{ matrix.node }}
           cache: 'pnpm'
@@ -97,7 +97,7 @@ jobs:
     needs: build-package
     steps:
       - name: Checkout code
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6.0.1
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
         with:
           filter: tree:0
           fetch-depth: 0
@@ -105,7 +105,7 @@ jobs:
       - uses: pnpm/action-setup@41ff72655975bd51cab0327fa583b6e92b6d3061
 
       - name: Setup Node.js
-        uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238  # v6.2.0
+        uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238 # v6.2.0
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'pnpm'
@@ -114,7 +114,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Download build artifacts
-        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131  # v7.0.0
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
         with:
           name: packages-dist
           path: ./packages/core
@@ -134,7 +134,7 @@ jobs:
     needs: build-package
     steps:
       - name: Checkout code
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6.0.1
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
         with:
           filter: tree:0
           fetch-depth: 0
@@ -152,13 +152,13 @@ jobs:
       - uses: pnpm/action-setup@41ff72655975bd51cab0327fa583b6e92b6d3061
 
       - name: Setup Node.js
-        uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238  # v6.2.0
+        uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238 # v6.2.0
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'pnpm'
 
       - name: Download built packages
-        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131  # v7.0.0
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
         with:
           name: packages-dist
           path: packages/core
@@ -230,7 +230,7 @@ jobs:
     needs: build-package
     steps:
       - name: Checkout code
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6.0.1
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
         with:
           filter: tree:0
           fetch-depth: 0
@@ -238,7 +238,7 @@ jobs:
       - uses: pnpm/action-setup@41ff72655975bd51cab0327fa583b6e92b6d3061
 
       - name: Setup Node.js
-        uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238  # v6.2.0
+        uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238 # v6.2.0
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'pnpm'
@@ -291,7 +291,7 @@ jobs:
     needs: build-package
     steps:
       - name: Checkout code
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6.0.1
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
         with:
           filter: tree:0
           fetch-depth: 0
@@ -299,7 +299,7 @@ jobs:
       - uses: pnpm/action-setup@41ff72655975bd51cab0327fa583b6e92b6d3061
 
       - name: Setup Node.js
-        uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238  # v6.2.0
+        uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238 # v6.2.0
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'pnpm'
@@ -310,7 +310,7 @@ jobs:
           version: latest
 
       - name: Download built packages
-        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131  # v7.0.0
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
         with:
           name: packages-dist
           path: packages/core
@@ -377,7 +377,7 @@ jobs:
     needs: build-package
     steps:
       - name: Checkout code
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6.0.1
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
         with:
           filter: tree:0
           fetch-depth: 0
@@ -385,7 +385,7 @@ jobs:
       - uses: pnpm/action-setup@41ff72655975bd51cab0327fa583b6e92b6d3061
 
       - name: Setup Node.js
-        uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238  # v6.2.0
+        uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238 # v6.2.0
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'pnpm'
@@ -396,7 +396,7 @@ jobs:
           version: latest
 
       - name: Download built packages
-        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131  # v7.0.0
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
         with:
           name: packages-dist
           path: packages/core
@@ -462,7 +462,7 @@ jobs:
     needs: build-package
     steps:
       - name: Checkout code
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6.0.1
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
         with:
           filter: tree:0
           fetch-depth: 0
@@ -475,7 +475,7 @@ jobs:
       - uses: pnpm/action-setup@41ff72655975bd51cab0327fa583b6e92b6d3061
 
       - name: Setup Node.js
-        uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238  # v6.2.0
+        uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238 # v6.2.0
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'pnpm'
@@ -486,7 +486,7 @@ jobs:
           version: latest
 
       - name: Download built packages
-        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131  # v7.0.0
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
         with:
           name: packages-dist
           path: packages/core
@@ -550,18 +550,18 @@ jobs:
     needs: build-package
     steps:
       - name: Checkout code
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6.0.1
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
         with:
           filter: tree:0
           fetch-depth: 0
 
       - name: Setup Node.js
-        uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238  # v6.2.0
+        uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238 # v6.2.0
         with:
           node-version: ${{ env.NODE_VERSION }}
 
       - name: Download artifact
-        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131  # v7.0.0
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
         with:
           name: supabase-umd
           path: ./packages/core/supabase-js/dist/umd/

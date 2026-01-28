@@ -13,14 +13,14 @@ jobs:
     name: Run tests for Node.js 20
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6.0.1
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
         with:
           filter: tree:0
           fetch-depth: 0
       # Setup pnpm
       - uses: pnpm/action-setup@41ff72655975bd51cab0327fa583b6e92b6d3061 # v4.2.0
       # Cache node_modules
-      - uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238  # v6.2.0
+      - uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238 # v6.2.0
         with:
           node-version: 20
           cache: 'pnpm'
@@ -104,18 +104,18 @@ jobs:
     name: Test auth-js (Docker - Full Coverage)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6.0.1
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
         with:
           filter: tree:0
           fetch-depth: 0
       - uses: pnpm/action-setup@41ff72655975bd51cab0327fa583b6e92b6d3061
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238 # v6.2.0
         with:
           node-version: 20
           cache: 'pnpm'
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
-      - uses: nrwl/nx-set-shas@v4
+      - uses: nrwl/nx-set-shas@3e9ad7370203c1e93d109be57f3b72eb0eb511b1 # v4.4.0
 
       - name: Generate RSA signing keys for auth-js Docker tests
         run: node packages/core/auth-js/test/generate-signing-keys.js
@@ -133,12 +133,12 @@ jobs:
     name: Test postgrest-js
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6.0.1
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
         with:
           filter: tree:0
           fetch-depth: 0
       - uses: pnpm/action-setup@41ff72655975bd51cab0327fa583b6e92b6d3061
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+      - uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238 # v6.2.0
         with:
           node-version: 20
           cache: 'pnpm'
@@ -174,12 +174,12 @@ jobs:
     name: Check Postgrest Generated Types
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6.0.1
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
         with:
           filter: tree:0
           fetch-depth: 0
       - uses: pnpm/action-setup@41ff72655975bd51cab0327fa583b6e92b6d3061
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+      - uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238 # v6.2.0
         with:
           node-version: 20
           cache: 'pnpm'
@@ -216,12 +216,12 @@ jobs:
     name: Test postgrest-js v12 compat
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6.0.1
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
         with:
           filter: tree:0
           fetch-depth: 0
       - uses: pnpm/action-setup@41ff72655975bd51cab0327fa583b6e92b6d3061
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+      - uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238 # v6.2.0
         with:
           node-version: 20
           cache: 'pnpm'
