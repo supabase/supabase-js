@@ -1,3 +1,13 @@
+## 2.93.3 (2026-01-29)
+
+### 🩹 Fixes
+
+- **auth:** add webauthn tests and fix fallback naming ([#1763](https://github.com/supabase/supabase-js/pull/1763))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+
 ## 2.93.2 (2026-01-27)
 
 This was a version bump only for @supabase/auth-js to align it with other projects, there were no code changes.

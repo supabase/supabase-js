@@ -1,3 +1,13 @@
+## 2.93.3 (2026-01-29)
+
+### 🩹 Fixes
+
+- **storage:** handle empty 200 responses in vector operations ([#2073](https://github.com/supabase/supabase-js/pull/2073))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+
 ## 2.93.2 (2026-01-27)
 
 This was a version bump only for @supabase/storage-js to align it with other projects, there were no code changes.
