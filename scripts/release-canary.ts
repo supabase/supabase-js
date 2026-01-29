@@ -40,10 +40,14 @@ import { execSync } from 'child_process'
   // so that we can use OIDC for trusted publishing
   const gh_token_bak = process.env.GITHUB_TOKEN
   process.env.GITHUB_TOKEN = process.env.RELEASE_GITHUB_TOKEN
-  // backup original auth header
-  const originalAuth = execSync('git config --local http.https://github.com/.extraheader')
-    .toString()
-    .trim()
+  // backup original auth header if exists
+  let originalAuth = ''
+  try {
+    originalAuth = execSync('git config --local http.https://github.com/.extraheader')
+      .toString()
+      .trim()
+  } catch {}
+
   // switch the token used
   const authHeader = `AUTHORIZATION: basic ${Buffer.from(`x-access-token:${process.env.RELEASE_GITHUB_TOKEN}`).toString('base64')}`
   execSync(`git config --local http.https://github.com/.extraheader "${authHeader}"`)
@@ -56,8 +60,12 @@ import { execSync } from 'child_process'
   })
 
   // npm publish with OIDC
-  // not strictly necessary to restore the header but do it incase  we require it later
-  execSync(`git config --local http.https://github.com/.extraheader "${originalAuth}"`)
+  // not strictly necessary to restore the header but do it incase we require it later
+  if (originalAuth) {
+    execSync(`git config --local http.https://github.com/.extraheader "${originalAuth}"`)
+  } else {
+    execSync('git config --local --unset http.https://github.com/.extraheader || true')
+  }
   // restore the GH token
   process.env.GITHUB_TOKEN = gh_token_bak
 
