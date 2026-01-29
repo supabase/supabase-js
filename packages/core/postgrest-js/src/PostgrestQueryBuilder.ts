@@ -133,6 +133,15 @@ export default class PostgrestQueryBuilder<
     const { url, headers } = this.cloneRequestState()
     url.searchParams.set('select', cleanedColumns)
 
+    // Warn about very long field lists that may exceed HTTP header limits
+    if (cleanedColumns.length > 8000) {
+      console.warn(
+        `postgrest-js: select parameter is ${cleanedColumns.length} characters. ` +
+          `Very long field lists may cause issues due to HTTP header limits. ` +
+          `Consider using views or selecting fewer fields.`
+      )
+    }
+
     if (count) {
       headers.append('Prefer', `count=${count}`)
     }

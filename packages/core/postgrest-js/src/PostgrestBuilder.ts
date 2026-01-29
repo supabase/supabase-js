@@ -227,6 +227,8 @@ export default abstract class PostgrestBuilder<
         // Note: We don't populate code/hint for client-side network errors since those
         // fields are meant for upstream service errors (PostgREST/PostgreSQL)
         let errorDetails = ''
+        let hint = ''
+        let code = ''
 
         // Add cause information if available (e.g., DNS errors, network failures)
         const cause = fetchError?.cause
@@ -247,12 +249,24 @@ export default abstract class PostgrestBuilder<
           errorDetails = fetchError?.stack ?? ''
         }
 
+        // Handle AbortError specially with helpful hints
+        if (fetchError?.name === 'AbortError' || fetchError?.code === 'ABORT_ERR') {
+          code = 'PGRST_TIMEOUT'
+          hint = 'Request was aborted (timeout or manual cancellation)'
+
+          // If URL is very long, add helpful hint about potential cause
+          const urlLength = this.url.toString().length
+          if (urlLength > 8000) {
+            hint += `. Note: Your request URL is ${urlLength} characters, which may exceed server limits. Consider using views or selecting fewer fields.`
+          }
+        }
+
         return {
           error: {
             message: `${fetchError?.name ?? 'FetchError'}: ${fetchError?.message}`,
             details: errorDetails,
-            hint: '',
-            code: '',
+            hint: hint,
+            code: code,
           },
           data: null,
           count: null,

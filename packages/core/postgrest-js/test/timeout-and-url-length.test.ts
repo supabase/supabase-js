@@ -1,0 +1,250 @@
+import { PostgrestClient } from '../src/index'
+
+const REST_URL = 'http://localhost:3000'
+
+describe('URL length validation and timeout protection', () => {
+  describe('URL length warning', () => {
+    let consoleWarnSpy: jest.SpyInstance
+
+    beforeEach(() => {
+      consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation()
+    })
+
+    afterEach(() => {
+      consoleWarnSpy.mockRestore()
+    })
+
+    test('should not warn for normal length selects', () => {
+      const postgrest = new PostgrestClient(REST_URL)
+      const query = postgrest.from('users').select('id,name,email')
+
+      expect(consoleWarnSpy).not.toHaveBeenCalled()
+    })
+
+    test('should warn for very long select strings (> 8KB)', () => {
+      const postgrest = new PostgrestClient(REST_URL)
+      // Create a select string > 8000 characters
+      const longFieldList = Array.from({ length: 1000 }, (_, i) => `field_${i}`).join(',')
+
+      const query = postgrest.from('users').select(longFieldList)
+
+      expect(consoleWarnSpy).toHaveBeenCalledWith(
+        expect.stringContaining('postgrest-js: select parameter is')
+      )
+      expect(consoleWarnSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Very long field lists may cause issues due to HTTP header limits')
+      )
+      expect(consoleWarnSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Consider using views or selecting fewer fields')
+      )
+    })
+
+    test('warning should include exact character count', () => {
+      const postgrest = new PostgrestClient(REST_URL)
+      const longFieldList = Array.from({ length: 1000 }, (_, i) => `field_${i}`).join(',')
+
+      postgrest.from('users').select(longFieldList)
+
+      const warningCall = consoleWarnSpy.mock.calls[0][0]
+      expect(warningCall).toMatch(/select parameter is \d+ characters/)
+    })
+  })
+
+  describe('timeout option', () => {
+    test('should create client without timeout by default', () => {
+      const postgrest = new PostgrestClient(REST_URL)
+      expect(postgrest).toBeDefined()
+      expect(postgrest.fetch).toBeDefined()
+    })
+
+    test('should create client with timeout option', () => {
+      const postgrest = new PostgrestClient(REST_URL, { timeout: 5000 })
+      expect(postgrest).toBeDefined()
+      expect(postgrest.fetch).toBeDefined()
+    })
+
+    test('should abort request after timeout', async () => {
+      // Mock fetch that respects AbortSignal and takes longer than timeout
+      const slowFetch: typeof fetch = (_input, init) =>
+        new Promise((resolve, reject) => {
+          const timeoutId = setTimeout(() => {
+            resolve(new Response(JSON.stringify([]), { status: 200 }))
+          }, 2000)
+
+          // Listen to abort signal
+          if (init?.signal) {
+            init.signal.addEventListener('abort', () => {
+              clearTimeout(timeoutId)
+              const abortError = new Error('The operation was aborted')
+              abortError.name = 'AbortError'
+              reject(abortError)
+            })
+          }
+        })
+
+      const postgrest = new PostgrestClient(REST_URL, {
+        timeout: 100, // 100ms timeout
+        fetch: slowFetch,
+      })
+
+      const { error } = await postgrest.from('users').select()
+
+      expect(error).toBeDefined()
+      expect(error?.message).toContain('AbortError')
+    })
+
+    test('should complete fast requests within timeout', async () => {
+      const fastFetch: typeof fetch = () =>
+        Promise.resolve(
+          new Response(JSON.stringify([{ id: 1, name: 'Test' }]), {
+            status: 200,
+            headers: { 'Content-Type': 'application/json' },
+          })
+        )
+
+      const postgrest = new PostgrestClient(REST_URL, {
+        timeout: 5000,
+        fetch: fastFetch,
+      })
+
+      const { data, error } = await postgrest.from('users').select()
+
+      expect(error).toBeNull()
+      expect(data).toEqual([{ id: 1, name: 'Test' }])
+    })
+
+    test('should ignore zero or negative timeout values', () => {
+      const postgrest1 = new PostgrestClient(REST_URL, { timeout: 0 })
+      const postgrest2 = new PostgrestClient(REST_URL, { timeout: -100 })
+
+      expect(postgrest1).toBeDefined()
+      expect(postgrest2).toBeDefined()
+    })
+
+    test('should respect existing AbortSignal', async () => {
+      const controller = new AbortController()
+      const fastFetch: typeof fetch = () =>
+        Promise.resolve(
+          new Response(JSON.stringify([]), {
+            status: 200,
+          })
+        )
+
+      const postgrest = new PostgrestClient(REST_URL, {
+        timeout: 5000,
+        fetch: fastFetch,
+      })
+
+      // Abort immediately
+      controller.abort()
+
+      const { error } = await postgrest.from('users').select()
+
+      // Should handle abort gracefully
+      expect(error).toBeDefined()
+    })
+  })
+
+  describe('enhanced error messages for AbortError', () => {
+    test('should include helpful hint for AbortError with short URL', async () => {
+      const abortingFetch: typeof fetch = () => {
+        const error = new Error('The operation was aborted')
+        error.name = 'AbortError'
+        return Promise.reject(error)
+      }
+
+      const postgrest = new PostgrestClient(REST_URL, {
+        fetch: abortingFetch,
+      })
+
+      const { error } = await postgrest.from('users').select('id,name')
+
+      expect(error).toBeDefined()
+      expect(error?.message).toContain('AbortError')
+      expect(error?.hint).toContain('Request was aborted')
+      expect(error?.code).toBe('PGRST_TIMEOUT')
+    })
+
+    test('should include URL length hint for AbortError with very long URL', async () => {
+      const abortingFetch: typeof fetch = () => {
+        const error = new Error('The operation was aborted')
+        error.name = 'AbortError'
+        return Promise.reject(error)
+      }
+
+      const postgrest = new PostgrestClient(REST_URL, {
+        fetch: abortingFetch,
+      })
+
+      // Create a very long select that will result in a long URL
+      const longFieldList = Array.from({ length: 1000 }, (_, i) => `field_${i}`).join(',')
+      const { error } = await postgrest.from('users').select(longFieldList)
+
+      expect(error).toBeDefined()
+      expect(error?.message).toContain('AbortError')
+      expect(error?.hint).toContain('Request was aborted')
+      expect(error?.hint).toContain('Your request URL is')
+      expect(error?.hint).toContain('characters, which may exceed server limits')
+      expect(error?.hint).toContain('Consider using views or selecting fewer fields')
+      expect(error?.code).toBe('PGRST_TIMEOUT')
+    })
+
+    test('should not add URL length hint for non-AbortError', async () => {
+      const errorFetch: typeof fetch = () => {
+        return Promise.reject(new Error('Network error'))
+      }
+
+      const postgrest = new PostgrestClient(REST_URL, {
+        fetch: errorFetch,
+      })
+
+      const longFieldList = Array.from({ length: 1000 }, (_, i) => `field_${i}`).join(',')
+      const { error } = await postgrest.from('users').select(longFieldList)
+
+      expect(error).toBeDefined()
+      expect(error?.hint).not.toContain('Your request URL is')
+    })
+  })
+
+  describe('integration: timeout + long URL', () => {
+    test('should timeout on long URL and provide comprehensive error', async () => {
+      const slowFetch: typeof fetch = (_input, init) =>
+        new Promise((resolve, reject) => {
+          const timeoutId = setTimeout(() => {
+            resolve(new Response(JSON.stringify([]), { status: 200 }))
+          }, 2000)
+
+          // Listen to abort signal
+          if (init?.signal) {
+            init.signal.addEventListener('abort', () => {
+              clearTimeout(timeoutId)
+              const abortError = new Error('The operation was aborted')
+              abortError.name = 'AbortError'
+              reject(abortError)
+            })
+          }
+        })
+
+      const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation()
+
+      const postgrest = new PostgrestClient(REST_URL, {
+        timeout: 100,
+        fetch: slowFetch,
+      })
+
+      const longFieldList = Array.from({ length: 1000 }, (_, i) => `field_${i}`).join(',')
+      const { error } = await postgrest.from('users').select(longFieldList)
+
+      // Should warn about long URL
+      expect(consoleWarnSpy).toHaveBeenCalled()
+
+      // Should timeout and provide helpful error
+      expect(error).toBeDefined()
+      expect(error?.message).toContain('AbortError')
+      expect(error?.hint).toContain('Your request URL is')
+      expect(error?.code).toBe('PGRST_TIMEOUT')
+
+      consoleWarnSpy.mockRestore()
+    })
+  })
+})

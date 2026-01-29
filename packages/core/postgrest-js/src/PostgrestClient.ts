@@ -48,6 +48,7 @@ export default class PostgrestClient<
    * @param options.headers - Custom headers
    * @param options.schema - Postgres schema to switch to
    * @param options.fetch - Custom fetch
+   * @param options.timeout - Optional timeout in milliseconds for all requests. When set, requests will automatically abort after this duration to prevent indefinite hangs.
    * @example
    * ```ts
    * import PostgrestClient from '@supabase/postgrest-js'
@@ -55,6 +56,7 @@ export default class PostgrestClient<
    * const postgrest = new PostgrestClient('https://xyzcompany.supabase.co/rest/v1', {
    *   headers: { apikey: 'public-anon-key' },
    *   schema: 'public',
+   *   timeout: 30000, // 30 second timeout
    * })
    * ```
    */
@@ -64,16 +66,50 @@ export default class PostgrestClient<
       headers = {},
       schema,
       fetch,
+      timeout,
     }: {
       headers?: HeadersInit
       schema?: SchemaName
       fetch?: Fetch
+      timeout?: number
     } = {}
   ) {
     this.url = url
     this.headers = new Headers(headers)
     this.schemaName = schema
-    this.fetch = fetch
+
+    const originalFetch = fetch ?? globalThis.fetch
+
+    // Wrap fetch with timeout if specified
+    if (timeout !== undefined && timeout > 0) {
+      this.fetch = (input, init) => {
+        const controller = new AbortController()
+        const timeoutId = setTimeout(() => controller.abort(), timeout)
+
+        // Merge abort signals if one already exists
+        const existingSignal = init?.signal
+        if (existingSignal) {
+          // If the existing signal is already aborted, use it directly
+          if (existingSignal.aborted) {
+            clearTimeout(timeoutId)
+            return originalFetch(input, init)
+          }
+
+          // Listen to existing signal and abort our controller too
+          existingSignal.addEventListener('abort', () => {
+            clearTimeout(timeoutId)
+            controller.abort()
+          })
+        }
+
+        return originalFetch(input, {
+          ...init,
+          signal: controller.signal,
+        }).finally(() => clearTimeout(timeoutId))
+      }
+    } else {
+      this.fetch = originalFetch
+    }
   }
   from<
     TableName extends string & keyof Schema['Tables'],
