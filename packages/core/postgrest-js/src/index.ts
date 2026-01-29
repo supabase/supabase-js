@@ -29,6 +29,12 @@ export type {
   PostgrestMaybeSingleResponse,
 } from './types/types'
 export type { ClientServerOptions as PostgrestClientOptions } from './types/common/common'
+export {
+  DEFAULT_MAX_RETRIES,
+  getRetryDelay,
+  RETRYABLE_STATUS_CODES,
+  RETRYABLE_METHODS,
+} from './types/common/common'
 // https://github.com/supabase/postgrest-js/issues/551
 // To be replaced with a helper type that only uses public types
 export type { GetResult as UnstableGetResult } from './select-query-parser/result'
