@@ -249,15 +249,30 @@ export default abstract class PostgrestBuilder<
           errorDetails = fetchError?.stack ?? ''
         }
 
+        // Get URL length for potential hints
+        const urlLength = this.url.toString().length
+
         // Handle AbortError specially with helpful hints
         if (fetchError?.name === 'AbortError' || fetchError?.code === 'ABORT_ERR') {
           code = 'PGRST_TIMEOUT'
           hint = 'Request was aborted (timeout or manual cancellation)'
 
-          // If URL is very long, add helpful hint about potential cause
-          const urlLength = this.url.toString().length
           if (urlLength > 8000) {
             hint += `. Note: Your request URL is ${urlLength} characters, which may exceed server limits. Consider using views or selecting fewer fields.`
+          }
+        }
+        // Handle HeadersOverflowError from undici (Node.js fetch implementation)
+        else if (
+          cause?.name === 'HeadersOverflowError' ||
+          cause?.code === 'UND_ERR_HEADERS_OVERFLOW' ||
+          fetchError?.message?.includes('HeadersOverflowError') ||
+          fetchError?.message?.includes('Headers Overflow')
+        ) {
+          code = 'PGRST_HEADERS_OVERFLOW'
+          hint = 'HTTP headers exceeded server limits (typically 16KB)'
+
+          if (urlLength > 8000) {
+            hint += `. Your request URL is ${urlLength} characters. Consider using views, selecting fewer fields, or using POST for complex queries.`
           }
         }
 

@@ -31,6 +31,18 @@ export type SupabaseClientOptions<SchemaName> = {
    */
   db?: {
     schema?: SchemaName
+    /**
+     * Optional timeout in milliseconds for PostgREST requests.
+     * When set, requests will automatically abort after this duration to prevent indefinite hangs.
+     *
+     * @example
+     * ```ts
+     * const supabase = createClient(url, key, {
+     *   db: { timeout: 30000 } // 30 second timeout
+     * })
+     * ```
+     */
+    timeout?: number
   }
 
   auth?: {

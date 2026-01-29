@@ -145,7 +145,7 @@ describe('URL length validation and timeout protection', () => {
     })
   })
 
-  describe('enhanced error messages for AbortError', () => {
+  describe('enhanced error messages', () => {
     test('should include helpful hint for AbortError with short URL', async () => {
       const abortingFetch: typeof fetch = () => {
         const error = new Error('The operation was aborted')
@@ -203,6 +203,78 @@ describe('URL length validation and timeout protection', () => {
 
       expect(error).toBeDefined()
       expect(error?.hint).not.toContain('Your request URL is')
+    })
+
+    test('should include helpful hint for HeadersOverflowError with long URL', async () => {
+      const headersOverflowFetch: typeof fetch = () => {
+        const overflowError: any = new Error('Headers Overflow Error')
+        overflowError.name = 'HeadersOverflowError'
+        overflowError.code = 'UND_ERR_HEADERS_OVERFLOW'
+
+        const typeError = new Error('fetch failed')
+        typeError.name = 'TypeError'
+        typeError.cause = overflowError
+
+        return Promise.reject(typeError)
+      }
+
+      const postgrest = new PostgrestClient(REST_URL, {
+        fetch: headersOverflowFetch,
+      })
+
+      const longFieldList = Array.from({ length: 1000 }, (_, i) => `field_${i}`).join(',')
+      const { error } = await postgrest.from('users').select(longFieldList)
+
+      expect(error).toBeDefined()
+      expect(error?.message).toContain('fetch failed')
+      expect(error?.code).toBe('PGRST_HEADERS_OVERFLOW')
+      expect(error?.hint).toContain('HTTP headers exceeded server limits')
+      expect(error?.hint).toContain('Your request URL is')
+      expect(error?.hint).toContain('Consider using views')
+      expect(error?.details).toContain('HeadersOverflowError')
+    })
+
+    test('should include hint for HeadersOverflowError with short URL', async () => {
+      const headersOverflowFetch: typeof fetch = () => {
+        const overflowError: any = new Error('Headers Overflow Error')
+        overflowError.name = 'HeadersOverflowError'
+        overflowError.code = 'UND_ERR_HEADERS_OVERFLOW'
+
+        const typeError = new Error('fetch failed')
+        typeError.name = 'TypeError'
+        typeError.cause = overflowError
+
+        return Promise.reject(typeError)
+      }
+
+      const postgrest = new PostgrestClient(REST_URL, {
+        fetch: headersOverflowFetch,
+      })
+
+      const { error } = await postgrest.from('users').select('id,name')
+
+      expect(error).toBeDefined()
+      expect(error?.code).toBe('PGRST_HEADERS_OVERFLOW')
+      expect(error?.hint).toContain('HTTP headers exceeded server limits')
+      expect(error?.hint).not.toContain('Your request URL is')
+    })
+
+    test('should detect HeadersOverflowError in message string', async () => {
+      const headersOverflowFetch: typeof fetch = () => {
+        const error = new Error('Request failed: HeadersOverflowError occurred')
+        error.name = 'FetchError'
+        return Promise.reject(error)
+      }
+
+      const postgrest = new PostgrestClient(REST_URL, {
+        fetch: headersOverflowFetch,
+      })
+
+      const { error } = await postgrest.from('users').select('id')
+
+      expect(error).toBeDefined()
+      expect(error?.code).toBe('PGRST_HEADERS_OVERFLOW')
+      expect(error?.hint).toContain('HTTP headers exceeded server limits')
     })
   })
 
