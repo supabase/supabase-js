@@ -264,9 +264,7 @@ export default abstract class PostgrestBuilder<
         // Handle HeadersOverflowError from undici (Node.js fetch implementation)
         else if (
           cause?.name === 'HeadersOverflowError' ||
-          cause?.code === 'UND_ERR_HEADERS_OVERFLOW' ||
-          fetchError?.message?.includes('HeadersOverflowError') ||
-          fetchError?.message?.includes('Headers Overflow')
+          cause?.code === 'UND_ERR_HEADERS_OVERFLOW'
         ) {
           code = 'PGRST_HEADERS_OVERFLOW'
           hint = 'HTTP headers exceeded server limits (typically 16KB)'

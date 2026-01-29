@@ -66,7 +66,7 @@ describe('URL length validation and timeout protection', () => {
     test('should abort request after timeout', async () => {
       // Mock fetch that respects AbortSignal and takes longer than timeout
       const slowFetch: typeof fetch = (_input, init) =>
-        new Promise((resolve, reject) => {
+        new Promise<Response>((resolve, reject) => {
           const timeoutId = setTimeout(() => {
             resolve(new Response(JSON.stringify([]), { status: 200 }))
           }, 2000)
@@ -259,11 +259,17 @@ describe('URL length validation and timeout protection', () => {
       expect(error?.hint).not.toContain('Your request URL is')
     })
 
-    test('should detect HeadersOverflowError in message string', async () => {
+    test('should detect HeadersOverflowError by error code', async () => {
       const headersOverflowFetch: typeof fetch = () => {
-        const error = new Error('Request failed: HeadersOverflowError occurred')
-        error.name = 'FetchError'
-        return Promise.reject(error)
+        const overflowError: any = new Error('Headers Overflow Error')
+        overflowError.name = 'SomeOtherError' // Different name
+        overflowError.code = 'UND_ERR_HEADERS_OVERFLOW' // But correct code
+
+        const typeError = new Error('fetch failed')
+        typeError.name = 'TypeError'
+        typeError.cause = overflowError
+
+        return Promise.reject(typeError)
       }
 
       const postgrest = new PostgrestClient(REST_URL, {
@@ -281,7 +287,7 @@ describe('URL length validation and timeout protection', () => {
   describe('integration: timeout + long URL', () => {
     test('should timeout on long URL and provide comprehensive error', async () => {
       const slowFetch: typeof fetch = (_input, init) =>
-        new Promise((resolve, reject) => {
+        new Promise<Response>((resolve, reject) => {
           const timeoutId = setTimeout(() => {
             resolve(new Response(JSON.stringify([]), { status: 200 }))
           }, 2000)
