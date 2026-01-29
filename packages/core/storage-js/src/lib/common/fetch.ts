@@ -155,9 +155,20 @@ async function _handleRequest(
         if (!result.ok) throw result
         if (options?.noResolveJson) return result
 
-        // Handle empty responses (204, empty body) - especially for vectors
+        // AWS S3 Vectors API returns 200 OK with content-length: 0 for successful mutations
+        // (putVectors, deleteVectors) instead of 204 or JSON response. This is AWS's design choice
+        // for performance optimization of bulk operations (up to 500 vectors per request).
+        // We handle this to prevent "Unexpected end of JSON input" errors when calling result.json()
         if (namespace === 'vectors') {
           const contentType = result.headers.get('content-type')
+          const contentLength = result.headers.get('content-length')
+
+          // Return empty object for explicitly empty responses
+          if (contentLength === '0' || result.status === 204) {
+            return {}
+          }
+
+          // Return empty object if no JSON content type
           if (!contentType || !contentType.includes('application/json')) {
             return {}
           }
@@ -284,3 +295,6 @@ export function createFetchApi(namespace: ErrorNamespace = 'storage') {
 // Default exports for backward compatibility with 'storage' namespace
 const defaultApi = createFetchApi('storage')
 export const { get, post, put, head, remove } = defaultApi
+
+// Vectors API with 'vectors' namespace for proper error handling
+export const vectorsApi = createFetchApi('vectors')
