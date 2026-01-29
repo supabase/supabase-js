@@ -158,6 +158,14 @@ async function _handleRequest(
         // Handle empty responses (204, empty body) - especially for vectors
         if (namespace === 'vectors') {
           const contentType = result.headers.get('content-type')
+          const contentLength = result.headers.get('content-length')
+
+          // Return empty object for empty responses or 204 No Content
+          if (contentLength === '0' || result.status === 204) {
+            return {}
+          }
+
+          // Return empty object if no JSON content type
           if (!contentType || !contentType.includes('application/json')) {
             return {}
           }
