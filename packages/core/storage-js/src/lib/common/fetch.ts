@@ -160,23 +160,8 @@ async function _handleRequest(
           const contentType = result.headers.get('content-type')
           const contentLength = result.headers.get('content-length')
 
-          // Debug: Log actual values (remove after fixing)
-          console.log('[DEBUG] Vector response headers:', {
-            contentType,
-            contentLength,
-            contentLengthType: typeof contentLength,
-            status: result.status,
-          })
-
-          // Return empty object for empty responses or 204 No Content
-          // Check both string '0' and absence of content-length
-          if (
-            contentLength === '0' ||
-            contentLength === '' ||
-            !contentLength ||
-            result.status === 204
-          ) {
-            console.log('[DEBUG] Returning empty object for empty response')
+          // Return empty object for explicitly empty responses
+          if (contentLength === '0' || result.status === 204) {
             return {}
           }
 
