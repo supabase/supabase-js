@@ -22,6 +22,9 @@ export default class PostgrestQueryBuilder<
   fetch?: Fetch
   urlLengthLimit: number
 
+  // Retry configuration
+  retry?: boolean
+
   /**
    * Creates a query builder scoped to a Postgres table or view.
    *
@@ -44,11 +47,13 @@ export default class PostgrestQueryBuilder<
       schema,
       fetch,
       urlLengthLimit = 8000,
+      retry,
     }: {
       headers?: HeadersInit
       schema?: string
       fetch?: Fetch
       urlLengthLimit?: number
+      retry?: boolean
     }
   ) {
     this.url = url
@@ -56,6 +61,7 @@ export default class PostgrestQueryBuilder<
     this.schema = schema
     this.fetch = fetch
     this.urlLengthLimit = urlLengthLimit
+    this.retry = retry
   }
 
   /**
@@ -904,6 +910,7 @@ export default class PostgrestQueryBuilder<
       schema: this.schema,
       fetch: this.fetch,
       urlLengthLimit: this.urlLengthLimit,
+      retry: this.retry,
     })
   }
 
@@ -1092,6 +1099,7 @@ export default class PostgrestQueryBuilder<
       body: values,
       fetch: this.fetch ?? fetch,
       urlLengthLimit: this.urlLengthLimit,
+      retry: this.retry,
     })
   }
 
@@ -1389,6 +1397,7 @@ export default class PostgrestQueryBuilder<
       body: values,
       fetch: this.fetch ?? fetch,
       urlLengthLimit: this.urlLengthLimit,
+      retry: this.retry,
     })
   }
 
@@ -1562,6 +1571,7 @@ export default class PostgrestQueryBuilder<
       body: values,
       fetch: this.fetch ?? fetch,
       urlLengthLimit: this.urlLengthLimit,
+      retry: this.retry,
     })
   }
 
@@ -1710,6 +1720,7 @@ export default class PostgrestQueryBuilder<
       schema: this.schema,
       fetch: this.fetch ?? fetch,
       urlLengthLimit: this.urlLengthLimit,
+      retry: this.retry,
     })
   }
 }

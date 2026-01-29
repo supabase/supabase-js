@@ -2,6 +2,32 @@
 
 export type Fetch = typeof fetch
 
+/**
+ * Default number of retry attempts.
+ */
+export const DEFAULT_MAX_RETRIES = 3
+
+/**
+ * Default exponential backoff delay function.
+ * Delays: 1s, 2s, 4s, 8s, ... (max 30s)
+ *
+ * @param attemptIndex - Zero-based index of the retry attempt
+ * @returns Delay in milliseconds before the next retry
+ */
+export const getRetryDelay = (attemptIndex: number): number =>
+  Math.min(1000 * 2 ** attemptIndex, 30000)
+
+/**
+ * Status codes that are safe to retry.
+ * 520 = Cloudflare timeout/connection errors (transient)
+ */
+export const RETRYABLE_STATUS_CODES = [520] as const
+
+/**
+ * HTTP methods that are safe to retry (idempotent operations).
+ */
+export const RETRYABLE_METHODS = ['GET', 'HEAD', 'OPTIONS'] as const
+
 export type GenericRelationship = {
   foreignKeyName: string
   columns: string[]
