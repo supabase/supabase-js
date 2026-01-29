@@ -1,3 +1,15 @@
+## 2.93.3 (2026-01-29)
+
+### 🩹 Fixes
+
+- **auth:** add webauthn tests and fix fallback naming ([#1763](https://github.com/supabase/supabase-js/pull/1763))
+- **ci:** add persist-credentials: false to release job checkouts ([#2074](https://github.com/supabase/supabase-js/pull/2074))
+- **storage:** handle empty 200 responses in vector operations ([#2073](https://github.com/supabase/supabase-js/pull/2073))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+
 ## 2.93.2 (2026-01-27)
 
 ### 🩹 Fixes
