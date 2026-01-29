@@ -21,6 +21,9 @@ export default class PostgrestQueryBuilder<
   signal?: AbortSignal
   fetch?: Fetch
 
+  // Retry configuration
+  retry?: boolean
+
   /**
    * Creates a query builder scoped to a Postgres table or view.
    *
@@ -40,16 +43,19 @@ export default class PostgrestQueryBuilder<
       headers = {},
       schema,
       fetch,
+      retry,
     }: {
       headers?: HeadersInit
       schema?: string
       fetch?: Fetch
+      retry?: boolean
     }
   ) {
     this.url = url
     this.headers = new Headers(headers)
     this.schema = schema
     this.fetch = fetch
+    this.retry = retry
   }
 
   /**
@@ -143,6 +149,7 @@ export default class PostgrestQueryBuilder<
       headers,
       schema: this.schema,
       fetch: this.fetch,
+      retry: this.retry,
     })
   }
 
@@ -245,6 +252,7 @@ export default class PostgrestQueryBuilder<
       schema: this.schema,
       body: values,
       fetch: this.fetch ?? fetch,
+      retry: this.retry,
     })
   }
 
@@ -418,6 +426,7 @@ export default class PostgrestQueryBuilder<
       schema: this.schema,
       body: values,
       fetch: this.fetch ?? fetch,
+      retry: this.retry,
     })
   }
 
@@ -472,6 +481,7 @@ export default class PostgrestQueryBuilder<
       schema: this.schema,
       body: values,
       fetch: this.fetch ?? fetch,
+      retry: this.retry,
     })
   }
 
@@ -520,6 +530,7 @@ export default class PostgrestQueryBuilder<
       headers,
       schema: this.schema,
       fetch: this.fetch ?? fetch,
+      retry: this.retry,
     })
   }
 }

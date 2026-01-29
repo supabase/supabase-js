@@ -39,6 +39,9 @@ export default class PostgrestClient<
   schemaName?: SchemaName
   fetch?: Fetch
 
+  // Retry configuration - enabled by default
+  retry?: boolean
+
   // TODO: Add back shouldThrowOnError once we figure out the typings
   /**
    * Creates a PostgREST client.
@@ -48,6 +51,10 @@ export default class PostgrestClient<
    * @param options.headers - Custom headers
    * @param options.schema - Postgres schema to switch to
    * @param options.fetch - Custom fetch
+   * @param options.retry - Enable or disable automatic retries for transient errors.
+   *   When enabled, GET/HEAD requests that fail with 520 errors (Cloudflare timeouts)
+   *   will be automatically retried up to 3 times with exponential backoff.
+   *   Defaults to `true`.
    * @example
    * ```ts
    * import PostgrestClient from '@supabase/postgrest-js'
@@ -55,6 +62,7 @@ export default class PostgrestClient<
    * const postgrest = new PostgrestClient('https://xyzcompany.supabase.co/rest/v1', {
    *   headers: { apikey: 'public-anon-key' },
    *   schema: 'public',
+   *   retry: false, // Disable automatic retries
    * })
    * ```
    */
@@ -64,16 +72,19 @@ export default class PostgrestClient<
       headers = {},
       schema,
       fetch,
+      retry,
     }: {
       headers?: HeadersInit
       schema?: SchemaName
       fetch?: Fetch
+      retry?: boolean
     } = {}
   ) {
     this.url = url
     this.headers = new Headers(headers)
     this.schemaName = schema
     this.fetch = fetch
+    this.retry = retry
   }
   from<
     TableName extends string & keyof Schema['Tables'],
@@ -97,6 +108,7 @@ export default class PostgrestClient<
       headers: new Headers(this.headers),
       schema: this.schemaName,
       fetch: this.fetch,
+      retry: this.retry,
     })
   }
 
@@ -119,6 +131,7 @@ export default class PostgrestClient<
       headers: this.headers,
       schema,
       fetch: this.fetch,
+      retry: this.retry,
     })
   }
 
@@ -223,6 +236,7 @@ export default class PostgrestClient<
       schema: this.schemaName,
       body,
       fetch: this.fetch ?? fetch,
+      retry: this.retry,
     })
   }
 }
