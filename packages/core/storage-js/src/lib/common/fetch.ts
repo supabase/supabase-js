@@ -307,3 +307,6 @@ export function createFetchApi(namespace: ErrorNamespace = 'storage') {
 // Default exports for backward compatibility with 'storage' namespace
 const defaultApi = createFetchApi('storage')
 export const { get, post, put, head, remove } = defaultApi
+
+// Vectors API with 'vectors' namespace for proper error handling
+export const vectorsApi = createFetchApi('vectors')

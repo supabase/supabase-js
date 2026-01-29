@@ -1,6 +1,6 @@
 import { DEFAULT_HEADERS } from '../lib/constants'
 import { StorageError } from '../lib/common/errors'
-import { Fetch, post } from '../lib/common/fetch'
+import { Fetch, vectorsApi } from '../lib/common/fetch'
 import BaseApiClient from '../lib/common/BaseApiClient'
 import {
   ApiResponse,
@@ -35,7 +35,7 @@ export default class VectorDataApi extends BaseApiClient<StorageError> {
     }
 
     return this.handleOperation(async () => {
-      const data = await post(this.fetch, `${this.url}/PutVectors`, options, {
+      const data = await vectorsApi.post(this.fetch, `${this.url}/PutVectors`, options, {
         headers: this.headers,
       })
       return data || {}
@@ -45,7 +45,7 @@ export default class VectorDataApi extends BaseApiClient<StorageError> {
   /** Retrieves vectors by their keys in batch */
   async getVectors(options: GetVectorsOptions): Promise<ApiResponse<GetVectorsResponse>> {
     return this.handleOperation(async () => {
-      return await post(this.fetch, `${this.url}/GetVectors`, options, {
+      return await vectorsApi.post(this.fetch, `${this.url}/GetVectors`, options, {
         headers: this.headers,
       })
     })
@@ -66,7 +66,7 @@ export default class VectorDataApi extends BaseApiClient<StorageError> {
     }
 
     return this.handleOperation(async () => {
-      return await post(this.fetch, `${this.url}/ListVectors`, options, {
+      return await vectorsApi.post(this.fetch, `${this.url}/ListVectors`, options, {
         headers: this.headers,
       })
     })
@@ -75,7 +75,7 @@ export default class VectorDataApi extends BaseApiClient<StorageError> {
   /** Queries for similar vectors using approximate nearest neighbor search */
   async queryVectors(options: QueryVectorsOptions): Promise<ApiResponse<QueryVectorsResponse>> {
     return this.handleOperation(async () => {
-      return await post(this.fetch, `${this.url}/QueryVectors`, options, {
+      return await vectorsApi.post(this.fetch, `${this.url}/QueryVectors`, options, {
         headers: this.headers,
       })
     })
@@ -89,7 +89,7 @@ export default class VectorDataApi extends BaseApiClient<StorageError> {
     }
 
     return this.handleOperation(async () => {
-      const data = await post(this.fetch, `${this.url}/DeleteVectors`, options, {
+      const data = await vectorsApi.post(this.fetch, `${this.url}/DeleteVectors`, options, {
         headers: this.headers,
       })
       return data || {}
