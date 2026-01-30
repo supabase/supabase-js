@@ -47,6 +47,19 @@ export default abstract class BaseApiClient<TError extends StorageError = Storag
   }
 
   /**
+   * Set an HTTP header for the request.
+   * Creates a shallow copy of headers to avoid mutating shared state.
+   *
+   * @param name - Header name
+   * @param value - Header value
+   * @returns this - For method chaining
+   */
+  public setHeader(name: string, value: string): this {
+    this.headers = { ...this.headers, [name]: value }
+    return this
+  }
+
+  /**
    * Handles API operation with standardized error handling
    * Eliminates repetitive try-catch blocks across all API methods
    *
