@@ -191,9 +191,15 @@ jobs:
           npm view @supabase/supabase-js version --registry http://localhost:4873
           npm view @supabase/supabase-js --registry http://localhost:4873 | head -20
 
+      - name: Clear Deno npm cache
+        run: |
+          echo "Clearing Deno npm cache to force fresh package resolution from Verdaccio..."
+          rm -rf ~/.cache/deno/npm
+          echo "Deno npm cache cleared"
+
       - name: Run All Deno Tests
         env:
-          DENO_NPM_REGISTRY: http://localhost:4873
+          NPM_CONFIG_REGISTRY: http://localhost:4873
         run: |
           echo "registry=http://localhost:4873/" > packages/core/supabase-js/test/deno/.npmrc
           npx nx test:deno:all supabase-js
