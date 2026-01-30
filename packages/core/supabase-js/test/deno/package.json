@@ -4,6 +4,10 @@
   "scripts": {
     "test": "npm run setup-deps && node run-deno-test.js integration.test.ts",
     "test:edge-functions": "npm run setup-deps && node run-deno-test.js edge-functions-integration.test.ts",
+    "test:cors-validation": "npm run setup-deps && node run-deno-test.js cors-validation.test.ts",
+    "test:cors-http-methods": "npm run setup-deps && node run-deno-test.js cors-http-methods.test.ts",
+    "test:cors-errors": "npm run setup-deps && node run-deno-test.js cors-errors.test.ts",
+    "test:cors-all": "npm run test:cors-validation && npm run test:cors-http-methods && npm run test:cors-errors",
     "setup-deps": "node setup-deps.js"
   },
   "dependencies": {
