@@ -20,6 +20,7 @@ export default class PostgrestQueryBuilder<
   schema?: string
   signal?: AbortSignal
   fetch?: Fetch
+  urlLengthLimit: number
 
   /**
    * Creates a query builder scoped to a Postgres table or view.
@@ -40,16 +41,19 @@ export default class PostgrestQueryBuilder<
       headers = {},
       schema,
       fetch,
+      urlLengthLimit = 8000,
     }: {
       headers?: HeadersInit
       schema?: string
       fetch?: Fetch
+      urlLengthLimit?: number
     }
   ) {
     this.url = url
     this.headers = new Headers(headers)
     this.schema = schema
     this.fetch = fetch
+    this.urlLengthLimit = urlLengthLimit
   }
 
   /**
@@ -143,6 +147,7 @@ export default class PostgrestQueryBuilder<
       headers,
       schema: this.schema,
       fetch: this.fetch,
+      urlLengthLimit: this.urlLengthLimit,
     })
   }
 
@@ -245,6 +250,7 @@ export default class PostgrestQueryBuilder<
       schema: this.schema,
       body: values,
       fetch: this.fetch ?? fetch,
+      urlLengthLimit: this.urlLengthLimit,
     })
   }
 
@@ -418,6 +424,7 @@ export default class PostgrestQueryBuilder<
       schema: this.schema,
       body: values,
       fetch: this.fetch ?? fetch,
+      urlLengthLimit: this.urlLengthLimit,
     })
   }
 
@@ -472,6 +479,7 @@ export default class PostgrestQueryBuilder<
       schema: this.schema,
       body: values,
       fetch: this.fetch ?? fetch,
+      urlLengthLimit: this.urlLengthLimit,
     })
   }
 
@@ -520,6 +528,7 @@ export default class PostgrestQueryBuilder<
       headers,
       schema: this.schema,
       fetch: this.fetch ?? fetch,
+      urlLengthLimit: this.urlLengthLimit,
     })
   }
 }
