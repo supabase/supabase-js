@@ -10,7 +10,6 @@
     "rootDir": "src",
     "sourceMap": true,
     "target": "ES2017",
-    "lib": ["ES2022"],
 
     "strict": true,
 
