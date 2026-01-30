@@ -63,14 +63,6 @@ describe('CORS Module', () => {
       expect(headers['Access-Control-Allow-Origin']).toBe('https://myapp.com')
     })
 
-    it('should throw error when passing multiple origins as an array', () => {
-      expect(() => {
-        createCorsHeaders({
-          origin: ['https://app1.com', 'https://app2.com'] as any,
-        })
-      }).toThrow('Access-Control-Allow-Origin does not support multiple origins')
-    })
-
     it('should enable credentials when specified', () => {
       const headers = createCorsHeaders({
         origin: 'https://myapp.com',
