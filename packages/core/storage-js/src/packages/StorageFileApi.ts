@@ -730,7 +730,7 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
     const _path = this._getFinalPath(path)
     const downloadFn = () =>
       get(this.fetch, `${this.url}/${renderPath}/${_path}${queryString}`, {
-        headers: this.headers,
+        headers: { ...this.headers, 'Cache-Control': 'no-store' },
         noResolveJson: true,
       })
     return new BlobDownloadBuilder(downloadFn, this.shouldThrowOnError)
