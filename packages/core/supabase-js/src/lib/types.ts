@@ -43,6 +43,19 @@ export type SupabaseClientOptions<SchemaName> = {
      * ```
      */
     timeout?: number
+    /**
+     * Maximum URL length in characters before warnings/errors are triggered.
+     * Defaults to 8000 characters. Used to provide helpful hints when URLs
+     * exceed server limits.
+     *
+     * @example
+     * ```ts
+     * const supabase = createClient(url, key, {
+     *   db: { urlLengthLimit: 10000 } // Custom limit
+     * })
+     * ```
+     */
+    urlLengthLimit?: number
   }
 
   auth?: {

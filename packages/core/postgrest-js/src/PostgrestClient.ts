@@ -38,6 +38,7 @@ export default class PostgrestClient<
   headers: Headers
   schemaName?: SchemaName
   fetch?: Fetch
+  urlLengthLimit: number
 
   // TODO: Add back shouldThrowOnError once we figure out the typings
   /**
@@ -49,6 +50,7 @@ export default class PostgrestClient<
    * @param options.schema - Postgres schema to switch to
    * @param options.fetch - Custom fetch
    * @param options.timeout - Optional timeout in milliseconds for all requests. When set, requests will automatically abort after this duration to prevent indefinite hangs.
+   * @param options.urlLengthLimit - Maximum URL length in characters before warnings/errors are triggered. Defaults to 8000.
    * @example
    * ```ts
    * import PostgrestClient from '@supabase/postgrest-js'
@@ -67,16 +69,19 @@ export default class PostgrestClient<
       schema,
       fetch,
       timeout,
+      urlLengthLimit = 8000,
     }: {
       headers?: HeadersInit
       schema?: SchemaName
       fetch?: Fetch
       timeout?: number
+      urlLengthLimit?: number
     } = {}
   ) {
     this.url = url
     this.headers = new Headers(headers)
     this.schemaName = schema
+    this.urlLengthLimit = urlLengthLimit
 
     const originalFetch = fetch ?? globalThis.fetch
 
@@ -96,9 +101,18 @@ export default class PostgrestClient<
           }
 
           // Listen to existing signal and abort our controller too
-          existingSignal.addEventListener('abort', () => {
+          const abortHandler = () => {
             clearTimeout(timeoutId)
             controller.abort()
+          }
+          existingSignal.addEventListener('abort', abortHandler, { once: true })
+
+          return originalFetch(input, {
+            ...init,
+            signal: controller.signal,
+          }).finally(() => {
+            clearTimeout(timeoutId)
+            existingSignal.removeEventListener('abort', abortHandler)
           })
         }
 
@@ -133,6 +147,7 @@ export default class PostgrestClient<
       headers: new Headers(this.headers),
       schema: this.schemaName,
       fetch: this.fetch,
+      urlLengthLimit: this.urlLengthLimit,
     })
   }
 
@@ -155,6 +170,7 @@ export default class PostgrestClient<
       headers: this.headers,
       schema,
       fetch: this.fetch,
+      urlLengthLimit: this.urlLengthLimit,
     })
   }
 
@@ -259,6 +275,7 @@ export default class PostgrestClient<
       schema: this.schemaName,
       body,
       fetch: this.fetch ?? fetch,
+      urlLengthLimit: this.urlLengthLimit,
     })
   }
 }

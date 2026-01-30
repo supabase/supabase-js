@@ -3,53 +3,6 @@ import { PostgrestClient } from '../src/index'
 const REST_URL = 'http://localhost:3000'
 
 describe('URL length validation and timeout protection', () => {
-  describe('URL length warning', () => {
-    let consoleWarnSpy: jest.SpyInstance
-
-    beforeEach(() => {
-      consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation()
-    })
-
-    afterEach(() => {
-      consoleWarnSpy.mockRestore()
-    })
-
-    test('should not warn for normal length selects', () => {
-      const postgrest = new PostgrestClient(REST_URL)
-      const query = postgrest.from('users').select('id,name,email')
-
-      expect(consoleWarnSpy).not.toHaveBeenCalled()
-    })
-
-    test('should warn for very long select strings (> 8KB)', () => {
-      const postgrest = new PostgrestClient(REST_URL)
-      // Create a select string > 8000 characters
-      const longFieldList = Array.from({ length: 1000 }, (_, i) => `field_${i}`).join(',')
-
-      const query = postgrest.from('users').select(longFieldList)
-
-      expect(consoleWarnSpy).toHaveBeenCalledWith(
-        expect.stringContaining('postgrest-js: select parameter is')
-      )
-      expect(consoleWarnSpy).toHaveBeenCalledWith(
-        expect.stringContaining('Very long field lists may cause issues due to HTTP header limits')
-      )
-      expect(consoleWarnSpy).toHaveBeenCalledWith(
-        expect.stringContaining('Consider using views or selecting fewer fields')
-      )
-    })
-
-    test('warning should include exact character count', () => {
-      const postgrest = new PostgrestClient(REST_URL)
-      const longFieldList = Array.from({ length: 1000 }, (_, i) => `field_${i}`).join(',')
-
-      postgrest.from('users').select(longFieldList)
-
-      const warningCall = consoleWarnSpy.mock.calls[0][0]
-      expect(warningCall).toMatch(/select parameter is \d+ characters/)
-    })
-  })
-
   describe('timeout option', () => {
     test('should create client without timeout by default', () => {
       const postgrest = new PostgrestClient(REST_URL)
@@ -162,7 +115,7 @@ describe('URL length validation and timeout protection', () => {
       expect(error).toBeDefined()
       expect(error?.message).toContain('AbortError')
       expect(error?.hint).toContain('Request was aborted')
-      expect(error?.code).toBe('PGRST_TIMEOUT')
+      expect(error?.code).toBe('')
     })
 
     test('should include URL length hint for AbortError with very long URL', async () => {
@@ -185,8 +138,9 @@ describe('URL length validation and timeout protection', () => {
       expect(error?.hint).toContain('Request was aborted')
       expect(error?.hint).toContain('Your request URL is')
       expect(error?.hint).toContain('characters, which may exceed server limits')
-      expect(error?.hint).toContain('Consider using views or selecting fewer fields')
-      expect(error?.code).toBe('PGRST_TIMEOUT')
+      expect(error?.hint).toContain('consider using views')
+      expect(error?.hint).toContain('consider using an RPC function')
+      expect(error?.code).toBe('')
     })
 
     test('should not add URL length hint for non-AbortError', async () => {
@@ -227,10 +181,11 @@ describe('URL length validation and timeout protection', () => {
 
       expect(error).toBeDefined()
       expect(error?.message).toContain('fetch failed')
-      expect(error?.code).toBe('PGRST_HEADERS_OVERFLOW')
+      expect(error?.code).toBe('')
       expect(error?.hint).toContain('HTTP headers exceeded server limits')
       expect(error?.hint).toContain('Your request URL is')
-      expect(error?.hint).toContain('Consider using views')
+      expect(error?.hint).toContain('consider using views')
+      expect(error?.hint).toContain('consider using an RPC function')
       expect(error?.details).toContain('HeadersOverflowError')
     })
 
@@ -254,7 +209,7 @@ describe('URL length validation and timeout protection', () => {
       const { error } = await postgrest.from('users').select('id,name')
 
       expect(error).toBeDefined()
-      expect(error?.code).toBe('PGRST_HEADERS_OVERFLOW')
+      expect(error?.code).toBe('')
       expect(error?.hint).toContain('HTTP headers exceeded server limits')
       expect(error?.hint).not.toContain('Your request URL is')
     })
@@ -279,7 +234,7 @@ describe('URL length validation and timeout protection', () => {
       const { error } = await postgrest.from('users').select('id')
 
       expect(error).toBeDefined()
-      expect(error?.code).toBe('PGRST_HEADERS_OVERFLOW')
+      expect(error?.code).toBe('')
       expect(error?.hint).toContain('HTTP headers exceeded server limits')
     })
   })
@@ -303,8 +258,6 @@ describe('URL length validation and timeout protection', () => {
           }
         })
 
-      const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation()
-
       const postgrest = new PostgrestClient(REST_URL, {
         timeout: 100,
         fetch: slowFetch,
@@ -313,16 +266,11 @@ describe('URL length validation and timeout protection', () => {
       const longFieldList = Array.from({ length: 1000 }, (_, i) => `field_${i}`).join(',')
       const { error } = await postgrest.from('users').select(longFieldList)
 
-      // Should warn about long URL
-      expect(consoleWarnSpy).toHaveBeenCalled()
-
       // Should timeout and provide helpful error
       expect(error).toBeDefined()
       expect(error?.message).toContain('AbortError')
       expect(error?.hint).toContain('Your request URL is')
-      expect(error?.code).toBe('PGRST_TIMEOUT')
-
-      consoleWarnSpy.mockRestore()
+      expect(error?.code).toBe('')
     })
   })
 })

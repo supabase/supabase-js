@@ -20,6 +20,7 @@ export default class PostgrestQueryBuilder<
   schema?: string
   signal?: AbortSignal
   fetch?: Fetch
+  urlLengthLimit: number
 
   /**
    * Creates a query builder scoped to a Postgres table or view.
@@ -40,16 +41,19 @@ export default class PostgrestQueryBuilder<
       headers = {},
       schema,
       fetch,
+      urlLengthLimit = 8000,
     }: {
       headers?: HeadersInit
       schema?: string
       fetch?: Fetch
+      urlLengthLimit?: number
     }
   ) {
     this.url = url
     this.headers = new Headers(headers)
     this.schema = schema
     this.fetch = fetch
+    this.urlLengthLimit = urlLengthLimit
   }
 
   /**
@@ -133,15 +137,6 @@ export default class PostgrestQueryBuilder<
     const { url, headers } = this.cloneRequestState()
     url.searchParams.set('select', cleanedColumns)
 
-    // Warn about very long field lists that may exceed HTTP header limits
-    if (cleanedColumns.length > 8000) {
-      console.warn(
-        `postgrest-js: select parameter is ${cleanedColumns.length} characters. ` +
-          `Very long field lists may cause issues due to HTTP header limits. ` +
-          `Consider using views or selecting fewer fields.`
-      )
-    }
-
     if (count) {
       headers.append('Prefer', `count=${count}`)
     }
@@ -152,6 +147,7 @@ export default class PostgrestQueryBuilder<
       headers,
       schema: this.schema,
       fetch: this.fetch,
+      urlLengthLimit: this.urlLengthLimit,
     })
   }
 
@@ -254,6 +250,7 @@ export default class PostgrestQueryBuilder<
       schema: this.schema,
       body: values,
       fetch: this.fetch ?? fetch,
+      urlLengthLimit: this.urlLengthLimit,
     })
   }
 
@@ -427,6 +424,7 @@ export default class PostgrestQueryBuilder<
       schema: this.schema,
       body: values,
       fetch: this.fetch ?? fetch,
+      urlLengthLimit: this.urlLengthLimit,
     })
   }
 
@@ -481,6 +479,7 @@ export default class PostgrestQueryBuilder<
       schema: this.schema,
       body: values,
       fetch: this.fetch ?? fetch,
+      urlLengthLimit: this.urlLengthLimit,
     })
   }
 
@@ -529,6 +528,7 @@ export default class PostgrestQueryBuilder<
       headers,
       schema: this.schema,
       fetch: this.fetch ?? fetch,
+      urlLengthLimit: this.urlLengthLimit,
     })
   }
 }

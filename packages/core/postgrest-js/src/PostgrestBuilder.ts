@@ -27,6 +27,7 @@ export default abstract class PostgrestBuilder<
   protected signal?: AbortSignal
   protected fetch: Fetch
   protected isMaybeSingle: boolean
+  protected urlLengthLimit: number
 
   /**
    * Creates a builder configured for a specific PostgREST request.
@@ -51,6 +52,7 @@ export default abstract class PostgrestBuilder<
     signal?: AbortSignal
     fetch?: Fetch
     isMaybeSingle?: boolean
+    urlLengthLimit?: number
   }) {
     this.method = builder.method
     this.url = builder.url
@@ -60,6 +62,7 @@ export default abstract class PostgrestBuilder<
     this.shouldThrowOnError = builder.shouldThrowOnError ?? false
     this.signal = builder.signal
     this.isMaybeSingle = builder.isMaybeSingle ?? false
+    this.urlLengthLimit = builder.urlLengthLimit ?? 8000
 
     if (builder.fetch) {
       this.fetch = builder.fetch
@@ -254,11 +257,11 @@ export default abstract class PostgrestBuilder<
 
         // Handle AbortError specially with helpful hints
         if (fetchError?.name === 'AbortError' || fetchError?.code === 'ABORT_ERR') {
-          code = 'PGRST_TIMEOUT'
+          code = ''
           hint = 'Request was aborted (timeout or manual cancellation)'
 
-          if (urlLength > 8000) {
-            hint += `. Note: Your request URL is ${urlLength} characters, which may exceed server limits. Consider using views or selecting fewer fields.`
+          if (urlLength > this.urlLengthLimit) {
+            hint += `. Note: Your request URL is ${urlLength} characters, which may exceed server limits. If selecting many fields, consider using views. If filtering with large arrays (e.g., .in('id', [many IDs])), consider using an RPC function to pass values server-side.`
           }
         }
         // Handle HeadersOverflowError from undici (Node.js fetch implementation)
@@ -266,11 +269,11 @@ export default abstract class PostgrestBuilder<
           cause?.name === 'HeadersOverflowError' ||
           cause?.code === 'UND_ERR_HEADERS_OVERFLOW'
         ) {
-          code = 'PGRST_HEADERS_OVERFLOW'
+          code = ''
           hint = 'HTTP headers exceeded server limits (typically 16KB)'
 
-          if (urlLength > 8000) {
-            hint += `. Your request URL is ${urlLength} characters. Consider using views, selecting fewer fields, or using POST for complex queries.`
+          if (urlLength > this.urlLengthLimit) {
+            hint += `. Your request URL is ${urlLength} characters. If selecting many fields, consider using views. If filtering with large arrays (e.g., .in('id', [200+ IDs])), consider using an RPC function instead.`
           }
         }
 

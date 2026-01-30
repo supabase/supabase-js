@@ -376,7 +376,7 @@ describe('PostgREST Timeout Configuration', () => {
       db: { timeout: 5000 },
     })
     expect(client).toBeDefined()
-    expect(client.rest).toBeDefined()
+    expect((client as any).rest).toBeDefined()
   })
 
   test('should work without timeout option', () => {
@@ -384,7 +384,7 @@ describe('PostgREST Timeout Configuration', () => {
       db: { schema: 'public' },
     })
     expect(client).toBeDefined()
-    expect(client.rest).toBeDefined()
+    expect((client as any).rest).toBeDefined()
   })
 
   test('should allow timeout with other db options', () => {
@@ -395,7 +395,7 @@ describe('PostgREST Timeout Configuration', () => {
       },
     })
     expect(client).toBeDefined()
-    expect(client.rest).toBeDefined()
+    expect((client as any).rest).toBeDefined()
   })
 })
 
