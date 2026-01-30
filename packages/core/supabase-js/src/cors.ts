@@ -148,6 +148,13 @@ export const corsHeaders: CorsHeaders = {
   'Access-Control-Allow-Methods': SUPABASE_METHODS,
 }
 
+// Debug: Verify SDK version being used
+console.log(
+  '[SDK cors.ts] Module loaded, corsHeaders.Access-Control-Allow-Origin:',
+  corsHeaders['Access-Control-Allow-Origin']
+)
+console.log('[SDK cors.ts] Module timestamp:', new Date().toISOString())
+
 /**
  * Creates custom CORS headers with the specified options.
  *

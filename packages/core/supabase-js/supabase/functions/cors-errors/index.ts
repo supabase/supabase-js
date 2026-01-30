@@ -4,10 +4,13 @@ import { corsHeaders } from '../../../src/cors.ts'
 serve(async (req) => {
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
-    return new Response(null, {
+    console.log('[cors-errors] OPTIONS request detected, returning 204')
+    const response = new Response(null, {
       status: 204,
       headers: corsHeaders,
     })
+    console.log('[cors-errors] Response status:', response.status)
+    return response
   }
 
   try {
