@@ -38,7 +38,7 @@ Deno.test(
           },
         })
 
-        assertEquals(response.status, 200)
+        assertEquals(response.status, 204)
         assertEquals(response.headers.get('Access-Control-Allow-Origin'), '*')
       })
     }
