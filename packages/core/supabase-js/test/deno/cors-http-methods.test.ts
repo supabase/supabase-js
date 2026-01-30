@@ -44,7 +44,7 @@ Deno.test(
         assertExists(allowedMethods)
 
         // Verify the method is explicitly allowed
-        if (!allowedMethods.toUpperCase().includes(method)) {
+        if (!allowedMethods?.toUpperCase().includes(method)) {
           throw new Error(`Method ${method} not found in Access-Control-Allow-Methods: ${allowedMethods}`)
         }
       })
