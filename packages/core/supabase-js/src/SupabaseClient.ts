@@ -88,6 +88,7 @@ export default class SupabaseClient<
   protected accessToken?: () => Promise<string | null>
 
   protected headers: Record<string, string>
+  protected bypassAuthSession: boolean
 
   /**
    * Create a new client for use in the browser.
@@ -136,6 +137,7 @@ export default class SupabaseClient<
 
     this.storageKey = settings.auth.storageKey ?? ''
     this.headers = settings.global.headers ?? {}
+    this.bypassAuthSession = settings.global.bypassAuthSession ?? false
 
     if (!settings.accessToken) {
       this.auth = this._initSupabaseAuthClient(
@@ -339,6 +341,14 @@ export default class SupabaseClient<
   private async _getAccessToken() {
     if (this.accessToken) {
       return await this.accessToken()
+    }
+
+    // When bypassAuthSession is true, always use the API key (e.g., service_role key)
+    // instead of any active user session token. This ensures requests run with
+    // the permissions of the API key, which is essential for service-role clients
+    // accessing security_invoker views or performing admin operations.
+    if (this.bypassAuthSession) {
+      return this.supabaseKey
     }
 
     const { data } = await this.auth.getSession()

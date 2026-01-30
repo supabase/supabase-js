@@ -139,6 +139,27 @@ export type SupabaseClientOptions<SchemaName> = {
      * Optional headers for initializing the client.
      */
     headers?: Record<string, string>
+    /**
+     * When set to `true`, the client will always use the API key for the
+     * `Authorization` header, ignoring any active user session. This is
+     * useful for service-role clients (admin clients) that should operate
+     * with elevated privileges regardless of user session state.
+     *
+     * When using a service-role key with `security_invoker` views or
+     * functions that require service-role permissions, set this to `true`
+     * to ensure requests always run with service-role privileges.
+     *
+     * @default false
+     *
+     * @example
+     * ```ts
+     * // Create an admin client that always uses the service-role key
+     * const adminClient = createClient(url, serviceRoleKey, {
+     *   global: { bypassAuthSession: true }
+     * })
+     * ```
+     */
+    bypassAuthSession?: boolean
   }
   /**
    * Optional function for using a third-party authentication system with
