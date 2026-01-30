@@ -258,6 +258,78 @@ describe('SupabaseClient', () => {
       })
     })
 
+    describe('Bypass Auth Session', () => {
+      test('should use supabaseKey when bypassAuthSession is true, even with active session', async () => {
+        const sessionToken = 'user-session-token'
+        const client = createClient(URL, KEY, {
+          global: { bypassAuthSession: true },
+        })
+
+        // Mock an active session
+        client.auth.getSession = jest.fn().mockResolvedValue({
+          data: { session: { access_token: sessionToken } },
+        })
+
+        // @ts-ignore - accessing private method
+        const token = await client._getAccessToken()
+        // Should use the API key, not the session token
+        expect(token).toBe(KEY)
+        // getSession should not be called when bypassAuthSession is true
+        expect(client.auth.getSession).not.toHaveBeenCalled()
+      })
+
+      test('should use session token when bypassAuthSession is false (default)', async () => {
+        const sessionToken = 'user-session-token'
+        const client = createClient(URL, KEY)
+
+        client.auth.getSession = jest.fn().mockResolvedValue({
+          data: { session: { access_token: sessionToken } },
+        })
+
+        // @ts-ignore - accessing private method
+        const token = await client._getAccessToken()
+        expect(token).toBe(sessionToken)
+        expect(client.auth.getSession).toHaveBeenCalled()
+      })
+
+      test('should pass correct token with bypassAuthSession in fetchWithAuth', async () => {
+        const sessionToken = 'user-session-token'
+        const mockFetch = jest.fn().mockResolvedValue({
+          ok: true,
+          json: () => Promise.resolve({}),
+        })
+
+        const client = createClient(URL, KEY, {
+          global: { fetch: mockFetch, bypassAuthSession: true },
+        })
+
+        // Mock an active session that would normally override the key
+        client.auth.getSession = jest.fn().mockResolvedValue({
+          data: { session: { access_token: sessionToken } },
+        })
+
+        await client.from('test').select('*')
+
+        expect(mockFetch).toHaveBeenCalled()
+        const [, options] = mockFetch.mock.calls[0]
+        // Authorization should use the API key, not the session token
+        expect(options.headers.get('Authorization')).toBe(`Bearer ${KEY}`)
+        expect(options.headers.get('apikey')).toBe(KEY)
+      })
+
+      test('should store bypassAuthSession value correctly', () => {
+        const clientWithBypass = createClient(URL, KEY, {
+          global: { bypassAuthSession: true },
+        })
+        // @ts-ignore - accessing protected property
+        expect(clientWithBypass.bypassAuthSession).toBe(true)
+
+        const clientWithoutBypass = createClient(URL, KEY)
+        // @ts-ignore - accessing protected property
+        expect(clientWithoutBypass.bypassAuthSession).toBe(false)
+      })
+    })
+
     describe('Realtime Authentication', () => {
       afterEach(() => {
         jest.clearAllMocks()
