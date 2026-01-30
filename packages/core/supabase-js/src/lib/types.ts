@@ -151,9 +151,15 @@ export type SupabaseClientOptions<SchemaName> = {
      *
      * @default false
      *
+     * @security **WARNING: Only use this option in server-side code** (Node.js,
+     * Edge Functions, serverless functions, etc.). Never expose service role keys
+     * in client-side/browser applications as they bypass all Row Level Security
+     * (RLS) policies and grant full unrestricted database access. For admin
+     * operations in browsers, create server-side API endpoints instead.
+     *
      * @example
      * ```ts
-     * // Create an admin client that always uses the service-role key
+     * // Server-side only: Create an admin client that always uses the service-role key
      * const adminClient = createClient(url, serviceRoleKey, {
      *   global: { bypassAuthSession: true }
      * })
