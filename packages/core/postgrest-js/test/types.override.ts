@@ -3,17 +3,32 @@ import { MergeDeep } from 'type-fest'
 
 import { z } from 'zod'
 
-export const CustomUserDataTypeSchema = z.object({
-  foo: z.string(),
-  bar: z.object({
-    baz: z.number(),
-  }),
-  en: z.enum(['ONE', 'TWO', 'THREE']),
-  record: z.record(z.string(), z.unknown()).nullable(),
-  recordNumber: z.record(z.number(), z.unknown()).nullable(),
-})
+export const CustomUserDataTypeSchema = z
+  .object({
+    foo: z.string(),
+    fooRecord: z.object({ bar: z.record(z.string(), z.unknown()), baz: z.string() }),
+    bar: z.object({
+      baz: z.number(),
+    }),
+    en: z.enum(['ONE', 'TWO', 'THREE']),
+    record: z.record(z.string(), z.unknown()).nullable(),
+    recordNumber: z.record(z.number(), z.unknown()).nullable(),
+  })
+  .nullable()
 
 export type CustomUserDataType = z.infer<typeof CustomUserDataTypeSchema>
+
+export const RequiredUserDataTypeSchema = z.object({
+  id: z.number(),
+  name: z.string(),
+  nested: z.object({
+    value: z.string(),
+    count: z.number(),
+  }),
+  status: z.enum(['ACTIVE', 'INACTIVE']),
+})
+
+export type RequiredUserDataType = z.infer<typeof RequiredUserDataTypeSchema>
 
 export type Database = MergeDeep<
   GeneratedDatabase,
@@ -22,13 +37,13 @@ export type Database = MergeDeep<
       Tables: {
         users: {
           Row: {
-            data: CustomUserDataType | null
+            data: CustomUserDataType
           }
           Insert: {
-            data?: CustomUserDataType | null
+            data?: CustomUserDataType
           }
           Update: {
-            data?: CustomUserDataType | null
+            data?: CustomUserDataType
           }
         }
       }
@@ -52,13 +67,30 @@ export type Database = MergeDeep<
       Tables: {
         users: {
           Row: {
-            data: CustomUserDataType | null
+            data: CustomUserDataType
           }
           Insert: {
-            data?: CustomUserDataType | null
+            data?: CustomUserDataType
           }
           Update: {
-            data?: CustomUserDataType | null
+            data?: CustomUserDataType
+          }
+        }
+        users_with_required_json: {
+          Row: {
+            id: number
+            username: string
+            required_data: RequiredUserDataType
+          }
+          Insert: {
+            id?: number
+            username: string
+            required_data: RequiredUserDataType
+          }
+          Update: {
+            id?: number
+            username?: string
+            required_data?: RequiredUserDataType
           }
         }
       }
