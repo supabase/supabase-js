@@ -5,7 +5,7 @@
  * It tests that all expected exports are available and functional.
  */
 
-const { corsHeaders, createCorsHeaders, validateOrigin } = require('@supabase/supabase-js/cors')
+const { corsHeaders, createCorsHeaders } = require('@supabase/supabase-js/cors')
 
 console.log('Testing @supabase/supabase-js/cors CommonJS exports...')
 
@@ -110,43 +110,7 @@ try {
   }
 }
 
-console.log('✓ createCorsHeaders correctly validates credentials + wildcard')
-
-// Test 7: validateOrigin is exported and works
-if (typeof validateOrigin !== 'function') {
-  throw new Error('validateOrigin is not a function')
-}
-
-if (!validateOrigin('https://myapp.com', '*')) {
-  throw new Error('validateOrigin should return true for wildcard')
-}
-
-if (!validateOrigin('https://myapp.com', 'https://myapp.com')) {
-  throw new Error('validateOrigin should return true for matching origin')
-}
-
-if (validateOrigin('https://badapp.com', 'https://myapp.com')) {
-  throw new Error('validateOrigin should return false for non-matching origin')
-}
-
-if (!validateOrigin(null, 'https://myapp.com')) {
-  throw new Error('validateOrigin should return true for null origin')
-}
-
-console.log('✓ validateOrigin export is valid')
-
-// Test 8: validateOrigin with array of origins
-if (!validateOrigin('https://app1.com', ['https://app1.com', 'https://app2.com'])) {
-  throw new Error('validateOrigin should return true for origin in array')
-}
-
-if (validateOrigin('https://app3.com', ['https://app1.com', 'https://app2.com'])) {
-  throw new Error('validateOrigin should return false for origin not in array')
-}
-
-console.log('✓ validateOrigin works with array of origins')
-
-// Test 9: Verify CORS headers work with Response API (if available in Node.js)
+// Test 7: Verify CORS headers work with Response API (if available in Node.js)
 if (typeof Response !== 'undefined') {
   const response = new Response('ok', { headers: corsHeaders })
 

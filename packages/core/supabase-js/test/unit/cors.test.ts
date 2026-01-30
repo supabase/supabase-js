@@ -1,11 +1,5 @@
 import { describe, expect, it } from '@jest/globals'
-import {
-  corsHeaders,
-  createCorsHeaders,
-  validateOrigin,
-  type CorsHeaders,
-  type CorsOptions,
-} from '../../src/cors'
+import { corsHeaders, createCorsHeaders, type CorsHeaders, type CorsOptions } from '../../src/cors'
 
 describe('CORS Module', () => {
   describe('corsHeaders', () => {
@@ -151,48 +145,6 @@ describe('CORS Module', () => {
     })
   })
 
-  describe('validateOrigin', () => {
-    it('should return true for null/undefined origin', () => {
-      expect(validateOrigin(null, 'https://myapp.com')).toBe(true)
-      expect(validateOrigin(undefined, 'https://myapp.com')).toBe(true)
-    })
-
-    it('should return true for wildcard allowed origins', () => {
-      expect(validateOrigin('https://anyapp.com', '*')).toBe(true)
-    })
-
-    it('should return true when origin matches single allowed origin', () => {
-      expect(validateOrigin('https://myapp.com', 'https://myapp.com')).toBe(true)
-    })
-
-    it('should return false when origin does not match single allowed origin', () => {
-      expect(validateOrigin('https://badapp.com', 'https://myapp.com')).toBe(false)
-    })
-
-    it('should return true when origin is in allowed origins array', () => {
-      const allowedOrigins = ['https://app1.com', 'https://app2.com']
-
-      expect(validateOrigin('https://app1.com', allowedOrigins)).toBe(true)
-      expect(validateOrigin('https://app2.com', allowedOrigins)).toBe(true)
-    })
-
-    it('should return false when origin is not in allowed origins array', () => {
-      const allowedOrigins = ['https://app1.com', 'https://app2.com']
-
-      expect(validateOrigin('https://badapp.com', allowedOrigins)).toBe(false)
-    })
-
-    it('should be case-sensitive for origin matching', () => {
-      expect(validateOrigin('https://MyApp.com', 'https://myapp.com')).toBe(false)
-    })
-
-    it('should match exact origin including protocol and port', () => {
-      expect(validateOrigin('http://localhost:3000', 'http://localhost:3000')).toBe(true)
-      expect(validateOrigin('http://localhost:3000', 'http://localhost:3001')).toBe(false)
-      expect(validateOrigin('https://localhost:3000', 'http://localhost:3000')).toBe(false)
-    })
-  })
-
   describe('TypeScript types', () => {
     it('should export CorsHeaders type', () => {
       const headers: CorsHeaders = {
@@ -242,19 +194,6 @@ describe('CORS Module', () => {
       expect(response.headers.get('Access-Control-Allow-Origin')).toBe('https://myapp.com')
       expect(response.headers.get('Access-Control-Allow-Credentials')).toBe('true')
       expect(response.headers.get('Content-Type')).toBe('application/json')
-    })
-
-    it('should work for dynamic CORS validation scenario', () => {
-      const allowedOrigins = ['https://app1.com', 'https://app2.com']
-      const requestOrigin = 'https://app1.com'
-
-      if (!validateOrigin(requestOrigin, allowedOrigins)) {
-        // Would return 403 Forbidden
-        expect(true).toBe(false) // Should not reach here
-      }
-
-      const headers = createCorsHeaders({ origin: requestOrigin })
-      expect(headers['Access-Control-Allow-Origin']).toBe('https://app1.com')
     })
   })
 })

@@ -35,7 +35,7 @@
  */
 
 /**
- * All custom headers sent by Supabase client libraries.
+ * All custom headers sent by the Supabase SDK.
  * These headers need to be included in CORS configuration to prevent preflight failures.
  *
  * Headers:
@@ -64,7 +64,7 @@ const SUPABASE_HEADERS = [
 ].join(', ')
 
 /**
- * All HTTP methods used by Supabase client libraries
+ * All HTTP methods used by the Supabase SDK
  */
 const SUPABASE_METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'].join(', ')
 
@@ -84,8 +84,20 @@ export interface CorsOptions {
    *
    * Note: Cannot use credentials: true with origin: '*'
    *
-   * For multiple origins, use validateOrigin() to check the request origin
-   * against an allowlist and pass the validated origin to createCorsHeaders().
+   * For multiple origins, validate the request origin against your
+   * allowlist and pass the specific origin to this function:
+   *
+   * @example
+   * ```typescript
+   * const allowedOrigins = ['https://app1.com', 'https://app2.com']
+   * const requestOrigin = req.headers.get('Origin')
+   *
+   * if (requestOrigin && !allowedOrigins.includes(requestOrigin)) {
+   *   return new Response('Forbidden', { status: 403 })
+   * }
+   *
+   * const corsHeaders = createCorsHeaders({ origin: requestOrigin })
+   * ```
    */
   origin?: string
 
@@ -154,17 +166,6 @@ export const corsHeaders: CorsHeaders = {
  * })
  * ```
  *
- * @example Handle multiple origins with dynamic validation
- * ```typescript
- * const allowedOrigins = ['https://app1.com', 'https://app2.com']
- * const requestOrigin = req.headers.get('Origin')
- * const validatedOrigin = validateOrigin(requestOrigin, allowedOrigins)
- *
- * const corsHeaders = createCorsHeaders({
- *   origin: validatedOrigin || '*'
- * })
- * ```
- *
  * @example Add custom headers
  * ```typescript
  * const corsHeaders = createCorsHeaders({
@@ -180,19 +181,11 @@ export function createCorsHeaders(options: CorsOptions = {}): CorsHeaders {
     additionalMethods = [],
   } = options
 
-  // Validate origin type
-  if (Array.isArray(origin)) {
-    throw new Error(
-      'Access-Control-Allow-Origin does not support multiple origins. ' +
-        'Use validateOrigin() to implement dynamic origin validation instead.'
-    )
-  }
-
   // Validate credentials + wildcard combination
   if (credentials && origin === '*') {
     throw new Error(
       'Cannot use credentials: true with origin: "*". ' +
-        'Specify explicit origin(s) when using credentials.'
+        'Specify an explicit origin when using credentials.'
     )
   }
 
@@ -204,10 +197,8 @@ export function createCorsHeaders(options: CorsOptions = {}): CorsHeaders {
   const allMethods =
     SUPABASE_METHODS + (additionalMethods.length > 0 ? ', ' + additionalMethods.join(', ') : '')
 
-  const originValue = origin
-
   const headers: CorsHeaders = {
-    'Access-Control-Allow-Origin': originValue,
+    'Access-Control-Allow-Origin': origin,
     'Access-Control-Allow-Headers': allHeaders,
     'Access-Control-Allow-Methods': allMethods,
   }
@@ -217,59 +208,4 @@ export function createCorsHeaders(options: CorsOptions = {}): CorsHeaders {
   }
 
   return headers
-}
-
-/**
- * Validates if a request origin is allowed based on the configured allowed origins.
- *
- * Useful for implementing dynamic CORS validation in Edge Functions where you need
- * to check the request origin against a list of allowed origins.
- *
- * @param requestOrigin - The origin from the request (req.headers.get('origin'))
- * @param allowedOrigins - Single origin, array of origins, or '*' for any origin
- * @returns True if the origin is allowed, false otherwise
- *
- * @example Dynamic CORS validation
- * ```typescript
- * import { validateOrigin, createCorsHeaders } from '@supabase/supabase-js/cors'
- *
- * const allowedOrigins = ['https://app1.com', 'https://app2.com']
- *
- * Deno.serve(async (req) => {
- *   const origin = req.headers.get('origin')
- *
- *   if (!validateOrigin(origin, allowedOrigins)) {
- *     return new Response('Forbidden', { status: 403 })
- *   }
- *
- *   const corsHeaders = createCorsHeaders({ origin: origin || '*' })
- *
- *   if (req.method === 'OPTIONS') {
- *     return new Response('ok', { headers: corsHeaders })
- *   }
- *
- *   return new Response(
- *     JSON.stringify({ data: 'Hello' }),
- *     { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
- *   )
- * })
- * ```
- */
-export function validateOrigin(
-  requestOrigin: string | null | undefined,
-  allowedOrigins: string | string[]
-): boolean {
-  // No origin in request (same-origin or non-browser request)
-  if (!requestOrigin) {
-    return true
-  }
-
-  // Wildcard allows all origins
-  if (allowedOrigins === '*') {
-    return true
-  }
-
-  // Check against allowed origins list
-  const allowed = Array.isArray(allowedOrigins) ? allowedOrigins : [allowedOrigins]
-  return allowed.includes(requestOrigin)
 }

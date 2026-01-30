@@ -5,7 +5,7 @@
  * It tests that all expected exports are available and functional.
  */
 
-import { corsHeaders, createCorsHeaders, validateOrigin } from '@supabase/supabase-js/cors'
+import { corsHeaders, createCorsHeaders } from '@supabase/supabase-js/cors'
 
 console.log('Testing @supabase/supabase-js/cors ESM exports...')
 
@@ -113,43 +113,7 @@ try {
   }
 }
 
-console.log('✓ createCorsHeaders correctly validates credentials + wildcard')
-
-// Test 7: validateOrigin is exported and works
-if (typeof validateOrigin !== 'function') {
-  throw new Error('validateOrigin is not a function')
-}
-
-if (!validateOrigin('https://myapp.com', '*')) {
-  throw new Error('validateOrigin should return true for wildcard')
-}
-
-if (!validateOrigin('https://myapp.com', 'https://myapp.com')) {
-  throw new Error('validateOrigin should return true for matching origin')
-}
-
-if (validateOrigin('https://badapp.com', 'https://myapp.com')) {
-  throw new Error('validateOrigin should return false for non-matching origin')
-}
-
-if (!validateOrigin(null, 'https://myapp.com')) {
-  throw new Error('validateOrigin should return true for null origin')
-}
-
-console.log('✓ validateOrigin export is valid')
-
-// Test 8: validateOrigin with array of origins
-if (!validateOrigin('https://app1.com', ['https://app1.com', 'https://app2.com'])) {
-  throw new Error('validateOrigin should return true for origin in array')
-}
-
-if (validateOrigin('https://app3.com', ['https://app1.com', 'https://app2.com'])) {
-  throw new Error('validateOrigin should return false for origin not in array')
-}
-
-console.log('✓ validateOrigin works with array of origins')
-
-// Test 9: Verify CORS headers work with Response API
+// Test 7: Verify CORS headers work with Response API
 const response = new Response('ok', { headers: corsHeaders })
 
 if (response.headers.get('Access-Control-Allow-Origin') !== '*') {
@@ -158,7 +122,7 @@ if (response.headers.get('Access-Control-Allow-Origin') !== '*') {
 
 console.log('✓ CORS headers work with Response API')
 
-// Test 10: Verify merged headers work with Response API
+// Test 8: Verify merged headers work with Response API
 const mergedResponse = new Response(JSON.stringify({ data: 'test' }), {
   headers: {
     ...corsHeaders,

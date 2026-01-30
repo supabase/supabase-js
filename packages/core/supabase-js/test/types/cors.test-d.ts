@@ -5,14 +5,8 @@
  * and work as expected in various usage scenarios.
  */
 
-import { expectType, expectAssignable, expectNotAssignable, expectError } from 'tsd'
-import {
-  corsHeaders,
-  createCorsHeaders,
-  validateOrigin,
-  type CorsHeaders,
-  type CorsOptions,
-} from '../../src/cors'
+import { expectType, expectAssignable, expectNotAssignable } from 'tsd'
+import { corsHeaders, createCorsHeaders, type CorsHeaders, type CorsOptions } from '../../src/cors'
 
 // Test: corsHeaders has correct type
 expectType<CorsHeaders>(corsHeaders)
@@ -46,9 +40,6 @@ expectType<CorsHeaders>(createCorsHeaders({}))
 
 // Test: createCorsHeaders with single origin
 expectType<CorsHeaders>(createCorsHeaders({ origin: 'https://myapp.com' }))
-
-// Test: createCorsHeaders with array of origins should error
-expectError(createCorsHeaders({ origin: ['https://app1.com', 'https://app2.com'] }))
 
 // Test: createCorsHeaders with credentials
 expectType<CorsHeaders>(createCorsHeaders({ credentials: true }))
@@ -84,26 +75,6 @@ expectNotAssignable<CorsOptions>({ credentials: 'true' })
 expectNotAssignable<CorsOptions>({ additionalHeaders: 'x-custom' })
 expectNotAssignable<CorsOptions>({ additionalMethods: 'GET' })
 
-// Test: validateOrigin function signature
-expectType<
-  (requestOrigin: string | null | undefined, allowedOrigins: string | string[]) => boolean
->(validateOrigin)
-
-// Test: validateOrigin with string origin and string allowed
-expectType<boolean>(validateOrigin('https://myapp.com', 'https://myapp.com'))
-
-// Test: validateOrigin with string origin and array allowed
-expectType<boolean>(validateOrigin('https://myapp.com', ['https://app1.com', 'https://app2.com']))
-
-// Test: validateOrigin with null origin
-expectType<boolean>(validateOrigin(null, 'https://myapp.com'))
-
-// Test: validateOrigin with undefined origin
-expectType<boolean>(validateOrigin(undefined, 'https://myapp.com'))
-
-// Test: validateOrigin with wildcard
-expectType<boolean>(validateOrigin('https://myapp.com', '*'))
-
 // Test: Common usage patterns compile successfully
 
 // Pattern 1: Basic Edge Function CORS
@@ -126,16 +97,7 @@ const mergedHeaders = {
 expectAssignable<Record<string, string>>(mergedHeaders)
 expectType<string>(mergedHeaders['Content-Type'])
 
-// Pattern 4: Dynamic CORS validation
-const requestOrigin: string | null = 'https://myapp.com'
-const allowedOrigins = ['https://app1.com', 'https://app2.com']
-
-if (validateOrigin(requestOrigin, allowedOrigins)) {
-  const validatedHeaders = createCorsHeaders({ origin: requestOrigin || '*' })
-  expectType<CorsHeaders>(validatedHeaders)
-}
-
-// Pattern 5: Edge Function with OPTIONS handler
+// Pattern 4: Edge Function with OPTIONS handler
 function handleRequest(req: Request): Response {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
@@ -150,7 +112,7 @@ function handleRequest(req: Request): Response {
 }
 expectType<(req: Request) => Response>(handleRequest)
 
-// Pattern 6: Custom CORS configuration with additional headers and methods
+// Pattern 5: Custom CORS configuration with additional headers and methods
 const advancedHeaders = createCorsHeaders({
   origin: 'https://app1.com',
   credentials: true,
@@ -159,7 +121,7 @@ const advancedHeaders = createCorsHeaders({
 })
 expectType<CorsHeaders>(advancedHeaders)
 
-// Pattern 7: Type-safe header access
+// Pattern 6: Type-safe header access
 const origin: string = corsHeaders['Access-Control-Allow-Origin']
 const methods: string = corsHeaders['Access-Control-Allow-Methods']
 expectType<string>(origin)
