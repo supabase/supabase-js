@@ -63,6 +63,13 @@ export function generateUsername(): string {
   return `${adj}${noun}${num}`;
 }
 
+/**
+ * Obtain a username for the current runtime, persisting it in browser storage when available.
+ *
+ * In browser environments, returns the value stored under the module's storage key; if none exists, generates a username, saves it to localStorage, and returns it. In non-browser environments, returns a newly generated username on each call.
+ *
+ * @returns A username string; in browsers this is the value read from (or saved to) localStorage, otherwise a newly generated username.
+ */
 export function getUsername(): string {
   if (typeof window === "undefined") return generateUsername();
 
