@@ -28,6 +28,13 @@ const nouns = [
 
 const STORAGE_KEY = "chat_username";
 
+/**
+ * Produce a random integer in the range [0, maxExclusive).
+ *
+ * @param maxExclusive - Upper bound (exclusive) for the returned integer; must be greater than 0.
+ * @returns An integer greater than or equal to 0 and less than `maxExclusive`.
+ * @throws Error if `maxExclusive` is not greater than 0.
+ */
 function secureRandomInt(maxExclusive: number): number {
   if (maxExclusive <= 0) {
     throw new Error("maxExclusive must be positive");
@@ -44,6 +51,11 @@ function secureRandomInt(maxExclusive: number): number {
   return randomInt(0, maxExclusive);
 }
 
+/**
+ * Creates a compact username by combining a randomly chosen adjective, a randomly chosen noun, and a two-digit numeric suffix.
+ *
+ * @returns The generated username string in the form `AdjectiveNounNN` where the numeric suffix is between 0 and 99. 
+ */
 export function generateUsername(): string {
   const adj = adjectives[secureRandomInt(adjectives.length)];
   const noun = nouns[secureRandomInt(nouns.length)];
