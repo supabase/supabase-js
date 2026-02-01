@@ -8,6 +8,7 @@
  */
 
 const { execSync } = require('child_process')
+const fs = require('fs')
 const path = require('path')
 
 const POSTGREST_DIR = path.join(__dirname, '../packages/core/postgrest-js')
@@ -50,10 +51,16 @@ function main() {
 
   // Generate types from database using Supabase CLI
   console.log('🔧 Generating types from database...')
-  exec(`supabase gen types typescript --local --schema public,personal > ${OUTPUT_FILE}`, {
-    cwd: TEST_DIR,
-    shell: true,
-  })
+  try {
+    const result = execSync('supabase gen types typescript --local --schema public,personal', {
+      cwd: TEST_DIR,
+      stdio: ['ignore', 'pipe', 'inherit'],
+    })
+    fs.writeFileSync(OUTPUT_FILE, result)
+  } catch (error) {
+    console.error('❌ Command failed: supabase gen types typescript --local --schema public,personal')
+    process.exit(1)
+  }
 
   // Run post-generation script to update JSON type
   console.log('🔧 Post-processing generated types...')
