@@ -1,6 +1,6 @@
 import { DEFAULT_HEADERS } from '../lib/constants'
 import { StorageError } from '../lib/common/errors'
-import { Fetch, post } from '../lib/common/fetch'
+import { Fetch, vectorsApi } from '../lib/common/fetch'
 import BaseApiClient from '../lib/common/BaseApiClient'
 import {
   ApiResponse,
@@ -44,7 +44,7 @@ export default class VectorIndexApi extends BaseApiClient<StorageError> {
   /** Creates a new vector index within a bucket */
   async createIndex(options: CreateIndexOptions): Promise<ApiResponse<undefined>> {
     return this.handleOperation(async () => {
-      const data = await post(this.fetch, `${this.url}/CreateIndex`, options, {
+      const data = await vectorsApi.post(this.fetch, `${this.url}/CreateIndex`, options, {
         headers: this.headers,
       })
       return data || {}
@@ -57,7 +57,7 @@ export default class VectorIndexApi extends BaseApiClient<StorageError> {
     indexName: string
   ): Promise<ApiResponse<{ index: VectorIndex }>> {
     return this.handleOperation(async () => {
-      return await post(
+      return await vectorsApi.post(
         this.fetch,
         `${this.url}/GetIndex`,
         { vectorBucketName, indexName },
@@ -69,7 +69,7 @@ export default class VectorIndexApi extends BaseApiClient<StorageError> {
   /** Lists vector indexes within a bucket with optional filtering and pagination */
   async listIndexes(options: ListIndexesOptions): Promise<ApiResponse<ListIndexesResponse>> {
     return this.handleOperation(async () => {
-      return await post(this.fetch, `${this.url}/ListIndexes`, options, {
+      return await vectorsApi.post(this.fetch, `${this.url}/ListIndexes`, options, {
         headers: this.headers,
       })
     })
@@ -78,7 +78,7 @@ export default class VectorIndexApi extends BaseApiClient<StorageError> {
   /** Deletes a vector index and all its data */
   async deleteIndex(vectorBucketName: string, indexName: string): Promise<ApiResponse<undefined>> {
     return this.handleOperation(async () => {
-      const data = await post(
+      const data = await vectorsApi.post(
         this.fetch,
         `${this.url}/DeleteIndex`,
         { vectorBucketName, indexName },

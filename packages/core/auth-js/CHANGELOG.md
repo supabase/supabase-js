@@ -1,3 +1,36 @@
+## 2.93.3 (2026-01-29)
+
+### 🩹 Fixes
+
+- **auth:** add webauthn tests and fix fallback naming ([#1763](https://github.com/supabase/supabase-js/pull/1763))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+
+## 2.93.2 (2026-01-27)
+
+This was a version bump only for @supabase/auth-js to align it with other projects, there were no code changes.
+
+## 2.93.1 (2026-01-26)
+
+This was a version bump only for @supabase/auth-js to align it with other projects, there were no code changes.
+
+## 2.93.0 (2026-01-26)
+
+### 🚀 Features
+
+- **auth:** add optional jwt parameter to getAuthenticatorAssuranceLevel ([#1940](https://github.com/supabase/supabase-js/pull/1940))
+
+### 🩹 Fixes
+
+- **auth:** clear local storage on signOut when session is already missing ([#2026](https://github.com/supabase/supabase-js/pull/2026))
+- **auth:** handle uncaught promise rejections during initialization ([#2032](https://github.com/supabase/supabase-js/pull/2032))
+
+### ❤️ Thank You
+
+- Vaibhav @7ttp
+
 ## 2.91.1 (2026-01-23)
 
 ### 🩹 Fixes

@@ -1,3 +1,56 @@
+## 2.93.3 (2026-01-29)
+
+### 🩹 Fixes
+
+- **auth:** add webauthn tests and fix fallback naming ([#1763](https://github.com/supabase/supabase-js/pull/1763))
+- **ci:** add persist-credentials: false to release job checkouts ([#2074](https://github.com/supabase/supabase-js/pull/2074))
+- **storage:** handle empty 200 responses in vector operations ([#2073](https://github.com/supabase/supabase-js/pull/2073))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+
+## 2.93.2 (2026-01-27)
+
+### 🩹 Fixes
+
+- **supabase:** revert client platform and runtime detection headers ([#2067](https://github.com/supabase/supabase-js/pull/2067))
+
+### ❤️ Thank You
+
+- Guilherme Souza
+
+## 2.93.1 (2026-01-26)
+
+### 🩹 Fixes
+
+- **realtime:** revert validate table filter in postgres_changes event dispatch ([#2060](https://github.com/supabase/supabase-js/pull/2060))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+
+## 2.93.0 (2026-01-26)
+
+### 🚀 Features
+
+- **auth:** add optional jwt parameter to getAuthenticatorAssuranceLevel ([#1940](https://github.com/supabase/supabase-js/pull/1940))
+- **supabase:** add missing HTTP headers for client platform and runtime detection ([#2046](https://github.com/supabase/supabase-js/pull/2046))
+
+### 🩹 Fixes
+
+- **auth:** handle uncaught promise rejections during initialization ([#2032](https://github.com/supabase/supabase-js/pull/2032))
+- **auth:** clear local storage on signOut when session is already missing ([#2026](https://github.com/supabase/supabase-js/pull/2026))
+- **realtime:** send heartbeat for initial connection error ([#1746](https://github.com/supabase/supabase-js/pull/1746))
+- **realtime:** add generic overload for postgres_changes event type ([#1984](https://github.com/supabase/supabase-js/pull/1984))
+- **storage:** expose status and statusCode on StorageError base class ([#2018](https://github.com/supabase/supabase-js/pull/2018))
+- **supabase:** safe environment detection node v browser ([#2053](https://github.com/supabase/supabase-js/pull/2053))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+- Vaibhav @7ttp
+
 ## 2.91.1 (2026-01-23)
 
 ### 🩹 Fixes

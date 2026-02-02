@@ -1,3 +1,33 @@
+## 2.93.3 (2026-01-29)
+
+This was a version bump only for @supabase/realtime-js to align it with other projects, there were no code changes.
+
+## 2.93.2 (2026-01-27)
+
+This was a version bump only for @supabase/realtime-js to align it with other projects, there were no code changes.
+
+## 2.93.1 (2026-01-26)
+
+### 🩹 Fixes
+
+- **realtime:** revert validate table filter in postgres_changes event dispatch ([#2060](https://github.com/supabase/supabase-js/pull/2060))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+
+## 2.93.0 (2026-01-26)
+
+### 🩹 Fixes
+
+- **realtime:** add generic overload for postgres_changes event type ([#1984](https://github.com/supabase/supabase-js/pull/1984))
+- **realtime:** send heartbeat for initial connection error ([#1746](https://github.com/supabase/supabase-js/pull/1746))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+- Vaibhav @7ttp
+
 ## 2.91.1 (2026-01-23)
 
 This was a version bump only for @supabase/realtime-js to align it with other projects, there were no code changes.
