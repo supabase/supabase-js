@@ -1,5 +1,6 @@
 import PostgrestFilterBuilder from './PostgrestFilterBuilder'
 import { GetResult } from './select-query-parser/result'
+import { SelectItem, serializeSelectSpec } from './select-query-parser/select-builder'
 import {
   ClientServerOptions,
   Fetch,
@@ -69,7 +70,9 @@ export default class PostgrestQueryBuilder<
   /**
    * Perform a SELECT query on the table or view.
    *
-   * @param columns - The columns to retrieve, separated by commas. Columns can be renamed when returned with `customName:columnName`
+   * @param columns - The columns to retrieve. Can be:
+   *   - A string with comma-separated column names (e.g., `'id, name, email'`)
+   *   - An array of column names and/or field specs (e.g., `['id', { column: 'name', as: 'display_name' }]`)
    *
    * @param options - Named parameters
    *
@@ -90,6 +93,19 @@ export default class PostgrestQueryBuilder<
    * @remarks
    * When using `count` with `.range()` or `.limit()`, the returned `count` is the total number of rows
    * that match your filters, not the number of rows in the current page. Use this to build pagination UI.
+   *
+   * @example String-based select
+   * ```ts
+   * .select('id, name, email')
+   * .select('posts(id, title)')
+   * ```
+   *
+   * @example Array-based select (provides IDE autocomplete)
+   * ```ts
+   * .select(['id', 'name', 'email'])
+   * .select(['id', { relation: 'posts', select: ['id', 'title'] }])
+   * .select([{ column: 'username', as: 'display_name' }])
+   * ```
    */
   select<
     Query extends string = '*',
@@ -102,7 +118,7 @@ export default class PostgrestQueryBuilder<
       ClientOptions
     >,
   >(
-    columns?: Query,
+    columns?: Query | SelectItem[],
     options?: {
       head?: boolean
       count?: 'exact' | 'planned' | 'estimated'
@@ -119,9 +135,20 @@ export default class PostgrestQueryBuilder<
     const { head = false, count } = options ?? {}
 
     const method = head ? 'HEAD' : 'GET'
+
+    // Serialize array-based select specs to string
+    let columnsString: string
+    if (columns === undefined) {
+      columnsString = '*'
+    } else if (Array.isArray(columns)) {
+      columnsString = serializeSelectSpec(columns)
+    } else {
+      columnsString = columns
+    }
+
     // Remove whitespaces except when quoted
     let quoted = false
-    const cleanedColumns = (columns ?? '*')
+    const cleanedColumns = columnsString
       .split('')
       .map((c) => {
         if (/\s/.test(c) && !quoted) {

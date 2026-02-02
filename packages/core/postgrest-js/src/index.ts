@@ -32,3 +32,14 @@ export type { ClientServerOptions as PostgrestClientOptions } from './types/comm
 // https://github.com/supabase/postgrest-js/issues/551
 // To be replaced with a helper type that only uses public types
 export type { GetResult as UnstableGetResult } from './select-query-parser/result'
+// Array-based select builder types
+export type {
+  SelectSpec,
+  SelectItem,
+  FieldSpec,
+  RelationSpec,
+  SpreadSpec,
+  CountSpec,
+  AggregateFunction,
+} from './select-query-parser/select-builder'
+export { serializeSelectSpec } from './select-query-parser/select-builder'
