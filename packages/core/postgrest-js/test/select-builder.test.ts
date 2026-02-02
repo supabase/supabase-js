@@ -160,7 +160,9 @@ describe('serializeSelectSpec', () => {
     })
 
     it('should serialize JSON text path with alias', () => {
-      const spec: SelectSpec = [{ column: 'data', as: 'theme_name', jsonText: ['settings', 'theme'] }]
+      const spec: SelectSpec = [
+        { column: 'data', as: 'theme_name', jsonText: ['settings', 'theme'] },
+      ]
       expect(serializeSelectSpec(spec)).toBe('theme_name:data->settings->>theme')
     })
   })
@@ -295,11 +297,7 @@ describe('serializeSelectSpec', () => {
     })
 
     it('should serialize inner join with parent columns', () => {
-      const spec: SelectSpec = [
-        'id',
-        'name',
-        { relation: 'posts', inner: true, select: ['id'] },
-      ]
+      const spec: SelectSpec = ['id', 'name', { relation: 'posts', inner: true, select: ['id'] }]
       expect(serializeSelectSpec(spec)).toBe('id,name,posts!inner(id)')
     })
   })
@@ -393,11 +391,7 @@ describe('serializeSelectSpec', () => {
             'id',
             {
               relation: 'comments',
-              select: [
-                'id',
-                'text',
-                { relation: 'users', as: 'author', select: ['name'] },
-              ],
+              select: ['id', 'text', { relation: 'users', as: 'author', select: ['name'] }],
             },
           ],
         },
@@ -488,20 +482,20 @@ describe('serializeSelectSpec', () => {
       ]
       expect(serializeSelectSpec(spec)).toBe(
         'simple_col,' +
-        'alias:aliased_col,' +
-        'casted_col::text,' +
-        'json_col->path,' +
-        'json_text_col->>path,' +
-        'agg_col.sum(),' +
-        'count(),' +
-        'rel(id),' +
-        'ar:aliased_rel(id),' +
-        'inner_rel!inner(id),' +
-        'left_rel!left(id),' +
-        'hint_rel!fk(id),' +
-        'hint_inner_rel!fk!inner(id),' +
-        '...spread_rel(id),' +
-        '...spread_hint_rel!fk(id)'
+          'alias:aliased_col,' +
+          'casted_col::text,' +
+          'json_col->path,' +
+          'json_text_col->>path,' +
+          'agg_col.sum(),' +
+          'count(),' +
+          'rel(id),' +
+          'ar:aliased_rel(id),' +
+          'inner_rel!inner(id),' +
+          'left_rel!left(id),' +
+          'hint_rel!fk(id),' +
+          'hint_inner_rel!fk!inner(id),' +
+          '...spread_rel(id),' +
+          '...spread_hint_rel!fk(id)'
       )
     })
   })

@@ -99,34 +99,30 @@ const postgrest = new PostgrestClient<Database>(REST_URL)
 
 // accepts FieldSpec array
 {
-  const query = postgrest.from('users').select([
-    { column: 'username' },
-    { column: 'status', as: 'user_status' },
-  ])
+  const query = postgrest
+    .from('users')
+    .select([{ column: 'username' }, { column: 'status', as: 'user_status' }])
 }
 
 // accepts mixed string and FieldSpec array
 {
-  const query = postgrest.from('users').select([
-    'username',
-    { column: 'status', as: 'user_status' },
-  ])
+  const query = postgrest
+    .from('users')
+    .select(['username', { column: 'status', as: 'user_status' }])
 }
 
 // accepts RelationSpec
 {
-  const query = postgrest.from('users').select([
-    'username',
-    { relation: 'messages', select: ['id', 'message'] },
-  ])
+  const query = postgrest
+    .from('users')
+    .select(['username', { relation: 'messages', select: ['id', 'message'] }])
 }
 
 // accepts SpreadSpec
 {
-  const query = postgrest.from('messages').select([
-    'id',
-    { spread: true, relation: 'channels', select: ['slug'] },
-  ])
+  const query = postgrest
+    .from('messages')
+    .select(['id', { spread: true, relation: 'channels', select: ['slug'] }])
 }
 
 // accepts CountSpec
@@ -142,11 +138,7 @@ const postgrest = new PostgrestClient<Database>(REST_URL)
     {
       relation: 'messages',
       inner: true,
-      select: [
-        'id',
-        'message',
-        { relation: 'channels', select: ['slug'] },
-      ],
+      select: ['id', 'message', { relation: 'channels', select: ['slug'] }],
     },
     { count: true, as: 'total' },
   ])

@@ -37,48 +37,38 @@ describe('Array-based select with typed Database', () => {
     })
 
     it('should serialize field specs with aliases', async () => {
-      const builder = postgrest.from('users').select([
-        { column: 'username', as: 'name' },
-        'status',
-      ])
+      const builder = postgrest.from('users').select([{ column: 'username', as: 'name' }, 'status'])
       expect((builder as any).url.searchParams.get('select')).toBe('name:username,status')
     })
 
     it('should serialize field specs with casts', async () => {
-      const builder = postgrest.from('users').select([
-        { column: 'username', cast: 'text' },
-      ])
+      const builder = postgrest.from('users').select([{ column: 'username', cast: 'text' }])
       expect((builder as any).url.searchParams.get('select')).toBe('username::text')
     })
 
     it('should serialize relation specs', async () => {
-      const builder = postgrest.from('users').select([
-        'username',
-        { relation: 'messages', select: ['id', 'message'] },
-      ])
+      const builder = postgrest
+        .from('users')
+        .select(['username', { relation: 'messages', select: ['id', 'message'] }])
       expect((builder as any).url.searchParams.get('select')).toBe('username,messages(id,message)')
     })
 
     it('should serialize inner join', async () => {
-      const builder = postgrest.from('users').select([
-        'username',
-        { relation: 'messages', inner: true, select: ['id'] },
-      ])
+      const builder = postgrest
+        .from('users')
+        .select(['username', { relation: 'messages', inner: true, select: ['id'] }])
       expect((builder as any).url.searchParams.get('select')).toBe('username,messages!inner(id)')
     })
 
     it('should serialize spread specs', async () => {
-      const builder = postgrest.from('messages').select([
-        'id',
-        { spread: true, relation: 'channels', select: ['slug'] },
-      ])
+      const builder = postgrest
+        .from('messages')
+        .select(['id', { spread: true, relation: 'channels', select: ['slug'] }])
       expect((builder as any).url.searchParams.get('select')).toBe('id,...channels(slug)')
     })
 
     it('should serialize count specs', async () => {
-      const builder = postgrest.from('users').select([
-        { count: true, as: 'total' },
-      ])
+      const builder = postgrest.from('users').select([{ count: true, as: 'total' }])
       expect((builder as any).url.searchParams.get('select')).toBe('total:count()')
     })
 
@@ -87,11 +77,7 @@ describe('Array-based select with typed Database', () => {
         'username',
         {
           relation: 'messages',
-          select: [
-            'id',
-            'message',
-            { relation: 'channels', select: ['slug'] },
-          ],
+          select: ['id', 'message', { relation: 'channels', select: ['slug'] }],
         },
       ])
       expect((builder as any).url.searchParams.get('select')).toBe(
@@ -121,11 +107,7 @@ describe('Array-based select with typed Database', () => {
     })
 
     it('should accept array-based select spec after delete', async () => {
-      const builder = postgrest
-        .from('messages')
-        .delete()
-        .eq('id', 1)
-        .select(['id', 'message'])
+      const builder = postgrest.from('messages').delete().eq('id', 1).select(['id', 'message'])
 
       expect((builder as any).url.searchParams.get('select')).toBe('id,message')
     })
@@ -157,14 +139,16 @@ describe('Array-based select without typed Database (any schema)', () => {
     })
 
     it('should serialize complex queries without type information', () => {
-      const builder = (postgrest as any).from('users').select([
-        'id',
-        { column: 'name', as: 'display_name' },
-        { column: 'data', json: ['settings', 'theme'] },
-        { relation: 'posts', inner: true, select: ['id', 'title'] },
-        { spread: true, relation: 'profile', select: ['status'] },
-        { count: true, as: 'total' },
-      ])
+      const builder = (postgrest as any)
+        .from('users')
+        .select([
+          'id',
+          { column: 'name', as: 'display_name' },
+          { column: 'data', json: ['settings', 'theme'] },
+          { relation: 'posts', inner: true, select: ['id', 'title'] },
+          { spread: true, relation: 'profile', select: ['status'] },
+          { count: true, as: 'total' },
+        ])
       expect((builder as any).url.searchParams.get('select')).toBe(
         'id,display_name:name,data->settings->theme,posts!inner(id,title),...profile(status),total:count()'
       )

@@ -32,78 +32,80 @@ Simple cases use strings, complex features use objects:
 
 ```typescript
 // Aggregate functions
-type AggregateFunction = "count" | "sum" | "avg" | "min" | "max";
+type AggregateFunction = 'count' | 'sum' | 'avg' | 'min' | 'max'
 
 // Field/column selection
 interface FieldSpec {
-  column: string;
-  as?: string;
-  cast?: string;
-  json?: string[];
-  jsonText?: string[];
-  aggregate?: AggregateFunction;
+  column: string
+  as?: string
+  cast?: string
+  json?: string[]
+  jsonText?: string[]
+  aggregate?: AggregateFunction
 }
 
 // Relation/join selection
 interface RelationSpec {
-  relation: string;
-  as?: string;
-  hint?: string;
-  inner?: boolean;
-  left?: boolean;
-  select: SelectSpec;
+  relation: string
+  as?: string
+  hint?: string
+  inner?: boolean
+  left?: boolean
+  select: SelectSpec
 }
 
 // Spread operation
 interface SpreadSpec {
-  spread: true;
-  relation: string;
-  hint?: string;
-  select: SelectSpec;
+  spread: true
+  relation: string
+  hint?: string
+  select: SelectSpec
 }
 
 // Count shorthand
 interface CountSpec {
-  count: true;
-  as?: string;
-  cast?: string;
+  count: true
+  as?: string
+  cast?: string
 }
 
 // Single item in select array
-type SelectItem = string | FieldSpec | RelationSpec | SpreadSpec | CountSpec;
+type SelectItem = string | FieldSpec | RelationSpec | SpreadSpec | CountSpec
 
 // Full select specification
-type SelectSpec = string | SelectItem[];
+type SelectSpec = string | SelectItem[]
 ```
 
 ## Feature Coverage
 
-| Feature            | String Syntax           | Array Syntax                         |
-| ------------------ | ----------------------- | ------------------------------------ |
-| Simple columns     | `'id, name'`            | `['id', 'name']`                     |
-| Column alias       | `'display:username'`    | `{ column, as }`                     |
-| Type cast          | `'col::text'`           | `{ column, cast }`                   |
-| JSON path (->)     | `'data->foo'`           | `{ column, json: [...] }`            |
-| JSON as text (->>) | `'data->>foo'`          | `{ column, jsonText: [...] }`        |
-| Column aggregate   | `'id.sum()'`            | `{ column, aggregate }`              |
-| Top-level count    | `'count()'`             | `{ count: true }`                    |
-| Relation (join)    | `'posts(id)'`           | `{ relation, select }`               |
-| Relation alias     | `'author:users(id)'`    | `{ relation, as, select }`           |
-| Inner join         | `'posts!inner(id)'`     | `{ relation, inner: true }`          |
-| Left join          | `'posts!left(id)'`      | `{ relation, left: true }`           |
-| FK hint            | `'users!fk_id(id)'`     | `{ relation, hint }`                 |
-| Spread             | `'...profile(status)'`  | `{ spread: true, relation }`         |
-| Nested relations   | `'posts(comments(id))'` | nested `select` arrays               |
+| Feature            | String Syntax           | Array Syntax                  |
+| ------------------ | ----------------------- | ----------------------------- |
+| Simple columns     | `'id, name'`            | `['id', 'name']`              |
+| Column alias       | `'display:username'`    | `{ column, as }`              |
+| Type cast          | `'col::text'`           | `{ column, cast }`            |
+| JSON path (->)     | `'data->foo'`           | `{ column, json: [...] }`     |
+| JSON as text (->>) | `'data->>foo'`          | `{ column, jsonText: [...] }` |
+| Column aggregate   | `'id.sum()'`            | `{ column, aggregate }`       |
+| Top-level count    | `'count()'`             | `{ count: true }`             |
+| Relation (join)    | `'posts(id)'`           | `{ relation, select }`        |
+| Relation alias     | `'author:users(id)'`    | `{ relation, as, select }`    |
+| Inner join         | `'posts!inner(id)'`     | `{ relation, inner: true }`   |
+| Left join          | `'posts!left(id)'`      | `{ relation, left: true }`    |
+| FK hint            | `'users!fk_id(id)'`     | `{ relation, hint }`          |
+| Spread             | `'...profile(status)'`  | `{ spread: true, relation }`  |
+| Nested relations   | `'posts(comments(id))'` | nested `select` arrays        |
 
 ## Files Created/Modified
 
 ### New Files
+
 - `src/select-query-parser/select-builder.ts` - Types and serialization
 - `test/select-builder.test.ts` - Unit tests (56 tests)
 - `test/select-builder-integration.test.ts` - Integration tests (24 tests)
 - `test/select-builder.test-d.ts` - Type tests
 
 ### Modified Files
+
 - `src/PostgrestQueryBuilder.ts` - Accept array in `select()`
 - `src/PostgrestTransformBuilder.ts` - Accept array in `select()`
 - `src/index.ts` - Export new types
