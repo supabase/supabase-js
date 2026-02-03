@@ -36,10 +36,7 @@ import { GenericSchema } from '../types/common/common'
  *     postTitle: posts.title,
  *   }))
  */
-export class FluentQueryBuilder<
-  Schema = unknown,
-  Tables extends readonly string[] = readonly []
-> {
+export class FluentQueryBuilder<Schema = unknown, Tables extends readonly string[] = readonly []> {
   private readonly state: QueryBuilderState
 
   constructor(state: QueryBuilderState = createInitialState()) {
@@ -124,9 +121,7 @@ export class FluentQueryBuilder<
     selector: (...tables: SchemaAwareTableProxies<Schema, Tables>) => Selection
   ): FluentQueryBuilder<Schema, Tables> {
     const proxies = this.createProxiesArray()
-    const selection = selector(
-      ...(proxies as unknown as SchemaAwareTableProxies<Schema, Tables>)
-    )
+    const selection = selector(...(proxies as unknown as SchemaAwareTableProxies<Schema, Tables>))
 
     const newState: QueryBuilderState = {
       ...this.state,
@@ -173,9 +168,7 @@ export class FluentQueryBuilder<
     options: { ascending?: boolean } = {}
   ): FluentQueryBuilder<Schema, Tables> {
     const proxies = this.createProxiesArray()
-    const resolvedField = field(
-      ...(proxies as unknown as SchemaAwareTableProxies<Schema, Tables>)
-    )
+    const resolvedField = field(...(proxies as unknown as SchemaAwareTableProxies<Schema, Tables>))
 
     const newState: QueryBuilderState = {
       ...this.state,

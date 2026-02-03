@@ -51,9 +51,4 @@ export {
   toPostgrestQuery,
 } from './fluent-query-builder'
 
-export type {
-  FieldRef,
-  Condition,
-  AnyCondition,
-  GeneratedQuery,
-} from './fluent-query-builder'
+export type { FieldRef, Condition, AnyCondition, GeneratedQuery } from './fluent-query-builder'

@@ -21,7 +21,7 @@ export type TablesAndViews<Schema extends GenericSchema> = Schema['Tables'] & Sc
  */
 export type TableRow<
   Schema extends GenericSchema,
-  TableName extends string
+  TableName extends string,
 > = TableName extends keyof TablesAndViews<Schema>
   ? TablesAndViews<Schema>[TableName] extends { Row: infer R }
     ? R
@@ -43,10 +43,7 @@ export type ValidTableName<Schema> = Schema extends GenericSchema
  * A reference to a specific column in a table.
  * Created by the proxy system when accessing table.column
  */
-export interface FieldRef<
-  TableAlias extends string = string,
-  ColumnName extends string = string,
-> {
+export interface FieldRef<TableAlias extends string = string, ColumnName extends string = string> {
   readonly __type: 'FieldRef'
   readonly __tableAlias: TableAlias
   readonly __column: ColumnName

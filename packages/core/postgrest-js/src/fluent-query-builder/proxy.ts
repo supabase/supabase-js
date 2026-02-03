@@ -58,7 +58,7 @@ export type TableProxy<Alias extends string> = {
 export type SchemaAwareTableProxy<
   Schema extends GenericSchema,
   TableName extends string,
-  Alias extends string = TableName
+  Alias extends string = TableName,
 > = TableName extends keyof TablesAndViews<Schema>
   ? {
       readonly [Col in keyof TablesAndViews<Schema>[TableName]['Row'] & string]: FieldRef<
@@ -76,9 +76,13 @@ export type SchemaAwareTableProxy<
  */
 export type SchemaAwareTableProxies<
   Schema,
-  Tables extends readonly string[]
+  Tables extends readonly string[],
 > = Schema extends GenericSchema
-  ? { [K in keyof Tables]: Tables[K] extends string ? SchemaAwareTableProxy<Schema, Tables[K]> : never }
+  ? {
+      [K in keyof Tables]: Tables[K] extends string
+        ? SchemaAwareTableProxy<Schema, Tables[K]>
+        : never
+    }
   : { [K in keyof Tables]: Tables[K] extends string ? TableProxy<Tables[K]> : never }
 
 /**
