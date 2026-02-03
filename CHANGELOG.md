@@ -1,3 +1,17 @@
+## 2.94.0 (2026-02-03)
+
+### 🚀 Features
+
+- **postgrest:** add URL length validation and timeout protection ([#2078](https://github.com/supabase/supabase-js/pull/2078))
+
+### 🩹 Fixes
+
+- **ci:** handle missing git auth header in release-canary script ([#2077](https://github.com/supabase/supabase-js/pull/2077))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+
 ## 2.93.3 (2026-01-29)
 
 ### 🩹 Fixes
