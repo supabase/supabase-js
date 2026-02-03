@@ -5,7 +5,8 @@
  * producing FieldRef objects that can be used in conditions and selects.
  */
 
-import { FieldRef } from './types'
+import { FieldRef, TablesAndViews } from './types'
+import { GenericSchema } from '../types/common/common'
 
 /**
  * Symbol to identify proxy objects
@@ -39,7 +40,8 @@ export function isFieldRef(value: unknown): value is FieldRef {
 }
 
 /**
- * Type for a proxy that creates FieldRefs when properties are accessed
+ * Type for a proxy that creates FieldRefs when properties are accessed (untyped).
+ * Allows any column name - used for backward compatibility.
  */
 export type TableProxy<Alias extends string> = {
   readonly [column: string]: FieldRef<Alias, string>
@@ -47,6 +49,37 @@ export type TableProxy<Alias extends string> = {
   readonly [PROXY_MARKER]: true
   readonly __alias: Alias
 }
+
+/**
+ * Schema-aware table proxy that constrains property access to actual columns.
+ * When a table exists in the schema, only its columns are accessible.
+ * Falls back to TableProxy for unknown tables.
+ */
+export type SchemaAwareTableProxy<
+  Schema extends GenericSchema,
+  TableName extends string,
+  Alias extends string = TableName
+> = TableName extends keyof TablesAndViews<Schema>
+  ? {
+      readonly [Col in keyof TablesAndViews<Schema>[TableName]['Row'] & string]: FieldRef<
+        Alias,
+        Col
+      >
+    } & {
+      readonly [PROXY_MARKER]: true
+      readonly __alias: Alias
+    }
+  : TableProxy<Alias>
+
+/**
+ * Helper type that creates a tuple of schema-aware proxies from a tuple of table names.
+ */
+export type SchemaAwareTableProxies<
+  Schema,
+  Tables extends readonly string[]
+> = Schema extends GenericSchema
+  ? { [K in keyof Tables]: Tables[K] extends string ? SchemaAwareTableProxy<Schema, Tables[K]> : never }
+  : { [K in keyof Tables]: Tables[K] extends string ? TableProxy<Tables[K]> : never }
 
 /**
  * Creates a proxy for a table that generates FieldRefs when columns are accessed.

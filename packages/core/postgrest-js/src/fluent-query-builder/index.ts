@@ -20,6 +20,10 @@ export type {
   TableList,
   JoinedTable,
   QueryBuilderState,
+  // Schema helper types
+  TablesAndViews,
+  TableRow,
+  ValidTableName,
 } from './types'
 
 export { createInitialState } from './types'
@@ -27,7 +31,7 @@ export { createInitialState } from './types'
 // Proxy utilities
 export { createFieldRef, createTableProxy, isFieldRef, isTableProxy } from './proxy'
 
-export type { TableProxy } from './proxy'
+export type { TableProxy, SchemaAwareTableProxy, SchemaAwareTableProxies } from './proxy'
 
 // Operators
 export {

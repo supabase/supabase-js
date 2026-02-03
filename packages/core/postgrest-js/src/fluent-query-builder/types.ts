@@ -4,6 +4,41 @@
  * Core type definitions for the fluent query builder API.
  */
 
+import { GenericSchema } from '../types/common/common'
+
+// ============================================================================
+// Schema Helper Types
+// ============================================================================
+
+/**
+ * Combines Tables and Views from a schema for unified access.
+ */
+export type TablesAndViews<Schema extends GenericSchema> = Schema['Tables'] & Schema['Views']
+
+/**
+ * Extracts the Row type for a specific table/view from the schema.
+ * Falls back to Record<string, unknown> for unknown tables.
+ */
+export type TableRow<
+  Schema extends GenericSchema,
+  TableName extends string
+> = TableName extends keyof TablesAndViews<Schema>
+  ? TablesAndViews<Schema>[TableName] extends { Row: infer R }
+    ? R
+    : Record<string, unknown>
+  : Record<string, unknown>
+
+/**
+ * Gets valid table/view names from a schema, or string if schema is unknown.
+ */
+export type ValidTableName<Schema> = Schema extends GenericSchema
+  ? string & keyof TablesAndViews<Schema>
+  : string
+
+// ============================================================================
+// Field Reference Types
+// ============================================================================
+
 /**
  * A reference to a specific column in a table.
  * Created by the proxy system when accessing table.column

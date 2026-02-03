@@ -10,20 +10,24 @@ import {
   FieldRef,
   AnyCondition,
   JoinedTable,
+  ValidTableName,
 } from './types'
-import { createTableProxy, TableProxy } from './proxy'
-
-/**
- * Helper type to create a tuple of TableProxy types from a tuple of table names
- */
-type TableProxies<T extends readonly string[]> = {
-  [K in keyof T]: T[K] extends string ? TableProxy<T[K]> : never
-}
+import { createTableProxy, TableProxy, SchemaAwareTableProxies } from './proxy'
+import { GenericSchema } from '../types/common/common'
 
 /**
  * The main fluent query builder class.
  *
+ * @typeParam Schema - Database schema type for type-safe column access (optional)
+ * @typeParam Tables - Tuple of table names currently in the query
+ *
  * @example
+ * // Typed usage with schema
+ * const query = q<Database>()
+ *   .from('users')
+ *   .select((users) => ({ name: users.name }))
+ *
+ * // Untyped usage (backward compatible)
  * const query = q()
  *   .from('users')
  *   .join('posts')
@@ -32,7 +36,10 @@ type TableProxies<T extends readonly string[]> = {
  *     postTitle: posts.title,
  *   }))
  */
-export class FluentQueryBuilder<Tables extends readonly string[] = readonly []> {
+export class FluentQueryBuilder<
+  Schema = unknown,
+  Tables extends readonly string[] = readonly []
+> {
   private readonly state: QueryBuilderState
 
   constructor(state: QueryBuilderState = createInitialState()) {
@@ -41,11 +48,15 @@ export class FluentQueryBuilder<Tables extends readonly string[] = readonly []> 
 
   /**
    * Start a query from a base table.
+   * When Schema is provided, tableName is constrained to valid table/view names.
    *
    * @example
-   * q().from('users')
+   * q<Database>().from('users')  // Validates 'users' exists in schema
+   * q().from('any_table')        // Allows any table name (untyped)
    */
-  from<TableName extends string>(tableName: TableName): FluentQueryBuilder<readonly [TableName]> {
+  from<TableName extends ValidTableName<Schema>>(
+    tableName: TableName
+  ): FluentQueryBuilder<Schema, readonly [TableName]> {
     const newState: QueryBuilderState = {
       ...this.state,
       baseTable: tableName,
@@ -57,26 +68,29 @@ export class FluentQueryBuilder<Tables extends readonly string[] = readonly []> 
   /**
    * Join another table to the query.
    * The condition is optional - only needed when disambiguating multiple FKs.
+   * Column access in the condition callback is type-checked against the schema.
    *
    * @example
    * // Simple join (FK auto-resolved)
-   * q().from('users').join('posts')
+   * q<Database>().from('users').join('posts')
    *
    * // With disambiguation
-   * q().from('users').join('messages', (users, messages) =>
+   * q<Database>().from('users').join('messages', (users, messages) =>
    *   eq(users.id, messages.senderId)
    * )
    */
-  join<TableName extends string>(
+  join<TableName extends ValidTableName<Schema>>(
     tableName: TableName,
-    condition?: (...tables: TableProxies<readonly [...Tables, TableName]>) => AnyCondition
-  ): FluentQueryBuilder<readonly [...Tables, TableName]> {
+    condition?: (
+      ...tables: SchemaAwareTableProxies<Schema, readonly [...Tables, TableName]>
+    ) => AnyCondition
+  ): FluentQueryBuilder<Schema, readonly [...Tables, TableName]> {
     // Evaluate the condition if provided
     let resolvedCondition: AnyCondition | undefined
     if (condition) {
       const proxies = this.createProxiesArray(tableName)
       resolvedCondition = condition(
-        ...(proxies as unknown as TableProxies<readonly [...Tables, TableName]>)
+        ...(proxies as unknown as SchemaAwareTableProxies<Schema, readonly [...Tables, TableName]>)
       )
     }
 
@@ -95,9 +109,10 @@ export class FluentQueryBuilder<Tables extends readonly string[] = readonly []> 
 
   /**
    * Define the fields to select from the query.
+   * Column access is validated against schema types.
    *
    * @example
-   * q()
+   * q<Database>()
    *   .from('users')
    *   .join('posts')
    *   .select((users, posts) => ({
@@ -106,10 +121,12 @@ export class FluentQueryBuilder<Tables extends readonly string[] = readonly []> 
    *   }))
    */
   select<Selection extends Record<string, FieldRef>>(
-    selector: (...tables: TableProxies<Tables>) => Selection
-  ): FluentQueryBuilder<Tables> {
+    selector: (...tables: SchemaAwareTableProxies<Schema, Tables>) => Selection
+  ): FluentQueryBuilder<Schema, Tables> {
     const proxies = this.createProxiesArray()
-    const selection = selector(...(proxies as unknown as TableProxies<Tables>))
+    const selection = selector(
+      ...(proxies as unknown as SchemaAwareTableProxies<Schema, Tables>)
+    )
 
     const newState: QueryBuilderState = {
       ...this.state,
@@ -123,15 +140,17 @@ export class FluentQueryBuilder<Tables extends readonly string[] = readonly []> 
    * Add a where condition to filter results.
    *
    * @example
-   * q()
+   * q<Database>()
    *   .from('users')
    *   .where((users) => eq(users.status, 'active'))
    */
   where(
-    condition: (...tables: TableProxies<Tables>) => AnyCondition
-  ): FluentQueryBuilder<Tables> {
+    condition: (...tables: SchemaAwareTableProxies<Schema, Tables>) => AnyCondition
+  ): FluentQueryBuilder<Schema, Tables> {
     const proxies = this.createProxiesArray()
-    const resolvedCondition = condition(...(proxies as unknown as TableProxies<Tables>))
+    const resolvedCondition = condition(
+      ...(proxies as unknown as SchemaAwareTableProxies<Schema, Tables>)
+    )
 
     const newState: QueryBuilderState = {
       ...this.state,
@@ -145,16 +164,18 @@ export class FluentQueryBuilder<Tables extends readonly string[] = readonly []> 
    * Add ordering to the query.
    *
    * @example
-   * q()
+   * q<Database>()
    *   .from('users')
    *   .orderBy((users) => users.createdAt, { ascending: false })
    */
   orderBy(
-    field: (...tables: TableProxies<Tables>) => FieldRef,
+    field: (...tables: SchemaAwareTableProxies<Schema, Tables>) => FieldRef,
     options: { ascending?: boolean } = {}
-  ): FluentQueryBuilder<Tables> {
+  ): FluentQueryBuilder<Schema, Tables> {
     const proxies = this.createProxiesArray()
-    const resolvedField = field(...(proxies as unknown as TableProxies<Tables>))
+    const resolvedField = field(
+      ...(proxies as unknown as SchemaAwareTableProxies<Schema, Tables>)
+    )
 
     const newState: QueryBuilderState = {
       ...this.state,
@@ -173,7 +194,7 @@ export class FluentQueryBuilder<Tables extends readonly string[] = readonly []> 
    * @example
    * q().from('users').limit(10)
    */
-  limit(count: number): FluentQueryBuilder<Tables> {
+  limit(count: number): FluentQueryBuilder<Schema, Tables> {
     const newState: QueryBuilderState = {
       ...this.state,
       limit: count,
@@ -222,9 +243,20 @@ export class FluentQueryBuilder<Tables extends readonly string[] = readonly []> 
 /**
  * Create a new fluent query builder.
  *
+ * @typeParam Schema - Optional database schema type for type-safe column access
+ *
  * @example
+ * // With schema type (recommended) - provides autocomplete and type errors
  * import { q, eq } from './fluent-query-builder'
  *
+ * const query = q<Database>()
+ *   .from('users')  // Validates 'users' exists
+ *   .select((users) => ({
+ *     name: users.name,  // Validates 'name' column exists
+ *   }))
+ *
+ * @example
+ * // Without schema (backward compatible) - allows any table/column
  * const query = q()
  *   .from('users')
  *   .join('posts')
@@ -233,6 +265,8 @@ export class FluentQueryBuilder<Tables extends readonly string[] = readonly []> 
  *     postTitle: posts.title,
  *   }))
  */
-export function q(): FluentQueryBuilder<readonly []> {
+export function q<Schema extends GenericSchema>(): FluentQueryBuilder<Schema, readonly []>
+export function q(): FluentQueryBuilder<unknown, readonly []>
+export function q<Schema = unknown>(): FluentQueryBuilder<Schema, readonly []> {
   return new FluentQueryBuilder()
 }
