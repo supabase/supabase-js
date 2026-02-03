@@ -370,16 +370,13 @@ type SelectSpec = string | SelectItem[] // string for backward compat only
 ### New Files
 
 1. `packages/core/postgrest-js/src/select-query-parser/select-builder.ts`
-
    - Type definitions for SelectSpec, FieldSpec, RelationSpec, etc.
    - `serializeSelect()` function to convert array to string
 
 2. `packages/core/postgrest-js/src/select-query-parser/result-from-spec.ts`
-
    - Type inference for array-based specs (parallel to result.ts)
 
 3. `packages/core/postgrest-js/test/select-builder.test.ts`
-
    - Unit tests for serialization
 
 4. `packages/core/postgrest-js/test/select-builder.test-d.ts`
@@ -388,12 +385,10 @@ type SelectSpec = string | SelectItem[] // string for backward compat only
 ### Modified Files
 
 1. `packages/core/postgrest-js/src/PostgrestQueryBuilder.ts`
-
    - Update `select()` to accept `SelectSpec` in addition to string
    - Call `serializeSelect()` when array is passed
 
 2. `packages/core/postgrest-js/src/PostgrestTransformBuilder.ts`
-
    - Same changes for the chained `select()` after mutations
 
 3. `packages/core/postgrest-js/src/index.ts`
