@@ -28,9 +28,17 @@ update_file() {
     exit 1
   fi
 
-  # Show before
+  # Check for {COMMIT_HASH} placeholders before replacement
+  local before_count
+  before_count=$(grep -c '{COMMIT_HASH}' "$file" || true)
+
   echo "Before:"
-  grep -n "COMMIT_HASH" "$file" || echo "  (no {COMMIT_HASH} found)"
+  if [ "$before_count" -eq 0 ]; then
+    echo "❌ Error: No {COMMIT_HASH} placeholders found in $file"
+    exit 1
+  fi
+  grep -n '{COMMIT_HASH}' "$file"
+  echo "  (found $before_count placeholder(s))"
 
   # Update using sed (portable syntax for both macOS and Linux)
   if [[ "$OSTYPE" == "darwin"* ]]; then
@@ -41,9 +49,17 @@ update_file() {
     sed -i "s/{COMMIT_HASH}/$COMMIT_HASH/g" "$file"
   fi
 
-  # Show after
+  # Verify replacements were made
+  local after_count
+  after_count=$(grep -c "$COMMIT_HASH" "$file" || true)
+
   echo "After:"
-  grep -n "$COMMIT_HASH" "$file" || echo "  (no matches found - this might be an error!)"
+  if [ "$after_count" -eq 0 ]; then
+    echo "❌ Error: No replacements were made in $file (expected $COMMIT_HASH to appear)"
+    exit 1
+  fi
+  grep -n "$COMMIT_HASH" "$file"
+  echo "  (verified $after_count replacement(s))"
   echo ""
 }
 
