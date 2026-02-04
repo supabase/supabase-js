@@ -125,7 +125,7 @@ jobs:
           if [[ -z "$VERSION" ]]; then
             exit 1
           fi
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
       - name: Summary
         if: ${{ success() }}

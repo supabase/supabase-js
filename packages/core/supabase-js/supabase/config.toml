@@ -1,0 +1,26 @@
+# Supabase Edge Functions Configuration
+# https://supabase.com/docs/guides/local-development/cli/config
+
+[functions.hello]
+enabled = true
+verify_jwt = false
+
+[functions.echo]
+enabled = true
+verify_jwt = false
+
+[functions.status]
+enabled = true
+verify_jwt = false
+
+[functions.cors-validation]
+enabled = true
+verify_jwt = false
+
+[functions.cors-http-methods]
+enabled = true
+verify_jwt = false
+
+[functions.cors-errors]
+enabled = true
+verify_jwt = false

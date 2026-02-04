@@ -62,11 +62,11 @@
     "supabase": "^2.72.9",
     "ts-jest": "^29.4.2",
     "ts-node": "^10.9.1",
+    "tsd": "^0.33.0",
     "tsdown": "^0.18.0",
     "tslib": "^2.3.0",
     "typedoc": "^0.27.9",
     "typescript": "~5.8.3",
-    "verdaccio": "^6.2.4",
     "vite": "7.1.11",
     "vitest": "^3.2.4",
     "webpack-cli": "^5.1.4"
@@ -79,18 +79,5 @@
     "packages/core/realtime-js",
     "packages/core/storage-js",
     "packages/core/supabase-js"
-  ],
-  "nx": {
-    "includedScripts": [],
-    "targets": {
-      "local-registry": {
-        "executor": "@nx/js:verdaccio",
-        "options": {
-          "port": 4873,
-          "config": ".verdaccio/config.yml",
-          "storage": "tmp/local-registry/storage"
-        }
-      }
-    }
-  }
+  ]
 }

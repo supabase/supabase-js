@@ -1,0 +1,165 @@
+name: Integration Tests
+# Reusable workflow for running integration tests with pkg.pr.new packages
+# Called by preview-release.yml after packages are published
+
+on:
+  workflow_call:
+    inputs:
+      commit_hash:
+        description: 'Git commit hash for pkg.pr.new URLs'
+        required: true
+        type: string
+
+env:
+  NODE_VERSION: '20'
+  # Ensure Puppeteer installs and looks for Chrome in the same location
+  PUPPETEER_CACHE_DIR: /home/runner/.cache/puppeteer
+
+jobs:
+  integration-tests:
+    name: Integration Tests (All Platforms)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        with:
+          filter: tree:0
+          fetch-depth: 0
+
+      - name: Update pkg.pr.new URLs with commit hash
+        run: ./scripts/update-pkg-pr-urls.sh "${{ inputs.commit_hash }}"
+
+      - name: Setup Node.js
+        uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238 # v6.2.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Setup Deno
+        uses: denoland/setup-deno@e95548e56dfa95d4e1a28d6f422fafe75c4c26fb # v2.0.3
+        with:
+          deno-version: '2.x'
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@3d267786b128fe76c2f16a390aa2448b815359f3 # v2.1.2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install jq for JSON parsing
+        run: sudo apt-get update && sudo apt-get install -y jq
+
+      - name: Install browser dependencies
+        run: |
+          # Ensure cache directory exists
+          mkdir -p "$PUPPETEER_CACHE_DIR"
+          # Install Puppeteer Chrome for integration.browser.test.ts
+          # Using 'puppeteer browsers install' ensures Chrome is installed in PUPPETEER_CACHE_DIR
+          npx puppeteer browsers install chrome
+          # Install Playwright browsers for WebSocket tests
+          npx playwright install --with-deps
+
+      - name: Setup Supabase
+        run: npx nx test:supabase:setup supabase-js
+
+      - name: Export auth keys
+        run: |
+          cd packages/core/supabase-js
+          echo SUPABASE_ANON_KEY="$(npx supabase status --output json | jq -r '.ANON_KEY')" >> $GITHUB_ENV
+          echo SUPABASE_SERVICE_ROLE_KEY="$(npx supabase status --output json | jq -r '.SERVICE_ROLE_KEY')" >> $GITHUB_ENV
+          echo "✅ Keys exported"
+
+      - name: Verify edge functions
+        run: |
+          cd packages/core/supabase-js
+          MAX_ATTEMPTS=10
+          RETRY_DELAY=3
+          HTTP_CODE=""
+          RESPONSE=""
+
+          for attempt in $(seq 1 $MAX_ATTEMPTS); do
+            echo "Attempt $attempt/$MAX_ATTEMPTS: Probing edge functions..."
+
+            RESPONSE=$(curl -s -w "\n%{http_code}" \
+              --connect-timeout 5 \
+              --max-time 10 \
+              -X POST \
+              -H "Authorization: Bearer $SUPABASE_ANON_KEY" \
+              -H "Content-Type: application/json" \
+              -d '{"name":"CI"}' \
+              http://127.0.0.1:54321/functions/v1/hello 2>/dev/null) || true
+
+            HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+
+            if [ "$HTTP_CODE" = "200" ]; then
+              echo "✅ Edge functions ready (attempt $attempt)"
+              break
+            fi
+
+            echo "   Status: $HTTP_CODE (not ready yet)"
+
+            if [ "$attempt" -lt "$MAX_ATTEMPTS" ]; then
+              echo "   Retrying in ${RETRY_DELAY}s..."
+              sleep $RETRY_DELAY
+            fi
+          done
+
+          if [ "$HTTP_CODE" != "200" ]; then
+            echo "❌ Edge functions not responding after $MAX_ATTEMPTS attempts (final status: $HTTP_CODE)"
+            echo "--- Edge functions log ---"
+            cat /tmp/supabase-functions.log 2>/dev/null || echo "(no log available)"
+            echo "--- End of log ---"
+            exit 1
+          fi
+
+      - name: Prepare platform test dependencies
+        run: |
+          echo "📦 Installing dependencies for platform tests..."
+          echo "   Using --legacy-peer-deps because preview packages have version 0.0.0-automated"
+          echo "   which doesn't satisfy peer dependency requirements like ^2.76.1"
+          echo ""
+
+          cd packages/core/supabase-js/test/integration/next
+          npm install --legacy-peer-deps
+          cd "$GITHUB_WORKSPACE"
+
+          cd packages/core/supabase-js/test/integration/expo
+          npm install --legacy-peer-deps
+          cd "$GITHUB_WORKSPACE"
+
+          cd packages/core/supabase-js/test/integration/bun
+          bun install
+          cd "$GITHUB_WORKSPACE"
+
+      - name: Run all tests in parallel
+        run: |
+          set -e
+
+          # Core tests: Deno, Node integration, Browser integration
+          # Using run-many coordinates builds properly (no race conditions)
+          echo "🧪 Running core tests..."
+          npx nx run-many \
+            -t test:deno:all,test:integration,test:integration:browser \
+            -p supabase-js \
+            --parallel=3 \
+            --verbose
+
+          # Platform tests: Next.js, Expo, Bun
+          echo "🧪 Running platform tests..."
+          npx nx run-many \
+            -t test:next,test:expo,test:bun \
+            -p supabase-js \
+            --parallel=3 \
+            --verbose
+
+          # WebSocket tests (requires completed platforms)
+          echo "🧪 Running WebSocket tests..."
+          npx nx test:node:playwright supabase-js
+
+          echo "✅ All tests passed"
+
+      - name: Stop Supabase
+        if: always()
+        run: npx nx test:supabase:stop supabase-js

@@ -1,0 +1,13 @@
+{
+  "lock": false,
+  "imports": {
+    "@supabase/supabase-js": "https://esm.sh/pr/supabase/supabase-js/@supabase/supabase-js@{COMMIT_HASH}?target=deno",
+    "@supabase/supabase-js/": "https://esm.sh/pr/supabase/supabase-js/@supabase/supabase-js@{COMMIT_HASH}/",
+    "@supabase/supabase-js/cors": "https://esm.sh/pr/supabase/supabase-js/@supabase/supabase-js@{COMMIT_HASH}/dist/cors.mjs",
+    "@supabase/realtime-js": "https://esm.sh/pr/supabase/supabase-js/@supabase/realtime-js@{COMMIT_HASH}?target=deno",
+    "@supabase/functions-js": "https://esm.sh/pr/supabase/supabase-js/@supabase/functions-js@{COMMIT_HASH}?target=deno",
+    "@supabase/postgrest-js": "https://esm.sh/pr/supabase/supabase-js/@supabase/postgrest-js@{COMMIT_HASH}?target=deno",
+    "@supabase/auth-js": "https://esm.sh/pr/supabase/supabase-js/@supabase/auth-js@{COMMIT_HASH}?target=deno",
+    "@supabase/storage-js": "https://esm.sh/pr/supabase/supabase-js/@supabase/storage-js@{COMMIT_HASH}?target=deno"
+  }
+}

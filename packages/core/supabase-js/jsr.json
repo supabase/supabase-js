@@ -1,6 +1,9 @@
 {
   "name": "@supabase/supabase-js",
   "version": "0.0.0-automated",
-  "exports": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./cors": "./src/cors.ts"
+  },
   "exclude": ["examples"]
 }

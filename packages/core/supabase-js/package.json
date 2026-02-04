@@ -29,6 +29,16 @@
         "default": "./dist/index.cjs"
       }
     },
+    "./cors": {
+      "import": {
+        "types": "./dist/cors.d.mts",
+        "default": "./dist/cors.mjs"
+      },
+      "require": {
+        "types": "./dist/cors.d.cts",
+        "default": "./dist/cors.cjs"
+      }
+    },
     "./dist/*": "./dist/*",
     "./package.json": "./package.json"
   },
@@ -55,10 +65,10 @@
     "test:bun": "cd test/integration/bun && bun install && bun test",
     "test:expo": "cd test/integration/expo && npm test",
     "test:next": "cd test/integration/next && npm test",
-    "test:types": "tsd --files test/types/*.test-d.ts && jsr publish --dry-run --allow-dirty",
-    "test:exports": "attw --pack .",
-    "test:esm": "node test/module-resolution.test.mjs",
-    "test:cjs": "node test/module-resolution.test.cjs",
+    "test:types": "tsd --files test/types/index.test-d.ts && tsd --typings dist/cors.d.cts --files test/types/cors.test-d.ts && jsr publish --dry-run --allow-dirty",
+    "test:exports": "attw --pack . --ignore-rules no-resolution",
+    "test:esm": "node test/module-resolution.test.mjs && node test/module-resolution-cors.test.mjs",
+    "test:cjs": "node test/module-resolution.test.cjs && node test/module-resolution-cors.test.cjs",
     "test:module-resolution": "npm run test:exports && npm run test:esm && npm run test:cjs",
     "docs": "typedoc --entryPoints src/index.ts --out docs/v2",
     "docs:json": "typedoc --entryPoints src/index.ts --json docs/v2/spec.json --excludeExternals",
@@ -78,8 +88,7 @@
   },
   "devDependencies": {
     "jsr": "^0.13.5",
-    "puppeteer": "^24.9.0",
-    "tsd": "^0.33.0"
+    "puppeteer": "^24.9.0"
   },
   "jsdelivr": "dist/umd/supabase.js",
   "unpkg": "dist/umd/supabase.js",
