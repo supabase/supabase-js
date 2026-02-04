@@ -1,3 +1,13 @@
+## 2.94.1 (2026-02-04)
+
+### 🩹 Fixes
+
+- **auth:** correct OAuth authorization types to match API responses ([#2088](https://github.com/supabase/supabase-js/pull/2088))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+
 ## 2.94.0 (2026-02-03)
 
 This was a version bump only for @supabase/auth-js to align it with other projects, there were no code changes.
