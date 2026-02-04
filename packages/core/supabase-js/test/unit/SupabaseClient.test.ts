@@ -135,6 +135,63 @@ describe('SupabaseClient', () => {
       // @ts-ignore
       expect(client.headers).toHaveProperty('X-Client-Info')
     })
+
+    test('should append schema name to storage key for non-public schemas', () => {
+      const client = createClient('https://project-ref.supabase.co', KEY, {
+        db: { schema: 'personal' },
+      })
+      // @ts-ignore
+      expect(client.storageKey).toBe('sb-project-ref-auth-token-personal')
+    })
+
+    test('should not append schema name for public schema', () => {
+      const client = createClient('https://project-ref.supabase.co', KEY, {
+        db: { schema: 'public' },
+      })
+      // @ts-ignore
+      expect(client.storageKey).toBe('sb-project-ref-auth-token')
+    })
+
+    test('should create unique storage keys for different schemas', () => {
+      const client1 = createClient('https://project-ref.supabase.co', KEY, {
+        db: { schema: 'public' },
+      })
+      const client2 = createClient('https://project-ref.supabase.co', KEY, {
+        db: { schema: 'personal' },
+      })
+
+      // @ts-ignore
+      expect(client1.storageKey).toBe('sb-project-ref-auth-token')
+      // @ts-ignore
+      expect(client2.storageKey).toBe('sb-project-ref-auth-token-personal')
+
+      // @ts-ignore
+      expect(client1.storageKey).not.toBe(client2.storageKey)
+    })
+
+    test('should respect custom storage key even with schema specified', () => {
+      const customStorageKey = 'my-custom-key'
+      const client = createClient(URL, KEY, {
+        db: { schema: 'personal' },
+        auth: { storageKey: customStorageKey },
+      })
+      // @ts-ignore
+      expect(client.storageKey).toBe(customStorageKey)
+    })
+
+    test('should handle schema names with special characters', () => {
+      const client = createClient('https://project-ref.supabase.co', KEY, {
+        db: { schema: 'my_schema-v2' },
+      })
+      // @ts-ignore
+      expect(client.storageKey).toBe('sb-project-ref-auth-token-my_schema-v2')
+    })
+
+    test('should not append when schema is undefined', () => {
+      const client = createClient('https://project-ref.supabase.co', KEY)
+      // @ts-ignore
+      expect(client.storageKey).toBe('sb-project-ref-auth-token')
+    })
   })
 
   describe('Client Methods', () => {

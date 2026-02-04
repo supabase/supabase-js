@@ -124,7 +124,9 @@ export default class SupabaseClient<
     this.functionsUrl = new URL('functions/v1', baseUrl)
 
     // default storage key uses the supabase project ref as a namespace
-    const defaultStorageKey = `sb-${baseUrl.hostname.split('.')[0]}-auth-token`
+    const schemaName = options?.db?.schema
+    const schemaSuffix = schemaName && schemaName !== 'public' ? `-${schemaName}` : ''
+    const defaultStorageKey = `sb-${baseUrl.hostname.split('.')[0]}-auth-token${schemaSuffix}`
     const DEFAULTS = {
       db: DEFAULT_DB_OPTIONS,
       realtime: DEFAULT_REALTIME_OPTIONS,
