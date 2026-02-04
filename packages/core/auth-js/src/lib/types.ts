@@ -1764,14 +1764,21 @@ export type OAuthAuthorizationClient = {
 }
 
 /**
- * OAuth authorization details for the consent flow.
+ * OAuth authorization details when user needs to provide consent.
  * Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
+ *
+ * This response includes all information needed to display a consent page:
+ * client details, user info, requested scopes, and where the user will be redirected.
+ *
+ * Note: `redirect_uri` is the base URI (e.g., "https://app.com/callback") without
+ * query parameters. After consent, you'll receive a complete `redirect_url` with
+ * the authorization code and state parameters appended.
  */
 export type OAuthAuthorizationDetails = {
-  /** The authorization ID */
+  /** The authorization ID used to approve or deny the request */
   authorization_id: string
-  /** Redirect URL - present if user already consented (can be used to trigger immediate redirect) */
-  redirect_url?: string
+  /** The OAuth client's registered redirect URI (base URI without query parameters) */
+  redirect_uri: string
   /** OAuth client requesting authorization */
   client: OAuthAuthorizationClient
   /** User object associated with the authorization */
@@ -1781,24 +1788,59 @@ export type OAuthAuthorizationDetails = {
     /** User email */
     email: string
   }
-  /** Space-separated list of requested scopes */
+  /** Space-separated list of requested scopes (e.g., "openid profile email") */
   scope: string
 }
 
 /**
- * Response type for getting OAuth authorization details.
+ * OAuth redirect response when user has already consented or after consent decision.
  * Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
+ *
+ * This response is returned in three scenarios:
+ * 1. User already consented to these scopes (auto-approved)
+ * 2. User just approved the authorization request
+ * 3. User just denied the authorization request
+ *
+ * The `redirect_url` is a complete URL ready for redirecting the user back to the
+ * OAuth client, including authorization code (on success) or error (on denial) in
+ * query parameters, along with the state parameter if one was provided.
  */
-export type AuthOAuthAuthorizationDetailsResponse = RequestResult<OAuthAuthorizationDetails>
+export type OAuthRedirect = {
+  /** Complete redirect URL with authorization code and state parameters (e.g., "https://app.com/callback?code=xxx&state=yyy") */
+  redirect_url: string
+}
+
+/**
+ * Response type for getting OAuth authorization details.
+ * Returns either full authorization details (if consent needed) or redirect URL (if already consented).
+ * Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
+ *
+ * @example
+ * ```typescript
+ * const { data, error } = await supabase.auth.oauth.getAuthorizationDetails(authorizationId)
+ *
+ * if (error) {
+ *   console.error('Error:', error)
+ * } else if ('authorization_id' in data) {
+ *   // User needs to provide consent - show consent page
+ *   console.log('Client:', data.client.name)
+ *   console.log('Scopes:', data.scope)
+ *   console.log('Redirect URI:', data.redirect_uri)
+ * } else {
+ *   // User already consented - redirect immediately
+ *   window.location.href = data.redirect_url
+ * }
+ * ```
+ */
+export type AuthOAuthAuthorizationDetailsResponse = RequestResult<
+  OAuthAuthorizationDetails | OAuthRedirect
+>
 
 /**
  * Response type for OAuth consent decision (approve/deny).
  * Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
  */
-export type AuthOAuthConsentResponse = RequestResult<{
-  /** URL to redirect the user back to the OAuth client */
-  redirect_url: string
-}>
+export type AuthOAuthConsentResponse = RequestResult<OAuthRedirect>
 
 /**
  * An OAuth grant representing a user's authorization of an OAuth client.
@@ -1837,12 +1879,21 @@ export interface AuthOAuthServerApi {
    * Used to display consent information to the user.
    * Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
    *
-   * This method returns authorization details including client info, scopes, and user information.
-   * If the response includes a redirect_uri, it means consent was already given - the caller
-   * should handle the redirect manually if needed.
+   * This method returns one of two response types:
+   * - `OAuthAuthorizationDetails`: User needs to consent - show consent page with client info
+   * - `OAuthRedirect`: User already consented - redirect immediately to the OAuth client
+   *
+   * Use type narrowing to distinguish between the responses:
+   * ```typescript
+   * if ('authorization_id' in data) {
+   *   // Show consent page
+   * } else {
+   *   // Redirect to data.redirect_url
+   * }
+   * ```
    *
    * @param authorizationId - The authorization ID from the authorization request
-   * @returns Authorization details including client info and requested scopes
+   * @returns Authorization details or redirect URL depending on consent status
    */
   getAuthorizationDetails(authorizationId: string): Promise<AuthOAuthAuthorizationDetailsResponse>
 
@@ -1850,9 +1901,13 @@ export interface AuthOAuthServerApi {
    * Approves an OAuth authorization request.
    * Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
    *
+   * After approval, the user's consent is stored and an authorization code is generated.
+   * The response contains a complete redirect URL with the authorization code and state.
+   *
    * @param authorizationId - The authorization ID to approve
-   * @param options - Optional parameters including skipBrowserRedirect
-   * @returns Redirect URL to send the user back to the OAuth client
+   * @param options - Optional parameters
+   * @param options.skipBrowserRedirect - If false (default), automatically redirects the browser to the OAuth client. If true, returns the redirect_url without automatic redirect (useful for custom handling).
+   * @returns Redirect URL to send the user back to the OAuth client with authorization code
    */
   approveAuthorization(
     authorizationId: string,
@@ -1863,9 +1918,13 @@ export interface AuthOAuthServerApi {
    * Denies an OAuth authorization request.
    * Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
    *
+   * After denial, the response contains a redirect URL with an OAuth error
+   * (access_denied) to inform the OAuth client that the user rejected the request.
+   *
    * @param authorizationId - The authorization ID to deny
-   * @param options - Optional parameters including skipBrowserRedirect
-   * @returns Redirect URL to send the user back to the OAuth client
+   * @param options - Optional parameters
+   * @param options.skipBrowserRedirect - If false (default), automatically redirects the browser to the OAuth client. If true, returns the redirect_url without automatic redirect (useful for custom handling).
+   * @returns Redirect URL to send the user back to the OAuth client with error information
    */
   denyAuthorization(
     authorizationId: string,
