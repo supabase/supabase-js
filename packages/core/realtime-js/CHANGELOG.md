@@ -1,3 +1,7 @@
+## 2.94.1 (2026-02-04)
+
+This was a version bump only for @supabase/realtime-js to align it with other projects, there were no code changes.
+
 ## 2.94.0 (2026-02-03)
 
 This was a version bump only for @supabase/realtime-js to align it with other projects, there were no code changes.
