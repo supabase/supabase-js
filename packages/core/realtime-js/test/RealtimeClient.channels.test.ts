@@ -154,8 +154,9 @@ describe('channel', () => {
 
     assert.equal(testSetup.socket.getChannels().length, 1)
 
-    // Mock unsubscribe to return 'ok'
-    vi.spyOn(channel, 'unsubscribe').mockResolvedValue('ok')
+    // Mock the internal unsubscribe method to return 'ok'
+    // @ts-ignore - accessing private method for testing
+    vi.spyOn(channel, '_unsubscribeNoRemoval').mockResolvedValue('ok')
 
     await testSetup.socket.removeChannel(channel)
 
@@ -169,8 +170,9 @@ describe('channel', () => {
 
     assert.equal(testSetup.socket.getChannels().length, 1)
 
-    // Mock unsubscribe to return 'error'
-    vi.spyOn(channel, 'unsubscribe').mockResolvedValue('error')
+    // Mock the internal unsubscribe method to return 'error'
+    // @ts-ignore - accessing private method for testing
+    vi.spyOn(channel, '_unsubscribeNoRemoval').mockResolvedValue('error')
 
     const result = await testSetup.socket.removeChannel(channel)
 
