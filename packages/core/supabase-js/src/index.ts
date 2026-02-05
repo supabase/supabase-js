@@ -37,6 +37,8 @@ export type {
  * const supabase = createClient('https://xyzcompany.supabase.co', 'public-anon-key')
  * const { data, error } = await supabase.from('profiles').select('*')
  * ```
+ *
+ * @module supabase-js
  */
 export const createClient = <
   Database = any,
