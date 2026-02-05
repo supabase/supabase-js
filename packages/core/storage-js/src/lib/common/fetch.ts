@@ -1,5 +1,6 @@
 import { StorageApiError, StorageUnknownError, ErrorNamespace } from './errors'
 import { isPlainObject, resolveResponse } from './helpers'
+import { FetchParameters } from '../types'
 
 export type Fetch = typeof fetch
 
@@ -12,13 +13,6 @@ export interface FetchOptions {
   }
   duplex?: string
   noResolveJson?: boolean
-}
-
-/**
- * Additional fetch parameters (e.g., signal for cancellation)
- */
-export interface FetchParameters {
-  signal?: AbortSignal
 }
 
 /**

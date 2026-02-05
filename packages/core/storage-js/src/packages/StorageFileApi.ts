@@ -687,6 +687,7 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
    * @category File Buckets
    * @param path The full path and file name of the file to be downloaded. For example `folder/image.png`.
    * @param options.transform Transform the asset before serving it to the client.
+   * @param parameters Additional fetch parameters like signal for cancellation. Supports standard fetch options including cache control.
    * @returns BlobDownloadBuilder instance for downloading the file
    *
    * @example Download file
@@ -718,10 +719,30 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
    *     }
    *   })
    * ```
+   *
+   * @example Download with cache control (useful in Edge Functions)
+   * ```js
+   * const { data, error } = await supabase
+   *   .storage
+   *   .from('avatars')
+   *   .download('folder/avatar1.png', {}, { cache: 'no-store' })
+   * ```
+   *
+   * @example Download with abort signal
+   * ```js
+   * const controller = new AbortController()
+   * setTimeout(() => controller.abort(), 5000)
+   *
+   * const { data, error } = await supabase
+   *   .storage
+   *   .from('avatars')
+   *   .download('folder/avatar1.png', {}, { signal: controller.signal })
+   * ```
    */
   download<Options extends { transform?: TransformOptions }>(
     path: string,
-    options?: Options
+    options?: Options,
+    parameters?: FetchParameters
   ): BlobDownloadBuilder {
     const wantsTransformation = typeof options?.transform !== 'undefined'
     const renderPath = wantsTransformation ? 'render/image/authenticated' : 'object'
@@ -729,10 +750,15 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
     const queryString = transformationQuery ? `?${transformationQuery}` : ''
     const _path = this._getFinalPath(path)
     const downloadFn = () =>
-      get(this.fetch, `${this.url}/${renderPath}/${_path}${queryString}`, {
-        headers: this.headers,
-        noResolveJson: true,
-      })
+      get(
+        this.fetch,
+        `${this.url}/${renderPath}/${_path}${queryString}`,
+        {
+          headers: this.headers,
+          noResolveJson: true,
+        },
+        parameters
+      )
     return new BlobDownloadBuilder(downloadFn, this.shouldThrowOnError)
   }
 

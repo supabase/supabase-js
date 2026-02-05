@@ -278,6 +278,84 @@ describe('Common Fetch', () => {
       })
     })
 
+    describe('FetchParameters with cache', () => {
+      it('should include cache parameter', async () => {
+        const responseData = { result: 'success' }
+        mockFetch.mockResolvedValue(
+          new MockResponse(JSON.stringify(responseData), {
+            status: 200,
+            statusText: 'OK',
+          })
+        )
+
+        await get(mockFetch, 'http://test.com/api', undefined, {
+          cache: 'no-store',
+        })
+
+        expect(mockFetch).toHaveBeenCalledWith('http://test.com/api', {
+          method: 'GET',
+          headers: {},
+          cache: 'no-store',
+        })
+      })
+
+      it('should include both signal and cache', async () => {
+        const controller = new AbortController()
+        const responseData = { result: 'success' }
+        mockFetch.mockResolvedValue(
+          new MockResponse(JSON.stringify(responseData), {
+            status: 200,
+            statusText: 'OK',
+          })
+        )
+
+        await get(mockFetch, 'http://test.com/api', undefined, {
+          signal: controller.signal,
+          cache: 'no-store',
+        })
+
+        expect(mockFetch).toHaveBeenCalledWith('http://test.com/api', {
+          method: 'GET',
+          headers: {},
+          signal: controller.signal,
+          cache: 'no-store',
+        })
+      })
+
+      it('should support all cache values', async () => {
+        const cacheValues = [
+          'default',
+          'no-store',
+          'reload',
+          'no-cache',
+          'force-cache',
+          'only-if-cached',
+        ] as const
+
+        for (const cacheValue of cacheValues) {
+          const responseData = { result: 'success' }
+          mockFetch.mockResolvedValue(
+            new MockResponse(JSON.stringify(responseData), {
+              status: 200,
+              statusText: 'OK',
+            })
+          )
+
+          await get(mockFetch, 'http://test.com/api', undefined, {
+            cache: cacheValue,
+          })
+
+          expect(mockFetch).toHaveBeenCalledWith('http://test.com/api', {
+            method: 'GET',
+            headers: {},
+            cache: cacheValue,
+          })
+
+          mockFetch.mockClear()
+        }
+      })
+    })
+
     describe('empty response handling', () => {
       it('should NOT handle content-length: 0 for storage namespace (only vectors)', async () => {
         // Storage namespace should fail on empty responses, as they indicate a bug
