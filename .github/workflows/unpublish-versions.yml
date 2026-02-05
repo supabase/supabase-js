@@ -1,0 +1,312 @@
+name: Unpublish Package Versions
+
+# Manual workflow to unpublish specific versions from npm
+# ⚠️ WARNING: This is a destructive operation that cannot be undone
+# npm only allows unpublishing versions within 72 hours of publishing
+
+on:
+  push:
+    branches:
+      - chore/unpublish-packages
+  pull_request:
+    branches:
+      - chore/unpublish-packages
+  workflow_dispatch:
+    inputs:
+      versions:
+        description: 'Versions to unpublish (comma-separated, e.g., 2.95.0,2.95.1)'
+        required: true
+        type: string
+        default: '2.95.0,2.95.1'
+      packages:
+        description: 'Packages to unpublish from (comma-separated, or "all" for all packages)'
+        required: true
+        type: string
+        default: 'all'
+      dry_run:
+        description: 'Dry run (show what would be unpublished without actually doing it)'
+        required: true
+        type: boolean
+        default: true
+      confirm_unpublish:
+        description: 'Type "CONFIRM" to proceed with unpublishing (required if dry_run is false)'
+        required: false
+        type: string
+
+env:
+  NODE_VERSION: '20'
+
+jobs:
+  unpublish-versions:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Generate token
+        id: app-token
+        uses: actions/create-github-app-token@29824e69f54612133e76f7eaac726eef6c875baf
+        with:
+          app-id: ${{ secrets.APP_ID }}
+          private-key: ${{ secrets.PRIVATE_KEY }}
+
+      - name: Check if actor is member of admin or sdk team
+        id: team-check
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
+        with:
+          github-token: ${{ steps.app-token.outputs.token }}
+          script: |
+            const org = 'supabase'
+            const { actor } = context
+
+            async function isTeamMember(team_slug) {
+              try {
+                const res = await github.rest.teams.getMembershipForUserInOrg({
+                  org,
+                  team_slug,
+                  username: actor,
+                })
+                return res && res.status === 200
+              } catch (_) {
+                return false
+              }
+            }
+            const isAdmin = await isTeamMember('admin')
+            const isSdk = await isTeamMember('sdk')
+            const isMember = isAdmin || isSdk
+            core.setOutput('is_team_member', isMember ? 'true' : 'false')
+
+      - name: Fail if not authorized
+        if: ${{ steps.team-check.outputs.is_team_member != 'true' }}
+        run: |
+          echo "❌ You must be a member of @supabase/admin or @supabase/sdk."
+          exit 1
+
+      - name: Set default values for automatic triggers
+        id: set-defaults
+        run: |
+          # Set defaults based on trigger type
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            VERSIONS="${{ inputs.versions }}"
+            PACKAGES="${{ inputs.packages }}"
+            DRY_RUN="${{ inputs.dry_run }}"
+            CONFIRM="${{ inputs.confirm_unpublish }}"
+          else
+            # Automatic triggers (push/PR) always use safe defaults
+            VERSIONS="2.95.0,2.95.1"
+            PACKAGES="all"
+            DRY_RUN="true"
+            CONFIRM=""
+            echo "ℹ️  Automatic trigger detected - using dry-run mode for safety"
+          fi
+
+          echo "versions=$VERSIONS" >> $GITHUB_OUTPUT
+          echo "packages=$PACKAGES" >> $GITHUB_OUTPUT
+          echo "dry_run=$DRY_RUN" >> $GITHUB_OUTPUT
+          echo "confirm=$CONFIRM" >> $GITHUB_OUTPUT
+
+      - name: Validate confirmation
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run == false }}
+        run: |
+          if [[ "${{ inputs.confirm_unpublish }}" != "CONFIRM" ]]; then
+            echo "❌ You must type 'CONFIRM' in the confirm_unpublish input to proceed"
+            echo "   Current value: '${{ inputs.confirm_unpublish }}'"
+            exit 1
+          fi
+
+      - name: Checkout code
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238 # v6.2.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          registry-url: 'https://registry.npmjs.org'
+
+      # Ensure npm 11.5.1 or later is installed for trusted publishing support
+      - name: Update npm
+        run: npm install -g npm@latest
+
+      - name: Unpublish versions
+        env:
+          NPM_CONFIG_PROVENANCE: true
+        run: |
+          set -e
+
+          # Define all packages
+          ALL_PACKAGES=(
+            "@supabase/auth-js"
+            "@supabase/supabase-js"
+            "@supabase/functions-js"
+            "@supabase/realtime-js"
+            "@supabase/postgrest-js"
+            "@supabase/storage-js"
+            "@supabase/gotrue-js"
+          )
+
+          # Get values from defaults step
+          VERSIONS_INPUT="${{ steps.set-defaults.outputs.versions }}"
+          PACKAGES_INPUT="${{ steps.set-defaults.outputs.packages }}"
+          DRY_RUN_INPUT="${{ steps.set-defaults.outputs.dry_run }}"
+
+          # Parse input packages
+          if [[ "$PACKAGES_INPUT" == "all" ]]; then
+            PACKAGES=("${ALL_PACKAGES[@]}")
+          else
+            IFS=',' read -ra PACKAGES <<< "$PACKAGES_INPUT"
+          fi
+
+          # Parse versions
+          IFS=',' read -ra VERSIONS <<< "$VERSIONS_INPUT"
+
+          # Determine mode
+          if [[ "$DRY_RUN_INPUT" == "true" ]]; then
+            MODE="DRY RUN"
+            echo "🔍 DRY RUN MODE - No actual unpublishing will occur"
+          else
+            MODE="LIVE"
+            echo "⚠️  LIVE MODE - Versions will be unpublished from npm"
+          fi
+
+          # Show trigger information
+          if [[ "${{ github.event_name }}" != "workflow_dispatch" ]]; then
+            echo "ℹ️  Triggered by: ${{ github.event_name }}"
+            echo "ℹ️  Branch: ${{ github.ref_name }}"
+            echo ""
+          fi
+
+          echo ""
+          echo "================================"
+          echo "   UNPUBLISH OPERATION SUMMARY"
+          echo "================================"
+          echo "Mode: $MODE"
+          echo "Versions to unpublish: ${VERSIONS[*]}"
+          echo "Number of packages: ${#PACKAGES[@]}"
+          echo ""
+
+          # Track results
+          SUCCESSFUL=0
+          FAILED=0
+          SKIPPED=0
+
+          # Unpublish each version from each package
+          for package in "${PACKAGES[@]}"; do
+            package=$(echo "$package" | xargs) # trim whitespace
+            echo ""
+            echo "📦 Processing package: $package"
+            echo "-----------------------------------"
+
+            for version in "${VERSIONS[@]}"; do
+              version=$(echo "$version" | xargs) # trim whitespace
+              PACKAGE_VERSION="${package}@${version}"
+
+              if [[ "$DRY_RUN_INPUT" == "true" ]]; then
+                echo "  [DRY RUN] Would unpublish: $PACKAGE_VERSION"
+
+                # Check if version exists
+                if npm view "$PACKAGE_VERSION" version 2>/dev/null; then
+                  echo "  ✓ Version exists on npm"
+                  ((SUCCESSFUL++))
+                else
+                  echo "  ⚠ Version does not exist on npm (already unpublished or never published)"
+                  ((SKIPPED++))
+                fi
+              else
+                echo "  Unpublishing: $PACKAGE_VERSION"
+
+                if npm unpublish "$PACKAGE_VERSION" --force 2>&1; then
+                  echo "  ✅ Successfully unpublished $PACKAGE_VERSION"
+                  ((SUCCESSFUL++))
+                else
+                  RESULT=$?
+                  if [[ $RESULT -eq 0 ]]; then
+                    echo "  ✅ Successfully unpublished $PACKAGE_VERSION"
+                    ((SUCCESSFUL++))
+                  else
+                    echo "  ❌ Failed to unpublish $PACKAGE_VERSION"
+                    echo "     This may be because:"
+                    echo "     - Version was published more than 72 hours ago"
+                    echo "     - Version doesn't exist"
+                    echo "     - Package has too many downloads"
+                    ((FAILED++))
+                  fi
+                fi
+              fi
+            done
+          done
+
+          echo ""
+          echo "================================"
+          echo "   OPERATION COMPLETE"
+          echo "================================"
+          if [[ "$DRY_RUN_INPUT" == "true" ]]; then
+            echo "Mode: DRY RUN"
+            echo "Versions checked: $SUCCESSFUL"
+            echo "Already unpublished/not found: $SKIPPED"
+          else
+            echo "Mode: LIVE"
+            echo "Successfully unpublished: $SUCCESSFUL"
+            echo "Failed: $FAILED"
+            echo "Skipped: $SKIPPED"
+          fi
+          echo "================================"
+
+          # Exit with error if any failures in live mode
+          if [[ "$DRY_RUN_INPUT" == "false" ]] && [[ $FAILED -gt 0 ]]; then
+            echo ""
+            echo "⚠️  Some versions failed to unpublish. See details above."
+            exit 1
+          fi
+
+      - name: Summary
+        if: ${{ success() }}
+        run: |
+          DRY_RUN="${{ steps.set-defaults.outputs.dry_run }}"
+          VERSIONS="${{ steps.set-defaults.outputs.versions }}"
+          PACKAGES="${{ steps.set-defaults.outputs.packages }}"
+          TRIGGER="${{ github.event_name }}"
+
+          if [[ "$DRY_RUN" == "true" ]]; then
+            echo "## 🔍 Dry Run Complete" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+
+            if [[ "$TRIGGER" != "workflow_dispatch" ]]; then
+              echo "**Triggered by:** $TRIGGER on branch \`${{ github.ref_name }}\`" >> $GITHUB_STEP_SUMMARY
+              echo "" >> $GITHUB_STEP_SUMMARY
+            fi
+
+            echo "No versions were actually unpublished." >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "**Checked versions:** \`$VERSIONS\`" >> $GITHUB_STEP_SUMMARY
+            echo "**Checked packages:** \`$PACKAGES\`" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "To proceed with unpublishing:" >> $GITHUB_STEP_SUMMARY
+            echo "1. Go to Actions → Unpublish Package Versions → Run workflow" >> $GITHUB_STEP_SUMMARY
+            echo "2. Set \`dry_run\` to \`false\`" >> $GITHUB_STEP_SUMMARY
+            echo "3. Type \`CONFIRM\` in the \`confirm_unpublish\` field" >> $GITHUB_STEP_SUMMARY
+            echo "4. Run the workflow" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "## ✅ Versions Unpublished" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "- **Versions:** \`$VERSIONS\`" >> $GITHUB_STEP_SUMMARY
+            echo "- **Packages:** \`$PACKAGES\`" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "⚠️ **This action cannot be undone**" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Summary on failure
+        if: ${{ failure() }}
+        run: |
+          echo "## ❌ Unpublish Failed" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Some versions could not be unpublished. Common reasons:" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **72-hour window expired**: npm only allows unpublishing within 72 hours" >> $GITHUB_STEP_SUMMARY
+          echo "- **Version doesn't exist**: already unpublished or never published" >> $GITHUB_STEP_SUMMARY
+          echo "- **High download count**: npm may prevent unpublishing popular versions" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Alternative:** Consider using \`npm deprecate\` instead of unpublish" >> $GITHUB_STEP_SUMMARY
