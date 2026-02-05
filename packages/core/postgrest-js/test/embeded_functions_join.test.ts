@@ -1264,7 +1264,13 @@ describe('embeded functions select', () => {
         "error": {
           "code": "PGRST202",
           "details": "Searched for the function public.created_ago with parameter id or with a single unnamed json/jsonb parameter, but no matches were found in the schema cache.",
-          "hint": null,
+          "hint": "Function 'public.created_ago' not found. This could mean:
+      1. The function doesn't exist, OR
+      2. You don't have permission to see it
+
+      If the function exists, grant permission with:
+
+      GRANT EXECUTE ON FUNCTION public.created_ago TO anon, authenticated, service_role;",
           "message": "Could not find the function public.created_ago(id) in the schema cache",
         },
         "status": 404,
@@ -1319,7 +1325,13 @@ describe('embeded functions select', () => {
         "error": {
           "code": "PGRST202",
           "details": "Searched for the function public.days_since_event with parameter id or with a single unnamed json/jsonb parameter, but no matches were found in the schema cache.",
-          "hint": null,
+          "hint": "Function 'public.days_since_event' not found. This could mean:
+      1. The function doesn't exist, OR
+      2. You don't have permission to see it
+
+      If the function exists, grant permission with:
+
+      GRANT EXECUTE ON FUNCTION public.days_since_event TO anon, authenticated, service_role;",
           "message": "Could not find the function public.days_since_event(id) in the schema cache",
         },
         "status": 404,
