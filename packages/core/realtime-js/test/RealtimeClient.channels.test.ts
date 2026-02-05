@@ -147,6 +147,37 @@ describe('channel', () => {
     assert.equal(testSetup.socket.getChannels().length, 0)
     expect(disconnectStub).toHaveBeenCalled()
   })
+
+  test('removes channel from list when unsubscribe succeeds with ok', async () => {
+    const channel = testSetup.socket.channel('topic')
+    await channel.subscribe()
+
+    assert.equal(testSetup.socket.getChannels().length, 1)
+
+    // Mock unsubscribe to return 'ok'
+    vi.spyOn(channel, 'unsubscribe').mockResolvedValue('ok')
+
+    await testSetup.socket.removeChannel(channel)
+
+    // Channel should be removed from the list
+    assert.equal(testSetup.socket.getChannels().length, 0)
+  })
+
+  test('does NOT remove channel from list when unsubscribe fails with error', async () => {
+    const channel = testSetup.socket.channel('topic')
+    await channel.subscribe()
+
+    assert.equal(testSetup.socket.getChannels().length, 1)
+
+    // Mock unsubscribe to return 'error'
+    vi.spyOn(channel, 'unsubscribe').mockResolvedValue('error')
+
+    const result = await testSetup.socket.removeChannel(channel)
+
+    // Channel should NOT be removed from the list
+    assert.equal(testSetup.socket.getChannels().length, 1)
+    assert.equal(result, 'error')
+  })
 })
 
 describe('leaveOpenTopic', () => {
