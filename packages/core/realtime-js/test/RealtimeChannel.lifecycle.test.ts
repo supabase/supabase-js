@@ -403,7 +403,7 @@ describe('Channel Lifecycle Management', () => {
     })
 
     test('unsubscribes to channel with incorrect server postgres_changes resp', () => {
-      const unsubscribeSpy = vi.spyOn(channel, 'unsubscribe')
+      const unsubscribeSpy = vi.spyOn(channel, '_unsubscribeNoRemoval')
       const callbackSpy = vi.fn()
       const dummyCallback = () => {}
 

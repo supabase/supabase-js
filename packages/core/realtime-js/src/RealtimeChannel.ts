@@ -339,7 +339,7 @@ export default class RealtimeChannel {
                   id: serverPostgresFilter.id,
                 })
               } else {
-                this.unsubscribe()
+                this._unsubscribeNoRemoval()
                 this.state = CHANNEL_STATES.errored
 
                 callback?.(
@@ -539,7 +539,7 @@ export default class RealtimeChannel {
         'channel',
         `resubscribe to ${this.topic} due to change in presence callbacks on joined channel`
       )
-      this.unsubscribe().then(async () => await this.subscribe())
+      this._unsubscribeNoRemoval().then(async () => await this.subscribe())
     }
     return this._on(type, filter, callback)
   }
@@ -701,10 +701,29 @@ export default class RealtimeChannel {
    * Unsubscribes from server events, and instructs channel to terminate on server.
    * Triggers onClose() hooks.
    *
+   * On successful unsubscribe ('ok' status), automatically removes the channel from
+   * the client's channel list.
+   *
    * To receive leave acknowledgements, use the a `receive` hook to bind to the server ack, ie:
    * channel.unsubscribe().receive("ok", () => alert("left!") )
    */
   unsubscribe(timeout = this.timeout): Promise<'ok' | 'timed out' | 'error'> {
+    return this._unsubscribeNoRemoval(timeout).then((status) => {
+      // Remove from client only if successful
+      if (status === 'ok') {
+        this.socket._remove(this)
+      }
+      return status
+    })
+  }
+
+  /**
+   * Internal unsubscribe implementation without client removal.
+   * Sends leave message to server and waits for acknowledgement.
+   * @internal
+   * @private
+   */
+  private _unsubscribeNoRemoval(timeout = this.timeout): Promise<'ok' | 'timed out' | 'error'> {
     this.state = CHANNEL_STATES.leaving
     const onClose = () => {
       this.socket.log('channel', `leave ${this.topic}`)
