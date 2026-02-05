@@ -138,7 +138,7 @@ describe('Object API', () => {
       const bucketName = await newBucket()
       const formData = new FormData()
       // FormData needs a proper file field, not 'file'
-      formData.append('', new Blob([file]), 'file.txt')
+      formData.append('', new Blob([file.buffer as ArrayBuffer]), 'file.txt')
 
       const res = await storage.from(bucketName).upload(uploadPath, formData)
       expect(res.error).toBeNull()
@@ -152,13 +152,13 @@ describe('Object API', () => {
     })
 
     test('uploading using array buffer', async () => {
-      const res = await storage.from(bucketName).upload(uploadPath, file.buffer)
+      const res = await storage.from(bucketName).upload(uploadPath, file.buffer as ArrayBuffer)
       expect(res.error).toBeNull()
       expect(res.data?.path).toEqual(uploadPath)
     })
 
     test('uploading using blob', async () => {
-      const fileBlob = new Blob([file])
+      const fileBlob = new Blob([file.buffer as ArrayBuffer])
       const res = await storage.from(bucketName).upload(uploadPath, fileBlob)
       expect(res.error).toBeNull()
       expect(res.data?.path).toEqual(uploadPath)
@@ -666,18 +666,25 @@ describe('Object API', () => {
 })
 
 describe('download with fetch parameters', () => {
+  let bucketName: string
+  let file: Buffer
+  let uploadPath: string
+  beforeEach(async () => {
+    bucketName = await newBucket()
+    file = await fsp.readFile(uploadFilePath('sadcat.jpg'))
+    uploadPath = `testpath/file-${Date.now()}.jpg`
+  })
   it('download with abort signal', async () => {
-    const controller = new AbortController()
     const uploadRes = await storage.from(bucketName).upload(uploadPath, file)
     expect(uploadRes.error).toBeNull()
 
-    const downloadBuilder = storage
+    const controller = new AbortController()
+    controller.abort() // Abort before download to prevent race condition
+
+    const { data, error } = await storage
       .from(bucketName)
       .download(uploadPath, {}, { signal: controller.signal })
 
-    controller.abort()
-
-    const { data, error } = await downloadBuilder
     expect(data).toBeNull()
     expect(error).not.toBeNull()
     expect(error?.message).toContain('abort')
