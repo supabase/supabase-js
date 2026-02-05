@@ -1,3 +1,19 @@
+## 2.95.0 (2026-02-05)
+
+### 🚀 Features
+
+- **supabase:** add canonical CORS headers export for edge functions ([#2071](https://github.com/supabase/supabase-js/pull/2071))
+
+### 🩹 Fixes
+
+- **realtime:** removeChannel when unsubscribe successfully ([#2091](https://github.com/supabase/supabase-js/pull/2091))
+- **storage:** expose fetch parameters in download method ([#2090](https://github.com/supabase/supabase-js/pull/2090))
+
+### ❤️ Thank You
+
+- Eduardo Gurgel
+- Katerina Skroumpelou @mandarini
+
 ## 2.94.1 (2026-02-04)
 
 ### 🩹 Fixes
