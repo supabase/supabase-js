@@ -98,13 +98,13 @@ jobs:
           echo ""
           echo "✅ All packages tagged with latest"
 
-      - name: Unpublish versions 2.95.0 and 2.95.1
+      - name: Unpublish versions 2.95.0 and 2.95.1 from dependency packages
         env:
           NPM_CONFIG_PROVENANCE: true
         run: |
-          PACKAGES=(
+          # Unpublish dependencies first
+          DEPENDENCY_PACKAGES=(
             "@supabase/auth-js"
-            "@supabase/supabase-js"
             "@supabase/functions-js"
             "@supabase/realtime-js"
             "@supabase/postgrest-js"
@@ -115,10 +115,10 @@ jobs:
           VERSIONS=("2.95.0" "2.95.1")
 
           echo "Unpublishing versions: ${VERSIONS[*]}"
-          echo "From packages: ${#PACKAGES[@]} total"
+          echo "From dependency packages first"
           echo ""
 
-          for package in "${PACKAGES[@]}"; do
+          for package in "${DEPENDENCY_PACKAGES[@]}"; do
             echo "📦 $package"
             for version in "${VERSIONS[@]}"; do
               echo -n "  Unpublishing ${version}... "
@@ -131,4 +131,26 @@ jobs:
           done
 
           echo ""
-          echo "✅ Complete"
+          echo "✅ Dependency packages complete"
+
+      - name: Unpublish versions 2.95.0 and 2.95.1 from supabase-js (last)
+        env:
+          NPM_CONFIG_PROVENANCE: true
+        run: |
+          # Unpublish main package last
+          VERSIONS=("2.95.0" "2.95.1")
+
+          echo "Unpublishing supabase-js (main package)"
+          echo ""
+
+          for version in "${VERSIONS[@]}"; do
+            echo -n "📦 @supabase/supabase-js@${version}... "
+            if npm unpublish "@supabase/supabase-js@${version}" --force 2>&1; then
+              echo "✅"
+            else
+              echo "⚠️ (may not exist or already unpublished)"
+            fi
+          done
+
+          echo ""
+          echo "✅ All packages unpublished"
