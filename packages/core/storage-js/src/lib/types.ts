@@ -202,6 +202,17 @@ export interface FetchParameters {
    * Pass in an AbortController's signal to cancel the request.
    */
   signal?: AbortSignal
+
+  /**
+   * Controls how the request interacts with the browser's HTTP cache.
+   * - 'default': Use standard cache behavior
+   * - 'no-store': Bypass cache entirely (useful in Edge Functions)
+   * - 'reload': Bypass cache but update it with response
+   * - 'no-cache': Validate with server before using cached response
+   * - 'force-cache': Use cache even if stale
+   * - 'only-if-cached': Only use cache, fail if not cached
+   */
+  cache?: 'default' | 'no-store' | 'reload' | 'no-cache' | 'force-cache' | 'only-if-cached'
 }
 
 // TODO: need to check for metadata props. The api swagger doesnt have.

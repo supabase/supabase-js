@@ -665,6 +665,77 @@ describe('Object API', () => {
   })
 })
 
+describe('download with fetch parameters', () => {
+  it('download with abort signal', async () => {
+    const controller = new AbortController()
+    const uploadRes = await storage.from(bucketName).upload(uploadPath, file)
+    expect(uploadRes.error).toBeNull()
+
+    const downloadBuilder = storage
+      .from(bucketName)
+      .download(uploadPath, {}, { signal: controller.signal })
+
+    controller.abort()
+
+    const { data, error } = await downloadBuilder
+    expect(data).toBeNull()
+    expect(error).not.toBeNull()
+    expect(error?.message).toContain('abort')
+  })
+
+  it('download with cache control', async () => {
+    const uploadRes = await storage.from(bucketName).upload(uploadPath, file)
+    expect(uploadRes.error).toBeNull()
+
+    const originalFetch = global.fetch
+    const mockFetch = jest.fn(originalFetch)
+    global.fetch = mockFetch
+
+    try {
+      const { data, error } = await storage
+        .from(bucketName)
+        .download(uploadPath, {}, { cache: 'no-store' })
+
+      expect(error).toBeNull()
+      expect(data).not.toBeNull()
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining(uploadPath),
+        expect.objectContaining({ cache: 'no-store' })
+      )
+    } finally {
+      global.fetch = originalFetch
+    }
+  })
+
+  it('download with transform and fetch parameters', async () => {
+    const uploadRes = await storage.from(bucketName).upload(uploadPath, file)
+    expect(uploadRes.error).toBeNull()
+
+    const controller = new AbortController()
+
+    const { data, error } = await storage
+      .from(bucketName)
+      .download(
+        uploadPath,
+        { transform: { width: 100, height: 100 } },
+        { signal: controller.signal, cache: 'no-store' }
+      )
+
+    expect(error).toBeNull()
+    expect(data).not.toBeNull()
+  })
+
+  it('download without parameters (backward compatibility)', async () => {
+    const uploadRes = await storage.from(bucketName).upload(uploadPath, file)
+    expect(uploadRes.error).toBeNull()
+
+    const { data, error } = await storage.from(bucketName).download(uploadPath)
+
+    expect(error).toBeNull()
+    expect(data).not.toBeNull()
+  })
+})
+
 describe('error handling', () => {
   let mockError: Error
 
