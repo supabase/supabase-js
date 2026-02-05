@@ -1,3 +1,13 @@
+## 2.95.2 (2026-02-05)
+
+### 🩹 Fixes
+
+- **supabase:** add module to tsdoc ([1fac0c45](https://github.com/supabase/supabase-js/commit/1fac0c45))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou
+
 ## 2.94.0 (2026-02-03)
 
 ### 🚀 Features
