@@ -323,7 +323,14 @@ describe('Common Fetch', () => {
       })
 
       it('should support all cache values', async () => {
-        const cacheValues = ['default', 'no-store', 'reload', 'no-cache', 'force-cache', 'only-if-cached'] as const
+        const cacheValues = [
+          'default',
+          'no-store',
+          'reload',
+          'no-cache',
+          'force-cache',
+          'only-if-cached',
+        ] as const
 
         for (const cacheValue of cacheValues) {
           const responseData = { result: 'success' }
