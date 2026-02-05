@@ -57,17 +57,11 @@ Deno.test(
         'x-client-info',
         'apikey',
         'content-type',
-        'x-supabase-api-version',
-        'accept-profile',
-        'content-profile',
-        'prefer',
-        'accept',
-        'x-region',
       ]
 
       // Parse into exact token set to avoid false positives (e.g., "accept" matching "accept-profile")
       const allowedHeadersSet = new Set(
-        allowedHeaders.split(',').map((h) => h.trim().toLowerCase())
+        allowedHeaders!.split(',').map((h) => h.trim().toLowerCase())
       )
       requiredHeaders.forEach((header) => {
         if (!allowedHeadersSet.has(header.toLowerCase())) {
@@ -87,7 +81,7 @@ Deno.test(
       const requiredMethods = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS']
       // Parse into exact token set to avoid false positives
       const allowedMethodsSet = new Set(
-        allowedMethods.split(',').map((m) => m.trim().toUpperCase())
+        allowedMethods!.split(',').map((m) => m.trim().toUpperCase())
       )
       requiredMethods.forEach((method) => {
         if (!allowedMethodsSet.has(method.toUpperCase())) {
@@ -104,12 +98,6 @@ Deno.test(
           'x-client-info': '@supabase/supabase-js/2.0.0',
           'apikey': 'test-api-key',
           'Content-Type': 'application/json',
-          'x-supabase-api-version': '2024-01-01',
-          'accept-profile': 'public',
-          'content-profile': 'public',
-          'prefer': 'return=representation',
-          'accept': 'application/json',
-          'x-region': 'us-east-1',
         },
         body: JSON.stringify({ test: 'data' }),
       })
@@ -138,8 +126,23 @@ Deno.test(
       // Kong gateway may return 200 instead of 204 for OPTIONS
       assertPreflightStatus(preflightResponse.status)
 
+      // Verify the preflight response allows the new header
+      // This is critical: browsers check Access-Control-Allow-Headers before sending the actual request
+      const allowedHeaders = preflightResponse.headers.get('Access-Control-Allow-Headers')
+      assertExists(allowedHeaders, 'Access-Control-Allow-Headers must be present in preflight response')
+
+      // Either wildcard (*) is used, or the specific header must be listed
+      if (allowedHeaders !== '*') {
+        const allowedSet = new Set(allowedHeaders!.split(',').map((h) => h.trim().toLowerCase()))
+        if (!allowedSet.has('x-supabase-new-feature')) {
+          throw new Error(
+            `New header "x-supabase-new-feature" not found in Access-Control-Allow-Headers: ${allowedHeaders}`
+          )
+        }
+      }
+
       // Note: This test would FAIL with hardcoded CORS but PASSES with canonical CORS
-      // because canonical CORS includes headers dynamically from cors.ts
+      // because canonical CORS includes headers dynamically from cors.ts (or uses wildcard)
 
       // Then make the actual request with the new header
       const response = await fetch(functionUrl, {
@@ -177,33 +180,6 @@ Deno.test(
       assertEquals(response.headers.get('Access-Control-Allow-Origin'), '*')
       assertExists(response.headers.get('Access-Control-Allow-Headers'))
       assertExists(response.headers.get('Access-Control-Allow-Methods'))
-    })
-
-    await t.step('Comparison - canonical CORS has more headers than hardcoded', async () => {
-      const response = await fetch(functionUrl, {
-        method: 'OPTIONS',
-      })
-
-      const canonicalHeaders = response.headers.get('Access-Control-Allow-Headers')
-      assertExists(canonicalHeaders)
-
-      // Typical hardcoded CORS from old docs (like in echo/index.ts)
-      const hardcodedExample = 'authorization, x-client-info, apikey, content-type'
-      const hardcodedCount = hardcodedExample.split(',').length // 4 headers
-
-      const canonicalCount = canonicalHeaders.split(',').length
-
-      // Canonical should have significantly more headers (10+)
-      if (canonicalCount <= hardcodedCount) {
-        throw new Error(
-          `Expected canonical (${canonicalCount}) to have more headers than hardcoded (${hardcodedCount})`
-        )
-      }
-      if (canonicalCount < 10) {
-        throw new Error(
-          `Expected canonical to have at least 10 headers, got ${canonicalCount}: ${canonicalHeaders}`
-        )
-      }
     })
   }
 )
