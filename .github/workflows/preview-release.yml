@@ -5,35 +5,36 @@ permissions:
 
 on:
   pull_request:
-    types: [opened, synchronize, labeled]
+    types: [opened, synchronize]
     paths:
       - 'packages/core/**'
       - 'package.json'
       - 'package-lock.json'
       - 'nx.json'
       - 'tsconfig.base.json'
+      - 'scripts/**'
       - '.github/workflows/preview-release.yml'
-      - '!packages/**/*.md'
-      - '!packages/**/docs/**'
-      - '!packages/**/.prettierrc'
-      - '!packages/**/*ignore'
+      - '.github/workflows/integration-tests.yml'
+      - '!packages/core/**/*.md'
+      - '!packages/core/**/docs/**'
+      - '!packages/core/**/.prettierrc'
+      - '!packages/core/**/*ignore'
 
 jobs:
   preview:
-    if: >
-      github.repository == 'supabase/supabase-js' &&
-      (github.event_name == 'push' ||
-      (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'trigger: preview')))
+    if: github.repository == 'supabase/supabase-js'
     runs-on: ubuntu-latest
+    outputs:
+      commit_hash: ${{ steps.commit.outputs.sha }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6.0.1
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
         with:
           filter: tree:0
           fetch-depth: 0
 
       - name: Setup Node.js
-        uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238  # v6.2.0
+        uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238 # v6.2.0
         with:
           node-version: '20'
           cache: 'npm'
@@ -56,3 +57,21 @@ jobs:
             ./packages/core/realtime-js \
             ./packages/core/storage-js \
             ./packages/core/supabase-js
+
+      - name: Get commit hash
+        id: commit
+        run: |
+          # Use PR head SHA, not merge commit SHA
+          # pkg.pr.new publishes based on actual repo commits, not GitHub's temporary merge commits
+          COMMIT_SHA="${{ github.event.pull_request.head.sha }}"
+          echo "sha=$COMMIT_SHA" >> "$GITHUB_OUTPUT"
+          echo "📍 PR Head commit: $COMMIT_SHA"
+          echo "📍 Current HEAD (merge commit): $(git rev-parse HEAD)"
+          echo "📍 These are different - we use PR head for pkg.pr.new URLs"
+
+  integration-tests:
+    name: Run Integration Tests
+    needs: preview
+    uses: ./.github/workflows/integration-tests.yml
+    with:
+      commit_hash: ${{ needs.preview.outputs.commit_hash }}

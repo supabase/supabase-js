@@ -6,7 +6,7 @@
     "test:watch": "bun test --watch integration.test.ts"
   },
   "dependencies": {
-    "@supabase/supabase-js": "*"
+    "@supabase/supabase-js": "https://pkg.pr.new/@supabase/supabase-js@{COMMIT_HASH}"
   },
   "devDependencies": {
     "bun-types": "latest"

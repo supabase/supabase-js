@@ -13,12 +13,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6.0.1
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
         with:
           filter: tree:0
           fetch-depth: 0
 
-      - uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238  # v6.2.0
+      - uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238 # v6.2.0
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
@@ -32,7 +32,7 @@ jobs:
         run: npx nx run-many --target=build --all
 
       - name: Upload built packages
-        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f  # v6.0.0
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
         with:
           name: packages-dist
           path: |
@@ -44,7 +44,7 @@ jobs:
             packages/core/supabase-js/dist
 
       - name: Upload UMD build
-        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f  # v6.0.0
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
         with:
           name: supabase-umd
           path: packages/core/supabase-js/dist/umd/supabase.js
@@ -60,13 +60,13 @@ jobs:
       fail-fast: false
     steps:
       - name: Checkout code
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6.0.1
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
         with:
           filter: tree:0
           fetch-depth: 0
 
       - name: Setup Node.js
-        uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238  # v6.2.0
+        uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238 # v6.2.0
         with:
           node-version: ${{ matrix.node }}
           cache: 'npm'
@@ -93,13 +93,13 @@ jobs:
     needs: build-package
     steps:
       - name: Checkout code
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6.0.1
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
         with:
           filter: tree:0
           fetch-depth: 0
 
       - name: Setup Node.js
-        uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238  # v6.2.0
+        uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238 # v6.2.0
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
@@ -108,7 +108,7 @@ jobs:
         run: npm ci
 
       - name: Download build artifacts
-        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131  # v7.0.0
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
         with:
           name: packages-dist
           path: ./packages/core
@@ -121,468 +121,3 @@ jobs:
 
       - name: Test CJS requires
         run: npx nx test:cjs supabase-js
-
-  deno-tests:
-    name: Deno Tests
-    runs-on: ubuntu-latest
-    needs: build-package
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6.0.1
-        with:
-          filter: tree:0
-          fetch-depth: 0
-
-      - name: Setup Deno
-        uses: denoland/setup-deno@e95548e56dfa95d4e1a28d6f422fafe75c4c26fb # v2.0.3
-        with:
-          deno-version: '2.x'
-
-      - name: Setup Supabase CLI
-        uses: supabase/setup-cli@b60b5899c73b63a2d2d651b1e90db8d4c9392f51 # v1.6.0
-        with:
-          version: latest
-
-      - name: Setup Node.js
-        uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238  # v6.2.0
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-
-      - name: Download built packages
-        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131  # v7.0.0
-        with:
-          name: packages-dist
-          path: packages/core
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Start Verdaccio
-        run: |
-          npx verdaccio --config .verdaccio/config.yml &
-          sleep 3
-
-      - name: Configure npm auth for Verdaccio
-        run: npm config set //localhost:4873/:_authToken "secretVerdaccioToken"
-
-      - name: Publish packages to Verdaccio
-        run: node scripts/populate-verdaccio.mjs
-
-      - name: Start Supabase and apply migrations
-        run: |
-          cd packages/core/supabase-js
-          echo "Starting Supabase from packages/core/supabase-js directory"
-          npx supabase start
-          echo "Resetting database to apply migrations"
-          npx supabase db reset --no-seed
-          echo "Waiting for PostgREST schema cache to refresh"
-          sleep 5
-          echo "Creating storage bucket"
-          npx supabase db query "insert into storage.buckets (id, name, public) values ('test-bucket','test-bucket', false) on conflict (id) do nothing;"
-          echo "Verifying todos table exists"
-          npx supabase db query "select count(*) from public.todos;"
-          echo "Verifying storage bucket exists"
-          npx supabase db query "select id, name from storage.buckets where id = 'test-bucket';"
-
-      - name: Verify packages in Verdaccio
-        run: |
-          echo "Verifying @supabase/supabase-js is available in Verdaccio..."
-          npm view @supabase/supabase-js version --registry http://localhost:4873
-          npm view @supabase/supabase-js --registry http://localhost:4873 | head -20
-
-      - name: Run Deno Tests
-        env:
-          DENO_NPM_REGISTRY: http://localhost:4873
-        run: |
-          cd packages/core/supabase-js/test/deno
-          echo "registry=http://localhost:4873/" > .npmrc
-          npm install
-          npm test || npm test
-          rm -f .npmrc
-          cd ../../..
-
-      - name: Run integration and browser tests
-        run: npx nx test:integration:browser supabase-js
-
-      - name: Run Edge Functions Tests
-        run: |
-          cd packages/core/supabase-js/test/deno
-          npm run test:edge-functions
-          cd ../../..
-
-      - name: Stop Supabase
-        if: always()
-        run: |
-          cd packages/core/supabase-js
-          npx supabase stop
-  node-integration:
-    name: Node Integration
-    runs-on: ubuntu-latest
-    needs: build-package
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6.0.1
-        with:
-          filter: tree:0
-          fetch-depth: 0
-
-      - name: Setup Node.js
-        uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238  # v6.2.0
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-
-      - name: Setup Supabase CLI
-        uses: supabase/setup-cli@b60b5899c73b63a2d2d651b1e90db8d4c9392f51 # v1.6.0
-        with:
-          version: latest
-
-      - name: Start Supabase and apply migrations
-        run: |
-          cd packages/core/supabase-js
-          echo "Starting Supabase from packages/core/supabase-js directory"
-          npx supabase start
-          echo "Resetting database to apply migrations"
-          npx supabase db reset --no-seed
-          echo "Waiting for PostgREST schema cache to refresh"
-          sleep 5
-          echo "Creating storage bucket"
-          npx supabase db query "insert into storage.buckets (id, name, public) values ('test-bucket','test-bucket', false) on conflict (id) do nothing;"
-          echo "Verifying todos table exists"
-          npx supabase db query "select count(*) from public.todos;"
-          echo "Verifying storage bucket exists"
-          npx supabase db query "select id, name from storage.buckets where id = 'test-bucket';"
-
-      - name: Install dependencies and build
-        run: |
-          npm ci
-          npx nx build supabase-js
-
-      - name: Install jq
-        run: sudo apt-get update && sudo apt-get install -y jq
-
-      - name: Run integration tests
-        run: |
-          cd packages/core/supabase-js
-          export SUPABASE_SERVICE_ROLE_KEY="$(supabase status --output json | jq -r '.SERVICE_ROLE_KEY')"
-          cd ../../..
-          npx nx test:integration supabase-js || npx nx test:integration supabase-js
-
-      - name: Stop Supabase
-        if: always()
-        run: |
-          cd packages/core/supabase-js
-          npx supabase stop
-
-  next-integration:
-    name: Next.js Integration
-    runs-on: ubuntu-latest
-    needs: build-package
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6.0.1
-        with:
-          filter: tree:0
-          fetch-depth: 0
-
-      - name: Setup Node.js
-        uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238  # v6.2.0
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-
-      - name: Setup Supabase CLI
-        uses: supabase/setup-cli@b60b5899c73b63a2d2d651b1e90db8d4c9392f51 # v1.6.0
-        with:
-          version: latest
-
-      - name: Download built packages
-        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131  # v7.0.0
-        with:
-          name: packages-dist
-          path: packages/core
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Start Verdaccio
-        run: |
-          npx verdaccio --config .verdaccio/config.yml &
-          sleep 3
-
-      - name: Configure npm auth for Verdaccio
-        run: npm config set //localhost:4873/:_authToken "secretVerdaccioToken"
-
-      - name: Publish packages to Verdaccio
-        run: node scripts/populate-verdaccio.mjs
-
-      - name: Start Supabase and apply migrations
-        run: |
-          cd packages/core/supabase-js
-          echo "Starting Supabase from packages/core/supabase-js directory"
-          npx supabase start
-          echo "Resetting database to apply migrations"
-          npx supabase db reset --no-seed
-          echo "Waiting for PostgREST schema cache to refresh"
-          sleep 5
-          echo "Creating storage bucket"
-          npx supabase db query "insert into storage.buckets (id, name, public) values ('test-bucket','test-bucket', false) on conflict (id) do nothing;"
-          echo "Verifying todos table exists"
-          npx supabase db query "select count(*) from public.todos;"
-          echo "Verifying storage bucket exists"
-          npx supabase db query "select id, name from storage.buckets where id = 'test-bucket';"
-
-      - name: Verify packages in Verdaccio
-        run: |
-          echo "Verifying @supabase/supabase-js is available in Verdaccio..."
-          npm view @supabase/supabase-js version --registry http://localhost:4873
-          npm view @supabase/supabase-js --registry http://localhost:4873 | head -20
-
-      - name: Run integration tests in isolation
-        run: |
-          TEST_DIR="/tmp/test-next-${{ github.run_id }}"
-          mkdir -p "$TEST_DIR"
-          cp -r packages/core/supabase-js/test/integration/next/* "$TEST_DIR/"
-          cd "$TEST_DIR"
-          echo "registry=http://localhost:4873/" > .npmrc
-          npm install
-          echo "Building Next.js app (catches production build errors)"
-          npm run build
-          npx playwright install --with-deps
-          npm run test
-          rm -f .npmrc
-
-      - name: Stop Supabase
-        if: always()
-        run: |
-          cd packages/core/supabase-js
-          npx supabase stop
-
-  expo-tests:
-    name: Expo Tests
-    runs-on: ubuntu-latest
-    needs: build-package
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6.0.1
-        with:
-          filter: tree:0
-          fetch-depth: 0
-
-      - name: Setup Node.js
-        uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238  # v6.2.0
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-
-      - name: Setup Supabase CLI
-        uses: supabase/setup-cli@b60b5899c73b63a2d2d651b1e90db8d4c9392f51 # v1.6.0
-        with:
-          version: latest
-
-      - name: Download built packages
-        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131  # v7.0.0
-        with:
-          name: packages-dist
-          path: packages/core
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Start Verdaccio
-        run: |
-          npx verdaccio --config .verdaccio/config.yml &
-          sleep 3
-
-      - name: Configure npm auth for Verdaccio
-        run: npm config set //localhost:4873/:_authToken "secretVerdaccioToken"
-
-      - name: Publish packages to Verdaccio
-        run: node scripts/populate-verdaccio.mjs
-
-      - name: Start Supabase and apply migrations
-        run: |
-          cd packages/core/supabase-js
-          echo "Starting Supabase from packages/core/supabase-js directory"
-          npx supabase start
-          echo "Resetting database to apply migrations"
-          npx supabase db reset --no-seed
-          echo "Waiting for PostgREST schema cache to refresh"
-          sleep 5
-          echo "Creating storage bucket"
-          npx supabase db query "insert into storage.buckets (id, name, public) values ('test-bucket','test-bucket', false) on conflict (id) do nothing;"
-          echo "Verifying todos table exists"
-          npx supabase db query "select count(*) from public.todos;"
-          echo "Verifying storage bucket exists"
-          npx supabase db query "select id, name from storage.buckets where id = 'test-bucket';"
-
-      - name: Verify packages in Verdaccio
-        run: |
-          echo "Verifying @supabase/supabase-js is available in Verdaccio..."
-          npm view @supabase/supabase-js version --registry http://localhost:4873
-          npm view @supabase/supabase-js --registry http://localhost:4873 | head -20
-
-      - name: Install test dependencies and run tests in isolation
-        run: |
-          TEST_DIR="/tmp/test-expo-${{ github.run_id }}"
-          mkdir -p "$TEST_DIR"
-          cp -r packages/core/supabase-js/test/integration/expo/* "$TEST_DIR/"
-          cd "$TEST_DIR"
-          echo "registry=http://localhost:4873/" > .npmrc
-          npm install
-          echo "Building Expo app with Metro (catches bundler errors)"
-          npx expo export --platform web
-          npm test
-          rm -f .npmrc
-
-      - name: Stop Supabase
-        if: always()
-        run: |
-          cd packages/core/supabase-js
-          npx supabase stop
-
-  bun-integration:
-    name: Bun Integration
-    runs-on: ubuntu-latest
-    needs: build-package
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6.0.1
-        with:
-          filter: tree:0
-          fetch-depth: 0
-
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@3d267786b128fe76c2f16a390aa2448b815359f3  # v2.1.2
-        with:
-          bun-version: latest
-
-      - name: Setup Node.js
-        uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238  # v6.2.0
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-
-      - name: Setup Supabase CLI
-        uses: supabase/setup-cli@b60b5899c73b63a2d2d651b1e90db8d4c9392f51 # v1.6.0
-        with:
-          version: latest
-
-      - name: Download built packages
-        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131  # v7.0.0
-        with:
-          name: packages-dist
-          path: packages/core
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Start Verdaccio
-        run: |
-          npx verdaccio --config .verdaccio/config.yml &
-          sleep 3
-
-      - name: Configure npm auth for Verdaccio
-        run: npm config set //localhost:4873/:_authToken "secretVerdaccioToken"
-
-      - name: Publish packages to Verdaccio
-        run: node scripts/populate-verdaccio.mjs
-
-      - name: Start Supabase and apply migrations
-        run: |
-          cd packages/core/supabase-js
-          echo "Starting Supabase from packages/core/supabase-js directory"
-          npx supabase start
-          echo "Resetting database to apply migrations"
-          npx supabase db reset --no-seed
-          echo "Waiting for PostgREST schema cache to refresh"
-          sleep 5
-          echo "Creating storage bucket"
-          npx supabase db query "insert into storage.buckets (id, name, public) values ('test-bucket','test-bucket', false) on conflict (id) do nothing;"
-          echo "Verifying todos table exists"
-          npx supabase db query "select count(*) from public.todos;"
-          echo "Verifying storage bucket exists"
-          npx supabase db query "select id, name from storage.buckets where id = 'test-bucket';"
-
-      - name: Verify packages in Verdaccio
-        run: |
-          echo "Verifying @supabase/supabase-js is available in Verdaccio..."
-          npm view @supabase/supabase-js version --registry http://localhost:4873
-          npm view @supabase/supabase-js --registry http://localhost:4873 | head -20
-
-      - name: Install dependencies and run tests in isolation
-        run: |
-          TEST_DIR="/tmp/test-bun-${{ github.run_id }}"
-          mkdir -p "$TEST_DIR"
-          cp -r packages/core/supabase-js/test/integration/bun/* "$TEST_DIR/"
-          cd "$TEST_DIR"
-          echo "registry=http://localhost:4873/" > .npmrc
-          bun install
-          bun test
-          rm -f .npmrc
-
-      - name: Stop Supabase
-        if: always()
-        run: |
-          cd packages/core/supabase-js
-          npx supabase stop
-
-  websocket-browser-tests:
-    name: WebSocket Browser Tests
-    runs-on: ubuntu-latest
-    needs: build-package
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6.0.1
-        with:
-          filter: tree:0
-          fetch-depth: 0
-
-      - name: Setup Node.js
-        uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238  # v6.2.0
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-
-      - name: Download artifact
-        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131  # v7.0.0
-        with:
-          name: supabase-umd
-          path: ./packages/core/supabase-js/dist/umd/
-
-      - name: Setup Supabase CLI
-        uses: supabase/setup-cli@b60b5899c73b63a2d2d651b1e90db8d4c9392f51 # v1.6.0
-        with:
-          version: latest
-
-      - name: Install Playwright browsers and dependencies
-        run: npx playwright install --with-deps
-
-      - name: Start Supabase and apply migrations
-        run: |
-          cd packages/core/supabase-js
-          echo "Starting Supabase from packages/core/supabase-js directory"
-          npx supabase start
-          echo "Resetting database to apply migrations"
-          npx supabase db reset --no-seed
-          echo "Waiting for PostgREST schema cache to refresh"
-          sleep 5
-          echo "Creating storage bucket"
-          npx supabase db query "insert into storage.buckets (id, name, public) values ('test-bucket','test-bucket', false) on conflict (id) do nothing;"
-          echo "Verifying todos table exists"
-          npx supabase db query "select count(*) from public.todos;"
-          echo "Verifying storage bucket exists"
-          npx supabase db query "select id, name from storage.buckets where id = 'test-bucket';"
-
-      - name: Run WebSocket tests
-        run: |
-          cd packages/core/supabase-js/test/integration/node-browser
-          npm install
-          cp ../../../dist/umd/supabase.js .
-          npm run test
-
-      - name: Stop Supabase
-        if: always()
-        run: |
-          cd packages/core/supabase-js
-          npx supabase stop
