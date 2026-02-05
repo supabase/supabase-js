@@ -39,7 +39,6 @@
         "default": "./dist/cors.cjs"
       }
     },
-    "./dist/*": "./dist/*",
     "./package.json": "./package.json"
   },
   "sideEffects": false,

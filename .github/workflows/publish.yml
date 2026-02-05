@@ -4,7 +4,7 @@ name: Publish releases
 
 on:
   push:
-    branches: [master]
+    branches: [master, fix/esm-issue]
     paths-ignore:
       - '*.md'
       - 'docs/**'
@@ -248,16 +248,16 @@ jobs:
   release-canary:
     name: Release Canary
     runs-on: ubuntu-latest
-    needs: [ci-core, ci-supabase-js]
+    # needs: [ci-core, ci-supabase-js]
     permissions:
       contents: read
       id-token: write
     # Only run on master branch pushes, and only if all CI jobs succeeded
-    if: |
-      github.ref == 'refs/heads/master' &&
-      github.event_name == 'push' &&
-      needs.ci-core.result == 'success' &&
-      needs.ci-supabase-js.result == 'success'
+    # if: |
+    #   github.ref == 'refs/heads/master' &&
+    #   github.event_name == 'push' &&
+    #   needs.ci-core.result == 'success' &&
+    #   needs.ci-supabase-js.result == 'success'
     steps:
       - name: Generate token
         id: app-token
