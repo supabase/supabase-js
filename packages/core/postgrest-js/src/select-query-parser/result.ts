@@ -308,14 +308,17 @@ type ResolveJsonPathType<
       ? PathResult extends string
         ? // Use the result if it's a string as we know that even with the string accessor ->> it's a valid type
           PathResult
-        : IsStringUnion<PathResult> extends true
-          ? // Use the result if it's a union of strings
+        : IsStringUnion<Exclude<PathResult, null>> extends true
+          ? // Use the result if it's a union of strings (even if nullable)
             PathResult
-          : CastType extends 'json'
-            ? // If the type is not a string, ensure it was accessed with json accessor ->
+          : IsStringUnion<PathResult> extends true
+            ? // Use the result if it's a union of strings (non-nullable)
               PathResult
-            : // Otherwise it means non-string value accessed with string accessor ->> use the TypeScriptTypes result
-              TypeScriptTypes<CastType>
+            : CastType extends 'json'
+              ? // If the type is not a string, ensure it was accessed with json accessor ->
+                PathResult
+              : // Otherwise it means non-string value accessed with string accessor ->> use the TypeScriptTypes result
+                TypeScriptTypes<CastType>
       : TypeScriptTypes<CastType>
   : // No json path, use regular type casting
     TypeScriptTypes<CastType>

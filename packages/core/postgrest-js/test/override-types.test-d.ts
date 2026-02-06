@@ -74,7 +74,7 @@ const postgrest = new PostgrestClient<Database>(REST_URL)
   let expectedType: {
     age_range: unknown
     catchphrase: unknown
-    data: CustomUserDataType | null
+    data: CustomUserDataType
     status: 'ONLINE' | 'OFFLINE' | null
     username: string
     custom_field: string
@@ -95,7 +95,7 @@ const postgrest = new PostgrestClient<Database>(REST_URL)
   let expectedType: {
     age_range: unknown
     catchphrase: string
-    data: CustomUserDataType | null
+    data: CustomUserDataType
     status: 'ONLINE' | 'OFFLINE' | null
     username: string
   } | null
@@ -146,7 +146,7 @@ const postgrest = new PostgrestClient<Database>(REST_URL)
       typeof result,
       {
         username: string
-        data: CustomUserDataType | null
+        data: CustomUserDataType
         age_range: unknown
         catchphrase: unknown
         status: 'ONLINE' | 'OFFLINE' | null
@@ -193,7 +193,7 @@ const postgrest = new PostgrestClient<Database>(REST_URL)
       typeof data,
       {
         username: number
-        data: CustomUserDataType | null
+        data: CustomUserDataType
         age_range: unknown
         catchphrase: unknown
         status: 'ONLINE' | 'OFFLINE' | null
@@ -218,7 +218,7 @@ const postgrest = new PostgrestClient<Database>(REST_URL)
       typeof data,
       {
         username: number
-        data: CustomUserDataType | null
+        data: CustomUserDataType
         age_range: unknown
         catchphrase: unknown
         status: 'ONLINE' | 'OFFLINE' | null
@@ -244,6 +244,12 @@ const postgrest = new PostgrestClient<Database>(REST_URL)
         username: string
         data: {
           foo: number
+          fooRecord: {
+            bar: {
+              [x: string]: unknown
+            }
+            baz: string
+          }
           bar: { baz: number }
           en: 'ONE' | 'TWO' | 'THREE'
           record: Record<string, Json | undefined> | null
@@ -275,6 +281,12 @@ const postgrest = new PostgrestClient<Database>(REST_URL)
         username: string
         data: {
           foo: number
+          fooRecord: {
+            bar: {
+              [x: string]: unknown
+            }
+            baz: string
+          }
           bar: { baz: number }
           en: 'ONE' | 'TWO' | 'THREE'
           record: Record<string, Json | undefined> | null
@@ -317,7 +329,7 @@ const postgrest = new PostgrestClient<Database>(REST_URL)
       typeof data,
       {
         username: string
-        data: CustomUserDataType | null
+        data: CustomUserDataType
         age_range: unknown
         catchphrase: unknown
         status: 'ONLINE' | 'OFFLINE' | null
@@ -344,6 +356,12 @@ const postgrest = new PostgrestClient<Database>(REST_URL)
         username: string
         data: {
           foo: string
+          fooRecord: {
+            bar: {
+              [x: string]: unknown
+            }
+            baz: string
+          }
           bar: { baz: number; newBaz: string }
           en: 'FOUR' // Overridden enum value
           record: Record<string, Json | undefined> | null
@@ -374,6 +392,12 @@ const postgrest = new PostgrestClient<Database>(REST_URL)
         username: string
         data: {
           foo: string
+          fooRecord: {
+            bar: {
+              [x: string]: unknown
+            }
+            baz: string
+          }
           bar: {
             baz: number
           }
@@ -411,7 +435,7 @@ const postgrest = new PostgrestClient<Database>(REST_URL)
       typeof data,
       {
         username: string
-        data: CustomUserDataType | null
+        data: CustomUserDataType
         age_range: unknown
         catchphrase: unknown
         status: 'ONLINE' | 'OFFLINE' | null
@@ -466,7 +490,7 @@ const postgrest = new PostgrestClient<Database>(REST_URL)
       typeof data,
       {
         username: string
-        data: CustomUserDataType | null
+        data: CustomUserDataType
         age_range: unknown
         catchphrase: unknown
         status: 'ONLINE' | 'OFFLINE' | null
@@ -503,7 +527,7 @@ const postgrest = new PostgrestClient<Database>(REST_URL)
       {
         age_range: unknown
         catchphrase: unknown
-        data: CustomUserDataType | null
+        data: CustomUserDataType
         status: 'ONLINE' | 'OFFLINE' | null
         username: string
         messages: {
@@ -539,7 +563,7 @@ const postgrest = new PostgrestClient<Database>(REST_URL)
       typeof data,
       {
         username: string
-        data: CustomUserDataType | null
+        data: CustomUserDataType
         age_range: unknown
         catchphrase: unknown
         status: 'ONLINE' | 'OFFLINE' | null
