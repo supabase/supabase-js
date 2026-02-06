@@ -242,6 +242,8 @@ export default class RealtimeChannel {
       this.socket._remove(this)
     })
 
+    this._updateFilterTransform()
+
     this.broadcastEndpointURL = httpEndpointURL(this.socket.socketAdapter.endPointURL())
     this.private = this.params.config.private || false
 
@@ -286,8 +288,6 @@ export default class RealtimeChannel {
       })
 
       this._onClose(() => callback?.(REALTIME_SUBSCRIBE_STATES.CLOSED))
-
-      this._updateFilterTransform()
 
       this.updateJoinPayload({ ...{ config }, ...accessTokenPayload })
 
