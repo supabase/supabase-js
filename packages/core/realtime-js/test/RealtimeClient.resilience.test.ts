@@ -16,11 +16,10 @@ afterEach(() => {
 describe('Network failure scenarios', () => {
   test('should handle network failure and schedule reconnection', async () => {
     testClient.client.connect()
-
-    await vi.waitFor(() => expect(testClient.emitters.connected).toBeCalled())
+    await testClient.socketConnected()
 
     testClient.mockServer.close({ code: 1006, reason: 'Network error', wasClean: false })
-    await vi.waitFor(() => expect(testClient.emitters.close).toBeCalled())
+    await testClient.socketClosed()
 
     // Verify reconnection is scheduled
     assert.ok(testClient.client.socketAdapter.getSocket().reconnectTimer.timer)
@@ -28,7 +27,7 @@ describe('Network failure scenarios', () => {
 
   test('should not schedule reconnection on manual disconnect', async () => {
     testClient.client.connect()
-    await vi.waitFor(() => expect(testClient.emitters.connected).toBeCalled())
+    await testClient.socketConnected()
     testClient.client.disconnect()
 
     // Verify no reconnection is scheduled
@@ -99,7 +98,7 @@ describe('Reconnection timer logic', () => {
 describe('socket close event', () => {
   beforeEach(async () => {
     testClient.client.connect()
-    await vi.waitFor(() => expect(testClient.emitters.connected).toBeCalled())
+    await testClient.socketConnected()
   })
 
   test('schedules reconnectTimer timeout', async () => {
@@ -109,7 +108,7 @@ describe('socket close event', () => {
     )
 
     testClient.mockServer.close({ code: 1000, reason: '', wasClean: true })
-    await vi.waitFor(() => expect(testClient.emitters.close).toBeCalled())
+    await testClient.socketClosed()
 
     expect(spy).toHaveBeenCalledTimes(1)
   })
@@ -120,7 +119,7 @@ describe('socket close event', () => {
     const spy = vi.spyOn(channel.channelAdapter.getChannel(), 'trigger')
 
     testClient.mockServer.close({ code: 1000, reason: '', wasClean: true })
-    await vi.waitFor(() => expect(testClient.emitters.close).toHaveBeenCalled())
+    await testClient.socketClosed()
 
     expect(spy).toHaveBeenCalledWith(CHANNEL_EVENTS.error)
   })

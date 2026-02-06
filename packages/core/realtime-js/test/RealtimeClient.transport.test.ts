@@ -23,7 +23,7 @@ describe('push', () => {
 
   test('sends data to connection when connected', async () => {
     testSetup.connect()
-    await vi.waitFor(() => expect(testSetup.emitters.connected).toHaveBeenCalled())
+    await testSetup.socketConnected()
 
     const spy = vi.spyOn(testSetup.client.socketAdapter.getSocket().conn!, 'send')
     testSetup.client.push(data)

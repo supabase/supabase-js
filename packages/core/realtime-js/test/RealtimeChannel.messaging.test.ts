@@ -193,7 +193,7 @@ describe('send', () => {
     beforeEach(async () => {
       testSetup = setupRealtimeTest()
       testSetup.connect()
-      await vi.waitFor(() => expect(testSetup.emitters.connected).toHaveBeenCalled())
+      await testSetup.socketConnected()
     })
 
     afterEach(() => {

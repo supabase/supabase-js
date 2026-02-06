@@ -5,7 +5,13 @@ import RealtimeClient from '../src/RealtimeClient'
 import RealtimeChannel from '../src/RealtimeChannel'
 import { WebSocket } from 'mock-socket'
 import { CHANNEL_STATES, CONNECTION_STATE } from '../src/lib/constants'
-import { DEFAULT_API_KEY, setupRealtimeTest, TestSetup } from './helpers/setup'
+import {
+  DEFAULT_API_KEY,
+  phxReply,
+  setupRealtimeTest,
+  TestSetup,
+  waitForChannelSubscribed,
+} from './helpers/setup'
 
 const defaultRef = '1'
 const defaultTimeout = 1000
@@ -206,7 +212,7 @@ describe('Channel Lifecycle Management', () => {
 
     test('if attempting to join multiple times, ignores calls', async () => {
       channel.subscribe()
-      await vi.waitFor(() => expect(channel.state).toBe(CHANNEL_STATES.joined))
+      await waitForChannelSubscribed(channel)
 
       for (let i = 0; i < 10; ++i) channel.subscribe()
 
@@ -238,8 +244,7 @@ describe('Channel Lifecycle Management', () => {
       testSetup.client.accessTokenValue = 'token123'
 
       channel.subscribe()
-
-      await vi.waitFor(() => expect(channel.state).toBe(CHANNEL_STATES.joined))
+      await waitForChannelSubscribed(channel)
 
       expect(channel.joinPush.payload()).toStrictEqual({
         access_token: 'token123',
@@ -256,12 +261,14 @@ describe('Channel Lifecycle Management', () => {
       const testSocket = new RealtimeClient(testSetup.realtimeUrl, {
         accessToken: accessToken,
         transport: WebSocket,
+        timeout: 1000,
+        decode: (msg, callback) => callback(JSON.parse(msg as string)),
+        encode: (msg, callback) => callback(JSON.stringify(msg)),
         params: { apikey: DEFAULT_API_KEY },
       })
 
       testSocket.connect()
-
-      await vi.waitFor(() => expect(testSocket.connectionState()).toBe(CONNECTION_STATE.open))
+      await testSetup.socketConnected()
       expect(testSocket.accessTokenValue).toStrictEqual(tokens[0])
 
       const channel = testSocket.channel('topic')
@@ -271,7 +278,7 @@ describe('Channel Lifecycle Management', () => {
       await vi.waitFor(() => expect(testSocket.connectionState()).toBe(CONNECTION_STATE.closed))
 
       channel.subscribe()
-      await vi.waitFor(() => expect(channel.state).toBe(CHANNEL_STATES.joined))
+      await waitForChannelSubscribed(channel)
       expect(channel.socket.accessTokenValue).toStrictEqual(tokens[2]) // Token set during connect and during subscribe
     })
 
@@ -577,8 +584,7 @@ describe('Channel Lifecycle Management', () => {
       })
       channel = testSetup.client.channel('topic')
       channel.subscribe()
-
-      await vi.waitFor(() => expect(channel.state).toBe(CHANNEL_STATES.joined))
+      await waitForChannelSubscribed(channel)
 
       const result = await channel.unsubscribe()
 

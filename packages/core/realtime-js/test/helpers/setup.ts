@@ -1,7 +1,9 @@
-import { Mock, vi } from 'vitest'
+import { Mock, vi, expect } from 'vitest'
 import crypto from 'crypto'
 import { Server, Client } from 'mock-socket'
 import RealtimeClient, { RealtimeClientOptions } from '../../src/RealtimeClient'
+import RealtimeChannel from '../../src/RealtimeChannel'
+import { CHANNEL_STATES } from '../../src/lib/constants'
 
 // Constants
 export const DEFAULT_REALTIME_URL = 'localhost:4000'
@@ -45,6 +47,8 @@ export interface TestSetup {
   cleanup: () => void
   connect: () => void
   disconnect: () => void
+  socketConnected: () => Promise<void>
+  socketClosed: () => Promise<void>
 }
 
 export interface BuilderOptions extends Omit<RealtimeClientOptions, 'params'> {
@@ -93,23 +97,13 @@ export function setupRealtimeTest(options: BuilderOptions = {}): TestSetup {
         }
 
         if (msg.event === 'phx_join') {
-          const reply = {
-            event: 'phx_reply',
-            payload: { status: 'ok', response: { postgres_changes: [] } },
-            ref: msg.ref,
-            topic: msg.topic,
-          }
-          socket.send(JSON.stringify(reply))
+          socket.send(
+            phxReply(message as string, { status: 'ok', response: { postgres_changes: [] } })
+          )
         }
 
         if (msg.event === 'heartbeat') {
-          const reply = {
-            topic: 'phoenix',
-            event: 'phx_reply',
-            ref: msg.ref,
-            payload: { status: 'ok', response: {} },
-          }
-          socket.send(JSON.stringify(reply))
+          socket.send(phxReply(message as string, { status: 'ok', response: {} }))
         }
       })
     })
@@ -117,7 +111,7 @@ export function setupRealtimeTest(options: BuilderOptions = {}): TestSetup {
   mockServer.on('connection', onConnection)
 
   const client = new RealtimeClient(realtimeUrl, {
-    decode: (msg, callback) => callback(JSON.parse(msg)),
+    decode: (msg, callback) => callback(JSON.parse(msg as string)),
     encode: (msg, callback) => callback(JSON.stringify(msg)),
     ...options,
     params: { ...options.params, apikey: options.apikey || DEFAULT_API_KEY },
@@ -143,10 +137,12 @@ export function setupRealtimeTest(options: BuilderOptions = {}): TestSetup {
     connect,
     disconnect,
     cleanup,
+    socketConnected: async () => waitForHaveBeenCalled(emitters.connected),
+    socketClosed: async () => waitForHaveBeenCalled(emitters.close),
   }
 }
 
-export function cleanupRealtimeTest(client: RealtimeClient, mockServer: Server, clock?: any): void {
+function cleanupRealtimeTest(client: RealtimeClient, mockServer: Server, clock?: any): void {
   try {
     client.disconnect()
   } catch (error) {
@@ -161,4 +157,23 @@ export function cleanupRealtimeTest(client: RealtimeClient, mockServer: Server, 
     vi.useRealTimers()
   }
   vi.resetAllMocks()
+}
+
+async function waitForHaveBeenCalled(connected: Mock) {
+  return vi.waitFor(() => expect(connected).toHaveBeenCalled())
+}
+
+export async function waitForChannelSubscribed(channel: RealtimeChannel) {
+  return vi.waitFor(() => expect(channel.state).toBe(CHANNEL_STATES.joined))
+}
+
+export function phxReply(message: string, payload: Object) {
+  const { topic, ref } = JSON.parse(message)
+
+  return JSON.stringify({
+    topic: topic,
+    event: 'phx_reply',
+    ref: ref,
+    payload,
+  })
 }

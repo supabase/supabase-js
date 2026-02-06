@@ -1,5 +1,5 @@
 import { beforeEach, afterEach, expect, describe, test, vi } from 'vitest'
-import { type TestSetup, setupRealtimeTest } from './helpers/setup'
+import { type TestSetup, setupRealtimeTest, waitForChannelSubscribed } from './helpers/setup'
 import { CHANNEL_STATES } from '../src/lib/constants'
 let testSetup: TestSetup
 
@@ -104,7 +104,7 @@ describe('channel', () => {
 
   test('allows to create second channel with given topic after first one unsubscribed', async () => {
     const channel1 = testSetup.client.channel('topic').subscribe()
-    await vi.waitFor(() => expect(channel1.state).toBe(CHANNEL_STATES.joined))
+    await waitForChannelSubscribed(channel1)
 
     expect(testSetup.client.getChannels().length).toBe(1)
     await channel1.unsubscribe()
@@ -112,7 +112,7 @@ describe('channel', () => {
     expect(testSetup.client.getChannels().length).toBe(0)
 
     const channel2 = testSetup.client.channel('topic').subscribe()
-    await vi.waitFor(() => expect(channel2.state).toBe(CHANNEL_STATES.joined))
+    await waitForChannelSubscribed(channel2)
 
     expect(channel2).not.toBe(channel1)
   })

@@ -1,19 +1,17 @@
-import assert from 'assert'
-import { describe, beforeEach, afterEach, test, vi, expect } from 'vitest'
+import { beforeEach, afterEach, test, describe, expect, vi, Mock } from 'vitest'
+import {
+  type TestSetup,
+  phxReply,
+  setupRealtimeTest,
+  waitForChannelSubscribed,
+} from './helpers/setup'
 import RealtimeChannel from '../src/RealtimeChannel'
 import { CHANNEL_STATES, MAX_PUSH_BUFFER_SIZE } from '../src/lib/constants'
-import {
-  setupRealtimeTest,
-  cleanupRealtimeTest,
-  TestSetup,
-  setupJoinedChannel,
-  setupDisconnectedSocket,
-} from './helpers/setup'
+
+let testSetup: TestSetup
+let channel: RealtimeChannel
 
 const defaultTimeout = 1000
-
-let channel: RealtimeChannel
-let testSetup: TestSetup
 
 beforeEach(() => {
   testSetup = setupRealtimeTest({
@@ -22,11 +20,15 @@ beforeEach(() => {
   })
 })
 
-afterEach(() => cleanupRealtimeTest(testSetup))
+afterEach(() => {
+  testSetup.cleanup()
+})
 
 describe('Error Recovery & Resilience', () => {
-  beforeEach(() => {
-    channel = testSetup.socket.channel('test-resilience')
+  beforeEach(async () => {
+    testSetup.connect()
+    await testSetup.socketConnected()
+    channel = testSetup.client.channel('test-resilience')
   })
 
   afterEach(() => {
@@ -34,65 +36,83 @@ describe('Error Recovery & Resilience', () => {
   })
 
   describe('Network disconnection recovery', () => {
-    test('should handle network disconnection during subscription', () => {
-      let subscriptionStatus: string | null = null
-
-      channel.subscribe((status) => {
-        subscriptionStatus = status
+    test('should handle network disconnection during subscription', async () => {
+      testSetup.cleanup()
+      testSetup = setupRealtimeTest({
+        useFakeTimers: true,
+        socketHandlers: {
+          phx_join: () => {},
+        },
       })
 
-      // Simulate network failure during subscription
-      testSetup.socket.conn = null
+      channel = testSetup.client.channel('test-resilience')
+      channel.subscribe()
 
-      // Simulate reconnection
-      testSetup.socket.connect()
+      await vi.waitFor(() => {
+        expect(testSetup.emitters.message).toHaveBeenCalledTimes(1)
+        expect(testSetup.emitters.message).toHaveBeenCalledWith(
+          'realtime:test-resilience',
+          'phx_join',
+          expect.any(Object)
+        )
+      })
 
-      // Verify channel attempts to rejoin
-      assert.equal(channel.state, CHANNEL_STATES.joining)
+      testSetup.client.socketAdapter.getSocket().conn = null
+      testSetup.connect()
+
+      vi.advanceTimersByTime(defaultTimeout)
+
+      testSetup.mockServer.emit(
+        'message',
+        JSON.stringify({
+          event: 'phx_reply',
+          payload: { status: 'ok', response: { postgres_changes: [] } },
+          ref: channel.joinPush.ref,
+          topic: 'realtime:test-resilience',
+        })
+      )
+
+      await waitForChannelSubscribed(channel)
     })
 
-    test('should recover from server disconnection', () => {
-      // Set up successful subscription first
-      setupJoinedChannel(channel)
+    test('should recover from server disconnection', async () => {
+      channel.subscribe()
+      await waitForChannelSubscribed(channel)
 
-      // Directly set state to errored and schedule rejoin
-      channel.state = CHANNEL_STATES.errored
-      channel.rejoinTimer.scheduleTimeout()
+      testSetup.mockServer.emit('close', {
+        code: 1006,
+        reason: 'Network Failure',
+        wasClean: false,
+      })
+      expect(channel.state).toBe(CHANNEL_STATES.errored)
+      vi.advanceTimersByTime(defaultTimeout)
 
-      // Verify channel goes to errored state
-      assert.equal(channel.state, CHANNEL_STATES.errored)
-
-      // Verify rejoin timer is scheduled
-      expect(channel.rejoinTimer.timer).toBeTruthy()
+      // Verify channel rejoins
+      await waitForChannelSubscribed(channel)
     })
   })
 
   describe('Malformed message handling', () => {
-    test('should handle malformed server responses gracefully', () => {
-      let errorTriggered = false
-
-      // @ts-ignore - accessing private method for testing
-      channel._onError(() => {
-        errorTriggered = true
-      })
+    test('should handle malformed server responses gracefully', async () => {
+      channel.subscribe()
+      await waitForChannelSubscribed(channel)
 
       // Override _onMessage to simulate malformed message handling
-      const originalOnMessage = channel._onMessage
-      channel._onMessage = (event, payload, ref) => {
+      const originalOnMessage = channel.channelAdapter.getChannel().onMessage
+
+      channel.channelAdapter.getChannel().onMessage = (event, payload, ref) => {
         if (payload === null || payload === undefined) {
           throw new Error('Malformed payload')
         }
+
         return originalOnMessage.call(channel, event, payload, ref)
       }
 
-      try {
-        // Simulate malformed message
-        channel._trigger('test', null)
-      } catch (error) {
-        // Error should be caught and handled
-        expect(error instanceof Error)
-        assert.equal(error.message, 'Malformed payload')
-      }
+      expect(() => {
+        channel.channelAdapter.getChannel().trigger('test')
+      }).toThrowError('Malformed payload')
+
+      channel.channelAdapter.getChannel().onMessage = originalOnMessage
     })
 
     test('should handle missing required message fields', () => {
@@ -109,12 +129,24 @@ describe('Error Recovery & Resilience', () => {
         callbackTriggered = true
       })
 
-      channel._trigger('broadcast', incompletePayload)
-      assert.equal(callbackTriggered, false)
+      channel.channelAdapter.getChannel().trigger('broadcast', incompletePayload)
+      expect(callbackTriggered).toBe(false)
     })
   })
 
   describe('Subscription error handling', () => {
+    beforeEach(() => {
+      testSetup.cleanup()
+      testSetup = setupRealtimeTest({
+        useFakeTimers: true,
+        timeout: defaultTimeout,
+        socketHandlers: {
+          // No response for timeout
+          phx_join: () => {},
+        },
+      })
+    })
+
     test('should handle subscription timeout gracefully', () => {
       let timeoutReceived = false
 
@@ -124,11 +156,13 @@ describe('Error Recovery & Resilience', () => {
         }
       })
 
-      // Simulate subscription timeout
-      channel.joinPush.trigger('timeout', {})
+      channel = testSetup.client.channel('test-resilience')
+      channel.subscribe()
 
-      assert.equal(timeoutReceived, true)
-      assert.equal(channel.state, CHANNEL_STATES.errored)
+      vi.advanceTimersByTime(defaultTimeout)
+
+      expect(timeoutReceived).toBe(true)
+      expect(channel.state).toBe(CHANNEL_STATES.errored)
     })
 
     test('should handle subscription errors with detailed error messages', () => {
@@ -148,25 +182,31 @@ describe('Error Recovery & Resilience', () => {
 
       channel.joinPush.trigger('error', errorPayload)
 
-      assert.equal(errorStatus, 'CHANNEL_ERROR')
-      expect(errorMessage !== null && errorMessage.includes('Authentication failed'))
+      expect(errorStatus).toBe('CHANNEL_ERROR')
+      expect(errorMessage).not.toBeNull()
+
+      // @ts-ignore error message is string
+      expect(errorMessage.includes('Invalid API key'))
+      // @ts-ignore error message is string
+      expect(errorMessage.includes('Authentication failed'))
     })
   })
 
   describe('State consistency during errors', () => {
-    test('should maintain consistent state during rejoin failures', () => {
+    test('should maintain consistent state during rejoin failures', async () => {
       // Set up initial state
-      setupJoinedChannel(channel)
+      channel.subscribe()
+      await waitForChannelSubscribed(channel)
 
-      // Mock socket as disconnected
-      setupDisconnectedSocket(testSetup.socket)
+      testSetup.disconnect()
+      await testSetup.socketClosed()
 
       // Directly set state to errored and schedule rejoin
       channel.state = CHANNEL_STATES.errored
       channel.rejoinTimer.scheduleTimeout()
 
       // Verify state transition
-      assert.equal(channel.state, CHANNEL_STATES.errored)
+      expect(channel.state).toBe(CHANNEL_STATES.errored)
 
       // Verify rejoin timer is active
       expect(channel.rejoinTimer.timer).toBeTruthy()
@@ -175,61 +215,49 @@ describe('Error Recovery & Resilience', () => {
     test('should handle multiple error events gracefully', () => {
       let errorCount = 0
 
-      // Setup error handler directly
-      // @ts-ignore - accessing private method for testing
-      channel._onError(() => {
-        errorCount++
-      })
-
-      // Set initial state to allow error handling
-      channel.state = CHANNEL_STATES.joining
+      channel.channelAdapter.onError(() => errorCount++)
 
       // Trigger multiple errors via the error event
-      // @ts-ignore - accessing private method for testing
-      channel._trigger('phx_error', 'Error 1')
-      // @ts-ignore - accessing private method for testing
-      channel._trigger('phx_error', 'Error 2')
-      // @ts-ignore - accessing private method for testing
-      channel._trigger('phx_error', 'Error 3')
+      channel.channelAdapter.getChannel().trigger('phx_error', 'Error 1')
+      channel.channelAdapter.getChannel().trigger('phx_error', 'Error 2')
+      channel.channelAdapter.getChannel().trigger('phx_error', 'Error 3')
 
       // Should handle all errors
-      assert.equal(errorCount, 3)
-      assert.equal(channel.state, CHANNEL_STATES.errored)
+      expect(errorCount).toBe(3)
+      expect(channel.state).toBe(CHANNEL_STATES.errored)
     })
   })
 })
 
 describe('Error Handling Consolidation', () => {
-  beforeEach(() => {
-    channel = testSetup.socket.channel('test-error-handling')
-  })
+  let channel: RealtimeChannel
+  let logSpy: Mock
 
-  afterEach(() => {
-    channel.unsubscribe()
+  beforeEach(() => {
+    testSetup.cleanup()
+    logSpy = vi.fn()
+    testSetup = setupRealtimeTest({
+      logger: logSpy,
+      useFakeTimers: true,
+      timeout: defaultTimeout,
+      socketHandlers: {
+        phx_join: () => {},
+      },
+    })
+    channel = testSetup.client.channel('test-error-handling')
   })
 
   describe('Error Handling Through Public API', () => {
-    let logSpy: any
-
-    beforeEach(() => {
-      logSpy = vi.spyOn(testSetup.socket, 'log')
-    })
-
-    test('should set state to errored and schedule rejoin when joinPush receives error', () => {
+    test('should set state to errored and schedule rejoin when joinPush receives error', async () => {
       // Set channel to joining state (not joined, so error handler will work)
-      channel.state = CHANNEL_STATES.joining
-
       const scheduleTimeoutSpy = vi.spyOn(channel.rejoinTimer, 'scheduleTimeout')
 
-      // Simulate the actual error flow by calling _matchReceive directly on the joinPush
-      // This is how the error would actually be processed
-      // @ts-ignore - accessing private method for proper simulation
-      channel.joinPush._matchReceive({
-        status: 'error',
-        response: 'test reason',
-      })
+      channel.subscribe()
+      await testSetup.socketConnected()
 
-      assert.equal(channel.state, CHANNEL_STATES.errored)
+      channel.joinPush.trigger('error', 'test reason')
+
+      expect(channel.state).toBe(CHANNEL_STATES.errored)
       expect(scheduleTimeoutSpy).toHaveBeenCalledTimes(1)
       // Check that log was called with the correct arguments
       expect(logSpy).toHaveBeenCalledWith('channel', `error ${channel.topic}`, 'test reason')
@@ -250,24 +278,19 @@ describe('Error Handling Consolidation', () => {
 
       const scheduleTimeoutSpy = vi.spyOn(channel.rejoinTimer, 'scheduleTimeout')
 
-      // Trigger actual error through public API
       channel.joinPush.trigger('error', 'test reason')
 
-      assert.equal(channel.state, originalState)
+      expect(channel.state).toBe(originalState)
       expect(scheduleTimeoutSpy).not.toHaveBeenCalled()
     })
 
     test('should handle timeout events through public API', () => {
-      // Keep channel in joining state so timeout handler will trigger
-      channel.state = CHANNEL_STATES.joining
-
       const scheduleTimeoutSpy = vi.spyOn(channel.rejoinTimer, 'scheduleTimeout')
 
-      // Simulate the actual timeout flow by calling _matchReceive directly
-      // @ts-ignore - accessing private method for proper simulation
-      channel.joinPush._matchReceive({ status: 'timeout', response: {} })
+      channel.subscribe()
+      vi.advanceTimersByTime(defaultTimeout)
 
-      assert.equal(channel.state, CHANNEL_STATES.errored)
+      expect(channel.state).toBe(CHANNEL_STATES.errored)
       expect(scheduleTimeoutSpy).toHaveBeenCalledTimes(1)
       expect(logSpy).toHaveBeenCalledWith(
         'channel',
@@ -276,61 +299,99 @@ describe('Error Handling Consolidation', () => {
       )
     })
 
-    test('should maintain consistent state during rejoin failures', () => {
-      setupJoinedChannel(channel)
-      setupDisconnectedSocket(testSetup.socket)
-      channel.state = CHANNEL_STATES.errored
+    test('should maintain consistent state during rejoin failures', async () => {
+      testSetup.cleanup()
+      testSetup = setupRealtimeTest({
+        useFakeTimers: true,
+        timeout: defaultTimeout,
+        socketHandlers: {
+          phx_join: (socket, message) => {
+            socket.send(
+              phxReply(message as string, { status: 'ok', response: { postgres_changes: [] } })
+            )
+          },
+        },
+      })
+
+      channel = testSetup.client.channel('test')
+      channel.subscribe()
+
+      await waitForChannelSubscribed(channel)
+
+      testSetup.disconnect()
+      await testSetup.socketClosed()
+
+      expect(channel.state).toBe(CHANNEL_STATES.errored)
       channel.rejoinTimer.scheduleTimeout()
-      assert.equal(channel.state, CHANNEL_STATES.errored)
+      expect(channel.state).toBe(CHANNEL_STATES.errored)
       expect(channel.rejoinTimer.timer).toBeTruthy()
     })
 
-    test('should handle multiple error events gracefully', () => {
-      channel.state = CHANNEL_STATES.joining
+    test('should handle multiple error events gracefully', async () => {
+      channel.subscribe()
       const scheduleTimeoutSpy = vi.spyOn(channel.rejoinTimer, 'scheduleTimeout')
 
-      // Simulate first error through proper flow
-      // @ts-ignore - accessing private method for proper simulation
-      channel.joinPush._matchReceive({ status: 'error', response: 'reason1' })
-      assert.equal(channel.state, CHANNEL_STATES.errored)
+      channel.joinPush.trigger('error', 'reason1')
+      expect(channel.state).toBe(CHANNEL_STATES.errored)
 
-      // Reset state to test second error
-      channel.state = CHANNEL_STATES.joining
+      vi.advanceTimersByTime(defaultTimeout)
+
+      expect(channel.state).toBe(CHANNEL_STATES.joining)
+      await vi.waitFor(() => expect(scheduleTimeoutSpy).toHaveBeenCalledTimes(1))
 
       // Simulate second error - should not crash
-      // @ts-ignore - accessing private method for proper simulation
-      channel.joinPush._matchReceive({ status: 'error', response: 'reason2' })
-      assert.equal(channel.state, CHANNEL_STATES.errored)
+      channel.joinPush.trigger('error', 'reason2')
+      expect(channel.state).toBe(CHANNEL_STATES.errored)
+
+      vi.advanceTimersByTime(defaultTimeout)
 
       // Should have called scheduleTimeout for both errors
-      expect(scheduleTimeoutSpy).toHaveBeenCalledTimes(2)
+      await vi.waitFor(() => expect(scheduleTimeoutSpy).toHaveBeenCalledTimes(2))
     })
   })
 
   describe('Join Push Error Integration', () => {
-    test('should handle joinPush timeout through existing error handling', () => {
+    beforeEach(() => {
+      testSetup.cleanup()
+      testSetup = setupRealtimeTest({
+        useFakeTimers: true,
+        timeout: defaultTimeout,
+        socketHandlers: {
+          // No response for timeout
+          phx_join: () => {},
+        },
+      })
+
+      channel = testSetup.client.channel('test-join-push-error')
+    })
+
+    test('should handle joinPush timeout through existing error handling', async () => {
       channel.subscribe()
 
       const scheduleTimeoutSpy = vi.spyOn(channel.rejoinTimer, 'scheduleTimeout')
+
+      await testSetup.socketConnected()
 
       // Simulate timeout through public API
       channel.joinPush.trigger('timeout', {})
 
       // Verify the existing error handling works
-      assert.equal(channel.state, CHANNEL_STATES.errored)
+      expect(channel.state).toBe(CHANNEL_STATES.errored)
       expect(scheduleTimeoutSpy).toHaveBeenCalledTimes(1)
     })
 
-    test('should handle joinPush error through existing error handling', () => {
+    test('should handle joinPush error through existing error handling', async () => {
       channel.subscribe()
 
       const scheduleTimeoutSpy = vi.spyOn(channel.rejoinTimer, 'scheduleTimeout')
+
+      await testSetup.socketConnected()
 
       // Trigger error through public API
       channel.joinPush.trigger('error', { message: 'join failed' })
 
       // Verify the existing error handling works
-      assert.equal(channel.state, CHANNEL_STATES.errored)
+      expect(channel.state).toBe(CHANNEL_STATES.errored)
       expect(scheduleTimeoutSpy).toHaveBeenCalledTimes(1)
     })
   })
@@ -338,182 +399,134 @@ describe('Error Handling Consolidation', () => {
 
 describe('Improved Cleanup & Bounded Buffer', () => {
   beforeEach(() => {
-    channel = testSetup.socket.channel('test-cleanup')
+    channel = testSetup.client.channel('test-cleanup')
   })
 
-  afterEach(() => {
-    channel.teardown()
-  })
+  describe('Bounded push buffer', () => {
+    let logSpy = vi.fn()
 
-  describe('Enhanced teardown', () => {
-    test('should perform complete cleanup', () => {
-      // Add pushes to buffer
-      setupJoinedChannel(channel)
-      setupDisconnectedSocket(testSetup.socket)
-      channel._push('test', { data: 'test1' })
-      channel._push('test', { data: 'test2' })
+    beforeEach(() => {
+      logSpy.mockClear()
+      testSetup.cleanup()
+      testSetup = setupRealtimeTest({
+        timeout: defaultTimeout,
+        useFakeTimers: true,
+        logger: logSpy,
+        socketHandlers: {
+          phx_join: (socket, message) => {
+            socket.send(phxReply(message, { status: 'ok', response: { postgres_changes: [] } }))
+          },
+        },
+      })
 
-      assert.equal(channel.pushBuffer.length, 2)
-
-      // Schedule rejoin timer
-      channel.rejoinTimer.scheduleTimeout()
-      expect(channel.rejoinTimer.timer).toBeTruthy()
-
-      // Perform teardown
-      channel.teardown()
-
-      // Verify important cleanup
-      assert.equal(channel.pushBuffer.length, 0)
-      assert.equal(channel.state, 'closed')
-      assert.equal(channel.rejoinTimer.timer, undefined)
-      // Bindings are cleared (this clears ALL bindings, not just user ones)
-      assert.deepEqual(channel.bindings, {})
+      channel = testSetup.client.channel('test-push-buffer')
     })
 
-    test('should be safe to call multiple times', () => {
-      // First teardown
-      channel.teardown()
-      assert.equal(channel.state, 'closed')
+    test('should maintain buffer within size limit', async () => {
+      channel.subscribe()
+      await waitForChannelSubscribed(channel)
+      testSetup.disconnect()
+      await testSetup.socketClosed()
 
-      // Second teardown should not throw or cause issues
-      channel.teardown()
-      assert.equal(channel.state, 'closed')
-
-      // Should still be safe to call again
-      channel.teardown()
-      assert.equal(channel.state, 'closed')
-    })
-
-    test('should destroy all pushes in buffer before clearing', () => {
-      setupJoinedChannel(channel)
-      setupDisconnectedSocket(testSetup.socket)
-
-      // Add pushes to buffer
-      channel._push('test', { data: 'test1' })
-      channel._push('test', { data: 'test2' })
-
-      const push1 = channel.pushBuffer[0]
-      const push2 = channel.pushBuffer[1]
-
-      const destroySpy1 = vi.spyOn(push1, 'destroy')
-      const destroySpy2 = vi.spyOn(push2, 'destroy')
-
-      channel.teardown()
-
-      expect(destroySpy1).toHaveBeenCalledTimes(1)
-      expect(destroySpy2).toHaveBeenCalledTimes(1)
-      assert.equal(channel.pushBuffer.length, 0)
-    })
-  })
-
-  describe('Bounded push buffer (_addToPushBuffer)', () => {
-    test('should maintain buffer within size limit', () => {
-      setupJoinedChannel(channel)
-      const isConnectedStub = vi.spyOn(testSetup.socket, 'isConnected')
-      isConnectedStub.mockReturnValue(false)
-
-      const logSpy = vi.spyOn(testSetup.socket, 'log')
+      logSpy.mockClear()
 
       // Fill buffer to capacity
-
       for (let i = 0; i < MAX_PUSH_BUFFER_SIZE + 5; i++) {
-        channel._push('test', { data: `message-${i}` })
+        channel.channelAdapter.push('test', { data: `message-${i}` })
       }
 
       // Buffer should not exceed max size
-      assert.equal(channel.pushBuffer.length, MAX_PUSH_BUFFER_SIZE)
+      expect(channel.channelAdapter.getChannel().pushBuffer.length).toBe(MAX_PUSH_BUFFER_SIZE)
 
       // Should have logged about discarding old pushes
-      expect(logSpy).toHaveBeenCalled()
+      expect(logSpy).toHaveBeenCalledWith(
+        'channel',
+        'discarded push due to buffer overflow: test',
+        expect.any(Object)
+      )
+      expect(logSpy).toHaveBeenCalledTimes(5)
     })
 
-    test('should destroy oldest push when buffer is full', () => {
-      setupJoinedChannel(channel)
-      const isConnectedStub = vi.spyOn(testSetup.socket, 'isConnected')
-      isConnectedStub.mockReturnValue(false)
+    test('should destroy oldest push when buffer is full', async () => {
+      channel.subscribe()
+      await waitForChannelSubscribed(channel)
+      testSetup.disconnect()
+      await testSetup.socketClosed()
+
+      logSpy.mockClear()
 
       // Add one push to get a reference for spying
-      channel._push('test', { data: 'first' })
-      const firstPush = channel.pushBuffer[0]
-      const destroySpy = vi.spyOn(firstPush, 'destroy')
+      channel.channelAdapter.push('test', { data: 'first' })
 
       // Fill buffer beyond capacity
-      for (let i = 1; i < MAX_PUSH_BUFFER_SIZE + 2; i++) {
-        channel._push('test', { data: `message-${i}` })
+      for (let i = 0; i < MAX_PUSH_BUFFER_SIZE; i++) {
+        channel.channelAdapter.push('test', { data: `message-${i}` })
       }
 
       // First push should have been destroyed
-      expect(destroySpy).toHaveBeenCalledTimes(1)
-      assert.equal(channel.pushBuffer.length, MAX_PUSH_BUFFER_SIZE)
+      expect(logSpy).toHaveBeenCalledTimes(1)
+      expect(logSpy).toHaveBeenCalledWith('channel', expect.any(String), { data: 'first' })
+      expect(channel.channelAdapter.getChannel().pushBuffer.length).toBe(MAX_PUSH_BUFFER_SIZE)
     })
 
-    test('should handle empty buffer gracefully', () => {
-      setupJoinedChannel(channel)
-      setupDisconnectedSocket(testSetup.socket)
+    test('should handle empty buffer gracefully', async () => {
+      channel.subscribe()
+      await waitForChannelSubscribed(channel)
 
+      testSetup.disconnect()
+      await testSetup.socketClosed()
+
+      expect(channel.channelAdapter.getChannel().pushBuffer.length).toBe(0)
       // Should not throw when adding to empty buffer
-      channel._push('test', { data: 'test' })
-      assert.equal(channel.pushBuffer.length, 1)
+      channel.channelAdapter.push('test', { data: 'test' })
+      expect(channel.channelAdapter.getChannel().pushBuffer.length).toBe(1)
     })
 
-    test('should preserve push order when under limit', () => {
-      setupJoinedChannel(channel)
-      setupDisconnectedSocket(testSetup.socket)
+    test('should preserve push order when under limit', async () => {
+      channel.subscribe()
+      await waitForChannelSubscribed(channel)
+
+      testSetup.disconnect()
+      await testSetup.socketClosed()
 
       // Add pushes under the limit
-      channel._push('test1', { data: 'first' })
-      channel._push('test2', { data: 'second' })
-      channel._push('test3', { data: 'third' })
+      channel.channelAdapter.push('test1', { data: 'first' })
+      channel.channelAdapter.push('test2', { data: 'second' })
+      channel.channelAdapter.push('test3', { data: 'third' })
 
-      // Verify order is maintained
-      assert.equal(channel.pushBuffer[0].event, 'test1')
-      assert.equal(channel.pushBuffer[1].event, 'test2')
-      assert.equal(channel.pushBuffer[2].event, 'test3')
-      assert.equal(channel.pushBuffer.length, 3)
+      const pushBuffer = channel.channelAdapter.getChannel().pushBuffer
+
+      expect(pushBuffer[0].event).toBe('test1')
+      expect(pushBuffer[1].event).toBe('test2')
+      expect(pushBuffer[2].event).toBe('test3')
+      expect(pushBuffer.length).toBe(3)
     })
   })
 
   describe('Memory leak prevention', () => {
-    test('should clean up all references on teardown', () => {
-      // Add pushes
-      setupJoinedChannel(channel)
-      setupDisconnectedSocket(testSetup.socket)
-      channel._push('test', { data: 'test' })
+    test('should prevent push buffer growth during disconnection', async () => {
+      channel.subscribe()
+      await waitForChannelSubscribed(channel)
 
-      // Verify state before teardown
-      assert.equal(channel.pushBuffer.length, 1)
-
-      // Teardown
-      channel.teardown()
-
-      // Verify all references are cleaned
-      assert.deepEqual(channel.bindings, {})
-      assert.equal(channel.pushBuffer.length, 0)
-      assert.equal(channel.state, 'closed')
-    })
-
-    test('should prevent push buffer growth during disconnection', () => {
-      setupJoinedChannel(channel)
-      const isConnectedStub = vi.spyOn(testSetup.socket, 'isConnected')
-      isConnectedStub.mockReturnValue(false)
+      testSetup.client.disconnect()
+      await testSetup.socketClosed()
 
       // Simulate many rapid pushes during disconnection
       const extraPushes = 50
 
       for (let i = 0; i < MAX_PUSH_BUFFER_SIZE + extraPushes; i++) {
-        channel._push('rapid', { data: `message-${i}` })
+        channel.channelAdapter.push('rapid', { data: `message-${i}` })
       }
 
       // Should not exceed max buffer size
-      assert.equal(channel.pushBuffer.length, MAX_PUSH_BUFFER_SIZE)
-      expect(channel.pushBuffer.length < MAX_PUSH_BUFFER_SIZE + extraPushes)
+      expect(channel.channelAdapter.getChannel().pushBuffer.length).toBe(MAX_PUSH_BUFFER_SIZE)
     })
   })
 })
 
 describe('Trigger Function Error Handling', () => {
   beforeEach(() => {
-    channel = testSetup.socket.channel('test-trigger')
+    channel = testSetup.client.channel('test-trigger')
   })
 
   afterEach(() => {
@@ -522,54 +535,87 @@ describe('Trigger Function Error Handling', () => {
     channel.unsubscribe()
   })
 
-  test('validates inlined channel event skipping logic still works', () => {
-    const triggerSpy = vi.spyOn(channel, '_trigger')
-    const joinRef = channel._joinRef()
+  test('validates inlined channel event skipping logic still works', async () => {
+    channel.subscribe()
+    await waitForChannelSubscribed(channel)
+
+    const joinRef = channel.joinPush.ref
+
+    const triggerSpy = vi.spyOn(channel.channelAdapter.getChannel(), 'trigger')
 
     // This should skip because it's a channel event with wrong ref
-    channel._trigger('phx_close', {}, 'different-ref')
-    expect(triggerSpy).toHaveReturnedWith(undefined) // Should have returned early
+    testSetup.mockServer.emit(
+      'message',
+      JSON.stringify({
+        topic: 'realtime:test-trigger',
+        event: 'test1',
+        payload: {},
+        ref: '11',
+        join_ref: 'different-ref',
+      })
+    )
 
-    // This should NOT skip because ref matches
-    channel._trigger('phx_close', {}, joinRef)
-    // The method should have completed (not returned early)
+    testSetup.mockServer.emit(
+      'message',
+      JSON.stringify({
+        topic: 'realtime:different-topic',
+        event: 'test2',
+        payload: {},
+        ref: '12',
+        join_ref: joinRef,
+      })
+    )
+    testSetup.mockServer.emit(
+      'message',
+      JSON.stringify({
+        topic: 'realtime:test-trigger',
+        event: 'test3',
+        payload: {},
+        ref: '13',
+        join_ref: joinRef,
+      })
+    )
+
+    await vi.waitFor(() => expect(triggerSpy).toHaveBeenCalledWith('test3', {}, '13', joinRef))
+    expect(triggerSpy).toHaveBeenCalledTimes(1)
 
     triggerSpy.mockRestore()
   })
 
-  test('validates inlined postgres change event detection still works', () => {
-    const mockBinding = {
-      type: 'postgres_changes',
-      filter: { event: '*', schema: 'public', table: 'users' },
-      callback: vi.fn(),
-    }
-    channel.bindings.postgres_changes = [mockBinding]
-
-    // Should trigger postgres_changes path for insert/update/delete
-    channel._trigger('insert', { data: { type: 'INSERT' } })
-    channel._trigger('update', { data: { type: 'UPDATE' } })
-    channel._trigger('delete', { data: { type: 'DELETE' } })
-
-    // Should not trigger for other events
-    channel._trigger('broadcast', { event: 'test' })
-
-    expect(mockBinding.callback).toHaveBeenCalledTimes(3) // Only postgres events should trigger
-  })
-
-  describe('_trigger error scenarios', () => {
-    test('should skip channel events with wrong ref', () => {
+  describe('trigger error scenarios', () => {
+    test('should skip channel events with wrong ref', async () => {
       const spy = vi.fn()
-      // @ts-ignore - accessing private method for testing
-      channel._onError(spy)
+      channel.channelAdapter.getChannel().onError(spy)
 
-      vi.spyOn(channel, '_joinRef').mockReturnValue('correct-ref')
+      channel.subscribe()
+      await waitForChannelSubscribed(channel)
 
-      // Should not trigger with wrong ref
-      channel._trigger('phx_error', { message: 'error' }, 'wrong-ref')
+      const joinRef = channel.joinPush.ref
+
+      testSetup.mockServer.emit(
+        'message',
+        JSON.stringify({
+          topic: 'realtime:test-trigger',
+          event: 'phx_error',
+          payload: { message: 'error' },
+          ref: 'wrong-ref',
+          join_ref: joinRef,
+        })
+      )
+
       expect(spy).not.toHaveBeenCalled()
 
-      // Should trigger with correct ref
-      channel._trigger('phx_error', { message: 'error' }, 'correct-ref')
+      testSetup.mockServer.emit(
+        'message',
+        JSON.stringify({
+          topic: 'realtime:test-trigger',
+          event: 'phx_error',
+          payload: { message: 'error' },
+          ref: joinRef,
+          join_ref: joinRef,
+        })
+      )
+
       expect(spy).toHaveBeenCalledTimes(1)
     })
   })

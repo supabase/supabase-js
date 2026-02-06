@@ -1,7 +1,7 @@
 import assert from 'assert'
 import { describe, beforeEach, afterEach, test, vi, expect } from 'vitest'
 import RealtimeChannel from '../src/RealtimeChannel'
-import { setupRealtimeTest, type TestSetup } from './helpers/setup'
+import { setupRealtimeTest, waitForChannelSubscribed, type TestSetup } from './helpers/setup'
 import { REALTIME_LISTEN_TYPES } from '../src/RealtimeChannel'
 import { CHANNEL_STATES } from '../src/lib/constants'
 
@@ -46,7 +46,7 @@ describe('Presence state management', () => {
     })
 
     channel.subscribe()
-    await vi.waitFor(() => expect(channel.state).toBe(CHANNEL_STATES.joined))
+    await waitForChannelSubscribed(channel)
 
     // Must receive presence_state before presence_diff
     testSetup.mockServer.emit(
@@ -92,7 +92,7 @@ describe('Presence state management', () => {
     })
 
     channel.subscribe()
-    await vi.waitFor(() => expect(channel.state).toBe(CHANNEL_STATES.joined))
+    await waitForChannelSubscribed(channel)
 
     // Must receive presence_state before presence_diff
     testSetup.mockServer.emit(
@@ -140,7 +140,7 @@ describe('Presence state management', () => {
     })
 
     channel.subscribe()
-    await vi.waitFor(() => expect(channel.state).toBe(CHANNEL_STATES.joined))
+    waitForChannelSubscribed(channel)
 
     testSetup.mockServer.emit(
       'message',
@@ -162,7 +162,7 @@ describe('Presence state management', () => {
     })
 
     channel.subscribe()
-    await vi.waitFor(() => expect(channel.state).toBe(CHANNEL_STATES.joined))
+    await waitForChannelSubscribed(channel)
 
     // Emit presence_diff before presence_state
     testSetup.mockServer.emit(
@@ -302,7 +302,7 @@ describe('Presence helper methods', () => {
     },
   ])('$method presence via send method', async ({ method, payload, expectedCall, timeout }) => {
     channel.subscribe()
-    await vi.waitFor(() => expect(channel.state).toBe(CHANNEL_STATES.joined))
+    await waitForChannelSubscribed(channel)
 
     // @ts-ignore weird call to make test generic
     const resp = await (payload ? channel[method](payload) : channel[method]())
@@ -396,7 +396,7 @@ describe('Presence configuration override', () => {
     })
 
     channelWithPresenceEnabled.subscribe()
-    await vi.waitFor(() => expect(channelWithPresenceEnabled.state).toBe(CHANNEL_STATES.joined))
+    await waitForChannelSubscribed(channelWithPresenceEnabled)
 
     const resp = await channelWithPresenceEnabled.track({ id: 123, name: 'Test User' })
     expect(resp).toBe('ok')
@@ -422,7 +422,7 @@ describe('Presence configuration override', () => {
     })
 
     channelWithPresenceEnabled.subscribe()
-    await vi.waitFor(() => expect(channelWithPresenceEnabled.state).toBe(CHANNEL_STATES.joined))
+    await waitForChannelSubscribed(channelWithPresenceEnabled)
 
     const resp = await channelWithPresenceEnabled.untrack()
     expect(resp).toBe('ok')

@@ -225,7 +225,7 @@ export default class RealtimeClient {
    */
   connect(): void {
     // Skip if already connecting, disconnecting, or connected
-    if (this.isConnecting() || this.isDisconnecting() || this.socketAdapter.isConnected()) {
+    if (this.isConnecting() || this.isDisconnecting() || this.isConnected()) {
       return
     }
 

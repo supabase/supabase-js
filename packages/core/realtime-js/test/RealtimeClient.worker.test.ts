@@ -47,7 +47,7 @@ test('creates worker with blob URL when no workerUrl provided', async () => {
   })
 
   testSetup.connect()
-  await vi.waitFor(() => expect(testSetup.emitters.connected).toBeCalled())
+  await testSetup.socketConnected()
 
   // Verify worker was created (workerRef should exist)
   expect(testSetup.client.workerRef).toBeTruthy()
@@ -61,13 +61,13 @@ test('creates worker with blob URL when no workerUrl provided', async () => {
 test('starts worker on conenction open', async () => {
   expect(testSetup.client.workerRef).toBeFalsy()
   testSetup.connect()
-  await vi.waitFor(() => expect(testSetup.emitters.connected).toBeCalled())
+  await testSetup.socketConnected()
   expect(testSetup.client.workerRef).toBeTruthy()
 })
 
 test('ensures single worker ref is started even with multiple connect calls', async () => {
   testSetup.connect()
-  await vi.waitFor(() => expect(testSetup.emitters.connected).toBeCalled())
+  await testSetup.socketConnected()
   const ref = testSetup.client.workerRef
 
   // @ts-ignore - simulate another onOpen call
@@ -95,13 +95,13 @@ test('throws error when Web Worker is not supported', () => {
 
 test('terminates worker on disconnect', async () => {
   testSetup.connect()
-  await vi.waitFor(() => expect(testSetup.emitters.connected).toBeCalled())
+  await testSetup.socketConnected()
   expect(testSetup.client.workerRef).toBeTruthy()
   const ref = testSetup.client.workerRef!
 
   const spy = vi.spyOn(ref, 'terminate')
   testSetup.disconnect()
-  await vi.waitFor(() => expect(testSetup.emitters.close).toBeCalled())
+  await testSetup.socketClosed()
   expect(spy).toHaveBeenCalled()
   expect(testSetup.client.workerRef).toBeFalsy()
 })
