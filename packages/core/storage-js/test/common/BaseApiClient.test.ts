@@ -1,5 +1,6 @@
 import BaseApiClient from '../../src/lib/common/BaseApiClient'
 import { StorageError, StorageApiError } from '../../src/lib/common/errors'
+import { StorageClient } from '../../src/index'
 
 // Test implementation of BaseApiClient
 class TestApiClient extends BaseApiClient {
@@ -198,6 +199,52 @@ describe('BaseApiClient', () => {
         data: { result: 'success' },
         error: null,
       })
+    })
+  })
+
+  describe('setHeader', () => {
+    it('should set a header on the instance', () => {
+      client.setHeader('x-new', 'value')
+      expect(client['headers']).toEqual({ 'x-custom': 'header', 'x-new': 'value' })
+    })
+
+    it('should return this for method chaining', () => {
+      const result = client.setHeader('x-new', 'value')
+      expect(result).toBe(client)
+    })
+
+    it('should support chaining multiple setHeader calls', () => {
+      client.setHeader('x-a', '1').setHeader('x-b', '2')
+      expect(client['headers']).toEqual({
+        'x-custom': 'header',
+        'x-a': '1',
+        'x-b': '2',
+      })
+    })
+
+    it('should override an existing header', () => {
+      client.setHeader('x-custom', 'overridden')
+      expect(client['headers']).toEqual({ 'x-custom': 'overridden' })
+    })
+
+    it('should not mutate the original headers object', () => {
+      const originalHeaders = { authorization: 'Bearer token' }
+      const c = new TestApiClient('http://test.com', originalHeaders)
+      c.setHeader('x-extra', 'val')
+      expect(originalHeaders).toEqual({ authorization: 'Bearer token' })
+    })
+
+    it('should not mutate parent StorageClient headers when called on StorageFileApi from from()', () => {
+      const storageClient = new StorageClient('http://test.com', {
+        authorization: 'Bearer token',
+      })
+      const fileApi = storageClient.from('my-bucket')
+      fileApi.setHeader('x-per-request', 'value')
+
+      // Parent should be unaffected — no 'x-per-request' header
+      expect(storageClient['headers']).not.toHaveProperty('x-per-request')
+      // Child should have the new header
+      expect(fileApi['headers']).toHaveProperty('x-per-request', 'value')
     })
   })
 
