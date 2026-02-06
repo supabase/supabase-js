@@ -184,6 +184,38 @@ export default abstract class PostgrestBuilder<
         try {
           error = JSON.parse(body)
 
+          // Enhance permission errors with helpful hints (only when hint is null)
+          if (error && !error.hint) {
+            // Case 1: Direct permission denied (42501)
+            if (error.code === '42501') {
+              const permMatch = error.message?.match(
+                /permission denied for (table|view|function|schema) (\w+)/
+              )
+              if (permMatch) {
+                const [, objectType, objectName] = permMatch
+                error.hint = this.generatePermissionHint(objectType, objectName, 'denied')
+              }
+            }
+            // Case 2: Table not found in schema cache (PGRST205)
+            // Could be: doesn't exist OR exists but no permissions
+            else if (error.code === 'PGRST205') {
+              const tableMatch = error.message?.match(/Could not find the table ['"]([^'"]+)['"]/)
+              if (tableMatch) {
+                const tableName = tableMatch[1]
+                error.hint = this.generatePermissionHint('table', tableName, 'not_found')
+              }
+            }
+            // Case 3: Function not found in schema cache (PGRST202)
+            // Could be: doesn't exist OR exists but no permissions
+            else if (error.code === 'PGRST202') {
+              const funcMatch = error.message?.match(/Could not find the function ['"]?([^'"\s(]+)/)
+              if (funcMatch) {
+                const funcName = funcMatch[1]
+                error.hint = this.generatePermissionHint('function', funcName, 'not_found')
+              }
+            }
+          }
+
           // Workaround for https://github.com/supabase/postgrest-js/issues/295
           if (Array.isArray(error) && res.status === 404) {
             data = []
@@ -293,6 +325,66 @@ export default abstract class PostgrestBuilder<
     }
 
     return res.then(onfulfilled, onrejected)
+  }
+
+  /**
+   * Generates helpful hints for permission-related errors.
+   *
+   * @param objectType - Type of database object (table, view, function, schema)
+   * @param objectName - Name of the database object
+   * @param errorType - Whether error is 'denied' (explicit permission denied) or 'not_found' (could be missing permissions or doesn't exist)
+   * @returns A helpful hint with copy-paste ready SQL commands
+   */
+  private generatePermissionHint(
+    objectType: string,
+    objectName: string,
+    errorType: 'denied' | 'not_found'
+  ): string {
+    let grantType: string
+
+    if (objectType === 'function') {
+      grantType = 'EXECUTE'
+    } else {
+      // Map HTTP method to SQL permission
+      switch (this.method) {
+        case 'GET':
+        case 'HEAD':
+          grantType = 'SELECT'
+          break
+        case 'POST':
+          grantType = 'INSERT'
+          break
+        case 'PATCH':
+          grantType = 'UPDATE'
+          break
+        case 'DELETE':
+          grantType = 'DELETE'
+          break
+        default:
+          grantType = 'ALL'
+      }
+    }
+
+    // If object name doesn't contain a schema prefix, add 'public.'
+    // Otherwise use as-is (it's already schema-qualified)
+    const qualifiedName = objectName.includes('.') ? objectName : `public.${objectName}`
+
+    // Generate hint based on error type
+    if (errorType === 'denied') {
+      // Clear permission denied - direct GRANT instruction
+      if (objectType === 'function') {
+        return `Missing EXECUTE permission on function '${objectName}'. Grant permission with:\n\nGRANT EXECUTE ON FUNCTION ${qualifiedName} TO anon, authenticated, service_role;`
+      } else {
+        return `Missing ${grantType} permission on ${objectType} '${objectName}'. Grant permission with:\n\nGRANT ${grantType} ON ${qualifiedName} TO anon, authenticated, service_role;\n\nNote: Adjust schema if not 'public', and specify only the roles you want to grant access to.`
+      }
+    } else {
+      // Not found - could be missing object OR missing permissions
+      if (objectType === 'function') {
+        return `Function '${objectName}' not found. This could mean:\n1. The function doesn't exist, OR\n2. You don't have permission to see it\n\nIf the function exists, grant permission with:\n\nGRANT EXECUTE ON FUNCTION ${qualifiedName} TO anon, authenticated, service_role;`
+      } else {
+        return `Table '${objectName}' not found. This could mean:\n1. The ${objectType} doesn't exist, OR\n2. You don't have permission to see it\n\nIf the ${objectType} exists, grant permission with:\n\nGRANT ${grantType} ON ${qualifiedName} TO anon, authenticated, service_role;\n\nNote: Adjust schema if not 'public', and specify only the roles you want to grant access to.`
+      }
+    }
   }
 
   /**
