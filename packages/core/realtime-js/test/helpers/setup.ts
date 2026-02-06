@@ -177,3 +177,16 @@ export function phxReply(message: string, payload: Object) {
     payload,
   })
 }
+
+export function phxJoinReply(
+  channel: RealtimeChannel,
+  response: Object,
+  status: 'ok' | 'error' = 'ok'
+) {
+  return JSON.stringify({
+    topic: channel.topic,
+    ref: channel.joinPush.ref,
+    event: 'phx_reply',
+    payload: { status, response },
+  })
+}

@@ -2,7 +2,12 @@ import assert from 'assert'
 import { describe, beforeEach, afterEach, test, vi, expect } from 'vitest'
 import RealtimeChannel from '../src/RealtimeChannel'
 import { CHANNEL_STATES } from '../src/lib/constants'
-import { setupRealtimeTest, TestSetup, waitForChannelSubscribed } from './helpers/setup'
+import {
+  phxJoinReply,
+  setupRealtimeTest,
+  TestSetup,
+  waitForChannelSubscribed,
+} from './helpers/setup'
 
 const defaultTimeout = 1000
 
@@ -25,15 +30,6 @@ afterEach(() => {
   vi.restoreAllMocks()
   channel.unsubscribe()
 })
-
-function phxJoinReply(channel: RealtimeChannel, response: Object, status: 'ok' | 'error' = 'ok') {
-  return JSON.stringify({
-    topic: channel.topic,
-    ref: channel.joinPush.ref,
-    event: 'phx_reply',
-    payload: { status, response },
-  })
-}
 
 describe('PostgreSQL subscription validation', () => {
   test('should handle subscription when no postgres bindings exist', async () => {

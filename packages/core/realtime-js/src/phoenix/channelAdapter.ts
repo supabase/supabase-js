@@ -59,10 +59,6 @@ export default class ChannelAdapter {
     return this.channel.leave(timeout)
   }
 
-  send(event: string, payload: object, timeout?: number) {
-    this.channel.push(event, payload, timeout)
-  }
-
   onClose(callback: ChannelBindingCallback) {
     this.channel.onClose(callback)
   }
