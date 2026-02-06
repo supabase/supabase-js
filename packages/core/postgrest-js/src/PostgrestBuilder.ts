@@ -27,6 +27,7 @@ export default abstract class PostgrestBuilder<
   protected signal?: AbortSignal
   protected fetch: Fetch
   protected isMaybeSingle: boolean
+  protected urlLengthLimit: number
 
   /**
    * Creates a builder configured for a specific PostgREST request.
@@ -51,6 +52,7 @@ export default abstract class PostgrestBuilder<
     signal?: AbortSignal
     fetch?: Fetch
     isMaybeSingle?: boolean
+    urlLengthLimit?: number
   }) {
     this.method = builder.method
     this.url = builder.url
@@ -60,6 +62,7 @@ export default abstract class PostgrestBuilder<
     this.shouldThrowOnError = builder.shouldThrowOnError ?? false
     this.signal = builder.signal
     this.isMaybeSingle = builder.isMaybeSingle ?? false
+    this.urlLengthLimit = builder.urlLengthLimit ?? 8000
 
     if (builder.fetch) {
       this.fetch = builder.fetch
@@ -227,6 +230,8 @@ export default abstract class PostgrestBuilder<
         // Note: We don't populate code/hint for client-side network errors since those
         // fields are meant for upstream service errors (PostgREST/PostgreSQL)
         let errorDetails = ''
+        let hint = ''
+        let code = ''
 
         // Add cause information if available (e.g., DNS errors, network failures)
         const cause = fetchError?.cause
@@ -247,12 +252,37 @@ export default abstract class PostgrestBuilder<
           errorDetails = fetchError?.stack ?? ''
         }
 
+        // Get URL length for potential hints
+        const urlLength = this.url.toString().length
+
+        // Handle AbortError specially with helpful hints
+        if (fetchError?.name === 'AbortError' || fetchError?.code === 'ABORT_ERR') {
+          code = ''
+          hint = 'Request was aborted (timeout or manual cancellation)'
+
+          if (urlLength > this.urlLengthLimit) {
+            hint += `. Note: Your request URL is ${urlLength} characters, which may exceed server limits. If selecting many fields, consider using views. If filtering with large arrays (e.g., .in('id', [many IDs])), consider using an RPC function to pass values server-side.`
+          }
+        }
+        // Handle HeadersOverflowError from undici (Node.js fetch implementation)
+        else if (
+          cause?.name === 'HeadersOverflowError' ||
+          cause?.code === 'UND_ERR_HEADERS_OVERFLOW'
+        ) {
+          code = ''
+          hint = 'HTTP headers exceeded server limits (typically 16KB)'
+
+          if (urlLength > this.urlLengthLimit) {
+            hint += `. Your request URL is ${urlLength} characters. If selecting many fields, consider using views. If filtering with large arrays (e.g., .in('id', [200+ IDs])), consider using an RPC function instead.`
+          }
+        }
+
         return {
           error: {
             message: `${fetchError?.name ?? 'FetchError'}: ${fetchError?.message}`,
             details: errorDetails,
-            hint: '',
-            code: '',
+            hint: hint,
+            code: code,
           },
           data: null,
           count: null,

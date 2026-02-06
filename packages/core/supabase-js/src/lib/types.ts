@@ -31,6 +31,31 @@ export type SupabaseClientOptions<SchemaName> = {
    */
   db?: {
     schema?: SchemaName
+    /**
+     * Optional timeout in milliseconds for PostgREST requests.
+     * When set, requests will automatically abort after this duration to prevent indefinite hangs.
+     *
+     * @example
+     * ```ts
+     * const supabase = createClient(url, key, {
+     *   db: { timeout: 30000 } // 30 second timeout
+     * })
+     * ```
+     */
+    timeout?: number
+    /**
+     * Maximum URL length in characters before warnings/errors are triggered.
+     * Defaults to 8000 characters. Used to provide helpful hints when URLs
+     * exceed server limits.
+     *
+     * @example
+     * ```ts
+     * const supabase = createClient(url, key, {
+     *   db: { urlLengthLimit: 10000 } // Custom limit
+     * })
+     * ```
+     */
+    urlLengthLimit?: number
   }
 
   auth?: {

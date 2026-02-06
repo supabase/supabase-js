@@ -554,5 +554,4 @@ describe('WebSocketFactory', () => {
       ;(WebSocketFactory as any).detectEnvironment = originalDetectEnvironment
     })
   })
-
 })

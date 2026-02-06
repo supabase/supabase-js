@@ -1,6 +1,6 @@
 import { DEFAULT_HEADERS } from '../lib/constants'
 import { StorageError } from '../lib/common/errors'
-import { Fetch, post } from '../lib/common/fetch'
+import { Fetch, vectorsApi } from '../lib/common/fetch'
 import BaseApiClient from '../lib/common/BaseApiClient'
 import {
   ApiResponse,
@@ -25,7 +25,7 @@ export default class VectorBucketApi extends BaseApiClient<StorageError> {
   /** Creates a new vector bucket */
   async createBucket(vectorBucketName: string): Promise<ApiResponse<undefined>> {
     return this.handleOperation(async () => {
-      const data = await post(
+      const data = await vectorsApi.post(
         this.fetch,
         `${this.url}/CreateVectorBucket`,
         { vectorBucketName },
@@ -38,7 +38,7 @@ export default class VectorBucketApi extends BaseApiClient<StorageError> {
   /** Retrieves metadata for a specific vector bucket */
   async getBucket(vectorBucketName: string): Promise<ApiResponse<{ vectorBucket: VectorBucket }>> {
     return this.handleOperation(async () => {
-      return await post(
+      return await vectorsApi.post(
         this.fetch,
         `${this.url}/GetVectorBucket`,
         { vectorBucketName },
@@ -52,7 +52,7 @@ export default class VectorBucketApi extends BaseApiClient<StorageError> {
     options: ListVectorBucketsOptions = {}
   ): Promise<ApiResponse<ListVectorBucketsResponse>> {
     return this.handleOperation(async () => {
-      return await post(this.fetch, `${this.url}/ListVectorBuckets`, options, {
+      return await vectorsApi.post(this.fetch, `${this.url}/ListVectorBuckets`, options, {
         headers: this.headers,
       })
     })
@@ -61,7 +61,7 @@ export default class VectorBucketApi extends BaseApiClient<StorageError> {
   /** Deletes a vector bucket (must be empty first) */
   async deleteBucket(vectorBucketName: string): Promise<ApiResponse<undefined>> {
     return this.handleOperation(async () => {
-      const data = await post(
+      const data = await vectorsApi.post(
         this.fetch,
         `${this.url}/DeleteVectorBucket`,
         { vectorBucketName },

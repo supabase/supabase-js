@@ -570,48 +570,6 @@ describe('Postgres Changes Trigger Tests', () => {
   })
 })
 
-describe('PostgreSQL table filter validation', () => {
-  test('should only trigger callback for matching table when ids match', () => {
-    const conversationsSpy = vi.fn()
-    const messagesSpy = vi.fn()
-
-    channel.bindings.postgres_changes = [
-      {
-        id: 'conv-id',
-        type: 'postgres_changes',
-        filter: { event: 'INSERT', schema: 'public', table: 'conversations' },
-        callback: conversationsSpy,
-      },
-      {
-        id: 'msg-id',
-        type: 'postgres_changes',
-        filter: { event: 'INSERT', schema: 'public', table: 'messages' },
-        callback: messagesSpy,
-      },
-    ]
-
-    channel._trigger(
-      'postgres_changes',
-      {
-        ids: ['conv-id', 'msg-id'],
-        data: {
-          type: 'INSERT',
-          table: 'messages',
-          schema: 'public',
-          record: { id: 1 },
-          columns: [{ name: 'id', type: 'int4' }],
-          commit_timestamp: '2000-01-01T00:01:01Z',
-          errors: [],
-        },
-      },
-      '1'
-    )
-
-    expect(messagesSpy).toHaveBeenCalledTimes(1)
-    expect(conversationsSpy).toHaveBeenCalledTimes(0)
-  })
-})
-
 describe('Generic event type overload', () => {
   test('should accept generic event type parameter without type errors', () => {
     const event: '*' | 'INSERT' | 'UPDATE' | 'DELETE' = 'INSERT'

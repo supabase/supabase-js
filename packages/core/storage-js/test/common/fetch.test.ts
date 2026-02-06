@@ -277,6 +277,22 @@ describe('Common Fetch', () => {
         })
       })
     })
+
+    describe('empty response handling', () => {
+      it('should NOT handle content-length: 0 for storage namespace (only vectors)', async () => {
+        // Storage namespace should fail on empty responses, as they indicate a bug
+        mockFetch.mockResolvedValue(
+          new MockResponse('', {
+            status: 200,
+            statusText: 'OK',
+            headers: { 'content-length': '0' },
+          })
+        )
+
+        // This should throw because storage API never returns empty responses intentionally
+        await expect(post(mockFetch, 'http://test.com/api', {})).rejects.toThrow()
+      })
+    })
   })
 
   describe('createFetchApi with vectors namespace', () => {
@@ -314,6 +330,46 @@ describe('Common Fetch', () => {
       )
 
       const result = await vectorsApi.get(mockFetch, 'http://test.com/api')
+      expect(result).toEqual({})
+    })
+
+    it('should handle content-length: 0 from AWS S3 Vectors API (putVectors, deleteVectors)', async () => {
+      // AWS S3 Vectors API returns 200 with content-length: 0 for mutations
+      mockFetch.mockResolvedValue(
+        new MockResponse('', {
+          status: 200,
+          statusText: 'OK',
+          headers: { 'content-length': '0' },
+        })
+      )
+
+      const result = await vectorsApi.post(mockFetch, 'http://test.com/api', {})
+      expect(result).toEqual({})
+    })
+
+    it('should handle 204 No Content responses', async () => {
+      mockFetch.mockResolvedValue(
+        new MockResponse('', {
+          status: 204,
+          statusText: 'No Content',
+          headers: {},
+        })
+      )
+
+      const result = await vectorsApi.post(mockFetch, 'http://test.com/api', {})
+      expect(result).toEqual({})
+    })
+
+    it('should handle responses without content-type header', async () => {
+      mockFetch.mockResolvedValue(
+        new MockResponse('', {
+          status: 200,
+          statusText: 'OK',
+          headers: {},
+        })
+      )
+
+      const result = await vectorsApi.post(mockFetch, 'http://test.com/api', {})
       expect(result).toEqual({})
     })
 

@@ -370,6 +370,35 @@ describe('Storage API', () => {
   })
 })
 
+describe('PostgREST Timeout Configuration', () => {
+  test('should accept timeout option through client configuration', () => {
+    const client = createClient(SUPABASE_URL, ANON_KEY, {
+      db: { timeout: 5000 },
+    })
+    expect(client).toBeDefined()
+    expect((client as any).rest).toBeDefined()
+  })
+
+  test('should work without timeout option', () => {
+    const client = createClient(SUPABASE_URL, ANON_KEY, {
+      db: { schema: 'public' },
+    })
+    expect(client).toBeDefined()
+    expect((client as any).rest).toBeDefined()
+  })
+
+  test('should allow timeout with other db options', () => {
+    const client = createClient(SUPABASE_URL, ANON_KEY, {
+      db: {
+        schema: 'public',
+        timeout: 10000,
+      },
+    })
+    expect(client).toBeDefined()
+    expect((client as any).rest).toBeDefined()
+  })
+})
+
 describe('Custom JWT', () => {
   describe('Realtime', () => {
     test('will connect with a properly signed jwt token', async () => {

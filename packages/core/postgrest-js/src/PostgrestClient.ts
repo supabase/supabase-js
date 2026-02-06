@@ -38,6 +38,7 @@ export default class PostgrestClient<
   headers: Headers
   schemaName?: SchemaName
   fetch?: Fetch
+  urlLengthLimit: number
 
   // TODO: Add back shouldThrowOnError once we figure out the typings
   /**
@@ -48,6 +49,8 @@ export default class PostgrestClient<
    * @param options.headers - Custom headers
    * @param options.schema - Postgres schema to switch to
    * @param options.fetch - Custom fetch
+   * @param options.timeout - Optional timeout in milliseconds for all requests. When set, requests will automatically abort after this duration to prevent indefinite hangs.
+   * @param options.urlLengthLimit - Maximum URL length in characters before warnings/errors are triggered. Defaults to 8000.
    * @example
    * ```ts
    * import PostgrestClient from '@supabase/postgrest-js'
@@ -55,6 +58,7 @@ export default class PostgrestClient<
    * const postgrest = new PostgrestClient('https://xyzcompany.supabase.co/rest/v1', {
    *   headers: { apikey: 'public-anon-key' },
    *   schema: 'public',
+   *   timeout: 30000, // 30 second timeout
    * })
    * ```
    */
@@ -64,16 +68,62 @@ export default class PostgrestClient<
       headers = {},
       schema,
       fetch,
+      timeout,
+      urlLengthLimit = 8000,
     }: {
       headers?: HeadersInit
       schema?: SchemaName
       fetch?: Fetch
+      timeout?: number
+      urlLengthLimit?: number
     } = {}
   ) {
     this.url = url
     this.headers = new Headers(headers)
     this.schemaName = schema
-    this.fetch = fetch
+    this.urlLengthLimit = urlLengthLimit
+
+    const originalFetch = fetch ?? globalThis.fetch
+
+    // Wrap fetch with timeout if specified
+    if (timeout !== undefined && timeout > 0) {
+      this.fetch = (input, init) => {
+        const controller = new AbortController()
+        const timeoutId = setTimeout(() => controller.abort(), timeout)
+
+        // Merge abort signals if one already exists
+        const existingSignal = init?.signal
+        if (existingSignal) {
+          // If the existing signal is already aborted, use it directly
+          if (existingSignal.aborted) {
+            clearTimeout(timeoutId)
+            return originalFetch(input, init)
+          }
+
+          // Listen to existing signal and abort our controller too
+          const abortHandler = () => {
+            clearTimeout(timeoutId)
+            controller.abort()
+          }
+          existingSignal.addEventListener('abort', abortHandler, { once: true })
+
+          return originalFetch(input, {
+            ...init,
+            signal: controller.signal,
+          }).finally(() => {
+            clearTimeout(timeoutId)
+            existingSignal.removeEventListener('abort', abortHandler)
+          })
+        }
+
+        return originalFetch(input, {
+          ...init,
+          signal: controller.signal,
+        }).finally(() => clearTimeout(timeoutId))
+      }
+    } else {
+      this.fetch = originalFetch
+    }
   }
   from<
     TableName extends string & keyof Schema['Tables'],
@@ -97,6 +147,7 @@ export default class PostgrestClient<
       headers: new Headers(this.headers),
       schema: this.schemaName,
       fetch: this.fetch,
+      urlLengthLimit: this.urlLengthLimit,
     })
   }
 
@@ -119,6 +170,7 @@ export default class PostgrestClient<
       headers: this.headers,
       schema,
       fetch: this.fetch,
+      urlLengthLimit: this.urlLengthLimit,
     })
   }
 
@@ -223,6 +275,7 @@ export default class PostgrestClient<
       schema: this.schemaName,
       body,
       fetch: this.fetch ?? fetch,
+      urlLengthLimit: this.urlLengthLimit,
     })
   }
 }

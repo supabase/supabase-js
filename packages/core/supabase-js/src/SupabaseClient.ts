@@ -175,6 +175,8 @@ export default class SupabaseClient<
       headers: this.headers,
       schema: settings.db.schema,
       fetch: this.fetch,
+      timeout: settings.db.timeout,
+      urlLengthLimit: settings.db.urlLengthLimit,
     })
 
     this.storage = new SupabaseStorageClient(
