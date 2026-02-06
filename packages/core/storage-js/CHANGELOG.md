@@ -1,3 +1,17 @@
+## 2.95.3 (2026-02-06)
+
+### 🚀 Features
+
+- **supabase:** add canonical CORS headers export for edge functions ([#2071](https://github.com/supabase/supabase-js/pull/2071))
+
+### 🩹 Fixes
+
+- **storage:** expose fetch parameters in download method ([#2090](https://github.com/supabase/supabase-js/pull/2090))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+
 ## 2.95.0 (2026-02-05)
 
 ### 🚀 Features

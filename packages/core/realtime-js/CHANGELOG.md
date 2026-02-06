@@ -1,3 +1,13 @@
+## 2.95.3 (2026-02-06)
+
+### 🩹 Fixes
+
+- **realtime:** removeChannel when unsubscribe successfully ([#2091](https://github.com/supabase/supabase-js/pull/2091))
+
+### ❤️ Thank You
+
+- Eduardo Gurgel
+
 ## 2.95.0 (2026-02-05)
 
 ### 🩹 Fixes
