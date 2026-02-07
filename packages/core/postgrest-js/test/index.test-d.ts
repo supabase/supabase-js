@@ -9,12 +9,14 @@ const REST_URL = 'http://localhost:54321/rest/v1'
 const postgrest = new PostgrestClient<Database>(REST_URL)
 const postgrestWithOptions = new PostgrestClient<DatabaseWithOptions>(REST_URL)
 
-// table invalid type
+// table and view name type safety
 {
   // @ts-expect-error Argument of type '42' is not assignable to parameter of type
   postgrest.from(42)
   // @ts-expect-error Argument of type '"nonexistent_table"' is not assignable to parameter of type
   postgrest.from('nonexistent_table')
+  // @ts-expect-error Argument of type '"nonexistent_view"' is not assignable to parameter of type
+  postgrest.from('nonexistent_view')
 }
 
 // `null` can't be used with `.eq()`
