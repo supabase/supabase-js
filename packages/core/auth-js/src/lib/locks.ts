@@ -145,45 +145,62 @@ export async function navigatorLock<R>(
             if (internals.debug) {
               console.log('@supabase/gotrue-js: navigatorLock: released', name, lock.name)
             }
-          }
-        } else {
-          if (acquireTimeout === 0) {
+          : {
+              mode: 'exclusive',
+              signal: abortController.signal,
+            },
+        async (lock) => {
+          if (lock) {
             if (internals.debug) {
-              console.log('@supabase/gotrue-js: navigatorLock: not immediately available', name)
+              console.log('@supabase/gotrue-js: navigatorLock: acquired', name, lock.name)
             }
 
-            throw new NavigatorLockAcquireTimeoutError(
-              `Acquiring an exclusive Navigator LockManager lock "${name}" immediately failed`
-            )
-          } else {
-            if (internals.debug) {
-              try {
-                const result = await globalThis.navigator.locks.query()
-
-                console.log(
-                  '@supabase/gotrue-js: Navigator LockManager state',
-                  JSON.stringify(result, null, '  ')
-                )
-              } catch (e: any) {
-                console.warn(
-                  '@supabase/gotrue-js: Error when querying Navigator LockManager state',
-                  e
-                )
+            try {
+              return await fn()
+            } finally {
+              if (internals.debug) {
+                console.log('@supabase/gotrue-js: navigatorLock: released', name, lock.name)
               }
             }
+          } else {
+            if (acquireTimeout === 0) {
+              if (internals.debug) {
+                console.log('@supabase/gotrue-js: navigatorLock: not immediately available', name)
+              }
 
-            // Browser is not following the Navigator LockManager spec, it
-            // returned a null lock when we didn't use ifAvailable. So we can
-            // pretend the lock is acquired in the name of backward compatibility
-            // and user experience and just run the function.
-            console.warn(
-              '@supabase/gotrue-js: Navigator LockManager returned a null lock when using #request without ifAvailable set to true, it appears this browser is not following the LockManager spec https://developer.mozilla.org/en-US/docs/Web/API/LockManager/request'
-            )
+              throw new NavigatorLockAcquireTimeoutError(
+                `Acquiring an exclusive Navigator LockManager lock "${name}" immediately failed`
+              )
+            } else {
+              if (internals.debug) {
+                try {
+                  const result = await globalThis.navigator.locks.query()
 
-            return await fn()
+                  console.log(
+                    '@supabase/gotrue-js: Navigator LockManager state',
+                    JSON.stringify(result, null, '  ')
+                  )
+                } catch (e: any) {
+                  console.warn(
+                    '@supabase/gotrue-js: Error when querying Navigator LockManager state',
+                    e
+                  )
+                }
+              }
+
+              // Browser is not following the Navigator LockManager spec, it
+              // returned a null lock when we didn't use ifAvailable. So we can
+              // pretend the lock is acquired in the name of backward compatibility
+              // and user experience and just run the function.
+              console.warn(
+                '@supabase/gotrue-js: Navigator LockManager returned a null lock when using #request without ifAvailable set to true, it appears this browser is not following the LockManager spec https://developer.mozilla.org/en-US/docs/Web/API/LockManager/request'
+              )
+
+              return await fn()
+            }
           }
         }
-      }
+      )
     )
   } catch (e: any) {
     // When the AbortController times out, navigator.locks.request rejects with
