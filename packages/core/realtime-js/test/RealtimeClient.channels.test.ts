@@ -154,13 +154,13 @@ describe('channel', () => {
 
     assert.equal(testSetup.socket.getChannels().length, 1)
 
-    // Mock unsubscribe to return 'ok'
-    vi.spyOn(channel, 'unsubscribe').mockResolvedValue('ok')
+    channel._onMessage = () => ({ status: "ok" })
 
-    await testSetup.socket.removeChannel(channel)
+    const result = await testSetup.socket.removeChannel(channel)
 
     // Channel should be removed from the list
     assert.equal(testSetup.socket.getChannels().length, 0)
+    assert.equal(result, 'ok')
   })
 
   test('does NOT remove channel from list when unsubscribe fails with error', async () => {
@@ -169,8 +169,7 @@ describe('channel', () => {
 
     assert.equal(testSetup.socket.getChannels().length, 1)
 
-    // Mock unsubscribe to return 'error'
-    vi.spyOn(channel, 'unsubscribe').mockResolvedValue('error')
+    channel._onMessage = () => ({ status: "error" })
 
     const result = await testSetup.socket.removeChannel(channel)
 
