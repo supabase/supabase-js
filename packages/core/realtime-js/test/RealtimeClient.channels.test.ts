@@ -154,7 +154,7 @@ describe('channel', () => {
 
     assert.equal(testSetup.socket.getChannels().length, 1)
 
-    channel._onMessage = () => ({ status: "ok" })
+    channel._onMessage = () => ({ status: 'ok' })
 
     const result = await testSetup.socket.removeChannel(channel)
 
@@ -169,7 +169,7 @@ describe('channel', () => {
 
     assert.equal(testSetup.socket.getChannels().length, 1)
 
-    channel._onMessage = () => ({ status: "error" })
+    channel._onMessage = () => ({ status: 'error' })
 
     const result = await testSetup.socket.removeChannel(channel)
 
