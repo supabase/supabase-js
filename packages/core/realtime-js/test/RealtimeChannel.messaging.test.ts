@@ -1,300 +1,210 @@
 import assert from 'assert'
-import { describe, beforeEach, afterEach, test, vi, expect } from 'vitest'
-import RealtimeClient from '../src/RealtimeClient'
-import RealtimeChannel from '../src/RealtimeChannel'
-import { setupRealtimeTest, cleanupRealtimeTest, TestSetup } from './helpers/setup'
-
-const defaultRef = '1'
-const defaultTimeout = 1000
-
-let channel: RealtimeChannel
+import { describe, test, beforeEach, afterEach, vi, expect } from 'vitest'
+import type RealtimeChannel from '../src/RealtimeChannel'
+import { DEFAULT_API_KEY, setupRealtimeTest, type TestSetup } from './helpers/setup'
+import { VSN_2_0_0 } from '../src/lib/constants'
 let testSetup: TestSetup
 
-beforeEach(() => {
-  testSetup = setupRealtimeTest({
-    useFakeTimers: true,
-    timeout: defaultTimeout,
-  })
-
-  vi.spyOn(testSetup.socket, 'isConnected').mockImplementation(() => true)
-  vi.spyOn(testSetup.socket, 'push').mockImplementation(() => true)
-
-  channel = testSetup.socket.channel('topic')
-
-  joinPush = channel.joinPush
-
-  channel.subscribe()
-})
-
-afterEach(() => {
-  cleanupRealtimeTest(testSetup)
-  channel.unsubscribe()
-})
-
-let joinPush: any
-
-describe('onMessage', () => {
-  beforeEach(() => {
-    channel = testSetup.socket.channel('topic')
-  })
-
-  afterEach(() => {
-    testSetup.socket.disconnect()
-    channel.unsubscribe()
-  })
-
-  test('returns payload by default', () => {
-    vi.spyOn(testSetup.socket, '_makeRef').mockImplementation(() => defaultRef)
-    const payload = channel._onMessage('event', { one: 'two' }, defaultRef)
-
-    assert.deepEqual(payload, { one: 'two' })
-  })
-})
-
 describe('on', () => {
+  let channel: RealtimeChannel
+
   beforeEach(() => {
-    vi.spyOn(testSetup.socket, '_makeRef').mockImplementation(() => defaultRef)
-    channel = testSetup.socket.channel('topic')
-    vi.useRealTimers()
+    testSetup = setupRealtimeTest()
+    channel = testSetup.client.channel('some-channel')
   })
 
   afterEach(() => {
-    testSetup.socket.disconnect()
     channel.unsubscribe()
-    testSetup.clock = vi.useFakeTimers()
+    testSetup.cleanup()
   })
 
-  test('sets up callback for broadcast', () => {
+  describe('Broadcast event filtering', () => {
+    test('sets up callback for broadcast', () => {
+      const spy = vi.fn()
+
+      channel.channelAdapter.getChannel().trigger('broadcast', '*')
+      expect(spy).not.toHaveBeenCalled()
+      channel.on('broadcast', { event: '*' }, spy)
+
+      channel.channelAdapter.getChannel().trigger('broadcast', '*')
+
+      expect(spy).toHaveBeenCalled()
+    })
+
+    test('should filter broadcast events by exact event name', () => {
+      let testEventCount = 0
+      let otherEventCount = 0
+      let wildcardEventCount = 0
+
+      channel.on('broadcast', { event: 'test-event' }, () => {
+        testEventCount++
+      })
+
+      channel.on('broadcast', { event: 'other-event' }, () => {
+        otherEventCount++
+      })
+
+      channel.on('broadcast', { event: '*' }, () => {
+        wildcardEventCount++
+      })
+
+      // Trigger exact match
+      channel.channelAdapter.getChannel().trigger('broadcast', {
+        type: 'broadcast',
+        event: 'test-event',
+        payload: { data: 'test' },
+      })
+
+      // Trigger non-match
+      channel.channelAdapter.getChannel().trigger('broadcast', {
+        type: 'broadcast',
+        event: 'other-event',
+        payload: { data: 'test' },
+      })
+
+      assert.equal(testEventCount, 1)
+      assert.equal(otherEventCount, 1)
+      assert.equal(wildcardEventCount, 2)
+    })
+
+    test('should handle wildcard broadcast events', () => {
+      let wildcardEventCount = 0
+
+      channel.on('broadcast', { event: '*' }, () => {
+        wildcardEventCount++
+      })
+
+      // Trigger various broadcast events
+      channel.channelAdapter.getChannel().trigger('broadcast', {
+        type: 'broadcast',
+        event: 'event-1',
+        payload: { data: 'test' },
+      })
+
+      channel.channelAdapter.getChannel().trigger('broadcast', {
+        type: 'broadcast',
+        event: 'event-2',
+        payload: { data: 'test' },
+      })
+
+      assert.equal(wildcardEventCount, 2)
+    })
+
+    test('should handle multiple listeners for same event', () => {
+      let listener1Count = 0
+      let listener2Count = 0
+
+      channel.on('broadcast', { event: 'shared-event' }, () => {
+        listener1Count++
+      })
+
+      channel.on('broadcast', { event: 'shared-event' }, () => {
+        listener2Count++
+      })
+
+      channel.channelAdapter.getChannel().trigger('broadcast', {
+        type: 'broadcast',
+        event: 'shared-event',
+        payload: { data: 'test' },
+      })
+
+      assert.equal(listener1Count, 1)
+      assert.equal(listener2Count, 1)
+    })
+
+    test('other event callbacks are ignored', () => {
+      const spy = vi.fn()
+      const ignoredSpy = vi.fn()
+
+      channel.channelAdapter.getChannel().trigger('broadcast', { event: 'test' })
+
+      expect(ignoredSpy).not.toHaveBeenCalled()
+      channel.on('broadcast', { event: 'test' }, spy)
+      channel.on('broadcast', { event: 'ignore' }, ignoredSpy)
+
+      channel.channelAdapter.getChannel().trigger('broadcast', { event: 'test' })
+
+      expect(ignoredSpy).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('System event filtering', () => {
+    test('should handle system events', () => {
+      let systemEventCount = 0
+
+      channel.on('system', {}, (payload) => {
+        systemEventCount++
+        expect(payload)
+      })
+
+      channel.channelAdapter.getChannel().trigger('system', {
+        type: 'system',
+        event: 'status',
+        payload: { status: 'connected' },
+      })
+
+      assert.equal(systemEventCount, 1)
+    })
+  })
+})
+
+describe('trigger', () => {
+  let channel: RealtimeChannel
+
+  beforeEach(() => {
+    testSetup = setupRealtimeTest()
+    channel = testSetup.client.channel('some-channel')
+  })
+
+  afterEach(() => {
+    channel.unsubscribe()
+    testSetup.cleanup()
+  })
+
+  test('triggers when type is broadcast', () => {
     const spy = vi.fn()
 
-    channel._trigger('broadcast', '*', defaultRef)
-    expect(spy).not.toHaveBeenCalled()
     channel.on('broadcast', { event: '*' }, spy)
-
-    channel._trigger('broadcast', { event: '*' }, defaultRef)
-
-    expect(spy).toHaveBeenCalled()
-  })
-
-  test('other event callbacks are ignored', () => {
-    const spy = vi.fn()
-    const ignoredSpy = vi.fn()
-
-    channel._trigger('broadcast', { event: 'test' }, defaultRef)
-
-    expect(ignoredSpy).not.toHaveBeenCalled()
     channel.on('broadcast', { event: 'test' }, spy)
-    channel.on('broadcast', { event: 'ignore' }, ignoredSpy)
 
-    channel._trigger('broadcast', { event: 'test' }, defaultRef)
+    channel.channelAdapter.getChannel().trigger('broadcast', { event: 'test', id: '123' }, '1')
 
-    expect(ignoredSpy).not.toHaveBeenCalled()
+    expect(spy).toHaveBeenCalledTimes(2)
+    expect(spy).toHaveBeenCalledWith({ event: 'test', id: '123' }, '1', undefined)
   })
 
-  test('"*" bind all events', () => {
+  test('triggers when type is presence', () => {
     const spy = vi.fn()
 
-    channel._trigger('realtime', { event: 'INSERT' }, defaultRef)
-    expect(spy).not.toHaveBeenCalled()
+    channel.on('presence', { event: 'sync' }, spy)
+    channel.on('presence', { event: 'join' }, spy)
+    channel.on('presence', { event: 'leave' }, spy)
 
-    channel.on('broadcast', { event: 'INSERT' }, spy)
-    channel._trigger('broadcast', { event: 'INSERT' }, defaultRef)
-    expect(spy).toHaveBeenCalled()
-  })
+    channel.channelAdapter.getChannel().trigger('presence', { event: 'sync' }, '1')
+    channel.channelAdapter.getChannel().trigger('presence', { event: 'join' }, '2')
+    channel.channelAdapter.getChannel().trigger('presence', { event: 'leave' }, '3')
 
-  test('when we bind a new callback on an already joined channel we resubscribe with new join payload', async () => {
-    channel.on('broadcast', { event: 'test' }, vi.fn())
-    channel.subscribe()
-    channel.joinPush.trigger('ok', {})
-    assert.deepEqual(channel.joinPush.payload, {
-      config: {
-        broadcast: {
-          ack: false,
-          self: false,
-        },
-        postgres_changes: [],
-        presence: {
-          enabled: false,
-          key: '',
-        },
-        private: false,
-      },
-    })
-
-    channel.on('presence', { event: 'join' }, vi.fn())
-
-    await new Promise((resolve) => setTimeout(resolve, 100))
-
-    assert.deepEqual(channel.joinPush.payload, {
-      config: {
-        broadcast: {
-          ack: false,
-          self: false,
-        },
-        postgres_changes: [],
-        presence: {
-          enabled: true,
-          key: '',
-        },
-        private: false,
-      },
-    })
-  })
-
-  describe('off', () => {
-    beforeEach(() => {
-      vi.spyOn(testSetup.socket, '_makeRef').mockImplementation(() => defaultRef)
-      channel = testSetup.socket.channel('topic')
-    })
-
-    afterEach(() => {
-      channel.unsubscribe()
-    })
-
-    test('removes all callbacks for event', () => {
-      const spy1 = vi.fn()
-      const spy2 = vi.fn()
-      const spy3 = vi.fn()
-
-      channel.on('broadcast', { event: 'test1' }, spy1)
-      channel.on('broadcast', { event: 'test2' }, spy2)
-      channel.on('broadcast', { event: 'test3' }, spy3)
-
-      channel._off('broadcast', { event: 'test1' })
-
-      channel._trigger('broadcast', { event: 'test1' }, defaultRef)
-      channel._trigger('broadcast', { event: 'test2' }, defaultRef)
-      channel._trigger('broadcast', { event: 'test3' }, defaultRef)
-
-      expect(spy1).not.toHaveBeenCalled()
-      expect(spy2).toHaveBeenCalled()
-      expect(spy3).toHaveBeenCalled()
-    })
-  })
-
-  describe('trigger', () => {
-    let spy: any
-
-    beforeEach(() => {
-      channel = testSetup.socket.channel('topic')
-    })
-
-    test('triggers when type is insert, update, delete', () => {
-      spy = vi.fn()
-
-      channel.bindings.postgres_changes = [
-        {
-          type: 'postgres_changes',
-          filter: { event: 'INSERT' },
-          callback: spy,
-        },
-        {
-          type: 'postgres_changes',
-          filter: { event: 'UPDATE' },
-          callback: spy,
-        },
-        {
-          type: 'postgres_changes',
-          filter: { event: 'DELETE' },
-          callback: spy,
-        },
-        { type: 'postgres_changes', filter: { event: '*' }, callback: spy },
-      ]
-
-      channel._trigger('insert', { test: '123' }, '1')
-      channel._trigger('update', { test: '123' }, '2')
-      channel._trigger('delete', { test: '123' }, '3')
-
-      expect(spy).toHaveBeenCalledTimes(6)
-    })
-
-    test('triggers when type is broadcast', () => {
-      spy = vi.fn()
-
-      channel.bindings.broadcast = [
-        { type: 'broadcast', filter: { event: '*' }, callback: spy },
-        { type: 'broadcast', filter: { event: 'test' }, callback: spy },
-      ]
-
-      channel._trigger('broadcast', { event: 'test', id: '123' }, '1')
-
-      expect(spy).toHaveBeenCalledTimes(2)
-      expect(spy).toHaveBeenCalledWith({ event: 'test', id: '123' }, '1')
-    })
-
-    test('triggers when type is presence', () => {
-      spy = vi.fn()
-
-      channel.bindings.presence = [
-        { type: 'presence', filter: { event: 'sync' }, callback: spy },
-        { type: 'presence', filter: { event: 'join' }, callback: spy },
-        { type: 'presence', filter: { event: 'leave' }, callback: spy },
-      ]
-
-      channel._trigger('presence', { event: 'sync' }, '1')
-      channel._trigger('presence', { event: 'join' }, '2')
-      channel._trigger('presence', { event: 'leave' }, '3')
-
-      expect(spy).toHaveBeenCalledTimes(3)
-    })
-
-    test('triggers when type is postgres_changes', () => {
-      spy = vi.fn()
-
-      channel.bindings.postgres_changes = [
-        {
-          id: 'abc123',
-          type: 'postgres_changes',
-          filter: { event: 'INSERT', schema: 'public', table: 'test' },
-          callback: spy,
-        },
-      ]
-
-      channel._trigger(
-        'postgres_changes',
-        {
-          ids: ['abc123'],
-          data: {
-            type: 'INSERT',
-            table: 'test',
-            record: { id: 1 },
-            schema: 'public',
-            columns: [{ name: 'id', type: 'int4' }],
-            commit_timestamp: '2000-01-01T00:01:01Z',
-            errors: [],
-          },
-        },
-        '1'
-      )
-
-      expect(spy).toHaveBeenCalledWith(
-        {
-          schema: 'public',
-          table: 'test',
-          commit_timestamp: '2000-01-01T00:01:01Z',
-          eventType: 'INSERT',
-          new: { id: 1 },
-          old: {},
-          errors: [],
-        },
-        '1'
-      )
-    })
+    expect(spy).toHaveBeenCalledTimes(3)
   })
 })
 
 describe('send', () => {
   describe('WebSocket connection scenarios', () => {
-    beforeEach(() => {
-      testSetup.socket.connect()
-      vi.spyOn(testSetup.socket.conn!, 'readyState', 'get').mockReturnValue(1)
+    beforeEach(async () => {
+      testSetup = setupRealtimeTest()
+      testSetup.connect()
+      await testSetup.socketConnected()
+    })
+
+    afterEach(() => {
+      testSetup.cleanup()
     })
 
     test('sends message via ws conn when subscribed to channel', () => {
-      const new_channel = testSetup.socket.channel('topic', {
+      const new_channel = testSetup.client.channel('topic', {
         config: { private: true },
       })
-      const pushStub = vi.spyOn(new_channel, '_push')
+      const pushStub = vi.spyOn(new_channel.channelAdapter.getChannel(), 'push')
 
       // Set up channel as successfully subscribed by directly setting state
       new_channel.subscribe()
@@ -304,14 +214,18 @@ describe('send', () => {
       new_channel.send({ type: 'broadcast', event: 'test' })
 
       expect(pushStub).toHaveBeenCalledTimes(1)
-      expect(pushStub).toHaveBeenCalledWith('broadcast', { type: 'broadcast', event: 'test' }, 1000)
+      expect(pushStub).toHaveBeenCalledWith(
+        'broadcast',
+        { type: 'broadcast', event: 'test' },
+        10000
+      )
     })
 
     test('cannot send via ws conn when subscription times out', () => {
-      const new_channel = testSetup.socket.channel('topic', {
+      const new_channel = testSetup.client.channel('topic', {
         config: { private: true },
       })
-      const pushStub = vi.spyOn(new_channel, '_push')
+      const pushStub = vi.spyOn(new_channel.channelAdapter.getChannel(), 'push')
 
       // Set up channel as not subscribed (closed state)
       new_channel.subscribe()
@@ -346,25 +260,19 @@ describe('send', () => {
           body: { cancel: vi.fn() },
         })
 
-        const socket = new RealtimeClient(testSetup.url, {
+        testSetup = setupRealtimeTest({
           fetch: fetchStub as unknown as typeof fetch,
-          timeout: defaultTimeout,
-          params: { apikey: 'abc123' },
           ...(accessToken && { accessToken }),
         })
 
-        if (accessToken) {
-          await socket.setAuth()
-        } else {
-          socket.setAuth()
-        }
+        await testSetup.client.setAuth()
 
-        const channel = socket.channel('topic', {
+        const channel = testSetup.client.channel('topic', {
           config: { private: true },
         })
 
         const expectedHeaders: Record<string, string> = {
-          apikey: 'abc123',
+          apikey: DEFAULT_API_KEY,
           'Content-Type': 'application/json',
         }
         if (expectedAuth) {
@@ -378,10 +286,9 @@ describe('send', () => {
           signal: new AbortController().signal,
         }
 
-        const expectedUrl = testSetup.url
-          .replace('/socket', '')
+        const expectedUrl = testSetup.realtimeUrl
           .replace('wss', 'https')
-          .concat('/api/broadcast')
+          .concat(`/api/broadcast?apikey=${expectedHeaders.apikey}&vsn=${VSN_2_0_0}`)
 
         const res = await channel.send({
           type: 'broadcast',
@@ -402,11 +309,11 @@ describe('send', () => {
         Object.assign(new Error('Request aborted'), { name: 'AbortError' })
       )
 
-      const socket = new RealtimeClient(testSetup.url, {
+      testSetup = setupRealtimeTest({
         fetch: fetchStub as unknown as typeof fetch,
         params: { apikey: 'abc123' },
       })
-      const channel = socket.channel('topic')
+      const channel = testSetup.client.channel('topic')
 
       const result = await channel.send({
         type: 'broadcast',
@@ -419,11 +326,11 @@ describe('send', () => {
     test('handles HTTP request general error', async () => {
       const fetchStub = vi.fn().mockRejectedValue(new Error('Network error'))
 
-      const socket = new RealtimeClient(testSetup.url, {
+      testSetup = setupRealtimeTest({
         fetch: fetchStub as unknown as typeof fetch,
         params: { apikey: 'abc123' },
       })
-      const channel = socket.channel('topic')
+      const channel = testSetup.client.channel('topic')
 
       const result = await channel.send({
         type: 'broadcast',
@@ -440,11 +347,11 @@ describe('send', () => {
         body: { cancel: vi.fn() },
       })
 
-      const socket = new RealtimeClient(testSetup.url, {
+      testSetup = setupRealtimeTest({
         fetch: fetchStub as unknown as typeof fetch,
         params: { apikey: 'abc123' },
       })
-      const channel = socket.channel('topic')
+      const channel = testSetup.client.channel('topic')
 
       const result = await channel.send({
         type: 'broadcast',
@@ -461,11 +368,11 @@ describe('send', () => {
 
       const fetchStub = vi.fn().mockRejectedValue(timeoutError)
 
-      const socket = new RealtimeClient(testSetup.url, {
+      testSetup = setupRealtimeTest({
         fetch: fetchStub as unknown as typeof fetch,
         params: { apikey: 'abc123' },
       })
-      const channel = socket.channel('topic')
+      const channel = testSetup.client.channel('topic')
 
       const result = await channel.send({
         type: 'broadcast',
@@ -490,12 +397,12 @@ describe('httpSend', () => {
   const createSocket = (hasToken = false, fetchMock?: any) => {
     const config: any = {
       fetch: fetchMock,
-      params: { apikey: 'abc123' },
+      params: { apikey: '123456789' },
     }
     if (hasToken) {
       config.accessToken = () => Promise.resolve('token123')
     }
-    return new RealtimeClient(testSetup.url, config)
+    return setupRealtimeTest(config)
   }
 
   const testCases = [
@@ -516,9 +423,11 @@ describe('httpSend', () => {
       test('sends with correct Authorization header', async () => {
         const mockResponse = createMockResponse(202)
         const fetchStub = vi.fn().mockResolvedValue(mockResponse)
-        const socket = createSocket(hasToken, fetchStub)
-        if (hasToken) await socket.setAuth()
-        const channel = socket.channel('topic')
+
+        const testSetup = createSocket(hasToken, fetchStub)
+
+        if (hasToken) await testSetup.client.setAuth()
+        const channel = testSetup.client.channel('topic')
 
         const result = await channel.httpSend('test', { data: 'test' })
 
@@ -526,13 +435,13 @@ describe('httpSend', () => {
         expect(fetchStub).toHaveBeenCalledTimes(1)
         const [, options] = fetchStub.mock.calls[0]
         expect(options.headers.Authorization).toBe(expectedAuth)
-        expect(options.headers.apikey).toBe('abc123')
+        expect(options.headers.apikey).toBe(DEFAULT_API_KEY)
       })
 
       test('rejects when payload is not provided', async () => {
-        const socket = createSocket(hasToken)
-        if (hasToken) await socket.setAuth()
-        const channel = socket.channel('topic')
+        const testSetup = createSocket(hasToken)
+        if (hasToken) await testSetup.client.setAuth()
+        const channel = testSetup.client.channel('topic')
 
         await expect(channel.httpSend('test', undefined as any)).rejects.toBe(
           'Payload is required for httpSend()'
@@ -540,9 +449,9 @@ describe('httpSend', () => {
       })
 
       test('rejects when payload is null', async () => {
-        const socket = createSocket(hasToken)
-        if (hasToken) await socket.setAuth()
-        const channel = socket.channel('topic')
+        const testSetup = createSocket(hasToken)
+        if (hasToken) await testSetup.client.setAuth()
+        const channel = testSetup.client.channel('topic')
 
         await expect(channel.httpSend('test', null as any)).rejects.toBe(
           'Payload is required for httpSend()'
@@ -553,9 +462,10 @@ describe('httpSend', () => {
         const timeoutError = new Error('Request timeout')
         timeoutError.name = 'AbortError'
         const fetchStub = vi.fn().mockRejectedValue(timeoutError)
-        const socket = createSocket(hasToken, fetchStub)
-        if (hasToken) await socket.setAuth()
-        const channel = socket.channel('topic')
+        const testSetup = createSocket(hasToken, fetchStub)
+
+        if (hasToken) await testSetup.client.setAuth()
+        const channel = testSetup.client.channel('topic')
 
         await expect(channel.httpSend('test', { data: 'test' })).rejects.toThrow('Request timeout')
       })
@@ -565,9 +475,9 @@ describe('httpSend', () => {
           error: 'Server error',
         })
         const fetchStub = vi.fn().mockResolvedValue(mockResponse)
-        const socket = createSocket(hasToken, fetchStub)
-        if (hasToken) await socket.setAuth()
-        const channel = socket.channel('topic')
+        const testSetup = createSocket(hasToken, fetchStub)
+        if (hasToken) await testSetup.client.setAuth()
+        const channel = testSetup.client.channel('topic')
 
         await expect(channel.httpSend('test', { data: 'test' })).rejects.toThrow('Server error')
       })
@@ -575,9 +485,9 @@ describe('httpSend', () => {
       test('respects custom timeout option', async () => {
         const mockResponse = createMockResponse(202)
         const fetchStub = vi.fn().mockResolvedValue(mockResponse)
-        const socket = createSocket(hasToken, fetchStub)
-        if (hasToken) await socket.setAuth()
-        const channel = socket.channel('topic')
+        const testSetup = createSocket(hasToken, fetchStub)
+        if (hasToken) await testSetup.client.setAuth()
+        const channel = testSetup.client.channel('topic')
 
         const result = await channel.httpSend('test', { data: 'test' }, { timeout: 3000 })
 
@@ -590,9 +500,9 @@ describe('httpSend', () => {
       test('sends correct payload', async () => {
         const mockResponse = createMockResponse(202)
         const fetchStub = vi.fn().mockResolvedValue(mockResponse)
-        const socket = createSocket(hasToken, fetchStub)
-        if (hasToken) await socket.setAuth()
-        const channel = socket.channel('topic')
+        const testSetup = createSocket(hasToken, fetchStub)
+        if (hasToken) await testSetup.client.setAuth()
+        const channel = testSetup.client.channel('topic')
 
         const result = await channel.httpSend('test-payload', { data: 'value' })
 
@@ -611,23 +521,25 @@ describe('httpSend', () => {
     test('returns success true on 202 status with private channel', async () => {
       const mockResponse = createMockResponse(202, 'Accepted')
       const fetchStub = vi.fn().mockResolvedValue(mockResponse)
-      const socket = createSocket(true, fetchStub)
-      await socket.setAuth()
-      const channel = socket.channel('topic', { config: { private: true } })
+      const testSetup = createSocket(true, fetchStub)
+      await testSetup.client.setAuth()
+      const channel = testSetup.client.channel('topic', { config: { private: true } })
 
       const result = await channel.httpSend('test-explicit', { data: 'explicit' })
+      const expectedApiKey = '123456789'
 
       expect(result).toEqual({ success: true })
-      const expectedUrl = testSetup.url
-        .replace('/socket', '')
+      const expectedUrl = testSetup.wssUrl
+        .replace('/websocket', '')
         .replace('wss', 'https')
-        .concat('/api/broadcast')
+        .concat(`/api/broadcast?apikey=${expectedApiKey}&vsn=${VSN_2_0_0}`)
+
       expect(fetchStub).toHaveBeenCalledTimes(1)
       const [url, options] = fetchStub.mock.calls[0]
       expect(url).toBe(expectedUrl)
       expect(options.method).toBe('POST')
       expect(options.headers.Authorization).toBe('Bearer token123')
-      expect(options.headers.apikey).toBe('abc123')
+      expect(options.headers.apikey).toBe(expectedApiKey)
       expect(options.body).toBe(
         '{"messages":[{"topic":"topic","event":"test-explicit","payload":{"data":"explicit"},"private":true}]}'
       )
@@ -636,14 +548,14 @@ describe('httpSend', () => {
     test('uses default timeout when not specified', async () => {
       const mockResponse = createMockResponse(202)
       const fetchStub = vi.fn().mockResolvedValue(mockResponse)
-      const socket = new RealtimeClient(testSetup.url, {
+      const testSetup = setupRealtimeTest({
         fetch: fetchStub,
         timeout: 5000,
         params: { apikey: 'abc123' },
         accessToken: () => Promise.resolve('token123'),
       })
-      await socket.setAuth()
-      const channel = socket.channel('topic')
+      await testSetup.client.setAuth()
+      const channel = testSetup.client.channel('topic')
 
       const result = await channel.httpSend('test', { data: 'test' })
 
@@ -662,9 +574,9 @@ describe('httpSend', () => {
         json: vi.fn().mockResolvedValue({ message: 'Invalid request' }),
       }
       const fetchStub = vi.fn().mockResolvedValue(mockResponse)
-      const socket = createSocket(true, fetchStub)
-      await socket.setAuth()
-      const channel = socket.channel('topic')
+      const testSetup = createSocket(true, fetchStub)
+      await testSetup.client.setAuth()
+      const channel = testSetup.client.channel('topic')
 
       await expect(channel.httpSend('test', { data: 'test' })).rejects.toThrow('Invalid request')
     })
@@ -678,9 +590,9 @@ describe('httpSend', () => {
         json: vi.fn().mockRejectedValue(new Error('Invalid JSON')),
       }
       const fetchStub = vi.fn().mockResolvedValue(mockResponse)
-      const socket = createSocket(true, fetchStub)
-      await socket.setAuth()
-      const channel = socket.channel('topic')
+      const testSetup = createSocket(true, fetchStub)
+      await testSetup.client.setAuth()
+      const channel = testSetup.client.channel('topic')
 
       await expect(channel.httpSend('test', { data: 'test' })).rejects.toThrow(
         'Service Unavailable'

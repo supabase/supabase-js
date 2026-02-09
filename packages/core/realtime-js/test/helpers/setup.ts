@@ -1,153 +1,192 @@
-import { vi } from 'vitest'
+import { Mock, vi, expect } from 'vitest'
 import crypto from 'crypto'
-import { Server, WebSocket as MockWebSocket } from 'mock-socket'
+import { Server, Client } from 'mock-socket'
 import RealtimeClient, { RealtimeClientOptions } from '../../src/RealtimeClient'
 import RealtimeChannel from '../../src/RealtimeChannel'
+import { CHANNEL_STATES } from '../../src/lib/constants'
 
 // Constants
-export const DEFAULT_URL = 'ws://localhost:4000/socket'
+export const DEFAULT_REALTIME_URL = 'localhost:4000'
+export const DEFAULT_WSS_URL = 'ws://localhost:4000/socket'
 export const DEFAULT_API_KEY = '123456789'
+export const DEFAULT_PHX_JOIN_PAYLOAD = {
+  access_token: DEFAULT_API_KEY,
+  config: {
+    broadcast: {
+      ack: false,
+      self: false,
+    },
+    postgres_changes: [],
+    presence: {
+      enabled: false,
+      key: '',
+    },
+    private: true,
+  },
+}
+
+export type ClientOnHandler = (socket: Client, msg: any) => void
+export type ServerOnCallback = (socket: Client) => void
+export type DataSpy = Mock<(topic: string, event: string, payload: any) => void>
+export type EventEmitters = {
+  close: Mock
+  connected: Mock
+  message: DataSpy
+}
 
 // Core Interfaces
-export interface TestContext {
-  socket: RealtimeClient
-  mockServer: Server
-  url: string
-}
-
 export interface TestSetup {
-  socket: RealtimeClient
+  client: RealtimeClient
   mockServer: Server
-  url: string
-  projectRef: string
+  emitters: EventEmitters
+  realtimeUrl: string
+  wssUrl: string
   clock?: any
-}
+  projectRef: string
 
-export interface EnhancedTestSetup extends TestSetup {
   cleanup: () => void
   connect: () => void
   disconnect: () => void
+  socketConnected: () => Promise<void>
+  socketClosed: () => Promise<void>
 }
 
 export interface BuilderOptions extends Omit<RealtimeClientOptions, 'params'> {
+  socketHandlers?: Record<string, ClientOnHandler>
+  onConnectionCallback?: ServerOnCallback
+  onCloseCallback?: ServerOnCallback
   useFakeTimers?: boolean
   apikey?: string
   params?: Record<string, any>
-  [key: string]: any
 }
-
-// Utility Functions
-export const randomProjectRef = () => crypto.randomUUID()
 
 // Core Setup Functions
 export function setupRealtimeTest(options: BuilderOptions = {}): TestSetup {
-  const projectRef = randomProjectRef()
-  const url = `wss://${projectRef}/socket`
-  const mockServer = new Server(url)
-
-  const socket = new RealtimeClient(url, {
-    transport: MockWebSocket,
-    timeout: options.timeout || 1000,
-    heartbeatIntervalMs: options.heartbeatIntervalMs || 25000,
-    params: { apikey: options.apikey || DEFAULT_API_KEY, ...options.params },
-    ...options,
-  })
-
-  const setup: TestSetup = { socket, mockServer, url, projectRef }
-
-  if (options.useFakeTimers) {
-    setup.clock = vi.useFakeTimers({ shouldAdvanceTime: true })
+  const projectRef = crypto.randomUUID()
+  const wssUrl = `wss://${projectRef}/websocket`
+  const realtimeUrl = `wss://${projectRef}`
+  const mockServer = new Server(wssUrl)
+  const emitters: EventEmitters = {
+    close: vi.fn(),
+    connected: vi.fn(),
+    message: vi.fn(),
   }
 
-  return setup
+  const onClose =
+    options.onCloseCallback ??
+    (() => {
+      emitters.close()
+    })
+
+  mockServer.on('close', onClose)
+
+  const onConnection =
+    options.onConnectionCallback ??
+    ((socket: Client) => {
+      if (socket.readyState == socket.OPEN) {
+        emitters.connected()
+      }
+
+      socket.on('message', (message) => {
+        const msg = JSON.parse(message as string)
+        emitters.message(msg.topic, msg.event, msg.payload)
+
+        if (options.socketHandlers && options.socketHandlers[msg.event]) {
+          options.socketHandlers[msg.event](socket, message)
+          return
+        }
+
+        if (msg.event === 'phx_join') {
+          socket.send(
+            phxReply(message as string, { status: 'ok', response: { postgres_changes: [] } })
+          )
+        }
+
+        if (msg.event === 'heartbeat') {
+          socket.send(phxReply(message as string, { status: 'ok', response: {} }))
+        }
+      })
+    })
+
+  mockServer.on('connection', onConnection)
+
+  const client = new RealtimeClient(realtimeUrl, {
+    decode: (msg, callback) => callback(JSON.parse(msg as string)),
+    encode: (msg, callback) => callback(JSON.stringify(msg)),
+    ...options,
+    params: { ...options.params, apikey: options.apikey || DEFAULT_API_KEY },
+  })
+
+  let clock = undefined
+  if (options.useFakeTimers) {
+    clock = vi.useFakeTimers({ shouldAdvanceTime: true })
+  }
+
+  const connect = () => client.connect()
+  const disconnect = async () => client.disconnect()
+  const cleanup = () => cleanupRealtimeTest(client, mockServer, clock)
+
+  return {
+    client,
+    mockServer,
+    emitters,
+    realtimeUrl,
+    wssUrl,
+    clock,
+    projectRef,
+    connect,
+    disconnect,
+    cleanup,
+    socketConnected: async () => waitForHaveBeenCalled(emitters.connected),
+    socketClosed: async () => waitForHaveBeenCalled(emitters.close),
+  }
 }
 
-export function cleanupRealtimeTest(setup: TestSetup): void {
+function cleanupRealtimeTest(client: RealtimeClient, mockServer: Server, clock?: any): void {
   try {
-    setup.socket.disconnect()
+    client.disconnect()
   } catch (error) {
     // Ignore WebSocket cleanup errors in mock environment
   }
   try {
-    setup.mockServer.stop()
+    mockServer.stop()
   } catch (error) {
     // Ignore server cleanup errors
   }
-  if (setup.clock) {
+  if (clock) {
     vi.useRealTimers()
   }
   vi.resetAllMocks()
 }
 
-// Enhanced Test Builders
-export const testBuilders = {
-  /**
-   * Creates a standard RealtimeClient setup for basic testing
-   */
-  standardClient(options: BuilderOptions = {}): EnhancedTestSetup {
-    const setup = setupRealtimeTest(options)
-
-    return {
-      ...setup,
-      cleanup: () => cleanupRealtimeTest(setup),
-      connect: () => setup.socket.connect(),
-      disconnect: () => setup.socket.disconnect(),
-    }
-  },
+async function waitForHaveBeenCalled(connected: Mock) {
+  return vi.waitFor(() => expect(connected).toHaveBeenCalled())
 }
 
-// Test Suites (Pattern-based setups)
-export const testSuites = {
-  /**
-   * Standard setup for client tests with connection
-   */
-  clientWithConnection(
-    options: {
-      useFakeTimers?: boolean
-      connect?: boolean
-      timeout?: number
-    } = {}
-  ) {
-    let testSetup: TestSetup
-
-    const beforeEach = () => {
-      testSetup = setupRealtimeTest({
-        useFakeTimers: options.useFakeTimers,
-        timeout: options.timeout,
-      })
-      if (options.connect) {
-        testSetup.socket.connect()
-      }
-    }
-
-    const afterEach = () => {
-      cleanupRealtimeTest(testSetup)
-    }
-
-    const getSetup = () => testSetup
-
-    return { beforeEach, afterEach, getSetup }
-  },
+export async function waitForChannelSubscribed(channel: RealtimeChannel) {
+  return vi.waitFor(() => expect(channel.state).toBe(CHANNEL_STATES.joined))
 }
 
-// Channel Helper Functions
-export function setupJoinedChannel(channel: RealtimeChannel): void {
-  channel.joinedOnce = true
-  channel.state = 'joined' as any
+export function phxReply(message: string, payload: Object) {
+  const { topic, ref } = JSON.parse(message)
+
+  return JSON.stringify({
+    topic: topic,
+    event: 'phx_reply',
+    ref: ref,
+    payload,
+  })
 }
 
-export function setupConnectedSocket(socket: RealtimeClient): any {
-  return vi.spyOn(socket, 'isConnected').mockReturnValue(true)
-}
-
-export function setupDisconnectedSocket(socket: RealtimeClient): any {
-  return vi.spyOn(socket, 'isConnected').mockReturnValue(false)
-}
-
-export function setupJoinedChannelWithSocket(
+export function phxJoinReply(
   channel: RealtimeChannel,
-  socket: RealtimeClient
-): any {
-  setupJoinedChannel(channel)
-  return setupConnectedSocket(socket)
+  response: Object,
+  status: 'ok' | 'error' = 'ok'
+) {
+  return JSON.stringify({
+    topic: channel.topic,
+    ref: channel.joinPush.ref,
+    event: 'phx_reply',
+    payload: { status, response },
+  })
 }

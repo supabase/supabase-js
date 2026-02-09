@@ -2,85 +2,98 @@ import assert from 'assert'
 import { describe, beforeEach, afterEach, test, vi, expect } from 'vitest'
 import RealtimeClient from '../src/RealtimeClient'
 import RealtimeChannel from '../src/RealtimeChannel'
-import { CHANNEL_STATES } from '../src/lib/constants'
-import { setupRealtimeTest, cleanupRealtimeTest, TestSetup } from './helpers/setup'
+import { CHANNEL_STATES, VSN_1_0_0 } from '../src/lib/constants'
+import {
+  phxJoinReply,
+  phxReply,
+  setupRealtimeTest,
+  TestSetup,
+  waitForChannelSubscribed,
+} from './helpers/setup'
 
-const defaultRef = '1'
 const defaultTimeout = 1000
 
 let channel: RealtimeChannel
 let testSetup: TestSetup
 
-beforeEach(() => {
-  testSetup = setupRealtimeTest({
-    useFakeTimers: true,
-    timeout: defaultTimeout,
-  })
-})
-
-afterEach(() => cleanupRealtimeTest(testSetup))
-
 describe('push', () => {
-  let socketSpy: any
-
-  const pushParams = {
-    topic: 'realtime:topic',
-    event: 'event',
-    payload: { foo: 'bar' },
-    ref: defaultRef,
-    join_ref: defaultRef,
-  }
+  const pushParams = ['realtime:topic', 'event', { foo: 'bar' }]
 
   beforeEach(() => {
-    vi.spyOn(testSetup.socket, '_makeRef').mockImplementation(() => defaultRef)
-    vi.spyOn(testSetup.socket, 'isConnected').mockImplementation(() => true)
-    socketSpy = vi.spyOn(testSetup.socket, 'push')
+    testSetup = setupRealtimeTest({
+      useFakeTimers: true,
+      timeout: defaultTimeout,
+      socketHandlers: {
+        phx_join: () => {},
+      },
+    })
+  })
 
-    channel = testSetup.socket.channel('topic')
+  afterEach(() => testSetup.cleanup())
+
+  beforeEach(async () => {
+    testSetup.connect()
+    await testSetup.socketConnected()
+
+    channel = testSetup.client.channel('topic')
   })
 
   afterEach(() => {
     channel.unsubscribe()
+    testSetup.cleanup()
   })
 
-  test('sends push event when successfully joined', () => {
+  test('sends push event when successfully joined', async () => {
     channel.subscribe()
-    channel.joinPush.trigger('ok', {})
-    channel._push('event', { foo: 'bar' })
+    testSetup.mockServer.emit('message', phxJoinReply(channel, {}))
+    await waitForChannelSubscribed(channel)
 
-    expect(socketSpy).toHaveBeenCalledWith(pushParams)
+    testSetup.emitters.message.mockClear()
+
+    channel.channelAdapter.push('event', { foo: 'bar' })
+
+    await vi.waitFor(() => expect(testSetup.emitters.message).toHaveBeenCalledWith(...pushParams))
   })
 
-  test('enqueues push event to be sent once join has succeeded', () => {
+  test('enqueues push event to be sent once join has succeeded', async () => {
     channel.subscribe()
-    channel._push('event', { foo: 'bar' })
-
-    expect(socketSpy).not.toHaveBeenCalledWith(pushParams)
+    channel.channelAdapter.push('event', { foo: 'bar' })
 
     vi.advanceTimersByTime(channel.timeout / 2)
-    channel.joinPush.trigger('ok', {})
 
-    expect(socketSpy).toHaveBeenCalledWith(pushParams)
+    expect(testSetup.emitters.message).toHaveBeenCalledTimes(1) // phx_join
+
+    expect(testSetup.emitters.message).not.toHaveBeenCalledWith(...pushParams)
+
+    testSetup.mockServer.emit('message', phxJoinReply(channel, {}))
+
+    await vi.waitFor(() => expect(testSetup.emitters.message).toHaveBeenCalledWith(...pushParams))
   })
 
-  test('does not push if channel join times out', () => {
+  test('does not push if channel join times out', async () => {
     channel.subscribe()
-    channel._push('event', { foo: 'bar' })
-
-    expect(socketSpy).not.toHaveBeenCalledWith(pushParams)
+    channel.channelAdapter.push('event', { foo: 'bar' })
 
     vi.advanceTimersByTime(channel.timeout * 2)
-    channel.joinPush.trigger('ok', {})
 
-    expect(socketSpy).not.toHaveBeenCalledWith(pushParams)
+    expect(testSetup.emitters.message).toHaveBeenCalledTimes(2) // phx_join and phx_leave
+
+    testSetup.mockServer.emit('message', phxJoinReply(channel, {}))
+
+    await waitForChannelSubscribed(channel)
+
+    expect(testSetup.emitters.message).not.toHaveBeenCalledWith(...pushParams)
+    expect(testSetup.emitters.message).toHaveBeenCalledTimes(3) // 2 phx_join and 1 phx_leave
   })
 
-  test('uses channel timeout by default', () => {
+  test('uses channel timeout by default', async () => {
     const timeoutSpy = vi.fn()
-    channel.subscribe()
-    channel.joinPush.trigger('ok', {})
 
-    channel._push('event', { foo: 'bar' }).receive('timeout', timeoutSpy)
+    channel.subscribe()
+    testSetup.mockServer.emit('message', phxJoinReply(channel, {}))
+    await waitForChannelSubscribed(channel)
+
+    channel.channelAdapter.push('event', { foo: 'bar' }).receive('timeout', timeoutSpy)
 
     vi.advanceTimersByTime(channel.timeout / 2)
     expect(timeoutSpy).not.toHaveBeenCalled()
@@ -89,12 +102,16 @@ describe('push', () => {
     expect(timeoutSpy).toHaveBeenCalled()
   })
 
-  test('accepts timeout arg', () => {
+  test('accepts timeout arg', async () => {
     const timeoutSpy = vi.fn()
-    channel.subscribe()
-    channel.joinPush.trigger('ok', {})
 
-    channel._push('event', { foo: 'bar' }, channel.timeout * 2).receive('timeout', timeoutSpy)
+    channel.subscribe()
+    testSetup.mockServer.emit('message', phxJoinReply(channel, {}))
+    await waitForChannelSubscribed(channel)
+
+    channel.channelAdapter
+      .push('event', { foo: 'bar' }, channel.timeout * 2)
+      .receive('timeout', timeoutSpy)
 
     vi.advanceTimersByTime(channel.timeout / 2)
     expect(timeoutSpy).not.toHaveBeenCalled()
@@ -103,77 +120,90 @@ describe('push', () => {
     expect(timeoutSpy).toHaveBeenCalled()
   })
 
-  test("does not time out after receiving 'ok'", () => {
+  test("does not time out after receiving 'ok'", async () => {
     channel.subscribe()
-    channel.joinPush.trigger('ok', {})
+    testSetup.mockServer.emit('message', phxJoinReply(channel, {}))
+    await waitForChannelSubscribed(channel)
+
     const timeoutSpy = vi.fn()
-    const push = channel._push('event', { foo: 'bar' })
+
+    const push = channel.channelAdapter.push('event', { foo: 'bar' })
     push.receive('timeout', timeoutSpy)
 
     vi.advanceTimersByTime(push.timeout / 2)
     expect(timeoutSpy).not.toHaveBeenCalled()
 
-    push.trigger('ok', {})
+    testSetup.mockServer.emit(
+      'message',
+      JSON.stringify({
+        topic: channel.topic,
+        event: 'phx_reply',
+        ref: push.ref,
+        payload: { status: 'ok', response: {} },
+      })
+    )
 
     vi.advanceTimersByTime(push.timeout)
     expect(timeoutSpy).not.toHaveBeenCalled()
   })
 
   test('throws if channel has not been joined', () => {
-    assert.throws(() => channel._push('event', {}), /tried to push.*before joining/)
+    assert.throws(() => channel.channelAdapter.push('event', {}), /tried to push.*before joining/)
   })
 })
 
 describe('leave', () => {
-  let socketSpy: any
-
-  beforeEach(() => {
-    testSetup.socket.disconnect()
-    channel.unsubscribe()
-    // Use testSetup.socket instead of creating new socket
-    vi.spyOn(testSetup.socket, 'isConnected').mockImplementation(() => true)
-    socketSpy = vi.spyOn(testSetup.socket, 'push')
-
-    channel = testSetup.socket.channel('topic')
-    channel.subscribe()
-    channel.joinPush.trigger('ok', {})
-  })
-
-  test('unsubscribes from server events', () => {
-    vi.spyOn(testSetup.socket, '_makeRef').mockImplementation(() => defaultRef)
-
-    channel.unsubscribe()
-
-    expect(socketSpy).toHaveBeenCalledWith({
-      topic: 'realtime:topic',
-      event: 'phx_leave',
-      payload: {},
-      ref: defaultRef,
-      join_ref: defaultRef,
+  beforeEach(async () => {
+    testSetup = setupRealtimeTest({
+      useFakeTimers: true,
+      timeout: defaultTimeout,
+      socketHandlers: {
+        phx_leave: (socket, message) => {
+          socket.send(phxReply(message, { status: 'ok', response: {} }))
+        },
+      },
     })
-
-    assert.equal(channel.state, CHANNEL_STATES.closed)
-    assert.deepEqual(channel.pushBuffer, [])
+    channel = testSetup.client.channel('topic')
+    channel.subscribe()
+    testSetup.mockServer.emit('message', phxJoinReply(channel, {}))
+    await waitForChannelSubscribed(channel)
   })
 
-  test("closes channel on 'ok' from server", () => {
-    const anotherChannel = testSetup.socket.channel('another')
-    assert.equal(testSetup.socket.getChannels().length, 2)
+  afterEach(() => testSetup.cleanup())
+
+  test('unsubscribes from server events', async () => {
+    const result = await channel.unsubscribe()
+
+    expect(result).toBe('ok')
+
+    await vi.waitFor(() =>
+      expect(testSetup.emitters.message).toHaveBeenCalledWith('realtime:topic', 'phx_leave', {})
+    )
+
+    expect(channel.state).toBe(CHANNEL_STATES.closed)
+    expect(channel.channelAdapter.getChannel().pushBuffer).toStrictEqual([])
+  })
+
+  test("closes channel on 'ok' from server", async () => {
+    testSetup.cleanup()
+
+    const anotherChannel = testSetup.client.channel('another')
+    assert.equal(testSetup.client.getChannels().length, 2)
 
     channel.unsubscribe()
-    channel.joinPush.trigger('ok', {})
 
-    assert.equal(testSetup.socket.getChannels().length, 1)
-    assert.deepEqual(testSetup.socket.getChannels()[0], anotherChannel)
+    await vi.waitFor(() => expect(channel.state).toBe(CHANNEL_STATES.closed))
+
+    assert.equal(testSetup.client.getChannels().length, 1)
+    assert.deepEqual(testSetup.client.getChannels()[0], anotherChannel)
   })
 
-  test("sets state to closed on 'ok' event", () => {
+  test("sets state to closed on 'ok' event", async () => {
     assert.notEqual(channel.state, 'closed')
 
     channel.unsubscribe()
-    channel.joinPush.trigger('ok', {})
 
-    assert.equal(channel.state, 'closed')
+    await vi.waitFor(() => expect(channel.state).toBe(CHANNEL_STATES.closed))
   })
 
   // TODO - the following tests are skipped until Channel.leave
@@ -225,14 +255,23 @@ describe('joinPush', () => {
     },
   }
 
-  beforeEach(() => {
-    testSetup.socket.disconnect()
-    channel.unsubscribe()
-
-    channel = testSetup.socket.channel('topic')
+  beforeEach(async () => {
+    testSetup = setupRealtimeTest({
+      useFakeTimers: true,
+      timeout: defaultTimeout,
+      socketHandlers: {
+        phx_join: () => {},
+      },
+    })
+    channel = testSetup.client.channel('topic')
     joinPush = channel.joinPush
 
     channel.subscribe()
+  })
+
+  afterEach(() => {
+    channel.unsubscribe()
+    testSetup.cleanup()
   })
 
   describe("receives 'ok'", () => {
@@ -291,10 +330,10 @@ describe('joinPush', () => {
   })
 
   describe("receives 'timeout'", () => {
-    test('sets channel state to errored', () => {
+    test('sets channel state to errored', async () => {
       assert.notEqual(channel.state, CHANNEL_STATES.errored)
       helpers.receiveTimeout()
-      assert.equal(channel.state, CHANNEL_STATES.errored)
+      await vi.waitFor(() => assert.equal(channel.state, CHANNEL_STATES.errored))
     })
 
     test("triggers receive('timeout') callback", () => {
@@ -326,41 +365,38 @@ describe('joinPush', () => {
 })
 
 describe('canPush', () => {
-  let socket: RealtimeClient
-
   beforeEach(() => {
-    socket = new RealtimeClient('ws://example.com/socket', {
-      params: { apikey: '123456789' },
-    })
-
-    channel = testSetup.socket.channel('topic')
+    testSetup = setupRealtimeTest()
+    channel = testSetup.client.channel('topic')
   })
 
   afterEach(() => {
-    testSetup.socket.disconnect()
+    testSetup.client.disconnect()
     channel.unsubscribe()
   })
 
-  test('returns true when socket connected and channel joined', () => {
-    vi.spyOn(testSetup.socket, 'isConnected').mockReturnValue(true)
-    channel.state = CHANNEL_STATES.joined
-    // Note: Testing private method - should be refactored in future
-    expect((channel as any)._canPush()).toBeTruthy()
+  test('returns true when socket connected and channel joined', async () => {
+    channel.subscribe()
+    testSetup.mockServer.emit('message', phxJoinReply(channel, {}))
+    await testSetup.socketConnected()
+    await waitForChannelSubscribed(channel)
+
+    expect(channel.channelAdapter.canPush()).toBeTruthy()
   })
 
   test('otherwise returns false', () => {
-    const isConnectedStub = vi.spyOn(testSetup.socket, 'isConnected')
+    const isConnectedStub = vi.spyOn(testSetup.client, 'isConnected')
 
     isConnectedStub.mockReturnValue(false)
     channel.state = CHANNEL_STATES.joined
-    expect((channel as any)._canPush()).toBeFalsy()
+    expect(channel.channelAdapter.canPush()).toBeFalsy()
 
     isConnectedStub.mockReturnValue(true)
     channel.state = CHANNEL_STATES.joining
-    expect((channel as any)._canPush()).toBeFalsy()
+    expect(channel.channelAdapter.canPush()).toBeFalsy()
 
     isConnectedStub.mockReturnValue(false)
     channel.state = CHANNEL_STATES.joining
-    expect((channel as any)._canPush()).toBeFalsy()
+    expect(channel.channelAdapter.canPush()).toBeFalsy()
   })
 })

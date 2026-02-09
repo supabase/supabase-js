@@ -1,36 +1,24 @@
-import assert from 'assert'
-import { describe, beforeEach, afterEach, test, vi, expect } from 'vitest'
-import RealtimeChannel from '../src/RealtimeChannel'
+import { beforeEach, afterEach, describe, test, expect, vi } from 'vitest'
+import { setupRealtimeTest, waitForChannelSubscribed, type TestSetup } from './helpers/setup'
+import type RealtimeChannel from '../src/RealtimeChannel'
 import { CHANNEL_STATES } from '../src/lib/constants'
-import {
-  setupRealtimeTest,
-  cleanupRealtimeTest,
-  TestSetup,
-  setupJoinedChannelWithSocket,
-  setupJoinedChannel,
-  setupDisconnectedSocket,
-} from './helpers/setup'
 
-const defaultTimeout = 1000
-
-let channel: RealtimeChannel
 let testSetup: TestSetup
+let channel: RealtimeChannel
 
-beforeEach(() => {
+beforeEach(async () => {
   testSetup = setupRealtimeTest({
     useFakeTimers: true,
-    timeout: defaultTimeout,
   })
-})
+  testSetup.connect()
+  await testSetup.socketConnected()
 
-afterEach(() => cleanupRealtimeTest(testSetup))
-
-beforeEach(() => {
-  channel = testSetup.socket.channel('test-integration')
+  channel = testSetup.client.channel('test-integration')
 })
 
 afterEach(() => {
   channel.unsubscribe()
+  testSetup.cleanup()
 })
 
 describe('Complete lifecycle integration', () => {
@@ -45,48 +33,37 @@ describe('Complete lifecycle integration', () => {
 
     // Simulate successful subscription
     channel.joinPush.trigger('ok', {})
-    assert.equal(subscriptionStatus, 'SUBSCRIBED')
-    assert.equal(channel.state, CHANNEL_STATES.joined)
+    expect(subscriptionStatus).toBe('SUBSCRIBED')
+    expect(channel.state).toBe(CHANNEL_STATES.joined)
 
     // Unsubscribe and capture result
     const result = await channel.unsubscribe()
     unsubscriptionResult = result
 
-    expect(['ok', 'timed out', 'error'].includes(unsubscriptionResult)).toBeTruthy()
-    assert.equal(channel.state, CHANNEL_STATES.closed)
+    expect(unsubscriptionResult).toBe('ok')
+    expect(channel.state).toBe(CHANNEL_STATES.closed)
   })
 
   test('should handle mixed event types in single channel', () => {
-    let broadcastCount = 0
-    let presenceCount = 0
-    let postgresCount = 0
+    const broadcastSpy = vi.fn()
+    const presenceSpy = vi.fn()
+    const postgresSpy = vi.fn()
 
     // Set up multiple event types
-    channel.on('broadcast', { event: 'test' }, () => {
-      broadcastCount++
-    })
-    // @ts-ignore - using simplified typing for test
-    channel.on('presence', { event: 'sync' }, () => {
-      presenceCount++
-    })
-    channel.bindings.postgres_changes = [
-      {
-        type: 'postgres_changes',
-        filter: { event: 'INSERT' },
-        callback: () => {
-          postgresCount++
-        },
-      },
-    ]
+    channel.on('broadcast', { event: 'test' }, broadcastSpy)
+    channel.on('presence', { event: 'sync' }, presenceSpy)
+    channel.on('postgres_changes', { event: 'INSERT', schema: 'public' }, postgresSpy)
 
     // Trigger all event types
-    channel._trigger('broadcast', { event: 'test' })
-    channel._trigger('presence', { event: 'sync' })
-    channel._trigger('insert', { test: 'data' })
+    channel.channelAdapter.getChannel().trigger('broadcast', { event: 'test' })
+    channel.channelAdapter.getChannel().trigger('presence', { event: 'sync' })
+    channel.channelAdapter
+      .getChannel()
+      .trigger('postgres_changes', { event: 'insert', test: 'data' })
 
-    assert.equal(broadcastCount, 1)
-    assert.equal(presenceCount, 1)
-    assert.equal(postgresCount, 1)
+    expect(broadcastSpy).toHaveBeenCalledTimes(1)
+    expect(presenceSpy).toHaveBeenCalledTimes(1)
+    expect(postgresSpy).toHaveBeenCalledTimes(1)
   })
 })
 
@@ -94,14 +71,14 @@ describe('Error recovery integration', () => {
   test('should recover from subscription errors and retry', () => {
     let statusUpdates: string[] = []
 
-    channel.subscribe((status, error) => {
+    channel.subscribe((status) => {
       statusUpdates.push(status)
     })
 
     // Simulate initial error
     channel.joinPush.trigger('error', { message: 'Initial failure' })
     expect(statusUpdates).toContain('CHANNEL_ERROR')
-    assert.equal(channel.state, CHANNEL_STATES.errored)
+    expect(channel.state).toBe(CHANNEL_STATES.errored)
 
     // Verify rejoin timer is scheduled
     expect(channel.rejoinTimer.timer).toBeTruthy()
@@ -109,9 +86,11 @@ describe('Error recovery integration', () => {
 })
 
 describe('Complex message flow integration', () => {
-  test('should handle rapid message sending and receiving', () => {
-    setupJoinedChannelWithSocket(channel, testSetup.socket)
-    const pushSpy = vi.spyOn(channel, '_push')
+  test('should handle rapid message sending and receiving', async () => {
+    channel.subscribe()
+    await waitForChannelSubscribed(channel)
+
+    const pushSpy = vi.spyOn(channel.channelAdapter.getChannel(), 'push')
 
     // Send multiple rapid messages
     const messages = Array.from({ length: 10 }, (_, i) => `message-${i}`)
@@ -132,17 +111,17 @@ describe('Complex message flow integration', () => {
 describe('State consistency integration', () => {
   test('should maintain consistent state across complex operations', () => {
     // Initial state
-    assert.equal(channel.state, CHANNEL_STATES.closed)
-    assert.equal(channel.joinedOnce, false)
+    expect(channel.state).toBe(CHANNEL_STATES.closed)
+    expect(channel.joinedOnce).toBe(false)
 
     // Subscribe
     channel.subscribe()
-    assert.equal(channel.state, CHANNEL_STATES.joining)
+    expect(channel.state).toBe(CHANNEL_STATES.joining)
 
     // Complete subscription
     channel.joinPush.trigger('ok', {})
-    assert.equal(channel.state, CHANNEL_STATES.joined)
-    assert.equal(channel.joinedOnce, true)
+    expect(channel.state).toBe(CHANNEL_STATES.joined)
+    expect(channel.joinedOnce).toBe(true)
 
     // Add event listeners
     channel.on('broadcast', { event: 'test' }, () => {})
@@ -150,40 +129,8 @@ describe('State consistency integration', () => {
 
     // Unsubscribe
     channel.unsubscribe()
-    assert.equal(channel.state, CHANNEL_STATES.closed)
+    expect(channel.state).toBe(CHANNEL_STATES.closed)
 
-    // Bindings should be cleared by teardown
-    if (channel.state === CHANNEL_STATES.closed) {
-      expect(channel.pushBuffer.length).toBe(0)
-    }
-  })
-})
-
-describe('Performance and resource management', () => {
-  test('should handle resource cleanup efficiently', () => {
-    // Set up complex state
-    setupJoinedChannel(channel)
-
-    // Add multiple event types
-    for (let i = 0; i < 5; i++) {
-      channel.on('broadcast', { event: `test-${i}` }, () => {})
-    }
-
-    // Add some pushes to buffer
-    setupDisconnectedSocket(testSetup.socket)
-    for (let i = 0; i < 3; i++) {
-      channel._push('test', { data: `test-${i}` })
-    }
-
-    // Verify setup
-    expect(channel.bindings.broadcast.length).toBeGreaterThan(0)
-    expect(channel.pushBuffer.length).toBeGreaterThan(0)
-
-    // Teardown should clean everything
-    channel.teardown()
-
-    assert.equal(channel.state, 'closed')
-    assert.equal(channel.pushBuffer.length, 0)
-    assert.deepEqual(channel.bindings, {})
+    expect(channel.channelAdapter.getChannel().pushBuffer.length).toBe(0)
   })
 })
