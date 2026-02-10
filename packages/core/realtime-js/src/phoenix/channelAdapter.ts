@@ -59,6 +59,10 @@ export default class ChannelAdapter {
     return this.channel.leave(timeout)
   }
 
+  teardown() {
+    this.channel.teardown()
+  }
+
   onClose(callback: ChannelBindingCallback) {
     this.channel.onClose(callback)
   }

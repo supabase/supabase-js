@@ -710,6 +710,10 @@ export default class RealtimeChannel {
     })
   }
 
+  teardown() {
+    this.channelAdapter.teardown()
+  }
+
   /** @internal */
   async _fetchWithTimeout(url: string, options: { [key: string]: any }, timeout: number) {
     const controller = new AbortController()
