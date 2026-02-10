@@ -1,0 +1,345 @@
+name: Unpublish Package Version
+# Emergency workflow for removing published versions of all Supabase JS packages
+# ⚠️ WARNING: Unpublishing is PERMANENT. Use with extreme caution.
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to unpublish (e.g., "2.95.1" or "2.95.1-canary.0")'
+        required: true
+        type: string
+      reason:
+        description: 'Reason for unpublishing (for audit trail)'
+        required: true
+        type: string
+      confirm_criteria:
+        description: 'I confirm this version meets npm unpublish criteria (< 72hrs OR no usage)'
+        required: true
+        type: boolean
+
+env:
+  NODE_VERSION: '20'
+
+jobs:
+  unpublish:
+    name: Unpublish All Packages
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+
+    steps:
+      - name: Generate token
+        id: app-token
+        uses: actions/create-github-app-token@29824e69f54612133e76f7eaac726eef6c875baf
+        with:
+          app-id: ${{ secrets.APP_ID }}
+          private-key: ${{ secrets.PRIVATE_KEY }}
+
+      - name: Check if actor is member of admin or sdk team
+        id: team-check
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
+        with:
+          github-token: ${{ steps.app-token.outputs.token }}
+          script: |
+            const org = 'supabase'
+            const { actor } = context
+
+            async function isTeamMember(team_slug) {
+              try {
+                const res = await github.rest.teams.getMembershipForUserInOrg({
+                  org,
+                  team_slug,
+                  username: actor,
+                })
+                return res && res.status === 200
+              } catch (_) {
+                return false
+              }
+            }
+            const isAdmin = await isTeamMember('admin')
+            const isSdk = await isTeamMember('sdk')
+            const isMember = isAdmin || isSdk
+            core.setOutput('is_team_member', isMember ? 'true' : 'false')
+
+      - name: Fail if not authorized
+        if: ${{ steps.team-check.outputs.is_team_member != 'true' }}
+        run: |
+          echo "❌ You must be a member of @supabase/admin or @supabase/sdk to unpublish packages."
+          exit 1
+
+      - name: Check criteria confirmation
+        if: ${{ github.event.inputs.confirm_criteria != 'true' }}
+        run: |
+          echo "❌ You must confirm that this version meets npm unpublish criteria."
+          echo ""
+          echo "npm allows unpublishing only if:"
+          echo "  1. Package was published < 72 hours ago, OR"
+          echo "  2. ALL of the following:"
+          echo "     - No other packages depend on it"
+          echo "     - Had < 300 downloads over the last week"
+          echo "     - Has a single owner/maintainer"
+          echo ""
+          echo "If criteria not met, use 'npm deprecate' instead."
+          exit 1
+
+      - name: Validate version format
+        run: |
+          VERSION="${{ github.event.inputs.version }}"
+          echo "Validating version: $VERSION"
+
+          # Remove 'v' prefix if present for validation
+          CLEAN_VERSION="${VERSION#v}"
+
+          # Check if version matches semver format (with optional prerelease)
+          if [[ "$CLEAN_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]]; then
+            echo "✅ Valid version format: $CLEAN_VERSION"
+          else
+            echo "❌ Invalid version format: '$VERSION'"
+            echo "   Expected format: X.Y.Z or X.Y.Z-prerelease"
+            echo "   Examples: 2.95.1, 2.95.1-canary.0"
+            exit 1
+          fi
+
+      - name: Checkout code
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        with:
+          fetch-depth: 1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238 # v6.2.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Update npm
+        run: npm install -g npm@latest
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Display unpublish warnings
+        run: |
+          echo "⚠️  =========================================="
+          echo "⚠️  WARNING: UNPUBLISHING IS PERMANENT"
+          echo "⚠️  =========================================="
+          echo ""
+          echo "You are about to unpublish version ${{ github.event.inputs.version }}"
+          echo "from ALL Supabase JS packages."
+          echo ""
+          echo "⚠️  CONSEQUENCES:"
+          echo "   - This version will be permanently removed from npm"
+          echo "   - You CANNOT reuse this version number again"
+          echo "   - Dependent projects may break if they reference this exact version"
+          echo "   - This action CANNOT be undone"
+          echo ""
+          echo "📋 Reason provided: ${{ github.event.inputs.reason }}"
+          echo ""
+
+      - name: Confirm packages to unpublish
+        run: |
+          echo "📦 The following packages will be unpublished:"
+          echo "   1. @supabase/supabase-js@${{ github.event.inputs.version }}"
+          echo "   2. @supabase/auth-js@${{ github.event.inputs.version }}"
+          echo "   3. @supabase/gotrue-js@${{ github.event.inputs.version }}"
+          echo "   4. @supabase/postgrest-js@${{ github.event.inputs.version }}"
+          echo "   5. @supabase/realtime-js@${{ github.event.inputs.version }}"
+          echo "   6. @supabase/storage-js@${{ github.event.inputs.version }}"
+          echo "   7. @supabase/functions-js@${{ github.event.inputs.version }}"
+          echo ""
+          echo "Proceeding in 5 seconds..."
+          sleep 5
+
+      - name: Unpublish all packages
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        shell: bash
+        run: |
+          set +e  # Don't exit on first error - we want to try all packages
+
+          # Remove 'v' prefix from version if present
+          VERSION="${{ github.event.inputs.version }}"
+          VERSION="${VERSION#v}"
+
+          echo "Unpublishing version: $VERSION"
+          echo ""
+
+          # Verify NPM_TOKEN is set
+          if [ -z "$NODE_AUTH_TOKEN" ]; then
+            echo "❌ NPM_TOKEN secret is not set!"
+            echo "   Please configure NPM_TOKEN in repository secrets with publish/unpublish permissions."
+            exit 1
+          fi
+
+          # Define all 7 packages (in logical order)
+          PACKAGES=(
+            "@supabase/supabase-js"
+            "@supabase/auth-js"
+            "@supabase/gotrue-js"
+            "@supabase/postgrest-js"
+            "@supabase/realtime-js"
+            "@supabase/storage-js"
+            "@supabase/functions-js"
+          )
+
+          # Track results
+          declare -a FAILED_PACKAGES
+          declare -a SUCCESS_PACKAGES
+          declare -a POLICY_VIOLATIONS
+
+          # Unpublish each package
+          for PACKAGE in "${PACKAGES[@]}"; do
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            echo "Unpublishing: ${PACKAGE}@${VERSION}"
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+            # Capture both stdout and stderr
+            OUTPUT=$(npm unpublish "${PACKAGE}@${VERSION}" 2>&1)
+            EXIT_CODE=$?
+
+            if [ $EXIT_CODE -eq 0 ]; then
+              echo "✅ Successfully unpublished ${PACKAGE}@${VERSION}"
+              SUCCESS_PACKAGES+=("${PACKAGE}")
+            else
+              echo "❌ Failed to unpublish ${PACKAGE}@${VERSION}"
+              echo "Error output:"
+              echo "$OUTPUT"
+              FAILED_PACKAGES+=("${PACKAGE}")
+
+              # Check if it's a policy violation
+              if echo "$OUTPUT" | grep -q -i "policy\|criteria\|cannot be unpublished"; then
+                POLICY_VIOLATIONS+=("${PACKAGE}")
+              fi
+            fi
+            echo ""
+          done
+
+          # Display summary
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "UNPUBLISH SUMMARY"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo ""
+
+          if [ ${#SUCCESS_PACKAGES[@]} -gt 0 ]; then
+            echo "✅ Successfully unpublished (${#SUCCESS_PACKAGES[@]}):"
+            for PKG in "${SUCCESS_PACKAGES[@]}"; do
+              echo "   - ${PKG}@${VERSION}"
+            done
+            echo ""
+          fi
+
+          if [ ${#FAILED_PACKAGES[@]} -gt 0 ]; then
+            echo "❌ Failed to unpublish (${#FAILED_PACKAGES[@]}):"
+            for PKG in "${FAILED_PACKAGES[@]}"; do
+              echo "   - ${PKG}@${VERSION}"
+            done
+            echo ""
+          fi
+
+          if [ ${#POLICY_VIOLATIONS[@]} -gt 0 ]; then
+            echo "⚠️  Policy violations detected for:"
+            for PKG in "${POLICY_VIOLATIONS[@]}"; do
+              echo "   - ${PKG}@${VERSION}"
+            done
+            echo ""
+            echo "💡 These packages may not meet npm's unpublish criteria:"
+            echo "   - Published > 72 hours ago"
+            echo "   - Has other packages depending on it"
+            echo "   - Has > 300 downloads in the last week"
+            echo "   - Has multiple owners/maintainers"
+            echo ""
+            echo "Consider using deprecation instead:"
+            for PKG in "${POLICY_VIOLATIONS[@]}"; do
+              echo "   npm deprecate ${PKG}@${VERSION} \"[reason]\""
+            done
+            echo ""
+          fi
+
+          # Exit with error if any packages failed
+          if [ ${#FAILED_PACKAGES[@]} -gt 0 ]; then
+            echo "❌ Unpublish operation completed with errors."
+            exit 1
+          else
+            echo "✅ All packages successfully unpublished."
+            exit 0
+          fi
+
+      - name: Create audit issue
+        if: success()
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
+        with:
+          github-token: ${{ steps.app-token.outputs.token }}
+          script: |
+            const version = '${{ github.event.inputs.version }}'.replace(/^v/, '');
+            const reason = `${{ github.event.inputs.reason }}`;
+            const actor = context.actor;
+            const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            const timestamp = new Date().toISOString();
+
+            const body = `## Unpublish Operation Audit Trail
+
+            **Version unpublished:** \`${version}\`
+
+            **Packages affected:**
+            - \`@supabase/supabase-js@${version}\`
+            - \`@supabase/auth-js@${version}\`
+            - \`@supabase/gotrue-js@${version}\`
+            - \`@supabase/postgrest-js@${version}\`
+            - \`@supabase/realtime-js@${version}\`
+            - \`@supabase/storage-js@${version}\`
+            - \`@supabase/functions-js@${version}\`
+
+            **Reason:** ${reason}
+
+            **Executed by:** @${actor}
+
+            **Timestamp:** ${timestamp}
+
+            **Workflow run:** ${runUrl}
+
+            ---
+
+            ⚠️ **Important Notes:**
+            - This version has been permanently removed from npm
+            - This version number cannot be reused
+            - Projects depending on this exact version may break
+            - This action cannot be undone
+
+            If you need to restore functionality, publish a new patch version with fixes.`;
+
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `[Unpublish Audit] v${version}`,
+              body: body,
+              labels: ['unpublish-audit', 'automated']
+            });
+
+      - name: Generate workflow summary
+        if: always()
+        run: |
+          VERSION="${{ github.event.inputs.version }}"
+          VERSION="${VERSION#v}"
+
+          echo "## 🗑️ Package Unpublish Operation" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Version:** \`${VERSION}\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Packages unpublished:**" >> $GITHUB_STEP_SUMMARY
+          echo "1. \`@supabase/supabase-js@${VERSION}\`" >> $GITHUB_STEP_SUMMARY
+          echo "2. \`@supabase/auth-js@${VERSION}\`" >> $GITHUB_STEP_SUMMARY
+          echo "3. \`@supabase/gotrue-js@${VERSION}\`" >> $GITHUB_STEP_SUMMARY
+          echo "4. \`@supabase/postgrest-js@${VERSION}\`" >> $GITHUB_STEP_SUMMARY
+          echo "5. \`@supabase/realtime-js@${VERSION}\`" >> $GITHUB_STEP_SUMMARY
+          echo "6. \`@supabase/storage-js@${VERSION}\`" >> $GITHUB_STEP_SUMMARY
+          echo "7. \`@supabase/functions-js@${VERSION}\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Reason:** ${{ github.event.inputs.reason }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Executed by:** @${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "---" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "⚠️ **This operation is permanent and cannot be undone.**" >> $GITHUB_STEP_SUMMARY
