@@ -16,7 +16,14 @@ import { httpEndpointURL } from './lib/transformers'
 import RealtimeChannel from './RealtimeChannel'
 import type { RealtimeChannelOptions } from './RealtimeChannel'
 import SocketAdapter from './phoenix/socketAdapter'
-import type { Message, SocketOptions, HeartbeatCallback, Encode, Decode } from './phoenix/types'
+import type {
+  Message,
+  SocketOptions,
+  HeartbeatCallback,
+  Encode,
+  Decode,
+  Vsn,
+} from './phoenix/types'
 
 type Fetch = typeof fetch
 
@@ -59,11 +66,11 @@ export type RealtimeClientOptions = {
   timeout?: number
   heartbeatIntervalMs?: number
   heartbeatCallback?: (status: HeartbeatStatus, latency?: number) => void
-  vsn?: string
+  vsn?: Vsn
   logger?: (kind: string, msg: string, data?: any) => void
   encode?: Encode<void>
   decode?: Decode<void>
-  reconnectAfterMs?: Function
+  reconnectAfterMs?: (tries: number) => number
   headers?: { [key: string]: string }
   params?: { [key: string]: any }
   //Deprecated: Use it in favour of correct casing `logLevel`
@@ -660,54 +667,51 @@ export default class RealtimeClient {
    * @internal
    */
   private _initializeOptions(options?: RealtimeClientOptions): SocketOptions {
-    // Set defaults
-
-    const timeout = options?.timeout ?? DEFAULT_TIMEOUT
-    const heartbeatIntervalMs =
-      options?.heartbeatIntervalMs ?? CONNECTION_TIMEOUTS.HEARTBEAT_INTERVAL
-    const vsn = options?.vsn ?? DEFAULT_VSN
-    const transport = options?.transport ?? WebSocketFactory.getWebSocketConstructor()
-    let params = options?.params
-    let encode = options?.encode
-    let decode = options?.decode
-
     this.worker = options?.worker ?? false
-
     this.accessToken = options?.accessToken ?? null
 
-    const heartbeatCallback = this._wrapHeartbeatCallback(options?.heartbeatCallback)
-
-    if (options?.logLevel || options?.log_level) {
-      this.logLevel = options.logLevel || options.log_level
-      params = { ...params, log_level: this.logLevel as string }
-    }
-
-    const reconnectAfterMs =
+    const result: SocketOptions = {}
+    result.timeout = options?.timeout ?? DEFAULT_TIMEOUT
+    result.heartbeatIntervalMs =
+      options?.heartbeatIntervalMs ?? CONNECTION_TIMEOUTS.HEARTBEAT_INTERVAL
+    result.vsn = options?.vsn ?? DEFAULT_VSN
+    // @ts-ignore - mismatch between phoenix and supabase
+    result.transport = options?.transport ?? WebSocketFactory.getWebSocketConstructor()
+    result.params = options?.params
+    result.logger = options?.logger
+    result.heartbeatCallback = this._wrapHeartbeatCallback(options?.heartbeatCallback)
+    result.reconnectAfterMs =
       options?.reconnectAfterMs ??
       ((tries: number) => {
         return RECONNECT_INTERVALS[tries - 1] || DEFAULT_RECONNECT_FALLBACK
       })
 
-    switch (vsn) {
-      case VSN_1_0_0:
-        encode =
-          encode ??
-          ((payload, callback) => {
-            return callback(JSON.stringify(payload))
-          })
+    let defaultEncode: Encode<void>
+    let defaultDecode: Decode<void>
 
-        decode =
-          decode ??
-          ((payload, callback) => {
-            return callback(JSON.parse(payload as string))
-          })
+    switch (result.vsn) {
+      case VSN_1_0_0:
+        defaultEncode = (payload, callback) => {
+          return callback(JSON.stringify(payload))
+        }
+        defaultDecode = (payload, callback) => {
+          return callback(JSON.parse(payload as string))
+        }
         break
       case VSN_2_0_0:
-        encode = encode ?? this.serializer.encode.bind(this.serializer)
-        decode = decode ?? this.serializer.decode.bind(this.serializer)
+        defaultEncode = this.serializer.encode.bind(this.serializer)
+        defaultDecode = this.serializer.decode.bind(this.serializer)
         break
       default:
-        throw new Error(`Unsupported serializer version: ${vsn}`)
+        throw new Error(`Unsupported serializer version: ${result.vsn}`)
+    }
+
+    result.encode = options?.encode ?? defaultEncode
+    result.decode = options?.decode ?? defaultDecode
+
+    if (options?.logLevel || options?.log_level) {
+      this.logLevel = options.logLevel || options.log_level
+      result.params = { ...result.params, log_level: this.logLevel as string }
     }
 
     // Handle worker setup
@@ -716,21 +720,9 @@ export default class RealtimeClient {
         throw new Error('Web Worker is not supported')
       }
       this.workerUrl = options?.workerUrl
+      result.autoSendHeartbeat = !this.worker
     }
 
-    // @ts-ignore FIXME: align supabase types with phoenix types
-    return {
-      ...options,
-      timeout,
-      transport,
-      heartbeatIntervalMs,
-      heartbeatCallback,
-      vsn,
-      params,
-      encode,
-      decode,
-      reconnectAfterMs,
-      autoSendHeartbeat: !options?.worker,
-    } as any
+    return result
   }
 }
