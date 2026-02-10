@@ -16,7 +16,7 @@
     "@react-navigation/bottom-tabs": "^7.0.0",
     "@react-navigation/elements": "^2.0.0",
     "@react-navigation/native": "^7.0.0",
-    "@supabase/supabase-js": "*",
+    "@supabase/supabase-js": "https://pkg.pr.new/@supabase/supabase-js@{COMMIT_HASH}",
     "expo": "~53.0.9",
     "expo-blur": "~14.0.1",
     "expo-constants": "~17.0.3",

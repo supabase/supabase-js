@@ -1,3 +1,21 @@
+## 2.95.3 (2026-02-06)
+
+This was a version bump only for @supabase/auth-js to align it with other projects, there were no code changes.
+
+## 2.95.0 (2026-02-05)
+
+This was a version bump only for @supabase/auth-js to align it with other projects, there were no code changes.
+
+## 2.94.1 (2026-02-04)
+
+### 🩹 Fixes
+
+- **auth:** correct OAuth authorization types to match API responses ([#2088](https://github.com/supabase/supabase-js/pull/2088))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+
 ## 2.94.0 (2026-02-03)
 
 This was a version bump only for @supabase/auth-js to align it with other projects, there were no code changes.
