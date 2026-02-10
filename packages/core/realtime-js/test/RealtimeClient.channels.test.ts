@@ -148,35 +148,25 @@ describe('channel', () => {
     expect(disconnectStub).toHaveBeenCalled()
   })
 
-  test('removes channel from list when unsubscribe succeeds with ok', async () => {
-    const channel = testSetup.socket.channel('topic')
-    await channel.subscribe()
+  test.each([
+    ['ok', 'ok', 0],
+    ['timeout', 'timed out', 0],
+    ['error', 'error', 1],
+  ])(
+    'channels length should be $2 after unsubscribe returns $1',
+    async (stub, status, expected) => {
+      const channel = testSetup.socket.channel('topic').subscribe()
+      assert.equal(testSetup.socket.getChannels().length, 1)
 
-    assert.equal(testSetup.socket.getChannels().length, 1)
+      // force channel.trigger to call bindings with custom message
+      channel._onMessage = () => ({ status: stub })
 
-    channel._onMessage = () => ({ status: 'ok' })
+      const result = await testSetup.socket.removeChannel(channel)
 
-    const result = await testSetup.socket.removeChannel(channel)
-
-    // Channel should be removed from the list
-    assert.equal(testSetup.socket.getChannels().length, 0)
-    assert.equal(result, 'ok')
-  })
-
-  test('does NOT remove channel from list when unsubscribe fails with error', async () => {
-    const channel = testSetup.socket.channel('topic')
-    await channel.subscribe()
-
-    assert.equal(testSetup.socket.getChannels().length, 1)
-
-    channel._onMessage = () => ({ status: 'error' })
-
-    const result = await testSetup.socket.removeChannel(channel)
-
-    // Channel should NOT be removed from the list
-    assert.equal(testSetup.socket.getChannels().length, 1)
-    assert.equal(result, 'error')
-  })
+      assert.equal(testSetup.socket.getChannels().length, expected)
+      assert.equal(result, status)
+    }
+  )
 })
 
 describe('leaveOpenTopic', () => {
