@@ -57,7 +57,7 @@
     "test:e2e:storage": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "echo 'Storage tests coming in Phase 2'",
+        "command": "jest tests/storage --runInBand --coverage",
         "cwd": "{projectRoot}"
       },
       "dependsOn": ["^build", "test:e2e:setup"],
