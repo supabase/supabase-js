@@ -11,6 +11,7 @@ import type {
   Encode,
   Decode,
   HeartbeatCallback,
+  Timer,
 } from './types'
 import { CONNECTION_STATE, ConnectionState } from '../lib/constants'
 import type { HeartbeatTimer, WebSocketLikeConstructor } from '../RealtimeClient'
@@ -52,6 +53,10 @@ export default class SocketAdapter {
 
   get pendingHeartbeatRef(): string | null {
     return this.socket.pendingHeartbeatRef
+  }
+
+  get reconnectTimer(): Timer {
+    return this.socket.reconnectTimer
   }
 
   get vsn(): Vsn {

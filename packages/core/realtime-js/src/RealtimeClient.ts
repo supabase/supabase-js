@@ -11,7 +11,6 @@ import {
 } from './lib/constants'
 
 import Serializer from './lib/serializer'
-import { Timer } from 'phoenix'
 import { httpEndpointURL } from './lib/transformers'
 import RealtimeChannel from './RealtimeChannel'
 import type { RealtimeChannelOptions } from './RealtimeChannel'
@@ -39,7 +38,7 @@ export type RealtimeMessage = {
 
 export type RealtimeRemoveChannelResponse = 'ok' | 'timed out' | 'error'
 export type HeartbeatStatus = 'sent' | 'ok' | 'error' | 'timeout' | 'disconnected'
-export type HeartbeatTimer = ReturnType<typeof setInterval> | undefined
+export type HeartbeatTimer = ReturnType<typeof setTimeout> | undefined
 
 // Connection-related constants
 const CONNECTION_TIMEOUTS = {
@@ -103,7 +102,6 @@ export default class RealtimeClient {
   params?: { [key: string]: string } = {}
 
   ref: number = 0
-  reconnectTimer: Timer | null = null
 
   logLevel?: LogLevel
 
@@ -146,6 +144,10 @@ export default class RealtimeClient {
       return this._pendingWorkerHeartbeatRef
     }
     return this.socketAdapter.pendingHeartbeatRef
+  }
+
+  get reconnectTimer() {
+    return this.socketAdapter.reconnectTimer
   }
 
   get vsn() {
@@ -224,7 +226,6 @@ export default class RealtimeClient {
     this.httpEndpoint = httpEndpointURL(endPoint)
 
     this.fetch = this._resolveFetch(options?.fetch)
-    this._setupReconnectionTimer()
   }
 
   /**
@@ -291,6 +292,7 @@ export default class RealtimeClient {
     }
     return await this.socketAdapter.disconnect(
       () => {
+        clearInterval(this._workerHeartbeatTimer)
         this._terminateWorker()
       },
       code,
@@ -565,34 +567,15 @@ export default class RealtimeClient {
     }
   }
 
-  /**
-   * Setup reconnection timer with proper configuration
-   * @internal
-   */
-  private _setupReconnectionTimer(): void {
-    this.reconnectTimer = new Timer(async () => {
-      setTimeout(async () => {
-        await this._waitForAuthIfNeeded()
-        if (!this.isConnected()) {
-          this.connect()
-        }
-      }, CONNECTION_TIMEOUTS.RECONNECT_DELAY)
-    }, this.reconnectAfterMs)
-  }
-
   private _setupConnectionHandlers(): void {
     this.socketAdapter.onOpen(() => {
       const authPromise =
         this._authPromise ||
         (this.accessToken && !this.accessTokenValue ? this.setAuth() : Promise.resolve())
 
-      authPromise
-        .then(() => {
-          this.log('auth', 'auth completed on connect')
-        })
-        .catch((e) => {
-          this.log('error', 'error waiting for auth on connect', e)
-        })
+      authPromise.catch((e) => {
+        this.log('error', 'error waiting for auth on connect', e)
+      })
 
       if (this.worker && !this.workerRef) {
         this._startWorkerHeartbeat()
@@ -635,6 +618,7 @@ export default class RealtimeClient {
     this.workerRef.onerror = (error) => {
       this.log('worker', 'worker error', (error as ErrorEvent).message)
       this._terminateWorker()
+      this.disconnect()
     }
     this.workerRef.onmessage = (event) => {
       if (event.data.event === 'keepAlive') {
@@ -669,6 +653,13 @@ export default class RealtimeClient {
       result_url = URL.createObjectURL(blob)
     }
     return result_url
+  }
+
+  private async _reconnectAuth() {
+    await this._waitForAuthIfNeeded()
+    if (!this.isConnected()) {
+      this.connect()
+    }
   }
 
   /**
@@ -717,6 +708,8 @@ export default class RealtimeClient {
 
     result.encode = options?.encode ?? defaultEncode
     result.decode = options?.decode ?? defaultDecode
+
+    result.beforeReconnect = this._reconnectAuth.bind(this)
 
     if (options?.logLevel || options?.log_level) {
       this.logLevel = options.logLevel || options.log_level

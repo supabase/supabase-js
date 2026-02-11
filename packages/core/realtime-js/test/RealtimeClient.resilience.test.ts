@@ -1,6 +1,6 @@
 import assert from 'assert'
 import { beforeEach, afterEach, vi, describe, test, expect } from 'vitest'
-import { type TestSetup, setupRealtimeTest } from './helpers/setup'
+import { type TestSetup, phxReply, setupRealtimeTest } from './helpers/setup'
 import { CHANNEL_EVENTS, CHANNEL_STATES } from '../src/lib/constants'
 
 let testClient: TestSetup
@@ -63,35 +63,28 @@ describe('Heartbeat timeout handling', () => {
 
 describe('Reconnection timer logic', () => {
   test('should use delay in reconnection callback', async () => {
+    testClient.cleanup()
+    testClient = setupRealtimeTest({
+      socketHandlers: {
+        phx_close: (socket, message) => {
+          socket.send(phxReply(message, { status: 'ok', response: {} }))
+        },
+      },
+    })
+
     testClient.client.connect()
+    await testClient.socketConnected()
 
-    // Mock isConnected to return false initially
-    const originalIsConnected = testClient.client.isConnected
-    testClient.client.isConnected = () => false
-
-    // Track connect calls
-    let connectCalls = 0
-    const originalConnect = testClient.client.connect
-    testClient.client.connect = () => {
-      connectCalls++
-      return originalConnect.call(testClient.client)
-    }
+    const connectSpy = vi.spyOn(testClient.client, 'connect')
 
     // Trigger reconnection
     testClient.client.reconnectTimer!.callback()
 
     // Should not have called connect immediately
-    assert.equal(connectCalls, 0)
+    expect(connectSpy).toHaveBeenCalledTimes(0)
 
-    // Wait for the delay
-    await new Promise((resolve) => setTimeout(resolve, 20))
-
-    // Should have called connect after delay
-    assert.equal(connectCalls, 1)
-
-    // Restore original methods
-    testClient.client.isConnected = originalIsConnected
-    testClient.client.connect = originalConnect
+    // Should have called connect after socket teardown
+    await vi.waitFor(() => expect(connectSpy).toHaveBeenCalledTimes(1))
   })
 })
 

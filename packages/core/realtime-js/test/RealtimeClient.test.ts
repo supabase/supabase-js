@@ -1,51 +1,66 @@
-import assert from 'assert'
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import { WebSocket as MockWebSocket } from 'mock-socket'
-import RealtimeClient from '../src/RealtimeClient'
-import { CHANNEL_EVENTS } from '../src/lib/constants'
-import { setupRealtimeTest, cleanupRealtimeTest, TestSetup } from './helpers/setup'
+import RealtimeClient, { WebSocketLikeConstructor } from '../src/RealtimeClient'
+import { SOCKET_STATES } from '../src/lib/constants'
+import { DEFAULT_API_KEY, setupRealtimeTest, TestSetup } from './helpers/setup'
 
 let testSetup: TestSetup
+const logSpy = vi.fn()
 
 beforeEach(() => {
-  testSetup = setupRealtimeTest()
+  testSetup = setupRealtimeTest({
+    logger: logSpy,
+    encode: undefined,
+    decode: undefined,
+  })
 })
 
 afterEach(() => {
-  cleanupRealtimeTest(testSetup)
+  logSpy.mockClear()
+  testSetup.cleanup()
 })
 
 describe('Additional Coverage Tests', () => {
-  describe('Node.js WebSocket error handling', () => {
-    test('should provide helpful error message for Node.js WebSocket errors', async () => {
-      // Create a socket without transport to trigger WebSocketFactory usage
-      const socketWithoutTransport = new RealtimeClient(testSetup.url, {
-        params: { apikey: '123456789' },
-      })
+  describe('Node.js WebSocket error handling', async () => {
+    const WebSocketFactoryModule = await import('../src/lib/websocket-factory')
+    const WebSocketFactory = WebSocketFactoryModule.default
+    const originalCreateWebSocket = WebSocketFactory.getWebSocketConstructor
+
+    beforeEach(() => {
+      class MockWS {
+        constructor(address: string | URL) {
+          throw new Error('Node.js environment detected')
+        }
+      }
 
       // Mock WebSocketFactory to throw Node.js specific error
-      const WebSocketFactoryModule = await import('../src/lib/websocket-factory')
-      const WebSocketFactory = WebSocketFactoryModule.default
-      const originalCreateWebSocket = WebSocketFactory.createWebSocket
-      WebSocketFactory.createWebSocket = vi.fn(() => {
-        throw new Error('Node.js environment detected')
+      // @ts-ignore simplified typing
+      WebSocketFactory.getWebSocketConstructor = () => MockWS
+    })
+
+    afterEach(() => {
+      WebSocketFactory.getWebSocketConstructor = originalCreateWebSocket
+    })
+
+    test('should provide helpful error message for Node.js WebSocket errors', async () => {
+      // Create a socket without transport to trigger WebSocketFactory usage
+      const socketWithoutTransport = new RealtimeClient(testSetup.realtimeUrl, {
+        params: { apikey: '123456789' },
       })
 
       expect(() => {
         socketWithoutTransport.connect()
       }).toThrow(/Node.js environment detected/)
+
       expect(() => {
         socketWithoutTransport.connect()
       }).toThrow(/To use Realtime in Node.js, you need to provide a WebSocket implementation/)
-
-      // Restore original method
-      WebSocketFactory.createWebSocket = originalCreateWebSocket
     })
   })
 
   describe('disconnect with fallback timer', () => {
     test('should handle disconnect with fallback timer when connection close is slow', async () => {
-      testSetup.socket.connect()
+      testSetup.client.connect()
 
       // Mock a connection that doesn't close immediately
       const mockConn = {
@@ -53,10 +68,11 @@ describe('Additional Coverage Tests', () => {
         onclose: null as any,
         readyState: MockWebSocket.OPEN,
       }
-      testSetup.socket.conn = mockConn as any
+
+      testSetup.client.socketAdapter.getSocket().conn = mockConn as any
 
       // Start disconnect
-      testSetup.socket.disconnect(1000, 'test reason')
+      testSetup.client.disconnect(1000, 'test reason')
 
       // Verify close was called with correct parameters
       expect(mockConn.close).toHaveBeenCalledWith(1000, 'test reason')
@@ -65,11 +81,11 @@ describe('Additional Coverage Tests', () => {
       await new Promise((resolve) => setTimeout(resolve, 150))
 
       // Verify state was set to disconnected by fallback timer
-      expect(testSetup.socket.isDisconnecting()).toBe(false)
+      expect(testSetup.client.isDisconnecting()).toBe(false)
     })
 
     test('should handle disconnect when connection close callback fires normally', async () => {
-      testSetup.socket.connect()
+      testSetup.client.connect()
 
       // Mock a connection that closes normally
       const mockConn = {
@@ -80,48 +96,37 @@ describe('Additional Coverage Tests', () => {
         onclose: null as any,
         readyState: MockWebSocket.OPEN,
       }
-      testSetup.socket.conn = mockConn as any
+      testSetup.client.socketAdapter.getSocket().conn = mockConn as any
 
       // Start disconnect
-      testSetup.socket.disconnect()
+      testSetup.client.disconnect()
 
       // Wait for close callback to fire
       await new Promise((resolve) => setTimeout(resolve, 50))
 
       // Verify state was set to disconnected by close callback
-      expect(testSetup.socket.isDisconnecting()).toBe(false)
+      expect(testSetup.client.isDisconnecting()).toBe(false)
     })
   })
 
   describe('heartbeat timeout reconnection fallback', () => {
     test('should trigger reconnection fallback after heartbeat timeout', async () => {
-      testSetup.socket.connect()
+      testSetup.client.connect()
+      await testSetup.socketConnected()
 
       // Set up a pending heartbeat
-      testSetup.socket.pendingHeartbeatRef = 'test-ref'
-
-      // Mock isConnected to return false after timeout
-      let isConnectedCallCount = 0
-      const originalIsConnected = testSetup.socket.isConnected
-      testSetup.socket.isConnected = () => {
-        isConnectedCallCount++
-        return isConnectedCallCount <= 1 // First call returns true, subsequent false
-      }
+      testSetup.client.socketAdapter.getSocket().pendingHeartbeatRef = 'test-ref'
 
       // Mock reconnectTimer
-      const scheduleTimeoutSpy = vi.spyOn(testSetup.socket.reconnectTimer!, 'scheduleTimeout')
+      const scheduleTimeoutSpy = vi.spyOn(testSetup.client.reconnectTimer!, 'scheduleTimeout')
 
       // Trigger heartbeat timeout
-      await testSetup.socket.sendHeartbeat()
+      await testSetup.client.sendHeartbeat()
 
-      // Wait for fallback timeout
-      await new Promise((resolve) => setTimeout(resolve, 150))
+      await testSetup.socketClosed()
 
       // Verify reconnection was scheduled
-      expect(scheduleTimeoutSpy).toHaveBeenCalled()
-
-      // Restore original method
-      testSetup.socket.isConnected = originalIsConnected
+      await vi.waitFor(() => expect(scheduleTimeoutSpy).toHaveBeenCalled())
     })
   })
 
@@ -132,8 +137,8 @@ describe('Additional Coverage Tests', () => {
       // @ts-ignore
       delete global.fetch
 
-      const socket = new RealtimeClient(testSetup.url, {
-        params: { apikey: '123456789' },
+      const socket = new RealtimeClient(testSetup.realtimeUrl, {
+        params: { apikey: DEFAULT_API_KEY },
       })
 
       // Access the _resolveFetch method to test native fetch usage
@@ -150,8 +155,8 @@ describe('Additional Coverage Tests', () => {
       // Verify fetch exists (Node 20+ requirement)
       expect(typeof global.fetch).toBe('function')
 
-      const socket = new RealtimeClient(testSetup.url, {
-        params: { apikey: '123456789' },
+      const socket = new RealtimeClient(testSetup.realtimeUrl, {
+        params: { apikey: DEFAULT_API_KEY },
       })
 
       const resolvedFetch = socket._resolveFetch()
@@ -163,8 +168,8 @@ describe('Additional Coverage Tests', () => {
       const mockGlobalFetch = vi.fn().mockResolvedValue({ ok: true })
       global.fetch = mockGlobalFetch
 
-      const socket = new RealtimeClient(testSetup.url, {
-        params: { apikey: '123456789' },
+      const socket = new RealtimeClient(testSetup.realtimeUrl, {
+        params: { apikey: DEFAULT_API_KEY },
       })
 
       // The fetch property should be a function that wraps global fetch
@@ -188,7 +193,7 @@ describe('Additional Coverage Tests', () => {
       const mockCustomFetch = vi.fn().mockResolvedValue({ ok: true })
       global.fetch = mockGlobalFetch
 
-      const socket = new RealtimeClient(testSetup.url, {
+      const socket = new RealtimeClient(testSetup.realtimeUrl, {
         params: { apikey: '123456789' },
         fetch: mockCustomFetch,
       })
@@ -212,92 +217,40 @@ describe('Additional Coverage Tests', () => {
     })
   })
 
-  describe('_leaveOpenTopic', () => {
-    test('should leave duplicate open topic', () => {
-      const topic = 'realtime:test-topic'
-      const channel = testSetup.socket.channel('test-topic')
-
-      // Mock channel as joined
-      channel._isJoined = () => true
-      channel._isJoining = () => false
-
-      const unsubscribeSpy = vi.spyOn(channel, 'unsubscribe')
-      const logSpy = vi.spyOn(testSetup.socket, 'log')
-
-      testSetup.socket._leaveOpenTopic(topic)
-
-      expect(logSpy).toHaveBeenCalledWith('transport', `leaving duplicate topic "${topic}"`)
-      expect(unsubscribeSpy).toHaveBeenCalled()
-    })
-
-    test('should leave duplicate joining topic', () => {
-      const topic = 'realtime:test-topic'
-      const channel = testSetup.socket.channel('test-topic')
-
-      // Mock channel as joining
-      channel._isJoined = () => false
-      channel._isJoining = () => true
-
-      const unsubscribeSpy = vi.spyOn(channel, 'unsubscribe')
-      const logSpy = vi.spyOn(testSetup.socket, 'log')
-
-      testSetup.socket._leaveOpenTopic(topic)
-
-      expect(logSpy).toHaveBeenCalledWith('transport', `leaving duplicate topic "${topic}"`)
-      expect(unsubscribeSpy).toHaveBeenCalled()
-    })
-
-    test('should not leave topic that is not joined or joining', () => {
-      const topic = 'realtime:test-topic'
-      const channel = testSetup.socket.channel('test-topic')
-
-      // Mock channel as neither joined nor joining
-      channel._isJoined = () => false
-      channel._isJoining = () => false
-
-      const unsubscribeSpy = vi.spyOn(channel, 'unsubscribe')
-      const logSpy = vi.spyOn(testSetup.socket, 'log')
-
-      testSetup.socket._leaveOpenTopic(topic)
-
-      expect(logSpy).not.toHaveBeenCalled()
-      expect(unsubscribeSpy).not.toHaveBeenCalled()
-    })
-  })
-
   describe('message handling with heartbeat reference', () => {
     test('should clear pending heartbeat reference on matching message', () => {
-      testSetup.socket.pendingHeartbeatRef = 'test-ref-123'
+      testSetup.client.socketAdapter.getSocket().pendingHeartbeatRef = 'test-ref-123'
 
       const message = {
         data: JSON.stringify([null, 'test-ref-123', 'phoenix', 'phx_reply', { status: 'ok' }]),
       }
 
-      ;(testSetup.socket as any)._onConnMessage(message)
+      // @ts-ignore simplified typing
+      testSetup.client.socketAdapter.getSocket().onConnMessage(message)
 
-      expect(testSetup.socket.pendingHeartbeatRef).toBe(null)
+      expect(testSetup.client.pendingHeartbeatRef).toBe(null)
     })
 
     test('should not clear pending heartbeat reference on non-matching message', () => {
-      testSetup.socket.pendingHeartbeatRef = 'test-ref-123'
+      testSetup.client.socketAdapter.getSocket().pendingHeartbeatRef = 'test-ref-123'
 
       const message = {
         data: JSON.stringify([null, 'different-ref', 'phoenix', 'phx_reply', { status: 'ok' }]),
       }
 
-      ;(testSetup.socket as any)._onConnMessage(message)
+      // @ts-ignore simplified typing
+      testSetup.client.socketAdapter.getSocket().onConnMessage(message)
 
-      expect(testSetup.socket.pendingHeartbeatRef).toBe('test-ref-123')
+      expect(testSetup.client.pendingHeartbeatRef).toBe('test-ref-123')
     })
 
     test('should handle message without ref', () => {
-      const logSpy = vi.spyOn(testSetup.socket, 'log')
-
       const message = {
         data: JSON.stringify([null, null, 'test-topic', 'test-event', { data: 'test' }]),
       }
 
-      ;(testSetup.socket as any)._onConnMessage(message)
+      // @ts-ignore simplified typing
+      testSetup.client.socketAdapter.getSocket().onConnMessage(message)
 
       expect(logSpy).toHaveBeenCalledWith('receive', 'test-topic test-event', {
         data: 'test',
@@ -306,139 +259,88 @@ describe('Additional Coverage Tests', () => {
   })
 
   describe('worker error handling', () => {
-    test('should handle worker errors', async () => {
-      // Mock Worker for this test
-      const mockWorker = {
+    const originalWorker = global.Worker
+    const originalCreateObjectURL = global.URL.createObjectURL
+
+    let mockWorker: any // to simplify typing
+
+    beforeEach(() => {
+      mockWorker = {
         postMessage: vi.fn(),
         terminate: vi.fn(),
         onerror: null as any,
         onmessage: null as any,
       }
+    })
 
+    test('should handle worker errors', async () => {
       // Mock window.Worker
-      const originalWorker = global.Worker
       global.Worker = vi.fn(() => mockWorker) as any
-
       // Mock URL.createObjectURL
-      const originalCreateObjectURL = global.URL.createObjectURL
       global.URL.createObjectURL = vi.fn(() => 'blob:mock-url')
 
-      try {
-        const workerClient = new RealtimeClient(testSetup.url, {
-          worker: true,
-          params: { apikey: '123456789' },
-        })
+      const workerClient = new RealtimeClient(testSetup.realtimeUrl, {
+        worker: true,
+        logger: logSpy,
+        params: { apikey: DEFAULT_API_KEY },
+      })
 
-        const logSpy = vi.spyOn(workerClient, 'log')
+      workerClient.connect()
+      await testSetup.socketConnected()
 
-        // Trigger worker creation
-        ;(workerClient as any)._onConnOpen()
+      expect(logSpy).toHaveBeenCalledWith('worker', 'starting default worker', undefined)
 
-        // Simulate worker error
-        const errorEvent = new ErrorEvent('error', {
-          message: 'Worker script error',
-          error: new Error('Worker script error'),
-        })
+      // Simulate worker error
+      const errorEvent = new ErrorEvent('error', {
+        message: 'Worker script error',
+        error: new Error('Worker script error'),
+      })
 
-        mockWorker.onerror?.(errorEvent)
+      mockWorker.onerror?.(errorEvent)
 
-        expect(logSpy).toHaveBeenCalledWith('worker', 'worker error', 'Worker script error')
-        expect(mockWorker.terminate).toHaveBeenCalled()
-      } finally {
-        // Restore original functions
-        global.Worker = originalWorker
-        global.URL.createObjectURL = originalCreateObjectURL
-      }
+      expect(logSpy).toHaveBeenCalledWith('worker', 'worker error', 'Worker script error')
+      expect(mockWorker.terminate).toHaveBeenCalled()
+      expect(workerClient.connectionState()).not.toBe(SOCKET_STATES.open) // disconnecting on error
+
+      // Restore original functions
+      global.Worker = originalWorker
+      global.URL.createObjectURL = originalCreateObjectURL
     })
 
     test('should handle worker keepAlive messages', async () => {
-      // Mock Worker for this test
-      const mockWorker = {
-        postMessage: vi.fn(),
-        terminate: vi.fn(),
-        onerror: null as any,
-        onmessage: null as any,
-      }
-
       // Mock window.Worker
-      const originalWorker = global.Worker
       global.Worker = vi.fn(() => mockWorker) as any
-
       // Mock URL.createObjectURL
-      const originalCreateObjectURL = global.URL.createObjectURL
       global.URL.createObjectURL = vi.fn(() => 'blob:mock-url')
 
-      try {
-        const workerClient = new RealtimeClient(testSetup.url, {
-          worker: true,
-          params: { apikey: '123456789' },
-        })
-
-        const sendHeartbeatSpy = vi.spyOn(workerClient, 'sendHeartbeat')
-
-        // Trigger worker creation
-        ;(workerClient as any)._onConnOpen()
-
-        // Simulate worker keepAlive message
-        const messageEvent = {
-          data: { event: 'keepAlive' },
-        }
-
-        mockWorker.onmessage?.(messageEvent as MessageEvent)
-
-        expect(sendHeartbeatSpy).toHaveBeenCalled()
-      } finally {
-        // Restore original functions
-        global.Worker = originalWorker
-        global.URL.createObjectURL = originalCreateObjectURL
-      }
-    })
-  })
-
-  describe('_appendParams edge cases', () => {
-    test('should return URL unchanged when params is empty', () => {
-      const url = 'ws://example.com/socket'
-      const result = (testSetup.socket as any)._appendParams(url, {})
-      expect(result).toBe(url)
-    })
-
-    test('should use & when URL already has query params', () => {
-      const url = 'ws://example.com/socket?existing=param'
-      const result = (testSetup.socket as any)._appendParams(url, {
-        new: 'param',
+      const workerClient = new RealtimeClient(testSetup.realtimeUrl, {
+        worker: true,
+        params: { apikey: DEFAULT_API_KEY },
       })
-      expect(result).toBe('ws://example.com/socket?existing=param&new=param')
-    })
-  })
 
-  describe('_setupConnectionHandlers edge case', () => {
-    test('should return early when no connection exists', () => {
-      testSetup.socket.conn = null
+      const sendHeartbeatSpy = vi.spyOn(workerClient, 'sendHeartbeat')
 
-      // Should not throw when called with no connection
-      expect(() => {
-        ;(testSetup.socket as any)._setupConnectionHandlers()
-      }).not.toThrow()
-    })
-  })
+      workerClient.connect()
+      await testSetup.socketConnected()
 
-  describe('_startHeartbeat with existing timer', () => {
-    test('should clear existing heartbeat timer before starting new one', () => {
-      // Set up existing timer
-      testSetup.socket.heartbeatTimer = setInterval(() => {}, 1000)
-      const existingTimer = testSetup.socket.heartbeatTimer
+      // Simulate worker keepAlive message
+      const messageEvent = {
+        data: { event: 'keepAlive' },
+      }
 
-      const clearIntervalSpy = vi.spyOn(global, 'clearInterval')
+      mockWorker.onmessage?.(messageEvent as MessageEvent)
 
-      ;(testSetup.socket as any)._startHeartbeat()
+      expect(sendHeartbeatSpy).toHaveBeenCalled()
 
-      expect(clearIntervalSpy).toHaveBeenCalledWith(existingTimer)
+      // Restore original functions
+      global.Worker = originalWorker
+      global.URL.createObjectURL = originalCreateObjectURL
     })
   })
 
   describe('reconnectAfterMs fallback', () => {
     test('should use default fallback when tries exceed available intervals', () => {
-      const socket = new RealtimeClient(testSetup.url, {
+      const socket = new RealtimeClient(testSetup.realtimeUrl, {
         params: { apikey: '123456789' },
       })
 
@@ -450,13 +352,12 @@ describe('Additional Coverage Tests', () => {
 
   describe('message ref string handling', () => {
     test('should handle message with ref as string', () => {
-      const logSpy = vi.spyOn(testSetup.socket, 'log')
-
       const message = {
         data: JSON.stringify([null, '123', 'test-topic', 'test-event', { data: 'test' }]),
       }
 
-      ;(testSetup.socket as any)._onConnMessage(message)
+      // @ts-ignore
+      testSetup.client.socketAdapter.getSocket().onConnMessage(message)
 
       expect(logSpy).toHaveBeenCalledWith('receive', 'test-topic test-event (123)', {
         data: 'test',
