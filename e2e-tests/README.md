@@ -142,7 +142,7 @@ All services are configured in `/e2e-tests/supabase/config.toml`:
 - **Storage**: File size limits, S3 protocol, image transformation
 - **PostgREST**: Both `public` and `personal` schemas
 - **Realtime**: Enabled for realtime-js tests
-- **Edge Functions**: 6 test functions (hello, echo, status, cors-*)
+- **Edge Functions**: 6 test functions (hello, echo, status, cors-\*)
 - **Inbucket**: Email testing
 
 ### Database Schema
@@ -153,6 +153,7 @@ Migrations are consolidated from all packages:
 2. **00000000000002_storage_rls_policies.sql**: Storage RLS policies
 
 Seed data includes:
+
 - PostgREST: users, channels, messages, products, categories
 - Storage: auth.users, buckets, objects
 - Test fixtures for cross-package scenarios
@@ -177,9 +178,7 @@ describe('Storage Integration', () => {
   })
 
   test('should upload file', async () => {
-    const { data, error } = await client.storage
-      .from('bucket2')
-      .upload('test.txt', 'test content')
+    const { data, error } = await client.storage.from('bucket2').upload('test.txt', 'test content')
 
     expect(error).toBeNull()
     expect(data).toBeDefined()
@@ -218,10 +217,7 @@ const anonClient = createTestClient()
 const adminClient = createServiceRoleClient()
 
 // Authenticated client
-const authClient = await createAuthenticatedClient(
-  'test-user1@supabase.io',
-  'password123'
-)
+const authClient = await createAuthenticatedClient('test-user1@supabase.io', 'password123')
 
 // Cleanup
 await cleanupClient(authClient)
@@ -293,6 +289,7 @@ open http://127.0.0.1:54324
 ### Port Conflicts
 
 If ports are already in use:
+
 ```bash
 # Stop Supabase
 npx supabase stop
@@ -347,6 +344,7 @@ echo $SUPABASE_SERVICE_ROLE_KEY
 ## Migration Status
 
 ### Phase 1: Infrastructure Setup ✅
+
 - [x] Directory structure created
 - [x] Unified Supabase config
 - [x] Consolidated migrations
@@ -356,6 +354,7 @@ echo $SUPABASE_SERVICE_ROLE_KEY
 - [x] Shared helpers and fixtures
 
 ### Phase 2: Core Tests Migration (In Progress)
+
 - [ ] storage-js tests
 - [ ] postgrest-js standard tests
 - [ ] functions-js tests
@@ -363,15 +362,18 @@ echo $SUPABASE_SERVICE_ROLE_KEY
 - [ ] supabase-js core tests
 
 ### Phase 3: Edge Cases (Planned)
+
 - [ ] auth-js edge cases (Docker)
 - [ ] postgrest-js v12 compatibility (Docker)
 
 ### Phase 4: CI/CD Integration (Planned)
+
 - [ ] Add e2e test job to GitHub Actions
 - [ ] Parallel validation with old tests
 - [ ] Coverage comparison
 
 ### Phase 5: Cleanup (Planned)
+
 - [ ] Remove duplicate infrastructure
 - [ ] Update documentation
 - [ ] Archive old test infrastructure
