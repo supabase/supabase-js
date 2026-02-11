@@ -1,0 +1,259 @@
+# Unified E2E Integration Tests Configuration
+# Consolidates configurations from auth-js, storage-js, postgrest-js, and supabase-js
+# For detailed configuration reference documentation, visit:
+# https://supabase.com/docs/guides/local-development/cli/config
+
+project_id = "e2e-tests"
+
+[api]
+enabled = true
+# Port to use for the API URL.
+port = 54321
+# Schemas to expose in your API. Includes "personal" schema for postgrest-js tests.
+schemas = ["public", "personal", "graphql_public"]
+# Extra schemas to add to the search_path of every request.
+extra_search_path = ["public", "extensions"]
+# The maximum number of rows returns from a view, table, or stored procedure.
+max_rows = 1000
+
+[api.tls]
+# Enable HTTPS endpoints locally using a self-signed certificate.
+enabled = false
+
+[db]
+# Port to use for the local database URL.
+port = 54322
+# Port used by db diff command to initialize the shadow database.
+shadow_port = 54320
+# The database major version to use.
+major_version = 17
+
+[db.pooler]
+enabled = false
+port = 54329
+pool_mode = "transaction"
+default_pool_size = 20
+max_client_conn = 100
+
+[db.migrations]
+# If disabled, migrations will be skipped during a db push or reset.
+enabled = true
+schema_paths = []
+
+[db.seed]
+# If enabled, seeds the database after migrations during a db reset.
+enabled = true
+sql_paths = ["./seed.sql"]
+
+[db.network_restrictions]
+enabled = false
+allowed_cidrs = ["0.0.0.0/0"]
+allowed_cidrs_v6 = ["::/0"]
+
+[realtime]
+# Enable realtime for realtime-js and cross-package tests
+enabled = true
+# Bind realtime via either IPv4 or IPv6. (default: IPv4)
+# ip_version = "IPv6"
+
+[studio]
+# Disable studio by default, can be enabled for debugging
+enabled = false
+
+# Email testing server for auth-js tests
+[inbucket]
+enabled = true
+# Port to use for the email testing server web interface.
+port = 54324
+
+[storage]
+# Enable storage for storage-js and cross-package tests
+enabled = true
+# The maximum file size allowed (e.g. "5MB", "500KB").
+file_size_limit = "50MiB"
+
+# Allow connections via S3 compatible clients
+[storage.s3_protocol]
+enabled = true
+
+[storage.image_transformation]
+enabled = true
+
+[storage.analytics]
+enabled = false
+max_namespaces = 5
+max_tables = 10
+max_catalogs = 2
+
+[storage.vector]
+enabled = false
+max_buckets = 10
+max_indexes = 5
+
+[auth]
+# Enable auth with comprehensive configuration from auth-js
+enabled = true
+# The base URL of your website. Used as an allow-list for redirects and for constructing URLs used in emails.
+site_url = "http://127.0.0.1:3000"
+# A list of *exact* URLs that auth providers are permitted to redirect to post authentication.
+additional_redirect_urls = ["https://127.0.0.1:3000"]
+# How long tokens are valid for, in seconds. Defaults to 3600 (1 hour), maximum 604,800 (1 week).
+jwt_expiry = 3600
+# JWT secret for signing tokens. Must match the secret used to sign hardcoded service_role and anon keys.
+jwt_secret = "super-secret-jwt-token-with-at-least-32-characters-long"
+# Path to JWT signing key. DO NOT commit your signing keys file to git.
+# Note: signing_keys.json is generated at test runtime (see scripts/generate-signing-keys.js).
+signing_keys_path = "./signing_keys.json"
+# If disabled, the refresh token will never expire.
+enable_refresh_token_rotation = true
+# Allows refresh tokens to be reused after expiry, up to the specified interval in seconds.
+refresh_token_reuse_interval = 10
+# Allow/disallow new user signups to your project.
+enable_signup = true
+# Allow/disallow anonymous sign-ins to your project.
+enable_anonymous_sign_ins = true
+# Allow/disallow testing manual linking of accounts
+enable_manual_linking = false
+# Passwords shorter than this value will be rejected as weak. Minimum 6, recommended 8 or more.
+minimum_password_length = 6
+password_requirements = ""
+
+[auth.rate_limit]
+# Higher rate limits for testing (from auth-js)
+email_sent = 100
+sms_sent = 100
+anonymous_users = 100
+token_refresh = 300
+sign_in_sign_ups = 100
+token_verifications = 100
+web3 = 30
+
+[auth.email]
+# Allow/disallow new user signups via email to your project.
+enable_signup = true
+# If enabled, a user will be required to confirm any email change on both the old, and new email addresses.
+double_confirm_changes = true
+# If enabled, users need to confirm their email address before signing in.
+enable_confirmations = false
+# If enabled, users will need to reauthenticate or have logged in recently to change their password.
+secure_password_change = false
+# Controls the minimum amount of time that must pass before sending another signup confirmation or password reset email.
+max_frequency = "1s"
+# Number of characters used in the email OTP.
+otp_length = 6
+# Number of seconds before the email OTP expires (defaults to 1 hour).
+otp_expiry = 3600
+
+[auth.sms]
+# Allow/disallow new user signups via SMS to your project.
+enable_signup = true
+# If enabled, users need to confirm their phone number before signing in.
+enable_confirmations = false
+# Template for sending OTP to users
+template = "Your code is {{ .Code }}"
+# Controls the minimum amount of time that must pass before sending another sms otp.
+max_frequency = "1s"
+
+# Use pre-defined map of phone number to OTP for testing (from auth-js).
+[auth.sms.test_otp]
+"1234567890" = "123456"
+
+[auth.sms.twilio]
+enabled = false
+account_sid = ""
+message_service_sid = ""
+auth_token = "env(SUPABASE_AUTH_SMS_TWILIO_AUTH_TOKEN)"
+
+# Multi-factor-authentication
+[auth.mfa]
+max_enrolled_factors = 10
+
+[auth.mfa.totp]
+enroll_enabled = true
+verify_enabled = true
+
+[auth.mfa.phone]
+enroll_enabled = true
+verify_enabled = true
+otp_length = 6
+template = "Your code is {{ .Code }}"
+max_frequency = "1s"
+
+[auth.mfa.web_authn]
+enroll_enabled = true
+verify_enabled = true
+
+# External OAuth provider for testing (from auth-js)
+[auth.external.google]
+enabled = true
+client_id = "53566906701-bmhc1ndue7hild39575gkpimhs06b7ds.apps.googleusercontent.com"
+secret = "env(SUPABASE_AUTH_EXTERNAL_GOOGLE_SECRET)"
+redirect_uri = ""
+skip_nonce_check = true
+
+[auth.web3.solana]
+enabled = false
+
+[auth.third_party.firebase]
+enabled = false
+
+[auth.third_party.auth0]
+enabled = false
+
+[auth.third_party.aws_cognito]
+enabled = false
+
+[auth.third_party.clerk]
+enabled = false
+
+# OAuth server configuration (from auth-js)
+[auth.oauth_server]
+enabled = true
+authorization_url_path = "/oauth/consent"
+allow_dynamic_registration = true
+
+[edge_runtime]
+# Enable Edge Runtime for functions-js and supabase-js tests
+enabled = true
+# Supported request policies: `oneshot`, `per_worker`.
+policy = "per_worker"
+# Port to attach the Chrome inspector for debugging edge functions.
+inspector_port = 8083
+# The Deno major version to use.
+deno_version = 2
+
+[analytics]
+enabled = false
+
+# Experimental features may be deprecated any time
+[experimental]
+orioledb_version = ""
+s3_host = "env(S3_HOST)"
+s3_region = "env(S3_REGION)"
+s3_access_key = "env(S3_ACCESS_KEY)"
+s3_secret_key = "env(S3_SECRET_KEY)"
+
+# Edge Functions Configuration (from supabase-js)
+[functions.hello]
+enabled = true
+verify_jwt = false
+
+[functions.echo]
+enabled = true
+verify_jwt = false
+
+[functions.status]
+enabled = true
+verify_jwt = false
+
+[functions.cors-validation]
+enabled = true
+verify_jwt = false
+
+[functions.cors-http-methods]
+enabled = true
+verify_jwt = false
+
+[functions.cors-errors]
+enabled = true
+verify_jwt = false

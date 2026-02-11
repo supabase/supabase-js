@@ -1,0 +1,28 @@
+# Test output
+coverage/
+*.log
+
+# Build output
+dist/
+
+# Supabase CLI
+.temp/
+.branches/
+
+# Node modules (if any local testing dependencies)
+node_modules/
+
+# Environment files
+.env
+.env.local
+
+# Jest cache
+.jest/
+
+# IDE
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db

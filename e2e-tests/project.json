@@ -1,0 +1,163 @@
+{
+  "name": "e2e-tests",
+  "$schema": "../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "e2e-tests",
+  "projectType": "application",
+  "implicitDependencies": [
+    "@supabase/auth-js",
+    "@supabase/storage-js",
+    "@supabase/postgrest-js",
+    "@supabase/functions-js",
+    "@supabase/realtime-js",
+    "@supabase/supabase-js"
+  ],
+  "targets": {
+    "test:e2e:setup": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "bash scripts/setup-main.sh",
+        "cwd": "{projectRoot}"
+      },
+      "cache": false,
+      "description": "Setup main E2E test infrastructure (Supabase CLI with all services)"
+    },
+    "test:e2e:cleanup": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "bash scripts/cleanup-all.sh",
+        "cwd": "{projectRoot}"
+      },
+      "cache": false,
+      "description": "Cleanup E2E test infrastructure"
+    },
+    "test:e2e:auth:standard": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "echo 'Auth standard tests coming in Phase 2'",
+        "cwd": "{projectRoot}"
+      },
+      "dependsOn": ["^build", "test:e2e:setup"],
+      "inputs": ["testing", "^production"],
+      "outputs": ["{projectRoot}/coverage/auth"],
+      "cache": true,
+      "description": "Run auth-js standard integration tests (against Supabase CLI)"
+    },
+    "test:e2e:auth:edge": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "echo 'Auth edge case tests coming in Phase 3'",
+        "cwd": "{projectRoot}"
+      },
+      "dependsOn": ["^build"],
+      "inputs": ["testing", "^production"],
+      "outputs": ["{projectRoot}/coverage/auth-edge"],
+      "cache": true,
+      "description": "Run auth-js edge case tests (against Docker multi-GoTrue setup)"
+    },
+    "test:e2e:storage": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "echo 'Storage tests coming in Phase 2'",
+        "cwd": "{projectRoot}"
+      },
+      "dependsOn": ["^build", "test:e2e:setup"],
+      "inputs": ["testing", "^production"],
+      "outputs": ["{projectRoot}/coverage/storage"],
+      "cache": true,
+      "description": "Run storage-js integration tests"
+    },
+    "test:e2e:postgrest:standard": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "echo 'PostgREST standard tests coming in Phase 2'",
+        "cwd": "{projectRoot}"
+      },
+      "dependsOn": ["^build", "test:e2e:setup"],
+      "inputs": ["testing", "^production"],
+      "outputs": ["{projectRoot}/coverage/postgrest"],
+      "cache": true,
+      "description": "Run postgrest-js standard integration tests"
+    },
+    "test:e2e:postgrest:v12": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "echo 'PostgREST v12 tests coming in Phase 3'",
+        "cwd": "{projectRoot}"
+      },
+      "dependsOn": ["^build"],
+      "inputs": ["testing", "^production"],
+      "outputs": ["{projectRoot}/coverage/postgrest-v12"],
+      "cache": true,
+      "description": "Run postgrest-js v12 compatibility tests (against Docker)"
+    },
+    "test:e2e:functions": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "echo 'Functions tests coming in Phase 2'",
+        "cwd": "{projectRoot}"
+      },
+      "dependsOn": ["^build", "test:e2e:setup"],
+      "inputs": ["testing", "^production"],
+      "outputs": ["{projectRoot}/coverage/functions"],
+      "cache": true,
+      "description": "Run functions-js integration tests (Edge Functions)"
+    },
+    "test:e2e:supabase": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "echo 'Supabase-js integration tests coming in Phase 2'",
+        "cwd": "{projectRoot}"
+      },
+      "dependsOn": ["^build", "test:e2e:setup"],
+      "inputs": ["testing", "^production"],
+      "outputs": ["{projectRoot}/coverage/supabase"],
+      "cache": true,
+      "description": "Run supabase-js core integration tests"
+    },
+    "test:e2e:all:standard": {
+      "executor": "nx:run-commands",
+      "options": {
+        "commands": [
+          "nx test:e2e:setup e2e-tests",
+          "nx test:e2e:auth:standard e2e-tests",
+          "nx test:e2e:storage e2e-tests",
+          "nx test:e2e:postgrest:standard e2e-tests",
+          "nx test:e2e:functions e2e-tests",
+          "nx test:e2e:supabase e2e-tests",
+          "nx test:e2e:cleanup e2e-tests"
+        ],
+        "parallel": false
+      },
+      "dependsOn": ["^build"],
+      "cache": false,
+      "description": "Run all standard E2E tests (Supabase CLI infrastructure)"
+    },
+    "test:e2e:all:edge": {
+      "executor": "nx:run-commands",
+      "options": {
+        "commands": [
+          "nx test:e2e:auth:edge e2e-tests",
+          "nx test:e2e:postgrest:v12 e2e-tests"
+        ],
+        "parallel": false
+      },
+      "dependsOn": ["^build"],
+      "cache": false,
+      "description": "Run all edge case tests (Docker infrastructure)"
+    },
+    "test:e2e:all": {
+      "executor": "nx:run-commands",
+      "options": {
+        "commands": [
+          "nx test:e2e:all:standard e2e-tests",
+          "nx test:e2e:all:edge e2e-tests"
+        ],
+        "parallel": false
+      },
+      "dependsOn": ["^build"],
+      "cache": false,
+      "description": "Run ALL E2E tests (standard + edge cases)"
+    }
+  },
+  "tags": ["type:e2e", "scope:integration"]
+}

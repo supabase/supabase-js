@@ -1,0 +1,24 @@
+{
+  "extends": "../tsconfig.base.json",
+  "compilerOptions": {
+    "module": "CommonJS",
+    "moduleResolution": "Node",
+    "outDir": "./dist",
+    "rootDir": ".",
+    "composite": false,
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./*"],
+      "@fixtures/*": ["./fixtures/*"],
+      "@helpers/*": ["./helpers/*"]
+    }
+  },
+  "include": [
+    "tests/**/*.ts",
+    "fixtures/**/*.ts",
+    "helpers/**/*.ts",
+    "scripts/**/*.ts",
+    "jest.config.ts"
+  ],
+  "exclude": ["node_modules", "dist", "coverage"]
+}
