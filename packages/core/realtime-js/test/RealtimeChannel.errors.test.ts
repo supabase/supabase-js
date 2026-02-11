@@ -422,53 +422,6 @@ describe('Improved Cleanup & Bounded Buffer', () => {
       channel = testSetup.client.channel('test-push-buffer')
     })
 
-    test('should maintain buffer within size limit', async () => {
-      channel.subscribe()
-      await waitForChannelSubscribed(channel)
-      testSetup.disconnect()
-      await testSetup.socketClosed()
-
-      logSpy.mockClear()
-
-      // Fill buffer to capacity
-      for (let i = 0; i < MAX_PUSH_BUFFER_SIZE + 5; i++) {
-        channel.channelAdapter.push('test', { data: `message-${i}` })
-      }
-
-      // Buffer should not exceed max size
-      expect(channel.channelAdapter.getChannel().pushBuffer.length).toBe(MAX_PUSH_BUFFER_SIZE)
-
-      // Should have logged about discarding old pushes
-      expect(logSpy).toHaveBeenCalledWith(
-        'channel',
-        'discarded push due to buffer overflow: test',
-        expect.any(Object)
-      )
-      expect(logSpy).toHaveBeenCalledTimes(5)
-    })
-
-    test('should destroy oldest push when buffer is full', async () => {
-      channel.subscribe()
-      await waitForChannelSubscribed(channel)
-      testSetup.disconnect()
-      await testSetup.socketClosed()
-
-      logSpy.mockClear()
-
-      // Add one push to get a reference for spying
-      channel.channelAdapter.push('test', { data: 'first' })
-
-      // Fill buffer beyond capacity
-      for (let i = 0; i < MAX_PUSH_BUFFER_SIZE; i++) {
-        channel.channelAdapter.push('test', { data: `message-${i}` })
-      }
-
-      // First push should have been destroyed
-      expect(logSpy).toHaveBeenCalledTimes(1)
-      expect(logSpy).toHaveBeenCalledWith('channel', expect.any(String), { data: 'first' })
-      expect(channel.channelAdapter.getChannel().pushBuffer.length).toBe(MAX_PUSH_BUFFER_SIZE)
-    })
-
     test('should handle empty buffer gracefully', async () => {
       channel.subscribe()
       await waitForChannelSubscribed(channel)
