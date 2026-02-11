@@ -13,9 +13,7 @@ export default async function globalSetup() {
   const missingEnvVars = requiredEnvVars.filter((key) => !process.env[key])
 
   if (missingEnvVars.length > 0) {
-    console.warn(
-      `⚠️  Warning: Missing environment variables: ${missingEnvVars.join(', ')}`
-    )
+    console.warn(`⚠️  Warning: Missing environment variables: ${missingEnvVars.join(', ')}`)
     console.warn('   Run: source /tmp/e2e-supabase-keys.env')
   }
 }

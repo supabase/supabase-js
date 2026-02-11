@@ -135,10 +135,7 @@
     "test:e2e:all:edge": {
       "executor": "nx:run-commands",
       "options": {
-        "commands": [
-          "nx test:e2e:auth:edge e2e-tests",
-          "nx test:e2e:postgrest:v12 e2e-tests"
-        ],
+        "commands": ["nx test:e2e:auth:edge e2e-tests", "nx test:e2e:postgrest:v12 e2e-tests"],
         "parallel": false
       },
       "dependsOn": ["^build"],
@@ -148,10 +145,7 @@
     "test:e2e:all": {
       "executor": "nx:run-commands",
       "options": {
-        "commands": [
-          "nx test:e2e:all:standard e2e-tests",
-          "nx test:e2e:all:edge e2e-tests"
-        ],
+        "commands": ["nx test:e2e:all:standard e2e-tests", "nx test:e2e:all:edge e2e-tests"],
         "parallel": false
       },
       "dependsOn": ["^build"],
