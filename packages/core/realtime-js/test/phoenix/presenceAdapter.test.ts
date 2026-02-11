@@ -1,7 +1,7 @@
 import { describe, test, assert } from 'vitest'
-import { State } from 'phoenix'
 import type { RealtimePresenceState } from '../../src/RealtimePresence'
 import PresenceAdapter from '../../src/phoenix/presenceAdapter'
+import { PresenceStates } from '../../src/phoenix/types'
 
 describe('transformState', () => {
   test.each([
@@ -89,7 +89,7 @@ describe('transformState', () => {
         abc123: [{ presence_ref: '2', user_id: 1, details: { mood: 'happy' } }],
       },
     },
-  ] as { name: string; curState: State; expectedState: RealtimePresenceState }[])(
+  ] as { name: string; curState: PresenceStates; expectedState: RealtimePresenceState }[])(
     'transforms $name state',
     ({ curState, expectedState }) => {
       assert.deepEqual(PresenceAdapter.transformState(curState), expectedState)

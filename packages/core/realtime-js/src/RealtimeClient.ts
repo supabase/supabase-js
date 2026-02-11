@@ -595,6 +595,7 @@ export default class RealtimeClient {
 
   private _handleNodeJsRaceCondition() {
     if (this.socketAdapter.isConnected()) {
+      // hack: ensure onConnOpen is called
       this.socketAdapter.getSocket().onConnOpen()
     }
   }
