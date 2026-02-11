@@ -117,34 +117,24 @@ describe('channel', () => {
     expect(channel2).not.toBe(channel1)
   })
 
-  test('removes channel from list when unsubscribe succeeds with ok', async () => {
-    const channel = testSetup.client.channel('topic').subscribe()
+  test.each([
+    ['ok', 'ok', 0],
+    ['timeout', 'timed out', 0],
+    ['error', 'error', 1],
+  ])(
+    'channels length should be $2 after unsubscribe returns $1',
+    async (stub, status, expected) => {
+      const channel = testSetup.client.channel('topic').subscribe()
+      expect(testSetup.client.getChannels().length).toBe(1)
+      // force channel.trigger to call bindings with custom message
+      channel.channelAdapter.getChannel().onMessage = () => ({ status: stub })
 
-    expect(testSetup.client.getChannels().length).toBe(1)
+      const result = await testSetup.client.removeChannel(channel)
 
-    // Mock unsubscribe to return 'ok'
-    vi.spyOn(channel, 'unsubscribe').mockResolvedValue('ok')
-
-    await testSetup.client.removeChannel(channel)
-
-    // Channel should be removed from the list
-    expect(testSetup.client.getChannels().length).toBe(0)
-  })
-
-  test('does NOT remove channel from list when unsubscribe fails with error', async () => {
-    const channel = testSetup.client.channel('topic').subscribe()
-
-    expect(testSetup.client.getChannels().length).toBe(1)
-
-    // Mock unsubscribe to return 'error'
-    vi.spyOn(channel, 'unsubscribe').mockResolvedValue('error')
-
-    const result = await testSetup.client.removeChannel(channel)
-
-    // Channel should be removed from the list
-    expect(testSetup.client.getChannels().length).toBe(1)
-    expect(result).toBe('error')
-  })
+      expect(testSetup.client.getChannels().length).toBe(expected)
+      expect(result).toBe(status)
+    }
+  )
 })
 
 describe('leaveOpenTopic', () => {
