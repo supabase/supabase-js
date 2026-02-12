@@ -278,9 +278,34 @@ export default class GoTrueAdminApi {
   /**
    * Updates the user data. Changes are applied directly without confirmation flows.
    *
+   * @param uid The user's unique identifier
    * @param attributes The data you want to update.
    *
    * This function should only be called on a server. Never expose your `service_role` key in the browser.
+   *
+   * @remarks
+   * **Important:** This is a server-side operation and does **not** trigger client-side
+   * `onAuthStateChange` listeners. The admin API has no connection to client state.
+   *
+   * To sync changes to the client after calling this method:
+   * 1. On the client, call `supabase.auth.refreshSession()` to fetch the updated user data
+   * 2. This will trigger the `TOKEN_REFRESHED` event and notify all listeners
+   *
+   * @example
+   * ```typescript
+   * // Server-side (Edge Function)
+   * const { data, error } = await supabase.auth.admin.updateUserById(
+   *   userId,
+   *   { user_metadata: { preferences: { theme: 'dark' } } }
+   * )
+   *
+   * // Client-side (to sync the changes)
+   * const { data, error } = await supabase.auth.refreshSession()
+   * // onAuthStateChange listeners will now be notified with updated user
+   * ```
+   *
+   * @see {@link GoTrueClient.refreshSession} for syncing admin changes to the client
+   * @see {@link GoTrueClient.updateUser} for client-side user updates (triggers listeners automatically)
    */
   async updateUserById(uid: string, attributes: AdminUserAttributes): Promise<UserResponse> {
     validateUUID(uid)
