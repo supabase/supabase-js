@@ -257,3 +257,16 @@ verify_jwt = false
 [functions.cors-errors]
 enabled = true
 verify_jwt = false
+
+# Functions-js test functions
+[functions.mirror]
+enabled = true
+verify_jwt = false
+
+[functions.slow]
+enabled = true
+verify_jwt = false
+
+[functions.hijack]
+enabled = true
+verify_jwt = false
