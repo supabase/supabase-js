@@ -93,7 +93,7 @@
     "test:e2e:functions": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "echo 'Functions tests coming in Phase 2'",
+        "command": "jest tests/functions --runInBand --coverage",
         "cwd": "{projectRoot}"
       },
       "dependsOn": ["^build", "test:e2e:setup"],
