@@ -1,5 +1,4 @@
 import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest'
-
 import ChannelAdapter from '../../src/phoenix/channelAdapter'
 import { phxReply, setupRealtimeTest, TestSetup, waitForChannelSubscribed } from '../helpers/setup'
 import RealtimeChannel from '../../src/RealtimeChannel'
@@ -95,19 +94,32 @@ describe('push', () => {
 
 describe('updateJoinPayload', () => {
   test('changes joinPush payload function', () => {
-    const defaultPayload = channelAdapter.joinPush.payload()
-    expect(defaultPayload).toStrictEqual({
+    expect(channelAdapter.joinPush.payload()).toStrictEqual({
       config: {
         broadcast: { ack: false, self: false },
         presence: { key: '', enabled: false },
         private: false,
       },
     })
-
     const newPayload = { config: {} }
 
     channelAdapter.updateJoinPayload(newPayload)
 
     expect(channel.joinPush.payload()).toStrictEqual(newPayload)
+  })
+
+  test('preserves old data', () => {
+    const newPayload = { access_token: 'access_token' }
+
+    channelAdapter.updateJoinPayload(newPayload)
+
+    expect(channel.joinPush.payload()).toStrictEqual({
+      config: {
+        broadcast: { ack: false, self: false },
+        presence: { key: '', enabled: false },
+        private: false,
+      },
+      access_token: 'access_token',
+    })
   })
 })

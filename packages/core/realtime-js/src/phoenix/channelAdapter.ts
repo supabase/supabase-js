@@ -93,7 +93,8 @@ export default class ChannelAdapter {
   }
 
   updateJoinPayload(payload: Record<string, any>) {
-    this.channel.joinPush.payload = () => payload
+    const oldPayload = this.channel.joinPush.payload()
+    this.channel.joinPush.payload = () => ({ ...oldPayload, ...payload })
   }
 
   canPush() {
