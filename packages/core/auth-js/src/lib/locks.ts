@@ -120,69 +120,82 @@ export async function navigatorLock<R>(
   // .then() to avoid Firefox content script security errors where accessing .then()
   // on cross-context promises is forbidden.
   await Promise.resolve()
-  return await globalThis.navigator.locks.request(
-    name,
-    acquireTimeout === 0
-      ? {
-          mode: 'exclusive',
-          ifAvailable: true,
-        }
-      : {
-          mode: 'exclusive',
-          signal: abortController.signal,
-        },
-    async (lock) => {
-      if (lock) {
-        if (internals.debug) {
-          console.log('@supabase/gotrue-js: navigatorLock: acquired', name, lock.name)
-        }
 
-        try {
-          return await fn()
-        } finally {
-          if (internals.debug) {
-            console.log('@supabase/gotrue-js: navigatorLock: released', name, lock.name)
+  try {
+    return await globalThis.navigator.locks.request(
+      name,
+      acquireTimeout === 0
+        ? {
+            mode: 'exclusive',
+            ifAvailable: true,
           }
-        }
-      } else {
-        if (acquireTimeout === 0) {
+        : {
+            mode: 'exclusive',
+            signal: abortController.signal,
+          },
+      async (lock) => {
+        if (lock) {
           if (internals.debug) {
-            console.log('@supabase/gotrue-js: navigatorLock: not immediately available', name)
+            console.log('@supabase/gotrue-js: navigatorLock: acquired', name, lock.name)
           }
 
-          throw new NavigatorLockAcquireTimeoutError(
-            `Acquiring an exclusive Navigator LockManager lock "${name}" immediately failed`
-          )
-        } else {
-          if (internals.debug) {
-            try {
-              const result = await globalThis.navigator.locks.query()
-
-              console.log(
-                '@supabase/gotrue-js: Navigator LockManager state',
-                JSON.stringify(result, null, '  ')
-              )
-            } catch (e: any) {
-              console.warn(
-                '@supabase/gotrue-js: Error when querying Navigator LockManager state',
-                e
-              )
+          try {
+            return await fn()
+          } finally {
+            if (internals.debug) {
+              console.log('@supabase/gotrue-js: navigatorLock: released', name, lock.name)
             }
           }
+        } else {
+          if (acquireTimeout === 0) {
+            if (internals.debug) {
+              console.log('@supabase/gotrue-js: navigatorLock: not immediately available', name)
+            }
 
-          // Browser is not following the Navigator LockManager spec, it
-          // returned a null lock when we didn't use ifAvailable. So we can
-          // pretend the lock is acquired in the name of backward compatibility
-          // and user experience and just run the function.
-          console.warn(
-            '@supabase/gotrue-js: Navigator LockManager returned a null lock when using #request without ifAvailable set to true, it appears this browser is not following the LockManager spec https://developer.mozilla.org/en-US/docs/Web/API/LockManager/request'
-          )
+            throw new NavigatorLockAcquireTimeoutError(
+              `Acquiring an exclusive Navigator LockManager lock "${name}" immediately failed`
+            )
+          } else {
+            if (internals.debug) {
+              try {
+                const result = await globalThis.navigator.locks.query()
 
-          return await fn()
+                console.log(
+                  '@supabase/gotrue-js: Navigator LockManager state',
+                  JSON.stringify(result, null, '  ')
+                )
+              } catch (e: any) {
+                console.warn(
+                  '@supabase/gotrue-js: Error when querying Navigator LockManager state',
+                  e
+                )
+              }
+            }
+
+            // Browser is not following the Navigator LockManager spec, it
+            // returned a null lock when we didn't use ifAvailable. So we can
+            // pretend the lock is acquired in the name of backward compatibility
+            // and user experience and just run the function.
+            console.warn(
+              '@supabase/gotrue-js: Navigator LockManager returned a null lock when using #request without ifAvailable set to true, it appears this browser is not following the LockManager spec https://developer.mozilla.org/en-US/docs/Web/API/LockManager/request'
+            )
+
+            return await fn()
+          }
         }
       }
+    )
+  } catch (e: any) {
+    // When the AbortController times out, navigator.locks.request rejects with
+    // a DOMException named 'AbortError'. Convert this to NavigatorLockAcquireTimeoutError
+    // so callers can check error.isAcquireTimeout as documented.
+    if (e?.name === 'AbortError') {
+      throw new NavigatorLockAcquireTimeoutError(
+        `Acquiring an exclusive Navigator LockManager lock "${name}" timed out waiting ${acquireTimeout}ms`
+      )
     }
-  )
+    throw e
+  }
 }
 
 const PROCESS_LOCKS: { [name: string]: Promise<any> } = {}
@@ -227,31 +240,42 @@ export async function processLock<R>(
   })()
 
   const currentOperation = (async () => {
+    let timeoutId: ReturnType<typeof setTimeout> | null = null
+
     try {
       // Wait for either previous operation or timeout
-      await Promise.race(
-        [
-          previousOperationHandled,
-          acquireTimeout >= 0
-            ? new Promise((_, reject) => {
-                setTimeout(() => {
-                  console.warn(
-                    `@supabase/gotrue-js: Lock "${name}" acquisition timed out after ${acquireTimeout}ms. ` +
-                      'This may be caused by another operation holding the lock. ' +
-                      'Consider increasing lockAcquireTimeout or checking for stuck operations.'
-                  )
+      const timeoutPromise =
+        acquireTimeout >= 0
+          ? new Promise((_, reject) => {
+              timeoutId = setTimeout(() => {
+                console.warn(
+                  `@supabase/gotrue-js: Lock "${name}" acquisition timed out after ${acquireTimeout}ms. ` +
+                    'This may be caused by another operation holding the lock. ' +
+                    'Consider increasing lockAcquireTimeout or checking for stuck operations.'
+                )
 
-                  reject(
-                    new ProcessLockAcquireTimeoutError(
-                      `Acquiring process lock with name "${name}" timed out`
-                    )
+                reject(
+                  new ProcessLockAcquireTimeoutError(
+                    `Acquiring process lock with name "${name}" timed out`
                   )
-                }, acquireTimeout)
-              })
-            : null,
-        ].filter((x) => x)
-      )
+                )
+              }, acquireTimeout)
+            })
+          : null
+
+      await Promise.race([previousOperationHandled, timeoutPromise].filter((x) => x))
+
+      // If we reach here, previousOperationHandled won the race
+      // Clear the timeout to prevent false warnings
+      if (timeoutId !== null) {
+        clearTimeout(timeoutId)
+      }
     } catch (e: any) {
+      // Clear the timeout on error path as well
+      if (timeoutId !== null) {
+        clearTimeout(timeoutId)
+      }
+
       // Re-throw timeout errors, ignore others
       if (e && e.isAcquireTimeout) {
         throw e
