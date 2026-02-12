@@ -96,17 +96,7 @@ describe('params reached to function', () => {
       headers: data?.headers ?? [],
       body: '',
     }
-      'check data from function',
-      `expected: ${JSON.stringify(expected)}\n actual: ${JSON.stringify(data)}`,
-      'text/plain'
-    )
     expect(data).toEqual(expected)
-      'check headers from function',
-      `expected to include: ${['custom-header', customHeader]}\n actual: ${JSON.stringify(
-        data?.headers
-      )}`,
-      'text/plain'
-    )
     expect(
       (data?.headers as [Array<string>]).filter(
         ([k, v]) => k === 'custom-header' && v === customHeader
@@ -140,13 +130,6 @@ describe('params reached to function', () => {
 
     // Check that the URL contains the forceFunctionRegion query parameter
     expect(data?.url).toContain(`forceFunctionRegion=${validRegion}`)
-
-      'check headers from function',
-      `expected to include: ${['custom-header', customHeader]}\n actual: ${JSON.stringify(
-        data?.headers
-      )}`,
-      'text/plain'
-    )
   })
 
   test('invoke with region overrides region in the client', async () => {
@@ -174,12 +157,6 @@ describe('params reached to function', () => {
       body: '',
     }
     expect(data).toEqual(expected)
-      'check headers from function',
-      `expected to include: ${['custom-header', customHeader]}\n actual: ${JSON.stringify(
-        data?.headers
-      )}`,
-      'text/plain'
-    )
     console.log(data?.headers)
     expect(
       (data?.headers as [Array<string>]).filter(([k, v]) => k === 'x-region' && v === validRegion)
@@ -212,12 +189,6 @@ describe('params reached to function', () => {
       body: '',
     }
     expect(data).toEqual(expected)
-      'check headers from function',
-      `expected to include: ${['custom-header', customHeader]}\n actual: ${JSON.stringify(
-        data?.headers
-      )}`,
-      'text/plain'
-    )
     console.log(data?.headers)
     expect(
       (data?.headers as [Array<string>]).filter(([k, v]) => k === 'x-region' && v === validRegion)
@@ -278,10 +249,6 @@ describe('params reached to function', () => {
       headers: data?.headers ?? [],
       body: formData,
     }
-      'check data from function',
-      `expected: ${JSON.stringify(expected)}\n actual: ${JSON.stringify(data)}`,
-      'text/plain'
-    )
     expect(data).toEqual(expected)
   })
 
@@ -315,10 +282,6 @@ describe('params reached to function', () => {
       headers: data?.headers ?? [],
       body: body,
     }
-      'check data from function',
-      `expected: ${JSON.stringify(expected)}\n actual: ${JSON.stringify(data)}`,
-      'text/plain'
-    )
     expect(data).toEqual(expected)
   })
 

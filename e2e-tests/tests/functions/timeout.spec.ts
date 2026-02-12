@@ -2,8 +2,7 @@ import 'jest'
 
 import { createFunctionsClient } from '../../helpers/functions-client'
 
-describe('timeout tests (slow function)', () => {}
-
+describe('timeout tests (slow function)', () => {
   test('invoke slow function without timeout should succeed', async () => {
     /**
      * @feature timeout
@@ -22,7 +21,7 @@ describe('timeout tests (slow function)', () => {}
      */
     const fclient = createFunctionsClient()
 
-    const { data, error} = await fclient.invoke<string>('slow', {
+    const { data, error } = await fclient.invoke<string>('slow', {
       timeout: 1000,
     })
 
