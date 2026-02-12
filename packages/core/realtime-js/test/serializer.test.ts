@@ -67,6 +67,12 @@ describe('JSON', () => {
     const result = await decodeAsync(serializer, '[null,null,"t","e",{"foo":1}]')
     expect(result).toEqual(missingRefExampleMsg)
   })
+
+  it('handles non-array JSON gracefully', async () => {
+    const serializer = new Serializer()
+    const result = await decodeAsync(serializer, '{"error":"invalid"}')
+    expect(result).toEqual({})
+  })
 })
 
 describe('binary', () => {
