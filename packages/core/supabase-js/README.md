@@ -110,6 +110,60 @@ const supabase = createClient('https://xyzcompany.supabase.co', 'public-anon-key
 })
 ```
 
+## Known Build Warnings
+
+When using `@supabase/supabase-js` with Vite or other Rollup-based bundlers, you may see warnings like:
+
+```
+WARN "PostgrestError" is imported from external module "@supabase/postgrest-js" but never used
+WARN "FunctionRegion", "FunctionsError", "FunctionsFetchError", "FunctionsHttpError" and "FunctionsRelayError" are imported from external module "@supabase/functions-js" but never used
+```
+
+**This is harmless and can be safely ignored.** The warning occurs because our build process optimizes imports by combining them from the same package. Some identifiers (like `PostgrestError` and `FunctionsError`) are re-exported for your use, while others (like `PostgrestClient` and `FunctionsClient`) are used internally. Your bundler sees these combined imports and warns about the re-exported ones not being used in our code - but they ARE used (in your code when you import them).
+
+### Suppressing the Warnings
+
+If you prefer to suppress these warnings, add this to your Vite config:
+
+```javascript
+// vite.config.js
+export default {
+  build: {
+    rollupOptions: {
+      onwarn(warning, warn) {
+        // Suppress "unused external import" warnings from @supabase packages
+        if (warning.code === 'UNUSED_EXTERNAL_IMPORT' && warning.exporter?.includes('@supabase/')) {
+          return
+        }
+        warn(warning)
+      },
+    },
+  },
+}
+```
+
+For Nuxt, add to `nuxt.config.ts`:
+
+```typescript
+export default defineNuxtConfig({
+  vite: {
+    build: {
+      rollupOptions: {
+        onwarn(warning, warn) {
+          if (
+            warning.code === 'UNUSED_EXTERNAL_IMPORT' &&
+            warning.exporter?.includes('@supabase/')
+          ) {
+            return
+          }
+          warn(warning)
+        },
+      },
+    },
+  },
+})
+```
+
 ## Support Policy
 
 This section outlines the scope of support for various runtime environments in Supabase JavaScript client.
