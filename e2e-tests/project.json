@@ -69,7 +69,7 @@
     "test:e2e:postgrest:standard": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "echo 'PostgREST standard tests coming in Phase 2'",
+        "command": "jest tests/postgrest/standard --runInBand --coverage",
         "cwd": "{projectRoot}"
       },
       "dependsOn": ["^build", "test:e2e:setup"],
