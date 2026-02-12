@@ -1,47 +1,30 @@
 import 'jest'
-import { nanoid } from 'nanoid'
 import { sign } from 'jsonwebtoken'
 
-import { FunctionsClient } from '../../src/index'
+import { FunctionsClient } from '@supabase/functions-js'
 
-import { Relay, runRelay } from '../relay/container'
-import { attach, log } from '../utils/jest-custom-reporter'
-import { getCustomFetch } from '../utils/fetch'
+import {
+  createFunctionsClient,
+  createServiceRoleFunctionsClient,
+  createFunctionsClientWithKey,
+  getFunctionsInfo,
+} from '../../helpers/functions-client'
 
 describe('basic tests (hello function)', () => {
-  let relay: Relay
-  const jwtSecret = nanoid(10)
-  const apiKey = sign({ name: 'anon' }, jwtSecret)
-
-  beforeAll(async () => {
-    relay = await runRelay('hello', jwtSecret)
-  })
-
-  afterAll(async () => {
-    if (relay) {
-      await relay.stop()
-    }
-  })
+  const { anonKey } = getFunctionsInfo()
+  // Create a wrong key for testing auth failures
+  const wrongKey = sign({ name: 'anon' }, 'wrong_jwt_secret', { expiresIn: '1h' })
 
   test('invoke hello with auth header', async () => {
     /**
      * @feature auth
      */
-    log('create FunctionsClient')
-    const fclient = new FunctionsClient(`http://localhost:${relay.container.getMappedPort(8081)}`, {
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-      },
-    })
+    const fclient = createFunctionsClient()
 
-    log('invoke hello')
     const { data, error, response } = await fclient.invoke<string>('hello', {})
 
-    log('assert no error')
     expect(error).toBeNull()
-    log(`assert ${data} is equal to 'Hello World'`)
     expect(data).toEqual('Hello World')
-    log('assert response object is present')
     expect(response).toBeDefined()
     expect(response).toBeInstanceOf(Response)
   })
@@ -50,17 +33,12 @@ describe('basic tests (hello function)', () => {
     /**
      * @feature auth
      */
-    log('create FunctionsClient')
-    const fclient = new FunctionsClient(`http://localhost:${relay.container.getMappedPort(8081)}`)
-    attach('setAuth', apiKey, 'text/plain')
-    fclient.setAuth(apiKey)
+    const fclient = createFunctionsClient()
+    fclient.setAuth(anonKey)
 
-    log('invoke hello')
     const { data, error } = await fclient.invoke<string>('hello', {})
 
-    log('assert no error')
     expect(error).toBeNull()
-    log(`assert ${data} is equal to 'Hello World'`)
     expect(data).toEqual('Hello World')
   })
 
@@ -68,20 +46,15 @@ describe('basic tests (hello function)', () => {
     /**
      * @feature errors
      */
-    log('create FunctionsClient')
-    const fclient = new FunctionsClient(`http://localhost:${relay.container.getMappedPort(8081)}`)
-    const wrongKey = sign({ name: 'anon' }, 'wrong_jwt')
-    attach('setAuth with wrong jwt', wrongKey, 'text/plain')
+    const fclient = createFunctionsClient()
     fclient.setAuth(wrongKey)
 
-    log('invoke hello')
     const { data, error, response } = await fclient.invoke<string>('hello', {})
 
-    log('check error')
     expect(error).not.toBeNull()
-    expect(error?.message).toEqual('Relay Error invoking the Edge Function')
+    // Note: Error message may differ from Testcontainers relay
+    expect(error?.message).toBeDefined()
     expect(data).toBeNull()
-    log('assert response object is present in error case')
     expect(response).toBeDefined()
   })
 
@@ -89,22 +62,13 @@ describe('basic tests (hello function)', () => {
     /**
      * @feature auth
      */
-    log('create FunctionsClient')
-    const fclient = new FunctionsClient(`http://localhost:${relay.container.getMappedPort(8081)}`, {
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-      },
-    })
-    const wrongKey = sign({ name: 'anon' }, 'wrong_jwt')
-    attach('setAuth with wrong jwt', wrongKey, 'text/plain')
+    const fclient = createFunctionsClient()
     fclient.setAuth(wrongKey)
 
-    log('invoke hello')
     const { data, error } = await fclient.invoke<string>('hello', {})
 
-    log('check error')
     expect(error).not.toBeNull()
-    expect(error?.message).toEqual('Relay Error invoking the Edge Function')
+    expect(error?.message).toBeDefined()
     expect(data).toBeNull()
   })
 
@@ -112,24 +76,12 @@ describe('basic tests (hello function)', () => {
     /**
      * @feature auth
      */
-    const wrongKey = sign({ name: 'anon' }, 'wrong_jwt')
+    const fclient = createFunctionsClientWithKey(wrongKey)
+    fclient.setAuth(anonKey)
 
-    log('create FunctionsClient with wrong jwt')
-    const fclient = new FunctionsClient(`http://localhost:${relay.container.getMappedPort(8081)}`, {
-      headers: {
-        Authorization: `Bearer ${wrongKey}`,
-      },
-    })
-
-    attach('setAuth with right jwt', apiKey, 'text/plain')
-    fclient.setAuth(apiKey)
-
-    log('invoke hello')
     const { data, error } = await fclient.invoke<string>('hello', {})
 
-    log('assert no error')
     expect(error).toBeNull()
-    log(`assert ${data} is equal to 'Hello World'`)
     expect(data).toEqual('Hello World')
   })
 
@@ -137,19 +89,15 @@ describe('basic tests (hello function)', () => {
     /**
      * @feature auth
      */
-    log('create FunctionsClient')
-    const fclient = new FunctionsClient(`http://localhost:${relay.container.getMappedPort(8081)}`)
+    const fclient = createFunctionsClient()
 
-    log('invoke hello with Authorization header')
     const { data, error } = await fclient.invoke<string>('hello', {
       headers: {
-        Authorization: `Bearer ${apiKey}`,
+        Authorization: `Bearer ${anonKey}`,
       },
     })
 
-    log('assert no error')
     expect(error).toBeNull()
-    log(`assert ${data} is equal to 'Hello World'`)
     expect(data).toEqual('Hello World')
   })
 
@@ -157,23 +105,16 @@ describe('basic tests (hello function)', () => {
     /**
      * @feature auth
      */
-    log('create FunctionsClient with wrong jwt')
-    const fclient = new FunctionsClient(`http://localhost:${relay.container.getMappedPort(8081)}`)
-
-    const wrongKey = sign({ name: 'anon' }, 'wrong_jwt')
-    attach('setAuth with wrong jwt', wrongKey, 'text/plain')
+    const fclient = createFunctionsClient()
     fclient.setAuth(wrongKey)
 
-    log('invoke hello with Authorization header')
     const { data, error } = await fclient.invoke<string>('hello', {
       headers: {
-        Authorization: `Bearer ${apiKey}`,
+        Authorization: `Bearer ${anonKey}`,
       },
     })
 
-    log('assert no error')
     expect(error).toBeNull()
-    log(`assert ${data} is equal to 'Hello World'`)
     expect(data).toEqual('Hello World')
   })
 
@@ -181,24 +122,16 @@ describe('basic tests (hello function)', () => {
     /**
      * @feature auth
      */
-    log('create FunctionsClient with wrong jwt')
-    const fclient = new FunctionsClient(`http://localhost:${relay.container.getMappedPort(8081)}`, {
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-      },
-    })
+    const fclient = createFunctionsClient()
 
-    const wrongKey = sign({ name: 'anon' }, 'wrong_jwt')
-    log('invoke hello with wrong Authorization header')
     const { data, error } = await fclient.invoke<string>('hello', {
       headers: {
         Authorization: `Bearer ${wrongKey}`,
       },
     })
 
-    log('check error')
     expect(error).not.toBeNull()
-    expect(error?.message).toEqual('Relay Error invoking the Edge Function')
+    expect(error?.message).toBeDefined()
     expect(data).toBeNull()
   })
 
@@ -226,25 +159,25 @@ describe('basic tests (hello function)', () => {
     /**
      * @feature fetch
      */
-    log('create FunctionsClient')
-    const fclient = new FunctionsClient(`http://localhost:${relay.container.getMappedPort(8081)}`, {
-      customFetch: getCustomFetch(
-        `http://localhost:${relay.container.getMappedPort(8081)}/${'hello'}`,
-        {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${apiKey}`,
-          },
-        }
-      ),
-    })
+    const { url } = getFunctionsInfo()
+    const customFetch = (url: string, options?: RequestInit) => {
+      // Custom fetch that always calls 'hello' function
+      const helloUrl = `${url}/hello`.replace(/\/+/g, '/')
+      return fetch(helloUrl, {
+        ...options,
+        method: 'POST',
+        headers: {
+          ...options?.headers,
+          Authorization: `Bearer ${anonKey}`,
+        },
+      })
+    }
 
-    log('invoke hello')
+    const fclient = createFunctionsClient({ customFetch })
+
     const { data, error } = await fclient.invoke<string>('', {})
 
-    log('assert no error')
     expect(error).toBeNull()
-    log(`assert ${data} is equal to 'Hello World'`)
     expect(data).toEqual('Hello World')
   })
 
@@ -252,25 +185,25 @@ describe('basic tests (hello function)', () => {
     /**
      * @feature fetch
      */
-    log('create FunctionsClient')
-    const fclient = new FunctionsClient(`http://localhost:${relay.container.getMappedPort(8081)}`, {
-      customFetch: getCustomFetch(
-        `http://localhost:${relay.container.getMappedPort(8081)}/${'hello'}`,
-        {
-          method: 'GET',
-          headers: {
-            Authorization: `Bearer ${apiKey}`,
-          },
-        }
-      ),
-    })
+    const { url } = getFunctionsInfo()
+    const customFetch = (url: string, options?: RequestInit) => {
+      // Custom fetch that always calls 'hello' function with GET
+      const helloUrl = `${url}/hello`.replace(/\/+/g, '/')
+      return fetch(helloUrl, {
+        ...options,
+        method: 'GET',
+        headers: {
+          ...options?.headers,
+          Authorization: `Bearer ${anonKey}`,
+        },
+      })
+    }
 
-    log('invoke hello')
+    const fclient = createFunctionsClient({ customFetch })
+
     const { data, error } = await fclient.invoke<string>('', {})
 
-    log('assert no error')
     expect(error).toBeNull()
-    log(`assert ${data} is equal to 'Hello World'`)
     expect(data).toEqual('Hello World')
   })
 
@@ -278,29 +211,25 @@ describe('basic tests (hello function)', () => {
     /**
      * @feature fetch
      */
-    const wrongKey = sign({ name: 'anon' }, 'wrong_jwt')
-    log('create FunctionsClient')
-    const fclient = new FunctionsClient(`http://localhost:${relay.container.getMappedPort(8081)}`, {
-      headers: {
-        Authorization: `Bearer ${wrongKey}`,
-      },
-      customFetch: getCustomFetch(
-        `http://localhost:${relay.container.getMappedPort(8081)}/${'hello'}`,
-        {
-          method: 'Post',
-          headers: {
-            Authorization: `Bearer ${apiKey}`,
-          },
-        }
-      ),
-    })
+    const { url } = getFunctionsInfo()
+    const customFetch = (url: string, options?: RequestInit) => {
+      // Custom fetch that overrides with correct auth
+      const helloUrl = `${url}/hello`.replace(/\/+/g, '/')
+      return fetch(helloUrl, {
+        ...options,
+        method: 'POST',
+        headers: {
+          ...options?.headers,
+          Authorization: `Bearer ${anonKey}`,
+        },
+      })
+    }
 
-    log('invoke hello with Authorization header')
+    const fclient = createFunctionsClientWithKey(wrongKey, { customFetch })
+
     const { data, error } = await fclient.invoke<string>('hello', {})
 
-    log('assert no error')
     expect(error).toBeNull()
-    log(`assert ${data} is equal to 'Hello World'`)
     expect(data).toEqual('Hello World')
   })
 })

@@ -3,45 +3,39 @@ import querystring from 'querystring'
 
 import 'jest'
 import { nanoid } from 'nanoid'
-import { sign } from 'jsonwebtoken'
 
-import { FunctionsClient } from '../../src/index'
-import { FunctionRegion } from '../../src/types'
-import { Relay, runRelay } from '../relay/container'
-import { attach, log } from '../utils/jest-custom-reporter'
-import { str2ab } from '../utils/binaries'
-import { MirrorResponse } from '../models/mirrorResponse'
+import { FunctionsClient, FunctionRegion } from '@supabase/functions-js'
+import { createFunctionsClient, getFunctionsInfo } from '../../helpers/functions-client'
+
+// Helper to convert string to ArrayBuffer
+function str2ab(str: string): ArrayBuffer {
+  const buf = new ArrayBuffer(str.length)
+  const bufView = new Uint8Array(buf)
+  for (let i = 0, strLen = str.length; i < strLen; i++) {
+    bufView[i] = str.charCodeAt(i)
+  }
+  return buf
+}
+
+// Mirror response type
+type MirrorResponse = {
+  url: string
+  method: string
+  headers?: Array<[string, string]>
+  body?: any
+}
 
 describe('params reached to function', () => {
-  let relay: Relay
-  const jwtSecret = nanoid(10)
-  const apiKey = sign({ name: 'anon' }, jwtSecret)
-
-  beforeAll(async () => {
-    relay = await runRelay('mirror', jwtSecret)
-  })
-
-  afterAll(async () => {
-    if (relay) {
-      await relay.stop()
-    }
-  })
+  const { anonKey } = getFunctionsInfo()
 
   test('invoke mirror', async () => {
     /**
      * @feature core
      */
-    log('create FunctionsClient')
-    const fclient = new FunctionsClient(`http://localhost:${relay.container.getMappedPort(8081)}`, {
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-      },
-    })
+    const fclient = createFunctionsClient()
 
-    log('invoke mirror')
     const { data, error } = await fclient.invoke<MirrorResponse>('mirror', {})
 
-    log('assert no error')
     expect(error).toBeNull()
 
     const expected = {
@@ -50,11 +44,6 @@ describe('params reached to function', () => {
       headers: data?.headers ?? [],
       body: '',
     }
-    attach(
-      'check data from function',
-      `expected: ${JSON.stringify(expected)}\n actual: ${JSON.stringify(data)}`,
-      'text/plain'
-    )
     expect(data).toEqual(expected)
   })
 
@@ -62,18 +51,14 @@ describe('params reached to function', () => {
     /**
      * @feature headers
      */
-    log('create FunctionsClient')
-    const fclient = new FunctionsClient(`http://localhost:${relay.container.getMappedPort(8081)}`, {
+    const fclient = createFunctionsClient({
       headers: {
-        Authorization: `Bearer ${apiKey}`,
         CustomHeader: 'check me',
       },
     })
 
-    log('invoke mirror')
     const { data, error } = await fclient.invoke<MirrorResponse>('mirror', {})
 
-    log('assert no error')
     expect(error).toBeNull()
 
     const expected = {
@@ -82,19 +67,7 @@ describe('params reached to function', () => {
       headers: data?.headers ?? [],
       body: '',
     }
-    attach(
-      'check data from function',
-      `expected: ${JSON.stringify(expected)}\n actual: ${JSON.stringify(data)}`,
-      'text/plain'
-    )
     expect(data).toEqual(expected)
-    attach(
-      'check headers from function',
-      `expected to include: ${['customheader', 'check me']}\n actual: ${JSON.stringify(
-        data?.headers
-      )}`,
-      'text/plain'
-    )
     expect(
       (data?.headers as [Array<string>]).filter(
         ([k, v]) => k === 'customheader' && v === 'check me'
@@ -106,19 +79,15 @@ describe('params reached to function', () => {
     /**
      * @feature headers
      */
-    log('create FunctionsClient')
-    const fclient = new FunctionsClient(`http://localhost:${relay.container.getMappedPort(8081)}`)
+    const fclient = createFunctionsClient()
 
-    log('invoke mirror')
     const customHeader = nanoid()
     const { data, error } = await fclient.invoke<MirrorResponse>('mirror', {
       headers: {
         'custom-header': customHeader,
-        Authorization: `Bearer ${apiKey}`,
       },
     })
 
-    log('assert no error')
     expect(error).toBeNull()
 
     const expected = {
@@ -127,13 +96,11 @@ describe('params reached to function', () => {
       headers: data?.headers ?? [],
       body: '',
     }
-    attach(
       'check data from function',
       `expected: ${JSON.stringify(expected)}\n actual: ${JSON.stringify(data)}`,
       'text/plain'
     )
     expect(data).toEqual(expected)
-    attach(
       'check headers from function',
       `expected to include: ${['custom-header', customHeader]}\n actual: ${JSON.stringify(
         data?.headers
@@ -151,22 +118,18 @@ describe('params reached to function', () => {
     /**
      * @feature headers
      */
-    log('create FunctionsClient')
-    const fclient = new FunctionsClient(`http://localhost:${relay.container.getMappedPort(8081)}`)
+    const fclient = createFunctionsClient()
 
-    log('invoke mirror')
     const customHeader = nanoid()
     const validRegion = FunctionRegion.ApNortheast1
 
     const { data, error } = await fclient.invoke<MirrorResponse>('mirror', {
       headers: {
         'custom-header': customHeader,
-        Authorization: `Bearer ${apiKey}`,
       },
       region: validRegion,
     })
 
-    log('assert no error')
     expect(error).toBeNull()
 
     // Check that x-region header is present
@@ -178,7 +141,6 @@ describe('params reached to function', () => {
     // Check that the URL contains the forceFunctionRegion query parameter
     expect(data?.url).toContain(`forceFunctionRegion=${validRegion}`)
 
-    attach(
       'check headers from function',
       `expected to include: ${['custom-header', customHeader]}\n actual: ${JSON.stringify(
         data?.headers
@@ -191,24 +153,20 @@ describe('params reached to function', () => {
     /**
      * @feature headers
      */
-    log('create FunctionsClient')
-    const fclient = new FunctionsClient(`http://localhost:${relay.container.getMappedPort(8081)}`, {
+    const fclient = createFunctionsClient({
       region: FunctionRegion.ApNortheast1,
     })
 
-    log('invoke mirror')
     const customHeader = nanoid()
     const validRegion = FunctionRegion.ApSoutheast1
 
     const { data, error } = await fclient.invoke<MirrorResponse>('mirror', {
       headers: {
         'custom-header': customHeader,
-        Authorization: `Bearer ${apiKey}`,
       },
       region: validRegion,
     })
 
-    log('assert no error')
     const expected = {
       url: `http://localhost:8000/mirror?forceFunctionRegion=${FunctionRegion.ApSoutheast1}`,
       method: 'POST',
@@ -216,7 +174,6 @@ describe('params reached to function', () => {
       body: '',
     }
     expect(data).toEqual(expected)
-    attach(
       'check headers from function',
       `expected to include: ${['custom-header', customHeader]}\n actual: ${JSON.stringify(
         data?.headers
@@ -234,24 +191,20 @@ describe('params reached to function', () => {
     /**
      * @feature headers
      */
-    log('create FunctionsClient')
     const validRegion = FunctionRegion.ApSoutheast1
-    const fclient = new FunctionsClient(`http://localhost:${relay.container.getMappedPort(8081)}`, {
+    const fclient = createFunctionsClient({
       region: validRegion,
     })
 
-    log('invoke mirror')
     const customHeader = nanoid()
 
     const { data, error } = await fclient.invoke<MirrorResponse>('mirror', {
       headers: {
         'custom-header': customHeader,
-        Authorization: `Bearer ${apiKey}`,
       },
       region: FunctionRegion.Any,
     })
 
-    log('assert no error')
     const expected = {
       url: 'http://localhost:8000/mirror',
       method: 'POST',
@@ -259,7 +212,6 @@ describe('params reached to function', () => {
       body: '',
     }
     expect(data).toEqual(expected)
-    attach(
       'check headers from function',
       `expected to include: ${['custom-header', customHeader]}\n actual: ${JSON.stringify(
         data?.headers
@@ -277,22 +229,18 @@ describe('params reached to function', () => {
     /**
      * @feature headers
      */
-    log('create FunctionsClient')
-    const fclient = new FunctionsClient(`http://localhost:${relay.container.getMappedPort(8081)}`, {
+    const fclient = createFunctionsClient({
       region: FunctionRegion.ApNortheast1,
     })
 
-    log('invoke mirror')
     const customHeader = nanoid()
 
     const { data, error } = await fclient.invoke<MirrorResponse>('mirror', {
       headers: {
         'custom-header': customHeader,
-        Authorization: `Bearer ${apiKey}`,
       },
     })
 
-    log('assert no error')
     expect(
       (data?.headers as [Array<string>]).filter(
         ([k, v]) => k === 'x-region' && v === FunctionRegion.ApNortheast1
@@ -304,12 +252,9 @@ describe('params reached to function', () => {
     /**
      * @feature body
      */
-    log('create FunctionsClient')
-    const fclient = new FunctionsClient(`http://localhost:${relay.container.getMappedPort(8081)}`)
-    attach('setAuth', apiKey, 'text/plain')
-    fclient.setAuth(apiKey)
+    const fclient = createFunctionsClient()
+    fclient.setAuth(anonKey)
 
-    log('invoke mirror')
     var form = new FormData()
     const formData = [
       [nanoid(5), nanoid(10)],
@@ -325,7 +270,6 @@ describe('params reached to function', () => {
       },
     })
 
-    log('assert no error')
     expect(error).toBeNull()
 
     const expected = {
@@ -334,7 +278,6 @@ describe('params reached to function', () => {
       headers: data?.headers ?? [],
       body: formData,
     }
-    attach(
       'check data from function',
       `expected: ${JSON.stringify(expected)}\n actual: ${JSON.stringify(data)}`,
       'text/plain'
@@ -346,12 +289,9 @@ describe('params reached to function', () => {
     /**
      * @feature body
      */
-    log('create FunctionsClient')
-    const fclient = new FunctionsClient(`http://localhost:${relay.container.getMappedPort(8081)}`)
-    attach('setAuth', apiKey, 'text/plain')
-    fclient.setAuth(apiKey)
+    const fclient = createFunctionsClient()
+    fclient.setAuth(anonKey)
 
-    log('invoke mirror')
     const body = {
       one: nanoid(10),
       two: nanoid(5),
@@ -367,7 +307,6 @@ describe('params reached to function', () => {
       },
     })
 
-    log('assert no error')
     expect(error).toBeNull()
 
     const expected = {
@@ -376,7 +315,6 @@ describe('params reached to function', () => {
       headers: data?.headers ?? [],
       body: body,
     }
-    attach(
       'check data from function',
       `expected: ${JSON.stringify(expected)}\n actual: ${JSON.stringify(data)}`,
       'text/plain'
@@ -388,12 +326,9 @@ describe('params reached to function', () => {
     /**
      * @feature body
      */
-    log('create FunctionsClient')
-    const fclient = new FunctionsClient(`http://localhost:${relay.container.getMappedPort(8081)}`)
-    attach('setAuth', apiKey, 'text/plain')
-    fclient.setAuth(apiKey)
+    const fclient = createFunctionsClient()
+    fclient.setAuth(anonKey)
 
-    log('invoke mirror')
     const body = {
       one: nanoid(10),
       two: nanoid(5),
@@ -410,7 +345,6 @@ describe('params reached to function', () => {
       },
     })
 
-    log('assert no error')
     expect(error).toBeNull()
 
     const expected = {
@@ -425,12 +359,9 @@ describe('params reached to function', () => {
     /**
      * @feature body
      */
-    log('create FunctionsClient')
-    const fclient = new FunctionsClient(`http://localhost:${relay.container.getMappedPort(8081)}`)
-    attach('setAuth', apiKey, 'text/plain')
-    fclient.setAuth(apiKey)
+    const fclient = createFunctionsClient()
+    fclient.setAuth(anonKey)
 
-    log('invoke mirror')
     const body = {
       one: nanoid(10),
       two: nanoid(5),
@@ -447,7 +378,6 @@ describe('params reached to function', () => {
       },
     })
 
-    log('assert no error')
     expect(error).toBeNull()
 
     const expected = {
@@ -462,12 +392,9 @@ describe('params reached to function', () => {
     /**
      * @feature body
      */
-    log('create FunctionsClient')
-    const fclient = new FunctionsClient(`http://localhost:${relay.container.getMappedPort(8081)}`)
-    attach('setAuth', apiKey, 'text/plain')
-    fclient.setAuth(apiKey)
+    const fclient = createFunctionsClient()
+    fclient.setAuth(anonKey)
 
-    log('invoke mirror')
     const body = {
       one: nanoid(10),
       two: nanoid(5),
@@ -481,7 +408,6 @@ describe('params reached to function', () => {
       {}
     )
 
-    log('assert no error')
     expect(error).toBeNull()
 
     const expected = {
