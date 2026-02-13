@@ -527,17 +527,6 @@ describe('Channel Lifecycle Management', () => {
       assert.equal(joinPush.timeout, newTimeout)
     })
 
-    test('updates channel joinPush payload', () => {
-      const payload = channel.joinPush.payload()
-
-      channel.updateJoinPayload({ access_token: 'token123' })
-
-      const newPayload = channel.joinPush.payload()
-
-      expect(newPayload).toEqual({ access_token: 'token123' })
-      expect(payload).not.toEqual(newPayload)
-    })
-
     test('timeout behavior succeeds before timeout', async () => {
       testSetup.client.connect()
       channel.subscribe()

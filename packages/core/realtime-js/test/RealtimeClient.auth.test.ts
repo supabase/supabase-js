@@ -25,17 +25,20 @@ describe('token setting and updates', () => {
     ])
 
     // Check joinPush payload
-    assert.deepEqual(channel1.joinPush.payload(), {
+    expect(channel1.joinPush.payload()).toStrictEqual({
+      config: expect.any(Object),
       access_token: token,
       version: DEFAULT_VERSION,
     })
 
-    assert.deepEqual(channel2.joinPush.payload(), {
+    expect(channel2.joinPush.payload()).toStrictEqual({
+      config: expect.any(Object),
       access_token: token,
       version: DEFAULT_VERSION,
     })
 
-    assert.deepEqual(channel3.joinPush.payload(), {
+    expect(channel3.joinPush.payload()).toStrictEqual({
+      config: expect.any(Object),
       access_token: token,
       version: DEFAULT_VERSION,
     })
@@ -95,17 +98,20 @@ describe('token setting and updates', () => {
 
     vi.waitFor(() => assert.strictEqual(testSetup.client.accessTokenValue, new_token))
 
-    assert.deepEqual(channel1.joinPush.payload(), {
+    expect(channel1.joinPush.payload()).toStrictEqual({
+      config: expect.any(Object),
       access_token: new_token,
       version: DEFAULT_VERSION,
     })
 
-    assert.deepEqual(channel2.joinPush.payload(), {
+    expect(channel2.joinPush.payload()).toStrictEqual({
+      config: expect.any(Object),
       access_token: new_token,
       version: DEFAULT_VERSION,
     })
 
-    assert.deepEqual(channel3.joinPush.payload(), {
+    expect(channel3.joinPush.payload()).toStrictEqual({
+      config: expect.any(Object),
       access_token: new_token,
       version: DEFAULT_VERSION,
     })
