@@ -8,10 +8,6 @@ import type {
 import ChannelAdapter from './channelAdapter'
 
 export default class PresenceAdapter {
-  get state() {
-    return PresenceAdapter.transformState(this.presence.state)
-  }
-
   private presence: Presence
 
   constructor(channel: ChannelAdapter, opts?: RealtimePresenceOptions) {
@@ -43,6 +39,10 @@ export default class PresenceAdapter {
     this.presence.onSync(() => {
       channel.getChannel().trigger('presence', { event: 'sync' })
     })
+  }
+
+  get state() {
+    return PresenceAdapter.transformState(this.presence.state)
   }
 
   /**

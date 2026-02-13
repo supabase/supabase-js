@@ -308,7 +308,7 @@ export default class RealtimeClient {
   }
 
   /**
-   * Unsubscribes and removes a single channel
+   * Unsubscribes, removes and tears down a single channel
    * @param channel A RealtimeChannel instance
    */
   async removeChannel(channel: RealtimeChannel): Promise<RealtimeRemoveChannelResponse> {
@@ -326,7 +326,7 @@ export default class RealtimeClient {
   }
 
   /**
-   * Unsubscribes and removes all channels
+   * Unsubscribes, removes and tears down all channels
    */
   async removeAllChannels(): Promise<RealtimeRemoveChannelResponse[]> {
     const promises = this.channels.map(async (channel) => {
@@ -593,6 +593,7 @@ export default class RealtimeClient {
     })
   }
 
+  /** @internal */
   private _handleNodeJsRaceCondition() {
     if (this.socketAdapter.isConnected()) {
       // hack: ensure onConnOpen is called
@@ -600,6 +601,7 @@ export default class RealtimeClient {
     }
   }
 
+  /** @internal */
   private _wrapHeartbeatCallback(heartbeatCallback?: HeartbeatCallback) {
     return (status: HeartbeatStatus) => {
       if (status == 'sent') this._setAuthSafely()
@@ -654,13 +656,6 @@ export default class RealtimeClient {
       result_url = URL.createObjectURL(blob)
     }
     return result_url
-  }
-
-  private async _reconnectAuth() {
-    await this._waitForAuthIfNeeded()
-    if (!this.isConnected()) {
-      this.connect()
-    }
   }
 
   /**
@@ -727,5 +722,13 @@ export default class RealtimeClient {
     }
 
     return result
+  }
+
+  /** @internal */
+  private async _reconnectAuth() {
+    await this._waitForAuthIfNeeded()
+    if (!this.isConnected()) {
+      this.connect()
+    }
   }
 }

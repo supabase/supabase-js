@@ -10,7 +10,7 @@ import type {
 import * as Transformers from './lib/transformers'
 import { httpEndpointURL } from './lib/transformers'
 import ChannelAdapter from './phoenix/channelAdapter'
-import { ChannelBindingCallback, ChannelOnErrorCallback, Push } from './phoenix/types'
+import { ChannelBindingCallback, ChannelOnErrorCallback } from './phoenix/types'
 
 type ReplayOption = {
   since: number
