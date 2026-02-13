@@ -1053,6 +1053,19 @@ export default class RealtimeChannel {
     })
   }
 
+  copyBindings(other: RealtimeChannel) {
+    for (const kind in other.bindings) {
+      const bindings = other.bindings[kind]
+      if (this.joinedOnce && kind == "postgres_changes" && bindings.length > 0) {
+        throw new Error("cannot copy `postgres_changes` bindings into joined channel")
+      }
+
+      for (const binding of bindings) {
+        this._on(binding.type, binding.filter, binding.callback)
+      }
+    }
+  }
+
   /**
    * Compares two optional filter values for equality.
    * Treats undefined, null, and empty string as equivalent empty values.
