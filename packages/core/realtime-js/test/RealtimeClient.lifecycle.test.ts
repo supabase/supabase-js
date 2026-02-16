@@ -227,5 +227,6 @@ describe('Race condition prevention', () => {
 
     // Should not interfere with disconnection
     assert.equal(client.isDisconnecting(), true)
+    cleanup()
   })
 })

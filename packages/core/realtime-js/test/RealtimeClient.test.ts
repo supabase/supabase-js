@@ -1,7 +1,7 @@
-import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, test, vi } from 'vitest'
 import { WebSocket as MockWebSocket } from 'mock-socket'
-import RealtimeClient, { WebSocketLikeConstructor } from '../src/RealtimeClient'
-import { SOCKET_STATES } from '../src/lib/constants'
+import RealtimeClient from '../src/RealtimeClient'
+import { CONNECTION_STATE } from '../src/lib/constants'
 import { DEFAULT_API_KEY, setupRealtimeTest, TestSetup } from './helpers/setup'
 
 let testSetup: TestSetup
@@ -21,12 +21,15 @@ afterEach(() => {
 })
 
 describe('Additional Coverage Tests', () => {
-  describe('Node.js WebSocket error handling', async () => {
-    const WebSocketFactoryModule = await import('../src/lib/websocket-factory')
-    const WebSocketFactory = WebSocketFactoryModule.default
-    const originalCreateWebSocket = WebSocketFactory.getWebSocketConstructor
+  describe('Node.js WebSocket error handling', () => {
+    let WebSocketFactory: any
+    let originalCreateWebSocket: any
 
-    beforeEach(() => {
+    beforeAll(async () => {
+      const WebSocketFactoryModule = await import('../src/lib/websocket-factory')
+      WebSocketFactory = WebSocketFactoryModule.default
+      originalCreateWebSocket = WebSocketFactory.getWebSocketConstructor
+
       class MockWS {
         constructor(address: string | URL) {
           throw new Error('Node.js environment detected')
@@ -38,7 +41,7 @@ describe('Additional Coverage Tests', () => {
       WebSocketFactory.getWebSocketConstructor = () => MockWS
     })
 
-    afterEach(() => {
+    afterAll(() => {
       WebSocketFactory.getWebSocketConstructor = originalCreateWebSocket
     })
 
@@ -300,7 +303,7 @@ describe('Additional Coverage Tests', () => {
 
       expect(logSpy).toHaveBeenCalledWith('worker', 'worker error', 'Worker script error')
       expect(mockWorker.terminate).toHaveBeenCalled()
-      expect(workerClient.connectionState()).not.toBe(SOCKET_STATES.open) // disconnecting on error
+      expect(workerClient.connectionState()).not.toBe(CONNECTION_STATE.open) // disconnecting on error
 
       // Restore original functions
       global.Worker = originalWorker

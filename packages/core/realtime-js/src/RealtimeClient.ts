@@ -89,6 +89,7 @@ const WORKER_SCRIPT = `
   });`
 
 export default class RealtimeClient {
+  /** @internal */
   socketAdapter: SocketAdapter
   channels: RealtimeChannel[] = new Array()
 
@@ -567,6 +568,7 @@ export default class RealtimeClient {
     }
   }
 
+  /** @internal */
   private _setupConnectionHandlers(): void {
     this.socketAdapter.onOpen(() => {
       const authPromise =

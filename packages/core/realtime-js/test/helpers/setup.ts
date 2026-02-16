@@ -46,7 +46,7 @@ export interface TestSetup {
 
   cleanup: () => void
   connect: () => void
-  disconnect: () => void
+  disconnect: () => Promise<'timeout' | 'ok'>
   socketConnected: () => Promise<void>
   socketClosed: () => Promise<void>
 }
@@ -114,7 +114,7 @@ export function setupRealtimeTest(options: BuilderOptions = {}): TestSetup {
     decode: (msg, callback) => callback(JSON.parse(msg as string)),
     encode: (msg, callback) => callback(JSON.stringify(msg)),
     ...options,
-    params: { ...options.params, apikey: options.apikey || DEFAULT_API_KEY },
+    params: { apikey: options.apikey || DEFAULT_API_KEY, ...options.params },
   })
 
   let clock = undefined

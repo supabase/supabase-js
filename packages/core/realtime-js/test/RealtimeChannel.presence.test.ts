@@ -140,7 +140,7 @@ describe('Presence state management', () => {
     })
 
     channel.subscribe()
-    waitForChannelSubscribed(channel)
+    await waitForChannelSubscribed(channel)
 
     testSetup.mockServer.emit(
       'message',

@@ -28,7 +28,7 @@ describe('Network failure scenarios', () => {
   test('should not schedule reconnection on manual disconnect', async () => {
     testClient.client.connect()
     await testClient.socketConnected()
-    testClient.client.disconnect()
+    await testClient.client.disconnect()
 
     // Verify no reconnection is scheduled
     assert.equal(testClient.client.socketAdapter.getSocket().reconnectTimer.timer, undefined)

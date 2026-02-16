@@ -177,6 +177,7 @@ export default class RealtimeChannel {
   broadcastEndpointURL: string
   private: boolean
   presence: RealtimePresence
+  /** @internal */
   channelAdapter: ChannelAdapter
 
   get state() {
@@ -710,6 +711,9 @@ export default class RealtimeChannel {
     })
   }
 
+  /**
+   * Destroys and stops related timers.
+   */
   teardown() {
     this.channelAdapter.teardown()
   }
@@ -806,6 +810,7 @@ export default class RealtimeChannel {
     })
   }
 
+  /** @internal */
   private _notThisChannelEvent(event: string, ref?: string | null) {
     const { close, error, leave, join } = CHANNEL_EVENTS
     const events: string[] = [close, error, leave, join]

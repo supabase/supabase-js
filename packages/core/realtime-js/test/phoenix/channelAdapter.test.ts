@@ -47,7 +47,7 @@ describe('push', () => {
   test('should maintain buffer within size limit', async () => {
     channel.subscribe()
     await waitForChannelSubscribed(channel)
-    testSetup.disconnect()
+    await testSetup.disconnect()
     await testSetup.socketClosed()
 
     logSpy.mockClear()
@@ -72,7 +72,7 @@ describe('push', () => {
   test('should destroy oldest push when buffer is full', async () => {
     channel.subscribe()
     await waitForChannelSubscribed(channel)
-    testSetup.disconnect()
+    await testSetup.disconnect()
     await testSetup.socketClosed()
 
     logSpy.mockClear()

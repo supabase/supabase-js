@@ -1,6 +1,7 @@
 import { beforeEach, afterEach, expect, describe, test, vi } from 'vitest'
 import { type TestSetup, setupRealtimeTest, waitForChannelSubscribed } from './helpers/setup'
-import { CHANNEL_STATES } from '../src/lib/constants'
+
+import RealtimeChannel from '../src/RealtimeChannel'
 let testSetup: TestSetup
 
 beforeEach(() => {
@@ -64,13 +65,13 @@ describe('channel', () => {
     expect(foundChannel).toBe(channel)
   })
 
-  test('removes channel from phoenix-js socket', () => {
+  test('removes channel from phoenix-js socket', async () => {
     const channel = testSetup.client.channel('topic')
 
     expect(testSetup.client.getChannels().length).toBe(1)
     expect(testSetup.client.socketAdapter.getSocket().channels.length).toBe(1)
 
-    testSetup.client.removeChannel(channel)
+    await testSetup.client.removeChannel(channel)
 
     expect(testSetup.client.getChannels().length).toBe(0)
     expect(testSetup.client.socketAdapter.getSocket().channels.length).toBe(0)
@@ -138,13 +139,26 @@ describe('channel', () => {
 })
 
 describe('leaveOpenTopic', () => {
-  test('enforces client to subscribe to unique topics', () => {
-    const channel1 = testSetup.client.channel('topic')
-    const channel2 = testSetup.client.channel('topic')
+  test('enforces client to subscribe to unique topics', async () => {
+    const logSpy = vi.fn()
+    testSetup.cleanup()
+    testSetup = setupRealtimeTest({
+      logger: logSpy,
+    })
+    testSetup.connect()
+    await testSetup.socketConnected()
+    const channel1 = new RealtimeChannel('realtime:topic', { config: {} }, testSetup.client)
+    const channel2 = new RealtimeChannel('realtime:topic', { config: {} }, testSetup.client)
     channel1.subscribe()
-    expect(channel2.subscribe).toThrow()
+    channel2.subscribe()
 
-    expect(testSetup.client.getChannels().length).toBe(1)
-    expect(testSetup.client.getChannels()[0].topic).toBe('realtime:topic')
+    expect(logSpy).toHaveBeenCalledWith(
+      'transport',
+      'leaving duplicate topic "realtime:topic"',
+      undefined
+    )
+
+    expect(testSetup.client.socketAdapter.getSocket().channels.length).toBe(1)
+    expect(testSetup.client.socketAdapter.getSocket().channels[0].topic).toBe('realtime:topic')
   })
 })

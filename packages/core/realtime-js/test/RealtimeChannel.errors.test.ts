@@ -186,9 +186,9 @@ describe('Error Recovery & Resilience', () => {
       expect(errorMessage).not.toBeNull()
 
       // @ts-ignore error message is string
-      expect(errorMessage.includes('Invalid API key'))
+      expect(errorMessage).toContain('Invalid API key')
       // @ts-ignore error message is string
-      expect(errorMessage.includes('Authentication failed'))
+      expect(errorMessage).toContain('Authentication failed')
     })
   })
 
@@ -198,7 +198,7 @@ describe('Error Recovery & Resilience', () => {
       channel.subscribe()
       await waitForChannelSubscribed(channel)
 
-      testSetup.disconnect()
+      await testSetup.disconnect()
       await testSetup.socketClosed()
 
       // Directly set state to errored and schedule rejoin
@@ -318,7 +318,7 @@ describe('Error Handling Consolidation', () => {
 
       await waitForChannelSubscribed(channel)
 
-      testSetup.disconnect()
+      await testSetup.disconnect()
       await testSetup.socketClosed()
 
       expect(channel.state).toBe(CHANNEL_STATES.errored)
@@ -426,7 +426,7 @@ describe('Improved Cleanup & Bounded Buffer', () => {
       channel.subscribe()
       await waitForChannelSubscribed(channel)
 
-      testSetup.disconnect()
+      await testSetup.disconnect()
       await testSetup.socketClosed()
 
       expect(channel.channelAdapter.getChannel().pushBuffer.length).toBe(0)
@@ -439,7 +439,7 @@ describe('Improved Cleanup & Bounded Buffer', () => {
       channel.subscribe()
       await waitForChannelSubscribed(channel)
 
-      testSetup.disconnect()
+      await testSetup.disconnect()
       await testSetup.socketClosed()
 
       // Add pushes under the limit

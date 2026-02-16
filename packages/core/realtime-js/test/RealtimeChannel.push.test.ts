@@ -19,7 +19,7 @@ let testSetup: TestSetup
 describe('push', () => {
   const pushParams = ['realtime:topic', 'event', { foo: 'bar' }]
 
-  beforeEach(() => {
+  beforeEach(async () => {
     testSetup = setupRealtimeTest({
       useFakeTimers: true,
       timeout: defaultTimeout,
@@ -27,11 +27,7 @@ describe('push', () => {
         phx_join: () => {},
       },
     })
-  })
 
-  afterEach(() => testSetup.cleanup())
-
-  beforeEach(async () => {
     testSetup.connect()
     await testSetup.socketConnected()
 
@@ -185,8 +181,6 @@ describe('leave', () => {
   })
 
   test("closes channel on 'ok' from server", async () => {
-    testSetup.cleanup()
-
     const anotherChannel = testSetup.client.channel('another')
     assert.equal(testSetup.client.getChannels().length, 2)
 

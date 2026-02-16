@@ -1,4 +1,4 @@
-import { beforeAll, beforeEach, afterEach, test, expect, vi } from 'vitest'
+import { beforeAll, afterAll, beforeEach, afterEach, test, expect, vi, describe } from 'vitest'
 import { type TestSetup, setupRealtimeTest } from './helpers/setup'
 import Worker from 'web-worker'
 import path from 'path'
@@ -35,27 +35,37 @@ test('sets worker URL', () => {
   expect(testSetup.client.workerUrl).toBe(workerUrl)
 })
 
-test('creates worker with blob URL when no workerUrl provided', async () => {
-  // Mock URL.createObjectURL to return a valid file URL for Node.js web-worker polyfill
+describe('when no workerUrl provided', () => {
   const mockObjectURL = `file://${workerUrl}`
-  const originalCreateObjectURL = global.URL.createObjectURL
-  global.URL.createObjectURL = vi.fn(() => mockObjectURL)
+  let originalCreateObjectURL: any
 
-  testSetup.cleanup()
-  testSetup = setupRealtimeTest({
-    worker: true,
+  beforeAll(() => {
+    originalCreateObjectURL = global.URL.createObjectURL
+    global.URL.createObjectURL = vi.fn(() => mockObjectURL)
   })
 
-  testSetup.connect()
-  await testSetup.socketConnected()
+  afterAll(() => {
+    global.URL.createObjectURL = originalCreateObjectURL
+  })
 
-  // Verify worker was created (workerRef should exist)
-  expect(testSetup.client.workerRef).toBeTruthy()
-  expect(testSetup.client.workerRef instanceof Worker).toBeTruthy()
+  test('creates worker with blob URL when no workerUrl provided', async () => {
+    // Mock URL.createObjectURL to return a valid file URL for Node.js web-worker polyfill
 
-  // Verify createObjectURL was called (this exercises the blob creation path)
-  expect(global.URL.createObjectURL).toHaveBeenCalled()
-  global.URL.createObjectURL = originalCreateObjectURL
+    testSetup.cleanup()
+    testSetup = setupRealtimeTest({
+      worker: true,
+    })
+
+    testSetup.connect()
+    await testSetup.socketConnected()
+
+    // Verify worker was created (workerRef should exist)
+    expect(testSetup.client.workerRef).toBeTruthy()
+    expect(testSetup.client.workerRef instanceof Worker).toBeTruthy()
+
+    // Verify createObjectURL was called (this exercises the blob creation path)
+    expect(global.URL.createObjectURL).toHaveBeenCalled()
+  })
 })
 
 test('starts worker on conenction open', async () => {
@@ -100,7 +110,7 @@ test('terminates worker on disconnect', async () => {
   const ref = testSetup.client.workerRef!
 
   const spy = vi.spyOn(ref, 'terminate')
-  testSetup.disconnect()
+  await testSetup.disconnect()
   await testSetup.socketClosed()
   expect(spy).toHaveBeenCalled()
   expect(testSetup.client.workerRef).toBeFalsy()

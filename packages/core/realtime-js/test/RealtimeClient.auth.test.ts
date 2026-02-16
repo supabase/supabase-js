@@ -96,7 +96,7 @@ describe('token setting and updates', () => {
 
     testSetup.emitters.message.mockClear()
 
-    vi.waitFor(() => assert.strictEqual(testSetup.client.accessTokenValue, new_token))
+    await vi.waitFor(() => assert.strictEqual(testSetup.client.accessTokenValue, new_token))
 
     expect(channel1.joinPush.payload()).toStrictEqual({
       config: expect.any(Object),
