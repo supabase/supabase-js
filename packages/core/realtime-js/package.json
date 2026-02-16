@@ -40,8 +40,8 @@
     "test:ci": "vitest run --coverage"
   },
   "dependencies": {
-    "phoenix": "github:supabase/phoenix",
     "@types/ws": "^8.18.1",
+    "phoenix": "https://github.com/supabase/phoenix/tarball/18ae7d1a7f2bbb3c5ea06405b7301d9c5d4f049d",
     "tslib": "2.8.1",
     "ws": "^8.18.2"
   },
