@@ -340,6 +340,7 @@ describe('Object API', () => {
           metadata: expect.any(Object), // Files should have metadata
         }),
       ])
+      assert(res.data)
 
       // Verify files have non-null required fields
       const fileObj = res.data[0]
@@ -533,6 +534,7 @@ describe('Object API', () => {
           id: expect.any(String), // Verify it's a file, not a folder
         }),
       ])
+      assert(res.data)
 
       // bucket_id may be present in remove() responses (deprecated field)
       // If present, verify it matches
@@ -560,6 +562,7 @@ describe('Object API', () => {
           version: expect.any(String),
         })
       )
+      assert(res.data)
 
       // Verify FileObjectV2 required fields
       expect(res.data.id).toBeDefined()
