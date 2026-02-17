@@ -107,6 +107,9 @@ export interface FileObject {
 /**
  * File object returned by the Info endpoint (info() method)
  * Contains detailed metadata for a specific file
+ *
+ * Note: The info endpoint returns user_metadata as the metadata field,
+ * while system metadata (size, mimetype, etc.) is flattened into top-level fields.
  */
 export interface FileObjectV2 {
   /** Unique identifier for the file */
@@ -117,22 +120,22 @@ export interface FileObjectV2 {
   name: string
   /** Bucket identifier */
   bucket_id: string
+  /** Last modification timestamp */
+  last_modified: string
   /** Creation timestamp */
   created_at: string
-  /** @deprecated Use last_modified instead */
-  last_accessed_at: string
-  /** File size in bytes */
-  size?: number
-  /** Cache control header value */
-  cache_control?: string
-  /** MIME content type */
-  content_type?: string
-  /** Entity tag for caching */
-  etag?: string
-  /** Last modification timestamp (replaces updated_at) */
-  last_modified?: string
-  /** Custom file metadata */
-  metadata?: FileMetadata
+  /** @deprecated Use last_modified instead. Not returned by info endpoint. */
+  last_accessed_at?: string
+  /** File size in bytes (null if not available) */
+  size: number | null
+  /** Cache control header value (null if not set) */
+  cache_control: string | null
+  /** MIME content type (null if not available) */
+  content_type: string | null
+  /** Entity tag for caching (null if not available) */
+  etag: string | null
+  /** User-provided custom metadata (arbitrary key-value pairs) */
+  metadata: Record<string, any> | null
   /**
    * @deprecated The API returns last_modified instead.
    * This field may not be present in responses.
@@ -269,6 +272,8 @@ export interface SearchV2Result {
   folders: SearchV2Folder[]
   objects: SearchV2Object[]
   nextCursor?: string
+  /** The key/name used for cursor-based pagination (returned by storage server) */
+  nextCursorKey?: string
 }
 
 export interface FetchParameters {

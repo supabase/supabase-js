@@ -7,6 +7,15 @@ import { StorageApiError, StorageError } from '../src/lib/common/errors'
 import BlobDownloadBuilder from '../src/packages/BlobDownloadBuilder'
 import StreamDownloadBuilder from '../src/packages/StreamDownloadBuilder'
 
+// Type assertion helper for test responses
+function assertSuccess<T>(res: {
+  data: T | null
+  error: StorageError | null
+}): asserts res is { data: T; error: null } {
+  expect(res.error).toBeNull()
+  expect(res.data).not.toBeNull()
+}
+
 // Supabase CLI local development defaults
 const URL = 'http://127.0.0.1:54321/storage/v1'
 // service_role key - bypasses RLS for testing
@@ -332,7 +341,7 @@ describe('Object API', () => {
     test('list objects', async () => {
       await storage.from(bucketName).upload(uploadPath, file)
       const res = await storage.from(bucketName).list('testpath')
-      expect(res.error).toBeNull()
+      assertSuccess(res)
       expect(res.data).toEqual([
         expect.objectContaining({
           name: uploadPath.replace('testpath/', ''),
@@ -526,7 +535,7 @@ describe('Object API', () => {
       await storage.from(bucketName).upload(uploadPath, file)
       const res = await storage.from(bucketName).remove([uploadPath])
 
-      expect(res.error).toBeNull()
+      assertSuccess(res)
       expect(res.data).toEqual([
         expect.objectContaining({
           name: uploadPath,
@@ -545,7 +554,7 @@ describe('Object API', () => {
       await storage.from(bucketName).upload(uploadPath, file)
       const res = await storage.from(bucketName).info(uploadPath)
 
-      expect(res.error).toBeNull()
+      assertSuccess(res)
       expect(res.data).toEqual(
         expect.objectContaining({
           id: expect.any(String),
