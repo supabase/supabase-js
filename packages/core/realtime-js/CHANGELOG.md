@@ -1,3 +1,13 @@
+## 2.96.0 (2026-02-17)
+
+### 🩹 Fixes
+
+- **realtime:** remove unnecessary check in `removeChannel` ([#2109](https://github.com/supabase/supabase-js/pull/2109))
+
+### ❤️ Thank You
+
+- Dominik Pilipczuk @snickerdoodle2
+
 ## 2.95.3 (2026-02-06)
 
 ### 🩹 Fixes

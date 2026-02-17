@@ -1,3 +1,13 @@
+## 2.96.0 (2026-02-17)
+
+### 🩹 Fixes
+
+- **postgrest:** enforce type safety for table and view names in from() method ([#2058](https://github.com/supabase/supabase-js/pull/2058))
+
+### ❤️ Thank You
+
+- Vaibhav @7ttp
+
 ## 2.95.3 (2026-02-06)
 
 This was a version bump only for @supabase/postgrest-js to align it with other projects, there were no code changes.
