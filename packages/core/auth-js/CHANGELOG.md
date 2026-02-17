@@ -1,3 +1,13 @@
+## 2.96.0 (2026-02-17)
+
+### 🩹 Fixes
+
+- **auth:** resolve Firefox content script Promise.then() security errors in locks ([#2112](https://github.com/supabase/supabase-js/pull/2112))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+
 ## 2.95.3 (2026-02-06)
 
 This was a version bump only for @supabase/auth-js to align it with other projects, there were no code changes.
