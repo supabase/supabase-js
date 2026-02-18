@@ -24,9 +24,9 @@ export type {
   Decode,
   HeartbeatCallback,
   HeartbeatStatus,
-} from 'phoenix'
+} from '@supabase/phoenix'
 
-import type { Channel, PresenceState } from 'phoenix'
+import type { Channel, PresenceState } from '@supabase/phoenix'
 
 export type Push = ReturnType<Channel['push']>
 export type PresenceStates = Record<string, PresenceState>

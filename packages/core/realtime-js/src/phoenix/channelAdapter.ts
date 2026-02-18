@@ -1,4 +1,4 @@
-import { Channel } from 'phoenix'
+import { Channel } from '@supabase/phoenix'
 import { CHANNEL_STATES, MAX_PUSH_BUFFER_SIZE } from '../lib/constants'
 import type { RealtimeChannelOptions } from '../RealtimeChannel'
 import SocketAdapter from './socketAdapter'

@@ -1,4 +1,4 @@
-import { Socket } from 'phoenix'
+import { Socket } from '@supabase/phoenix'
 import type {
   Message,
   SocketOnClose,

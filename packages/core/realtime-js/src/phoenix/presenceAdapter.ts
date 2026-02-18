@@ -1,4 +1,4 @@
-import { Presence } from 'phoenix'
+import { Presence } from '@supabase/phoenix'
 import type { PresenceState, PresenceStates } from './types'
 import type {
   RealtimePresenceOptions,
