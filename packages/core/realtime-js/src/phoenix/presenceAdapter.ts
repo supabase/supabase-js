@@ -15,25 +15,13 @@ export default class PresenceAdapter {
     this.presence = new Presence(channel.getChannel(), phoenixOptions)
 
     this.presence.onJoin((key, currentPresence, newPresence) => {
-      const currentPresences = parseCurrentPresences(currentPresence)
-      const newPresences = newPresence['metas']
-      channel.getChannel().trigger('presence', {
-        event: 'join',
-        key,
-        currentPresences,
-        newPresences,
-      })
+      const onJoinPayload = PresenceAdapter.onJoinPayload(key, currentPresence, newPresence)
+      channel.getChannel().trigger('presence', onJoinPayload)
     })
 
     this.presence.onLeave((key, currentPresence, leftPresence) => {
-      const currentPresences = parseCurrentPresences(currentPresence)
-      const leftPresences = leftPresence['metas']
-      channel.getChannel().trigger('presence', {
-        event: 'leave',
-        key,
-        currentPresences,
-        leftPresences,
-      })
+      const onLeavePayload = PresenceAdapter.onLeavePayload(key, currentPresence, leftPresence)
+      channel.getChannel().trigger('presence', onLeavePayload)
     })
 
     this.presence.onSync(() => {
@@ -85,6 +73,30 @@ export default class PresenceAdapter {
 
       return newState
     }, {} as RealtimePresenceState)
+  }
+
+  static onJoinPayload(key: string, currentPresence: PresenceState, newPresence: PresenceState) {
+    const currentPresences = parseCurrentPresences(currentPresence)
+    const newPresences = newPresence['metas']
+
+    return {
+      event: 'join',
+      key,
+      currentPresences,
+      newPresences,
+    }
+  }
+
+  static onLeavePayload(key: string, currentPresence: PresenceState, leftPresence: PresenceState) {
+    const currentPresences = parseCurrentPresences(currentPresence)
+    const leftPresences = leftPresence['metas']
+
+    return {
+      event: 'leave',
+      key,
+      currentPresences,
+      leftPresences,
+    }
   }
 }
 
