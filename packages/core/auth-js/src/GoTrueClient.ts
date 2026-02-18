@@ -763,9 +763,21 @@ export default class GoTrueClient {
   async exchangeCodeForSession(authCode: string): Promise<AuthTokenResponse> {
     await this.initializePromise
 
-    return this._acquireLock(this.lockAcquireTimeout, async () => {
-      return this._exchangeCodeForSession(authCode)
+    let signedInSession: Session | null = null
+
+    const result = await this._acquireLock(this.lockAcquireTimeout, async () => {
+      const response = await this._exchangeCodeForSession(authCode)
+      if (!response.error && response.data?.session) {
+        signedInSession = response.data.session
+      }
+      return response
     })
+
+    if (signedInSession) {
+      await this._notifyAllSubscribers('SIGNED_IN', signedInSession)
+    }
+
+    return result
   }
 
   /**
