@@ -1,6 +1,7 @@
 import { Presence } from '@supabase/phoenix'
 import type { PresenceState, PresenceStates } from './types'
 import type {
+  RealtimePresenceJoinPayload,
   RealtimePresenceOptions,
   RealtimePresenceState,
   Presence as RealtimePresenceType,
@@ -61,15 +62,7 @@ export default class PresenceAdapter {
 
     return Object.getOwnPropertyNames(state).reduce((newState, key) => {
       const presences = state[key]
-
-      newState[key] = presences.metas.map((presence) => {
-        presence['presence_ref'] = presence['phx_ref']
-
-        delete presence['phx_ref']
-        delete presence['phx_ref_prev']
-
-        return presence
-      }) as RealtimePresenceType[]
+      newState[key] = transformState(presences)
 
       return newState
     }, {} as RealtimePresenceState)
@@ -77,7 +70,7 @@ export default class PresenceAdapter {
 
   static onJoinPayload(key: string, currentPresence: PresenceState, newPresence: PresenceState) {
     const currentPresences = parseCurrentPresences(currentPresence)
-    const newPresences = newPresence['metas']
+    const newPresences = transformState(newPresence)
 
     return {
       event: 'join',
@@ -89,7 +82,7 @@ export default class PresenceAdapter {
 
   static onLeavePayload(key: string, currentPresence: PresenceState, leftPresence: PresenceState) {
     const currentPresences = parseCurrentPresences(currentPresence)
-    const leftPresences = leftPresence['metas']
+    const leftPresences = transformState(leftPresence)
 
     return {
       event: 'leave',
@@ -98,6 +91,17 @@ export default class PresenceAdapter {
       leftPresences,
     }
   }
+}
+
+function transformState(presences: PresenceState) {
+  return presences.metas.map((presence) => {
+    presence['presence_ref'] = presence['phx_ref']
+
+    delete presence['phx_ref']
+    delete presence['phx_ref_prev']
+
+    return presence
+  }) as RealtimePresenceType[]
 }
 
 function cloneState(state: PresenceStates): PresenceStates {
@@ -109,5 +113,5 @@ function phoenixPresenceOptions(opts?: RealtimePresenceOptions) {
 }
 
 function parseCurrentPresences(currentPresences?: PresenceState) {
-  return currentPresences?.metas || []
+  return currentPresences?.metas ? transformState(currentPresences) : []
 }

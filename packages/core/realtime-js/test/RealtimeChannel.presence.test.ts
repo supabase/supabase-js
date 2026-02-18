@@ -79,7 +79,7 @@ describe('Presence state management', () => {
         currentPresences: [],
         event: 'join',
         key: 'user-123',
-        newPresences: [{ phx_ref: 'phoenix_ref', name: 'John', user_id: 'user-123' }],
+        newPresences: [{ presence_ref: 'phoenix_ref', name: 'John', user_id: 'user-123' }],
       })
     )
   })
@@ -127,7 +127,7 @@ describe('Presence state management', () => {
         currentPresences: [],
         event: 'leave',
         key: 'user-123',
-        leftPresences: [{ phx_ref: 'phoenix_ref', name: 'John', user_id: 'user-123' }],
+        leftPresences: [{ presence_ref: 'phoenix_ref', name: 'John', user_id: 'user-123' }],
       })
     )
   })
@@ -200,7 +200,7 @@ describe('Presence state management', () => {
         currentPresences: [],
         event: 'join',
         key: 'user-123',
-        newPresences: [{ phx_ref: 'phoenix_ref', name: 'John', user_id: 'user-123' }],
+        newPresences: [{ presence_ref: 'phoenix_ref', name: 'John', user_id: 'user-123' }],
       })
     )
   })
