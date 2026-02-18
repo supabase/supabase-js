@@ -91,6 +91,7 @@ We support Cloudflare Workers runtime environments. Cloudflare Workers provides 
 ### Important Notes
 
 - **Experimental features**: Features marked as experimental may be removed or changed without notice
+- **Build warnings**: If you see `UNUSED_EXTERNAL_IMPORT` warnings from Vite/Nuxt, see the [supabase-js README](./packages/core/supabase-js/README.md#known-build-warnings) — these are false positives
 
 ## 🚀 Quick Start
 
