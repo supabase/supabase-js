@@ -3592,3 +3592,93 @@ describe('GoTrueClient with throwOnError option', () => {
     await expect(client.signInWithSSO({ domain: 'nonexistent.example.com' })).rejects.toThrow()
   })
 })
+
+describe('GoTrueClient with skipAutoInitialize option', () => {
+  const store = memoryLocalStorageAdapter()
+
+  test('should auto-initialize by default (backward compatibility)', async () => {
+    // Spy on prototype before creating instance
+    const initializeSpy = jest.spyOn(GoTrueClient.prototype, 'initialize')
+
+    const client = new GoTrueClient({
+      url: GOTRUE_URL_SIGNUP_ENABLED_AUTO_CONFIRM_ON,
+      storageKey: 'test-auto-init-default',
+      autoRefreshToken: false,
+      persistSession: true,
+      storage: {
+        ...store,
+      },
+    })
+
+    // Wait for next tick to ensure constructor completes
+    await new Promise((resolve) => setTimeout(resolve, 10))
+
+    expect(initializeSpy).toHaveBeenCalled()
+
+    initializeSpy.mockRestore()
+  })
+
+  test('should skip auto-initialization when skipAutoInitialize is true', async () => {
+    // Spy on prototype before creating instance
+    const initializeSpy = jest.spyOn(GoTrueClient.prototype, 'initialize')
+
+    const client = new GoTrueClient({
+      url: GOTRUE_URL_SIGNUP_ENABLED_AUTO_CONFIRM_ON,
+      storageKey: 'test-skip-auto-init',
+      autoRefreshToken: false,
+      persistSession: true,
+      skipAutoInitialize: true, // Skip auto-initialization
+      storage: {
+        ...store,
+      },
+    })
+
+    // Wait for next tick
+    await new Promise((resolve) => setTimeout(resolve, 10))
+
+    expect(initializeSpy).not.toHaveBeenCalled()
+
+    initializeSpy.mockRestore()
+  })
+
+  test('should allow manual initialization after skipAutoInitialize', async () => {
+    const client = new GoTrueClient({
+      url: GOTRUE_URL_SIGNUP_ENABLED_AUTO_CONFIRM_ON,
+      storageKey: 'test-manual-init',
+      autoRefreshToken: false,
+      persistSession: true,
+      skipAutoInitialize: true,
+      storage: {
+        ...store,
+      },
+    })
+
+    // Manually initialize
+    await client.initialize()
+
+    // Client should be functional
+    const { data, error } = await client.getSession()
+    expect(error).toBeNull()
+  })
+
+  test('should work with lazy initialization in public methods', async () => {
+    const client = new GoTrueClient({
+      url: GOTRUE_URL_SIGNUP_ENABLED_AUTO_CONFIRM_ON,
+      storageKey: 'test-lazy-init',
+      autoRefreshToken: false,
+      persistSession: true,
+      skipAutoInitialize: true,
+      storage: {
+        ...store,
+      },
+    })
+
+    // Public methods should trigger lazy initialization
+    const { email, password } = mockUserCredentials()
+    const { data, error } = await client.signUp({ email, password })
+
+    // Should work without explicit initialize() call
+    expect(error).toBeNull()
+    expect(data.user).toBeDefined()
+  })
+})
