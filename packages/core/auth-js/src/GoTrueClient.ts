@@ -174,7 +174,7 @@ const DEFAULT_OPTIONS: Omit<
   debug: false,
   hasCustomAuthorizationHeader: false,
   throwOnError: false,
-  lockAcquireTimeout: 10000, // 10 seconds
+  lockAcquireTimeout: 5000, // 5 seconds
   skipAutoInitialize: false,
 }
 
