@@ -115,10 +115,13 @@ export async function navigatorLock<R>(
 
   // MDN article: https://developer.mozilla.org/en-US/docs/Web/API/LockManager/request
 
-  // Wrapping with await Promise.resolve() is done as some libraries like zone.js
-  // patch the Promise object to track execution context. We use await instead of
-  // .then() to avoid Firefox content script security errors where accessing .then()
-  // on cross-context promises is forbidden.
+  // Wrapping navigator.locks.request() with a plain Promise is done as some
+  // libraries like zone.js patch the Promise object to track the execution
+  // context. However, it appears that most browsers use an internal promise
+  // implementation when using the navigator.locks.request() API causing them
+  // to lose context and emit confusing log messages or break certain features.
+  // This wrapping is believed to help zone.js track the execution context
+  // better.
   await Promise.resolve()
 
   try {
@@ -186,14 +189,73 @@ export async function navigatorLock<R>(
       }
     )
   } catch (e: any) {
-    // When the AbortController times out, navigator.locks.request rejects with
-    // a DOMException named 'AbortError'. Convert this to NavigatorLockAcquireTimeoutError
-    // so callers can check error.isAcquireTimeout as documented.
-    if (e?.name === 'AbortError') {
-      throw new NavigatorLockAcquireTimeoutError(
-        `Acquiring an exclusive Navigator LockManager lock "${name}" timed out waiting ${acquireTimeout}ms`
+    if (e?.name === 'AbortError' && acquireTimeout > 0) {
+      // The lock acquisition was aborted because the timeout fired while the
+      // request was still pending. This typically means another lock holder is
+      // not releasing the lock, possibly due to React Strict Mode's
+      // double-mount/unmount behavior or a component unmounting mid-operation,
+      // leaving an orphaned lock.
+      //
+      // Recovery: use { steal: true } to forcefully acquire the lock. Per the
+      // Web Locks API spec, this releases any currently held lock with the same
+      // name and grants the request immediately, preempting any queued requests.
+      // The previous holder's callback continues running to completion but no
+      // longer holds the lock for exclusion purposes.
+      //
+      // See: https://github.com/supabase/supabase/issues/42505
+      if (internals.debug) {
+        console.log(
+          '@supabase/gotrue-js: navigatorLock: acquire timeout, recovering by stealing lock',
+          name
+        )
+      }
+
+      console.warn(
+        `@supabase/gotrue-js: Lock "${name}" was not released within ${acquireTimeout}ms. ` +
+          'This may indicate an orphaned lock from a component unmount (e.g., React Strict Mode). ' +
+          'Forcefully acquiring the lock to recover.'
+      )
+
+      return await Promise.resolve().then(() =>
+        globalThis.navigator.locks.request(
+          name,
+          {
+            mode: 'exclusive',
+            steal: true,
+          },
+          async (lock) => {
+            if (lock) {
+              if (internals.debug) {
+                console.log(
+                  '@supabase/gotrue-js: navigatorLock: recovered (stolen)',
+                  name,
+                  lock.name
+                )
+              }
+
+              try {
+                return await fn()
+              } finally {
+                if (internals.debug) {
+                  console.log(
+                    '@supabase/gotrue-js: navigatorLock: released (stolen)',
+                    name,
+                    lock.name
+                  )
+                }
+              }
+            } else {
+              // This should not happen with steal: true, but handle gracefully.
+              console.warn(
+                '@supabase/gotrue-js: Navigator LockManager returned null lock even with steal: true'
+              )
+              return await fn()
+            }
+          }
+        )
       )
     }
+
     throw e
   }
 }
