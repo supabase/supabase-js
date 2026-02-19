@@ -1055,7 +1055,7 @@ export default class RealtimeChannel {
 
   copyBindings(other: RealtimeChannel) {
     if (this.joinedOnce) {
-        throw new Error("cannot copy bindings into joined channel")
+      throw new Error('cannot copy bindings into joined channel')
     }
     for (const kind in other.bindings) {
       for (const binding of other.bindings[kind]) {

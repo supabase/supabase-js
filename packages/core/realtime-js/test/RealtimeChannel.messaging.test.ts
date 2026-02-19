@@ -1,7 +1,12 @@
 import assert from 'assert'
 import { describe, test, beforeEach, afterEach, vi, expect } from 'vitest'
 import type RealtimeChannel from '../src/RealtimeChannel'
-import { DEFAULT_API_KEY, setupRealtimeTest, waitForChannelSubscribed, type TestSetup } from './helpers/setup'
+import {
+  DEFAULT_API_KEY,
+  setupRealtimeTest,
+  waitForChannelSubscribed,
+  type TestSetup,
+} from './helpers/setup'
 import { VSN_2_0_0 } from '../src/lib/constants'
 let testSetup: TestSetup
 
@@ -148,14 +153,14 @@ describe('on', () => {
   })
 })
 
-describe("copyBindings", () => {
-  let firstChannel: RealtimeChannel;
-  let secondChannel: RealtimeChannel;
+describe('copyBindings', () => {
+  let firstChannel: RealtimeChannel
+  let secondChannel: RealtimeChannel
 
   beforeEach(() => {
     testSetup = setupRealtimeTest()
-    firstChannel = testSetup.client.channel("test")
-    secondChannel = testSetup.client.channel("test-copy")
+    firstChannel = testSetup.client.channel('test')
+    secondChannel = testSetup.client.channel('test-copy')
   })
 
   afterEach(() => {
@@ -164,10 +169,12 @@ describe("copyBindings", () => {
     testSetup.cleanup()
   })
 
-  test("throws if channel is subscribed", () => {
+  test('throws if channel is subscribed', () => {
     secondChannel.subscribe()
     waitForChannelSubscribed(secondChannel)
-    expect(() => secondChannel.copyBindings(firstChannel)).toThrow(/cannot copy bindings into joined channel/)
+    expect(() => secondChannel.copyBindings(firstChannel)).toThrow(
+      /cannot copy bindings into joined channel/
+    )
   })
 
   test('copies broadcast bindings', () => {
@@ -224,7 +231,7 @@ describe("copyBindings", () => {
   })
 
   test('copies bindings from unsubscribed channel to new channel with same topic', async () => {
-    secondChannel.unsubscribe();
+    secondChannel.unsubscribe()
 
     const callback = vi.fn()
     firstChannel.on('broadcast', { event: 'test' }, callback)
@@ -233,7 +240,7 @@ describe("copyBindings", () => {
     await waitForChannelSubscribed(firstChannel)
     await firstChannel.unsubscribe()
 
-    secondChannel = testSetup.client.channel("test")
+    secondChannel = testSetup.client.channel('test')
     secondChannel.copyBindings(firstChannel)
 
     secondChannel.subscribe()
