@@ -1,7 +1,6 @@
 import { Presence } from '@supabase/phoenix'
 import type { PresenceState, PresenceStates } from './types'
 import type {
-  RealtimePresenceJoinPayload,
   RealtimePresenceOptions,
   RealtimePresenceState,
   Presence as RealtimePresenceType,

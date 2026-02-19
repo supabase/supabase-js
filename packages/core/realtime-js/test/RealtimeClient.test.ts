@@ -10,6 +10,7 @@ const logSpy = vi.fn()
 beforeEach(() => {
   testSetup = setupRealtimeTest({
     logger: logSpy,
+    useFakeTimers: true,
     encode: undefined,
     decode: undefined,
   })
@@ -80,8 +81,7 @@ describe('Additional Coverage Tests', () => {
       // Verify close was called with correct parameters
       expect(mockConn.close).toHaveBeenCalledWith(1000, 'test reason')
 
-      // Wait for fallback timer to trigger
-      await new Promise((resolve) => setTimeout(resolve, 150))
+      vi.advanceTimersByTime(150)
 
       // Verify state was set to disconnected by fallback timer
       expect(testSetup.client.isDisconnecting()).toBe(false)
@@ -104,8 +104,7 @@ describe('Additional Coverage Tests', () => {
       // Start disconnect
       testSetup.client.disconnect()
 
-      // Wait for close callback to fire
-      await new Promise((resolve) => setTimeout(resolve, 50))
+      vi.advanceTimersByTime(50)
 
       // Verify state was set to disconnected by close callback
       expect(testSetup.client.isDisconnecting()).toBe(false)

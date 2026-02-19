@@ -283,7 +283,7 @@ describe('send', () => {
           method: 'POST',
           headers: expectedHeaders,
           body: '{"messages":[{"topic":"topic","event":"test","private":true}]}',
-          signal: new AbortController().signal,
+          signal: expect.any(AbortSignal),
         }
 
         const expectedUrl = testSetup.realtimeUrl

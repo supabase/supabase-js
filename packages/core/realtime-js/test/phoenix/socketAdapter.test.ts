@@ -1,7 +1,6 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import { setupRealtimeTest, type TestSetup } from '../helpers/setup'
 import SocketAdapter from '../../src/phoenix/socketAdapter'
-import { CONNECTION_STATE, SOCKET_STATES } from '../../src/lib/constants'
 
 let testSetup: TestSetup
 let socketAdapter: SocketAdapter

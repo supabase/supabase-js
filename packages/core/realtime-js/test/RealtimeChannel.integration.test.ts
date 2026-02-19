@@ -95,13 +95,15 @@ describe('Complex message flow integration', () => {
     // Send multiple rapid messages
     const messages = Array.from({ length: 10 }, (_, i) => `message-${i}`)
 
-    messages.forEach(async (message) => {
-      await channel.send({
-        type: 'broadcast',
-        event: 'rapid-test',
-        payload: { message },
-      })
-    })
+    await Promise.all(
+      messages.map((message) =>
+        channel.send({
+          type: 'broadcast',
+          event: 'rapid-test',
+          payload: { message },
+        })
+      )
+    )
 
     // Should have attempted to push all messages
     expect(pushSpy).toHaveBeenCalledTimes(10)

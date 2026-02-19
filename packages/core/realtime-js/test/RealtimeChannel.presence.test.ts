@@ -19,6 +19,7 @@ beforeEach(() => {
 })
 
 afterEach(() => {
+  channel.unsubscribe()
   testSetup.cleanup()
 })
 
