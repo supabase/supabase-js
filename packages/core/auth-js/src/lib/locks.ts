@@ -115,15 +115,14 @@ export async function navigatorLock<R>(
 
   // MDN article: https://developer.mozilla.org/en-US/docs/Web/API/LockManager/request
 
-  // Wrapping navigator.locks.request() with a plain Promise is done as some
-  // libraries like zone.js patch the Promise object to track the execution
-  // context. However, it appears that most browsers use an internal promise
-  // implementation when using the navigator.locks.request() API causing them
-  // to lose context and emit confusing log messages or break certain features.
-  // This wrapping is believed to help zone.js track the execution context
-  // better.
-  return await Promise.resolve().then(() =>
-    globalThis.navigator.locks.request(
+  // Wrapping with await Promise.resolve() is done as some libraries like zone.js
+  // patch the Promise object to track execution context. We use await instead of
+  // .then() to avoid Firefox content script security errors where accessing .then()
+  // on cross-context promises is forbidden.
+  await Promise.resolve()
+
+  try {
+    return await globalThis.navigator.locks.request(
       name,
       acquireTimeout === 0
         ? {
@@ -186,7 +185,17 @@ export async function navigatorLock<R>(
         }
       }
     )
-  )
+  } catch (e: any) {
+    // When the AbortController times out, navigator.locks.request rejects with
+    // a DOMException named 'AbortError'. Convert this to NavigatorLockAcquireTimeoutError
+    // so callers can check error.isAcquireTimeout as documented.
+    if (e?.name === 'AbortError') {
+      throw new NavigatorLockAcquireTimeoutError(
+        `Acquiring an exclusive Navigator LockManager lock "${name}" timed out waiting ${acquireTimeout}ms`
+      )
+    }
+    throw e
+  }
 }
 
 const PROCESS_LOCKS: { [name: string]: Promise<any> } = {}
@@ -218,55 +227,85 @@ export async function processLock<R>(
 ): Promise<R> {
   const previousOperation = PROCESS_LOCKS[name] ?? Promise.resolve()
 
-  const currentOperation = Promise.race(
-    [
-      previousOperation.catch(() => {
-        // ignore error of previous operation that we're waiting to finish
-        return null
-      }),
-      acquireTimeout >= 0
-        ? new Promise((_, reject) => {
-            setTimeout(() => {
-              console.warn(
-                `@supabase/gotrue-js: Lock "${name}" acquisition timed out after ${acquireTimeout}ms. ` +
-                  'This may be caused by another operation holding the lock. ' +
-                  'Consider increasing lockAcquireTimeout or checking for stuck operations.'
-              )
+  // Wrap previousOperation to handle errors without using .catch()
+  // This avoids Firefox content script security errors
+  const previousOperationHandled = (async () => {
+    try {
+      await previousOperation
+      return null
+    } catch (e) {
+      // ignore error of previous operation that we're waiting to finish
+      return null
+    }
+  })()
 
-              reject(
-                new ProcessLockAcquireTimeoutError(
-                  `Acquiring process lock with name "${name}" timed out`
+  const currentOperation = (async () => {
+    let timeoutId: ReturnType<typeof setTimeout> | null = null
+
+    try {
+      // Wait for either previous operation or timeout
+      const timeoutPromise =
+        acquireTimeout >= 0
+          ? new Promise((_, reject) => {
+              timeoutId = setTimeout(() => {
+                console.warn(
+                  `@supabase/gotrue-js: Lock "${name}" acquisition timed out after ${acquireTimeout}ms. ` +
+                    'This may be caused by another operation holding the lock. ' +
+                    'Consider increasing lockAcquireTimeout or checking for stuck operations.'
                 )
-              )
-            }, acquireTimeout)
-          })
-        : null,
-    ].filter((x) => x)
-  )
-    .catch((e: any) => {
+
+                reject(
+                  new ProcessLockAcquireTimeoutError(
+                    `Acquiring process lock with name "${name}" timed out`
+                  )
+                )
+              }, acquireTimeout)
+            })
+          : null
+
+      await Promise.race([previousOperationHandled, timeoutPromise].filter((x) => x))
+
+      // If we reach here, previousOperationHandled won the race
+      // Clear the timeout to prevent false warnings
+      if (timeoutId !== null) {
+        clearTimeout(timeoutId)
+      }
+    } catch (e: any) {
+      // Clear the timeout on error path as well
+      if (timeoutId !== null) {
+        clearTimeout(timeoutId)
+      }
+
+      // Re-throw timeout errors, ignore others
       if (e && e.isAcquireTimeout) {
         throw e
       }
-
-      return null
-    })
-    .then(async () => {
-      // previous operations finished and we didn't get a race on the acquire
-      // timeout, so the current operation can finally start
-      return await fn()
-    })
-
-  PROCESS_LOCKS[name] = currentOperation.catch(async (e: any) => {
-    if (e && e.isAcquireTimeout) {
-      // if the current operation timed out, it doesn't mean that the previous
-      // operation finished, so we need contnue waiting for it to finish
-      await previousOperation
-
-      return null
+      // Fall through to run fn() - previous operation finished with error
     }
 
-    throw e
-  })
+    // Previous operations finished and we didn't get a race on the acquire
+    // timeout, so the current operation can finally start
+    return await fn()
+  })()
+
+  PROCESS_LOCKS[name] = (async () => {
+    try {
+      return await currentOperation
+    } catch (e: any) {
+      if (e && e.isAcquireTimeout) {
+        // if the current operation timed out, it doesn't mean that the previous
+        // operation finished, so we need continue waiting for it to finish
+        try {
+          await previousOperation
+        } catch (prevError) {
+          // Ignore previous operation errors
+        }
+        return null
+      }
+
+      throw e
+    }
+  })()
 
   // finally wait for the current operation to finish successfully, with an
   // error or with an acquire timeout error

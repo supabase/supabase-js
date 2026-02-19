@@ -170,6 +170,15 @@ export type GoTrueClientOptions = {
    * ```
    */
   lockAcquireTimeout?: number
+
+  /**
+   * If true, skips automatic initialization in constructor. Useful for SSR
+   * contexts where initialization timing must be controlled to prevent race
+   * conditions with HTTP response generation.
+   *
+   * @default false
+   */
+  skipAutoInitialize?: boolean
 }
 
 const WeakPasswordReasons = ['length', 'characters', 'pwned'] as const

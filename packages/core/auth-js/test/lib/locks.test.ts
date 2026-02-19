@@ -38,6 +38,32 @@ describe('navigatorLock', () => {
   it('should not throw if browser is not following the Navigator LockManager spec', async () => {
     await expect(navigatorLock('test-lock', 1, async () => 'success')).resolves.toBe('success')
   })
+
+  it('should convert AbortError to NavigatorLockAcquireTimeoutError with isAcquireTimeout property', async () => {
+    // Mock navigator.locks.request to simulate an AbortError being thrown when timeout occurs
+    const abortError = new Error('AbortError')
+    abortError.name = 'AbortError'
+    ;(globalThis.navigator.locks.request as jest.Mock).mockRejectedValue(abortError)
+
+    // Call navigatorLock with a timeout - should convert AbortError to timeout error
+    await expect(navigatorLock('test-lock', 100, async () => 'success')).rejects.toMatchObject({
+      isAcquireTimeout: true,
+      message: expect.stringContaining('timed out'),
+    })
+  })
+
+  it('should rethrow non-AbortError errors unchanged', async () => {
+    // Mock navigator.locks.request to throw a different error
+    const customError = new Error('Some other error')
+    customError.name = 'CustomError'
+    ;(globalThis.navigator.locks.request as jest.Mock).mockRejectedValue(customError)
+
+    // Should rethrow the error unchanged (no isAcquireTimeout property)
+    await expect(navigatorLock('test-lock', 100, async () => 'success')).rejects.toMatchObject({
+      message: 'Some other error',
+      name: 'CustomError',
+    })
+  })
 })
 
 describe('processLock', () => {
