@@ -119,7 +119,10 @@ export type GoTrueClientOptions = {
   /* If debug messages are emitted. Can be used to inspect the behavior of the library. If set to a function, the provided function will be used instead of `console.log()` to perform the logging. */
   debug?: boolean | ((message: string, ...args: any[]) => void)
   /**
-   * Provide your own locking mechanism based on the environment. By default no locking is done at this time.
+   * Provide your own locking mechanism based on the environment. By default,
+   * `navigatorLock` (Web Locks API) is used in browser environments when
+   * `persistSession` is true. Falls back to an in-process lock for non-browser
+   * environments (e.g. React Native).
    *
    * @experimental
    */
@@ -139,34 +142,25 @@ export type GoTrueClientOptions = {
    *
    * When multiple browser tabs or windows use the auth client simultaneously, they coordinate
    * via the Web Locks API to prevent race conditions during session refresh and other operations.
-   * This timeout controls how long to wait for the lock before failing.
+   * This timeout controls how long to wait before attempting lock recovery.
    *
-   * If the lock cannot be acquired within this time, a `LockAcquireTimeoutError` is thrown.
-   * You can catch this by checking `error.isAcquireTimeout === true`.
+   * - **Positive value**: Wait up to this many milliseconds. If the lock is still held, attempt
+   *   automatic recovery by stealing it (the previous holder is evicted, its callback continues
+   *   to completion without exclusive access). This recovers from orphaned locks caused by
+   *   React Strict Mode double-mount, storage API hangs, or aborted operations.
+   * - **Zero (0)**: Fail immediately if the lock is unavailable; throws `LockAcquireTimeoutError`
+   *   (check `error.isAcquireTimeout === true`).
+   * - **Negative value**: Wait indefinitely — can cause permanent deadlocks if the lock is orphaned.
    *
-   * - **Positive value**: Wait up to this many milliseconds before timing out
-   * - **Zero (0)**: Fail immediately if the lock is unavailable
-   * - **Negative value**: Wait indefinitely (not recommended - can cause deadlocks)
-   *
-   * @default 10000
+   * @default 5000
    *
    * @example
    * ```ts
    * const client = createClient(url, key, {
    *   auth: {
-   *     lockAcquireTimeout: 10000, // 10 seconds
+   *     lockAcquireTimeout: 5000, // 5 seconds, then steal orphaned lock
    *   },
    * })
-   *
-   * try {
-   *   await client.auth.getSession()
-   * } catch (error) {
-   *   if (error.isAcquireTimeout) {
-   *     // Lock held by another tab/instance, or a previous operation is stuck.
-   *     // Consider: closing other tabs, increasing timeout, or restarting the browser.
-   *     console.error('Could not acquire lock within timeout period.')
-   *   }
-   * }
    * ```
    */
   lockAcquireTimeout?: number
