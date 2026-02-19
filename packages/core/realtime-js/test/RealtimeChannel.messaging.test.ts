@@ -1,7 +1,7 @@
 import assert from 'assert'
 import { describe, test, beforeEach, afterEach, vi, expect } from 'vitest'
 import type RealtimeChannel from '../src/RealtimeChannel'
-import { DEFAULT_API_KEY, setupRealtimeTest, type TestSetup } from './helpers/setup'
+import { DEFAULT_API_KEY, setupRealtimeTest, waitForChannelSubscribed, type TestSetup } from './helpers/setup'
 import { VSN_2_0_0 } from '../src/lib/constants'
 let testSetup: TestSetup
 
@@ -145,6 +145,102 @@ describe('on', () => {
 
       assert.equal(systemEventCount, 1)
     })
+  })
+})
+
+describe("copyBindings", () => {
+  let firstChannel: RealtimeChannel;
+  let secondChannel: RealtimeChannel;
+
+  beforeEach(() => {
+    testSetup = setupRealtimeTest()
+    firstChannel = testSetup.client.channel("test")
+    secondChannel = testSetup.client.channel("test-copy")
+  })
+
+  afterEach(() => {
+    firstChannel.unsubscribe()
+    secondChannel.unsubscribe()
+    testSetup.cleanup()
+  })
+
+  test("throws if channel is subscribed", () => {
+    secondChannel.subscribe()
+    waitForChannelSubscribed(secondChannel)
+    expect(() => secondChannel.copyBindings(firstChannel)).toThrow(/cannot copy bindings into joined channel/)
+  })
+
+  test('copies broadcast bindings', () => {
+    const callback = vi.fn()
+    firstChannel.on('broadcast', { event: 'test' }, callback)
+
+    secondChannel.copyBindings(firstChannel)
+
+    expect(secondChannel.bindings.broadcast.length).toBe(1)
+    expect(secondChannel.bindings.broadcast[0].filter).toEqual({ event: 'test' })
+
+    secondChannel.channelAdapter.getChannel().trigger('broadcast', { event: 'test' })
+    expect(callback).toHaveBeenCalled()
+  })
+
+  test('copies presence bindings', () => {
+    const callback = vi.fn()
+    firstChannel.on('presence', { event: 'sync' }, callback)
+
+    secondChannel.copyBindings(firstChannel)
+
+    expect(secondChannel.bindings.presence.length).toBe(1)
+    expect(secondChannel.bindings.presence[0].filter).toEqual({ event: 'sync' })
+
+    secondChannel.channelAdapter.getChannel().trigger('presence', { event: 'sync' })
+    expect(callback).toHaveBeenCalled()
+  })
+
+  test('copies postgres_changes bindings', () => {
+    const callback = vi.fn()
+    const filter = { event: 'INSERT' as const, schema: 'public' }
+    firstChannel.on('postgres_changes', filter, callback)
+
+    secondChannel.copyBindings(firstChannel)
+
+    expect(secondChannel.bindings.postgres_changes.length).toBe(1)
+    expect(secondChannel.bindings.postgres_changes[0].filter).toEqual(filter)
+
+    secondChannel.channelAdapter.getChannel().trigger('postgres_changes', { event: 'INSERT' })
+    expect(callback).toHaveBeenCalled()
+  })
+
+  test('copies system bindings', () => {
+    const callback = vi.fn()
+    firstChannel.on('system', {}, callback)
+
+    secondChannel.copyBindings(firstChannel)
+
+    expect(secondChannel.bindings.system.length).toBe(1)
+    expect(secondChannel.bindings.system[0].filter).toEqual({})
+
+    secondChannel.channelAdapter.getChannel().trigger('system', { status: 'ok' })
+    expect(callback).toHaveBeenCalled()
+  })
+
+  test('copies bindings from unsubscribed channel to new channel with same topic', async () => {
+    secondChannel.unsubscribe();
+
+    const callback = vi.fn()
+    firstChannel.on('broadcast', { event: 'test' }, callback)
+
+    firstChannel.subscribe()
+    await waitForChannelSubscribed(firstChannel)
+    await firstChannel.unsubscribe()
+
+    secondChannel = testSetup.client.channel("test")
+    secondChannel.copyBindings(firstChannel)
+
+    secondChannel.subscribe()
+    await waitForChannelSubscribed(secondChannel)
+
+    secondChannel.channelAdapter.getChannel().trigger('broadcast', { event: 'test' })
+    expect(callback).toHaveBeenCalled()
   })
 })
 
