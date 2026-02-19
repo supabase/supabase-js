@@ -1054,13 +1054,11 @@ export default class RealtimeChannel {
   }
 
   copyBindings(other: RealtimeChannel) {
+    if (this.joinedOnce) {
+        throw new Error("cannot copy bindings into joined channel")
+    }
     for (const kind in other.bindings) {
-      const bindings = other.bindings[kind]
-      if (this.joinedOnce && kind == "postgres_changes" && bindings.length > 0) {
-        throw new Error("cannot copy `postgres_changes` bindings into joined channel")
-      }
-
-      for (const binding of bindings) {
+      for (const binding of other.bindings[kind]) {
         this._on(binding.type, binding.filter, binding.callback)
       }
     }
