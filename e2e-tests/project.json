@@ -33,7 +33,7 @@
     "test:e2e:auth:standard": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "echo 'Auth standard tests coming in Phase 2'",
+        "command": "jest tests/auth/standard --runInBand --coverage",
         "cwd": "{projectRoot}"
       },
       "dependsOn": ["^build", "test:e2e:setup"],
@@ -105,7 +105,7 @@
     "test:e2e:supabase": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "echo 'Supabase-js integration tests coming in Phase 2'",
+        "command": "jest tests/supabase --runInBand --coverage",
         "cwd": "{projectRoot}"
       },
       "dependsOn": ["^build", "test:e2e:setup"],
