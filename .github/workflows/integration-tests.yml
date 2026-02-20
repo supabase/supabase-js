@@ -199,6 +199,6 @@ jobs:
 
       - name: Run e2e standard tests via Nx
         run: npx nx test:e2e:all:standard e2e-tests
-        timeout-minutes: 30
+        timeout-minutes: 15
         # test:e2e:all:standard handles: setup → auth/storage/postgrest/functions/supabase tests → cleanup
         # dependsOn: ["^build"] is satisfied from cache (built in previous step)
