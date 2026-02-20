@@ -42,6 +42,49 @@ describe('push', () => {
   })
 })
 
+describe('onConnMessage', () => {
+  beforeEach(() => {
+    testSetup = setupRealtimeTest()
+  })
+
+  afterEach(() => {
+    testSetup.cleanup()
+  })
+
+  test("on heartbeat events from the 'phoenix' topic, callback is called with latency", async () => {
+    let called = false
+    let calledLatency: number | undefined = undefined
+    testSetup.client.onHeartbeat((message, latency) => {
+      called = message == 'ok'
+      calledLatency = latency
+    })
+
+    testSetup.connect()
+    await testSetup.socketConnected()
+
+    const socket = testSetup.client.socketAdapter.getSocket()
+    socket.sendHeartbeat()
+    // One minute ago
+    socket.heartbeatSentAt = Date.now() - 60000
+
+    const message = JSON.stringify({
+      join_ref: null,
+      ref: socket.pendingHeartbeatRef,
+      topic: 'phoenix',
+      event: 'phx_reply',
+      payload: { status: 'ok', response: {} },
+    })
+
+    const messageEvent = new MessageEvent('message', { data: message })
+    socket.onConnMessage(messageEvent)
+
+    assert.strictEqual(called, true)
+    assert.strictEqual(testSetup.client.socketAdapter.getSocket().pendingHeartbeatRef, null)
+    expect(calledLatency).toBeGreaterThanOrEqual(60000)
+    expect(calledLatency).toBeLessThan(61000)
+  })
+})
+
 describe('custom encoder and decoder', () => {
   test('encodes to array JSON by default', () => {
     testSetup = setupRealtimeTest({

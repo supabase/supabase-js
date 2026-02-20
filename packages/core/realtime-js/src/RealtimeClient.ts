@@ -604,10 +604,10 @@ export default class RealtimeClient {
   }
 
   /** @internal */
-  private _wrapHeartbeatCallback(heartbeatCallback?: HeartbeatCallback) {
-    return (status: HeartbeatStatus) => {
+  private _wrapHeartbeatCallback(heartbeatCallback?: HeartbeatCallback): HeartbeatCallback {
+    return (status, latency) => {
       if (status == 'sent') this._setAuthSafely()
-      if (heartbeatCallback) heartbeatCallback(status)
+      if (heartbeatCallback) heartbeatCallback(status, latency)
     }
   }
 
