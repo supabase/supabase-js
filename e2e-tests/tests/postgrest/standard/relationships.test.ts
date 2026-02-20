@@ -3,7 +3,7 @@ import { createPostgrestClient, REST_URL_EXPORT as REST_URL } from '../../helper
 import { CustomUserDataTypeSchema, Database } from './types.override'
 import { expectType, TypeEqual } from './types'
 import { z } from 'zod'
-import { Json } from '../src/select-query-parser/types'
+import { Json } from '@supabase/postgrest-js/src/select-query-parser/types'
 import { RequiredDeep } from 'type-fest'
 
 const postgrest = createPostgrestClient<Database>()

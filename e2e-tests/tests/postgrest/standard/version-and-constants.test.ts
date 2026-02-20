@@ -1,5 +1,5 @@
-import { version } from '../src/version'
-import { DEFAULT_HEADERS } from '../src/constants'
+import { version } from '@supabase/postgrest-js/src/version'
+import { DEFAULT_HEADERS } from '@supabase/postgrest-js/src/constants'
 
 describe('version', () => {
   test('should export version string', () => {

@@ -65,6 +65,44 @@ For package-specific issues, consult the troubleshooting section in each package
 - **Docker not running**: Ensure Docker Desktop is started
 - **Container cleanup**: Use `npx nx test:clean <package>` if containers weren't properly removed
 
+## E2E Integration Tests
+
+The `/e2e-tests/` directory contains a consolidated end-to-end test infrastructure that runs all packages against a single shared Supabase CLI instance.
+
+### Running E2E Tests
+
+```bash
+# Run all standard e2e tests (Supabase CLI)
+npx nx test:e2e:all:standard e2e-tests
+
+# Run by package
+npx nx test:e2e:auth:standard e2e-tests
+npx nx test:e2e:storage e2e-tests
+npx nx test:e2e:postgrest:standard e2e-tests
+npx nx test:e2e:functions e2e-tests
+npx nx test:e2e:supabase e2e-tests
+
+# Run Docker-based edge case tests
+npx nx test:e2e:auth:edge e2e-tests        # 4 GoTrue instances
+npx nx test:e2e:postgrest:v12 e2e-tests    # PostgREST v12 compat
+```
+
+### Prerequisites for E2E Tests
+
+- **Supabase CLI** installed (`npx supabase`)
+- **Docker** running (for standard tests via Supabase CLI, and for edge/v12 Docker tests)
+- **Node.js 20+**
+
+### Infrastructure
+
+| Test Suite              | Infrastructure              | Ports                   |
+| ----------------------- | --------------------------- | ----------------------- |
+| standard (all packages) | Supabase CLI                | 54321 (API), 54322 (DB) |
+| auth:edge               | Docker (4 GoTrue instances) | 9996-9999               |
+| postgrest:v12           | Docker (PostgREST v12)      | 3012                    |
+
+See [e2e-tests/README.md](../e2e-tests/README.md) for complete details.
+
 ## Contributing Tests
 
 When adding new features or fixing bugs:

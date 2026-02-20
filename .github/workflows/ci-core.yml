@@ -121,6 +121,13 @@ jobs:
         run: npx nx affected --target=test:docker --projects=@supabase/auth-js
         timeout-minutes: 10
 
+      - name: Build affected packages (for e2e-tests)
+        run: npx nx affected --target=build
+
+      - name: Run e2e auth edge case tests (if affected)
+        run: npx nx affected --target=test:e2e:auth:edge --projects=e2e-tests
+        timeout-minutes: 10
+
       # Note: Docker test coverage is not uploaded to Coveralls
       # The regular auth-js tests provide comprehensive coverage reporting
       # Docker tests verify integration scenarios but don't need separate coverage tracking
@@ -227,6 +234,92 @@ jobs:
         run: npx nx affected --target=test:ci:v12
         timeout-minutes: 5
 
+      - name: Build affected packages (for e2e-tests)
+        run: npx nx affected --target=build
+
+      - name: Run e2e PostgREST v12 tests (if affected)
+        run: npx nx affected --target=test:e2e:postgrest:v12 --projects=e2e-tests
+        timeout-minutes: 10
+
+  # E2E integration tests (Supabase CLI - unified infrastructure)
+  test-e2e-standard:
+    name: E2E Standard Tests (Supabase CLI)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        with:
+          filter: tree:0
+          fetch-depth: 0
+      - uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238 # v6.2.0
+        with:
+          node-version: 20
+          cache: 'npm'
+      - name: Install dependencies
+        run: npm ci
+      - uses: nrwl/nx-set-shas@3e9ad7370203c1e93d109be57f3b72eb0eb511b1 # v4.4.0
+
+      - name: Build affected packages
+        run: npx nx affected --target=build
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@b60b5899c73b63a2d2d651b1e90db8d4c9392f51 # v1.6.0
+        with:
+          version: latest
+
+      - name: Run standard e2e tests (if e2e-tests affected)
+        run: npx nx affected --target=test:e2e:all:standard --projects=e2e-tests
+        timeout-minutes: 30
+
+      - name: Upload e2e coverage (auth standard)
+        uses: coverallsapp/github-action@5cbfd81b66ca5d10c19b062c04de0199c215fb6e # v2.3.7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path-to-lcov: ./e2e-tests/coverage/auth/lcov.info
+          parallel: true
+          flag-name: e2e-auth-standard
+          fail-on-error: false
+        continue-on-error: true
+
+      - name: Upload e2e coverage (storage)
+        uses: coverallsapp/github-action@5cbfd81b66ca5d10c19b062c04de0199c215fb6e # v2.3.7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path-to-lcov: ./e2e-tests/coverage/storage/lcov.info
+          parallel: true
+          flag-name: e2e-storage
+          fail-on-error: false
+        continue-on-error: true
+
+      - name: Upload e2e coverage (postgrest)
+        uses: coverallsapp/github-action@5cbfd81b66ca5d10c19b062c04de0199c215fb6e # v2.3.7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path-to-lcov: ./e2e-tests/coverage/postgrest/lcov.info
+          parallel: true
+          flag-name: e2e-postgrest
+          fail-on-error: false
+        continue-on-error: true
+
+      - name: Upload e2e coverage (functions)
+        uses: coverallsapp/github-action@5cbfd81b66ca5d10c19b062c04de0199c215fb6e # v2.3.7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path-to-lcov: ./e2e-tests/coverage/functions/lcov.info
+          parallel: true
+          flag-name: e2e-functions
+          fail-on-error: false
+        continue-on-error: true
+
+      - name: Upload e2e coverage (supabase-js)
+        uses: coverallsapp/github-action@5cbfd81b66ca5d10c19b062c04de0199c215fb6e # v2.3.7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path-to-lcov: ./e2e-tests/coverage/supabase/lcov.info
+          parallel: true
+          flag-name: e2e-supabase
+          fail-on-error: false
+        continue-on-error: true
+
   # SUMMARY JOB
   all-core-tests-pass:
     name: All Core Package Tests Pass
@@ -238,6 +331,7 @@ jobs:
         test-postgrest-js,
         check-postgrest-generated-types,
         test-postgrest-js-v12,
+        test-e2e-standard,
       ]
     steps:
       - name: Summary
