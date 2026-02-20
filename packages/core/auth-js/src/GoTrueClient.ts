@@ -175,7 +175,6 @@ const DEFAULT_OPTIONS: Omit<
   hasCustomAuthorizationHeader: false,
   throwOnError: false,
   lockAcquireTimeout: 10000, // 10 seconds
-  skipAutoInitialize: false,
 }
 
 async function lockNoOp<R>(name: string, acquireTimeout: number, fn: () => Promise<R>): Promise<R> {
@@ -407,14 +406,9 @@ export default class GoTrueClient {
       })
     }
 
-    // Only auto-initialize if not explicitly disabled. Skipped in SSR contexts
-    // where initialization timing must be controlled. All public methods have
-    // lazy initialization, so the client remains fully functional.
-    if (!settings.skipAutoInitialize) {
-      this.initialize().catch((error) => {
-        this._debug('#initialize()', 'error', error)
-      })
-    }
+    this.initialize().catch((error) => {
+      this._debug('#initialize()', 'error', error)
+    })
   }
 
   /**

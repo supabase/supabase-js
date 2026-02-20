@@ -1,17 +1,3 @@
-## 2.97.0 (2026-02-18)
-
-This was a version bump only for @supabase/storage-js to align it with other projects, there were no code changes.
-
-## 2.96.0 (2026-02-17)
-
-### 🚀 Features
-
-- **storage:** add setHeader method to BaseApiClient ([#2079](https://github.com/supabase/supabase-js/pull/2079))
-
-### ❤️ Thank You
-
-- David Barrell @dabarrell
-
 ## 2.95.3 (2026-02-06)
 
 ### 🚀 Features

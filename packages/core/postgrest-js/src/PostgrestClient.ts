@@ -137,9 +137,7 @@ export default class PostgrestClient<
    *
    * @param relation - The table or view name to query
    */
-  from(
-    relation: (string & keyof Schema['Tables']) | (string & keyof Schema['Views'])
-  ): PostgrestQueryBuilder<ClientOptions, Schema, any, any> {
+  from(relation: string): PostgrestQueryBuilder<ClientOptions, Schema, any, any> {
     if (!relation || typeof relation !== 'string' || relation.trim() === '') {
       throw new Error('Invalid relation name: relation must be a non-empty string.')
     }
