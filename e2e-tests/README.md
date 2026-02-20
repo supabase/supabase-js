@@ -28,7 +28,7 @@ This directory contains a unified testing infrastructure that replaces the scatt
 
 ### Supplementary Docker
 
-- **Auth Edge Cases**: `/e2e-tests/infra/auth-edge-cases/` (4 GoTrue configs on ports 9996-9999)
+- **Auth Edge Cases**: `/e2e-tests/infra/auth/` (4 GoTrue configs on ports 9996-9999)
 - **PostgREST v12**: `/e2e-tests/infra/postgrest-v12/` (port 3012)
 - **Usage**: Specialized configuration variants only
 
@@ -40,32 +40,50 @@ e2e-tests/
 │   ├── config.toml              # Unified config (all services)
 │   ├── migrations/              # Consolidated database migrations
 │   │   ├── 00000000000001_postgrest_schema.sql
-│   │   └── 00000000000002_storage_rls_policies.sql
+│   │   ├── 00000000000002_storage_rls_policies.sql
+│   │   └── 00000000000003_supabase_js_schema.sql
 │   ├── seed.sql                 # Combined seed data
 │   └── functions/               # Edge Functions
-├── infra/                       # Supplementary Docker (Phase 3)
-│   ├── auth-edge-cases/
-│   └── postgrest-v12/
+├── infra/                       # Supplementary Docker
+│   ├── auth/                   # 4 GoTrue instances (ports 9996-9999)
+│   │   ├── docker-compose.yml
+│   │   └── db/00-schema.sql
+│   └── postgrest-v12/          # PostgREST v12 (port 3012)
+│       ├── docker-compose.yml
+│       ├── 00-schema.sql
+│       └── 01-seed.sql
 ├── tests/                       # Test files by package
 │   ├── auth/
 │   │   ├── standard/           # Runs against Supabase CLI
-│   │   └── edge-cases/         # Runs against Docker
+│   │   └── edge/               # Runs against Docker multi-GoTrue
 │   ├── storage/
 │   ├── postgrest/
 │   │   ├── standard/
 │   │   └── v12/
 │   ├── functions/
-│   ├── supabase/
-│   └── cross-package/          # Tests spanning multiple services
+│   └── supabase/
 ├── fixtures/                    # Shared test data
 │   └── users.ts
 ├── helpers/                     # Shared utilities
 │   ├── supabase-client.ts
+│   ├── auth-client.ts
+│   ├── auth/                   # auth-js specific helpers
+│   │   ├── clients.ts
+│   │   ├── utils.ts
+│   │   └── webauthn.fixtures.ts
+│   ├── functions-client.ts
+│   ├── postgrest-client.ts
+│   ├── storage-client.ts
 │   ├── global-setup.ts
 │   └── global-teardown.ts
 ├── scripts/                     # Setup/cleanup scripts
-│   ├── setup-main.sh
-│   └── cleanup-all.sh
+│   ├── setup-main.sh            # Start Supabase CLI
+│   ├── cleanup-all.sh           # Stop Supabase CLI
+│   ├── setup-auth-edge.sh       # Start auth Docker
+│   ├── cleanup-auth-edge.sh     # Stop auth Docker
+│   ├── setup-postgrest-v12.sh   # Start postgrest-v12 Docker
+│   ├── cleanup-postgrest-v12.sh # Stop postgrest-v12 Docker
+│   └── generate-signing-keys.js # Generate RSA keys for auth tests
 ├── project.json                 # Nx configuration
 ├── jest.config.ts
 ├── tsconfig.json
@@ -353,29 +371,30 @@ echo $SUPABASE_SERVICE_ROLE_KEY
 - [x] Jest configuration
 - [x] Shared helpers and fixtures
 
-### Phase 2: Core Tests Migration (In Progress)
+### Phase 2: Core Tests Migration ✅
 
-- [ ] storage-js tests
-- [ ] postgrest-js standard tests
-- [ ] functions-js tests
-- [ ] auth-js standard tests
-- [ ] supabase-js core tests
+- [x] storage-js tests (`tests/storage/`)
+- [x] postgrest-js standard tests (`tests/postgrest/standard/`)
+- [x] functions-js tests (`tests/functions/`)
+- [x] auth-js standard tests (`tests/auth/standard/`)
+- [x] supabase-js core tests (`tests/supabase/`)
 
-### Phase 3: Edge Cases (Planned)
+### Phase 3: Edge Cases ✅
 
-- [ ] auth-js edge cases (Docker)
-- [ ] postgrest-js v12 compatibility (Docker)
+- [x] auth-js edge cases (`tests/auth/edge/` + `infra/auth/`)
+- [x] postgrest-js v12 compatibility (`tests/postgrest/v12/` + `infra/postgrest-v12/`)
 
-### Phase 4: CI/CD Integration (Planned)
+### Phase 4: CI/CD Integration ✅
 
-- [ ] Add e2e test job to GitHub Actions
-- [ ] Parallel validation with old tests
-- [ ] Coverage comparison
+- [x] `test-e2e-standard` job added to `.github/workflows/ci-core.yml`
+- [x] Auth edge tests wired into `test-auth-js-docker` job
+- [x] PostgREST v12 e2e tests wired into `test-postgrest-js-v12` job
+- [x] Coverage upload steps added for all e2e test suites
 
-### Phase 5: Cleanup (Planned)
+### Phase 5: Cleanup (Pending - after validation period)
 
-- [ ] Remove duplicate infrastructure
-- [ ] Update documentation
+- [ ] Remove duplicate infrastructure from individual packages
+- [ ] Update CLAUDE.md and docs/TESTING.md
 - [ ] Archive old test infrastructure
 
 ## Resources

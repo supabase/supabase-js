@@ -45,13 +45,18 @@
     "test:e2e:auth:edge": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "echo 'Auth edge case tests coming in Phase 3'",
+        "commands": [
+          "bash scripts/setup-auth-edge.sh",
+          "jest tests/auth/edge --runInBand --coverage",
+          "bash scripts/cleanup-auth-edge.sh"
+        ],
+        "parallel": false,
         "cwd": "{projectRoot}"
       },
       "dependsOn": ["^build"],
       "inputs": ["testing", "^production"],
       "outputs": ["{projectRoot}/coverage/auth-edge"],
-      "cache": true,
+      "cache": false,
       "description": "Run auth-js edge case tests (against Docker multi-GoTrue setup)"
     },
     "test:e2e:storage": {
@@ -81,13 +86,18 @@
     "test:e2e:postgrest:v12": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "echo 'PostgREST v12 tests coming in Phase 3'",
+        "commands": [
+          "bash scripts/setup-postgrest-v12.sh",
+          "jest tests/postgrest/v12 --runInBand --coverage",
+          "bash scripts/cleanup-postgrest-v12.sh"
+        ],
+        "parallel": false,
         "cwd": "{projectRoot}"
       },
       "dependsOn": ["^build"],
       "inputs": ["testing", "^production"],
       "outputs": ["{projectRoot}/coverage/postgrest-v12"],
-      "cache": true,
+      "cache": false,
       "description": "Run postgrest-js v12 compatibility tests (against Docker)"
     },
     "test:e2e:functions": {
