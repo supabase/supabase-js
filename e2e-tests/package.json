@@ -1,0 +1,13 @@
+{
+  "name": "e2e-tests",
+  "private": true,
+  "description": "pkg.pr.new overrides for e2e tests in integration-tests CI",
+  "dependencies": {
+    "@supabase/auth-js": "https://pkg.pr.new/supabase/supabase-js/@supabase/auth-js@{COMMIT_HASH}",
+    "@supabase/functions-js": "https://pkg.pr.new/supabase/supabase-js/@supabase/functions-js@{COMMIT_HASH}",
+    "@supabase/postgrest-js": "https://pkg.pr.new/supabase/supabase-js/@supabase/postgrest-js@{COMMIT_HASH}",
+    "@supabase/realtime-js": "https://pkg.pr.new/supabase/supabase-js/@supabase/realtime-js@{COMMIT_HASH}",
+    "@supabase/storage-js": "https://pkg.pr.new/supabase/supabase-js/@supabase/storage-js@{COMMIT_HASH}",
+    "@supabase/supabase-js": "https://pkg.pr.new/supabase/supabase-js/@supabase/supabase-js@{COMMIT_HASH}"
+  }
+}

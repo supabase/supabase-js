@@ -64,6 +64,7 @@ update_file() {
 }
 
 # Update all files
+update_file "e2e-tests/package.json"
 update_file "packages/core/supabase-js/supabase/deno.json"
 update_file "packages/core/supabase-js/test/deno/deno.json"
 update_file "packages/core/supabase-js/test/integration/next/package.json"

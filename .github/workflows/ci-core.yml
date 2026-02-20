@@ -79,11 +79,6 @@ jobs:
           fail-on-error: false
         continue-on-error: true
 
-      - name: Setup Supabase CLI (for storage-js tests)
-        uses: supabase/setup-cli@b60b5899c73b63a2d2d651b1e90db8d4c9392f51 # v1.6.0
-        with:
-          version: latest
-
       - name: Run storage-js tests (if affected)
         run: npx nx affected --target=test:storage
 
@@ -149,11 +144,6 @@ jobs:
         run: npm ci
       - uses: nrwl/nx-set-shas@3e9ad7370203c1e93d109be57f3b72eb0eb511b1 # v4.4.0
 
-      - name: Setup Supabase CLI (for postgrest-js tests)
-        uses: supabase/setup-cli@b60b5899c73b63a2d2d651b1e90db8d4c9392f51 # v1.6.0
-        with:
-          version: latest
-
       - name: Run postgrest-js integration tests (if affected)
         run: npx nx affected --target=test:ci:postgrest
         timeout-minutes: 10
@@ -187,11 +177,6 @@ jobs:
           cache: 'npm'
       - name: Install dependencies
         run: npm ci
-
-      - name: Setup Supabase CLI (for checking generated types)
-        uses: supabase/setup-cli@b60b5899c73b63a2d2d651b1e90db8d4c9392f51 # v1.6.0
-        with:
-          version: latest
 
       - name: Check if database schema changed
         id: check_changes
@@ -260,11 +245,6 @@ jobs:
 
       - name: Build affected packages
         run: npx nx affected --target=build
-
-      - name: Setup Supabase CLI
-        uses: supabase/setup-cli@b60b5899c73b63a2d2d651b1e90db8d4c9392f51 # v1.6.0
-        with:
-          version: latest
 
       - name: Run standard e2e tests (if affected)
         run: npx nx affected --target=test:e2e:all:standard

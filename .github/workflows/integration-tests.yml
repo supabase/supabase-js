@@ -163,3 +163,42 @@ jobs:
       - name: Stop Supabase
         if: always()
         run: npx nx test:supabase:stop supabase-js
+
+  e2e-standard-tests:
+    name: E2E Standard Tests (pkg.pr.new packages)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        with:
+          filter: tree:0
+          fetch-depth: 0
+
+      - name: Update pkg.pr.new URLs with commit hash
+        run: ./scripts/update-pkg-pr-urls.sh "${{ inputs.commit_hash }}"
+
+      - name: Setup Node.js
+        uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238 # v6.2.0
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install root dependencies
+        run: npm ci
+
+      - uses: nrwl/nx-set-shas@3e9ad7370203c1e93d109be57f3b72eb0eb511b1 # v4.4.0
+
+      - name: Install pkg.pr.new @supabase packages into e2e-tests
+        run: cd e2e-tests && npm install --legacy-peer-deps
+        # Creates e2e-tests/node_modules/@supabase/* with pkg.pr.new versions.
+        # Node.js prefers local node_modules over parent, so e2e tests use published packages
+        # instead of workspace symlinks → packages/core/*/
+
+      - name: Build packages (cached by Nx for subsequent steps)
+        run: npx nx run-many --target=build --all
+
+      - name: Run e2e standard tests via Nx
+        run: npx nx test:e2e:all:standard e2e-tests
+        timeout-minutes: 30
+        # test:e2e:all:standard handles: setup → auth/storage/postgrest/functions/supabase tests → cleanup
+        # dependsOn: ["^build"] is satisfied from cache (built in previous step)
