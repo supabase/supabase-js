@@ -125,7 +125,7 @@ jobs:
         run: npx nx affected --target=build
 
       - name: Run e2e auth edge case tests (if affected)
-        run: npx nx affected --target=test:e2e:auth:edge --projects=e2e-tests
+        run: npx nx affected --target=test:e2e:auth:edge
         timeout-minutes: 10
 
       # Note: Docker test coverage is not uploaded to Coveralls
@@ -238,7 +238,7 @@ jobs:
         run: npx nx affected --target=build
 
       - name: Run e2e PostgREST v12 tests (if affected)
-        run: npx nx affected --target=test:e2e:postgrest:v12 --projects=e2e-tests
+        run: npx nx affected --target=test:e2e:postgrest:v12
         timeout-minutes: 10
 
   # E2E integration tests (Supabase CLI - unified infrastructure)
@@ -266,8 +266,8 @@ jobs:
         with:
           version: latest
 
-      - name: Run standard e2e tests (if e2e-tests affected)
-        run: npx nx affected --target=test:e2e:all:standard --projects=e2e-tests
+      - name: Run standard e2e tests (if affected)
+        run: npx nx affected --target=test:e2e:all:standard
         timeout-minutes: 30
 
       - name: Upload e2e coverage (auth standard)

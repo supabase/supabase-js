@@ -21,10 +21,12 @@ wait_for_gotrue() {
   local port=$1
   local name=$2
   local attempts=0
-  local max_attempts=30
+  local max_attempts=60
 
   while [ $attempts -lt $max_attempts ]; do
-    if curl -s "http://localhost:${port}/health" | grep -q "ok" 2>/dev/null; then
+    local http_status
+    http_status=$(curl -s -o /dev/null -w "%{http_code}" "http://localhost:${port}/health" 2>/dev/null || echo "000")
+    if [ "$http_status" = "200" ]; then
       echo "   ✅ ${name} (port ${port}) ready"
       return 0
     fi
