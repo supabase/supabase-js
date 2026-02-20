@@ -1,6 +1,7 @@
 import PostgrestBuilder from './PostgrestBuilder'
 import PostgrestFilterBuilder, { InvalidMethodError } from './PostgrestFilterBuilder'
 import { GetResult } from './select-query-parser/result'
+import { SelectItem, serializeSelectSpec } from './select-query-parser/select-builder'
 import { CheckMatchingArrayTypes } from './types/types'
 import { ClientServerOptions, GenericSchema } from './types/common/common'
 import type { MaxAffectedEnabled } from './types/feature-flags'
@@ -21,13 +22,26 @@ export default class PostgrestTransformBuilder<
    * return modified rows. By calling this method, modified rows are returned in
    * `data`.
    *
-   * @param columns - The columns to retrieve, separated by commas
+   * @param columns - The columns to retrieve. Can be:
+   *   - A string with comma-separated column names (e.g., `'id, name, email'`)
+   *   - An array of column names and/or field specs (e.g., `['id', { column: 'name', as: 'display_name' }]`)
+   *
+   * @example String-based select
+   * ```ts
+   * .select('id, name, email')
+   * ```
+   *
+   * @example Array-based select (provides IDE autocomplete)
+   * ```ts
+   * .select(['id', 'name', 'email'])
+   * .select([{ column: 'username', as: 'display_name' }])
+   * ```
    */
   select<
     Query extends string = '*',
     NewResultOne = GetResult<Schema, Row, RelationName, Relationships, Query, ClientOptions>,
   >(
-    columns?: Query
+    columns?: Query | SelectItem[]
   ): PostgrestFilterBuilder<
     ClientOptions,
     Schema,
@@ -41,9 +55,19 @@ export default class PostgrestTransformBuilder<
     Relationships,
     Method
   > {
+    // Serialize array-based select specs to string
+    let columnsString: string
+    if (columns === undefined) {
+      columnsString = '*'
+    } else if (Array.isArray(columns)) {
+      columnsString = serializeSelectSpec(columns)
+    } else {
+      columnsString = columns
+    }
+
     // Remove whitespaces except when quoted
     let quoted = false
-    const cleanedColumns = (columns ?? '*')
+    const cleanedColumns = columnsString
       .split('')
       .map((c) => {
         if (/\s/.test(c) && !quoted) {
