@@ -2126,6 +2126,14 @@ export default class GoTrueClient {
     if (typeof this.detectSessionInUrl === 'function') {
       return this.detectSessionInUrl(new URL(window.location.href), params)
     }
+    // Check for Supabase Auth identifier
+    if ('sb' in params) {
+      // sb is just an identifier
+      // Still require OAuth params to prevent forced logout via crafted URLs with only 'sb'
+      return Boolean(params.access_token || params.error || params.error_description)
+    }
+    // TODO @mandarini: Remove this legacy fallback in next major version and return false instead
+    // Legacy detection for backwards compatibility with older Auth servers that don't include 'sb'
     return Boolean(params.access_token || params.error_description)
   }
 
