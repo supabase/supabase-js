@@ -8,6 +8,9 @@ cd "$(dirname "$0")/.."
 echo "🚀 Stop supabase if it is running"
 npx supabase stop 2>/dev/null || true
 
+echo "🔑 Generating RSA signing keys for auth tests..."
+node scripts/generate-signing-keys.js
+
 echo "🚀 Starting Supabase (with migrations and seed data)..."
 npx supabase start
 

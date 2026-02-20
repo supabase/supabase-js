@@ -2,8 +2,8 @@ import jwt from 'jsonwebtoken'
 import crypto from 'crypto'
 import fs from 'fs'
 import path from 'path'
-import { GoTrueAdminApi, GoTrueClient, type GoTrueClientOptions } from '../../src/index'
-import { SupportedStorage } from '../../src/lib/types'
+import { GoTrueAdminApi, GoTrueClient, type GoTrueClientOptions } from '@supabase/auth-js'
+import { SupportedStorage } from '@supabase/auth-js'
 
 // Supabase CLI Auth endpoint
 export const GOTRUE_URL_SIGNUP_ENABLED_AUTO_CONFIRM_ON = 'http://127.0.0.1:54321/auth/v1'
@@ -28,7 +28,8 @@ class MemoryStorage {
 }
 
 // Load RSA private key from signing_keys.json and generate JWTs dynamically
-const signingKeysPath = path.join(__dirname, '../supabase/signing_keys.json')
+// Path from helpers/auth/ -> ../../supabase/signing_keys.json
+const signingKeysPath = path.join(__dirname, '../../supabase/signing_keys.json')
 const signingKeys = JSON.parse(fs.readFileSync(signingKeysPath, 'utf8'))
 const rsaKey = signingKeys[0]
 const privateKeyObject = crypto.createPrivateKey({

@@ -1,4 +1,4 @@
-import { authClientWithSession, serviceRoleApiClient } from './lib/clients'
+import { authClientWithSession, serviceRoleApiClient } from '../../../helpers/auth/clients'
 
 import {
   createNewUserWithEmail,
@@ -9,7 +9,7 @@ import {
   mockOAuthClientParams,
   mockOAuthUpdateParams,
   createTestOAuthClient,
-} from './lib/utils'
+} from '../../../helpers/auth/utils'
 
 import type { GenerateLinkProperties, User } from '@supabase/auth-js/src/lib/types'
 

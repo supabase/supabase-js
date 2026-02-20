@@ -3,6 +3,16 @@
  */
 import { createClient, SupabaseClient } from '@supabase/supabase-js'
 
+// WebSocket transport for Node.js < 22
+let wsTransport: any = undefined
+if (typeof WebSocket === 'undefined' && typeof process !== 'undefined' && process.versions?.node) {
+  try {
+    wsTransport = require('ws')
+  } catch {
+    // ws not available, Realtime may not work
+  }
+}
+
 const SUPABASE_URL = process.env.SUPABASE_URL || 'http://127.0.0.1:54321'
 const SUPABASE_ANON_KEY =
   process.env.SUPABASE_ANON_KEY ||
@@ -14,7 +24,7 @@ const SUPABASE_SERVICE_ROLE_KEY =
 /**
  * Create a Supabase client with anon key (default)
  */
-export function createTestClient(options = {}): SupabaseClient {
+export function createTestClient(options: Record<string, any> = {}): SupabaseClient {
   return createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
     auth: {
       persistSession: false,
@@ -25,9 +35,26 @@ export function createTestClient(options = {}): SupabaseClient {
 }
 
 /**
+ * Create a Supabase client with anon key and WebSocket support for Realtime tests
+ */
+export function createRealtimeClient(
+  realtimeOptions: Record<string, any> = {},
+  options: Record<string, any> = {}
+): SupabaseClient {
+  return createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    realtime: {
+      heartbeatIntervalMs: 500,
+      ...(wsTransport && { transport: wsTransport }),
+      ...realtimeOptions,
+    },
+    ...options,
+  })
+}
+
+/**
  * Create a Supabase client with service_role key (bypasses RLS)
  */
-export function createServiceRoleClient(options = {}): SupabaseClient {
+export function createServiceRoleClient(options: Record<string, any> = {}): SupabaseClient {
   return createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
     auth: {
       persistSession: false,
@@ -68,5 +95,6 @@ export function getConnectionInfo() {
     url: SUPABASE_URL,
     anonKey: SUPABASE_ANON_KEY,
     serviceRoleKey: SUPABASE_SERVICE_ROLE_KEY,
+    jwtSecret: process.env.JWT_SECRET || 'super-secret-jwt-token-with-at-least-32-characters-long',
   }
 }

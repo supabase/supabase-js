@@ -1,5 +1,5 @@
 import { AuthError, AuthPKCECodeVerifierMissingError } from '@supabase/auth-js/src/lib/errors'
-import { JWK, Session } from '../src'
+import { JWK, Session } from '@supabase/auth-js'
 import GoTrueClient from '@supabase/auth-js/src/GoTrueClient'
 import { base64UrlToUint8Array } from '@supabase/auth-js/src/lib/base64url'
 import { STORAGE_KEY } from '@supabase/auth-js/src/lib/constants'
@@ -26,12 +26,12 @@ import {
   autoRefreshClient,
   getClientWithSpecificStorage,
   GOTRUE_URL_SIGNUP_ENABLED_AUTO_CONFIRM_ON,
-} from './lib/clients'
-import { mockUserCredentials } from './lib/utils'
+} from '../../../helpers/auth/clients'
+import { mockUserCredentials } from '../../../helpers/auth/utils'
 import {
   webauthnCreationCredentialResponse,
   webauthnCreationMockCredential,
-} from './webauthn.fixtures'
+} from '../../../helpers/auth/webauthn.fixtures'
 
 const TEST_USER_DATA = { info: 'some info' }
 

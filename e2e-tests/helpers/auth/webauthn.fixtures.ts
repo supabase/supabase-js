@@ -4,9 +4,15 @@
  * All sensitive fields have been replaced with synthetic data for security
  */
 
-import { AuthenticationResponseJSON, RegistrationResponseJSON } from '../src/lib/webauthn'
-import { base64UrlToUint8Array } from '../src/lib/base64url'
-import { AuthenticationCredential, RegistrationCredential } from '../src/lib/webauthn.dom'
+import {
+  AuthenticationResponseJSON,
+  RegistrationResponseJSON,
+} from '@supabase/auth-js/src/lib/webauthn'
+import { base64UrlToUint8Array } from '@supabase/auth-js/src/lib/base64url'
+import {
+  AuthenticationCredential,
+  RegistrationCredential,
+} from '@supabase/auth-js/src/lib/webauthn.dom'
 
 export const webauthnAssertionCredentialResponse = {
   factorId: '1c339118-cf88-4cee-b393-fc787827aa44',

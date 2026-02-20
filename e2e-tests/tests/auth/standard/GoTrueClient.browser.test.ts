@@ -7,8 +7,8 @@ import {
   getClientWithSpecificStorage,
   getClientWithSpecificStorageKey,
   pkceClient,
-} from './lib/clients'
-import { mockUserCredentials } from './lib/utils'
+} from '../../../helpers/auth/clients'
+import { mockUserCredentials } from '../../../helpers/auth/utils'
 import {
   supportsLocalStorage,
   validateExp,
