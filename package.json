@@ -30,7 +30,6 @@
     "@nx/playwright": "21.6.2",
     "@nx/vite": "21.6.2",
     "@nx/web": "21.6.2",
-    "@nx/webpack": "21.6.2",
     "@swc-node/register": "^1.11.1",
     "@swc/core": "~1.5.7",
     "@swc/helpers": "~0.5.11",
@@ -72,12 +71,6 @@
     "webpack-cli": "^5.1.4"
   },
   "workspaces": [
-    "packages/*",
-    "packages/core/auth-js",
-    "packages/core/functions-js",
-    "packages/core/postgrest-js",
-    "packages/core/realtime-js",
-    "packages/core/storage-js",
-    "packages/core/supabase-js"
+    "packages/core/*"
   ]
 }

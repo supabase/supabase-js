@@ -6,19 +6,16 @@ permissions:
 on:
   pull_request:
     types: [opened, synchronize]
-    paths:
-      - 'packages/core/**'
-      - 'package.json'
-      - 'package-lock.json'
-      - 'nx.json'
-      - 'tsconfig.base.json'
-      - 'scripts/**'
-      - '.github/workflows/preview-release.yml'
-      - '.github/workflows/integration-tests.yml'
-      - '!packages/core/**/*.md'
-      - '!packages/core/**/docs/**'
-      - '!packages/core/**/.prettierrc'
-      - '!packages/core/**/*ignore'
+    paths-ignore:
+      - '**/*.md'
+      - '**/docs/**'
+      - 'LICENSE'
+      - '**/.prettierrc'
+      - '**/.prettierignore'
+      - '**/.editorconfig'
+      - '.vscode/**'
+      - '**/.gitignore'
+      - '**/.gitattributes'
 
 jobs:
   preview:

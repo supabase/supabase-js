@@ -113,6 +113,7 @@
     },
     "test:ci": {
       "inputs": ["testing", "^production"],
+      "dependsOn": ["^build"],
       "cache": true,
       "outputs": ["{projectRoot}/coverage"]
     },
@@ -128,6 +129,7 @@
       "outputs": ["{projectRoot}/coverage"]
     },
     "test:storage": {
+      "inputs": ["testing", "^production"],
       "cache": false
     },
     "test:suite": {
@@ -243,16 +245,6 @@
         "previewTargetName": "preview",
         "serveStaticTargetName": "serve-static",
         "typecheckTargetName": "vite:typecheck",
-        "buildDepsTargetName": "build-deps",
-        "watchDepsTargetName": "watch-deps"
-      }
-    },
-    {
-      "plugin": "@nx/webpack/plugin",
-      "options": {
-        "buildTargetName": "webpack:build",
-        "serveTargetName": "serve",
-        "previewTargetName": "preview",
         "buildDepsTargetName": "build-deps",
         "watchDepsTargetName": "watch-deps"
       }
