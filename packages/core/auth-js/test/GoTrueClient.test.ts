@@ -237,7 +237,7 @@ describe('GoTrueClient', () => {
       // Error message varies between GoTrue versions
       expect(
         setSessionError?.message?.includes('Invalid Refresh Token') ||
-          setSessionError?.message?.includes('Refresh token is not valid')
+        setSessionError?.message?.includes('Refresh token is not valid')
       ).toBe(true)
       expect(session).toBeNull()
     })
@@ -1439,7 +1439,7 @@ describe('MFA', () => {
       // Create a valid JWT with aal1
       const jwt = require('jsonwebtoken')
       const { GOTRUE_JWT_SECRET } = require('./lib/clients')
-      
+
       const testJwt = jwt.sign(
         {
           sub: 'test-user-id',
@@ -1480,7 +1480,7 @@ describe('MFA', () => {
       // Create a valid JWT with aal1
       const jwt = require('jsonwebtoken')
       const { GOTRUE_JWT_SECRET } = require('./lib/clients')
-      
+
       const testJwt = jwt.sign(
         {
           sub: 'test-user-id',
@@ -1533,7 +1533,7 @@ describe('MFA', () => {
       // Create a valid JWT structure
       const jwt = require('jsonwebtoken')
       const { GOTRUE_JWT_SECRET } = require('./lib/clients')
-      
+
       const testJwt = jwt.sign(
         {
           sub: 'nonexistent-user-id',
@@ -1694,7 +1694,7 @@ describe('WebAuthn MFA', () => {
       static parseRequestOptionsFromJSON = deserializeCredentialRequestOptions
     }
 
-    ;(global as any).PublicKeyCredential = PublicKeyCredentialMock
+    ; (global as any).PublicKeyCredential = PublicKeyCredentialMock
   })
 
   afterAll(() => {
@@ -3054,7 +3054,7 @@ describe('Session Management Edge Cases', () => {
     // Error message varies between GoTrue versions
     expect(
       error?.message?.includes('Invalid Refresh Token') ||
-        error?.message?.includes('Refresh token is not valid')
+      error?.message?.includes('Refresh token is not valid')
     ).toBe(true)
     expect(data.session).toBeNull()
   })
@@ -3083,8 +3083,8 @@ describe('Storage adapter edge cases', () => {
       getItem: async () => {
         throw new Error('getItem failed message')
       },
-      setItem: async () => {},
-      removeItem: async () => {},
+      setItem: async () => { },
+      removeItem: async () => { },
     }
     const client = getClientWithSpecificStorage(brokenStorage)
     await expect(client.getSession()).rejects.toThrow('getItem failed message')
@@ -3096,7 +3096,7 @@ describe('Storage adapter edge cases', () => {
       setItem: async () => {
         throw new Error('setItem failed message')
       },
-      removeItem: async () => {},
+      removeItem: async () => { },
     }
     const client = getClientWithSpecificStorage(brokenStorage)
     const session = {
@@ -3117,7 +3117,7 @@ describe('Storage adapter edge cases', () => {
   test('should handle storage removeItem failure in _removeSession', async () => {
     const brokenStorage = {
       getItem: async () => '{}',
-      setItem: async () => {},
+      setItem: async () => { },
       removeItem: async () => {
         throw new Error('removeItem failed message')
       },
@@ -3130,8 +3130,8 @@ describe('Storage adapter edge cases', () => {
   test('should handle invalid JSON in storage', async () => {
     const invalidStorage = {
       getItem: async () => 'invalid-json',
-      setItem: async () => {},
-      removeItem: async () => {},
+      setItem: async () => { },
+      removeItem: async () => { },
     }
     const client = getClientWithSpecificStorage(invalidStorage)
     const { data, error } = await client.getSession()
@@ -3142,8 +3142,8 @@ describe('Storage adapter edge cases', () => {
   test('should handle null storage value', async () => {
     const nullStorage = {
       getItem: async () => null,
-      setItem: async () => {},
-      removeItem: async () => {},
+      setItem: async () => { },
+      removeItem: async () => { },
     }
     const client = getClientWithSpecificStorage(nullStorage)
     const { data, error } = await client.getSession()
@@ -3154,8 +3154,8 @@ describe('Storage adapter edge cases', () => {
   test('should handle empty storage value', async () => {
     const emptyStorage = {
       getItem: async () => '',
-      setItem: async () => {},
-      removeItem: async () => {},
+      setItem: async () => { },
+      removeItem: async () => { },
     }
     const client = getClientWithSpecificStorage(emptyStorage)
     const { data, error } = await client.getSession()
@@ -3166,8 +3166,8 @@ describe('Storage adapter edge cases', () => {
   test('should handle malformed session data', async () => {
     const malformedStorage = {
       getItem: async () => JSON.stringify({ access_token: 'test' }), // Missing required fields
-      setItem: async () => {},
-      removeItem: async () => {},
+      setItem: async () => { },
+      removeItem: async () => { },
     }
     const client = getClientWithSpecificStorage(malformedStorage)
     const { data, error } = await client.getSession()
@@ -3186,8 +3186,8 @@ describe('Storage adapter edge cases', () => {
           token_type: 'bearer',
           user: null,
         }),
-      setItem: async () => {},
-      removeItem: async () => {},
+      setItem: async () => { },
+      removeItem: async () => { },
     }
     const client = getClientWithSpecificStorage(expiredStorage)
     // @ts-expect-error private method
@@ -3397,14 +3397,14 @@ describe('Lock functionality', () => {
       lock: mockLock,
       autoRefreshToken: false,
       persistSession: false,
-      // lockAcquireTimeout not provided, should default to 10000
+      // lockAcquireTimeout not provided, should default to 5000
     })
 
     await client.initialize()
 
-    // Verify that the default timeout (10000ms = 10 seconds) was used
+    // Verify that the default timeout (5000 = 5 seconds) was used
     expect(mockLock).toHaveBeenCalled()
-    expect(capturedTimeouts).toContain(10000)
+    expect(capturedTimeouts).toContain(5000)
   })
 
   test('should pass negative timeout to lock for indefinite wait', async () => {
@@ -3590,5 +3590,95 @@ describe('GoTrueClient with throwOnError option', () => {
 
   test('signInWithSSO() should throw on error when throwOnError is true', async () => {
     await expect(client.signInWithSSO({ domain: 'nonexistent.example.com' })).rejects.toThrow()
+  })
+})
+
+describe('GoTrueClient with skipAutoInitialize option', () => {
+  const store = memoryLocalStorageAdapter()
+
+  test('should auto-initialize by default (backward compatibility)', async () => {
+    // Spy on prototype before creating instance
+    const initializeSpy = jest.spyOn(GoTrueClient.prototype, 'initialize')
+
+    const client = new GoTrueClient({
+      url: GOTRUE_URL_SIGNUP_ENABLED_AUTO_CONFIRM_ON,
+      storageKey: 'test-auto-init-default',
+      autoRefreshToken: false,
+      persistSession: true,
+      storage: {
+        ...store,
+      },
+    })
+
+    // Wait for next tick to ensure constructor completes
+    await new Promise((resolve) => setTimeout(resolve, 10))
+
+    expect(initializeSpy).toHaveBeenCalled()
+
+    initializeSpy.mockRestore()
+  })
+
+  test('should skip auto-initialization when skipAutoInitialize is true', async () => {
+    // Spy on prototype before creating instance
+    const initializeSpy = jest.spyOn(GoTrueClient.prototype, 'initialize')
+
+    const client = new GoTrueClient({
+      url: GOTRUE_URL_SIGNUP_ENABLED_AUTO_CONFIRM_ON,
+      storageKey: 'test-skip-auto-init',
+      autoRefreshToken: false,
+      persistSession: true,
+      skipAutoInitialize: true, // Skip auto-initialization
+      storage: {
+        ...store,
+      },
+    })
+
+    // Wait for next tick
+    await new Promise((resolve) => setTimeout(resolve, 10))
+
+    expect(initializeSpy).not.toHaveBeenCalled()
+
+    initializeSpy.mockRestore()
+  })
+
+  test('should allow manual initialization after skipAutoInitialize', async () => {
+    const client = new GoTrueClient({
+      url: GOTRUE_URL_SIGNUP_ENABLED_AUTO_CONFIRM_ON,
+      storageKey: 'test-manual-init',
+      autoRefreshToken: false,
+      persistSession: true,
+      skipAutoInitialize: true,
+      storage: {
+        ...store,
+      },
+    })
+
+    // Manually initialize
+    await client.initialize()
+
+    // Client should be functional
+    const { data, error } = await client.getSession()
+    expect(error).toBeNull()
+  })
+
+  test('should work with lazy initialization in public methods', async () => {
+    const client = new GoTrueClient({
+      url: GOTRUE_URL_SIGNUP_ENABLED_AUTO_CONFIRM_ON,
+      storageKey: 'test-lazy-init',
+      autoRefreshToken: false,
+      persistSession: true,
+      skipAutoInitialize: true,
+      storage: {
+        ...store,
+      },
+    })
+
+    // Public methods should trigger lazy initialization
+    const { email, password } = mockUserCredentials()
+    const { data, error } = await client.signUp({ email, password })
+
+    // Should work without explicit initialize() call
+    expect(error).toBeNull()
+    expect(data.user).toBeDefined()
   })
 })

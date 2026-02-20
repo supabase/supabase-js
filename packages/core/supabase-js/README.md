@@ -152,6 +152,67 @@ We support Cloudflare Workers runtime environments. Cloudflare Workers provides 
 
 - **Experimental features**: Features marked as experimental may be removed or changed without notice
 
+## Known Build Warnings
+
+### `UNUSED_EXTERNAL_IMPORT` in Vite / Rollup / Nuxt
+
+When bundling your app, you may see warnings like:
+
+```
+"PostgrestError" is imported from external module "@supabase/postgrest-js" but never used in "...supabase-js/dist/index.mjs".
+"FunctionRegion", "FunctionsError", "FunctionsFetchError", "FunctionsHttpError" and "FunctionsRelayError" are imported from external module "@supabase/functions-js" but never used in "...".
+```
+
+**This is a false positive — your bundle is fine.** Here is why it happens:
+
+`@supabase/supabase-js` re-exports `PostgrestError`, `FunctionsError`, and related symbols so you can import them directly from `@supabase/supabase-js`. However, our build tool merges all imports from the same package into a single import statement in the built output:
+
+```js
+// dist/index.mjs (simplified)
+import { PostgrestClient, PostgrestError } from '@supabase/postgrest-js'
+//       ^ used internally    ^ re-exported for you
+```
+
+Your bundler checks which names from that import are used _in the code body_, and flags `PostgrestError` as unused because it only appears in an `export` statement — not called or assigned. The export itself is the usage, but downstream bundlers don't track this correctly. This is a known Rollup/Vite limitation with re-exported external imports.
+
+**Nothing is broken.** Tree-shaking and bundle size are unaffected.
+
+To suppress the warning:
+
+**Vite / Rollup (`vite.config.js` or `rollup.config.js`):**
+
+```js
+export default {
+  build: {
+    rollupOptions: {
+      onwarn(warning, warn) {
+        if (warning.code === 'UNUSED_EXTERNAL_IMPORT' && warning.exporter?.includes('@supabase/'))
+          return
+        warn(warning)
+      },
+    },
+  },
+}
+```
+
+**Nuxt (`nuxt.config.ts`):**
+
+```ts
+export default defineNuxtConfig({
+  vite: {
+    build: {
+      rollupOptions: {
+        onwarn(warning, warn) {
+          if (warning.code === 'UNUSED_EXTERNAL_IMPORT' && warning.exporter?.includes('@supabase/'))
+            return
+          warn(warning)
+        },
+      },
+    },
+  },
+})
+```
+
 ## Contributing
 
 We welcome contributions! Please see our [Contributing Guide](../../../CONTRIBUTING.md) for details on how to get started.

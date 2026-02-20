@@ -1,3 +1,32 @@
+## 2.97.0 (2026-02-18)
+
+### 🚀 Features
+
+- **auth:** add skipAutoInitialize option to prevent constructor auto-init ([#2123](https://github.com/supabase/supabase-js/pull/2123))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+
+## 2.96.0 (2026-02-17)
+
+### 🚀 Features
+
+- **storage:** add setHeader method to BaseApiClient ([#2079](https://github.com/supabase/supabase-js/pull/2079))
+
+### 🩹 Fixes
+
+- **auth:** resolve Firefox content script Promise.then() security errors in locks ([#2112](https://github.com/supabase/supabase-js/pull/2112))
+- **postgrest:** enforce type safety for table and view names in from() method ([#2058](https://github.com/supabase/supabase-js/pull/2058))
+- **realtime:** remove unnecessary check in `removeChannel` ([#2109](https://github.com/supabase/supabase-js/pull/2109))
+
+### ❤️ Thank You
+
+- David Barrell @dabarrell
+- Dominik Pilipczuk @snickerdoodle2
+- Katerina Skroumpelou @mandarini
+- Vaibhav @7ttp
+
 ## 2.95.3 (2026-02-06)
 
 ### 🚀 Features
