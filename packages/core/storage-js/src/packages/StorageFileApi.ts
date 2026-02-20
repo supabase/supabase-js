@@ -765,6 +765,9 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
   /**
    * Retrieves the details of an existing file.
    *
+   * Returns detailed file metadata including size, content type, and timestamps.
+   * Note: The API returns `last_modified` field, not `updated_at`.
+   *
    * @category File Buckets
    * @param path The file path, including the file name. For example `folder/image.png`.
    * @returns Promise with response containing file metadata or error
@@ -775,6 +778,11 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
    *   .storage
    *   .from('avatars')
    *   .info('folder/avatar1.png')
+   *
+   * if (data) {
+   *   console.log('Last modified:', data.lastModified)
+   *   console.log('Size:', data.size)
+   * }
    * ```
    */
   async info(path: string): Promise<
@@ -933,6 +941,9 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
   /**
    * Deletes files within the same bucket
    *
+   * Returns an array of FileObject entries for the deleted files. Note that deprecated
+   * fields like `bucket_id` may or may not be present in the response - do not rely on them.
+   *
    * @category File Buckets
    * @param paths An array of files to delete, including the path and file name. For example [`'folder/image.png'`].
    * @returns Promise with response containing array of deleted file objects or error
@@ -1039,11 +1050,16 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
   /**
    * Lists all the files and folders within a path of the bucket.
    *
+   * **Important:** For folder entries, fields like `id`, `updated_at`, `created_at`,
+   * `last_accessed_at`, and `metadata` will be `null`. Only files have these fields populated.
+   * Additionally, deprecated fields like `bucket_id`, `owner`, and `buckets` are NOT returned
+   * by this method.
+   *
    * @category File Buckets
    * @param path The folder path.
    * @param options Search options including limit (defaults to 100), offset, sortBy, and search
    * @param parameters Optional fetch parameters including signal for cancellation
-   * @returns Promise with response containing array of files or error
+   * @returns Promise with response containing array of files/folders or error
    *
    * @example List files in a bucket
    * ```js
@@ -1055,9 +1071,20 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
    *     offset: 0,
    *     sortBy: { column: 'name', order: 'asc' },
    *   })
+   *
+   * // Handle files vs folders
+   * data?.forEach(item => {
+   *   if (item.id !== null) {
+   *     // It's a file
+   *     console.log('File:', item.name, 'Size:', item.metadata?.size)
+   *   } else {
+   *     // It's a folder
+   *     console.log('Folder:', item.name)
+   *   }
+   * })
    * ```
    *
-   * Response:
+   * Response (file entry):
    * ```json
    * {
    *   "data": [
@@ -1122,11 +1149,51 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
   }
 
   /**
+   * Lists all the files and folders within a bucket using the V2 API with pagination support.
+   *
+   * **Important:** For folder entries in the `folders` array, fields like `id`, `updated_at`,
+   * `created_at`, `last_accessed_at`, and `metadata` will be `null`. Only files in the
+   * `objects` array have these fields populated. The `key` field may also be missing in
+   * some responses.
+   *
    * @experimental this method signature might change in the future
    *
    * @category File Buckets
-   * @param options search options
-   * @param parameters
+   * @param options Search options including prefix, cursor for pagination, limit, with_delimiter
+   * @param parameters Optional fetch parameters including signal for cancellation
+   * @returns Promise with response containing folders/objects arrays with pagination info or error
+   *
+   * @example List files with pagination
+   * ```js
+   * const { data, error } = await supabase
+   *   .storage
+   *   .from('avatars')
+   *   .listV2({
+   *     prefix: 'folder/',
+   *     limit: 100,
+   *   })
+   *
+   * // Handle pagination
+   * if (data?.hasNext) {
+   *   const nextPage = await supabase
+   *     .storage
+   *     .from('avatars')
+   *     .listV2({
+   *       prefix: 'folder/',
+   *       cursor: data.nextCursor,
+   *     })
+   * }
+   *
+   * // Handle files vs folders
+   * data?.objects.forEach(file => {
+   *   if (file.id !== null) {
+   *     console.log('File:', file.name, 'Size:', file.metadata?.size)
+   *   }
+   * })
+   * data?.folders.forEach(folder => {
+   *   console.log('Folder:', folder.name)
+   * })
+   * ```
    */
   async listV2(
     options?: SearchV2Options,

@@ -7,6 +7,15 @@ import { StorageApiError, StorageError } from '../src/lib/common/errors'
 import BlobDownloadBuilder from '../src/packages/BlobDownloadBuilder'
 import StreamDownloadBuilder from '../src/packages/StreamDownloadBuilder'
 
+// Type assertion helper for test responses
+function assertSuccess<T>(res: {
+  data: T | null
+  error: StorageError | null
+}): asserts res is { data: T; error: null } {
+  expect(res.error).toBeNull()
+  expect(res.data).not.toBeNull()
+}
+
 // Supabase CLI local development defaults
 const URL = 'http://127.0.0.1:54321/storage/v1'
 // service_role key - bypasses RLS for testing
@@ -332,12 +341,21 @@ describe('Object API', () => {
     test('list objects', async () => {
       await storage.from(bucketName).upload(uploadPath, file)
       const res = await storage.from(bucketName).list('testpath')
-      expect(res.error).toBeNull()
+      assertSuccess(res)
       expect(res.data).toEqual([
         expect.objectContaining({
           name: uploadPath.replace('testpath/', ''),
+          id: expect.any(String), // Files should have non-null id
+          metadata: expect.any(Object), // Files should have metadata
         }),
       ])
+
+      // Verify files have non-null required fields
+      const fileObj = res.data[0]
+      expect(fileObj.id).not.toBeNull()
+      expect(fileObj.metadata).not.toBeNull()
+      expect(fileObj.updated_at).not.toBeNull()
+      expect(fileObj.created_at).not.toBeNull()
     })
 
     test('list objects V2', async () => {
@@ -517,20 +535,26 @@ describe('Object API', () => {
       await storage.from(bucketName).upload(uploadPath, file)
       const res = await storage.from(bucketName).remove([uploadPath])
 
-      expect(res.error).toBeNull()
+      assertSuccess(res)
       expect(res.data).toEqual([
         expect.objectContaining({
-          bucket_id: bucketName,
           name: uploadPath,
+          id: expect.any(String), // Verify it's a file, not a folder
         }),
       ])
+
+      // bucket_id may be present in remove() responses (deprecated field)
+      // If present, verify it matches
+      if (res.data[0].bucket_id) {
+        expect(res.data[0].bucket_id).toBe(bucketName)
+      }
     })
 
     test('get object info', async () => {
       await storage.from(bucketName).upload(uploadPath, file)
       const res = await storage.from(bucketName).info(uploadPath)
 
-      expect(res.error).toBeNull()
+      assertSuccess(res)
       expect(res.data).toEqual(
         expect.objectContaining({
           id: expect.any(String),
@@ -545,6 +569,19 @@ describe('Object API', () => {
           version: expect.any(String),
         })
       )
+
+      // Verify FileObjectV2 required fields
+      expect(res.data.id).toBeDefined()
+      expect(res.data.bucketId).toBeDefined()
+      expect(res.data.lastModified).toBeDefined() // Should have this
+      expect(res.data.size).toBeGreaterThan(0)
+      expect(res.data.contentType).toBeDefined()
+      expect(res.data.cacheControl).toBeDefined()
+      expect(res.data.etag).toBeDefined()
+
+      // Verify updated_at does NOT exist (API returns camelCase, but the raw type shouldn't have it)
+      // Note: The info() method uses Camelize so we check the camelCase version
+      expect(res.data).not.toHaveProperty('updatedAt')
 
       // throws when .throwOnError is enabled
       await expect(storage.from(bucketName).throwOnError().info('non-existent')).rejects.toThrow()
