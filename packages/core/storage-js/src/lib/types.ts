@@ -89,6 +89,10 @@ export interface FileOptions {
    */
   contentType?: string
   /**
+   * The `Content-Encoding` header value (e.g., `gzip`).
+   */
+  contentEncoding?: string
+  /**
    * When upsert is set to true, the file is overwritten if it exists. When set to false, an error is thrown if the object already exists. Defaults to false.
    */
   upsert?: boolean
