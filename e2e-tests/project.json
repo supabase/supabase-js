@@ -47,7 +47,7 @@
       "options": {
         "commands": [
           "bash scripts/setup-auth-edge.sh",
-          "jest tests/auth/edge --runInBand --coverage",
+          { "command": "jest tests/auth/edge --runInBand --coverage", "forwardAllArgs": false },
           "bash scripts/cleanup-auth-edge.sh"
         ],
         "parallel": false,
@@ -88,7 +88,7 @@
       "options": {
         "commands": [
           "bash scripts/setup-postgrest-v12.sh",
-          "jest tests/postgrest/v12 --runInBand --coverage",
+          { "command": "jest tests/postgrest/v12 --runInBand --coverage", "forwardAllArgs": false },
           "bash scripts/cleanup-postgrest-v12.sh"
         ],
         "parallel": false,
