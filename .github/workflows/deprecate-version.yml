@@ -1,6 +1,9 @@
 name: Deprecate package versions
 
 on:
+  push:
+    branches:
+      - ci/deprecate-v
   workflow_dispatch:
     inputs:
       version:
@@ -71,11 +74,9 @@ jobs:
         run: npm install -g npm@latest
 
       - name: Deprecate package versions
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
-          VERSION="${{ inputs.version }}"
-          MESSAGE="${{ inputs.message }}"
+          VERSION="${{ inputs.version || '2.86.1-canary.0' }}"
+          MESSAGE="${{ inputs.message || 'Testing deprecation' }}"
 
           PACKAGES=(
             "supabase-js"
@@ -121,7 +122,7 @@ jobs:
     with:
       title: 'SDK Deprecation'
       status: 'success'
-      version: ${{ inputs.version }}
+      version: ${{ inputs.version || '2.86.1-canary.0' }}
     secrets: inherit
 
   notify-failure:
@@ -131,5 +132,5 @@ jobs:
     with:
       title: 'SDK Deprecation'
       status: 'failure'
-      version: ${{ inputs.version }}
+      version: ${{ inputs.version || '2.86.1-canary.0' }}
     secrets: inherit
