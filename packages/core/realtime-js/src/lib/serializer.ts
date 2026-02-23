@@ -132,15 +132,14 @@ export default class Serializer {
     if (typeof rawPayload === 'string') {
       try {
         const jsonPayload = JSON.parse(rawPayload)
-        if (!Array.isArray(jsonPayload)) {
-          // maybe log error message here but I can't find logging pattern.
+        if (!Array.isArray(jsonPayload) || jsonPayload.length < 5) {
+          console.error('Malformed Realtime message:', jsonPayload)
           return callback({})
         }
         const [join_ref, ref, topic, event, payload] = jsonPayload
         return callback({ join_ref, ref, topic, event, payload })
       } catch (error) {
-        // JSON parsing could fail
-        // maybe log error message here but I can't find logging pattern.
+        console.error('Error parsing Realtime message:', error, rawPayload)
         return callback({})
       }
     }
