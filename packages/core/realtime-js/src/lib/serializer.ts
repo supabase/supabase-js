@@ -130,9 +130,19 @@ export default class Serializer {
     }
 
     if (typeof rawPayload === 'string') {
-      const jsonPayload = JSON.parse(rawPayload)
-      const [join_ref, ref, topic, event, payload] = jsonPayload
-      return callback({ join_ref, ref, topic, event, payload })
+      try {
+        const jsonPayload = JSON.parse(rawPayload)
+        if (!Array.isArray(jsonPayload)) {
+          // maybe log error message here but I can't find logging pattern.
+          return callback({})
+        }
+        const [join_ref, ref, topic, event, payload] = jsonPayload
+        return callback({ join_ref, ref, topic, event, payload })
+      } catch (error) {
+        // JSON parsing could fail
+        // maybe log error message here but I can't find logging pattern.
+        return callback({})
+      }
     }
 
     return callback({})
