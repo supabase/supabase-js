@@ -464,6 +464,15 @@ export interface User {
 
 export interface UserAttributes {
   /**
+   * The user's current password
+   *
+   * This is only ever present when the user is resetting
+   * their password and GOTRUE_SECURITY_UPDATE_PASSWORD_REQUIRE_CURRENT_PASSWORD is true.
+   *
+   */
+  currentPassword?: string
+
+  /**
    * The user's email.
    */
   email?: string
