@@ -127,14 +127,7 @@
     "test:e2e:all:standard": {
       "executor": "nx:run-commands",
       "options": {
-        "commands": [
-          {
-            "command": "npx nx run-many --projects=e2e-tests --targets=test:e2e:auth:standard,test:e2e:storage,test:e2e:postgrest:standard,test:e2e:functions,test:e2e:supabase --parallel 5",
-            "forwardAllArgs": false
-          },
-          "bash scripts/cleanup-all.sh"
-        ],
-        "parallel": false,
+        "command": "npx nx run-many --projects=e2e-tests --targets=test:e2e:auth:standard,test:e2e:storage,test:e2e:postgrest:standard,test:e2e:functions,test:e2e:supabase --parallel 5",
         "cwd": "{projectRoot}"
       },
       "dependsOn": ["^build"],

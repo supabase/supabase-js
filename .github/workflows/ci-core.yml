@@ -250,6 +250,10 @@ jobs:
         run: npx nx affected --target=test:e2e:all:standard
         timeout-minutes: 15
 
+      - name: Cleanup e2e infrastructure
+        if: always()
+        run: npx nx test:e2e:cleanup e2e-tests
+
       - name: Upload e2e coverage (auth standard)
         uses: coverallsapp/github-action@5cbfd81b66ca5d10c19b062c04de0199c215fb6e # v2.3.7
         with:
