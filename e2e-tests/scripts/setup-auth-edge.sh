@@ -9,6 +9,12 @@ COMPOSE_FILE="infra/auth/docker-compose.yml"
 
 echo "🐳 Starting Auth Edge Cases Docker infrastructure..."
 
+# Generate signing_keys.json so helpers/auth/clients.ts can load at module init time.
+# The edge tests use their own clients.ts (HS256, ports 9999-9996) and don't use these
+# keys to authenticate — the file just needs to exist before Jest imports the helpers.
+echo "🔑 Generating RSA signing keys..."
+node scripts/generate-signing-keys.js
+
 # Stop any existing instances
 docker compose -f "$COMPOSE_FILE" down --remove-orphans 2>/dev/null || true
 
