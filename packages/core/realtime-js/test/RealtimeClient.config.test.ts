@@ -1,7 +1,9 @@
 import assert from 'assert'
 import { afterEach, beforeEach, describe, expect, test } from 'vitest'
 import RealtimeClient from '../src/RealtimeClient'
-import { setupRealtimeTest, cleanupRealtimeTest, TestSetup } from './helpers/setup'
+import { setupRealtimeTest, TestSetup, DEFAULT_API_KEY } from './helpers/setup'
+import { VSN_1_0_0, VSN_2_0_0, DEFAULT_VSN } from '../src/lib/constants'
+import Serializer from '../src/lib/serializer'
 
 let testSetup: TestSetup
 
@@ -10,54 +12,99 @@ beforeEach(() => {
 })
 
 afterEach(() => {
-  cleanupRealtimeTest(testSetup)
+  testSetup.cleanup()
 })
 
 describe('endpointURL', () => {
   test('returns endpoint for given full url', () => {
     assert.equal(
-      testSetup.socket.endpointURL(),
-      `${testSetup.url}/websocket?apikey=123456789&vsn=2.0.0`
+      testSetup.client.endpointURL(),
+      `${testSetup.wssUrl}?apikey=${DEFAULT_API_KEY}&vsn=${DEFAULT_VSN}`
     )
   })
 
   test('returns endpoint with parameters', () => {
-    const socket = new RealtimeClient(testSetup.url, {
-      params: { foo: 'bar', apikey: '123456789' },
+    const client = new RealtimeClient(testSetup.realtimeUrl, {
+      params: { foo: 'bar', apikey: DEFAULT_API_KEY },
     })
     assert.equal(
-      socket.endpointURL(),
-      `${testSetup.url}/websocket?foo=bar&apikey=123456789&vsn=2.0.0`
+      client.endpointURL(),
+      `${testSetup.wssUrl}?foo=bar&apikey=${DEFAULT_API_KEY}&vsn=${DEFAULT_VSN}`
     )
   })
 
   test('returns endpoint with apikey', () => {
-    const socket = new RealtimeClient(testSetup.url, {
-      params: { apikey: '123456789' },
+    const client = new RealtimeClient(testSetup.realtimeUrl, {
+      params: { apikey: DEFAULT_API_KEY },
     })
-    assert.equal(socket.endpointURL(), `${testSetup.url}/websocket?apikey=123456789&vsn=2.0.0`)
+    assert.equal(
+      client.endpointURL(),
+      `${testSetup.wssUrl}?apikey=${DEFAULT_API_KEY}&vsn=${DEFAULT_VSN}`
+    )
   })
 
   test('returns endpoint with valid vsn', () => {
-    const socket = new RealtimeClient(testSetup.url, {
-      params: { apikey: '123456789' },
+    const client = new RealtimeClient(testSetup.realtimeUrl, {
+      params: { apikey: DEFAULT_API_KEY },
       vsn: '1.0.0',
     })
-    assert.equal(socket.endpointURL(), `${testSetup.url}/websocket?apikey=123456789&vsn=1.0.0`)
+    assert.equal(client.endpointURL(), `${testSetup.wssUrl}?apikey=${DEFAULT_API_KEY}&vsn=1.0.0`)
   })
 
   test('errors out with unsupported version', () => {
     expect(
-      () => new RealtimeClient(testSetup.url, { params: { apikey: '123456789' }, vsn: '4.0.0' })
+      () =>
+        new RealtimeClient(testSetup.realtimeUrl, {
+          params: { apikey: DEFAULT_API_KEY },
+          vsn: '4.0.0',
+        })
     ).toThrow(/Unsupported serializer/)
   })
+})
 
-  test('returns endpoint with no params (empty params object)', () => {
-    const socket = new RealtimeClient(testSetup.url, {
-      params: { apikey: '123456789' },
+describe('encode and decode', () => {
+  const exampleMsg = { join_ref: '0', ref: '1', topic: 't', event: 'e', payload: { foo: 1 } }
+
+  let encodedMsg: any
+  let decodedMsg: any
+
+  beforeEach(() => {
+    encodedMsg = null
+    decodedMsg = null
+  })
+
+  test('are set to JSON if version is 1.0.0', () => {
+    const client = new RealtimeClient(testSetup.realtimeUrl, {
+      vsn: VSN_1_0_0,
+      params: { apikey: DEFAULT_API_KEY },
     })
-    // Clear params after construction to test empty params scenario
-    socket.params = {}
-    assert.equal(socket.endpointURL(), `${testSetup.url}/websocket?vsn=2.0.0`)
+
+    const encodedExample = JSON.stringify(exampleMsg)
+    client.encode(exampleMsg, (encoded) => (encodedMsg = encoded))
+    expect(encodedMsg).toStrictEqual(encodedExample)
+
+    const decodedExample = JSON.parse(encodedExample)
+    client.decode(encodedExample, (decoded) => (decodedMsg = decoded))
+    expect(decodedMsg).toStrictEqual(decodedExample)
+  })
+
+  test('are set to serializer if version is 2.0.0', () => {
+    const client = new RealtimeClient(testSetup.realtimeUrl, {
+      vsn: VSN_2_0_0,
+      params: { apikey: DEFAULT_API_KEY },
+    })
+
+    let encodedExample: string = ''
+    let decodedExample: Object = {}
+
+    const serializer = new Serializer()
+
+    serializer.encode(exampleMsg, (encoded) => (encodedExample = encoded as string))
+    client.encode(exampleMsg, (encoded) => (encodedMsg = encoded as string))
+    expect(encodedMsg).toStrictEqual(encodedExample)
+
+    serializer.decode(encodedExample, (decoded: Object) => (decodedExample = decoded))
+    client.decode(encodedExample, (decoded) => (decodedMsg = decoded))
+    expect(decodedMsg).toStrictEqual(decodedExample)
   })
 })

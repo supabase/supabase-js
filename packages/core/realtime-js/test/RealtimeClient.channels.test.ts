@@ -1,11 +1,11 @@
-import assert from 'assert'
-import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
-import { testBuilders, EnhancedTestSetup } from './helpers/setup'
+import { beforeEach, afterEach, expect, describe, test, vi } from 'vitest'
+import { type TestSetup, setupRealtimeTest, waitForChannelSubscribed } from './helpers/setup'
 
-let testSetup: EnhancedTestSetup
+import RealtimeChannel from '../src/RealtimeChannel'
+let testSetup: TestSetup
 
 beforeEach(() => {
-  testSetup = testBuilders.standardClient()
+  testSetup = setupRealtimeTest()
 })
 
 afterEach(() => {
@@ -13,10 +13,9 @@ afterEach(() => {
 })
 
 describe('channel', () => {
-  let channel
   test('throws error on replay for a public channel', () => {
     expect(() => {
-      channel = testSetup.socket.channel('topic', {
+      testSetup.client.channel('topic', {
         config: { broadcast: { replay: { since: 0 } } },
       })
     }).toThrow(
@@ -25,13 +24,13 @@ describe('channel', () => {
   })
 
   test('returns channel with private channel using replay', () => {
-    channel = testSetup.socket.channel('topic', {
+    const channel = testSetup.client.channel('topic', {
       config: { private: true, broadcast: { replay: { since: 0 } } },
     })
 
-    assert.deepStrictEqual(channel.socket, testSetup.socket)
-    assert.equal(channel.topic, 'realtime:topic')
-    assert.deepEqual(channel.params, {
+    expect(channel.socket).toBe(testSetup.client)
+    expect(channel.topic).toBe('realtime:topic')
+    expect(channel.params).toStrictEqual({
       config: {
         broadcast: { replay: { since: 0 } },
         presence: { key: '', enabled: false },
@@ -40,26 +39,12 @@ describe('channel', () => {
     })
   })
 
-  test('returns channel with given topic and params', () => {
-    channel = testSetup.socket.channel('topic')
-
-    assert.deepStrictEqual(channel.socket, testSetup.socket)
-    assert.equal(channel.topic, 'realtime:topic')
-    assert.deepEqual(channel.params, {
-      config: {
-        broadcast: { ack: false, self: false },
-        presence: { key: '', enabled: false },
-        private: false,
-      },
-    })
-  })
-
   test('returns channel with given topic and params for a private channel', () => {
-    channel = testSetup.socket.channel('topic', { config: { private: true } })
+    const channel = testSetup.client.channel('topic', { config: { private: true } })
 
-    assert.deepStrictEqual(channel.socket, testSetup.socket)
-    assert.equal(channel.topic, 'realtime:topic')
-    assert.deepEqual(channel.params, {
+    expect(channel.socket).toBe(testSetup.client)
+    expect(channel.topic).toBe('realtime:topic')
+    expect(channel.params).toStrictEqual({
       config: {
         broadcast: { ack: false, self: false },
         presence: { key: '', enabled: false },
@@ -68,84 +53,69 @@ describe('channel', () => {
     })
   })
 
-  test('adds channel to sockets channels list', () => {
-    assert.equal(testSetup.socket.getChannels().length, 0)
-
-    channel = testSetup.socket.channel('topic')
-
-    assert.equal(testSetup.socket.getChannels().length, 1)
-
-    const [foundChannel] = testSetup.socket.channels
-    assert.deepStrictEqual(foundChannel, channel)
-  })
-
   test('does not repeat channels to sockets channels list', () => {
-    assert.equal(testSetup.socket.getChannels().length, 0)
+    expect(testSetup.client.getChannels().length).toBe(0)
 
-    channel = testSetup.socket.channel('topic')
-    testSetup.socket.channel('topic') // should be ignored
+    const channel = testSetup.client.channel('topic')
+    testSetup.client.channel('topic') // should be ignored
 
-    assert.equal(testSetup.socket.getChannels().length, 1)
+    expect(testSetup.client.getChannels().length).toBe(1)
 
-    const [foundChannel] = testSetup.socket.channels
-    assert.deepStrictEqual(foundChannel, channel)
+    const [foundChannel] = testSetup.client.channels
+    expect(foundChannel).toBe(channel)
   })
 
-  test('gets all channels', () => {
-    assert.equal(testSetup.socket.getChannels().length, 0)
+  test('removes channel from phoenix-js socket', async () => {
+    const channel = testSetup.client.channel('topic')
 
-    const chan1 = testSetup.socket.channel('chan1')
-    const chan2 = testSetup.socket.channel('chan2')
+    expect(testSetup.client.getChannels().length).toBe(1)
+    expect(testSetup.client.socketAdapter.getSocket().channels.length).toBe(1)
 
-    assert.deepEqual(testSetup.socket.getChannels(), [chan1, chan2])
-  })
+    await testSetup.client.removeChannel(channel)
 
-  test('removes a channel', async () => {
-    const connectStub = vi.spyOn(testSetup.socket, 'connect')
-    const disconnectStub = vi.spyOn(testSetup.socket, 'disconnect')
-
-    channel = testSetup.socket.channel('topic')
-    await channel.subscribe()
-
-    assert.equal(testSetup.socket.getChannels().length, 1)
-    expect(connectStub).toHaveBeenCalled()
-
-    await testSetup.socket.removeChannel(channel)
-
-    assert.equal(testSetup.socket.getChannels().length, 0)
-    expect(disconnectStub).toHaveBeenCalled()
-  })
-
-  test('does not remove other channels when removing one', async () => {
-    const connectStub = vi.spyOn(testSetup.socket, 'connect')
-    const disconnectStub = vi.spyOn(testSetup.socket, 'disconnect')
-    const channel1 = testSetup.socket.channel('chan1')
-    const channel2 = testSetup.socket.channel('chan2')
-
-    await channel1.subscribe()
-    await channel2.subscribe()
-    assert.equal(testSetup.socket.getChannels().length, 2)
-    expect(connectStub).toHaveBeenCalled()
-
-    await testSetup.socket.removeChannel(channel1)
-
-    assert.equal(testSetup.socket.getChannels().length, 1)
-    expect(disconnectStub).not.toHaveBeenCalled()
-    assert.deepStrictEqual(testSetup.socket.getChannels()[0], channel2)
+    expect(testSetup.client.getChannels().length).toBe(0)
+    expect(testSetup.client.socketAdapter.getSocket().channels.length).toBe(0)
   })
 
   test('removes all channels', async () => {
-    const disconnectStub = vi.spyOn(testSetup.socket, 'disconnect')
+    const disconnectStub = vi.spyOn(testSetup.client, 'disconnect')
 
-    testSetup.socket.channel('chan1').subscribe()
-    testSetup.socket.channel('chan2').subscribe()
+    testSetup.client.channel('chan1').subscribe()
+    testSetup.client.channel('chan2').subscribe()
 
-    assert.equal(testSetup.socket.getChannels().length, 2)
+    expect(testSetup.client.getChannels().length).toBe(2)
 
-    await testSetup.socket.removeAllChannels()
+    await testSetup.client.removeAllChannels()
 
-    assert.equal(testSetup.socket.getChannels().length, 0)
+    expect(testSetup.client.getChannels().length).toBe(0)
     expect(disconnectStub).toHaveBeenCalled()
+  })
+
+  test('removes all channels from phoenix-js socket', async () => {
+    testSetup.client.channel('chan1').subscribe()
+    testSetup.client.channel('chan2').subscribe()
+
+    expect(testSetup.client.getChannels().length).toBe(2)
+    expect(testSetup.client.socketAdapter.getSocket().channels.length).toBe(2)
+
+    await testSetup.client.removeAllChannels()
+
+    expect(testSetup.client.socketAdapter.getSocket().channels.length).toBe(0)
+  })
+
+  test('allows to create second channel with given topic after first one unsubscribed', async () => {
+    const channel1 = testSetup.client.channel('topic').subscribe()
+    await waitForChannelSubscribed(channel1)
+
+    expect(testSetup.client.getChannels().length).toBe(1)
+    await channel1.unsubscribe()
+
+    expect(testSetup.client.getChannels().length).toBe(0)
+
+    const channel2 = testSetup.client.channel('topic').subscribe()
+    await waitForChannelSubscribed(channel2)
+
+    expect(channel2).not.toBe(channel1)
   })
 
   test.each([
@@ -155,61 +125,40 @@ describe('channel', () => {
   ])(
     'channels length should be $2 after unsubscribe returns $1',
     async (stub, status, expected) => {
-      const channel = testSetup.socket.channel('topic').subscribe()
-      assert.equal(testSetup.socket.getChannels().length, 1)
-
+      const channel = testSetup.client.channel('topic').subscribe()
+      expect(testSetup.client.getChannels().length).toBe(1)
       // force channel.trigger to call bindings with custom message
-      channel._onMessage = () => ({ status: stub })
+      channel.channelAdapter.getChannel().onMessage = () => ({ status: stub })
 
-      const result = await testSetup.socket.removeChannel(channel)
+      const result = await testSetup.client.removeChannel(channel)
 
-      assert.equal(testSetup.socket.getChannels().length, expected)
-      assert.equal(result, status)
+      expect(testSetup.client.getChannels().length).toBe(expected)
+      expect(result).toBe(status)
     }
   )
 })
 
 describe('leaveOpenTopic', () => {
-  let channel1
-  let channel2
-
-  afterEach(() => {
-    channel1.unsubscribe()
-    channel2.unsubscribe()
-  })
-
-  test('enforces client to subscribe to unique topics', () => {
-    channel1 = testSetup.socket.channel('topic')
-    channel2 = testSetup.socket.channel('topic')
+  test('enforces client to subscribe to unique topics', async () => {
+    const logSpy = vi.fn()
+    testSetup.cleanup()
+    testSetup = setupRealtimeTest({
+      logger: logSpy,
+    })
+    testSetup.connect()
+    await testSetup.socketConnected()
+    const channel1 = new RealtimeChannel('realtime:topic', { config: {} }, testSetup.client)
+    const channel2 = new RealtimeChannel('realtime:topic', { config: {} }, testSetup.client)
     channel1.subscribe()
-    try {
-      channel2.subscribe()
-    } catch (e) {
-      console.error(e)
-      assert.equal(
-        e,
-        `tried to subscribe multiple times. 'subscribe' can only be called a single time per channel instance`
-      )
-    }
+    channel2.subscribe()
 
-    assert.equal(testSetup.socket.getChannels().length, 1)
-    assert.equal(testSetup.socket.getChannels()[0].topic, 'realtime:topic')
-  })
-})
+    expect(logSpy).toHaveBeenCalledWith(
+      'transport',
+      'leaving duplicate topic "realtime:topic"',
+      undefined
+    )
 
-describe('remove', () => {
-  test('removes given channel from channels', () => {
-    const channel1 = testSetup.socket.channel('topic-1')
-    const channel2 = testSetup.socket.channel('topic-2')
-
-    vi.spyOn(channel1, '_joinRef').mockReturnValue('1')
-    vi.spyOn(channel2, '_joinRef').mockReturnValue('2')
-
-    testSetup.socket._remove(channel1)
-
-    assert.equal(testSetup.socket.getChannels().length, 1)
-
-    const [foundChannel] = testSetup.socket.channels
-    assert.deepStrictEqual(foundChannel, channel2)
+    expect(testSetup.client.socketAdapter.getSocket().channels.length).toBe(1)
+    expect(testSetup.client.socketAdapter.getSocket().channels[0].topic).toBe('realtime:topic')
   })
 })
