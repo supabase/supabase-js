@@ -26,6 +26,12 @@ import {
   UpdateOAuthClientParams,
   OAuthClientResponse,
   OAuthClientListResponse,
+  GoTrueAdminCustomProvidersApi,
+  CreateCustomProviderParams,
+  UpdateCustomProviderParams,
+  ListCustomProvidersParams,
+  CustomProviderResponse,
+  CustomProviderListResponse,
 } from './lib/types'
 import { AuthError, isAuthError } from './lib/errors'
 
@@ -38,6 +44,9 @@ export default class GoTrueAdminApi {
    * Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
    */
   oauth: GoTrueAdminOAuthApi
+
+  /** Contains all custom OIDC/OAuth provider administration methods. */
+  customProviders: GoTrueAdminCustomProvidersApi
 
   protected url: string
   protected headers: {
@@ -83,6 +92,13 @@ export default class GoTrueAdminApi {
       updateClient: this._updateOAuthClient.bind(this),
       deleteClient: this._deleteOAuthClient.bind(this),
       regenerateClientSecret: this._regenerateOAuthClientSecret.bind(this),
+    }
+    this.customProviders = {
+      listProviders: this._listCustomProviders.bind(this),
+      createProvider: this._createCustomProvider.bind(this),
+      getProvider: this._getCustomProvider.bind(this),
+      updateProvider: this._updateCustomProvider.bind(this),
+      deleteProvider: this._deleteCustomProvider.bind(this),
     }
   }
 
@@ -570,6 +586,141 @@ export default class GoTrueAdminApi {
         return { data: null, error }
       }
 
+      throw error
+    }
+  }
+
+  /**
+   * Lists all custom providers with optional type filter.
+   *
+   * This function should only be called on a server. Never expose your `service_role` key in the browser.
+   */
+  private async _listCustomProviders(
+    params?: ListCustomProvidersParams
+  ): Promise<CustomProviderListResponse> {
+    try {
+      const query: Record<string, string> = {}
+      if (params?.type) {
+        query.type = params.type
+      }
+      return await _request(this.fetch, 'GET', `${this.url}/admin/custom-providers`, {
+        headers: this.headers,
+        query,
+        xform: (data: any) => {
+          return { data: { providers: data.providers }, error: null }
+        },
+      })
+    } catch (error) {
+      if (isAuthError(error)) {
+        return { data: { providers: [] }, error }
+      }
+      throw error
+    }
+  }
+
+  /**
+   * Creates a new custom OIDC/OAuth provider.
+   *
+   * This function should only be called on a server. Never expose your `service_role` key in the browser.
+   */
+  private async _createCustomProvider(
+    params: CreateCustomProviderParams
+  ): Promise<CustomProviderResponse> {
+    try {
+      return await _request(this.fetch, 'POST', `${this.url}/admin/custom-providers`, {
+        body: params,
+        headers: this.headers,
+        xform: (provider: any) => {
+          return { data: provider, error: null }
+        },
+      })
+    } catch (error) {
+      if (isAuthError(error)) {
+        return { data: null, error }
+      }
+      throw error
+    }
+  }
+
+  /**
+   * Gets details of a specific custom provider by identifier.
+   *
+   * This function should only be called on a server. Never expose your `service_role` key in the browser.
+   */
+  private async _getCustomProvider(identifier: string): Promise<CustomProviderResponse> {
+    try {
+      return await _request(
+        this.fetch,
+        'GET',
+        `${this.url}/admin/custom-providers/${encodeURIComponent(identifier)}`,
+        {
+          headers: this.headers,
+          xform: (provider: any) => {
+            return { data: provider, error: null }
+          },
+        }
+      )
+    } catch (error) {
+      if (isAuthError(error)) {
+        return { data: null, error }
+      }
+      throw error
+    }
+  }
+
+  /**
+   * Updates an existing custom provider.
+   *
+   * This function should only be called on a server. Never expose your `service_role` key in the browser.
+   */
+  private async _updateCustomProvider(
+    identifier: string,
+    params: UpdateCustomProviderParams
+  ): Promise<CustomProviderResponse> {
+    try {
+      return await _request(
+        this.fetch,
+        'PUT',
+        `${this.url}/admin/custom-providers/${encodeURIComponent(identifier)}`,
+        {
+          body: params,
+          headers: this.headers,
+          xform: (provider: any) => {
+            return { data: provider, error: null }
+          },
+        }
+      )
+    } catch (error) {
+      if (isAuthError(error)) {
+        return { data: null, error }
+      }
+      throw error
+    }
+  }
+
+  /**
+   * Deletes a custom provider.
+   *
+   * This function should only be called on a server. Never expose your `service_role` key in the browser.
+   */
+  private async _deleteCustomProvider(
+    identifier: string
+  ): Promise<{ data: null; error: AuthError | null }> {
+    try {
+      await _request(
+        this.fetch,
+        'DELETE',
+        `${this.url}/admin/custom-providers/${encodeURIComponent(identifier)}`,
+        {
+          headers: this.headers,
+          noResolveJson: true,
+        }
+      )
+      return { data: null, error: null }
+    } catch (error) {
+      if (isAuthError(error)) {
+        return { data: null, error }
+      }
       throw error
     }
   }

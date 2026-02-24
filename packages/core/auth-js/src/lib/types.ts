@@ -1752,6 +1752,214 @@ export interface GoTrueAdminOAuthApi {
 }
 
 /**
+ * Type of custom identity provider.
+ */
+export type CustomProviderType = 'oauth2' | 'oidc'
+
+/**
+ * Custom OAuth/OIDC provider object returned from the admin API.
+ */
+export type CustomOAuthProvider = {
+  /** Unique identifier (UUID) */
+  id: string
+  /** Provider type */
+  provider_type: CustomProviderType
+  /** Provider identifier (e.g. `custom:mycompany`) */
+  identifier: string
+  /** Human-readable name */
+  name: string
+  /** OAuth client ID */
+  client_id: string
+  /** Additional client IDs accepted during token validation */
+  acceptable_client_ids?: string[]
+  /** OAuth scopes requested during authorization */
+  scopes?: string
+  /** Whether PKCE is enabled */
+  pkce_enabled?: boolean
+  /** Mapping of provider attributes to Supabase user attributes */
+  attribute_mapping?: Record<string, any>
+  /** Additional parameters sent with the authorization request */
+  authorization_params?: Record<string, string>
+  /** Whether the provider is enabled */
+  enabled?: boolean
+  /** Whether email is optional for this provider */
+  email_optional?: boolean
+  /** OIDC issuer URL */
+  issuer?: string
+  /** OIDC discovery URL */
+  discovery_url?: string
+  /** Whether to skip nonce check (OIDC) */
+  skip_nonce_check?: boolean
+  /** OAuth2 authorization URL */
+  authorization_url?: string
+  /** OAuth2 token URL */
+  token_url?: string
+  /** OAuth2 userinfo URL */
+  userinfo_url?: string
+  /** JWKS URI for token verification */
+  jwks_uri?: string
+  /** Timestamp when the provider was created */
+  created_at: string
+  /** Timestamp when the provider was last updated */
+  updated_at: string
+}
+
+/**
+ * Parameters for creating a new custom provider.
+ */
+export type CreateCustomProviderParams = {
+  /** Provider type */
+  provider_type: CustomProviderType
+  /** Provider identifier (e.g. `custom:mycompany`) */
+  identifier: string
+  /** Human-readable name */
+  name: string
+  /** OAuth client ID */
+  client_id: string
+  /** OAuth client secret (write-only, not returned in responses) */
+  client_secret: string
+  /** Additional client IDs accepted during token validation */
+  acceptable_client_ids?: string[]
+  /** OAuth scopes requested during authorization */
+  scopes?: string
+  /** Whether PKCE is enabled */
+  pkce_enabled?: boolean
+  /** Mapping of provider attributes to Supabase user attributes */
+  attribute_mapping?: Record<string, any>
+  /** Additional parameters sent with the authorization request */
+  authorization_params?: Record<string, string>
+  /** Whether the provider is enabled */
+  enabled?: boolean
+  /** Whether email is optional for this provider */
+  email_optional?: boolean
+  /** OIDC issuer URL */
+  issuer?: string
+  /** OIDC discovery URL */
+  discovery_url?: string
+  /** Whether to skip nonce check (OIDC) */
+  skip_nonce_check?: boolean
+  /** OAuth2 authorization URL */
+  authorization_url?: string
+  /** OAuth2 token URL */
+  token_url?: string
+  /** OAuth2 userinfo URL */
+  userinfo_url?: string
+  /** JWKS URI for token verification */
+  jwks_uri?: string
+}
+
+/**
+ * Parameters for updating an existing custom provider.
+ * All fields are optional. Only provided fields will be updated.
+ * `provider_type` and `identifier` are immutable and cannot be changed.
+ */
+export type UpdateCustomProviderParams = {
+  /** Human-readable name */
+  name?: string
+  /** OAuth client ID */
+  client_id?: string
+  /** OAuth client secret (write-only, not returned in responses) */
+  client_secret?: string
+  /** Additional client IDs accepted during token validation */
+  acceptable_client_ids?: string[]
+  /** OAuth scopes requested during authorization */
+  scopes?: string
+  /** Whether PKCE is enabled */
+  pkce_enabled?: boolean
+  /** Mapping of provider attributes to Supabase user attributes */
+  attribute_mapping?: Record<string, any>
+  /** Additional parameters sent with the authorization request */
+  authorization_params?: Record<string, string>
+  /** Whether the provider is enabled */
+  enabled?: boolean
+  /** Whether email is optional for this provider */
+  email_optional?: boolean
+  /** OIDC issuer URL */
+  issuer?: string
+  /** OIDC discovery URL */
+  discovery_url?: string
+  /** Whether to skip nonce check (OIDC) */
+  skip_nonce_check?: boolean
+  /** OAuth2 authorization URL */
+  authorization_url?: string
+  /** OAuth2 token URL */
+  token_url?: string
+  /** OAuth2 userinfo URL */
+  userinfo_url?: string
+  /** JWKS URI for token verification */
+  jwks_uri?: string
+}
+
+/**
+ * Parameters for listing custom providers.
+ */
+export type ListCustomProvidersParams = {
+  /** Filter by provider type */
+  type?: CustomProviderType
+}
+
+/**
+ * Response type for custom provider operations.
+ */
+export type CustomProviderResponse = RequestResult<CustomOAuthProvider>
+
+/**
+ * Response type for listing custom providers.
+ */
+export type CustomProviderListResponse =
+  | {
+      data: { providers: CustomOAuthProvider[] }
+      error: null
+    }
+  | {
+      data: { providers: [] }
+      error: AuthError
+    }
+
+/**
+ * Contains all custom OIDC/OAuth provider administration methods.
+ */
+export interface GoTrueAdminCustomProvidersApi {
+  /**
+   * Lists all custom providers with optional type filter.
+   *
+   * This function should only be called on a server. Never expose your `service_role` key in the browser.
+   */
+  listProviders(params?: ListCustomProvidersParams): Promise<CustomProviderListResponse>
+
+  /**
+   * Creates a new custom OIDC/OAuth provider.
+   *
+   * This function should only be called on a server. Never expose your `service_role` key in the browser.
+   */
+  createProvider(params: CreateCustomProviderParams): Promise<CustomProviderResponse>
+
+  /**
+   * Gets details of a specific custom provider by identifier.
+   *
+   * This function should only be called on a server. Never expose your `service_role` key in the browser.
+   */
+  getProvider(identifier: string): Promise<CustomProviderResponse>
+
+  /**
+   * Updates an existing custom provider.
+   *
+   * This function should only be called on a server. Never expose your `service_role` key in the browser.
+   */
+  updateProvider(
+    identifier: string,
+    params: UpdateCustomProviderParams
+  ): Promise<CustomProviderResponse>
+
+  /**
+   * Deletes a custom provider.
+   *
+   * This function should only be called on a server. Never expose your `service_role` key in the browser.
+   */
+  deleteProvider(identifier: string): Promise<{ data: null; error: AuthError | null }>
+}
+
+/**
  * OAuth client details in an authorization request.
  * Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
  */
