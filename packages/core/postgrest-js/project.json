@@ -11,7 +11,7 @@
     "test:infra": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "npx supabase start && npx supabase db reset",
+        "command": "npx supabase start && npx supabase db reset && sleep 3",
         "cwd": "{projectRoot}/test"
       },
       "dependsOn": ["test:clean-pre"]

@@ -12,12 +12,10 @@ const config: Config.InitialOptions = {
   prettierPath: require.resolve('prettier'),
   // Increase timeout for CI environments (default is 5000ms)
   testTimeout: 30000,
-  globals: {
+  transform: {
     // For consistency between VSCode and type-check
     // https://github.com/supabase/postgrest-js/pull/627#discussion_r2236995331
-    'ts-jest': {
-      tsconfig: 'tsconfig.test.json',
-    },
+    '^.+\\.tsx?$': ['ts-jest', { tsconfig: 'tsconfig.test.json' }],
   },
 }
 export default config
