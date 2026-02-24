@@ -36,7 +36,7 @@
         "command": "jest tests/auth/standard --runInBand --coverage",
         "cwd": "{projectRoot}"
       },
-      "dependsOn": ["^build"],
+      "dependsOn": ["^build", "test:e2e:setup"],
       "inputs": ["testing", "^production"],
       "outputs": ["{projectRoot}/coverage/auth"],
       "cache": true,
@@ -65,7 +65,7 @@
         "command": "jest tests/storage --runInBand --coverage",
         "cwd": "{projectRoot}"
       },
-      "dependsOn": ["^build"],
+      "dependsOn": ["^build", "test:e2e:setup"],
       "inputs": ["testing", "^production"],
       "outputs": ["{projectRoot}/coverage/storage"],
       "cache": true,
@@ -77,7 +77,7 @@
         "command": "jest tests/postgrest/standard --runInBand --coverage",
         "cwd": "{projectRoot}"
       },
-      "dependsOn": ["^build"],
+      "dependsOn": ["^build", "test:e2e:setup"],
       "inputs": ["testing", "^production"],
       "outputs": ["{projectRoot}/coverage/postgrest"],
       "cache": true,
@@ -106,7 +106,7 @@
         "command": "jest tests/functions --runInBand --coverage",
         "cwd": "{projectRoot}"
       },
-      "dependsOn": ["^build"],
+      "dependsOn": ["^build", "test:e2e:setup"],
       "inputs": ["testing", "^production"],
       "outputs": ["{projectRoot}/coverage/functions"],
       "cache": true,
@@ -118,7 +118,7 @@
         "command": "jest tests/supabase --runInBand --coverage",
         "cwd": "{projectRoot}"
       },
-      "dependsOn": ["^build"],
+      "dependsOn": ["^build", "test:e2e:setup"],
       "inputs": ["testing", "^production"],
       "outputs": ["{projectRoot}/coverage/supabase"],
       "cache": true,
@@ -128,7 +128,6 @@
       "executor": "nx:run-commands",
       "options": {
         "commands": [
-          "bash scripts/setup-main.sh",
           {
             "command": "npx nx run-many --projects=e2e-tests --targets=test:e2e:auth:standard,test:e2e:storage,test:e2e:postgrest:standard,test:e2e:functions,test:e2e:supabase --parallel 5",
             "forwardAllArgs": false
