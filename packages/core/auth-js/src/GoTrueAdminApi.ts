@@ -607,7 +607,7 @@ export default class GoTrueAdminApi {
         headers: this.headers,
         query,
         xform: (data: any) => {
-          return { data: { providers: data.providers }, error: null }
+          return { data: { providers: data?.providers ?? [] }, error: null }
         },
       })
     } catch (error) {
