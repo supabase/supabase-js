@@ -14,7 +14,7 @@ import {
   RegistrationCredential,
 } from './webauthn.dom'
 
-/** One of the providers supported by GoTrue. */
+/** One of the providers supported by GoTrue. Use the `custom:` prefix for custom OIDC providers (e.g. `custom:my-oidc-provider`). */
 export type Provider =
   | 'apple'
   | 'azure'
@@ -41,6 +41,7 @@ export type Provider =
   | 'workos'
   | 'zoom'
   | 'fly'
+  | `custom:${string}`
 
 export type AuthChangeEventMFA = 'MFA_CHALLENGE_VERIFIED'
 
@@ -675,8 +676,8 @@ export type SignInWithOAuthCredentials = {
 }
 
 export type SignInWithIdTokenCredentials = {
-  /** Provider name or OIDC `iss` value identifying which provider should be used to verify the provided token. Supported names: `google`, `apple`, `azure`, `facebook`, `kakao`, `keycloak` (deprecated). */
-  provider: 'google' | 'apple' | 'azure' | 'facebook' | 'kakao' | (string & {})
+  /** Provider name or OIDC `iss` value identifying which provider should be used to verify the provided token. Supported names: `google`, `apple`, `azure`, `facebook`, `kakao`. Use the `custom:` prefix for custom OIDC providers (e.g. `custom:my-oidc-provider`). */
+  provider: 'google' | 'apple' | 'azure' | 'facebook' | 'kakao' | `custom:${string}` | (string & {})
   /** OIDC ID token issued by the specified provider. The `iss` claim in the ID token must match the supplied provider. Some ID tokens contain an `at_hash` which require that you provide an `access_token` value to be accepted properly. If the token contains a `nonce` claim you must supply the nonce used to obtain the ID token. */
   token: string
   /** If the ID token contains an `at_hash` claim, then the hash of this value is compared to the value in the ID token. */
