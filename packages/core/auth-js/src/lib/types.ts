@@ -1606,6 +1606,15 @@ export type OAuthClientType = 'public' | 'confidential'
 export type OAuthClientRegistrationType = 'dynamic' | 'manual'
 
 /**
+ * OAuth client token endpoint authentication method.
+ * Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
+ */
+export type OAuthClientTokenEndpointAuthMethod =
+  | 'none'
+  | 'client_secret_basic'
+  | 'client_secret_post'
+
+/**
  * OAuth client object returned from the OAuth 2.1 server.
  * Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
  */
@@ -1619,7 +1628,7 @@ export type OAuthClient = {
   /** Type of OAuth client */
   client_type: OAuthClientType
   /** Token endpoint authentication method */
-  token_endpoint_auth_method: string
+  token_endpoint_auth_method: OAuthClientTokenEndpointAuthMethod
   /** Registration type of the client */
   registration_type: OAuthClientRegistrationType
   /** URI of the OAuth client */
@@ -1657,6 +1666,8 @@ export type CreateOAuthClientParams = {
   response_types?: OAuthClientResponseType[]
   /** Scope of the OAuth client */
   scope?: string
+  /** Token endpoint authentication method (defaults to server default if not specified) */
+  token_endpoint_auth_method?: OAuthClientTokenEndpointAuthMethod
 }
 
 /**
@@ -1675,6 +1686,8 @@ export type UpdateOAuthClientParams = {
   redirect_uris?: string[]
   /** Array of allowed grant types */
   grant_types?: OAuthClientGrantType[]
+  /** Token endpoint authentication method */
+  token_endpoint_auth_method?: OAuthClientTokenEndpointAuthMethod
 }
 
 /**
