@@ -1,7 +1,7 @@
 import type { RequiredDeep } from 'type-fest'
 import { z } from 'zod'
 import { PostgrestClient } from '@supabase/postgrest-js'
-import { createPostgrestClient, REST_URL_EXPORT as REST_URL } from '../../helpers/postgrest-client'
+import { createPostgrestClient, REST_URL_EXPORT as REST_URL } from '@helpers/postgrest-client'
 import type { SelectQueryError } from '@supabase/postgrest-js/src/select-query-parser/utils'
 import { expectType, type TypeEqual } from './types'
 import type { Database } from './types.override'

@@ -1,5 +1,5 @@
 import { PostgrestClient } from '@supabase/postgrest-js'
-import { createPostgrestClient, REST_URL_EXPORT as REST_URL } from '../../helpers/postgrest-client'
+import { createPostgrestClient, REST_URL_EXPORT as REST_URL } from '@helpers/postgrest-client'
 import { Database as DatabasePostgrest14 } from './types.override-with-options-postgrest14'
 import { expectType, TypeEqual } from './types'
 import { InvalidMethodError } from '@supabase/postgrest-js/src/PostgrestFilterBuilder'

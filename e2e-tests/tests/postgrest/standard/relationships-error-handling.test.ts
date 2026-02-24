@@ -1,5 +1,5 @@
 import { PostgrestClient } from '@supabase/postgrest-js'
-import { createPostgrestClient, REST_URL_EXPORT as REST_URL } from '../../helpers/postgrest-client'
+import { createPostgrestClient, REST_URL_EXPORT as REST_URL } from '@helpers/postgrest-client'
 import { Database } from './types.override'
 import { expectType, TypeEqual } from './types'
 import { SelectQueryError } from '@supabase/postgrest-js/src/select-query-parser/utils'

@@ -1,5 +1,5 @@
 import { PostgrestClient } from '@supabase/postgrest-js'
-import { createPostgrestClient, REST_URL_EXPORT as REST_URL } from '../../helpers/postgrest-client'
+import { createPostgrestClient, REST_URL_EXPORT as REST_URL } from '@helpers/postgrest-client'
 import { Database } from './types.override'
 
 const postgrest = new PostgrestClient<Database>('http://localhost:54321/rest/v1')

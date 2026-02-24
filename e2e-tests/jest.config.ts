@@ -23,7 +23,7 @@ const config: Config.InitialOptions = {
   coverageDirectory: '<rootDir>/coverage',
   coverageReporters: ['text', 'lcov', 'html'],
   // Test pattern
-  testMatch: ['<rootDir>/tests/**/*.test.ts'],
+  testMatch: ['<rootDir>/tests/**/*.{test,spec}.ts'],
   globals: {
     'ts-jest': {
       tsconfig: 'tsconfig.json',

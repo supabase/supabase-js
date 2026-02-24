@@ -3,9 +3,7 @@ import * as fsp from 'fs/promises'
 import * as fs from 'fs'
 import * as path from 'path'
 import assert from 'assert'
-import { StorageApiError, StorageError } from '@supabase/storage-js/dist/module/lib/common/errors'
-import BlobDownloadBuilder from '@supabase/storage-js/dist/module/packages/BlobDownloadBuilder'
-import StreamDownloadBuilder from '@supabase/storage-js/dist/module/packages/StreamDownloadBuilder'
+import { StorageApiError, StorageError } from '@supabase/storage-js'
 import {
   createStorageClient,
   createNewBucket,
@@ -474,7 +472,7 @@ describe('Object API', () => {
       await storage.from(bucketName).upload(uploadPath, file)
 
       const blobBuilder = storage.from(bucketName).download(uploadPath)
-      expect(blobBuilder).toBeInstanceOf(BlobDownloadBuilder)
+      expect(blobBuilder.constructor.name).toBe('BlobDownloadBuilder')
 
       const blobResponse = await blobBuilder
       expect(blobResponse.error).toBeNull()
@@ -491,7 +489,7 @@ describe('Object API', () => {
       await storage.from(bucketName).upload(uploadPath, file)
 
       const streamBuilder = storage.from(bucketName).download(uploadPath).asStream()
-      expect(streamBuilder).toBeInstanceOf(StreamDownloadBuilder)
+      expect(streamBuilder.constructor.name).toBe('StreamDownloadBuilder')
 
       const streamResponse = await streamBuilder
       expect(streamResponse.error).toBeNull()

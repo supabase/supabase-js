@@ -1,8 +1,5 @@
 import { StorageClient } from '@supabase/storage-js'
-import {
-  StorageError,
-  StorageUnknownError,
-} from '@supabase/storage-js/dist/module/lib/common/errors'
+import { StorageError, StorageUnknownError } from '@supabase/storage-js'
 import { getStorageInfo } from '../../helpers/storage-client'
 
 // Mock URL and credentials for testing
