@@ -695,6 +695,34 @@ export default class RealtimeClient {
 
     authPromise
       .then(() => {
+        // When subscribe() is called before the accessToken callback has
+        // resolved (common on React Native / Expo where token storage is
+        // async), the phx_join payload captured at subscribe()-time will
+        // have no access_token.  By this point auth has settled and
+        // this.accessTokenValue holds the real JWT.
+        //
+        // The stale join messages sitting in sendBuffer captured the old
+        // (token-less) payload in a closure, so we cannot simply flush
+        // them.  Instead we:
+        //   1. Patch each channel's joinPush payload with the real token
+        //   2. Drop the stale buffered messages
+        //   3. Re-send the join for any channel still in "joining" state
+        //
+        // On browsers this is a harmless no-op: accessTokenValue was
+        // already set synchronously before subscribe() ran, so the join
+        // payload already had the correct token.
+        if (this.accessTokenValue) {
+          this.channels.forEach((channel) => {
+            channel.updateJoinPayload({ access_token: this.accessTokenValue })
+          })
+          this.sendBuffer = []
+          this.channels.forEach((channel) => {
+            if (channel._isJoining()) {
+              channel.joinPush.sent = false
+              channel.joinPush.send()
+            }
+          })
+        }
         this.flushSendBuffer()
       })
       .catch((e) => {
