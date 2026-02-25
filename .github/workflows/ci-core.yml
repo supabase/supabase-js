@@ -144,23 +144,11 @@ jobs:
         run: npm ci
       - uses: nrwl/nx-set-shas@3e9ad7370203c1e93d109be57f3b72eb0eb511b1 # v4.4.0
 
-      - name: Run postgrest-js integration tests (if affected)
-        run: npx nx affected --target=test:ci:postgrest
-        timeout-minutes: 10
-
+      # Note: postgrest-js integration tests now run in the test-e2e-standard job
+      # via test:e2e:postgrest:standard against the unified Supabase CLI instance
       - name: Run postgrest-js type tests (if affected)
         run: npx nx affected --target=test:types:ci
         timeout-minutes: 15
-
-      - name: Upload coverage for postgrest-js (if affected)
-        uses: coverallsapp/github-action@5cbfd81b66ca5d10c19b062c04de0199c215fb6e # v2.3.7
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          path-to-lcov: ./packages/core/postgrest-js/coverage/lcov.info
-          parallel: true
-          flag-name: postgrest-js
-          fail-on-error: false
-        continue-on-error: true
 
   # Separate job for slow type generation check (runs in parallel)
   check-postgrest-generated-types:

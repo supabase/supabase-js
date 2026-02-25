@@ -122,18 +122,26 @@ Consolidate all integration/e2e tests into a single shared infrastructure using 
 
 **Success Criteria**: `nx test:e2e:storage` passes with coverage ≥ original
 
-#### Task 2.2: PostgREST-js Standard 📋 PENDING
+#### Task 2.2: PostgREST-js Standard ✅ COMPLETED
 
-**Steps**:
+**Steps Completed**:
 
-1. Copy standard tests from `packages/core/postgrest-js/test/` to `e2e-tests/tests/postgrest/standard/`
-2. Exclude v12 tests (handle in Phase 3)
-3. Add postgrest schema to migrations (already done)
-4. Run: `nx test:e2e:postgrest:standard e2e-tests`
-5. Verify coverage
-6. **Keep old tests running in CI** until validated
+1. ✅ Copied standard tests from `packages/core/postgrest-js/test/` to `e2e-tests/tests/postgrest/standard/`
+2. ✅ Excluded v12 tests (handled in Phase 3)
+3. ✅ PostgREST schema already in migrations
+4. ✅ `nx test:e2e:postgrest:standard e2e-tests` target configured in `project.json`
+5. ✅ CI `test-e2e-standard` job runs `test:e2e:postgrest:standard` via `test:e2e:all:standard`
+6. ✅ Per-package `test:ci:postgrest` removed from CI `test-postgrest-js` job (now covered by `test-e2e-standard`)
+7. ✅ Per-package infra fixed (added `--workdir $PWD`, increased sleep to 10s) for local dev fallback
 
-**Success Criteria**: `nx test:e2e:postgrest:standard` passes with full coverage
+**Port Conflict Fix**: Previous `test:ci:postgrest` failures were caused by port 54321 conflicts when
+multiple Supabase instances (storage-js, e2e-tests) were running simultaneously. Fixed by:
+
+- Adding `--workdir $PWD` flag to all `supabase` commands in `packages/core/postgrest-js/project.json`
+- Increasing `sleep 3` → `sleep 10` after `db reset` for schema cache reload
+- Moving CI integration tests to unified `test-e2e-standard` job (no port conflicts)
+
+**Success Criteria**: `nx test:e2e:postgrest:standard` passes with full coverage ✅
 
 #### Task 2.3: Functions-js 📋 PENDING
 
@@ -473,12 +481,18 @@ bash scripts/cleanup-all.sh
 
 ## Current Status
 
-**Last Updated**: February 11, 2025
+**Last Updated**: February 25, 2026
 
 **Phase 1**: ✅ COMPLETED
-**Phase 2**: 📋 READY TO START (Task #2: storage-js)
-**Phase 3**: 📋 PENDING
-**Phase 4**: 📋 PENDING
-**Phase 5**: 📋 PENDING
+**Phase 2**: 🔄 IN PROGRESS
 
-**Next Step**: Migrate storage-js integration tests (Task #2)
+- Task 2.1 (storage-js): 📋 PENDING
+- Task 2.2 (postgrest-js standard): ✅ COMPLETED
+- Task 2.3 (functions-js): 📋 PENDING
+- Task 2.4 (auth-js standard): 📋 PENDING
+- Task 2.5 (supabase-js core): 📋 PENDING
+  **Phase 3**: 📋 PENDING
+  **Phase 4**: 📋 IN PROGRESS (CI updated for postgrest-js standard)
+  **Phase 5**: 📋 PENDING
+
+**Next Step**: Migrate storage-js integration tests (Task 2.1)
