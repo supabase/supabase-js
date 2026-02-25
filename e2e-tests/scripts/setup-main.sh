@@ -34,19 +34,13 @@ echo "   ✅ Storage schema loaded"
 PGPASSWORD=postgres psql -h 127.0.0.1 -p 54322 -U postgres -d postgres -c "SELECT count(*) FROM auth.users;" > /dev/null 2>&1
 echo "   ✅ Auth users loaded"
 
-echo "📦 Starting Edge Functions..."
-npx supabase functions serve --import-map supabase/deno.json > /tmp/e2e-supabase-functions.log 2>&1 &
-FUNCTIONS_PID=$!
-echo $FUNCTIONS_PID > /tmp/e2e-supabase-functions.pid
-
-echo "⏳ Waiting for Edge Runtime to initialize..."
-sleep 5
-
 echo "🔑 Exporting authentication keys..."
-export SUPABASE_ANON_KEY="$(npx supabase status --output json | jq -r '.ANON_KEY')"
-export SUPABASE_SERVICE_ROLE_KEY="$(npx supabase status --output json | jq -r '.SERVICE_ROLE_KEY')"
-echo "   SUPABASE_ANON_KEY exported"
-echo "   SUPABASE_SERVICE_ROLE_KEY exported"
+# Single supabase status call (two calls each restart auth; one call = one restart)
+STATUS_JSON=$(npx supabase status --output json 2>/dev/null)
+export SUPABASE_ANON_KEY="$(echo "$STATUS_JSON" | jq -r '.ANON_KEY')"
+export SUPABASE_SERVICE_ROLE_KEY="$(echo "$STATUS_JSON" | jq -r '.SERVICE_ROLE_KEY')"
+echo "   SUPABASE_ANON_KEY exported (${#SUPABASE_ANON_KEY} chars)"
+echo "   SUPABASE_SERVICE_ROLE_KEY exported (${#SUPABASE_SERVICE_ROLE_KEY} chars)"
 
 # Write keys to a file that tests can source
 cat > /tmp/e2e-supabase-keys.env << EOF
@@ -56,34 +50,50 @@ export SUPABASE_URL="http://127.0.0.1:54321"
 export SUPABASE_DB_URL="postgresql://postgres:postgres@127.0.0.1:54322/postgres"
 EOF
 
-echo "🧪 Testing edge function endpoint..."
-for i in {1..3}; do
-  RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
+echo "🧪 Waiting for Auth API to be ready..."
+# supabase status call above restarts auth; allow up to 90s for it to come back
+for i in $(seq 1 30); do
+  if curl -s http://127.0.0.1:54321/auth/v1/health 2>/dev/null | grep -qi "ok"; then
+    echo "   ✅ Auth API ready (attempt $i)"
+    break
+  fi
+  if [ "$i" -eq 30 ]; then
+    echo "❌ Auth API failed to start after 90s"
+    exit 1
+  fi
+  echo "   ⏳ Attempt $i/30 not ready, retrying in 3s..."
+  sleep 3
+done
+
+echo "📦 Starting Edge Functions..."
+npx supabase functions serve --import-map supabase/deno.json > /tmp/e2e-supabase-functions.log 2>&1 &
+FUNCTIONS_PID=$!
+echo $FUNCTIONS_PID > /tmp/e2e-supabase-functions.pid
+
+echo "🧪 Waiting for Edge Functions to be ready..."
+for i in $(seq 1 15); do
+  HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" \
+    --connect-timeout 5 --max-time 10 \
+    -X POST \
     -H "Authorization: Bearer $SUPABASE_ANON_KEY" \
     -H "Content-Type: application/json" \
     -d '{"name":"E2E Setup"}' \
-    http://127.0.0.1:54321/functions/v1/hello 2>&1)
-
-  HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+    http://127.0.0.1:54321/functions/v1/hello 2>/dev/null) || true
 
   if [ "$HTTP_CODE" = "200" ]; then
-    echo "   ✅ Edge functions responding"
+    echo "   ✅ Edge functions ready (attempt $i)"
     break
-  elif [ $i -lt 3 ]; then
-    echo "   ⏳ Attempt $i/3 failed (status $HTTP_CODE), retrying..."
-    sleep 3
-  else
-    echo "   ⚠️  Edge functions may still be initializing (status $HTTP_CODE)"
   fi
+  if [ "$i" -eq 15 ]; then
+    echo "❌ Edge functions failed to start after 45s (final status: $HTTP_CODE)"
+    echo "--- Edge functions log ---"
+    cat /tmp/e2e-supabase-functions.log
+    echo "--- End of log ---"
+    exit 1
+  fi
+  echo "   ⏳ Attempt $i/15 not ready (status $HTTP_CODE), retrying in 3s..."
+  sleep 3
 done
-
-echo "🧪 Testing Auth API..."
-HEALTH_CHECK=$(curl -s http://127.0.0.1:54321/auth/v1/health)
-if echo "$HEALTH_CHECK" | grep -q "ok"; then
-  echo "   ✅ Auth API responding"
-else
-  echo "   ⚠️  Auth API may not be fully ready"
-fi
 
 echo "🧪 Testing Storage API..."
 HEALTH_CHECK=$(curl -s http://127.0.0.1:54321/storage/v1/bucket)

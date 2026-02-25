@@ -202,3 +202,7 @@ jobs:
         timeout-minutes: 15
         # test:e2e:all:standard handles: setup → auth/storage/postgrest/functions/supabase tests → cleanup
         # dependsOn: ["^build"] is satisfied from cache (built in previous step)
+
+      - name: Cleanup e2e infrastructure
+        if: always()
+        run: cd e2e-tests && npx supabase stop --no-backup 2>/dev/null || true

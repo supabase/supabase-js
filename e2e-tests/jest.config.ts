@@ -10,6 +10,8 @@ const config: Config.InitialOptions = {
   prettierPath: require.resolve('prettier'),
   // Increase timeout for E2E tests (includes network calls, database operations)
   testTimeout: 60000,
+  // Load RSA-signed keys into each worker before modules are resolved
+  setupFiles: ['<rootDir>/helpers/load-test-env.ts'],
   // Global setup/teardown
   globalSetup: '<rootDir>/helpers/global-setup.ts',
   globalTeardown: '<rootDir>/helpers/global-teardown.ts',
