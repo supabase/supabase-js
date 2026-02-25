@@ -1,0 +1,22 @@
+{
+  "name": "@supabase/realtime-js",
+  "targets": {
+    "test:e2e": {
+      "executor": "nx:run-commands",
+      "options": {
+        "commands": [
+          "cp .env.local.ci .env.local || true",
+          "npm install",
+          "npx playwright install chromium",
+          "npx playwright test"
+        ],
+        "cwd": "{projectRoot}/example",
+        "parallel": false
+      },
+      "dependsOn": ["build"],
+      "metadata": {
+        "description": "Run Playwright E2E tests against the realtime-js chat example app"
+      }
+    }
+  }
+}

@@ -133,6 +133,11 @@ jobs:
           bun install
           cd "$GITHUB_WORKSPACE"
 
+      - name: Apply extra migrations for E2E tests
+        run: |
+          PGPASSWORD=postgres psql -h 127.0.0.1 -p 54322 -U postgres -d postgres \
+            -f packages/core/realtime-js/example/supabase/migrations/001_create_messages_table.sql
+
       - name: Run all tests in parallel
         run: |
           set -e
@@ -159,6 +164,24 @@ jobs:
           npx nx test:node:playwright supabase-js
 
           echo "✅ All tests passed"
+
+      - name: Run E2E tests
+        run: |
+          npx nx run-many \
+            --target=test:e2e \
+            --projects=auth-js,realtime-js \
+            --parallel=1 \
+            --verbose
+
+      - name: Upload Playwright reports
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            packages/core/auth-js/example/react/playwright-report/
+            packages/core/realtime-js/example/playwright-report/
+          retention-days: 7
 
       - name: Stop Supabase
         if: always()
