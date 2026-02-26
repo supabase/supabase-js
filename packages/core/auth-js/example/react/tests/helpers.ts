@@ -8,6 +8,8 @@ const INBUCKET_URL = 'http://127.0.0.1:54324'
 export async function getLatestEmail(emailAddress: string) {
   const mailbox = emailAddress.split('@')[0]
   const res = await fetch(`${INBUCKET_URL}/api/v1/mailbox/${mailbox}`)
+  // Inbucket returns 404 with "File not found\n" for non-existent/empty mailboxes
+  if (!res.ok) return null
   const messages = await res.json()
   if (!messages.length) return null
   const latest = messages[messages.length - 1]

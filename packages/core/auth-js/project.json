@@ -29,7 +29,7 @@
     "test:suite": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "jest --config jest.config.cli.js --runInBand --coverage --testPathIgnorePatterns=docker-tests",
+        "command": "jest --config jest.config.cli.js --runInBand --coverage",
         "cwd": "{projectRoot}"
       },
       "outputs": ["{projectRoot}/coverage"],

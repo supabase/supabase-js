@@ -1,6 +1,10 @@
 # Supabase Edge Functions Configuration
 # https://supabase.com/docs/guides/local-development/cli/config
 
+[auth]
+# Required for auth-js E2E tests (anonymous sign-in flow)
+enable_anonymous_sign_ins = true
+
 [functions.hello]
 enabled = true
 verify_jwt = false
