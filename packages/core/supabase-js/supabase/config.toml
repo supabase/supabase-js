@@ -5,6 +5,9 @@
 # Required for auth-js E2E tests (anonymous sign-in flow)
 enable_anonymous_sign_ins = true
 
+[inbucket]
+enabled = true
+
 [functions.hello]
 enabled = true
 verify_jwt = false
