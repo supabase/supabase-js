@@ -1757,6 +1757,34 @@ export interface GoTrueAdminOAuthApi {
 export type CustomProviderType = 'oauth2' | 'oidc'
 
 /**
+ * OIDC discovery document fields.
+ * Populated when the server successfully fetches and validates the
+ * provider's OpenID Connect discovery document.
+ */
+export type OIDCDiscoveryDocument = {
+  /** The issuer identifier */
+  issuer: string
+  /** URL of the authorization endpoint */
+  authorization_endpoint: string
+  /** URL of the token endpoint */
+  token_endpoint: string
+  /** URL of the JSON Web Key Set */
+  jwks_uri: string
+  /** URL of the userinfo endpoint */
+  userinfo_endpoint?: string
+  /** URL of the revocation endpoint */
+  revocation_endpoint?: string
+  /** List of supported scopes */
+  supported_scopes?: string[]
+  /** List of supported response types */
+  supported_response_types?: string[]
+  /** List of supported subject types */
+  supported_subject_types?: string[]
+  /** List of supported ID token signing algorithms */
+  supported_id_token_signing_algs?: string[]
+}
+
+/**
  * Custom OAuth/OIDC provider object returned from the admin API.
  */
 export type CustomOAuthProvider = {
@@ -1798,6 +1826,8 @@ export type CustomOAuthProvider = {
   userinfo_url?: string
   /** JWKS URI for token verification */
   jwks_uri?: string
+  /** OIDC discovery document (OIDC providers only) */
+  discovery_document?: OIDCDiscoveryDocument | null
   /** Timestamp when the provider was created */
   created_at: string
   /** Timestamp when the provider was last updated */
@@ -1930,6 +1960,12 @@ export interface GoTrueAdminCustomProvidersApi {
   /**
    * Creates a new custom OIDC/OAuth provider.
    *
+   * For OIDC providers, the server fetches and validates the OpenID Connect discovery document
+   * from the issuer's well-known endpoint (or the provided `discovery_url`) at creation time.
+   * This may return a validation error (`error_code: "validation_failed"`) if the discovery
+   * document is unreachable, not valid JSON, missing required fields, or if the issuer
+   * in the document does not match the expected issuer.
+   *
    * This function should only be called on a server. Never expose your `service_role` key in the browser.
    */
   createProvider(params: CreateCustomProviderParams): Promise<CustomProviderResponse>
@@ -1943,6 +1979,11 @@ export interface GoTrueAdminCustomProvidersApi {
 
   /**
    * Updates an existing custom provider.
+   *
+   * When `issuer` or `discovery_url` is changed on an OIDC provider, the server re-fetches and
+   * validates the discovery document before persisting. This may return a validation error
+   * (`error_code: "validation_failed"`) if the discovery document is unreachable, invalid, or
+   * the issuer does not match.
    *
    * This function should only be called on a server. Never expose your `service_role` key in the browser.
    */
