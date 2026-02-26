@@ -104,5 +104,8 @@ test-output
 supabase/.branches/*
 supabase/.temp/*
 
+packages/**/supabase/.temp/*
+packages/**/supabase/.branches/*
+
 # Test signing keys (generated at test runtime)
 **/signing_keys.json
