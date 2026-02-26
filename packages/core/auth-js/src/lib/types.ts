@@ -471,7 +471,7 @@ export interface UserAttributes {
    * their password and GOTRUE_SECURITY_UPDATE_PASSWORD_REQUIRE_CURRENT_PASSWORD is true.
    *
    */
-  currentPassword?: string
+  current_password?: string
 
   /**
    * The user's email.
