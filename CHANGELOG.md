@@ -1,3 +1,25 @@
+## 2.98.0 (2026-02-26)
+
+### 🚀 Features
+
+- **auth:** add `token_endpoint_auth_method` to OAuth client create/update ([#2132](https://github.com/supabase/supabase-js/pull/2132))
+- **auth:** support custom providers via `custom:` prefix in Provider type ([#2134](https://github.com/supabase/supabase-js/pull/2134))
+- **auth:** add currentPassword to UserAttributes type ([#2131](https://github.com/supabase/supabase-js/pull/2131))
+
+### 🩹 Fixes
+
+- **auth:** recover from orphaned navigator locks via steal fallback ([#2106](https://github.com/supabase/supabase-js/pull/2106))
+- **auth:** lower lockAcquireTimeout default to 5s and fix stale JSDoc ([#2125](https://github.com/supabase/supabase-js/pull/2125))
+- **auth:** fixes userattributes type ([#2139](https://github.com/supabase/supabase-js/pull/2139))
+- **realtime:** patch channel join payloads with resolved access token before flushing send buffer ([#2136](https://github.com/supabase/supabase-js/pull/2136))
+
+### ❤️ Thank You
+
+- Cemal Kılıç @cemalkilic
+- Elliot Padfield @ElliotPadfield
+- Etienne Stalmans @staaldraad
+- Katerina Skroumpelou @mandarini
+
 ## 2.97.0 (2026-02-18)
 
 ### 🚀 Features
