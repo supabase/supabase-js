@@ -77,8 +77,14 @@ test.describe('Auth E2E Flows', () => {
 
     await page.click('button:has-text("Send magic link")')
 
+    // Wait for the OTP request to complete (success or error)
+    const statusEl = page.locator('[data-testid="magic-link-status"]')
+    await expect(statusEl).toBeVisible({ timeout: 15000 })
+    const statusText = await statusEl.textContent()
+    expect(statusText).not.toContain('error:')
+
     let emailData = null
-    for (let i = 0; i < 10; i++) {
+    for (let i = 0; i < 30; i++) {
       await page.waitForTimeout(1000)
       emailData = await getLatestEmail(email)
       if (emailData) break
