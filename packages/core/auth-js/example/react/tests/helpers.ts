@@ -1,37 +1,33 @@
-const INBUCKET_URL = 'http://127.0.0.1:54324'
+const MAILPIT_URL = 'http://127.0.0.1:54324'
 
 /**
- * Fetch the latest email from Inbucket for a given mailbox.
- * Inbucket ships with Supabase CLI — captures all emails locally.
- * Mailbox = the part before @ in the email address.
+ * Fetch the latest email from Mailpit for a given address.
+ * Mailpit ships with Supabase CLI — captures all emails locally.
  */
 export async function getLatestEmail(emailAddress: string) {
-  const mailbox = emailAddress.split('@')[0]
-  const res = await fetch(`${INBUCKET_URL}/api/v1/mailbox/${mailbox}`)
-  // Inbucket returns 404 with "File not found\n" for non-existent/empty mailboxes
+  const res = await fetch(
+    `${MAILPIT_URL}/api/v1/search?query=to:${encodeURIComponent(emailAddress)}&limit=1`
+  )
   if (!res.ok) return null
-  const messages = await res.json()
-  if (!messages.length) return null
-  const latest = messages[messages.length - 1]
-  const detail = await fetch(`${INBUCKET_URL}/api/v1/mailbox/${mailbox}/${latest.id}`)
+  const data = await res.json()
+  if (!data.messages?.length) return null
+  const latest = data.messages[0]
+  const detail = await fetch(`${MAILPIT_URL}/api/v1/message/${latest.ID}`)
+  if (!detail.ok) return null
   return detail.json()
 }
 
 /**
- * Purge all emails in a mailbox (call before tests that check for specific emails).
+ * Purge all emails in Mailpit (call before tests that check for specific emails).
  */
-export async function purgeMailbox(emailAddress: string) {
-  const mailbox = emailAddress.split('@')[0]
-  await fetch(`${INBUCKET_URL}/api/v1/mailbox/${mailbox}`, {
-    method: 'DELETE',
-  })
+export async function purgeMailbox(_emailAddress: string) {
+  await fetch(`${MAILPIT_URL}/api/v1/messages`, { method: 'DELETE' })
 }
 
 /**
- * Extract the token_hash from a Supabase auth email body.
- * The CLI sends emails with a link containing token_hash=<hash>&type=<type>.
+ * Extract the GoTrue magic link verify URL from the email body text.
  */
-export function extractTokenHash(emailBodyText: string): string | null {
-  const match = emailBodyText.match(/token_hash=([a-zA-Z0-9_-]+)/)
-  return match ? match[1] : null
+export function extractMagicLink(emailBodyText: string): string | null {
+  const match = emailBodyText.match(/https?:\/\/\S+\/auth\/v1\/verify\?\S+/)
+  return match ? match[0].replace(/[)\s].*$/, '') : null
 }

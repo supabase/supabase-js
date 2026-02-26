@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { getLatestEmail, purgeMailbox, extractTokenHash } from './helpers'
+import { getLatestEmail, purgeMailbox, extractMagicLink } from './helpers'
 
 test.describe('Auth E2E Flows', () => {
   test('email + password sign-up creates a session', async ({ page }) => {
@@ -91,10 +91,12 @@ test.describe('Auth E2E Flows', () => {
     }
     expect(emailData).not.toBeNull()
 
-    const tokenHash = extractTokenHash(emailData.body.text)
-    expect(tokenHash).not.toBeNull()
+    const magicLink = extractMagicLink(emailData.Text)
+    expect(magicLink).not.toBeNull()
 
-    await page.goto(`/?token_hash=${tokenHash}&type=magiclink`)
+    // Navigate to GoTrue verify URL, redirecting back to the app
+    const verifyUrl = magicLink!.replace(/redirect_to=[^&\s]+/, 'redirect_to=http://localhost:5173')
+    await page.goto(verifyUrl)
 
     await expect(page.locator('button:has-text("Sign out")')).toBeVisible({ timeout: 15000 })
   })
