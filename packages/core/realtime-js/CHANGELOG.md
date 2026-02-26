@@ -1,3 +1,13 @@
+## 2.98.0 (2026-02-26)
+
+### 🩹 Fixes
+
+- **realtime:** patch channel join payloads with resolved access token before flushing send buffer ([#2136](https://github.com/supabase/supabase-js/pull/2136))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+
 ## 2.97.0 (2026-02-18)
 
 This was a version bump only for @supabase/realtime-js to align it with other projects, there were no code changes.
