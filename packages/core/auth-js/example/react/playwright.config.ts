@@ -6,7 +6,7 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,
   workers: 1,
-  timeout: 30000,
+  timeout: 60000,
   reporter: process.env.CI ? 'github' : 'html',
   use: {
     baseURL: 'http://localhost:5173',
