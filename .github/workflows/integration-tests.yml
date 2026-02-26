@@ -173,6 +173,20 @@ jobs:
             --parallel=1 \
             --verbose
 
+      - name: Debug email infrastructure on failure
+        if: failure()
+        run: |
+          echo "=== Docker containers ==="
+          docker ps -a
+          echo "=== Inbucket status ==="
+          curl -s http://127.0.0.1:54324/api/v1/server/info || echo "Inbucket not reachable on :54324"
+          echo "=== All Inbucket mailboxes ==="
+          curl -s "http://127.0.0.1:54324/api/v1/mailbox" || echo "Could not list mailboxes"
+          echo "=== GoTrue container logs (last 50 lines) ==="
+          docker logs $(docker ps -q --filter "name=supabase_auth") --tail=50 2>&1 || echo "Could not get GoTrue logs"
+          echo "=== Inbucket container logs (last 20 lines) ==="
+          docker logs $(docker ps -q --filter "name=supabase_inbucket") --tail=20 2>&1 || echo "Could not get Inbucket logs"
+
       - name: Upload Playwright reports
         if: failure()
         uses: actions/upload-artifact@v4

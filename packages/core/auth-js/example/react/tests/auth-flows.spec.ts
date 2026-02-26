@@ -52,7 +52,7 @@ test.describe('Auth E2E Flows', () => {
     await page.click('button:has-text("Sign out")')
 
     await expect(page.locator('pre')).toContainText('None', { timeout: 5000 })
-    await expect(page.locator('button:has-text("Sign out")')).not.toBeVisible()
+    await expect(page.locator('button:has-text("Sign out")')).not.toBeVisible({ timeout: 5000 })
   })
 
   test('anonymous sign-in creates a session', async ({ page }) => {

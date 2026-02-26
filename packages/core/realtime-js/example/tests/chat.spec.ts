@@ -20,7 +20,7 @@ test.describe('Realtime Chat E2E', () => {
     await expect(page.locator('h1:has-text("Realtime Chat")')).toBeVisible({ timeout: 15000 })
 
     await page.click('button:has-text("off-topic")')
-    await page.waitForTimeout(1000)
+    await expect(page.locator('text=No messages yet')).toBeVisible({ timeout: 5000 })
   })
 
   test('user can send a message and see it appear', async ({ page }) => {
@@ -51,8 +51,6 @@ test.describe('Realtime Chat E2E', () => {
     await page.click('button:has-text("Send")')
     await expect(page.locator(`text=${uniqueMsg}`)).toBeVisible({ timeout: 10000 })
 
-    await page.waitForTimeout(2000)
-
     await page.reload()
     await expect(page.locator(`text=${uniqueMsg}`)).toBeVisible({ timeout: 15000 })
   })
@@ -69,9 +67,7 @@ test.describe('Realtime Chat E2E', () => {
     await expect(page.locator(`text=${generalMsg}`)).toBeVisible({ timeout: 10000 })
 
     await page.click('button:has-text("random")')
-    await page.waitForTimeout(2000)
-
-    await expect(page.locator(`text=${generalMsg}`)).not.toBeVisible()
+    await expect(page.locator(`text=${generalMsg}`)).not.toBeVisible({ timeout: 5000 })
   })
 
   test('two browser contexts can exchange messages via broadcast', async ({ browser }) => {
@@ -80,8 +76,8 @@ test.describe('Realtime Chat E2E', () => {
     const page1 = await context1.newPage()
     const page2 = await context2.newPage()
 
-    await page1.goto('http://localhost:3000')
-    await page2.goto('http://localhost:3000')
+    await page1.goto('/')
+    await page2.goto('/')
 
     await expect(page1.locator('input[placeholder="Type a message..."]')).toBeVisible({
       timeout: 15000,
@@ -89,9 +85,6 @@ test.describe('Realtime Chat E2E', () => {
     await expect(page2.locator('input[placeholder="Type a message..."]')).toBeVisible({
       timeout: 15000,
     })
-
-    await page1.waitForTimeout(3000)
-    await page2.waitForTimeout(3000)
 
     const crossMsg = `cross-tab-${Date.now()}`
     await page1.fill('input[placeholder="Type a message..."]', crossMsg)
@@ -108,8 +101,6 @@ test.describe('Realtime Chat E2E', () => {
   test('presence: user appears in online list', async ({ page }) => {
     await page.goto('/')
     await expect(page.locator('h1:has-text("Realtime Chat")')).toBeVisible({ timeout: 15000 })
-
-    await page.waitForTimeout(3000)
 
     await expect(page.locator('text=(you)')).toBeVisible({ timeout: 10000 })
   })
