@@ -15,6 +15,7 @@ module.exports = {
     '!**/node_modules/**',
     '!**/vendor/**',
   ],
+  testPathIgnorePatterns: ['/node_modules/', '/example/'],
   rootDir: '.',
   silent: true,
 }

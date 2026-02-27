@@ -14,6 +14,10 @@ npx nx test:ci:postgrest postgrest-js      # Complete postgrest-js test suite
 npx nx test functions-js                    # Standard test (uses testcontainers)
 npx nx test realtime-js                     # Standard test (no Docker needed)
 npx nx test supabase-js                    # Standard test (unit tests only)
+
+# E2E tests (require local Supabase running — see E2E section below)
+npx nx test:e2e auth-js                     # Auth-js Playwright e2e tests
+npx nx test:e2e realtime-js                 # Realtime-js Playwright e2e tests
 ```
 
 ## Package-Specific Testing Guides
@@ -39,6 +43,53 @@ npx nx test supabase-js --coverage
 npx nx test:coverage realtime-js
 npx nx test:ci functions-js                 # Includes coverage
 ```
+
+## E2E Tests (Playwright)
+
+The `auth-js` and `realtime-js` packages include Playwright end-to-end tests that run against their example apps and a local Supabase instance.
+
+### Prerequisites
+
+- **Supabase running locally** — Start the local Supabase stack via the `supabase-js` setup target:
+  ```bash
+  npx nx test:supabase:setup supabase-js
+  ```
+- **Playwright Chromium** — Installed automatically by the `test:e2e` target (no separate install needed).
+
+### Environment Variables
+
+Each example directory ships with a `.env.local.ci` file pre-configured for the default local Supabase instance (`http://127.0.0.1:54321`). The `test:e2e` target copies this file to `.env.local` automatically.
+
+If you're using a custom local Supabase setup, create `.env.local` manually in the example directory:
+
+| Package       | Directory                              | Variables                                                          |
+| ------------- | -------------------------------------- | ------------------------------------------------------------------ |
+| `auth-js`     | `packages/core/auth-js/example/react/` | `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_DEFAULT_KEY`       |
+| `realtime-js` | `packages/core/realtime-js/example/`   | `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` |
+
+### Running E2E Tests
+
+```bash
+# Run individually
+npx nx test:e2e auth-js
+npx nx test:e2e realtime-js
+
+# Run both sequentially (avoids port conflicts)
+npx nx run-many --target=test:e2e --projects=auth-js,realtime-js --parallel=1
+```
+
+> **Note:** Run with `--parallel=1` when running both together — the apps use different ports (5173 and 3000) but share the same local Supabase, and sequential execution avoids potential resource conflicts.
+
+### What the Tests Cover
+
+| Package       | Test file                                | Scenarios                                                                   |
+| ------------- | ---------------------------------------- | --------------------------------------------------------------------------- |
+| `auth-js`     | `example/react/tests/auth-flows.spec.ts` | Sign-up, sign-in, sign-out, anonymous auth, magic link, session persistence |
+| `realtime-js` | `example/tests/chat.spec.ts`             | Send messages, room switching, broadcast between clients, presence          |
+
+### Playwright Reports
+
+On failure, test traces and screenshots are saved locally. In CI, Playwright HTML reports are uploaded as workflow artifacts.
 
 ## Prerequisites
 

@@ -29,7 +29,7 @@
     "test:suite": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "jest --config jest.config.cli.js --runInBand --coverage --testPathIgnorePatterns=docker-tests",
+        "command": "jest --config jest.config.cli.js --runInBand --coverage",
         "cwd": "{projectRoot}"
       },
       "outputs": ["{projectRoot}/coverage"],
@@ -99,6 +99,23 @@
       "dependsOn": ["test:docker:clean-post"],
       "metadata": {
         "description": "Run Docker-only tests (signup-disabled, asymmetric-jwt, phone-otp, anonymous-disabled)"
+      }
+    },
+    "test:e2e": {
+      "executor": "nx:run-commands",
+      "options": {
+        "commands": [
+          "cp .env.local.ci .env.local || true",
+          "npm install",
+          "npx playwright install chromium",
+          "npx playwright test"
+        ],
+        "cwd": "{projectRoot}/example/react",
+        "parallel": false
+      },
+      "dependsOn": ["build"],
+      "metadata": {
+        "description": "Run Playwright E2E tests against the auth-js React example app"
       }
     }
   }

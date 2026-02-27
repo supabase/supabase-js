@@ -161,6 +161,9 @@
     "test:docker:clean-post": {
       "cache": false
     },
+    "test:e2e": {
+      "cache": false
+    },
     "vite:test": {
       "inputs": ["testing", "^production"],
       "cache": true,
@@ -243,16 +246,6 @@
         "previewTargetName": "preview",
         "serveStaticTargetName": "serve-static",
         "typecheckTargetName": "vite:typecheck",
-        "buildDepsTargetName": "build-deps",
-        "watchDepsTargetName": "watch-deps"
-      }
-    },
-    {
-      "plugin": "@nx/webpack/plugin",
-      "options": {
-        "buildTargetName": "webpack:build",
-        "serveTargetName": "serve",
-        "previewTargetName": "preview",
         "buildDepsTargetName": "build-deps",
         "watchDepsTargetName": "watch-deps"
       }
