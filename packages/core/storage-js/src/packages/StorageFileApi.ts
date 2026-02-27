@@ -1,4 +1,9 @@
-import { StorageError, StorageUnknownError, isStorageError } from '../lib/common/errors'
+import {
+  StorageApiError,
+  StorageError,
+  StorageUnknownError,
+  isStorageError,
+} from '../lib/common/errors'
 import { get, head, post, put, remove, Fetch } from '../lib/common/fetch'
 import { recursiveToCamel } from '../lib/common/helpers'
 import BaseApiClient from '../lib/common/BaseApiClient'
@@ -842,10 +847,16 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
       if (this.shouldThrowOnError) {
         throw error
       }
-      if (isStorageError(error) && error instanceof StorageUnknownError) {
-        const originalError = error.originalError as unknown as { status: number }
+      if (isStorageError(error)) {
+        // HEAD requests produce StorageApiError (via handleError) or StorageUnknownError (legacy)
+        const status =
+          error instanceof StorageApiError
+            ? error.status
+            : error instanceof StorageUnknownError
+              ? (error.originalError as { status: number })?.status
+              : undefined
 
-        if ([400, 404].includes(originalError?.status)) {
+        if (status !== undefined && [400, 404].includes(status)) {
           return { data: false, error }
         }
       }
