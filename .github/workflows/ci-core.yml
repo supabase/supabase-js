@@ -150,7 +150,7 @@ jobs:
       - name: Generate RSA signing keys for auth-js tests
         run: node packages/core/auth-js/test/generate-signing-keys.js
       - name: Run auth-js tests with Supabase CLI
-        run: npx nx run auth-js:test:auth
+        run: npx nx test:auth auth-js
         timeout-minutes: 10
       - name: Save Docker images to cache
         if: steps.docker-cache.outputs.cache-hit != 'true' && !cancelled()
@@ -205,7 +205,7 @@ jobs:
             [ -f "$f" ] && zstd -d --stdout "$f" | docker image load
           done
       - name: Run storage-js tests
-        run: npx nx run storage-js:test:storage
+        run: npx nx test:storage storage-js
         timeout-minutes: 15
       - name: Save Docker images to cache
         if: steps.docker-cache.outputs.cache-hit != 'true' && !cancelled()
@@ -262,7 +262,7 @@ jobs:
       - name: Generate RSA signing keys for auth-js Docker tests
         run: node packages/core/auth-js/test/generate-signing-keys.js
       - name: Run auth-js Docker tests
-        run: npx nx run auth-js:test:docker
+        run: npx nx test:docker auth-js
         timeout-minutes: 10
       - name: Save Docker images to cache
         if: steps.docker-cache.outputs.cache-hit != 'true' && !cancelled()
@@ -311,10 +311,10 @@ jobs:
             [ -f "$f" ] && zstd -d --stdout "$f" | docker image load
           done
       - name: Run postgrest-js integration tests
-        run: npx nx run postgrest-js:test:ci:postgrest
+        run: npx nx test:ci:postgrest postgrest-js
         timeout-minutes: 10
       - name: Run postgrest-js type tests
-        run: npx nx run postgrest-js:test:types:ci
+        run: npx nx test:types:ci postgrest-js
         timeout-minutes: 15
       - name: Save Docker images to cache
         if: steps.docker-cache.outputs.cache-hit != 'true' && !cancelled()
@@ -388,7 +388,7 @@ jobs:
             [ -f "$f" ] && zstd -d --stdout "$f" | docker image load
           done
       - name: Run v12 compat tests
-        run: npx nx run postgrest-js:test:ci:v12
+        run: npx nx test:ci:v12 postgrest-js
         timeout-minutes: 5
       - name: Save Docker images to cache
         if: steps.docker-cache.outputs.cache-hit != 'true' && !cancelled()
