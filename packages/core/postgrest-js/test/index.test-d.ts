@@ -1,7 +1,6 @@
 import { expectType, TypeEqual } from './types'
 import { PostgrestClient, PostgrestError } from '../src/index'
 import { Prettify } from '../src/types/types'
-import { Json } from '../src/select-query-parser/types'
 import { Database } from './types.override'
 import { Database as DatabaseWithOptions } from './types.override-with-options-postgrest14'
 
@@ -193,12 +192,15 @@ const postgrestWithOptions = new PostgrestClient<DatabaseWithOptions>(REST_URL)
 
 // json accessor in select query
 {
-  const result = await postgrest.from('users').select('data->foo->bar, data->foo->>baz').single()
+  const result = await postgrest
+    .from('users')
+    .select('data->fooRecord->bar, data->fooRecord->>baz')
+    .single()
   if (result.error) {
     throw new Error(result.error.message)
   }
-  expectType<Json>(result.data.bar)
-  expectType<string>(result.data.baz)
+  expectType<Record<string, unknown> | null>(result.data.bar)
+  expectType<string | null>(result.data.baz)
 }
 
 // PostgrestBuilder's children retains class when using inherited methods
@@ -285,11 +287,11 @@ const postgrestWithOptions = new PostgrestClient<DatabaseWithOptions>(REST_URL)
     TypeEqual<
       typeof result.data,
       {
-        baz: number
-        en: 'ONE' | 'TWO' | 'THREE'
+        baz: number | null
+        en: 'ONE' | 'TWO' | 'THREE' | null
         bar: {
           baz: number
-        }
+        } | null
       }[]
     >
   >(true)
@@ -313,9 +315,9 @@ const postgrestWithOptions = new PostgrestClient<DatabaseWithOptions>(REST_URL)
   }
   expectType<
     {
-      baz: string
-      en: 'ONE' | 'TWO' | 'THREE'
-      bar: string
+      baz: string | null
+      en: 'ONE' | 'TWO' | 'THREE' | null
+      bar: string | null
     }[]
   >(result.data)
 }

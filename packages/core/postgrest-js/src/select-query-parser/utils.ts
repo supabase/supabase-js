@@ -618,7 +618,7 @@ export type JsonPathToAccessor<Path extends string> = Path extends `${infer P1}-
 export type JsonPathToType<T, Path extends string> = Path extends ''
   ? T
   : ContainsNull<T> extends true
-    ? JsonPathToType<Exclude<T, null>, Path>
+    ? JsonPathToType<Exclude<T, null>, Path> | null
     : Path extends `${infer Key}.${infer Rest}`
       ? Key extends keyof T
         ? JsonPathToType<T[Key], Rest>
@@ -627,13 +627,13 @@ export type JsonPathToType<T, Path extends string> = Path extends ''
         ? T[Path]
         : never
 
-export type IsStringUnion<T> = string extends T
+export type IsStringUnion<T> = [T] extends [never]
   ? false
-  : T extends string
-    ? [T] extends [never]
-      ? false
-      : true
-    : false
+  : string extends T
+    ? false
+    : T extends string
+      ? true
+      : false
 
 type MatchingFunctionBySetofFrom<
   Fn extends GenericFunction,

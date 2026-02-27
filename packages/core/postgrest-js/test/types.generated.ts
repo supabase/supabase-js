@@ -571,6 +571,24 @@ export type Database = {
         }
         Relationships: []
       }
+      users_with_required_json: {
+        Row: {
+          id: number
+          required_data: Json
+          username: string
+        }
+        Insert: {
+          id?: number
+          required_data: Json
+          username: string
+        }
+        Update: {
+          id?: number
+          required_data?: Json
+          username?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       active_users: {

@@ -5,7 +5,17 @@ VALUES
     ('kiwicopple', 'OFFLINE', '[25,35)'::int4range, 'cat bat'::tsvector, NUlL),
     ('awailas', 'ONLINE', '[25,35)'::int4range, 'bat rat'::tsvector, NULL),
     ('dragarcia', 'ONLINE', '[20,30)'::int4range, 'rat fat'::tsvector, NULL),
-    ('jsonuser', 'ONLINE', '[20,30)'::int4range, 'json test'::tsvector, '{"foo": {"bar": {"nested": "value"}, "baz": "string value"}}'::jsonb);
+    ('jsonuser', 'ONLINE', '[20,30)'::int4range, 'json test'::tsvector, '{"foo": "string value", "fooRecord": {"bar": {"nested": "value"}, "baz": "string value"}}'::jsonb),
+    ('jsonusernull', 'ONLINE', '[20,30)'::int4range, 'json null test'::tsvector, '{"foo": "string value", "bar": null, "en": "ONE", "fooRecord": {"bar": null, "baz": "string value"}}'::jsonb),
+    ('jsonuserobj', 'ONLINE', '[20,30)'::int4range, 'json obj test'::tsvector, '{"bar": {"baz": 42}, "en": "TWO", "fooRecord": {"bar": {"nested": "deep"}, "baz": "test"}}'::jsonb),
+    ('jsonusermissing', 'ONLINE', '[20,30)'::int4range, 'json missing test'::tsvector, '{"foo": "string", "en": "THREE"}'::jsonb);
+
+INSERT INTO
+    public.users_with_required_json (username, required_data)
+VALUES
+    ('testuser1', '{"id": 1, "name": "testuser1", "nested": {"value": "test", "count": 10}, "status": "ACTIVE"}'::jsonb),
+    ('testuser2', '{"id": 2, "name": "testuser2", "nested": {"value": "data", "count": 20}, "status": "INACTIVE"}'::jsonb),
+    ('testuser3', '{"id": 3, "name": "testuser3", "nested": {"value": "info", "count": 30}, "status": "ACTIVE"}'::jsonb);
 
 INSERT INTO
     public.channels (slug)
