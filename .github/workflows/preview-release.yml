@@ -57,14 +57,17 @@ jobs:
             ./packages/core/realtime-js \
             ./packages/core/storage-js \
             ./packages/core/supabase-js \
-            | tee /tmp/pkg-pr-new-output.txt
+            2>&1 | tee /tmp/pkg-pr-new-output.txt
 
       - name: Get commit hash
         id: commit
         run: |
           # Extract the SHA from pkg.pr.new URLs in the output
           # Lines look like: npm i https://pkg.pr.new/@supabase/supabase-js@49b3c56
-          COMMIT_SHA=$(grep -oE 'pkg\.pr\.new/\S+@[a-f0-9]+' /tmp/pkg-pr-new-output.txt | head -1 | grep -oE '[a-f0-9]+$')
+          echo "--- pkg-pr-new captured output ---"
+          cat /tmp/pkg-pr-new-output.txt
+          echo "--- end of captured output ---"
+          COMMIT_SHA=$(grep -oE 'pkg\.pr\.new/\S+@[a-f0-9]+' /tmp/pkg-pr-new-output.txt | head -1 | grep -oE '[a-f0-9]+$' || true)
           if [ -z "$COMMIT_SHA" ]; then
             echo "::warning::Failed to parse commit SHA from pkg-pr-new output, falling back to PR head SHA"
             COMMIT_SHA="${{ github.event.pull_request.head.sha }}"
