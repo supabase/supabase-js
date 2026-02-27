@@ -581,9 +581,7 @@ describe('Object API', () => {
       )
     })
 
-    it.skip('will download an authenticated transformed file', async () => {
-      // TODO: requires imgproxy route /render/image/authenticated/ to be registered in Kong
-      // Passes with storage-api >= version that enables image_transformation routing; skip until verified
+    it('will download an authenticated transformed file', async () => {
       const privateBucketName = 'my-private-bucket'
       await findOrCreateBucket(privateBucketName)
 
@@ -644,9 +642,7 @@ describe('Object API', () => {
     expect(res.data?.type).toEqual('image/jpeg')
   })
 
-  it.skip('will get a signed transformed image', async () => {
-    // TODO: requires imgproxy route /render/image/sign/ to be registered in Kong
-    // Passes with storage-api >= version that enables image_transformation routing; skip until verified
+  it('will get a signed transformed image', async () => {
     await storage.from(bucketName).upload(uploadPath, file)
     const res = await storage.from(bucketName).createSignedUrl(uploadPath, 60000, {
       transform: {
@@ -718,9 +714,7 @@ describe('download with fetch parameters', () => {
     }
   })
 
-  it.skip('download with transform and fetch parameters', async () => {
-    // TODO: requires imgproxy route /render/image/authenticated/ to be registered in Kong
-    // Passes with storage-api >= version that enables image_transformation routing; skip until verified
+  it('download with transform and fetch parameters', async () => {
     const uploadRes = await storage.from(bucketName).upload(uploadPath, file)
     expect(uploadRes.error).toBeNull()
 
