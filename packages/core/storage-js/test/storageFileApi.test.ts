@@ -6,6 +6,7 @@ import assert from 'assert'
 import { StorageApiError, StorageError } from '../src/lib/common/errors'
 import BlobDownloadBuilder from '../src/packages/BlobDownloadBuilder'
 import StreamDownloadBuilder from '../src/packages/StreamDownloadBuilder'
+import StorageFileApi from '../src/packages/StorageFileApi'
 
 // Supabase CLI local development defaults
 const URL = 'http://127.0.0.1:54321/storage/v1'
@@ -928,6 +929,18 @@ describe('StorageFileApi Edge Cases', () => {
       const [, , body, { headers }] = mockPost.mock.calls[0]
       expect(body).toBe(testFormData)
       expect(headers[testHeaderKey]).toBe(testHeaderValue)
+    })
+
+    test('upload sets Content-Encoding when provided', async () => {
+      await storage.from('test-bucket').upload('test-path', new Uint8Array([1, 2, 3]), {
+        contentType: 'application/octet-stream',
+        contentEncoding: 'gzip',
+      })
+
+      expect(mockPost).toHaveBeenCalled()
+      const [, , body, { headers }] = mockPost.mock.calls[0]
+      expect(headers['content-type']).toBe('application/octet-stream')
+      expect(headers['content-encoding']).toBe('gzip')
     })
   })
 })
