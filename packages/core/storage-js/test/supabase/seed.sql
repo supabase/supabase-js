@@ -74,12 +74,12 @@ INSERT INTO auth.users (
     );
 
 -- Insert test buckets (using fixed timestamp for snapshot tests)
-INSERT INTO storage.buckets (id, name, owner, owner_id, created_at, updated_at, public) VALUES
-    ('bucket2', 'bucket2', '4d56e902-f0a0-4662-8448-a4d9e643c142', '4d56e902-f0a0-4662-8448-a4d9e643c142', '2021-02-17T04:43:32.770Z', '2021-02-17T04:43:32.770Z', false),
-    ('bucket3', 'bucket3', '4d56e902-f0a0-4662-8448-a4d9e643c142', '4d56e902-f0a0-4662-8448-a4d9e643c142', '2021-02-17T04:43:32.770Z', '2021-02-17T04:43:32.770Z', false),
-    ('bucket4', 'bucket4', '317eadce-631a-4429-a0bb-f19a7a517b4a', '317eadce-631a-4429-a0bb-f19a7a517b4a', '2021-02-17T04:43:32.770Z', '2021-02-17T04:43:32.770Z', false),
-    ('bucket5', 'bucket5', '317eadce-631a-4429-a0bb-f19a7a517b4a', '317eadce-631a-4429-a0bb-f19a7a517b4a', '2021-02-17T04:43:32.770Z', '2021-02-17T04:43:32.770Z', false),
-    ('bucket-move', 'bucket-move', '317eadce-631a-4429-a0bb-f19a7a517b4a', '317eadce-631a-4429-a0bb-f19a7a517b4a', '2021-02-17T04:43:32.770Z', '2021-02-17T04:43:32.770Z', false);
+INSERT INTO storage.buckets (id, name, owner, created_at, updated_at, public) VALUES
+    ('bucket2', 'bucket2', '4d56e902-f0a0-4662-8448-a4d9e643c142', '2021-02-17T04:43:32.770Z', '2021-02-17T04:43:32.770Z', false),
+    ('bucket3', 'bucket3', '4d56e902-f0a0-4662-8448-a4d9e643c142', '2021-02-17T04:43:32.770Z', '2021-02-17T04:43:32.770Z', false),
+    ('bucket4', 'bucket4', '317eadce-631a-4429-a0bb-f19a7a517b4a', '2021-02-17T04:43:32.770Z', '2021-02-17T04:43:32.770Z', false),
+    ('bucket5', 'bucket5', '317eadce-631a-4429-a0bb-f19a7a517b4a', '2021-02-17T04:43:32.770Z', '2021-02-17T04:43:32.770Z', false),
+    ('bucket-move', 'bucket-move', '317eadce-631a-4429-a0bb-f19a7a517b4a', '2021-02-17T04:43:32.770Z', '2021-02-17T04:43:32.770Z', false);
 
 -- Insert test objects
 INSERT INTO storage.objects (id, bucket_id, name, owner, created_at, updated_at, last_accessed_at, metadata) VALUES
