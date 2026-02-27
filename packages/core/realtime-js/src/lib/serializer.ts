@@ -130,9 +130,18 @@ export default class Serializer {
     }
 
     if (typeof rawPayload === 'string') {
-      const jsonPayload = JSON.parse(rawPayload)
-      const [join_ref, ref, topic, event, payload] = jsonPayload
-      return callback({ join_ref, ref, topic, event, payload })
+      try {
+        const jsonPayload = JSON.parse(rawPayload)
+        if (!Array.isArray(jsonPayload) || jsonPayload.length < 5) {
+          console.error('Malformed Realtime message:', jsonPayload)
+          return callback({})
+        }
+        const [join_ref, ref, topic, event, payload] = jsonPayload
+        return callback({ join_ref, ref, topic, event, payload })
+      } catch (error) {
+        console.error('Error parsing Realtime message:', error, rawPayload)
+        return callback({})
+      }
     }
 
     return callback({})
