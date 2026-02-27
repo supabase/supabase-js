@@ -44,34 +44,103 @@ export interface AnalyticBucket {
   updated_at: string
 }
 
-export interface FileObject {
-  name: string
-  bucket_id: string
-  owner: string
-  id: string
-  updated_at: string
-  created_at: string
-  /** @deprecated */
-  last_accessed_at: string
-  metadata: Record<string, any>
-  buckets: Bucket
+/**
+ * Metadata object returned by the Storage API for files
+ * Contains information about file size, type, caching, and HTTP response details
+ */
+export interface FileMetadata {
+  /** Entity tag for caching and conditional requests */
+  eTag: string
+  /** File size in bytes */
+  size: number
+  /** MIME type of the file */
+  mimetype: string
+  /** Cache control directive (e.g., "max-age=3600") */
+  cacheControl: string
+  /** Last modification timestamp (ISO 8601) */
+  lastModified: string
+  /** Content length in bytes (usually same as size) */
+  contentLength: number
+  /** HTTP status code from the storage backend */
+  httpStatusCode: number
+  /** Any additional custom metadata stored with the file */
+  [key: string]: any
 }
 
-export interface FileObjectV2 {
-  id: string
-  version: string
+/**
+ * File object returned by the List V1 API (list() method)
+ * Note: Folder entries will have null values for most fields except name
+ *
+ * Warning: Some fields may not be present in all API responses. Fields like
+ * bucket_id, owner, and buckets are not returned by list() operations.
+ */
+export interface FileObject {
+  /** File or folder name (relative to the prefix) - always present */
   name: string
+  /** Unique identifier for the file (null for folders) */
+  id: string | null
+  /** Last update timestamp (null for folders) */
+  updated_at: string | null
+  /** Creation timestamp (null for folders) */
+  created_at: string | null
+  /** @deprecated Last access timestamp (null for folders) */
+  last_accessed_at: string | null
+  /** File metadata including size, mimetype, etc. (null for folders) */
+  metadata: FileMetadata | null
+  /**
+   * @deprecated Bucket identifier - NOT returned by list() operations.
+   * May be present in remove() responses. Do not rely on this field.
+   */
+  bucket_id?: string
+  /**
+   * @deprecated Owner identifier - NOT returned by list() or remove() operations.
+   * This field should not be relied upon.
+   */
+  owner?: string
+  /**
+   * @deprecated Bucket object - NOT returned by list() or remove() operations.
+   * This field should not be relied upon.
+   */
+  buckets?: Bucket
+}
+
+/**
+ * File object returned by the Info endpoint (info() method)
+ * Contains detailed metadata for a specific file
+ *
+ * Note: The info endpoint returns user_metadata as the metadata field,
+ * while system metadata (size, mimetype, etc.) is flattened into top-level fields.
+ */
+export interface FileObjectV2 {
+  /** Unique identifier for the file */
+  id: string
+  /** File version identifier */
+  version: string
+  /** File name */
+  name: string
+  /** Bucket identifier */
   bucket_id: string
-  updated_at: string
+  /** Last modification timestamp */
+  last_modified: string
+  /** Creation timestamp */
   created_at: string
-  /** @deprecated */
-  last_accessed_at: string
-  size?: number
-  cache_control?: string
-  content_type?: string
-  etag?: string
-  last_modified?: string
-  metadata?: Record<string, any>
+  /** @deprecated Use last_modified instead. Not returned by info endpoint. */
+  last_accessed_at?: string
+  /** File size in bytes (null if not available) */
+  size: number | null
+  /** Cache control header value (null if not set) */
+  cache_control: string | null
+  /** MIME content type (null if not available) */
+  content_type: string | null
+  /** Entity tag for caching (null if not available) */
+  etag: string | null
+  /** User-provided custom metadata (arbitrary key-value pairs) */
+  metadata: Record<string, any> | null
+  /**
+   * @deprecated The API returns last_modified instead.
+   * This field may not be present in responses.
+   */
+  updated_at?: string
 }
 
 export interface SortBy {
@@ -175,17 +244,25 @@ export interface SearchV2Options {
   sortBy?: SortByV2
 }
 
+/**
+ * File object returned by the List V2 API (listV2() method)
+ * Note: Folder entries will have null values for most fields except key and name
+ */
 export interface SearchV2Object {
-  id: string
-  key: string
+  /** File or folder name - always present */
   name: string
-  updated_at: string
-  created_at: string
-  metadata: Record<string, any>
-  /**
-   * @deprecated
-   */
-  last_accessed_at: string
+  /** Full object key/path (may be missing in some responses) */
+  key?: string
+  /** Unique identifier for the file (null for folders) */
+  id: string | null
+  /** Last update timestamp (null for folders) */
+  updated_at: string | null
+  /** Creation timestamp (null for folders) */
+  created_at: string | null
+  /** File metadata (null for folders) */
+  metadata: FileMetadata | null
+  /** @deprecated Last access timestamp (null for folders) */
+  last_accessed_at: string | null
 }
 
 export type SearchV2Folder = Omit<SearchV2Object, 'id' | 'metadata' | 'last_accessed_at'>
@@ -195,6 +272,8 @@ export interface SearchV2Result {
   folders: SearchV2Folder[]
   objects: SearchV2Object[]
   nextCursor?: string
+  /** The key/name used for cursor-based pagination (returned by storage server) */
+  nextCursorKey?: string
 }
 
 export interface FetchParameters {
