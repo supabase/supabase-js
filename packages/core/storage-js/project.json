@@ -4,15 +4,13 @@
     "test:clean-pre": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "npx supabase stop --no-backup || true",
-        "cwd": "{projectRoot}/test"
+        "command": "npx supabase stop --no-backup --workdir {projectRoot}/test || true"
       }
     },
     "test:infra": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "npx supabase start && npx supabase db reset && sleep 20",
-        "cwd": "{projectRoot}/test"
+        "command": "npx supabase start --workdir {projectRoot}/test && npx supabase db reset --workdir {projectRoot}/test && sleep 20"
       },
       "dependsOn": ["test:clean-pre"]
     },
@@ -28,8 +26,7 @@
     "test:clean-post": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "npx supabase stop --no-backup || true",
-        "cwd": "{projectRoot}/test"
+        "command": "npx supabase stop --no-backup --workdir {projectRoot}/test || true"
       },
       "dependsOn": ["test:suite"]
     },
