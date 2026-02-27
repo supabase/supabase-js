@@ -54,7 +54,7 @@ const handleError = async (
     'ok' in error &&
     typeof (error as any).status === 'number'
 
-  if (isResponseLike && !options?.noResolveJson) {
+  if (isResponseLike) {
     const responseError = error as any
     const status = responseError.status || 500
 
