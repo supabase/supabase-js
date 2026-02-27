@@ -913,6 +913,48 @@ describe('StorageFileApi Edge Cases', () => {
       expect(body.get('metadata')).toBe(JSON.stringify(metadata))
     })
 
+    test('uploadToSignedUrl with Blob and metadata', async () => {
+      const testBlob = new Blob(['test content'], { type: 'text/plain' })
+      const metadata = { custom_id: '12345', author: 'test' }
+
+      await storage
+        .from('test-bucket')
+        .uploadToSignedUrl('test-path', 'test-token', testBlob, { metadata })
+
+      expect(mockPut).toHaveBeenCalled()
+      const [, , body] = mockPut.mock.calls[0] as [null, null, FormData]
+      expect(body.constructor.name).toBe('FormData')
+      expect(body.get('metadata')).toBe(JSON.stringify(metadata))
+    })
+
+    test('uploadToSignedUrl with FormData and metadata', async () => {
+      const testFormData = new FormData()
+      testFormData.append('file', 'test content')
+      const metadata = { custom_id: '12345' }
+
+      await storage
+        .from('test-bucket')
+        .uploadToSignedUrl('test-path', 'test-token', testFormData, { metadata })
+
+      expect(mockPut).toHaveBeenCalled()
+      const [, , body] = mockPut.mock.calls[0] as [null, null, FormData]
+      expect(body).toBe(testFormData)
+      expect(body.get('metadata')).toBe(JSON.stringify(metadata))
+    })
+
+    test('uploadToSignedUrl with binary body and metadata sets x-metadata header', async () => {
+      const metadata = { custom_id: '12345' }
+
+      await storage
+        .from('test-bucket')
+        .uploadToSignedUrl('test-path', 'test-token', 'raw-binary-content', { metadata })
+
+      expect(mockPut).toHaveBeenCalled()
+      const [, , , { headers }] = mockPut.mock.calls[0]
+      const expectedBase64 = Buffer.from(JSON.stringify(metadata)).toString('base64')
+      expect(headers['x-metadata']).toBe(expectedBase64)
+    })
+
     test('upload passes headers', async () => {
       const testFormData = new FormData()
       testFormData.append('file', 'test content')
