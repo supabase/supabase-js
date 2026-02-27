@@ -22,7 +22,8 @@ export default class PostgrestQueryBuilder<
   fetch?: Fetch
   urlLengthLimit: number
 
-  /**
+  /** @hidden
+   *
    * Creates a query builder scoped to a Postgres table or view.
    *
    * @example

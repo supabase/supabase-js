@@ -8,7 +8,8 @@ export default class PostgrestError extends Error {
   hint: string
   code: string
 
-  /**
+  /** @hidden
+   *
    * @example
    * ```ts
    * import PostgrestError from '@supabase/postgrest-js'

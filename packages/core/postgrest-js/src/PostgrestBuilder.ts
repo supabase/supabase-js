@@ -29,7 +29,8 @@ export default abstract class PostgrestBuilder<
   protected isMaybeSingle: boolean
   protected urlLengthLimit: number
 
-  /**
+  /** @hidden
+   *
    * Creates a builder configured for a specific PostgREST request.
    *
    * @example
