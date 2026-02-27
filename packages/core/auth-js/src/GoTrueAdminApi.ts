@@ -658,7 +658,7 @@ export default class GoTrueAdminApi {
       return await _request(
         this.fetch,
         'GET',
-        `${this.url}/admin/custom-providers/${encodeURIComponent(identifier)}`,
+        `${this.url}/admin/custom-providers/${identifier}`,
         {
           headers: this.headers,
           xform: (provider: any) => {
@@ -692,7 +692,7 @@ export default class GoTrueAdminApi {
       return await _request(
         this.fetch,
         'PUT',
-        `${this.url}/admin/custom-providers/${encodeURIComponent(identifier)}`,
+        `${this.url}/admin/custom-providers/${identifier}`,
         {
           body: params,
           headers: this.headers,
@@ -721,7 +721,7 @@ export default class GoTrueAdminApi {
       await _request(
         this.fetch,
         'DELETE',
-        `${this.url}/admin/custom-providers/${encodeURIComponent(identifier)}`,
+        `${this.url}/admin/custom-providers/${identifier}`,
         {
           headers: this.headers,
           noResolveJson: true,

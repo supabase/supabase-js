@@ -1801,7 +1801,7 @@ export type CustomOAuthProvider = {
   /** Additional client IDs accepted during token validation */
   acceptable_client_ids?: string[]
   /** OAuth scopes requested during authorization */
-  scopes?: string
+  scopes?: string[]
   /** Whether PKCE is enabled */
   pkce_enabled?: boolean
   /** Mapping of provider attributes to Supabase user attributes */
@@ -1851,7 +1851,7 @@ export type CreateCustomProviderParams = {
   /** Additional client IDs accepted during token validation */
   acceptable_client_ids?: string[]
   /** OAuth scopes requested during authorization */
-  scopes?: string
+  scopes?: string[]
   /** Whether PKCE is enabled */
   pkce_enabled?: boolean
   /** Mapping of provider attributes to Supabase user attributes */
@@ -1893,7 +1893,7 @@ export type UpdateCustomProviderParams = {
   /** Additional client IDs accepted during token validation */
   acceptable_client_ids?: string[]
   /** OAuth scopes requested during authorization */
-  scopes?: string
+  scopes?: string[]
   /** Whether PKCE is enabled */
   pkce_enabled?: boolean
   /** Mapping of provider attributes to Supabase user attributes */
