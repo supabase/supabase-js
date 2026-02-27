@@ -839,7 +839,7 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
         const originalError = error.originalError as unknown as { status: number }
 
         if ([400, 404].includes(originalError?.status)) {
-          return { data: false, error }
+          return { data: false, error: null }
         }
       }
 

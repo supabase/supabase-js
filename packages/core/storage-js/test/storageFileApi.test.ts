@@ -559,6 +559,7 @@ describe('Object API', () => {
 
       const resNotExists = await storage.from(bucketName).exists('do-not-exists')
       expect(resNotExists.data).toEqual(false)
+      expect(resNotExists.error).toBeNull()
 
       // should throw when .throwOnError is enabled
       await expect(
