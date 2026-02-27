@@ -161,6 +161,9 @@
     "test:docker:clean-post": {
       "cache": false
     },
+    "test:e2e": {
+      "cache": false
+    },
     "vite:test": {
       "inputs": ["testing", "^production"],
       "cache": true,

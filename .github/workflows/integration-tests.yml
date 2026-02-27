@@ -178,14 +178,14 @@ jobs:
         run: |
           echo "=== Docker containers ==="
           docker ps -a
-          echo "=== Inbucket status ==="
-          curl -s http://127.0.0.1:54324/api/v1/server/info || echo "Inbucket not reachable on :54324"
-          echo "=== All Inbucket mailboxes ==="
-          curl -s "http://127.0.0.1:54324/api/v1/mailbox" || echo "Could not list mailboxes"
+          echo "=== Mailpit status ==="
+          curl -s http://127.0.0.1:54324/api/v1/info || echo "Mailpit not reachable on :54324"
+          echo "=== All Mailpit messages ==="
+          curl -s "http://127.0.0.1:54324/api/v1/messages" || echo "Could not list messages"
           echo "=== GoTrue container logs (last 50 lines) ==="
           docker logs $(docker ps -q --filter "name=supabase_auth") --tail=50 2>&1 || echo "Could not get GoTrue logs"
-          echo "=== Inbucket container logs (last 20 lines) ==="
-          docker logs $(docker ps -q --filter "name=supabase_inbucket") --tail=20 2>&1 || echo "Could not get Inbucket logs"
+          echo "=== Mailpit container logs (last 20 lines) ==="
+          docker logs $(docker ps -q --filter "name=supabase_mail") --tail=20 2>&1 || echo "Could not get Mailpit logs"
 
       - name: Upload Playwright reports
         if: failure()
