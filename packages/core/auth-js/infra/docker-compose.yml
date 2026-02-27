@@ -41,8 +41,14 @@ services:
       GOTRUE_MFA_WEB_AUTHN_ENROLL_ENABLED: 'true'
       GOTRUE_MFA_WEB_AUTHN_VERIFY_ENABLED: 'true'
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     restart: on-failure
+    healthcheck:
+      test: ['CMD-SHELL', 'wget -qO- http://localhost:9999/health || exit 1']
+      interval: 5s
+      timeout: 3s
+      retries: 10
   autoconfirm: # Signup enabled, autoconfirm on
     image: supabase/auth:v2.185.0
     ports:
@@ -74,8 +80,14 @@ services:
       GOTRUE_MFA_WEB_AUTHN_ENROLL_ENABLED: 'true'
       GOTRUE_MFA_WEB_AUTHN_VERIFY_ENABLED: 'true'
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     restart: on-failure
+    healthcheck:
+      test: ['CMD-SHELL', 'wget -qO- http://localhost:9998/health || exit 1']
+      interval: 5s
+      timeout: 3s
+      retries: 10
   autoconfirm_with_asymmetric_keys: # Signup enabled, autoconfirm on
     image: supabase/auth:v2.185.0
     ports:
@@ -106,8 +118,14 @@ services:
       GOTRUE_MFA_WEB_AUTHN_ENROLL_ENABLED: 'true'
       GOTRUE_MFA_WEB_AUTHN_VERIFY_ENABLED: 'true'
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     restart: on-failure
+    healthcheck:
+      test: ['CMD-SHELL', 'wget -qO- http://localhost:9996/health || exit 1']
+      interval: 5s
+      timeout: 3s
+      retries: 10
   disabled: # Signup disabled
     image: supabase/auth:v2.185.0
     ports:
@@ -137,8 +155,14 @@ services:
       GOTRUE_MFA_WEB_AUTHN_ENROLL_ENABLED: 'true'
       GOTRUE_MFA_WEB_AUTHN_VERIFY_ENABLED: 'true'
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     restart: on-failure
+    healthcheck:
+      test: ['CMD-SHELL', 'wget -qO- http://localhost:9997/health || exit 1']
+      interval: 5s
+      timeout: 3s
+      retries: 10
   mail:
     image: phamhieu/inbucket:latest
     ports:
@@ -157,3 +181,8 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
       POSTGRES_PORT: 5432
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres']
+      interval: 5s
+      timeout: 3s
+      retries: 10

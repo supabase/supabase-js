@@ -29,6 +29,7 @@ npm run build
    - `advanced-` Advanced Features (LOW)
 
 2. **Copy the template**:
+
    ```bash
    cp references/_template.md references/query-your-reference-name.md
    ```
@@ -36,6 +37,7 @@ npm run build
 3. **Fill in the content** following the template structure
 
 4. **Validate and build**:
+
    ```bash
    npm run validate
    npm run build

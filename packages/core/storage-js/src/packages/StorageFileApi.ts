@@ -595,9 +595,10 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
     return this.handleOperation(async () => {
       let _path = this._getFinalPath(path)
 
+      const signEndpoint = options?.transform ? 'render/image/sign' : 'object/sign'
       let data = await post(
         this.fetch,
-        `${this.url}/object/sign/${_path}`,
+        `${this.url}/${signEndpoint}/${_path}`,
         { expiresIn, ...(options?.transform ? { transform: options.transform } : {}) },
         { headers: this.headers }
       )
