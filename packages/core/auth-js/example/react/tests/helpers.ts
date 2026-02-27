@@ -18,10 +18,25 @@ export async function getLatestEmail(emailAddress: string) {
 }
 
 /**
- * Purge all emails in Mailpit (call before tests that check for specific emails).
+ * Clears ALL messages in Mailpit. Call before tests that assert on specific emails.
+ * Note: this is global, not per-address — fine for isolated CI environments.
  */
-export async function purgeMailbox(_emailAddress: string) {
+export async function purgeAllMail() {
   await fetch(`${MAILPIT_URL}/api/v1/messages`, { method: 'DELETE' })
+}
+
+/**
+ * Poll Mailpit until an email arrives for the given address, then return it.
+ * Returns null if no email arrives within the timeout.
+ */
+export async function waitForEmail(emailAddress: string, timeoutMs = 30_000) {
+  const deadline = Date.now() + timeoutMs
+  while (Date.now() < deadline) {
+    const email = await getLatestEmail(emailAddress)
+    if (email) return email
+    await new Promise((r) => setTimeout(r, 1_000))
+  }
+  return null
 }
 
 /**

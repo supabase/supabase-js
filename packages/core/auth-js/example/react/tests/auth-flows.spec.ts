@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { getLatestEmail, purgeMailbox, extractMagicLink } from './helpers'
+import { waitForEmail, purgeAllMail, extractMagicLink } from './helpers'
 
 test.describe('Auth E2E Flows', () => {
   test('email + password sign-up creates a session', async ({ page }) => {
@@ -68,7 +68,7 @@ test.describe('Auth E2E Flows', () => {
   test('magic link flow via Inbucket', async ({ page }) => {
     const email = `magic-${Date.now()}@test.com`
 
-    await purgeMailbox(email)
+    await purgeAllMail()
 
     await page.goto('/')
 
@@ -83,12 +83,7 @@ test.describe('Auth E2E Flows', () => {
     const statusText = await statusEl.textContent()
     expect(statusText).not.toContain('error:')
 
-    let emailData = null
-    for (let i = 0; i < 30; i++) {
-      await page.waitForTimeout(1000)
-      emailData = await getLatestEmail(email)
-      if (emailData) break
-    }
+    const emailData = await waitForEmail(email)
     expect(emailData).not.toBeNull()
 
     const magicLink = extractMagicLink(emailData.Text)
