@@ -180,6 +180,9 @@ export default class RealtimeChannel {
   broadcastEndpointURL: string
   subTopic: string
   private: boolean
+  private _subscribeCallback: ((status: REALTIME_SUBSCRIBE_STATES, err?: Error) => void) | null =
+    null
+  private _pendingSystemReady: Set<string> = new Set()
 
   /**
    * Creates a channel that can broadcast messages, sync presence, and listen to Postgres changes.
@@ -352,7 +355,12 @@ export default class RealtimeChannel {
 
             this.bindings.postgres_changes = newPostgresBindings
 
-            callback && callback(REALTIME_SUBSCRIBE_STATES.SUBSCRIBED)
+            if (bindingsLen > 0) {
+              this._subscribeCallback = callback || null
+              this._pendingSystemReady.add('postgres_changes')
+            } else {
+              callback?.(REALTIME_SUBSCRIBE_STATES.SUBSCRIBED)
+            }
             return
           }
         })
@@ -825,6 +833,14 @@ export default class RealtimeChannel {
   }
 
   /** @internal */
+  _maybeEmitSubscribed(): void {
+    if (this._pendingSystemReady.size === 0 && this._subscribeCallback) {
+      this._subscribeCallback(REALTIME_SUBSCRIBE_STATES.SUBSCRIBED)
+      this._subscribeCallback = null
+    }
+  }
+
+  /** @internal */
   _trigger(type: string, payload?: any, ref?: string) {
     const typeLower = type.toLocaleLowerCase()
     const { close, error, leave, join } = CHANNEL_EVENTS
@@ -832,6 +848,12 @@ export default class RealtimeChannel {
     if (ref && events.indexOf(typeLower) >= 0 && ref !== this._joinRef()) {
       return
     }
+
+    if (typeLower === 'system' && payload?.extension && payload?.status === 'ok') {
+      this._pendingSystemReady.delete(payload.extension)
+      this._maybeEmitSubscribed()
+    }
+
     let handledPayload = this._onMessage(typeLower, payload, ref)
     if (payload && !handledPayload) {
       throw 'channel onMessage callbacks must return the payload, modified or unmodified'
