@@ -655,17 +655,12 @@ export default class GoTrueAdminApi {
    */
   private async _getCustomProvider(identifier: string): Promise<CustomProviderResponse> {
     try {
-      return await _request(
-        this.fetch,
-        'GET',
-        `${this.url}/admin/custom-providers/${identifier}`,
-        {
-          headers: this.headers,
-          xform: (provider: any) => {
-            return { data: provider, error: null }
-          },
-        }
-      )
+      return await _request(this.fetch, 'GET', `${this.url}/admin/custom-providers/${identifier}`, {
+        headers: this.headers,
+        xform: (provider: any) => {
+          return { data: provider, error: null }
+        },
+      })
     } catch (error) {
       if (isAuthError(error)) {
         return { data: null, error }
@@ -689,18 +684,13 @@ export default class GoTrueAdminApi {
     params: UpdateCustomProviderParams
   ): Promise<CustomProviderResponse> {
     try {
-      return await _request(
-        this.fetch,
-        'PUT',
-        `${this.url}/admin/custom-providers/${identifier}`,
-        {
-          body: params,
-          headers: this.headers,
-          xform: (provider: any) => {
-            return { data: provider, error: null }
-          },
-        }
-      )
+      return await _request(this.fetch, 'PUT', `${this.url}/admin/custom-providers/${identifier}`, {
+        body: params,
+        headers: this.headers,
+        xform: (provider: any) => {
+          return { data: provider, error: null }
+        },
+      })
     } catch (error) {
       if (isAuthError(error)) {
         return { data: null, error }
@@ -718,15 +708,10 @@ export default class GoTrueAdminApi {
     identifier: string
   ): Promise<{ data: null; error: AuthError | null }> {
     try {
-      await _request(
-        this.fetch,
-        'DELETE',
-        `${this.url}/admin/custom-providers/${identifier}`,
-        {
-          headers: this.headers,
-          noResolveJson: true,
-        }
-      )
+      await _request(this.fetch, 'DELETE', `${this.url}/admin/custom-providers/${identifier}`, {
+        headers: this.headers,
+        noResolveJson: true,
+      })
       return { data: null, error: null }
     } catch (error) {
       if (isAuthError(error)) {
