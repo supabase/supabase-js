@@ -129,6 +129,7 @@
       "outputs": ["{projectRoot}/coverage"]
     },
     "test:storage": {
+      "inputs": ["testing", "^production"],
       "cache": false,
       "outputs": ["{projectRoot}/coverage"]
     },
