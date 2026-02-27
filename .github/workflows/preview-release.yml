@@ -62,9 +62,9 @@ jobs:
       - name: Get commit hash
         id: commit
         run: |
-          # Extract the SHA that pkg-pr-new actually used from its output
-          # Output lines look like: npm i https://pkg.pr.new/@supabase/supabase-js@49b3c56
-          COMMIT_SHA=$(grep -m1 'pkg.pr.new/' /tmp/pkg-pr-new-output.txt | sed 's/.*@\([a-f0-9]*\)$/\1/')
+          # Extract the SHA from pkg.pr.new URLs in the output
+          # Lines look like: npm i https://pkg.pr.new/@supabase/supabase-js@49b3c56
+          COMMIT_SHA=$(grep -oE 'pkg\.pr\.new/\S+@[a-f0-9]+' /tmp/pkg-pr-new-output.txt | head -1 | grep -oE '[a-f0-9]+$')
           if [ -z "$COMMIT_SHA" ]; then
             echo "::warning::Failed to parse commit SHA from pkg-pr-new output, falling back to PR head SHA"
             COMMIT_SHA="${{ github.event.pull_request.head.sha }}"
