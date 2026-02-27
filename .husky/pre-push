@@ -1,6 +1,6 @@
 # Check code formatting
 echo "🔍 Checking code formatting..."
-npx nx format:check --verbose
+./node_modules/.bin/nx format:check --verbose
 
 echo "✅ Code formatting check passed"
 
