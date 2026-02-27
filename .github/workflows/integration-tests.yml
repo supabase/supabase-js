@@ -136,6 +136,7 @@ jobs:
       - name: Apply extra migrations for E2E tests
         run: |
           PGPASSWORD=postgres psql -h 127.0.0.1 -p 54322 -U postgres -d postgres \
+            -v ON_ERROR_STOP=1 --single-transaction \
             -f packages/core/realtime-js/example/supabase/migrations/001_create_messages_table.sql
 
       - name: Run all tests in parallel
