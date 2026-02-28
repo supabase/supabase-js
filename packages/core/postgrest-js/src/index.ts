@@ -32,3 +32,23 @@ export type { ClientServerOptions as PostgrestClientOptions } from './types/comm
 // https://github.com/supabase/postgrest-js/issues/551
 // To be replaced with a helper type that only uses public types
 export type { GetResult as UnstableGetResult } from './select-query-parser/result'
+
+// Fluent Query Builder - experimental new API
+export {
+  FluentQueryBuilder,
+  q,
+  eq,
+  neq,
+  gt,
+  gte,
+  lt,
+  lte,
+  and,
+  or,
+  isNull,
+  isNotNull,
+  generateQuery,
+  toPostgrestQuery,
+} from './fluent-query-builder'
+
+export type { FieldRef, Condition, AnyCondition, GeneratedQuery } from './fluent-query-builder'
