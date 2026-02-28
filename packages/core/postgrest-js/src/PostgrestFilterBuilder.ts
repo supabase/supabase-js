@@ -76,6 +76,10 @@ type ResolveFilterRelationshipValue<
 
 export type InvalidMethodError<S extends string> = { Error: S }
 
+type NonNullableColumn<Row, Column extends keyof Row> = Omit<Row, Column> & {
+  [K in Column]-?: NonNullable<Row[K]>
+}
+
 export default class PostgrestFilterBuilder<
   ClientOptions extends ClientServerOptions,
   Schema extends GenericSchema,
@@ -610,28 +614,44 @@ export default class PostgrestFilterBuilder<
     return this
   }
 
+  // overload 1 – narrows null
+  not<ColumnName extends keyof Row>(
+    column: ColumnName,
+    operator: 'is',
+    value: null
+  ): PostgrestFilterBuilder<
+    ClientOptions,
+    Schema,
+    NonNullableColumn<Row, ColumnName>,
+    Result,
+    RelationName,
+    Relationships,
+    Method
+  >
+
+  // overload 2 – fallback
   not<ColumnName extends string & keyof Row>(
     column: ColumnName,
     operator: FilterOperator,
     value: Row[ColumnName]
   ): this
-  not(column: string, operator: string, value: unknown): this
-  /**
-   * Match only rows which doesn't satisfy the filter.
-   *
-   * Unlike most filters, `opearator` and `value` are used as-is and need to
-   * follow [PostgREST
-   * syntax](https://postgrest.org/en/stable/api.html#operators). You also need
-   * to make sure they are properly sanitized.
-   *
-   * @param column - The column to filter on
-   * @param operator - The operator to be negated to filter with, following
-   * PostgREST syntax
-   * @param value - The value to filter with, following PostgREST syntax
-   */
-  not(column: string, operator: string, value: unknown): this {
+
+  // ✅ implementation (widened return)
+  not(
+    column: string,
+    operator: string,
+    value: unknown
+  ): PostgrestFilterBuilder<
+    ClientOptions,
+    Schema,
+    any,
+    Result,
+    RelationName,
+    Relationships,
+    Method
+  > {
     this.url.searchParams.append(column, `not.${operator}.${value}`)
-    return this
+    return this as any
   }
 
   /**
