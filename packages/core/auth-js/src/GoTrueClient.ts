@@ -1707,26 +1707,6 @@ export default class GoTrueClient {
 
       const { data: session, error } = await this._callRefreshToken(currentSession.refresh_token)
       if (error) {
-        const isExpired = currentSession.expires_at
-          ? currentSession.expires_at * 1000 < Date.now()
-          : true
-
-        if (!isExpired) {
-          if (this.userStorage) {
-            const maybeUser: { user?: User | null } | null = (await getItemAsync(
-              this.userStorage,
-              this.storageKey + '-user'
-            )) as any
-            currentSession.user = maybeUser?.user ?? userNotAvailableProxy()
-          }
-
-          return { data: { session: currentSession }, error: null }
-        }
-
-        if (!isAuthRetryableFetchError(error)) {
-          await this._removeSession()
-        }
-
         return this._returnResult({ data: { session: null }, error })
       }
 
@@ -1915,9 +1895,6 @@ export default class GoTrueClient {
           currentSession.refresh_token
         )
         if (error) {
-          if (!isAuthRetryableFetchError(error)) {
-            await this._removeSession()
-          }
           return this._returnResult({ data: { user: null, session: null }, error: error })
         }
 
@@ -1986,9 +1963,6 @@ export default class GoTrueClient {
 
         const { data: session, error } = await this._callRefreshToken(currentSession.refresh_token)
         if (error) {
-          if (!isAuthRetryableFetchError(error)) {
-            await this._removeSession()
-          }
           return this._returnResult({ data: { user: null, session: null }, error: error })
         }
 
@@ -2667,13 +2641,12 @@ export default class GoTrueClient {
             console.error(error)
 
             if (!isAuthRetryableFetchError(error)) {
-              const isExpired = currentSession.expires_at
-                ? currentSession.expires_at * 1000 < Date.now()
-                : true
-
-              if (isExpired) {
-                await this._removeSession()
-              }
+              this._debug(
+                debugName,
+                'refresh failed with a non-retryable error, removing the session',
+                error
+              )
+              await this._removeSession()
             }
           }
         }
