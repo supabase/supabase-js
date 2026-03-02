@@ -16,7 +16,7 @@
     "@radix-ui/react-dropdown-menu": "^2.1.14",
     "@radix-ui/react-label": "^2.1.6",
     "@radix-ui/react-slot": "^1.2.2",
-    "@supabase/ssr": "latest",
+    "@supabase/ssr": "^0.9.0",
     "@supabase/supabase-js": "https://pkg.pr.new/@supabase/supabase-js@{COMMIT_HASH}",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
