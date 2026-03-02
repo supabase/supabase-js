@@ -66,8 +66,7 @@
       "options": {
         "commands": [
           "docker compose -f infra/docker-compose.yml pull",
-          "docker compose -f infra/docker-compose.yml up -d",
-          "sleep 30"
+          "docker compose -f infra/docker-compose.yml up -d --wait"
         ],
         "cwd": "{projectRoot}",
         "parallel": false

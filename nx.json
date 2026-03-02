@@ -113,22 +113,25 @@
     },
     "test:ci": {
       "inputs": ["testing", "^production"],
+      "dependsOn": ["^build"],
       "cache": true,
       "outputs": ["{projectRoot}/coverage"]
     },
     "test:ci:postgrest": {
       "inputs": ["testing", "^production"],
       "dependsOn": ["build"],
-      "cache": true,
+      "cache": false,
       "outputs": ["{projectRoot}/coverage"]
     },
     "test:auth": {
       "inputs": ["testing", "^production"],
-      "cache": true,
+      "cache": false,
       "outputs": ["{projectRoot}/coverage"]
     },
     "test:storage": {
-      "cache": false
+      "inputs": ["testing", "^production"],
+      "cache": false,
+      "outputs": ["{projectRoot}/coverage"]
     },
     "test:suite": {
       "inputs": ["testing", "^production"],
