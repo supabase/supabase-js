@@ -453,6 +453,58 @@ describe('GoTrueClient', () => {
       expect(session3).toHaveProperty('access_token')
     })
 
+    test('_callRefreshToken() should not remove session from storage on non-retryable error', async () => {
+      const store: { [key: string]: string } = {}
+      const storage = memoryLocalStorageAdapter(store)
+      const client = new GoTrueClient({
+        url: 'http://localhost:9999',
+        autoRefreshToken: false,
+        persistSession: true,
+        storage,
+      })
+
+      await client.initialize()
+
+      const expiresAt = Math.floor(Date.now() / 1000) + 30
+      const session = {
+        access_token: expiredAccessToken,
+        refresh_token: 'test-refresh-token',
+        expires_at: expiresAt,
+        expires_in: 30,
+        token_type: 'bearer',
+        user: {
+          id: 'test-user-id',
+          aud: 'authenticated',
+          role: 'authenticated',
+          email: 'test@example.com',
+          app_metadata: {},
+          user_metadata: {},
+          created_at: new Date().toISOString(),
+        },
+      }
+
+      await storage.setItem(STORAGE_KEY, JSON.stringify(session))
+
+      // @ts-expect-error 'Allow access to private _refreshAccessToken'
+      jest.spyOn(client, '_refreshAccessToken').mockResolvedValueOnce({
+        data: { session: null, user: null },
+        error: new AuthError('Invalid refresh token'),
+      })
+
+      const { data, error } = await client.getSession()
+
+      expect(error).not.toBeNull()
+      expect(error?.message).toBe('Invalid refresh token')
+      expect(data.session).toBeNull()
+
+      const storedSession = await storage.getItem(STORAGE_KEY)
+      expect(storedSession).not.toBeNull()
+      expect(JSON.parse(storedSession!)).toMatchObject({
+        access_token: expiredAccessToken,
+        refresh_token: 'test-refresh-token',
+      })
+    })
+
     test('_getSessionFromURL() can only be called from a browser', async () => {
       const {
         error,

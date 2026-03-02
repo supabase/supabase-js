@@ -2724,9 +2724,9 @@ export default class GoTrueClient {
       if (isAuthError(error)) {
         const result = { data: null, error }
 
-        if (!isAuthRetryableFetchError(error)) {
-          await this._removeSession()
-        }
+        // Don't remove session here — callers have context about whether
+        // the access token is still valid and should decide themselves.
+        // _recoverAndRefresh already handles cleanup for non-retryable errors.
 
         this.refreshingDeferred?.resolve(result)
 
