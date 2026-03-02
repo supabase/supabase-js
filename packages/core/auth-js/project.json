@@ -106,7 +106,7 @@
       "options": {
         "commands": [
           "cp .env.local.ci .env.local || true",
-          "npm install",
+          "npm i --legacy-peer-deps",
           "npx playwright install chromium",
           "npx playwright test"
         ],
