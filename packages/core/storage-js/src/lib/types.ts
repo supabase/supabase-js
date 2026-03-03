@@ -243,26 +243,35 @@ export interface SearchV2Options {
 
 /**
  * File object returned by the List V2 API (listV2() method)
- * Note: Folder entries will have null values for most fields except key and name
+ * Objects and folders are returned in separate arrays - this type represents
+ * actual files only. Use SearchV2Folder for folder entries.
  */
 export interface SearchV2Object {
-  /** File or folder name - always present */
+  /** File name */
   name: string
-  /** Full object key/path (may be missing in some responses) */
+  /** Full object key/path */
   key?: string
-  /** Unique identifier for the file (null for folders) */
-  id: string | null
-  /** Last update timestamp (null for folders) */
-  updated_at: string | null
-  /** Creation timestamp (null for folders) */
-  created_at: string | null
-  /** File metadata (null for folders) */
+  /** Unique identifier for the file */
+  id: string
+  /** Last update timestamp */
+  updated_at: string
+  /** Creation timestamp */
+  created_at: string
+  /** File metadata including size, mimetype, etc. (null if not yet set) */
   metadata: FileMetadata | null
-  /** @deprecated Last access timestamp (null for folders) */
-  last_accessed_at: string | null
+  /** @deprecated Last access timestamp */
+  last_accessed_at: string
 }
 
-export type SearchV2Folder = Omit<SearchV2Object, 'id' | 'metadata' | 'last_accessed_at'>
+/**
+ * Folder entry returned by the List V2 API (listV2() method) when using with_delimiter: true
+ */
+export interface SearchV2Folder {
+  /** Folder name/prefix */
+  name: string
+  /** Full folder key/path */
+  key?: string
+}
 
 export interface SearchV2Result {
   hasNext: boolean
