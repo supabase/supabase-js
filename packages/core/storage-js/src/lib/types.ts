@@ -119,8 +119,6 @@ export interface FileObjectV2 {
   bucket_id: string
   /** Creation timestamp */
   created_at: string
-  /** @deprecated Use last_modified instead */
-  last_accessed_at: string
   /** File size in bytes */
   size?: number
   /** Cache control header value */

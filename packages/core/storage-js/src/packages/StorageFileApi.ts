@@ -1169,10 +1169,9 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
   /**
    * Lists all the files and folders within a bucket using the V2 API with pagination support.
    *
-   * **Important:** For folder entries in the `folders` array, fields like `id`, `updated_at`,
-   * `created_at`, `last_accessed_at`, and `metadata` will be `null`. Only files in the
-   * `objects` array have these fields populated. The `key` field may also be missing in
-   * some responses.
+   * **Important:** Folder entries in the `folders` array only contain `name` and optionally `key` —
+   * they have no `id`, timestamps, or `metadata` fields. Full file metadata is only available
+   * on entries in the `objects` array.
    *
    * @experimental this method signature might change in the future
    *
