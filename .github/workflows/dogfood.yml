@@ -25,6 +25,13 @@ on:
         required: false
         type: string
         default: 'supabase-js-stable-release'
+    secrets:
+      APP_ID:
+        required: true
+      PRIVATE_KEY:
+        required: true
+
+permissions: {}
 
 jobs:
   trigger-downstream:
