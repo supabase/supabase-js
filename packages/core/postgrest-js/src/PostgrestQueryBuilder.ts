@@ -960,122 +960,122 @@ export default class PostgrestQueryBuilder<
     'POST'
   >
   /**
-       * Perform an INSERT into the table or view.
-       *
-       * By default, inserted rows are not returned. To return it, chain the call
-       * with `.select()`.
-       *
-       * @param values - The values to insert. Pass an object to insert a single row
-       * or an array to insert multiple rows.
-       *
-       * @param options - Named parameters
-       *
-       * @param options.count - Count algorithm to use to count inserted rows.
-       *
-       * `"exact"`: Exact but slow count algorithm. Performs a `COUNT(*)` under the
-       * hood.
-       *
-       * `"planned"`: Approximated but fast count algorithm. Uses the Postgres
-       * statistics under the hood.
-       *
-       * `"estimated"`: Uses exact count for low numbers and planned count for high
-       * numbers.
-       *
-       * @param options.defaultToNull - Make missing fields default to `null`.
-       * Otherwise, use the default value for the column. Only applies for bulk
-       * inserts.
-        *
-     * @category Database
-     *
-     * @example Create a record
-     * ```ts
-     * const { error } = await supabase
-     *   .from('countries')
-     *   .insert({ id: 1, name: 'Mordor' })
-     * ```
-     *
-     * @exampleSql Create a record
-     * ```sql
-     * ```sql
-     * create table
-     *   countries (id int8 primary key, name text);
-     * ```
-     * ```
-     *
-     * @exampleResponse Create a record
-     * ```json
-     * {
-     *   "status": 201,
-     *   "statusText": "Created"
-     * }
-     * ```
-     *
-     * @example Create a record and return it
-     * ```ts
-     * const { data, error } = await supabase
-     *   .from('countries')
-     *   .insert({ id: 1, name: 'Mordor' })
-     *   .select()
-     * ```
-     *
-     * @exampleSql Create a record and return it
-     * ```sql
-     * ```sql
-     * create table
-     *   countries (id int8 primary key, name text);
-     * ```
-     * ```
-     *
-     * @exampleResponse Create a record and return it
-     * ```json
-     * {
-     *   "data": [
-     *     {
-     *       "id": 1,
-     *       "name": "Mordor"
-     *     }
-     *   ],
-     *   "status": 201,
-     *   "statusText": "Created"
-     * }
-     * ```
-     *
-     * @exampleDescription Bulk create
-     * A bulk create operation is handled in a single transaction.
-     * If any of the inserts fail, none of the rows are inserted.
-     *
-     * @example Bulk create
-     * ```ts
-     * const { error } = await supabase
-     *   .from('countries')
-     *   .insert([
-     *     { id: 1, name: 'Mordor' },
-     *     { id: 1, name: 'The Shire' },
-     *   ])
-     * ```
-     *
-     * @exampleSql Bulk create
-     * ```sql
-     * ```sql
-     * create table
-     *   countries (id int8 primary key, name text);
-     * ```
-     * ```
-     *
-     * @exampleResponse Bulk create
-     * ```json
-     * {
-     *   "error": {
-     *     "code": "23505",
-     *     "details": "Key (id)=(1) already exists.",
-     *     "hint": null,
-     *     "message": "duplicate key value violates unique constraint \"countries_pkey\""
-     *   },
-     *   "status": 409,
-     *   "statusText": "Conflict"
-     * }
-     * ```
-       */
+   * Perform an INSERT into the table or view.
+   *
+   * By default, inserted rows are not returned. To return it, chain the call
+   * with `.select()`.
+   *
+   * @param values - The values to insert. Pass an object to insert a single row
+   * or an array to insert multiple rows.
+   *
+   * @param options - Named parameters
+   *
+   * @param options.count - Count algorithm to use to count inserted rows.
+   *
+   * `"exact"`: Exact but slow count algorithm. Performs a `COUNT(*)` under the
+   * hood.
+   *
+   * `"planned"`: Approximated but fast count algorithm. Uses the Postgres
+   * statistics under the hood.
+   *
+   * `"estimated"`: Uses exact count for low numbers and planned count for high
+   * numbers.
+   *
+   * @param options.defaultToNull - Make missing fields default to `null`.
+   * Otherwise, use the default value for the column. Only applies for bulk
+   * inserts.
+   *
+   * @category Database
+   *
+   * @example Create a record
+   * ```ts
+   * const { error } = await supabase
+   *   .from('countries')
+   *   .insert({ id: 1, name: 'Mordor' })
+   * ```
+   *
+   * @exampleSql Create a record
+   * ```sql
+   * ```sql
+   * create table
+   *   countries (id int8 primary key, name text);
+   * ```
+   * ```
+   *
+   * @exampleResponse Create a record
+   * ```json
+   * {
+   *   "status": 201,
+   *   "statusText": "Created"
+   * }
+   * ```
+   *
+   * @example Create a record and return it
+   * ```ts
+   * const { data, error } = await supabase
+   *   .from('countries')
+   *   .insert({ id: 1, name: 'Mordor' })
+   *   .select()
+   * ```
+   *
+   * @exampleSql Create a record and return it
+   * ```sql
+   * ```sql
+   * create table
+   *   countries (id int8 primary key, name text);
+   * ```
+   * ```
+   *
+   * @exampleResponse Create a record and return it
+   * ```json
+   * {
+   *   "data": [
+   *     {
+   *       "id": 1,
+   *       "name": "Mordor"
+   *     }
+   *   ],
+   *   "status": 201,
+   *   "statusText": "Created"
+   * }
+   * ```
+   *
+   * @exampleDescription Bulk create
+   * A bulk create operation is handled in a single transaction.
+   * If any of the inserts fail, none of the rows are inserted.
+   *
+   * @example Bulk create
+   * ```ts
+   * const { error } = await supabase
+   *   .from('countries')
+   *   .insert([
+   *     { id: 1, name: 'Mordor' },
+   *     { id: 1, name: 'The Shire' },
+   *   ])
+   * ```
+   *
+   * @exampleSql Bulk create
+   * ```sql
+   * ```sql
+   * create table
+   *   countries (id int8 primary key, name text);
+   * ```
+   * ```
+   *
+   * @exampleResponse Bulk create
+   * ```json
+   * {
+   *   "error": {
+   *     "code": "23505",
+   *     "details": "Key (id)=(1) already exists.",
+   *     "hint": null,
+   *     "message": "duplicate key value violates unique constraint \"countries_pkey\""
+   *   },
+   *   "status": 409,
+   *   "statusText": "Conflict"
+   * }
+   * ```
+   */
   insert<Row extends Relation extends { Insert: unknown } ? Relation['Insert'] : never>(
     values: Row | Row[],
     {
