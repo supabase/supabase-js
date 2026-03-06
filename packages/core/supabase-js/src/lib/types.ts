@@ -171,3 +171,30 @@ export type QueryError = PostgrestError
  * ```
  */
 export type DatabaseWithoutInternals<DB> = Omit<DB, '__InternalSupabase'>
+
+/**
+ * @internal
+ * Eagerly resolves the Schema type for a given Database and SchemaName.
+ * Used by createClient to pass concrete Schema types to SupabaseClient,
+ * avoiding cryptic unresolved conditional types in IDE tooltips.
+ */
+export type ResolveSchema<
+  Database,
+  SchemaName extends string & keyof Omit<Database, '__InternalSupabase'>,
+> = Omit<Database, '__InternalSupabase'>[SchemaName] extends GenericSchema
+  ? Omit<Database, '__InternalSupabase'>[SchemaName]
+  : never
+
+/**
+ * @internal
+ * Eagerly resolves the ClientOptions type for a given Database and SchemaNameOrClientOptions.
+ * Used by createClient to pass concrete ClientOptions to SupabaseClient.
+ */
+export type ResolveClientOptions<Database, SchemaNameOrClientOptions> =
+  SchemaNameOrClientOptions extends string & keyof Omit<Database, '__InternalSupabase'>
+    ? Database extends { __InternalSupabase: { PostgrestVersion: string } }
+      ? Database['__InternalSupabase']
+      : { PostgrestVersion: '12' }
+    : SchemaNameOrClientOptions extends { PostgrestVersion: string }
+      ? SchemaNameOrClientOptions
+      : never

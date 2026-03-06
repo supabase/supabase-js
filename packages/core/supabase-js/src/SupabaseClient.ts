@@ -81,7 +81,7 @@ export default class SupabaseClient<
   protected authUrl: URL
   protected storageUrl: URL
   protected functionsUrl: URL
-  protected rest: PostgrestClient<Database, ClientOptions, SchemaName>
+  protected rest: PostgrestClient<Database, ClientOptions, SchemaName, Schema>
   protected storageKey: string
   protected fetch?: Fetch
   protected changedAccessToken?: string
@@ -171,13 +171,16 @@ export default class SupabaseClient<
         .catch((e) => console.warn('Failed to set initial Realtime auth token:', e))
     }
 
-    this.rest = new PostgrestClient(new URL('rest/v1', baseUrl).href, {
-      headers: this.headers,
-      schema: settings.db.schema,
-      fetch: this.fetch,
-      timeout: settings.db.timeout,
-      urlLengthLimit: settings.db.urlLengthLimit,
-    })
+    this.rest = new PostgrestClient<Database, ClientOptions, SchemaName, Schema>(
+      new URL('rest/v1', baseUrl).href,
+      {
+        headers: this.headers,
+        schema: settings.db.schema,
+        fetch: this.fetch,
+        timeout: settings.db.timeout,
+        urlLengthLimit: settings.db.urlLengthLimit,
+      }
+    )
 
     this.storage = new SupabaseStorageClient(
       this.storageUrl.href,

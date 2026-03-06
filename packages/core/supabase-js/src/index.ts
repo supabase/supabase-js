@@ -1,5 +1,5 @@
 import SupabaseClient from './SupabaseClient'
-import type { SupabaseClientOptions } from './lib/types'
+import type { SupabaseClientOptions, ResolveSchema, ResolveClientOptions } from './lib/types'
 
 export * from '@supabase/auth-js'
 export type { User as AuthUser, Session as AuthSession } from '@supabase/auth-js'
@@ -56,12 +56,20 @@ export const createClient = <
   supabaseUrl: string,
   supabaseKey: string,
   options?: SupabaseClientOptions<SchemaName>
-): SupabaseClient<Database, SchemaNameOrClientOptions, SchemaName> => {
-  return new SupabaseClient<Database, SchemaNameOrClientOptions, SchemaName>(
-    supabaseUrl,
-    supabaseKey,
-    options
-  )
+): SupabaseClient<
+  Database,
+  SchemaNameOrClientOptions,
+  SchemaName,
+  ResolveSchema<Database, SchemaName>,
+  ResolveClientOptions<Database, SchemaNameOrClientOptions>
+> => {
+  return new SupabaseClient<
+    Database,
+    SchemaNameOrClientOptions,
+    SchemaName,
+    ResolveSchema<Database, SchemaName>,
+    ResolveClientOptions<Database, SchemaNameOrClientOptions>
+  >(supabaseUrl, supabaseKey, options)
 }
 
 // Check for Node.js <= 18 deprecation
