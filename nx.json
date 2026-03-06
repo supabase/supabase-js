@@ -113,22 +113,25 @@
     },
     "test:ci": {
       "inputs": ["testing", "^production"],
+      "dependsOn": ["^build"],
       "cache": true,
       "outputs": ["{projectRoot}/coverage"]
     },
     "test:ci:postgrest": {
       "inputs": ["testing", "^production"],
       "dependsOn": ["build"],
-      "cache": true,
+      "cache": false,
       "outputs": ["{projectRoot}/coverage"]
     },
     "test:auth": {
       "inputs": ["testing", "^production"],
-      "cache": true,
+      "cache": false,
       "outputs": ["{projectRoot}/coverage"]
     },
     "test:storage": {
-      "cache": false
+      "inputs": ["testing", "^production"],
+      "cache": false,
+      "outputs": ["{projectRoot}/coverage"]
     },
     "test:suite": {
       "inputs": ["testing", "^production"],
@@ -159,6 +162,9 @@
       "cache": false
     },
     "test:docker:clean-post": {
+      "cache": false
+    },
+    "test:e2e": {
       "cache": false
     },
     "vite:test": {
@@ -243,16 +249,6 @@
         "previewTargetName": "preview",
         "serveStaticTargetName": "serve-static",
         "typecheckTargetName": "vite:typecheck",
-        "buildDepsTargetName": "build-deps",
-        "watchDepsTargetName": "watch-deps"
-      }
-    },
-    {
-      "plugin": "@nx/webpack/plugin",
-      "options": {
-        "buildTargetName": "webpack:build",
-        "serveTargetName": "serve",
-        "previewTargetName": "preview",
         "buildDepsTargetName": "build-deps",
         "watchDepsTargetName": "watch-deps"
       }
