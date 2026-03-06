@@ -751,20 +751,28 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
    *   .download('folder/avatar1.png', {}, { signal: controller.signal })
    * ```
    */
-  download<Options extends { transform?: TransformOptions }>(
+  download<Options extends { transform?: TransformOptions; version?: string }>(
     path: string,
     options?: Options,
     parameters?: FetchParameters
   ): BlobDownloadBuilder {
     const wantsTransformation = typeof options?.transform !== 'undefined'
     const renderPath = wantsTransformation ? 'render/image/authenticated' : 'object'
-    const transformationQuery = this.transformOptsToQueryString(options?.transform || {})
-    const queryString = transformationQuery ? `?${transformationQuery}` : ''
+
+    const queryString: string = [
+      // transformation
+      options?.transform && this.transformOptsToQueryString(options.transform),
+      // versioning
+      options?.version && `_v=${options.version}`,
+    ]
+      .filter(Boolean)
+      .join('&')
+
     const _path = this._getFinalPath(path)
     const downloadFn = () =>
       get(
         this.fetch,
-        `${this.url}/${renderPath}/${_path}${queryString}`,
+        `${this.url}/${renderPath}/${_path}${queryString ? `?${queryString}` : ''}`,
         {
           headers: this.headers,
           noResolveJson: true,
