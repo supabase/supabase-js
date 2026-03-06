@@ -751,7 +751,7 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
    *   .download('folder/avatar1.png', {}, { signal: controller.signal })
    * ```
    */
-  download<Options extends { transform?: TransformOptions; version?: string }>(
+  download<Options extends { transform?: TransformOptions; version?: string | number }>(
     path: string,
     options?: Options,
     parameters?: FetchParameters
@@ -763,7 +763,7 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
       // transformation
       options?.transform && this.transformOptsToQueryString(options.transform),
       // versioning
-      options?.version && `_v=${options.version}`,
+      options?.version != null && `_v=${encodeURIComponent(options.version)}`,
     ]
       .filter(Boolean)
       .join('&')
