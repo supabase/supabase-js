@@ -252,7 +252,11 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
 
     return this.handleOperation(async () => {
       let body
-      const options = { ...DEFAULT_FILE_OPTIONS, upsert: DEFAULT_FILE_OPTIONS.upsert, ...fileOptions }
+      const options = {
+        ...DEFAULT_FILE_OPTIONS,
+        upsert: DEFAULT_FILE_OPTIONS.upsert,
+        ...fileOptions,
+      }
       let headers: Record<string, string> = {
         ...this.headers,
         ...{ 'x-upsert': String(options.upsert as boolean) },
