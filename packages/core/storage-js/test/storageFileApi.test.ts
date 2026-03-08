@@ -954,7 +954,7 @@ describe('StorageFileApi Edge Cases', () => {
       const [, , body] = mockPut.mock.calls[0]
       expect(body.get('cacheControl')).toBe('7200')
     })
-    
+
     test('uploadToSignedUrl with Blob includes metadata in FormData', async () => {
       const testBlob = new Blob(['test content'], { type: 'text/plain' })
       const metadata = { customKey: 'customValue', author: 'test' }
