@@ -56,18 +56,24 @@ jobs:
             ./packages/core/postgrest-js \
             ./packages/core/realtime-js \
             ./packages/core/storage-js \
-            ./packages/core/supabase-js
+            ./packages/core/supabase-js \
+            2>&1 | tee /tmp/pkg-pr-new-output.txt
 
       - name: Get commit hash
         id: commit
         run: |
-          # Use PR head SHA, not merge commit SHA
-          # pkg.pr.new publishes based on actual repo commits, not GitHub's temporary merge commits
-          COMMIT_SHA="${{ github.event.pull_request.head.sha }}"
+          # Extract the SHA from pkg.pr.new URLs in the output
+          # Lines look like: npm i https://pkg.pr.new/@supabase/supabase-js@49b3c56
+          echo "--- pkg-pr-new captured output ---"
+          cat /tmp/pkg-pr-new-output.txt
+          echo "--- end of captured output ---"
+          COMMIT_SHA=$(grep -oE 'pkg\.pr\.new/\S+@[a-f0-9]+' /tmp/pkg-pr-new-output.txt | head -1 | grep -oE '[a-f0-9]+$' || true)
+          if [ -z "$COMMIT_SHA" ]; then
+            echo "::warning::Failed to parse commit SHA from pkg-pr-new output, falling back to PR head SHA"
+            COMMIT_SHA="${{ github.event.pull_request.head.sha }}"
+          fi
           echo "sha=$COMMIT_SHA" >> "$GITHUB_OUTPUT"
-          echo "📍 PR Head commit: $COMMIT_SHA"
-          echo "📍 Current HEAD (merge commit): $(git rev-parse HEAD)"
-          echo "📍 These are different - we use PR head for pkg.pr.new URLs"
+          echo "Commit SHA for pkg.pr.new URLs: $COMMIT_SHA"
 
   integration-tests:
     name: Run Integration Tests

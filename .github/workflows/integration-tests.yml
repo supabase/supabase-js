@@ -51,15 +51,49 @@ jobs:
       - name: Install jq for JSON parsing
         run: sudo apt-get update && sudo apt-get install -y jq
 
+      - name: Cache Supabase Docker images
+        uses: actions/cache@v4
+        id: docker-cache
+        with:
+          path: /tmp/supabase-docker-images
+          key: supabase-docker-integration-${{ hashFiles('package.json', 'packages/core/supabase-js/test/supabase/**') }}
+
+      - name: Load cached Docker images
+        if: steps.docker-cache.outputs.cache-hit == 'true'
+        run: |
+          for f in /tmp/supabase-docker-images/*.tar.zst; do
+            [ -f "$f" ] && zstd -d --stdout "$f" | docker image load
+          done
+
+      - name: Cache Puppeteer browsers
+        uses: actions/cache@v4
+        id: puppeteer-cache
+        with:
+          path: ${{ env.PUPPETEER_CACHE_DIR }}
+          key: puppeteer-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        id: playwright-cache
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
       - name: Install browser dependencies
         run: |
           # Ensure cache directory exists
           mkdir -p "$PUPPETEER_CACHE_DIR"
           # Install Puppeteer Chrome for integration.browser.test.ts
-          # Using 'puppeteer browsers install' ensures Chrome is installed in PUPPETEER_CACHE_DIR
-          npx puppeteer browsers install chrome
+          # Only download if not already cached
+          if [ "${{ steps.puppeteer-cache.outputs.cache-hit }}" != "true" ]; then
+            npx puppeteer browsers install chrome
+          fi
           # Install Playwright browsers for WebSocket tests
-          npx playwright install --with-deps
+          if [ "${{ steps.playwright-cache.outputs.cache-hit }}" != "true" ]; then
+            npx playwright install --with-deps
+          else
+            npx playwright install-deps
+          fi
 
       - name: Setup Supabase
         run: npx nx test:supabase:setup supabase-js
@@ -133,6 +167,12 @@ jobs:
           bun install
           cd "$GITHUB_WORKSPACE"
 
+      - name: Apply extra migrations for E2E tests
+        run: |
+          PGPASSWORD=postgres psql -h 127.0.0.1 -p 54322 -U postgres -d postgres \
+            -v ON_ERROR_STOP=1 --single-transaction \
+            -f packages/core/realtime-js/example/supabase/migrations/001_create_messages_table.sql
+
       - name: Run all tests in parallel
         run: |
           set -e
@@ -159,6 +199,50 @@ jobs:
           npx nx test:node:playwright supabase-js
 
           echo "✅ All tests passed"
+
+      - name: Run E2E tests
+        run: |
+          npx nx run-many \
+            --target=test:e2e \
+            --projects=auth-js,realtime-js \
+            --parallel=1 \
+            --verbose
+
+      - name: Debug email infrastructure on failure
+        if: failure()
+        run: |
+          echo "=== Docker containers ==="
+          docker ps -a
+          echo "=== Mailpit status ==="
+          curl -s http://127.0.0.1:54324/api/v1/info || echo "Mailpit not reachable on :54324"
+          echo "=== All Mailpit messages ==="
+          curl -s "http://127.0.0.1:54324/api/v1/messages" || echo "Could not list messages"
+          echo "=== GoTrue container logs (last 50 lines) ==="
+          docker logs $(docker ps -q --filter "name=supabase_auth") --tail=50 2>&1 || echo "Could not get GoTrue logs"
+          echo "=== Mailpit container logs (last 20 lines) ==="
+          docker logs $(docker ps -q --filter "name=supabase_mail") --tail=20 2>&1 || echo "Could not get Mailpit logs"
+
+      - name: Upload Playwright reports
+        if: failure()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        with:
+          name: playwright-report
+          path: |
+            packages/core/auth-js/example/react/playwright-report/
+            packages/core/realtime-js/example/playwright-report/
+          retention-days: 7
+
+      - name: Save Docker images to cache
+        if: steps.docker-cache.outputs.cache-hit != 'true' && !cancelled()
+        run: |
+          mkdir -p /tmp/supabase-docker-images
+          docker images --format '{{.Repository}}:{{.Tag}}' \
+            | grep -v '<none>' \
+            | grep -E 'supabase|postgrest|gotrue|storage-api|imgproxy|kong|inbucket|deno' \
+            | while read img; do
+                name=$(echo "$img" | tr '/:' '_')
+                docker image save "$img" | zstd -T0 -3 -o "/tmp/supabase-docker-images/${name}.tar.zst"
+              done
 
       - name: Stop Supabase
         if: always()

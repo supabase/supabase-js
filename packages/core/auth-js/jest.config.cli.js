@@ -9,7 +9,7 @@ module.exports = {
   coverageDirectory: './coverage',
   coverageReporters: ['json', 'html', 'lcov'],
   collectCoverageFrom: ['src/**/*.{js,ts}', '!**/node_modules/**', '!**/vendor/**'],
-  testPathIgnorePatterns: ['/node_modules/', '/docker-tests/'],
+  testPathIgnorePatterns: ['/node_modules/', '/docker-tests/', '/example/'],
   rootDir: '.',
   silent: true,
 }

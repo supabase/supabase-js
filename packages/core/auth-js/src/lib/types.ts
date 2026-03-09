@@ -14,7 +14,7 @@ import {
   RegistrationCredential,
 } from './webauthn.dom'
 
-/** One of the providers supported by GoTrue. */
+/** One of the providers supported by GoTrue. Use the `custom:` prefix for custom OIDC providers (e.g. `custom:my-oidc-provider`). */
 export type Provider =
   | 'apple'
   | 'azure'
@@ -41,6 +41,7 @@ export type Provider =
   | 'workos'
   | 'zoom'
   | 'fly'
+  | `custom:${string}`
 
 export type AuthChangeEventMFA = 'MFA_CHALLENGE_VERIFIED'
 
@@ -464,6 +465,15 @@ export interface User {
 
 export interface UserAttributes {
   /**
+   * The user's current password
+   *
+   * This is only ever present when the user is resetting
+   * their password and GOTRUE_SECURITY_UPDATE_PASSWORD_REQUIRE_CURRENT_PASSWORD is true.
+   *
+   */
+  current_password?: string
+
+  /**
    * The user's email.
    */
   email?: string
@@ -675,8 +685,8 @@ export type SignInWithOAuthCredentials = {
 }
 
 export type SignInWithIdTokenCredentials = {
-  /** Provider name or OIDC `iss` value identifying which provider should be used to verify the provided token. Supported names: `google`, `apple`, `azure`, `facebook`, `kakao`, `keycloak` (deprecated). */
-  provider: 'google' | 'apple' | 'azure' | 'facebook' | 'kakao' | (string & {})
+  /** Provider name or OIDC `iss` value identifying which provider should be used to verify the provided token. Supported names: `google`, `apple`, `azure`, `facebook`, `kakao`. Use the `custom:` prefix for custom OIDC providers (e.g. `custom:my-oidc-provider`). */
+  provider: 'google' | 'apple' | 'azure' | 'facebook' | 'kakao' | `custom:${string}` | (string & {})
   /** OIDC ID token issued by the specified provider. The `iss` claim in the ID token must match the supplied provider. Some ID tokens contain an `at_hash` which require that you provide an `access_token` value to be accepted properly. If the token contains a `nonce` claim you must supply the nonce used to obtain the ID token. */
   token: string
   /** If the ID token contains an `at_hash` claim, then the hash of this value is compared to the value in the ID token. */
@@ -1606,6 +1616,15 @@ export type OAuthClientType = 'public' | 'confidential'
 export type OAuthClientRegistrationType = 'dynamic' | 'manual'
 
 /**
+ * OAuth client token endpoint authentication method.
+ * Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
+ */
+export type OAuthClientTokenEndpointAuthMethod =
+  | 'none'
+  | 'client_secret_basic'
+  | 'client_secret_post'
+
+/**
  * OAuth client object returned from the OAuth 2.1 server.
  * Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
  */
@@ -1619,7 +1638,7 @@ export type OAuthClient = {
   /** Type of OAuth client */
   client_type: OAuthClientType
   /** Token endpoint authentication method */
-  token_endpoint_auth_method: string
+  token_endpoint_auth_method: OAuthClientTokenEndpointAuthMethod
   /** Registration type of the client */
   registration_type: OAuthClientRegistrationType
   /** URI of the OAuth client */
@@ -1657,6 +1676,8 @@ export type CreateOAuthClientParams = {
   response_types?: OAuthClientResponseType[]
   /** Scope of the OAuth client */
   scope?: string
+  /** Token endpoint authentication method (defaults to server default if not specified) */
+  token_endpoint_auth_method?: OAuthClientTokenEndpointAuthMethod
 }
 
 /**
@@ -1675,6 +1696,8 @@ export type UpdateOAuthClientParams = {
   redirect_uris?: string[]
   /** Array of allowed grant types */
   grant_types?: OAuthClientGrantType[]
+  /** Token endpoint authentication method */
+  token_endpoint_auth_method?: OAuthClientTokenEndpointAuthMethod
 }
 
 /**
@@ -1749,6 +1772,255 @@ export interface GoTrueAdminOAuthApi {
    * This function should only be called on a server. Never expose your `service_role` key in the browser.
    */
   regenerateClientSecret(clientId: string): Promise<OAuthClientResponse>
+}
+
+/**
+ * Type of custom identity provider.
+ */
+export type CustomProviderType = 'oauth2' | 'oidc'
+
+/**
+ * OIDC discovery document fields.
+ * Populated when the server successfully fetches and validates the
+ * provider's OpenID Connect discovery document.
+ */
+export type OIDCDiscoveryDocument = {
+  /** The issuer identifier */
+  issuer: string
+  /** URL of the authorization endpoint */
+  authorization_endpoint: string
+  /** URL of the token endpoint */
+  token_endpoint: string
+  /** URL of the JSON Web Key Set */
+  jwks_uri: string
+  /** URL of the userinfo endpoint */
+  userinfo_endpoint?: string
+  /** URL of the revocation endpoint */
+  revocation_endpoint?: string
+  /** List of supported scopes */
+  supported_scopes?: string[]
+  /** List of supported response types */
+  supported_response_types?: string[]
+  /** List of supported subject types */
+  supported_subject_types?: string[]
+  /** List of supported ID token signing algorithms */
+  supported_id_token_signing_algs?: string[]
+}
+
+/**
+ * Custom OAuth/OIDC provider object returned from the admin API.
+ */
+export type CustomOAuthProvider = {
+  /** Unique identifier (UUID) */
+  id: string
+  /** Provider type */
+  provider_type: CustomProviderType
+  /** Provider identifier (e.g. `custom:mycompany`) */
+  identifier: string
+  /** Human-readable name */
+  name: string
+  /** OAuth client ID */
+  client_id: string
+  /** Additional client IDs accepted during token validation */
+  acceptable_client_ids?: string[]
+  /** OAuth scopes requested during authorization */
+  scopes?: string[]
+  /** Whether PKCE is enabled */
+  pkce_enabled?: boolean
+  /** Mapping of provider attributes to Supabase user attributes */
+  attribute_mapping?: Record<string, any>
+  /** Additional parameters sent with the authorization request */
+  authorization_params?: Record<string, string>
+  /** Whether the provider is enabled */
+  enabled?: boolean
+  /** Whether email is optional for this provider */
+  email_optional?: boolean
+  /** OIDC issuer URL */
+  issuer?: string
+  /** OIDC discovery URL */
+  discovery_url?: string
+  /** Whether to skip nonce check (OIDC) */
+  skip_nonce_check?: boolean
+  /** OAuth2 authorization URL */
+  authorization_url?: string
+  /** OAuth2 token URL */
+  token_url?: string
+  /** OAuth2 userinfo URL */
+  userinfo_url?: string
+  /** JWKS URI for token verification */
+  jwks_uri?: string
+  /** OIDC discovery document (OIDC providers only) */
+  discovery_document?: OIDCDiscoveryDocument | null
+  /** Timestamp when the provider was created */
+  created_at: string
+  /** Timestamp when the provider was last updated */
+  updated_at: string
+}
+
+/**
+ * Parameters for creating a new custom provider.
+ */
+export type CreateCustomProviderParams = {
+  /** Provider type */
+  provider_type: CustomProviderType
+  /** Provider identifier (e.g. `custom:mycompany`) */
+  identifier: string
+  /** Human-readable name */
+  name: string
+  /** OAuth client ID */
+  client_id: string
+  /** OAuth client secret (write-only, not returned in responses) */
+  client_secret: string
+  /** Additional client IDs accepted during token validation */
+  acceptable_client_ids?: string[]
+  /** OAuth scopes requested during authorization */
+  scopes?: string[]
+  /** Whether PKCE is enabled */
+  pkce_enabled?: boolean
+  /** Mapping of provider attributes to Supabase user attributes */
+  attribute_mapping?: Record<string, any>
+  /** Additional parameters sent with the authorization request */
+  authorization_params?: Record<string, string>
+  /** Whether the provider is enabled */
+  enabled?: boolean
+  /** Whether email is optional for this provider */
+  email_optional?: boolean
+  /** OIDC issuer URL */
+  issuer?: string
+  /** OIDC discovery URL */
+  discovery_url?: string
+  /** Whether to skip nonce check (OIDC) */
+  skip_nonce_check?: boolean
+  /** OAuth2 authorization URL */
+  authorization_url?: string
+  /** OAuth2 token URL */
+  token_url?: string
+  /** OAuth2 userinfo URL */
+  userinfo_url?: string
+  /** JWKS URI for token verification */
+  jwks_uri?: string
+}
+
+/**
+ * Parameters for updating an existing custom provider.
+ * All fields are optional. Only provided fields will be updated.
+ * `provider_type` and `identifier` are immutable and cannot be changed.
+ */
+export type UpdateCustomProviderParams = {
+  /** Human-readable name */
+  name?: string
+  /** OAuth client ID */
+  client_id?: string
+  /** OAuth client secret (write-only, not returned in responses) */
+  client_secret?: string
+  /** Additional client IDs accepted during token validation */
+  acceptable_client_ids?: string[]
+  /** OAuth scopes requested during authorization */
+  scopes?: string[]
+  /** Whether PKCE is enabled */
+  pkce_enabled?: boolean
+  /** Mapping of provider attributes to Supabase user attributes */
+  attribute_mapping?: Record<string, any>
+  /** Additional parameters sent with the authorization request */
+  authorization_params?: Record<string, string>
+  /** Whether the provider is enabled */
+  enabled?: boolean
+  /** Whether email is optional for this provider */
+  email_optional?: boolean
+  /** OIDC issuer URL */
+  issuer?: string
+  /** OIDC discovery URL */
+  discovery_url?: string
+  /** Whether to skip nonce check (OIDC) */
+  skip_nonce_check?: boolean
+  /** OAuth2 authorization URL */
+  authorization_url?: string
+  /** OAuth2 token URL */
+  token_url?: string
+  /** OAuth2 userinfo URL */
+  userinfo_url?: string
+  /** JWKS URI for token verification */
+  jwks_uri?: string
+}
+
+/**
+ * Parameters for listing custom providers.
+ */
+export type ListCustomProvidersParams = {
+  /** Filter by provider type */
+  type?: CustomProviderType
+}
+
+/**
+ * Response type for custom provider operations.
+ */
+export type CustomProviderResponse = RequestResult<CustomOAuthProvider>
+
+/**
+ * Response type for listing custom providers.
+ */
+export type CustomProviderListResponse =
+  | {
+      data: { providers: CustomOAuthProvider[] }
+      error: null
+    }
+  | {
+      data: { providers: [] }
+      error: AuthError
+    }
+
+/**
+ * Contains all custom OIDC/OAuth provider administration methods.
+ */
+export interface GoTrueAdminCustomProvidersApi {
+  /**
+   * Lists all custom providers with optional type filter.
+   *
+   * This function should only be called on a server. Never expose your `service_role` key in the browser.
+   */
+  listProviders(params?: ListCustomProvidersParams): Promise<CustomProviderListResponse>
+
+  /**
+   * Creates a new custom OIDC/OAuth provider.
+   *
+   * For OIDC providers, the server fetches and validates the OpenID Connect discovery document
+   * from the issuer's well-known endpoint (or the provided `discovery_url`) at creation time.
+   * This may return a validation error (`error_code: "validation_failed"`) if the discovery
+   * document is unreachable, not valid JSON, missing required fields, or if the issuer
+   * in the document does not match the expected issuer.
+   *
+   * This function should only be called on a server. Never expose your `service_role` key in the browser.
+   */
+  createProvider(params: CreateCustomProviderParams): Promise<CustomProviderResponse>
+
+  /**
+   * Gets details of a specific custom provider by identifier.
+   *
+   * This function should only be called on a server. Never expose your `service_role` key in the browser.
+   */
+  getProvider(identifier: string): Promise<CustomProviderResponse>
+
+  /**
+   * Updates an existing custom provider.
+   *
+   * When `issuer` or `discovery_url` is changed on an OIDC provider, the server re-fetches and
+   * validates the discovery document before persisting. This may return a validation error
+   * (`error_code: "validation_failed"`) if the discovery document is unreachable, invalid, or
+   * the issuer does not match.
+   *
+   * This function should only be called on a server. Never expose your `service_role` key in the browser.
+   */
+  updateProvider(
+    identifier: string,
+    params: UpdateCustomProviderParams
+  ): Promise<CustomProviderResponse>
+
+  /**
+   * Deletes a custom provider.
+   *
+   * This function should only be called on a server. Never expose your `service_role` key in the browser.
+   */
+  deleteProvider(identifier: string): Promise<{ data: null; error: AuthError | null }>
 }
 
 /**
