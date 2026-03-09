@@ -30,6 +30,10 @@ on:
         required: true
       PRIVATE_KEY:
         required: true
+      DOGFOOD_APP_ID:
+        required: true
+      DOGFOOD_APP_PRIVATE_KEY:
+        required: true
 
 permissions: {}
 
@@ -38,8 +42,15 @@ jobs:
     name: Trigger Downstream Updates
     runs-on: ubuntu-latest
     steps:
-      - name: Generate token
-        id: app-token
+      - name: Generate token for member check
+        id: app-token-member-check
+        uses: actions/create-github-app-token@29824e69f54612133e76f7eaac726eef6c875baf
+        with:
+          app-id: ${{ secrets.APP_ID }}
+          private-key: ${{ secrets.PRIVATE_KEY }}
+
+      - name: Generate token for dogfood
+        id: app-token-dogfood
         uses: actions/create-github-app-token@29824e69f54612133e76f7eaac726eef6c875baf
         with:
           app-id: ${{ secrets.DOGFOOD_APP_ID }}
@@ -52,7 +63,7 @@ jobs:
         if: ${{ github.event_name == 'workflow_dispatch' }}
         uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
         with:
-          github-token: ${{ steps.app-token.outputs.token }}
+          github-token: ${{ steps.app-token-member-check.outputs.token }}
           script: |
             const org = 'supabase'
             const { actor } = context
@@ -86,7 +97,7 @@ jobs:
           VERSION: ${{ inputs.version }}
           SOURCE: ${{ inputs.source }}
         with:
-          github-token: ${{ steps.app-token.outputs.token }}
+          github-token: ${{ steps.app-token-dogfood.outputs.token }}
           script: |
             const version = process.env.VERSION;
             const source = process.env.SOURCE;
