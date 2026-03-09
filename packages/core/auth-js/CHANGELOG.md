@@ -1,3 +1,13 @@
+## 2.99.0 (2026-03-09)
+
+### 🚀 Features
+
+- **auth:** add custom OIDC/OAuth provider admin CRUD methods ([#2133](https://github.com/supabase/supabase-js/pull/2133))
+
+### ❤️ Thank You
+
+- Cemal Kılıç @cemalkilic
+
 ## 2.98.0 (2026-02-26)
 
 ### 🚀 Features
