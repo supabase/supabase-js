@@ -72,7 +72,7 @@ jobs:
       - name: Deprecate package versions
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-          VERSION: ${{ inputs.version }
+          VERSION: ${{ inputs.version }}
           MESSAGE: ${{ inputs.message }}
         run: |
 
