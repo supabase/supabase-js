@@ -93,8 +93,10 @@ jobs:
           git config --global user.email "supabase-releaser[bot]@users.noreply.github.com"
 
       - name: Validate input
+        env:
+          VERSION_SPECIFIER: ${{ github.event.inputs.version_specifier }}
         run: |
-          VS="${{ github.event.inputs.version_specifier }}"
+          VS="${VERSION_SPECIFIER}"
           echo "Validating: $VS"
 
           if [[ "$VS" =~ ^(patch|minor|major|prepatch|preminor|premajor|prerelease)$ ]]; then
@@ -129,9 +131,11 @@ jobs:
 
       - name: Summary
         if: ${{ success() }}
+        env:
+          VERSION_SPECIFIER: ${{ github.event.inputs.version_specifier }}
         run: |
           echo "## ✅ Stable Release" >> $GITHUB_STEP_SUMMARY
-          echo "- **Version specifier:** \`${{ github.event.inputs.version_specifier }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Version specifier:** \`${VERSION_SPECIFIER}\`" >> $GITHUB_STEP_SUMMARY
           echo "- **Source commit:** HEAD of the checked-out branch" >> $GITHUB_STEP_SUMMARY
           echo "- **Dist-tag:** \`latest\`" >> $GITHUB_STEP_SUMMARY
 
