@@ -1287,6 +1287,124 @@ export default class PostgrestQueryBuilder<
    *
    * `"estimated"`: Uses exact count for low numbers and planned count for high
    * numbers.
+   *
+   * @category Database
+   *
+   * @remarks
+   * - `update()` should always be combined with [Filters](/docs/reference/javascript/using-filters) to target the item(s) you wish to update.
+   *
+   * @example Updating your data
+   * ```ts
+   * const { error } = await supabase
+   *   .from('instruments')
+   *   .update({ name: 'piano' })
+   *   .eq('id', 1)
+   * ```
+   *
+   * @exampleSql Updating your data
+   * ```sql
+   * create table
+   *   instruments (id int8 primary key, name text);
+   *
+   * insert into
+   *   instruments (id, name)
+   * values
+   *   (1, 'harpsichord');
+   * ```
+   *
+   * @exampleResponse Updating your data
+   * ```json
+   * {
+   *   "status": 204,
+   *   "statusText": "No Content"
+   * }
+   * ```
+   *
+   * @example Update a record and return it
+   * ```ts
+   * const { data, error } = await supabase
+   *   .from('instruments')
+   *   .update({ name: 'piano' })
+   *   .eq('id', 1)
+   *   .select()
+   * ```
+   *
+   * @exampleSql Update a record and return it
+   * ```sql
+   * create table
+   *   instruments (id int8 primary key, name text);
+   *
+   * insert into
+   *   instruments (id, name)
+   * values
+   *   (1, 'harpsichord');
+   * ```
+   *
+   * @exampleResponse Update a record and return it
+   * ```json
+   * {
+   *   "data": [
+   *     {
+   *       "id": 1,
+   *       "name": "piano"
+   *     }
+   *   ],
+   *   "status": 200,
+   *   "statusText": "OK"
+   * }
+   * ```
+   *
+   * @exampleDescription Updating JSON data
+   * Postgres offers some
+   * [operators](/docs/guides/database/json#query-the-jsonb-data) for
+   * working with JSON data. Currently, it is only possible to update the entire JSON document.
+   *
+   * @example Updating JSON data
+   * ```ts
+   * const { data, error } = await supabase
+   *   .from('users')
+   *   .update({
+   *     address: {
+   *       street: 'Melrose Place',
+   *       postcode: 90210
+   *     }
+   *   })
+   *   .eq('address->postcode', 90210)
+   *   .select()
+   * ```
+   *
+   * @exampleSql Updating JSON data
+   * ```sql
+   * create table
+   *   users (
+   *     id int8 primary key,
+   *     name text,
+   *     address jsonb
+   *   );
+   *
+   * insert into
+   *   users (id, name, address)
+   * values
+   *   (1, 'Michael', '{ "postcode": 90210 }');
+   * ```
+   *
+   * @exampleResponse Updating JSON data
+   * ```json
+   * {
+   *   "data": [
+   *     {
+   *       "id": 1,
+   *       "name": "Michael",
+   *       "address": {
+   *         "street": "Melrose Place",
+   *         "postcode": 90210
+   *       }
+   *     }
+   *   ],
+   *   "status": 200,
+   *   "statusText": "OK"
+   * }
+   * ```
    */
   update<Row extends Relation extends { Update: unknown } ? Relation['Update'] : never>(
     values: Row,
