@@ -194,7 +194,7 @@ export default class Serializer {
       try {
         parsedPayload = JSON.parse(textPayload)
       } catch (error) {
-        console.log('Error decoding JSON payload:', error, textPayload)
+        console.error('Error decoding JSON payload:', error, textPayload)
         return undefined
       }
     } else {
