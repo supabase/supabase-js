@@ -197,13 +197,13 @@ export default class SupabaseClient<
    * This key is stored inside Expo's SecureStore, while the value is encrypted and placed inside AsyncStorage.
    *
    * Please make sure that:
-   * - You keep the `expo-secure-storage`, `aes-js` and `react-native-get-random-values` libraries up-to-date.
+   * - You keep the `expo-secure-store`, `aes-js` and `react-native-get-random-values` libraries up-to-date.
    * - Choose the correct [`SecureStoreOptions`](https://docs.expo.dev/versions/latest/sdk/securestore/#securestoreoptions) for your app's needs.
    *   E.g. [`SecureStore.WHEN_UNLOCKED`](https://docs.expo.dev/versions/latest/sdk/securestore/#securestorewhen_unlocked) regulates when the data can be accessed.
    * - Carefully consider optimizations or other modifications to the above example, as those can lead to introducing subtle security vulnerabilities.
    *
    * @example React Native options with Expo SecureStore
-   * ```js
+   * ```ts
    * import 'react-native-url-polyfill/auto'
    * import { createClient } from '@supabase/supabase-js'
    * import AsyncStorage from '@react-native-async-storage/async-storage';

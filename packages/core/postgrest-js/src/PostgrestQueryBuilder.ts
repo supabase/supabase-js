@@ -184,7 +184,7 @@ export default class PostgrestQueryBuilder<
      * @example Query referenced tables
      * ```js
      * const { data, error } = await supabase
-     *   .from('orchestal_sections')
+     *   .from('orchestral_sections')
      *   .select(`
      *     name,
      *     instruments (
@@ -248,7 +248,7 @@ export default class PostgrestQueryBuilder<
      * @example Query referenced tables with spaces in their names
      * ```js
      * const { data, error } = await supabase
-     *   .from('orchestal sections')
+     *   .from('orchestral sections')
      *   .select(`
      *     name,
      *     "musical instruments" (
@@ -1302,7 +1302,7 @@ export default class PostgrestQueryBuilder<
    * ```ts
    * const { data, error } = await supabase
    *   .from('users')
-   *   .upsert({ id: 42, handle: 'saoirse', display_name: 'Saoirse' }, { onConflict: 'handle' })
+   *   .upsert({ id: 42, handle: 'saoirse', display_name: 'Saoirse' })
    *   .select()
    * ```
    *
