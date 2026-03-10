@@ -106,7 +106,6 @@ export default class PostgrestQueryBuilder<
      *
      * @exampleSql Getting your data
      * ```sql
-     * ```sql
      * create table
      *   characters (id int8 primary key, name text);
      *
@@ -116,7 +115,6 @@ export default class PostgrestQueryBuilder<
      *   (1, 'Harry'),
      *   (2, 'Frodo'),
      *   (3, 'Katniss');
-     * ```
      * ```
      *
      * @exampleResponse Getting your data
@@ -150,7 +148,6 @@ export default class PostgrestQueryBuilder<
      *
      * @exampleSql Selecting specific columns
      * ```sql
-     * ```sql
      * create table
      *   characters (id int8 primary key, name text);
      *
@@ -160,7 +157,6 @@ export default class PostgrestQueryBuilder<
      *   (1, 'Frodo'),
      *   (2, 'Harry'),
      *   (3, 'Katniss');
-     * ```
      * ```
      *
      * @exampleResponse Selecting specific columns
@@ -199,7 +195,6 @@ export default class PostgrestQueryBuilder<
      *
      * @exampleSql Query referenced tables
      * ```sql
-     * ```sql
      * create table
      *   orchestral_sections (id int8 primary key, name text);
      * create table
@@ -219,7 +214,6 @@ export default class PostgrestQueryBuilder<
      * values
      *   (1, 2, 'flute'),
      *   (2, 1, 'violin');
-     * ```
      * ```
      *
      * @exampleResponse Query referenced tables
@@ -265,7 +259,6 @@ export default class PostgrestQueryBuilder<
      *
      * @exampleSql Query referenced tables with spaces in their names
      * ```sql
-     * ```sql
      * create table
      *   "orchestral sections" (id int8 primary key, name text);
      * create table
@@ -285,7 +278,6 @@ export default class PostgrestQueryBuilder<
      * values
      *   (1, 2, 'flute'),
      *   (2, 1, 'violin');
-     * ```
      * ```
      *
      * @exampleResponse Query referenced tables with spaces in their names
@@ -335,7 +327,6 @@ export default class PostgrestQueryBuilder<
      *
      * @exampleSql Query referenced tables through a join table
      * ```sql
-     * ```sql
      * create table
      *   users (
      *     id int8 primary key,
@@ -371,7 +362,6 @@ export default class PostgrestQueryBuilder<
      *   (1, 1),
      *   (1, 2),
      *   (2, 2);
-     * ```
      * ```
      *
      * @exampleResponse Query referenced tables through a join table
@@ -431,7 +421,6 @@ export default class PostgrestQueryBuilder<
      * ```
      *
      * @exampleSql Query the same referenced table multiple times
-     * ```sql
      * ```sql
      *  create table
      *  users (id int8 primary key, name text);
@@ -546,7 +535,6 @@ export default class PostgrestQueryBuilder<
      *   (1, 1, 2, 'Green vs Blue'),
      *   (2, 2, 1, 'Blue vs Green');
      * ```
-     * ```
      *
      * @exampleResponse Query nested foreign tables through a join table
      * ```json
@@ -600,7 +588,6 @@ export default class PostgrestQueryBuilder<
      *
      * @exampleSql Filtering through referenced tables
      * ```sql
-     * ```sql
      * create table
      *   orchestral_sections (id int8 primary key, name text);
      * create table
@@ -620,7 +607,6 @@ export default class PostgrestQueryBuilder<
      * values
      *   (1, 2, 'flute'),
      *   (2, 1, 'violin');
-     * ```
      * ```
      *
      * @exampleResponse Filtering through referenced tables
@@ -654,7 +640,6 @@ export default class PostgrestQueryBuilder<
      *
      * @exampleSql Querying referenced table with count
      * ```sql
-     * ```sql
      * create table orchestral_sections (
      *   "id" "uuid" primary key default "extensions"."uuid_generate_v4"() not null,
      *   "name" text
@@ -675,7 +660,6 @@ export default class PostgrestQueryBuilder<
      * ('viola', (select id from section)),
      * ('cello', (select id from section)),
      * ('double bass', (select id from section));
-     * ```
      * ```
      *
      * @exampleResponse Querying referenced table with count
@@ -706,7 +690,6 @@ export default class PostgrestQueryBuilder<
      *
      * @exampleSql Querying with count option
      * ```sql
-     * ```sql
      * create table
      *   characters (id int8 primary key, name text);
      *
@@ -716,7 +699,6 @@ export default class PostgrestQueryBuilder<
      *   (1, 'Luke'),
      *   (2, 'Leia'),
      *   (3, 'Han');
-     * ```
      * ```
      *
      * @exampleResponse Querying with count option
@@ -746,7 +728,6 @@ export default class PostgrestQueryBuilder<
      *
      * @exampleSql Querying JSON data
      * ```sql
-     * ```sql
      * create table
      *   users (
      *     id int8 primary key,
@@ -758,7 +739,6 @@ export default class PostgrestQueryBuilder<
      *   users (id, name, address)
      * values
      *   (1, 'Frodo', '{"city":"Hobbiton"}');
-     * ```
      * ```
      *
      * @exampleResponse Querying JSON data
@@ -791,7 +771,6 @@ export default class PostgrestQueryBuilder<
      *
      * @exampleSql Querying referenced table with inner join
      * ```sql
-     * ```sql
      * create table orchestral_sections (
      *   "id" "uuid" primary key default "extensions"."uuid_generate_v4"() not null,
      *   "name" text
@@ -812,7 +791,6 @@ export default class PostgrestQueryBuilder<
      * ('clarinet', (select id from section)),
      * ('bassoon', (select id from section)),
      * ('piccolo', (select id from section));
-     * ```
      * ```
      *
      * @exampleResponse Querying referenced table with inner join
@@ -843,7 +821,6 @@ export default class PostgrestQueryBuilder<
      *
      * @exampleSql Switching schemas per query
      * ```sql
-     * ```sql
      * create schema myschema;
      *
      * create table myschema.mytable (
@@ -852,7 +829,6 @@ export default class PostgrestQueryBuilder<
      * );
      *
      * insert into myschema.mytable (data) values ('mydata');
-     * ```
      * ```
      *
      * @exampleResponse Switching schemas per query
@@ -996,10 +972,8 @@ export default class PostgrestQueryBuilder<
    *
    * @exampleSql Create a record
    * ```sql
-   * ```sql
    * create table
    *   countries (id int8 primary key, name text);
-   * ```
    * ```
    *
    * @exampleResponse Create a record
@@ -1020,10 +994,8 @@ export default class PostgrestQueryBuilder<
    *
    * @exampleSql Create a record and return it
    * ```sql
-   * ```sql
    * create table
    *   countries (id int8 primary key, name text);
-   * ```
    * ```
    *
    * @exampleResponse Create a record and return it
@@ -1056,10 +1028,8 @@ export default class PostgrestQueryBuilder<
    *
    * @exampleSql Bulk create
    * ```sql
-   * ```sql
    * create table
    *   countries (id int8 primary key, name text);
-   * ```
    * ```
    *
    * @exampleResponse Bulk create
