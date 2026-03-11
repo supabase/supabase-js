@@ -1,3 +1,13 @@
+## 2.99.1 (2026-03-11)
+
+### 🩹 Fixes
+
+- **functions:** add RateLimitError in `Deno.errors` namespace ([#2160](https://github.com/supabase/supabase-js/pull/2160))
+
+### ❤️ Thank You
+
+- 냥냐챠 @nyannyacha
+
 ## 2.99.0 (2026-03-09)
 
 ### 🚀 Features
