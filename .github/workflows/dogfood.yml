@@ -1,0 +1,177 @@
+name: Dogfood
+# Dispatches update-supabase-js workflows across all downstream repos
+# Can be triggered manually or called from publish.yml after a stable release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'supabase-js version to dogfood (e.g. 2.49.0)'
+        required: true
+        type: string
+      source:
+        description: 'Source of the trigger'
+        required: false
+        type: string
+        default: 'manual'
+  workflow_call:
+    inputs:
+      version:
+        description: 'supabase-js version to dogfood'
+        required: true
+        type: string
+      source:
+        description: 'Source of the trigger'
+        required: false
+        type: string
+        default: 'supabase-js-stable-release'
+    secrets:
+      APP_ID:
+        required: true
+      PRIVATE_KEY:
+        required: true
+      DOGFOOD_APP_ID:
+        required: true
+      DOGFOOD_APP_PRIVATE_KEY:
+        required: true
+
+permissions: {}
+
+jobs:
+  trigger-downstream:
+    name: Trigger Downstream Updates
+    runs-on: ubuntu-latest
+    steps:
+      - name: Generate token for member check
+        id: app-token-member-check
+        uses: actions/create-github-app-token@29824e69f54612133e76f7eaac726eef6c875baf
+        with:
+          app-id: ${{ secrets.APP_ID }}
+          private-key: ${{ secrets.PRIVATE_KEY }}
+
+      - name: Generate token for dogfood
+        id: app-token-dogfood
+        uses: actions/create-github-app-token@29824e69f54612133e76f7eaac726eef6c875baf
+        with:
+          app-id: ${{ secrets.DOGFOOD_APP_ID }}
+          private-key: ${{ secrets.DOGFOOD_APP_PRIVATE_KEY }}
+          owner: supabase
+          repositories: supabase,multiplayer.dev,platform,tests,realtime,ssr,helper-scripts,embeddings-generator,dbdev
+
+      - name: Check if actor is member of admin or sdk team
+        id: team-check
+        if: ${{ github.event_name == 'workflow_dispatch' }}
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
+        with:
+          github-token: ${{ steps.app-token-member-check.outputs.token }}
+          script: |
+            const org = 'supabase'
+            const { actor } = context
+
+            async function isTeamMember(team_slug) {
+              try {
+                const res = await github.rest.teams.getMembershipForUserInOrg({
+                  org,
+                  team_slug,
+                  username: actor,
+                })
+                return res && res.status === 200
+              } catch (_) {
+                return false
+              }
+            }
+            const isAdmin = await isTeamMember('admin')
+            const isSdk = await isTeamMember('sdk')
+            const isMember = isAdmin || isSdk
+            core.setOutput('is_team_member', isMember ? 'true' : 'false')
+
+      - name: Fail if not authorized
+        if: ${{ github.event_name == 'workflow_dispatch' && steps.team-check.outputs.is_team_member != 'true' }}
+        run: |
+          echo "You must be a member of @supabase/admin or @supabase/sdk."
+          exit 1
+
+      - name: Dispatch update workflows
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
+        env:
+          VERSION: ${{ inputs.version }}
+          SOURCE: ${{ inputs.source }}
+        with:
+          github-token: ${{ steps.app-token-dogfood.outputs.token }}
+          script: |
+            const version = process.env.VERSION;
+            const source = process.env.SOURCE;
+
+            const dispatches = [
+              {
+                repo: 'supabase',
+                workflow: 'update-js-libs.yml',
+                inputs: { version, source },
+              },
+              {
+                repo: 'multiplayer.dev',
+                workflow: 'update-supabase-js.yml',
+                inputs: { package: 'supabase-js', version, source },
+              },
+              {
+                repo: 'platform',
+                workflow: 'update-supabase-js.yml',
+                inputs: { version, source },
+              },
+              {
+                repo: 'tests',
+                workflow: 'update-supabase-js.yml',
+                inputs: { version, source },
+              },
+              {
+                repo: 'realtime',
+                workflow: 'update-supabase-js.yml',
+                inputs: { version, source },
+              },
+              {
+                repo: 'ssr',
+                workflow: 'update-supabase-js.yml',
+                inputs: { version, source },
+              },
+              {
+                repo: 'helper-scripts',
+                workflow: 'update-supabase-js.yml',
+                inputs: { version, source },
+              },
+              {
+                repo: 'embeddings-generator',
+                workflow: 'update-supabase-js.yml',
+                inputs: { version, source },
+              },
+              {
+                repo: 'dbdev',
+                workflow: 'update-supabase-js.yml',
+                inputs: { version, source },
+              },
+            ];
+
+            const results = [];
+            for (const { repo, workflow, inputs } of dispatches) {
+              try {
+                const { data: repoData } = await github.rest.repos.get({
+                  owner: 'supabase',
+                  repo,
+                });
+                await github.rest.actions.createWorkflowDispatch({
+                  owner: 'supabase',
+                  repo,
+                  workflow_id: workflow,
+                  ref: repoData.default_branch,
+                  inputs,
+                });
+                results.push(`✅ supabase/${repo} — ${workflow}`);
+              } catch (error) {
+                results.push(`❌ supabase/${repo} — ${workflow}: ${error.message}`);
+              }
+            }
+
+            const summary = results.join('\n');
+            core.summary.addHeading('Dogfood Dispatch Results', 2);
+            core.summary.addCodeBlock(summary);
+            await core.summary.write();
+            console.log(summary);
