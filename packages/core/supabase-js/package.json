@@ -84,7 +84,8 @@
     "@supabase/functions-js": "*",
     "@supabase/postgrest-js": "*",
     "@supabase/realtime-js": "*",
-    "@supabase/storage-js": "*"
+    "@supabase/storage-js": "*",
+    "@supabase/trace-propagation": "*"
   },
   "devDependencies": {
     "jsr": "^0.13.5",
