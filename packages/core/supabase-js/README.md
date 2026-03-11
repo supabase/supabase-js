@@ -110,6 +110,130 @@ const supabase = createClient('https://xyzcompany.supabase.co', 'public-anon-key
 })
 ```
 
+### Distributed Tracing with OpenTelemetry
+
+The Supabase JS SDK supports automatic W3C/OpenTelemetry trace context propagation for distributed tracing. When enabled, the SDK automatically attaches trace context headers (`traceparent`, `tracestate`, `baggage`) to all outgoing requests, enabling end-to-end request tracing from your client application through Supabase services.
+
+#### Auto-Detection (Default)
+
+By default, trace propagation is enabled in `'auto'` mode, which automatically detects and propagates active trace context from the OpenTelemetry API:
+
+```js
+import { createClient } from '@supabase/supabase-js'
+import { trace } from '@opentelemetry/api'
+
+// Create client with default trace propagation (mode: 'auto')
+const supabase = createClient('https://xyzcompany.supabase.co', 'public-anon-key')
+
+// Create a traced operation
+const tracer = trace.getTracer('my-app')
+await tracer.startActiveSpan('fetch-users', async (span) => {
+  // This request will automatically include trace context headers
+  const { data, error } = await supabase.from('users').select('*')
+  span.end()
+})
+```
+
+#### Custom Trace Extractor
+
+If you're using a custom tracing system (not OpenTelemetry), you can provide a custom trace extractor:
+
+```js
+import { createClient } from '@supabase/supabase-js'
+
+const supabase = createClient('https://xyzcompany.supabase.co', 'public-anon-key', {
+  tracePropagation: {
+    mode: 'auto',
+    customExtractor: () => {
+      // Extract from your custom tracing system
+      const currentSpan = myCustomTracer.getCurrentSpan()
+      if (!currentSpan) return null
+
+      return {
+        traceparent: currentSpan.toTraceparent(),
+        tracestate: currentSpan.toTracestate(),
+      }
+    },
+  },
+})
+```
+
+#### Configuration Options
+
+```typescript
+interface TracePropagationOptions {
+  // Trace propagation mode
+  mode?: 'auto' | 'off' | 'manual'
+
+  // Custom URL targets for trace propagation
+  targets?: (string | RegExp | ((url: URL) => boolean))[]
+
+  // Respect upstream sampling decisions (default: true)
+  respectSamplingDecision?: boolean
+
+  // Custom trace context extractor
+  customExtractor?: () => { traceparent?: string; tracestate?: string; baggage?: string } | null
+}
+```
+
+#### Disable Trace Propagation
+
+```js
+const supabase = createClient('https://xyzcompany.supabase.co', 'public-anon-key', {
+  tracePropagation: {
+    mode: 'off',
+  },
+})
+```
+
+#### Custom Propagation Targets
+
+By default, trace context is only propagated to Supabase domains (for security). You can customize this:
+
+```js
+const supabase = createClient('https://xyzcompany.supabase.co', 'public-anon-key', {
+  tracePropagation: {
+    mode: 'auto',
+    targets: [
+      'xyzcompany.supabase.co', // Exact hostname match
+      '*.internal.company.com', // Wildcard domain
+      /.*\.trusted\.com$/, // RegExp pattern
+      (url) => url.protocol === 'https:', // Custom function
+    ],
+  },
+})
+```
+
+#### Manual Mode
+
+Use manual mode when you want to control trace context via global headers:
+
+```js
+const supabase = createClient('https://xyzcompany.supabase.co', 'public-anon-key', {
+  tracePropagation: {
+    mode: 'manual',
+  },
+  global: {
+    headers: {
+      traceparent: '00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-01',
+    },
+  },
+})
+```
+
+#### Sampling Decisions
+
+By default, the SDK respects upstream sampling decisions. If the trace is marked as non-sampled, trace context won't be propagated:
+
+```js
+const supabase = createClient('https://xyzcompany.supabase.co', 'public-anon-key', {
+  tracePropagation: {
+    mode: 'auto',
+    respectSamplingDecision: false, // Always propagate, ignore sampling
+  },
+})
+```
+
 ## Support Policy
 
 This section outlines the scope of support for various runtime environments in Supabase JavaScript client.

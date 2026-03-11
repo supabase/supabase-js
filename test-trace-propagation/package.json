@@ -1,0 +1,20 @@
+{
+  "name": "test-trace-propagation",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "test": "node --loader ts-node/esm test-trace.ts"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "file:../packages/core/supabase-js",
+    "@opentelemetry/api": "^1.9.0",
+    "@opentelemetry/sdk-node": "^0.54.0",
+    "@opentelemetry/auto-instrumentations-node": "^0.51.0",
+    "@opentelemetry/exporter-trace-otlp-http": "^0.54.0",
+    "@opentelemetry/sdk-trace-node": "^1.28.0",
+    "@opentelemetry/resources": "^1.28.0",
+    "@opentelemetry/semantic-conventions": "^1.28.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.8.3"
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "name": "@supabase/trace-propagation",
+  "targets": {
+    "test:ci": {
+      "cache": false
+    }
+  }
+}
