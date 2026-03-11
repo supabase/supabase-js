@@ -13,11 +13,13 @@ import {
   type RealtimeRemoveChannelResponse,
 } from '@supabase/realtime-js'
 import { StorageClient as SupabaseStorageClient } from '@supabase/storage-js'
+import { extractTraceContext } from '@supabase/trace-propagation'
 import {
   DEFAULT_AUTH_OPTIONS,
   DEFAULT_DB_OPTIONS,
   DEFAULT_GLOBAL_OPTIONS,
   DEFAULT_REALTIME_OPTIONS,
+  DEFAULT_TRACE_PROPAGATION_OPTIONS,
 } from './lib/constants'
 import { fetchWithAuth } from './lib/fetch'
 import { applySettingDefaults, validateSupabaseUrl } from './lib/helpers'
@@ -89,6 +91,7 @@ export default class SupabaseClient<
   protected accessToken?: () => Promise<string | null>
 
   protected headers: Record<string, string>
+  protected settings?: Required<SupabaseClientOptions<SchemaName>>
 
   /**
    * Create a new client for use in the browser.
@@ -298,9 +301,11 @@ export default class SupabaseClient<
       realtime: DEFAULT_REALTIME_OPTIONS,
       auth: { ...DEFAULT_AUTH_OPTIONS, storageKey: defaultStorageKey },
       global: DEFAULT_GLOBAL_OPTIONS,
+      tracePropagation: DEFAULT_TRACE_PROPAGATION_OPTIONS,
     }
 
     const settings = applySettingDefaults(options ?? {}, DEFAULTS)
+    this.settings = settings
 
     this.storageKey = settings.auth.storageKey ?? ''
     this.headers = settings.global.headers ?? {}
@@ -325,7 +330,13 @@ export default class SupabaseClient<
       })
     }
 
-    this.fetch = fetchWithAuth(supabaseKey, this._getAccessToken.bind(this), settings.global.fetch)
+    this.fetch = fetchWithAuth(
+      supabaseKey,
+      supabaseUrl,
+      this._getAccessToken.bind(this),
+      settings.global.fetch,
+      settings.tracePropagation
+    )
     this.realtime = this._initRealtimeClient({
       headers: this.headers,
       accessToken: this._getAccessToken.bind(this),
@@ -592,9 +603,30 @@ export default class SupabaseClient<
   }
 
   private _initRealtimeClient(options: RealtimeClientOptions) {
+    // Extract trace context if enabled
+    let traceParams: Record<string, string> = {}
+
+    if (this.settings?.tracePropagation?.mode === 'auto') {
+      const traceContext = extractTraceContext({
+        customExtractor: this.settings.tracePropagation.customExtractor,
+      })
+
+      if (traceContext?.traceparent) {
+        // Add trace context as query parameters for WebSocket connection
+        // Use x- prefix to avoid conflicts with standard query parameters
+        traceParams['x-traceparent'] = traceContext.traceparent
+        if (traceContext.tracestate) {
+          traceParams['x-tracestate'] = traceContext.tracestate
+        }
+        if (traceContext.baggage) {
+          traceParams['x-baggage'] = traceContext.baggage
+        }
+      }
+    }
+
     return new RealtimeClient(this.realtimeUrl.href, {
       ...options,
-      params: { ...{ apikey: this.supabaseKey }, ...options?.params },
+      params: { ...{ apikey: this.supabaseKey }, ...options?.params, ...traceParams },
     })
   }
 
