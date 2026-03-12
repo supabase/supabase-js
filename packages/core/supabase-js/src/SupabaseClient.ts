@@ -12,7 +12,6 @@ import {
   type RealtimeClientOptions,
 } from '@supabase/realtime-js'
 import { StorageClient as SupabaseStorageClient } from '@supabase/storage-js'
-import { extractTraceContext } from '@supabase/tracing'
 import {
   DEFAULT_AUTH_OPTIONS,
   DEFAULT_DB_OPTIONS,
@@ -594,28 +593,9 @@ export default class SupabaseClient<
   }
 
   private _initRealtimeClient(options: RealtimeClientOptions) {
-    // Extract trace context if enabled
-    let traceParams: Record<string, string> = {}
-
-    if (this.settings?.tracePropagation?.enabled !== false) {
-      const traceContext = extractTraceContext()
-
-      if (traceContext?.traceparent) {
-        // Add trace context as query parameters for WebSocket connection
-        // Use x- prefix to avoid conflicts with standard query parameters
-        traceParams['x-traceparent'] = traceContext.traceparent
-        if (traceContext.tracestate) {
-          traceParams['x-tracestate'] = traceContext.tracestate
-        }
-        if (traceContext.baggage) {
-          traceParams['x-baggage'] = traceContext.baggage
-        }
-      }
-    }
-
     return new RealtimeClient(this.realtimeUrl.href, {
       ...options,
-      params: { ...{ apikey: this.supabaseKey }, ...options?.params, ...traceParams },
+      params: { ...{ apikey: this.supabaseKey }, ...options?.params },
     })
   }
 
