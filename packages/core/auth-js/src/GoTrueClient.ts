@@ -561,6 +561,74 @@ export default class GoTrueClient {
    * Creates a new anonymous user.
    *
    * @returns A session where the is_anonymous claim in the access token JWT set to true
+   *
+   * @category Auth
+   *
+   * @remarks
+   * - Returns an anonymous user
+   * - It is recommended to set up captcha for anonymous sign-ins to prevent abuse. You can pass in the captcha token in the `options` param.
+   *
+   * @example Create an anonymous user
+   * ```js
+   * const { data, error } = await supabase.auth.signInAnonymously({
+   *   options: {
+   *     captchaToken
+   *   }
+   * });
+   * ```
+   *
+   * @exampleResponse Create an anonymous user
+   * ```json
+   * {
+   *   "data": {
+   *     "user": {
+   *       "id": "11111111-1111-1111-1111-111111111111",
+   *       "aud": "authenticated",
+   *       "role": "authenticated",
+   *       "email": "",
+   *       "phone": "",
+   *       "last_sign_in_at": "2024-01-01T00:00:00Z",
+   *       "app_metadata": {},
+   *       "user_metadata": {},
+   *       "identities": [],
+   *       "created_at": "2024-01-01T00:00:00Z",
+   *       "updated_at": "2024-01-01T00:00:00Z",
+   *       "is_anonymous": true
+   *     },
+   *     "session": {
+   *       "access_token": "<ACCESS_TOKEN>",
+   *       "token_type": "bearer",
+   *       "expires_in": 3600,
+   *       "expires_at": 1700000000,
+   *       "refresh_token": "<REFRESH_TOKEN>",
+   *       "user": {
+   *         "id": "11111111-1111-1111-1111-111111111111",
+   *         "aud": "authenticated",
+   *         "role": "authenticated",
+   *         "email": "",
+   *         "phone": "",
+   *         "last_sign_in_at": "2024-01-01T00:00:00Z",
+   *         "app_metadata": {},
+   *         "user_metadata": {},
+   *         "identities": [],
+   *         "created_at": "2024-01-01T00:00:00Z",
+   *         "updated_at": "2024-01-01T00:00:00Z",
+   *         "is_anonymous": true
+   *       }
+   *     }
+   *   },
+   *   "error": null
+   * }
+   * ```
+   *
+   * @example Create an anonymous user with custom user metadata
+   * ```js
+   * const { data, error } = await supabase.auth.signInAnonymously({
+   *   options: {
+   *     data
+   *   }
+   * })
+   * ```
    */
   async signInAnonymously(credentials?: SignInAnonymouslyCredentials): Promise<AuthResponse> {
     try {
@@ -850,6 +918,115 @@ export default class GoTrueClient {
    * between the cases where the account does not exist or that the
    * email/phone and password combination is wrong or that the account can only
    * be accessed via social login.
+   *
+   * @category Auth
+   *
+   * @remarks
+   * - Requires either an email and password or a phone number and password.
+   *
+   * @example Sign in with email and password
+   * ```js
+   * const { data, error } = await supabase.auth.signInWithPassword({
+   *   email: 'example@email.com',
+   *   password: 'example-password',
+   * })
+   * ```
+   *
+   * @exampleResponse Sign in with email and password
+   * ```json
+   * {
+   *   "data": {
+   *     "user": {
+   *       "id": "11111111-1111-1111-1111-111111111111",
+   *       "aud": "authenticated",
+   *       "role": "authenticated",
+   *       "email": "example@email.com",
+   *       "email_confirmed_at": "2024-01-01T00:00:00Z",
+   *       "phone": "",
+   *       "last_sign_in_at": "2024-01-01T00:00:00Z",
+   *       "app_metadata": {
+   *         "provider": "email",
+   *         "providers": [
+   *           "email"
+   *         ]
+   *       },
+   *       "user_metadata": {},
+   *       "identities": [
+   *         {
+   *           "identity_id": "22222222-2222-2222-2222-222222222222",
+   *           "id": "11111111-1111-1111-1111-111111111111",
+   *           "user_id": "11111111-1111-1111-1111-111111111111",
+   *           "identity_data": {
+   *             "email": "example@email.com",
+   *             "email_verified": false,
+   *             "phone_verified": false,
+   *             "sub": "11111111-1111-1111-1111-111111111111"
+   *           },
+   *           "provider": "email",
+   *           "last_sign_in_at": "2024-01-01T00:00:00Z",
+   *           "created_at": "2024-01-01T00:00:00Z",
+   *           "updated_at": "2024-01-01T00:00:00Z",
+   *           "email": "example@email.com"
+   *         }
+   *       ],
+   *       "created_at": "2024-01-01T00:00:00Z",
+   *       "updated_at": "2024-01-01T00:00:00Z"
+   *     },
+   *     "session": {
+   *       "access_token": "<ACCESS_TOKEN>",
+   *       "token_type": "bearer",
+   *       "expires_in": 3600,
+   *       "expires_at": 1700000000,
+   *       "refresh_token": "<REFRESH_TOKEN>",
+   *       "user": {
+   *         "id": "11111111-1111-1111-1111-111111111111",
+   *         "aud": "authenticated",
+   *         "role": "authenticated",
+   *         "email": "example@email.com",
+   *         "email_confirmed_at": "2024-01-01T00:00:00Z",
+   *         "phone": "",
+   *         "last_sign_in_at": "2024-01-01T00:00:00Z",
+   *         "app_metadata": {
+   *           "provider": "email",
+   *           "providers": [
+   *             "email"
+   *           ]
+   *         },
+   *         "user_metadata": {},
+   *         "identities": [
+   *           {
+   *             "identity_id": "22222222-2222-2222-2222-222222222222",
+   *             "id": "11111111-1111-1111-1111-111111111111",
+   *             "user_id": "11111111-1111-1111-1111-111111111111",
+   *             "identity_data": {
+   *               "email": "example@email.com",
+   *               "email_verified": false,
+   *               "phone_verified": false,
+   *               "sub": "11111111-1111-1111-1111-111111111111"
+   *             },
+   *             "provider": "email",
+   *             "last_sign_in_at": "2024-01-01T00:00:00Z",
+   *             "created_at": "2024-01-01T00:00:00Z",
+   *             "updated_at": "2024-01-01T00:00:00Z",
+   *             "email": "example@email.com"
+   *           }
+   *         ],
+   *         "created_at": "2024-01-01T00:00:00Z",
+   *         "updated_at": "2024-01-01T00:00:00Z"
+   *       }
+   *     }
+   *   },
+   *   "error": null
+   * }
+   * ```
+   *
+   * @example Sign in with phone and password
+   * ```js
+   * const { data, error } = await supabase.auth.signInWithPassword({
+   *   phone: '+13334445555',
+   *   password: 'some-password',
+   * })
+   * ```
    */
   async signInWithPassword(
     credentials: SignInWithPasswordCredentials
@@ -914,6 +1091,81 @@ export default class GoTrueClient {
   /**
    * Log in an existing user via a third-party provider.
    * This method supports the PKCE flow.
+   *
+   * @category Auth
+   *
+   * @remarks
+   * - This method is used for signing in using [Social Login (OAuth) providers](/docs/guides/auth#configure-third-party-providers).
+   * - It works by redirecting your application to the provider's authorization screen, before bringing back the user to your app.
+   *
+   * @example Sign in using a third-party provider
+   * ```js
+   * const { data, error } = await supabase.auth.signInWithOAuth({
+   *   provider: 'github'
+   * })
+   * ```
+   *
+   * @exampleResponse Sign in using a third-party provider
+   * ```json
+   * {
+   *   data: {
+   *     provider: 'github',
+   *     url: <PROVIDER_URL_TO_REDIRECT_TO>
+   *   },
+   *   error: null
+   * }
+   * ```
+   *
+   * @exampleDescription Sign in using a third-party provider with redirect
+   * - When the OAuth provider successfully authenticates the user, they are redirected to the URL specified in the `redirectTo` parameter. This parameter defaults to the [`SITE_URL`](/docs/guides/auth/redirect-urls#use-wildcards-in-redirect-urls). It does not redirect the user immediately after invoking this method.
+   * - See [redirect URLs and wildcards](/docs/guides/auth/redirect-urls#use-wildcards-in-redirect-urls) to add additional redirect URLs to your project.
+   *
+   * @example Sign in using a third-party provider with redirect
+   * ```js
+   * const { data, error } = await supabase.auth.signInWithOAuth({
+   *   provider: 'github',
+   *   options: {
+   *     redirectTo: 'https://example.com/welcome'
+   *   }
+   * })
+   * ```
+   *
+   * @exampleDescription Sign in with scopes and access provider tokens
+   * If you need additional access from an OAuth provider, in order to access provider specific APIs in the name of the user, you can do this by passing in the scopes the user should authorize for your application. Note that the `scopes` option takes in **a space-separated list** of scopes.
+   *
+   * Because OAuth sign-in often includes redirects, you should register an `onAuthStateChange` callback immediately after you create the Supabase client. This callback will listen for the presence of `provider_token` and `provider_refresh_token` properties on the `session` object and store them in local storage. The client library will emit these values **only once** immediately after the user signs in. You can then access them by looking them up in local storage, or send them to your backend servers for further processing.
+   *
+   * Finally, make sure you remove them from local storage on the `SIGNED_OUT` event. If the OAuth provider supports token revocation, make sure you call those APIs either from the frontend or schedule them to be called on the backend.
+   *
+   * @example Sign in with scopes and access provider tokens
+   * ```js
+   * // Register this immediately after calling createClient!
+   * // Because signInWithOAuth causes a redirect, you need to fetch the
+   * // provider tokens from the callback.
+   * supabase.auth.onAuthStateChange((event, session) => {
+   *   if (session && session.provider_token) {
+   *     window.localStorage.setItem('oauth_provider_token', session.provider_token)
+   *   }
+   *
+   *   if (session && session.provider_refresh_token) {
+   *     window.localStorage.setItem('oauth_provider_refresh_token', session.provider_refresh_token)
+   *   }
+   *
+   *   if (event === 'SIGNED_OUT') {
+   *     window.localStorage.removeItem('oauth_provider_token')
+   *     window.localStorage.removeItem('oauth_provider_refresh_token')
+   *   }
+   * })
+   *
+   * // Call this on your Sign in with GitHub button to initiate OAuth
+   * // with GitHub with the requested elevated scopes.
+   * await supabase.auth.signInWithOAuth({
+   *   provider: 'github',
+   *   options: {
+   *     scopes: 'repo gist notifications'
+   *   }
+   * })
+   * ```
    */
   async signInWithOAuth(credentials: SignInWithOAuthCredentials): Promise<OAuthResponse> {
     return await this._handleProviderSignIn(credentials.provider, {
@@ -941,6 +1193,87 @@ export default class GoTrueClient {
    * both of which derive from the EIP-4361 standard
    * With slight variation on Solana's side.
    * @reference https://eips.ethereum.org/EIPS/eip-4361
+   *
+   * @category Auth
+   *
+   * @remarks
+   * - Uses a Web3 (Ethereum, Solana) wallet to sign a user in.
+   * - Read up on the [potential for abuse](/docs/guides/auth/auth-web3#potential-for-abuse) before using it.
+   *
+   * @example Sign in with Solana or Ethereum (Window API)
+   * ```js
+   *   // uses window.ethereum for the wallet
+   *   const { data, error } = await supabase.auth.signInWithWeb3({
+   *     chain: 'ethereum',
+   *     statement: 'I accept the Terms of Service at https://example.com/tos'
+   *   })
+   *
+   *   // uses window.solana for the wallet
+   *   const { data, error } = await supabase.auth.signInWithWeb3({
+   *     chain: 'solana',
+   *     statement: 'I accept the Terms of Service at https://example.com/tos'
+   *   })
+   * ```
+   *
+   * @example Sign in with Ethereum (Message and Signature)
+   * ```js
+   *   const { data, error } = await supabase.auth.signInWithWeb3({
+   *     chain: 'ethereum',
+   *     message: '<sign in with ethereum message>',
+   *     signature: '<hex of the ethereum signature over the message>',
+   *   })
+   * ```
+   *
+   * @example Sign in with Solana (Brave)
+   * ```js
+   *   const { data, error } = await supabase.auth.signInWithWeb3({
+   *     chain: 'solana',
+   *     statement: 'I accept the Terms of Service at https://example.com/tos',
+   *     wallet: window.braveSolana
+   *   })
+   * ```
+   *
+   * @example Sign in with Solana (Wallet Adapter)
+   * ```jsx
+   *   function SignInButton() {
+   *   const wallet = useWallet()
+   *
+   *   return (
+   *     <>
+   *       {wallet.connected ? (
+   *         <button
+   *           onClick={() => {
+   *             supabase.auth.signInWithWeb3({
+   *               chain: 'solana',
+   *               statement: 'I accept the Terms of Service at https://example.com/tos',
+   *               wallet,
+   *             })
+   *           }}
+   *         >
+   *           Sign in with Solana
+   *         </button>
+   *       ) : (
+   *         <WalletMultiButton />
+   *       )}
+   *     </>
+   *   )
+   * }
+   *
+   * function App() {
+   *   const endpoint = clusterApiUrl('devnet')
+   *   const wallets = useMemo(() => [], [])
+   *
+   *   return (
+   *     <ConnectionProvider endpoint={endpoint}>
+   *       <WalletProvider wallets={wallets}>
+   *         <WalletModalProvider>
+   *           <SignInButton />
+   *         </WalletModalProvider>
+   *       </WalletProvider>
+   *     </ConnectionProvider>
+   *   )
+   * }
+   * ```
    */
   async signInWithWeb3(credentials: Web3Credentials): Promise<
     | {
@@ -1343,6 +1676,77 @@ export default class GoTrueClient {
   /**
    * Allows signing in with an OIDC ID token. The authentication provider used
    * should be enabled and configured.
+   *
+   * @category Auth
+   *
+   * @remarks
+   * - Use an ID token to sign in.
+   * - Especially useful when implementing sign in using native platform dialogs in mobile or desktop apps using Sign in with Apple or Sign in with Google on iOS and Android.
+   * - You can also use Google's [One Tap](https://developers.google.com/identity/gsi/web/guides/display-google-one-tap) and [Automatic sign-in](https://developers.google.com/identity/gsi/web/guides/automatic-sign-in-sign-out) via this API.
+   *
+   * @example Sign In using ID Token
+   * ```js
+   * const { data, error } = await supabase.auth.signInWithIdToken({
+   *   provider: 'google',
+   *   token: 'your-id-token'
+   * })
+   * ```
+   *
+   * @exampleResponse Sign In using ID Token
+   * ```json
+   * {
+   *   "data": {
+   *     "user": {
+   *       "id": "11111111-1111-1111-1111-111111111111",
+   *       "aud": "authenticated",
+   *       "role": "authenticated",
+   *       "last_sign_in_at": "2024-01-01T00:00:00Z",
+   *       "app_metadata": {
+   *         ...
+   *       },
+   *       "user_metadata": {
+   *         ...
+   *       },
+   *       "identities": [
+   *         {
+   *           "identity_id": "22222222-2222-2222-2222-222222222222",
+   *           "provider": "google",
+   *         }
+   *       ],
+   *       "created_at": "2024-01-01T00:00:00Z",
+   *       "updated_at": "2024-01-01T00:00:00Z",
+   *     },
+   *     "session": {
+   *       "access_token": "<ACCESS_TOKEN>",
+   *       "token_type": "bearer",
+   *       "expires_in": 3600,
+   *       "expires_at": 1700000000,
+   *       "refresh_token": "<REFRESH_TOKEN>",
+   *       "user": {
+   *         "id": "11111111-1111-1111-1111-111111111111",
+   *         "aud": "authenticated",
+   *         "role": "authenticated",
+   *         "last_sign_in_at": "2024-01-01T00:00:00Z",
+   *         "app_metadata": {
+   *           ...
+   *         },
+   *         "user_metadata": {
+   *           ...
+   *         },
+   *         "identities": [
+   *           {
+   *             "identity_id": "22222222-2222-2222-2222-222222222222",
+   *             "provider": "google",
+   *           }
+   *         ],
+   *         "created_at": "2024-01-01T00:00:00Z",
+   *         "updated_at": "2024-01-01T00:00:00Z",
+   *       }
+   *     }
+   *   },
+   *   "error": null
+   * }
+   * ```
    */
   async signInWithIdToken(credentials: SignInWithIdTokenCredentials): Promise<AuthTokenResponse> {
     try {
@@ -1396,6 +1800,66 @@ export default class GoTrueClient {
    * channel is not supported on other providers
    * at this time.
    * This method supports PKCE when an email is passed.
+   *
+   * @category Auth
+   *
+   * @remarks
+   * - Requires either an email or phone number.
+   * - This method is used for passwordless sign-ins where a OTP is sent to the user's email or phone number.
+   * - If the user doesn't exist, `signInWithOtp()` will signup the user instead. To restrict this behavior, you can set `shouldCreateUser` in `SignInWithPasswordlessCredentials.options` to `false`.
+   * - If you're using an email, you can configure whether you want the user to receive a magiclink or a OTP.
+   * - If you're using phone, you can configure whether you want the user to receive a OTP.
+   * - The magic link's destination URL is determined by the [`SITE_URL`](/docs/guides/auth/redirect-urls#use-wildcards-in-redirect-urls).
+   * - See [redirect URLs and wildcards](/docs/guides/auth/redirect-urls#use-wildcards-in-redirect-urls) to add additional redirect URLs to your project.
+   * - Magic links and OTPs share the same implementation. To send users a one-time code instead of a magic link, [modify the magic link email template](/dashboard/project/_/auth/templates) to include `{{ .Token }}` instead of `{{ .ConfirmationURL }}`.
+   * - See our [Twilio Phone Auth Guide](/docs/guides/auth/phone-login?showSMSProvider=Twilio) for details about configuring WhatsApp sign in.
+   *
+   * @exampleDescription Sign in with email
+   * The user will be sent an email which contains either a magiclink or a OTP or both. By default, a given user can only request a OTP once every 60 seconds.
+   *
+   * @example Sign in with email
+   * ```js
+   * const { data, error } = await supabase.auth.signInWithOtp({
+   *   email: 'example@email.com',
+   *   options: {
+   *     emailRedirectTo: 'https://example.com/welcome'
+   *   }
+   * })
+   * ```
+   *
+   * @exampleResponse Sign in with email
+   * ```json
+   * {
+   *   "data": {
+   *     "user": null,
+   *     "session": null
+   *   },
+   *   "error": null
+   * }
+   * ```
+   *
+   * @exampleDescription Sign in with SMS OTP
+   * The user will be sent a SMS which contains a OTP. By default, a given user can only request a OTP once every 60 seconds.
+   *
+   * @example Sign in with SMS OTP
+   * ```js
+   * const { data, error } = await supabase.auth.signInWithOtp({
+   *   phone: '+13334445555',
+   * })
+   * ```
+   *
+   * @exampleDescription Sign in with WhatsApp OTP
+   * The user will be sent a WhatsApp message which contains a OTP. By default, a given user can only request a OTP once every 60 seconds. Note that a user will need to have a valid WhatsApp account that is linked to Twilio in order to use this feature.
+   *
+   * @example Sign in with WhatsApp OTP
+   * ```js
+   * const { data, error } = await supabase.auth.signInWithOtp({
+   *   phone: '+13334445555',
+   *   options: {
+   *     channel:'whatsapp',
+   *   }
+   * })
+   * ```
    */
   async signInWithOtp(credentials: SignInWithPasswordlessCredentials): Promise<AuthOtpResponse> {
     try {
@@ -1514,6 +1978,45 @@ export default class GoTrueClient {
    *
    * If you have built an organization-specific login page, you can use the
    * organization's SSO Identity Provider UUID directly instead.
+   *
+   * @category Auth
+   *
+   * @remarks
+   * - Before you can call this method you need to [establish a connection](/docs/guides/auth/sso/auth-sso-saml#managing-saml-20-connections) to an identity provider. Use the [CLI commands](/docs/reference/cli/supabase-sso) to do this.
+   * - If you've associated an email domain to the identity provider, you can use the `domain` property to start a sign-in flow.
+   * - In case you need to use a different way to start the authentication flow with an identity provider, you can use the `providerId` property. For example:
+   *     - Mapping specific user email addresses with an identity provider.
+   *     - Using different hints to identity the identity provider to be used by the user, like a company-specific page, IP address or other tracking information.
+   *
+   * @example Sign in with email domain
+   * ```js
+   *   // You can extract the user's email domain and use it to trigger the
+   *   // authentication flow with the correct identity provider.
+   *
+   *   const { data, error } = await supabase.auth.signInWithSSO({
+   *     domain: 'company.com'
+   *   })
+   *
+   *   if (data?.url) {
+   *     // redirect the user to the identity provider's authentication flow
+   *     window.location.href = data.url
+   *   }
+   * ```
+   *
+   * @example Sign in with provider UUID
+   * ```js
+   *   // Useful when you need to map a user's sign in request according
+   *   // to different rules that can't use email domains.
+   *
+   *   const { data, error } = await supabase.auth.signInWithSSO({
+   *     providerId: '21648a9d-8d5a-4555-a9d1-d6375dc14e92'
+   *   })
+   *
+   *   if (data?.url) {
+   *     // redirect the user to the identity provider's authentication flow
+   *     window.location.href = data.url
+   *   }
+   * ```
    */
   async signInWithSSO(params: SignInWithSSO): Promise<SSOResponse> {
     try {
@@ -2383,6 +2886,193 @@ export default class GoTrueClient {
     data: { subscription: Subscription }
   }
 
+  /**  *
+   * @category Auth
+   *
+   * @remarks
+   * - Subscribes to important events occurring on the user's session.
+   * - Use on the frontend/client. It is less useful on the server.
+   * - Events are emitted across tabs to keep your application's UI up-to-date. Some events can fire very frequently, based on the number of tabs open. Use a quick and efficient callback function, and defer or debounce as many operations as you can to be performed outside of the callback.
+   * - **Important:** A callback can be an `async` function and it runs synchronously during the processing of the changes causing the event. You can easily create a dead-lock by using `await` on a call to another method of the Supabase library.
+   *   - Avoid using `async` functions as callbacks.
+   *   - Limit the number of `await` calls in `async` callbacks.
+   *   - Do not use other Supabase functions in the callback function. If you must, dispatch the functions once the callback has finished executing. Use this as a quick way to achieve this:
+   *     ```js
+   *     supabase.auth.onAuthStateChange((event, session) => {
+   *       setTimeout(async () => {
+   *         // await on other Supabase function here
+   *         // this runs right after the callback has finished
+   *       }, 0)
+   *     })
+   *     ```
+   * - Emitted events:
+   *   - `INITIAL_SESSION`
+   *     - Emitted right after the Supabase client is constructed and the initial session from storage is loaded.
+   *   - `SIGNED_IN`
+   *     - Emitted each time a user session is confirmed or re-established, including on user sign in and when refocusing a tab.
+   *     - Avoid making assumptions as to when this event is fired, this may occur even when the user is already signed in. Instead, check the user object attached to the event to see if a new user has signed in and update your application's UI.
+   *     - This event can fire very frequently depending on the number of tabs open in your application.
+   *   - `SIGNED_OUT`
+   *     - Emitted when the user signs out. This can be after:
+   *       - A call to `supabase.auth.signOut()`.
+   *       - After the user's session has expired for any reason:
+   *         - User has signed out on another device.
+   *         - The session has reached its timebox limit or inactivity timeout.
+   *         - User has signed in on another device with single session per user enabled.
+   *         - Check the [User Sessions](/docs/guides/auth/sessions) docs for more information.
+   *     - Use this to clean up any local storage your application has associated with the user.
+   *   - `TOKEN_REFRESHED`
+   *     - Emitted each time a new access and refresh token are fetched for the signed in user.
+   *     - It's best practice and highly recommended to extract the access token (JWT) and store it in memory for further use in your application.
+   *       - Avoid frequent calls to `supabase.auth.getSession()` for the same purpose.
+   *     - There is a background process that keeps track of when the session should be refreshed so you will always receive valid tokens by listening to this event.
+   *     - The frequency of this event is related to the JWT expiry limit configured on your project.
+   *   - `USER_UPDATED`
+   *     - Emitted each time the `supabase.auth.updateUser()` method finishes successfully. Listen to it to update your application's UI based on new profile information.
+   *   - `PASSWORD_RECOVERY`
+   *     - Emitted instead of the `SIGNED_IN` event when the user lands on a page that includes a password recovery link in the URL.
+   *     - Use it to show a UI to the user where they can [reset their password](/docs/guides/auth/passwords#resetting-a-users-password-forgot-password).
+   *
+   * @example Listen to auth changes
+   * ```js
+   * const { data } = supabase.auth.onAuthStateChange((event, session) => {
+   *   console.log(event, session)
+   *
+   *   if (event === 'INITIAL_SESSION') {
+   *     // handle initial session
+   *   } else if (event === 'SIGNED_IN') {
+   *     // handle sign in event
+   *   } else if (event === 'SIGNED_OUT') {
+   *     // handle sign out event
+   *   } else if (event === 'PASSWORD_RECOVERY') {
+   *     // handle password recovery event
+   *   } else if (event === 'TOKEN_REFRESHED') {
+   *     // handle token refreshed event
+   *   } else if (event === 'USER_UPDATED') {
+   *     // handle user updated event
+   *   }
+   * })
+   *
+   * // call unsubscribe to remove the callback
+   * data.subscription.unsubscribe()
+   * ```
+   *
+   * @exampleDescription Listen to sign out
+   * Make sure you clear out any local data, such as local and session storage, after the client library has detected the user's sign out.
+   *
+   * @example Listen to sign out
+   * ```js
+   * supabase.auth.onAuthStateChange((event, session) => {
+   *   if (event === 'SIGNED_OUT') {
+   *     console.log('SIGNED_OUT', session)
+   *
+   *     // clear local and session storage
+   *     [
+   *       window.localStorage,
+   *       window.sessionStorage,
+   *     ].forEach((storage) => {
+   *       Object.entries(storage)
+   *         .forEach(([key]) => {
+   *           storage.removeItem(key)
+   *         })
+   *     })
+   *   }
+   * })
+   * ```
+   *
+   * @exampleDescription Store OAuth provider tokens on sign in
+   * When using [OAuth (Social Login)](/docs/guides/auth/social-login) you sometimes wish to get access to the provider's access token and refresh token, in order to call provider APIs in the name of the user.
+   *
+   * For example, if you are using [Sign in with Google](/docs/guides/auth/social-login/auth-google) you may want to use the provider token to call Google APIs on behalf of the user. Supabase Auth does not keep track of the provider access and refresh token, but does return them for you once, immediately after sign in. You can use the `onAuthStateChange` method to listen for the presence of the provider tokens and store them in local storage. You can further send them to your server's APIs for use on the backend.
+   *
+   * Finally, make sure you remove them from local storage on the `SIGNED_OUT` event. If the OAuth provider supports token revocation, make sure you call those APIs either from the frontend or schedule them to be called on the backend.
+   *
+   * @example Store OAuth provider tokens on sign in
+   * ```js
+   * // Register this immediately after calling createClient!
+   * // Because signInWithOAuth causes a redirect, you need to fetch the
+   * // provider tokens from the callback.
+   * supabase.auth.onAuthStateChange((event, session) => {
+   *   if (session && session.provider_token) {
+   *     window.localStorage.setItem('oauth_provider_token', session.provider_token)
+   *   }
+   *
+   *   if (session && session.provider_refresh_token) {
+   *     window.localStorage.setItem('oauth_provider_refresh_token', session.provider_refresh_token)
+   *   }
+   *
+   *   if (event === 'SIGNED_OUT') {
+   *     window.localStorage.removeItem('oauth_provider_token')
+   *     window.localStorage.removeItem('oauth_provider_refresh_token')
+   *   }
+   * })
+   * ```
+   *
+   * @exampleDescription Use React Context for the User's session
+   * Instead of relying on `supabase.auth.getSession()` within your React components, you can use a [React Context](https://react.dev/reference/react/createContext) to store the latest session information from the `onAuthStateChange` callback and access it that way.
+   *
+   * @example Use React Context for the User's session
+   * ```js
+   * const SessionContext = React.createContext(null)
+   *
+   * function main() {
+   *   const [session, setSession] = React.useState(null)
+   *
+   *   React.useEffect(() => {
+   *     const {data: { subscription }} = supabase.auth.onAuthStateChange(
+   *       (event, session) => {
+   *         if (event === 'SIGNED_OUT') {
+   *           setSession(null)
+   *         } else if (session) {
+   *           setSession(session)
+   *         }
+   *       })
+   *
+   *     return () => {
+   *       subscription.unsubscribe()
+   *     }
+   *   }, [])
+   *
+   *   return (
+   *     <SessionContext.Provider value={session}>
+   *       <App />
+   *     </SessionContext.Provider>
+   *   )
+   * }
+   * ```
+   *
+   * @example Listen to password recovery events
+   * ```js
+   * supabase.auth.onAuthStateChange((event, session) => {
+   *   if (event === 'PASSWORD_RECOVERY') {
+   *     console.log('PASSWORD_RECOVERY', session)
+   *     // show screen to update user's password
+   *     showPasswordResetScreen(true)
+   *   }
+   * })
+   * ```
+   *
+   * @example Listen to sign in
+   * ```js
+   * supabase.auth.onAuthStateChange((event, session) => {
+   *   if (event === 'SIGNED_IN') console.log('SIGNED_IN', session)
+   * })
+   * ```
+   *
+   * @example Listen to token refresh
+   * ```js
+   * supabase.auth.onAuthStateChange((event, session) => {
+   *   if (event === 'TOKEN_REFRESHED') console.log('TOKEN_REFRESHED', session)
+   * })
+   * ```
+   *
+   * @example Listen to user updates
+   * ```js
+   * supabase.auth.onAuthStateChange((event, session) => {
+   *   if (event === 'USER_UPDATED') console.log('USER_UPDATED', session)
+   * })
+   * ```
+   */
   onAuthStateChange(
     callback: (event: AuthChangeEvent, session: Session | null) => void | Promise<void>
   ): {
