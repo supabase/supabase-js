@@ -68,9 +68,6 @@ export function applySettingDefaults<
         DEFAULT_TRACE_PROPAGATION_OPTIONS?.respectSamplingDecision ??
         true,
       targets: tracePropagationOptions?.targets ?? DEFAULT_TRACE_PROPAGATION_OPTIONS?.targets,
-      customExtractor:
-        tracePropagationOptions?.customExtractor ??
-        DEFAULT_TRACE_PROPAGATION_OPTIONS?.customExtractor,
     },
     accessToken: async () => '',
   }

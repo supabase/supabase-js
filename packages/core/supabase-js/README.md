@@ -134,30 +134,6 @@ await tracer.startActiveSpan('fetch-users', async (span) => {
 })
 ```
 
-#### Custom Trace Extractor
-
-If you're using a custom tracing system (not OpenTelemetry), you can provide a custom trace extractor:
-
-```js
-import { createClient } from '@supabase/supabase-js'
-
-const supabase = createClient('https://xyzcompany.supabase.co', 'public-anon-key', {
-  tracePropagation: {
-    mode: 'auto',
-    customExtractor: () => {
-      // Extract from your custom tracing system
-      const currentSpan = myCustomTracer.getCurrentSpan()
-      if (!currentSpan) return null
-
-      return {
-        traceparent: currentSpan.toTraceparent(),
-        tracestate: currentSpan.toTracestate(),
-      }
-    },
-  },
-})
-```
-
 #### Configuration Options
 
 ```typescript
@@ -170,9 +146,6 @@ interface TracePropagationOptions {
 
   // Respect upstream sampling decisions (default: true)
   respectSamplingDecision?: boolean
-
-  // Custom trace context extractor
-  customExtractor?: () => { traceparent?: string; tracestate?: string; baggage?: string } | null
 }
 ```
 

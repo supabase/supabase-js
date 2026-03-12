@@ -138,48 +138,6 @@ describe('fetch module', () => {
     })
 
     describe('trace propagation', () => {
-      test('should inject trace headers when mode is auto with custom extractor', async () => {
-        const mockResponse = { ok: true }
-        const mockFetchImpl = jest.fn().mockResolvedValue(mockResponse)
-        const mockSet = jest.fn()
-        const mockHeadersImpl = jest.fn().mockReturnValue({
-          has: jest.fn().mockReturnValue(false),
-          set: mockSet,
-        })
-
-        ;(global as any).fetch = mockFetchImpl
-        ;(global as any).Headers = mockHeadersImpl
-
-        const supabaseKey = 'test-key'
-        const supabaseUrl = 'https://myproject.supabase.co'
-        const getAccessToken = jest.fn().mockResolvedValue('test-token')
-
-        const tracePropagationOptions = {
-          mode: 'auto' as const,
-          customExtractor: () => ({
-            traceparent: '00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-01',
-            tracestate: 'vendor1=value1',
-            baggage: 'key1=value1',
-          }),
-        }
-
-        const authFetch = fetchWithAuth(
-          supabaseKey,
-          supabaseUrl,
-          getAccessToken,
-          undefined,
-          tracePropagationOptions
-        )
-        await authFetch('https://myproject.supabase.co/rest/v1/table')
-
-        expect(mockSet).toHaveBeenCalledWith(
-          'traceparent',
-          '00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-01'
-        )
-        expect(mockSet).toHaveBeenCalledWith('tracestate', 'vendor1=value1')
-        expect(mockSet).toHaveBeenCalledWith('baggage', 'key1=value1')
-      })
-
       test('should not inject trace headers when mode is off', async () => {
         const mockResponse = { ok: true }
         const mockFetchImpl = jest.fn().mockResolvedValue(mockResponse)
@@ -198,9 +156,6 @@ describe('fetch module', () => {
 
         const tracePropagationOptions = {
           mode: 'off' as const,
-          customExtractor: () => ({
-            traceparent: '00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-01',
-          }),
         }
 
         const authFetch = fetchWithAuth(
@@ -235,9 +190,6 @@ describe('fetch module', () => {
 
         const tracePropagationOptions = {
           mode: 'manual' as const,
-          customExtractor: () => ({
-            traceparent: '00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-01',
-          }),
         }
 
         const authFetch = fetchWithAuth(
@@ -270,9 +222,6 @@ describe('fetch module', () => {
 
         const tracePropagationOptions = {
           mode: 'auto' as const,
-          customExtractor: () => ({
-            traceparent: '00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-01',
-          }),
           targets: ['myproject.supabase.co'], // Only allow exact match
         }
 
@@ -307,9 +256,6 @@ describe('fetch module', () => {
 
         const tracePropagationOptions = {
           mode: 'auto' as const,
-          customExtractor: () => ({
-            traceparent: '00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-01',
-          }),
           targets: ['trusted.com'],
         }
 
@@ -346,10 +292,6 @@ describe('fetch module', () => {
 
         const tracePropagationOptions = {
           mode: 'auto' as const,
-          customExtractor: () => ({
-            // Non-sampled trace (last byte is 00)
-            traceparent: '00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-00',
-          }),
           respectSamplingDecision: true,
         }
 
@@ -384,10 +326,6 @@ describe('fetch module', () => {
 
         const tracePropagationOptions = {
           mode: 'auto' as const,
-          customExtractor: () => ({
-            // Non-sampled trace (last byte is 00)
-            traceparent: '00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-00',
-          }),
           respectSamplingDecision: false,
         }
 
@@ -425,9 +363,6 @@ describe('fetch module', () => {
 
         const tracePropagationOptions = {
           mode: 'auto' as const,
-          customExtractor: () => ({
-            traceparent: '00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-01',
-          }),
         }
 
         const authFetch = fetchWithAuth(

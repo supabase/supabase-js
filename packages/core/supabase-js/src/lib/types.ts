@@ -111,38 +111,6 @@ export interface TracePropagationOptions {
    * ```
    */
   respectSamplingDecision?: boolean
-
-  /**
-   * Custom trace context extractor function.
-   *
-   * Useful when OpenTelemetry API is not available but trace context exists
-   * elsewhere (e.g., custom tracing system, thread-local storage, async context).
-   *
-   * The function should return trace context headers or null if unavailable.
-   *
-   * @example
-   * ```ts
-   * createClient(url, key, {
-   *   tracePropagation: {
-   *     customExtractor: () => {
-   *       // Extract from custom tracing system
-   *       const span = customTracer.getCurrentSpan()
-   *       if (!span) return null
-   *
-   *       return {
-   *         traceparent: span.toTraceparent(),
-   *         tracestate: span.toTracestate()
-   *       }
-   *     }
-   *   }
-   * })
-   * ```
-   */
-  customExtractor?: () => {
-    traceparent?: string
-    tracestate?: string
-    baggage?: string
-  } | null
 }
 
 export type SupabaseClientOptions<SchemaName> = {
