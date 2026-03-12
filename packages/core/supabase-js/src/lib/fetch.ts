@@ -75,13 +75,8 @@ function getTraceHeaders(
   supabaseUrl: string,
   options?: TracePropagationOptions
 ): TraceContext | null {
-  // Mode check
-  if (options?.mode === 'off') {
-    return null
-  }
-
-  if (options?.mode === 'manual') {
-    // Manual mode - don't auto-extract, rely on global.headers
+  // Check if trace propagation is enabled
+  if (options?.enabled === false) {
     return null
   }
 

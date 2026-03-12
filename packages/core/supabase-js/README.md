@@ -116,13 +116,13 @@ The Supabase JS SDK supports automatic W3C/OpenTelemetry trace context propagati
 
 #### Auto-Detection (Default)
 
-By default, trace propagation is enabled in `'auto'` mode, which automatically detects and propagates active trace context from the OpenTelemetry API:
+By default, trace propagation is enabled and automatically detects and propagates active trace context from the OpenTelemetry API:
 
 ```js
 import { createClient } from '@supabase/supabase-js'
 import { trace } from '@opentelemetry/api'
 
-// Create client with default trace propagation (mode: 'auto')
+// Create client with default trace propagation (enabled: true)
 const supabase = createClient('https://xyzcompany.supabase.co', 'public-anon-key')
 
 // Create a traced operation
@@ -138,8 +138,8 @@ await tracer.startActiveSpan('fetch-users', async (span) => {
 
 ```typescript
 interface TracePropagationOptions {
-  // Trace propagation mode
-  mode?: 'auto' | 'off' | 'manual'
+  // Enable or disable trace propagation (default: true)
+  enabled?: boolean
 
   // Custom URL targets for trace propagation
   targets?: (string | RegExp | ((url: URL) => boolean))[]
@@ -154,7 +154,7 @@ interface TracePropagationOptions {
 ```js
 const supabase = createClient('https://xyzcompany.supabase.co', 'public-anon-key', {
   tracePropagation: {
-    mode: 'off',
+    enabled: false,
   },
 })
 ```
@@ -166,30 +166,12 @@ By default, trace context is only propagated to Supabase domains (for security).
 ```js
 const supabase = createClient('https://xyzcompany.supabase.co', 'public-anon-key', {
   tracePropagation: {
-    mode: 'auto',
     targets: [
       'xyzcompany.supabase.co', // Exact hostname match
       '*.internal.company.com', // Wildcard domain
       /.*\.trusted\.com$/, // RegExp pattern
       (url) => url.protocol === 'https:', // Custom function
     ],
-  },
-})
-```
-
-#### Manual Mode
-
-Use manual mode when you want to control trace context via global headers:
-
-```js
-const supabase = createClient('https://xyzcompany.supabase.co', 'public-anon-key', {
-  tracePropagation: {
-    mode: 'manual',
-  },
-  global: {
-    headers: {
-      traceparent: '00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-01',
-    },
   },
 })
 ```
@@ -201,7 +183,6 @@ By default, the SDK respects upstream sampling decisions. If the trace is marked
 ```js
 const supabase = createClient('https://xyzcompany.supabase.co', 'public-anon-key', {
   tracePropagation: {
-    mode: 'auto',
     respectSamplingDecision: false, // Always propagate, ignore sampling
   },
 })
