@@ -147,7 +147,7 @@ interface TracePropagationOptions {
 ```
 
 Trace context is automatically propagated only to Supabase domains
-(*.supabase.co, *.supabase.in, localhost) for security.
+(_.supabase.co, _.supabase.in, localhost) for security.
 
 #### Disable Trace Propagation
 
