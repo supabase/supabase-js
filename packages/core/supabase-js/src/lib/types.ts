@@ -2,7 +2,7 @@ import { GoTrueClientOptions } from '@supabase/auth-js'
 import { RealtimeClientOptions } from '@supabase/realtime-js'
 import { PostgrestError } from '@supabase/postgrest-js'
 import type { StorageClientOptions } from '@supabase/storage-js'
-import type { TracePropagationTarget } from '@supabase/trace-propagation'
+import type { TracePropagationTarget } from '@supabase/tracing'
 import type {
   GenericSchema,
   GenericRelationship,
