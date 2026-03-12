@@ -27,11 +27,6 @@ export interface SupabaseAuthClientOptions extends GoTrueClientOptions {}
 export type Fetch = typeof fetch
 
 /**
- * Trace propagation mode for W3C/OpenTelemetry trace context.
- */
-export type TracePropagationMode = 'auto' | 'off' | 'manual'
-
-/**
  * Configuration options for trace context propagation.
  *
  * Enables distributed tracing across Supabase services using W3C Trace Context
@@ -43,24 +38,23 @@ export type TracePropagationMode = 'auto' | 'off' | 'manual'
  */
 export interface TracePropagationOptions {
   /**
-   * Trace propagation mode. Defaults to 'auto'.
+   * Enable or disable trace propagation. Defaults to true.
    *
-   * - 'auto': Automatically detect and propagate active trace context from OpenTelemetry API
-   * - 'off': Disable trace propagation completely
-   * - 'manual': Only propagate trace headers manually set via global.headers
+   * When enabled, automatically detects and propagates active trace context
+   * from OpenTelemetry API to outgoing Supabase requests.
    *
-   * @default 'auto'
+   * @default true
    *
    * @example
    * ```ts
-   * // Auto-detect and propagate (default)
-   * createClient(url, key, { tracePropagation: { mode: 'auto' } })
+   * // Enable trace propagation (default)
+   * createClient(url, key, { tracePropagation: { enabled: true } })
    *
    * // Disable trace propagation
-   * createClient(url, key, { tracePropagation: { mode: 'off' } })
+   * createClient(url, key, { tracePropagation: { enabled: false } })
    * ```
    */
-  mode?: TracePropagationMode
+  enabled?: boolean
 
   /**
    * List of URL targets that should receive trace context headers.

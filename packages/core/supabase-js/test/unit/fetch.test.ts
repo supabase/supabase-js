@@ -138,7 +138,7 @@ describe('fetch module', () => {
     })
 
     describe('trace propagation', () => {
-      test('should not inject trace headers when mode is off', async () => {
+      test('should not inject trace headers when disabled', async () => {
         const mockResponse = { ok: true }
         const mockFetchImpl = jest.fn().mockResolvedValue(mockResponse)
         const mockSet = jest.fn()
@@ -155,7 +155,7 @@ describe('fetch module', () => {
         const getAccessToken = jest.fn().mockResolvedValue('test-token')
 
         const tracePropagationOptions = {
-          mode: 'off' as const,
+          enabled: false,
         }
 
         const authFetch = fetchWithAuth(
@@ -172,7 +172,7 @@ describe('fetch module', () => {
         expect(mockSet).not.toHaveBeenCalledWith('baggage', expect.anything())
       })
 
-      test('should not inject trace headers when mode is manual', async () => {
+      test('should not inject trace headers when explicitly disabled', async () => {
         const mockResponse = { ok: true }
         const mockFetchImpl = jest.fn().mockResolvedValue(mockResponse)
         const mockSet = jest.fn()
@@ -189,7 +189,7 @@ describe('fetch module', () => {
         const getAccessToken = jest.fn().mockResolvedValue('test-token')
 
         const tracePropagationOptions = {
-          mode: 'manual' as const,
+          enabled: false,
         }
 
         const authFetch = fetchWithAuth(
@@ -255,7 +255,7 @@ describe('fetch module', () => {
         const getAccessToken = jest.fn().mockResolvedValue('test-token')
 
         const tracePropagationOptions = {
-          mode: 'auto' as const,
+          enabled: true,
           targets: ['trusted.com'],
         }
 
@@ -291,7 +291,7 @@ describe('fetch module', () => {
         const getAccessToken = jest.fn().mockResolvedValue('test-token')
 
         const tracePropagationOptions = {
-          mode: 'auto' as const,
+          enabled: true,
           respectSamplingDecision: true,
         }
 
@@ -325,7 +325,7 @@ describe('fetch module', () => {
         const getAccessToken = jest.fn().mockResolvedValue('test-token')
 
         const tracePropagationOptions = {
-          mode: 'auto' as const,
+          enabled: true,
           respectSamplingDecision: false,
         }
 
@@ -362,7 +362,7 @@ describe('fetch module', () => {
         const getAccessToken = jest.fn().mockResolvedValue('test-token')
 
         const tracePropagationOptions = {
-          mode: 'auto' as const,
+          enabled: true,
         }
 
         const authFetch = fetchWithAuth(

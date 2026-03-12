@@ -570,7 +570,7 @@ export default class SupabaseClient<
     // Extract trace context if enabled
     let traceParams: Record<string, string> = {}
 
-    if (this.settings?.tracePropagation?.mode === 'auto') {
+    if (this.settings?.tracePropagation?.enabled !== false) {
       const traceContext = extractTraceContext()
 
       if (traceContext?.traceparent) {
