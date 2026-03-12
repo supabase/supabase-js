@@ -204,41 +204,7 @@ describe('fetch module', () => {
         expect(mockSet).not.toHaveBeenCalledWith('traceparent', expect.anything())
       })
 
-      test('should not inject trace headers to non-allowed targets', async () => {
-        const mockResponse = { ok: true }
-        const mockFetchImpl = jest.fn().mockResolvedValue(mockResponse)
-        const mockSet = jest.fn()
-        const mockHeadersImpl = jest.fn().mockReturnValue({
-          has: jest.fn().mockReturnValue(false),
-          set: mockSet,
-        })
-
-        ;(global as any).fetch = mockFetchImpl
-        ;(global as any).Headers = mockHeadersImpl
-
-        const supabaseKey = 'test-key'
-        const supabaseUrl = 'https://myproject.supabase.co'
-        const getAccessToken = jest.fn().mockResolvedValue('test-token')
-
-        const tracePropagationOptions = {
-          mode: 'auto' as const,
-          targets: ['myproject.supabase.co'], // Only allow exact match
-        }
-
-        const authFetch = fetchWithAuth(
-          supabaseKey,
-          supabaseUrl,
-          getAccessToken,
-          undefined,
-          tracePropagationOptions
-        )
-        // Request to different domain
-        await authFetch('https://evil.com/api')
-
-        expect(mockSet).not.toHaveBeenCalledWith('traceparent', expect.anything())
-      })
-
-      test('should inject trace headers to allowed custom targets', async () => {
+      test('should not inject trace headers to non-Supabase domains', async () => {
         const mockResponse = { ok: true }
         const mockFetchImpl = jest.fn().mockResolvedValue(mockResponse)
         const mockSet = jest.fn()
@@ -256,7 +222,6 @@ describe('fetch module', () => {
 
         const tracePropagationOptions = {
           enabled: true,
-          targets: ['trusted.com'],
         }
 
         const authFetch = fetchWithAuth(
@@ -266,12 +231,10 @@ describe('fetch module', () => {
           undefined,
           tracePropagationOptions
         )
-        await authFetch('https://trusted.com/api')
+        // Request to non-Supabase domain
+        await authFetch('https://evil.com/api')
 
-        expect(mockSet).toHaveBeenCalledWith(
-          'traceparent',
-          '00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-01'
-        )
+        expect(mockSet).not.toHaveBeenCalledWith('traceparent', expect.anything())
       })
 
       test('should respect sampling decision when enabled', async () => {

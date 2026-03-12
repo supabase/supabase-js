@@ -141,13 +141,13 @@ interface TracePropagationOptions {
   // Enable or disable trace propagation (default: true)
   enabled?: boolean
 
-  // Custom URL targets for trace propagation
-  targets?: (string | RegExp | ((url: URL) => boolean))[]
-
   // Respect upstream sampling decisions (default: true)
   respectSamplingDecision?: boolean
 }
 ```
+
+Trace context is automatically propagated only to Supabase domains
+(*.supabase.co, *.supabase.in, localhost) for security.
 
 #### Disable Trace Propagation
 
@@ -155,23 +155,6 @@ interface TracePropagationOptions {
 const supabase = createClient('https://xyzcompany.supabase.co', 'public-anon-key', {
   tracePropagation: {
     enabled: false,
-  },
-})
-```
-
-#### Custom Propagation Targets
-
-By default, trace context is only propagated to Supabase domains (for security). You can customize this:
-
-```js
-const supabase = createClient('https://xyzcompany.supabase.co', 'public-anon-key', {
-  tracePropagation: {
-    targets: [
-      'xyzcompany.supabase.co', // Exact hostname match
-      '*.internal.company.com', // Wildcard domain
-      /.*\.trusted\.com$/, // RegExp pattern
-      (url) => url.protocol === 'https:', // Custom function
-    ],
   },
 })
 ```

@@ -2,7 +2,6 @@ import { GoTrueClientOptions } from '@supabase/auth-js'
 import { RealtimeClientOptions } from '@supabase/realtime-js'
 import { PostgrestError } from '@supabase/postgrest-js'
 import type { StorageClientOptions } from '@supabase/storage-js'
-import type { TracePropagationTarget } from '@supabase/tracing'
 import type {
   GenericSchema,
   GenericRelationship,
@@ -43,6 +42,9 @@ export interface TracePropagationOptions {
    * When enabled, automatically detects and propagates active trace context
    * from OpenTelemetry API to outgoing Supabase requests.
    *
+   * Trace context is only propagated to Supabase domains (*.supabase.co,
+   * *.supabase.in, localhost) for security.
+   *
    * @default true
    *
    * @example
@@ -55,36 +57,6 @@ export interface TracePropagationOptions {
    * ```
    */
   enabled?: boolean
-
-  /**
-   * List of URL targets that should receive trace context headers.
-   *
-   * By default, trace context is only propagated to Supabase domains
-   * (*.supabase.co, *.supabase.in, localhost) for security. Configure
-   * this option to propagate to additional domains.
-   *
-   * Targets can be:
-   * - String: Exact hostname match or wildcard domain (*.example.com)
-   * - RegExp: Pattern matching hostname
-   * - Function: Custom logic to determine if URL should receive trace context
-   *
-   * @default Supabase domains only (*.supabase.co, *.supabase.in, localhost)
-   *
-   * @example
-   * ```ts
-   * createClient(url, key, {
-   *   tracePropagation: {
-   *     targets: [
-   *       'myproject.supabase.co',           // Exact match
-   *       '*.internal.company.com',          // Wildcard domain
-   *       /.*\.trusted\.com$/,               // Regex pattern
-   *       (url) => url.protocol === 'https:' // Custom function
-   *     ]
-   *   }
-   * })
-   * ```
-   */
-  targets?: TracePropagationTarget[]
 
   /**
    * Respect upstream sampling decisions.

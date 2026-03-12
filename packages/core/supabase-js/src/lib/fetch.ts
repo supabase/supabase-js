@@ -84,8 +84,8 @@ function getTraceHeaders(
   const targetUrl =
     typeof input === 'string' ? input : input instanceof URL ? input.href : input.url
 
-  // Get propagation targets (use defaults if not specified)
-  const targets = options?.targets ?? getDefaultPropagationTargets(supabaseUrl)
+  // Get default propagation targets (Supabase domains only)
+  const targets = getDefaultPropagationTargets(supabaseUrl)
 
   // Check if we should propagate to this target
   if (!shouldPropagateToTarget(targetUrl, targets)) {
