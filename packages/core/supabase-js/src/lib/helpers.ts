@@ -67,7 +67,6 @@ export function applySettingDefaults<
         tracePropagationOptions?.respectSamplingDecision ??
         DEFAULT_TRACE_PROPAGATION_OPTIONS?.respectSamplingDecision ??
         true,
-      targets: tracePropagationOptions?.targets ?? DEFAULT_TRACE_PROPAGATION_OPTIONS?.targets,
     },
     accessToken: async () => '',
   }
