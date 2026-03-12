@@ -1,5 +1,5 @@
 {
-  "name": "@supabase/trace-propagation",
+  "name": "@supabase/tracing",
   "targets": {
     "test:ci": {
       "cache": false

@@ -45,11 +45,11 @@ await tracer.startActiveSpan('test-span', async (span) => {
 console.log('')
 
 // Test trace propagation with detailed logging
-console.log('2️⃣ Testing trace-propagation package directly...')
+console.log('2️⃣ Testing tracing package directly...')
 
-// Import the trace-propagation utilities directly
+// Import the tracing utilities directly
 const { extractTraceContext, shouldPropagateToTarget, getDefaultPropagationTargets } = await import(
-  '../packages/shared/trace-propagation/dist/module/index.js'
+  '../packages/shared/tracing/dist/module/index.js'
 )
 
 console.log('   Testing extractTraceContext()...')

@@ -1,5 +1,5 @@
 {
-  "name": "test-trace-propagation",
+  "name": "test-tracing",
   "version": "1.0.0",
   "type": "module",
   "scripts": {

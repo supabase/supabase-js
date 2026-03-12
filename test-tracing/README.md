@@ -13,7 +13,7 @@ This directory contains test scripts to verify that W3C/OpenTelemetry trace cont
 ## Installation
 
 ```bash
-cd test-trace-propagation
+cd test-tracing
 npm install
 ```
 
@@ -182,7 +182,7 @@ Build the supabase-js package first:
 ```bash
 cd ..
 npx nx build supabase-js
-cd test-trace-propagation
+cd test-tracing
 ```
 
 ### No trace headers in output

@@ -1,4 +1,4 @@
-# @supabase/trace-propagation
+# @supabase/tracing
 
 W3C/OpenTelemetry trace context propagation utilities for the Supabase JS SDK.
 
@@ -22,7 +22,7 @@ This package is typically used internally by `@supabase/supabase-js` and does no
 ### Extract Trace Context
 
 ```typescript
-import { extractTraceContext } from '@supabase/trace-propagation'
+import { extractTraceContext } from '@supabase/tracing'
 
 // Extract from OpenTelemetry API (if available)
 const context = extractTraceContext()
@@ -40,7 +40,7 @@ const context = extractTraceContext({
 ### Parse Traceparent Header
 
 ```typescript
-import { parseTraceParent } from '@supabase/trace-propagation'
+import { parseTraceParent } from '@supabase/tracing'
 
 const parsed = parseTraceParent('00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-01')
 
@@ -57,7 +57,7 @@ console.log(parsed)
 ### Validate Target URLs
 
 ```typescript
-import { shouldPropagateToTarget } from '@supabase/trace-propagation'
+import { shouldPropagateToTarget } from '@supabase/tracing'
 
 const targets = [
   'myproject.supabase.co',
@@ -75,7 +75,7 @@ const shouldPropagate = shouldPropagateToTarget(
 ### Get Default Targets
 
 ```typescript
-import { getDefaultPropagationTargets } from '@supabase/trace-propagation'
+import { getDefaultPropagationTargets } from '@supabase/tracing'
 
 const targets = getDefaultPropagationTargets('https://myproject.supabase.co')
 // Returns array of default Supabase domains

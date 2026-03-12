@@ -12,7 +12,7 @@ import {
   type RealtimeClientOptions,
 } from '@supabase/realtime-js'
 import { StorageClient as SupabaseStorageClient } from '@supabase/storage-js'
-import { extractTraceContext } from '@supabase/trace-propagation'
+import { extractTraceContext } from '@supabase/tracing'
 import {
   DEFAULT_AUTH_OPTIONS,
   DEFAULT_DB_OPTIONS,
