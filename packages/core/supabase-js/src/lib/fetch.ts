@@ -4,7 +4,7 @@ import {
   shouldPropagateToTarget,
   getDefaultPropagationTargets,
   type TraceContext,
-} from '@supabase/trace-propagation'
+} from '@supabase/tracing'
 import type { TracePropagationOptions } from './types'
 
 type Fetch = typeof fetch

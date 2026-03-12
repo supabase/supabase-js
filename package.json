@@ -78,6 +78,6 @@
     "packages/core/realtime-js",
     "packages/core/storage-js",
     "packages/core/supabase-js",
-    "packages/shared/trace-propagation"
+    "packages/shared/tracing"
   ]
 }

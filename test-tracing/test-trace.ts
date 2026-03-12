@@ -40,7 +40,7 @@ console.log('🚀 Initializing OpenTelemetry SDK...\n')
 
 const sdk = new NodeSDK({
   resource: new Resource({
-    [ATTR_SERVICE_NAME]: 'trace-propagation-test',
+    [ATTR_SERVICE_NAME]: 'tracing-test',
   }),
   traceExporter: new DetailedConsoleExporter(),
 })
