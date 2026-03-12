@@ -98,9 +98,7 @@ function getTraceHeaders(
   }
 
   // Extract trace context
-  const traceContext = extractTraceContext({
-    customExtractor: options?.customExtractor,
-  })
+  const traceContext = extractTraceContext()
 
   if (!traceContext || !traceContext.traceparent) {
     return null

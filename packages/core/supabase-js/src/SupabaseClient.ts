@@ -571,9 +571,7 @@ export default class SupabaseClient<
     let traceParams: Record<string, string> = {}
 
     if (this.settings?.tracePropagation?.mode === 'auto') {
-      const traceContext = extractTraceContext({
-        customExtractor: this.settings.tracePropagation.customExtractor,
-      })
+      const traceContext = extractTraceContext()
 
       if (traceContext?.traceparent) {
         // Add trace context as query parameters for WebSocket connection
