@@ -6,7 +6,7 @@ This package provides utilities for extracting, parsing, validating, and propaga
 
 ## Features
 
-- Extract trace context from OpenTelemetry API or custom extractors
+- Extract trace context from OpenTelemetry API
 - Parse and validate W3C `traceparent` headers
 - Validate target URLs for trace propagation
 - Default Supabase domain allowlist
@@ -26,15 +26,6 @@ import { extractTraceContext } from '@supabase/tracing'
 
 // Extract from OpenTelemetry API (if available)
 const context = extractTraceContext()
-
-// Use custom extractor
-const context = extractTraceContext({
-  customExtractor: () => ({
-    traceparent: '00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-01',
-    tracestate: 'vendor1=value1',
-    baggage: 'key1=value1',
-  }),
-})
 ```
 
 ### Parse Traceparent Header
