@@ -62,7 +62,8 @@ export function applySettingDefaults<
       },
     },
     tracePropagation: {
-      enabled: tracePropagationOptions?.enabled ?? DEFAULT_TRACE_PROPAGATION_OPTIONS?.enabled ?? true,
+      enabled:
+        tracePropagationOptions?.enabled ?? DEFAULT_TRACE_PROPAGATION_OPTIONS?.enabled ?? true,
       respectSamplingDecision:
         tracePropagationOptions?.respectSamplingDecision ??
         DEFAULT_TRACE_PROPAGATION_OPTIONS?.respectSamplingDecision ??
