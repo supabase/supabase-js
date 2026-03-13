@@ -121,6 +121,17 @@ describe('Object API', () => {
       expect(res.data?.signedUrl).toContain(`${URL}/render/image/sign/${bucketName}/${uploadPath}`)
     })
 
+    test('sign url with empty transform object does not use render endpoint', async () => {
+      await storage.from(bucketName).upload(uploadPath, file)
+      const res = await storage.from(bucketName).createSignedUrl(uploadPath, 2000, {
+        transform: {},
+      })
+
+      expect(res.error).toBeNull()
+      expect(res.data?.signedUrl).toContain(`${URL}/object/sign/${bucketName}/${uploadPath}`)
+      expect(res.data?.signedUrl).not.toContain('/render/image/sign/')
+    })
+
     test('sign url with custom filename for download', async () => {
       await storage.from(bucketName).upload(uploadPath, file)
       const res = await storage.from(bucketName).createSignedUrl(uploadPath, 2000, {

@@ -600,10 +600,15 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
     return this.handleOperation(async () => {
       let _path = this._getFinalPath(path)
 
+      const hasTransform =
+        typeof options?.transform === 'object' &&
+        options.transform !== null &&
+        Object.keys(options.transform).length > 0
+
       let data = await post(
         this.fetch,
         `${this.url}/object/sign/${_path}`,
-        { expiresIn, ...(options?.transform ? { transform: options.transform } : {}) },
+        { expiresIn, ...(hasTransform ? { transform: options!.transform } : {}) },
         { headers: this.headers }
       )
       const downloadQueryParam = options?.download
@@ -613,7 +618,7 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
       // Some storage-api versions return /object/sign/ even for transform requests,
       // so we normalise the path on the client side.
       const returnedPath =
-        options?.transform && data.signedURL.includes('/object/sign/')
+        hasTransform && data.signedURL.includes('/object/sign/')
           ? data.signedURL.replace('/object/sign/', '/render/image/sign/')
           : data.signedURL
       const signedUrl = encodeURI(`${this.url}${returnedPath}${downloadQueryParam}`)
