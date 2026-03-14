@@ -694,6 +694,79 @@ describe('Object API', () => {
       'height:200,width:200,resizing_type:fill,quality:60'
     )
   })
+
+  it('will append a version parameter', async () => {
+    const version = Date.now().toString()
+    await storage.from(bucketName).upload(uploadPath, file)
+
+    // `createSignedUrl` with transform
+    {
+      const res = await storage.from(bucketName).createSignedUrl(uploadPath, 60000, {
+        transform: {
+          width: 200,
+          height: 200,
+          quality: 60,
+        },
+        version,
+      })
+
+      expect(res.error).toBeNull()
+      assert(res.data)
+
+      const parsedUrl = global.URL.parse(res.data.signedUrl)
+      assert(parsedUrl)
+      assert(
+        parsedUrl.searchParams.has('_v', version),
+        `params should contain '_v=${version}' (is '${parsedUrl.searchParams.toString()}')`
+      )
+    }
+
+    // `createSignedUrl` without transform
+    {
+      const res = await storage.from(bucketName).createSignedUrl(uploadPath, 60000, {
+        version,
+      })
+
+      expect(res.error).toBeNull()
+      assert(res.data)
+
+      const parsedUrl = global.URL.parse(res.data.signedUrl)
+      assert(parsedUrl)
+      assert(parsedUrl.searchParams.has('_v', version))
+    }
+
+    // `getPublicUrl` with transform & download
+    {
+      const res = storage.from(bucketName).getPublicUrl(uploadPath, {
+        version,
+        transform: {
+          width: 200,
+          height: 200,
+          quality: 60,
+        },
+        download: true,
+      })
+
+      assert(res.data)
+
+      const parsedUrl = global.URL.parse(res.data.publicUrl)
+      assert(parsedUrl)
+      assert(parsedUrl.searchParams.has('_v', version))
+    }
+
+    // `getPublicUrl` without transform
+    {
+      const res = storage.from(bucketName).getPublicUrl(uploadPath, {
+        version,
+      })
+
+      assert(res.data)
+
+      const parsedUrl = global.URL.parse(res.data.publicUrl)
+      assert(parsedUrl)
+      assert(parsedUrl.searchParams.has('_v', version))
+    }
+  })
 })
 
 describe('download with fetch parameters', () => {
