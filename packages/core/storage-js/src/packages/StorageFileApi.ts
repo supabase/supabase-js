@@ -700,7 +700,7 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
       return data.map((datum: { signedURL: string }) => ({
         ...datum,
         signedUrl: datum.signedURL
-          ? encodeURI(`${this.url}${datum.signedURL}${queryString ? `?${queryString}` : ''}`)
+          ? encodeURI(`${this.url}${datum.signedURL}&${queryString}`)
           : null,
       }))
     })

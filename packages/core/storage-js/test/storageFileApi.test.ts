@@ -715,10 +715,7 @@ describe('Object API', () => {
 
       const parsedUrl = global.URL.parse(res.data.signedUrl)
       assert(parsedUrl)
-      assert(
-        parsedUrl.searchParams.has('_v', version),
-        `params should contain '_v=${version}' (is '${parsedUrl.searchParams.toString()}')`
-      )
+      assert(parsedUrl.searchParams.has('_v', version))
     }
 
     // `createSignedUrl` without transform
@@ -765,6 +762,24 @@ describe('Object API', () => {
       const parsedUrl = global.URL.parse(res.data.publicUrl)
       assert(parsedUrl)
       assert(parsedUrl.searchParams.has('_v', version))
+    }
+
+    // `createSignedUrls` with download
+    {
+      const res = await storage.from(bucketName).createSignedUrls([uploadPath], 60000, {
+        version,
+        download: true,
+      })
+
+      expect(res.error).toBeNull()
+      assert(res.data)
+      expect(res.data).toHaveLength(1)
+      expect(res.data[0].error).toBeNull()
+
+      const parsedUrl = global.URL.parse(res.data[0].signedUrl)
+      assert(parsedUrl)
+      assert(parsedUrl.searchParams.has('_v', version))
+      assert(parsedUrl.searchParams.has('token'))
     }
   })
 })
