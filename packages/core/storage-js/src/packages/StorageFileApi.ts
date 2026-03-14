@@ -540,6 +540,7 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
    * @param expiresIn The number of seconds until the signed URL expires. For example, `60` for a URL which is valid for one minute.
    * @param options.download triggers the file as a download if set to true. Set this parameter as the name of the file if you want to trigger the download with a different filename.
    * @param options.transform Transform the asset before serving it to the client.
+   * @param options.version Append a version parameter to the URL to invalidate the cache.
    * @returns Promise with response containing signed URL or error
    *
    * @example Create Signed URL
@@ -634,6 +635,7 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
    * @param paths The file paths to be downloaded, including the current file names. For example `['folder/image.png', 'folder2/image2.png']`.
    * @param expiresIn The number of seconds until the signed URLs expire. For example, `60` for URLs which are valid for one minute.
    * @param options.download triggers the file as a download if set to true. Set this parameter as the name of the file if you want to trigger the download with a different filename.
+   * @param options.version Append a version parameter to the URL to invalidate the cache.
    * @returns Promise with response containing array of objects with signedUrl, path, and error or error
    *
    * @example Create Signed URLs
@@ -710,6 +712,7 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
    * @category File Buckets
    * @param path The full path and file name of the file to be downloaded. For example `folder/image.png`.
    * @param options.transform Transform the asset before serving it to the client.
+   * @param options.version Append a version parameter to the URL to invalidate the cache.
    * @param parameters Additional fetch parameters like signal for cancellation. Supports standard fetch options including cache control.
    * @returns BlobDownloadBuilder instance for downloading the file
    *
@@ -896,6 +899,7 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
    * @param path The path and name of the file to generate the public URL for. For example `folder/image.png`.
    * @param options.download Triggers the file as a download if set to true. Set this parameter as the name of the file if you want to trigger the download with a different filename.
    * @param options.transform Transform the asset before serving it to the client.
+   * @param options.version Append a version parameter to the URL to invalidate the cache.
    * @returns Object with public URL
    *
    * @example Returns the URL for an asset in a public bucket
