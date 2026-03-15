@@ -94,8 +94,9 @@ export async function handleError(error: unknown) {
     )
   } else if (errorCode === 'session_not_found') {
     // The `session_id` inside the JWT does not correspond to a row in the
-    // `sessions` table. This usually means the user has signed out, has been
-    // deleted, or their session has somehow been terminated.
+    // `sessions` table. This can indicate the user has signed out, has been
+    // deleted, or their session has been terminated — but it may also be
+    // transient (e.g. server-side race, brief network partition).
     throw new AuthSessionMissingError()
   }
 
