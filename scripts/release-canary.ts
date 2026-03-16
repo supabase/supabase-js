@@ -1,5 +1,6 @@
 import { releaseVersion, releaseChangelog, releasePublish } from 'nx/release'
 import { execSync } from 'child_process'
+import { writeFile } from 'fs/promises'
 
 function getArg(name: string): string | undefined {
   const idx = process.argv.findIndex((a) => a === `--${name}` || a.startsWith(`--${name}=`))
@@ -13,26 +14,33 @@ const preid = getArg('preid') ?? 'canary'
 const distTag = getArg('tag') ?? 'canary'
 const specifier = getArg('specifier') ?? 'prerelease'
 
-const validTags = ['latest', 'canary', 'beta', 'alpha', 'next', 'rc']
+const validTags = ['canary', 'beta', 'alpha', 'next', 'rc']
 if (!validTags.includes(distTag)) {
-  console.error(`❌ Invalid tag: ${distTag}. Must be one of: ${validTags.join(', ')}`)
+  console.error(
+    `❌ Invalid tag: "${distTag}". This script only publishes prereleases. Must be one of: ${validTags.join(', ')}`
+  )
   process.exit(1)
 }
 
-;(async () => {
-  const { workspaceVersion: canaryCheckWorkspaceVersion } = await releaseVersion({
-    verbose: true,
-    gitCommit: false,
-    stageChanges: false,
-    dryRun: true, // Just to check if there are any conventional commits that warrant a release
-  })
+// Determine if this is a manual invocation (explicit args passed) or automated canary
+const isManual = !!(getArg('tag') || getArg('preid') || getArg('specifier'))
 
-  // If no version bump detected, exit early
-  if (!canaryCheckWorkspaceVersion || canaryCheckWorkspaceVersion === '0.0.0') {
-    console.log(
-      'ℹ️  No conventional commits found that warrant a release. Skipping canary release.'
-    )
-    process.exit(0)
+;(async () => {
+  if (!isManual) {
+    const { workspaceVersion: canaryCheckWorkspaceVersion } = await releaseVersion({
+      verbose: true,
+      gitCommit: false,
+      stageChanges: false,
+      dryRun: true, // Just to check if there are any conventional commits that warrant a release
+    })
+
+    // If no version bump detected, exit early
+    if (!canaryCheckWorkspaceVersion || canaryCheckWorkspaceVersion === '0.0.0') {
+      console.log(
+        'ℹ️  No conventional commits found that warrant a release. Skipping canary release.'
+      )
+      process.exit(0)
+    }
   }
 
   const { workspaceVersion, projectsVersionData } = await releaseVersion({
@@ -113,6 +121,12 @@ if (!validTags.includes(distTag)) {
     console.error('❌ Failed to publish to JSR:', error)
     // Don't fail the entire release if JSR publishing fails
     console.log('⚠️  Continuing with release despite JSR publish failure')
+  }
+
+  try {
+    await writeFile('.release-version', workspaceVersion ?? '', 'utf-8')
+  } catch (error) {
+    console.error('❌ Failed to write release version to file', error)
   }
 
   process.exit(Object.values(publishResult).every((result) => result.code === 0) ? 0 : 1)

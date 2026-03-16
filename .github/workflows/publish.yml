@@ -176,7 +176,7 @@ jobs:
   docs-after-stable-release:
     name: Generate Documentation
     needs: release-stable
-    if: ${{ github.event_name == 'workflow_dispatch' && needs.release-stable.result == 'success' }}
+    if: ${{ github.event_name == 'workflow_dispatch' && needs.release-stable.result == 'success' && github.event.inputs.dist_tag == 'latest' }}
     uses: ./.github/workflows/docs.yml
     permissions:
       actions: read
@@ -185,7 +185,7 @@ jobs:
   trigger-dogfood:
     name: Trigger Dogfood
     needs: release-stable
-    if: ${{ github.event_name == 'workflow_dispatch' && needs.release-stable.result == 'success' }}
+    if: ${{ github.event_name == 'workflow_dispatch' && needs.release-stable.result == 'success' && github.event.inputs.dist_tag == 'latest' }}
     uses: ./.github/workflows/dogfood.yml
     secrets:
       APP_ID: ${{ secrets.APP_ID }}
@@ -200,7 +200,7 @@ jobs:
     name: Trigger Supabase Docs Update
     runs-on: ubuntu-latest
     needs: [release-stable, docs-after-stable-release]
-    if: ${{ github.event_name == 'workflow_dispatch' && needs.release-stable.result == 'success' && needs.docs-after-stable-release.result == 'success' }}
+    if: ${{ github.event_name == 'workflow_dispatch' && needs.release-stable.result == 'success' && needs.docs-after-stable-release.result == 'success' && github.event.inputs.dist_tag == 'latest' }}
     steps:
       - name: Generate token
         id: app-token
