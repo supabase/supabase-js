@@ -24,7 +24,6 @@ function getArg(name: string): string | undefined {
 }
 
 const versionSpecifier = getArg('versionSpecifier') ?? process.argv[2] // optional positional fallback
-const distTag = getArg('tag') ?? 'latest'
 
 if (!versionSpecifier) {
   console.error(
@@ -33,14 +32,6 @@ if (!versionSpecifier) {
       `  --versionSpecifier patch | minor | major | prepatch | preminor | premajor | prerelease\n` +
       `  --versionSpecifier v2.3.4 (explicit version)\n`
   )
-  process.exit(1)
-}
-
-// Validate distTag
-const validTags = ['latest', 'canary', 'beta', 'alpha', 'next', 'rc']
-if (!validTags.includes(distTag)) {
-  console.error(`❌ Invalid tag: ${distTag}`)
-  console.error(`Must be one of: ${validTags.join(', ')}`)
   process.exit(1)
 }
 
@@ -137,14 +128,14 @@ function safeExec(cmd: string, opts = {}) {
   const publishResult = await releasePublish({
     registry: 'https://registry.npmjs.org/',
     access: 'public',
-    tag: distTag,
+    tag: 'latest',
     verbose: true,
   })
 
   // Publish gotrue-js as legacy mirror of auth-js
   console.log('\n📦 Publishing @supabase/gotrue-js (legacy mirror)...')
   try {
-    safeExec(`npx tsx scripts/publish-gotrue-legacy.ts --tag=${distTag}`)
+    safeExec('npx tsx scripts/publish-gotrue-legacy.ts --tag=latest')
   } catch (error) {
     console.error('❌ Failed to publish gotrue-js legacy package:', error)
     // Don't fail the entire release if gotrue-js fails
@@ -154,7 +145,7 @@ function safeExec(cmd: string, opts = {}) {
   // Publish all packages to JSR
   console.log('\n📦 Publishing packages to JSR...')
   try {
-    safeExec(`npx tsx scripts/publish-to-jsr.ts --tag=${distTag}`)
+    safeExec('npx tsx scripts/publish-to-jsr.ts --tag=latest')
   } catch (error) {
     console.error('❌ Failed to publish to JSR:', error)
     // Don't fail the entire release if JSR publishing fails

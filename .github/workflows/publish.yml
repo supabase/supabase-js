@@ -11,12 +11,8 @@ on:
       - '**/CHANGELOG.md'
   workflow_dispatch:
     inputs:
-      version_specifier:
-        description: 'Semver bump (patch|minor|major|pre*) or exact version (v1.2.3)'
-        required: true
-        type: string
       dist_tag:
-        description: 'Dist-tag for manual release (latest|rc|canary|next). Ignored for canary auto-releases.'
+        description: 'Dist-tag for the release. Use "latest" for stable, or "rc"/"canary"/etc for a prerelease.'
         required: false
         default: 'latest'
         type: choice
@@ -25,6 +21,14 @@ on:
           - rc
           - canary
           - next
+      version_specifier:
+        description: 'Stable only: semver bump (patch|minor|major|pre*) or exact version (v1.2.3). Ignored for prerelease dist-tags.'
+        required: false
+        type: string
+      preid:
+        description: 'Prerelease only: preid for the version bump (e.g. rc, beta). Ignored when dist_tag is "latest".'
+        required: false
+        type: string
 
 env:
   NODE_VERSION: '20'
@@ -105,28 +109,45 @@ jobs:
       - name: Validate input
         env:
           VERSION_SPECIFIER: ${{ github.event.inputs.version_specifier }}
+          DIST_TAG: ${{ github.event.inputs.dist_tag }}
         run: |
+          TAG="${DIST_TAG}"
           VS="${VERSION_SPECIFIER}"
-          echo "Validating: $VS"
 
-          if [[ "$VS" =~ ^(patch|minor|major|prepatch|preminor|premajor|prerelease)$ ]]; then
-            echo "✔ bump keyword"
-          elif [[ "$VS" =~ ^v?[0-9]+\.[0-9]+\.[0-9]+([.-][0-9A-Za-z.-]+)?$ ]]; then
-            echo "✔ explicit version"
+          if [[ "$TAG" == "latest" ]]; then
+            echo "Validating version_specifier for stable release: $VS"
+            if [[ "$VS" =~ ^(patch|minor|major|prepatch|preminor|premajor|prerelease)$ ]]; then
+              echo "✔ bump keyword"
+            elif [[ "$VS" =~ ^v?[0-9]+\.[0-9]+\.[0-9]+([.-][0-9A-Za-z.-]+)?$ ]]; then
+              echo "✔ explicit version"
+            else
+              echo "❌ Invalid version_specifier: '$VS'"
+              echo "   Use: patch|minor|major|pre*, or v1.2.3"
+              exit 1
+            fi
           else
-            echo "❌ Invalid version_specifier: '$VS'"
-            echo "   Use: patch|minor|major|pre*, or v1.2.3"
-            exit 1
+            echo "✔ prerelease path — version_specifier not required (will bump as prerelease with preid)"
           fi
 
-      - name: Release stable version
+      - name: Release prerelease version
+        if: ${{ github.event.inputs.dist_tag != 'latest' }}
         env:
           NPM_CONFIG_PROVENANCE: true
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           RELEASE_GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
         shell: bash
-        run: npm run release-stable -- --versionSpecifier "${{ github.event.inputs.version_specifier }}" --tag "${{ github.event.inputs.dist_tag }}"
+        run: npm run release-canary -- --preid "${{ github.event.inputs.preid || github.event.inputs.dist_tag }}" --tag "${{ github.event.inputs.dist_tag }}"
+
+      - name: Release stable version
+        if: ${{ github.event.inputs.dist_tag == 'latest' }}
+        env:
+          NPM_CONFIG_PROVENANCE: true
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        shell: bash
+        run: npm run release-stable -- --versionSpecifier "${{ github.event.inputs.version_specifier }}"
 
       - name: Extract released version
         id: extract-version
@@ -141,13 +162,16 @@ jobs:
 
       - name: Summary
         if: ${{ success() }}
-        env:
-          VERSION_SPECIFIER: ${{ github.event.inputs.version_specifier }}
         run: |
-          echo "## ✅ Stable Release" >> $GITHUB_STEP_SUMMARY
-          echo "- **Version specifier:** \`${VERSION_SPECIFIER}\`" >> $GITHUB_STEP_SUMMARY
-          echo "- **Source commit:** HEAD of the checked-out branch" >> $GITHUB_STEP_SUMMARY
+          if [[ "${{ github.event.inputs.dist_tag }}" == "latest" ]]; then
+            echo "## ✅ Stable Release" >> $GITHUB_STEP_SUMMARY
+            echo "- **Version specifier:** \`${{ github.event.inputs.version_specifier }}\`" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "## ✅ Prerelease" >> $GITHUB_STEP_SUMMARY
+            echo "- **Preid:** \`${{ github.event.inputs.preid || github.event.inputs.dist_tag }}\`" >> $GITHUB_STEP_SUMMARY
+          fi
           echo "- **Dist-tag:** \`${{ github.event.inputs.dist_tag }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Source commit:** HEAD of the checked-out branch" >> $GITHUB_STEP_SUMMARY
 
   docs-after-stable-release:
     name: Generate Documentation

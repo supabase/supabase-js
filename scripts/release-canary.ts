@@ -1,5 +1,23 @@
 import { releaseVersion, releaseChangelog, releasePublish } from 'nx/release'
 import { execSync } from 'child_process'
+
+function getArg(name: string): string | undefined {
+  const idx = process.argv.findIndex((a) => a === `--${name}` || a.startsWith(`--${name}=`))
+  if (idx === -1) return undefined
+  const token = process.argv[idx]
+  if (token.includes('=')) return token.split('=')[1]
+  return process.argv[idx + 1]
+}
+
+const preid = getArg('preid') ?? 'canary'
+const distTag = getArg('tag') ?? 'canary'
+
+const validTags = ['latest', 'canary', 'beta', 'alpha', 'next', 'rc']
+if (!validTags.includes(distTag)) {
+  console.error(`❌ Invalid tag: ${distTag}. Must be one of: ${validTags.join(', ')}`)
+  process.exit(1)
+}
+
 ;(async () => {
   const { workspaceVersion: canaryCheckWorkspaceVersion } = await releaseVersion({
     verbose: true,
@@ -21,7 +39,7 @@ import { execSync } from 'child_process'
     gitCommit: false,
     stageChanges: false,
     specifier: 'prerelease',
-    preid: 'canary',
+    preid,
   })
 
   // Update version.ts files with the new versions
@@ -72,14 +90,14 @@ import { execSync } from 'child_process'
   const publishResult = await releasePublish({
     registry: 'https://registry.npmjs.org/',
     access: 'public',
-    tag: 'canary',
+    tag: distTag,
     verbose: true,
   })
 
   // Publish gotrue-js as legacy mirror of auth-js
   console.log('\n📦 Publishing @supabase/gotrue-js (legacy mirror)...')
   try {
-    execSync('npx tsx scripts/publish-gotrue-legacy.ts --tag=canary', { stdio: 'inherit' })
+    execSync(`npx tsx scripts/publish-gotrue-legacy.ts --tag=${distTag}`, { stdio: 'inherit' })
   } catch (error) {
     console.error('❌ Failed to publish gotrue-js legacy package:', error)
     // Don't fail the entire release if gotrue-js fails
@@ -89,7 +107,7 @@ import { execSync } from 'child_process'
   // Publish all packages to JSR
   console.log('\n📦 Publishing packages to JSR (canary)...')
   try {
-    execSync('npx tsx scripts/publish-to-jsr.ts --tag=canary', { stdio: 'inherit' })
+    execSync(`npx tsx scripts/publish-to-jsr.ts --tag=${distTag}`, { stdio: 'inherit' })
   } catch (error) {
     console.error('❌ Failed to publish to JSR:', error)
     // Don't fail the entire release if JSR publishing fails
