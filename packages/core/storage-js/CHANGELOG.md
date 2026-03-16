@@ -1,3 +1,13 @@
+## 2.99.2 (2026-03-16)
+
+### 🩹 Fixes
+
+- **storage:** do not rewrite signed URL to render endpoint for empty transform object ([#2162](https://github.com/supabase/supabase-js/pull/2162))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+
 ## 2.99.1 (2026-03-11)
 
 This was a version bump only for @supabase/storage-js to align it with other projects, there were no code changes.
