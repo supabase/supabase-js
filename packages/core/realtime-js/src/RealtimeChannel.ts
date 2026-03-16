@@ -1,7 +1,6 @@
-import { CHANNEL_EVENTS, CHANNEL_STATES, MAX_PUSH_BUFFER_SIZE } from './lib/constants'
-import Push from './lib/push'
+import { CHANNEL_EVENTS, CHANNEL_STATES } from './lib/constants'
+import type { ChannelState } from './lib/constants'
 import type RealtimeClient from './RealtimeClient'
-import Timer from './lib/timer'
 import RealtimePresence, { REALTIME_PRESENCE_LISTEN_EVENTS } from './RealtimePresence'
 import type {
   RealtimePresenceJoinPayload,
@@ -10,6 +9,8 @@ import type {
 } from './RealtimePresence'
 import * as Transformers from './lib/transformers'
 import { httpEndpointURL } from './lib/transformers'
+import ChannelAdapter from './phoenix/channelAdapter'
+import { ChannelBindingCallback, ChannelOnErrorCallback } from './phoenix/types'
 
 type ReplayOption = {
   since: number
@@ -147,7 +148,7 @@ export enum REALTIME_SUBSCRIBE_STATES {
 
 export const REALTIME_CHANNEL_STATES = CHANNEL_STATES
 
-interface PostgresChangesFilters {
+type PostgresChangesFilters = {
   postgres_changes: {
     id: string
     event: string
@@ -156,30 +157,52 @@ interface PostgresChangesFilters {
     filter?: string
   }[]
 }
+
+type Binding = {
+  type: string
+  filter: { [key: string]: any }
+  callback: ChannelBindingCallback
+  ref: number
+  id?: string
+}
+
 /** A channel is the basic building block of Realtime
  * and narrows the scope of data flow to subscribed clients.
  * You can think of a channel as a chatroom where participants are able to see who's online
  * and send and receive messages.
  */
 export default class RealtimeChannel {
-  bindings: {
-    [key: string]: {
-      type: string
-      filter: { [key: string]: any }
-      callback: Function
-      id?: string
-    }[]
-  } = {}
-  timeout: number
-  state: CHANNEL_STATES = CHANNEL_STATES.closed
-  joinedOnce = false
-  joinPush: Push
-  rejoinTimer: Timer
-  pushBuffer: Push[] = []
-  presence: RealtimePresence
-  broadcastEndpointURL: string
+  bindings: Record<string, Binding[]> = {}
   subTopic: string
+  broadcastEndpointURL: string
   private: boolean
+  presence: RealtimePresence
+  /** @internal */
+  channelAdapter: ChannelAdapter
+
+  get state() {
+    return this.channelAdapter.state
+  }
+
+  set state(state: ChannelState) {
+    this.channelAdapter.state = state
+  }
+
+  get joinedOnce() {
+    return this.channelAdapter.joinedOnce
+  }
+
+  get timeout() {
+    return this.socket.timeout
+  }
+
+  get joinPush() {
+    return this.channelAdapter.joinPush
+  }
+
+  get rejoinTimer() {
+    return this.channelAdapter.rejoinTimer
+  }
 
   /**
    * Creates a channel that can broadcast messages, sync presence, and listen to Postgres changes.
@@ -212,53 +235,17 @@ export default class RealtimeChannel {
       },
       ...params.config,
     }
-    this.timeout = this.socket.timeout
-    this.joinPush = new Push(this, CHANNEL_EVENTS.join, this.params, this.timeout)
-    this.rejoinTimer = new Timer(() => this._rejoinUntilConnected(), this.socket.reconnectAfterMs)
-    this.joinPush.receive('ok', () => {
-      this.state = CHANNEL_STATES.joined
-      this.rejoinTimer.reset()
-      this.pushBuffer.forEach((pushEvent: Push) => pushEvent.send())
-      this.pushBuffer = []
-    })
-    this._onClose(() => {
-      this.rejoinTimer.reset()
-      this.socket.log('channel', `close ${this.topic} ${this._joinRef()}`)
-      this.state = CHANNEL_STATES.closed
-      this.socket._remove(this)
-    })
-    this._onError((reason: string) => {
-      if (this._isLeaving() || this._isClosed()) {
-        return
-      }
-      this.socket.log('channel', `error ${this.topic}`, reason)
-      this.state = CHANNEL_STATES.errored
-      this.rejoinTimer.scheduleTimeout()
-    })
-    this.joinPush.receive('timeout', () => {
-      if (!this._isJoining()) {
-        return
-      }
-      this.socket.log('channel', `timeout ${this.topic}`, this.joinPush.timeout)
-      this.state = CHANNEL_STATES.errored
-      this.rejoinTimer.scheduleTimeout()
-    })
 
-    this.joinPush.receive('error', (reason: any) => {
-      if (this._isLeaving() || this._isClosed()) {
-        return
-      }
-      this.socket.log('channel', `error ${this.topic}`, reason)
-      this.state = CHANNEL_STATES.errored
-      this.rejoinTimer.scheduleTimeout()
-    })
-    this._on(CHANNEL_EVENTS.reply, {}, (payload: any, ref: string) => {
-      this._trigger(this._replyEventName(ref), payload)
-    })
-
+    this.channelAdapter = new ChannelAdapter(this.socket.socketAdapter, topic, this.params)
     this.presence = new RealtimePresence(this)
 
-    this.broadcastEndpointURL = httpEndpointURL(this.socket.endPoint)
+    this._onClose(() => {
+      this.socket._remove(this)
+    })
+
+    this._updateFilterTransform()
+
+    this.broadcastEndpointURL = httpEndpointURL(this.socket.socketAdapter.endPointURL())
     this.private = this.params.config.private || false
 
     if (!this.private && this.params.config?.broadcast?.replay) {
@@ -274,7 +261,7 @@ export default class RealtimeChannel {
     if (!this.socket.isConnected()) {
       this.socket.connect()
     }
-    if (this.state == CHANNEL_STATES.closed) {
+    if (this.channelAdapter.isClosed()) {
       const {
         config: { broadcast, presence, private: isPrivate },
       } = this.params
@@ -297,16 +284,18 @@ export default class RealtimeChannel {
         accessTokenPayload.access_token = this.socket.accessTokenValue
       }
 
-      this._onError((e: Error) => callback?.(REALTIME_SUBSCRIBE_STATES.CHANNEL_ERROR, e))
+      this._onError((reason: unknown) => {
+        callback?.(REALTIME_SUBSCRIBE_STATES.CHANNEL_ERROR, reason as Error)
+      })
 
       this._onClose(() => callback?.(REALTIME_SUBSCRIBE_STATES.CLOSED))
 
       this.updateJoinPayload({ ...{ config }, ...accessTokenPayload })
 
-      this.joinedOnce = true
-      this._rejoin(timeout)
+      this._updateFilterMessage()
 
-      this.joinPush
+      this.channelAdapter
+        .subscribe(timeout)
         .receive('ok', async ({ postgres_changes }: PostgresChangesFilters) => {
           // Only refresh auth if using callback-based tokens
           if (!this.socket._isManualToken()) {
@@ -315,46 +304,9 @@ export default class RealtimeChannel {
           if (postgres_changes === undefined) {
             callback?.(REALTIME_SUBSCRIBE_STATES.SUBSCRIBED)
             return
-          } else {
-            const clientPostgresBindings = this.bindings.postgres_changes
-            const bindingsLen = clientPostgresBindings?.length ?? 0
-            const newPostgresBindings = []
-
-            for (let i = 0; i < bindingsLen; i++) {
-              const clientPostgresBinding = clientPostgresBindings[i]
-              const {
-                filter: { event, schema, table, filter },
-              } = clientPostgresBinding
-              const serverPostgresFilter = postgres_changes && postgres_changes[i]
-
-              if (
-                serverPostgresFilter &&
-                serverPostgresFilter.event === event &&
-                RealtimeChannel.isFilterValueEqual(serverPostgresFilter.schema, schema) &&
-                RealtimeChannel.isFilterValueEqual(serverPostgresFilter.table, table) &&
-                RealtimeChannel.isFilterValueEqual(serverPostgresFilter.filter, filter)
-              ) {
-                newPostgresBindings.push({
-                  ...clientPostgresBinding,
-                  id: serverPostgresFilter.id,
-                })
-              } else {
-                this.unsubscribe()
-                this.state = CHANNEL_STATES.errored
-
-                callback?.(
-                  REALTIME_SUBSCRIBE_STATES.CHANNEL_ERROR,
-                  new Error('mismatch between server and client bindings for postgres changes')
-                )
-                return
-              }
-            }
-
-            this.bindings.postgres_changes = newPostgresBindings
-
-            callback && callback(REALTIME_SUBSCRIBE_STATES.SUBSCRIBED)
-            return
           }
+
+          this._updatePostgresBindings(postgres_changes, callback)
         })
         .receive('error', (error: { [key: string]: any }) => {
           this.state = CHANNEL_STATES.errored
@@ -362,14 +314,57 @@ export default class RealtimeChannel {
             REALTIME_SUBSCRIBE_STATES.CHANNEL_ERROR,
             new Error(JSON.stringify(Object.values(error).join(', ') || 'error'))
           )
-          return
         })
         .receive('timeout', () => {
           callback?.(REALTIME_SUBSCRIBE_STATES.TIMED_OUT)
-          return
         })
     }
     return this
+  }
+
+  private _updatePostgresBindings(
+    postgres_changes: PostgresChangesFilters['postgres_changes'],
+    callback?: (status: REALTIME_SUBSCRIBE_STATES, err?: Error) => void
+  ) {
+    const clientPostgresBindings = this.bindings.postgres_changes
+    const bindingsLen = clientPostgresBindings?.length ?? 0
+    const newPostgresBindings = []
+
+    for (let i = 0; i < bindingsLen; i++) {
+      const clientPostgresBinding = clientPostgresBindings[i]
+      const {
+        filter: { event, schema, table, filter },
+      } = clientPostgresBinding
+      const serverPostgresFilter = postgres_changes && postgres_changes[i]
+
+      if (
+        serverPostgresFilter &&
+        serverPostgresFilter.event === event &&
+        RealtimeChannel.isFilterValueEqual(serverPostgresFilter.schema, schema) &&
+        RealtimeChannel.isFilterValueEqual(serverPostgresFilter.table, table) &&
+        RealtimeChannel.isFilterValueEqual(serverPostgresFilter.filter, filter)
+      ) {
+        newPostgresBindings.push({
+          ...clientPostgresBinding,
+          id: serverPostgresFilter.id,
+        })
+      } else {
+        this.unsubscribe()
+        this.state = CHANNEL_STATES.errored
+
+        callback?.(
+          REALTIME_SUBSCRIBE_STATES.CHANNEL_ERROR,
+          new Error('mismatch between server and client bindings for postgres changes')
+        )
+        return
+      }
+    }
+
+    this.bindings.postgres_changes = newPostgresBindings
+
+    if (this.state != CHANNEL_STATES.errored && callback) {
+      callback(REALTIME_SUBSCRIBE_STATES.SUBSCRIBED)
+    }
   }
 
   /**
@@ -430,6 +425,11 @@ export default class RealtimeChannel {
     type: `${REALTIME_LISTEN_TYPES.PRESENCE}`,
     filter: { event: `${REALTIME_PRESENCE_LISTEN_EVENTS.LEAVE}` },
     callback: (payload: RealtimePresenceLeavePayload<T>) => void
+  ): RealtimeChannel
+  on<T extends { [key: string]: any }>(
+    type: `${REALTIME_LISTEN_TYPES.PRESENCE}`,
+    filter: { event: '*' },
+    callback: (payload?: RealtimePresenceJoinPayload<T> | RealtimePresenceLeavePayload<T>) => void
   ): RealtimeChannel
   on<T extends { [key: string]: any }>(
     type: `${REALTIME_LISTEN_TYPES.POSTGRES_CHANGES}`,
@@ -534,12 +534,9 @@ export default class RealtimeChannel {
     filter: { event: string; [key: string]: string },
     callback: (payload: any) => void
   ): RealtimeChannel {
-    if (this.state === CHANNEL_STATES.joined && type === REALTIME_LISTEN_TYPES.PRESENCE) {
-      this.socket.log(
-        'channel',
-        `resubscribe to ${this.topic} due to change in presence callbacks on joined channel`
-      )
-      this.unsubscribe().then(async () => await this.subscribe())
+    if (this.channelAdapter.isJoined() && type === REALTIME_LISTEN_TYPES.PRESENCE) {
+      this.socket.log('channel', `cannot add presence callbacks for ${this.topic} after joining.`)
+      throw new Error('cannot add presence callbacks after joining a channel')
     }
     return this._on(type, filter, callback)
   }
@@ -624,7 +621,7 @@ export default class RealtimeChannel {
     },
     opts: { [key: string]: any } = {}
   ): Promise<RealtimeChannelSendResponse> {
-    if (!this._canPush() && args.type === 'broadcast') {
+    if (!this.channelAdapter.canPush() && args.type === 'broadcast') {
       console.warn(
         'Realtime send() is automatically falling back to REST API. ' +
           'This behavior will be deprecated in the future. ' +
@@ -674,7 +671,7 @@ export default class RealtimeChannel {
       }
     } else {
       return new Promise((resolve) => {
-        const push = this._push(args.type, args, opts.timeout || this.timeout)
+        const push = this.channelAdapter.push(args.type, args, opts.timeout || this.timeout)
 
         if (args.type === 'broadcast' && !this.params?.config?.broadcast?.ack) {
           resolve('ok')
@@ -691,8 +688,8 @@ export default class RealtimeChannel {
    * Updates the payload that will be sent the next time the channel joins (reconnects).
    * Useful for rotating access tokens or updating config without re-creating the channel.
    */
-  updateJoinPayload(payload: { [key: string]: any }): void {
-    this.joinPush.updatePayload(payload)
+  updateJoinPayload(payload: Record<string, any>) {
+    this.channelAdapter.updateJoinPayload(payload)
   }
 
   /**
@@ -704,56 +701,24 @@ export default class RealtimeChannel {
    * To receive leave acknowledgements, use the a `receive` hook to bind to the server ack, ie:
    * channel.unsubscribe().receive("ok", () => alert("left!") )
    */
-  unsubscribe(timeout = this.timeout): Promise<'ok' | 'timed out' | 'error'> {
-    this.state = CHANNEL_STATES.leaving
-    const onClose = () => {
-      this.socket.log('channel', `leave ${this.topic}`)
-      this._trigger(CHANNEL_EVENTS.close, 'leave', this._joinRef())
-    }
-
-    this.joinPush.destroy()
-
-    let leavePush: Push | null = null
-
+  async unsubscribe(timeout = this.timeout) {
     return new Promise<RealtimeChannelSendResponse>((resolve) => {
-      leavePush = new Push(this, CHANNEL_EVENTS.leave, {}, timeout)
-      leavePush
-        .receive('ok', () => {
-          onClose()
-          resolve('ok')
-        })
-        .receive('timeout', () => {
-          onClose()
-          resolve('timed out')
-        })
-        .receive('error', () => {
-          resolve('error')
-        })
-
-      leavePush.send()
-      if (!this._canPush()) {
-        leavePush.trigger('ok', {})
-      }
-    }).finally(() => {
-      leavePush?.destroy()
+      this.channelAdapter
+        .unsubscribe(timeout)
+        .receive('ok', () => resolve('ok'))
+        .receive('timeout', () => resolve('timed out'))
+        .receive('error', () => resolve('error'))
     })
   }
+
   /**
-   * Teardown the channel.
-   *
    * Destroys and stops related timers.
    */
   teardown() {
-    this.pushBuffer.forEach((push: Push) => push.destroy())
-    this.pushBuffer = []
-    this.rejoinTimer.reset()
-    this.joinPush.destroy()
-    this.state = CHANNEL_STATES.closed
-    this.bindings = {}
+    this.channelAdapter.teardown()
   }
 
   /** @internal */
-
   async _fetchWithTimeout(url: string, options: { [key: string]: any }, timeout: number) {
     const controller = new AbortController()
     const id = setTimeout(() => controller.abort(), timeout)
@@ -769,156 +734,16 @@ export default class RealtimeChannel {
   }
 
   /** @internal */
-  _push(event: string, payload: { [key: string]: any }, timeout = this.timeout) {
-    if (!this.joinedOnce) {
-      throw `tried to push '${event}' to '${this.topic}' before joining. Use channel.subscribe() before pushing events`
-    }
-    let pushEvent = new Push(this, event, payload, timeout)
-    if (this._canPush()) {
-      pushEvent.send()
-    } else {
-      this._addToPushBuffer(pushEvent)
-    }
-
-    return pushEvent
-  }
-
-  /** @internal */
-  _addToPushBuffer(pushEvent: Push) {
-    pushEvent.startTimeout()
-    this.pushBuffer.push(pushEvent)
-
-    // Enforce buffer size limit
-    if (this.pushBuffer.length > MAX_PUSH_BUFFER_SIZE) {
-      const removedPush = this.pushBuffer.shift()
-      if (removedPush) {
-        removedPush.destroy()
-        this.socket.log(
-          'channel',
-          `discarded push due to buffer overflow: ${removedPush.event}`,
-          removedPush.payload
-        )
-      }
-    }
-  }
-
-  /**
-   * Overridable message hook
-   *
-   * Receives all events for specialized message handling before dispatching to the channel callbacks.
-   * Must return the payload, modified or unmodified.
-   *
-   * @internal
-   */
-  _onMessage(_event: string, payload: any, _ref?: string) {
-    return payload
-  }
-
-  /** @internal */
-  _isMember(topic: string): boolean {
-    return this.topic === topic
-  }
-
-  /** @internal */
-  _joinRef(): string {
-    return this.joinPush.ref
-  }
-
-  /** @internal */
-  _trigger(type: string, payload?: any, ref?: string) {
+  _on(type: string, filter: { [key: string]: any }, callback: ChannelBindingCallback) {
     const typeLower = type.toLocaleLowerCase()
-    const { close, error, leave, join } = CHANNEL_EVENTS
-    const events: string[] = [close, error, leave, join]
-    if (ref && events.indexOf(typeLower) >= 0 && ref !== this._joinRef()) {
-      return
-    }
-    let handledPayload = this._onMessage(typeLower, payload, ref)
-    if (payload && !handledPayload) {
-      throw 'channel onMessage callbacks must return the payload, modified or unmodified'
-    }
 
-    if (['insert', 'update', 'delete'].includes(typeLower)) {
-      this.bindings.postgres_changes
-        ?.filter((bind) => {
-          return bind.filter?.event === '*' || bind.filter?.event?.toLocaleLowerCase() === typeLower
-        })
-        .map((bind) => bind.callback(handledPayload, ref))
-    } else {
-      this.bindings[typeLower]
-        ?.filter((bind) => {
-          if (['broadcast', 'presence', 'postgres_changes'].includes(typeLower)) {
-            if ('id' in bind) {
-              const bindId = bind.id
-              const bindEvent = bind.filter?.event
-              return (
-                bindId &&
-                payload.ids?.includes(bindId) &&
-                (bindEvent === '*' ||
-                  bindEvent?.toLocaleLowerCase() === payload.data?.type.toLocaleLowerCase())
-              )
-            } else {
-              const bindEvent = bind?.filter?.event?.toLocaleLowerCase()
-              return bindEvent === '*' || bindEvent === payload?.event?.toLocaleLowerCase()
-            }
-          } else {
-            return bind.type.toLocaleLowerCase() === typeLower
-          }
-        })
-        .map((bind) => {
-          if (typeof handledPayload === 'object' && 'ids' in handledPayload) {
-            const postgresChanges = handledPayload.data
-            const { schema, table, commit_timestamp, type, errors } = postgresChanges
-            const enrichedPayload = {
-              schema: schema,
-              table: table,
-              commit_timestamp: commit_timestamp,
-              eventType: type,
-              new: {},
-              old: {},
-              errors: errors,
-            }
-            handledPayload = {
-              ...enrichedPayload,
-              ...this._getPayloadRecords(postgresChanges),
-            }
-          }
-          bind.callback(handledPayload, ref)
-        })
-    }
-  }
+    const ref = this.channelAdapter.on(type, callback)
 
-  /** @internal */
-  _isClosed(): boolean {
-    return this.state === CHANNEL_STATES.closed
-  }
-
-  /** @internal */
-  _isJoined(): boolean {
-    return this.state === CHANNEL_STATES.joined
-  }
-
-  /** @internal */
-  _isJoining(): boolean {
-    return this.state === CHANNEL_STATES.joining
-  }
-
-  /** @internal */
-  _isLeaving(): boolean {
-    return this.state === CHANNEL_STATES.leaving
-  }
-
-  /** @internal */
-  _replyEventName(ref: string): string {
-    return `chan_reply_${ref}`
-  }
-
-  /** @internal */
-  _on(type: string, filter: { [key: string]: any }, callback: Function) {
-    const typeLower = type.toLocaleLowerCase()
-    const binding = {
+    const binding: Binding = {
       type: typeLower,
       filter: filter,
       callback: callback,
+      ref: ref,
     }
 
     if (this.bindings[typeLower]) {
@@ -927,37 +752,94 @@ export default class RealtimeChannel {
       this.bindings[typeLower] = [binding]
     }
 
+    this._updateFilterMessage()
+
     return this
   }
 
-  /** @internal */
-  _off(type: string, filter: { [key: string]: any }) {
-    const typeLower = type.toLocaleLowerCase()
+  /**
+   * Registers a callback that will be executed when the channel closes.
+   *
+   * @internal
+   */
+  private _onClose(callback: ChannelBindingCallback) {
+    this.channelAdapter.onClose(callback)
+  }
 
-    if (this.bindings[typeLower]) {
-      this.bindings[typeLower] = this.bindings[typeLower].filter((bind) => {
-        return !(
-          bind.type?.toLocaleLowerCase() === typeLower &&
-          RealtimeChannel.isEqual(bind.filter, filter)
-        )
-      })
-    }
-    return this
+  /**
+   * Registers a callback that will be executed when the channel encounteres an error.
+   *
+   * @internal
+   */
+  private _onError(callback: ChannelOnErrorCallback) {
+    this.channelAdapter.onError(callback)
   }
 
   /** @internal */
-  private static isEqual(obj1: { [key: string]: string }, obj2: { [key: string]: string }) {
-    if (Object.keys(obj1).length !== Object.keys(obj2).length) {
-      return false
-    }
+  private _updateFilterMessage() {
+    this.channelAdapter.updateFilterBindings((binding, payload: any, ref) => {
+      const typeLower = binding.event.toLocaleLowerCase()
 
-    for (const k in obj1) {
-      if (obj1[k] !== obj2[k]) {
+      if (this._notThisChannelEvent(typeLower, ref)) {
         return false
       }
-    }
 
-    return true
+      const bind = this.bindings[typeLower]?.find((bind) => bind.ref === binding.ref)
+
+      if (!bind) {
+        return true
+      }
+
+      if (['broadcast', 'presence', 'postgres_changes'].includes(typeLower)) {
+        if ('id' in bind) {
+          const bindId = bind.id
+          const bindEvent = bind.filter?.event
+          return (
+            bindId &&
+            payload.ids?.includes(bindId) &&
+            (bindEvent === '*' ||
+              bindEvent?.toLocaleLowerCase() === payload.data?.type.toLocaleLowerCase())
+          )
+        } else {
+          const bindEvent = bind?.filter?.event?.toLocaleLowerCase()
+          return bindEvent === '*' || bindEvent === payload?.event?.toLocaleLowerCase()
+        }
+      } else {
+        return bind.type.toLocaleLowerCase() === typeLower
+      }
+    })
+  }
+
+  /** @internal */
+  private _notThisChannelEvent(event: string, ref?: string | null) {
+    const { close, error, leave, join } = CHANNEL_EVENTS
+    const events: string[] = [close, error, leave, join]
+    return ref && events.includes(event) && ref !== this.joinPush.ref
+  }
+
+  /** @internal */
+  private _updateFilterTransform() {
+    this.channelAdapter.updatePayloadTransform((event, payload: any, ref) => {
+      if (typeof payload === 'object' && 'ids' in payload) {
+        const postgresChanges = payload.data
+        const { schema, table, commit_timestamp, type, errors } = postgresChanges
+        const enrichedPayload = {
+          schema: schema,
+          table: table,
+          commit_timestamp: commit_timestamp,
+          eventType: type,
+          new: {},
+          old: {},
+          errors: errors,
+        }
+        return {
+          ...enrichedPayload,
+          ...this._getPayloadRecords(postgresChanges),
+        }
+      }
+
+      return payload
+    })
   }
 
   /**
@@ -972,51 +854,6 @@ export default class RealtimeChannel {
     const normalizedServer = serverValue ?? undefined
     const normalizedClient = clientValue ?? undefined
     return normalizedServer === normalizedClient
-  }
-
-  /** @internal */
-  private _rejoinUntilConnected() {
-    this.rejoinTimer.scheduleTimeout()
-    if (this.socket.isConnected()) {
-      this._rejoin()
-    }
-  }
-
-  /**
-   * Registers a callback that will be executed when the channel closes.
-   *
-   * @internal
-   */
-  private _onClose(callback: Function) {
-    this._on(CHANNEL_EVENTS.close, {}, callback)
-  }
-
-  /**
-   * Registers a callback that will be executed when the channel encounteres an error.
-   *
-   * @internal
-   */
-  private _onError(callback: Function) {
-    this._on(CHANNEL_EVENTS.error, {}, (reason: string) => callback(reason))
-  }
-
-  /**
-   * Returns `true` if the socket is connected and the channel has been joined.
-   *
-   * @internal
-   */
-  private _canPush(): boolean {
-    return this.socket.isConnected() && this._isJoined()
-  }
-
-  /** @internal */
-  private _rejoin(timeout = this.timeout): void {
-    if (this._isLeaving()) {
-      return
-    }
-    this.socket._leaveOpenTopic(this.topic)
-    this.state = CHANNEL_STATES.joining
-    this.joinPush.resend(timeout)
   }
 
   /** @internal */
