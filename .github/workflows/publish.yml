@@ -93,8 +93,10 @@ jobs:
           git config --global user.email "supabase-releaser[bot]@users.noreply.github.com"
 
       - name: Validate input
+        env:
+          VERSION_SPECIFIER: ${{ github.event.inputs.version_specifier }}
         run: |
-          VS="${{ github.event.inputs.version_specifier }}"
+          VS="${VERSION_SPECIFIER}"
           echo "Validating: $VS"
 
           if [[ "$VS" =~ ^(patch|minor|major|prepatch|preminor|premajor|prerelease)$ ]]; then
@@ -129,9 +131,11 @@ jobs:
 
       - name: Summary
         if: ${{ success() }}
+        env:
+          VERSION_SPECIFIER: ${{ github.event.inputs.version_specifier }}
         run: |
           echo "## ✅ Stable Release" >> $GITHUB_STEP_SUMMARY
-          echo "- **Version specifier:** \`${{ github.event.inputs.version_specifier }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Version specifier:** \`${VERSION_SPECIFIER}\`" >> $GITHUB_STEP_SUMMARY
           echo "- **Source commit:** HEAD of the checked-out branch" >> $GITHUB_STEP_SUMMARY
           echo "- **Dist-tag:** \`latest\`" >> $GITHUB_STEP_SUMMARY
 
@@ -144,35 +148,19 @@ jobs:
       actions: read
       contents: write
 
-  trigger-update-js-libs:
-    name: Trigger Update JS Libs
-    runs-on: ubuntu-latest
+  trigger-dogfood:
+    name: Trigger Dogfood
     needs: release-stable
     if: ${{ github.event_name == 'workflow_dispatch' && needs.release-stable.result == 'success' }}
-    steps:
-      - name: Generate token
-        id: app-token
-        uses: actions/create-github-app-token@29824e69f54612133e76f7eaac726eef6c875baf
-        with:
-          app-id: ${{ secrets.APP_ID }}
-          private-key: ${{ secrets.PRIVATE_KEY }}
-          owner: supabase
-          repositories: supabase, supabase-js
-      - name: Trigger supabase/supabase update-js-libs workflow
-        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
-        with:
-          github-token: ${{ steps.app-token.outputs.token }}
-          script: |
-            await github.rest.actions.createWorkflowDispatch({
-              owner: 'supabase',
-              repo: 'supabase',
-              workflow_id: 'update-js-libs.yml',
-              ref: 'master',
-              inputs: {
-                version: '${{ needs.release-stable.outputs.released_version }}',
-                source: 'supabase-js-stable-release'
-              }
-            });
+    uses: ./.github/workflows/dogfood.yml
+    secrets:
+      APP_ID: ${{ secrets.APP_ID }}
+      PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
+      DOGFOOD_APP_ID: ${{ secrets.DOGFOOD_APP_ID }}
+      DOGFOOD_APP_PRIVATE_KEY: ${{ secrets.DOGFOOD_APP_PRIVATE_KEY }}
+    with:
+      version: ${{ needs.release-stable.outputs.released_version }}
+      source: supabase-js-stable-release
 
   trigger-supabase-docs-update:
     name: Trigger Supabase Docs Update

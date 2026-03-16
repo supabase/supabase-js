@@ -72,9 +72,9 @@ jobs:
       - name: Deprecate package versions
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          VERSION: ${{ inputs.version }}
+          MESSAGE: ${{ inputs.message }}
         run: |
-          VERSION="${{ inputs.version }}"
-          MESSAGE="${{ inputs.message }}"
 
           PACKAGES=(
             "supabase-js"

@@ -329,8 +329,10 @@ jobs:
               done
       - name: Check if database schema changed
         id: check_codegen
+        env:
+          REF: ${{ github.base_ref }}
         run: |
-          BASE_REF="${{ github.base_ref }}"
+          BASE_REF="${REF}"
           BASE_REF="${BASE_REF:-master}"
           git fetch origin "$BASE_REF" 2>/dev/null || true
           if git diff --name-only "origin/${BASE_REF}...HEAD" 2>/dev/null | grep -q "packages/core/postgrest-js/test/db/"; then
