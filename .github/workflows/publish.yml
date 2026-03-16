@@ -15,6 +15,16 @@ on:
         description: 'Semver bump (patch|minor|major|pre*) or exact version (v1.2.3)'
         required: true
         type: string
+      dist_tag:
+        description: 'Dist-tag for manual release (latest|rc|canary|next). Ignored for canary auto-releases.'
+        required: false
+        default: 'latest'
+        type: choice
+        options:
+          - latest
+          - rc
+          - canary
+          - next
 
 env:
   NODE_VERSION: '20'
@@ -116,7 +126,7 @@ jobs:
           RELEASE_GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
         shell: bash
-        run: npm run release-stable -- --versionSpecifier "${{ github.event.inputs.version_specifier }}"
+        run: npm run release-stable -- --versionSpecifier "${{ github.event.inputs.version_specifier }}" --tag "${{ github.event.inputs.dist_tag }}"
 
       - name: Extract released version
         id: extract-version
@@ -137,7 +147,7 @@ jobs:
           echo "## ✅ Stable Release" >> $GITHUB_STEP_SUMMARY
           echo "- **Version specifier:** \`${VERSION_SPECIFIER}\`" >> $GITHUB_STEP_SUMMARY
           echo "- **Source commit:** HEAD of the checked-out branch" >> $GITHUB_STEP_SUMMARY
-          echo "- **Dist-tag:** \`latest\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Dist-tag:** \`${{ github.event.inputs.dist_tag }}\`" >> $GITHUB_STEP_SUMMARY
 
   docs-after-stable-release:
     name: Generate Documentation
