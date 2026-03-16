@@ -22,7 +22,7 @@ on:
           - canary
           - next
       version_specifier:
-        description: 'Stable only: semver bump (patch|minor|major|pre*) or exact version (v1.2.3). Ignored for prerelease dist-tags.'
+        description: 'Semver bump (patch|minor|major|prepatch|preminor|premajor|prerelease) or exact version (v1.2.3). For stable: required. For prerelease: defaults to "prerelease".'
         required: false
         type: string
       preid:
@@ -137,7 +137,7 @@ jobs:
           RELEASE_GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
         shell: bash
-        run: npm run release-canary -- --preid "${{ github.event.inputs.preid || github.event.inputs.dist_tag }}" --tag "${{ github.event.inputs.dist_tag }}"
+        run: npm run release-canary -- --specifier "${{ github.event.inputs.version_specifier || 'prerelease' }}" --preid "${{ github.event.inputs.preid || github.event.inputs.dist_tag }}" --tag "${{ github.event.inputs.dist_tag }}"
 
       - name: Release stable version
         if: ${{ github.event.inputs.dist_tag == 'latest' }}

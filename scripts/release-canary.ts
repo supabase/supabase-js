@@ -11,6 +11,7 @@ function getArg(name: string): string | undefined {
 
 const preid = getArg('preid') ?? 'canary'
 const distTag = getArg('tag') ?? 'canary'
+const specifier = getArg('specifier') ?? 'prerelease'
 
 const validTags = ['latest', 'canary', 'beta', 'alpha', 'next', 'rc']
 if (!validTags.includes(distTag)) {
@@ -38,7 +39,7 @@ if (!validTags.includes(distTag)) {
     verbose: true,
     gitCommit: false,
     stageChanges: false,
-    specifier: 'prerelease',
+    specifier,
     preid,
   })
 
