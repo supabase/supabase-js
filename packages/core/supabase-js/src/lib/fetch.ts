@@ -44,7 +44,7 @@ export const fetchWithAuth = (
     }
 
     // Inject trace headers
-    const traceHeaders = getTraceHeaders(input, supabaseUrl, tracePropagationOptions)
+    const traceHeaders = await getTraceHeaders(input, supabaseUrl, tracePropagationOptions)
 
     if (traceHeaders) {
       if (traceHeaders.traceparent && !headers.has('traceparent')) {
@@ -70,11 +70,11 @@ export const fetchWithAuth = (
  * @param options - Trace propagation options
  * @returns Trace context headers, or null if trace propagation is disabled or unavailable
  */
-function getTraceHeaders(
+async function getTraceHeaders(
   input: RequestInfo | URL,
   supabaseUrl: string,
   options?: TracePropagationOptions
-): TraceContext | null {
+): Promise<TraceContext | null> {
   // Check if trace propagation is enabled
   if (options?.enabled === false) {
     return null
@@ -93,7 +93,7 @@ function getTraceHeaders(
   }
 
   // Extract trace context
-  const traceContext = extractTraceContext()
+  const traceContext = await extractTraceContext()
 
   if (!traceContext || !traceContext.traceparent) {
     return null
