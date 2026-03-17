@@ -209,6 +209,11 @@ export default abstract class PostgrestBuilder<
           statusText = 'OK'
         }
 
+        if (error && !error.hint) {
+          const hint = this._getPermissionHint(error)
+          if (hint) error = { ...error, hint }
+        }
+
         if (error && this.shouldThrowOnError) {
           throw new PostgrestError(error)
         }
@@ -336,6 +341,79 @@ export default abstract class PostgrestBuilder<
    * ```
    * @returns A PostgrestBuilder instance with the new type
    */
+  private _getPermissionHint(error: { code: string; message: string }): string | null {
+    const isRpc = this.url.pathname.includes('/rpc/')
+
+    const getPrivilege = (): string => {
+      if (isRpc) return 'EXECUTE'
+      switch (this.method) {
+        case 'GET':
+        case 'HEAD':
+          return 'SELECT'
+        case 'POST':
+          return 'INSERT'
+        case 'PATCH':
+          return 'UPDATE'
+        case 'DELETE':
+          return 'DELETE'
+        default:
+          return 'SELECT'
+      }
+    }
+
+    const schema = this.schema ?? 'public'
+
+    // 42501 - PostgreSQL permission denied (supautils fallback or non-supautils environments)
+    if (error.code === '42501') {
+      const match = error.message?.match(
+        /permission denied for (?:table|view|sequence|schema|function) (\S+)/
+      )
+      if (!match) return null
+      const objectName = match[1]
+      const qualified = objectName.includes('.') ? objectName : `${schema}.${objectName}`
+      const privilege = getPrivilege()
+      return (
+        `Missing ${privilege} privilege on '${qualified}'.\n\n` +
+        `Grant it with:\n` +
+        `GRANT ${privilege} ON ${isRpc ? `FUNCTION ${qualified}` : qualified} TO anon, authenticated;\n\n` +
+        `Note: Specify only the roles that need access.`
+      )
+    }
+
+    // PGRST205 - table not found in PostgREST schema cache (could be missing perms)
+    if (error.code === 'PGRST205') {
+      const match = error.message?.match(/Could not find the table ['"]?([^'"]+)['"]?/)
+      if (!match) return null
+      const tableName = match[1]
+      const privilege = getPrivilege()
+      return (
+        `Table '${tableName}' not found. This could mean:\n` +
+        `1. The table doesn't exist, OR\n` +
+        `2. The role lacks permission to see it\n\n` +
+        `If the table exists, grant permission with:\n` +
+        `GRANT ${privilege} ON ${tableName} TO anon, authenticated;\n\n` +
+        `Note: Specify only the roles that need access.`
+      )
+    }
+
+    // PGRST202 - function not found in PostgREST schema cache (could be missing perms)
+    if (error.code === 'PGRST202') {
+      const match = error.message?.match(/Could not find the function (\S+)/)
+      if (!match) return null
+      const funcName = match[1].replace(/\(.*$/, '')
+      return (
+        `Function '${funcName}' not found. This could mean:\n` +
+        `1. The function doesn't exist, OR\n` +
+        `2. The role lacks permission to see it\n\n` +
+        `If the function exists, grant permission with:\n` +
+        `GRANT EXECUTE ON FUNCTION ${funcName} TO anon, authenticated;\n\n` +
+        `Note: Specify only the roles that need access.`
+      )
+    }
+
+    return null
+  }
+
   overrideTypes<
     NewResult,
     Options extends { merge?: boolean } = { merge: true },
