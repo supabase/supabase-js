@@ -84,10 +84,10 @@
     "@supabase/functions-js": "*",
     "@supabase/postgrest-js": "*",
     "@supabase/realtime-js": "*",
-    "@supabase/storage-js": "*",
-    "@supabase/tracing": "*"
+    "@supabase/storage-js": "*"
   },
   "devDependencies": {
+    "@supabase/tracing": "*",
     "jsr": "^0.13.5",
     "puppeteer": "^24.9.0"
   },

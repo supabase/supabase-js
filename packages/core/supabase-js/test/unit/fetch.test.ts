@@ -1,5 +1,15 @@
 import { resolveFetch, resolveHeadersConstructor, fetchWithAuth } from '../../src/lib/fetch'
 
+jest.mock('@supabase/tracing', () => {
+  const actual = jest.requireActual('@supabase/tracing')
+  return {
+    ...actual,
+    extractTraceContext: jest.fn().mockResolvedValue({
+      traceparent: '00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-00',
+    }),
+  }
+})
+
 // Mock fetch for testing
 const mockFetch = jest.fn()
 const mockHeaders = jest.fn()

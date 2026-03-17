@@ -14,12 +14,14 @@ import type { TraceContext } from './types'
  * const context = extractTraceContext()
  * ```
  */
-export function extractTraceContext(): TraceContext | null {
-  // Try OpenTelemetry API (dynamic require, fails gracefully if not available)
+export async function extractTraceContext(): Promise<TraceContext | null> {
+  // Try OpenTelemetry API (dynamic import, fails gracefully if not available)
   try {
-    // Use dynamic require to avoid bundling @opentelemetry/api
-    // This will only work if the user has installed it
-    const otel = require('@opentelemetry/api')
+    // Use dynamic import to avoid bundling @opentelemetry/api and to prevent
+    // bundlers from emitting a top-level createRequire(import.meta.url) shim,
+    // which breaks in Deno when the module is loaded via an https:// URL.
+    // @ts-ignore - @opentelemetry/api is an optional peer dependency
+    const otel = await import('@opentelemetry/api')
 
     if (!otel || !otel.propagation || !otel.context) {
       return null
