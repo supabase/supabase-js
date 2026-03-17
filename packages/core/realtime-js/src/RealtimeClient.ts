@@ -15,14 +15,7 @@ import { httpEndpointURL } from './lib/transformers'
 import RealtimeChannel from './RealtimeChannel'
 import type { RealtimeChannelOptions } from './RealtimeChannel'
 import SocketAdapter from './phoenix/socketAdapter'
-import type {
-  Message,
-  SocketOptions,
-  HeartbeatCallback,
-  Encode,
-  Decode,
-  Vsn,
-} from './phoenix/types'
+import type { Message, SocketOptions, HeartbeatCallback, Encode, Decode } from './phoenix/types'
 
 type Fetch = typeof fetch
 
@@ -65,7 +58,7 @@ export type RealtimeClientOptions = {
   timeout?: number
   heartbeatIntervalMs?: number
   heartbeatCallback?: (status: HeartbeatStatus, latency?: number) => void
-  vsn?: Vsn
+  vsn?: string
   logger?: (kind: string, msg: string, data?: any) => void
   encode?: Encode<void>
   decode?: Decode<void>
@@ -672,7 +665,7 @@ export default class RealtimeClient {
     result.timeout = options?.timeout ?? DEFAULT_TIMEOUT
     result.heartbeatIntervalMs =
       options?.heartbeatIntervalMs ?? CONNECTION_TIMEOUTS.HEARTBEAT_INTERVAL
-    result.vsn = options?.vsn ?? DEFAULT_VSN
+
     // @ts-ignore - mismatch between phoenix and supabase
     result.transport = options?.transport ?? WebSocketFactory.getWebSocketConstructor()
     result.params = options?.params
@@ -687,7 +680,9 @@ export default class RealtimeClient {
     let defaultEncode: Encode<void>
     let defaultDecode: Decode<void>
 
-    switch (result.vsn) {
+    const vsn = options?.vsn ?? DEFAULT_VSN
+
+    switch (vsn) {
       case VSN_1_0_0:
         defaultEncode = (payload, callback) => {
           return callback(JSON.stringify(payload))
@@ -704,6 +699,7 @@ export default class RealtimeClient {
         throw new Error(`Unsupported serializer version: ${result.vsn}`)
     }
 
+    result.vsn = vsn
     result.encode = options?.encode ?? defaultEncode
     result.decode = options?.decode ?? defaultDecode
 
