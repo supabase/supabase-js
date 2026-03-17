@@ -604,9 +604,13 @@ export default class PostgrestFilterBuilder<
    * to their filter values
    */
   match(query: Record<string, unknown>): this {
-    Object.entries(query).forEach(([column, value]) => {
-      this.url.searchParams.append(column, `eq.${value}`)
-    })
+    Object.entries(query) 
+      // columns with `undefined` value needs to be filtered out, otherwise it'll 
+      // show up as `?column=eq.undefined` 
+      .filter(([_, value]) => value !== undefined)
+      .forEach(([column, value]) => {
+        this.url.searchParams.append(column, `eq.${value}`)
+      })
     return this
   }
 
