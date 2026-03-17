@@ -2,9 +2,9 @@ import { extractTraceContext } from '../src/extract'
 
 describe('extractTraceContext', () => {
   describe('OpenTelemetry API', () => {
-    it('should return null when OTel API is not available', () => {
+    it('should return null when OTel API is not available', async () => {
       // Without OpenTelemetry API installed, should return null
-      const result = extractTraceContext()
+      const result = await extractTraceContext()
 
       // Since @opentelemetry/api is not installed in this package, this should return null
       expect(result).toBeNull()

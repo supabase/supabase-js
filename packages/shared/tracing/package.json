@@ -5,6 +5,13 @@
   "main": "dist/main/index.js",
   "module": "dist/module/index.js",
   "types": "dist/module/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/module/index.js",
+      "require": "./dist/main/index.js",
+      "types": "./dist/module/index.d.ts"
+    }
+  },
   "sideEffects": false,
   "scripts": {
     "build": "npm run build:main && npm run build:module",
