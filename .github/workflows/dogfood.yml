@@ -164,14 +164,15 @@ jobs:
                   ref: repoData.default_branch,
                   inputs,
                 });
-                results.push(`✅ supabase/${repo} — ${workflow}`);
+                const repoLink = `<a href="https://github.com/supabase/${repo}/pulls">supabase/${repo}</a>`;
+                results.push(`✅ ${repoLink} — ${workflow}`);
               } catch (error) {
-                results.push(`❌ supabase/${repo} — ${workflow}: ${error.message}`);
+                const repoLink = `<a href="https://github.com/supabase/${repo}/pulls">supabase/${repo}</a>`;
+                results.push(`❌ ${repoLink} — ${workflow}: ${error.message}`);
               }
             }
 
-            const summary = results.join('\n');
             core.summary.addHeading('Dogfood Dispatch Results', 2);
-            core.summary.addCodeBlock(summary);
+            core.summary.addList(results);
             await core.summary.write();
-            console.log(summary);
+            console.log(results.join('\n'));
