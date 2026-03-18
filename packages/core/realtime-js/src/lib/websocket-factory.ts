@@ -146,10 +146,14 @@ export class WebSocketFactory {
    *
    * @category Realtime
    *
-   * @example Example 1
+   * @example Example with error handling
    * ```ts
-   * const WS = WebSocketFactory.getWebSocketConstructor()
-   * const socket = new WS('wss://realtime.supabase.co/socket')
+   * try {
+   *   const WS = WebSocketFactory.getWebSocketConstructor()
+   *   const socket = new WS('wss://example.com/socket')
+   * } catch (error) {
+   *   console.error('WebSocket not available in this environment.', error)
+   * }
    * ```
    */
   public static getWebSocketConstructor(): typeof WebSocket {
@@ -176,10 +180,11 @@ export class WebSocketFactory {
    *
    * @category Realtime
    *
-   * @example Example 1
+   * @example Example in a Node.js script
    * ```ts
    * if (!WebSocketFactory.isWebSocketSupported()) {
-   *   console.warn('Falling back to long polling')
+   *   console.error('WebSockets are required for this script.')
+   *   process.exitCode = 1
    * }
    * ```
    */

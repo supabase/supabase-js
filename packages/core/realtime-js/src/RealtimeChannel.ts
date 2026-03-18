@@ -802,17 +802,17 @@ export default class RealtimeChannel {
    *
    * @example Send a message via websocket
    * ```js
-   * supabase
-   *   .channel('room1')
-   *   .subscribe((status) => {
-   *     if (status === 'SUBSCRIBED') {
-   *       channel.send({
-   *         type: 'broadcast',
-   *         event: 'cursor-pos',
-   *         payload: { x: Math.random(), y: Math.random() },
-   *       })
-   *     }
-   *   })
+   * const channel = supabase.channel('room1')
+   *
+   * channel.subscribe((status) => {
+   *   if (status === 'SUBSCRIBED') {
+   *     channel.send({
+   *       type: 'broadcast',
+   *       event: 'cursor-pos',
+   *       payload: { x: Math.random(), y: Math.random() },
+   *     })
+   *   }
+   * })
    * ```
    *
    * @exampleResponse Send a message via websocket
