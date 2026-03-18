@@ -669,7 +669,7 @@ export default class RealtimeChannel {
    *
    * @exampleDescription Listen to deletes
    * By default, Supabase does not send deleted records. If you want to receive the deleted record you can
-   * enable full replication for the table you are listening too:
+   * enable full replication for the table you are listening to:
    *
    * ```sql
    * alter table "your_table" replica identity full;
