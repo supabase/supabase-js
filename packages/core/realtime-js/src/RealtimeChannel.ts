@@ -265,7 +265,8 @@ export default class RealtimeChannel {
     }
   }
 
-  /** Subscribe registers your client with the server  *
+  /**
+   * Subscribe registers your client with the server
    * @category Realtime
    */
   subscribe(
