@@ -27,7 +27,7 @@ export default class PostgrestQueryBuilder<
    *
    * @example
    * ```ts
-   * import PostgrestQueryBuilder from '@supabase/postgrest-js'
+   * import { PostgrestQueryBuilder } from '@supabase/postgrest-js'
    *
    * const query = new PostgrestQueryBuilder(
    *   new URL('https://xyzcompany.supabase.co/rest/v1/users'),
@@ -39,7 +39,7 @@ export default class PostgrestQueryBuilder<
    *
    * @example Example 1
    * ```ts
-   * import PostgrestQueryBuilder from '@supabase/postgrest-js'
+   * import { PostgrestQueryBuilder } from '@supabase/postgrest-js'
    *
    * const query = new PostgrestQueryBuilder(
    *   new URL('https://xyzcompany.supabase.co/rest/v1/users'),
