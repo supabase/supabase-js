@@ -540,6 +540,41 @@ export default class PostgrestTransformBuilder<
    *
    * Query result must be one row (e.g. using `.limit(1)`), otherwise this
    * returns an error.
+   *
+   * @category Database
+   *
+   * @example With `select()`
+   * ```ts
+   * const { data, error } = await supabase
+   *   .from('characters')
+   *   .select('name')
+   *   .limit(1)
+   *   .single()
+   * ```
+   *
+   * @exampleSql With `select()`
+   * ```sql
+   * create table
+   *   characters (id int8 primary key, name text);
+   *
+   * insert into
+   *   characters (id, name)
+   * values
+   *   (1, 'Luke'),
+   *   (2, 'Leia'),
+   *   (3, 'Han');
+   * ```
+   *
+   * @exampleResponse With `select()`
+   * ```json
+   * {
+   *   "data": {
+   *     "name": "Luke"
+   *   },
+   *   "status": 200,
+   *   "statusText": "OK"
+   * }
+   * ```
    */
   single<ResultOne = Result extends (infer ResultOne)[] ? ResultOne : never>(): PostgrestBuilder<
     ClientOptions,
@@ -554,6 +589,38 @@ export default class PostgrestTransformBuilder<
    *
    * Query result must be zero or one row (e.g. using `.limit(1)`), otherwise
    * this returns an error.
+   *
+   * @category Database
+   *
+   * @example With `select()`
+   * ```ts
+   * const { data, error } = await supabase
+   *   .from('characters')
+   *   .select()
+   *   .eq('name', 'Katniss')
+   *   .maybeSingle()
+   * ```
+   *
+   * @exampleSql With `select()`
+   * ```sql
+   * create table
+   *   characters (id int8 primary key, name text);
+   *
+   * insert into
+   *   characters (id, name)
+   * values
+   *   (1, 'Luke'),
+   *   (2, 'Leia'),
+   *   (3, 'Han');
+   * ```
+   *
+   * @exampleResponse With `select()`
+   * ```json
+   * {
+   *   "status": 200,
+   *   "statusText": "OK"
+   * }
+   * ```
    */
   maybeSingle<
     ResultOne = Result extends (infer ResultOne)[] ? ResultOne : never,
@@ -571,6 +638,41 @@ export default class PostgrestTransformBuilder<
 
   /**
    * Return `data` as a string in CSV format.
+   *
+   * @category Database
+   *
+   * @exampleDescription Return data as CSV
+   * By default, the data is returned in JSON format, but can also be returned as Comma Separated Values.
+   *
+   * @example Return data as CSV
+   * ```ts
+   * const { data, error } = await supabase
+   *   .from('characters')
+   *   .select()
+   *   .csv()
+   * ```
+   *
+   * @exampleSql Return data as CSV
+   * ```sql
+   * create table
+   *   characters (id int8 primary key, name text);
+   *
+   * insert into
+   *   characters (id, name)
+   * values
+   *   (1, 'Luke'),
+   *   (2, 'Leia'),
+   *   (3, 'Han');
+   * ```
+   *
+   * @exampleResponse Return data as CSV
+   * ```json
+   * {
+   *   "data": "id,name\n1,Luke\n2,Leia\n3,Han",
+   *   "status": 200,
+   *   "statusText": "OK"
+   * }
+   * ```
    */
   csv(): PostgrestBuilder<ClientOptions, string> {
     this.headers.set('Accept', 'text/csv')
@@ -609,6 +711,76 @@ export default class PostgrestTransformBuilder<
    *
    * @param options.format - The format of the output, can be `"text"` (default)
    * or `"json"`
+   *
+   * @category Database
+   *
+   * @exampleDescription Get the execution plan
+   * By default, the data is returned in TEXT format, but can also be returned as JSON by using the `format` parameter.
+   *
+   * @example Get the execution plan
+   * ```ts
+   * const { data, error } = await supabase
+   *   .from('characters')
+   *   .select()
+   *   .explain()
+   * ```
+   *
+   * @exampleSql Get the execution plan
+   * ```sql
+   * create table
+   *   characters (id int8 primary key, name text);
+   *
+   * insert into
+   *   characters (id, name)
+   * values
+   *   (1, 'Luke'),
+   *   (2, 'Leia'),
+   *   (3, 'Han');
+   * ```
+   *
+   * @exampleResponse Get the execution plan
+   * ```js
+   * Aggregate  (cost=33.34..33.36 rows=1 width=112)
+   *   ->  Limit  (cost=0.00..18.33 rows=1000 width=40)
+   *         ->  Seq Scan on characters  (cost=0.00..22.00 rows=1200 width=40)
+   * ```
+   *
+   * @exampleDescription Get the execution plan with analyze and verbose
+   * By default, the data is returned in TEXT format, but can also be returned as JSON by using the `format` parameter.
+   *
+   * @example Get the execution plan with analyze and verbose
+   * ```ts
+   * const { data, error } = await supabase
+   *   .from('characters')
+   *   .select()
+   *   .explain({analyze:true,verbose:true})
+   * ```
+   *
+   * @exampleSql Get the execution plan with analyze and verbose
+   * ```sql
+   * create table
+   *   characters (id int8 primary key, name text);
+   *
+   * insert into
+   *   characters (id, name)
+   * values
+   *   (1, 'Luke'),
+   *   (2, 'Leia'),
+   *   (3, 'Han');
+   * ```
+   *
+   * @exampleResponse Get the execution plan with analyze and verbose
+   * ```js
+   * Aggregate  (cost=33.34..33.36 rows=1 width=112) (actual time=0.041..0.041 rows=1 loops=1)
+   *   Output: NULL::bigint, count(ROW(characters.id, characters.name)), COALESCE(json_agg(ROW(characters.id, characters.name)), '[]'::json), NULLIF(current_setting('response.headers'::text, true), ''::text), NULLIF(current_setting('response.status'::text, true), ''::text)
+   *   ->  Limit  (cost=0.00..18.33 rows=1000 width=40) (actual time=0.005..0.006 rows=3 loops=1)
+   *         Output: characters.id, characters.name
+   *         ->  Seq Scan on public.characters  (cost=0.00..22.00 rows=1200 width=40) (actual time=0.004..0.005 rows=3 loops=1)
+   *               Output: characters.id, characters.name
+   * Query Identifier: -4730654291623321173
+   * Planning Time: 0.407 ms
+   * Execution Time: 0.119 ms
+   * ```
    */
   explain({
     analyze = false,
@@ -662,6 +834,38 @@ export default class PostgrestTransformBuilder<
    *
    * @typeParam NewResult - The new result type to override with
    * @deprecated Use overrideTypes<yourType, { merge: false }>() method at the end of your call chain instead
+   *
+   * @category Database
+   *
+   * @remarks
+   * - Deprecated: use overrideTypes method instead
+   *
+   * @example Override type of successful response
+   * ```ts
+   * const { data } = await supabase
+   *   .from('countries')
+   *   .select()
+   *   .returns<Array<MyType>>()
+   * ```
+   *
+   * @exampleResponse Override type of successful response
+   * ```js
+   * let x: typeof data // MyType[]
+   * ```
+   *
+   * @example Override type of object response
+   * ```ts
+   * const { data } = await supabase
+   *   .from('countries')
+   *   .select()
+   *   .maybeSingle()
+   *   .returns<MyType>()
+   * ```
+   *
+   * @exampleResponse Override type of object response
+   * ```js
+   * let x: typeof data // MyType | null
+   * ```
    */
   returns<NewResult>(): PostgrestTransformBuilder<
     ClientOptions,

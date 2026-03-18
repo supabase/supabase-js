@@ -61,6 +61,33 @@ export default class PostgrestClient<
    *   timeout: 30000, // 30 second timeout
    * })
    * ```
+   *
+   * @category Database
+   *
+   * @remarks
+   * - A `timeout` option (in milliseconds) can be set to automatically abort requests that take too long.
+   * - A `urlLengthLimit` option (default: 8000) can be set to control when URL length warnings are included in error messages for aborted requests.
+   *
+   * @example Example 1
+   * ```ts
+   * import PostgrestClient from '@supabase/postgrest-js'
+   *
+   * const postgrest = new PostgrestClient('https://xyzcompany.supabase.co/rest/v1', {
+   *   headers: { apikey: 'public-anon-key' },
+   *   schema: 'public',
+   * })
+   * ```
+   *
+   * @example With timeout
+   * ```ts
+   * import PostgrestClient from '@supabase/postgrest-js'
+   *
+   * const postgrest = new PostgrestClient('https://xyzcompany.supabase.co/rest/v1', {
+   *   headers: { apikey: 'public-anon-key' },
+   *   schema: 'public',
+   *   timeout: 30000, // 30 second timeout
+   * })
+   * ```
    */
   constructor(
     url: string,
@@ -136,6 +163,8 @@ export default class PostgrestClient<
    * Perform a query on a table or a view.
    *
    * @param relation - The table or view name to query
+   *
+   * @category Database
    */
   from(
     relation: (string & keyof Schema['Tables']) | (string & keyof Schema['Views'])
@@ -159,6 +188,8 @@ export default class PostgrestClient<
    * The schema needs to be on the list of exposed schemas inside Supabase.
    *
    * @param schema - The schema to query
+   *
+   * @category Database
    */
   schema<DynamicSchema extends string & keyof Omit<Database, '__InternalSupabase'>>(
     schema: DynamicSchema

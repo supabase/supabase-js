@@ -566,6 +566,8 @@ export default class PostgrestFilterBuilder<
    *
    * @param column - The column to filter on
    * @param patterns - The patterns to match with
+   *
+   * @category Database
    */
   ilikeAllOf(column: string, patterns: readonly string[]): this {
     this.url.searchParams.append(column, `ilike(all).{${patterns.join(',')}}`)
