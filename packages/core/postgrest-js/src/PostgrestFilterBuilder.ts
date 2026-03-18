@@ -93,6 +93,13 @@ export default class PostgrestFilterBuilder<
   Relationships,
   Method
 > {
+  eq<ColumnName extends string & keyof Row>(
+    column: ColumnName,
+    value: ResolveFilterValue<Schema, Row, ColumnName> extends infer Resolved
+      ? NonNullable<Resolved>
+      : never
+  ): this
+  eq(column: string, value: unknown): this
   /**
    * Match only rows where `column` is equal to `value`.
    *
@@ -138,21 +145,18 @@ export default class PostgrestFilterBuilder<
    * }
    * ```
    */
-  eq<ColumnName extends string>(
-    column: ColumnName,
-    value: ResolveFilterValue<Schema, Row, ColumnName> extends never
-      ? NonNullable<unknown>
-      : // We want to infer the type before wrapping it into a `NonNullable` to avoid too deep
-        // type resolution error
-        ResolveFilterValue<Schema, Row, ColumnName> extends infer ResolvedFilterValue
-        ? NonNullable<ResolvedFilterValue>
-        : // We should never enter this case as all the branches are covered above
-          never
-  ): this {
+  eq(column: string, value: unknown): this {
     this.url.searchParams.append(column, `eq.${value}`)
     return this
   }
 
+  neq<ColumnName extends string & keyof Row>(
+    column: ColumnName,
+    value: ResolveFilterValue<Schema, Row, ColumnName> extends infer Resolved
+      ? Resolved
+      : never
+  ): this
+  neq(column: string, value: unknown): this
   /**
    * Match only rows where `column` is not equal to `value`.
    *
@@ -200,14 +204,7 @@ export default class PostgrestFilterBuilder<
    * }
    * ```
    */
-  neq<ColumnName extends string>(
-    column: ColumnName,
-    value: ResolveFilterValue<Schema, Row, ColumnName> extends never
-      ? unknown
-      : ResolveFilterValue<Schema, Row, ColumnName> extends infer ResolvedFilterValue
-        ? ResolvedFilterValue
-        : never
-  ): this {
+  neq(column: string, value: unknown): this {
     this.url.searchParams.append(column, `neq.${value}`)
     return this
   }
