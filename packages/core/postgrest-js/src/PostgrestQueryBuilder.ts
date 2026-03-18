@@ -27,7 +27,19 @@ export default class PostgrestQueryBuilder<
    *
    * @example
    * ```ts
-   * import PostgrestQueryBuilder from '@supabase/postgrest-js'
+   * import { PostgrestQueryBuilder } from '@supabase/postgrest-js'
+   *
+   * const query = new PostgrestQueryBuilder(
+   *   new URL('https://xyzcompany.supabase.co/rest/v1/users'),
+   *   { headers: { apikey: 'public-anon-key' } }
+   * )
+   * ```
+   *
+   * @category Database
+   *
+   * @example Example 1
+   * ```ts
+   * import { PostgrestQueryBuilder } from '@supabase/postgrest-js'
    *
    * const query = new PostgrestQueryBuilder(
    *   new URL('https://xyzcompany.supabase.co/rest/v1/users'),
@@ -1581,6 +1593,105 @@ export default class PostgrestQueryBuilder<
    *
    * `"estimated"`: Uses exact count for low numbers and planned count for high
    * numbers.
+   *
+   * @category Database
+   *
+   * @remarks
+   * - `delete()` should always be combined with [filters](/docs/reference/javascript/using-filters) to target the item(s) you wish to delete.
+   * - If you use `delete()` with filters and you have
+   *   [RLS](/docs/learn/auth-deep-dive/auth-row-level-security) enabled, only
+   *   rows visible through `SELECT` policies are deleted. Note that by default
+   *   no rows are visible, so you need at least one `SELECT`/`ALL` policy that
+   *   makes the rows visible.
+   * - When using `delete().in()`, specify an array of values to target multiple rows with a single query. This is particularly useful for batch deleting entries that share common criteria, such as deleting users by their IDs. Ensure that the array you provide accurately represents all records you intend to delete to avoid unintended data removal.
+   *
+   * @example Delete a single record
+   * ```ts
+   * const response = await supabase
+   *   .from('countries')
+   *   .delete()
+   *   .eq('id', 1)
+   * ```
+   *
+   * @exampleSql Delete a single record
+   * ```sql
+   * create table
+   *   countries (id int8 primary key, name text);
+   *
+   * insert into
+   *   countries (id, name)
+   * values
+   *   (1, 'Mordor');
+   * ```
+   *
+   * @exampleResponse Delete a single record
+   * ```json
+   * {
+   *   "status": 204,
+   *   "statusText": "No Content"
+   * }
+   * ```
+   *
+   * @example Delete a record and return it
+   * ```ts
+   * const { data, error } = await supabase
+   *   .from('countries')
+   *   .delete()
+   *   .eq('id', 1)
+   *   .select()
+   * ```
+   *
+   * @exampleSql Delete a record and return it
+   * ```sql
+   * create table
+   *   countries (id int8 primary key, name text);
+   *
+   * insert into
+   *   countries (id, name)
+   * values
+   *   (1, 'Mordor');
+   * ```
+   *
+   * @exampleResponse Delete a record and return it
+   * ```json
+   * {
+   *   "data": [
+   *     {
+   *       "id": 1,
+   *       "name": "Mordor"
+   *     }
+   *   ],
+   *   "status": 200,
+   *   "statusText": "OK"
+   * }
+   * ```
+   *
+   * @example Delete multiple records
+   * ```ts
+   * const response = await supabase
+   *   .from('countries')
+   *   .delete()
+   *   .in('id', [1, 2, 3])
+   * ```
+   *
+   * @exampleSql Delete multiple records
+   * ```sql
+   * create table
+   *   countries (id int8 primary key, name text);
+   *
+   * insert into
+   *   countries (id, name)
+   * values
+   *   (1, 'Rohan'), (2, 'The Shire'), (3, 'Mordor');
+   * ```
+   *
+   * @exampleResponse Delete multiple records
+   * ```json
+   * {
+   *   "status": 204,
+   *   "statusText": "No Content"
+   * }
+   * ```
    */
   delete({
     count,
