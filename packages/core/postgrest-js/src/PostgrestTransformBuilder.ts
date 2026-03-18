@@ -556,13 +556,13 @@ export default class PostgrestTransformBuilder<
    * ```json
    *   {
    *     "error": {
-   *       "message": "FetchError: The user aborted a request.",
+   *       "message": "AbortError: The user aborted a request.",
    *       "details": "",
-   *       "hint": "",
+   *       "hint": "The request was aborted locally via the provided AbortSignal.",
    *       "code": ""
    *     },
-   *     "status": 400,
-   *     "statusText": "Bad Request"
+   *     "status": 0,
+   *     "statusText": ""
    *   }
    *
    * ```
