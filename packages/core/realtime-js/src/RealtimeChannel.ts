@@ -210,19 +210,9 @@ export default class RealtimeChannel {
    * The topic determines which realtime stream you are subscribing to. Config options let you
    * enable acknowledgement for broadcasts, presence tracking, or private channels.
    *
-   * @example
-   * ```ts
-   * import RealtimeClient from '@supabase/realtime-js'
-   *
-   * const client = new RealtimeClient('https://xyzcompany.supabase.co/realtime/v1', {
-   *   params: { apikey: 'public-anon-key' },
-   * })
-   * const channel = new RealtimeChannel('realtime:public:messages', { config: {} }, client)
-   * ```
-   *
    * @category Realtime
    *
-   * @example Example 1
+   * @example Example for a public channel
    * ```ts
    * import RealtimeClient from '@supabase/realtime-js'
    *

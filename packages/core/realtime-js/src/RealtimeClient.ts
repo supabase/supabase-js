@@ -197,19 +197,10 @@ export default class RealtimeClient {
    * @param options.worker Use Web Worker to set a side flow. Defaults to false.
    * @param options.workerUrl The URL of the worker script. Defaults to https://realtime.supabase.com/worker.js that includes a heartbeat event call to keep the connection alive.
    * @param options.vsn The protocol version to use when connecting. Supported versions are "1.0.0" and "2.0.0". Defaults to "2.0.0".
-   * @example
-   * ```ts
-   * import RealtimeClient from '@supabase/realtime-js'
-   *
-   * const client = new RealtimeClient('https://xyzcompany.supabase.co/realtime/v1', {
-   *   params: { apikey: 'public-anon-key' },
-   * })
-   * client.connect()
-   * ```
    *
    * @category Realtime
    *
-   * @example Example 1
+   * @example Example for a public channel
    * ```ts
    * import RealtimeClient from '@supabase/realtime-js'
    *

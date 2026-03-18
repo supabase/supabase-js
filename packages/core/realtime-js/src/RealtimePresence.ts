@@ -51,18 +51,9 @@ export default class RealtimePresence {
    * @param channel - The realtime channel to bind to.
    * @param opts - Optional custom event names, e.g. `{ events: { state: 'state', diff: 'diff' } }`.
    *
-   * @example
-   * ```ts
-   * const presence = new RealtimePresence(channel)
-   *
-   * channel.on('presence', ({ event, key }) => {
-   *   console.log(`Presence ${event} on ${key}`)
-   * })
-   * ```
-   *
    * @category Realtime
    *
-   * @example Example 1
+   * @example Example for a presence channel
    * ```ts
    * const presence = new RealtimePresence(channel)
    *

@@ -138,12 +138,6 @@ export class WebSocketFactory {
   /**
    * Returns the best available WebSocket constructor for the current runtime.
    *
-   * @example
-   * ```ts
-   * const WS = WebSocketFactory.getWebSocketConstructor()
-   * const socket = new WS('wss://realtime.supabase.co/socket')
-   * ```
-   *
    * @category Realtime
    *
    * @example Example with error handling
@@ -170,13 +164,6 @@ export class WebSocketFactory {
 
   /**
    * Detects whether the runtime can establish WebSocket connections.
-   *
-   * @example
-   * ```ts
-   * if (!WebSocketFactory.isWebSocketSupported()) {
-   *   console.warn('Falling back to long polling')
-   * }
-   * ```
    *
    * @category Realtime
    *
