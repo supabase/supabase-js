@@ -529,6 +529,63 @@ export default class PostgrestTransformBuilder<
    * Set the AbortSignal for the fetch request.
    *
    * @param signal - The AbortSignal to use for the fetch request
+   *
+   * @category Database
+   *
+   * @remarks
+   * You can use this to set a timeout for the request.
+   *
+   * @exampleDescription Aborting requests in-flight
+   * You can use an [`AbortController`](https://developer.mozilla.org/en-US/docs/Web/API/AbortController) to abort requests.
+   * Note that `status` and `statusText` don't mean anything for aborted requests as the request wasn't fulfilled.
+   *
+   * @example Aborting requests in-flight
+   * ```ts
+   * const ac = new AbortController()
+   * ac.abort()
+   * const { data, error } = await supabase
+   *   .from('very_big_table')
+   *   .select()
+   *   .abortSignal(ac.signal)
+   * ```
+   *
+   * @exampleResponse Aborting requests in-flight
+   * ```json
+   *   {
+   *     "error": {
+   *       "message": "FetchError: The user aborted a request.",
+   *       "details": "",
+   *       "hint": "",
+   *       "code": ""
+   *     },
+   *     "status": 400,
+   *     "statusText": "Bad Request"
+   *   }
+   *
+   * ```
+   *
+   * @example Set a timeout
+   * ```ts
+   * const { data, error } = await supabase
+   *   .from('very_big_table')
+   *   .select()
+   *   .abortSignal(AbortSignal.timeout(1000 /* ms *\/))
+   * ```
+   *
+   * @exampleResponse Set a timeout
+   * ```json
+   *   {
+   *     "error": {
+   *       "message": "FetchError: The user aborted a request.",
+   *       "details": "",
+   *       "hint": "",
+   *       "code": ""
+   *     },
+   *     "status": 400,
+   *     "statusText": "Bad Request"
+   *   }
+   *
+   * ```
    */
   abortSignal(signal: AbortSignal): this {
     this.signal = signal
