@@ -542,11 +542,14 @@ export default class PostgrestTransformBuilder<
    * @example Aborting requests in-flight
    * ```ts
    * const ac = new AbortController()
-   * ac.abort()
+   *
    * const { data, error } = await supabase
    *   .from('very_big_table')
    *   .select()
    *   .abortSignal(ac.signal)
+   *
+   * // Abort the request after 100 ms
+   * setTimeout(() => ac.abort(), 100)
    * ```
    *
    * @exampleResponse Aborting requests in-flight
