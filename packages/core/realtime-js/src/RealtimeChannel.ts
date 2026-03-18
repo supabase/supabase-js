@@ -219,6 +219,18 @@ export default class RealtimeChannel {
    * })
    * const channel = new RealtimeChannel('realtime:public:messages', { config: {} }, client)
    * ```
+   *
+   * @category Realtime
+   *
+   * @example Example 1
+   * ```ts
+   * import RealtimeClient from '@supabase/realtime-js'
+   *
+   * const client = new RealtimeClient('https://xyzcompany.supabase.co/realtime/v1', {
+   *   params: { apikey: 'public-anon-key' },
+   * })
+   * const channel = new RealtimeChannel('realtime:public:messages', { config: {} }, client)
+   * ```
    */
   constructor(
     /** Topic name can be any string. */
@@ -253,7 +265,9 @@ export default class RealtimeChannel {
     }
   }
 
-  /** Subscribe registers your client with the server */
+  /** Subscribe registers your client with the server  *
+   * @category Realtime
+   */
   subscribe(
     callback?: (status: REALTIME_SUBSCRIBE_STATES, err?: Error) => void,
     timeout = this.timeout
@@ -372,6 +386,8 @@ export default class RealtimeChannel {
    *
    * The shape is a map keyed by presence key (for example a user id) where each entry contains the
    * tracked metadata for that user.
+   *
+   * @category Realtime
    */
   presenceState<T extends { [key: string]: any } = {}>(): RealtimePresenceState<T> {
     return this.presence.state as RealtimePresenceState<T>
@@ -380,6 +396,8 @@ export default class RealtimeChannel {
   /**
    * Sends the supplied payload to the presence tracker so other subscribers can see that this
    * client is online. Use `untrack` to stop broadcasting presence for the same key.
+   *
+   * @category Realtime
    */
   async track(
     payload: { [key: string]: any },
@@ -397,6 +415,8 @@ export default class RealtimeChannel {
 
   /**
    * Removes the current presence state for this client.
+   *
+   * @category Realtime
    */
   async untrack(opts: { [key: string]: any } = {}): Promise<RealtimeChannelSendResponse> {
     return await this.send(
@@ -529,6 +549,164 @@ export default class RealtimeChannel {
     filter: {},
     callback: (payload: any) => void
   ): RealtimeChannel
+  /**  *
+   * @category Realtime
+   *
+   * @remarks
+   * - By default, Broadcast and Presence are enabled for all projects.
+   * - By default, listening to database changes is disabled for new projects due to database performance and security concerns. You can turn it on by managing Realtime's [replication](/docs/guides/api#realtime-api-overview).
+   * - You can receive the "previous" data for updates and deletes by setting the table's `REPLICA IDENTITY` to `FULL` (e.g., `ALTER TABLE your_table REPLICA IDENTITY FULL;`).
+   * - Row level security is not applied to delete statements. When RLS is enabled and replica identity is set to full, only the primary key is sent to clients.
+   *
+   * @example Listen to broadcast messages
+   * ```js
+   * const channel = supabase.channel("room1")
+   *
+   * channel.on("broadcast", { event: "cursor-pos" }, (payload) => {
+   *   console.log("Cursor position received!", payload);
+   * }).subscribe((status) => {
+   *   if (status === "SUBSCRIBED") {
+   *     channel.send({
+   *       type: "broadcast",
+   *       event: "cursor-pos",
+   *       payload: { x: Math.random(), y: Math.random() },
+   *     });
+   *   }
+   * });
+   * ```
+   *
+   * @example Listen to presence sync
+   * ```js
+   * const channel = supabase.channel('room1')
+   * channel
+   *   .on('presence', { event: 'sync' }, () => {
+   *     console.log('Synced presence state: ', channel.presenceState())
+   *   })
+   *   .subscribe(async (status) => {
+   *     if (status === 'SUBSCRIBED') {
+   *       await channel.track({ online_at: new Date().toISOString() })
+   *     }
+   *   })
+   * ```
+   *
+   * @example Listen to presence join
+   * ```js
+   * const channel = supabase.channel('room1')
+   * channel
+   *   .on('presence', { event: 'join' }, ({ newPresences }) => {
+   *     console.log('Newly joined presences: ', newPresences)
+   *   })
+   *   .subscribe(async (status) => {
+   *     if (status === 'SUBSCRIBED') {
+   *       await channel.track({ online_at: new Date().toISOString() })
+   *     }
+   *   })
+   * ```
+   *
+   * @example Listen to presence leave
+   * ```js
+   * const channel = supabase.channel('room1')
+   * channel
+   *   .on('presence', { event: 'leave' }, ({ leftPresences }) => {
+   *     console.log('Newly left presences: ', leftPresences)
+   *   })
+   *   .subscribe(async (status) => {
+   *     if (status === 'SUBSCRIBED') {
+   *       await channel.track({ online_at: new Date().toISOString() })
+   *       await channel.untrack()
+   *     }
+   *   })
+   * ```
+   *
+   * @example Listen to all database changes
+   * ```js
+   * supabase
+   *   .channel('room1')
+   *   .on('postgres_changes', { event: '*', schema: '*' }, payload => {
+   *     console.log('Change received!', payload)
+   *   })
+   *   .subscribe()
+   * ```
+   *
+   * @example Listen to a specific table
+   * ```js
+   * supabase
+   *   .channel('room1')
+   *   .on('postgres_changes', { event: '*', schema: 'public', table: 'countries' }, payload => {
+   *     console.log('Change received!', payload)
+   *   })
+   *   .subscribe()
+   * ```
+   *
+   * @example Listen to inserts
+   * ```js
+   * supabase
+   *   .channel('room1')
+   *   .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'countries' }, payload => {
+   *     console.log('Change received!', payload)
+   *   })
+   *   .subscribe()
+   * ```
+   *
+   * @exampleDescription Listen to updates
+   * By default, Supabase will send only the updated record. If you want to receive the previous values as well you can
+   * enable full replication for the table you are listening to:
+   *
+   * ```sql
+   * alter table "your_table" replica identity full;
+   * ```
+   *
+   * @example Listen to updates
+   * ```js
+   * supabase
+   *   .channel('room1')
+   *   .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'countries' }, payload => {
+   *     console.log('Change received!', payload)
+   *   })
+   *   .subscribe()
+   * ```
+   *
+   * @exampleDescription Listen to deletes
+   * By default, Supabase does not send deleted records. If you want to receive the deleted record you can
+   * enable full replication for the table you are listening too:
+   *
+   * ```sql
+   * alter table "your_table" replica identity full;
+   * ```
+   *
+   * @example Listen to deletes
+   * ```js
+   * supabase
+   *   .channel('room1')
+   *   .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'countries' }, payload => {
+   *     console.log('Change received!', payload)
+   *   })
+   *   .subscribe()
+   * ```
+   *
+   * @exampleDescription Listen to multiple events
+   * You can chain listeners if you want to listen to multiple events for each table.
+   *
+   * @example Listen to multiple events
+   * ```js
+   * supabase
+   *   .channel('room1')
+   *   .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'countries' }, handleRecordInserted)
+   *   .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'countries' }, handleRecordDeleted)
+   *   .subscribe()
+   * ```
+   *
+   * @exampleDescription Listen to row level changes
+   * You can listen to individual rows using the format `{table}:{col}=eq.{val}` - where `{col}` is the column name, and `{val}` is the value which you want to match.
+   *
+   * @example Listen to row level changes
+   * ```js
+   * supabase
+   *   .channel('room1')
+   *   .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'countries', filter: 'id=eq.200' }, handleRecordUpdated)
+   *   .subscribe()
+   * ```
+   */
   on(
     type: `${REALTIME_LISTEN_TYPES}`,
     filter: { event: string; [key: string]: string },
@@ -550,6 +728,8 @@ export default class RealtimeChannel {
    * @param payload Payload to be sent (required)
    * @param opts Options including timeout
    * @returns Promise resolving to object with success status, and error details if failed
+   *
+   * @category Realtime
    */
   async httpSend(
     event: string,
@@ -611,6 +791,39 @@ export default class RealtimeChannel {
    * @param args.event The name of the event being sent
    * @param args.payload Payload to be sent
    * @param opts Options to be used during the send process
+   *
+   * @category Realtime
+   *
+   * @remarks
+   * - When using REST you don't need to subscribe to the channel
+   * - REST calls are only available from 2.37.0 onwards
+   *
+   * @example Send a message via websocket
+   * ```js
+   * supabase
+   *   .channel('room1')
+   *   .subscribe((status) => {
+   *     if (status === 'SUBSCRIBED') {
+   *       channel.send({
+   *         type: 'broadcast',
+   *         event: 'cursor-pos',
+   *         payload: { x: Math.random(), y: Math.random() },
+   *       })
+   *     }
+   *   })
+   * ```
+   *
+   * @exampleResponse Send a message via websocket
+   * ```js
+   * ok | timed out | error
+   * ```
+   *
+   * @example Send a message via REST
+   * ```js
+   * supabase
+   *   .channel('room1')
+   *   .httpSend('cursor-pos', { x: Math.random(), y: Math.random() })
+   * ```
    */
   async send(
     args: {
@@ -687,6 +900,8 @@ export default class RealtimeChannel {
   /**
    * Updates the payload that will be sent the next time the channel joins (reconnects).
    * Useful for rotating access tokens or updating config without re-creating the channel.
+   *
+   * @category Realtime
    */
   updateJoinPayload(payload: Record<string, any>) {
     this.channelAdapter.updateJoinPayload(payload)
@@ -700,6 +915,8 @@ export default class RealtimeChannel {
    *
    * To receive leave acknowledgements, use the a `receive` hook to bind to the server ack, ie:
    * channel.unsubscribe().receive("ok", () => alert("left!") )
+   *
+   * @category Realtime
    */
   async unsubscribe(timeout = this.timeout) {
     return new Promise<RealtimeChannelSendResponse>((resolve) => {
@@ -713,6 +930,8 @@ export default class RealtimeChannel {
 
   /**
    * Destroys and stops related timers.
+   *
+   * @category Realtime
    */
   teardown() {
     this.channelAdapter.teardown()

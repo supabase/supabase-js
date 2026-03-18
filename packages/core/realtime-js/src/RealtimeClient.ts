@@ -206,6 +206,18 @@ export default class RealtimeClient {
    * })
    * client.connect()
    * ```
+   *
+   * @category Realtime
+   *
+   * @example Example 1
+   * ```ts
+   * import RealtimeClient from '@supabase/realtime-js'
+   *
+   * const client = new RealtimeClient('https://xyzcompany.supabase.co/realtime/v1', {
+   *   params: { apikey: 'public-anon-key' },
+   * })
+   * client.connect()
+   * ```
    */
   constructor(endPoint: string, options?: RealtimeClientOptions) {
     // Validate required parameters
@@ -224,6 +236,8 @@ export default class RealtimeClient {
 
   /**
    * Connects the socket, unless already connected.
+   *
+   * @category Realtime
    */
   connect(): void {
     // Skip if already connecting, disconnecting, or connected
@@ -269,6 +283,8 @@ export default class RealtimeClient {
   /**
    * Returns the URL of the websocket.
    * @returns string The URL of the websocket.
+   *
+   * @category Realtime
    */
   endpointURL(): string {
     return this.socketAdapter.endPointURL()
@@ -279,6 +295,8 @@ export default class RealtimeClient {
    *
    * @param code A numeric status code to send on disconnect.
    * @param reason A custom reason for the disconnect.
+   *
+   * @category Realtime
    */
   async disconnect(code?: number, reason?: string) {
     if (this.isDisconnecting()) {
@@ -296,6 +314,8 @@ export default class RealtimeClient {
 
   /**
    * Returns all created channels
+   *
+   * @category Realtime
    */
   getChannels(): RealtimeChannel[] {
     return this.channels
@@ -304,6 +324,8 @@ export default class RealtimeClient {
   /**
    * Unsubscribes, removes and tears down a single channel
    * @param channel A RealtimeChannel instance
+   *
+   * @category Realtime
    */
   async removeChannel(channel: RealtimeChannel): Promise<RealtimeRemoveChannelResponse> {
     const status = await channel.unsubscribe()
@@ -321,6 +343,8 @@ export default class RealtimeClient {
 
   /**
    * Unsubscribes, removes and tears down all channels
+   *
+   * @category Realtime
    */
   async removeAllChannels(): Promise<RealtimeRemoveChannelResponse[]> {
     const promises = this.channels.map(async (channel) => {
@@ -338,6 +362,8 @@ export default class RealtimeClient {
    * Logs the message.
    *
    * For customized logging, `this.logger` can be overridden in Client constructor.
+   *
+   * @category Realtime
    */
   log(kind: string, msg: string, data?: any) {
     this.socketAdapter.log(kind, msg, data)
@@ -345,6 +371,8 @@ export default class RealtimeClient {
 
   /**
    * Returns the current state of the socket.
+   *
+   * @category Realtime
    */
   connectionState() {
     return this.socketAdapter.connectionState() || CONNECTION_STATE.closed
@@ -352,6 +380,8 @@ export default class RealtimeClient {
 
   /**
    * Returns `true` is the connection is open.
+   *
+   * @category Realtime
    */
   isConnected(): boolean {
     return this.socketAdapter.isConnected()
@@ -359,6 +389,8 @@ export default class RealtimeClient {
 
   /**
    * Returns `true` if the connection is currently connecting.
+   *
+   * @category Realtime
    */
   isConnecting(): boolean {
     return this.socketAdapter.isConnecting()
@@ -366,6 +398,8 @@ export default class RealtimeClient {
 
   /**
    * Returns `true` if the connection is currently disconnecting.
+   *
+   * @category Realtime
    */
   isDisconnecting(): boolean {
     return this.socketAdapter.isDisconnecting()
@@ -377,6 +411,8 @@ export default class RealtimeClient {
    * Topics are automatically prefixed with `realtime:` to match the Realtime service.
    * If a channel with the same topic already exists it will be returned instead of creating
    * a duplicate connection.
+   *
+   * @category Realtime
    */
   channel(topic: string, params: RealtimeChannelOptions = { config: {} }): RealtimeChannel {
     const realtimeTopic = `realtime:${topic}`
@@ -396,6 +432,8 @@ export default class RealtimeClient {
    * Push out a message if the socket is connected.
    *
    * If the socket is not connected, the message gets enqueued within a local buffer, and sent out when a connection is next established.
+   *
+   * @category Realtime
    */
   push(data: RealtimeMessage): void {
     this.socketAdapter.push(data)
@@ -420,6 +458,8 @@ export default class RealtimeClient {
    *
    * // Switch back to using the accessToken callback
    * client.realtime.setAuth()
+   *
+   * @category Realtime
    */
   async setAuth(token: string | null = null): Promise<void> {
     this._authPromise = this._performAuth(token)
@@ -441,6 +481,8 @@ export default class RealtimeClient {
 
   /**
    * Sends a heartbeat message if the socket is connected.
+   *
+   * @category Realtime
    */
   async sendHeartbeat() {
     this.socketAdapter.sendHeartbeat()
@@ -449,6 +491,8 @@ export default class RealtimeClient {
   /**
    * Sets a callback that receives lifecycle events for internal heartbeat messages.
    * Useful for instrumenting connection health (e.g. sent/ok/timeout/disconnected).
+   *
+   * @category Realtime
    */
   onHeartbeat(callback: HeartbeatCallback) {
     this.socketAdapter.heartbeatCallback = this._wrapHeartbeatCallback(callback)

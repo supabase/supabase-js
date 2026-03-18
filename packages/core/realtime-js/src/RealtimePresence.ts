@@ -59,6 +59,17 @@ export default class RealtimePresence {
    *   console.log(`Presence ${event} on ${key}`)
    * })
    * ```
+   *
+   * @category Realtime
+   *
+   * @example Example 1
+   * ```ts
+   * const presence = new RealtimePresence(channel)
+   *
+   * channel.on('presence', ({ event, key }) => {
+   *   console.log(`Presence ${event} on ${key}`)
+   * })
+   * ```
    */
   constructor(
     public channel: RealtimeChannel,
