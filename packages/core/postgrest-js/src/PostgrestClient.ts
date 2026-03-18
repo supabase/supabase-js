@@ -53,7 +53,7 @@ export default class PostgrestClient<
    * @param options.urlLengthLimit - Maximum URL length in characters before warnings/errors are triggered. Defaults to 8000.
    * @example
    * ```ts
-   * import PostgrestClient from '@supabase/postgrest-js'
+   * import { PostgrestClient } from '@supabase/postgrest-js'
    *
    * const postgrest = new PostgrestClient('https://xyzcompany.supabase.co/rest/v1', {
    *   headers: { apikey: 'public-anon-key' },
@@ -70,7 +70,7 @@ export default class PostgrestClient<
    *
    * @example Example 1
    * ```ts
-   * import PostgrestClient from '@supabase/postgrest-js'
+   * import { PostgrestClient } from '@supabase/postgrest-js'
    *
    * const postgrest = new PostgrestClient('https://xyzcompany.supabase.co/rest/v1', {
    *   headers: { apikey: 'public-anon-key' },
@@ -80,7 +80,7 @@ export default class PostgrestClient<
    *
    * @example With timeout
    * ```ts
-   * import PostgrestClient from '@supabase/postgrest-js'
+   * import { PostgrestClient } from '@supabase/postgrest-js'
    *
    * const postgrest = new PostgrestClient('https://xyzcompany.supabase.co/rest/v1', {
    *   headers: { apikey: 'public-anon-key' },
