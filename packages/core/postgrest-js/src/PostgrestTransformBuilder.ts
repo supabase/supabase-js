@@ -681,6 +681,8 @@ export default class PostgrestTransformBuilder<
 
   /**
    * Return `data` as an object in [GeoJSON](https://geojson.org) format.
+   *
+   * @category Database
    */
   geojson(): PostgrestBuilder<ClientOptions, Record<string, unknown>> {
     this.headers.set('Accept', 'application/geo+json')
@@ -823,6 +825,8 @@ export default class PostgrestTransformBuilder<
    * Rollback the query.
    *
    * `data` will still be returned, but the query is not committed.
+   *
+   * @category Database
    */
   rollback(): this {
     this.headers.append('Prefer', 'tx=rollback')
@@ -892,6 +896,8 @@ export default class PostgrestTransformBuilder<
    * Only available in PostgREST v13+ and only works with PATCH and DELETE methods.
    *
    * @param value - The maximum number of rows that can be affected
+   *
+   * @category Database
    */
   maxAffected(value: number): MaxAffectedEnabled<ClientOptions['PostgrestVersion']> extends true
     ? // TODO: update the RPC case to only work on RPC that returns SETOF rows

@@ -34,6 +34,18 @@ export default class PostgrestQueryBuilder<
    *   { headers: { apikey: 'public-anon-key' } }
    * )
    * ```
+   *
+   * @category Database
+   *
+   * @example Example 1
+   * ```ts
+   * import PostgrestQueryBuilder from '@supabase/postgrest-js'
+   *
+   * const query = new PostgrestQueryBuilder(
+   *   new URL('https://xyzcompany.supabase.co/rest/v1/users'),
+   *   { headers: { apikey: 'public-anon-key' } }
+   * )
+   * ```
    */
   constructor(
     url: URL,

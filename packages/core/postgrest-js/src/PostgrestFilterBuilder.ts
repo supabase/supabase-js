@@ -484,6 +484,8 @@ export default class PostgrestFilterBuilder<
    *
    * @param column - The column to filter on
    * @param patterns - The patterns to match with
+   *
+   * @category Database
    */
   likeAllOf(column: string, patterns: readonly string[]): this {
     this.url.searchParams.append(column, `like(all).{${patterns.join(',')}}`)
@@ -500,6 +502,8 @@ export default class PostgrestFilterBuilder<
    *
    * @param column - The column to filter on
    * @param patterns - The patterns to match with
+   *
+   * @category Database
    */
   likeAnyOf(column: string, patterns: readonly string[]): this {
     this.url.searchParams.append(column, `like(any).{${patterns.join(',')}}`)
@@ -584,6 +588,8 @@ export default class PostgrestFilterBuilder<
    *
    * @param column - The column to filter on
    * @param patterns - The patterns to match with
+   *
+   * @category Database
    */
   ilikeAnyOf(column: string, patterns: readonly string[]): this {
     this.url.searchParams.append(column, `ilike(any).{${patterns.join(',')}}`)
