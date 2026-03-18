@@ -84,8 +84,9 @@ describe('navigatorLock', () => {
   })
 
   it('should throw NavigatorLockAcquireTimeoutError when the held lock is stolen by another request', async () => {
-    // Simulate: we hold the lock, then someone else steals it.
-    // Our AbortController is NOT aborted (signal.aborted remains false).
+    // Simulate: navigator.locks.request() rejects with an AbortError (e.g. because
+    // another request stole the lock) even though our AbortController signal has
+    // NOT been aborted (signal.aborted remains false).
     ;(globalThis.navigator.locks.request as jest.Mock).mockRejectedValue(
       new DOMException("Lock broken by another request with the 'steal' option.", 'AbortError')
     )
