@@ -250,7 +250,7 @@ export default class PostgrestTransformBuilder<
    *     },
    *     {
    *       "name": "woodwinds",
-   *       "characters": []
+   *       "instruments": []
    *     }
    *   ],
    *   "status": 200,
