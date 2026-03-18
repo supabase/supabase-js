@@ -22,6 +22,41 @@ export default class PostgrestTransformBuilder<
    * `data`.
    *
    * @param columns - The columns to retrieve, separated by commas
+   *
+   * @category Database
+   *
+   * @example With `upsert()`
+   * ```ts
+   * const { data, error } = await supabase
+   *   .from('characters')
+   *   .upsert({ id: 1, name: 'Han Solo' })
+   *   .select()
+   * ```
+   *
+   * @exampleSql With `upsert()`
+   * ```sql
+   * create table
+   *   characters (id int8 primary key, name text);
+   *
+   * insert into
+   *   characters (id, name)
+   * values
+   *   (1, 'Han');
+   * ```
+   *
+   * @exampleResponse With `upsert()`
+   * ```json
+   * {
+   *   "data": [
+   *     {
+   *       "id": 1,
+   *       "name": "Han Solo"
+   *     }
+   *   ],
+   *   "status": 201,
+   *   "statusText": "Created"
+   * }
+   * ```
    */
   select<
     Query extends string = '*',
@@ -111,6 +146,176 @@ export default class PostgrestTransformBuilder<
    * its columns
    * @param options.foreignTable - Deprecated, use `options.referencedTable`
    * instead
+   *
+   * @category Database
+   *
+   * @example With `select()`
+   * ```ts
+   * const { data, error } = await supabase
+   *   .from('characters')
+   *   .select('id, name')
+   *   .order('id', { ascending: false })
+   * ```
+   *
+   * @exampleSql With `select()`
+   * ```sql
+   * create table
+   *   characters (id int8 primary key, name text);
+   *
+   * insert into
+   *   characters (id, name)
+   * values
+   *   (1, 'Luke'),
+   *   (2, 'Leia'),
+   *   (3, 'Han');
+   * ```
+   *
+   * @exampleResponse With `select()`
+   * ```json
+   * {
+   *   "data": [
+   *     {
+   *       "id": 3,
+   *       "name": "Han"
+   *     },
+   *     {
+   *       "id": 2,
+   *       "name": "Leia"
+   *     },
+   *     {
+   *       "id": 1,
+   *       "name": "Luke"
+   *     }
+   *   ],
+   *   "status": 200,
+   *   "statusText": "OK"
+   * }
+   * ```
+   *
+   * @exampleDescription On a referenced table
+   * Ordering with `referencedTable` doesn't affect the ordering of the
+   * parent table.
+   *
+   * @example On a referenced table
+   * ```ts
+   *   const { data, error } = await supabase
+   *     .from('orchestral_sections')
+   *     .select(`
+   *       name,
+   *       instruments (
+   *         name
+   *       )
+   *     `)
+   *     .order('name', { referencedTable: 'instruments', ascending: false })
+   *
+   * ```
+   *
+   * @exampleSql On a referenced table
+   * ```sql
+   * create table
+   *   orchestral_sections (id int8 primary key, name text);
+   * create table
+   *   instruments (
+   *     id int8 primary key,
+   *     section_id int8 not null references orchestral_sections,
+   *     name text
+   *   );
+   *
+   * insert into
+   *   orchestral_sections (id, name)
+   * values
+   *   (1, 'strings'),
+   *   (2, 'woodwinds');
+   * insert into
+   *   instruments (id, section_id, name)
+   * values
+   *   (1, 1, 'harp'),
+   *   (2, 1, 'violin');
+   * ```
+   *
+   * @exampleResponse On a referenced table
+   * ```json
+   * {
+   *   "data": [
+   *     {
+   *       "name": "strings",
+   *       "instruments": [
+   *         {
+   *           "name": "violin"
+   *         },
+   *         {
+   *           "name": "harp"
+   *         }
+   *       ]
+   *     },
+   *     {
+   *       "name": "woodwinds",
+   *       "characters": []
+   *     }
+   *   ],
+   *   "status": 200,
+   *   "statusText": "OK"
+   * }
+   * ```
+   *
+   * @exampleDescription Order parent table by a referenced table
+   * Ordering with `referenced_table(col)` affects the ordering of the
+   * parent table.
+   *
+   * @example Order parent table by a referenced table
+   * ```ts
+   *   const { data, error } = await supabase
+   *     .from('instruments')
+   *     .select(`
+   *       name,
+   *       section:orchestral_sections (
+   *         name
+   *       )
+   *     `)
+   *     .order('section(name)', { ascending: true })
+   *
+   * ```
+   *
+   * @exampleSql Order parent table by a referenced table
+   * ```sql
+   * create table
+   *   orchestral_sections (id int8 primary key, name text);
+   * create table
+   *   instruments (
+   *     id int8 primary key,
+   *     section_id int8 not null references orchestral_sections,
+   *     name text
+   *   );
+   *
+   * insert into
+   *   orchestral_sections (id, name)
+   * values
+   *   (1, 'strings'),
+   *   (2, 'woodwinds');
+   * insert into
+   *   instruments (id, section_id, name)
+   * values
+   *   (1, 2, 'flute'),
+   *   (2, 1, 'violin');
+   * ```
+   *
+   * @exampleResponse Order parent table by a referenced table
+   * ```json
+   * {
+   *   "data": [
+   *     {
+   *       "name": "violin",
+   *       "orchestral_sections": {"name": "strings"}
+   *     },
+   *     {
+   *       "name": "flute",
+   *       "orchestral_sections": {"name": "woodwinds"}
+   *     }
+   *   ],
+   *   "status": 200,
+   *   "statusText": "OK"
+   * }
+   * ```
    */
   order(
     column: string,
@@ -147,6 +352,95 @@ export default class PostgrestTransformBuilder<
    * tables instead of the parent table
    * @param options.foreignTable - Deprecated, use `options.referencedTable`
    * instead
+   *
+   * @category Database
+   *
+   * @example With `select()`
+   * ```ts
+   * const { data, error } = await supabase
+   *   .from('characters')
+   *   .select('name')
+   *   .limit(1)
+   * ```
+   *
+   * @exampleSql With `select()`
+   * ```sql
+   * create table
+   *   characters (id int8 primary key, name text);
+   *
+   * insert into
+   *   characters (id, name)
+   * values
+   *   (1, 'Luke'),
+   *   (2, 'Leia'),
+   *   (3, 'Han');
+   * ```
+   *
+   * @exampleResponse With `select()`
+   * ```json
+   * {
+   *   "data": [
+   *     {
+   *       "name": "Luke"
+   *     }
+   *   ],
+   *   "status": 200,
+   *   "statusText": "OK"
+   * }
+   * ```
+   *
+   * @example On a referenced table
+   * ```ts
+   * const { data, error } = await supabase
+   *   .from('orchestral_sections')
+   *   .select(`
+   *     name,
+   *     instruments (
+   *       name
+   *     )
+   *   `)
+   *   .limit(1, { referencedTable: 'instruments' })
+   * ```
+   *
+   * @exampleSql On a referenced table
+   * ```sql
+   * create table
+   *   orchestral_sections (id int8 primary key, name text);
+   * create table
+   *   instruments (
+   *     id int8 primary key,
+   *     section_id int8 not null references orchestral_sections,
+   *     name text
+   *   );
+   *
+   * insert into
+   *   orchestral_sections (id, name)
+   * values
+   *   (1, 'strings');
+   * insert into
+   *   instruments (id, section_id, name)
+   * values
+   *   (1, 1, 'harp'),
+   *   (2, 1, 'violin');
+   * ```
+   *
+   * @exampleResponse On a referenced table
+   * ```json
+   * {
+   *   "data": [
+   *     {
+   *       "name": "strings",
+   *       "instruments": [
+   *         {
+   *           "name": "violin"
+   *         }
+   *       ]
+   *     }
+   *   ],
+   *   "status": 200,
+   *   "statusText": "OK"
+   * }
+   * ```
    */
   limit(
     count: number,
@@ -174,6 +468,45 @@ export default class PostgrestTransformBuilder<
    * tables instead of the parent table
    * @param options.foreignTable - Deprecated, use `options.referencedTable`
    * instead
+   *
+   * @category Database
+   *
+   * @example With `select()`
+   * ```ts
+   * const { data, error } = await supabase
+   *   .from('characters')
+   *   .select('name')
+   *   .range(0, 1)
+   * ```
+   *
+   * @exampleSql With `select()`
+   * ```sql
+   * create table
+   *   characters (id int8 primary key, name text);
+   *
+   * insert into
+   *   characters (id, name)
+   * values
+   *   (1, 'Luke'),
+   *   (2, 'Leia'),
+   *   (3, 'Han');
+   * ```
+   *
+   * @exampleResponse With `select()`
+   * ```json
+   * {
+   *   "data": [
+   *     {
+   *       "name": "Luke"
+   *     },
+   *     {
+   *       "name": "Leia"
+   *     }
+   *   ],
+   *   "status": 200,
+   *   "statusText": "OK"
+   * }
+   * ```
    */
   range(
     from: number,
