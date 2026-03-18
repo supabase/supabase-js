@@ -2047,7 +2047,7 @@ export default class PostgrestFilterBuilder<
    *   "data": [
    *     {
    *       "name": "woodwinds",
-   *       "instruments":
+   *       "instruments": [
    *         {
    *           "name": "flute"
    *         }
