@@ -34,7 +34,19 @@ export default abstract class PostgrestBuilder<
    *
    * @example
    * ```ts
-   * import PostgrestQueryBuilder from '@supabase/postgrest-js'
+   * import { PostgrestQueryBuilder } from '@supabase/postgrest-js'
+   *
+   * const builder = new PostgrestQueryBuilder(
+   *   new URL('https://xyzcompany.supabase.co/rest/v1/users'),
+   *   { headers: new Headers({ apikey: 'public-anon-key' }) }
+   * )
+   * ```
+   *
+   * @category Database
+   *
+   * @example Example 1
+   * ```ts
+   * import { PostgrestQueryBuilder } from '@supabase/postgrest-js'
    *
    * const builder = new PostgrestQueryBuilder(
    *   new URL('https://xyzcompany.supabase.co/rest/v1/users'),
@@ -76,6 +88,8 @@ export default abstract class PostgrestBuilder<
    * throwing the error instead of returning it as part of a successful response.
    *
    * {@link https://github.com/supabase/supabase-js/issues/92}
+   *
+   * @category Database
    */
   throwOnError(): this & PostgrestBuilder<ClientOptions, Result, true> {
     this.shouldThrowOnError = true
@@ -84,6 +98,8 @@ export default abstract class PostgrestBuilder<
 
   /**
    * Set an HTTP header for the request.
+   *
+   * @category Database
    */
   setHeader(name: string, value: string): this {
     this.headers = new Headers(this.headers)
@@ -91,6 +107,9 @@ export default abstract class PostgrestBuilder<
     return this
   }
 
+  /**  *
+   * @category Database
+   */
   then<
     TResult1 = ThrowOnError extends true
       ? PostgrestResponseSuccess<Result>
@@ -300,6 +319,8 @@ export default abstract class PostgrestBuilder<
    *
    * @typeParam NewResult - The new result type to override with
    * @deprecated Use overrideTypes<yourType, { merge: false }>() method at the end of your call chain instead
+   *
+   * @category Database
    */
   returns<NewResult>(): PostgrestBuilder<
     ClientOptions,
@@ -335,6 +356,77 @@ export default abstract class PostgrestBuilder<
    *   .overrideTypes<{ id: number; name: string }, { merge: false }>()
    * ```
    * @returns A PostgrestBuilder instance with the new type
+   *
+   * @category Database
+   *
+   * @example Complete Override type of successful response
+   * ```ts
+   * const { data } = await supabase
+   *   .from('countries')
+   *   .select()
+   *   .overrideTypes<Array<MyType>, { merge: false }>()
+   * ```
+   *
+   * @exampleResponse Complete Override type of successful response
+   * ```ts
+   * let x: typeof data // MyType[]
+   * ```
+   *
+   * @example Complete Override type of object response
+   * ```ts
+   * const { data } = await supabase
+   *   .from('countries')
+   *   .select()
+   *   .maybeSingle()
+   *   .overrideTypes<MyType, { merge: false }>()
+   * ```
+   *
+   * @exampleResponse Complete Override type of object response
+   * ```ts
+   * let x: typeof data // MyType | null
+   * ```
+   *
+   * @example Partial Override type of successful response
+   * ```ts
+   * const { data } = await supabase
+   *   .from('countries')
+   *   .select()
+   *   .overrideTypes<Array<{ status: "A" | "B" }>>()
+   * ```
+   *
+   * @exampleResponse Partial Override type of successful response
+   * ```ts
+   * let x: typeof data // Array<CountryRowProperties & { status: "A" | "B" }>
+   * ```
+   *
+   * @example Partial Override type of object response
+   * ```ts
+   * const { data } = await supabase
+   *   .from('countries')
+   *   .select()
+   *   .maybeSingle()
+   *   .overrideTypes<{ status: "A" | "B" }>()
+   * ```
+   *
+   * @exampleResponse Partial Override type of object response
+   * ```ts
+   * let x: typeof data // CountryRowProperties & { status: "A" | "B" } | null
+   * ```
+   *
+   * @example Example 5
+   * ```typescript
+   * // Merge with existing types (default behavior)
+   * const query = supabase
+   *   .from('users')
+   *   .select()
+   *   .overrideTypes<{ custom_field: string }>()
+   *
+   * // Replace existing types completely
+   * const replaceQuery = supabase
+   *   .from('users')
+   *   .select()
+   *   .overrideTypes<{ id: number; name: string }, { merge: false }>()
+   * ```
    */
   overrideTypes<
     NewResult,
