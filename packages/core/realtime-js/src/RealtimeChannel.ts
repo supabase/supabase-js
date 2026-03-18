@@ -550,7 +550,8 @@ export default class RealtimeChannel {
     filter: {},
     callback: (payload: any) => void
   ): RealtimeChannel
-  /**  *
+  /**
+   * Listen to realtime events on this channel.
    * @category Realtime
    *
    * @remarks
