@@ -489,6 +489,32 @@ describe('Common Fetch', () => {
     })
   })
 
+  describe('isResponseLike regression (undici/polyfill)', () => {
+    it('handles Response-like objects without ok property (undici/polyfill regression)', async () => {
+      // Simulates the production case: undici or a fetch wrapper returns a Response
+      // where 'ok' is not accessible via the `in` operator, causing isResponseLike to fail
+      const responseBody = {
+        statusCode: '409',
+        message: 'Unable to empty the bucket because it contains too many objects',
+      }
+      const mockResponse = {
+        status: 409,
+        statusText: 'Conflict',
+        json: async () => responseBody,
+        // Deliberately no `ok` property — this is what causes the bug in production
+      }
+      mockFetch.mockResolvedValue(mockResponse)
+
+      await expect(
+        post(mockFetch, 'http://example.com/bucket/test/empty', {})
+      ).rejects.toMatchObject({
+        name: 'StorageApiError',
+        message: 'Unable to empty the bucket because it contains too many objects',
+        status: 409,
+      })
+    })
+  })
+
   describe('Error message extraction', () => {
     it('should extract message from msg field', async () => {
       const errorResponse = { msg: 'Error from msg' }

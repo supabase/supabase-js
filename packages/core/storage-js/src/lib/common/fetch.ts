@@ -45,45 +45,30 @@ const handleError = async (
   options: FetchOptions | undefined,
   namespace: ErrorNamespace
 ) => {
-  // Check if error is a Response-like object (has status and ok properties)
-  // This is more reliable than instanceof which can fail across realms
+  // Structural detection of json() method, present in all Response implementations
+  // (native, node-fetch, cross-fetch, undici) and absent from standard Error objects.
+  // Checking 'ok' or 'status' via `in` is unreliable across fetch polyfills/realms.
   const isResponseLike =
-    error &&
-    typeof error === 'object' &&
-    'status' in error &&
-    'ok' in error &&
-    typeof (error as any).status === 'number'
+    error !== null && typeof error === 'object' && typeof (error as any).json === 'function'
 
   if (isResponseLike) {
     const responseError = error as any
-    const status = responseError.status || 500
-
-    // Try to parse JSON body if available
-    if (typeof responseError.json === 'function') {
-      responseError
-        .json()
-        .then((err: any) => {
-          const statusCode = err?.statusCode || err?.code || status + ''
-          reject(new StorageApiError(_getErrorMessage(err), status, statusCode, namespace))
-        })
-        .catch(() => {
-          // If JSON parsing fails for vectors, create ApiError with HTTP status
-          if (namespace === 'vectors') {
-            const statusCode = status + ''
-            const message = responseError.statusText || `HTTP ${status} error`
-            reject(new StorageApiError(message, status, statusCode, namespace))
-          } else {
-            const statusCode = status + ''
-            const message = responseError.statusText || `HTTP ${status} error`
-            reject(new StorageApiError(message, status, statusCode, namespace))
-          }
-        })
-    } else {
-      // No json() method available, create error from status
-      const statusCode = status + ''
-      const message = responseError.statusText || `HTTP ${status} error`
-      reject(new StorageApiError(message, status, statusCode, namespace))
+    let status = parseInt(responseError.status, 10)
+    if (!Number.isFinite(status)) {
+      status = 500
     }
+
+    responseError
+      .json()
+      .then((err: any) => {
+        const statusCode = err?.statusCode || err?.code || status + ''
+        reject(new StorageApiError(_getErrorMessage(err), status, statusCode, namespace))
+      })
+      .catch(() => {
+        const statusCode = status + ''
+        const message = responseError.statusText || `HTTP ${status} error`
+        reject(new StorageApiError(message, status, statusCode, namespace))
+      })
   } else {
     reject(new StorageUnknownError(_getErrorMessage(error), error, namespace))
   }
