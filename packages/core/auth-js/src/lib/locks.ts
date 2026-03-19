@@ -199,6 +199,12 @@ export async function navigatorLock<R>(
       }
     )
   } catch (e: any) {
+    // Always clear the acquire timeout once the request settles, so it cannot
+    // fire later and incorrectly abort/log after a rejection.
+    if (acquireTimeout > 0) {
+      clearTimeout(acquireTimeoutTimer)
+    }
+
     if (e?.name === 'AbortError' && acquireTimeout > 0) {
       if (abortController.signal.aborted) {
         // OUR timeout fired — the lock is genuinely orphaned. Steal it.
