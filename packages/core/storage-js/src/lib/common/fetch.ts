@@ -45,18 +45,18 @@ const handleError = async (
   options: FetchOptions | undefined,
   namespace: ErrorNamespace
 ) => {
-  // Check if error is a Response-like object (has status and ok properties)
-  // This is more reliable than instanceof which can fail across realms
+  // Structural detection of json() method, present in all Response implementations
+  // (native, node-fetch, cross-fetch, undici) and absent from standard Error objects.
+  // Checking 'ok' or 'status' via `in` is unreliable across fetch polyfills/realms.
   const isResponseLike =
-    error &&
-    typeof error === 'object' &&
-    'status' in error &&
-    'ok' in error &&
-    typeof (error as any).status === 'number'
+    error !== null && typeof error === 'object' && typeof (error as any).json === 'function'
 
   if (isResponseLike) {
     const responseError = error as any
-    const status = responseError.status || 500
+    const status =
+      typeof responseError.status === 'number'
+        ? responseError.status
+        : parseInt(responseError.status, 10) || 500
 
     // Try to parse JSON body if available
     if (typeof responseError.json === 'function') {
