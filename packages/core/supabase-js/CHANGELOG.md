@@ -1,3 +1,7 @@
+## 2.99.3 (2026-03-19)
+
+This was a version bump only for @supabase/supabase-js to align it with other projects, there were no code changes.
+
 ## 2.99.2 (2026-03-16)
 
 This was a version bump only for @supabase/supabase-js to align it with other projects, there were no code changes.
