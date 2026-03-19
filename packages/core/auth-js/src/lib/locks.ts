@@ -104,8 +104,10 @@ export async function navigatorLock<R>(
 
   const abortController = new globalThis.AbortController()
 
+  let acquireTimeoutTimer: ReturnType<typeof setTimeout> | undefined
+
   if (acquireTimeout > 0) {
-    setTimeout(() => {
+    acquireTimeoutTimer = setTimeout(() => {
       abortController.abort()
       if (internals.debug) {
         console.log('@supabase/gotrue-js: navigatorLock acquire timed out', name)
@@ -138,6 +140,13 @@ export async function navigatorLock<R>(
           },
       async (lock) => {
         if (lock) {
+          // Lock acquired — cancel the acquire-timeout timer so it cannot fire
+          // while fn() is running. Without this, a delayed timeout abort would
+          // set signal.aborted = true even though we already hold the lock,
+          // causing a subsequent steal to be misclassified as "our timeout
+          // fired" and triggering a spurious steal-back cascade.
+          clearTimeout(acquireTimeoutTimer)
+
           if (internals.debug) {
             console.log('@supabase/gotrue-js: navigatorLock: acquired', name, lock.name)
           }
@@ -183,77 +192,106 @@ export async function navigatorLock<R>(
               '@supabase/gotrue-js: Navigator LockManager returned a null lock when using #request without ifAvailable set to true, it appears this browser is not following the LockManager spec https://developer.mozilla.org/en-US/docs/Web/API/LockManager/request'
             )
 
+            clearTimeout(acquireTimeoutTimer)
             return await fn()
           }
         }
       }
     )
   } catch (e: any) {
+    // Always clear the acquire timeout once the request settles, so it cannot
+    // fire later and incorrectly abort/log after a rejection.
+    if (acquireTimeout > 0) {
+      clearTimeout(acquireTimeoutTimer)
+    }
+
     if (e?.name === 'AbortError' && acquireTimeout > 0) {
-      // The lock acquisition was aborted because the timeout fired while the
-      // request was still pending. This typically means another lock holder is
-      // not releasing the lock, possibly due to React Strict Mode's
-      // double-mount/unmount behavior or a component unmounting mid-operation,
-      // leaving an orphaned lock.
-      //
-      // Recovery: use { steal: true } to forcefully acquire the lock. Per the
-      // Web Locks API spec, this releases any currently held lock with the same
-      // name and grants the request immediately, preempting any queued requests.
-      // The previous holder's callback continues running to completion but no
-      // longer holds the lock for exclusion purposes.
-      //
-      // See: https://github.com/supabase/supabase/issues/42505
-      if (internals.debug) {
-        console.log(
-          '@supabase/gotrue-js: navigatorLock: acquire timeout, recovering by stealing lock',
-          name
+      if (abortController.signal.aborted) {
+        // OUR timeout fired — the lock is genuinely orphaned. Steal it.
+        //
+        // The lock acquisition was aborted because the timeout fired while the
+        // request was still pending. This typically means another lock holder is
+        // not releasing the lock, possibly due to React Strict Mode's
+        // double-mount/unmount behavior or a component unmounting mid-operation,
+        // leaving an orphaned lock.
+        //
+        // Recovery: use { steal: true } to forcefully acquire the lock. Per the
+        // Web Locks API spec, this releases any currently held lock with the same
+        // name and grants the request immediately, preempting any queued requests.
+        // The previous holder's callback continues running to completion but no
+        // longer holds the lock for exclusion purposes.
+        //
+        // See: https://github.com/supabase/supabase/issues/42505
+        if (internals.debug) {
+          console.log(
+            '@supabase/gotrue-js: navigatorLock: acquire timeout, recovering by stealing lock',
+            name
+          )
+        }
+
+        console.warn(
+          `@supabase/gotrue-js: Lock "${name}" was not released within ${acquireTimeout}ms. ` +
+            'This may indicate an orphaned lock from a component unmount (e.g., React Strict Mode). ' +
+            'Forcefully acquiring the lock to recover.'
         )
-      }
 
-      console.warn(
-        `@supabase/gotrue-js: Lock "${name}" was not released within ${acquireTimeout}ms. ` +
-          'This may indicate an orphaned lock from a component unmount (e.g., React Strict Mode). ' +
-          'Forcefully acquiring the lock to recover.'
-      )
-
-      return await Promise.resolve().then(() =>
-        globalThis.navigator.locks.request(
-          name,
-          {
-            mode: 'exclusive',
-            steal: true,
-          },
-          async (lock) => {
-            if (lock) {
-              if (internals.debug) {
-                console.log(
-                  '@supabase/gotrue-js: navigatorLock: recovered (stolen)',
-                  name,
-                  lock.name
-                )
-              }
-
-              try {
-                return await fn()
-              } finally {
+        return await Promise.resolve().then(() =>
+          globalThis.navigator.locks.request(
+            name,
+            {
+              mode: 'exclusive',
+              steal: true,
+            },
+            async (lock) => {
+              if (lock) {
                 if (internals.debug) {
                   console.log(
-                    '@supabase/gotrue-js: navigatorLock: released (stolen)',
+                    '@supabase/gotrue-js: navigatorLock: recovered (stolen)',
                     name,
                     lock.name
                   )
                 }
+
+                try {
+                  return await fn()
+                } finally {
+                  if (internals.debug) {
+                    console.log(
+                      '@supabase/gotrue-js: navigatorLock: released (stolen)',
+                      name,
+                      lock.name
+                    )
+                  }
+                }
+              } else {
+                // This should not happen with steal: true, but handle gracefully.
+                console.warn(
+                  '@supabase/gotrue-js: Navigator LockManager returned null lock even with steal: true'
+                )
+                return await fn()
               }
-            } else {
-              // This should not happen with steal: true, but handle gracefully.
-              console.warn(
-                '@supabase/gotrue-js: Navigator LockManager returned null lock even with steal: true'
-              )
-              return await fn()
             }
-          }
+          )
         )
-      )
+      } else {
+        // We HELD the lock but another request stole it from us.
+        // Per the Web Locks spec, our fn() callback is still running as an
+        // orphaned background task — do NOT steal back. Stealing back would
+        // cause a cascade (A steals B, B steals A, ...) and run fn() a second
+        // time concurrently, corrupting auth state.
+        // Convert to a typed error so callers (e.g. _autoRefreshTokenTick)
+        // can handle/filter it without it leaking to Sentry as a raw AbortError.
+        if (internals.debug) {
+          console.log(
+            '@supabase/gotrue-js: navigatorLock: lock was stolen by another request',
+            name
+          )
+        }
+
+        throw new NavigatorLockAcquireTimeoutError(
+          `Lock "${name}" was released because another request stole it`
+        )
+      }
     }
 
     throw e
