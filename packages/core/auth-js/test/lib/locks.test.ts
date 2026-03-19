@@ -84,18 +84,28 @@ describe('navigatorLock', () => {
   })
 
   it('should throw NavigatorLockAcquireTimeoutError when the held lock is stolen by another request', async () => {
-    // Simulate: navigator.locks.request() rejects with an AbortError (e.g. because
-    // another request stole the lock) even though our AbortController signal has
-    // NOT been aborted (signal.aborted remains false).
-    ;(globalThis.navigator.locks.request as jest.Mock).mockRejectedValue(
-      new DOMException("Lock broken by another request with the 'steal' option.", 'AbortError')
+    // Simulate: we acquire the lock (callback is invoked, fn() starts running),
+    // but then another request steals it — the outer promise rejects with AbortError
+    // even though our AbortController signal has NOT been aborted (signal.aborted remains false).
+    const mockFn = jest.fn(async () => 'result')
+    ;(globalThis.navigator.locks.request as jest.Mock).mockImplementation(
+      (_name: string, _options: any, callback: (lock: any) => Promise<any>) => {
+        // Invoke callback so fn() runs (we held the lock)
+        callback({ name: 'test' })
+        // Outer promise rejects independently — another request stole the lock
+        return Promise.reject(
+          new DOMException("Lock broken by another request with the 'steal' option.", 'AbortError')
+        )
+      }
     )
 
-    await expect(navigatorLock('test', 100, async () => 'result')).rejects.toMatchObject({
+    await expect(navigatorLock('test', 100, mockFn)).rejects.toMatchObject({
       isAcquireTimeout: true,
     })
 
-    // Must NOT have tried to steal back (no second call)
+    // fn() ran exactly once (while we held the lock) — no steal-back re-execution
+    expect(mockFn).toHaveBeenCalledTimes(1)
+    // Must NOT have tried to steal back (no second call to navigator.locks.request)
     expect(globalThis.navigator.locks.request).toHaveBeenCalledTimes(1)
   })
 
