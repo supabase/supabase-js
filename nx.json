@@ -265,6 +265,7 @@
     "projects": ["packages/core/*"],
     "projectsRelationship": "fixed",
     "releaseTagPatternCheckAllBranchesWhen": true,
+    "releaseTagPatternStrictPreid": true,
     "version": {
       "conventionalCommits": true
     },
