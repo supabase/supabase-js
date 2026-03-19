@@ -53,37 +53,22 @@ const handleError = async (
 
   if (isResponseLike) {
     const responseError = error as any
-    const status =
-      typeof responseError.status === 'number'
-        ? responseError.status
-        : parseInt(responseError.status, 10) || 500
-
-    // Try to parse JSON body if available
-    if (typeof responseError.json === 'function') {
-      responseError
-        .json()
-        .then((err: any) => {
-          const statusCode = err?.statusCode || err?.code || status + ''
-          reject(new StorageApiError(_getErrorMessage(err), status, statusCode, namespace))
-        })
-        .catch(() => {
-          // If JSON parsing fails for vectors, create ApiError with HTTP status
-          if (namespace === 'vectors') {
-            const statusCode = status + ''
-            const message = responseError.statusText || `HTTP ${status} error`
-            reject(new StorageApiError(message, status, statusCode, namespace))
-          } else {
-            const statusCode = status + ''
-            const message = responseError.statusText || `HTTP ${status} error`
-            reject(new StorageApiError(message, status, statusCode, namespace))
-          }
-        })
-    } else {
-      // No json() method available, create error from status
-      const statusCode = status + ''
-      const message = responseError.statusText || `HTTP ${status} error`
-      reject(new StorageApiError(message, status, statusCode, namespace))
+    let status = parseInt(responseError.status, 10)
+    if (!Number.isFinite(status)) {
+      status = 500
     }
+
+    responseError
+      .json()
+      .then((err: any) => {
+        const statusCode = err?.statusCode || err?.code || status + ''
+        reject(new StorageApiError(_getErrorMessage(err), status, statusCode, namespace))
+      })
+      .catch(() => {
+        const statusCode = status + ''
+        const message = responseError.statusText || `HTTP ${status} error`
+        reject(new StorageApiError(message, status, statusCode, namespace))
+      })
   } else {
     reject(new StorageUnknownError(_getErrorMessage(error), error, namespace))
   }
