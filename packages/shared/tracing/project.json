@@ -1,0 +1,8 @@
+{
+  "name": "@supabase/tracing",
+  "targets": {
+    "test:ci": {
+      "cache": false
+    }
+  }
+}

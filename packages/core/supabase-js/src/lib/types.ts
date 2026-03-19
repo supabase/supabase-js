@@ -25,6 +25,60 @@ export interface SupabaseAuthClientOptions extends GoTrueClientOptions {}
 
 export type Fetch = typeof fetch
 
+/**
+ * Configuration options for trace context propagation.
+ *
+ * Enables distributed tracing across Supabase services using W3C Trace Context
+ * and OpenTelemetry standards. When enabled, the SDK automatically attaches
+ * trace context headers (traceparent, tracestate, baggage) to outgoing requests.
+ *
+ * @see https://www.w3.org/TR/trace-context/
+ * @see https://opentelemetry.io/docs/concepts/context-propagation/
+ */
+export interface TracePropagationOptions {
+  /**
+   * Enable or disable trace propagation. Defaults to true.
+   *
+   * When enabled, automatically detects and propagates active trace context
+   * from OpenTelemetry API to outgoing Supabase requests.
+   *
+   * Trace context is only propagated to Supabase domains (*.supabase.co,
+   * *.supabase.in, localhost) for security.
+   *
+   * @default true
+   *
+   * @example
+   * ```ts
+   * // Enable trace propagation (default)
+   * createClient(url, key, { tracePropagation: { enabled: true } })
+   *
+   * // Disable trace propagation
+   * createClient(url, key, { tracePropagation: { enabled: false } })
+   * ```
+   */
+  enabled?: boolean
+
+  /**
+   * Respect upstream sampling decisions.
+   *
+   * When true, trace context will not be propagated if the upstream trace
+   * indicates non-sampling (sampled flag = 0 in traceparent header).
+   * This helps reduce overhead when traces are not being collected.
+   *
+   * @default true
+   *
+   * @example
+   * ```ts
+   * createClient(url, key, {
+   *   tracePropagation: {
+   *     respectSamplingDecision: false // Always propagate, ignore sampling
+   *   }
+   * })
+   * ```
+   */
+  respectSamplingDecision?: boolean
+}
+
 export type SupabaseClientOptions<SchemaName> = {
   /**
    * The Postgres schema which your tables belong to. Must be on the list of exposed schemas in Supabase. Defaults to `public`.
@@ -152,6 +206,27 @@ export type SupabaseClientOptions<SchemaName> = {
    * authentications concurrently in the same application.
    */
   accessToken?: () => Promise<string | null>
+  /**
+   * Trace propagation configuration for OpenTelemetry/W3C trace context.
+   * Enables distributed tracing across Supabase services.
+   *
+   * @example
+   * ```ts
+   * // Auto-detect and propagate (default)
+   * createClient(url, key, { tracePropagation: { mode: 'auto' } })
+   *
+   * // Disable trace propagation
+   * createClient(url, key, { tracePropagation: { mode: 'off' } })
+   *
+   * // Custom targets
+   * createClient(url, key, {
+   *   tracePropagation: {
+   *     targets: ['myproject.supabase.co', /.*\.internal\.company\.com/]
+   *   }
+   * })
+   * ```
+   */
+  tracePropagation?: TracePropagationOptions
 }
 
 /**
