@@ -685,13 +685,8 @@ export default class PostgrestTransformBuilder<
   maybeSingle<
     ResultOne = Result extends (infer ResultOne)[] ? ResultOne : never,
   >(): PostgrestBuilder<ClientOptions, ResultOne | null> {
-    // Temporary partial fix for https://github.com/supabase/postgrest-js/issues/361
-    // Issue persists e.g. for `.insert([...]).select().maybeSingle()`
-    if (this.method === 'GET') {
-      this.headers.set('Accept', 'application/json')
-    } else {
-      this.headers.set('Accept', 'application/vnd.pgrst.object+json')
-    }
+    // No Accept header override — we fetch as a list and enforce cardinality client-side.
+    // Fixes https://github.com/supabase/postgrest-js/issues/361 for all request methods.
     this.isMaybeSingle = true
     return this as unknown as PostgrestBuilder<ClientOptions, ResultOne | null>
   }
