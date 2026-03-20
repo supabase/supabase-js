@@ -605,6 +605,16 @@ describe('GoTrueClient', () => {
       expect(error).toBeNull()
     })
 
+    test('resend with email and PKCE flowType', async () => {
+      const { email } = mockUserCredentials()
+      const { error } = await pkceClient.resend({
+        email,
+        type: 'signup',
+        options: { emailRedirectTo: 'http://localhost:9999/welcome' },
+      })
+      expect(error).toBeNull()
+    })
+
     // Phone resend tests moved to docker-tests/phone-otp.test.ts
 
     test('resend() fails without email or phone', async () => {
