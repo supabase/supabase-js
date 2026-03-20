@@ -3,7 +3,8 @@ import PostgrestFilterBuilder from './PostgrestFilterBuilder'
 import { Fetch, GenericSchema, ClientServerOptions } from './types/common/common'
 import { GetRpcFunctionFilterBuilderByArgs } from './types/common/rpc'
 
-/**
+/** @hidden
+ *
  * PostgREST client.
  *
  * @typeParam Database - Types for the schema from the [type
