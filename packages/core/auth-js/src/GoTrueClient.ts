@@ -1938,11 +1938,11 @@ export default class GoTrueClient {
     } catch (error) {
       if (isAuthError(error)) {
         if (isAuthSessionMissingError(error)) {
-          // JWT contains a `session_id` which does not correspond to an active
-          // session in the database, indicating the user is signed out.
-
-          await this._removeSession()
-          await removeItemAsync(this.storage, `${this.storageKey}-code-verifier`)
+          // The JWT's `session_id` does not correspond to an active session in
+          // the database. This can be transient — do not destroy the local
+          // session. If the session is truly invalid, _callRefreshToken() will
+          // fail on the next refresh and clean up at that point.
+          this._debug('#_getUser()', 'session not found on server, preserving local session')
         }
 
         return this._returnResult({ data: { user: null }, error })
