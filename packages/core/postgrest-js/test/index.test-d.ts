@@ -19,6 +19,19 @@ const postgrestWithOptions = new PostgrestClient<DatabaseWithOptions>(REST_URL)
   postgrest.from('nonexistent_view')
 }
 
+// `.eq()` and `.neq()` reject invalid column name literals
+{
+  // @ts-expect-error Argument of type '"INVALID"' is not assignable to parameter
+  postgrest.from('users').select().eq('INVALID', 'test')
+  // @ts-expect-error Argument of type '"INVALID"' is not assignable to parameter
+  postgrest.from('users').select().neq('INVALID', 'test')
+
+  // Dynamic string variables should still work (falls through to string branch)
+  const col: string = 'username'
+  postgrest.from('users').select().eq(col, 'foo')
+  postgrest.from('users').select().neq(col, 'foo')
+}
+
 // `null` can't be used with `.eq()`
 {
   postgrest.from('users').select().eq('username', 'foo')
