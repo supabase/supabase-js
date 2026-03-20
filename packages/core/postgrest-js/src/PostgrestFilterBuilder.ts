@@ -93,13 +93,6 @@ export default class PostgrestFilterBuilder<
   Relationships,
   Method
 > {
-  eq<ColumnName extends string & keyof Row>(
-    column: ColumnName,
-    value: ResolveFilterValue<Schema, Row, ColumnName> extends infer Resolved
-      ? NonNullable<Resolved>
-      : never
-  ): this
-  eq(column: string, value: unknown): this
   /**
    * Match only rows where `column` is equal to `value`.
    *
@@ -145,18 +138,24 @@ export default class PostgrestFilterBuilder<
    * }
    * ```
    */
-  eq(column: string, value: unknown): this {
-    this.url.searchParams.append(column, `eq.${value}`)
+  eq<ColumnName extends string>(
+    column: ColumnName extends keyof Row
+      ? ColumnName
+      : ColumnName extends `${string}.${string}` | `${string}->${string}`
+        ? ColumnName
+        : string extends ColumnName
+          ? string
+          : keyof Row,
+    value: ResolveFilterValue<Schema, Row, ColumnName> extends never
+      ? NonNullable<unknown>
+      : ResolveFilterValue<Schema, Row, ColumnName> extends infer ResolvedFilterValue
+        ? NonNullable<ResolvedFilterValue>
+        : never
+  ): this {
+    this.url.searchParams.append(column as string, `eq.${value}`)
     return this
   }
 
-  neq<ColumnName extends string & keyof Row>(
-    column: ColumnName,
-    value: ResolveFilterValue<Schema, Row, ColumnName> extends infer Resolved
-      ? Resolved
-      : never
-  ): this
-  neq(column: string, value: unknown): this
   /**
    * Match only rows where `column` is not equal to `value`.
    *
@@ -204,8 +203,21 @@ export default class PostgrestFilterBuilder<
    * }
    * ```
    */
-  neq(column: string, value: unknown): this {
-    this.url.searchParams.append(column, `neq.${value}`)
+  neq<ColumnName extends string>(
+    column: ColumnName extends keyof Row
+      ? ColumnName
+      : ColumnName extends `${string}.${string}` | `${string}->${string}`
+        ? ColumnName
+        : string extends ColumnName
+          ? string
+          : keyof Row,
+    value: ResolveFilterValue<Schema, Row, ColumnName> extends never
+      ? unknown
+      : ResolveFilterValue<Schema, Row, ColumnName> extends infer Resolved
+        ? Resolved
+        : never
+  ): this {
+    this.url.searchParams.append(column as string, `neq.${value}`)
     return this
   }
 
