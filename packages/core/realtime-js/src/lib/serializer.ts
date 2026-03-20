@@ -126,16 +126,29 @@ export default class Serializer {
   decode(rawPayload: ArrayBuffer | string, callback: Function) {
     if (this._isArrayBuffer(rawPayload)) {
       let result = this._binaryDecode(rawPayload as ArrayBuffer)
+      if (result === undefined) {
+        console.error('Failed to decode binary Realtime message')
+        return
+      }
       return callback(result)
     }
 
     if (typeof rawPayload === 'string') {
-      const jsonPayload = JSON.parse(rawPayload)
-      const [join_ref, ref, topic, event, payload] = jsonPayload
-      return callback({ join_ref, ref, topic, event, payload })
+      try {
+        const jsonPayload = JSON.parse(rawPayload)
+        if (!Array.isArray(jsonPayload) || jsonPayload.length < 5) {
+          console.error('Malformed Realtime message:', jsonPayload)
+          return
+        }
+        const [join_ref, ref, topic, event, payload] = jsonPayload
+        return callback({ join_ref, ref, topic, event, payload })
+      } catch (error) {
+        console.error('Error parsing Realtime message:', error, rawPayload)
+        return
+      }
     }
 
-    return callback({})
+    return
   }
 
   private _binaryDecode(buffer: ArrayBuffer) {
@@ -152,13 +165,15 @@ export default class Serializer {
     buffer: ArrayBuffer,
     view: DataView,
     decoder: TextDecoder
-  ): {
-    join_ref: null
-    ref: null
-    topic: string
-    event: string
-    payload: { [key: string]: any }
-  } {
+  ):
+    | {
+        join_ref: null
+        ref: null
+        topic: string
+        event: string
+        payload: { [key: string]: any }
+      }
+    | undefined {
     const topicSize = view.getUint8(1)
     const userEventSize = view.getUint8(2)
     const metadataSize = view.getUint8(3)
@@ -173,8 +188,18 @@ export default class Serializer {
     offset = offset + metadataSize
 
     const payload = buffer.slice(offset, buffer.byteLength)
-    const parsedPayload =
-      payloadEncoding === this.JSON_ENCODING ? JSON.parse(decoder.decode(payload)) : payload
+    let parsedPayload
+    if (payloadEncoding === this.JSON_ENCODING) {
+      const textPayload = decoder.decode(payload)
+      try {
+        parsedPayload = JSON.parse(textPayload)
+      } catch (error) {
+        console.error('Error decoding JSON payload:', error, textPayload)
+        return undefined
+      }
+    } else {
+      parsedPayload = payload
+    }
 
     const data: { [key: string]: any } = {
       type: this.BROADCAST_EVENT,
