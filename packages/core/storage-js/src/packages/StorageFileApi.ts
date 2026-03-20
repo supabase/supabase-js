@@ -540,6 +540,7 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
    * @param expiresIn The number of seconds until the signed URL expires. For example, `60` for a URL which is valid for one minute.
    * @param options.download triggers the file as a download if set to true. Set this parameter as the name of the file if you want to trigger the download with a different filename.
    * @param options.transform Transform the asset before serving it to the client.
+   * @param options.version Append a version parameter to the URL to invalidate the cache.
    * @returns Promise with response containing signed URL or error
    *
    * @example Create Signed URL
@@ -586,7 +587,7 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
   async createSignedUrl(
     path: string,
     expiresIn: number,
-    options?: { download?: string | boolean; transform?: TransformOptions }
+    options?: { download?: string | boolean; transform?: TransformOptions; version?: string }
   ): Promise<
     | {
         data: { signedUrl: string }
@@ -611,9 +612,12 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
         { expiresIn, ...(hasTransform ? { transform: options!.transform } : {}) },
         { headers: this.headers }
       )
-      const downloadQueryParam = options?.download
-        ? `&download=${options.download === true ? '' : options.download}`
-        : ''
+
+      const query = new URLSearchParams()
+      if (options?.download)
+        query.set('download', options.download === true ? '' : options.download)
+      if (options?.version) query.set('_v', options.version)
+
       // When transforms are requested the signed URL must use the render endpoint.
       // Some storage-api versions return /object/sign/ even for transform requests,
       // so we normalise the path on the client side.
@@ -621,7 +625,10 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
         hasTransform && data.signedURL.includes('/object/sign/')
           ? data.signedURL.replace('/object/sign/', '/render/image/sign/')
           : data.signedURL
-      const signedUrl = encodeURI(`${this.url}${returnedPath}${downloadQueryParam}`)
+
+      // `returnedPath` contains a `token` query parameter. That's why we append `query` with `&`.
+      const signedUrl = encodeURI(`${this.url}${returnedPath}&${query}`)
+
       return { signedUrl }
     })
   }
@@ -633,6 +640,7 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
    * @param paths The file paths to be downloaded, including the current file names. For example `['folder/image.png', 'folder2/image2.png']`.
    * @param expiresIn The number of seconds until the signed URLs expire. For example, `60` for URLs which are valid for one minute.
    * @param options.download triggers the file as a download if set to true. Set this parameter as the name of the file if you want to trigger the download with a different filename.
+   * @param options.version Append a version parameter to the URL to invalidate the cache.
    * @returns Promise with response containing array of objects with signedUrl, path, and error or error
    *
    * @example Create Signed URLs
@@ -667,7 +675,7 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
   async createSignedUrls(
     paths: string[],
     expiresIn: number,
-    options?: { download: string | boolean }
+    options?: { download: string | boolean; version?: string }
   ): Promise<
     | {
         data: { error: string | null; path: string | null; signedUrl: string }[]
@@ -686,13 +694,18 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
         { headers: this.headers }
       )
 
-      const downloadQueryParam = options?.download
-        ? `&download=${options.download === true ? '' : options.download}`
-        : ''
+      const query = new URLSearchParams()
+
+      if (options?.download)
+        query.set('download', options.download === true ? '' : options.download)
+      if (options?.version) query.set('_v', options.version)
+
+      const queryString = query.toString()
+
       return data.map((datum: { signedURL: string }) => ({
         ...datum,
         signedUrl: datum.signedURL
-          ? encodeURI(`${this.url}${datum.signedURL}${downloadQueryParam}`)
+          ? encodeURI(`${this.url}${datum.signedURL}&${queryString}`)
           : null,
       }))
     })
@@ -704,6 +717,7 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
    * @category File Buckets
    * @param path The full path and file name of the file to be downloaded. For example `folder/image.png`.
    * @param options.transform Transform the asset before serving it to the client.
+   * @param options.version Append a version parameter to the URL to invalidate the cache.
    * @param parameters Additional fetch parameters like signal for cancellation. Supports standard fetch options including cache control.
    * @returns BlobDownloadBuilder instance for downloading the file
    *
@@ -756,20 +770,24 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
    *   .download('folder/avatar1.png', {}, { signal: controller.signal })
    * ```
    */
-  download<Options extends { transform?: TransformOptions }>(
+  download<Options extends { transform?: TransformOptions; version?: string }>(
     path: string,
     options?: Options,
     parameters?: FetchParameters
   ): BlobDownloadBuilder {
     const wantsTransformation = typeof options?.transform !== 'undefined'
     const renderPath = wantsTransformation ? 'render/image/authenticated' : 'object'
-    const transformationQuery = this.transformOptsToQueryString(options?.transform || {})
-    const queryString = transformationQuery ? `?${transformationQuery}` : ''
+
+    const query = new URLSearchParams()
+    if (options?.transform) this.applyTransformOptsToQuery(query, options.transform)
+    if (options?.version) query.set('_v', options.version)
+    const queryString = query.toString()
+
     const _path = this._getFinalPath(path)
     const downloadFn = () =>
       get(
         this.fetch,
-        `${this.url}/${renderPath}/${_path}${queryString}`,
+        `${this.url}/${renderPath}/${_path}${queryString ? `?${queryString}` : ''}`,
         {
           headers: this.headers,
           noResolveJson: true,
@@ -886,6 +904,7 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
    * @param path The path and name of the file to generate the public URL for. For example `folder/image.png`.
    * @param options.download Triggers the file as a download if set to true. Set this parameter as the name of the file if you want to trigger the download with a different filename.
    * @param options.transform Transform the asset before serving it to the client.
+   * @param options.version Append a version parameter to the URL to invalidate the cache.
    * @returns Object with public URL
    *
    * @example Returns the URL for an asset in a public bucket
@@ -930,34 +949,25 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
    */
   getPublicUrl(
     path: string,
-    options?: { download?: string | boolean; transform?: TransformOptions }
+    options?: { download?: string | boolean; transform?: TransformOptions; version?: string }
   ): { data: { publicUrl: string } } {
     const _path = this._getFinalPath(path)
-    const _queryString: string[] = []
 
-    const downloadQueryParam = options?.download
-      ? `download=${options.download === true ? '' : options.download}`
-      : ''
-
-    if (downloadQueryParam !== '') {
-      _queryString.push(downloadQueryParam)
-    }
+    const query = new URLSearchParams()
+    if (options?.download) query.set('download', options.download === true ? '' : options.download)
+    if (options?.transform) this.applyTransformOptsToQuery(query, options.transform)
+    if (options?.version) query.set('_v', options.version)
+    const queryString = query.toString()
 
     const wantsTransformation = typeof options?.transform !== 'undefined'
     const renderPath = wantsTransformation ? 'render/image' : 'object'
-    const transformationQuery = this.transformOptsToQueryString(options?.transform || {})
-
-    if (transformationQuery !== '') {
-      _queryString.push(transformationQuery)
-    }
-
-    let queryString = _queryString.join('&')
-    if (queryString !== '') {
-      queryString = `?${queryString}`
-    }
 
     return {
-      data: { publicUrl: encodeURI(`${this.url}/${renderPath}/public/${_path}${queryString}`) },
+      data: {
+        publicUrl:
+          encodeURI(`${this.url}/${renderPath}/public/${_path}`) +
+          (queryString ? `?${queryString}` : ''),
+      },
     }
   }
 
@@ -1261,28 +1271,17 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
     return path.replace(/^\/|\/$/g, '').replace(/\/+/g, '/')
   }
 
-  private transformOptsToQueryString(transform: TransformOptions) {
-    const params: string[] = []
-    if (transform.width) {
-      params.push(`width=${transform.width}`)
-    }
+  /** Modifies the `query`, appending values the from `transform` */
+  private applyTransformOptsToQuery(
+    query: URLSearchParams,
+    transform: TransformOptions
+  ): URLSearchParams {
+    if (transform.width) query.set('width', transform.width.toString())
+    if (transform.height) query.set('height', transform.height.toString())
+    if (transform.resize) query.set('resize', transform.resize)
+    if (transform.format) query.set('format', transform.format)
+    if (transform.quality) query.set('quality', transform.quality.toString())
 
-    if (transform.height) {
-      params.push(`height=${transform.height}`)
-    }
-
-    if (transform.resize) {
-      params.push(`resize=${transform.resize}`)
-    }
-
-    if (transform.format) {
-      params.push(`format=${transform.format}`)
-    }
-
-    if (transform.quality) {
-      params.push(`quality=${transform.quality}`)
-    }
-
-    return params.join('&')
+    return query
   }
 }
