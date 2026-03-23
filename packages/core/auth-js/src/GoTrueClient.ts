@@ -455,6 +455,8 @@ export default class GoTrueClient {
    * Initializes the client session either from the url or from storage.
    * This method is automatically called when instantiating the client, but should also be called
    * manually when checking for an error from an auth redirect (oauth, magiclink, password recovery, etc).
+   *
+   * @category Auth
    */
   async initialize(): Promise<InitializeResult> {
     if (this.initializePromise) {
@@ -1178,6 +1180,173 @@ export default class GoTrueClient {
 
   /**
    * Log in an existing user by exchanging an Auth Code issued during the PKCE flow.
+   *
+   * @category Auth
+   *
+   * @remarks
+   * - Used when `flowType` is set to `pkce` in client options.
+   *
+   * @example Exchange Auth Code
+   * ```js
+   * supabase.auth.exchangeCodeForSession('34e770dd-9ff9-416c-87fa-43b31d7ef225')
+   * ```
+   *
+   * @exampleResponse Exchange Auth Code
+   * ```json
+   * {
+   *   "data": {
+   *     session: {
+   *       access_token: '<ACCESS_TOKEN>',
+   *       token_type: 'bearer',
+   *       expires_in: 3600,
+   *       expires_at: 1700000000,
+   *       refresh_token: '<REFRESH_TOKEN>',
+   *       user: {
+   *         id: '11111111-1111-1111-1111-111111111111',
+   *         aud: 'authenticated',
+   *         role: 'authenticated',
+   *         email: 'example@email.com'
+   *         email_confirmed_at: '2024-01-01T00:00:00Z',
+   *         phone: '',
+   *         confirmation_sent_at: '2024-01-01T00:00:00Z',
+   *         confirmed_at: '2024-01-01T00:00:00Z',
+   *         last_sign_in_at: '2024-01-01T00:00:00Z',
+   *         app_metadata: {
+   *           "provider": "email",
+   *           "providers": [
+   *             "email",
+   *             "<OTHER_PROVIDER>"
+   *           ]
+   *         },
+   *         user_metadata: {
+   *           email: 'email@email.com',
+   *           email_verified: true,
+   *           full_name: 'User Name',
+   *           iss: '<ISS>',
+   *           name: 'User Name',
+   *           phone_verified: false,
+   *           provider_id: '<PROVIDER_ID>',
+   *           sub: '<SUB>'
+   *         },
+   *         identities: [
+   *           {
+   *             "identity_id": "22222222-2222-2222-2222-222222222222",
+   *             "id": "11111111-1111-1111-1111-111111111111",
+   *             "user_id": "11111111-1111-1111-1111-111111111111",
+   *             "identity_data": {
+   *               "email": "example@email.com",
+   *               "email_verified": false,
+   *               "phone_verified": false,
+   *               "sub": "11111111-1111-1111-1111-111111111111"
+   *             },
+   *             "provider": "email",
+   *             "last_sign_in_at": "2024-01-01T00:00:00Z",
+   *             "created_at": "2024-01-01T00:00:00Z",
+   *             "updated_at": "2024-01-01T00:00:00Z",
+   *             "email": "email@example.com"
+   *           },
+   *           {
+   *             "identity_id": "33333333-3333-3333-3333-333333333333",
+   *             "id": "<ID>",
+   *             "user_id": "<USER_ID>",
+   *             "identity_data": {
+   *               "email": "example@email.com",
+   *               "email_verified": true,
+   *               "full_name": "User Name",
+   *               "iss": "<ISS>",
+   *               "name": "User Name",
+   *               "phone_verified": false,
+   *               "provider_id": "<PROVIDER_ID>",
+   *               "sub": "<SUB>"
+   *             },
+   *             "provider": "<PROVIDER>",
+   *             "last_sign_in_at": "2024-01-01T00:00:00Z",
+   *             "created_at": "2024-01-01T00:00:00Z",
+   *             "updated_at": "2024-01-01T00:00:00Z",
+   *             "email": "example@email.com"
+   *           }
+   *         ],
+   *         created_at: '2024-01-01T00:00:00Z',
+   *         updated_at: '2024-01-01T00:00:00Z',
+   *         is_anonymous: false
+   *       },
+   *       provider_token: '<PROVIDER_TOKEN>',
+   *       provider_refresh_token: '<PROVIDER_REFRESH_TOKEN>'
+   *     },
+   *     user: {
+   *       id: '11111111-1111-1111-1111-111111111111',
+   *       aud: 'authenticated',
+   *       role: 'authenticated',
+   *       email: 'example@email.com',
+   *       email_confirmed_at: '2024-01-01T00:00:00Z',
+   *       phone: '',
+   *       confirmation_sent_at: '2024-01-01T00:00:00Z',
+   *       confirmed_at: '2024-01-01T00:00:00Z',
+   *       last_sign_in_at: '2024-01-01T00:00:00Z',
+   *       app_metadata: {
+   *         provider: 'email',
+   *         providers: [
+   *           "email",
+   *           "<OTHER_PROVIDER>"
+   *         ]
+   *       },
+   *       user_metadata: {
+   *         email: 'email@email.com',
+   *         email_verified: true,
+   *         full_name: 'User Name',
+   *         iss: '<ISS>',
+   *         name: 'User Name',
+   *         phone_verified: false,
+   *         provider_id: '<PROVIDER_ID>',
+   *         sub: '<SUB>'
+   *       },
+   *       identities: [
+   *         {
+   *           "identity_id": "22222222-2222-2222-2222-222222222222",
+   *           "id": "11111111-1111-1111-1111-111111111111",
+   *           "user_id": "11111111-1111-1111-1111-111111111111",
+   *           "identity_data": {
+   *             "email": "example@email.com",
+   *             "email_verified": false,
+   *             "phone_verified": false,
+   *             "sub": "11111111-1111-1111-1111-111111111111"
+   *           },
+   *           "provider": "email",
+   *           "last_sign_in_at": "2024-01-01T00:00:00Z",
+   *           "created_at": "2024-01-01T00:00:00Z",
+   *           "updated_at": "2024-01-01T00:00:00Z",
+   *           "email": "email@example.com"
+   *         },
+   *         {
+   *           "identity_id": "33333333-3333-3333-3333-333333333333",
+   *           "id": "<ID>",
+   *           "user_id": "<USER_ID>",
+   *           "identity_data": {
+   *             "email": "example@email.com",
+   *             "email_verified": true,
+   *             "full_name": "User Name",
+   *             "iss": "<ISS>",
+   *             "name": "User Name",
+   *             "phone_verified": false,
+   *             "provider_id": "<PROVIDER_ID>",
+   *             "sub": "<SUB>"
+   *           },
+   *           "provider": "<PROVIDER>",
+   *           "last_sign_in_at": "2024-01-01T00:00:00Z",
+   *           "created_at": "2024-01-01T00:00:00Z",
+   *           "updated_at": "2024-01-01T00:00:00Z",
+   *           "email": "example@email.com"
+   *         }
+   *       ],
+   *       created_at: '2024-01-01T00:00:00Z',
+   *       updated_at: '2024-01-01T00:00:00Z',
+   *       is_anonymous: false
+   *     },
+   *     redirectType: null
+   *   },
+   *   "error": null
+   * }
+   * ```
    */
   async exchangeCodeForSession(authCode: string): Promise<AuthTokenResponse> {
     await this.initializePromise
@@ -1917,6 +2086,140 @@ export default class GoTrueClient {
 
   /**
    * Log in a user given a User supplied OTP or TokenHash received through mobile or email.
+   *
+   * @category Auth
+   *
+   * @remarks
+   * - The `verifyOtp` method takes in different verification types.
+   * - If a phone number is used, the type can either be:
+   *   1. `sms` – Used when verifying a one-time password (OTP) sent via SMS during sign-up or sign-in.
+   *   2. `phone_change` – Used when verifying an OTP sent to a new phone number during a phone number update process.
+   * - If an email address is used, the type can be one of the following (note: `signup` and `magiclink` types are deprecated):
+   *   1. `email` – Used when verifying an OTP sent to the user's email during sign-up or sign-in.
+   *   2. `recovery` – Used when verifying an OTP sent for account recovery, typically after a password reset request.
+   *   3. `invite` – Used when verifying an OTP sent as part of an invitation to join a project or organization.
+   *   4. `email_change` – Used when verifying an OTP sent to a new email address during an email update process.
+   * - The verification type used should be determined based on the corresponding auth method called before `verifyOtp` to sign up / sign-in a user.
+   * - The `TokenHash` is contained in the [email templates](/docs/guides/auth/auth-email-templates) and can be used to sign in.  You may wish to use the hash for the PKCE flow for Server Side Auth. Read [the Password-based Auth guide](/docs/guides/auth/passwords) for more details.
+   *
+   * @example Verify Signup One-Time Password (OTP)
+   * ```js
+   * const { data, error } = await supabase.auth.verifyOtp({ email, token, type: 'email'})
+   * ```
+   *
+   * @exampleResponse Verify Signup One-Time Password (OTP)
+   * ```json
+   * {
+   *   "data": {
+   *     "user": {
+   *       "id": "11111111-1111-1111-1111-111111111111",
+   *       "aud": "authenticated",
+   *       "role": "authenticated",
+   *       "email": "example@email.com",
+   *       "email_confirmed_at": "2024-01-01T00:00:00Z",
+   *       "phone": "",
+   *       "confirmed_at": "2024-01-01T00:00:00Z",
+   *       "recovery_sent_at": "2024-01-01T00:00:00Z",
+   *       "last_sign_in_at": "2024-01-01T00:00:00Z",
+   *       "app_metadata": {
+   *         "provider": "email",
+   *         "providers": [
+   *           "email"
+   *         ]
+   *       },
+   *       "user_metadata": {
+   *         "email": "example@email.com",
+   *         "email_verified": false,
+   *         "phone_verified": false,
+   *         "sub": "11111111-1111-1111-1111-111111111111"
+   *       },
+   *       "identities": [
+   *         {
+   *           "identity_id": "22222222-2222-2222-2222-222222222222",
+   *           "id": "11111111-1111-1111-1111-111111111111",
+   *           "user_id": "11111111-1111-1111-1111-111111111111",
+   *           "identity_data": {
+   *             "email": "example@email.com",
+   *             "email_verified": false,
+   *             "phone_verified": false,
+   *             "sub": "11111111-1111-1111-1111-111111111111"
+   *           },
+   *           "provider": "email",
+   *           "last_sign_in_at": "2024-01-01T00:00:00Z",
+   *           "created_at": "2024-01-01T00:00:00Z",
+   *           "updated_at": "2024-01-01T00:00:00Z",
+   *           "email": "example@email.com"
+   *         }
+   *       ],
+   *       "created_at": "2024-01-01T00:00:00Z",
+   *       "updated_at": "2024-01-01T00:00:00Z",
+   *       "is_anonymous": false
+   *     },
+   *     "session": {
+   *       "access_token": "<ACCESS_TOKEN>",
+   *       "token_type": "bearer",
+   *       "expires_in": 3600,
+   *       "expires_at": 1700000000,
+   *       "refresh_token": "<REFRESH_TOKEN>",
+   *       "user": {
+   *         "id": "11111111-1111-1111-1111-111111111111",
+   *         "aud": "authenticated",
+   *         "role": "authenticated",
+   *         "email": "example@email.com",
+   *         "email_confirmed_at": "2024-01-01T00:00:00Z",
+   *         "phone": "",
+   *         "confirmed_at": "2024-01-01T00:00:00Z",
+   *         "recovery_sent_at": "2024-01-01T00:00:00Z",
+   *         "last_sign_in_at": "2024-01-01T00:00:00Z",
+   *         "app_metadata": {
+   *           "provider": "email",
+   *           "providers": [
+   *             "email"
+   *           ]
+   *         },
+   *         "user_metadata": {
+   *           "email": "example@email.com",
+   *           "email_verified": false,
+   *           "phone_verified": false,
+   *           "sub": "11111111-1111-1111-1111-111111111111"
+   *         },
+   *         "identities": [
+   *           {
+   *             "identity_id": "22222222-2222-2222-2222-222222222222",
+   *             "id": "11111111-1111-1111-1111-111111111111",
+   *             "user_id": "11111111-1111-1111-1111-111111111111",
+   *             "identity_data": {
+   *               "email": "example@email.com",
+   *               "email_verified": false,
+   *               "phone_verified": false,
+   *               "sub": "11111111-1111-1111-1111-111111111111"
+   *             },
+   *             "provider": "email",
+   *             "last_sign_in_at": "2024-01-01T00:00:00Z",
+   *             "created_at": "2024-01-01T00:00:00Z",
+   *             "updated_at": "2024-01-01T00:00:00Z",
+   *             "email": "example@email.com"
+   *           }
+   *         ],
+   *         "created_at": "2024-01-01T00:00:00Z",
+   *         "updated_at": "2024-01-01T00:00:00Z",
+   *         "is_anonymous": false
+   *       }
+   *     }
+   *   },
+   *   "error": null
+   * }
+   * ```
+   *
+   * @example Verify SMS One-Time Password (OTP)
+   * ```js
+   * const { data, error } = await supabase.auth.verifyOtp({ phone, token, type: 'sms'})
+   * ```
+   *
+   * @example Verify Email Auth (Token Hash)
+   * ```js
+   * const { data, error } = await supabase.auth.verifyOtp({ token_hash: tokenHash, type: 'email'})
+   * ```
    */
   async verifyOtp(params: VerifyOtpParams): Promise<AuthResponse> {
     try {
@@ -2063,6 +2366,23 @@ export default class GoTrueClient {
   /**
    * Sends a reauthentication OTP to the user's email or phone number.
    * Requires the user to be signed-in.
+   *
+   * @category Auth
+   *
+   * @remarks
+   * - This method is used together with `updateUser()` when a user's password needs to be updated.
+   * - If you require your user to reauthenticate before updating their password, you need to enable the **Secure password change** option in your [project's email provider settings](/dashboard/project/_/auth/providers).
+   * - A user is only require to reauthenticate before updating their password if **Secure password change** is enabled and the user **hasn't recently signed in**. A user is deemed recently signed in if the session was created in the last 24 hours.
+   * - This method will send a nonce to the user's email. If the user doesn't have a confirmed email address, the method will send the nonce to the user's confirmed phone number instead.
+   * - After receiving the OTP, include it as the `nonce` in your `updateUser()` call to finalize the password change.
+   *
+   * @exampleDescription Send reauthentication nonce
+   * Sends a reauthentication nonce to the user's email or phone number.
+   *
+   * @example Send reauthentication nonce
+   * ```js
+   * const { error } = await supabase.auth.reauthenticate()
+   * ```
    */
   async reauthenticate(): Promise<AuthResponse> {
     await this.initializePromise
@@ -2098,6 +2418,62 @@ export default class GoTrueClient {
 
   /**
    * Resends an existing signup confirmation email, email change email, SMS OTP or phone change OTP.
+   *
+   * @category Auth
+   *
+   * @remarks
+   * - Resends a signup confirmation, email change or phone change email to the user.
+   * - Passwordless sign-ins can be resent by calling the `signInWithOtp()` method again.
+   * - Password recovery emails can be resent by calling the `resetPasswordForEmail()` method again.
+   * - This method will only resend an email or phone OTP to the user if there was an initial signup, email change or phone change request being made(note: For existing users signing in with OTP, you should use `signInWithOtp()` again to resend the OTP).
+   * - You can specify a redirect url when you resend an email link using the `emailRedirectTo` option.
+   *
+   * @exampleDescription Resend an email signup confirmation
+   * Resends the email signup confirmation to the user
+   *
+   * @example Resend an email signup confirmation
+   * ```js
+   * const { error } = await supabase.auth.resend({
+   *   type: 'signup',
+   *   email: 'email@example.com',
+   *   options: {
+   *     emailRedirectTo: 'https://example.com/welcome'
+   *   }
+   * })
+   * ```
+   *
+   * @exampleDescription Resend a phone signup confirmation
+   * Resends the phone signup confirmation email to the user
+   *
+   * @example Resend a phone signup confirmation
+   * ```js
+   * const { error } = await supabase.auth.resend({
+   *   type: 'sms',
+   *   phone: '1234567890'
+   * })
+   * ```
+   *
+   * @exampleDescription Resend email change email
+   * Resends the email change email to the user
+   *
+   * @example Resend email change email
+   * ```js
+   * const { error } = await supabase.auth.resend({
+   *   type: 'email_change',
+   *   email: 'email@example.com'
+   * })
+   * ```
+   *
+   * @exampleDescription Resend phone change OTP
+   * Resends the phone change OTP to the user
+   *
+   * @example Resend phone change OTP
+   * ```js
+   * const { error } = await supabase.auth.resend({
+   *   type: 'phone_change',
+   *   phone: '1234567890'
+   * })
+   * ```
    */
   async resend(credentials: ResendParams): Promise<AuthOtpResponse> {
     try {
@@ -2150,6 +2526,80 @@ export default class GoTrueClient {
    * the values in it may not be authentic and therefore it's strongly advised
    * against using this method and its results in such circumstances. A warning
    * will be emitted if this is detected. Use {@link #getUser()} instead.
+   *
+   * @category Auth
+   *
+   * @remarks
+   * - Since the introduction of [asymmetric JWT signing keys](/docs/guides/auth/signing-keys), this method is considered low-level and we encourage you to use `getClaims()` or `getUser()` instead.
+   * - Retrieves the current [user session](/docs/guides/auth/sessions) from the storage medium (local storage, cookies).
+   * - The session contains an access token (signed JWT), a refresh token and the user object.
+   * - If the session's access token is expired or is about to expire, this method will use the refresh token to refresh the session.
+   * - When using in a browser, or you've called `startAutoRefresh()` in your environment (React Native, etc.) this function always returns a valid access token without refreshing the session itself, as this is done in the background. This function returns very fast.
+   * - **IMPORTANT SECURITY NOTICE:** If using an insecure storage medium, such as cookies or request headers, the user object returned by this function **must not be trusted**. Always verify the JWT using `getClaims()` or your own JWT verification library to securely establish the user's identity and access. You can also use `getUser()` to fetch the user object directly from the Auth server for this purpose.
+   * - When using in a browser, this function is synchronized across all tabs using the [LockManager](https://developer.mozilla.org/en-US/docs/Web/API/LockManager) API. In other environments make sure you've defined a proper `lock` property, if necessary, to make sure there are no race conditions while the session is being refreshed.
+   *
+   * @example Get the session data
+   * ```js
+   * const { data, error } = await supabase.auth.getSession()
+   * ```
+   *
+   * @exampleResponse Get the session data
+   * ```json
+   * {
+   *   "data": {
+   *     "session": {
+   *       "access_token": "<ACCESS_TOKEN>",
+   *       "token_type": "bearer",
+   *       "expires_in": 3600,
+   *       "expires_at": 1700000000,
+   *       "refresh_token": "<REFRESH_TOKEN>",
+   *       "user": {
+   *         "id": "11111111-1111-1111-1111-111111111111",
+   *         "aud": "authenticated",
+   *         "role": "authenticated",
+   *         "email": "example@email.com",
+   *         "email_confirmed_at": "2024-01-01T00:00:00Z",
+   *         "phone": "",
+   *         "last_sign_in_at": "2024-01-01T00:00:00Z",
+   *         "app_metadata": {
+   *           "provider": "email",
+   *           "providers": [
+   *             "email"
+   *           ]
+   *         },
+   *         "user_metadata": {
+   *           "email": "example@email.com",
+   *           "email_verified": false,
+   *           "phone_verified": false,
+   *           "sub": "11111111-1111-1111-1111-111111111111"
+   *         },
+   *         "identities": [
+   *           {
+   *             "identity_id": "22222222-2222-2222-2222-222222222222",
+   *             "id": "11111111-1111-1111-1111-111111111111",
+   *             "user_id": "11111111-1111-1111-1111-111111111111",
+   *             "identity_data": {
+   *               "email": "example@email.com",
+   *               "email_verified": false,
+   *               "phone_verified": false,
+   *               "sub": "11111111-1111-1111-1111-111111111111"
+   *             },
+   *             "provider": "email",
+   *             "last_sign_in_at": "2024-01-01T00:00:00Z",
+   *             "created_at": "2024-01-01T00:00:00Z",
+   *             "updated_at": "2024-01-01T00:00:00Z",
+   *             "email": "example@email.com"
+   *           }
+   *         ],
+   *         "created_at": "2024-01-01T00:00:00Z",
+   *         "updated_at": "2024-01-01T00:00:00Z",
+   *         "is_anonymous": false
+   *       }
+   *     }
+   *   },
+   *   "error": null
+   * }
+   * ```
    */
   async getSession() {
     await this.initializePromise
@@ -2392,6 +2842,75 @@ export default class GoTrueClient {
    * value is authentic and can be used to base authorization rules on.
    *
    * @param jwt Takes in an optional access token JWT. If no JWT is provided, the JWT from the current session is used.
+   *
+   * @category Auth
+   *
+   * @remarks
+   * - This method fetches the user object from the database instead of local session.
+   * - This method is useful for checking if the user is authorized because it validates the user's access token JWT on the server.
+   * - Should always be used when checking for user authorization on the server. On the client, you can instead use `getSession().session.user` for faster results. `getSession` is insecure on the server.
+   *
+   * @example Get the logged in user with the current existing session
+   * ```js
+   * const { data: { user } } = await supabase.auth.getUser()
+   * ```
+   *
+   * @exampleResponse Get the logged in user with the current existing session
+   * ```json
+   * {
+   *   "data": {
+   *     "user": {
+   *       "id": "11111111-1111-1111-1111-111111111111",
+   *       "aud": "authenticated",
+   *       "role": "authenticated",
+   *       "email": "example@email.com",
+   *       "email_confirmed_at": "2024-01-01T00:00:00Z",
+   *       "phone": "",
+   *       "confirmed_at": "2024-01-01T00:00:00Z",
+   *       "last_sign_in_at": "2024-01-01T00:00:00Z",
+   *       "app_metadata": {
+   *         "provider": "email",
+   *         "providers": [
+   *           "email"
+   *         ]
+   *       },
+   *       "user_metadata": {
+   *         "email": "example@email.com",
+   *         "email_verified": false,
+   *         "phone_verified": false,
+   *         "sub": "11111111-1111-1111-1111-111111111111"
+   *       },
+   *       "identities": [
+   *         {
+   *           "identity_id": "22222222-2222-2222-2222-222222222222",
+   *           "id": "11111111-1111-1111-1111-111111111111",
+   *           "user_id": "11111111-1111-1111-1111-111111111111",
+   *           "identity_data": {
+   *             "email": "example@email.com",
+   *             "email_verified": false,
+   *             "phone_verified": false,
+   *             "sub": "11111111-1111-1111-1111-111111111111"
+   *           },
+   *           "provider": "email",
+   *           "last_sign_in_at": "2024-01-01T00:00:00Z",
+   *           "created_at": "2024-01-01T00:00:00Z",
+   *           "updated_at": "2024-01-01T00:00:00Z",
+   *           "email": "example@email.com"
+   *         }
+   *       ],
+   *       "created_at": "2024-01-01T00:00:00Z",
+   *       "updated_at": "2024-01-01T00:00:00Z",
+   *       "is_anonymous": false
+   *     }
+   *   },
+   *   "error": null
+   * }
+   * ```
+   *
+   * @example Get the logged in user with a custom access token jwt
+   * ```js
+   * const { data: { user } } = await supabase.auth.getUser(jwt)
+   * ```
    */
   async getUser(jwt?: string): Promise<UserResponse> {
     if (jwt) {
@@ -2457,6 +2976,117 @@ export default class GoTrueClient {
 
   /**
    * Updates user data for a logged in user.
+   *
+   * @category Auth
+   *
+   * @remarks
+   * - In order to use the `updateUser()` method, the user needs to be signed in first.
+   * - By default, email updates sends a confirmation link to both the user's current and new email.
+   * To only send a confirmation link to the user's new email, disable **Secure email change** in your project's [email auth provider settings](/dashboard/project/_/auth/providers).
+   *
+   * @exampleDescription Update the email for an authenticated user
+   * Sends a "Confirm Email Change" email to the new address. If **Secure Email Change** is enabled (default), confirmation is also required from the **old email** before the change is applied. To skip dual confirmation and apply the change after only the new email is verified, disable **Secure Email Change** in the [Email Auth Provider settings](/dashboard/project/_/auth/providers?provider=Email).
+   *
+   * @example Update the email for an authenticated user
+   * ```js
+   * const { data, error } = await supabase.auth.updateUser({
+   *   email: 'new@email.com'
+   * })
+   * ```
+   *
+   * @exampleResponse Update the email for an authenticated user
+   * ```json
+   * {
+   *   "data": {
+   *     "user": {
+   *       "id": "11111111-1111-1111-1111-111111111111",
+   *       "aud": "authenticated",
+   *       "role": "authenticated",
+   *       "email": "example@email.com",
+   *       "email_confirmed_at": "2024-01-01T00:00:00Z",
+   *       "phone": "",
+   *       "confirmed_at": "2024-01-01T00:00:00Z",
+   *       "new_email": "new@email.com",
+   *       "email_change_sent_at": "2024-01-01T00:00:00Z",
+   *       "last_sign_in_at": "2024-01-01T00:00:00Z",
+   *       "app_metadata": {
+   *         "provider": "email",
+   *         "providers": [
+   *           "email"
+   *         ]
+   *       },
+   *       "user_metadata": {
+   *         "email": "example@email.com",
+   *         "email_verified": false,
+   *         "phone_verified": false,
+   *         "sub": "11111111-1111-1111-1111-111111111111"
+   *       },
+   *       "identities": [
+   *         {
+   *           "identity_id": "22222222-2222-2222-2222-222222222222",
+   *           "id": "11111111-1111-1111-1111-111111111111",
+   *           "user_id": "11111111-1111-1111-1111-111111111111",
+   *           "identity_data": {
+   *             "email": "example@email.com",
+   *             "email_verified": false,
+   *             "phone_verified": false,
+   *             "sub": "11111111-1111-1111-1111-111111111111"
+   *           },
+   *           "provider": "email",
+   *           "last_sign_in_at": "2024-01-01T00:00:00Z",
+   *           "created_at": "2024-01-01T00:00:00Z",
+   *           "updated_at": "2024-01-01T00:00:00Z",
+   *           "email": "example@email.com"
+   *         }
+   *       ],
+   *       "created_at": "2024-01-01T00:00:00Z",
+   *       "updated_at": "2024-01-01T00:00:00Z",
+   *       "is_anonymous": false
+   *     }
+   *   },
+   *   "error": null
+   * }
+   * ```
+   *
+   * @exampleDescription Update the phone number for an authenticated user
+   * Sends a one-time password (OTP) to the new phone number.
+   *
+   * @example Update the phone number for an authenticated user
+   * ```js
+   * const { data, error } = await supabase.auth.updateUser({
+   *   phone: '123456789'
+   * })
+   * ```
+   *
+   * @example Update the password for an authenticated user
+   * ```js
+   * const { data, error } = await supabase.auth.updateUser({
+   *   password: 'new password'
+   * })
+   * ```
+   *
+   * @exampleDescription Update the user's metadata
+   * Updates the user's custom metadata.
+   *
+   * **Note**: The `data` field maps to the `auth.users.raw_user_meta_data` column in your Supabase database. When calling `getUser()`, the data will be available as `user.user_metadata`.
+   *
+   * @example Update the user's metadata
+   * ```js
+   * const { data, error } = await supabase.auth.updateUser({
+   *   data: { hello: 'world' }
+   * })
+   * ```
+   *
+   * @exampleDescription Update the user's password with a nonce
+   * If **Secure password change** is enabled in your [project's email provider settings](/dashboard/project/_/auth/providers), updating the user's password would require a nonce if the user **hasn't recently signed in**. The nonce is sent to the user's email or phone number. A user is deemed recently signed in if the session was created in the last 24 hours.
+   *
+   * @example Update the user's password with a nonce
+   * ```js
+   * const { data, error } = await supabase.auth.updateUser({
+   *   password: 'new password',
+   *   nonce: '123456'
+   * })
+   * ```
    */
   async updateUser(
     attributes: UserAttributes,
@@ -2529,6 +3159,125 @@ export default class GoTrueClient {
    * Sets the session data from the current session. If the current session is expired, setSession will take care of refreshing it to obtain a new session.
    * If the refresh token or access token in the current session is invalid, an error will be thrown.
    * @param currentSession The current session that minimally contains an access token and refresh token.
+   *
+   * @category Auth
+   *
+   * @remarks
+   * - This method sets the session using an `access_token` and `refresh_token`.
+   * - If successful, a `SIGNED_IN` event is emitted.
+   *
+   * @exampleDescription Set the session
+   * Sets the session data from an access_token and refresh_token, then returns an auth response or error.
+   *
+   * @example Set the session
+   * ```js
+   *   const { data, error } = await supabase.auth.setSession({
+   *     access_token,
+   *     refresh_token
+   *   })
+   * ```
+   *
+   * @exampleResponse Set the session
+   * ```json
+   * {
+   *   "data": {
+   *     "user": {
+   *       "id": "11111111-1111-1111-1111-111111111111",
+   *       "aud": "authenticated",
+   *       "role": "authenticated",
+   *       "email": "example@email.com",
+   *       "email_confirmed_at": "2024-01-01T00:00:00Z",
+   *       "phone": "",
+   *       "confirmed_at": "2024-01-01T00:00:00Z",
+   *       "last_sign_in_at": "2024-01-01T00:00:00Z",
+   *       "app_metadata": {
+   *         "provider": "email",
+   *         "providers": [
+   *           "email"
+   *         ]
+   *       },
+   *       "user_metadata": {
+   *         "email": "example@email.com",
+   *         "email_verified": false,
+   *         "phone_verified": false,
+   *         "sub": "11111111-1111-1111-1111-111111111111"
+   *       },
+   *       "identities": [
+   *         {
+   *           "identity_id": "22222222-2222-2222-2222-222222222222",
+   *           "id": "11111111-1111-1111-1111-111111111111",
+   *           "user_id": "11111111-1111-1111-1111-111111111111",
+   *           "identity_data": {
+   *             "email": "example@email.com",
+   *             "email_verified": false,
+   *             "phone_verified": false,
+   *             "sub": "11111111-1111-1111-1111-111111111111"
+   *           },
+   *           "provider": "email",
+   *           "last_sign_in_at": "2024-01-01T00:00:00Z",
+   *           "created_at": "2024-01-01T00:00:00Z",
+   *           "updated_at": "2024-01-01T00:00:00Z",
+   *           "email": "example@email.com"
+   *         }
+   *       ],
+   *       "created_at": "2024-01-01T00:00:00Z",
+   *       "updated_at": "2024-01-01T00:00:00Z",
+   *       "is_anonymous": false
+   *     },
+   *     "session": {
+   *       "access_token": "<ACCESS_TOKEN>",
+   *       "refresh_token": "<REFRESH_TOKEN>",
+   *       "user": {
+   *         "id": "11111111-1111-1111-1111-111111111111",
+   *         "aud": "authenticated",
+   *         "role": "authenticated",
+   *         "email": "example@email.com",
+   *         "email_confirmed_at": "2024-01-01T00:00:00Z",
+   *         "phone": "",
+   *         "confirmed_at": "2024-01-01T00:00:00Z",
+   *         "last_sign_in_at": "11111111-1111-1111-1111-111111111111",
+   *         "app_metadata": {
+   *           "provider": "email",
+   *           "providers": [
+   *             "email"
+   *           ]
+   *         },
+   *         "user_metadata": {
+   *           "email": "example@email.com",
+   *           "email_verified": false,
+   *           "phone_verified": false,
+   *           "sub": "11111111-1111-1111-1111-111111111111"
+   *         },
+   *         "identities": [
+   *           {
+   *             "identity_id": "2024-01-01T00:00:00Z",
+   *             "id": "11111111-1111-1111-1111-111111111111",
+   *             "user_id": "11111111-1111-1111-1111-111111111111",
+   *             "identity_data": {
+   *               "email": "example@email.com",
+   *               "email_verified": false,
+   *               "phone_verified": false,
+   *               "sub": "11111111-1111-1111-1111-111111111111"
+   *             },
+   *             "provider": "email",
+   *             "last_sign_in_at": "2024-01-01T00:00:00Z",
+   *             "created_at": "2024-01-01T00:00:00Z",
+   *             "updated_at": "2024-01-01T00:00:00Z",
+   *             "email": "example@email.com"
+   *           }
+   *         ],
+   *         "created_at": "2024-01-01T00:00:00Z",
+   *         "updated_at": "2024-01-01T00:00:00Z",
+   *         "is_anonymous": false
+   *       },
+   *       "token_type": "bearer",
+   *       "expires_in": 3500,
+   *       "expires_at": 1700000000
+   *     }
+   *   },
+   *   "error": null
+   * }
+   * ```
    */
   async setSession(currentSession: {
     access_token: string
@@ -2604,6 +3353,125 @@ export default class GoTrueClient {
    * Takes in an optional current session. If not passed in, then refreshSession() will attempt to retrieve it from getSession().
    * If the current session's refresh token is invalid, an error will be thrown.
    * @param currentSession The current session. If passed in, it must contain a refresh token.
+   *
+   * @category Auth
+   *
+   * @remarks
+   * - This method will refresh and return a new session whether the current one is expired or not.
+   *
+   * @example Refresh session using the current session
+   * ```js
+   * const { data, error } = await supabase.auth.refreshSession()
+   * const { session, user } = data
+   * ```
+   *
+   * @exampleResponse Refresh session using the current session
+   * ```json
+   * {
+   *   "data": {
+   *     "user": {
+   *       "id": "11111111-1111-1111-1111-111111111111",
+   *       "aud": "authenticated",
+   *       "role": "authenticated",
+   *       "email": "example@email.com",
+   *       "email_confirmed_at": "2024-01-01T00:00:00Z",
+   *       "phone": "",
+   *       "confirmed_at": "2024-01-01T00:00:00Z",
+   *       "last_sign_in_at": "2024-01-01T00:00:00Z",
+   *       "app_metadata": {
+   *         "provider": "email",
+   *         "providers": [
+   *           "email"
+   *         ]
+   *       },
+   *       "user_metadata": {
+   *         "email": "example@email.com",
+   *         "email_verified": false,
+   *         "phone_verified": false,
+   *         "sub": "11111111-1111-1111-1111-111111111111"
+   *       },
+   *       "identities": [
+   *         {
+   *           "identity_id": "22222222-2222-2222-2222-222222222222",
+   *           "id": "11111111-1111-1111-1111-111111111111",
+   *           "user_id": "11111111-1111-1111-1111-111111111111",
+   *           "identity_data": {
+   *             "email": "example@email.com",
+   *             "email_verified": false,
+   *             "phone_verified": false,
+   *             "sub": "11111111-1111-1111-1111-111111111111"
+   *           },
+   *           "provider": "email",
+   *           "last_sign_in_at": "2024-01-01T00:00:00Z",
+   *           "created_at": "2024-01-01T00:00:00Z",
+   *           "updated_at": "2024-01-01T00:00:00Z",
+   *           "email": "example@email.com"
+   *         }
+   *       ],
+   *       "created_at": "2024-01-01T00:00:00Z",
+   *       "updated_at": "2024-01-01T00:00:00Z",
+   *       "is_anonymous": false
+   *     },
+   *     "session": {
+   *       "access_token": "<ACCESS_TOKEN>",
+   *       "token_type": "bearer",
+   *       "expires_in": 3600,
+   *       "expires_at": 1700000000,
+   *       "refresh_token": "<REFRESH_TOKEN>",
+   *       "user": {
+   *         "id": "11111111-1111-1111-1111-111111111111",
+   *         "aud": "authenticated",
+   *         "role": "authenticated",
+   *         "email": "example@email.com",
+   *         "email_confirmed_at": "2024-01-01T00:00:00Z",
+   *         "phone": "",
+   *         "confirmed_at": "2024-01-01T00:00:00Z",
+   *         "last_sign_in_at": "2024-01-01T00:00:00Z",
+   *         "app_metadata": {
+   *           "provider": "email",
+   *           "providers": [
+   *             "email"
+   *           ]
+   *         },
+   *         "user_metadata": {
+   *           "email": "example@email.com",
+   *           "email_verified": false,
+   *           "phone_verified": false,
+   *           "sub": "11111111-1111-1111-1111-111111111111"
+   *         },
+   *         "identities": [
+   *           {
+   *             "identity_id": "22222222-2222-2222-2222-222222222222",
+   *             "id": "11111111-1111-1111-1111-111111111111",
+   *             "user_id": "11111111-1111-1111-1111-111111111111",
+   *             "identity_data": {
+   *               "email": "example@email.com",
+   *               "email_verified": false,
+   *               "phone_verified": false,
+   *               "sub": "11111111-1111-1111-1111-111111111111"
+   *             },
+   *             "provider": "email",
+   *             "last_sign_in_at": "2024-01-01T00:00:00Z",
+   *             "created_at": "2024-01-01T00:00:00Z",
+   *             "updated_at": "2024-01-01T00:00:00Z",
+   *             "email": "example@email.com"
+   *           }
+   *         ],
+   *         "created_at": "2024-01-01T00:00:00Z",
+   *         "updated_at": "2024-01-01T00:00:00Z",
+   *         "is_anonymous": false
+   *       }
+   *     }
+   *   },
+   *   "error": null
+   * }
+   * ```
+   *
+   * @example Refresh session using a refresh token
+   * ```js
+   * const { data, error } = await supabase.auth.refreshSession({ refresh_token })
+   * const { session, user } = data
+   * ```
    */
   async refreshSession(currentSession?: { refresh_token: string }): Promise<AuthResponse> {
     await this.initializePromise
@@ -2818,6 +3686,28 @@ export default class GoTrueClient {
    * There is no way to revoke a user's access token jwt until it expires. It is recommended to set a shorter expiry on the jwt for this reason.
    *
    * If using `others` scope, no `SIGNED_OUT` event is fired!
+   *
+   * @category Auth
+   *
+   * @remarks
+   * - In order to use the `signOut()` method, the user needs to be signed in first.
+   * - By default, `signOut()` uses the global scope, which signs out all other sessions that the user is logged into as well. Customize this behavior by passing a scope parameter.
+   * - Since Supabase Auth uses JWTs for authentication, the access token JWT will be valid until it's expired. When the user signs out, Supabase revokes the refresh token and deletes the JWT from the client-side. This does not revoke the JWT and it will still be valid until it expires.
+   *
+   * @example Sign out (all sessions)
+   * ```js
+   * const { error } = await supabase.auth.signOut()
+   * ```
+   *
+   * @example Sign out (current session)
+   * ```js
+   * const { error } = await supabase.auth.signOut({ scope: 'local' })
+   * ```
+   *
+   * @example Sign out (other sessions)
+   * ```js
+   * const { error } = await supabase.auth.signOut({ scope: 'others' })
+   * ```
    */
   async signOut(options: SignOut = { scope: 'global' }): Promise<{ error: AuthError | null }> {
     await this.initializePromise
@@ -3128,6 +4018,66 @@ export default class GoTrueClient {
    * @param email The email address of the user.
    * @param options.redirectTo The URL to send the user to after they click the password reset link.
    * @param options.captchaToken Verification token received when the user completes the captcha on the site.
+   *
+   * @category Auth
+   *
+   * @remarks
+   * - The password reset flow consist of 2 broad steps: (i) Allow the user to login via the password reset link; (ii) Update the user's password.
+   * - The `resetPasswordForEmail()` only sends a password reset link to the user's email.
+   * To update the user's password, see [`updateUser()`](/docs/reference/javascript/auth-updateuser).
+   * - A `PASSWORD_RECOVERY` event will be emitted when the password recovery link is clicked.
+   * You can use [`onAuthStateChange()`](/docs/reference/javascript/auth-onauthstatechange) to listen and invoke a callback function on these events.
+   * - When the user clicks the reset link in the email they are redirected back to your application.
+   * You can configure the URL that the user is redirected to with the `redirectTo` parameter.
+   * See [redirect URLs and wildcards](/docs/guides/auth/redirect-urls#use-wildcards-in-redirect-urls) to add additional redirect URLs to your project.
+   * - After the user has been redirected successfully, prompt them for a new password and call `updateUser()`:
+   * ```js
+   * const { data, error } = await supabase.auth.updateUser({
+   *   password: new_password
+   * })
+   * ```
+   *
+   * @example Reset password
+   * ```js
+   * const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
+   *   redirectTo: 'https://example.com/update-password',
+   * })
+   * ```
+   *
+   * @exampleResponse Reset password
+   * ```json
+   * {
+   *   data: {}
+   *   error: null
+   * }
+   * ```
+   *
+   * @example Reset password (React)
+   * ```js
+   * /**
+   *  * Step 1: Send the user an email to get a password reset token.
+   *  * This email contains a link which sends the user back to your application.
+   *  *\/
+   * const { data, error } = await supabase.auth
+   *   .resetPasswordForEmail('user@email.com')
+   *
+   * /**
+   *  * Step 2: Once the user is redirected back to your application,
+   *  * ask the user to reset their password.
+   *  *\/
+   *  useEffect(() => {
+   *    supabase.auth.onAuthStateChange(async (event, session) => {
+   *      if (event == "PASSWORD_RECOVERY") {
+   *        const newPassword = prompt("What would you like your new password to be?");
+   *        const { data, error } = await supabase.auth
+   *          .updateUser({ password: newPassword })
+   *
+   *        if (data) alert("Password updated successfully!")
+   *        if (error) alert("There was an error updating your password.")
+   *      }
+   *    })
+   *  }, [])
+   * ```
    */
   async resetPasswordForEmail(
     email: string,
@@ -3175,6 +4125,43 @@ export default class GoTrueClient {
 
   /**
    * Gets all the identities linked to a user.
+   *
+   * @category Auth
+   *
+   * @remarks
+   * - The user needs to be signed in to call `getUserIdentities()`.
+   *
+   * @example Returns a list of identities linked to the user
+   * ```js
+   * const { data, error } = await supabase.auth.getUserIdentities()
+   * ```
+   *
+   * @exampleResponse Returns a list of identities linked to the user
+   * ```json
+   * {
+   *   "data": {
+   *     "identities": [
+   *       {
+   *         "identity_id": "22222222-2222-2222-2222-222222222222",
+   *         "id": "2024-01-01T00:00:00Z",
+   *         "user_id": "2024-01-01T00:00:00Z",
+   *         "identity_data": {
+   *           "email": "example@email.com",
+   *           "email_verified": false,
+   *           "phone_verified": false,
+   *           "sub": "11111111-1111-1111-1111-111111111111"
+   *         },
+   *         "provider": "email",
+   *         "last_sign_in_at": "2024-01-01T00:00:00Z",
+   *         "created_at": "2024-01-01T00:00:00Z",
+   *         "updated_at": "2024-01-01T00:00:00Z",
+   *         "email": "example@email.com"
+   *       }
+   *     ]
+   *   },
+   *   "error": null
+   * }
+   * ```
    */
   async getUserIdentities(): Promise<
     | {
@@ -3208,6 +4195,33 @@ export default class GoTrueClient {
    */
   async linkIdentity(credentials: SignInWithIdTokenCredentials): Promise<AuthTokenResponse>
 
+  /**  *
+   * @category Auth
+   *
+   * @remarks
+   * - The **Enable Manual Linking** option must be enabled from your [project's authentication settings](/dashboard/project/_/auth/providers).
+   * - The user needs to be signed in to call `linkIdentity()`.
+   * - If the candidate identity is already linked to the existing user or another user, `linkIdentity()` will fail.
+   * - If `linkIdentity` is run in the browser, the user is automatically redirected to the returned URL. On the server, you should handle the redirect.
+   *
+   * @example Link an identity to a user
+   * ```js
+   * const { data, error } = await supabase.auth.linkIdentity({
+   *   provider: 'github'
+   * })
+   * ```
+   *
+   * @exampleResponse Link an identity to a user
+   * ```json
+   * {
+   *   data: {
+   *     provider: 'github',
+   *     url: <PROVIDER_URL_TO_REDIRECT_TO>
+   *   },
+   *   error: null
+   * }
+   * ```
+   */
   async linkIdentity(credentials: any): Promise<any> {
     if ('token' in credentials) {
       return this.linkIdentityIdToken(credentials)
@@ -3305,6 +4319,28 @@ export default class GoTrueClient {
 
   /**
    * Unlinks an identity from a user by deleting it. The user will no longer be able to sign in with that identity once it's unlinked.
+   *
+   * @category Auth
+   *
+   * @remarks
+   * - The **Enable Manual Linking** option must be enabled from your [project's authentication settings](/dashboard/project/_/auth/providers).
+   * - The user needs to be signed in to call `unlinkIdentity()`.
+   * - The user must have at least 2 identities in order to unlink an identity.
+   * - The identity to be unlinked must belong to the user.
+   *
+   * @example Unlink an identity
+   * ```js
+   * // retrieve all identities linked to a user
+   * const identities = await supabase.auth.getUserIdentities()
+   *
+   * // find the google identity
+   * const googleIdentity = identities.find(
+   *   identity => identity.provider === 'google'
+   * )
+   *
+   * // unlink the google identity
+   * const { error } = await supabase.auth.unlinkIdentity(googleIdentity)
+   * ```
    */
   async unlinkIdentity(identity: UserIdentity): Promise<
     | {
@@ -3804,6 +4840,28 @@ export default class GoTrueClient {
    * appropriately to conserve resources.
    *
    * {@see #stopAutoRefresh}
+   *
+   * @category Auth
+   *
+   * @remarks
+   * - Only useful in non-browser environments such as React Native or Electron.
+   * - The Supabase Auth library automatically starts and stops proactively refreshing the session when a tab is focused or not.
+   * - On non-browser platforms, such as mobile or desktop apps built with web technologies, the library is not able to effectively determine whether the application is _focused_ or not.
+   * - To give this hint to the application, you should be calling this method when the app is in focus and calling `supabase.auth.stopAutoRefresh()` when it's out of focus.
+   *
+   * @example Start and stop auto refresh in React Native
+   * ```js
+   * import { AppState } from 'react-native'
+   *
+   * // make sure you register this only once!
+   * AppState.addEventListener('change', (state) => {
+   *   if (state === 'active') {
+   *     supabase.auth.startAutoRefresh()
+   *   } else {
+   *     supabase.auth.stopAutoRefresh()
+   *   }
+   * })
+   * ```
    */
   async startAutoRefresh() {
     this._removeVisibilityChangedCallback()
@@ -3817,6 +4875,28 @@ export default class GoTrueClient {
    * removed and you must manage visibility changes on your own.
    *
    * See {@link #startAutoRefresh} for more details.
+   *
+   * @category Auth
+   *
+   * @remarks
+   * - Only useful in non-browser environments such as React Native or Electron.
+   * - The Supabase Auth library automatically starts and stops proactively refreshing the session when a tab is focused or not.
+   * - On non-browser platforms, such as mobile or desktop apps built with web technologies, the library is not able to effectively determine whether the application is _focused_ or not.
+   * - When your application goes in the background or out of focus, call this method to stop the proactive refreshing of the session.
+   *
+   * @example Start and stop auto refresh in React Native
+   * ```js
+   * import { AppState } from 'react-native'
+   *
+   * // make sure you register this only once!
+   * AppState.addEventListener('change', (state) => {
+   *   if (state === 'active') {
+   *     supabase.auth.startAutoRefresh()
+   *   } else {
+   *     supabase.auth.stopAutoRefresh()
+   *   }
+   * })
+   * ```
    */
   async stopAutoRefresh() {
     this._removeVisibilityChangedCallback()
@@ -4660,6 +5740,55 @@ export default class GoTrueClient {
    *            can obtain from {@link #getSession}.
    * @param options Various additional options that allow you to customize the
    *                behavior of this method.
+   *
+   * @category Auth
+   *
+   * @remarks
+   * - Parses the user's [access token](/docs/guides/auth/sessions#access-token-jwt-claims) as a [JSON Web Token (JWT)](/docs/guides/auth/jwts) and returns its components if valid and not expired.
+   * - If your project is using asymmetric JWT signing keys, then the verification is done locally usually without a network request using the [WebCrypto API](https://developer.mozilla.org/en-US/docs/Web/API/Web_Crypto_API).
+   * - A network request is sent to your project's JWT signing key discovery endpoint `https://project-id.supabase.co/auth/v1/.well-known/jwks.json`, which is cached locally. If your environment is ephemeral, such as a Lambda function that is destroyed after every request, a network request will be sent for each new invocation. Supabase provides a network-edge cache providing fast responses for these situations.
+   * - If the user's access token is about to expire when calling this function, the user's session will first be refreshed before validating the JWT.
+   * - If your project is using a symmetric secret to sign the JWT, it always sends a request similar to `getUser()` to validate the JWT at the server before returning the decoded token. This is also used if the WebCrypto API is not available in the environment. Make sure you polyfill it in such situations.
+   * - The returned claims can be customized per project using the [Custom Access Token Hook](/docs/guides/auth/auth-hooks/custom-access-token-hook).
+   *
+   * @example Get JWT claims, header and signature
+   * ```js
+   * const { data, error } = await supabase.auth.getClaims()
+   * ```
+   *
+   * @exampleResponse Get JWT claims, header and signature
+   * ```json
+   * {
+   *   "data": {
+   *     "claims": {
+   *       "aal": "aal1",
+   *       "amr": [{
+   *         "method": "email",
+   *         "timestamp": 1715766000
+   *       }],
+   *       "app_metadata": {},
+   *       "aud": "authenticated",
+   *       "email": "example@email.com",
+   *       "exp": 1715769600,
+   *       "iat": 1715766000,
+   *       "is_anonymous": false,
+   *       "iss": "https://project-id.supabase.co/auth/v1",
+   *       "phone": "+13334445555",
+   *       "role": "authenticated",
+   *       "session_id": "11111111-1111-1111-1111-111111111111",
+   *       "sub": "11111111-1111-1111-1111-111111111111",
+   *       "user_metadata": {}
+   *     },
+   *     "header": {
+   *       "alg": "RS256",
+   *       "typ": "JWT",
+   *       "kid": "11111111-1111-1111-1111-111111111111"
+   *     },
+   *     "signature": [/** Uint8Array *\/],
+   *   },
+   *   "error": null
+   * }
+   * ```
    */
   async getClaims(
     jwt?: string,
