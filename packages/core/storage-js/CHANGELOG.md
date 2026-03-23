@@ -1,3 +1,13 @@
+## 2.100.0 (2026-03-23)
+
+### 🩹 Fixes
+
+- **storage:** structural detection on json() to detect Response-like errors ([#2179](https://github.com/supabase/supabase-js/pull/2179))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+
 ## 2.99.2 (2026-03-16)
 
 ### 🩹 Fixes

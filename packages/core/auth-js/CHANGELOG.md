@@ -1,3 +1,13 @@
+## 2.100.0 (2026-03-23)
+
+### 🩹 Fixes
+
+- **auth:** guard navigator lock steal against cascade when lock is stolen by another request ([#2178](https://github.com/supabase/supabase-js/pull/2178))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+
 ## 2.99.2 (2026-03-16)
 
 This was a version bump only for @supabase/auth-js to align it with other projects, there were no code changes.
