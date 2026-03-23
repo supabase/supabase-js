@@ -175,6 +175,12 @@ export default class StorageBucketApi extends BaseApiClient<StorageError> {
    *   "error": null
    * }
    * ```
+   *
+   * @remarks
+   * - RLS policy permissions required:
+   *   - `buckets` table permissions: `insert`
+   *   - `objects` table permissions: none
+   * - Refer to the [Storage guide](/docs/guides/storage/security/access-control) on how access control works
    */
   async createBucket(
     id: string,
@@ -247,6 +253,12 @@ export default class StorageBucketApi extends BaseApiClient<StorageError> {
    *   "error": null
    * }
    * ```
+   *
+   * @remarks
+   * - RLS policy permissions required:
+   *   - `buckets` table permissions: `select` and `update`
+   *   - `objects` table permissions: none
+   * - Refer to the [Storage guide](/docs/guides/storage/security/access-control) on how access control works
    */
   async updateBucket(
     id: string,
@@ -304,6 +316,12 @@ export default class StorageBucketApi extends BaseApiClient<StorageError> {
    *   "error": null
    * }
    * ```
+   *
+   * @remarks
+   * - RLS policy permissions required:
+   *   - `buckets` table permissions: `select`
+   *   - `objects` table permissions: `select` and `delete`
+   * - Refer to the [Storage guide](/docs/guides/storage/security/access-control) on how access control works
    */
   async emptyBucket(id: string): Promise<
     | {
@@ -344,6 +362,12 @@ export default class StorageBucketApi extends BaseApiClient<StorageError> {
    *   "error": null
    * }
    * ```
+   *
+   * @remarks
+   * - RLS policy permissions required:
+   *   - `buckets` table permissions: `select` and `delete`
+   *   - `objects` table permissions: none
+   * - Refer to the [Storage guide](/docs/guides/storage/security/access-control) on how access control works
    */
   async deleteBucket(id: string): Promise<
     | {

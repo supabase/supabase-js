@@ -189,6 +189,13 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
    *     contentType: 'image/png'
    *   })
    * ```
+   *
+   * @remarks
+   * - RLS policy permissions required:
+   *   - `buckets` table permissions: none
+   *   - `objects` table permissions: only `insert` when you are uploading new files and `select`, `insert` and `update` when you are upserting files
+   * - Refer to the [Storage guide](/docs/guides/storage/security/access-control) on how access control works
+   * - For React Native, using either `Blob`, `File` or `FormData` does not work as intended. Upload file using `ArrayBuffer` from base64 file data instead, see example below.
    */
   async upload(
     path: string,
@@ -237,6 +244,12 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
    *   "error": null
    * }
    * ```
+   *
+   * @remarks
+   * - RLS policy permissions required:
+   *   - `buckets` table permissions: none
+   *   - `objects` table permissions: none
+   * - Refer to the [Storage guide](/docs/guides/storage/security/access-control) on how access control works
    */
   async uploadToSignedUrl(
     path: string,
@@ -306,6 +319,12 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
    *   "error": null
    * }
    * ```
+   *
+   * @remarks
+   * - RLS policy permissions required:
+   *   - `buckets` table permissions: none
+   *   - `objects` table permissions: `insert`
+   * - Refer to the [Storage guide](/docs/guides/storage/security/access-control) on how access control works
    */
   async createSignedUploadUrl(
     path: string,
@@ -391,6 +410,13 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
    *     contentType: 'image/png'
    *   })
    * ```
+   *
+   * @remarks
+   * - RLS policy permissions required:
+   *   - `buckets` table permissions: none
+   *   - `objects` table permissions: `update` and `select`
+   * - Refer to the [Storage guide](/docs/guides/storage/security/access-control) on how access control works
+   * - For React Native, using either `Blob`, `File` or `FormData` does not work as intended. Update file using `ArrayBuffer` from base64 file data instead, see example below.
    */
   async update(
     path: string,
@@ -445,6 +471,12 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
    *   "error": null
    * }
    * ```
+   *
+   * @remarks
+   * - RLS policy permissions required:
+   *   - `buckets` table permissions: none
+   *   - `objects` table permissions: `update` and `select`
+   * - Refer to the [Storage guide](/docs/guides/storage/security/access-control) on how access control works
    */
   async move(
     fromPath: string,
@@ -501,6 +533,12 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
    *   "error": null
    * }
    * ```
+   *
+   * @remarks
+   * - RLS policy permissions required:
+   *   - `buckets` table permissions: none
+   *   - `objects` table permissions: `insert` and `select`
+   * - Refer to the [Storage guide](/docs/guides/storage/security/access-control) on how access control works
    */
   async copy(
     fromPath: string,
@@ -582,6 +620,12 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
    *     download: true,
    *   })
    * ```
+   *
+   * @remarks
+   * - RLS policy permissions required:
+   *   - `buckets` table permissions: none
+   *   - `objects` table permissions: `select`
+   * - Refer to the [Storage guide](/docs/guides/storage/security/access-control) on how access control works
    */
   async createSignedUrl(
     path: string,
@@ -663,6 +707,12 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
    *   "error": null
    * }
    * ```
+   *
+   * @remarks
+   * - RLS policy permissions required:
+   *   - `buckets` table permissions: none
+   *   - `objects` table permissions: `select`
+   * - Refer to the [Storage guide](/docs/guides/storage/security/access-control) on how access control works
    */
   async createSignedUrls(
     paths: string[],
@@ -755,6 +805,12 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
    *   .from('avatars')
    *   .download('folder/avatar1.png', {}, { signal: controller.signal })
    * ```
+   *
+   * @remarks
+   * - RLS policy permissions required:
+   *   - `buckets` table permissions: none
+   *   - `objects` table permissions: `select`
+   * - Refer to the [Storage guide](/docs/guides/storage/security/access-control) on how access control works
    */
   download<Options extends { transform?: TransformOptions }>(
     path: string,
@@ -927,6 +983,13 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
    *     download: true,
    *   })
    * ```
+   *
+   * @remarks
+   * - The bucket needs to be set to public, either via [updateBucket()](/docs/reference/javascript/storage-updatebucket) or by going to Storage on [supabase.com/dashboard](https://supabase.com/dashboard), clicking the overflow menu on a bucket and choosing "Make public"
+   * - RLS policy permissions required:
+   *   - `buckets` table permissions: none
+   *   - `objects` table permissions: none
+   * - Refer to the [Storage guide](/docs/guides/storage/security/access-control) on how access control works
    */
   getPublicUrl(
     path: string,
@@ -986,6 +1049,12 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
    *   "error": null
    * }
    * ```
+   *
+   * @remarks
+   * - RLS policy permissions required:
+   *   - `buckets` table permissions: none
+   *   - `objects` table permissions: `delete` and `select`
+   * - Refer to the [Storage guide](/docs/guides/storage/security/access-control) on how access control works
    */
   async remove(paths: string[]): Promise<
     | {
@@ -1144,6 +1213,12 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
    *     search: 'jon'
    *   })
    * ```
+   *
+   * @remarks
+   * - RLS policy permissions required:
+   *   - `buckets` table permissions: none
+   *   - `objects` table permissions: `select`
+   * - Refer to the [Storage guide](/docs/guides/storage/security/access-control) on how access control works
    */
   async list(
     path?: string,
