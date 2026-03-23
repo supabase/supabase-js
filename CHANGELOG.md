@@ -1,3 +1,21 @@
+## 2.100.0 (2026-03-23)
+
+### 🚀 Features
+
+- **realtime:** use phoenix's js lib inside realtime-js ([#2119](https://github.com/supabase/supabase-js/pull/2119))
+
+### 🩹 Fixes
+
+- **auth:** guard navigator lock steal against cascade when lock is stolen by another request ([#2178](https://github.com/supabase/supabase-js/pull/2178))
+- **realtime:** revert `vsn` type to `string` ([#2170](https://github.com/supabase/supabase-js/pull/2170))
+- **storage:** structural detection on json() to detect Response-like errors ([#2179](https://github.com/supabase/supabase-js/pull/2179))
+
+### ❤️ Thank You
+
+- Alan Guzek @GuzekAlan
+- Dominik Pilipczuk @snickerdoodle2
+- Katerina Skroumpelou @mandarini
+
 ## 2.99.2 (2026-03-16)
 
 ### 🩹 Fixes
