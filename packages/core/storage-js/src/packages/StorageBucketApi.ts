@@ -60,6 +60,12 @@ export default class StorageBucketApi extends BaseApiClient<StorageError> {
    *     search: 'prod'
    *   })
    * ```
+   *
+   * @remarks
+   * - RLS policy permissions required:
+   *   - `buckets` table permissions: `select`
+   *   - `objects` table permissions: none
+   * - Refer to the [Storage guide](/docs/guides/storage/security/access-control) on how access control works
    */
   async listBuckets(options?: ListBucketOptions): Promise<
     | {
@@ -111,6 +117,12 @@ export default class StorageBucketApi extends BaseApiClient<StorageError> {
    *   "error": null
    * }
    * ```
+   *
+   * @remarks
+   * - RLS policy permissions required:
+   *   - `buckets` table permissions: `select`
+   *   - `objects` table permissions: none
+   * - Refer to the [Storage guide](/docs/guides/storage/security/access-control) on how access control works
    */
   async getBucket(id: string): Promise<
     | {

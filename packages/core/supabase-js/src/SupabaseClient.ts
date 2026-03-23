@@ -481,6 +481,13 @@ export default class SupabaseClient<
 
   /**
    * Returns all Realtime channels.
+   *
+   * @category Initializing
+   *
+   * @example Get all channels
+   * ```js
+   * const channels = supabase.getChannels()
+   * ```
    */
   getChannels(): RealtimeChannel[] {
     return this.realtime.getChannels()
@@ -491,6 +498,16 @@ export default class SupabaseClient<
    *
    * @param {RealtimeChannel} channel - The name of the Realtime channel.
    *
+   *
+   * @category Initializing
+   *
+   * @remarks
+   * - Removing a channel is a great way to maintain the performance of your project's Realtime service as well as your database if you're listening to Postgres changes. Supabase will automatically handle cleanup 30 seconds after a client is disconnected, but unused channels may cause degradation as more clients are simultaneously subscribed.
+   *
+   * @example Removes a channel
+   * ```js
+   * supabase.removeChannel(myChannel)
+   * ```
    */
   removeChannel(channel: RealtimeChannel): Promise<'ok' | 'timed out' | 'error'> {
     return this.realtime.removeChannel(channel)
@@ -498,6 +515,16 @@ export default class SupabaseClient<
 
   /**
    * Unsubscribes and removes all Realtime channels from Realtime client.
+   *
+   * @category Initializing
+   *
+   * @remarks
+   * - Removing channels is a great way to maintain the performance of your project's Realtime service as well as your database if you're listening to Postgres changes. Supabase will automatically handle cleanup 30 seconds after a client is disconnected, but unused channels may cause degradation as more clients are simultaneously subscribed.
+   *
+   * @example Remove all channels
+   * ```js
+   * supabase.removeAllChannels()
+   * ```
    */
   removeAllChannels(): Promise<('ok' | 'timed out' | 'error')[]> {
     return this.realtime.removeAllChannels()
