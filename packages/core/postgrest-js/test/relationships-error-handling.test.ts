@@ -212,7 +212,7 @@ test('aggregate on missing column with alias', async () => {
   const res = await postgrest
     .from('users')
     .select('alias:missing_column.count()')
-    .eq('id', 2)
+    .eq('username', 'supabot')
     .limit(1)
     .single()
   expect(res).toMatchInlineSnapshot(`
