@@ -15,12 +15,12 @@ feature/*  →  develop  →  (when ready)  →  master
 
 ## Branch Roles
 
-| Branch | Purpose | Who merges here | npm tag |
-|--------|---------|-----------------|---------|
-| `develop` | All feature/fix PRs, staging baseline | Everyone (via PR) | `canary` |
-| `master` | Production-ready only — patches & stable releases | Maintainers only (hotfix PRs or merge from develop) | `latest` |
-| `feature/*` | In-flight feature work, beta testing before merge | Author | `beta` |
-| `release/2.x` _(future)_ | 2.x maintenance after v3 split | Maintainers | `latest` |
+| Branch                   | Purpose                                           | Who merges here                                     | npm tag  |
+| ------------------------ | ------------------------------------------------- | --------------------------------------------------- | -------- |
+| `develop`                | All feature/fix PRs, staging baseline             | Everyone (via PR)                                   | `canary` |
+| `master`                 | Production-ready only — patches & stable releases | Maintainers only (hotfix PRs or merge from develop) | `latest` |
+| `feature/*`              | In-flight feature work, beta testing before merge | Author                                              | `beta`   |
+| `release/2.x` _(future)_ | 2.x maintenance after v3 split                    | Maintainers                                         | `latest` |
 
 ---
 
@@ -61,6 +61,18 @@ No cherry-pick needed. The sync workflow handles it automatically.
 
 `.github/workflows/sync-develop.yml` runs on every push to `master` and hourly. It merges master into develop automatically. If there's a merge conflict, it fires a Slack notification to `#client-libs` for manual resolution — no silent failures.
 
+## Patchback Bot: develop → master (escape hatch)
+
+`.github/workflows/patchback.yml` handles the case where a fix was merged to `develop` but needs to go to `master` urgently.
+
+**How to use:**
+
+1. Add the label `patchback-master` to the already-merged PR on develop
+2. The bot cherry-picks the merge commit and opens a PR to master
+3. Review and merge the PR, then run the stable release workflow
+
+If there's a cherry-pick conflict, a Slack notification fires with instructions for manual resolution.
+
 ---
 
 ## v3 Path (future)
@@ -84,8 +96,8 @@ Critical hotfixes that apply to both 2.x and v3 get cherry-picked from `release/
 
 ## Branch Protection Summary
 
-| Branch | Direct push | PR required | CI required |
-|--------|------------|-------------|-------------|
-| `develop` | ❌ | ✅ | ✅ |
-| `master` | ❌ (maintainers only for hotfixes) | ✅ | ✅ |
-| `feature/*` | ✅ | — | — |
+| Branch      | Direct push                        | PR required | CI required |
+| ----------- | ---------------------------------- | ----------- | ----------- |
+| `develop`   | ❌                                 | ✅          | ✅          |
+| `master`    | ❌ (maintainers only for hotfixes) | ✅          | ✅          |
+| `feature/*` | ✅                                 | —           | —           |
