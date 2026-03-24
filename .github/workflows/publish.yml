@@ -4,7 +4,7 @@ name: Publish releases
 
 on:
   push:
-    branches: [master]
+    branches: [develop]
     paths-ignore:
       - '*.md'
       - 'docs/**'
@@ -351,9 +351,9 @@ jobs:
     permissions:
       contents: read
       id-token: write
-    # Only run on master branch pushes, and only if all CI jobs succeeded
+    # Only run on develop branch pushes, and only if all CI jobs succeeded
     if: |
-      github.ref == 'refs/heads/master' &&
+      github.ref == 'refs/heads/develop' &&
       github.event_name == 'push' &&
       needs.ci-core.result == 'success' &&
       needs.ci-supabase-js.result == 'success'

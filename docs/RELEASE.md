@@ -1,14 +1,18 @@
 # Release Workflows
 
-- [.github/workflows/publish.yml](.github/workflows/publish.yml) - Canary, RC, and stable releases
+- [.github/workflows/publish.yml](.github/workflows/publish.yml) - Canary, beta, and stable releases
 - [.github/workflows/preview-release.yml](.github/workflows/preview-release.yml) - PR preview releases
+- [.github/workflows/sync-develop.yml](.github/workflows/sync-develop.yml) - Automated master→develop backport
+- [docs/BRANCHES.md](./BRANCHES.md) - Branch roles, contributor workflow, v3 path
 
 ## Overview
 
-This monorepo uses a fixed release model where all packages share a single version number and are released together. There are four types of releases:
+This monorepo uses a `develop`/`master` model. All feature PRs go to `develop`; `master` is always releasable and only receives patches and stable merges. See [BRANCHES.md](./BRANCHES.md) for the full branch strategy.
 
-1. **Canary Releases** - Automated pre-releases on every conventional commit to `master`
-2. **RC Releases** - Manual pre-releases from feature branches for testing before stable
+All packages share a single version number and are released together. There are four types of releases:
+
+1. **Canary Releases** - Automated pre-releases on every conventional commit to `develop`
+2. **Beta Releases** - Manual pre-releases from feature branches for testing before merge
 3. **Stable Releases** - Manual releases for production use (requires maintainer permission)
 4. **Preview Releases** - PR-specific releases for testing changes
 
@@ -17,7 +21,7 @@ This monorepo uses a fixed release model where all packages share a single versi
 ### 🤖 Canary Releases (Automated)
 
 **Workflow:** `publish.yml`
-**Trigger:** Every push to `master` branch (after CI passes)
+**Trigger:** Every push to `develop` branch (after CI passes)
 **Script:** `scripts/release-canary.ts`
 **Purpose:** Immediate feedback with pre-release versions
 
@@ -64,7 +68,7 @@ npm install @supabase/storage-js@canary
 
 ---
 
-### 🚀 RC Releases (Manual, from feature branches)
+### 🚀 Beta Releases (Manual, from feature branches)
 
 **Workflow:** `publish.yml` (manual trigger)
 **Script:** `scripts/release-rc.ts`
@@ -195,7 +199,7 @@ Canary releases are **fully automated**. Simply:
 
 1. Make changes in your feature branch
 2. Use conventional commits with type and scope (e.g., `fix(auth):`, `feat(realtime):`, `chore(repo):`)
-3. Create and merge PR to `master` branch
+3. Create and merge PR to `develop` branch
 4. Workflow automatically:
    - Runs CI checks (`ci-core` and `ci-supabase-js`)
    - Checks for conventional commits that warrant a release
@@ -205,20 +209,24 @@ Canary releases are **fully automated**. Simply:
 
 ### Running RC Release (maintainers only)
 
+Use this when a feature needs testing/dogfooding before it's ready for stable. **Keep the feature on its own branch** — do not merge to master until you're ready for a stable release. This way canary and stable changelogs are never polluted by RC tags.
+
 1. **Navigate to Actions tab** in GitHub repository
 2. **Select "Publish releases"** workflow
 3. **Click "Run workflow"**
-4. **Select your feature branch** from the branch dropdown at the top
-5. **Fill in the RC version** field: e.g. `2.101.0-rc.0`
-6. **Leave version_specifier empty**
+4. **⚠️ Select your feature branch** from the branch dropdown at the top — this is what gets checked out and published
+5. **Fill in the `rc_version` field**: e.g. `2.101.0-rc.0`
+6. **Leave `version_specifier` empty**
 7. **Click "Run workflow"**
 8. **Workflow automatically:**
    - Validates you're a member of `@supabase/admin` or `@supabase/sdk`
    - Bumps version for all packages to the specified RC version
-   - Generates changelog since last stable tag
-   - Publishes to npm with `rc` tag
+   - Generates changelog since last stable tag (unaffected by previous RC tags)
+   - Publishes to npm with `rc` tag (never touches `latest`)
    - Creates GitHub pre-release
    - Sends Slack notifications
+
+To iterate, push more commits to your feature branch and re-trigger with the next RC version (`rc.1`, `rc.2`, etc.). When ready for stable, merge the branch to master and run the stable workflow with the appropriate specifier (`minor`, `patch`, etc.).
 
 ### Running Stable Release (maintainers only)
 
