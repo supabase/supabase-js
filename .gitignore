@@ -109,3 +109,7 @@ packages/**/supabase/.branches/*
 
 # Test signing keys (generated at test runtime)
 **/signing_keys.json
+
+.nx/polygraph
+.claude/worktrees
+.claude/settings.local.json
