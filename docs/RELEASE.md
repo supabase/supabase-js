@@ -71,25 +71,25 @@ npm install @supabase/storage-js@canary
 ### 🚀 Beta Releases (Manual, from feature branches)
 
 **Workflow:** `publish.yml` (manual trigger)
-**Script:** `scripts/release-rc.ts`
+**Script:** `scripts/release-beta.ts`
 **Trigger:** Manual workflow dispatch by maintainers
 **Permission:** Members of `@supabase/admin` or `@supabase/sdk` teams only
 **Purpose:** Test a specific feature or set of changes before committing to a stable release
 
 #### When to use
 
-Use RC releases when you have a feature that needs testing/dogfooding before it's merged to master and released as stable. Develop on a feature branch, publish RCs from there, and only merge to master when ready for stable.
+Use beta releases when you have a feature that needs testing/dogfooding before it's merged to master and released as stable. Develop on a feature branch, publish betas from there, and only merge to master when ready for stable.
 
-This keeps master clean and prevents RC tags from polluting the canary/stable changelog.
+This keeps master clean and prevents beta tags from polluting the canary/stable changelog.
 
 #### How it works
 
 1. **Checkout your feature branch** in the workflow trigger UI (select branch at the top of the Run Workflow dialog)
-2. **Provide an explicit version** like `2.101.0-rc.0`
+2. **Provide an explicit version** like `2.101.0-beta.0`
 3. **Version Bump** - Nx applies the exact version to all packages
 4. **Build** - Rebuilds all packages
-5. **Changelog** - Generated from commits since the last stable tag (not affected by other RC tags)
-6. **NPM Publish** - Publishes all packages with `rc` dist-tag
+5. **Changelog** - Generated from commits since the last stable tag (not affected by other beta tags)
+6. **NPM Publish** - Publishes all packages with `beta` dist-tag
 7. **GitHub Pre-release** - Creates a GitHub pre-release automatically
 
 #### Example flow
@@ -98,29 +98,29 @@ This keeps master clean and prevents RC tags from polluting the canary/stable ch
 # 1. Develop feature on a branch
 git checkout -b feat/my-feature
 
-# 2. When ready for RC, trigger workflow from GitHub UI:
+# 2. When ready for beta, trigger workflow from GitHub UI:
 #    - Select branch: feat/my-feature
-#    - RC version: 2.101.0-rc.0
+#    - Beta version: 2.101.0-beta.0
 
 # 3. Iterate as needed
 #    - Fix issues, push to feat/my-feature
-#    - Trigger again with: 2.101.0-rc.1
+#    - Trigger again with: 2.101.0-beta.1
 
 # 4. When stable, merge to master and run stable release with 'minor'
 ```
 
-#### Install RC versions
+#### Install beta versions
 
 ```bash
-npm install @supabase/supabase-js@rc
+npm install @supabase/supabase-js@beta
 # or specific version
-npm install @supabase/supabase-js@2.101.0-rc.0
+npm install @supabase/supabase-js@2.101.0-beta.0
 ```
 
 #### Running via CLI (locally)
 
 ```bash
-npm run release-rc -- --version 2.101.0-rc.0
+npm run release-beta -- --version 2.101.0-beta.0
 ```
 
 ---
@@ -138,7 +138,7 @@ npm run release-rc -- --version 2.101.0-rc.0
 1. **Version Specification**: Maintainer provides a version specifier via workflow input
 2. **Version Bump**: Nx applies the version change to all packages
 3. **Build**: Rebuilds all packages with updated versions
-4. **Changelog Update**: Generates changelogs from conventional commits (since last stable tag — RC tags are ignored)
+4. **Changelog Update**: Generates changelogs from conventional commits (since last stable tag — beta tags are ignored)
 5. **NPM Publish**: Publishes all packages with `latest` dist-tag
 6. **Legacy Package**: Publishes `@supabase/gotrue-js` as legacy mirror
 7. **Release Branch**: Creates a release branch with changelog updates
@@ -207,26 +207,26 @@ Canary releases are **fully automated**. Simply:
    - Publishes to npm with `canary` tag
    - Creates GitHub changelog entries
 
-### Running RC Release (maintainers only)
+### Running Beta Release (maintainers only)
 
-Use this when a feature needs testing/dogfooding before it's ready for stable. **Keep the feature on its own branch** — do not merge to master until you're ready for a stable release. This way canary and stable changelogs are never polluted by RC tags.
+Use this when a feature needs testing/dogfooding before it's ready for stable. **Keep the feature on its own branch** — do not merge to master until you're ready for a stable release. This way canary and stable changelogs are never polluted by beta tags.
 
 1. **Navigate to Actions tab** in GitHub repository
 2. **Select "Publish releases"** workflow
 3. **Click "Run workflow"**
 4. **⚠️ Select your feature branch** from the branch dropdown at the top — this is what gets checked out and published
-5. **Fill in the `rc_version` field**: e.g. `2.101.0-rc.0`
+5. **Fill in the `beta_version` field**: e.g. `2.101.0-beta.0`
 6. **Leave `version_specifier` empty**
 7. **Click "Run workflow"**
 8. **Workflow automatically:**
    - Validates you're a member of `@supabase/admin` or `@supabase/sdk`
-   - Bumps version for all packages to the specified RC version
-   - Generates changelog since last stable tag (unaffected by previous RC tags)
-   - Publishes to npm with `rc` tag (never touches `latest`)
+   - Bumps version for all packages to the specified beta version
+   - Generates changelog since last stable tag (unaffected by previous beta tags)
+   - Publishes to npm with `beta` tag (never touches `latest`)
    - Creates GitHub pre-release
    - Sends Slack notifications
 
-To iterate, push more commits to your feature branch and re-trigger with the next RC version (`rc.1`, `rc.2`, etc.). When ready for stable, merge the branch to master and run the stable workflow with the appropriate specifier (`minor`, `patch`, etc.).
+To iterate, push more commits to your feature branch and re-trigger with the next beta version (`beta.1`, `beta.2`, etc.). When ready for stable, merge the branch to master and run the stable workflow with the appropriate specifier (`minor`, `patch`, etc.).
 
 ### Running Stable Release (maintainers only)
 
@@ -238,12 +238,12 @@ To iterate, push more commits to your feature branch and re-trigger with the nex
    - For minor release: `minor`
    - For major release: `major`
    - For specific version: `v2.81.0` or `2.81.0`
-5. **Leave rc_version empty**
+5. **Leave `beta_version` empty**
 6. **Click "Run workflow"**
 7. **Workflow automatically:**
    - Validates you're a member of `@supabase/admin` or `@supabase/sdk`
    - Bumps version for all packages
-   - Generates changelogs since last stable tag (RC tags don't affect this)
+   - Generates changelogs since last stable tag (beta tags don't affect this)
    - Publishes to npm with `latest` tag
    - Creates release branch and PR with changelog updates
    - Enables auto-merge on PR
@@ -273,12 +273,12 @@ To iterate, push more commits to your feature branch and re-trigger with the nex
 - Generated from conventional commits
 - Per-package CHANGELOG.md files
 - Unchanged packages show "No user-facing changes in this release"
-- Stable and RC releases generate changelogs from last stable tag (RC tags never pollute the range)
+- Stable and beta releases generate changelogs from last stable tag (beta tags never pollute the range)
 
 ### 🔐 Security & Permissions
 
 - Canary releases use GitHub App token for automation
-- Stable and RC releases restricted to `@supabase/admin` or `@supabase/sdk` team members
+- Stable and beta releases restricted to `@supabase/admin` or `@supabase/sdk` team members
 - NPM publishing uses OIDC trusted publishing
 - All releases signed and traceable
 
@@ -286,7 +286,7 @@ To iterate, push more commits to your feature branch and re-trigger with the nex
 
 - **`scripts/utils.ts`** - Shared helpers (`getLastStableTag`, `getArg`)
 - **`scripts/release-canary.ts`** - Handles canary releases, derives correct bump type from conventional commits
-- **`scripts/release-rc.ts`** - Handles RC releases with explicit version, publishes under `rc` tag, creates GitHub pre-release
+- **`scripts/release-beta.ts`** - Handles beta releases with explicit version, publishes under `beta` tag, creates GitHub pre-release
 - **`scripts/release-stable.ts`** - Handles stable releases with version specifier input, creates release branch and PR
 
 ---
@@ -305,13 +305,13 @@ To iterate, push more commits to your feature branch and re-trigger with the nex
 ### For Maintainers
 
 1. **Release cadence**:
-   - Canary: Automatic on every `master` commit (if conventional commits present)
-   - RC: As needed from feature branches before stable
-   - Stable: Weekly or as needed based on canary/RC feedback
+   - Canary: Automatic on every `develop` commit (if conventional commits present)
+   - Beta: As needed from feature branches before stable
+   - Stable: Weekly or as needed based on canary/beta feedback
    - Major: Coordinate with team and users
-2. **RC workflow**:
-   - Keep feature on a branch until RC is validated
-   - Use `rc.0`, `rc.1`, etc. for iterations
+2. **Beta workflow**:
+   - Keep feature on a branch until beta is validated
+   - Use `beta.0`, `beta.1`, etc. for iterations
    - Merge to master only when ready for stable
 3. **Version strategy**:
    - Use `patch` for bug fixes

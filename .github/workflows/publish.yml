@@ -15,8 +15,8 @@ on:
         description: 'Stable: semver bump (patch|minor|major|pre*) or exact version (v1.2.3)'
         required: false
         type: string
-      rc_version:
-        description: 'RC: explicit prerelease version (e.g. 2.101.0-rc.0). Select your feature branch above.'
+      beta_version:
+        description: 'Beta: explicit prerelease version (e.g. 2.101.0-beta.0). Select your feature branch above.'
         required: false
         type: string
 
@@ -197,8 +197,8 @@ jobs:
               }
             });
 
-  release-rc:
-    if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.rc_version != '' }}
+  release-beta:
+    if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.beta_version != '' }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -267,42 +267,42 @@ jobs:
           git config --global user.name "supabase-releaser[bot]"
           git config --global user.email "supabase-releaser[bot]@users.noreply.github.com"
 
-      - name: Release RC version
+      - name: Release Beta version
         env:
           NPM_CONFIG_PROVENANCE: true
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           RELEASE_GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
-        run: npm run release-rc -- --version "${{ github.event.inputs.rc_version }}"
+        run: npm run release-beta -- --version "${{ github.event.inputs.beta_version }}"
 
       - name: Summary
         if: ${{ success() }}
         run: |
-          echo "## ✅ RC Release" >> $GITHUB_STEP_SUMMARY
-          echo "- **Version:** \`${{ github.event.inputs.rc_version }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "## ✅ Beta Release" >> $GITHUB_STEP_SUMMARY
+          echo "- **Version:** \`${{ github.event.inputs.beta_version }}\`" >> $GITHUB_STEP_SUMMARY
           echo "- **Branch:** \`${{ github.ref_name }}\`" >> $GITHUB_STEP_SUMMARY
-          echo "- **Dist-tag:** \`rc\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Dist-tag:** \`beta\`" >> $GITHUB_STEP_SUMMARY
 
-  notify-rc-failure:
-    name: Notify Slack for RC failure
-    needs: release-rc
-    if: ${{ always() && github.event_name == 'workflow_dispatch' && needs.release-rc.result == 'failure' }}
+  notify-beta-failure:
+    name: Notify Slack for Beta failure
+    needs: release-beta
+    if: ${{ always() && github.event_name == 'workflow_dispatch' && needs.release-beta.result == 'failure' }}
     uses: ./.github/workflows/slack-notify.yml
     secrets: inherit
     with:
-      title: 'RC Release'
+      title: 'Beta Release'
       status: 'failure'
 
-  notify-rc-success:
-    name: Notify Slack for RC success
-    needs: release-rc
-    if: ${{ github.event_name == 'workflow_dispatch' && needs.release-rc.result == 'success' }}
+  notify-beta-success:
+    name: Notify Slack for Beta success
+    needs: release-beta
+    if: ${{ github.event_name == 'workflow_dispatch' && needs.release-beta.result == 'success' }}
     uses: ./.github/workflows/slack-notify.yml
     secrets: inherit
     with:
-      title: 'RC Release'
+      title: 'Beta Release'
       status: 'success'
-      version: ${{ github.event.inputs.rc_version }}
+      version: ${{ github.event.inputs.beta_version }}
 
   # preview jobs
   ci-core:

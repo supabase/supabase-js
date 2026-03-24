@@ -6,22 +6,24 @@ const version = getArg('version')
 
 if (!version) {
   console.error(
-    `Usage: npm run release-rc -- --version <prerelease-version>\n` +
+    `Usage: npm run release-beta -- --version <prerelease-version>\n` +
       `Examples:\n` +
-      `  --version 2.101.0-rc.0\n` +
-      `  --version 2.101.0-rc.1\n`
+      `  --version 2.101.0-beta.0\n` +
+      `  --version 2.101.0-beta.1\n`
   )
   process.exit(1)
 }
 
-// Must be a valid prerelease semver (e.g. 2.101.0-rc.0)
+// Must be a valid prerelease semver (e.g. 2.101.0-beta.0)
 const isValidPrerelease = /^\d+\.\d+\.\d+-[a-zA-Z0-9.-]+$/.test(version)
 if (!isValidPrerelease) {
-  console.error(`❌ Invalid version: "${version}". Must be a prerelease semver, e.g. 2.101.0-rc.0`)
+  console.error(
+    `❌ Invalid version: "${version}". Must be a prerelease semver, e.g. 2.101.0-beta.0`
+  )
   process.exit(1)
 }
 
-// Extract the preid (e.g. 'rc' from '2.101.0-rc.0')
+// Extract the preid (e.g. 'beta' from '2.101.0-beta.0')
 const preid = version.split('-')[1].split('.')[0]
 
 function safeExec(cmd: string, opts = {}) {
@@ -65,7 +67,7 @@ function safeExec(cmd: string, opts = {}) {
   const authHeader = `AUTHORIZATION: basic ${Buffer.from(`x-access-token:${process.env.RELEASE_GITHUB_TOKEN}`).toString('base64')}`
   safeExec(`git config --local http.https://github.com/.extraheader "${authHeader}"`)
 
-  // Generate changelog anchored to last stable tag so RC tags never pollute
+  // Generate changelog anchored to last stable tag so beta tags never pollute
   // the commit range used by future stable releases
   await releaseChangelog({
     versionData: projectsVersionData,
@@ -88,7 +90,7 @@ function safeExec(cmd: string, opts = {}) {
   const publishResult = await releasePublish({
     registry: 'https://registry.npmjs.org/',
     access: 'public',
-    tag: 'rc',
+    tag: 'beta',
     verbose: true,
   })
 
