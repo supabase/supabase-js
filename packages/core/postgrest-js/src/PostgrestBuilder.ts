@@ -176,9 +176,8 @@ export default abstract class PostgrestBuilder<
           count = parseInt(contentRange[1])
         }
 
-        // Temporary partial fix for https://github.com/supabase/postgrest-js/issues/361
-        // Issue persists e.g. for `.insert([...]).select().maybeSingle()`
-        if (this.isMaybeSingle && this.method === 'GET' && Array.isArray(data)) {
+        // Fix for https://github.com/supabase/postgrest-js/issues/361 — applies to all methods.
+        if (this.isMaybeSingle && Array.isArray(data)) {
           if (data.length > 1) {
             error = {
               // https://github.com/PostgREST/postgrest/blob/a867d79c42419af16c18c3fb019eba8df992626f/src/PostgREST/Error.hs#L553
@@ -220,12 +219,6 @@ export default abstract class PostgrestBuilder<
               message: body,
             }
           }
-        }
-
-        if (error && this.isMaybeSingle && error?.details?.includes('0 rows')) {
-          error = null
-          status = 200
-          statusText = 'OK'
         }
 
         if (error && this.shouldThrowOnError) {
