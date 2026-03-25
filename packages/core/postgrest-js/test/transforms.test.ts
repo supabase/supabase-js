@@ -315,6 +315,38 @@ test('csv', async () => {
   `)
 })
 
+test('stripNulls', async () => {
+  const res = await postgrest.from('users').select().stripNulls()
+  // Null fields (data, age_range, catchphrase) should be stripped from rows where they are null
+  expect(res.error).toBeNull()
+  expect(res.status).toBe(200)
+  expect(Array.isArray(res.data)).toBe(true)
+  // Check that a row with null `data` does not have the `data` key
+  const supabot = (res.data as any[])?.find((u: any) => u.username === 'supabot')
+  expect(supabot).toBeDefined()
+  expect(supabot).not.toHaveProperty('data')
+  expect(supabot).toHaveProperty('username')
+  // Check that a row with non-null `data` still has it
+  const jsonuser = (res.data as any[])?.find((u: any) => u.username === 'jsonuser')
+  expect(jsonuser).toBeDefined()
+  expect(jsonuser).toHaveProperty('data')
+})
+
+test('stripNulls with single', async () => {
+  const res = await postgrest.from('users').select().eq('username', 'supabot').limit(1).single().stripNulls()
+  expect(res.error).toBeNull()
+  expect(res.status).toBe(200)
+  expect(res.data).not.toHaveProperty('data')
+  expect((res.data as any)?.username).toBe('supabot')
+})
+
+test('stripNulls does not affect csv', async () => {
+  const res = await postgrest.from('users').select().csv().stripNulls()
+  expect(res.error).toBeNull()
+  // CSV format should still work — stripNulls is ignored for non-JSON formats
+  expect(typeof res.data).toBe('string')
+})
+
 test('geojson', async () => {
   const res = await postgrest.from('shops').select().geojson()
   expect(res).toMatchInlineSnapshot(`
