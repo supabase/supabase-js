@@ -314,7 +314,13 @@ test('stripNulls', async () => {
 })
 
 test('stripNulls with single', async () => {
-  const res = await postgrest.from('users').select().eq('username', 'supabot').limit(1).single().stripNulls()
+  const res = await postgrest
+    .from('users')
+    .select()
+    .eq('username', 'supabot')
+    .limit(1)
+    .single()
+    .stripNulls()
   expect(res.error).toBeNull()
   expect(res.status).toBe(200)
   expect(res.data).not.toHaveProperty('data')
