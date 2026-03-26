@@ -149,6 +149,9 @@ export default abstract class PostgrestBuilder<
    * ```
    */
   stripNulls(): this {
+    if (this.headers.get('Accept') === 'text/csv') {
+      throw new Error('stripNulls() cannot be used with csv()')
+    }
     this.shouldStripNulls = true
     return this
   }
