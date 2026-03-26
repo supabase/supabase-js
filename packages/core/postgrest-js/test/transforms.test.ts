@@ -346,11 +346,10 @@ test('stripNulls with single', async () => {
   expect((res.data as any)?.username).toBe('supabot')
 })
 
-test('stripNulls does not affect csv', async () => {
-  const res = await postgrest.from('users').select().csv().stripNulls()
-  expect(res.error).toBeNull()
-  // CSV format should still work — stripNulls is ignored for non-JSON formats
-  expect(typeof res.data).toBe('string')
+test('stripNulls throws when used with csv', () => {
+  expect(() => postgrest.from('users').select().csv().stripNulls()).toThrow(
+    'stripNulls() cannot be used with csv()'
+  )
 })
 
 test('geojson', async () => {
