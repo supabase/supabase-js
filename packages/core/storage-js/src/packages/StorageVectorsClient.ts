@@ -90,7 +90,7 @@ export class StorageVectorsClient extends VectorBucketApi {
    * @param options.headers - Optional headers (for example `Authorization`) applied to every request.
    * @param options.fetch - Optional custom `fetch` implementation for non-browser runtimes.
    *
-   * @example
+   * @example Creating a StorageVectorsClient instance
    * ```typescript
    * const client = new StorageVectorsClient(url, options)
    * ```
@@ -112,7 +112,7 @@ export class StorageVectorsClient extends VectorBucketApi {
    * @param vectorBucketName - Name of the vector bucket
    * @returns Bucket-scoped client with index and vector operations
    *
-   * @example
+   * @example Accessing a vector bucket
    * ```typescript
    * const bucket = supabase.storage.vectors.from('embeddings-prod')
    * ```
@@ -134,7 +134,7 @@ export class StorageVectorsClient extends VectorBucketApi {
    * @param vectorBucketName - Unique name for the vector bucket
    * @returns Promise with empty response on success or error
    *
-   * @example
+   * @example Creating a vector bucket
    * ```typescript
    * const { data, error } = await supabase
    *   .storage
@@ -158,7 +158,7 @@ export class StorageVectorsClient extends VectorBucketApi {
    * @param vectorBucketName - Name of the vector bucket
    * @returns Promise with bucket metadata or error
    *
-   * @example
+   * @example Get bucket metadata
    * ```typescript
    * const { data, error } = await supabase
    *   .storage
@@ -184,7 +184,7 @@ export class StorageVectorsClient extends VectorBucketApi {
    * @param options - Optional filters (prefix, maxResults, nextToken)
    * @returns Promise with list of buckets or error
    *
-   * @example
+   * @example List vector buckets
    * ```typescript
    * const { data, error } = await supabase
    *   .storage
@@ -215,7 +215,7 @@ export class StorageVectorsClient extends VectorBucketApi {
    * @param vectorBucketName - Name of the vector bucket to delete
    * @returns Promise with empty response on success or error
    *
-   * @example
+   * @example Delete a vector bucket
    * ```typescript
    * const { data, error } = await supabase
    *   .storage
@@ -248,7 +248,7 @@ export class VectorBucketScope extends VectorIndexApi {
    * **Public alpha:** This API is part of a public alpha release and may not be available to your account type.
    *
    * @category Vector Buckets
-   * @example
+   * @example Creating a vector bucket scope
    * ```typescript
    * const bucket = supabase.storage.vectors.from('embeddings-prod')
    * ```
@@ -276,7 +276,7 @@ export class VectorBucketScope extends VectorIndexApi {
    * @param options - Index configuration (vectorBucketName is automatically set)
    * @returns Promise with empty response on success or error
    *
-   * @example
+   * @example Creating a vector index
    * ```typescript
    * const bucket = supabase.storage.vectors.from('embeddings-prod')
    * await bucket.createIndex({
@@ -310,7 +310,7 @@ export class VectorBucketScope extends VectorIndexApi {
    * @param options - Listing options (vectorBucketName is automatically set)
    * @returns Promise with response containing indexes array and pagination token or error
    *
-   * @example
+   * @example List indexes
    * ```typescript
    * const bucket = supabase.storage.vectors.from('embeddings-prod')
    * const { data } = await bucket.listIndexes({ prefix: 'documents-' })
@@ -336,7 +336,7 @@ export class VectorBucketScope extends VectorIndexApi {
    * @param indexName - Name of the index to retrieve
    * @returns Promise with index metadata or error
    *
-   * @example
+   * @example Get index metadata
    * ```typescript
    * const bucket = supabase.storage.vectors.from('embeddings-prod')
    * const { data } = await bucket.getIndex('documents-openai')
@@ -360,7 +360,7 @@ export class VectorBucketScope extends VectorIndexApi {
    * @param indexName - Name of the index to delete
    * @returns Promise with empty response on success or error
    *
-   * @example
+   * @example Delete an index
    * ```typescript
    * const bucket = supabase.storage.vectors.from('embeddings-prod')
    * await bucket.deleteIndex('old-index')
@@ -383,7 +383,7 @@ export class VectorBucketScope extends VectorIndexApi {
    * @param indexName - Name of the index
    * @returns Index-scoped client with vector data operations
    *
-   * @example
+   * @example Accessing an index
    * ```typescript
    * const index = supabase.storage.vectors.from('embeddings-prod').index('documents-openai')
    *
@@ -434,7 +434,7 @@ export class VectorIndexScope extends VectorDataApi {
    * **Public alpha:** This API is part of a public alpha release and may not be available to your account type.
    *
    * @category Vector Buckets
-   * @example
+   * @example Creating a vector index scope
    * ```typescript
    * const index = supabase.storage.vectors.from('embeddings-prod').index('documents-openai')
    * ```
@@ -464,7 +464,7 @@ export class VectorIndexScope extends VectorDataApi {
    * @param options - Vector insertion options (bucket and index names automatically set)
    * @returns Promise with empty response on success or error
    *
-   * @example
+   * @example Insert vectors into an index
    * ```typescript
    * const index = supabase.storage.vectors.from('embeddings-prod').index('documents-openai')
    * await index.putVectors({
@@ -499,7 +499,7 @@ export class VectorIndexScope extends VectorDataApi {
    * @param options - Vector retrieval options (bucket and index names automatically set)
    * @returns Promise with response containing vectors array or error
    *
-   * @example
+   * @example Get vectors by keys
    * ```typescript
    * const index = supabase.storage.vectors.from('embeddings-prod').index('documents-openai')
    * const { data } = await index.getVectors({
@@ -529,7 +529,7 @@ export class VectorIndexScope extends VectorDataApi {
    * @param options - Listing options (bucket and index names automatically set)
    * @returns Promise with response containing vectors array and pagination token or error
    *
-   * @example
+   * @example List vectors with pagination
    * ```typescript
    * const index = supabase.storage.vectors.from('embeddings-prod').index('documents-openai')
    * const { data } = await index.listVectors({
@@ -561,7 +561,7 @@ export class VectorIndexScope extends VectorDataApi {
    * @param options - Query options (bucket and index names automatically set)
    * @returns Promise with response containing matches array of similar vectors ordered by distance or error
    *
-   * @example
+   * @example Query similar vectors
    * ```typescript
    * const index = supabase.storage.vectors.from('embeddings-prod').index('documents-openai')
    * const { data } = await index.queryVectors({
@@ -596,7 +596,7 @@ export class VectorIndexScope extends VectorDataApi {
    * @param options - Deletion options (bucket and index names automatically set)
    * @returns Promise with empty response on success or error
    *
-   * @example
+   * @example Delete vectors by keys
    * ```typescript
    * const index = supabase.storage.vectors.from('embeddings-prod').index('documents-openai')
    * await index.deleteVectors({

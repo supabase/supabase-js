@@ -68,7 +68,7 @@ export default class PostgrestClient<
    * - A `timeout` option (in milliseconds) can be set to automatically abort requests that take too long.
    * - A `urlLengthLimit` option (default: 8000) can be set to control when URL length warnings are included in error messages for aborted requests.
    *
-   * @example Example 1
+   * @example Creating a Postgrest client
    * ```ts
    * import { PostgrestClient } from '@supabase/postgrest-js'
    *

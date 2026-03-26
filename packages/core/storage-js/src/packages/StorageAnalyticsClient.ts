@@ -31,7 +31,7 @@ export default class StorageAnalyticsClient extends BaseApiClient<StorageError> 
    * @param headers - HTTP headers to include in requests
    * @param fetch - Optional custom fetch implementation
    *
-   * @example
+   * @example Creating a StorageAnalyticsClient instance
    * ```typescript
    * const client = new StorageAnalyticsClient(url, headers)
    * ```

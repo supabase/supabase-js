@@ -443,7 +443,7 @@ export default class RealtimeClient {
    *
    * @param token A JWT string to override the token set on the client.
    *
-   * @example
+   * @example Setting the authorization header
    * // Use a manual token (preserved across resubscribes, ignores accessToken callback)
    * client.realtime.setAuth('my-custom-jwt')
    *

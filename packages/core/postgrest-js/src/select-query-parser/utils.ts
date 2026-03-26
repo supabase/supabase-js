@@ -498,7 +498,7 @@ export type ResolveForwardRelationship<
  * Given a CurrentTableOrView, finds all join tables to this relation.
  * For example, if products and categories are linked via product_categories table:
  *
- * @example
+ * @example Find join table relationship
  * Given:
  * - CurrentTableView = 'products'
  * - FieldName = "categories"

@@ -33,7 +33,7 @@ export class FunctionsClient {
    *
    * @category Functions
    *
-   * @example Example 1
+   * @example Creating a Functions client
    * ```ts
    * import { FunctionsClient, FunctionRegion } from '@supabase/functions-js'
    *
@@ -64,14 +64,10 @@ export class FunctionsClient {
   /**
    * Updates the authorization header
    * @param token - the new jwt token sent in the authorisation header
-   * @example
-   * ```ts
-   * functions.setAuth(session.access_token)
-   * ```
    *
    * @category Functions
    *
-   * @example Example 1
+   * @example Setting the authorization header
    * ```ts
    * functions.setAuth(session.access_token)
    * ```

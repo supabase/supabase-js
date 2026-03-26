@@ -1176,7 +1176,7 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
    * })
    * ```
    *
-   * Response (file entry):
+   * Response:
    * ```json
    * {
    *   "data": [

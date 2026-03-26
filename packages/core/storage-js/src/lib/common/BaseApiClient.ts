@@ -73,7 +73,7 @@ export default abstract class BaseApiClient<TError extends StorageError = Storag
    * @param operation - Async function that performs the API call
    * @returns Promise with { data, error } tuple
    *
-   * @example
+   * @example Handling an operation
    * ```typescript
    * async listBuckets() {
    *   return this.handleOperation(async () => {
