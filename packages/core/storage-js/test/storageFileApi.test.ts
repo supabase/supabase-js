@@ -931,6 +931,29 @@ describe('StorageFileApi Edge Cases', () => {
       expect(body).toBe(testFormData)
     })
 
+    test('uploadToSignedUrl uses default cacheControl when not provided', async () => {
+      const testBlob = new Blob(['test content'], { type: 'text/plain' })
+
+      await storage.from('test-bucket').uploadToSignedUrl('test-path', 'test-token', testBlob)
+
+      expect(mockPut).toHaveBeenCalled()
+      const [, , body] = mockPut.mock.calls[0]
+      expect(body.get('cacheControl')).not.toBe('undefined')
+      expect(body.get('cacheControl')).toBe('3600')
+    })
+
+    test('uploadToSignedUrl respects custom cacheControl', async () => {
+      const testBlob = new Blob(['test content'], { type: 'text/plain' })
+
+      await storage
+        .from('test-bucket')
+        .uploadToSignedUrl('test-path', 'test-token', testBlob, { cacheControl: '7200' })
+
+      expect(mockPut).toHaveBeenCalled()
+      const [, , body] = mockPut.mock.calls[0]
+      expect(body.get('cacheControl')).toBe('7200')
+    })
+
     test('upload with metadata', async () => {
       const testBlob = new Blob(['test content'], { type: 'text/plain' })
       const metadata = { customKey: 'customValue', author: 'test' }
