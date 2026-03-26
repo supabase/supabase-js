@@ -1,7 +1,7 @@
 import { serve } from 'https://deno.land/std@0.192.0/http/server.ts'
 import { assertEquals } from 'https://deno.land/std@0.224.0/testing/asserts.ts'
 import { describe, it, beforeAll, afterAll } from 'https://deno.land/std@0.224.0/testing/bdd.ts'
-import { Browser, Page, launch } from 'npm:puppeteer@24.9.0'
+import { Browser, Page, launch } from 'npm:puppeteer@24.19.0'
 import { sleep } from 'https://deno.land/x/sleep/mod.ts'
 
 const stderr = 'inherit'
@@ -90,7 +90,11 @@ const content = `<html>
 `
 
 beforeAll(async () => {
-  await new Deno.Command('supabase', { args: ['start'], stderr }).output()
+  try {
+    await new Deno.Command('npx', { args: ['supabase', 'start'], stderr }).output()
+  } catch {
+    // supabase may already be running (e.g. in CI) or not available via PATH
+  }
   await new Deno.Command('npm', { args: ['install'], stderr }).output()
   await new Deno.Command('npm', {
     args: ['run', 'build'],
