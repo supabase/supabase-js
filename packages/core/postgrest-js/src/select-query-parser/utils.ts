@@ -656,12 +656,14 @@ type ComputedField<
   RelationName extends keyof TablesAndViews<Schema>,
   FieldName extends keyof TablesAndViews<Schema>[RelationName]['Row'],
 > = FieldName extends keyof Schema['Functions']
-  ? Schema['Functions'][FieldName] extends {
-      Args: { '': TablesAndViews<Schema>[RelationName]['Row'] }
-      Returns: any
-    }
-    ? FieldName
-    : never
+  ? [Schema['Functions'][FieldName]['Args']] extends [never]
+    ? never
+    : Schema['Functions'][FieldName] extends {
+          Args: { '': TablesAndViews<Schema>[RelationName]['Row'] }
+          Returns: any
+        }
+      ? FieldName
+      : never
   : never
 
 // Given a relation name (Table or View) extract all the "computed fields" based on the Row
