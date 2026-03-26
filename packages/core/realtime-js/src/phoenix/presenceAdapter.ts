@@ -39,7 +39,7 @@ export default class PresenceAdapter {
    * Change 'phx_ref' to 'presence_ref'
    * Remove 'phx_ref' and 'phx_ref_prev'
    *
-   * @example
+   * @example Transform state
    * // returns {
    *  abc123: [
    *    { presence_ref: '2', user_id: 1 },

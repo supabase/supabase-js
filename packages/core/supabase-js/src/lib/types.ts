@@ -35,7 +35,7 @@ export type SupabaseClientOptions<SchemaName> = {
      * Optional timeout in milliseconds for PostgREST requests.
      * When set, requests will automatically abort after this duration to prevent indefinite hangs.
      *
-     * @example
+     * @example With timeout
      * ```ts
      * const supabase = createClient(url, key, {
      *   db: { timeout: 30000 } // 30 second timeout
@@ -48,7 +48,7 @@ export type SupabaseClientOptions<SchemaName> = {
      * Defaults to 8000 characters. Used to provide helpful hints when URLs
      * exceed server limits.
      *
-     * @example
+     * @example With custom URL length limit
      * ```ts
      * const supabase = createClient(url, key, {
      *   db: { urlLengthLimit: 10000 } // Custom limit
@@ -82,7 +82,7 @@ export type SupabaseClientOptions<SchemaName> = {
      * also return access_token in the URL fragment, which would otherwise be incorrectly
      * intercepted by Supabase Auth.
      *
-     * @example
+     * @example With custom detection logic
      * ```ts
      * detectSessionInUrl: (url, params) => {
      *   // Ignore Facebook OAuth redirects
@@ -165,7 +165,7 @@ export type QueryError = PostgrestError
  * Strips internal Supabase metadata from Database types.
  * Useful for libraries defining generic constraints on Database types.
  *
- * @example
+ * @example Stripping internal Supabase metadata
  * ```typescript
  * type CleanDB = DatabaseWithoutInternals<Database>
  * ```

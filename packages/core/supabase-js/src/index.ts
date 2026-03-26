@@ -30,7 +30,7 @@ export type {
 /**
  * Creates a new Supabase Client.
  *
- * @example
+ * @example Creating a Supabase client
  * ```ts
  * import { createClient } from '@supabase/supabase-js'
  *

@@ -1258,6 +1258,77 @@ export interface GoTrueMFAApi {
    * The user has to enter the code from their authenticator app to verify it.
    *
    * Upon verifying a factor, all other sessions are logged out and the current session's authenticator level is promoted to `aal2`.
+   *
+   * @category Auth
+   *
+   * @remarks
+   * - Use `totp` or `phone` as the `factorType` and use the returned `id` to create a challenge.
+   * - To create a challenge, see [`mfa.challenge()`](/docs/reference/javascript/auth-mfa-challenge).
+   * - To verify a challenge, see [`mfa.verify()`](/docs/reference/javascript/auth-mfa-verify).
+   * - To create and verify a TOTP challenge in a single step, see [`mfa.challengeAndVerify()`](/docs/reference/javascript/auth-mfa-challengeandverify).
+   * - To generate a QR code for the `totp` secret in Next.js, you can do the following:
+   * ```html
+   * <Image src={data.totp.qr_code} alt={data.totp.uri} layout="fill"></Image>
+   * ```
+   * - The `challenge` and `verify` steps are separated when using Phone factors as the user will need time to receive and input the code obtained from the SMS in challenge.
+   *
+   * @example Enroll a time-based, one-time password (TOTP) factor
+   * ```js
+   * const { data, error } = await supabase.auth.mfa.enroll({
+   *   factorType: 'totp',
+   *   friendlyName: 'your_friendly_name'
+   * })
+   *
+   * // Use the id to create a challenge.
+   * // The challenge can be verified by entering the code generated from the authenticator app.
+   * // The code will be generated upon scanning the qr_code or entering the secret into the authenticator app.
+   * const { id, type, totp: { qr_code, secret, uri }, friendly_name } = data
+   * const challenge = await supabase.auth.mfa.challenge({ factorId: id });
+   * ```
+   *
+   * @exampleResponse Enroll a time-based, one-time password (TOTP) factor
+   * ```json
+   * {
+   *   data: {
+   *     id: '<ID>',
+   *     type: 'totp'
+   *     totp: {
+   *       qr_code: '<QR_CODE_AS_SVG_DATA>',
+   *       secret: '<SECRET>',
+   *       uri: '<URI>',
+   *     }
+   *     friendly_name?: 'Important app'
+   *   },
+   *   error: null
+   * }
+   * ```
+   *
+   * @example Enroll a Phone Factor
+   * ```js
+   * const { data, error } = await supabase.auth.mfa.enroll({
+   *   factorType: 'phone',
+   *   friendlyName: 'your_friendly_name',
+   *   phone: '+12345678',
+   * })
+   *
+   * // Use the id to create a challenge and send an SMS with a code to the user.
+   * const { id, type, friendly_name, phone } = data
+   *
+   * const challenge = await supabase.auth.mfa.challenge({ factorId: id });
+   * ```
+   *
+   * @exampleResponse Enroll a Phone Factor
+   * ```json
+   * {
+   *   data: {
+   *     id: '<ID>',
+   *     type: 'phone',
+   *     friendly_name?: 'Important app',
+   *     phone: '+5787123456'
+   *   },
+   *   error: null
+   * }
+   * ```
    */
   enroll(params: MFAEnrollTOTPParams): Promise<AuthMFAEnrollTOTPResponse>
   enroll(params: MFAEnrollPhoneParams): Promise<AuthMFAEnrollPhoneResponse>
@@ -1267,6 +1338,70 @@ export interface GoTrueMFAApi {
   /**
    * Prepares a challenge used to verify that a user has access to a MFA
    * factor.
+   *
+   * @category Auth
+   *
+   * @remarks
+   * - An [enrolled factor](/docs/reference/javascript/auth-mfa-enroll) is required before creating a challenge.
+   * - To verify a challenge, see [`mfa.verify()`](/docs/reference/javascript/auth-mfa-verify).
+   * - A phone factor sends a code to the user upon challenge. The channel defaults to `sms` unless otherwise specified.
+   *
+   * @example Create a challenge for a factor
+   * ```js
+   * const { data, error } = await supabase.auth.mfa.challenge({
+   *   factorId: '34e770dd-9ff9-416c-87fa-43b31d7ef225'
+   * })
+   * ```
+   *
+   * @exampleResponse Create a challenge for a factor
+   * ```json
+   * {
+   *   data: {
+   *     id: '<ID>',
+   *     type: 'totp',
+   *     expires_at: 1700000000
+   *   },
+   *   error: null
+   * }
+   * ```
+   *
+   * @example Create a challenge for a phone factor
+   * ```js
+   * const { data, error } = await supabase.auth.mfa.challenge({
+   *   factorId: '34e770dd-9ff9-416c-87fa-43b31d7ef225',
+   * })
+   * ```
+   *
+   * @exampleResponse Create a challenge for a phone factor
+   * ```json
+   * {
+   *   data: {
+   *     id: '<ID>',
+   *     type: 'phone',
+   *     expires_at: 1700000000
+   *   },
+   *   error: null
+   * }
+   * ```
+   *
+   * @example Create a challenge for a phone factor (WhatsApp)
+   * ```js
+   * const { data, error } = await supabase.auth.mfa.challenge({
+   *   factorId: '34e770dd-9ff9-416c-87fa-43b31d7ef225',
+   *   channel: 'whatsapp',
+   * })
+   * ```
+   *
+   * @exampleResponse Create a challenge for a phone factor (WhatsApp)
+   * ```json
+   * {
+   *   data: {
+   *     id: '<ID>',
+   *     expires_at: 1700000000
+   *   },
+   *   error: null
+   * }
+   * ```
    */
   challenge(params: MFAChallengeTOTPParams): Promise<Prettify<AuthMFAChallengeTOTPResponse>>
   challenge(params: MFAChallengePhoneParams): Promise<Prettify<AuthMFAChallengePhoneResponse>>
@@ -1276,6 +1411,80 @@ export interface GoTrueMFAApi {
   /**
    * Verifies a code against a challenge. The verification code is
    * provided by the user by entering a code seen in their authenticator app.
+   *
+   * @category Auth
+   *
+   * @remarks
+   * - To verify a challenge, please [create a challenge](/docs/reference/javascript/auth-mfa-challenge) first.
+   *
+   * @example Verify a challenge for a factor
+   * ```js
+   * const { data, error } = await supabase.auth.mfa.verify({
+   *   factorId: '34e770dd-9ff9-416c-87fa-43b31d7ef225',
+   *   challengeId: '4034ae6f-a8ce-4fb5-8ee5-69a5863a7c15',
+   *   code: '123456'
+   * })
+   * ```
+   *
+   * @exampleResponse Verify a challenge for a factor
+   * ```json
+   * {
+   *   data: {
+   *     access_token: '<ACCESS_TOKEN>',
+   *     token_type: 'Bearer',
+   *     expires_in: 3600,
+   *     refresh_token: '<REFRESH_TOKEN>',
+   *     user: {
+   *       id: '11111111-1111-1111-1111-111111111111',
+   *       aud: 'authenticated',
+   *       role: 'authenticated',
+   *       email: 'example@email.com',
+   *       email_confirmed_at: '2024-01-01T00:00:00Z',
+   *       phone: '',
+   *       confirmation_sent_at: '2024-01-01T00:00:00Z',
+   *       confirmed_at: '2024-01-01T00:00:00Z',
+   *       last_sign_in_at: '2024-01-01T00:00:00Z',
+   *       app_metadata: {
+   *         provider: 'email',
+   *         providers: [
+   *           "email",
+   *         ]
+   *       },
+   *       user_metadata: {},
+   *       identities: [
+   *         {
+   *           "identity_id": "22222222-2222-2222-2222-222222222222",
+   *           "id": "11111111-1111-1111-1111-111111111111",
+   *           "user_id": "11111111-1111-1111-1111-111111111111",
+   *           "identity_data": {
+   *             "email": "example@email.com",
+   *             "email_verified": true,
+   *             "phone_verified": false,
+   *             "sub": "11111111-1111-1111-1111-111111111111"
+   *           },
+   *           "provider": "email",
+   *           "last_sign_in_at": "2024-01-01T00:00:00Z",
+   *           "created_at": "2024-01-01T00:00:00Z",
+   *           "updated_at": "2024-01-01T00:00:00Z",
+   *           "email": "email@example.com"
+   *         },
+   *       ],
+   *       created_at: '2024-01-01T00:00:00Z',
+   *       updated_at: '2024-01-01T00:00:00Z',
+   *       is_anonymous: false,
+   *       factors: [
+   *         "id": '<ID>',
+   *         "friendly_name": 'Important Auth App',
+   *         "factor_type": 'totp',
+   *         "status": 'verified',
+   *         "created_at": "2024-01-01T00:00:00Z",
+   *         "updated_at": "2024-01-01T00:00:00Z"
+   *       ]
+   *     }
+   *   }
+   *   error: null
+   * }
+   * ```
    */
   verify(params: MFAVerifyTOTPParams): Promise<AuthMFAVerifyResponse>
   verify(params: MFAVerifyPhoneParams): Promise<AuthMFAVerifyResponse>
@@ -1285,12 +1494,106 @@ export interface GoTrueMFAApi {
   /**
    * Unenroll removes a MFA factor.
    * A user has to have an `aal2` authenticator level in order to unenroll a `verified` factor.
+   *
+   * @category Auth
+   *
+   * @example Unenroll a factor
+   * ```js
+   * const { data, error } = await supabase.auth.mfa.unenroll({
+   *   factorId: '34e770dd-9ff9-416c-87fa-43b31d7ef225',
+   * })
+   * ```
+   *
+   * @exampleResponse Unenroll a factor
+   * ```json
+   * {
+   *   data: {
+   *     id: '<FACTOR_ID>'
+   *   },
+   *   error: null
+   * }
+   * ```
    */
   unenroll(params: MFAUnenrollParams): Promise<AuthMFAUnenrollResponse>
 
   /**
    * Helper method which creates a challenge and immediately uses the given code to verify against it thereafter. The verification code is
    * provided by the user by entering a code seen in their authenticator app.
+   *
+   * @category Auth
+   *
+   * @remarks
+   * - Intended for use with only TOTP factors.
+   * - An [enrolled factor](/docs/reference/javascript/auth-mfa-enroll) is required before invoking `challengeAndVerify()`.
+   * - Executes [`mfa.challenge()`](/docs/reference/javascript/auth-mfa-challenge) and [`mfa.verify()`](/docs/reference/javascript/auth-mfa-verify) in a single step.
+   *
+   * @example Create and verify a challenge for a factor
+   * ```js
+   * const { data, error } = await supabase.auth.mfa.challengeAndVerify({
+   *   factorId: '34e770dd-9ff9-416c-87fa-43b31d7ef225',
+   *   code: '123456'
+   * })
+   * ```
+   *
+   * @exampleResponse Create and verify a challenge for a factor
+   * ```json
+   * {
+   *   data: {
+   *     access_token: '<ACCESS_TOKEN>',
+   *     token_type: 'Bearer',
+   *     expires_in: 3600,
+   *     refresh_token: '<REFRESH_TOKEN>',
+   *     user: {
+   *       id: '11111111-1111-1111-1111-111111111111',
+   *       aud: 'authenticated',
+   *       role: 'authenticated',
+   *       email: 'example@email.com',
+   *       email_confirmed_at: '2024-01-01T00:00:00Z',
+   *       phone: '',
+   *       confirmation_sent_at: '2024-01-01T00:00:00Z',
+   *       confirmed_at: '2024-01-01T00:00:00Z',
+   *       last_sign_in_at: '2024-01-01T00:00:00Z',
+   *       app_metadata: {
+   *         provider: 'email',
+   *         providers: [
+   *           "email",
+   *         ]
+   *       },
+   *       user_metadata: {},
+   *       identities: [
+   *         {
+   *           "identity_id": "22222222-2222-2222-2222-222222222222",
+   *           "id": "11111111-1111-1111-1111-111111111111",
+   *           "user_id": "11111111-1111-1111-1111-111111111111",
+   *           "identity_data": {
+   *             "email": "example@email.com",
+   *             "email_verified": true,
+   *             "phone_verified": false,
+   *             "sub": "11111111-1111-1111-1111-111111111111"
+   *           },
+   *           "provider": "email",
+   *           "last_sign_in_at": "2024-01-01T00:00:00Z",
+   *           "created_at": "2024-01-01T00:00:00Z",
+   *           "updated_at": "2024-01-01T00:00:00Z",
+   *           "email": "email@example.com"
+   *         },
+   *       ],
+   *       created_at: '2024-01-01T00:00:00Z',
+   *       updated_at: '2024-01-01T00:00:00Z',
+   *       is_anonymous: false,
+   *       factors: [
+   *         "id": '<ID>',
+   *         "friendly_name": 'Important Auth App',
+   *         "factor_type": 'totp',
+   *         "status": 'verified',
+   *         "created_at": "2024-01-01T00:00:00Z",
+   *         "updated_at": "2024-01-01T00:00:00Z"
+   *       ]
+   *     }
+   *   }
+   *   error: null
+   * }
+   * ```
    */
   challengeAndVerify(params: MFAChallengeAndVerifyParams): Promise<AuthMFAVerifyResponse>
 
@@ -1301,6 +1604,8 @@ export interface GoTrueMFAApi {
    * @see {@link GoTrueMFAApi#getAuthenticatorAssuranceLevel}
    * @see {@link GoTrueClient#getUser}
    *
+   *
+   * @category Auth
    */
   listFactors(): Promise<AuthMFAListFactorsResponse>
 
@@ -1318,6 +1623,42 @@ export interface GoTrueMFAApi {
    * will make a network request to validate the user and fetch their MFA factors.
    *
    * @param jwt Takes in an optional access token JWT. If no JWT is provided, the JWT from the current session is used.
+   *
+   * @category Auth
+   *
+   * @remarks
+   * - Authenticator Assurance Level (AAL) is the measure of the strength of an authentication mechanism.
+   * - In Supabase, having an AAL of `aal1` refers to having the 1st factor of authentication such as an email and password or OAuth sign-in while `aal2` refers to the 2nd factor of authentication such as a time-based, one-time-password (TOTP) or Phone factor.
+   * - If the user has a verified factor, the `nextLevel` field will return `aal2`, else, it will return `aal1`.
+   * - An optional `jwt` parameter can be passed to check the AAL level of a specific JWT instead of the current session.
+   *
+   * @example Get the AAL details of a session
+   * ```js
+   * const { data, error } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel()
+   * const { currentLevel, nextLevel, currentAuthenticationMethods } = data
+   * ```
+   *
+   * @exampleResponse Get the AAL details of a session
+   * ```json
+   * {
+   *   data: {
+   *     currentLevel: 'aal1',
+   *     nextLevel: 'aal2',
+   *     currentAuthenticationMethods: [
+   *       {
+   *         method: 'password',
+   *         timestamp: 1700000000
+   *       }
+   *     ]
+   *   }
+   *   error: null
+   * }
+   * ```
+   *
+   * @example Get the AAL details for a specific JWT
+   * ```js
+   * const { data, error } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel(jwt)
+   * ```
    */
   getAuthenticatorAssuranceLevel(
     jwt?: string
@@ -1370,6 +1711,32 @@ export interface GoTrueAdminMFAApi {
   /**
    * Lists all factors associated to a user.
    *
+   *
+   * @category Auth
+   *
+   * @example List all factors for a user
+   * ```js
+   * const { data, error } = await supabase.auth.admin.mfa.listFactors()
+   * ```
+   *
+   * @exampleResponse List all factors for a user
+   * ```json
+   * {
+   *   data: {
+   *     factors: Factor[
+   *       {
+   *         id: '<ID>',
+   *         friendly_name: 'Auth App Factor',
+   *         factor_type: 'totp',
+   *         status: 'verified',
+   *         created_at: '2024-01-01T00:00:00Z',
+   *         updated_at: '2024-01-01T00:00:00Z'
+   *       }
+   *     ]
+   *   },
+   *   error: null
+   * }
+   * ```
    */
   listFactors(params: AuthMFAAdminListFactorsParams): Promise<AuthMFAAdminListFactorsResponse>
 
@@ -1380,6 +1747,26 @@ export interface GoTrueAdminMFAApi {
    * @see {@link GoTrueMFAApi#unenroll}
    *
    * @expermental
+   *
+   * @category Auth
+   *
+   * @example Delete a factor for a user
+   * ```js
+   * const { data, error } = await supabase.auth.admin.mfa.deleteFactor({
+   *   id: '34e770dd-9ff9-416c-87fa-43b31d7ef225',
+   *   userId: 'a89baba7-b1b7-440f-b4bb-91026967f66b',
+   * })
+   * ```
+   *
+   * @exampleResponse Delete a factor for a user
+   * ```json
+   * {
+   *   data: {
+   *     id: '34e770dd-9ff9-416c-87fa-43b31d7ef225'
+   *   },
+   *   error: null
+   * }
+   * ```
    */
   deleteFactor(params: AuthMFAAdminDeleteFactorParams): Promise<AuthMFAAdminDeleteFactorResponse>
 }
@@ -1730,6 +2117,8 @@ export interface GoTrueAdminOAuthApi {
    * Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
    *
    * This function should only be called on a server. Never expose your `service_role` key in the browser.
+   *
+   * @category Auth
    */
   listClients(params?: PageParams): Promise<OAuthClientListResponse>
 
@@ -1738,6 +2127,8 @@ export interface GoTrueAdminOAuthApi {
    * Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
    *
    * This function should only be called on a server. Never expose your `service_role` key in the browser.
+   *
+   * @category Auth
    */
   createClient(params: CreateOAuthClientParams): Promise<OAuthClientResponse>
 
@@ -1746,6 +2137,8 @@ export interface GoTrueAdminOAuthApi {
    * Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
    *
    * This function should only be called on a server. Never expose your `service_role` key in the browser.
+   *
+   * @category Auth
    */
   getClient(clientId: string): Promise<OAuthClientResponse>
 
@@ -1754,6 +2147,8 @@ export interface GoTrueAdminOAuthApi {
    * Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
    *
    * This function should only be called on a server. Never expose your `service_role` key in the browser.
+   *
+   * @category Auth
    */
   updateClient(clientId: string, params: UpdateOAuthClientParams): Promise<OAuthClientResponse>
 
@@ -1762,6 +2157,8 @@ export interface GoTrueAdminOAuthApi {
    * Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
    *
    * This function should only be called on a server. Never expose your `service_role` key in the browser.
+   *
+   * @category Auth
    */
   deleteClient(clientId: string): Promise<{ data: null; error: AuthError | null }>
 
@@ -1770,6 +2167,8 @@ export interface GoTrueAdminOAuthApi {
    * Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
    *
    * This function should only be called on a server. Never expose your `service_role` key in the browser.
+   *
+   * @category Auth
    */
   regenerateClientSecret(clientId: string): Promise<OAuthClientResponse>
 }
@@ -2169,6 +2568,8 @@ export interface AuthOAuthServerApi {
    *
    * @param authorizationId - The authorization ID from the authorization request
    * @returns Authorization details or redirect URL depending on consent status
+   *
+   * @category Auth
    */
   getAuthorizationDetails(authorizationId: string): Promise<AuthOAuthAuthorizationDetailsResponse>
 
@@ -2183,6 +2584,8 @@ export interface AuthOAuthServerApi {
    * @param options - Optional parameters
    * @param options.skipBrowserRedirect - If false (default), automatically redirects the browser to the OAuth client. If true, returns the redirect_url without automatic redirect (useful for custom handling).
    * @returns Redirect URL to send the user back to the OAuth client with authorization code
+   *
+   * @category Auth
    */
   approveAuthorization(
     authorizationId: string,
@@ -2200,6 +2603,8 @@ export interface AuthOAuthServerApi {
    * @param options - Optional parameters
    * @param options.skipBrowserRedirect - If false (default), automatically redirects the browser to the OAuth client. If true, returns the redirect_url without automatic redirect (useful for custom handling).
    * @returns Redirect URL to send the user back to the OAuth client with error information
+   *
+   * @category Auth
    */
   denyAuthorization(
     authorizationId: string,
@@ -2211,6 +2616,8 @@ export interface AuthOAuthServerApi {
    * Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
    *
    * @returns Response with array of OAuth grants with client information and granted scopes
+   *
+   * @category Auth
    */
   listGrants(): Promise<AuthOAuthGrantsResponse>
 
@@ -2224,6 +2631,8 @@ export interface AuthOAuthServerApi {
    * @param options - Revocation options
    * @param options.clientId - The OAuth client identifier (UUID) to revoke access for
    * @returns Empty response on successful revocation
+   *
+   * @category Auth
    */
   revokeGrant(options: { clientId: string }): Promise<AuthOAuthRevokeGrantResponse>
 }

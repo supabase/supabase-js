@@ -31,7 +31,7 @@ export default class StorageAnalyticsClient extends BaseApiClient<StorageError> 
    * @param headers - HTTP headers to include in requests
    * @param fetch - Optional custom fetch implementation
    *
-   * @example
+   * @example Creating a StorageAnalyticsClient instance
    * ```typescript
    * const client = new StorageAnalyticsClient(url, headers)
    * ```
@@ -75,6 +75,10 @@ export default class StorageAnalyticsClient extends BaseApiClient<StorageError> 
    *   "error": null
    * }
    * ```
+   *
+   * @remarks
+   * - Creates a new analytics bucket using Iceberg tables
+   * - Analytics buckets are optimized for analytical queries and data processing
    */
   async createBucket(name: string): Promise<
     | {
@@ -136,6 +140,10 @@ export default class StorageAnalyticsClient extends BaseApiClient<StorageError> 
    *   "error": null
    * }
    * ```
+   *
+   * @remarks
+   * - Retrieves the details of all Analytics Storage buckets within an existing project
+   * - Only returns buckets of type 'ANALYTICS'
    */
   async listBuckets(options?: {
     limit?: number
@@ -199,6 +207,9 @@ export default class StorageAnalyticsClient extends BaseApiClient<StorageError> 
    *   "error": null
    * }
    * ```
+   *
+   * @remarks
+   * - Deletes an analytics bucket
    */
   async deleteBucket(bucketName: string): Promise<
     | {

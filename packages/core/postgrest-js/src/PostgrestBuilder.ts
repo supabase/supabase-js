@@ -44,7 +44,7 @@ export default abstract class PostgrestBuilder<
    *
    * @category Database
    *
-   * @example Example 1
+   * @example Creating a Postgrest query builder
    * ```ts
    * import { PostgrestQueryBuilder } from '@supabase/postgrest-js'
    *

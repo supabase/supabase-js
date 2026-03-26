@@ -25,19 +25,9 @@ export default class PostgrestQueryBuilder<
   /**
    * Creates a query builder scoped to a Postgres table or view.
    *
-   * @example
-   * ```ts
-   * import { PostgrestQueryBuilder } from '@supabase/postgrest-js'
-   *
-   * const query = new PostgrestQueryBuilder(
-   *   new URL('https://xyzcompany.supabase.co/rest/v1/users'),
-   *   { headers: { apikey: 'public-anon-key' } }
-   * )
-   * ```
-   *
    * @category Database
    *
-   * @example Example 1
+   * @example Creating a Postgrest query builder
    * ```ts
    * import { PostgrestQueryBuilder } from '@supabase/postgrest-js'
    *
