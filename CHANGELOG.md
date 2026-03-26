@@ -1,3 +1,18 @@
+## 2.100.1 (2026-03-26)
+
+### 🩹 Fixes
+
+- **postgrest:** add type safety for eq() and neq() column names ([#2175](https://github.com/supabase/supabase-js/pull/2175))
+- **postgrest:** fix maybeSingle for all request methods by removing Accept header override ([#2182](https://github.com/supabase/supabase-js/pull/2182))
+- **postgrest:** narrow tstyche testFileMatch to only type test files ([#2193](https://github.com/supabase/supabase-js/pull/2193))
+- **postgrest:** prevent Args: never functions from being classified as computed fields ([#2195](https://github.com/supabase/supabase-js/pull/2195))
+- **storage:** spread all DEFAULT_FILE_OPTIONS in uploadToSignedUrl ([#2194](https://github.com/supabase/supabase-js/pull/2194))
+
+### ❤️ Thank You
+
+- Ayush Baluni @aayushbaluni
+- Katerina Skroumpelou @mandarini
+
 ## 2.100.0 (2026-03-23)
 
 ### 🚀 Features
