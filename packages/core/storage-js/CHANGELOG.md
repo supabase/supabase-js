@@ -1,3 +1,13 @@
+## 2.100.1 (2026-03-26)
+
+### 🩹 Fixes
+
+- **storage:** spread all DEFAULT_FILE_OPTIONS in uploadToSignedUrl ([#2194](https://github.com/supabase/supabase-js/pull/2194))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+
 ## 2.100.0 (2026-03-23)
 
 ### 🩹 Fixes
