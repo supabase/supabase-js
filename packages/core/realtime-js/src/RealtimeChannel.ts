@@ -704,9 +704,16 @@ export default class RealtimeChannel {
     filter: { event: string; [key: string]: string },
     callback: (payload: any) => void
   ): RealtimeChannel {
-    if (this.channelAdapter.isJoined() && type === REALTIME_LISTEN_TYPES.PRESENCE) {
-      this.socket.log('channel', `cannot add presence callbacks for ${this.topic} after joining.`)
-      throw new Error('cannot add presence callbacks after joining a channel')
+    const stateCheck = this.channelAdapter.isJoined() || this.channelAdapter.isJoining()
+    const typeCheck =
+      type === REALTIME_LISTEN_TYPES.PRESENCE || type === REALTIME_LISTEN_TYPES.POSTGRES_CHANGES
+
+    if (stateCheck && typeCheck) {
+      this.socket.log(
+        'channel',
+        `cannot add \`${type}\` callbacks for ${this.topic} after \`subscribe()\`.`
+      )
+      throw new Error(`cannot add \`${type}\` callbacks for ${this.topic} after \`subscribe()\`.`)
     }
     return this._on(type, filter, callback)
   }
