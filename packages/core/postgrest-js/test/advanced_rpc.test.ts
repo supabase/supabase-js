@@ -123,6 +123,13 @@ describe('advanced rpc', () => {
           {
             "channel_id": 3,
             "data": null,
+            "id": 3,
+            "message": "Some message on channel without details",
+            "username": "supabot",
+          },
+          {
+            "channel_id": 3,
+            "data": null,
             "id": 4,
             "message": "Some message on channel without details",
             "username": "supabot",
@@ -195,6 +202,13 @@ describe('advanced rpc', () => {
           {
             "channel_id": 3,
             "data": null,
+            "id": 3,
+            "message": "Some message on channel without details",
+            "username": "supabot",
+          },
+          {
+            "channel_id": 3,
+            "data": null,
             "id": 4,
             "message": "Some message on channel without details",
             "username": "supabot",
@@ -238,6 +252,13 @@ describe('advanced rpc', () => {
             "data": null,
             "id": 2,
             "message": "Perfection is attained, not when there is nothing more to add, but when there is nothing left to take away.",
+            "username": "supabot",
+          },
+          {
+            "channel_id": 3,
+            "data": null,
+            "id": 3,
+            "message": "Some message on channel without details",
             "username": "supabot",
           },
           {
@@ -291,6 +312,13 @@ describe('advanced rpc', () => {
           {
             "channel_id": 3,
             "data": null,
+            "id": 3,
+            "message": "Some message on channel without details",
+            "username": "supabot",
+          },
+          {
+            "channel_id": 3,
+            "data": null,
             "id": 4,
             "message": "Some message on channel without details",
             "username": "supabot",
@@ -325,6 +353,13 @@ describe('advanced rpc', () => {
             "channel_id": 3,
             "data": null,
             "id": 4,
+            "message": "Some message on channel without details",
+            "username": "supabot",
+          },
+          {
+            "channel_id": 3,
+            "data": null,
+            "id": 3,
             "message": "Some message on channel without details",
             "username": "supabot",
           },
@@ -370,6 +405,13 @@ describe('advanced rpc', () => {
             "username": "supabot",
           },
           {
+            "channel_id": 3,
+            "data": null,
+            "id": 3,
+            "message": "Some message on channel without details",
+            "username": "supabot",
+          },
+          {
             "channel_id": 2,
             "data": null,
             "id": 2,
@@ -405,6 +447,14 @@ describe('advanced rpc', () => {
       {
         "count": null,
         "data": [
+          {
+            "channel_id": 3,
+            "message": "Some message on channel without details",
+            "users": {
+              "catchphrase": "'cat' 'fat'",
+              "username": "supabot",
+            },
+          },
           {
             "channel_id": 3,
             "message": "Some message on channel without details",
@@ -671,6 +721,13 @@ describe('advanced rpc', () => {
             "data": null,
             "id": 2,
             "message": "Perfection is attained, not when there is nothing more to add, but when there is nothing left to take away.",
+            "username": "supabot",
+          },
+          {
+            "channel_id": 3,
+            "data": null,
+            "id": 3,
+            "message": "Some message on channel without details",
             "username": "supabot",
           },
           {
@@ -1103,6 +1160,13 @@ describe('advanced rpc', () => {
           },
           {
             "age_range": "[20,30)",
+            "catchphrase": "'fat' 'rat'",
+            "data": null,
+            "status": "ONLINE",
+            "username": "dragarcia",
+          },
+          {
+            "age_range": "[20,30)",
             "catchphrase": "'json' 'test'",
             "data": {
               "foo": {
@@ -1114,27 +1178,6 @@ describe('advanced rpc', () => {
             },
             "status": "ONLINE",
             "username": "jsonuser",
-          },
-          {
-            "age_range": null,
-            "catchphrase": null,
-            "data": null,
-            "status": "ONLINE",
-            "username": "a",
-          },
-          {
-            "age_range": null,
-            "catchphrase": null,
-            "data": null,
-            "status": "ONLINE",
-            "username": "b",
-          },
-          {
-            "age_range": "[20,30)",
-            "catchphrase": "'fat' 'rat'",
-            "data": null,
-            "status": "ONLINE",
-            "username": "dragarcia",
           },
         ],
         "error": null,
@@ -1284,6 +1327,10 @@ test('RPC call with subselect and computed field', async () => {
         {
           "blurb_message": "Per",
           "message": "Perfection is attained, not when there is nothing more to add, but when there is nothing left to take away.",
+        },
+        {
+          "blurb_message": "Som",
+          "message": "Some message on channel without details",
         },
         {
           "blurb_message": "Som",
