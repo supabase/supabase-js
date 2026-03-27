@@ -1053,6 +1053,17 @@ export default class RealtimeChannel {
     })
   }
 
+  copyBindings(other: RealtimeChannel) {
+    if (this.joinedOnce) {
+      throw new Error('cannot copy bindings into joined channel')
+    }
+    for (const kind in other.bindings) {
+      for (const binding of other.bindings[kind]) {
+        this._on(binding.type, binding.filter, binding.callback)
+      }
+    }
+  }
+
   /**
    * Compares two optional filter values for equality.
    * Treats undefined, null, and empty string as equivalent empty values.
