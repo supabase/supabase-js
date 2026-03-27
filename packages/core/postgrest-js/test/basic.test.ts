@@ -33,6 +33,13 @@ test('basic select table', async () => {
         },
         {
           "age_range": "[20,30)",
+          "catchphrase": "'fat' 'rat'",
+          "data": null,
+          "status": "ONLINE",
+          "username": "dragarcia",
+        },
+        {
+          "age_range": "[20,30)",
           "catchphrase": "'json' 'test'",
           "data": {
             "foo": {
@@ -44,27 +51,6 @@ test('basic select table', async () => {
           },
           "status": "ONLINE",
           "username": "jsonuser",
-        },
-        {
-          "age_range": null,
-          "catchphrase": null,
-          "data": null,
-          "status": "ONLINE",
-          "username": "a",
-        },
-        {
-          "age_range": null,
-          "catchphrase": null,
-          "data": null,
-          "status": "ONLINE",
-          "username": "b",
-        },
-        {
-          "age_range": "[20,30)",
-          "catchphrase": "'fat' 'rat'",
-          "data": null,
-          "status": "ONLINE",
-          "username": "dragarcia",
         },
       ],
       "error": null,
@@ -103,6 +89,13 @@ test('basic select returns types override', async () => {
         },
         {
           "age_range": "[20,30)",
+          "catchphrase": "'fat' 'rat'",
+          "data": null,
+          "status": "ONLINE",
+          "username": "dragarcia",
+        },
+        {
+          "age_range": "[20,30)",
           "catchphrase": "'json' 'test'",
           "data": {
             "foo": {
@@ -114,27 +107,6 @@ test('basic select returns types override', async () => {
           },
           "status": "ONLINE",
           "username": "jsonuser",
-        },
-        {
-          "age_range": null,
-          "catchphrase": null,
-          "data": null,
-          "status": "ONLINE",
-          "username": "a",
-        },
-        {
-          "age_range": null,
-          "catchphrase": null,
-          "data": null,
-          "status": "ONLINE",
-          "username": "b",
-        },
-        {
-          "age_range": "[20,30)",
-          "catchphrase": "'fat' 'rat'",
-          "data": null,
-          "status": "ONLINE",
-          "username": "dragarcia",
         },
       ],
       "error": null,
@@ -200,7 +172,7 @@ test('basic select with maybeSingle yielding more than one result', async () => 
       "data": null,
       "error": {
         "code": "PGRST116",
-        "details": "Results contain 7 rows, application/vnd.pgrst.object+json requires 1 row",
+        "details": "Results contain 5 rows, application/vnd.pgrst.object+json requires 1 row",
         "hint": null,
         "message": "JSON object requested, multiple (or no) rows returned",
       },
@@ -218,7 +190,7 @@ test('basic select with single yielding more than one result', async () => {
       "data": null,
       "error": {
         "code": "PGRST116",
-        "details": "The result contains 7 rows",
+        "details": "The result contains 5 rows",
         "hint": null,
         "message": "Cannot coerce the result to a single JSON object",
       },
@@ -248,19 +220,11 @@ test('basic select view', async () => {
         },
         {
           "non_updatable_column": 1,
-          "username": "jsonuser",
-        },
-        {
-          "non_updatable_column": 1,
-          "username": "a",
-        },
-        {
-          "non_updatable_column": 1,
-          "username": "b",
-        },
-        {
-          "non_updatable_column": 1,
           "username": "dragarcia",
+        },
+        {
+          "non_updatable_column": 1,
+          "username": "jsonuser",
         },
       ],
       "error": null,
@@ -502,7 +466,7 @@ describe('basic insert, update, delete', () => {
           {
             "channel_id": 1,
             "data": null,
-            "id": 33,
+            "id": 5,
             "message": "foo",
             "username": "supabot",
           },
@@ -533,10 +497,10 @@ describe('basic insert, update, delete', () => {
             "username": "supabot",
           },
           {
-            "channel_id": 1,
+            "channel_id": 3,
             "data": null,
-            "id": 33,
-            "message": "foo",
+            "id": 3,
+            "message": "Some message on channel without details",
             "username": "supabot",
           },
           {
@@ -544,6 +508,13 @@ describe('basic insert, update, delete', () => {
             "data": null,
             "id": 4,
             "message": "Some message on channel without details",
+            "username": "supabot",
+          },
+          {
+            "channel_id": 1,
+            "data": null,
+            "id": 5,
+            "message": "foo",
             "username": "supabot",
           },
         ],
@@ -572,8 +543,8 @@ describe('basic insert, update, delete', () => {
           },
         ],
         "error": null,
-        "status": 201,
-        "statusText": "Created",
+        "status": 200,
+        "statusText": "OK",
       }
     `)
 
@@ -597,17 +568,17 @@ describe('basic insert, update, delete', () => {
             "username": "supabot",
           },
           {
-            "channel_id": 1,
-            "data": null,
-            "id": 33,
-            "message": "foo",
-            "username": "supabot",
-          },
-          {
             "channel_id": 3,
             "data": null,
             "id": 4,
             "message": "Some message on channel without details",
+            "username": "supabot",
+          },
+          {
+            "channel_id": 1,
+            "data": null,
+            "id": 5,
+            "message": "foo",
             "username": "supabot",
           },
           {
@@ -640,14 +611,14 @@ describe('basic insert, update, delete', () => {
           {
             "channel_id": 1,
             "data": null,
-            "id": 34,
+            "id": 6,
             "message": "foo",
             "username": "supabot",
           },
           {
             "channel_id": 1,
             "data": null,
-            "id": 35,
+            "id": 7,
             "message": "foo",
             "username": "supabot",
           },
@@ -678,17 +649,17 @@ describe('basic insert, update, delete', () => {
             "username": "supabot",
           },
           {
-            "channel_id": 1,
-            "data": null,
-            "id": 33,
-            "message": "foo",
-            "username": "supabot",
-          },
-          {
             "channel_id": 3,
             "data": null,
             "id": 4,
             "message": "Some message on channel without details",
+            "username": "supabot",
+          },
+          {
+            "channel_id": 1,
+            "data": null,
+            "id": 5,
+            "message": "foo",
             "username": "supabot",
           },
           {
@@ -701,14 +672,14 @@ describe('basic insert, update, delete', () => {
           {
             "channel_id": 1,
             "data": null,
-            "id": 34,
+            "id": 6,
             "message": "foo",
             "username": "supabot",
           },
           {
             "channel_id": 1,
             "data": null,
-            "id": 35,
+            "id": 7,
             "message": "foo",
             "username": "supabot",
           },
@@ -755,7 +726,7 @@ describe('basic insert, update, delete', () => {
           {
             "channel_id": 2,
             "data": null,
-            "id": 33,
+            "id": 5,
             "message": "foo",
             "username": "supabot",
           },
@@ -769,14 +740,14 @@ describe('basic insert, update, delete', () => {
           {
             "channel_id": 2,
             "data": null,
-            "id": 34,
+            "id": 6,
             "message": "foo",
             "username": "supabot",
           },
           {
             "channel_id": 2,
             "data": null,
-            "id": 35,
+            "id": 7,
             "message": "foo",
             "username": "supabot",
           },
@@ -816,7 +787,7 @@ describe('basic insert, update, delete', () => {
           {
             "channel_id": 2,
             "data": null,
-            "id": 33,
+            "id": 5,
             "message": "foo",
             "username": "supabot",
           },
@@ -830,14 +801,14 @@ describe('basic insert, update, delete', () => {
           {
             "channel_id": 2,
             "data": null,
-            "id": 34,
+            "id": 6,
             "message": "foo",
             "username": "supabot",
           },
           {
             "channel_id": 2,
             "data": null,
-            "id": 35,
+            "id": 7,
             "message": "foo",
             "username": "supabot",
           },
@@ -858,7 +829,7 @@ describe('basic insert, update, delete', () => {
           {
             "channel_id": 2,
             "data": null,
-            "id": 33,
+            "id": 5,
             "message": "foo",
             "username": "supabot",
           },
@@ -872,14 +843,14 @@ describe('basic insert, update, delete', () => {
           {
             "channel_id": 2,
             "data": null,
-            "id": 34,
+            "id": 6,
             "message": "foo",
             "username": "supabot",
           },
           {
             "channel_id": 2,
             "data": null,
-            "id": 35,
+            "id": 7,
             "message": "foo",
             "username": "supabot",
           },
@@ -1079,20 +1050,6 @@ test('allow ordering on JSON column', async () => {
         "username": "jsonuser",
       },
       {
-        "age_range": null,
-        "catchphrase": null,
-        "data": null,
-        "status": "ONLINE",
-        "username": "a",
-      },
-      {
-        "age_range": null,
-        "catchphrase": null,
-        "data": null,
-        "status": "ONLINE",
-        "username": "b",
-      },
-      {
         "age_range": "[20,30)",
         "catchphrase": "'fat' 'rat'",
         "data": null,
@@ -1127,7 +1084,7 @@ test('select with head:true, count:exact', async () => {
   const res = await postgrest.from('users').select('*', { head: true, count: 'exact' })
   expect(res).toMatchInlineSnapshot(`
     {
-      "count": 7,
+      "count": 5,
       "data": null,
       "error": null,
       "status": 200,
@@ -1176,7 +1133,7 @@ test('select with count:exact', async () => {
   const res = await postgrest.from('users').select('*', { count: 'exact' })
   expect(res).toMatchInlineSnapshot(`
     {
-      "count": 7,
+      "count": 5,
       "data": [
         {
           "age_range": "[1,2)",
@@ -1212,20 +1169,6 @@ test('select with count:exact', async () => {
           },
           "status": "ONLINE",
           "username": "jsonuser",
-        },
-        {
-          "age_range": null,
-          "catchphrase": null,
-          "data": null,
-          "status": "ONLINE",
-          "username": "a",
-        },
-        {
-          "age_range": null,
-          "catchphrase": null,
-          "data": null,
-          "status": "ONLINE",
-          "username": "b",
         },
         {
           "age_range": "[20,30)",
@@ -1349,7 +1292,7 @@ describe("insert, update, delete with count: 'exact'", () => {
           {
             "channel_id": 1,
             "data": null,
-            "id": 36,
+            "id": 8,
             "message": "foo",
             "username": "supabot",
           },
@@ -1389,7 +1332,7 @@ describe("insert, update, delete with count: 'exact'", () => {
           {
             "channel_id": 1,
             "data": null,
-            "id": 36,
+            "id": 8,
             "message": "foo",
             "username": "supabot",
           },
@@ -1453,7 +1396,7 @@ describe("insert, update, delete with count: 'exact'", () => {
           {
             "channel_id": 1,
             "data": null,
-            "id": 36,
+            "id": 8,
             "message": "foo",
             "username": "supabot",
           },
@@ -1490,14 +1433,14 @@ describe("insert, update, delete with count: 'exact'", () => {
           {
             "channel_id": 1,
             "data": null,
-            "id": 37,
+            "id": 9,
             "message": "foo",
             "username": "supabot",
           },
           {
             "channel_id": 1,
             "data": null,
-            "id": 38,
+            "id": 10,
             "message": "foo",
             "username": "supabot",
           },
@@ -1537,7 +1480,7 @@ describe("insert, update, delete with count: 'exact'", () => {
           {
             "channel_id": 1,
             "data": null,
-            "id": 36,
+            "id": 8,
             "message": "foo",
             "username": "supabot",
           },
@@ -1551,14 +1494,14 @@ describe("insert, update, delete with count: 'exact'", () => {
           {
             "channel_id": 1,
             "data": null,
-            "id": 37,
+            "id": 9,
             "message": "foo",
             "username": "supabot",
           },
           {
             "channel_id": 1,
             "data": null,
-            "id": 38,
+            "id": 10,
             "message": "foo",
             "username": "supabot",
           },
@@ -1587,7 +1530,7 @@ describe("insert, update, delete with count: 'exact'", () => {
           },
           {
             "data": null,
-            "id": 13,
+            "id": 5,
             "slug": "test-slug",
           },
         ],
@@ -1615,7 +1558,7 @@ describe("insert, update, delete with count: 'exact'", () => {
           },
           {
             "data": null,
-            "id": 15,
+            "id": 7,
             "slug": "test-slug",
           },
         ],
@@ -1639,7 +1582,7 @@ describe("insert, update, delete with count: 'exact'", () => {
           {
             "channel_id": 2,
             "data": null,
-            "id": 36,
+            "id": 8,
             "message": "foo",
             "username": "supabot",
           },
@@ -1653,14 +1596,14 @@ describe("insert, update, delete with count: 'exact'", () => {
           {
             "channel_id": 2,
             "data": null,
-            "id": 37,
+            "id": 9,
             "message": "foo",
             "username": "supabot",
           },
           {
             "channel_id": 2,
             "data": null,
-            "id": 38,
+            "id": 10,
             "message": "foo",
             "username": "supabot",
           },
@@ -1700,7 +1643,7 @@ describe("insert, update, delete with count: 'exact'", () => {
           {
             "channel_id": 2,
             "data": null,
-            "id": 36,
+            "id": 8,
             "message": "foo",
             "username": "supabot",
           },
@@ -1714,14 +1657,14 @@ describe("insert, update, delete with count: 'exact'", () => {
           {
             "channel_id": 2,
             "data": null,
-            "id": 37,
+            "id": 9,
             "message": "foo",
             "username": "supabot",
           },
           {
             "channel_id": 2,
             "data": null,
-            "id": 38,
+            "id": 10,
             "message": "foo",
             "username": "supabot",
           },
@@ -1746,7 +1689,7 @@ describe("insert, update, delete with count: 'exact'", () => {
           {
             "channel_id": 2,
             "data": null,
-            "id": 36,
+            "id": 8,
             "message": "foo",
             "username": "supabot",
           },
@@ -1760,14 +1703,14 @@ describe("insert, update, delete with count: 'exact'", () => {
           {
             "channel_id": 2,
             "data": null,
-            "id": 37,
+            "id": 9,
             "message": "foo",
             "username": "supabot",
           },
           {
             "channel_id": 2,
             "data": null,
-            "id": 38,
+            "id": 10,
             "message": "foo",
             "username": "supabot",
           },

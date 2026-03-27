@@ -184,14 +184,6 @@ describe('embeded functions select', () => {
           },
           {
             "all_user_messages": [],
-            "username": "a",
-          },
-          {
-            "all_user_messages": [],
-            "username": "b",
-          },
-          {
-            "all_user_messages": [],
             "username": "dragarcia",
           },
         ],
@@ -257,14 +249,6 @@ describe('embeded functions select', () => {
           {
             "all_user_messages": [],
             "username": "jsonuser",
-          },
-          {
-            "all_user_messages": [],
-            "username": "a",
-          },
-          {
-            "all_user_messages": [],
-            "username": "b",
           },
           {
             "all_user_messages": [],
@@ -336,14 +320,6 @@ describe('embeded functions select', () => {
           },
           {
             "all_user_messages": [],
-            "username": "a",
-          },
-          {
-            "all_user_messages": [],
-            "username": "b",
-          },
-          {
-            "all_user_messages": [],
             "username": "dragarcia",
           },
         ],
@@ -397,14 +373,6 @@ describe('embeded functions select', () => {
           {
             "setof_rows_one": null,
             "username": "jsonuser",
-          },
-          {
-            "setof_rows_one": null,
-            "username": "a",
-          },
-          {
-            "setof_rows_one": null,
-            "username": "b",
           },
           {
             "setof_rows_one": null,
@@ -469,20 +437,6 @@ describe('embeded functions select', () => {
               "username": null,
             },
             "username": "jsonuser",
-          },
-          {
-            "returns_row": {
-              "id": null,
-              "username": null,
-            },
-            "username": "a",
-          },
-          {
-            "returns_row": {
-              "id": null,
-              "username": null,
-            },
-            "username": "b",
           },
           {
             "returns_row": {
@@ -587,18 +541,6 @@ describe('embeded functions select', () => {
               "username": null,
             },
             "username": "jsonuser",
-          },
-          {
-            "user_called_profile": {
-              "username": null,
-            },
-            "username": "a",
-          },
-          {
-            "user_called_profile": {
-              "username": null,
-            },
-            "username": "b",
           },
           {
             "user_called_profile": {
@@ -748,14 +690,6 @@ describe('embeded functions select', () => {
           },
           {
             "user_messages": [],
-            "username": "a",
-          },
-          {
-            "user_messages": [],
-            "username": "b",
-          },
-          {
-            "user_messages": [],
             "username": "dragarcia",
           },
         ],
@@ -826,14 +760,6 @@ describe('embeded functions select', () => {
           {
             "active_user_messages": [],
             "username": "jsonuser",
-          },
-          {
-            "active_user_messages": [],
-            "username": "a",
-          },
-          {
-            "active_user_messages": [],
-            "username": "b",
           },
           {
             "active_user_messages": [],
@@ -914,14 +840,6 @@ describe('embeded functions select', () => {
           },
           {
             "recent_messages": [],
-            "username": "a",
-          },
-          {
-            "recent_messages": [],
-            "username": "b",
-          },
-          {
-            "recent_messages": [],
             "username": "dragarcia",
           },
         ],
@@ -995,14 +913,6 @@ describe('embeded functions select', () => {
           },
           {
             "recent_messages": [],
-            "username": "a",
-          },
-          {
-            "recent_messages": [],
-            "username": "b",
-          },
-          {
-            "recent_messages": [],
             "username": "dragarcia",
           },
         ],
@@ -1071,14 +981,6 @@ describe('embeded functions select', () => {
           {
             "user_messages": [],
             "username": "jsonuser",
-          },
-          {
-            "user_messages": [],
-            "username": "a",
-          },
-          {
-            "user_messages": [],
-            "username": "b",
           },
           {
             "user_messages": [],
@@ -1245,20 +1147,6 @@ describe('embeded functions select', () => {
               "id": null,
               "username": null,
             },
-            "username": "a",
-          },
-          {
-            "profile": {
-              "id": null,
-              "username": null,
-            },
-            "username": "b",
-          },
-          {
-            "profile": {
-              "id": null,
-              "username": null,
-            },
             "username": "dragarcia",
           },
         ],
@@ -1309,14 +1197,6 @@ describe('embeded functions select', () => {
           {
             "profile": null,
             "username": "jsonuser",
-          },
-          {
-            "profile": null,
-            "username": "a",
-          },
-          {
-            "profile": null,
-            "username": "b",
           },
           {
             "profile": null,

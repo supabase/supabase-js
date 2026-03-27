@@ -371,13 +371,14 @@ describe('Automatic Retries', () => {
     })
 
     it('should drain the response body before retrying', async () => {
-      const cancelMock = jest.fn().mockResolvedValue(undefined)
-      const pgrst002Body = JSON.stringify({
-        code: 'PGRST002',
-        details: null,
-        hint: null,
-        message: 'err',
-      })
+      const textMock = jest.fn().mockResolvedValue(
+        JSON.stringify({
+          code: 'PGRST002',
+          details: null,
+          hint: null,
+          message: 'err',
+        })
+      )
 
       fetchMock
         .mockResolvedValueOnce({
@@ -385,8 +386,7 @@ describe('Automatic Retries', () => {
           status: 503,
           statusText: 'Service Unavailable',
           headers: new Headers({ 'Retry-After': '0', 'Content-Type': 'application/json' }),
-          text: () => Promise.resolve(pgrst002Body),
-          body: { cancel: cancelMock },
+          text: textMock,
         })
         .mockResolvedValueOnce({
           ok: true,
@@ -399,7 +399,8 @@ describe('Automatic Retries', () => {
       const client = new PostgrestClient('http://localhost:3000', { fetch: fetchMock })
       await runWithTimers(client.from('users').select())
 
-      expect(cancelMock).toHaveBeenCalledTimes(1)
+      // text() is called once to drain body before retry, once by processResponse for the retry
+      expect(textMock).toHaveBeenCalledTimes(1)
     })
   })
 

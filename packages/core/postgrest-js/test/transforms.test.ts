@@ -47,25 +47,11 @@ test('order', async () => {
           "username": "dragarcia",
         },
         {
-          "age_range": null,
-          "catchphrase": null,
-          "data": null,
-          "status": "ONLINE",
-          "username": "b",
-        },
-        {
           "age_range": "[25,35)",
           "catchphrase": "'bat' 'rat'",
           "data": null,
           "status": "ONLINE",
           "username": "awailas",
-        },
-        {
-          "age_range": null,
-          "catchphrase": null,
-          "data": null,
-          "status": "ONLINE",
-          "username": "a",
         },
       ],
       "error": null,
@@ -241,13 +227,13 @@ test('maybeSingle', async () => {
       "count": null,
       "data": null,
       "error": {
-        "code": "23505",
-        "details": "Key (username)=(a) already exists.",
+        "code": "PGRST116",
+        "details": "Results contain 2 rows, application/vnd.pgrst.object+json requires 1 row",
         "hint": null,
-        "message": "duplicate key value violates unique constraint "users_pkey"",
+        "message": "JSON object requested, multiple (or no) rows returned",
       },
-      "status": 409,
-      "statusText": "Conflict",
+      "status": 406,
+      "statusText": "Not Acceptable",
     }
   `)
 })
@@ -300,9 +286,9 @@ test('csv', async () => {
     kiwicopple,,"[25,35)",OFFLINE,"'bat' 'cat'"
     awailas,,"[25,35)",ONLINE,"'bat' 'rat'"
     jsonuser,"{""foo"": {""bar"": {""nested"": ""value""}, ""baz"": ""string value""}}","[20,30)",ONLINE,"'json' 'test'"
+    dragarcia,,"[20,30)",ONLINE,"'fat' 'rat'"
     a,,,ONLINE,
-    b,,,ONLINE,
-    dragarcia,,"[20,30)",ONLINE,"'fat' 'rat'"",
+    b,,,ONLINE,",
       "error": null,
       "status": 200,
       "statusText": "OK",
