@@ -1,40 +1,40 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import PostgrestClient from '../src/PostgrestClient'
 
 describe('Automatic Retries', () => {
-  let fetchMock: ReturnType<typeof vi.fn>
+  let fetchMock: jest.Mock
 
   beforeEach(() => {
-    fetchMock = vi.fn()
-    vi.useFakeTimers()
+    fetchMock = jest.fn()
+    jest.useFakeTimers()
   })
 
   afterEach(() => {
-    vi.useRealTimers()
-    vi.restoreAllMocks()
+    jest.useRealTimers()
+    jest.restoreAllMocks()
   })
 
   /**
    * Helper to run async code with fake timers
    */
-  async function runWithTimers<T>(promise: Promise<T>): Promise<T> {
+  async function runWithTimers<T>(promise: PromiseLike<T>): Promise<T> {
     let result: T | undefined
     let error: Error | undefined
     let resolved = false
 
-    promise
-      .then((r) => {
+    promise.then(
+      (r) => {
         result = r
         resolved = true
-      })
-      .catch((e) => {
+      },
+      (e) => {
         error = e
         resolved = true
-      })
+      }
+    )
 
     // Keep advancing timers until promise resolves
     while (!resolved) {
-      await vi.advanceTimersByTimeAsync(100)
+      await jest.advanceTimersByTimeAsync(100)
     }
 
     if (error) throw error
@@ -211,7 +211,7 @@ describe('Automatic Retries', () => {
     it('should use exponential backoff delays', async () => {
       let delaysSeen: number[] = []
       const originalSleep = globalThis.setTimeout
-      vi.spyOn(globalThis, 'setTimeout').mockImplementation((fn, delay) => {
+      jest.spyOn(globalThis, 'setTimeout').mockImplementation((fn, delay) => {
         delaysSeen.push(delay as number)
         return originalSleep(fn, 0) // Run immediately for testing
       })
@@ -334,7 +334,7 @@ describe('Automatic Retries', () => {
           statusText: 'Service Unavailable',
           headers: new Headers({ 'Retry-After': '0', 'Content-Type': 'application/json' }),
           text: () => Promise.resolve(pgrst002Body),
-          body: { cancel: vi.fn().mockResolvedValue(undefined) },
+          body: { cancel: jest.fn().mockResolvedValue(undefined) },
         })
         .mockResolvedValueOnce({
           ok: true,
@@ -359,7 +359,7 @@ describe('Automatic Retries', () => {
         hint: null,
         message: 'Could not query the database for the schema cache. Retrying.',
       })
-      const mockBody = { cancel: vi.fn().mockResolvedValue(undefined) }
+      const mockBody = { cancel: jest.fn().mockResolvedValue(undefined) }
 
       fetchMock.mockResolvedValue({
         ok: false,
@@ -380,7 +380,7 @@ describe('Automatic Retries', () => {
     })
 
     it('should drain the response body before retrying', async () => {
-      const cancelMock = vi.fn().mockResolvedValue(undefined)
+      const cancelMock = jest.fn().mockResolvedValue(undefined)
       const pgrst002Body = JSON.stringify({
         code: 'PGRST002',
         details: null,

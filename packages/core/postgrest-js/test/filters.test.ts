@@ -21,6 +21,12 @@ test('not', async () => {
         {
           "status": "ONLINE",
         },
+        {
+          "status": "ONLINE",
+        },
+        {
+          "status": "ONLINE",
+        },
       ],
       "error": null,
       "status": 200,
@@ -85,6 +91,12 @@ test('neq', async () => {
         },
         {
           "username": "jsonuser",
+        },
+        {
+          "username": "a",
+        },
+        {
+          "username": "b",
         },
         {
           "username": "dragarcia",
@@ -315,6 +327,12 @@ test('is', async () => {
         {
           "data": null,
         },
+        {
+          "data": null,
+        },
+        {
+          "data": null,
+        },
       ],
       "error": null,
       "status": 200,
@@ -335,6 +353,12 @@ test('in', async () => {
         },
         {
           "status": "OFFLINE",
+        },
+        {
+          "status": "ONLINE",
+        },
+        {
+          "status": "ONLINE",
         },
         {
           "status": "ONLINE",
