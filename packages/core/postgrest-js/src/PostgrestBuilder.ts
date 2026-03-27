@@ -222,11 +222,7 @@ export default abstract class PostgrestBuilder<
       let attemptCount = 0
 
       while (true) {
-        // Clone headers for each attempt and add retry count header if this is a retry
         const requestHeaders = new Headers(this.headers)
-        if (attemptCount > 0) {
-          requestHeaders.set('X-Retry-Count', String(attemptCount))
-        }
 
         try {
           const res = await _fetch(this.url.toString(), {
