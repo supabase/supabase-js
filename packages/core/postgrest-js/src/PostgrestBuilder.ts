@@ -347,6 +347,7 @@ export default abstract class PostgrestBuilder<
         }
 
         return {
+          success: false as const,
           error: {
             message: `${fetchError?.name ?? 'FetchError'}: ${fetchError?.message}`,
             details: errorDetails,
