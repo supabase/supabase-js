@@ -154,10 +154,9 @@ export default abstract class PostgrestBuilder<
     return this
   }
 
-  /**  *
-   * @category Database
-   */
   /**
+   * @category Database
+   *
    * Configure retry behavior for this request.
    *
    * By default, retries are enabled for GET/HEAD requests that fail with
@@ -229,29 +228,6 @@ export default abstract class PostgrestBuilder<
           requestHeaders.set('X-Retry-Count', String(attemptCount))
         }
 
-        // Fix for https://github.com/supabase/postgrest-js/issues/361 — applies to all methods.
-        if (this.isMaybeSingle && Array.isArray(data)) {
-          if (data.length > 1) {
-            error = {
-              // https://github.com/PostgREST/postgrest/blob/a867d79c42419af16c18c3fb019eba8df992626f/src/PostgREST/Error.hs#L553
-              code: 'PGRST116',
-              details: `Results contain ${data.length} rows, application/vnd.pgrst.object+json requires 1 row`,
-              hint: null,
-              message: 'JSON object requested, multiple (or no) rows returned',
-            }
-            data = null
-            count = null
-            status = 406
-            statusText = 'Not Acceptable'
-          } else if (data.length === 1) {
-            data = data[0]
-          } else {
-            data = null
-          }
-        }
-      } else {
-        const body = await res.text()
-
         try {
           const res = await _fetch(this.url.toString(), {
             method: this.method,
@@ -262,7 +238,12 @@ export default abstract class PostgrestBuilder<
 
           // Check if we should retry this response
           if (shouldRetry(this.method, res.status, attemptCount, this.retryEnabled)) {
-            const delay = getRetryDelay(attemptCount)
+            const retryAfterHeader = res.headers.get('Retry-After')
+            const delay =
+              retryAfterHeader !== null
+                ? Math.max(0, parseInt(retryAfterHeader, 10) || 0) * 1000
+                : getRetryDelay(attemptCount)
+            await res.body?.cancel()
             attemptCount++
             await sleep(delay)
             continue
@@ -271,13 +252,16 @@ export default abstract class PostgrestBuilder<
           // Process successful or final response
           return await this.processResponse(res)
         } catch (fetchError: any) {
+          // Never retry aborted requests
+          if (fetchError?.name === 'AbortError' || fetchError?.code === 'ABORT_ERR') {
+            throw fetchError
+          }
+
           // Don't retry network errors for non-idempotent methods
           if (!RETRYABLE_METHODS.includes(this.method as (typeof RETRYABLE_METHODS)[number])) {
             throw fetchError
           }
 
-        if (error && this.shouldThrowOnError) {
-          throw new PostgrestError(error)
           // Check if we should retry network errors
           if (this.retryEnabled && attemptCount < DEFAULT_MAX_RETRIES) {
             const delay = getRetryDelay(attemptCount)
@@ -404,9 +388,8 @@ export default abstract class PostgrestBuilder<
         count = parseInt(contentRange[1])
       }
 
-      // Temporary partial fix for https://github.com/supabase/postgrest-js/issues/361
-      // Issue persists e.g. for `.insert([...]).select().maybeSingle()`
-      if (this.isMaybeSingle && this.method === 'GET' && Array.isArray(data)) {
+      // Fix for https://github.com/supabase/postgrest-js/issues/361 — applies to all methods.
+      if (this.isMaybeSingle && Array.isArray(data)) {
         if (data.length > 1) {
           error = {
             // https://github.com/PostgREST/postgrest/blob/a867d79c42419af16c18c3fb019eba8df992626f/src/PostgREST/Error.hs#L553
@@ -448,12 +431,6 @@ export default abstract class PostgrestBuilder<
             message: body,
           }
         }
-      }
-
-      if (error && this.isMaybeSingle && error?.details?.includes('0 rows')) {
-        error = null
-        status = 200
-        statusText = 'OK'
       }
 
       if (error && this.shouldThrowOnError) {

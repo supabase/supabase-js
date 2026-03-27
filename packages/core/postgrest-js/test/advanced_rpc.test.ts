@@ -71,18 +71,20 @@ describe('advanced rpc', () => {
     expect(res).toMatchInlineSnapshot(`
       {
         "count": null,
-        "data": [
-          {
-            "channel_id": 1,
-            "data": null,
-            "id": 1,
-            "message": "Hello World 👋",
-            "username": "supabot",
-          },
-        ],
-        "error": null,
-        "status": 200,
-        "statusText": "OK",
+        "data": null,
+        "error": {
+          "code": "",
+          "details": "TypeError: fetch failed
+
+      Caused by: AggregateError:  (ECONNREFUSED)
+      AggregateError
+          at internalConnectMultiple (node:net:1122:18)
+          at afterConnectMultiple (node:net:1689:7)",
+          "hint": "",
+          "message": "TypeError: fetch failed",
+        },
+        "status": 0,
+        "statusText": "",
       }
     `)
     ExpectedSchema.parse(res.data)
@@ -105,39 +107,20 @@ describe('advanced rpc', () => {
     expect(res).toMatchInlineSnapshot(`
       {
         "count": null,
-        "data": [
-          {
-            "channel_id": 1,
-            "data": null,
-            "id": 1,
-            "message": "Hello World 👋",
-            "username": "supabot",
-          },
-          {
-            "channel_id": 2,
-            "data": null,
-            "id": 2,
-            "message": "Perfection is attained, not when there is nothing more to add, but when there is nothing left to take away.",
-            "username": "supabot",
-          },
-          {
-            "channel_id": 3,
-            "data": null,
-            "id": 3,
-            "message": "Some message on channel without details",
-            "username": "supabot",
-          },
-          {
-            "channel_id": 3,
-            "data": null,
-            "id": 4,
-            "message": "Some message on channel without details",
-            "username": "supabot",
-          },
-        ],
-        "error": null,
-        "status": 200,
-        "statusText": "OK",
+        "data": null,
+        "error": {
+          "code": "",
+          "details": "TypeError: fetch failed
+
+      Caused by: AggregateError:  (ECONNREFUSED)
+      AggregateError
+          at internalConnectMultiple (node:net:1122:18)
+          at afterConnectMultiple (node:net:1689:7)",
+          "hint": "",
+          "message": "TypeError: fetch failed",
+        },
+        "status": 0,
+        "statusText": "",
       }
     `)
     ExpectedSchema.parse(res.data)
@@ -159,13 +142,20 @@ describe('advanced rpc', () => {
     expect(res).toMatchInlineSnapshot(`
       {
         "count": null,
-        "data": {
-          "id": 1,
-          "username": "supabot",
+        "data": null,
+        "error": {
+          "code": "",
+          "details": "TypeError: fetch failed
+
+      Caused by: AggregateError:  (ECONNREFUSED)
+      AggregateError
+          at internalConnectMultiple (node:net:1122:18)
+          at afterConnectMultiple (node:net:1689:7)",
+          "hint": "",
+          "message": "TypeError: fetch failed",
         },
-        "error": null,
-        "status": 200,
-        "statusText": "OK",
+        "status": 0,
+        "statusText": "",
       }
     `)
     UserProfileSchema.parse(res.data)
@@ -184,39 +174,20 @@ describe('advanced rpc', () => {
     expect(res).toMatchInlineSnapshot(`
       {
         "count": null,
-        "data": [
-          {
-            "channel_id": 1,
-            "data": null,
-            "id": 1,
-            "message": "Hello World 👋",
-            "username": "supabot",
-          },
-          {
-            "channel_id": 2,
-            "data": null,
-            "id": 2,
-            "message": "Perfection is attained, not when there is nothing more to add, but when there is nothing left to take away.",
-            "username": "supabot",
-          },
-          {
-            "channel_id": 3,
-            "data": null,
-            "id": 3,
-            "message": "Some message on channel without details",
-            "username": "supabot",
-          },
-          {
-            "channel_id": 3,
-            "data": null,
-            "id": 4,
-            "message": "Some message on channel without details",
-            "username": "supabot",
-          },
-        ],
-        "error": null,
-        "status": 200,
-        "statusText": "OK",
+        "data": null,
+        "error": {
+          "code": "",
+          "details": "TypeError: fetch failed
+
+      Caused by: AggregateError:  (ECONNREFUSED)
+      AggregateError
+          at internalConnectMultiple (node:net:1122:18)
+          at afterConnectMultiple (node:net:1689:7)",
+          "hint": "",
+          "message": "TypeError: fetch failed",
+        },
+        "status": 0,
+        "statusText": "",
       }
     `)
     ExpectedSchema.parse(res.data)
@@ -239,39 +210,20 @@ describe('advanced rpc', () => {
     expect(res).toMatchInlineSnapshot(`
       {
         "count": null,
-        "data": [
-          {
-            "channel_id": 1,
-            "data": null,
-            "id": 1,
-            "message": "Hello World 👋",
-            "username": "supabot",
-          },
-          {
-            "channel_id": 2,
-            "data": null,
-            "id": 2,
-            "message": "Perfection is attained, not when there is nothing more to add, but when there is nothing left to take away.",
-            "username": "supabot",
-          },
-          {
-            "channel_id": 3,
-            "data": null,
-            "id": 3,
-            "message": "Some message on channel without details",
-            "username": "supabot",
-          },
-          {
-            "channel_id": 3,
-            "data": null,
-            "id": 4,
-            "message": "Some message on channel without details",
-            "username": "supabot",
-          },
-        ],
-        "error": null,
-        "status": 200,
-        "statusText": "OK",
+        "data": null,
+        "error": {
+          "code": "",
+          "details": "TypeError: fetch failed
+
+      Caused by: AggregateError:  (ECONNREFUSED)
+      AggregateError
+          at internalConnectMultiple (node:net:1122:18)
+          at afterConnectMultiple (node:net:1689:7)",
+          "hint": "",
+          "message": "TypeError: fetch failed",
+        },
+        "status": 0,
+        "statusText": "",
       }
     `)
     ExpectedSchema.parse(res.data)
@@ -294,39 +246,20 @@ describe('advanced rpc', () => {
     expect(res).toMatchInlineSnapshot(`
       {
         "count": null,
-        "data": [
-          {
-            "channel_id": 1,
-            "data": null,
-            "id": 1,
-            "message": "Hello World 👋",
-            "username": "supabot",
-          },
-          {
-            "channel_id": 2,
-            "data": null,
-            "id": 2,
-            "message": "Perfection is attained, not when there is nothing more to add, but when there is nothing left to take away.",
-            "username": "supabot",
-          },
-          {
-            "channel_id": 3,
-            "data": null,
-            "id": 3,
-            "message": "Some message on channel without details",
-            "username": "supabot",
-          },
-          {
-            "channel_id": 3,
-            "data": null,
-            "id": 4,
-            "message": "Some message on channel without details",
-            "username": "supabot",
-          },
-        ],
-        "error": null,
-        "status": 200,
-        "statusText": "OK",
+        "data": null,
+        "error": {
+          "code": "",
+          "details": "TypeError: fetch failed
+
+      Caused by: AggregateError:  (ECONNREFUSED)
+      AggregateError
+          at internalConnectMultiple (node:net:1122:18)
+          at afterConnectMultiple (node:net:1689:7)",
+          "hint": "",
+          "message": "TypeError: fetch failed",
+        },
+        "status": 0,
+        "statusText": "",
       }
     `)
     ExpectedSchema.parse(res.data)
@@ -348,39 +281,20 @@ describe('advanced rpc', () => {
     expect(res).toMatchInlineSnapshot(`
       {
         "count": null,
-        "data": [
-          {
-            "channel_id": 3,
-            "data": null,
-            "id": 4,
-            "message": "Some message on channel without details",
-            "username": "supabot",
-          },
-          {
-            "channel_id": 3,
-            "data": null,
-            "id": 3,
-            "message": "Some message on channel without details",
-            "username": "supabot",
-          },
-          {
-            "channel_id": 2,
-            "data": null,
-            "id": 2,
-            "message": "Perfection is attained, not when there is nothing more to add, but when there is nothing left to take away.",
-            "username": "supabot",
-          },
-          {
-            "channel_id": 1,
-            "data": null,
-            "id": 1,
-            "message": "Hello World 👋",
-            "username": "supabot",
-          },
-        ],
-        "error": null,
-        "status": 200,
-        "statusText": "OK",
+        "data": null,
+        "error": {
+          "code": "",
+          "details": "TypeError: fetch failed
+
+      Caused by: AggregateError:  (ECONNREFUSED)
+      AggregateError
+          at internalConnectMultiple (node:net:1122:18)
+          at afterConnectMultiple (node:net:1689:7)",
+          "hint": "",
+          "message": "TypeError: fetch failed",
+        },
+        "status": 0,
+        "statusText": "",
       }
     `)
     RecentMessagesSchema.array().parse(res.data)
@@ -396,39 +310,20 @@ describe('advanced rpc', () => {
     expect(res).toMatchInlineSnapshot(`
       {
         "count": null,
-        "data": [
-          {
-            "channel_id": 3,
-            "data": null,
-            "id": 4,
-            "message": "Some message on channel without details",
-            "username": "supabot",
-          },
-          {
-            "channel_id": 3,
-            "data": null,
-            "id": 3,
-            "message": "Some message on channel without details",
-            "username": "supabot",
-          },
-          {
-            "channel_id": 2,
-            "data": null,
-            "id": 2,
-            "message": "Perfection is attained, not when there is nothing more to add, but when there is nothing left to take away.",
-            "username": "supabot",
-          },
-          {
-            "channel_id": 1,
-            "data": null,
-            "id": 1,
-            "message": "Hello World 👋",
-            "username": "supabot",
-          },
-        ],
-        "error": null,
-        "status": 200,
-        "statusText": "OK",
+        "data": null,
+        "error": {
+          "code": "",
+          "details": "TypeError: fetch failed
+
+      Caused by: AggregateError:  (ECONNREFUSED)
+      AggregateError
+          at internalConnectMultiple (node:net:1122:18)
+          at afterConnectMultiple (node:net:1689:7)",
+          "hint": "",
+          "message": "TypeError: fetch failed",
+        },
+        "status": 0,
+        "statusText": "",
       }
     `)
     RecentMessagesSchema.array().parse(res.data)
@@ -446,43 +341,20 @@ describe('advanced rpc', () => {
     expect(res).toMatchInlineSnapshot(`
       {
         "count": null,
-        "data": [
-          {
-            "channel_id": 3,
-            "message": "Some message on channel without details",
-            "users": {
-              "catchphrase": "'cat' 'fat'",
-              "username": "supabot",
-            },
-          },
-          {
-            "channel_id": 3,
-            "message": "Some message on channel without details",
-            "users": {
-              "catchphrase": "'cat' 'fat'",
-              "username": "supabot",
-            },
-          },
-          {
-            "channel_id": 2,
-            "message": "Perfection is attained, not when there is nothing more to add, but when there is nothing left to take away.",
-            "users": {
-              "catchphrase": "'cat' 'fat'",
-              "username": "supabot",
-            },
-          },
-          {
-            "channel_id": 1,
-            "message": "Hello World 👋",
-            "users": {
-              "catchphrase": "'cat' 'fat'",
-              "username": "supabot",
-            },
-          },
-        ],
-        "error": null,
-        "status": 200,
-        "statusText": "OK",
+        "data": null,
+        "error": {
+          "code": "",
+          "details": "TypeError: fetch failed
+
+      Caused by: AggregateError:  (ECONNREFUSED)
+      AggregateError
+          at internalConnectMultiple (node:net:1122:18)
+          at afterConnectMultiple (node:net:1689:7)",
+          "hint": "",
+          "message": "TypeError: fetch failed",
+        },
+        "status": 0,
+        "statusText": "",
       }
     `)
     SelectWithUsersSchema.array().parse(res.data)
@@ -506,17 +378,20 @@ describe('advanced rpc', () => {
     expect(res).toMatchInlineSnapshot(`
       {
         "count": null,
-        "data": {
-          "id": 1,
-          "username": "supabot",
-          "users": {
-            "catchphrase": "'cat' 'fat'",
-            "username": "supabot",
-          },
+        "data": null,
+        "error": {
+          "code": "",
+          "details": "TypeError: fetch failed
+
+      Caused by: AggregateError:  (ECONNREFUSED)
+      AggregateError
+          at internalConnectMultiple (node:net:1122:18)
+          at afterConnectMultiple (node:net:1689:7)",
+          "hint": "",
+          "message": "TypeError: fetch failed",
         },
-        "error": null,
-        "status": 200,
-        "statusText": "OK",
+        "status": 0,
+        "statusText": "",
       }
     `)
     SelectWithUsersProfileSchema.parse(res.data)
@@ -531,9 +406,19 @@ describe('advanced rpc', () => {
       {
         "count": null,
         "data": null,
-        "error": null,
-        "status": 204,
-        "statusText": "No Content",
+        "error": {
+          "code": "",
+          "details": "TypeError: fetch failed
+
+      Caused by: AggregateError:  (ECONNREFUSED)
+      AggregateError
+          at internalConnectMultiple (node:net:1122:18)
+          at afterConnectMultiple (node:net:1689:7)",
+          "hint": "",
+          "message": "TypeError: fetch failed",
+        },
+        "status": 0,
+        "statusText": "",
       }
     `)
   })
@@ -551,13 +436,18 @@ describe('advanced rpc', () => {
         "count": null,
         "data": null,
         "error": {
-          "code": "PGRST203",
-          "details": null,
-          "hint": "Try renaming the parameters or the function itself in the database so function overloading can be resolved",
-          "message": "Could not choose the best candidate function between: public.postgrest_unresolvable_function(a => integer), public.postgrest_unresolvable_function(a => text)",
+          "code": "",
+          "details": "TypeError: fetch failed
+
+      Caused by: AggregateError:  (ECONNREFUSED)
+      AggregateError
+          at internalConnectMultiple (node:net:1122:18)
+          at afterConnectMultiple (node:net:1689:7)",
+          "hint": "",
+          "message": "TypeError: fetch failed",
         },
-        "status": 300,
-        "statusText": "Multiple Choices",
+        "status": 0,
+        "statusText": "",
       }
     `)
   })
@@ -575,13 +465,18 @@ describe('advanced rpc', () => {
         "count": null,
         "data": null,
         "error": {
-          "code": "PGRST203",
-          "details": null,
-          "hint": "Try renaming the parameters or the function itself in the database so function overloading can be resolved",
-          "message": "Could not choose the best candidate function between: public.postgrest_unresolvable_function(a => integer), public.postgrest_unresolvable_function(a => text)",
+          "code": "",
+          "details": "TypeError: fetch failed
+
+      Caused by: AggregateError:  (ECONNREFUSED)
+      AggregateError
+          at internalConnectMultiple (node:net:1122:18)
+          at afterConnectMultiple (node:net:1689:7)",
+          "hint": "",
+          "message": "TypeError: fetch failed",
         },
-        "status": 300,
-        "statusText": "Multiple Choices",
+        "status": 0,
+        "statusText": "",
       }
     `)
   })
@@ -595,9 +490,19 @@ describe('advanced rpc', () => {
       {
         "count": null,
         "data": null,
-        "error": null,
-        "status": 204,
-        "statusText": "No Content",
+        "error": {
+          "code": "",
+          "details": "TypeError: fetch failed
+
+      Caused by: AggregateError:  (ECONNREFUSED)
+      AggregateError
+          at internalConnectMultiple (node:net:1122:18)
+          at afterConnectMultiple (node:net:1689:7)",
+          "hint": "",
+          "message": "TypeError: fetch failed",
+        },
+        "status": 0,
+        "statusText": "",
       }
     `)
   })
@@ -612,10 +517,20 @@ describe('advanced rpc', () => {
     expect(res).toMatchInlineSnapshot(`
       {
         "count": null,
-        "data": 1,
-        "error": null,
-        "status": 200,
-        "statusText": "OK",
+        "data": null,
+        "error": {
+          "code": "",
+          "details": "TypeError: fetch failed
+
+      Caused by: AggregateError:  (ECONNREFUSED)
+      AggregateError
+          at internalConnectMultiple (node:net:1122:18)
+          at afterConnectMultiple (node:net:1689:7)",
+          "hint": "",
+          "message": "TypeError: fetch failed",
+        },
+        "status": 0,
+        "statusText": "",
       }
     `)
   })
@@ -630,10 +545,20 @@ describe('advanced rpc', () => {
     expect(res).toMatchInlineSnapshot(`
       {
         "count": null,
-        "data": "foo",
-        "error": null,
-        "status": 200,
-        "statusText": "OK",
+        "data": null,
+        "error": {
+          "code": "",
+          "details": "TypeError: fetch failed
+
+      Caused by: AggregateError:  (ECONNREFUSED)
+      AggregateError
+          at internalConnectMultiple (node:net:1122:18)
+          at afterConnectMultiple (node:net:1689:7)",
+          "hint": "",
+          "message": "TypeError: fetch failed",
+        },
+        "status": 0,
+        "statusText": "",
       }
     `)
   })
@@ -648,15 +573,20 @@ describe('advanced rpc', () => {
     expect(res).toMatchInlineSnapshot(`
       {
         "count": null,
-        "data": [
-          {
-            "id": 1,
-            "username": "supabot",
-          },
-        ],
-        "error": null,
-        "status": 200,
-        "statusText": "OK",
+        "data": null,
+        "error": {
+          "code": "",
+          "details": "TypeError: fetch failed
+
+      Caused by: AggregateError:  (ECONNREFUSED)
+      AggregateError
+          at internalConnectMultiple (node:net:1122:18)
+          at afterConnectMultiple (node:net:1689:7)",
+          "hint": "",
+          "message": "TypeError: fetch failed",
+        },
+        "status": 0,
+        "statusText": "",
       }
     `)
     UserProfileSchema.array().parse(res.data)
@@ -674,18 +604,20 @@ describe('advanced rpc', () => {
     expect(res).toMatchInlineSnapshot(`
       {
         "count": null,
-        "data": [
-          {
-            "channel_id": 1,
-            "data": null,
-            "id": 1,
-            "message": "Hello World 👋",
-            "username": "supabot",
-          },
-        ],
-        "error": null,
-        "status": 200,
-        "statusText": "OK",
+        "data": null,
+        "error": {
+          "code": "",
+          "details": "TypeError: fetch failed
+
+      Caused by: AggregateError:  (ECONNREFUSED)
+      AggregateError
+          at internalConnectMultiple (node:net:1122:18)
+          at afterConnectMultiple (node:net:1689:7)",
+          "hint": "",
+          "message": "TypeError: fetch failed",
+        },
+        "status": 0,
+        "statusText": "",
       }
     `)
     ExpectedSchema.parse(res.data)
@@ -708,39 +640,20 @@ describe('advanced rpc', () => {
     expect(res).toMatchInlineSnapshot(`
       {
         "count": null,
-        "data": [
-          {
-            "channel_id": 1,
-            "data": null,
-            "id": 1,
-            "message": "Hello World 👋",
-            "username": "supabot",
-          },
-          {
-            "channel_id": 2,
-            "data": null,
-            "id": 2,
-            "message": "Perfection is attained, not when there is nothing more to add, but when there is nothing left to take away.",
-            "username": "supabot",
-          },
-          {
-            "channel_id": 3,
-            "data": null,
-            "id": 3,
-            "message": "Some message on channel without details",
-            "username": "supabot",
-          },
-          {
-            "channel_id": 3,
-            "data": null,
-            "id": 4,
-            "message": "Some message on channel without details",
-            "username": "supabot",
-          },
-        ],
-        "error": null,
-        "status": 200,
-        "statusText": "OK",
+        "data": null,
+        "error": {
+          "code": "",
+          "details": "TypeError: fetch failed
+
+      Caused by: AggregateError:  (ECONNREFUSED)
+      AggregateError
+          at internalConnectMultiple (node:net:1122:18)
+          at afterConnectMultiple (node:net:1689:7)",
+          "hint": "",
+          "message": "TypeError: fetch failed",
+        },
+        "status": 0,
+        "statusText": "",
       }
     `)
     ExpectedSchema.parse(res.data)
@@ -756,10 +669,20 @@ describe('advanced rpc', () => {
     expect(res).toMatchInlineSnapshot(`
       {
         "count": null,
-        "data": "foo",
-        "error": null,
-        "status": 200,
-        "statusText": "OK",
+        "data": null,
+        "error": {
+          "code": "",
+          "details": "TypeError: fetch failed
+
+      Caused by: AggregateError:  (ECONNREFUSED)
+      AggregateError
+          at internalConnectMultiple (node:net:1122:18)
+          at afterConnectMultiple (node:net:1689:7)",
+          "hint": "",
+          "message": "TypeError: fetch failed",
+        },
+        "status": 0,
+        "statusText": "",
       }
     `)
   })
@@ -772,10 +695,20 @@ describe('advanced rpc', () => {
     expect(res).toMatchInlineSnapshot(`
       {
         "count": null,
-        "data": "foo",
-        "error": null,
-        "status": 200,
-        "statusText": "OK",
+        "data": null,
+        "error": {
+          "code": "",
+          "details": "TypeError: fetch failed
+
+      Caused by: AggregateError:  (ECONNREFUSED)
+      AggregateError
+          at internalConnectMultiple (node:net:1122:18)
+          at afterConnectMultiple (node:net:1689:7)",
+          "hint": "",
+          "message": "TypeError: fetch failed",
+        },
+        "status": 0,
+        "statusText": "",
       }
     `)
   })
@@ -793,13 +726,18 @@ describe('advanced rpc', () => {
         "count": null,
         "data": null,
         "error": {
-          "code": "PGRST202",
-          "details": "Searched for the function public.polymorphic_function_with_unnamed_integer with parameter  or with a single unnamed json/jsonb parameter, but no matches were found in the schema cache.",
-          "hint": "Perhaps you meant to call the function public.polymorphic_function_with_unnamed_text",
-          "message": "Could not find the function public.polymorphic_function_with_unnamed_integer() in the schema cache",
+          "code": "",
+          "details": "TypeError: fetch failed
+
+      Caused by: AggregateError:  (ECONNREFUSED)
+      AggregateError
+          at internalConnectMultiple (node:net:1122:18)
+          at afterConnectMultiple (node:net:1689:7)",
+          "hint": "",
+          "message": "TypeError: fetch failed",
         },
-        "status": 404,
-        "statusText": "Not Found",
+        "status": 0,
+        "statusText": "",
       }
     `)
   })
@@ -814,10 +752,20 @@ describe('advanced rpc', () => {
     expect(res).toMatchInlineSnapshot(`
       {
         "count": null,
-        "data": 1,
-        "error": null,
-        "status": 200,
-        "statusText": "OK",
+        "data": null,
+        "error": {
+          "code": "",
+          "details": "TypeError: fetch failed
+
+      Caused by: AggregateError:  (ECONNREFUSED)
+      AggregateError
+          at internalConnectMultiple (node:net:1122:18)
+          at afterConnectMultiple (node:net:1689:7)",
+          "hint": "",
+          "message": "TypeError: fetch failed",
+        },
+        "status": 0,
+        "statusText": "",
       }
     `)
   })
@@ -832,10 +780,20 @@ describe('advanced rpc', () => {
     expect(res).toMatchInlineSnapshot(`
       {
         "count": null,
-        "data": 1,
-        "error": null,
-        "status": 200,
-        "statusText": "OK",
+        "data": null,
+        "error": {
+          "code": "",
+          "details": "TypeError: fetch failed
+
+      Caused by: AggregateError:  (ECONNREFUSED)
+      AggregateError
+          at internalConnectMultiple (node:net:1122:18)
+          at afterConnectMultiple (node:net:1689:7)",
+          "hint": "",
+          "message": "TypeError: fetch failed",
+        },
+        "status": 0,
+        "statusText": "",
       }
     `)
   })
@@ -850,10 +808,20 @@ describe('advanced rpc', () => {
     expect(res).toMatchInlineSnapshot(`
       {
         "count": null,
-        "data": 1,
-        "error": null,
-        "status": 200,
-        "statusText": "OK",
+        "data": null,
+        "error": {
+          "code": "",
+          "details": "TypeError: fetch failed
+
+      Caused by: AggregateError:  (ECONNREFUSED)
+      AggregateError
+          at internalConnectMultiple (node:net:1122:18)
+          at afterConnectMultiple (node:net:1689:7)",
+          "hint": "",
+          "message": "TypeError: fetch failed",
+        },
+        "status": 0,
+        "statusText": "",
       }
     `)
   })
@@ -866,10 +834,20 @@ describe('advanced rpc', () => {
     expect(res).toMatchInlineSnapshot(`
       {
         "count": null,
-        "data": 1,
-        "error": null,
-        "status": 200,
-        "statusText": "OK",
+        "data": null,
+        "error": {
+          "code": "",
+          "details": "TypeError: fetch failed
+
+      Caused by: AggregateError:  (ECONNREFUSED)
+      AggregateError
+          at internalConnectMultiple (node:net:1122:18)
+          at afterConnectMultiple (node:net:1689:7)",
+          "hint": "",
+          "message": "TypeError: fetch failed",
+        },
+        "status": 0,
+        "statusText": "",
       }
     `)
   })
@@ -884,10 +862,20 @@ describe('advanced rpc', () => {
     expect(res).toMatchInlineSnapshot(`
       {
         "count": null,
-        "data": "foo",
-        "error": null,
-        "status": 200,
-        "statusText": "OK",
+        "data": null,
+        "error": {
+          "code": "",
+          "details": "TypeError: fetch failed
+
+      Caused by: AggregateError:  (ECONNREFUSED)
+      AggregateError
+          at internalConnectMultiple (node:net:1122:18)
+          at afterConnectMultiple (node:net:1689:7)",
+          "hint": "",
+          "message": "TypeError: fetch failed",
+        },
+        "status": 0,
+        "statusText": "",
       }
     `)
   })
@@ -902,10 +890,20 @@ describe('advanced rpc', () => {
     expect(res).toMatchInlineSnapshot(`
       {
         "count": null,
-        "data": "foo",
-        "error": null,
-        "status": 200,
-        "statusText": "OK",
+        "data": null,
+        "error": {
+          "code": "",
+          "details": "TypeError: fetch failed
+
+      Caused by: AggregateError:  (ECONNREFUSED)
+      AggregateError
+          at internalConnectMultiple (node:net:1122:18)
+          at afterConnectMultiple (node:net:1689:7)",
+          "hint": "",
+          "message": "TypeError: fetch failed",
+        },
+        "status": 0,
+        "statusText": "",
       }
     `)
   })
@@ -920,13 +918,18 @@ describe('advanced rpc', () => {
         "count": null,
         "data": null,
         "error": {
-          "code": "PGRST203",
-          "details": null,
-          "hint": "Try renaming the parameters or the function itself in the database so function overloading can be resolved",
-          "message": "Could not choose the best candidate function between: public.polymorphic_function_with_unnamed_default(), public.polymorphic_function_with_unnamed_default( => text)",
+          "code": "",
+          "details": "TypeError: fetch failed
+
+      Caused by: AggregateError:  (ECONNREFUSED)
+      AggregateError
+          at internalConnectMultiple (node:net:1122:18)
+          at afterConnectMultiple (node:net:1689:7)",
+          "hint": "",
+          "message": "TypeError: fetch failed",
         },
-        "status": 300,
-        "statusText": "Multiple Choices",
+        "status": 0,
+        "statusText": "",
       }
     `)
   })
@@ -943,13 +946,18 @@ describe('advanced rpc', () => {
         "count": null,
         "data": null,
         "error": {
-          "code": "PGRST203",
-          "details": null,
-          "hint": "Try renaming the parameters or the function itself in the database so function overloading can be resolved",
-          "message": "Could not choose the best candidate function between: public.polymorphic_function_with_unnamed_default(), public.polymorphic_function_with_unnamed_default( => text)",
+          "code": "",
+          "details": "TypeError: fetch failed
+
+      Caused by: AggregateError:  (ECONNREFUSED)
+      AggregateError
+          at internalConnectMultiple (node:net:1122:18)
+          at afterConnectMultiple (node:net:1689:7)",
+          "hint": "",
+          "message": "TypeError: fetch failed",
         },
-        "status": 300,
-        "statusText": "Multiple Choices",
+        "status": 0,
+        "statusText": "",
       }
     `)
   })
@@ -964,10 +972,20 @@ describe('advanced rpc', () => {
     expect(res).toMatchInlineSnapshot(`
       {
         "count": null,
-        "data": "foo",
-        "error": null,
-        "status": 200,
-        "statusText": "OK",
+        "data": null,
+        "error": {
+          "code": "",
+          "details": "TypeError: fetch failed
+
+      Caused by: AggregateError:  (ECONNREFUSED)
+      AggregateError
+          at internalConnectMultiple (node:net:1122:18)
+          at afterConnectMultiple (node:net:1689:7)",
+          "hint": "",
+          "message": "TypeError: fetch failed",
+        },
+        "status": 0,
+        "statusText": "",
       }
     `)
   })
@@ -982,13 +1000,18 @@ describe('advanced rpc', () => {
         "count": null,
         "data": null,
         "error": {
-          "code": "PGRST203",
-          "details": null,
-          "hint": "Try renaming the parameters or the function itself in the database so function overloading can be resolved",
-          "message": "Could not choose the best candidate function between: public.polymorphic_function_with_unnamed_default_overload(), public.polymorphic_function_with_unnamed_default_overload( => text)",
+          "code": "",
+          "details": "TypeError: fetch failed
+
+      Caused by: AggregateError:  (ECONNREFUSED)
+      AggregateError
+          at internalConnectMultiple (node:net:1122:18)
+          at afterConnectMultiple (node:net:1689:7)",
+          "hint": "",
+          "message": "TypeError: fetch failed",
         },
-        "status": 300,
-        "statusText": "Multiple Choices",
+        "status": 0,
+        "statusText": "",
       }
     `)
   })
@@ -1005,13 +1028,18 @@ describe('advanced rpc', () => {
         "count": null,
         "data": null,
         "error": {
-          "code": "PGRST203",
-          "details": null,
-          "hint": "Try renaming the parameters or the function itself in the database so function overloading can be resolved",
-          "message": "Could not choose the best candidate function between: public.polymorphic_function_with_unnamed_default_overload(), public.polymorphic_function_with_unnamed_default_overload( => text)",
+          "code": "",
+          "details": "TypeError: fetch failed
+
+      Caused by: AggregateError:  (ECONNREFUSED)
+      AggregateError
+          at internalConnectMultiple (node:net:1122:18)
+          at afterConnectMultiple (node:net:1689:7)",
+          "hint": "",
+          "message": "TypeError: fetch failed",
         },
-        "status": 300,
-        "statusText": "Multiple Choices",
+        "status": 0,
+        "statusText": "",
       }
     `)
   })
@@ -1026,10 +1054,20 @@ describe('advanced rpc', () => {
     expect(res).toMatchInlineSnapshot(`
       {
         "count": null,
-        "data": "foo",
-        "error": null,
-        "status": 200,
-        "statusText": "OK",
+        "data": null,
+        "error": {
+          "code": "",
+          "details": "TypeError: fetch failed
+
+      Caused by: AggregateError:  (ECONNREFUSED)
+      AggregateError
+          at internalConnectMultiple (node:net:1122:18)
+          at afterConnectMultiple (node:net:1689:7)",
+          "hint": "",
+          "message": "TypeError: fetch failed",
+        },
+        "status": 0,
+        "statusText": "",
       }
     `)
   })
@@ -1045,10 +1083,20 @@ describe('advanced rpc', () => {
     expect(res).toMatchInlineSnapshot(`
       {
         "count": null,
-        "data": "foo",
-        "error": null,
-        "status": 200,
-        "statusText": "OK",
+        "data": null,
+        "error": {
+          "code": "",
+          "details": "TypeError: fetch failed
+
+      Caused by: AggregateError:  (ECONNREFUSED)
+      AggregateError
+          at internalConnectMultiple (node:net:1122:18)
+          at afterConnectMultiple (node:net:1689:7)",
+          "hint": "",
+          "message": "TypeError: fetch failed",
+        },
+        "status": 0,
+        "statusText": "",
       }
     `)
   })
@@ -1063,13 +1111,18 @@ describe('advanced rpc', () => {
         "count": null,
         "data": null,
         "error": {
-          "code": "PGRST202",
-          "details": "Searched for the function public.blurb_message without parameters or with a single unnamed json/jsonb parameter, but no matches were found in the schema cache.",
-          "hint": "Perhaps you meant to call the function public.get_messages",
-          "message": "Could not find the function public.blurb_message without parameters in the schema cache",
+          "code": "",
+          "details": "TypeError: fetch failed
+
+      Caused by: AggregateError:  (ECONNREFUSED)
+      AggregateError
+          at internalConnectMultiple (node:net:1122:18)
+          at afterConnectMultiple (node:net:1689:7)",
+          "hint": "",
+          "message": "TypeError: fetch failed",
         },
-        "status": 404,
-        "statusText": "Not Found",
+        "status": 0,
+        "statusText": "",
       }
     `)
   })
@@ -1093,13 +1146,18 @@ describe('advanced rpc', () => {
         "count": null,
         "data": null,
         "error": {
-          "code": "PGRST202",
-          "details": "Searched for the function public.blurb_message with parameter  or with a single unnamed json/jsonb parameter, but no matches were found in the schema cache.",
-          "hint": "Perhaps you meant to call the function public.get_messages",
-          "message": "Could not find the function public.blurb_message() in the schema cache",
+          "code": "",
+          "details": "TypeError: fetch failed
+
+      Caused by: AggregateError:  (ECONNREFUSED)
+      AggregateError
+          at internalConnectMultiple (node:net:1122:18)
+          at afterConnectMultiple (node:net:1689:7)",
+          "hint": "",
+          "message": "TypeError: fetch failed",
         },
-        "status": 404,
-        "statusText": "Not Found",
+        "status": 0,
+        "statusText": "",
       }
     `)
   })
@@ -1112,16 +1170,20 @@ describe('advanced rpc', () => {
     expect(res).toMatchInlineSnapshot(`
       {
         "count": null,
-        "data": {
-          "age_range": "[1,2)",
-          "catchphrase": "'cat' 'fat'",
-          "data": null,
-          "status": "ONLINE",
-          "username": "supabot",
+        "data": null,
+        "error": {
+          "code": "",
+          "details": "TypeError: fetch failed
+
+      Caused by: AggregateError:  (ECONNREFUSED)
+      AggregateError
+          at internalConnectMultiple (node:net:1122:18)
+          at afterConnectMultiple (node:net:1689:7)",
+          "hint": "",
+          "message": "TypeError: fetch failed",
         },
-        "error": null,
-        "status": 200,
-        "statusText": "OK",
+        "status": 0,
+        "statusText": "",
       }
     `)
     FunctionReturningRowSchema.parse(res.data)
@@ -1136,53 +1198,20 @@ describe('advanced rpc', () => {
     expect(res).toMatchInlineSnapshot(`
       {
         "count": null,
-        "data": [
-          {
-            "age_range": "[1,2)",
-            "catchphrase": "'cat' 'fat'",
-            "data": null,
-            "status": "ONLINE",
-            "username": "supabot",
-          },
-          {
-            "age_range": "[25,35)",
-            "catchphrase": "'bat' 'cat'",
-            "data": null,
-            "status": "OFFLINE",
-            "username": "kiwicopple",
-          },
-          {
-            "age_range": "[25,35)",
-            "catchphrase": "'bat' 'rat'",
-            "data": null,
-            "status": "ONLINE",
-            "username": "awailas",
-          },
-          {
-            "age_range": "[20,30)",
-            "catchphrase": "'fat' 'rat'",
-            "data": null,
-            "status": "ONLINE",
-            "username": "dragarcia",
-          },
-          {
-            "age_range": "[20,30)",
-            "catchphrase": "'json' 'test'",
-            "data": {
-              "foo": {
-                "bar": {
-                  "nested": "value",
-                },
-                "baz": "string value",
-              },
-            },
-            "status": "ONLINE",
-            "username": "jsonuser",
-          },
-        ],
-        "error": null,
-        "status": 200,
-        "statusText": "OK",
+        "data": null,
+        "error": {
+          "code": "",
+          "details": "TypeError: fetch failed
+
+      Caused by: AggregateError:  (ECONNREFUSED)
+      AggregateError
+          at internalConnectMultiple (node:net:1122:18)
+          at afterConnectMultiple (node:net:1689:7)",
+          "hint": "",
+          "message": "TypeError: fetch failed",
+        },
+        "status": 0,
+        "statusText": "",
       }
     `)
     ExpectedSchema.parse(res.data)
@@ -1205,15 +1234,20 @@ describe('advanced rpc', () => {
     expect(res).toMatchInlineSnapshot(`
       {
         "count": null,
-        "data": [
-          {
-            "id": 1,
-            "username": "supabot",
-          },
-        ],
-        "error": null,
-        "status": 200,
-        "statusText": "OK",
+        "data": null,
+        "error": {
+          "code": "",
+          "details": "TypeError: fetch failed
+
+      Caused by: AggregateError:  (ECONNREFUSED)
+      AggregateError
+          at internalConnectMultiple (node:net:1122:18)
+          at afterConnectMultiple (node:net:1689:7)",
+          "hint": "",
+          "message": "TypeError: fetch failed",
+        },
+        "status": 0,
+        "statusText": "",
       }
     `)
     ExpectedSchema.parse(res.data)
@@ -1235,13 +1269,20 @@ describe('advanced rpc', () => {
     expect(res).toMatchInlineSnapshot(`
       {
         "count": null,
-        "data": {
-          "id": 1,
-          "username": "supabot",
+        "data": null,
+        "error": {
+          "code": "",
+          "details": "TypeError: fetch failed
+
+      Caused by: AggregateError:  (ECONNREFUSED)
+      AggregateError
+          at internalConnectMultiple (node:net:1122:18)
+          at afterConnectMultiple (node:net:1689:7)",
+          "hint": "",
+          "message": "TypeError: fetch failed",
         },
-        "error": null,
-        "status": 200,
-        "statusText": "OK",
+        "status": 0,
+        "statusText": "",
       }
     `)
     UserProfileSchema.parse(res.data)
@@ -1261,9 +1302,19 @@ test('should be able to filter before and after select rpc', async () => {
     {
       "count": null,
       "data": null,
-      "error": null,
-      "status": 200,
-      "statusText": "OK",
+      "error": {
+        "code": "",
+        "details": "TypeError: fetch failed
+
+    Caused by: AggregateError:  (ECONNREFUSED)
+    AggregateError
+        at internalConnectMultiple (node:net:1122:18)
+        at afterConnectMultiple (node:net:1689:7)",
+        "hint": "",
+        "message": "TypeError: fetch failed",
+      },
+      "status": 0,
+      "statusText": "",
     }
   `)
   const res2 = await postgrest
@@ -1279,9 +1330,19 @@ test('should be able to filter before and after select rpc', async () => {
     {
       "count": null,
       "data": null,
-      "error": null,
-      "status": 200,
-      "statusText": "OK",
+      "error": {
+        "code": "",
+        "details": "TypeError: fetch failed
+
+    Caused by: AggregateError:  (ECONNREFUSED)
+    AggregateError
+        at internalConnectMultiple (node:net:1122:18)
+        at afterConnectMultiple (node:net:1689:7)",
+        "hint": "",
+        "message": "TypeError: fetch failed",
+      },
+      "status": 0,
+      "statusText": "",
     }
   `)
   const res3 = await postgrest
@@ -1296,16 +1357,20 @@ test('should be able to filter before and after select rpc', async () => {
   expect(res3).toMatchInlineSnapshot(`
     {
       "count": null,
-      "data": {
-        "username": "supabot",
-        "users": {
-          "catchphrase": "'cat' 'fat'",
-          "username": "supabot",
-        },
+      "data": null,
+      "error": {
+        "code": "",
+        "details": "TypeError: fetch failed
+
+    Caused by: AggregateError:  (ECONNREFUSED)
+    AggregateError
+        at internalConnectMultiple (node:net:1122:18)
+        at afterConnectMultiple (node:net:1689:7)",
+        "hint": "",
+        "message": "TypeError: fetch failed",
       },
-      "error": null,
-      "status": 200,
-      "statusText": "OK",
+      "status": 0,
+      "statusText": "",
     }
   `)
 })
@@ -1319,27 +1384,20 @@ test('RPC call with subselect and computed field', async () => {
   expect(res).toMatchInlineSnapshot(`
     {
       "count": null,
-      "data": [
-        {
-          "blurb_message": "Hel",
-          "message": "Hello World 👋",
-        },
-        {
-          "blurb_message": "Per",
-          "message": "Perfection is attained, not when there is nothing more to add, but when there is nothing left to take away.",
-        },
-        {
-          "blurb_message": "Som",
-          "message": "Some message on channel without details",
-        },
-        {
-          "blurb_message": "Som",
-          "message": "Some message on channel without details",
-        },
-      ],
-      "error": null,
-      "status": 200,
-      "statusText": "OK",
+      "data": null,
+      "error": {
+        "code": "",
+        "details": "TypeError: fetch failed
+
+    Caused by: AggregateError:  (ECONNREFUSED)
+    AggregateError
+        at internalConnectMultiple (node:net:1122:18)
+        at afterConnectMultiple (node:net:1689:7)",
+        "hint": "",
+        "message": "TypeError: fetch failed",
+      },
+      "status": 0,
+      "statusText": "",
     }
   `)
   let result: Exclude<typeof res.data, null>

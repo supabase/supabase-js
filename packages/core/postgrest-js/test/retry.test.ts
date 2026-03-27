@@ -318,6 +318,116 @@ describe('Automatic Retries', () => {
     })
   })
 
+  describe('503 / PGRST002 (schema cache not ready)', () => {
+    it('should retry on 503 with Retry-After header and succeed', async () => {
+      const pgrst002Body = JSON.stringify({
+        code: 'PGRST002',
+        details: null,
+        hint: null,
+        message: 'Could not query the database for the schema cache. Retrying.',
+      })
+
+      fetchMock
+        .mockResolvedValueOnce({
+          ok: false,
+          status: 503,
+          statusText: 'Service Unavailable',
+          headers: new Headers({ 'Retry-After': '0', 'Content-Type': 'application/json' }),
+          text: () => Promise.resolve(pgrst002Body),
+          body: { cancel: vi.fn().mockResolvedValue(undefined) },
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          status: 200,
+          statusText: 'OK',
+          headers: new Headers(),
+          text: () => Promise.resolve(JSON.stringify([{ id: 1 }])),
+        })
+
+      const client = new PostgrestClient('http://localhost:3000', { fetch: fetchMock })
+      const result = await runWithTimers(client.from('users').select())
+
+      expect(result.error).toBeNull()
+      expect(result.data).toEqual([{ id: 1 }])
+      expect(fetchMock).toHaveBeenCalledTimes(2)
+    })
+
+    it('should surface the error if retry also returns 503', async () => {
+      const pgrst002Body = JSON.stringify({
+        code: 'PGRST002',
+        details: null,
+        hint: null,
+        message: 'Could not query the database for the schema cache. Retrying.',
+      })
+      const mockBody = { cancel: vi.fn().mockResolvedValue(undefined) }
+
+      fetchMock.mockResolvedValue({
+        ok: false,
+        status: 503,
+        statusText: 'Service Unavailable',
+        headers: new Headers({ 'Retry-After': '0', 'Content-Type': 'application/json' }),
+        text: () => Promise.resolve(pgrst002Body),
+        body: mockBody,
+      })
+
+      const client = new PostgrestClient('http://localhost:3000', { fetch: fetchMock })
+      const result = await runWithTimers(client.from('users').select())
+
+      expect(result.error).not.toBeNull()
+      expect(result.error?.code).toBe('PGRST002')
+      expect(result.status).toBe(503)
+      expect(fetchMock).toHaveBeenCalledTimes(4) // 1 original + 3 retries
+    })
+
+    it('should drain the response body before retrying', async () => {
+      const cancelMock = vi.fn().mockResolvedValue(undefined)
+      const pgrst002Body = JSON.stringify({
+        code: 'PGRST002',
+        details: null,
+        hint: null,
+        message: 'err',
+      })
+
+      fetchMock
+        .mockResolvedValueOnce({
+          ok: false,
+          status: 503,
+          statusText: 'Service Unavailable',
+          headers: new Headers({ 'Retry-After': '0', 'Content-Type': 'application/json' }),
+          text: () => Promise.resolve(pgrst002Body),
+          body: { cancel: cancelMock },
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          status: 200,
+          statusText: 'OK',
+          headers: new Headers(),
+          text: () => Promise.resolve('[]'),
+        })
+
+      const client = new PostgrestClient('http://localhost:3000', { fetch: fetchMock })
+      await runWithTimers(client.from('users').select())
+
+      expect(cancelMock).toHaveBeenCalledTimes(1)
+    })
+  })
+
+  describe('AbortError handling', () => {
+    it('should rethrow AbortError immediately without retrying', async () => {
+      const abortError = new Error('The operation was aborted')
+      abortError.name = 'AbortError'
+
+      fetchMock.mockRejectedValue(abortError)
+
+      const client = new PostgrestClient('http://localhost:3000', { fetch: fetchMock })
+      const result = await runWithTimers(client.from('users').select())
+
+      expect(result.error).not.toBeNull()
+      expect(result.error?.message).toContain('AbortError')
+      expect(fetchMock).toHaveBeenCalledTimes(1) // No retries
+    })
+  })
+
   describe('schema switching', () => {
     it('should preserve retry setting when switching schemas', async () => {
       fetchMock.mockResolvedValueOnce({

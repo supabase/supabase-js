@@ -161,7 +161,6 @@ export default class PostgrestClient<
     } else {
       this.fetch = originalFetch
     }
-    this.fetch = fetch
     this.retry = retry
   }
   from<
