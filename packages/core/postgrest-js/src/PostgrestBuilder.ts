@@ -239,7 +239,7 @@ export default abstract class PostgrestBuilder<
               retryAfterHeader !== null
                 ? Math.max(0, parseInt(retryAfterHeader, 10) || 0) * 1000
                 : getRetryDelay(attemptCount)
-            await res.body?.cancel()
+            await res.text()
             attemptCount++
             await sleep(delay)
             continue
