@@ -605,14 +605,114 @@ describe('GoTrueClient', () => {
       expect(error).toBeNull()
     })
 
-    test('resend with email and PKCE flowType', async () => {
+    test('resend with email and PKCE flowType includes code_challenge in request', async () => {
+      const mockFetch = jest.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        headers: new Headers(),
+        json: () => Promise.resolve({}),
+      })
+
+      const storage = memoryLocalStorageAdapter()
+      const client = new GoTrueClient({
+        url: GOTRUE_URL_SIGNUP_ENABLED_AUTO_CONFIRM_ON,
+        autoRefreshToken: false,
+        persistSession: true,
+        storage,
+        flowType: 'pkce',
+        fetch: mockFetch,
+      })
+
       const { email } = mockUserCredentials()
-      const { error } = await pkceClient.resend({
+      const { error } = await client.resend({
         email,
         type: 'signup',
         options: { emailRedirectTo: 'http://localhost:9999/welcome' },
       })
       expect(error).toBeNull()
+
+      // Verify code_challenge was included in the request body
+      expect(mockFetch).toHaveBeenCalledTimes(1)
+      const [, fetchOptions] = mockFetch.mock.calls[0]
+      const body = JSON.parse(fetchOptions.body)
+      expect(body.code_challenge).toBeDefined()
+      expect(body.code_challenge).not.toBeNull()
+      expect(body.code_challenge_method).toBe('s256')
+
+      // Verify code verifier was stored for later exchange
+      // @ts-expect-error 'Allow access to protected storageKey'
+      const storageKey = client.storageKey
+      const codeVerifier = await storage.getItem(`${storageKey}-code-verifier`)
+      expect(codeVerifier).not.toBeNull()
+    })
+
+    test('resend with email_change type and PKCE flowType includes code_challenge', async () => {
+      const mockFetch = jest.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        headers: new Headers(),
+        json: () => Promise.resolve({}),
+      })
+
+      const storage = memoryLocalStorageAdapter()
+      const client = new GoTrueClient({
+        url: GOTRUE_URL_SIGNUP_ENABLED_AUTO_CONFIRM_ON,
+        autoRefreshToken: false,
+        persistSession: true,
+        storage,
+        flowType: 'pkce',
+        fetch: mockFetch,
+      })
+
+      const { error } = await client.resend({
+        email: 'newemail@example.com',
+        type: 'email_change',
+      })
+      expect(error).toBeNull()
+
+      // Verify code_challenge was included in the request body
+      expect(mockFetch).toHaveBeenCalledTimes(1)
+      const [, fetchOptions] = mockFetch.mock.calls[0]
+      const body = JSON.parse(fetchOptions.body)
+      expect(body.code_challenge).toBeDefined()
+      expect(body.code_challenge).not.toBeNull()
+      expect(body.code_challenge_method).toBe('s256')
+      expect(body.type).toBe('email_change')
+    })
+
+    test('resend with PKCE cleans up code verifier on HTTP error', async () => {
+      const mockFetch = jest.fn().mockResolvedValue({
+        ok: false,
+        status: 400,
+        headers: new Headers(),
+        json: () =>
+          Promise.resolve({
+            error: 'bad_request',
+            error_description: 'Invalid email',
+          }),
+      })
+
+      const storage = memoryLocalStorageAdapter()
+      const client = new GoTrueClient({
+        url: GOTRUE_URL_SIGNUP_ENABLED_AUTO_CONFIRM_ON,
+        autoRefreshToken: false,
+        persistSession: true,
+        storage,
+        flowType: 'pkce',
+        fetch: mockFetch,
+      })
+
+      const { error } = await client.resend({
+        email: 'bad@example.com',
+        type: 'signup',
+      })
+      expect(error).not.toBeNull()
+
+      // Verify code verifier was cleaned up after HTTP error
+      // @ts-expect-error 'Allow access to protected storageKey'
+      const storageKey = client.storageKey
+      const codeVerifier = await storage.getItem(`${storageKey}-code-verifier`)
+      expect(codeVerifier).toBeNull()
     })
 
     // Phone resend tests moved to docker-tests/phone-otp.test.ts

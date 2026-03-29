@@ -2499,6 +2499,9 @@ export default class GoTrueClient {
           },
           redirectTo: options?.emailRedirectTo,
         })
+        if (error) {
+          await removeItemAsync(this.storage, `${this.storageKey}-code-verifier`)
+        }
         return this._returnResult({ data: { user: null, session: null }, error })
       } else if ('phone' in credentials) {
         const { phone, type, options } = credentials
