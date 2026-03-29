@@ -1,3 +1,34 @@
+## 2.100.1 (2026-03-26)
+
+This was a version bump only for @supabase/realtime-js to align it with other projects, there were no code changes.
+
+## 2.100.0 (2026-03-23)
+
+### 🚀 Features
+
+- **realtime:** use phoenix's js lib inside realtime-js ([#2119](https://github.com/supabase/supabase-js/pull/2119))
+
+### 🩹 Fixes
+
+- **realtime:** revert `vsn` type to `string` ([#2170](https://github.com/supabase/supabase-js/pull/2170))
+
+### ❤️ Thank You
+
+- Alan Guzek @GuzekAlan
+- Dominik Pilipczuk @snickerdoodle2
+
+## 2.99.2 (2026-03-16)
+
+This was a version bump only for @supabase/realtime-js to align it with other projects, there were no code changes.
+
+## 2.99.1 (2026-03-11)
+
+This was a version bump only for @supabase/realtime-js to align it with other projects, there were no code changes.
+
+## 2.99.0 (2026-03-09)
+
+This was a version bump only for @supabase/realtime-js to align it with other projects, there were no code changes.
+
 ## 2.98.0 (2026-02-26)
 
 ### 🩹 Fixes

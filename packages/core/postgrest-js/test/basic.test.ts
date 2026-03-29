@@ -2157,29 +2157,8 @@ test('handles empty body with 404 status', async () => {
   `)
 })
 
-test('maybeSingle handles zero rows error', async () => {
-  const customFetch = jest.fn().mockImplementation(() =>
-    Promise.resolve({
-      ok: false,
-      status: 406,
-      statusText: 'Not Acceptable',
-      text: () =>
-        Promise.resolve(
-          JSON.stringify({
-            code: 'PGRST116',
-            details: '0 rows',
-            hint: null,
-            message: 'JSON object requested, multiple (or no) rows returned',
-          })
-        ),
-    })
-  )
-
-  const postgrestWithCustomFetch = new PostgrestClient<Database>(REST_URL, {
-    fetch: customFetch,
-  })
-
-  const res = await postgrestWithCustomFetch.from('users').select().maybeSingle()
+test('maybeSingle returns null for zero rows (GET)', async () => {
+  const res = await postgrest.from('users').select().eq('username', 'does_not_exist').maybeSingle()
 
   expect(res).toMatchInlineSnapshot(`
     {

@@ -34,7 +34,19 @@ export default abstract class PostgrestBuilder<
    *
    * @example
    * ```ts
-   * import PostgrestQueryBuilder from '@supabase/postgrest-js'
+   * import { PostgrestQueryBuilder } from '@supabase/postgrest-js'
+   *
+   * const builder = new PostgrestQueryBuilder(
+   *   new URL('https://xyzcompany.supabase.co/rest/v1/users'),
+   *   { headers: new Headers({ apikey: 'public-anon-key' }) }
+   * )
+   * ```
+   *
+   * @category Database
+   *
+   * @example Creating a Postgrest query builder
+   * ```ts
+   * import { PostgrestQueryBuilder } from '@supabase/postgrest-js'
    *
    * const builder = new PostgrestQueryBuilder(
    *   new URL('https://xyzcompany.supabase.co/rest/v1/users'),
@@ -76,6 +88,8 @@ export default abstract class PostgrestBuilder<
    * throwing the error instead of returning it as part of a successful response.
    *
    * {@link https://github.com/supabase/supabase-js/issues/92}
+   *
+   * @category Database
    */
   throwOnError(): this & PostgrestBuilder<ClientOptions, Result, true> {
     this.shouldThrowOnError = true
@@ -84,6 +98,8 @@ export default abstract class PostgrestBuilder<
 
   /**
    * Set an HTTP header for the request.
+   *
+   * @category Database
    */
   setHeader(name: string, value: string): this {
     this.headers = new Headers(this.headers)
@@ -91,6 +107,9 @@ export default abstract class PostgrestBuilder<
     return this
   }
 
+  /**  *
+   * @category Database
+   */
   then<
     TResult1 = ThrowOnError extends true
       ? PostgrestResponseSuccess<Result>
@@ -157,9 +176,8 @@ export default abstract class PostgrestBuilder<
           count = parseInt(contentRange[1])
         }
 
-        // Temporary partial fix for https://github.com/supabase/postgrest-js/issues/361
-        // Issue persists e.g. for `.insert([...]).select().maybeSingle()`
-        if (this.isMaybeSingle && this.method === 'GET' && Array.isArray(data)) {
+        // Fix for https://github.com/supabase/postgrest-js/issues/361 — applies to all methods.
+        if (this.isMaybeSingle && Array.isArray(data)) {
           if (data.length > 1) {
             error = {
               // https://github.com/PostgREST/postgrest/blob/a867d79c42419af16c18c3fb019eba8df992626f/src/PostgREST/Error.hs#L553
@@ -201,12 +219,6 @@ export default abstract class PostgrestBuilder<
               message: body,
             }
           }
-        }
-
-        if (error && this.isMaybeSingle && error?.details?.includes('0 rows')) {
-          error = null
-          status = 200
-          statusText = 'OK'
         }
 
         if (error && this.shouldThrowOnError) {
@@ -300,6 +312,8 @@ export default abstract class PostgrestBuilder<
    *
    * @typeParam NewResult - The new result type to override with
    * @deprecated Use overrideTypes<yourType, { merge: false }>() method at the end of your call chain instead
+   *
+   * @category Database
    */
   returns<NewResult>(): PostgrestBuilder<
     ClientOptions,
@@ -335,6 +349,77 @@ export default abstract class PostgrestBuilder<
    *   .overrideTypes<{ id: number; name: string }, { merge: false }>()
    * ```
    * @returns A PostgrestBuilder instance with the new type
+   *
+   * @category Database
+   *
+   * @example Complete Override type of successful response
+   * ```ts
+   * const { data } = await supabase
+   *   .from('countries')
+   *   .select()
+   *   .overrideTypes<Array<MyType>, { merge: false }>()
+   * ```
+   *
+   * @exampleResponse Complete Override type of successful response
+   * ```ts
+   * let x: typeof data // MyType[]
+   * ```
+   *
+   * @example Complete Override type of object response
+   * ```ts
+   * const { data } = await supabase
+   *   .from('countries')
+   *   .select()
+   *   .maybeSingle()
+   *   .overrideTypes<MyType, { merge: false }>()
+   * ```
+   *
+   * @exampleResponse Complete Override type of object response
+   * ```ts
+   * let x: typeof data // MyType | null
+   * ```
+   *
+   * @example Partial Override type of successful response
+   * ```ts
+   * const { data } = await supabase
+   *   .from('countries')
+   *   .select()
+   *   .overrideTypes<Array<{ status: "A" | "B" }>>()
+   * ```
+   *
+   * @exampleResponse Partial Override type of successful response
+   * ```ts
+   * let x: typeof data // Array<CountryRowProperties & { status: "A" | "B" }>
+   * ```
+   *
+   * @example Partial Override type of object response
+   * ```ts
+   * const { data } = await supabase
+   *   .from('countries')
+   *   .select()
+   *   .maybeSingle()
+   *   .overrideTypes<{ status: "A" | "B" }>()
+   * ```
+   *
+   * @exampleResponse Partial Override type of object response
+   * ```ts
+   * let x: typeof data // CountryRowProperties & { status: "A" | "B" } | null
+   * ```
+   *
+   * @example Example 5
+   * ```typescript
+   * // Merge with existing types (default behavior)
+   * const query = supabase
+   *   .from('users')
+   *   .select()
+   *   .overrideTypes<{ custom_field: string }>()
+   *
+   * // Replace existing types completely
+   * const replaceQuery = supabase
+   *   .from('users')
+   *   .select()
+   *   .overrideTypes<{ id: number; name: string }, { merge: false }>()
+   * ```
    */
   overrideTypes<
     NewResult,

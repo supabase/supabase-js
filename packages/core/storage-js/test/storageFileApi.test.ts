@@ -121,6 +121,17 @@ describe('Object API', () => {
       expect(res.data?.signedUrl).toContain(`${URL}/render/image/sign/${bucketName}/${uploadPath}`)
     })
 
+    test('sign url with empty transform object does not use render endpoint', async () => {
+      await storage.from(bucketName).upload(uploadPath, file)
+      const res = await storage.from(bucketName).createSignedUrl(uploadPath, 2000, {
+        transform: {},
+      })
+
+      expect(res.error).toBeNull()
+      expect(res.data?.signedUrl).toContain(`${URL}/object/sign/${bucketName}/${uploadPath}`)
+      expect(res.data?.signedUrl).not.toContain('/render/image/sign/')
+    })
+
     test('sign url with custom filename for download', async () => {
       await storage.from(bucketName).upload(uploadPath, file)
       const res = await storage.from(bucketName).createSignedUrl(uploadPath, 2000, {
@@ -336,8 +347,18 @@ describe('Object API', () => {
       expect(res.data).toEqual([
         expect.objectContaining({
           name: uploadPath.replace('testpath/', ''),
+          id: expect.any(String), // Files should have non-null id
+          metadata: expect.any(Object), // Files should have metadata
         }),
       ])
+      assert(res.data)
+
+      // Verify files have non-null required fields
+      const fileObj = res.data[0]
+      expect(fileObj.id).not.toBeNull()
+      expect(fileObj.metadata).not.toBeNull()
+      expect(fileObj.updated_at).not.toBeNull()
+      expect(fileObj.created_at).not.toBeNull()
     })
 
     test('list objects V2', async () => {
@@ -520,10 +541,17 @@ describe('Object API', () => {
       expect(res.error).toBeNull()
       expect(res.data).toEqual([
         expect.objectContaining({
-          bucket_id: bucketName,
           name: uploadPath,
+          id: expect.any(String), // Verify it's a file, not a folder
         }),
       ])
+      assert(res.data)
+
+      // bucket_id may be present in remove() responses (deprecated field)
+      // If present, verify it matches
+      if (res.data[0].bucket_id) {
+        expect(res.data[0].bucket_id).toBe(bucketName)
+      }
     })
 
     test('get object info', async () => {
@@ -545,6 +573,20 @@ describe('Object API', () => {
           version: expect.any(String),
         })
       )
+      assert(res.data)
+
+      // Verify FileObjectV2 required fields
+      expect(res.data.id).toBeDefined()
+      expect(res.data.bucketId).toBeDefined()
+      expect(res.data.lastModified).toBeDefined() // Should have this
+      expect(res.data.size).toBeGreaterThan(0)
+      expect(res.data.contentType).toBeDefined()
+      expect(res.data.cacheControl).toBeDefined()
+      expect(res.data.etag).toBeDefined()
+
+      // Verify updated_at does NOT exist (API returns camelCase, but the raw type shouldn't have it)
+      // Note: The info() method uses Camelize so we check the camelCase version
+      expect(res.data).not.toHaveProperty('updatedAt')
 
       // throws when .throwOnError is enabled
       await expect(storage.from(bucketName).throwOnError().info('non-existent')).rejects.toThrow()
@@ -887,6 +929,29 @@ describe('StorageFileApi Edge Cases', () => {
       expect(mockPut).toHaveBeenCalled()
       const [, , body] = mockPut.mock.calls[0]
       expect(body).toBe(testFormData)
+    })
+
+    test('uploadToSignedUrl uses default cacheControl when not provided', async () => {
+      const testBlob = new Blob(['test content'], { type: 'text/plain' })
+
+      await storage.from('test-bucket').uploadToSignedUrl('test-path', 'test-token', testBlob)
+
+      expect(mockPut).toHaveBeenCalled()
+      const [, , body] = mockPut.mock.calls[0]
+      expect(body.get('cacheControl')).not.toBe('undefined')
+      expect(body.get('cacheControl')).toBe('3600')
+    })
+
+    test('uploadToSignedUrl respects custom cacheControl', async () => {
+      const testBlob = new Blob(['test content'], { type: 'text/plain' })
+
+      await storage
+        .from('test-bucket')
+        .uploadToSignedUrl('test-path', 'test-token', testBlob, { cacheControl: '7200' })
+
+      expect(mockPut).toHaveBeenCalled()
+      const [, , body] = mockPut.mock.calls[0]
+      expect(body.get('cacheControl')).toBe('7200')
     })
 
     test('upload with metadata', async () => {

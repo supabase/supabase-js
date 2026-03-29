@@ -1,3 +1,29 @@
+## 2.100.1 (2026-03-26)
+
+### 🩹 Fixes
+
+- **postgrest:** narrow tstyche testFileMatch to only type test files ([#2193](https://github.com/supabase/supabase-js/pull/2193))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+
+## 2.100.0 (2026-03-23)
+
+This was a version bump only for @supabase/supabase-js to align it with other projects, there were no code changes.
+
+## 2.99.2 (2026-03-16)
+
+This was a version bump only for @supabase/supabase-js to align it with other projects, there were no code changes.
+
+## 2.99.1 (2026-03-11)
+
+This was a version bump only for @supabase/supabase-js to align it with other projects, there were no code changes.
+
+## 2.99.0 (2026-03-09)
+
+This was a version bump only for @supabase/supabase-js to align it with other projects, there were no code changes.
+
 ## 2.98.0 (2026-02-26)
 
 This was a version bump only for @supabase/supabase-js to align it with other projects, there were no code changes.

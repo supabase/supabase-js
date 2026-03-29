@@ -18,4 +18,5 @@ module.exports = {
   testPathIgnorePatterns: ['/node_modules/', '/example/'],
   rootDir: '.',
   silent: true,
+  forceExit: true,
 }

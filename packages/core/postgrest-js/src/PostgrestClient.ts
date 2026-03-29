@@ -53,7 +53,34 @@ export default class PostgrestClient<
    * @param options.urlLengthLimit - Maximum URL length in characters before warnings/errors are triggered. Defaults to 8000.
    * @example
    * ```ts
-   * import PostgrestClient from '@supabase/postgrest-js'
+   * import { PostgrestClient } from '@supabase/postgrest-js'
+   *
+   * const postgrest = new PostgrestClient('https://xyzcompany.supabase.co/rest/v1', {
+   *   headers: { apikey: 'public-anon-key' },
+   *   schema: 'public',
+   *   timeout: 30000, // 30 second timeout
+   * })
+   * ```
+   *
+   * @category Database
+   *
+   * @remarks
+   * - A `timeout` option (in milliseconds) can be set to automatically abort requests that take too long.
+   * - A `urlLengthLimit` option (default: 8000) can be set to control when URL length warnings are included in error messages for aborted requests.
+   *
+   * @example Creating a Postgrest client
+   * ```ts
+   * import { PostgrestClient } from '@supabase/postgrest-js'
+   *
+   * const postgrest = new PostgrestClient('https://xyzcompany.supabase.co/rest/v1', {
+   *   headers: { apikey: 'public-anon-key' },
+   *   schema: 'public',
+   * })
+   * ```
+   *
+   * @example With timeout
+   * ```ts
+   * import { PostgrestClient } from '@supabase/postgrest-js'
    *
    * const postgrest = new PostgrestClient('https://xyzcompany.supabase.co/rest/v1', {
    *   headers: { apikey: 'public-anon-key' },
@@ -136,6 +163,8 @@ export default class PostgrestClient<
    * Perform a query on a table or a view.
    *
    * @param relation - The table or view name to query
+   *
+   * @category Database
    */
   from(
     relation: (string & keyof Schema['Tables']) | (string & keyof Schema['Views'])
@@ -159,6 +188,8 @@ export default class PostgrestClient<
    * The schema needs to be on the list of exposed schemas inside Supabase.
    *
    * @param schema - The schema to query
+   *
+   * @category Database
    */
   schema<DynamicSchema extends string & keyof Omit<Database, '__InternalSupabase'>>(
     schema: DynamicSchema
@@ -206,6 +237,139 @@ export default class PostgrestClient<
    *   .schema('schema_b')
    *   .rpc('function_a', {})
    *   .overrideTypes<{ id: string; user_id: string }[]>()
+   * ```
+   *
+   * @category Database
+   *
+   * @example Call a Postgres function without arguments
+   * ```ts
+   * const { data, error } = await supabase.rpc('hello_world')
+   * ```
+   *
+   * @exampleSql Call a Postgres function without arguments
+   * ```sql
+   * create function hello_world() returns text as $$
+   *   select 'Hello world';
+   * $$ language sql;
+   * ```
+   *
+   * @exampleResponse Call a Postgres function without arguments
+   * ```json
+   * {
+   *   "data": "Hello world",
+   *   "status": 200,
+   *   "statusText": "OK"
+   * }
+   * ```
+   *
+   * @example Call a Postgres function with arguments
+   * ```ts
+   * const { data, error } = await supabase.rpc('echo', { say: '👋' })
+   * ```
+   *
+   * @exampleSql Call a Postgres function with arguments
+   * ```sql
+   * create function echo(say text) returns text as $$
+   *   select say;
+   * $$ language sql;
+   * ```
+   *
+   * @exampleResponse Call a Postgres function with arguments
+   * ```json
+   *   {
+   *     "data": "👋",
+   *     "status": 200,
+   *     "statusText": "OK"
+   *   }
+   *
+   * ```
+   *
+   * @exampleDescription Bulk processing
+   * You can process large payloads by passing in an array as an argument.
+   *
+   * @example Bulk processing
+   * ```ts
+   * const { data, error } = await supabase.rpc('add_one_each', { arr: [1, 2, 3] })
+   * ```
+   *
+   * @exampleSql Bulk processing
+   * ```sql
+   * create function add_one_each(arr int[]) returns int[] as $$
+   *   select array_agg(n + 1) from unnest(arr) as n;
+   * $$ language sql;
+   * ```
+   *
+   * @exampleResponse Bulk processing
+   * ```json
+   * {
+   *   "data": [
+   *     2,
+   *     3,
+   *     4
+   *   ],
+   *   "status": 200,
+   *   "statusText": "OK"
+   * }
+   * ```
+   *
+   * @exampleDescription Call a Postgres function with filters
+   * Postgres functions that return tables can also be combined with [Filters](/docs/reference/javascript/using-filters) and [Modifiers](/docs/reference/javascript/using-modifiers).
+   *
+   * @example Call a Postgres function with filters
+   * ```ts
+   * const { data, error } = await supabase
+   *   .rpc('list_stored_countries')
+   *   .eq('id', 1)
+   *   .single()
+   * ```
+   *
+   * @exampleSql Call a Postgres function with filters
+   * ```sql
+   * create table
+   *   countries (id int8 primary key, name text);
+   *
+   * insert into
+   *   countries (id, name)
+   * values
+   *   (1, 'Rohan'),
+   *   (2, 'The Shire');
+   *
+   * create function list_stored_countries() returns setof countries as $$
+   *   select * from countries;
+   * $$ language sql;
+   * ```
+   *
+   * @exampleResponse Call a Postgres function with filters
+   * ```json
+   * {
+   *   "data": {
+   *     "id": 1,
+   *     "name": "Rohan"
+   *   },
+   *   "status": 200,
+   *   "statusText": "OK"
+   * }
+   * ```
+   *
+   * @example Call a read-only Postgres function
+   * ```ts
+   * const { data, error } = await supabase.rpc('hello_world', undefined, { get: true })
+   * ```
+   *
+   * @exampleSql Call a read-only Postgres function
+   * ```sql
+   * create function hello_world() returns text as $$
+   *   select 'Hello world';
+   * $$ language sql;
+   * ```
+   *
+   * @exampleResponse Call a read-only Postgres function
+   * ```json
+   * {
+   *   "data": "Hello world",
+   *   "status": 200,
+   *   "statusText": "OK"
+   * }
    * ```
    */
   rpc<

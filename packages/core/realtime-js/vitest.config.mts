@@ -8,5 +8,8 @@ export default defineConfig({
       reporter: ['lcov'],
     },
     environment: 'jsdom',
+    sequence: {
+      shuffle: true,
+    },
   },
 })

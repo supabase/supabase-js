@@ -1,3 +1,29 @@
+## 2.100.1 (2026-03-26)
+
+This was a version bump only for @supabase/functions-js to align it with other projects, there were no code changes.
+
+## 2.100.0 (2026-03-23)
+
+This was a version bump only for @supabase/functions-js to align it with other projects, there were no code changes.
+
+## 2.99.2 (2026-03-16)
+
+This was a version bump only for @supabase/functions-js to align it with other projects, there were no code changes.
+
+## 2.99.1 (2026-03-11)
+
+### 🩹 Fixes
+
+- **functions:** add RateLimitError in `Deno.errors` namespace ([#2160](https://github.com/supabase/supabase-js/pull/2160))
+
+### ❤️ Thank You
+
+- 냥냐챠 @nyannyacha
+
+## 2.99.0 (2026-03-09)
+
+This was a version bump only for @supabase/functions-js to align it with other projects, there were no code changes.
+
 ## 2.98.0 (2026-02-26)
 
 This was a version bump only for @supabase/functions-js to align it with other projects, there were no code changes.

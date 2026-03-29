@@ -100,19 +100,59 @@ export default class PostgrestFilterBuilder<
    *
    * @param column - The column to filter on
    * @param value - The value to filter with
+   *
+   * @category Database
+   *
+   * @example With `select()`
+   * ```ts
+   * const { data, error } = await supabase
+   *   .from('characters')
+   *   .select()
+   *   .eq('name', 'Leia')
+   * ```
+   *
+   * @exampleSql With `select()`
+   * ```sql
+   * create table
+   *   characters (id int8 primary key, name text);
+   *
+   * insert into
+   *   characters (id, name)
+   * values
+   *   (1, 'Luke'),
+   *   (2, 'Leia'),
+   *   (3, 'Han');
+   * ```
+   *
+   * @exampleResponse With `select()`
+   * ```json
+   * {
+   *   "data": [
+   *     {
+   *       "id": 2,
+   *       "name": "Leia"
+   *     }
+   *   ],
+   *   "status": 200,
+   *   "statusText": "OK"
+   * }
+   * ```
    */
   eq<ColumnName extends string>(
-    column: ColumnName,
+    column: ColumnName extends keyof Row
+      ? ColumnName
+      : ColumnName extends `${string}.${string}` | `${string}->${string}`
+        ? ColumnName
+        : string extends ColumnName
+          ? string
+          : keyof Row,
     value: ResolveFilterValue<Schema, Row, ColumnName> extends never
       ? NonNullable<unknown>
-      : // We want to infer the type before wrapping it into a `NonNullable` to avoid too deep
-        // type resolution error
-        ResolveFilterValue<Schema, Row, ColumnName> extends infer ResolvedFilterValue
+      : ResolveFilterValue<Schema, Row, ColumnName> extends infer ResolvedFilterValue
         ? NonNullable<ResolvedFilterValue>
-        : // We should never enter this case as all the branches are covered above
-          never
+        : never
   ): this {
-    this.url.searchParams.append(column, `eq.${value}`)
+    this.url.searchParams.append(column as string, `eq.${value}`)
     return this
   }
 
@@ -121,16 +161,63 @@ export default class PostgrestFilterBuilder<
    *
    * @param column - The column to filter on
    * @param value - The value to filter with
+   *
+   * @category Database
+   *
+   * @example With `select()`
+   * ```ts
+   * const { data, error } = await supabase
+   *   .from('characters')
+   *   .select()
+   *   .neq('name', 'Leia')
+   * ```
+   *
+   * @exampleSql With `select()`
+   * ```sql
+   * create table
+   *   characters (id int8 primary key, name text);
+   *
+   * insert into
+   *   characters (id, name)
+   * values
+   *   (1, 'Luke'),
+   *   (2, 'Leia'),
+   *   (3, 'Han');
+   * ```
+   *
+   * @exampleResponse With `select()`
+   * ```json
+   * {
+   *   "data": [
+   *     {
+   *       "id": 1,
+   *       "name": "Luke"
+   *     },
+   *     {
+   *       "id": 3,
+   *       "name": "Han"
+   *     }
+   *   ],
+   *   "status": 200,
+   *   "statusText": "OK"
+   * }
+   * ```
    */
   neq<ColumnName extends string>(
-    column: ColumnName,
+    column: ColumnName extends keyof Row
+      ? ColumnName
+      : ColumnName extends `${string}.${string}` | `${string}->${string}`
+        ? ColumnName
+        : string extends ColumnName
+          ? string
+          : keyof Row,
     value: ResolveFilterValue<Schema, Row, ColumnName> extends never
       ? unknown
-      : ResolveFilterValue<Schema, Row, ColumnName> extends infer ResolvedFilterValue
-        ? ResolvedFilterValue
+      : ResolveFilterValue<Schema, Row, ColumnName> extends infer Resolved
+        ? Resolved
         : never
   ): this {
-    this.url.searchParams.append(column, `neq.${value}`)
+    this.url.searchParams.append(column as string, `neq.${value}`)
     return this
   }
 
@@ -141,6 +228,47 @@ export default class PostgrestFilterBuilder<
    *
    * @param column - The column to filter on
    * @param value - The value to filter with
+   *
+   * @category Database
+   *
+   * @exampleDescription With `select()`
+   * When using [reserved words](https://www.postgresql.org/docs/current/sql-keywords-appendix.html) for column names you need
+   * to add double quotes e.g. `.gt('"order"', 2)`
+   *
+   * @example With `select()`
+   * ```ts
+   * const { data, error } = await supabase
+   *   .from('characters')
+   *   .select()
+   *   .gt('id', 2)
+   * ```
+   *
+   * @exampleSql With `select()`
+   * ```sql
+   * create table
+   *   characters (id int8 primary key, name text);
+   *
+   * insert into
+   *   characters (id, name)
+   * values
+   *   (1, 'Luke'),
+   *   (2, 'Leia'),
+   *   (3, 'Han');
+   * ```
+   *
+   * @exampleResponse With `select()`
+   * ```json
+   * {
+   *   "data": [
+   *     {
+   *       "id": 3,
+   *       "name": "Han"
+   *     }
+   *   ],
+   *   "status": 200,
+   *   "statusText": "OK"
+   * }
+   * ```
    */
   gt(column: string, value: unknown): this {
     this.url.searchParams.append(column, `gt.${value}`)
@@ -154,6 +282,47 @@ export default class PostgrestFilterBuilder<
    *
    * @param column - The column to filter on
    * @param value - The value to filter with
+   *
+   * @category Database
+   *
+   * @example With `select()`
+   * ```ts
+   * const { data, error } = await supabase
+   *   .from('characters')
+   *   .select()
+   *   .gte('id', 2)
+   * ```
+   *
+   * @exampleSql With `select()`
+   * ```sql
+   * create table
+   *   characters (id int8 primary key, name text);
+   *
+   * insert into
+   *   characters (id, name)
+   * values
+   *   (1, 'Luke'),
+   *   (2, 'Leia'),
+   *   (3, 'Han');
+   * ```
+   *
+   * @exampleResponse With `select()`
+   * ```json
+   * {
+   *   "data": [
+   *     {
+   *       "id": 2,
+   *       "name": "Leia"
+   *     },
+   *     {
+   *       "id": 3,
+   *       "name": "Han"
+   *     }
+   *   ],
+   *   "status": 200,
+   *   "statusText": "OK"
+   * }
+   * ```
    */
   gte(column: string, value: unknown): this {
     this.url.searchParams.append(column, `gte.${value}`)
@@ -167,6 +336,43 @@ export default class PostgrestFilterBuilder<
    *
    * @param column - The column to filter on
    * @param value - The value to filter with
+   *
+   * @category Database
+   *
+   * @example With `select()`
+   * ```ts
+   * const { data, error } = await supabase
+   *   .from('characters')
+   *   .select()
+   *   .lt('id', 2)
+   * ```
+   *
+   * @exampleSql With `select()`
+   * ```sql
+   * create table
+   *   characters (id int8 primary key, name text);
+   *
+   * insert into
+   *   characters (id, name)
+   * values
+   *   (1, 'Luke'),
+   *   (2, 'Leia'),
+   *   (3, 'Han');
+   * ```
+   *
+   * @exampleResponse With `select()`
+   * ```json
+   * {
+   *   "data": [
+   *     {
+   *       "id": 1,
+   *       "name": "Luke"
+   *     }
+   *   ],
+   *   "status": 200,
+   *   "statusText": "OK"
+   * }
+   * ```
    */
   lt(column: string, value: unknown): this {
     this.url.searchParams.append(column, `lt.${value}`)
@@ -180,6 +386,47 @@ export default class PostgrestFilterBuilder<
    *
    * @param column - The column to filter on
    * @param value - The value to filter with
+   *
+   * @category Database
+   *
+   * @example With `select()`
+   * ```ts
+   * const { data, error } = await supabase
+   *   .from('characters')
+   *   .select()
+   *   .lte('id', 2)
+   * ```
+   *
+   * @exampleSql With `select()`
+   * ```sql
+   * create table
+   *   characters (id int8 primary key, name text);
+   *
+   * insert into
+   *   characters (id, name)
+   * values
+   *   (1, 'Luke'),
+   *   (2, 'Leia'),
+   *   (3, 'Han');
+   * ```
+   *
+   * @exampleResponse With `select()`
+   * ```json
+   * {
+   *   "data": [
+   *     {
+   *       "id": 1,
+   *       "name": "Luke"
+   *     },
+   *     {
+   *       "id": 2,
+   *       "name": "Leia"
+   *     }
+   *   ],
+   *   "status": 200,
+   *   "statusText": "OK"
+   * }
+   * ```
    */
   lte(column: string, value: unknown): this {
     this.url.searchParams.append(column, `lte.${value}`)
@@ -193,6 +440,43 @@ export default class PostgrestFilterBuilder<
    *
    * @param column - The column to filter on
    * @param pattern - The pattern to match with
+   *
+   * @category Database
+   *
+   * @example With `select()`
+   * ```ts
+   * const { data, error } = await supabase
+   *   .from('characters')
+   *   .select()
+   *   .like('name', '%Lu%')
+   * ```
+   *
+   * @exampleSql With `select()`
+   * ```sql
+   * create table
+   *   characters (id int8 primary key, name text);
+   *
+   * insert into
+   *   characters (id, name)
+   * values
+   *   (1, 'Luke'),
+   *   (2, 'Leia'),
+   *   (3, 'Han');
+   * ```
+   *
+   * @exampleResponse With `select()`
+   * ```json
+   * {
+   *   "data": [
+   *     {
+   *       "id": 1,
+   *       "name": "Luke"
+   *     }
+   *   ],
+   *   "status": 200,
+   *   "statusText": "OK"
+   * }
+   * ```
    */
   like(column: string, pattern: string): this {
     this.url.searchParams.append(column, `like.${pattern}`)
@@ -209,6 +493,8 @@ export default class PostgrestFilterBuilder<
    *
    * @param column - The column to filter on
    * @param patterns - The patterns to match with
+   *
+   * @category Database
    */
   likeAllOf(column: string, patterns: readonly string[]): this {
     this.url.searchParams.append(column, `like(all).{${patterns.join(',')}}`)
@@ -225,6 +511,8 @@ export default class PostgrestFilterBuilder<
    *
    * @param column - The column to filter on
    * @param patterns - The patterns to match with
+   *
+   * @category Database
    */
   likeAnyOf(column: string, patterns: readonly string[]): this {
     this.url.searchParams.append(column, `like(any).{${patterns.join(',')}}`)
@@ -238,6 +526,43 @@ export default class PostgrestFilterBuilder<
    *
    * @param column - The column to filter on
    * @param pattern - The pattern to match with
+   *
+   * @category Database
+   *
+   * @example With `select()`
+   * ```ts
+   * const { data, error } = await supabase
+   *   .from('characters')
+   *   .select()
+   *   .ilike('name', '%lu%')
+   * ```
+   *
+   * @exampleSql With `select()`
+   * ```sql
+   * create table
+   *   characters (id int8 primary key, name text);
+   *
+   * insert into
+   *   characters (id, name)
+   * values
+   *   (1, 'Luke'),
+   *   (2, 'Leia'),
+   *   (3, 'Han');
+   * ```
+   *
+   * @exampleResponse With `select()`
+   * ```json
+   * {
+   *   "data": [
+   *     {
+   *       "id": 1,
+   *       "name": "Luke"
+   *     }
+   *   ],
+   *   "status": 200,
+   *   "statusText": "OK"
+   * }
+   * ```
    */
   ilike(column: string, pattern: string): this {
     this.url.searchParams.append(column, `ilike.${pattern}`)
@@ -254,6 +579,8 @@ export default class PostgrestFilterBuilder<
    *
    * @param column - The column to filter on
    * @param patterns - The patterns to match with
+   *
+   * @category Database
    */
   ilikeAllOf(column: string, patterns: readonly string[]): this {
     this.url.searchParams.append(column, `ilike(all).{${patterns.join(',')}}`)
@@ -270,6 +597,8 @@ export default class PostgrestFilterBuilder<
    *
    * @param column - The column to filter on
    * @param patterns - The patterns to match with
+   *
+   * @category Database
    */
   ilikeAnyOf(column: string, patterns: readonly string[]): this {
     this.url.searchParams.append(column, `ilike(any).{${patterns.join(',')}}`)
@@ -320,6 +649,47 @@ export default class PostgrestFilterBuilder<
    *
    * @param column - The column to filter on
    * @param value - The value to filter with
+   *
+   * @category Database
+   *
+   * @exampleDescription Checking for nullness, true or false
+   * Using the `eq()` filter doesn't work when filtering for `null`.
+   *
+   * Instead, you need to use `is()`.
+   *
+   * @example Checking for nullness, true or false
+   * ```ts
+   * const { data, error } = await supabase
+   *   .from('countries')
+   *   .select()
+   *   .is('name', null)
+   * ```
+   *
+   * @exampleSql Checking for nullness, true or false
+   * ```sql
+   * create table
+   *   countries (id int8 primary key, name text);
+   *
+   * insert into
+   *   countries (id, name)
+   * values
+   *   (1, 'null'),
+   *   (2, null);
+   * ```
+   *
+   * @exampleResponse Checking for nullness, true or false
+   * ```json
+   * {
+   *   "data": [
+   *     {
+   *       "id": 2,
+   *       "name": "null"
+   *     }
+   *   ],
+   *   "status": 200,
+   *   "statusText": "OK"
+   * }
+   * ```
    */
   is(column: string, value: boolean | null): this {
     this.url.searchParams.append(column, `is.${value}`)
@@ -353,6 +723,47 @@ export default class PostgrestFilterBuilder<
    *
    * @param column - The column to filter on
    * @param values - The values array to filter with
+   *
+   * @category Database
+   *
+   * @example With `select()`
+   * ```ts
+   * const { data, error } = await supabase
+   *   .from('characters')
+   *   .select()
+   *   .in('name', ['Leia', 'Han'])
+   * ```
+   *
+   * @exampleSql With `select()`
+   * ```sql
+   * create table
+   *   characters (id int8 primary key, name text);
+   *
+   * insert into
+   *   characters (id, name)
+   * values
+   *   (1, 'Luke'),
+   *   (2, 'Leia'),
+   *   (3, 'Han');
+   * ```
+   *
+   * @exampleResponse With `select()`
+   * ```json
+   * {
+   *   "data": [
+   *     {
+   *       "id": 2,
+   *       "name": "Leia"
+   *     },
+   *     {
+   *       "id": 3,
+   *       "name": "Han"
+   *     }
+   *   ],
+   *   "status": 200,
+   *   "statusText": "OK"
+   * }
+   * ```
    */
   in<ColumnName extends string>(
     column: ColumnName,
@@ -418,6 +829,127 @@ export default class PostgrestFilterBuilder<
    *
    * @param column - The jsonb, array, or range column to filter on
    * @param value - The jsonb, array, or range value to filter with
+   *
+   * @category Database
+   *
+   * @example On array columns
+   * ```ts
+   * const { data, error } = await supabase
+   *   .from('issues')
+   *   .select()
+   *   .contains('tags', ['is:open', 'priority:low'])
+   * ```
+   *
+   * @exampleSql On array columns
+   * ```sql
+   * create table
+   *   issues (
+   *     id int8 primary key,
+   *     title text,
+   *     tags text[]
+   *   );
+   *
+   * insert into
+   *   issues (id, title, tags)
+   * values
+   *   (1, 'Cache invalidation is not working', array['is:open', 'severity:high', 'priority:low']),
+   *   (2, 'Use better names', array['is:open', 'severity:low', 'priority:medium']);
+   * ```
+   *
+   * @exampleResponse On array columns
+   * ```json
+   * {
+   *   "data": [
+   *     {
+   *       "title": "Cache invalidation is not working"
+   *     }
+   *   ],
+   *   "status": 200,
+   *   "statusText": "OK"
+   * }
+   * ```
+   *
+   * @exampleDescription On range columns
+   * Postgres supports a number of [range
+   * types](https://www.postgresql.org/docs/current/rangetypes.html). You
+   * can filter on range columns using the string representation of range
+   * values.
+   *
+   * @example On range columns
+   * ```ts
+   * const { data, error } = await supabase
+   *   .from('reservations')
+   *   .select()
+   *   .contains('during', '[2000-01-01 13:00, 2000-01-01 13:30)')
+   * ```
+   *
+   * @exampleSql On range columns
+   * ```sql
+   * create table
+   *   reservations (
+   *     id int8 primary key,
+   *     room_name text,
+   *     during tsrange
+   *   );
+   *
+   * insert into
+   *   reservations (id, room_name, during)
+   * values
+   *   (1, 'Emerald', '[2000-01-01 13:00, 2000-01-01 15:00)'),
+   *   (2, 'Topaz', '[2000-01-02 09:00, 2000-01-02 10:00)');
+   * ```
+   *
+   * @exampleResponse On range columns
+   * ```json
+   * {
+   *   "data": [
+   *     {
+   *       "id": 1,
+   *       "room_name": "Emerald",
+   *       "during": "[\"2000-01-01 13:00:00\",\"2000-01-01 15:00:00\")"
+   *     }
+   *   ],
+   *   "status": 200,
+   *   "statusText": "OK"
+   * }
+   * ```
+   *
+   * @example On `jsonb` columns
+   * ```ts
+   * const { data, error } = await supabase
+   *   .from('users')
+   *   .select('name')
+   *   .contains('address', { postcode: 90210 })
+   * ```
+   *
+   * @exampleSql On `jsonb` columns
+   * ```sql
+   * create table
+   *   users (
+   *     id int8 primary key,
+   *     name text,
+   *     address jsonb
+   *   );
+   *
+   * insert into
+   *   users (id, name, address)
+   * values
+   *   (1, 'Michael', '{ "postcode": 90210, "street": "Melrose Place" }'),
+   *   (2, 'Jane', '{}');
+   * ```
+   *
+   * @exampleResponse On `jsonb` columns
+   * ```json
+   * {
+   *   "data": [
+   *     {
+   *       "name": "Michael"
+   *     }
+   *   ],
+   *   "status": 200,
+   *   "statusText": "OK"
+   * }
+   * ```
    */
   contains(column: string, value: string | readonly unknown[] | Record<string, unknown>): this {
     if (typeof value === 'string') {
@@ -445,6 +977,128 @@ export default class PostgrestFilterBuilder<
    *
    * @param column - The jsonb, array, or range column to filter on
    * @param value - The jsonb, array, or range value to filter with
+   *
+   * @category Database
+   *
+   * @example On array columns
+   * ```ts
+   * const { data, error } = await supabase
+   *   .from('classes')
+   *   .select('name')
+   *   .containedBy('days', ['monday', 'tuesday', 'wednesday', 'friday'])
+   * ```
+   *
+   * @exampleSql On array columns
+   * ```sql
+   * create table
+   *   classes (
+   *     id int8 primary key,
+   *     name text,
+   *     days text[]
+   *   );
+   *
+   * insert into
+   *   classes (id, name, days)
+   * values
+   *   (1, 'Chemistry', array['monday', 'friday']),
+   *   (2, 'History', array['monday', 'wednesday', 'thursday']);
+   * ```
+   *
+   * @exampleResponse On array columns
+   * ```json
+   * {
+   *   "data": [
+   *     {
+   *       "name": "Chemistry"
+   *     }
+   *   ],
+   *   "status": 200,
+   *   "statusText": "OK"
+   * }
+   * ```
+   *
+   * @exampleDescription On range columns
+   * Postgres supports a number of [range
+   * types](https://www.postgresql.org/docs/current/rangetypes.html). You
+   * can filter on range columns using the string representation of range
+   * values.
+   *
+   * @example On range columns
+   * ```ts
+   * const { data, error } = await supabase
+   *   .from('reservations')
+   *   .select()
+   *   .containedBy('during', '[2000-01-01 00:00, 2000-01-01 23:59)')
+   * ```
+   *
+   * @exampleSql On range columns
+   * ```sql
+   * create table
+   *   reservations (
+   *     id int8 primary key,
+   *     room_name text,
+   *     during tsrange
+   *   );
+   *
+   * insert into
+   *   reservations (id, room_name, during)
+   * values
+   *   (1, 'Emerald', '[2000-01-01 13:00, 2000-01-01 15:00)'),
+   *   (2, 'Topaz', '[2000-01-02 09:00, 2000-01-02 10:00)');
+   * ```
+   *
+   * @exampleResponse On range columns
+   * ```json
+   * {
+   *   "data": [
+   *     {
+   *       "id": 1,
+   *       "room_name": "Emerald",
+   *       "during": "[\"2000-01-01 13:00:00\",\"2000-01-01 15:00:00\")"
+   *     }
+   *   ],
+   *   "status": 200,
+   *   "statusText": "OK"
+   * }
+   * ```
+   *
+   * @example On `jsonb` columns
+   * ```ts
+   * const { data, error } = await supabase
+   *   .from('users')
+   *   .select('name')
+   *   .containedBy('address', {})
+   * ```
+   *
+   * @exampleSql On `jsonb` columns
+   * ```sql
+   * create table
+   *   users (
+   *     id int8 primary key,
+   *     name text,
+   *     address jsonb
+   *   );
+   *
+   * insert into
+   *   users (id, name, address)
+   * values
+   *   (1, 'Michael', '{ "postcode": 90210, "street": "Melrose Place" }'),
+   *   (2, 'Jane', '{}');
+   * ```
+   *
+   * @exampleResponse On `jsonb` columns
+   * ```json
+   *   {
+   *     "data": [
+   *       {
+   *         "name": "Jane"
+   *       }
+   *     ],
+   *     "status": 200,
+   *     "statusText": "OK"
+   *   }
+   *
+   * ```
    */
   containedBy(column: string, value: string | readonly unknown[] | Record<string, unknown>): this {
     if (typeof value === 'string') {
@@ -468,6 +1122,54 @@ export default class PostgrestFilterBuilder<
    *
    * @param column - The range column to filter on
    * @param range - The range to filter with
+   *
+   * @category Database
+   *
+   * @exampleDescription With `select()`
+   * Postgres supports a number of [range
+   * types](https://www.postgresql.org/docs/current/rangetypes.html). You
+   * can filter on range columns using the string representation of range
+   * values.
+   *
+   * @example With `select()`
+   * ```ts
+   * const { data, error } = await supabase
+   *   .from('reservations')
+   *   .select()
+   *   .rangeGt('during', '[2000-01-02 08:00, 2000-01-02 09:00)')
+   * ```
+   *
+   * @exampleSql With `select()`
+   * ```sql
+   * create table
+   *   reservations (
+   *     id int8 primary key,
+   *     room_name text,
+   *     during tsrange
+   *   );
+   *
+   * insert into
+   *   reservations (id, room_name, during)
+   * values
+   *   (1, 'Emerald', '[2000-01-01 13:00, 2000-01-01 15:00)'),
+   *   (2, 'Topaz', '[2000-01-02 09:00, 2000-01-02 10:00)');
+   * ```
+   *
+   * @exampleResponse With `select()`
+   * ```json
+   *   {
+   *     "data": [
+   *       {
+   *         "id": 2,
+   *         "room_name": "Topaz",
+   *         "during": "[\"2000-01-02 09:00:00\",\"2000-01-02 10:00:00\")"
+   *       }
+   *     ],
+   *     "status": 200,
+   *     "statusText": "OK"
+   *   }
+   *
+   * ```
    */
   rangeGt(column: string, range: string): this {
     this.url.searchParams.append(column, `sr.${range}`)
@@ -483,6 +1185,54 @@ export default class PostgrestFilterBuilder<
    *
    * @param column - The range column to filter on
    * @param range - The range to filter with
+   *
+   * @category Database
+   *
+   * @exampleDescription With `select()`
+   * Postgres supports a number of [range
+   * types](https://www.postgresql.org/docs/current/rangetypes.html). You
+   * can filter on range columns using the string representation of range
+   * values.
+   *
+   * @example With `select()`
+   * ```ts
+   * const { data, error } = await supabase
+   *   .from('reservations')
+   *   .select()
+   *   .rangeGte('during', '[2000-01-02 08:30, 2000-01-02 09:30)')
+   * ```
+   *
+   * @exampleSql With `select()`
+   * ```sql
+   * create table
+   *   reservations (
+   *     id int8 primary key,
+   *     room_name text,
+   *     during tsrange
+   *   );
+   *
+   * insert into
+   *   reservations (id, room_name, during)
+   * values
+   *   (1, 'Emerald', '[2000-01-01 13:00, 2000-01-01 15:00)'),
+   *   (2, 'Topaz', '[2000-01-02 09:00, 2000-01-02 10:00)');
+   * ```
+   *
+   * @exampleResponse With `select()`
+   * ```json
+   *   {
+   *     "data": [
+   *       {
+   *         "id": 2,
+   *         "room_name": "Topaz",
+   *         "during": "[\"2000-01-02 09:00:00\",\"2000-01-02 10:00:00\")"
+   *       }
+   *     ],
+   *     "status": 200,
+   *     "statusText": "OK"
+   *   }
+   *
+   * ```
    */
   rangeGte(column: string, range: string): this {
     this.url.searchParams.append(column, `nxl.${range}`)
@@ -497,6 +1247,53 @@ export default class PostgrestFilterBuilder<
    *
    * @param column - The range column to filter on
    * @param range - The range to filter with
+   *
+   * @category Database
+   *
+   * @exampleDescription With `select()`
+   * Postgres supports a number of [range
+   * types](https://www.postgresql.org/docs/current/rangetypes.html). You
+   * can filter on range columns using the string representation of range
+   * values.
+   *
+   * @example With `select()`
+   * ```ts
+   * const { data, error } = await supabase
+   *   .from('reservations')
+   *   .select()
+   *   .rangeLt('during', '[2000-01-01 15:00, 2000-01-01 16:00)')
+   * ```
+   *
+   * @exampleSql With `select()`
+   * ```sql
+   * create table
+   *   reservations (
+   *     id int8 primary key,
+   *     room_name text,
+   *     during tsrange
+   *   );
+   *
+   * insert into
+   *   reservations (id, room_name, during)
+   * values
+   *   (1, 'Emerald', '[2000-01-01 13:00, 2000-01-01 15:00)'),
+   *   (2, 'Topaz', '[2000-01-02 09:00, 2000-01-02 10:00)');
+   * ```
+   *
+   * @exampleResponse With `select()`
+   * ```json
+   * {
+   *   "data": [
+   *     {
+   *       "id": 1,
+   *       "room_name": "Emerald",
+   *       "during": "[\"2000-01-01 13:00:00\",\"2000-01-01 15:00:00\")"
+   *     }
+   *   ],
+   *   "status": 200,
+   *   "statusText": "OK"
+   * }
+   * ```
    */
   rangeLt(column: string, range: string): this {
     this.url.searchParams.append(column, `sl.${range}`)
@@ -512,6 +1309,54 @@ export default class PostgrestFilterBuilder<
    *
    * @param column - The range column to filter on
    * @param range - The range to filter with
+   *
+   * @category Database
+   *
+   * @exampleDescription With `select()`
+   * Postgres supports a number of [range
+   * types](https://www.postgresql.org/docs/current/rangetypes.html). You
+   * can filter on range columns using the string representation of range
+   * values.
+   *
+   * @example With `select()`
+   * ```ts
+   * const { data, error } = await supabase
+   *   .from('reservations')
+   *   .select()
+   *   .rangeLte('during', '[2000-01-01 14:00, 2000-01-01 16:00)')
+   * ```
+   *
+   * @exampleSql With `select()`
+   * ```sql
+   * create table
+   *   reservations (
+   *     id int8 primary key,
+   *     room_name text,
+   *     during tsrange
+   *   );
+   *
+   * insert into
+   *   reservations (id, room_name, during)
+   * values
+   *   (1, 'Emerald', '[2000-01-01 13:00, 2000-01-01 15:00)'),
+   *   (2, 'Topaz', '[2000-01-02 09:00, 2000-01-02 10:00)');
+   * ```
+   *
+   * @exampleResponse With `select()`
+   * ```json
+   *   {
+   *     "data": [
+   *       {
+   *         "id": 1,
+   *         "room_name": "Emerald",
+   *         "during": "[\"2000-01-01 13:00:00\",\"2000-01-01 15:00:00\")"
+   *       }
+   *     ],
+   *     "status": 200,
+   *     "statusText": "OK"
+   *   }
+   *
+   * ```
    */
   rangeLte(column: string, range: string): this {
     this.url.searchParams.append(column, `nxr.${range}`)
@@ -527,6 +1372,53 @@ export default class PostgrestFilterBuilder<
    *
    * @param column - The range column to filter on
    * @param range - The range to filter with
+   *
+   * @category Database
+   *
+   * @exampleDescription With `select()`
+   * Postgres supports a number of [range
+   * types](https://www.postgresql.org/docs/current/rangetypes.html). You
+   * can filter on range columns using the string representation of range
+   * values.
+   *
+   * @example With `select()`
+   * ```ts
+   * const { data, error } = await supabase
+   *   .from('reservations')
+   *   .select()
+   *   .rangeAdjacent('during', '[2000-01-01 12:00, 2000-01-01 13:00)')
+   * ```
+   *
+   * @exampleSql With `select()`
+   * ```sql
+   * create table
+   *   reservations (
+   *     id int8 primary key,
+   *     room_name text,
+   *     during tsrange
+   *   );
+   *
+   * insert into
+   *   reservations (id, room_name, during)
+   * values
+   *   (1, 'Emerald', '[2000-01-01 13:00, 2000-01-01 15:00)'),
+   *   (2, 'Topaz', '[2000-01-02 09:00, 2000-01-02 10:00)');
+   * ```
+   *
+   * @exampleResponse With `select()`
+   * ```json
+   * {
+   *   "data": [
+   *     {
+   *       "id": 1,
+   *       "room_name": "Emerald",
+   *       "during": "[\"2000-01-01 13:00:00\",\"2000-01-01 15:00:00\")"
+   *     }
+   *   ],
+   *   "status": 200,
+   *   "statusText": "OK"
+   * }
+   * ```
    */
   rangeAdjacent(column: string, range: string): this {
     this.url.searchParams.append(column, `adj.${range}`)
@@ -544,6 +1436,90 @@ export default class PostgrestFilterBuilder<
    *
    * @param column - The array or range column to filter on
    * @param value - The array or range value to filter with
+   *
+   * @category Database
+   *
+   * @example On array columns
+   * ```ts
+   * const { data, error } = await supabase
+   *   .from('issues')
+   *   .select('title')
+   *   .overlaps('tags', ['is:closed', 'severity:high'])
+   * ```
+   *
+   * @exampleSql On array columns
+   * ```sql
+   * create table
+   *   issues (
+   *     id int8 primary key,
+   *     title text,
+   *     tags text[]
+   *   );
+   *
+   * insert into
+   *   issues (id, title, tags)
+   * values
+   *   (1, 'Cache invalidation is not working', array['is:open', 'severity:high', 'priority:low']),
+   *   (2, 'Use better names', array['is:open', 'severity:low', 'priority:medium']);
+   * ```
+   *
+   * @exampleResponse On array columns
+   * ```json
+   * {
+   *   "data": [
+   *     {
+   *       "title": "Cache invalidation is not working"
+   *     }
+   *   ],
+   *   "status": 200,
+   *   "statusText": "OK"
+   * }
+   * ```
+   *
+   * @exampleDescription On range columns
+   * Postgres supports a number of [range
+   * types](https://www.postgresql.org/docs/current/rangetypes.html). You
+   * can filter on range columns using the string representation of range
+   * values.
+   *
+   * @example On range columns
+   * ```ts
+   * const { data, error } = await supabase
+   *   .from('reservations')
+   *   .select()
+   *   .overlaps('during', '[2000-01-01 12:45, 2000-01-01 13:15)')
+   * ```
+   *
+   * @exampleSql On range columns
+   * ```sql
+   * create table
+   *   reservations (
+   *     id int8 primary key,
+   *     room_name text,
+   *     during tsrange
+   *   );
+   *
+   * insert into
+   *   reservations (id, room_name, during)
+   * values
+   *   (1, 'Emerald', '[2000-01-01 13:00, 2000-01-01 15:00)'),
+   *   (2, 'Topaz', '[2000-01-02 09:00, 2000-01-02 10:00)');
+   * ```
+   *
+   * @exampleResponse On range columns
+   * ```json
+   * {
+   *   "data": [
+   *     {
+   *       "id": 1,
+   *       "room_name": "Emerald",
+   *       "during": "[\"2000-01-01 13:00:00\",\"2000-01-01 15:00:00\")"
+   *     }
+   *   ],
+   *   "status": 200,
+   *   "statusText": "OK"
+   * }
+   * ```
    */
   overlaps(column: string, value: string | readonly unknown[]): this {
     if (typeof value === 'string') {
@@ -575,6 +1551,99 @@ export default class PostgrestFilterBuilder<
    * @param options - Named parameters
    * @param options.config - The text search configuration to use
    * @param options.type - Change how the `query` text is interpreted
+   *
+   * @category Database
+   *
+   * @remarks
+   * - For more information, see [Postgres full text search](/docs/guides/database/full-text-search).
+   *
+   * @example Text search
+   * ```ts
+   * const result = await supabase
+   *   .from("texts")
+   *   .select("content")
+   *   .textSearch("content", `'eggs' & 'ham'`, {
+   *     config: "english",
+   *   });
+   * ```
+   *
+   * @exampleSql Text search
+   * ```sql
+   * create table texts (
+   *   id      bigint
+   *           primary key
+   *           generated always as identity,
+   *   content text
+   * );
+   *
+   * insert into texts (content) values
+   *     ('Four score and seven years ago'),
+   *     ('The road goes ever on and on'),
+   *     ('Green eggs and ham')
+   * ;
+   * ```
+   *
+   * @exampleResponse Text search
+   * ```json
+   * {
+   *   "data": [
+   *     {
+   *       "content": "Green eggs and ham"
+   *     }
+   *   ],
+   *   "status": 200,
+   *   "statusText": "OK"
+   * }
+   * ```
+   *
+   * @exampleDescription Basic normalization
+   * Uses PostgreSQL's `plainto_tsquery` function.
+   *
+   * @example Basic normalization
+   * ```ts
+   * const { data, error } = await supabase
+   *   .from('quotes')
+   *   .select('catchphrase')
+   *   .textSearch('catchphrase', `'fat' & 'cat'`, {
+   *     type: 'plain',
+   *     config: 'english'
+   *   })
+   * ```
+   *
+   * @exampleDescription Full normalization
+   * Uses PostgreSQL's `phraseto_tsquery` function.
+   *
+   * @example Full normalization
+   * ```ts
+   * const { data, error } = await supabase
+   *   .from('quotes')
+   *   .select('catchphrase')
+   *   .textSearch('catchphrase', `'fat' & 'cat'`, {
+   *     type: 'phrase',
+   *     config: 'english'
+   *   })
+   * ```
+   *
+   * @exampleDescription Websearch
+   * Uses PostgreSQL's `websearch_to_tsquery` function.
+   * This function will never raise syntax errors, which makes it possible to use raw user-supplied input for search, and can be used
+   * with advanced operators.
+   *
+   * - `unquoted text`: text not inside quote marks will be converted to terms separated by & operators, as if processed by plainto_tsquery.
+   * - `"quoted text"`: text inside quote marks will be converted to terms separated by `<->` operators, as if processed by phraseto_tsquery.
+   * - `OR`: the word “or” will be converted to the | operator.
+   * - `-`: a dash will be converted to the ! operator.
+   *
+   * @example Websearch
+   * ```ts
+   * const { data, error } = await supabase
+   *   .from('quotes')
+   *   .select('catchphrase')
+   *   .textSearch('catchphrase', `'fat or cat'`, {
+   *     type: 'websearch',
+   *     config: 'english'
+   *   })
+   * ```
    */
   textSearch(
     column: string,
@@ -602,11 +1671,51 @@ export default class PostgrestFilterBuilder<
    *
    * @param query - The object to filter with, with column names as keys mapped
    * to their filter values
+   *
+   * @category Database
+   *
+   * @example With `select()`
+   * ```ts
+   * const { data, error } = await supabase
+   *   .from('characters')
+   *   .select('name')
+   *   .match({ id: 2, name: 'Leia' })
+   * ```
+   *
+   * @exampleSql With `select()`
+   * ```sql
+   * create table
+   *   characters (id int8 primary key, name text);
+   *
+   * insert into
+   *   characters (id, name)
+   * values
+   *   (1, 'Luke'),
+   *   (2, 'Leia'),
+   *   (3, 'Han');
+   * ```
+   *
+   * @exampleResponse With `select()`
+   * ```json
+   * {
+   *   "data": [
+   *     {
+   *       "name": "Leia"
+   *     }
+   *   ],
+   *   "status": 200,
+   *   "statusText": "OK"
+   * }
+   * ```
    */
   match(query: Record<string, unknown>): this {
-    Object.entries(query).forEach(([column, value]) => {
-      this.url.searchParams.append(column, `eq.${value}`)
-    })
+    Object.entries(query)
+      // columns with `undefined` value needs to be filtered out, otherwise it'll
+      // show up as `?column=eq.undefined`
+      .filter(([_, value]) => value !== undefined)
+      .forEach(([column, value]) => {
+        this.url.searchParams.append(column, `eq.${value}`)
+      })
     return this
   }
 
@@ -628,6 +1737,51 @@ export default class PostgrestFilterBuilder<
    * @param operator - The operator to be negated to filter with, following
    * PostgREST syntax
    * @param value - The value to filter with, following PostgREST syntax
+   *
+   * @category Database
+   *
+   * @remarks
+   * not() expects you to use the raw PostgREST syntax for the filter values.
+   *
+   * ```ts
+   * .not('id', 'in', '(5,6,7)')  // Use `()` for `in` filter
+   * .not('arraycol', 'cs', '{"a","b"}')  // Use `cs` for `contains()`, `{}` for array values
+   * ```
+   *
+   * @example With `select()`
+   * ```ts
+   * const { data, error } = await supabase
+   *   .from('countries')
+   *   .select()
+   *   .not('name', 'is', null)
+   * ```
+   *
+   * @exampleSql With `select()`
+   * ```sql
+   * create table
+   *   countries (id int8 primary key, name text);
+   *
+   * insert into
+   *   countries (id, name)
+   * values
+   *   (1, 'null'),
+   *   (2, null);
+   * ```
+   *
+   * @exampleResponse With `select()`
+   * ```json
+   *   {
+   *     "data": [
+   *       {
+   *         "id": 1,
+   *         "name": "null"
+   *       }
+   *     ],
+   *     "status": 200,
+   *     "statusText": "OK"
+   *   }
+   *
+   * ```
    */
   not(column: string, operator: string, value: unknown): this {
     this.url.searchParams.append(column, `not.${operator}.${value}`)
@@ -648,6 +1802,141 @@ export default class PostgrestFilterBuilder<
    * @param options.referencedTable - Set this to filter on referenced tables
    * instead of the parent table
    * @param options.foreignTable - Deprecated, use `referencedTable` instead
+   *
+   * @category Database
+   *
+   * @remarks
+   * or() expects you to use the raw PostgREST syntax for the filter names and values.
+   *
+   * ```ts
+   * .or('id.in.(5,6,7), arraycol.cs.{"a","b"}')  // Use `()` for `in` filter, `{}` for array values and `cs` for `contains()`.
+   * .or('id.in.(5,6,7), arraycol.cd.{"a","b"}')  // Use `cd` for `containedBy()`
+   * ```
+   *
+   * @example With `select()`
+   * ```ts
+   * const { data, error } = await supabase
+   *   .from('characters')
+   *   .select('name')
+   *   .or('id.eq.2,name.eq.Han')
+   * ```
+   *
+   * @exampleSql With `select()`
+   * ```sql
+   * create table
+   *   characters (id int8 primary key, name text);
+   *
+   * insert into
+   *   characters (id, name)
+   * values
+   *   (1, 'Luke'),
+   *   (2, 'Leia'),
+   *   (3, 'Han');
+   * ```
+   *
+   * @exampleResponse With `select()`
+   * ```json
+   * {
+   *   "data": [
+   *     {
+   *       "name": "Leia"
+   *     },
+   *     {
+   *       "name": "Han"
+   *     }
+   *   ],
+   *   "status": 200,
+   *   "statusText": "OK"
+   * }
+   * ```
+   *
+   * @example Use `or` with `and`
+   * ```ts
+   * const { data, error } = await supabase
+   *   .from('characters')
+   *   .select('name')
+   *   .or('id.gt.3,and(id.eq.1,name.eq.Luke)')
+   * ```
+   *
+   * @exampleSql Use `or` with `and`
+   * ```sql
+   * create table
+   *   characters (id int8 primary key, name text);
+   *
+   * insert into
+   *   characters (id, name)
+   * values
+   *   (1, 'Luke'),
+   *   (2, 'Leia'),
+   *   (3, 'Han');
+   * ```
+   *
+   * @exampleResponse Use `or` with `and`
+   * ```json
+   * {
+   *   "data": [
+   *     {
+   *       "name": "Luke"
+   *     }
+   *   ],
+   *   "status": 200,
+   *   "statusText": "OK"
+   * }
+   * ```
+   *
+   * @example Use `or` on referenced tables
+   * ```ts
+   * const { data, error } = await supabase
+   *   .from('orchestral_sections')
+   *   .select(`
+   *     name,
+   *     instruments!inner (
+   *       name
+   *     )
+   *   `)
+   *   .or('section_id.eq.1,name.eq.guzheng', { referencedTable: 'instruments' })
+   * ```
+   *
+   * @exampleSql Use `or` on referenced tables
+   * ```sql
+   * create table
+   *   orchestral_sections (id int8 primary key, name text);
+   * create table
+   *   instruments (
+   *     id int8 primary key,
+   *     section_id int8 not null references orchestral_sections,
+   *     name text
+   *   );
+   *
+   * insert into
+   *   orchestral_sections (id, name)
+   * values
+   *   (1, 'strings'),
+   *   (2, 'woodwinds');
+   * insert into
+   *   instruments (id, section_id, name)
+   * values
+   *   (1, 2, 'flute'),
+   *   (2, 1, 'violin');
+   * ```
+   *
+   * @exampleResponse Use `or` on referenced tables
+   * ```json
+   * {
+   *   "data": [
+   *     {
+   *       "name": "strings",
+   *       "instruments": [
+   *         {
+   *           "name": "violin"
+   *         }
+   *       ]
+   *     }
+   *   ],
+   *   "status": 200,
+   *   "statusText": "OK"
+   * }
+   * ```
    */
   or(
     filters: string,
@@ -679,6 +1968,105 @@ export default class PostgrestFilterBuilder<
    * @param column - The column to filter on
    * @param operator - The operator to filter with, following PostgREST syntax
    * @param value - The value to filter with, following PostgREST syntax
+   *
+   * @category Database
+   *
+   * @remarks
+   * filter() expects you to use the raw PostgREST syntax for the filter values.
+   *
+   * ```ts
+   * .filter('id', 'in', '(5,6,7)')  // Use `()` for `in` filter
+   * .filter('arraycol', 'cs', '{"a","b"}')  // Use `cs` for `contains()`, `{}` for array values
+   * ```
+   *
+   * @example With `select()`
+   * ```ts
+   * const { data, error } = await supabase
+   *   .from('characters')
+   *   .select()
+   *   .filter('name', 'in', '("Han","Yoda")')
+   * ```
+   *
+   * @exampleSql With `select()`
+   * ```sql
+   * create table
+   *   characters (id int8 primary key, name text);
+   *
+   * insert into
+   *   characters (id, name)
+   * values
+   *   (1, 'Luke'),
+   *   (2, 'Leia'),
+   *   (3, 'Han');
+   * ```
+   *
+   * @exampleResponse With `select()`
+   * ```json
+   * {
+   *   "data": [
+   *     {
+   *       "id": 3,
+   *       "name": "Han"
+   *     }
+   *   ],
+   *   "status": 200,
+   *   "statusText": "OK"
+   * }
+   * ```
+   *
+   * @example On a referenced table
+   * ```ts
+   * const { data, error } = await supabase
+   *   .from('orchestral_sections')
+   *   .select(`
+   *     name,
+   *     instruments!inner (
+   *       name
+   *     )
+   *   `)
+   *   .filter('instruments.name', 'eq', 'flute')
+   * ```
+   *
+   * @exampleSql On a referenced table
+   * ```sql
+   * create table
+   *   orchestral_sections (id int8 primary key, name text);
+   * create table
+   *    instruments (
+   *     id int8 primary key,
+   *     section_id int8 not null references orchestral_sections,
+   *     name text
+   *   );
+   *
+   * insert into
+   *   orchestral_sections (id, name)
+   * values
+   *   (1, 'strings'),
+   *   (2, 'woodwinds');
+   * insert into
+   *   instruments (id, section_id, name)
+   * values
+   *   (1, 2, 'flute'),
+   *   (2, 1, 'violin');
+   * ```
+   *
+   * @exampleResponse On a referenced table
+   * ```json
+   * {
+   *   "data": [
+   *     {
+   *       "name": "woodwinds",
+   *       "instruments": [
+   *         {
+   *           "name": "flute"
+   *         }
+   *       ]
+   *     }
+   *   ],
+   *   "status": 200,
+   *   "statusText": "OK"
+   * }
+   * ```
    */
   filter(column: string, operator: string, value: unknown): this {
     this.url.searchParams.append(column, `${operator}.${value}`)

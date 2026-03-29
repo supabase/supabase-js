@@ -52,7 +52,7 @@ export type CorsHeaders = Record<string, string>
  * Includes all headers sent by Supabase client libraries and allows all standard HTTP methods.
  * Use this for simple CORS configurations with wildcard origin.
  *
- * @example
+ * @example Basic usage
  * ```typescript
  * import { corsHeaders } from '@supabase/supabase-js/cors'
  *

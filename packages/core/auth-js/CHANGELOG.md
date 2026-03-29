@@ -1,3 +1,35 @@
+## 2.100.1 (2026-03-26)
+
+This was a version bump only for @supabase/auth-js to align it with other projects, there were no code changes.
+
+## 2.100.0 (2026-03-23)
+
+### 🩹 Fixes
+
+- **auth:** guard navigator lock steal against cascade when lock is stolen by another request ([#2178](https://github.com/supabase/supabase-js/pull/2178))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+
+## 2.99.2 (2026-03-16)
+
+This was a version bump only for @supabase/auth-js to align it with other projects, there were no code changes.
+
+## 2.99.1 (2026-03-11)
+
+This was a version bump only for @supabase/auth-js to align it with other projects, there were no code changes.
+
+## 2.99.0 (2026-03-09)
+
+### 🚀 Features
+
+- **auth:** add custom OIDC/OAuth provider admin CRUD methods ([#2133](https://github.com/supabase/supabase-js/pull/2133))
+
+### ❤️ Thank You
+
+- Cemal Kılıç @cemalkilic
+
 ## 2.98.0 (2026-02-26)
 
 ### 🚀 Features

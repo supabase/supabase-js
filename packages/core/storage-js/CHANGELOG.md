@@ -1,3 +1,47 @@
+## 2.100.1 (2026-03-26)
+
+### 🩹 Fixes
+
+- **storage:** spread all DEFAULT_FILE_OPTIONS in uploadToSignedUrl ([#2194](https://github.com/supabase/supabase-js/pull/2194))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+
+## 2.100.0 (2026-03-23)
+
+### 🩹 Fixes
+
+- **storage:** structural detection on json() to detect Response-like errors ([#2179](https://github.com/supabase/supabase-js/pull/2179))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+
+## 2.99.2 (2026-03-16)
+
+### 🩹 Fixes
+
+- **storage:** do not rewrite signed URL to render endpoint for empty transform object ([#2162](https://github.com/supabase/supabase-js/pull/2162))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+
+## 2.99.1 (2026-03-11)
+
+This was a version bump only for @supabase/storage-js to align it with other projects, there were no code changes.
+
+## 2.99.0 (2026-03-09)
+
+### 🩹 Fixes
+
+- **storage:** improve FileObject type accuracy with nullable fields ([#2116](https://github.com/supabase/supabase-js/pull/2116))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+
 ## 2.98.0 (2026-02-26)
 
 This was a version bump only for @supabase/storage-js to align it with other projects, there were no code changes.
