@@ -1,5 +1,6 @@
 import { releaseVersion, releaseChangelog, releasePublish } from 'nx/release'
 import { execSync } from 'child_process'
+import { getLastStableTag } from './utils'
 ;(async () => {
   const { workspaceVersion: canaryCheckWorkspaceVersion } = await releaseVersion({
     verbose: true,
@@ -16,11 +17,24 @@ import { execSync } from 'child_process'
     process.exit(0)
   }
 
+  // Derive the correct pre* specifier from conventional commits rather than
+  // always using 'prerelease' (which always bumps patch regardless of commit type).
+  const lastStableTag = getLastStableTag()
+  const stableBase = lastStableTag.replace(/^v/, '') // e.g. "2.100.0"
+  const [curMajor, curMinor] = stableBase.split('.').map(Number)
+  const dryBase = canaryCheckWorkspaceVersion.replace(/^v/, '').replace(/-.*$/, '')
+  const [newMajor, newMinor] = dryBase.split('.').map(Number)
+
+  let specifier: 'prepatch' | 'preminor' | 'premajor'
+  if (newMajor > curMajor) specifier = 'premajor'
+  else if (newMinor > curMinor) specifier = 'preminor'
+  else specifier = 'prepatch'
+
   const { workspaceVersion, projectsVersionData } = await releaseVersion({
     verbose: true,
     gitCommit: false,
     stageChanges: false,
-    specifier: 'prerelease',
+    specifier,
     preid: 'canary',
   })
 
