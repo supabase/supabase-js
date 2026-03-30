@@ -2,7 +2,7 @@ import assert from 'assert'
 import { randomUUID } from 'crypto'
 import { describe, beforeEach, afterEach, test, vi, expect } from 'vitest'
 import RealtimeClient from '../src/RealtimeClient'
-import RealtimeChannel from '../src/RealtimeChannel'
+import RealtimeChannel, { REALTIME_LISTEN_TYPES } from '../src/RealtimeChannel'
 import { WebSocket } from 'mock-socket'
 import { CHANNEL_STATES, CONNECTION_STATE } from '../src/lib/constants'
 import {
@@ -580,6 +580,31 @@ describe('Channel Lifecycle Management', () => {
       expect(result).toBe('ok')
 
       expect(channel.state).toBe(CHANNEL_STATES.closed)
+    })
+  })
+
+  describe('on', () => {
+    const failingTypes = [
+      REALTIME_LISTEN_TYPES.PRESENCE,
+      REALTIME_LISTEN_TYPES.POSTGRES_CHANGES,
+    ] as const
+
+    const passingTypes = Object.values(REALTIME_LISTEN_TYPES).filter(
+      (t) => !failingTypes.includes(t as any)
+    )
+
+    test.each(failingTypes)('fails to add %s listener after `subscribe`', (type) => {
+      const ch = testSetup.client.channel('channel').subscribe()
+      // @ts-ignore: simplify typing
+      expect(() => ch.on(type, {}, () => {})).toThrow(
+        `cannot add \`${type}\` callbacks for realtime:channel after \`subscribe()\`.`
+      )
+    })
+
+    test.each(passingTypes)('succeeds to add %s listener after `subscribe`', (type) => {
+      const ch = testSetup.client.channel('channel').subscribe()
+      // @ts-ignore: simplify typing
+      expect(() => ch.on(type, {}, () => {})).not.toThrow()
     })
   })
 })
