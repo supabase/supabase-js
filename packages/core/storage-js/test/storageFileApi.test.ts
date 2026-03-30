@@ -3,6 +3,7 @@ import * as fsp from 'fs/promises'
 import * as fs from 'fs'
 import * as path from 'path'
 import assert from 'assert'
+import * as ts from 'typescript'
 import { StorageApiError, StorageError } from '../src/lib/common/errors'
 import BlobDownloadBuilder from '../src/packages/BlobDownloadBuilder'
 import StreamDownloadBuilder from '../src/packages/StreamDownloadBuilder'
@@ -960,5 +961,45 @@ describe('StorageFileApi Edge Cases', () => {
       expect(body).toBe(testFormData)
       expect(headers[testHeaderKey]).toBe(testHeaderValue)
     })
+  })
+})
+
+describe('TypeScript compatibility', () => {
+  test('compiles with exactOptionalPropertyTypes enabled', () => {
+    const packageRoot = path.resolve(__dirname, '..')
+    const tsconfigPath = path.join(packageRoot, 'tsconfig.json')
+    const config = ts.readConfigFile(tsconfigPath, ts.sys.readFile)
+    const formatHost = {
+      getCanonicalFileName: (fileName: string) => fileName,
+      getCurrentDirectory: () => packageRoot,
+      getNewLine: () => ts.sys.newLine,
+    }
+
+    if (config.error) {
+      throw new Error(ts.formatDiagnosticsWithColorAndContext([config.error], formatHost))
+    }
+
+    const parsed = ts.parseJsonConfigFileContent(
+      {
+        ...config.config,
+        compilerOptions: {
+          ...config.config.compilerOptions,
+          noEmit: true,
+          exactOptionalPropertyTypes: true,
+        },
+      },
+      ts.sys,
+      packageRoot,
+      undefined,
+      tsconfigPath
+    )
+    const program = ts.createProgram({
+      rootNames: parsed.fileNames,
+      options: parsed.options,
+      projectReferences: parsed.projectReferences,
+    })
+    const diagnostics = [...parsed.errors, ...ts.getPreEmitDiagnostics(program)]
+
+    expect(ts.formatDiagnosticsWithColorAndContext(diagnostics, formatHost)).toBe('')
   })
 })
