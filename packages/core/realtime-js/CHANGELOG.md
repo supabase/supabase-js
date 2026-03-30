@@ -1,3 +1,14 @@
+## 2.101.0 (2026-03-30)
+
+### 🚀 Features
+
+- **realtime:** block setting `postgres_changes` event listener after joining ([#2201](https://github.com/supabase/supabase-js/pull/2201))
+- **realtime:** add `copyBindings` functionality ([#2197](https://github.com/supabase/supabase-js/pull/2197))
+
+### ❤️ Thank You
+
+- Dominik Pilipczuk @snickerdoodle2
+
 ## 2.100.1 (2026-03-26)
 
 This was a version bump only for @supabase/realtime-js to align it with other projects, there were no code changes.
