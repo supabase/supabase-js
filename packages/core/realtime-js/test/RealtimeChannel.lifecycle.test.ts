@@ -584,15 +584,27 @@ describe('Channel Lifecycle Management', () => {
   })
 
   describe('on', () => {
-    test.each([REALTIME_LISTEN_TYPES.PRESENCE, REALTIME_LISTEN_TYPES.POSTGRES_CHANGES])(
-      'fails to add %s listener after `subscribe`',
-      (type) => {
-        const ch = testSetup.client.channel('channel').subscribe()
-        // @ts-ignore: simplify typing
-        expect(() => ch.on(type, {}, () => {})).toThrow(
-          `cannot add \`${type}\` callbacks for realtime:channel after \`subscribe()\`.`
-        )
-      }
+    const failingTypes = [
+      REALTIME_LISTEN_TYPES.PRESENCE,
+      REALTIME_LISTEN_TYPES.POSTGRES_CHANGES,
+    ] as const
+
+    const passingTypes = Object.values(REALTIME_LISTEN_TYPES).filter(
+      (t) => !failingTypes.includes(t as any)
     )
+
+    test.each(failingTypes)('fails to add %s listener after `subscribe`', (type) => {
+      const ch = testSetup.client.channel('channel').subscribe()
+      // @ts-ignore: simplify typing
+      expect(() => ch.on(type, {}, () => {})).toThrow(
+        `cannot add \`${type}\` callbacks for realtime:channel after \`subscribe()\`.`
+      )
+    })
+
+    test.each(passingTypes)('succeeds to add %s listener after `subscribe`', (type) => {
+      const ch = testSetup.client.channel('channel').subscribe()
+      // @ts-ignore: simplify typing
+      expect(() => ch.on(type, {}, () => {})).not.toThrow()
+    })
   })
 })
