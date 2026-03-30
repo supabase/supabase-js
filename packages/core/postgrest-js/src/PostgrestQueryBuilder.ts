@@ -22,7 +22,12 @@ export default class PostgrestQueryBuilder<
   fetch?: Fetch
   urlLengthLimit: number
 
-  // Retry configuration
+  /**
+   * Enable or disable automatic retries for transient errors.
+   * When enabled, idempotent requests (GET/HEAD/OPTIONS) that fail with 520 or 503 errors
+   * are automatically retried with exponential backoff (up to 3 attempts).
+   * Defaults to `true` when not specified.
+   */
   retry?: boolean
 
   /**
@@ -30,13 +35,21 @@ export default class PostgrestQueryBuilder<
    *
    * @category Database
    *
+   * @param url - The URL for the query
+   * @param options - Named parameters
+   * @param options.headers - Custom headers
+   * @param options.schema - Postgres schema to use
+   * @param options.fetch - Custom fetch implementation
+   * @param options.urlLengthLimit - Maximum URL length before warning
+   * @param options.retry - Enable automatic retries for transient errors (default: true)
+   *
    * @example Creating a Postgrest query builder
    * ```ts
    * import { PostgrestQueryBuilder } from '@supabase/postgrest-js'
    *
    * const query = new PostgrestQueryBuilder(
    *   new URL('https://xyzcompany.supabase.co/rest/v1/users'),
-   *   { headers: { apikey: 'public-anon-key' } }
+   *   { headers: { apikey: 'public-anon-key' }, retry: true }
    * )
    * ```
    */
