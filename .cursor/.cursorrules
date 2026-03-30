@@ -93,9 +93,9 @@ The workspace uses strict TypeScript settings:
   - `nx test:storage storage-js` - Handles Docker lifecycle
   - `nx test:ci:postgrest postgrest-js` - Handles Docker lifecycle
 - Manual infrastructure management available:
-  - `nx test:infra auth-js` / `nx test:suite auth-js` / `nx test:clean auth-js`
-  - `nx test:infra storage-js` / `nx test:suite storage-js` / `nx test:clean storage-js`
-  - `nx db:run postgrest-js` / `nx test:run postgrest-js` / `nx db:clean postgrest-js`
+  - `nx test:infra auth-js` / `nx test:suite auth-js` / `nx test:clean-post auth-js`
+  - `nx test:infra storage-js` / `nx test:suite storage-js` / `nx test:clean-post storage-js`
+  - `nx test:infra postgrest-js` / `nx test:run postgrest-js` / `nx test:clean-post postgrest-js`
 
 ### Cross-Platform Tests
 The main supabase-js tests against:
