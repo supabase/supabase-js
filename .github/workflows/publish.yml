@@ -12,8 +12,12 @@ on:
   workflow_dispatch:
     inputs:
       version_specifier:
-        description: 'Semver bump (patch|minor|major|pre*) or exact version (v1.2.3)'
-        required: true
+        description: 'Stable: semver bump (patch|minor|major|pre*) or exact version (v1.2.3)'
+        required: false
+        type: string
+      beta_version:
+        description: 'Beta: explicit prerelease version (e.g. 2.101.0-beta.0). Select your feature branch above.'
+        required: false
         type: string
 
 env:
@@ -21,7 +25,7 @@ env:
 
 jobs:
   release-stable: # stable releases can only be manually triggered
-    if: ${{ github.event_name == 'workflow_dispatch' }}
+    if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.version_specifier != '' }}
     runs-on: ubuntu-latest
     outputs:
       released_version: ${{ steps.extract-version.outputs.version }}
@@ -192,6 +196,113 @@ jobs:
                 source: 'supabase-js-stable-release'
               }
             });
+
+  release-beta:
+    if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.beta_version != '' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Generate token
+        id: app-token
+        uses: actions/create-github-app-token@29824e69f54612133e76f7eaac726eef6c875baf
+        with:
+          app-id: ${{ secrets.APP_ID }}
+          private-key: ${{ secrets.PRIVATE_KEY }}
+
+      - name: Check if actor is member of admin or sdk team
+        id: team-check
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
+        with:
+          github-token: ${{ steps.app-token.outputs.token }}
+          script: |
+            const org = 'supabase'
+            const { actor } = context
+
+            async function isTeamMember(team_slug) {
+              try {
+                const res = await github.rest.teams.getMembershipForUserInOrg({
+                  org,
+                  team_slug,
+                  username: actor,
+                })
+                return res && res.status === 200
+              } catch (_) {
+                return false
+              }
+            }
+            const isAdmin = await isTeamMember('admin')
+            const isSdk = await isTeamMember('sdk')
+            const isMember = isAdmin || isSdk
+            core.setOutput('is_team_member', isMember ? 'true' : 'false')
+
+      - name: Fail if not authorized
+        if: ${{ steps.team-check.outputs.is_team_member != 'true' }}
+        run: |
+          echo "You must be a member of @supabase/admin or @supabase/sdk."
+          exit 1
+
+      - name: Checkout code
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238 # v6.2.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Update npm
+        run: npm install -g npm@latest
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Configure git
+        run: |
+          git config --global user.name "supabase-releaser[bot]"
+          git config --global user.email "supabase-releaser[bot]@users.noreply.github.com"
+
+      - name: Release Beta version
+        env:
+          NPM_CONFIG_PROVENANCE: true
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: npm run release-beta -- --version "${{ github.event.inputs.beta_version }}"
+
+      - name: Summary
+        if: ${{ success() }}
+        run: |
+          echo "## ✅ Beta Release" >> $GITHUB_STEP_SUMMARY
+          echo "- **Version:** \`${{ github.event.inputs.beta_version }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Branch:** \`${{ github.ref_name }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Dist-tag:** \`beta\`" >> $GITHUB_STEP_SUMMARY
+
+  notify-beta-failure:
+    name: Notify Slack for Beta failure
+    needs: release-beta
+    if: ${{ always() && github.event_name == 'workflow_dispatch' && needs.release-beta.result == 'failure' }}
+    uses: ./.github/workflows/slack-notify.yml
+    secrets: inherit
+    with:
+      title: 'Beta Release'
+      status: 'failure'
+
+  notify-beta-success:
+    name: Notify Slack for Beta success
+    needs: release-beta
+    if: ${{ github.event_name == 'workflow_dispatch' && needs.release-beta.result == 'success' }}
+    uses: ./.github/workflows/slack-notify.yml
+    secrets: inherit
+    with:
+      title: 'Beta Release'
+      status: 'success'
+      version: ${{ github.event.inputs.beta_version }}
 
   # preview jobs
   ci-core:
