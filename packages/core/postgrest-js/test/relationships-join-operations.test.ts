@@ -208,6 +208,13 @@ test('!left oneToMany', async () => {
             "message": "Some message on channel without details",
             "username": "supabot",
           },
+          {
+            "channel_id": 3,
+            "data": null,
+            "id": 3,
+            "message": "Some message on channel without details",
+            "username": "supabot",
+          },
         ],
       },
       "error": null,

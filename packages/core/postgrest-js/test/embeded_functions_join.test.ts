@@ -47,6 +47,13 @@ describe('embeded functions select', () => {
                 "message": "Some message on channel without details",
                 "username": "supabot",
               },
+              {
+                "channel_id": 3,
+                "data": null,
+                "id": 3,
+                "message": "Some message on channel without details",
+                "username": "supabot",
+              },
             ],
             "id": 3,
           },
@@ -111,6 +118,10 @@ describe('embeded functions select', () => {
                 "id": 4,
                 "message": "Some message on channel without details",
               },
+              {
+                "id": 3,
+                "message": "Some message on channel without details",
+              },
             ],
             "id": 3,
           },
@@ -167,6 +178,13 @@ describe('embeded functions select', () => {
                 "message": "Some message on channel without details",
                 "username": "supabot",
               },
+              {
+                "channel_id": 3,
+                "data": null,
+                "id": 3,
+                "message": "Some message on channel without details",
+                "username": "supabot",
+              },
             ],
             "username": "supabot",
           },
@@ -181,14 +199,6 @@ describe('embeded functions select', () => {
           {
             "all_user_messages": [],
             "username": "jsonuser",
-          },
-          {
-            "all_user_messages": [],
-            "username": "a",
-          },
-          {
-            "all_user_messages": [],
-            "username": "b",
           },
           {
             "all_user_messages": [],
@@ -243,6 +253,10 @@ describe('embeded functions select', () => {
                 "id": 4,
                 "message": "Some message on channel without details",
               },
+              {
+                "id": 3,
+                "message": "Some message on channel without details",
+              },
             ],
             "username": "supabot",
           },
@@ -257,14 +271,6 @@ describe('embeded functions select', () => {
           {
             "all_user_messages": [],
             "username": "jsonuser",
-          },
-          {
-            "all_user_messages": [],
-            "username": "a",
-          },
-          {
-            "all_user_messages": [],
-            "username": "b",
           },
           {
             "all_user_messages": [],
@@ -319,6 +325,11 @@ describe('embeded functions select', () => {
                 "id": 4,
                 "message": "Some message on channel without details",
               },
+              {
+                "blurb_message": "Som",
+                "id": 3,
+                "message": "Some message on channel without details",
+              },
             ],
             "username": "supabot",
           },
@@ -333,14 +344,6 @@ describe('embeded functions select', () => {
           {
             "all_user_messages": [],
             "username": "jsonuser",
-          },
-          {
-            "all_user_messages": [],
-            "username": "a",
-          },
-          {
-            "all_user_messages": [],
-            "username": "b",
           },
           {
             "all_user_messages": [],
@@ -397,14 +400,6 @@ describe('embeded functions select', () => {
           {
             "setof_rows_one": null,
             "username": "jsonuser",
-          },
-          {
-            "setof_rows_one": null,
-            "username": "a",
-          },
-          {
-            "setof_rows_one": null,
-            "username": "b",
           },
           {
             "setof_rows_one": null,
@@ -469,20 +464,6 @@ describe('embeded functions select', () => {
               "username": null,
             },
             "username": "jsonuser",
-          },
-          {
-            "returns_row": {
-              "id": null,
-              "username": null,
-            },
-            "username": "a",
-          },
-          {
-            "returns_row": {
-              "id": null,
-              "username": null,
-            },
-            "username": "b",
           },
           {
             "returns_row": {
@@ -592,18 +573,6 @@ describe('embeded functions select', () => {
             "user_called_profile": {
               "username": null,
             },
-            "username": "a",
-          },
-          {
-            "user_called_profile": {
-              "username": null,
-            },
-            "username": "b",
-          },
-          {
-            "user_called_profile": {
-              "username": null,
-            },
             "username": "dragarcia",
           },
         ],
@@ -671,6 +640,14 @@ describe('embeded functions select', () => {
                 "id": 4,
                 "message": "Some message on channel without details",
               },
+              {
+                "channels": {
+                  "id": 3,
+                  "slug": "other",
+                },
+                "id": 3,
+                "message": "Some message on channel without details",
+              },
             ],
             "id": 3,
           },
@@ -731,6 +708,13 @@ describe('embeded functions select', () => {
                 "message": "Some message on channel without details",
                 "username": "supabot",
               },
+              {
+                "channel_id": 3,
+                "data": null,
+                "id": 3,
+                "message": "Some message on channel without details",
+                "username": "supabot",
+              },
             ],
             "username": "supabot",
           },
@@ -745,14 +729,6 @@ describe('embeded functions select', () => {
           {
             "user_messages": [],
             "username": "jsonuser",
-          },
-          {
-            "user_messages": [],
-            "username": "a",
-          },
-          {
-            "user_messages": [],
-            "username": "b",
           },
           {
             "user_messages": [],
@@ -816,6 +792,13 @@ describe('embeded functions select', () => {
                 "message": "Some message on channel without details",
                 "username": "supabot",
               },
+              {
+                "channel_id": 3,
+                "data": null,
+                "id": 3,
+                "message": "Some message on channel without details",
+                "username": "supabot",
+              },
             ],
             "username": "supabot",
           },
@@ -826,14 +809,6 @@ describe('embeded functions select', () => {
           {
             "active_user_messages": [],
             "username": "jsonuser",
-          },
-          {
-            "active_user_messages": [],
-            "username": "a",
-          },
-          {
-            "active_user_messages": [],
-            "username": "b",
           },
           {
             "active_user_messages": [],
@@ -884,6 +859,13 @@ describe('embeded functions select', () => {
                 "username": "supabot",
               },
               {
+                "channel_id": 3,
+                "data": null,
+                "id": 3,
+                "message": "Some message on channel without details",
+                "username": "supabot",
+              },
+              {
                 "channel_id": 2,
                 "data": null,
                 "id": 2,
@@ -911,14 +893,6 @@ describe('embeded functions select', () => {
           {
             "recent_messages": [],
             "username": "jsonuser",
-          },
-          {
-            "recent_messages": [],
-            "username": "a",
-          },
-          {
-            "recent_messages": [],
-            "username": "b",
           },
           {
             "recent_messages": [],
@@ -969,6 +943,13 @@ describe('embeded functions select', () => {
                 "username": "supabot",
               },
               {
+                "channel_id": 3,
+                "data": null,
+                "id": 3,
+                "message": "Some message on channel without details",
+                "username": "supabot",
+              },
+              {
                 "channel_id": 2,
                 "data": null,
                 "id": 2,
@@ -992,14 +973,6 @@ describe('embeded functions select', () => {
           {
             "recent_messages": [],
             "username": "jsonuser",
-          },
-          {
-            "recent_messages": [],
-            "username": "a",
-          },
-          {
-            "recent_messages": [],
-            "username": "b",
           },
           {
             "recent_messages": [],
@@ -1057,6 +1030,11 @@ describe('embeded functions select', () => {
                 "id": 4,
                 "message": "Some message on channel without details",
               },
+              {
+                "blurb_message": "Som",
+                "id": 3,
+                "message": "Some message on channel without details",
+              },
             ],
             "username": "supabot",
           },
@@ -1071,14 +1049,6 @@ describe('embeded functions select', () => {
           {
             "user_messages": [],
             "username": "jsonuser",
-          },
-          {
-            "user_messages": [],
-            "username": "a",
-          },
-          {
-            "user_messages": [],
-            "username": "b",
           },
           {
             "user_messages": [],
@@ -1154,6 +1124,13 @@ describe('embeded functions select', () => {
           },
           {
             "id": 4,
+            "user": {
+              "status": "ONLINE",
+              "username": "supabot",
+            },
+          },
+          {
+            "id": 3,
             "user": {
               "status": "ONLINE",
               "username": "supabot",
@@ -1245,20 +1222,6 @@ describe('embeded functions select', () => {
               "id": null,
               "username": null,
             },
-            "username": "a",
-          },
-          {
-            "profile": {
-              "id": null,
-              "username": null,
-            },
-            "username": "b",
-          },
-          {
-            "profile": {
-              "id": null,
-              "username": null,
-            },
             "username": "dragarcia",
           },
         ],
@@ -1309,14 +1272,6 @@ describe('embeded functions select', () => {
           {
             "profile": null,
             "username": "jsonuser",
-          },
-          {
-            "profile": null,
-            "username": "a",
-          },
-          {
-            "profile": null,
-            "username": "b",
           },
           {
             "profile": null,

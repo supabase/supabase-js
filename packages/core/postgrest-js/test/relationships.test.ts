@@ -44,6 +44,10 @@ test('nested query with selective fields', async () => {
             "id": 4,
             "message": "Some message on channel without details",
           },
+          {
+            "id": 3,
+            "message": "Some message on channel without details",
+          },
         ],
         "username": "supabot",
       },
@@ -102,6 +106,14 @@ test('nested query with multiple levels and selective fields', async () => {
             "id": 4,
             "message": "Some message on channel without details",
           },
+          {
+            "channels": {
+              "id": 3,
+              "slug": "other",
+            },
+            "id": 3,
+            "message": "Some message on channel without details",
+          },
         ],
         "username": "supabot",
       },
@@ -148,6 +160,9 @@ test('query with multiple one-to-many relationships', async () => {
           },
           {
             "id": 4,
+          },
+          {
+            "id": 3,
           },
         ],
         "user_profiles": [
@@ -229,6 +244,13 @@ test('one-to-many relationship', async () => {
             "message": "Some message on channel without details",
             "username": "supabot",
           },
+          {
+            "channel_id": 3,
+            "data": null,
+            "id": 3,
+            "message": "Some message on channel without details",
+            "username": "supabot",
+          },
         ],
       },
       "error": null,
@@ -262,6 +284,9 @@ test('one-to-many relationship with selective columns', async () => {
       "count": null,
       "data": {
         "messages": [
+          {
+            "data": null,
+          },
           {
             "data": null,
           },

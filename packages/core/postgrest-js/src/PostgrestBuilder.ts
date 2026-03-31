@@ -261,7 +261,7 @@ export default abstract class PostgrestBuilder<
 
         // Check if we should retry this HTTP response
         if (shouldRetry(this.method, res.status, attemptCount, this.retryEnabled)) {
-          const retryAfterHeader = res.headers.get('Retry-After')
+          const retryAfterHeader = res.headers?.get('Retry-After') ?? null
           const delay =
             retryAfterHeader !== null
               ? Math.max(0, parseInt(retryAfterHeader, 10) || 0) * 1000
