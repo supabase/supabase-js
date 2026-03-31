@@ -227,29 +227,15 @@ export default abstract class PostgrestBuilder<
           requestHeaders.set('X-Retry-Count', String(attemptCount))
         }
 
+        // Only wrap the fetch call itself — processResponse errors must never trigger retries
+        let res: Response
         try {
-          const res = await _fetch(this.url.toString(), {
+          res = await _fetch(this.url.toString(), {
             method: this.method,
             headers: requestHeaders,
             body: JSON.stringify(this.body),
             signal: this.signal,
           })
-
-          // Check if we should retry this response
-          if (shouldRetry(this.method, res.status, attemptCount, this.retryEnabled)) {
-            const retryAfterHeader = res.headers.get('Retry-After')
-            const delay =
-              retryAfterHeader !== null
-                ? Math.max(0, parseInt(retryAfterHeader, 10) || 0) * 1000
-                : getRetryDelay(attemptCount)
-            await res.text()
-            attemptCount++
-            await sleep(delay)
-            continue
-          }
-
-          // Process successful or final response
-          return await this.processResponse(res)
         } catch (fetchError: any) {
           // Never retry aborted requests
           if (fetchError?.name === 'AbortError' || fetchError?.code === 'ABORT_ERR') {
@@ -272,6 +258,21 @@ export default abstract class PostgrestBuilder<
           // Exhausted retries or retries disabled, throw the last error
           throw fetchError
         }
+
+        // Check if we should retry this HTTP response
+        if (shouldRetry(this.method, res.status, attemptCount, this.retryEnabled)) {
+          const retryAfterHeader = res.headers.get('Retry-After')
+          const delay =
+            retryAfterHeader !== null
+              ? Math.max(0, parseInt(retryAfterHeader, 10) || 0) * 1000
+              : getRetryDelay(attemptCount)
+          await res.text()
+          attemptCount++
+          await sleep(delay)
+          continue
+        }
+
+        return await this.processResponse(res)
       }
     }
 

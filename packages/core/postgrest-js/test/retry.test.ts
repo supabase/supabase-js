@@ -429,6 +429,43 @@ describe('Automatic Retries', () => {
     })
   })
 
+  describe('shouldThrowOnError interaction', () => {
+    it('should NOT retry a non-retryable error with throwOnError()', async () => {
+      fetchMock.mockResolvedValueOnce({
+        ok: false,
+        status: 400,
+        statusText: 'Bad Request',
+        text: () =>
+          Promise.resolve(
+            JSON.stringify({ code: 'PGRST000', message: 'bad input', hint: null, details: null })
+          ),
+        headers: new Headers(),
+      })
+
+      const client = new PostgrestClient('http://localhost:3000', { fetch: fetchMock })
+      await expect(runWithTimers(client.from('users').select().throwOnError())).rejects.toThrow(
+        'bad input'
+      )
+
+      expect(fetchMock).toHaveBeenCalledTimes(1) // No retries for application-level errors
+    })
+
+    it('should NOT retry a retryable status code after exhaustion when using throwOnError()', async () => {
+      fetchMock.mockResolvedValue({
+        ok: false,
+        status: 520,
+        statusText: 'Origin Error',
+        text: () => Promise.resolve('Cloudflare timeout'),
+        headers: new Headers(),
+      })
+
+      const client = new PostgrestClient('http://localhost:3000', { fetch: fetchMock })
+      await expect(runWithTimers(client.from('users').select().throwOnError())).rejects.toThrow()
+
+      expect(fetchMock).toHaveBeenCalledTimes(4) // 1 initial + 3 retries, then throws
+    })
+  })
+
   describe('schema switching', () => {
     it('should preserve retry setting when switching schemas', async () => {
       fetchMock.mockResolvedValueOnce({
