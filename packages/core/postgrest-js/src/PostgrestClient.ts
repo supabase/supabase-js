@@ -55,9 +55,9 @@ export default class PostgrestClient<
    * @param options.timeout - Optional timeout in milliseconds for all requests. When set, requests will automatically abort after this duration to prevent indefinite hangs.
    * @param options.urlLengthLimit - Maximum URL length in characters before warnings/errors are triggered. Defaults to 8000.
    * @param options.retry - Enable or disable automatic retries for transient errors.
-   *   When enabled, GET/HEAD requests that fail with 520 errors (Cloudflare timeouts)
-   *   will be automatically retried up to 3 times with exponential backoff.
-   *   Defaults to `true`.
+   *   When enabled, idempotent requests (GET, HEAD, OPTIONS) that fail with network
+   *   errors or HTTP 503/520 responses will be automatically retried up to 3 times
+   *   with exponential backoff (1s, 2s, 4s). Defaults to `true`.
    * @example
    * ```ts
    * import { PostgrestClient } from '@supabase/postgrest-js'

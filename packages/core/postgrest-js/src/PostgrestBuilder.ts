@@ -18,9 +18,24 @@ import { ContainsNull } from './select-query-parser/types'
 
 /**
  * Sleep for a given number of milliseconds.
+ * If an AbortSignal is provided, the sleep resolves early when the signal is aborted.
  */
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms))
+function sleep(ms: number, signal?: AbortSignal): Promise<void> {
+  return new Promise((resolve) => {
+    if (signal?.aborted) {
+      resolve()
+      return
+    }
+    const id = setTimeout(() => {
+      signal?.removeEventListener('abort', onAbort)
+      resolve()
+    }, ms)
+    function onAbort() {
+      clearTimeout(id)
+      resolve()
+    }
+    signal?.addEventListener('abort', onAbort)
+  })
 }
 
 /**
@@ -159,9 +174,9 @@ export default abstract class PostgrestBuilder<
    *
    * Configure retry behavior for this request.
    *
-   * By default, retries are enabled for GET/HEAD requests that fail with
-   * 520 status codes (Cloudflare timeout/connection errors). Retries use
-   * exponential backoff (1s, 2s, 4s) with a maximum of 3 attempts.
+   * By default, retries are enabled for idempotent requests (GET, HEAD, OPTIONS)
+   * that fail with network errors or specific HTTP status codes (503, 520).
+   * Retries use exponential backoff (1s, 2s, 4s) with a maximum of 3 attempts.
    *
    * @param enabled - Whether to enable retries for this request
    *
@@ -251,7 +266,7 @@ export default abstract class PostgrestBuilder<
           if (this.retryEnabled && attemptCount < DEFAULT_MAX_RETRIES) {
             const delay = getRetryDelay(attemptCount)
             attemptCount++
-            await sleep(delay)
+            await sleep(delay, this.signal)
             continue
           }
 
@@ -268,7 +283,7 @@ export default abstract class PostgrestBuilder<
               : getRetryDelay(attemptCount)
           await res.text()
           attemptCount++
-          await sleep(delay)
+          await sleep(delay, this.signal)
           continue
         }
 

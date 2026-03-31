@@ -24,9 +24,9 @@ export default class PostgrestQueryBuilder<
 
   /**
    * Enable or disable automatic retries for transient errors.
-   * When enabled, idempotent requests (GET/HEAD/OPTIONS) that fail with 520 or 503 errors
-   * are automatically retried with exponential backoff (up to 3 attempts).
-   * Defaults to `true` when not specified.
+   * When enabled, idempotent requests (GET/HEAD/OPTIONS) that fail with network
+   * errors or HTTP 503/520 responses are automatically retried with exponential
+   * backoff (1s, 2s, 4s, up to 3 attempts). Defaults to `true` when not specified.
    */
   retry?: boolean
 
