@@ -1,3 +1,13 @@
+## 2.101.1 (2026-03-31)
+
+### 🩹 Fixes
+
+- **storage:** support exactOptionalPropertyTypes ([#2200](https://github.com/supabase/supabase-js/pull/2200))
+
+### ❤️ Thank You
+
+- Vaibhav @7ttp
+
 ## 2.101.0 (2026-03-30)
 
 ### 🚀 Features
