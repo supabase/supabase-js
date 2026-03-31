@@ -9,6 +9,7 @@
     "emitDeclarationOnly": false,
     "declaration": true,
     "declarationMap": true,
+    "exactOptionalPropertyTypes": true,
 
     "stripInternal": true,
     "allowSyntheticDefaultImports": true,

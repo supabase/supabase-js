@@ -33,11 +33,23 @@ export function getTestConfig(): TestConfig {
     headers['Authorization'] = `Bearer ${authToken}`
   }
 
-  return {
-    useMockServer,
-    apiUrl: useMockServer ? undefined : apiUrl,
-    headers: useMockServer ? {} : headers,
+  if (useMockServer) {
+    return {
+      useMockServer,
+      headers: {},
+    }
   }
+
+  return apiUrl
+    ? {
+        useMockServer,
+        apiUrl,
+        headers,
+      }
+    : {
+        useMockServer,
+        headers,
+      }
 }
 
 /**

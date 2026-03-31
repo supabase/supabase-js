@@ -49,7 +49,7 @@ type FileBody =
   | string
 
 export default class StorageFileApi extends BaseApiClient<StorageError> {
-  protected bucketId?: string
+  protected bucketId: string | undefined
 
   constructor(
     url: string,

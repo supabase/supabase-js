@@ -11,8 +11,8 @@ export type ErrorNamespace = 'storage' | 'vectors'
 export class StorageError extends Error {
   protected __isStorageError = true
   protected namespace: ErrorNamespace
-  status?: number
-  statusCode?: string
+  status: number | undefined
+  statusCode: string | undefined
 
   constructor(
     message: string,
