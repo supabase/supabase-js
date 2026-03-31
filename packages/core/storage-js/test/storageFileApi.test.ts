@@ -995,5 +995,23 @@ describe('StorageFileApi Edge Cases', () => {
       expect(body).toBe(testFormData)
       expect(headers[testHeaderKey]).toBe(testHeaderValue)
     })
+
+    test('upload prefers file content type over existing content type header', async () => {
+      const clientWithContentType = new StorageClient('http://localhost:8000/storage/v1', {
+        apikey: 'test-token',
+        'Content-Type': 'application/json',
+      })
+
+      await clientWithContentType.from('test-bucket').upload('test-path', 'test content', {
+        contentType: 'image/png',
+      })
+
+      expect(mockPost).toHaveBeenCalled()
+      const [, , , { headers }] = mockPost.mock.calls[0]
+
+      expect(headers['Content-Type']).toBe('image/png')
+      expect(headers['content-type']).toBeUndefined()
+      expect(new Headers(headers).get('Content-Type')).toBe('image/png')
+    })
   })
 })
