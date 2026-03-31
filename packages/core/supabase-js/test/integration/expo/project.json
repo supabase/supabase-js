@@ -14,7 +14,7 @@
     "install": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "npm install",
+        "command": "npm install --ignore-scripts",
         "cwd": "packages/core/supabase-js/test/integration/expo"
       }
     }

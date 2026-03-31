@@ -156,11 +156,11 @@ jobs:
           echo ""
 
           cd packages/core/supabase-js/test/integration/next
-          npm install --legacy-peer-deps
+          npm install --legacy-peer-deps --ignore-scripts
           cd "$GITHUB_WORKSPACE"
 
           cd packages/core/supabase-js/test/integration/expo
-          npm install --legacy-peer-deps
+          npm install --legacy-peer-deps --ignore-scripts
           cd "$GITHUB_WORKSPACE"
 
           cd packages/core/supabase-js/test/integration/bun
