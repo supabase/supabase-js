@@ -114,7 +114,7 @@ For package-specific issues, consult the troubleshooting section in each package
 
 - **Port conflicts**: Check if required ports are already in use
 - **Docker not running**: Ensure Docker Desktop is started
-- **Container cleanup**: Use `npx nx test:clean <package>` if containers weren't properly removed
+- **Container cleanup**: Use `npx nx test:clean-post <package>` if containers weren't properly removed
 
 ## Contributing Tests
 

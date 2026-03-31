@@ -1170,27 +1170,21 @@ npx nx docs storage-js
 
 ### Testing
 
-**Important:** The storage-js tests require a local test infrastructure running in Docker. This is **NOT** the same as a regular Supabase instance - it's a specialized test setup with its own storage API, database, and Kong gateway.
+**Important:** The storage-js tests require a local Supabase stack running via the Supabase CLI. Docker must be running since the Supabase CLI uses it internally.
 
 #### Prerequisites
 
-1. **Docker** must be installed and running
-2. **Port availability** - The following ports must be free:
-   - 5432 (PostgreSQL database)
-   - 5050 (Storage API - sometimes 5000 conflicts macOS AirPlay conflict)
-   - 8000 (Kong API Gateway)
-   - 50020 (imgproxy for image transformations)
-
-**Note:** If port 5000 conflicts with macOS AirPlay Receiver, the docker-compose.yml has been configured to use port 5050 instead.
+1. **Docker** must be installed and running (used by Supabase CLI internally)
+2. **Supabase CLI** — installed automatically via `npx supabase`
 
 #### Test Scripts Overview
 
-| Script         | Description                       | What it does                                                      |
-| -------------- | --------------------------------- | ----------------------------------------------------------------- |
-| `test:storage` | **Complete test workflow**        | Runs the full test cycle: clean → start infra → run tests → clean |
-| `test:suite`   | **Jest tests only**               | Runs Jest tests with coverage (requires infra to be running)      |
-| `test:infra`   | **Start test infrastructure**     | Starts Docker containers for storage API, database, and Kong      |
-| `test:clean`   | **Stop and clean infrastructure** | Stops all Docker containers and removes them                      |
+| Script            | Description                       | What it does                                                      |
+| ----------------- | --------------------------------- | ----------------------------------------------------------------- |
+| `test:storage`    | **Complete test workflow**        | Runs the full test cycle: clean → start infra → run tests → clean |
+| `test:suite`      | **Jest tests only**               | Runs Jest tests with coverage (requires infra to be running)      |
+| `test:infra`      | **Start test infrastructure**     | Starts Supabase CLI stack (PostgreSQL, Storage API, Kong, etc.)   |
+| `test:clean-post` | **Stop and clean infrastructure** | Stops the Supabase CLI stack                                      |
 
 #### Running Tests
 
@@ -1225,7 +1219,7 @@ npx nx test:infra storage-js
 npx nx test:suite storage-js
 
 # Step 3: When done, clean up the infrastructure
-npx nx test:clean storage-js
+npx nx test:clean-post storage-js
 ```
 
 ##### Option 3: Development Mode
@@ -1240,53 +1234,26 @@ npx nx test:infra storage-js
 npx nx test:suite storage-js --watch
 
 # Clean up when done
-npx nx test:clean storage-js
+npx nx test:clean-post storage-js
 ```
 
 #### Test Infrastructure Details
 
-The test infrastructure (`infra/docker-compose.yml`) includes:
-
-- **PostgreSQL Database** (port 5432)
-  - Initialized with storage schema and test data
-  - Contains bucket configurations and permissions
-
-- **Storage API** (port 5050, internal 5000)
-  - Supabase Storage service for handling file operations
-  - Configured with test authentication keys
-
-- **Kong Gateway** (port 8000)
-  - API gateway that routes requests to storage service
-  - Handles authentication and CORS
-
-- **imgproxy** (port 50020)
-  - Image transformation service for on-the-fly image processing
+The test infrastructure is managed via the Supabase CLI (`npx supabase start --workdir test`), which starts a local Supabase stack defined by the config in `test/`. This includes PostgreSQL, the Storage API, Kong Gateway, and supporting services.
 
 #### Common Issues and Solutions
 
-| Issue                             | Solution                                                                                                                               |
-| --------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
-| Port 5000 already in use          | macOS AirPlay uses this port. Either disable AirPlay Receiver in System Settings or use the modified docker-compose.yml with port 5050 |
-| Port 5432 already in use          | Another PostgreSQL instance is running. Stop it or modify the port in docker-compose.yml                                               |
-| "request failed, reason:" errors  | Infrastructure isn't running. Run `npx nx test:infra storage-js` first                                                                 |
-| Tests fail with connection errors | Ensure Docker is running and healthy                                                                                                   |
-| "Container name already exists"   | Run `npx nx test:clean storage-js` to remove existing containers                                                                       |
+| Issue                             | Solution                                                                                         |
+| --------------------------------- | ------------------------------------------------------------------------------------------------ |
+| Port conflicts                    | Another service is using a required port. Run `npx nx test:clean-post storage-js` then try again |
+| "request failed, reason:" errors  | Infrastructure isn't running. Run `npx nx test:infra storage-js` first                           |
+| Tests fail with connection errors | Ensure Docker is running (Supabase CLI requires Docker)                                          |
+| Stack already running             | Run `npx nx test:clean-post storage-js` to stop it before restarting                             |
 
 #### Understanding Test Failures
 
 - **StorageUnknownError with "request failed"**: Infrastructure not running
-- **Port binding errors**: Ports are already in use by other services
-- **Snapshot failures**: Expected test data has changed - review and update snapshots if needed
-
-#### What About Supabase CLI?
-
-**No**, you don't need `supabase start` or a regular Supabase instance for these tests. The storage-js tests use their own specialized Docker setup that's lighter and focused specifically on testing the storage SDK. This test infrastructure:
-
-- Is completely independent from any Supabase CLI projects
-- Uses fixed test authentication keys
-- Has predictable test data and bucket configurations
-- Runs faster than a full Supabase stack
-- Doesn't interfere with your local Supabase development projects
+- **Snapshot failures**: Expected test data has changed — review and update snapshots if needed
 
 ### Contributing
 
