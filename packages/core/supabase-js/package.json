@@ -118,5 +118,10 @@
   },
   "engines": {
     "node": ">=20.0.0"
+  },
+  "tsd": {
+    "compilerOptions": {
+      "moduleResolution": "bundler"
+    }
   }
 }
