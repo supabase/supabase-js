@@ -412,13 +412,14 @@ describe('Object API', () => {
         let hasNext = true
         let pages = 0
         while (hasNext) {
-          const res = await storage.from(bucketName).listV2({
+          const options = {
             prefix: 'testpath/',
             with_delimiter: true,
             limit: 2,
-            cursor,
-            sortBy,
-          })
+            ...(cursor ? { cursor } : {}),
+            ...(sortBy ? { sortBy } : {}),
+          }
+          const res = await storage.from(bucketName).listV2(options)
 
           expect(res.error).toBeNull()
           expect(res.data?.objects).toHaveLength(2)
