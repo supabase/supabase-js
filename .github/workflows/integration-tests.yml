@@ -157,6 +157,7 @@ jobs:
 
           cd packages/core/supabase-js/test/integration/next
           npm install --legacy-peer-deps --ignore-scripts
+          npx playwright install --with-deps
           cd "$GITHUB_WORKSPACE"
 
           cd packages/core/supabase-js/test/integration/expo

@@ -57,7 +57,7 @@
     "test:unit": "jest --runInBand --detectOpenHandles test/unit",
     "test:coverage": "jest --runInBand --coverage --testPathIgnorePatterns=\"test/integration|test/deno\"",
     "test:integration": "jest --runInBand --detectOpenHandles test/integration.test.ts",
-    "test:integration:browser": "deno test --node-modules-dir=manual --allow-all test/integration.browser.test.ts",
+    "test:integration:browser": "deno test --allow-all test/integration.browser.test.ts",
     "test:edge-functions": "cd test/deno && npm run test:edge-functions",
     "test:deno": "cd test/deno && npm run test",
     "test:watch": "jest --watch --verbose false --silent false",
