@@ -30,7 +30,7 @@ export default abstract class BaseApiClient<TError extends StorageError = Storag
     namespace: ErrorNamespace = 'storage'
   ) {
     this.url = url
-    this.headers = headers
+    this.headers = Object.fromEntries(Object.entries(headers).map(([k, v]) => [k.toLowerCase(), v]))
     this.fetch = resolveFetch(fetch)
     this.namespace = namespace
   }
@@ -55,7 +55,7 @@ export default abstract class BaseApiClient<TError extends StorageError = Storag
    * @returns this - For method chaining
    */
   public setHeader(name: string, value: string): this {
-    this.headers = { ...this.headers, [name]: value }
+    this.headers = { ...this.headers, [name.toLowerCase()]: value }
     return this
   }
 

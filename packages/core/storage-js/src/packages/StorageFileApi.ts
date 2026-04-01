@@ -112,7 +112,7 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
       } else {
         body = fileBody
         headers['cache-control'] = `max-age=${options.cacheControl}`
-        headers = this.setRequestHeader(headers, 'Content-Type', options.contentType as string)
+        headers['content-type'] = options.contentType as string
 
         if (metadata) {
           headers['x-metadata'] = this.toBase64(this.encodeMetadata(metadata))
@@ -266,7 +266,7 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
     return this.handleOperation(async () => {
       let body
       const options = { ...DEFAULT_FILE_OPTIONS, ...fileOptions }
-      let headers: Record<string, string> = {
+      const headers: Record<string, string> = {
         ...this.headers,
         ...{ 'x-upsert': String(options.upsert as boolean) },
       }
@@ -281,26 +281,13 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
       } else {
         body = fileBody
         headers['cache-control'] = `max-age=${options.cacheControl}`
-        headers = this.setRequestHeader(headers, 'Content-Type', options.contentType as string)
+        headers['content-type'] = options.contentType as string
       }
 
       const data = await put(this.fetch, url.toString(), body as object, { headers })
 
       return { path: cleanPath, fullPath: data.Key }
     })
-  }
-
-  private setRequestHeader(headers: Record<string, string>, name: string, value: string) {
-    const nextHeaders = { ...headers }
-
-    for (const key of Object.keys(nextHeaders)) {
-      if (key.toLowerCase() === name.toLowerCase()) {
-        delete nextHeaders[key]
-      }
-    }
-
-    nextHeaders[name] = value
-    return nextHeaders
   }
 
   /**
