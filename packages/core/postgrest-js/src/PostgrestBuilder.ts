@@ -362,7 +362,13 @@ export default abstract class PostgrestBuilder<
       })
     }
 
-    return res.then(onfulfilled, onrejected)
+    return (
+      res as Promise<
+        ThrowOnError extends true
+          ? PostgrestResponseSuccess<Result>
+          : PostgrestSingleResponse<Result>
+      >
+    ).then(onfulfilled, onrejected)
   }
 
   /**
