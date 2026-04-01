@@ -678,6 +678,11 @@ describe('GoTrueClient', () => {
       expect(body.code_challenge).not.toBeNull()
       expect(body.code_challenge_method).toBe('s256')
       expect(body.type).toBe('email_change')
+
+      // @ts-expect-error 'Allow access to protected storageKey'
+      const storageKey = client.storageKey
+      const codeVerifier = await storage.getItem(`${storageKey}-code-verifier`)
+      expect(codeVerifier).not.toBeNull()
     })
 
     test('resend with PKCE cleans up code verifier on HTTP error', async () => {
@@ -713,6 +718,37 @@ describe('GoTrueClient', () => {
       const storageKey = client.storageKey
       const codeVerifier = await storage.getItem(`${storageKey}-code-verifier`)
       expect(codeVerifier).toBeNull()
+    })
+
+    test('resend without PKCE does not include code_challenge in request', async () => {
+      const mockFetch = jest.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        headers: new Headers(),
+        json: () => Promise.resolve({}),
+      })
+
+      const storage = memoryLocalStorageAdapter()
+      const client = new GoTrueClient({
+        url: GOTRUE_URL_SIGNUP_ENABLED_AUTO_CONFIRM_ON,
+        autoRefreshToken: false,
+        persistSession: true,
+        storage,
+        fetch: mockFetch,
+      })
+
+      const { error } = await client.resend({
+        email: 'test@example.com',
+        type: 'signup',
+      })
+      expect(error).toBeNull()
+
+      // Verify code_challenge fields are null in implicit flow
+      expect(mockFetch).toHaveBeenCalledTimes(1)
+      const [, fetchOptions] = mockFetch.mock.calls[0]
+      const body = JSON.parse(fetchOptions.body)
+      expect(body.code_challenge).toBeNull()
+      expect(body.code_challenge_method).toBeNull()
     })
 
     // Phone resend tests moved to docker-tests/phone-otp.test.ts
