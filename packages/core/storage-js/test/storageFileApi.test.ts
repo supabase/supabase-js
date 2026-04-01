@@ -1009,9 +1009,29 @@ describe('StorageFileApi Edge Cases', () => {
       expect(mockPost).toHaveBeenCalled()
       const [, , , { headers }] = mockPost.mock.calls[0]
 
-      expect(headers['Content-Type']).toBe('image/png')
-      expect(headers['content-type']).toBeUndefined()
-      expect(new Headers(headers).get('Content-Type')).toBe('image/png')
+      expect(headers['content-type']).toBe('image/png')
+      expect(headers['Content-Type']).toBeUndefined()
+      expect(new Headers(headers).get('content-type')).toBe('image/png')
+    })
+
+    test('uploadToSignedUrl prefers file content type over existing content type header', async () => {
+      const clientWithContentType = new StorageClient('http://localhost:8000/storage/v1', {
+        apikey: 'test-token',
+        'Content-Type': 'application/json',
+      })
+
+      await clientWithContentType
+        .from('test-bucket')
+        .uploadToSignedUrl('test-path', 'test-token', 'test content', {
+          contentType: 'image/png',
+        })
+
+      expect(mockPut).toHaveBeenCalled()
+      const [, , , { headers }] = mockPut.mock.calls[0]
+
+      expect(headers['content-type']).toBe('image/png')
+      expect(headers['Content-Type']).toBeUndefined()
+      expect(new Headers(headers).get('content-type')).toBe('image/png')
     })
   })
 })
