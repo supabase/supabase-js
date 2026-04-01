@@ -8,6 +8,7 @@
     "skipLibCheck": true,
     "module": "ES2022",
     "target": "ES2022",
-    "rootDir": "."
+    "rootDir": ".",
+    "types": ["jest"]
   }
 }
