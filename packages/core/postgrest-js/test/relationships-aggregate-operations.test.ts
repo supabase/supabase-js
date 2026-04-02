@@ -22,6 +22,7 @@ test('select with aggregate count function', async () => {
       "error": null,
       "status": 200,
       "statusText": "OK",
+      "success": true,
     }
   `)
   let result: Exclude<typeof res.data, null>
@@ -58,6 +59,7 @@ test('select with aggregate count on a column function', async () => {
       "error": null,
       "status": 200,
       "statusText": "OK",
+      "success": true,
     }
   `)
   let result: Exclude<typeof res.data, null>
@@ -94,6 +96,7 @@ test('select with aggregate count function and alias', async () => {
       "error": null,
       "status": 200,
       "statusText": "OK",
+      "success": true,
     }
   `)
   let result: Exclude<typeof res.data, null>
@@ -147,6 +150,7 @@ test('select with aggregate nested count function', async () => {
       "error": null,
       "status": 200,
       "statusText": "OK",
+      "success": true,
     }
   `)
   let result: Exclude<typeof res.data, null>
@@ -202,6 +206,7 @@ test('select with aggregate nested count function and alias', async () => {
       "error": null,
       "status": 200,
       "statusText": "OK",
+      "success": true,
     }
   `)
   let result: Exclude<typeof res.data, null>
@@ -236,6 +241,7 @@ test('select with aggregate sum function', async () => {
       "error": null,
       "status": 200,
       "statusText": "OK",
+      "success": true,
     }
   `)
   let result: Exclude<typeof res.data, null>
@@ -272,6 +278,7 @@ test('select with aggregate aliased sum function', async () => {
       "error": null,
       "status": 200,
       "statusText": "OK",
+      "success": true,
     }
   `)
   let result: Exclude<typeof res.data, null>
@@ -325,6 +332,7 @@ test('select with aggregate sum function on nested relation', async () => {
       "error": null,
       "status": 200,
       "statusText": "OK",
+      "success": true,
     }
   `)
   let result: Exclude<typeof res.data, null>

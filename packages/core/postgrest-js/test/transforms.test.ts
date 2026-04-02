@@ -57,6 +57,7 @@ test('order', async () => {
       "error": null,
       "status": 200,
       "statusText": "OK",
+      "success": true,
     }
   `)
 })
@@ -103,6 +104,7 @@ test('order on multiple columns', async () => {
       "error": null,
       "status": 200,
       "statusText": "OK",
+      "success": true,
     }
   `)
 })
@@ -124,6 +126,7 @@ test('limit', async () => {
       "error": null,
       "status": 200,
       "statusText": "OK",
+      "success": true,
     }
   `)
 })
@@ -166,6 +169,7 @@ test('range', async () => {
       "error": null,
       "status": 200,
       "statusText": "OK",
+      "success": true,
     }
   `)
 })
@@ -185,6 +189,7 @@ test('single', async () => {
       "error": null,
       "status": 200,
       "statusText": "OK",
+      "success": true,
     }
   `)
 })
@@ -204,6 +209,7 @@ test('single on insert', async () => {
       "error": null,
       "status": 201,
       "statusText": "Created",
+      "success": true,
     }
   `)
 
@@ -219,6 +225,7 @@ test('maybeSingle', async () => {
       "error": null,
       "status": 200,
       "statusText": "OK",
+      "success": true,
     }
   `)
 })
@@ -241,6 +248,7 @@ test('maybeSingle', async () => {
       },
       "status": 406,
       "statusText": "Not Acceptable",
+      "success": false,
     }
   `)
 
@@ -261,6 +269,7 @@ test('select on insert', async () => {
       "error": null,
       "status": 201,
       "statusText": "Created",
+      "success": true,
     }
   `)
 
@@ -282,6 +291,7 @@ test('select on rpc', async () => {
       "error": null,
       "status": 200,
       "statusText": "OK",
+      "success": true,
     }
   `)
 })
@@ -300,6 +310,7 @@ test('csv', async () => {
       "error": null,
       "status": 200,
       "statusText": "OK",
+      "success": true,
     }
   `)
 })
@@ -331,6 +342,7 @@ test('geojson', async () => {
       "error": null,
       "status": 200,
       "statusText": "OK",
+      "success": true,
     }
   `)
 })
@@ -359,6 +371,7 @@ test('abort signal', async () => {
       },
       "status": 0,
       "statusText": "",
+      "success": false,
     }
   `
   )
@@ -385,6 +398,7 @@ test('explain with json/text format', async () => {
       "error": null,
       "status": 200,
       "statusText": "OK",
+      "success": true,
     }
   `
   )
@@ -423,6 +437,7 @@ test('explain with options', async () => {
       "error": null,
       "status": 200,
       "statusText": "OK",
+      "success": true,
     }
   `
   )

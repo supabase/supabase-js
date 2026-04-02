@@ -83,6 +83,7 @@ describe('advanced rpc', () => {
         "error": null,
         "status": 200,
         "statusText": "OK",
+        "success": true,
       }
     `)
     ExpectedSchema.parse(res.data)
@@ -138,6 +139,7 @@ describe('advanced rpc', () => {
         "error": null,
         "status": 200,
         "statusText": "OK",
+        "success": true,
       }
     `)
     ExpectedSchema.parse(res.data)
@@ -166,6 +168,7 @@ describe('advanced rpc', () => {
         "error": null,
         "status": 200,
         "statusText": "OK",
+        "success": true,
       }
     `)
     UserProfileSchema.parse(res.data)
@@ -217,6 +220,7 @@ describe('advanced rpc', () => {
         "error": null,
         "status": 200,
         "statusText": "OK",
+        "success": true,
       }
     `)
     ExpectedSchema.parse(res.data)
@@ -272,6 +276,7 @@ describe('advanced rpc', () => {
         "error": null,
         "status": 200,
         "statusText": "OK",
+        "success": true,
       }
     `)
     ExpectedSchema.parse(res.data)
@@ -327,6 +332,7 @@ describe('advanced rpc', () => {
         "error": null,
         "status": 200,
         "statusText": "OK",
+        "success": true,
       }
     `)
     ExpectedSchema.parse(res.data)
@@ -381,6 +387,7 @@ describe('advanced rpc', () => {
         "error": null,
         "status": 200,
         "statusText": "OK",
+        "success": true,
       }
     `)
     RecentMessagesSchema.array().parse(res.data)
@@ -429,6 +436,7 @@ describe('advanced rpc', () => {
         "error": null,
         "status": 200,
         "statusText": "OK",
+        "success": true,
       }
     `)
     RecentMessagesSchema.array().parse(res.data)
@@ -483,6 +491,7 @@ describe('advanced rpc', () => {
         "error": null,
         "status": 200,
         "statusText": "OK",
+        "success": true,
       }
     `)
     SelectWithUsersSchema.array().parse(res.data)
@@ -517,6 +526,7 @@ describe('advanced rpc', () => {
         "error": null,
         "status": 200,
         "statusText": "OK",
+        "success": true,
       }
     `)
     SelectWithUsersProfileSchema.parse(res.data)
@@ -534,6 +544,7 @@ describe('advanced rpc', () => {
         "error": null,
         "status": 204,
         "statusText": "No Content",
+        "success": true,
       }
     `)
   })
@@ -558,6 +569,7 @@ describe('advanced rpc', () => {
         },
         "status": 300,
         "statusText": "Multiple Choices",
+        "success": false,
       }
     `)
   })
@@ -582,6 +594,7 @@ describe('advanced rpc', () => {
         },
         "status": 300,
         "statusText": "Multiple Choices",
+        "success": false,
       }
     `)
   })
@@ -598,6 +611,7 @@ describe('advanced rpc', () => {
         "error": null,
         "status": 204,
         "statusText": "No Content",
+        "success": true,
       }
     `)
   })
@@ -616,6 +630,7 @@ describe('advanced rpc', () => {
         "error": null,
         "status": 200,
         "statusText": "OK",
+        "success": true,
       }
     `)
   })
@@ -634,6 +649,7 @@ describe('advanced rpc', () => {
         "error": null,
         "status": 200,
         "statusText": "OK",
+        "success": true,
       }
     `)
   })
@@ -657,6 +673,7 @@ describe('advanced rpc', () => {
         "error": null,
         "status": 200,
         "statusText": "OK",
+        "success": true,
       }
     `)
     UserProfileSchema.array().parse(res.data)
@@ -686,6 +703,7 @@ describe('advanced rpc', () => {
         "error": null,
         "status": 200,
         "statusText": "OK",
+        "success": true,
       }
     `)
     ExpectedSchema.parse(res.data)
@@ -741,6 +759,7 @@ describe('advanced rpc', () => {
         "error": null,
         "status": 200,
         "statusText": "OK",
+        "success": true,
       }
     `)
     ExpectedSchema.parse(res.data)
@@ -760,6 +779,7 @@ describe('advanced rpc', () => {
         "error": null,
         "status": 200,
         "statusText": "OK",
+        "success": true,
       }
     `)
   })
@@ -776,6 +796,7 @@ describe('advanced rpc', () => {
         "error": null,
         "status": 200,
         "statusText": "OK",
+        "success": true,
       }
     `)
   })
@@ -800,6 +821,7 @@ describe('advanced rpc', () => {
         },
         "status": 404,
         "statusText": "Not Found",
+        "success": false,
       }
     `)
   })
@@ -818,6 +840,7 @@ describe('advanced rpc', () => {
         "error": null,
         "status": 200,
         "statusText": "OK",
+        "success": true,
       }
     `)
   })
@@ -836,6 +859,7 @@ describe('advanced rpc', () => {
         "error": null,
         "status": 200,
         "statusText": "OK",
+        "success": true,
       }
     `)
   })
@@ -854,6 +878,7 @@ describe('advanced rpc', () => {
         "error": null,
         "status": 200,
         "statusText": "OK",
+        "success": true,
       }
     `)
   })
@@ -870,6 +895,7 @@ describe('advanced rpc', () => {
         "error": null,
         "status": 200,
         "statusText": "OK",
+        "success": true,
       }
     `)
   })
@@ -888,6 +914,7 @@ describe('advanced rpc', () => {
         "error": null,
         "status": 200,
         "statusText": "OK",
+        "success": true,
       }
     `)
   })
@@ -906,6 +933,7 @@ describe('advanced rpc', () => {
         "error": null,
         "status": 200,
         "statusText": "OK",
+        "success": true,
       }
     `)
   })
@@ -927,6 +955,7 @@ describe('advanced rpc', () => {
         },
         "status": 300,
         "statusText": "Multiple Choices",
+        "success": false,
       }
     `)
   })
@@ -950,6 +979,7 @@ describe('advanced rpc', () => {
         },
         "status": 300,
         "statusText": "Multiple Choices",
+        "success": false,
       }
     `)
   })
@@ -968,6 +998,7 @@ describe('advanced rpc', () => {
         "error": null,
         "status": 200,
         "statusText": "OK",
+        "success": true,
       }
     `)
   })
@@ -989,6 +1020,7 @@ describe('advanced rpc', () => {
         },
         "status": 300,
         "statusText": "Multiple Choices",
+        "success": false,
       }
     `)
   })
@@ -1012,6 +1044,7 @@ describe('advanced rpc', () => {
         },
         "status": 300,
         "statusText": "Multiple Choices",
+        "success": false,
       }
     `)
   })
@@ -1030,6 +1063,7 @@ describe('advanced rpc', () => {
         "error": null,
         "status": 200,
         "statusText": "OK",
+        "success": true,
       }
     `)
   })
@@ -1049,6 +1083,7 @@ describe('advanced rpc', () => {
         "error": null,
         "status": 200,
         "statusText": "OK",
+        "success": true,
       }
     `)
   })
@@ -1070,6 +1105,7 @@ describe('advanced rpc', () => {
         },
         "status": 404,
         "statusText": "Not Found",
+        "success": false,
       }
     `)
   })
@@ -1100,6 +1136,7 @@ describe('advanced rpc', () => {
         },
         "status": 404,
         "statusText": "Not Found",
+        "success": false,
       }
     `)
   })
@@ -1122,6 +1159,7 @@ describe('advanced rpc', () => {
         "error": null,
         "status": 200,
         "statusText": "OK",
+        "success": true,
       }
     `)
     FunctionReturningRowSchema.parse(res.data)
@@ -1183,6 +1221,7 @@ describe('advanced rpc', () => {
         "error": null,
         "status": 200,
         "statusText": "OK",
+        "success": true,
       }
     `)
     ExpectedSchema.parse(res.data)
@@ -1214,6 +1253,7 @@ describe('advanced rpc', () => {
         "error": null,
         "status": 200,
         "statusText": "OK",
+        "success": true,
       }
     `)
     ExpectedSchema.parse(res.data)
@@ -1242,6 +1282,7 @@ describe('advanced rpc', () => {
         "error": null,
         "status": 200,
         "statusText": "OK",
+        "success": true,
       }
     `)
     UserProfileSchema.parse(res.data)
@@ -1264,6 +1305,7 @@ test('should be able to filter before and after select rpc', async () => {
       "error": null,
       "status": 200,
       "statusText": "OK",
+      "success": true,
     }
   `)
   const res2 = await postgrest
@@ -1282,6 +1324,7 @@ test('should be able to filter before and after select rpc', async () => {
       "error": null,
       "status": 200,
       "statusText": "OK",
+      "success": true,
     }
   `)
   const res3 = await postgrest
@@ -1306,6 +1349,7 @@ test('should be able to filter before and after select rpc', async () => {
       "error": null,
       "status": 200,
       "statusText": "OK",
+      "success": true,
     }
   `)
 })
@@ -1340,6 +1384,7 @@ test('RPC call with subselect and computed field', async () => {
       "error": null,
       "status": 200,
       "statusText": "OK",
+      "success": true,
     }
   `)
   let result: Exclude<typeof res.data, null>

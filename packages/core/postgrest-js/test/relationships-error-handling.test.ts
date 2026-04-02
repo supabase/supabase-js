@@ -39,6 +39,7 @@ test('join over a 1-1 relation with both nullables and non-nullables fields with
       },
       "status": 300,
       "statusText": "Multiple Choices",
+      "success": false,
     }
   `)
   let result: Exclude<typeof res.data, null>
@@ -86,6 +87,7 @@ test('join over a 1-M relation with both nullables and non-nullables fields with
       },
       "status": 300,
       "statusText": "Multiple Choices",
+      "success": false,
     }
   `)
   let result: Exclude<typeof res.data, null>
@@ -133,6 +135,7 @@ test('join over a 1-M relation with both nullables and non-nullables fields usin
       },
       "status": 300,
       "statusText": "Multiple Choices",
+      "success": false,
     }
   `)
   let result: Exclude<typeof res.data, null>
@@ -167,6 +170,7 @@ test('join with same dest twice column hinting', async () => {
       },
       "status": 400,
       "statusText": "Bad Request",
+      "success": false,
     }
   `)
   let result: Exclude<typeof res.data, null>
@@ -196,6 +200,7 @@ test('nested query with selective fields and inner join should error on non exis
       },
       "status": 400,
       "statusText": "Bad Request",
+      "success": false,
     }
   `)
   let result: Exclude<typeof res.data, null>
@@ -227,6 +232,7 @@ test('aggregate on missing column with alias', async () => {
       },
       "status": 400,
       "statusText": "Bad Request",
+      "success": false,
     }
   `)
   let result: Exclude<typeof res.data, null>
@@ -254,6 +260,7 @@ test('typecasting and aggregate', async () => {
       },
       "status": 400,
       "statusText": "Bad Request",
+      "success": false,
     }
   `)
   let result: Exclude<typeof res.data, null>
@@ -275,6 +282,7 @@ test('select with aggregate sum function without column should error', async () 
       },
       "status": 400,
       "statusText": "Bad Request",
+      "success": false,
     }
   `)
   let result: Exclude<typeof res.data, null>

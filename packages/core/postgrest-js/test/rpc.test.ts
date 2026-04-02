@@ -22,6 +22,7 @@ test('RPC call with no params', async () => {
       "error": null,
       "status": 200,
       "statusText": "OK",
+      "success": true,
     }
   `)
   // check our result types match the runtime result
@@ -51,6 +52,7 @@ test('RPC call with star select', async () => {
       "error": null,
       "status": 200,
       "statusText": "OK",
+      "success": true,
     }
   `)
   // check our result types match the runtime result
@@ -79,6 +81,7 @@ test('RPC call with single field select', async () => {
       "error": null,
       "status": 200,
       "statusText": "OK",
+      "success": true,
     }
   `)
   // check our result types match the runtime result
@@ -107,6 +110,7 @@ test('RPC call with multiple fields select', async () => {
       "error": null,
       "status": 200,
       "statusText": "OK",
+      "success": true,
     }
   `)
   // check our result types match the runtime result
@@ -135,6 +139,7 @@ test('RPC call with field aliasing', async () => {
       "error": null,
       "status": 200,
       "statusText": "OK",
+      "success": true,
     }
   `)
   // check our result types match the runtime result
@@ -162,6 +167,7 @@ test('RPC call with field casting', async () => {
       "error": null,
       "status": 200,
       "statusText": "OK",
+      "success": true,
     }
   `)
   // check our result types match the runtime result
@@ -192,6 +198,7 @@ test('RPC call with field aggregate', async () => {
       "error": null,
       "status": 200,
       "statusText": "OK",
+      "success": true,
     }
   `)
   // check our result types match the runtime result
