@@ -173,6 +173,20 @@ const postgrestWithOptions = new PostgrestClient<DatabaseWithOptions>(REST_URL)
   postgrest.from('updatable_view').update({ non_updatable_column: 0 })
 }
 
+// reject excess properties on insert, update, and upsert (#1636)
+{
+  // @ts-expect-error No overload matches this call.
+  postgrest.from('users').insert({ username: 'foo', nonexistent: 'bad' })
+}
+{
+  // @ts-expect-error Type 'string' is not assignable to type 'never'.
+  postgrest.from('users').update({ username: 'foo', nonexistent: 'bad' })
+}
+{
+  // @ts-expect-error No overload matches this call.
+  postgrest.from('users').upsert({ username: 'foo', nonexistent: 'bad' })
+}
+
 // spread resource with single column in select query
 {
   const result = await postgrest.from('messages').select('message, ...users(status)').single()

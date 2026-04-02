@@ -7,6 +7,7 @@ import {
   GenericTable,
   GenericView,
 } from './types/common/common'
+import { RejectExcessProperties } from './types/types'
 
 export default class PostgrestQueryBuilder<
   ClientOptions extends ClientServerOptions,
@@ -929,7 +930,10 @@ export default class PostgrestQueryBuilder<
 
   // TODO(v3): Make `defaultToNull` consistent for both single & bulk inserts.
   insert<Row extends Relation extends { Insert: unknown } ? Relation['Insert'] : never>(
-    values: Row,
+    values: RejectExcessProperties<
+      Relation extends { Insert: unknown } ? Relation['Insert'] : never,
+      Row
+    >,
     options?: {
       count?: 'exact' | 'planned' | 'estimated'
     }
@@ -943,7 +947,10 @@ export default class PostgrestQueryBuilder<
     'POST'
   >
   insert<Row extends Relation extends { Insert: unknown } ? Relation['Insert'] : never>(
-    values: Row[],
+    values: RejectExcessProperties<
+      Relation extends { Insert: unknown } ? Relation['Insert'] : never,
+      Row
+    >[],
     options?: {
       count?: 'exact' | 'planned' | 'estimated'
       defaultToNull?: boolean
@@ -1069,7 +1076,15 @@ export default class PostgrestQueryBuilder<
    * ```
    */
   insert<Row extends Relation extends { Insert: unknown } ? Relation['Insert'] : never>(
-    values: Row | Row[],
+    values:
+      | RejectExcessProperties<
+          Relation extends { Insert: unknown } ? Relation['Insert'] : never,
+          Row
+        >
+      | RejectExcessProperties<
+          Relation extends { Insert: unknown } ? Relation['Insert'] : never,
+          Row
+        >[],
     {
       count,
       defaultToNull = true,
@@ -1118,7 +1133,10 @@ export default class PostgrestQueryBuilder<
 
   // TODO(v3): Make `defaultToNull` consistent for both single & bulk upserts.
   upsert<Row extends Relation extends { Insert: unknown } ? Relation['Insert'] : never>(
-    values: Row,
+    values: RejectExcessProperties<
+      Relation extends { Insert: unknown } ? Relation['Insert'] : never,
+      Row
+    >,
     options?: {
       onConflict?: string
       ignoreDuplicates?: boolean
@@ -1134,7 +1152,10 @@ export default class PostgrestQueryBuilder<
     'POST'
   >
   upsert<Row extends Relation extends { Insert: unknown } ? Relation['Insert'] : never>(
-    values: Row[],
+    values: RejectExcessProperties<
+      Relation extends { Insert: unknown } ? Relation['Insert'] : never,
+      Row
+    >[],
     options?: {
       onConflict?: string
       ignoreDuplicates?: boolean
@@ -1360,7 +1381,15 @@ export default class PostgrestQueryBuilder<
    */
 
   upsert<Row extends Relation extends { Insert: unknown } ? Relation['Insert'] : never>(
-    values: Row | Row[],
+    values:
+      | RejectExcessProperties<
+          Relation extends { Insert: unknown } ? Relation['Insert'] : never,
+          Row
+        >
+      | RejectExcessProperties<
+          Relation extends { Insert: unknown } ? Relation['Insert'] : never,
+          Row
+        >[],
     {
       onConflict,
       ignoreDuplicates = false,
@@ -1554,7 +1583,10 @@ export default class PostgrestQueryBuilder<
    * ```
    */
   update<Row extends Relation extends { Update: unknown } ? Relation['Update'] : never>(
-    values: Row,
+    values: RejectExcessProperties<
+      Relation extends { Update: unknown } ? Relation['Update'] : never,
+      Row
+    >,
     {
       count,
     }: {

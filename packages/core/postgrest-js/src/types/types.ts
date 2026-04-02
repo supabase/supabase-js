@@ -38,6 +38,12 @@ export type DatabaseWithOptions<Database, Options extends ClientServerOptions> =
 // https://twitter.com/mattpocockuk/status/1622730173446557697
 export type Prettify<T> = { [K in keyof T]: T[K] } & {}
 
+// Rejects excess properties that aren't in Base.
+// Works around TypeScript not checking excess properties on generic parameters.
+export type RejectExcessProperties<Base, Row> = Row & {
+  [K in Exclude<keyof Row, keyof Base>]: never
+}
+
 // https://github.com/sindresorhus/type-fest
 export type SimplifyDeep<Type, ExcludeType = never> = ConditionalSimplifyDeep<
   Type,
