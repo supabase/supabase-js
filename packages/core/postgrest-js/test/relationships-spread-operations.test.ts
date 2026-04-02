@@ -35,6 +35,12 @@ test('select with aggregate count and spread', async () => {
               "details": null,
             },
           },
+          {
+            "channels": {
+              "count": 1,
+              "details": null,
+            },
+          },
         ],
         "username": "supabot",
       },
@@ -81,6 +87,12 @@ test('spread resource with single column in select query', async () => {
             "channels": {
               "count": 1,
               "details": "Details for random channel",
+            },
+          },
+          {
+            "channels": {
+              "count": 1,
+              "details": null,
             },
           },
           {
@@ -146,6 +158,13 @@ test('spread resource with all columns in select query', async () => {
               "id": null,
             },
           },
+          {
+            "channels": {
+              "count": 1,
+              "details": null,
+              "id": null,
+            },
+          },
         ],
         "username": "supabot",
       },
@@ -193,6 +212,12 @@ test('select with aggregate sum and spread', async () => {
             "channels": {
               "details": "Details for random channel",
               "sum": 2,
+            },
+          },
+          {
+            "channels": {
+              "details": null,
+              "sum": 3,
             },
           },
           {
@@ -251,6 +276,13 @@ test('select with aggregate sum and spread on nested relation', async () => {
               "details": "Details for random channel",
               "details_sum": 2,
               "sum": 2,
+            },
+          },
+          {
+            "channels": {
+              "details": null,
+              "details_sum": null,
+              "sum": 3,
             },
           },
           {

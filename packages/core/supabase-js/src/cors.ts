@@ -33,8 +33,15 @@
  * - x-client-info: Library version information
  * - apikey: Project API key
  * - content-type: Standard HTTP content type
+ * - x-retry-count: Retry attempt number sent by postgrest-js on retried requests
  */
-const SUPABASE_HEADERS = ['authorization', 'x-client-info', 'apikey', 'content-type'].join(', ')
+const SUPABASE_HEADERS = [
+  'authorization',
+  'x-client-info',
+  'apikey',
+  'content-type',
+  'x-retry-count',
+].join(', ')
 
 /**
  * All HTTP methods used by the Supabase SDK

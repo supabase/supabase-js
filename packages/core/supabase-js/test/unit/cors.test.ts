@@ -21,6 +21,7 @@ describe('CORS Module', () => {
       expect(allowedHeaders).toContain('x-client-info')
       expect(allowedHeaders).toContain('apikey')
       expect(allowedHeaders).toContain('content-type')
+      expect(allowedHeaders).toContain('x-retry-count')
     })
 
     it('should include all HTTP methods including OPTIONS', () => {

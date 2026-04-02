@@ -5,9 +5,65 @@ import type {
   MergePartialResult,
   IsValidResultOverride,
 } from './types/types'
-import { ClientServerOptions, Fetch } from './types/common/common'
+import {
+  ClientServerOptions,
+  Fetch,
+  DEFAULT_MAX_RETRIES,
+  getRetryDelay,
+  RETRYABLE_STATUS_CODES,
+  RETRYABLE_METHODS,
+} from './types/common/common'
 import PostgrestError from './PostgrestError'
 import { ContainsNull } from './select-query-parser/types'
+
+/**
+ * Sleep for a given number of milliseconds.
+ * If an AbortSignal is provided, the sleep resolves early when the signal is aborted.
+ */
+function sleep(ms: number, signal?: AbortSignal): Promise<void> {
+  return new Promise((resolve) => {
+    if (signal?.aborted) {
+      resolve()
+      return
+    }
+    const id = setTimeout(() => {
+      signal?.removeEventListener('abort', onAbort)
+      resolve()
+    }, ms)
+    function onAbort() {
+      clearTimeout(id)
+      resolve()
+    }
+    signal?.addEventListener('abort', onAbort)
+  })
+}
+
+/**
+ * Check if a request should be retried based on method and status code.
+ */
+function shouldRetry(
+  method: string,
+  status: number,
+  attemptCount: number,
+  retryEnabled: boolean
+): boolean {
+  // Don't retry if retries are disabled or we've exhausted attempts
+  if (!retryEnabled || attemptCount >= DEFAULT_MAX_RETRIES) {
+    return false
+  }
+
+  // Only retry idempotent methods (GET, HEAD, OPTIONS)
+  if (!RETRYABLE_METHODS.includes(method as (typeof RETRYABLE_METHODS)[number])) {
+    return false
+  }
+
+  // Only retry on specific status codes (520 - Cloudflare errors)
+  if (!RETRYABLE_STATUS_CODES.includes(status as (typeof RETRYABLE_STATUS_CODES)[number])) {
+    return false
+  }
+
+  return true
+}
 
 export default abstract class PostgrestBuilder<
   ClientOptions extends ClientServerOptions,
@@ -28,6 +84,9 @@ export default abstract class PostgrestBuilder<
   protected fetch: Fetch
   protected isMaybeSingle: boolean
   protected urlLengthLimit: number
+
+  // Retry configuration - enabled by default
+  protected retryEnabled: boolean = true
 
   /**
    * Creates a builder configured for a specific PostgREST request.
@@ -65,6 +124,8 @@ export default abstract class PostgrestBuilder<
     fetch?: Fetch
     isMaybeSingle?: boolean
     urlLengthLimit?: number
+    // Retry option
+    retry?: boolean
   }) {
     this.method = builder.method
     this.url = builder.url
@@ -75,6 +136,7 @@ export default abstract class PostgrestBuilder<
     this.signal = builder.signal
     this.isMaybeSingle = builder.isMaybeSingle ?? false
     this.urlLengthLimit = builder.urlLengthLimit ?? 8000
+    this.retryEnabled = builder.retry ?? true
 
     if (builder.fetch) {
       this.fetch = builder.fetch
@@ -107,9 +169,31 @@ export default abstract class PostgrestBuilder<
     return this
   }
 
-  /**  *
+  /**
    * @category Database
+   *
+   * Configure retry behavior for this request.
+   *
+   * By default, retries are enabled for idempotent requests (GET, HEAD, OPTIONS)
+   * that fail with network errors or specific HTTP status codes (503, 520).
+   * Retries use exponential backoff (1s, 2s, 4s) with a maximum of 3 attempts.
+   *
+   * @param enabled - Whether to enable retries for this request
+   *
+   * @example
+   * ```ts
+   * // Disable retries for a specific query
+   * const { data, error } = await supabase
+   *   .from('users')
+   *   .select()
+   *   .retry(false)
+   * ```
    */
+  retry(enabled: boolean): this {
+    this.retryEnabled = enabled
+    return this
+  }
+
   then<
     TResult1 = ThrowOnError extends true
       ? PostgrestResponseSuccess<Result>
@@ -141,101 +225,74 @@ export default abstract class PostgrestBuilder<
     // NOTE: Invoke w/o `this` to avoid illegal invocation error.
     // https://github.com/supabase/postgrest-js/pull/247
     const _fetch = this.fetch
-    let res = _fetch(this.url.toString(), {
-      method: this.method,
-      headers: this.headers,
-      body: JSON.stringify(this.body),
-      signal: this.signal,
-    }).then(async (res) => {
-      let error = null
-      let data = null
-      let count: number | null = null
-      let status = res.status
-      let statusText = res.statusText
 
-      if (res.ok) {
-        if (this.method !== 'HEAD') {
-          const body = await res.text()
-          if (body === '') {
-            // Prefer: return=minimal
-          } else if (this.headers.get('Accept') === 'text/csv') {
-            data = body
-          } else if (
-            this.headers.get('Accept') &&
-            this.headers.get('Accept')?.includes('application/vnd.pgrst.plan+text')
-          ) {
-            data = body
-          } else {
-            data = JSON.parse(body)
-          }
+    // Execute fetch with retry logic
+    const executeWithRetry = async (): Promise<{
+      error: any
+      data: any
+      count: number | null
+      status: number
+      statusText: string
+    }> => {
+      let attemptCount = 0
+
+      while (true) {
+        const requestHeaders = new Headers(this.headers)
+        if (attemptCount > 0) {
+          requestHeaders.set('X-Retry-Count', String(attemptCount))
         }
 
-        const countHeader = this.headers.get('Prefer')?.match(/count=(exact|planned|estimated)/)
-        const contentRange = res.headers.get('content-range')?.split('/')
-        if (countHeader && contentRange && contentRange.length > 1) {
-          count = parseInt(contentRange[1])
-        }
-
-        // Fix for https://github.com/supabase/postgrest-js/issues/361 — applies to all methods.
-        if (this.isMaybeSingle && Array.isArray(data)) {
-          if (data.length > 1) {
-            error = {
-              // https://github.com/PostgREST/postgrest/blob/a867d79c42419af16c18c3fb019eba8df992626f/src/PostgREST/Error.hs#L553
-              code: 'PGRST116',
-              details: `Results contain ${data.length} rows, application/vnd.pgrst.object+json requires 1 row`,
-              hint: null,
-              message: 'JSON object requested, multiple (or no) rows returned',
-            }
-            data = null
-            count = null
-            status = 406
-            statusText = 'Not Acceptable'
-          } else if (data.length === 1) {
-            data = data[0]
-          } else {
-            data = null
-          }
-        }
-      } else {
-        const body = await res.text()
-
+        // Only wrap the fetch call itself — processResponse errors must never trigger retries
+        let res: Response
         try {
-          error = JSON.parse(body)
+          res = await _fetch(this.url.toString(), {
+            method: this.method,
+            headers: requestHeaders,
+            body: JSON.stringify(this.body),
+            signal: this.signal,
+          })
+        } catch (fetchError: any) {
+          // Never retry aborted requests
+          if (fetchError?.name === 'AbortError' || fetchError?.code === 'ABORT_ERR') {
+            throw fetchError
+          }
 
-          // Workaround for https://github.com/supabase/postgrest-js/issues/295
-          if (Array.isArray(error) && res.status === 404) {
-            data = []
-            error = null
-            status = 200
-            statusText = 'OK'
+          // Don't retry network errors for non-idempotent methods
+          if (!RETRYABLE_METHODS.includes(this.method as (typeof RETRYABLE_METHODS)[number])) {
+            throw fetchError
           }
-        } catch {
-          // Workaround for https://github.com/supabase/postgrest-js/issues/295
-          if (res.status === 404 && body === '') {
-            status = 204
-            statusText = 'No Content'
-          } else {
-            error = {
-              message: body,
-            }
+
+          // Check if we should retry network errors
+          if (this.retryEnabled && attemptCount < DEFAULT_MAX_RETRIES) {
+            const delay = getRetryDelay(attemptCount)
+            attemptCount++
+            await sleep(delay, this.signal)
+            continue
           }
+
+          // Exhausted retries or retries disabled, throw the last error
+          throw fetchError
         }
 
-        if (error && this.shouldThrowOnError) {
-          throw new PostgrestError(error)
+        // Check if we should retry this HTTP response
+        if (shouldRetry(this.method, res.status, attemptCount, this.retryEnabled)) {
+          const retryAfterHeader = res.headers?.get('Retry-After') ?? null
+          const delay =
+            retryAfterHeader !== null
+              ? Math.max(0, parseInt(retryAfterHeader, 10) || 0) * 1000
+              : getRetryDelay(attemptCount)
+          await res.text()
+          attemptCount++
+          await sleep(delay, this.signal)
+          continue
         }
-      }
 
-      const postgrestResponse = {
-        error,
-        data,
-        count,
-        status,
-        statusText,
+        return await this.processResponse(res)
       }
+    }
 
-      return postgrestResponse
-    })
+    let res = executeWithRetry()
+
     if (!this.shouldThrowOnError) {
       res = res.catch((fetchError) => {
         // Build detailed error information including cause if available
@@ -305,6 +362,104 @@ export default abstract class PostgrestBuilder<
     }
 
     return res.then(onfulfilled, onrejected)
+  }
+
+  /**
+   * Process a fetch response and return the standardized postgrest response.
+   */
+  private async processResponse(res: Response): Promise<{
+    error: any
+    data: any
+    count: number | null
+    status: number
+    statusText: string
+  }> {
+    let error = null
+    let data = null
+    let count: number | null = null
+    let status = res.status
+    let statusText = res.statusText
+
+    if (res.ok) {
+      if (this.method !== 'HEAD') {
+        const body = await res.text()
+        if (body === '') {
+          // Prefer: return=minimal
+        } else if (this.headers.get('Accept') === 'text/csv') {
+          data = body
+        } else if (
+          this.headers.get('Accept') &&
+          this.headers.get('Accept')?.includes('application/vnd.pgrst.plan+text')
+        ) {
+          data = body
+        } else {
+          data = JSON.parse(body)
+        }
+      }
+
+      const countHeader = this.headers.get('Prefer')?.match(/count=(exact|planned|estimated)/)
+      const contentRange = res.headers.get('content-range')?.split('/')
+      if (countHeader && contentRange && contentRange.length > 1) {
+        count = parseInt(contentRange[1])
+      }
+
+      // Fix for https://github.com/supabase/postgrest-js/issues/361 — applies to all methods.
+      if (this.isMaybeSingle && Array.isArray(data)) {
+        if (data.length > 1) {
+          error = {
+            // https://github.com/PostgREST/postgrest/blob/a867d79c42419af16c18c3fb019eba8df992626f/src/PostgREST/Error.hs#L553
+            code: 'PGRST116',
+            details: `Results contain ${data.length} rows, application/vnd.pgrst.object+json requires 1 row`,
+            hint: null,
+            message: 'JSON object requested, multiple (or no) rows returned',
+          }
+          data = null
+          count = null
+          status = 406
+          statusText = 'Not Acceptable'
+        } else if (data.length === 1) {
+          data = data[0]
+        } else {
+          data = null
+        }
+      }
+    } else {
+      const body = await res.text()
+
+      try {
+        error = JSON.parse(body)
+
+        // Workaround for https://github.com/supabase/postgrest-js/issues/295
+        if (Array.isArray(error) && res.status === 404) {
+          data = []
+          error = null
+          status = 200
+          statusText = 'OK'
+        }
+      } catch {
+        // Workaround for https://github.com/supabase/postgrest-js/issues/295
+        if (res.status === 404 && body === '') {
+          status = 204
+          statusText = 'No Content'
+        } else {
+          error = {
+            message: body,
+          }
+        }
+      }
+
+      if (error && this.shouldThrowOnError) {
+        throw new PostgrestError(error)
+      }
+    }
+
+    return {
+      error,
+      data,
+      count,
+      status,
+      statusText,
+    }
   }
 
   /**

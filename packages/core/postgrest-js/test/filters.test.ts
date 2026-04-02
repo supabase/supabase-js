@@ -109,6 +109,9 @@ test('gt', async () => {
         {
           "id": 4,
         },
+        {
+          "id": 3,
+        },
       ],
       "error": null,
       "status": 200,
@@ -131,6 +134,9 @@ test('gte', async () => {
         },
         {
           "id": 4,
+        },
+        {
+          "id": 3,
         },
       ],
       "error": null,

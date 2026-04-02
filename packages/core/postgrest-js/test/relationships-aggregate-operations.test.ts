@@ -14,7 +14,7 @@ test('select with aggregate count function', async () => {
       "data": {
         "messages": [
           {
-            "count": 3,
+            "count": 4,
           },
         ],
         "username": "supabot",
@@ -50,7 +50,7 @@ test('select with aggregate count on a column function', async () => {
       "data": {
         "messages": [
           {
-            "count": 3,
+            "count": 4,
           },
         ],
         "username": "supabot",
@@ -86,7 +86,7 @@ test('select with aggregate count function and alias', async () => {
       "data": {
         "messages": [
           {
-            "message_count": 3,
+            "message_count": 4,
           },
         ],
         "username": "supabot",
@@ -121,6 +121,11 @@ test('select with aggregate nested count function', async () => {
       "count": null,
       "data": {
         "messages": [
+          {
+            "channels": {
+              "count": 1,
+            },
+          },
           {
             "channels": {
               "count": 1,
@@ -186,6 +191,11 @@ test('select with aggregate nested count function and alias', async () => {
               "channel_count": 1,
             },
           },
+          {
+            "channels": {
+              "channel_count": 1,
+            },
+          },
         ],
         "username": "supabot",
       },
@@ -218,7 +228,7 @@ test('select with aggregate sum function', async () => {
       "data": {
         "messages": [
           {
-            "sum": 7,
+            "sum": 10,
           },
         ],
         "username": "supabot",
@@ -254,7 +264,7 @@ test('select with aggregate aliased sum function', async () => {
       "data": {
         "messages": [
           {
-            "sum_id": 7,
+            "sum_id": 10,
           },
         ],
         "username": "supabot",
@@ -297,6 +307,11 @@ test('select with aggregate sum function on nested relation', async () => {
           {
             "channels": {
               "sum": 2,
+            },
+          },
+          {
+            "channels": {
+              "sum": 3,
             },
           },
           {

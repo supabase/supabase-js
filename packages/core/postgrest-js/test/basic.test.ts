@@ -894,6 +894,16 @@ describe('basic insert, update, delete', () => {
       }
     `)
   })
+
+  afterAll(async () => {
+    // Restore message id 3 — the upsert test changes it to 'foo' and the delete test removes it
+    await postgrest.from('messages').upsert({
+      id: 3,
+      message: 'Some message on channel without details',
+      username: 'supabot',
+      channel_id: 3,
+    })
+  })
 })
 
 test('throwOnError throws errors instead of returning them', async () => {
@@ -1330,6 +1340,13 @@ describe("insert, update, delete with count: 'exact'", () => {
             "username": "supabot",
           },
           {
+            "channel_id": 3,
+            "data": null,
+            "id": 3,
+            "message": "Some message on channel without details",
+            "username": "supabot",
+          },
+          {
             "channel_id": 1,
             "data": null,
             "id": 8,
@@ -1362,8 +1379,8 @@ describe("insert, update, delete with count: 'exact'", () => {
           },
         ],
         "error": null,
-        "status": 201,
-        "statusText": "Created",
+        "status": 200,
+        "statusText": "OK",
       }
     `)
 
@@ -1754,6 +1771,16 @@ describe("insert, update, delete with count: 'exact'", () => {
       }
     `)
   })
+
+  afterAll(async () => {
+    // Restore message id 3 — the upsert test changes it to 'foo' and the delete test removes it
+    await postgrest.from('messages').upsert({
+      id: 3,
+      message: 'Some message on channel without details',
+      username: 'supabot',
+      channel_id: 3,
+    })
+  })
 })
 
 test('insert includes columns param', async () => {
@@ -1840,6 +1867,9 @@ test('!left join on one to many relation', async () => {
       "count": null,
       "data": {
         "messages": [
+          {
+            "username": "supabot",
+          },
           {
             "username": "supabot",
           },

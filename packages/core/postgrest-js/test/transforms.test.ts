@@ -79,6 +79,13 @@ test('order on multiple columns', async () => {
           "username": "supabot",
         },
         {
+          "channel_id": 3,
+          "data": null,
+          "id": 3,
+          "message": "Some message on channel without details",
+          "username": "supabot",
+        },
+        {
           "channel_id": 2,
           "data": null,
           "id": 2,
@@ -236,6 +243,9 @@ test('maybeSingle', async () => {
       "statusText": "Not Acceptable",
     }
   `)
+
+  // Clean up inserted users so they don't leak into other test files
+  await postgrest.from('users').delete().in('username', ['a', 'b'])
 })
 
 test('select on insert', async () => {
@@ -286,9 +296,7 @@ test('csv', async () => {
     kiwicopple,,"[25,35)",OFFLINE,"'bat' 'cat'"
     awailas,,"[25,35)",ONLINE,"'bat' 'rat'"
     jsonuser,"{""foo"": {""bar"": {""nested"": ""value""}, ""baz"": ""string value""}}","[20,30)",ONLINE,"'json' 'test'"
-    dragarcia,,"[20,30)",ONLINE,"'fat' 'rat'"
-    a,,,ONLINE,
-    b,,,ONLINE,",
+    dragarcia,,"[20,30)",ONLINE,"'fat' 'rat'"",
       "error": null,
       "status": 200,
       "statusText": "OK",

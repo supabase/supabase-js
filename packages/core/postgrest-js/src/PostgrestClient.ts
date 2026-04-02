@@ -40,6 +40,9 @@ export default class PostgrestClient<
   fetch?: Fetch
   urlLengthLimit: number
 
+  // Retry configuration - enabled by default
+  retry?: boolean
+
   // TODO: Add back shouldThrowOnError once we figure out the typings
   /**
    * Creates a PostgREST client.
@@ -51,6 +54,10 @@ export default class PostgrestClient<
    * @param options.fetch - Custom fetch
    * @param options.timeout - Optional timeout in milliseconds for all requests. When set, requests will automatically abort after this duration to prevent indefinite hangs.
    * @param options.urlLengthLimit - Maximum URL length in characters before warnings/errors are triggered. Defaults to 8000.
+   * @param options.retry - Enable or disable automatic retries for transient errors.
+   *   When enabled, idempotent requests (GET, HEAD, OPTIONS) that fail with network
+   *   errors or HTTP 503/520 responses will be automatically retried up to 3 times
+   *   with exponential backoff (1s, 2s, 4s). Defaults to `true`.
    * @example
    * ```ts
    * import { PostgrestClient } from '@supabase/postgrest-js'
@@ -86,6 +93,7 @@ export default class PostgrestClient<
    *   headers: { apikey: 'public-anon-key' },
    *   schema: 'public',
    *   timeout: 30000, // 30 second timeout
+   *   retry: false, // Disable automatic retries
    * })
    * ```
    */
@@ -97,12 +105,14 @@ export default class PostgrestClient<
       fetch,
       timeout,
       urlLengthLimit = 8000,
+      retry,
     }: {
       headers?: HeadersInit
       schema?: SchemaName
       fetch?: Fetch
       timeout?: number
       urlLengthLimit?: number
+      retry?: boolean
     } = {}
   ) {
     this.url = url
@@ -151,6 +161,7 @@ export default class PostgrestClient<
     } else {
       this.fetch = originalFetch
     }
+    this.retry = retry
   }
   from<
     TableName extends string & keyof Schema['Tables'],
@@ -179,6 +190,7 @@ export default class PostgrestClient<
       schema: this.schemaName,
       fetch: this.fetch,
       urlLengthLimit: this.urlLengthLimit,
+      retry: this.retry,
     })
   }
 
@@ -204,6 +216,7 @@ export default class PostgrestClient<
       schema,
       fetch: this.fetch,
       urlLengthLimit: this.urlLengthLimit,
+      retry: this.retry,
     })
   }
 
@@ -442,6 +455,7 @@ export default class PostgrestClient<
       body,
       fetch: this.fetch ?? fetch,
       urlLengthLimit: this.urlLengthLimit,
+      retry: this.retry,
     })
   }
 }
