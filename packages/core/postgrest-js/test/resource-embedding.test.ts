@@ -61,6 +61,7 @@ test('embedded select', async () => {
       "error": null,
       "status": 200,
       "statusText": "OK",
+      "success": true,
     }
   `)
   let result: Exclude<typeof res.data, null>
@@ -143,6 +144,7 @@ test('embedded select with computed field explicit selection', async () => {
       "error": null,
       "status": 200,
       "statusText": "OK",
+      "success": true,
     }
   `)
   let result: Exclude<typeof res.data, null>
@@ -205,6 +207,7 @@ describe('embedded filters', () => {
         "error": null,
         "status": 200,
         "statusText": "OK",
+        "success": true,
       }
     `)
     let result: Exclude<typeof res.data, null>
@@ -270,6 +273,7 @@ describe('embedded filters', () => {
         "error": null,
         "status": 200,
         "statusText": "OK",
+        "success": true,
       }
     `)
     let result: Exclude<typeof res.data, null>
@@ -337,6 +341,7 @@ describe('embedded filters', () => {
         "error": null,
         "status": 200,
         "statusText": "OK",
+        "success": true,
       }
     `)
     let result: Exclude<typeof res.data, null>
@@ -419,6 +424,7 @@ describe('embedded transforms', () => {
         "error": null,
         "status": 200,
         "statusText": "OK",
+        "success": true,
       }
     `)
     let result: Exclude<typeof res.data, null>
@@ -500,6 +506,7 @@ describe('embedded transforms', () => {
         "error": null,
         "status": 200,
         "statusText": "OK",
+        "success": true,
       }
     `)
     let result: Exclude<typeof res.data, null>
@@ -559,6 +566,7 @@ describe('embedded transforms', () => {
         "error": null,
         "status": 200,
         "statusText": "OK",
+        "success": true,
       }
     `)
     let result: Exclude<typeof res.data, null>
@@ -618,6 +626,7 @@ describe('embedded transforms', () => {
         "error": null,
         "status": 200,
         "statusText": "OK",
+        "success": true,
       }
     `)
     let result: Exclude<typeof res.data, null>

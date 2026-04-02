@@ -61,6 +61,7 @@ describe('embeded functions select', () => {
         "error": null,
         "status": 200,
         "statusText": "OK",
+        "success": true,
       }
     `)
     let result: Exclude<typeof res.data, null>
@@ -129,6 +130,7 @@ describe('embeded functions select', () => {
         "error": null,
         "status": 200,
         "statusText": "OK",
+        "success": true,
       }
     `)
     let result: Exclude<typeof res.data, null>
@@ -208,6 +210,7 @@ describe('embeded functions select', () => {
         "error": null,
         "status": 200,
         "statusText": "OK",
+        "success": true,
       }
     `)
     let result: Exclude<typeof res.data, null>
@@ -280,6 +283,7 @@ describe('embeded functions select', () => {
         "error": null,
         "status": 200,
         "statusText": "OK",
+        "success": true,
       }
     `)
     let result: Exclude<typeof res.data, null>
@@ -353,6 +357,7 @@ describe('embeded functions select', () => {
         "error": null,
         "status": 200,
         "statusText": "OK",
+        "success": true,
       }
     `)
     let result: Exclude<typeof res.data, null>
@@ -409,6 +414,7 @@ describe('embeded functions select', () => {
         "error": null,
         "status": 200,
         "statusText": "OK",
+        "success": true,
       }
     `)
     let result: Exclude<typeof res.data, null>
@@ -476,6 +482,7 @@ describe('embeded functions select', () => {
         "error": null,
         "status": 200,
         "statusText": "OK",
+        "success": true,
       }
     `)
     let result: Exclude<typeof res.data, null>
@@ -515,6 +522,7 @@ describe('embeded functions select', () => {
         "error": null,
         "status": 200,
         "statusText": "OK",
+        "success": true,
       }
     `)
     let result: Exclude<typeof res.data, null>
@@ -579,6 +587,7 @@ describe('embeded functions select', () => {
         "error": null,
         "status": 200,
         "statusText": "OK",
+        "success": true,
       }
     `)
     let result: Exclude<typeof res.data, null>
@@ -655,6 +664,7 @@ describe('embeded functions select', () => {
         "error": null,
         "status": 200,
         "statusText": "OK",
+        "success": true,
       }
     `)
     let result: Exclude<typeof res.data, null>
@@ -738,6 +748,7 @@ describe('embeded functions select', () => {
         "error": null,
         "status": 200,
         "statusText": "OK",
+        "success": true,
       }
     `)
     let result: Exclude<typeof res.data, null>
@@ -818,6 +829,7 @@ describe('embeded functions select', () => {
         "error": null,
         "status": 200,
         "statusText": "OK",
+        "success": true,
       }
     `)
     let result: Exclude<typeof res.data, null>
@@ -902,6 +914,7 @@ describe('embeded functions select', () => {
         "error": null,
         "status": 200,
         "statusText": "OK",
+        "success": true,
       }
     `)
     let result: Exclude<typeof res.data, null>
@@ -982,6 +995,7 @@ describe('embeded functions select', () => {
         "error": null,
         "status": 200,
         "statusText": "OK",
+        "success": true,
       }
     `)
     let result: Exclude<typeof res.data, null>
@@ -1058,6 +1072,7 @@ describe('embeded functions select', () => {
         "error": null,
         "status": 200,
         "statusText": "OK",
+        "success": true,
       }
     `)
     let result: Exclude<typeof res.data, null>
@@ -1093,6 +1108,7 @@ describe('embeded functions select', () => {
         },
         "status": 400,
         "statusText": "Bad Request",
+        "success": false,
       }
     `)
     let result: Exclude<typeof res.data, null>
@@ -1140,6 +1156,7 @@ describe('embeded functions select', () => {
         "error": null,
         "status": 200,
         "statusText": "OK",
+        "success": true,
       }
     `)
     let result: Exclude<typeof res.data, null>
@@ -1174,6 +1191,7 @@ describe('embeded functions select', () => {
         },
         "status": 400,
         "statusText": "Bad Request",
+        "success": false,
       }
     `)
     let result: Exclude<typeof res.data, null>
@@ -1228,6 +1246,7 @@ describe('embeded functions select', () => {
         "error": null,
         "status": 200,
         "statusText": "OK",
+        "success": true,
       }
     `)
     let result: Exclude<typeof res.data, null>
@@ -1281,6 +1300,7 @@ describe('embeded functions select', () => {
         "error": null,
         "status": 200,
         "statusText": "OK",
+        "success": true,
       }
     `)
     let result: Exclude<typeof res.data, null>
@@ -1344,6 +1364,7 @@ describe('embeded functions select', () => {
         },
         "status": 404,
         "statusText": "Not Found",
+        "success": false,
       }
     `)
     let result_rpc: Exclude<typeof use_rpc_call.data, null>
@@ -1399,6 +1420,7 @@ describe('embeded functions select', () => {
         },
         "status": 404,
         "statusText": "Not Found",
+        "success": false,
       }
     `)
     let result_rpc: Exclude<typeof use_rpc_call.data, null>

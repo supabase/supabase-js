@@ -13,11 +13,13 @@ interface PostgrestResponseBase {
   statusText: string
 }
 export interface PostgrestResponseSuccess<T> extends PostgrestResponseBase {
+  success: true
   error: null
   data: T
   count: number | null
 }
 export interface PostgrestResponseFailure extends PostgrestResponseBase {
+  success: false
   error: PostgrestError
   data: null
   count: null

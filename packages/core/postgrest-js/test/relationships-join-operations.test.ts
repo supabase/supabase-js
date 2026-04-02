@@ -66,6 +66,7 @@ test('!inner relationship', async () => {
       "error": null,
       "status": 200,
       "statusText": "OK",
+      "success": true,
     }
   `)
 
@@ -134,6 +135,7 @@ test('!inner relationship on nullable relation', async () => {
       "error": null,
       "status": 200,
       "statusText": "OK",
+      "success": true,
     }
   `)
   let result: Exclude<typeof res.data, null>
@@ -166,6 +168,7 @@ test('!left oneToOne', async () => {
       "error": null,
       "status": 200,
       "statusText": "OK",
+      "success": true,
     }
   `)
   let result: Exclude<typeof res.data, null>
@@ -220,6 +223,7 @@ test('!left oneToMany', async () => {
       "error": null,
       "status": 200,
       "statusText": "OK",
+      "success": true,
     }
   `)
 
@@ -251,6 +255,7 @@ test('!left zeroToOne', async () => {
       "error": null,
       "status": 200,
       "statusText": "OK",
+      "success": true,
     }
   `)
 
@@ -303,6 +308,7 @@ test('join over a 1-1 relation with both nullables and non-nullables fields usin
       "error": null,
       "status": 200,
       "statusText": "OK",
+      "success": true,
     }
   `)
 
@@ -353,6 +359,7 @@ test('join over a 1-M relation with both nullables and non-nullables fields usin
       "error": null,
       "status": 200,
       "statusText": "OK",
+      "success": true,
     }
   `)
 
@@ -402,6 +409,7 @@ test('join on 1-M relation', async () => {
       "error": null,
       "status": 200,
       "statusText": "OK",
+      "success": true,
     }
   `)
 
@@ -454,6 +462,7 @@ test('join on 1-1 relation with nullables', async () => {
       "error": null,
       "status": 200,
       "statusText": "OK",
+      "success": true,
     }
   `)
 
@@ -507,6 +516,7 @@ test('join over a 1-1 relation with both nullablesand non-nullables fields with 
       "error": null,
       "status": 200,
       "statusText": "OK",
+      "success": true,
     }
   `)
 
@@ -556,6 +566,7 @@ test('join over a 1-M relation with both nullables and non-nullables fields usin
       "error": null,
       "status": 200,
       "statusText": "OK",
+      "success": true,
     }
   `)
 
@@ -614,6 +625,7 @@ test('join over a 1-M relation with both nullables and non-nullables fields usin
       "error": null,
       "status": 200,
       "statusText": "OK",
+      "success": true,
     }
   `)
 
@@ -670,6 +682,7 @@ test('!left join on one to 0-1 non-empty relation', async () => {
       "error": null,
       "status": 200,
       "statusText": "OK",
+      "success": true,
     }
   `)
 
@@ -705,6 +718,7 @@ test('join on one to 0-1 non-empty relation via column name', async () => {
       "error": null,
       "status": 200,
       "statusText": "OK",
+      "success": true,
     }
   `)
 
@@ -738,6 +752,7 @@ test('!left join on zero to one with null relation', async () => {
       "error": null,
       "status": 200,
       "statusText": "OK",
+      "success": true,
     }
   `)
 
@@ -778,6 +793,7 @@ test('!left join on zero to one with valid relation', async () => {
       "error": null,
       "status": 200,
       "statusText": "OK",
+      "success": true,
     }
   `)
 
@@ -845,6 +861,7 @@ test('join on 1-M relation with selective fk hinting', async () => {
       "error": null,
       "status": 200,
       "statusText": "OK",
+      "success": true,
     }
   `)
 
@@ -876,6 +893,7 @@ test('join select via column', async () => {
       "error": null,
       "status": 200,
       "statusText": "OK",
+      "success": true,
     }
   `)
 
@@ -903,6 +921,7 @@ test('join select via column selective', async () => {
       "error": null,
       "status": 200,
       "statusText": "OK",
+      "success": true,
     }
   `)
 
@@ -932,6 +951,7 @@ test('join select via column and alias', async () => {
       "error": null,
       "status": 200,
       "statusText": "OK",
+      "success": true,
     }
   `)
 
@@ -963,6 +983,7 @@ test('join select via unique table relationship', async () => {
       "error": null,
       "status": 200,
       "statusText": "OK",
+      "success": true,
     }
   `)
 
@@ -991,6 +1012,7 @@ test('join select via view name relationship', async () => {
       "error": null,
       "status": 200,
       "statusText": "OK",
+      "success": true,
     }
   `)
 
@@ -1020,6 +1042,7 @@ test('join select via column with string templating', async () => {
       "error": null,
       "status": 200,
       "statusText": "OK",
+      "success": true,
     }
   `)
 
@@ -1050,6 +1073,7 @@ test('join with column hinting', async () => {
       "error": null,
       "status": 200,
       "statusText": "OK",
+      "success": true,
     }
   `)
 
@@ -1085,6 +1109,7 @@ test('inner join on many relation', async () => {
       "error": null,
       "status": 200,
       "statusText": "OK",
+      "success": true,
     }
   `)
 

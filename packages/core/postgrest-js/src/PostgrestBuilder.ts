@@ -347,6 +347,7 @@ export default abstract class PostgrestBuilder<
         }
 
         return {
+          success: false as const,
           error: {
             message: `${fetchError?.name ?? 'FetchError'}: ${fetchError?.message}`,
             details: errorDetails,
@@ -361,13 +362,20 @@ export default abstract class PostgrestBuilder<
       })
     }
 
-    return res.then(onfulfilled, onrejected)
+    return (
+      res as Promise<
+        ThrowOnError extends true
+          ? PostgrestResponseSuccess<Result>
+          : PostgrestSingleResponse<Result>
+      >
+    ).then(onfulfilled, onrejected)
   }
 
   /**
    * Process a fetch response and return the standardized postgrest response.
    */
   private async processResponse(res: Response): Promise<{
+    success: boolean
     error: any
     data: any
     count: number | null
@@ -454,6 +462,7 @@ export default abstract class PostgrestBuilder<
     }
 
     return {
+      success: error === null,
       error,
       data,
       count,
