@@ -375,6 +375,7 @@ export default abstract class PostgrestBuilder<
    * Process a fetch response and return the standardized postgrest response.
    */
   private async processResponse(res: Response): Promise<{
+    success: boolean
     error: any
     data: any
     count: number | null
@@ -461,6 +462,7 @@ export default abstract class PostgrestBuilder<
     }
 
     return {
+      success: error === null,
       error,
       data,
       count,
