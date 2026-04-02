@@ -1,4 +1,5 @@
 import { PostgrestClient } from '../src/index'
+import PostgrestError from '../src/PostgrestError'
 import { Database } from './types.override'
 
 describe('Fetch error handling', () => {
@@ -186,5 +187,20 @@ describe('Fetch error handling', () => {
     expect(options.method).toBe('POST')
     expect(JSON.parse(options.body)).toEqual({ obj_arg: { nested: 'value' } })
     expect(options.headers.get('Prefer')).toContain('return=minimal')
+  })
+
+  test('PostgrestError serializes message with JSON.stringify', () => {
+    const err = new PostgrestError({
+      message: 'RLS denied',
+      details: 'some details',
+      hint: 'check policies',
+      code: 'PGRST301',
+    })
+    const serialized = JSON.parse(JSON.stringify(err))
+    expect(serialized.message).toBe('RLS denied')
+    expect(serialized.code).toBe('PGRST301')
+    expect(serialized.details).toBe('some details')
+    expect(serialized.hint).toBe('check policies')
+    expect(serialized.name).toBe('PostgrestError')
   })
 })
