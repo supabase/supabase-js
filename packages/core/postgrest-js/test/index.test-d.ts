@@ -187,6 +187,22 @@ const postgrestWithOptions = new PostgrestClient<DatabaseWithOptions>(REST_URL)
   postgrest.from('users').upsert({ username: 'foo', nonexistent: 'bad' })
 }
 
+// allow loosely-typed Record<string, *> on insert, update, and upsert
+// regression: RejectExcessProperties must not produce { [x: string]: never }
+// when the caller already has a string index signature
+{
+  const data: Record<string, unknown> = { username: 'foo' }
+  postgrest.from('users').insert(data)
+  postgrest.from('users').update(data)
+  postgrest.from('users').upsert(data)
+}
+{
+  const data: Record<string, any> = { username: 'foo' }
+  postgrest.from('users').insert(data)
+  postgrest.from('users').update(data)
+  postgrest.from('users').upsert(data)
+}
+
 // spread resource with single column in select query
 {
   const result = await postgrest.from('messages').select('message, ...users(status)').single()

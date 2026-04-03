@@ -42,9 +42,12 @@ export type Prettify<T> = { [K in keyof T]: T[K] } & {}
 
 // Rejects excess properties that aren't in Base.
 // Works around TypeScript not checking excess properties on generic parameters.
-export type RejectExcessProperties<Base, Row> = Row & {
-  [K in Exclude<keyof Row, keyof Base>]: never
-}
+// If Row has a string index signature (e.g. Record<string, any>), skip the check —
+// string extends keyof Row is true in that case, and applying the check would
+// produce { [x: string]: never } which conflicts with the index signature.
+export type RejectExcessProperties<Base, Row> = string extends keyof Row
+  ? Row
+  : Row & { [K in Exclude<keyof Row, keyof Base>]: never }
 
 // https://github.com/sindresorhus/type-fest
 export type SimplifyDeep<Type, ExcludeType = never> = ConditionalSimplifyDeep<
