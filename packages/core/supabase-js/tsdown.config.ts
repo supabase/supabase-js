@@ -9,7 +9,7 @@ export default defineConfig([
   {
     entry: ['src/index.ts', 'src/cors.ts'],
     format: ['cjs', 'esm'],
-    dts: true,
+    dts: { cjsReexport: true },
     sourcemap: true,
     clean: true,
     outDir: 'dist',
