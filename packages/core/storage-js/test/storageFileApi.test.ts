@@ -955,6 +955,52 @@ describe('StorageFileApi Edge Cases', () => {
       expect(body.get('cacheControl')).toBe('7200')
     })
 
+    test('uploadToSignedUrl with Blob includes metadata in FormData', async () => {
+      const testBlob = new Blob(['test content'], { type: 'text/plain' })
+      const metadata = { customKey: 'customValue', author: 'test' }
+
+      await storage
+        .from('test-bucket')
+        .uploadToSignedUrl('test-path', 'test-token', testBlob, { metadata })
+
+      expect(mockPut).toHaveBeenCalled()
+      const [, , body] = mockPut.mock.calls[0] as [null, null, FormData]
+      expect(body.constructor.name).toBe('FormData')
+      expect(body.get('metadata')).toBe(JSON.stringify(metadata))
+    })
+
+    test('uploadToSignedUrl with FormData includes metadata', async () => {
+      const testFormData = new FormData()
+      testFormData.append('file', 'test content')
+      const metadata = { customKey: 'customValue' }
+
+      await storage
+        .from('test-bucket')
+        .uploadToSignedUrl('test-path', 'test-token', testFormData, { metadata })
+
+      expect(mockPut).toHaveBeenCalled()
+      const [, , body] = mockPut.mock.calls[0] as [null, null, FormData]
+      expect(body).toBe(testFormData)
+      expect(body.get('metadata')).toBe(JSON.stringify(metadata))
+    })
+
+    test('uploadToSignedUrl with raw body includes metadata in headers', async () => {
+      const testBody = 'raw string content'
+      const metadata = { customKey: 'customValue' }
+
+      await storage
+        .from('test-bucket')
+        .uploadToSignedUrl('test-path', 'test-token', testBody, { metadata })
+
+      expect(mockPut).toHaveBeenCalled()
+      const [, , , { headers }] = mockPut.mock.calls[0]
+      const expectedBase64 =
+        typeof Buffer !== 'undefined'
+          ? Buffer.from(JSON.stringify(metadata)).toString('base64')
+          : btoa(JSON.stringify(metadata))
+      expect(headers['x-metadata']).toBe(expectedBase64)
+    })
+
     test('upload with metadata', async () => {
       const testBlob = new Blob(['test content'], { type: 'text/plain' })
       const metadata = { customKey: 'customValue', author: 'test' }
