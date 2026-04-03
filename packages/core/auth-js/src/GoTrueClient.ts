@@ -2480,15 +2480,28 @@ export default class GoTrueClient {
       const endpoint = `${this.url}/resend`
       if ('email' in credentials) {
         const { email, type, options } = credentials
+        let codeChallenge: string | null = null
+        let codeChallengeMethod: string | null = null
+        if (this.flowType === 'pkce') {
+          ;[codeChallenge, codeChallengeMethod] = await getCodeChallengeAndMethod(
+            this.storage,
+            this.storageKey
+          )
+        }
         const { error } = await _request(this.fetch, 'POST', endpoint, {
           headers: this.headers,
           body: {
             email,
             type,
             gotrue_meta_security: { captcha_token: options?.captchaToken },
+            code_challenge: codeChallenge,
+            code_challenge_method: codeChallengeMethod,
           },
           redirectTo: options?.emailRedirectTo,
         })
+        if (error) {
+          await removeItemAsync(this.storage, `${this.storageKey}-code-verifier`)
+        }
         return this._returnResult({ data: { user: null, session: null }, error })
       } else if ('phone' in credentials) {
         const { phone, type, options } = credentials
@@ -2509,6 +2522,7 @@ export default class GoTrueClient {
         'You must provide either an email or phone number and a type'
       )
     } catch (error) {
+      await removeItemAsync(this.storage, `${this.storageKey}-code-verifier`)
       if (isAuthError(error)) {
         return this._returnResult({ data: { user: null, session: null }, error })
       }
