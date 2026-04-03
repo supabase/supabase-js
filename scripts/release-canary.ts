@@ -17,24 +17,61 @@ import { getLastStableTag } from './utils'
     process.exit(0)
   }
 
-  // Derive the correct pre* specifier from conventional commits rather than
-  // always using 'prerelease' (which always bumps patch regardless of commit type).
-  const lastStableTag = getLastStableTag()
-  const stableBase = lastStableTag.replace(/^v/, '') // e.g. "2.100.0"
-  const [curMajor, curMinor] = stableBase.split('.').map(Number)
-  const dryBase = canaryCheckWorkspaceVersion.replace(/^v/, '').replace(/-.*$/, '')
-  const [newMajor, newMinor] = dryBase.split('.').map(Number)
+  // Determine the canary version by looking at ALL commits since the last stable tag.
+  // The base version (major.minor.patch) reflects what the next stable will be;
+  // the canary number (canary.x) simply increments for each canary on that base.
+  const lastStableTag = getLastStableTag() // e.g. 'v2.101.0'
+  const stableBase = lastStableTag.replace(/^v/, '') // '2.101.0'
+  const [maj, min, pat] = stableBase.split('.').map(Number)
 
-  let specifier: 'prepatch' | 'preminor' | 'premajor'
-  if (newMajor > curMajor) specifier = 'premajor'
-  else if (newMinor > curMinor) specifier = 'preminor'
-  else specifier = 'prepatch'
+  // Parse all commits since last stable to determine the correct bump type
+  const commitMessages = execSync(`git log ${lastStableTag}..HEAD --format=%s`)
+    .toString()
+    .trim()
+    .split('\n')
+    .filter(Boolean)
+
+  let bumpType: 'major' | 'minor' | 'patch' = 'patch'
+  for (const msg of commitMessages) {
+    if (/^[a-z]+(\([^)]+\))?!:/.test(msg) || msg.includes('BREAKING CHANGE')) {
+      bumpType = 'major'
+      break
+    }
+    if (/^feat(\([^)]+\))?:/.test(msg) && bumpType !== 'major') {
+      bumpType = 'minor'
+    }
+  }
+
+  const targetBase =
+    bumpType === 'major'
+      ? `${maj + 1}.0.0`
+      : bumpType === 'minor'
+        ? `${maj}.${min + 1}.0`
+        : `${maj}.${min}.${pat + 1}`
+
+  // Fetch latest tags from remote before computing the canary number to avoid
+  // conflicts if a previous run created a tag that isn't in the local clone yet
+  execSync('git fetch --tags', { stdio: 'inherit' })
+
+  // Find the next canary number for this base
+  const existingCanaries = execSync(
+    `git tag --list 'v${targetBase}-canary.*' --sort=-version:refname`
+  )
+    .toString()
+    .trim()
+    .split('\n')
+    .filter(Boolean)
+  const highestN =
+    existingCanaries.length > 0
+      ? parseInt(existingCanaries[0].match(/-canary\.(\d+)$/)?.[1] ?? '-1', 10)
+      : -1
+  const canaryVersion = `${targetBase}-canary.${highestN + 1}`
 
   const { workspaceVersion, projectsVersionData } = await releaseVersion({
     verbose: true,
     gitCommit: false,
     stageChanges: false,
-    specifier,
+    specifier: canaryVersion,
     preid: 'canary',
   })
 
