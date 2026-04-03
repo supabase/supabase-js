@@ -57,6 +57,15 @@ test('embedded select', async () => {
         {
           "messages": [],
         },
+        {
+          "messages": [],
+        },
+        {
+          "messages": [],
+        },
+        {
+          "messages": [],
+        },
       ],
       "error": null,
       "status": 200,
@@ -140,6 +149,15 @@ test('embedded select with computed field explicit selection', async () => {
         {
           "messages": [],
         },
+        {
+          "messages": [],
+        },
+        {
+          "messages": [],
+        },
+        {
+          "messages": [],
+        },
       ],
       "error": null,
       "status": 200,
@@ -190,6 +208,15 @@ describe('embedded filters', () => {
                 "username": "supabot",
               },
             ],
+          },
+          {
+            "messages": [],
+          },
+          {
+            "messages": [],
+          },
+          {
+            "messages": [],
           },
           {
             "messages": [],
@@ -269,6 +296,15 @@ describe('embedded filters', () => {
           {
             "messages": [],
           },
+          {
+            "messages": [],
+          },
+          {
+            "messages": [],
+          },
+          {
+            "messages": [],
+          },
         ],
         "error": null,
         "status": 200,
@@ -324,6 +360,15 @@ describe('embedded filters', () => {
                 "username": "supabot",
               },
             ],
+          },
+          {
+            "messages": [],
+          },
+          {
+            "messages": [],
+          },
+          {
+            "messages": [],
           },
           {
             "messages": [],
@@ -420,6 +465,15 @@ describe('embedded transforms', () => {
           {
             "messages": [],
           },
+          {
+            "messages": [],
+          },
+          {
+            "messages": [],
+          },
+          {
+            "messages": [],
+          },
         ],
         "error": null,
         "status": 200,
@@ -502,6 +556,15 @@ describe('embedded transforms', () => {
           {
             "messages": [],
           },
+          {
+            "messages": [],
+          },
+          {
+            "messages": [],
+          },
+          {
+            "messages": [],
+          },
         ],
         "error": null,
         "status": 200,
@@ -562,6 +625,15 @@ describe('embedded transforms', () => {
           {
             "messages": [],
           },
+          {
+            "messages": [],
+          },
+          {
+            "messages": [],
+          },
+          {
+            "messages": [],
+          },
         ],
         "error": null,
         "status": 200,
@@ -609,6 +681,15 @@ describe('embedded transforms', () => {
                 "username": "supabot",
               },
             ],
+          },
+          {
+            "messages": [],
+          },
+          {
+            "messages": [],
+          },
+          {
+            "messages": [],
           },
           {
             "messages": [],
