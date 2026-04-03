@@ -14,6 +14,7 @@ export default defineConfig([
     clean: true,
     outDir: 'dist',
     // CRITICAL: Keep @supabase/* packages external - not bundled
+    // NOTE: @supabase/tracing intentionally omitted — it gets bundled via noExternal
     external: [
       '@supabase/auth-js',
       '@supabase/functions-js',
@@ -21,6 +22,7 @@ export default defineConfig([
       '@supabase/realtime-js',
       '@supabase/storage-js',
     ],
+    noExternal: ['@supabase/tracing'],
     fixedExtension: true,
     hash: false,
     target: 'es2017',

@@ -78,6 +78,7 @@
     "packages/core/postgrest-js",
     "packages/core/realtime-js",
     "packages/core/storage-js",
-    "packages/core/supabase-js"
+    "packages/core/supabase-js",
+    "packages/shared/tracing"
   ]
 }

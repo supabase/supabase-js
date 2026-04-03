@@ -1,6 +1,6 @@
 // constants.ts
 import { RealtimeClientOptions } from '@supabase/realtime-js'
-import { SupabaseAuthClientOptions } from './types'
+import { SupabaseAuthClientOptions, TracePropagationOptions } from './types'
 import { version } from './version'
 
 let JS_ENV = ''
@@ -33,3 +33,8 @@ export const DEFAULT_AUTH_OPTIONS: SupabaseAuthClientOptions = {
 }
 
 export const DEFAULT_REALTIME_OPTIONS: RealtimeClientOptions = {}
+
+export const DEFAULT_TRACE_PROPAGATION_OPTIONS: TracePropagationOptions = {
+  enabled: true,
+  respectSamplingDecision: true,
+}
