@@ -88,7 +88,8 @@ export default abstract class PostgrestBuilder<
   // Retry configuration - enabled by default
   protected retryEnabled: boolean = true
 
-  /**
+  /** @hidden
+   *
    * Creates a builder configured for a specific PostgREST request.
    *
    * @example

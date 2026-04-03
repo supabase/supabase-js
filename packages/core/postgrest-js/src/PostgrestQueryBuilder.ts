@@ -31,7 +31,8 @@ export default class PostgrestQueryBuilder<
    */
   retry?: boolean
 
-  /**
+  /** @hidden
+   *
    * Creates a query builder scoped to a Postgres table or view.
    *
    * @category Database
