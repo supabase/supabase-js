@@ -817,7 +817,10 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
     options?: Options,
     parameters?: FetchParameters
   ): BlobDownloadBuilder {
-    const wantsTransformation = typeof options?.transform !== 'undefined'
+    const wantsTransformation =
+      typeof options?.transform === 'object' &&
+      options.transform !== null &&
+      Object.keys(options.transform).length > 0
     const renderPath = wantsTransformation ? 'render/image/authenticated' : 'object'
     const transformationQuery = this.transformOptsToQueryString(options?.transform || {})
     const queryString = transformationQuery ? `?${transformationQuery}` : ''
@@ -1006,7 +1009,10 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
       _queryString.push(downloadQueryParam)
     }
 
-    const wantsTransformation = typeof options?.transform !== 'undefined'
+    const wantsTransformation =
+      typeof options?.transform === 'object' &&
+      options.transform !== null &&
+      Object.keys(options.transform).length > 0
     const renderPath = wantsTransformation ? 'render/image' : 'object'
     const transformationQuery = this.transformOptsToQueryString(options?.transform || {})
 
