@@ -279,7 +279,7 @@ describe('VectorBucketApi JSON headers', () => {
 
     const client = new StorageVectorsClient('https://mock.example.com', {
       fetch: mockFetch as any,
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'content-Type': 'application/json' },
     })
 
     await client.createBucket('test-bucket')
