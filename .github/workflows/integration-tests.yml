@@ -11,7 +11,7 @@ on:
         type: string
 
 env:
-  NODE_VERSION: '20'
+  NODE_VERSION: '22'
   # Ensure Puppeteer installs and looks for Chrome in the same location
   PUPPETEER_CACHE_DIR: /home/runner/.cache/puppeteer
 
