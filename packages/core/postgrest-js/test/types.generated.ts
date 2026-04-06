@@ -716,6 +716,25 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      scalar_computed_count: {
+        Args: { '': Database['public']['Tables']['users']['Row'] }
+        Returns: number
+        SetofOptions: {
+          from: 'users'
+          to: ''
+          isSetofReturn: false
+          isNotNullable: true
+        }
+      }
+      scalar_computed_ids: {
+        Args: { '': Database['public']['Tables']['users']['Row'] }
+        Returns: string[]
+        SetofOptions: {
+          from: 'users'
+          to: ''
+          isSetofReturn: true
+        }
+      }
       function_returning_single_row: {
         Args: { messages: Database['public']['Tables']['messages']['Row'] }
         Returns: {
