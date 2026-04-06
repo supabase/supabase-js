@@ -67,7 +67,7 @@ jobs:
           registry-url: 'https://registry.npmjs.org'
 
       - name: Update npm
-        run: npm install -g npm@latest
+        run: corepack enable npm && corepack prepare npm@11 --activate
 
       - name: Deprecate package versions
         env:
