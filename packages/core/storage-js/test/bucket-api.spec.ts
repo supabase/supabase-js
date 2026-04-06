@@ -11,6 +11,7 @@ import {
   assertErrorResponse,
   assertErrorCode,
 } from './helpers'
+import { StorageVectorsClient } from '../src/packages/StorageVectorsClient'
 
 describe('VectorBucketApi Integration Tests', () => {
   let client: ReturnType<typeof createTestClient>
@@ -264,5 +265,31 @@ describe('VectorBucketApi Integration Tests', () => {
       expect(typeof bucketScope.listIndexes).toBe('function')
       expect(typeof bucketScope.index).toBe('function')
     })
+  })
+})
+
+describe('VectorBucketApi JSON headers', () => {
+  it('uses a single content-type header for JSON requests', async () => {
+    const mockFetch = jest.fn().mockResolvedValue(
+      new Response(JSON.stringify({}), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      })
+    )
+
+    const client = new StorageVectorsClient('https://mock.example.com', {
+      fetch: mockFetch as any,
+      headers: { 'Content-Type': 'application/json' },
+    })
+
+    await client.createBucket('test-bucket')
+
+    const [, request] = mockFetch.mock.calls[0]
+    const headers = request.headers as Record<string, string>
+
+    expect(Object.keys(headers).filter((key) => key.toLowerCase() === 'content-type')).toHaveLength(
+      1
+    )
+    expect(new Headers(headers).get('content-type')).toBe('application/json')
   })
 })
