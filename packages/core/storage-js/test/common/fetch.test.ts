@@ -153,6 +153,33 @@ describe('Common Fetch', () => {
         })
       })
 
+      it('should keep a single content-type header for JSON requests', async () => {
+        const requestBody = { data: 'test' }
+        const responseData = { result: 'created' }
+        mockFetch.mockResolvedValue(
+          new MockResponse(JSON.stringify(responseData), {
+            status: 201,
+            statusText: 'Created',
+          })
+        )
+
+        await post(mockFetch, 'http://test.com/api', requestBody, {
+          headers: {
+            Authorization: 'Bearer token',
+            'content-type': 'application/vnd.custom+json',
+          },
+        })
+
+        expect(mockFetch).toHaveBeenCalledWith('http://test.com/api', {
+          method: 'POST',
+          headers: {
+            Authorization: 'Bearer token',
+            'Content-Type': 'application/vnd.custom+json',
+          },
+          body: JSON.stringify(requestBody),
+        })
+      })
+
       it('should handle non-plain object bodies', async () => {
         const formData = new FormData()
         const responseData = { result: 'created' }
