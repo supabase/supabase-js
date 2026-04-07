@@ -612,6 +612,7 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
       if (options?.download)
         query.set('download', options.download === true ? '' : options.download)
       if (options?.version) query.set('_v', options.version)
+      const queryString = query.toString()
 
       // When transforms are requested the signed URL must use the render endpoint.
       // Some storage-api versions return /object/sign/ even for transform requests,
@@ -621,8 +622,11 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
           ? data.signedURL.replace('/object/sign/', '/render/image/sign/')
           : data.signedURL
 
-      // `returnedPath` contains a `token` query parameter. That's why we append `query` with `&`.
-      const signedUrl = encodeURI(`${this.url}${returnedPath}&${query}`)
+      // `returnedPath` contains a `token` query parameter, so append extra params with `&` only
+      // when we actually have something to add.
+      const signedUrl = encodeURI(
+        `${this.url}${returnedPath}${queryString ? `&${queryString}` : ''}`
+      )
 
       return { signedUrl }
     })
@@ -670,7 +674,7 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
   async createSignedUrls(
     paths: string[],
     expiresIn: number,
-    options?: { download: string | boolean; version?: string }
+    options?: { download?: string | boolean; version?: string }
   ): Promise<
     | {
         data: { error: string | null; path: string | null; signedUrl: string }[]
@@ -700,7 +704,7 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
       return data.map((datum: { signedURL: string }) => ({
         ...datum,
         signedUrl: datum.signedURL
-          ? encodeURI(`${this.url}${datum.signedURL}&${queryString}`)
+          ? encodeURI(`${this.url}${datum.signedURL}${queryString ? `&${queryString}` : ''}`)
           : null,
       }))
     })

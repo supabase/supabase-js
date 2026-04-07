@@ -89,6 +89,7 @@ describe('Object API', () => {
 
       expect(res.error).toBeNull()
       expect(res.data?.signedUrl).toContain(`${URL}/object/sign/${bucketName}/${uploadPath}`)
+      expect(res.data?.signedUrl).not.toMatch(/&$/)
 
       // throws when .throwOnError is enabled
       await expect(
@@ -130,6 +131,17 @@ describe('Object API', () => {
       expect(res.error).toBeNull()
       expect(res.data?.signedUrl).toContain(`${URL}/object/sign/${bucketName}/${uploadPath}`)
       expect(res.data?.signedUrl).toContain(`&download=test.jpg`)
+    })
+
+    test('sign urls without querystring', async () => {
+      await storage.from(bucketName).upload(uploadPath, file)
+      const res = await storage.from(bucketName).createSignedUrls([uploadPath], 2000)
+
+      expect(res.error).toBeNull()
+      expect(res.data).toHaveLength(1)
+      expect(res.data?.[0].error).toBeNull()
+      expect(res.data?.[0].signedUrl).toContain(`${URL}/object/sign/${bucketName}/${uploadPath}`)
+      expect(res.data?.[0].signedUrl).not.toMatch(/&$/)
     })
   })
 
@@ -762,6 +774,33 @@ describe('Object API', () => {
       const parsedUrl = global.URL.parse(res.data.publicUrl)
       assert(parsedUrl)
       assert(parsedUrl.searchParams.has('_v', version))
+    }
+
+    // `download` with version
+    {
+      const res = await storage.from(bucketName).download(uploadPath, {
+        version,
+      })
+
+      expect(res.error).toBeNull()
+      assert(res.data)
+    }
+
+    // `createSignedUrls` with version
+    {
+      const res = await storage.from(bucketName).createSignedUrls([uploadPath], 60000, {
+        version,
+      })
+
+      expect(res.error).toBeNull()
+      assert(res.data)
+      expect(res.data).toHaveLength(1)
+      expect(res.data[0].error).toBeNull()
+
+      const parsedUrl = global.URL.parse(res.data[0].signedUrl)
+      assert(parsedUrl)
+      assert(parsedUrl.searchParams.has('_v', version))
+      assert(parsedUrl.searchParams.has('token'))
     }
 
     // `createSignedUrls` with download
