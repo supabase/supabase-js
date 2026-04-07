@@ -170,6 +170,11 @@ export interface FileOptions {
    * Optionally add extra headers
    */
   headers?: Record<string, string>
+    /**
+   * The value of the `Content-Encoding` header. For example, `'gzip'` to
+   * indicate the file body is gzip-compressed.
+   */
+  contentEncoding?: string
 }
 
 export interface DestinationOptions {
