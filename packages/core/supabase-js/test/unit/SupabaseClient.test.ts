@@ -378,6 +378,43 @@ describe('SupabaseClient', () => {
         expect(client.realtime.setAuth).toHaveBeenCalledWith(testToken)
         expect((client.realtime as any).accessTokenValue).toBe(testToken)
       })
+
+      test('should sync fresh token to realtime on visibility change (tab resume)', async () => {
+        // Set up a minimal document mock for the visibility change listener
+        const listeners: Record<string, Function[]> = {}
+        const mockDocument = {
+          visibilityState: 'visible',
+          addEventListener: (event: string, cb: Function) => {
+            listeners[event] = listeners[event] || []
+            listeners[event].push(cb)
+          },
+          dispatchEvent: (event: { type: string }) => {
+            ;(listeners[event.type] || []).forEach((cb) => cb())
+          },
+        }
+        ;(globalThis as any).document = mockDocument
+
+        const freshToken = 'fresh-session-token'
+        const client = createClient(URL, KEY)
+
+        client.auth.getSession = jest.fn().mockResolvedValue({
+          data: { session: { access_token: freshToken } },
+        })
+
+        const setAuthSpy = jest.spyOn(client.realtime, 'setAuth').mockResolvedValue()
+
+        // Simulate tab becoming visible (as after suspension)
+        mockDocument.visibilityState = 'visible'
+        mockDocument.dispatchEvent({ type: 'visibilitychange' })
+
+        // Allow async callback to complete
+        await new Promise((r) => setTimeout(r, 50))
+
+        expect(setAuthSpy).toHaveBeenCalledWith(freshToken)
+
+        // Clean up
+        delete (globalThis as any).document
+      })
     })
 
     describe('FetchWithAuth Token Integration', () => {
