@@ -7,8 +7,13 @@ export type {
   PostgrestResponse,
   PostgrestSingleResponse,
   PostgrestMaybeSingleResponse,
+  PostgrestBuilder,
+  PostgrestFilterBuilder,
+  PostgrestTransformBuilder,
+  PostgrestQueryBuilder,
 } from '@supabase/postgrest-js'
 export { PostgrestError } from '@supabase/postgrest-js'
+export { StorageApiError } from '@supabase/storage-js'
 export type { FunctionInvokeOptions } from '@supabase/functions-js'
 export {
   FunctionsHttpError,
