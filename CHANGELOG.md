@@ -1,3 +1,28 @@
+## 2.102.0 (2026-04-07)
+
+### 🚀 Features
+
+- **postgrest:** add automatic retries for transient errors ([#2072](https://github.com/supabase/supabase-js/pull/2072))
+- **postgrest:** add success discriminator field to PostgREST response types ([#2198](https://github.com/supabase/supabase-js/pull/2198))
+- **supabase:** export PostgrestFilterBuilder and StorageApiError from supabase-js ([#2222](https://github.com/supabase/supabase-js/pull/2222))
+
+### 🩹 Fixes
+
+- **auth:** downgrade console.error to console.warn for missing session ([#2214](https://github.com/supabase/supabase-js/pull/2214))
+- **ci:** add --ignore-scripts to platform test installs to block post install attacks ([#2206](https://github.com/supabase/supabase-js/pull/2206))
+- **postgrest:** add toJSON to PostgrestError for correct JSON serialization ([#2212](https://github.com/supabase/supabase-js/pull/2212))
+- **postgrest:** reject excess properties in insert, update, and upsert ([#2186](https://github.com/supabase/supabase-js/pull/2186))
+- **storage:** set correct content-type for uploads ([#2211](https://github.com/supabase/supabase-js/pull/2211))
+- **storage:** avoid duplicate content-type headers in vector requests ([#2220](https://github.com/supabase/supabase-js/pull/2220))
+
+### ❤️ Thank You
+
+- Clay
+- Guilherme Souza
+- Katerina Skroumpelou @mandarini
+- oniani1
+- Vaibhav @7ttp
+
 ## 2.101.1 (2026-03-31)
 
 ### 🩹 Fixes

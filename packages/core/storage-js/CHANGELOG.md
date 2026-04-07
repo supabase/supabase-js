@@ -1,3 +1,15 @@
+## 2.102.0 (2026-04-07)
+
+### 🩹 Fixes
+
+- **storage:** avoid duplicate content-type headers in vector requests ([#2220](https://github.com/supabase/supabase-js/pull/2220))
+- **storage:** set correct content-type for uploads ([#2211](https://github.com/supabase/supabase-js/pull/2211))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+- Vaibhav @7ttp
+
 ## 2.101.1 (2026-03-31)
 
 ### 🩹 Fixes

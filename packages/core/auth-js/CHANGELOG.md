@@ -1,3 +1,13 @@
+## 2.102.0 (2026-04-07)
+
+### 🩹 Fixes
+
+- **auth:** downgrade console.error to console.warn for missing session ([#2214](https://github.com/supabase/supabase-js/pull/2214))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+
 ## 2.101.1 (2026-03-31)
 
 This was a version bump only for @supabase/auth-js to align it with other projects, there were no code changes.
