@@ -113,6 +113,9 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
         body = fileBody
         headers['cache-control'] = `max-age=${options.cacheControl}`
         headers['content-type'] = options.contentType as string
+                if (options.contentEncoding) {
+          headers['content-encoding'] = options.contentEncoding
+        }
 
         if (metadata) {
           headers['x-metadata'] = this.toBase64(this.encodeMetadata(metadata))
