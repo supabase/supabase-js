@@ -872,6 +872,29 @@ describe('download with fetch parameters', () => {
     }
   })
 
+  it('download with version querystring', async () => {
+    const uploadRes = await storage.from(bucketName).upload(uploadPath, file)
+    expect(uploadRes.error).toBeNull()
+
+    const version = Date.now().toString()
+    const originalFetch = global.fetch
+    const mockFetch = jest.fn(originalFetch)
+    global.fetch = mockFetch
+
+    try {
+      const { data, error } = await storage.from(bucketName).download(uploadPath, { version })
+
+      expect(error).toBeNull()
+      expect(data).not.toBeNull()
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining(`/${bucketName}/${uploadPath}?_v=${version}`),
+        expect.objectContaining({ method: 'GET' })
+      )
+    } finally {
+      global.fetch = originalFetch
+    }
+  })
+
   it('download with transform and fetch parameters', async () => {
     const uploadRes = await storage.from(bucketName).upload(uploadPath, file)
     expect(uploadRes.error).toBeNull()
