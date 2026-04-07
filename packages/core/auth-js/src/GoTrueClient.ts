@@ -4007,7 +4007,11 @@ export default class GoTrueClient {
       } catch (err) {
         await this.stateChangeEmitters.get(id)?.callback('INITIAL_SESSION', null)
         this._debug('INITIAL_SESSION', 'callback id', id, 'error', err)
-        console.error(err)
+        if (isAuthSessionMissingError(err)) {
+          console.warn(err)
+        } else {
+          console.error(err)
+        }
       }
     })
   }
