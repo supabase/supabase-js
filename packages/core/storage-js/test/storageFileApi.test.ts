@@ -652,9 +652,11 @@ describe('Object API', () => {
     })
 
     it('download with empty transform object does not use render endpoint', async () => {
-      await storage.from(bucketName).upload(uploadPath, file)
+      const txtFile = await fsp.readFile(uploadFilePath('file.txt'))
+      const txtPath = `testpath/file-${Date.now()}.txt`
+      await storage.from(bucketName).upload(txtPath, txtFile)
 
-      const res = await storage.from(bucketName).download(uploadPath, {
+      const res = await storage.from(bucketName).download(txtPath, {
         transform: {},
       })
 
