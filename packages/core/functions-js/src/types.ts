@@ -34,6 +34,14 @@ export class FunctionsError extends Error {
     this.name = name
     this.context = context
   }
+
+  toJSON() {
+    return {
+      name: this.name,
+      message: this.message,
+      context: this.context,
+    }
+  }
 }
 
 /**
