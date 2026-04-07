@@ -291,7 +291,11 @@ type ProcessFieldNode<
   Relationships extends GenericRelationship[],
   Field extends Ast.FieldNode,
 > = Field['children'] extends []
-  ? {}
+  ? // Empty `()` — could be a scalar computed column (e.g. `user_count()`).
+    // Route through ProcessEmbeddedResource so the scalar path returns the correct
+    // primitive type. For non-scalar embedded resources with empty selection,
+    // ProcessEmbeddedResource returns {} (no contribution to result type).
+    ProcessEmbeddedResource<ClientOptions, Schema, Relationships, Field, RelationName>
   : IsNonEmptyArray<Field['children']> extends true // Has embedded resource?
     ? ProcessEmbeddedResource<ClientOptions, Schema, Relationships, Field, RelationName>
     : ProcessSimpleField<Row, RelationName, Field>
@@ -366,13 +370,35 @@ export type ProcessEmbeddedResource<
 > =
   ResolveRelationship<Schema, Relationships, Field, CurrentTableOrView> extends infer Resolved
     ? Resolved extends {
-        referencedTable: Pick<GenericTable, 'Row' | 'Relationships'>
-        relation: GenericRelationship & { match: 'refrel' | 'col' | 'fkname' | 'func' }
-        direction: string
+        scalarType: infer ScalarType
+        relation: { isSetofReturn?: boolean; isNotNullable?: boolean }
       }
-      ? ProcessEmbeddedResourceResult<ClientOptions, Schema, Resolved, Field, CurrentTableOrView>
-      : // Otherwise the Resolved is a SelectQueryError return it
-        { [K in GetFieldNodeResultName<Field>]: Resolved }
+      ? // Scalar computed column: bypass ProcessNodes and return the primitive type directly.
+        {
+          [K in GetFieldNodeResultName<Field>]: Resolved['relation']['isSetofReturn'] extends true
+            ? ScalarType
+            : Resolved['relation']['isNotNullable'] extends true
+              ? ScalarType
+              : ScalarType | null
+        }
+      : Resolved extends {
+            referencedTable: Pick<GenericTable, 'Row' | 'Relationships'>
+            relation: GenericRelationship & { match: 'refrel' | 'col' | 'fkname' | 'func' }
+            direction: string
+          }
+        ? Field['children'] extends []
+          ? // Empty `()` on a regular table embed — no fields selected, contribute nothing.
+            // This preserves the prior behavior: `users()` does not add a `users` key to the result.
+            {}
+          : ProcessEmbeddedResourceResult<
+              ClientOptions,
+              Schema,
+              Resolved,
+              Field,
+              CurrentTableOrView
+            >
+        : // Otherwise the Resolved is a SelectQueryError return it
+          { [K in GetFieldNodeResultName<Field>]: Resolved }
     : {
         [K in GetFieldNodeResultName<Field>]: SelectQueryError<'Failed to resolve relationship.'> &
           string

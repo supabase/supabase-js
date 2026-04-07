@@ -1433,4 +1433,30 @@ describe('embeded functions select', () => {
       >
     >(true)
   })
+
+  test('scalar_computed_count - non-SETOF non-nullable scalar returns number (not null)', async () => {
+    const res = await postgrest.from('users').select('username, scalar_computed_count()')
+    let result: Exclude<typeof res.data, null>
+    const ExpectedSchema = z.array(
+      z.object({
+        username: z.string(),
+        scalar_computed_count: z.number(),
+      })
+    )
+    let expected: z.infer<typeof ExpectedSchema>
+    expectType<TypeEqual<typeof result, typeof expected>>(true)
+  })
+
+  test('scalar_computed_ids - SETOF scalar returns string[] (not null)', async () => {
+    const res = await postgrest.from('users').select('username, scalar_computed_ids()')
+    let result: Exclude<typeof res.data, null>
+    const ExpectedSchema = z.array(
+      z.object({
+        username: z.string(),
+        scalar_computed_ids: z.array(z.string()),
+      })
+    )
+    let expected: z.infer<typeof ExpectedSchema>
+    expectType<TypeEqual<typeof result, typeof expected>>(true)
+  })
 })

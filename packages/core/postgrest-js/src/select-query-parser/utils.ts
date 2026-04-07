@@ -464,30 +464,58 @@ export type ResolveForwardRelationship<
                     CurrentTableOrView,
                     Field['name']
                   > extends infer FoundEmbededFunctionJoinTableRelation
-                ? FoundEmbededFunctionJoinTableRelation extends GenericSetofOption
-                  ? {
-                      referencedTable: TablesAndViews<Schema>[FoundEmbededFunctionJoinTableRelation['to']]
-                      relation: {
-                        foreignKeyName: `${Field['name']}_${CurrentTableOrView}_${FoundEmbededFunctionJoinTableRelation['to']}_forward`
-                        columns: []
-                        isOneToOne: FoundEmbededFunctionJoinTableRelation['isOneToOne'] extends true
-                          ? true
-                          : false
-                        referencedColumns: []
-                        referencedRelation: FoundEmbededFunctionJoinTableRelation['to']
-                      } & {
-                        match: 'func'
-                        isNotNullable: FoundEmbededFunctionJoinTableRelation['isNotNullable'] extends true
-                          ? true
-                          : FoundEmbededFunctionJoinTableRelation['isSetofReturn'] extends true
-                            ? false
-                            : true
-                        isSetofReturn: FoundEmbededFunctionJoinTableRelation['isSetofReturn']
-                      }
-                      direction: 'forward'
-                      from: CurrentTableOrView
-                      type: 'found-by-embeded-function'
-                    }
+                ? FoundEmbededFunctionJoinTableRelation extends GenericFunction
+                  ? FoundEmbededFunctionJoinTableRelation['SetofOptions'] extends GenericSetofOption
+                    ? FoundEmbededFunctionJoinTableRelation['SetofOptions']['to'] extends ''
+                      ? // Scalar computed column: function returns a primitive (not a table row).
+                        // `to` is '' because there is no target table — the value is returned directly.
+                        {
+                          referencedTable: { Row: Record<string, never>; Relationships: [] }
+                          relation: {
+                            foreignKeyName: `${Field['name']}_${CurrentTableOrView}_scalar_forward`
+                            columns: []
+                            isOneToOne: false
+                            referencedColumns: []
+                            referencedRelation: ''
+                          } & {
+                            match: 'func'
+                            isNotNullable: FoundEmbededFunctionJoinTableRelation['SetofOptions']['isNotNullable'] extends true
+                              ? true
+                              : FoundEmbededFunctionJoinTableRelation['SetofOptions']['isSetofReturn'] extends true
+                                ? false
+                                : true
+                            isSetofReturn: FoundEmbededFunctionJoinTableRelation['SetofOptions']['isSetofReturn']
+                          }
+                          scalarType: FoundEmbededFunctionJoinTableRelation['Returns']
+                          direction: 'forward'
+                          from: CurrentTableOrView
+                          type: 'found-by-embeded-scalar-function'
+                        }
+                      : // Table-valued function: `to` names the target table/view.
+                        {
+                          referencedTable: TablesAndViews<Schema>[FoundEmbededFunctionJoinTableRelation['SetofOptions']['to']]
+                          relation: {
+                            foreignKeyName: `${Field['name']}_${CurrentTableOrView}_${FoundEmbededFunctionJoinTableRelation['SetofOptions']['to']}_forward`
+                            columns: []
+                            isOneToOne: FoundEmbededFunctionJoinTableRelation['SetofOptions']['isOneToOne'] extends true
+                              ? true
+                              : false
+                            referencedColumns: []
+                            referencedRelation: FoundEmbededFunctionJoinTableRelation['SetofOptions']['to']
+                          } & {
+                            match: 'func'
+                            isNotNullable: FoundEmbededFunctionJoinTableRelation['SetofOptions']['isNotNullable'] extends true
+                              ? true
+                              : FoundEmbededFunctionJoinTableRelation['SetofOptions']['isSetofReturn'] extends true
+                                ? false
+                                : true
+                            isSetofReturn: FoundEmbededFunctionJoinTableRelation['SetofOptions']['isSetofReturn']
+                          }
+                          direction: 'forward'
+                          from: CurrentTableOrView
+                          type: 'found-by-embeded-function'
+                        }
+                    : SelectQueryError<`could not find the relation between ${CurrentTableOrView} and ${Field['name']}`>
                   : SelectQueryError<`could not find the relation between ${CurrentTableOrView} and ${Field['name']}`>
                 : SelectQueryError<`could not find the relation between ${CurrentTableOrView} and ${Field['name']}`>
             : SelectQueryError<`could not find the relation between ${CurrentTableOrView} and ${Field['name']}`>
@@ -542,7 +570,7 @@ type ResolveEmbededFunctionJoinTableRelationship<
     CurrentTableOrView
   > extends infer Fn
     ? Fn extends GenericFunction
-      ? Fn['SetofOptions']
+      ? Fn
       : false
     : false
 
