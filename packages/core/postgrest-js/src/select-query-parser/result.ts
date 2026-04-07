@@ -294,7 +294,7 @@ type ProcessFieldNode<
   ? // Empty `()` — could be a scalar computed column (e.g. `user_count()`).
     // Route through ProcessEmbeddedResource so the scalar path returns the correct
     // primitive type. For non-scalar embedded resources with empty selection,
-    // ProcessNodes([]) returns {} which preserves the same prior behavior.
+    // ProcessEmbeddedResource returns {} (no contribution to result type).
     ProcessEmbeddedResource<ClientOptions, Schema, Relationships, Field, RelationName>
   : IsNonEmptyArray<Field['children']> extends true // Has embedded resource?
     ? ProcessEmbeddedResource<ClientOptions, Schema, Relationships, Field, RelationName>
@@ -386,7 +386,17 @@ export type ProcessEmbeddedResource<
             relation: GenericRelationship & { match: 'refrel' | 'col' | 'fkname' | 'func' }
             direction: string
           }
-        ? ProcessEmbeddedResourceResult<ClientOptions, Schema, Resolved, Field, CurrentTableOrView>
+        ? Field['children'] extends []
+          ? // Empty `()` on a regular table embed — no fields selected, contribute nothing.
+            // This preserves the prior behavior: `users()` does not add a `users` key to the result.
+            {}
+          : ProcessEmbeddedResourceResult<
+              ClientOptions,
+              Schema,
+              Resolved,
+              Field,
+              CurrentTableOrView
+            >
         : // Otherwise the Resolved is a SelectQueryError return it
           { [K in GetFieldNodeResultName<Field>]: Resolved }
     : {
