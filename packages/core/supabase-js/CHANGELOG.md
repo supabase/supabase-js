@@ -1,3 +1,15 @@
+## 2.102.0 (2026-04-07)
+
+### 🚀 Features
+
+- **supabase:** export PostgrestFilterBuilder and StorageApiError from supabase-js ([#2222](https://github.com/supabase/supabase-js/pull/2222))
+- **postgrest:** add automatic retries for transient errors ([#2072](https://github.com/supabase/supabase-js/pull/2072))
+
+### ❤️ Thank You
+
+- Guilherme Souza
+- Katerina Skroumpelou @mandarini
+
 ## 2.101.1 (2026-03-31)
 
 This was a version bump only for @supabase/supabase-js to align it with other projects, there were no code changes.

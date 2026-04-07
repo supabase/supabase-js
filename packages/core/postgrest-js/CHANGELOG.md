@@ -1,3 +1,22 @@
+## 2.102.0 (2026-04-07)
+
+### 🚀 Features
+
+- **postgrest:** add success discriminator field to PostgREST response types ([#2198](https://github.com/supabase/supabase-js/pull/2198))
+- **postgrest:** add automatic retries for transient errors ([#2072](https://github.com/supabase/supabase-js/pull/2072))
+
+### 🩹 Fixes
+
+- **postgrest:** reject excess properties in insert, update, and upsert ([#2186](https://github.com/supabase/supabase-js/pull/2186))
+- **postgrest:** add toJSON to PostgrestError for correct JSON serialization ([#2212](https://github.com/supabase/supabase-js/pull/2212))
+
+### ❤️ Thank You
+
+- Clay
+- Guilherme Souza
+- Katerina Skroumpelou @mandarini
+- oniani1
+
 ## 2.101.1 (2026-03-31)
 
 This was a version bump only for @supabase/postgrest-js to align it with other projects, there were no code changes.
