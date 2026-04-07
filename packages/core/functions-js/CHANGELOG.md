@@ -1,3 +1,13 @@
+## 2.102.1 (2026-04-07)
+
+### 🩹 Fixes
+
+- **functions:** add toJSON to FunctionsError for correct JSON serialization ([#2226](https://github.com/supabase/supabase-js/pull/2226))
+
+### ❤️ Thank You
+
+- oniani1
+
 ## 2.102.0 (2026-04-07)
 
 This was a version bump only for @supabase/functions-js to align it with other projects, there were no code changes.
