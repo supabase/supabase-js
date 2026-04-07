@@ -22,10 +22,9 @@ jobs:
         with:
           node-version: 22
 
-      - name: Upgrade to latest
-        run: npm install -g npm@latest
-
       # This is needed to match the npm version used when publishing
+      - name: Update npm
+        run: corepack enable npm && corepack prepare npm@11 --activate
       - name: Regenerate lockfile
         run: npm install --package-lock-only --ignore-scripts
 

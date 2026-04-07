@@ -84,9 +84,8 @@ jobs:
           cache: 'npm'
           registry-url: 'https://registry.npmjs.org'
 
-      # Ensure npm 11.5.1 or later is installed for trusted publishing support
       - name: Update npm
-        run: npm install -g npm@latest
+        run: corepack enable npm && corepack prepare npm@11 --activate
 
       - name: Install dependencies
         run: npm ci
@@ -257,7 +256,7 @@ jobs:
           registry-url: 'https://registry.npmjs.org'
 
       - name: Update npm
-        run: npm install -g npm@latest
+        run: corepack enable npm && corepack prepare npm@11 --activate
 
       - name: Install dependencies
         run: npm ci
@@ -378,9 +377,8 @@ jobs:
           cache: 'npm'
           registry-url: 'https://registry.npmjs.org'
 
-      # Ensure npm 11.5.1 or later is installed for trusted publishing support
       - name: Update npm
-        run: npm install -g npm@latest
+        run: corepack enable npm && corepack prepare npm@11 --activate
       - name: Install dependencies
         run: npm ci
       - name: Configure git
