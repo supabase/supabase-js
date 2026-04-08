@@ -266,6 +266,7 @@ export default class RealtimeChannel {
     if (!this.socket.isConnected()) {
       this.socket.connect()
     }
+    const delay = this.socket._recordChannelJoin()
     if (this.channelAdapter.isClosed()) {
       const {
         config: { broadcast, presence, private: isPrivate },
@@ -299,30 +300,38 @@ export default class RealtimeChannel {
 
       this._updateFilterMessage()
 
-      this.channelAdapter
-        .subscribe(timeout)
-        .receive('ok', async ({ postgres_changes }: PostgresChangesFilters) => {
-          // Only refresh auth if using callback-based tokens
-          if (!this.socket._isManualToken()) {
-            this.socket.setAuth()
-          }
-          if (postgres_changes === undefined) {
-            callback?.(REALTIME_SUBSCRIBE_STATES.SUBSCRIBED)
-            return
-          }
+      const doSubscribe = () => {
+        this.channelAdapter
+          .subscribe(timeout)
+          .receive('ok', async ({ postgres_changes }: PostgresChangesFilters) => {
+            // Only refresh auth if using callback-based tokens
+            if (!this.socket._isManualToken()) {
+              this.socket.setAuth()
+            }
+            if (postgres_changes === undefined) {
+              callback?.(REALTIME_SUBSCRIBE_STATES.SUBSCRIBED)
+              return
+            }
 
-          this._updatePostgresBindings(postgres_changes, callback)
-        })
-        .receive('error', (error: { [key: string]: any }) => {
-          this.state = CHANNEL_STATES.errored
-          callback?.(
-            REALTIME_SUBSCRIBE_STATES.CHANNEL_ERROR,
-            new Error(JSON.stringify(Object.values(error).join(', ') || 'error'))
-          )
-        })
-        .receive('timeout', () => {
-          callback?.(REALTIME_SUBSCRIBE_STATES.TIMED_OUT)
-        })
+            this._updatePostgresBindings(postgres_changes, callback)
+          })
+          .receive('error', (error: { [key: string]: any }) => {
+            this.state = CHANNEL_STATES.errored
+            callback?.(
+              REALTIME_SUBSCRIBE_STATES.CHANNEL_ERROR,
+              new Error(JSON.stringify(Object.values(error).join(', ') || 'error'))
+            )
+          })
+          .receive('timeout', () => {
+            callback?.(REALTIME_SUBSCRIBE_STATES.TIMED_OUT)
+          })
+      }
+
+      if (delay > 0) {
+        setTimeout(doSubscribe, delay)
+      } else {
+        doSubscribe()
+      }
     }
     return this
   }

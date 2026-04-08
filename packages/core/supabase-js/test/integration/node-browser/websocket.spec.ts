@@ -4,6 +4,23 @@ test.describe('WebSocket Browser Tests', () => {
   const versions = [{ vsn: '1.0.0' }, { vsn: '2.0.0' }]
 
   versions.forEach(({ vsn }) => {
+    test.describe(`Realtime throttle with vsn: ${vsn}`, () => {
+      test('should subscribe all channels even when rate is exceeded', async ({ page }) => {
+        await page.goto(`/?vsn=${vsn}&throttle=true`)
+        await expect(page.locator('#log')).toBeVisible()
+
+        await expect(page.locator('#log')).toContainText(
+          'Throttle test complete: all channels subscribed',
+          { timeout: 30000 }
+        )
+
+        expect(await page.locator('#log').textContent()).not.toContain('Global error')
+        expect(await page.locator('#log').textContent()).not.toContain(
+          'Unhandled promise rejection'
+        )
+      })
+    })
+
     test.describe(`WebSocket with vsn: ${vsn}`, () => {
       test('should test WebSocket transport', async ({ page }) => {
         await page.goto(`/?vsn=${vsn}`)
