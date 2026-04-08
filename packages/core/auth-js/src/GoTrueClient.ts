@@ -53,7 +53,7 @@ import {
   validateExp,
 } from './lib/helpers'
 import { memoryLocalStorageAdapter } from './lib/local-storage'
-import { LockAcquireTimeoutError, navigatorLock } from './lib/locks'
+import { LockAcquireTimeoutError, navigatorLock, processLock } from './lib/locks'
 import { polyfillGlobalThis } from './lib/polyfills'
 import { version } from './lib/version'
 
@@ -336,8 +336,8 @@ export default class GoTrueClient {
 
     if (settings.lock) {
       this.lock = settings.lock
-    } else if (this.persistSession && isBrowser() && globalThis?.navigator?.locks) {
-      this.lock = navigatorLock
+    } else if (this.persistSession && isBrowser()) {
+      this.lock = processLock
     } else {
       this.lock = lockNoOp
     }
