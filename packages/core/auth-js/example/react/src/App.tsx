@@ -13,6 +13,10 @@ const auth = new AuthClient({
   },
 })
 
+if (import.meta.env.DEV) {
+  ;(window as any).__auth__ = auth
+}
+
 function App() {
   const [session, setSession] = useState<Session | null>(null)
   const [email, setEmail] = useState(localStorage.getItem('email') ?? '')
