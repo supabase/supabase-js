@@ -540,7 +540,7 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
    * @param expiresIn The number of seconds until the signed URL expires. For example, `60` for a URL which is valid for one minute.
    * @param options.download triggers the file as a download if set to true. Set this parameter as the name of the file if you want to trigger the download with a different filename.
    * @param options.transform Transform the asset before serving it to the client.
-   * @param options.version Append a version parameter to the URL to invalidate the cache.
+   * @param options.cacheNonce Append a cache nonce parameter to the URL to invalidate the cache.
    * @returns Promise with response containing signed URL or error
    *
    * @example Create Signed URL
@@ -587,7 +587,11 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
   async createSignedUrl(
     path: string,
     expiresIn: number,
-    options?: { download?: string | boolean; transform?: TransformOptions; version?: string }
+    options?: {
+      download?: string | boolean
+      transform?: TransformOptions
+      cacheNonce?: string
+    }
   ): Promise<
     | {
         data: { signedUrl: string }
@@ -611,7 +615,7 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
       const query = new URLSearchParams()
       if (options?.download)
         query.set('download', options.download === true ? '' : options.download)
-      if (options?.version) query.set('_v', options.version)
+      if (options?.cacheNonce != null) query.set('cacheNonce', String(options.cacheNonce))
       const queryString = query.toString()
 
       // When transforms are requested the signed URL must use the render endpoint.
@@ -639,7 +643,7 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
    * @param paths The file paths to be downloaded, including the current file names. For example `['folder/image.png', 'folder2/image2.png']`.
    * @param expiresIn The number of seconds until the signed URLs expire. For example, `60` for URLs which are valid for one minute.
    * @param options.download triggers the file as a download if set to true. Set this parameter as the name of the file if you want to trigger the download with a different filename.
-   * @param options.version Append a version parameter to the URL to invalidate the cache.
+   * @param options.cacheNonce Append a cache nonce parameter to the URL to invalidate the cache.
    * @returns Promise with response containing array of objects with signedUrl, path, and error or error
    *
    * @example Create Signed URLs
@@ -674,7 +678,7 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
   async createSignedUrls(
     paths: string[],
     expiresIn: number,
-    options?: { download?: string | boolean; version?: string }
+    options?: { download?: string | boolean; cacheNonce?: string }
   ): Promise<
     | {
         data: { error: string | null; path: string | null; signedUrl: string }[]
@@ -697,7 +701,7 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
 
       if (options?.download)
         query.set('download', options.download === true ? '' : options.download)
-      if (options?.version) query.set('_v', options.version)
+      if (options?.cacheNonce != null) query.set('cacheNonce', String(options.cacheNonce))
 
       const queryString = query.toString()
 
@@ -716,7 +720,7 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
    * @category File Buckets
    * @param path The full path and file name of the file to be downloaded. For example `folder/image.png`.
    * @param options.transform Transform the asset before serving it to the client.
-   * @param options.version Append a version parameter to the URL to invalidate the cache.
+   * @param options.cacheNonce Append a cache nonce parameter to the URL to invalidate the cache.
    * @param parameters Additional fetch parameters like signal for cancellation. Supports standard fetch options including cache control.
    * @returns BlobDownloadBuilder instance for downloading the file
    *
@@ -769,7 +773,7 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
    *   .download('folder/avatar1.png', {}, { signal: controller.signal })
    * ```
    */
-  download<Options extends { transform?: TransformOptions; version?: string }>(
+  download<Options extends { transform?: TransformOptions; cacheNonce?: string }>(
     path: string,
     options?: Options,
     parameters?: FetchParameters
@@ -779,7 +783,7 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
 
     const query = new URLSearchParams()
     if (options?.transform) this.applyTransformOptsToQuery(query, options.transform)
-    if (options?.version) query.set('_v', options.version)
+    if (options?.cacheNonce != null) query.set('cacheNonce', String(options.cacheNonce))
     const queryString = query.toString()
 
     const _path = this._getFinalPath(path)
@@ -903,7 +907,7 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
    * @param path The path and name of the file to generate the public URL for. For example `folder/image.png`.
    * @param options.download Triggers the file as a download if set to true. Set this parameter as the name of the file if you want to trigger the download with a different filename.
    * @param options.transform Transform the asset before serving it to the client.
-   * @param options.version Append a version parameter to the URL to invalidate the cache.
+   * @param options.cacheNonce Append a cache nonce parameter to the URL to invalidate the cache.
    * @returns Object with public URL
    *
    * @example Returns the URL for an asset in a public bucket
@@ -948,14 +952,18 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
    */
   getPublicUrl(
     path: string,
-    options?: { download?: string | boolean; transform?: TransformOptions; version?: string }
+    options?: {
+      download?: string | boolean
+      transform?: TransformOptions
+      cacheNonce?: string
+    }
   ): { data: { publicUrl: string } } {
     const _path = this._getFinalPath(path)
 
     const query = new URLSearchParams()
     if (options?.download) query.set('download', options.download === true ? '' : options.download)
     if (options?.transform) this.applyTransformOptsToQuery(query, options.transform)
-    if (options?.version) query.set('_v', options.version)
+    if (options?.cacheNonce != null) query.set('cacheNonce', String(options.cacheNonce))
     const queryString = query.toString()
 
     const wantsTransformation = typeof options?.transform !== 'undefined'

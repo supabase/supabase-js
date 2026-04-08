@@ -707,8 +707,8 @@ describe('Object API', () => {
     )
   })
 
-  it('will append a version parameter', async () => {
-    const version = Date.now().toString()
+  it('will append a cacheNonce parameter', async () => {
+    const cacheNonce = Date.now().toString()
     await storage.from(bucketName).upload(uploadPath, file)
 
     // `createSignedUrl` with transform
@@ -719,7 +719,7 @@ describe('Object API', () => {
           height: 200,
           quality: 60,
         },
-        version,
+        cacheNonce,
       })
 
       expect(res.error).toBeNull()
@@ -727,13 +727,13 @@ describe('Object API', () => {
 
       const parsedUrl = global.URL.parse(res.data.signedUrl)
       assert(parsedUrl)
-      assert(parsedUrl.searchParams.has('_v', version))
+      assert(parsedUrl.searchParams.has('cacheNonce', cacheNonce))
     }
 
     // `createSignedUrl` without transform
     {
       const res = await storage.from(bucketName).createSignedUrl(uploadPath, 60000, {
-        version,
+        cacheNonce,
       })
 
       expect(res.error).toBeNull()
@@ -741,13 +741,13 @@ describe('Object API', () => {
 
       const parsedUrl = global.URL.parse(res.data.signedUrl)
       assert(parsedUrl)
-      assert(parsedUrl.searchParams.has('_v', version))
+      assert(parsedUrl.searchParams.has('cacheNonce', cacheNonce))
     }
 
     // `getPublicUrl` with transform & download
     {
       const res = storage.from(bucketName).getPublicUrl(uploadPath, {
-        version,
+        cacheNonce,
         transform: {
           width: 200,
           height: 200,
@@ -760,36 +760,36 @@ describe('Object API', () => {
 
       const parsedUrl = global.URL.parse(res.data.publicUrl)
       assert(parsedUrl)
-      assert(parsedUrl.searchParams.has('_v', version))
+      assert(parsedUrl.searchParams.has('cacheNonce', cacheNonce))
     }
 
     // `getPublicUrl` without transform
     {
       const res = storage.from(bucketName).getPublicUrl(uploadPath, {
-        version,
+        cacheNonce,
       })
 
       assert(res.data)
 
       const parsedUrl = global.URL.parse(res.data.publicUrl)
       assert(parsedUrl)
-      assert(parsedUrl.searchParams.has('_v', version))
+      assert(parsedUrl.searchParams.has('cacheNonce', cacheNonce))
     }
 
-    // `download` with version
+    // `download` with cacheNonce
     {
       const res = await storage.from(bucketName).download(uploadPath, {
-        version,
+        cacheNonce,
       })
 
       expect(res.error).toBeNull()
       assert(res.data)
     }
 
-    // `createSignedUrls` with version
+    // `createSignedUrls` with cacheNonce
     {
       const res = await storage.from(bucketName).createSignedUrls([uploadPath], 60000, {
-        version,
+        cacheNonce,
       })
 
       expect(res.error).toBeNull()
@@ -799,14 +799,14 @@ describe('Object API', () => {
 
       const parsedUrl = global.URL.parse(res.data[0].signedUrl)
       assert(parsedUrl)
-      assert(parsedUrl.searchParams.has('_v', version))
+      assert(parsedUrl.searchParams.has('cacheNonce', cacheNonce))
       assert(parsedUrl.searchParams.has('token'))
     }
 
     // `createSignedUrls` with download
     {
       const res = await storage.from(bucketName).createSignedUrls([uploadPath], 60000, {
-        version,
+        cacheNonce,
         download: true,
       })
 
@@ -817,7 +817,7 @@ describe('Object API', () => {
 
       const parsedUrl = global.URL.parse(res.data[0].signedUrl)
       assert(parsedUrl)
-      assert(parsedUrl.searchParams.has('_v', version))
+      assert(parsedUrl.searchParams.has('cacheNonce', cacheNonce))
       assert(parsedUrl.searchParams.has('token'))
     }
   })
@@ -872,22 +872,24 @@ describe('download with fetch parameters', () => {
     }
   })
 
-  it('download with version querystring', async () => {
+  it('download with cacheNonce querystring', async () => {
     const uploadRes = await storage.from(bucketName).upload(uploadPath, file)
     expect(uploadRes.error).toBeNull()
 
-    const version = Date.now().toString()
+    const cacheNonce = Date.now().toString()
     const originalFetch = global.fetch
     const mockFetch = jest.fn(originalFetch)
     global.fetch = mockFetch
 
     try {
-      const { data, error } = await storage.from(bucketName).download(uploadPath, { version })
+      const { data, error } = await storage.from(bucketName).download(uploadPath, {
+        cacheNonce,
+      })
 
       expect(error).toBeNull()
       expect(data).not.toBeNull()
       expect(mockFetch).toHaveBeenCalledWith(
-        expect.stringContaining(`/${bucketName}/${uploadPath}?_v=${version}`),
+        expect.stringContaining(`/${bucketName}/${uploadPath}?cacheNonce=${cacheNonce}`),
         expect.objectContaining({ method: 'GET' })
       )
     } finally {
