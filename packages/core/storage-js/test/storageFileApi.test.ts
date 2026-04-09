@@ -89,6 +89,7 @@ describe('Object API', () => {
 
       expect(res.error).toBeNull()
       expect(res.data?.signedUrl).toContain(`${URL}/object/sign/${bucketName}/${uploadPath}`)
+      expect(res.data?.signedUrl).not.toMatch(/&$/)
 
       // throws when .throwOnError is enabled
       await expect(
@@ -141,6 +142,17 @@ describe('Object API', () => {
       expect(res.error).toBeNull()
       expect(res.data?.signedUrl).toContain(`${URL}/object/sign/${bucketName}/${uploadPath}`)
       expect(res.data?.signedUrl).toContain(`&download=test.jpg`)
+    })
+
+    test('sign urls without querystring', async () => {
+      await storage.from(bucketName).upload(uploadPath, file)
+      const res = await storage.from(bucketName).createSignedUrls([uploadPath], 2000)
+
+      expect(res.error).toBeNull()
+      expect(res.data).toHaveLength(1)
+      expect(res.data?.[0].error).toBeNull()
+      expect(res.data?.[0].signedUrl).toContain(`${URL}/object/sign/${bucketName}/${uploadPath}`)
+      expect(res.data?.[0].signedUrl).not.toMatch(/&$/)
     })
   })
 
@@ -706,6 +718,121 @@ describe('Object API', () => {
       'height:200,width:200,resizing_type:fill,quality:60'
     )
   })
+
+  it('will append a cacheNonce parameter', async () => {
+    const cacheNonce = Date.now().toString()
+    await storage.from(bucketName).upload(uploadPath, file)
+
+    // `createSignedUrl` with transform
+    {
+      const res = await storage.from(bucketName).createSignedUrl(uploadPath, 60000, {
+        transform: {
+          width: 200,
+          height: 200,
+          quality: 60,
+        },
+        cacheNonce,
+      })
+
+      expect(res.error).toBeNull()
+      assert(res.data)
+
+      const parsedUrl = global.URL.parse(res.data.signedUrl)
+      assert(parsedUrl)
+      assert(parsedUrl.searchParams.has('cacheNonce', cacheNonce))
+    }
+
+    // `createSignedUrl` without transform
+    {
+      const res = await storage.from(bucketName).createSignedUrl(uploadPath, 60000, {
+        cacheNonce,
+      })
+
+      expect(res.error).toBeNull()
+      assert(res.data)
+
+      const parsedUrl = global.URL.parse(res.data.signedUrl)
+      assert(parsedUrl)
+      assert(parsedUrl.searchParams.has('cacheNonce', cacheNonce))
+    }
+
+    // `getPublicUrl` with transform & download
+    {
+      const res = storage.from(bucketName).getPublicUrl(uploadPath, {
+        cacheNonce,
+        transform: {
+          width: 200,
+          height: 200,
+          quality: 60,
+        },
+        download: true,
+      })
+
+      assert(res.data)
+
+      const parsedUrl = global.URL.parse(res.data.publicUrl)
+      assert(parsedUrl)
+      assert(parsedUrl.searchParams.has('cacheNonce', cacheNonce))
+    }
+
+    // `getPublicUrl` without transform
+    {
+      const res = storage.from(bucketName).getPublicUrl(uploadPath, {
+        cacheNonce,
+      })
+
+      assert(res.data)
+
+      const parsedUrl = global.URL.parse(res.data.publicUrl)
+      assert(parsedUrl)
+      assert(parsedUrl.searchParams.has('cacheNonce', cacheNonce))
+    }
+
+    // `download` with cacheNonce
+    {
+      const res = await storage.from(bucketName).download(uploadPath, {
+        cacheNonce,
+      })
+
+      expect(res.error).toBeNull()
+      assert(res.data)
+    }
+
+    // `createSignedUrls` with cacheNonce
+    {
+      const res = await storage.from(bucketName).createSignedUrls([uploadPath], 60000, {
+        cacheNonce,
+      })
+
+      expect(res.error).toBeNull()
+      assert(res.data)
+      expect(res.data).toHaveLength(1)
+      expect(res.data[0].error).toBeNull()
+
+      const parsedUrl = global.URL.parse(res.data[0].signedUrl)
+      assert(parsedUrl)
+      assert(parsedUrl.searchParams.has('cacheNonce', cacheNonce))
+      assert(parsedUrl.searchParams.has('token'))
+    }
+
+    // `createSignedUrls` with download
+    {
+      const res = await storage.from(bucketName).createSignedUrls([uploadPath], 60000, {
+        cacheNonce,
+        download: true,
+      })
+
+      expect(res.error).toBeNull()
+      assert(res.data)
+      expect(res.data).toHaveLength(1)
+      expect(res.data[0].error).toBeNull()
+
+      const parsedUrl = global.URL.parse(res.data[0].signedUrl)
+      assert(parsedUrl)
+      assert(parsedUrl.searchParams.has('cacheNonce', cacheNonce))
+      assert(parsedUrl.searchParams.has('token'))
+    }
+  })
 })
 
 describe('download with fetch parameters', () => {
@@ -751,6 +878,31 @@ describe('download with fetch parameters', () => {
       expect(mockFetch).toHaveBeenCalledWith(
         expect.stringContaining(uploadPath),
         expect.objectContaining({ cache: 'no-store' })
+      )
+    } finally {
+      global.fetch = originalFetch
+    }
+  })
+
+  it('download with cacheNonce querystring', async () => {
+    const uploadRes = await storage.from(bucketName).upload(uploadPath, file)
+    expect(uploadRes.error).toBeNull()
+
+    const cacheNonce = Date.now().toString()
+    const originalFetch = global.fetch
+    const mockFetch = jest.fn(originalFetch)
+    global.fetch = mockFetch
+
+    try {
+      const { data, error } = await storage.from(bucketName).download(uploadPath, {
+        cacheNonce,
+      })
+
+      expect(error).toBeNull()
+      expect(data).not.toBeNull()
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining(`/${bucketName}/${uploadPath}?cacheNonce=${cacheNonce}`),
+        expect.objectContaining({ method: 'GET' })
       )
     } finally {
       global.fetch = originalFetch
