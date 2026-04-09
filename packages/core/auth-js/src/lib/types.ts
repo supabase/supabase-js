@@ -124,13 +124,16 @@ export type GoTrueClientOptions = {
    * `processLock` (an in-process queue) is used in browser environments when
    * `persistSession` is true. Falls back to a no-op for non-browser environments.
    *
-   * To opt back in to the Web Locks API for cross-tab serialization:
+   * Cross-tab token refresh races are handled server-side: GoTrue allows
+   * concurrent refreshes of the same token (via reuse detection) so both tabs
+   * receive valid tokens without any client-side coordination.
+   *
+   * To opt back in to the Web Locks API for explicit cross-tab serialization
+   * (deprecated, scheduled for removal in the next major version):
    * ```ts
    * import { navigatorLock } from '@supabase/auth-js'
    * createClient(url, key, { auth: { lock: navigatorLock } })
    * ```
-   *
-   * @experimental
    */
   lock?: LockFunc
   /**
