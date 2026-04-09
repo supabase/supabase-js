@@ -1,3 +1,20 @@
+## 2.103.0 (2026-04-09)
+
+### 🚀 Features
+
+- **postgrest:** add stripNulls method for null value stripping ([#2189](https://github.com/supabase/supabase-js/pull/2189))
+- **storage:** add cacheNonce parameter for download ([#2234](https://github.com/supabase/supabase-js/pull/2234))
+
+### 🩹 Fixes
+
+- **postgrest:** fix scalar computed column type inference for isNotNullable and SETOF scalar ([#2224](https://github.com/supabase/supabase-js/pull/2224))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+- Seydi Charyyev @TheSeydiCharyyev
+- Vaibhav @7ttp
+
 ## 2.102.1 (2026-04-07)
 
 ### 🩹 Fixes

@@ -1,3 +1,13 @@
+## 2.103.0 (2026-04-09)
+
+### 🚀 Features
+
+- **storage:** add cacheNonce parameter for download ([#2234](https://github.com/supabase/supabase-js/pull/2234))
+
+### ❤️ Thank You
+
+- Vaibhav @7ttp
+
 ## 2.102.1 (2026-04-07)
 
 This was a version bump only for @supabase/storage-js to align it with other projects, there were no code changes.

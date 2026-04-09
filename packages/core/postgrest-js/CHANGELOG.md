@@ -1,3 +1,18 @@
+## 2.103.0 (2026-04-09)
+
+### 🚀 Features
+
+- **postgrest:** add stripNulls method for null value stripping ([#2189](https://github.com/supabase/supabase-js/pull/2189))
+
+### 🩹 Fixes
+
+- **postgrest:** fix scalar computed column type inference for isNotNullable and SETOF scalar ([#2224](https://github.com/supabase/supabase-js/pull/2224))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+- Seydi Charyyev @TheSeydiCharyyev
+
 ## 2.102.1 (2026-04-07)
 
 This was a version bump only for @supabase/postgrest-js to align it with other projects, there were no code changes.
