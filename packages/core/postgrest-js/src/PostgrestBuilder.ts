@@ -83,6 +83,7 @@ export default abstract class PostgrestBuilder<
   protected signal?: AbortSignal
   protected fetch: Fetch
   protected isMaybeSingle: boolean
+  protected shouldStripNulls: boolean
   protected urlLengthLimit: number
 
   // Retry configuration - enabled by default
@@ -123,6 +124,7 @@ export default abstract class PostgrestBuilder<
     signal?: AbortSignal
     fetch?: Fetch
     isMaybeSingle?: boolean
+    shouldStripNulls?: boolean
     urlLengthLimit?: number
     // Retry option
     retry?: boolean
@@ -135,6 +137,7 @@ export default abstract class PostgrestBuilder<
     this.shouldThrowOnError = builder.shouldThrowOnError ?? false
     this.signal = builder.signal
     this.isMaybeSingle = builder.isMaybeSingle ?? false
+    this.shouldStripNulls = builder.shouldStripNulls ?? false
     this.urlLengthLimit = builder.urlLengthLimit ?? 8000
     this.retryEnabled = builder.retry ?? true
 
@@ -156,6 +159,63 @@ export default abstract class PostgrestBuilder<
   throwOnError(): this & PostgrestBuilder<ClientOptions, Result, true> {
     this.shouldThrowOnError = true
     return this as this & PostgrestBuilder<ClientOptions, Result, true>
+  }
+
+  /**
+   * Strip null values from the response data. Properties with `null` values
+   * will be omitted from the returned JSON objects.
+   *
+   * Requires PostgREST 11.2.0+.
+   *
+   * {@link https://docs.postgrest.org/en/stable/references/api/resource_representation.html#stripped-nulls}
+   *
+   * @category Database
+   *
+   * @example With `select()`
+   * ```ts
+   * const { data, error } = await supabase
+   *   .from('characters')
+   *   .select()
+   *   .stripNulls()
+   * ```
+   *
+   * @exampleSql With `select()`
+   * ```sql
+   * create table
+   *   characters (id int8 primary key, name text, bio text);
+   *
+   * insert into
+   *   characters (id, name, bio)
+   * values
+   *   (1, 'Luke', null),
+   *   (2, 'Leia', 'Princess of Alderaan');
+   * ```
+   *
+   * @exampleResponse With `select()`
+   * ```json
+   * {
+   *   "data": [
+   *     {
+   *       "id": 1,
+   *       "name": "Luke"
+   *     },
+   *     {
+   *       "id": 2,
+   *       "name": "Leia",
+   *       "bio": "Princess of Alderaan"
+   *     }
+   *   ],
+   *   "status": 200,
+   *   "statusText": "OK"
+   * }
+   * ```
+   */
+  stripNulls(): this {
+    if (this.headers.get('Accept') === 'text/csv') {
+      throw new Error('stripNulls() cannot be used with csv()')
+    }
+    this.shouldStripNulls = true
+    return this
   }
 
   /**
@@ -220,6 +280,16 @@ export default abstract class PostgrestBuilder<
     }
     if (this.method !== 'GET' && this.method !== 'HEAD') {
       this.headers.set('Content-Type', 'application/json')
+    }
+
+    // https://docs.postgrest.org/en/stable/references/api/resource_representation.html#stripped-nulls
+    if (this.shouldStripNulls) {
+      const currentAccept = this.headers.get('Accept')
+      if (currentAccept === 'application/vnd.pgrst.object+json') {
+        this.headers.set('Accept', 'application/vnd.pgrst.object+json;nulls=stripped')
+      } else if (!currentAccept || currentAccept === 'application/json') {
+        this.headers.set('Accept', 'application/vnd.pgrst.array+json;nulls=stripped')
+      }
     }
 
     // NOTE: Invoke w/o `this` to avoid illegal invocation error.
