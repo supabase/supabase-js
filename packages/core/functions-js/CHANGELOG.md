@@ -1,3 +1,7 @@
+## 2.103.0 (2026-04-09)
+
+This was a version bump only for @supabase/functions-js to align it with other projects, there were no code changes.
+
 ## 2.102.1 (2026-04-07)
 
 ### 🩹 Fixes
