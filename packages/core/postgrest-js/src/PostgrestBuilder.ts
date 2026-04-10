@@ -463,7 +463,7 @@ export default abstract class PostgrestBuilder<
 
     return {
       success: error === null,
-      error,
+      error: error ? new PostgrestError(error) : null,
       data,
       count,
       status,
