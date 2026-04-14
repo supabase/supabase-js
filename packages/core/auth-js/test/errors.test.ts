@@ -39,6 +39,7 @@ describe('AuthError serialization', () => {
     const serialized = JSON.parse(JSON.stringify(err))
     expect(serialized.message).toBe('Auth failed')
     expect(serialized.name).toBe('AuthUnknownError')
+    expect(serialized).not.toHaveProperty('originalError')
   })
 
   test('AuthSessionMissingError serializes message with JSON.stringify', () => {
