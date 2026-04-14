@@ -26,6 +26,15 @@ export class StorageError extends Error {
     this.status = status
     this.statusCode = statusCode
   }
+
+  toJSON() {
+    return {
+      name: this.name,
+      message: this.message,
+      status: this.status,
+      statusCode: this.statusCode,
+    }
+  }
 }
 
 /**
@@ -59,10 +68,7 @@ export class StorageApiError extends StorageError {
 
   toJSON() {
     return {
-      name: this.name,
-      message: this.message,
-      status: this.status,
-      statusCode: this.statusCode,
+      ...super.toJSON(),
     }
   }
 }
