@@ -728,7 +728,7 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
     options?: { download?: string | boolean; cacheNonce?: string }
   ): Promise<
     | {
-        data: { error: string | null; path: string | null; signedUrl: string }[]
+        data: { error: string | null; path: string | null; signedUrl: string | null }[]
         error: null
       }
     | {

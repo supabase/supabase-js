@@ -830,7 +830,7 @@ describe('Object API', () => {
       expect(res.data).toHaveLength(1)
       expect(res.data[0].error).toBeNull()
 
-      const parsedUrl = global.URL.parse(res.data[0].signedUrl)
+      const parsedUrl = global.URL.parse(res.data[0].signedUrl!)
       assert(parsedUrl)
       assert(parsedUrl.searchParams.has('cacheNonce', cacheNonce))
       assert(parsedUrl.searchParams.has('token'))
@@ -848,7 +848,7 @@ describe('Object API', () => {
       expect(res.data).toHaveLength(1)
       expect(res.data[0].error).toBeNull()
 
-      const parsedUrl = global.URL.parse(res.data[0].signedUrl)
+      const parsedUrl = global.URL.parse(res.data[0].signedUrl!)
       assert(parsedUrl)
       assert(parsedUrl.searchParams.has('cacheNonce', cacheNonce))
       assert(parsedUrl.searchParams.has('token'))
