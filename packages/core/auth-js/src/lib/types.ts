@@ -609,16 +609,14 @@ export type SignInAnonymouslyCredentials = {
   }
 }
 
-export type SignUpWithPasswordCredentials = Prettify<
-  PasswordCredentialsBase & {
-    options?: {
-      emailRedirectTo?: string // only for email
-      data?: object
-      captchaToken?: string
-      channel?: 'sms' | 'whatsapp' // only for phone
-    }
+export type SignUpWithPasswordCredentials = PasswordCredentialsBase & {
+  options?: {
+    emailRedirectTo?: string // only for email
+    data?: object
+    captchaToken?: string
+    channel?: 'sms' | 'whatsapp' // only for phone
   }
->
+}
 
 type PasswordCredentialsBase =
   | { email: string; password: string }
@@ -995,11 +993,11 @@ type MFAVerifyTOTPParamFields = {
   code: string
 }
 
-export type MFAVerifyTOTPParams = Prettify<MFAVerifyParamsBase & MFAVerifyTOTPParamFields>
+export type MFAVerifyTOTPParams = MFAVerifyParamsBase & MFAVerifyTOTPParamFields
 
 type MFAVerifyPhoneParamFields = MFAVerifyTOTPParamFields
 
-export type MFAVerifyPhoneParams = Prettify<MFAVerifyParamsBase & MFAVerifyPhoneParamFields>
+export type MFAVerifyPhoneParams = MFAVerifyParamsBase & MFAVerifyPhoneParamFields
 
 type MFAVerifyWebauthnParamFieldsBase = {
   /** Relying party ID */
@@ -1032,7 +1030,7 @@ export type MFAVerifyWebauthnParamFields<T extends 'create' | 'request' = 'creat
  * @see {@link https://w3c.github.io/webauthn/#sctn-verifying-assertion W3C WebAuthn Spec - Verifying an Authentication Assertion}
  */
 export type MFAVerifyWebauthnParams<T extends 'create' | 'request' = 'create' | 'request'> =
-  Prettify<MFAVerifyParamsBase & MFAVerifyWebauthnParamFields<T>>
+  MFAVerifyParamsBase & MFAVerifyWebauthnParamFields<T>
 
 export type MFAVerifyParams = MFAVerifyTOTPParams | MFAVerifyPhoneParams | MFAVerifyWebauthnParams
 
@@ -1044,16 +1042,14 @@ type MFAChallengeParamsBase = {
 const MFATOTPChannels = ['sms', 'whatsapp'] as const
 export type MFATOTPChannel = (typeof MFATOTPChannels)[number]
 
-export type MFAChallengeTOTPParams = Prettify<MFAChallengeParamsBase>
+export type MFAChallengeTOTPParams = MFAChallengeParamsBase
 
 type MFAChallengePhoneParamFields<Channel extends MFATOTPChannel = MFATOTPChannel> = {
   /** Messaging channel to use (e.g. whatsapp or sms). Only relevant for phone factors */
   channel: Channel
 }
 
-export type MFAChallengePhoneParams = Prettify<
-  MFAChallengeParamsBase & MFAChallengePhoneParamFields
->
+export type MFAChallengePhoneParams = MFAChallengeParamsBase & MFAChallengePhoneParamFields
 
 /** WebAuthn parameters for WebAuthn factor challenge */
 type MFAChallengeWebauthnParamFields = {
@@ -1070,9 +1066,7 @@ type MFAChallengeWebauthnParamFields = {
  * Includes Relying Party information needed for WebAuthn ceremonies.
  * @see {@link https://w3c.github.io/webauthn/#sctn-rp-operations W3C WebAuthn Spec - Relying Party Operations}
  */
-export type MFAChallengeWebauthnParams = Prettify<
-  MFAChallengeParamsBase & MFAChallengeWebauthnParamFields
->
+export type MFAChallengeWebauthnParams = MFAChallengeParamsBase & MFAChallengeWebauthnParamFields
 
 export type MFAChallengeParams =
   | MFAChallengeTOTPParams
@@ -1083,9 +1077,8 @@ type MFAChallengeAndVerifyParamsBase = Omit<MFAVerifyParamsBase, 'challengeId'>
 
 type MFAChallengeAndVerifyTOTPParamFields = MFAVerifyTOTPParamFields
 
-type MFAChallengeAndVerifyTOTPParams = Prettify<
-  MFAChallengeAndVerifyParamsBase & MFAChallengeAndVerifyTOTPParamFields
->
+type MFAChallengeAndVerifyTOTPParams = MFAChallengeAndVerifyParamsBase &
+  MFAChallengeAndVerifyTOTPParamFields
 
 export type MFAChallengeAndVerifyParams = MFAChallengeAndVerifyTOTPParams
 
@@ -1142,7 +1135,7 @@ type AuthMFAChallengeTOTPResponseFields = {
 }
 
 export type AuthMFAChallengeTOTPResponse = RequestResult<
-  Prettify<AuthMFAChallengeResponseBase<'totp'> & AuthMFAChallengeTOTPResponseFields>
+  AuthMFAChallengeResponseBase<'totp'> & AuthMFAChallengeTOTPResponseFields
 >
 
 type AuthMFAChallengePhoneResponseFields = {
@@ -1150,7 +1143,7 @@ type AuthMFAChallengePhoneResponseFields = {
 }
 
 export type AuthMFAChallengePhoneResponse = RequestResult<
-  Prettify<AuthMFAChallengeResponseBase<'phone'> & AuthMFAChallengePhoneResponseFields>
+  AuthMFAChallengeResponseBase<'phone'> & AuthMFAChallengePhoneResponseFields
 >
 
 type AuthMFAChallengeWebauthnResponseFields = {
@@ -1171,7 +1164,7 @@ type AuthMFAChallengeWebauthnResponseFields = {
  * @see {@link https://w3c.github.io/webauthn/#sctn-credential-creation W3C WebAuthn Spec - Credential Creation}
  */
 export type AuthMFAChallengeWebauthnResponse = RequestResult<
-  Prettify<AuthMFAChallengeResponseBase<'webauthn'> & AuthMFAChallengeWebauthnResponseFields>
+  AuthMFAChallengeResponseBase<'webauthn'> & AuthMFAChallengeWebauthnResponseFields
 >
 
 type AuthMFAChallengeWebauthnResponseFieldsJSON = {
@@ -1190,9 +1183,8 @@ type AuthMFAChallengeWebauthnResponseFieldsJSON = {
  * JSON-serializable version of WebAuthn challenge response.
  * Used for server communication with base64url-encoded binary fields.
  */
-export type AuthMFAChallengeWebauthnResponseDataJSON = Prettify<
-  AuthMFAChallengeResponseBase<'webauthn'> & AuthMFAChallengeWebauthnResponseFieldsJSON
->
+export type AuthMFAChallengeWebauthnResponseDataJSON = AuthMFAChallengeResponseBase<'webauthn'> &
+  AuthMFAChallengeWebauthnResponseFieldsJSON
 
 /**
  * Server response type for WebAuthn MFA challenge.
@@ -1211,11 +1203,11 @@ export type AuthMFAListFactorsResponse<T extends typeof FactorTypes = typeof Fac
   RequestResult<
     {
       /** All available factors (verified and unverified). */
-      all: Prettify<Factor>[]
+      all: Factor[]
 
       // Dynamically create a property for each factor type with only verified factors
     } & {
-      [K in T[number]]: Prettify<Factor<K, 'verified'>>[]
+      [K in T[number]]: Factor<K, 'verified'>[]
     }
   >
 
@@ -1837,15 +1829,13 @@ type MFAEnrollTOTPParamFields = {
   issuer?: string
 }
 
-export type MFAEnrollTOTPParams = Prettify<MFAEnrollParamsBase<'totp'> & MFAEnrollTOTPParamFields>
+export type MFAEnrollTOTPParams = MFAEnrollParamsBase<'totp'> & MFAEnrollTOTPParamFields
 
 type MFAEnrollPhoneParamFields = {
   /** Phone number associated with a factor. Number should conform to E.164 format */
   phone: string
 }
-export type MFAEnrollPhoneParams = Prettify<
-  MFAEnrollParamsBase<'phone'> & MFAEnrollPhoneParamFields
->
+export type MFAEnrollPhoneParams = MFAEnrollParamsBase<'phone'> & MFAEnrollPhoneParamFields
 
 type MFAEnrollWebauthnFields = {
   /** no extra fields for now, kept for consistency and for possible future changes  */
@@ -1856,9 +1846,7 @@ type MFAEnrollWebauthnFields = {
  * Creates an unverified WebAuthn factor that must be verified with a credential.
  * @see {@link https://w3c.github.io/webauthn/#sctn-registering-a-new-credential W3C WebAuthn Spec - Registering a New Credential}
  */
-export type MFAEnrollWebauthnParams = Prettify<
-  MFAEnrollParamsBase<'webauthn'> & MFAEnrollWebauthnFields
->
+export type MFAEnrollWebauthnParams = MFAEnrollParamsBase<'webauthn'> & MFAEnrollWebauthnFields
 
 type AuthMFAEnrollResponseBase<T extends FactorType> = {
   /** ID of the factor that was just enrolled (in an unverified state). */
@@ -1891,7 +1879,7 @@ type AuthMFAEnrollTOTPResponseFields = {
 }
 
 export type AuthMFAEnrollTOTPResponse = RequestResult<
-  Prettify<AuthMFAEnrollResponseBase<'totp'> & AuthMFAEnrollTOTPResponseFields>
+  AuthMFAEnrollResponseBase<'totp'> & AuthMFAEnrollTOTPResponseFields
 >
 
 type AuthMFAEnrollPhoneResponseFields = {
@@ -1900,7 +1888,7 @@ type AuthMFAEnrollPhoneResponseFields = {
 }
 
 export type AuthMFAEnrollPhoneResponse = RequestResult<
-  Prettify<AuthMFAEnrollResponseBase<'phone'> & AuthMFAEnrollPhoneResponseFields>
+  AuthMFAEnrollResponseBase<'phone'> & AuthMFAEnrollPhoneResponseFields
 >
 
 type AuthMFAEnrollWebauthnFields = {
@@ -1913,7 +1901,7 @@ type AuthMFAEnrollWebauthnFields = {
  * @see {@link https://w3c.github.io/webauthn/#sctn-registering-a-new-credential W3C WebAuthn Spec - Registering a New Credential}
  */
 export type AuthMFAEnrollWebauthnResponse = RequestResult<
-  Prettify<AuthMFAEnrollResponseBase<'webauthn'> & AuthMFAEnrollWebauthnFields>
+  AuthMFAEnrollResponseBase<'webauthn'> & AuthMFAEnrollWebauthnFields
 >
 
 export type JwtHeader = {
