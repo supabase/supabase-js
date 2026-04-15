@@ -206,6 +206,74 @@ describe('Common Errors', () => {
     })
   })
 
+  describe('JSON serialization', () => {
+    it('should serialize StorageError with JSON.stringify', () => {
+      const error = new StorageError('Upload failed', 'storage', 500, 'InternalError')
+      const serialized = JSON.parse(JSON.stringify(error))
+      expect(serialized.message).toBe('Upload failed')
+      expect(serialized.name).toBe('StorageError')
+      expect(serialized.status).toBe(500)
+      expect(serialized.statusCode).toBe('InternalError')
+    })
+
+    it('should serialize StorageError without optional fields', () => {
+      const error = new StorageError('Something went wrong')
+      const serialized = JSON.parse(JSON.stringify(error))
+      expect(serialized.message).toBe('Something went wrong')
+      expect(serialized.name).toBe('StorageError')
+    })
+
+    it('should serialize StorageApiError with JSON.stringify', () => {
+      const error = new StorageApiError('Not found', 404, 'NotFound')
+      const serialized = JSON.parse(JSON.stringify(error))
+      expect(serialized.message).toBe('Not found')
+      expect(serialized.name).toBe('StorageApiError')
+      expect(serialized.status).toBe(404)
+      expect(serialized.statusCode).toBe('NotFound')
+    })
+
+    it('should serialize StorageUnknownError with JSON.stringify', () => {
+      const error = new StorageUnknownError('Unknown failure', new Error('original'))
+      const serialized = JSON.parse(JSON.stringify(error))
+      expect(serialized.message).toBe('Unknown failure')
+      expect(serialized.name).toBe('StorageUnknownError')
+      expect(serialized).not.toHaveProperty('originalError')
+    })
+
+    it('should serialize vectors namespace errors with JSON.stringify', () => {
+      const baseError = new StorageError('test', 'vectors')
+      const serialized = JSON.parse(JSON.stringify(baseError))
+      expect(serialized.name).toBe('StorageVectorsError')
+      expect(serialized.message).toBe('test')
+
+      const apiError = new StorageApiError('API error', 500, 'InternalError', 'vectors')
+      const apiSerialized = JSON.parse(JSON.stringify(apiError))
+      expect(apiSerialized.name).toBe('StorageVectorsApiError')
+      expect(apiSerialized.status).toBe(500)
+      expect(apiSerialized.statusCode).toBe('InternalError')
+
+      const unknownError = new StorageUnknownError('Unknown', new Error(), 'vectors')
+      const unknownSerialized = JSON.parse(JSON.stringify(unknownError))
+      expect(unknownSerialized.name).toBe('StorageVectorsUnknownError')
+      expect(unknownSerialized).not.toHaveProperty('originalError')
+    })
+
+    it('should serialize backward compatibility classes with JSON.stringify', () => {
+      const error = new StorageVectorsApiError('Conflict', 409, 'S3VectorConflictException')
+      const serialized = JSON.parse(JSON.stringify(error))
+      expect(serialized.message).toBe('Conflict')
+      expect(serialized.name).toBe('StorageVectorsApiError')
+      expect(serialized.status).toBe(409)
+      expect(serialized.statusCode).toBe('S3VectorConflictException')
+
+      const unknownError = new StorageVectorsUnknownError('Unknown', { circular: true })
+      const unknownSerialized = JSON.parse(JSON.stringify(unknownError))
+      expect(unknownSerialized.message).toBe('Unknown')
+      expect(unknownSerialized.name).toBe('StorageVectorsUnknownError')
+      expect(unknownSerialized).not.toHaveProperty('originalError')
+    })
+  })
+
   describe('StorageVectorsErrorCode', () => {
     it('should have all expected error codes', () => {
       expect(StorageVectorsErrorCode.InternalError).toBe('InternalError')
