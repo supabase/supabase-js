@@ -31,6 +31,15 @@ export class AuthError extends Error {
     this.status = status
     this.code = code
   }
+
+  toJSON() {
+    return {
+      name: this.name,
+      message: this.message,
+      status: this.status,
+      code: this.code,
+    }
+  }
 }
 
 export function isAuthError(error: unknown): error is AuthError {
@@ -181,9 +190,7 @@ export class AuthImplicitGrantRedirectError extends CustomAuthError {
 
   toJSON() {
     return {
-      name: this.name,
-      message: this.message,
-      status: this.status,
+      ...super.toJSON(),
       details: this.details,
     }
   }
@@ -215,9 +222,7 @@ export class AuthPKCEGrantCodeExchangeError extends CustomAuthError {
 
   toJSON() {
     return {
-      name: this.name,
-      message: this.message,
-      status: this.status,
+      ...super.toJSON(),
       details: this.details,
     }
   }
@@ -300,6 +305,13 @@ export class AuthWeakPasswordError extends CustomAuthError {
     super(message, 'AuthWeakPasswordError', status, 'weak_password')
 
     this.reasons = reasons
+  }
+
+  toJSON() {
+    return {
+      ...super.toJSON(),
+      reasons: this.reasons,
+    }
   }
 }
 
