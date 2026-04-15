@@ -636,6 +636,14 @@ describe('Object API', () => {
       )
     })
 
+    it('gets public url with empty transform object does not use render endpoint', () => {
+      const res = storage.from(bucketName).getPublicUrl(uploadPath, {
+        transform: {},
+      })
+      expect(res.data.publicUrl).toContain(`${URL}/object/public/${bucketName}/${uploadPath}`)
+      expect(res.data.publicUrl).not.toContain('/render/image/')
+    })
+
     it('will download an authenticated transformed file', async () => {
       const privateBucketName = 'my-private-bucket'
       await findOrCreateBucket(privateBucketName)
@@ -653,6 +661,19 @@ describe('Object API', () => {
       expect(res.error).toBeNull()
       expect(res.data?.size).toBeGreaterThan(0)
       expect(res.data?.type).toEqual('image/jpeg')
+    })
+
+    it('download with empty transform object does not use render endpoint', async () => {
+      const txtFile = await fsp.readFile(uploadFilePath('file.txt'))
+      const txtPath = `testpath/file-${Date.now()}.txt`
+      await storage.from(bucketName).upload(txtPath, txtFile)
+
+      const res = await storage.from(bucketName).download(txtPath, {
+        transform: {},
+      })
+
+      expect(res.error).toBeNull()
+      expect(res.data?.size).toBeGreaterThan(0)
     })
   })
 
