@@ -667,18 +667,10 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
       if (options?.cacheNonce != null) query.set('cacheNonce', String(options.cacheNonce))
       const queryString = query.toString()
 
-      // When transforms are requested the signed URL must use the render endpoint.
-      // Some storage-api versions return /object/sign/ even for transform requests,
-      // so we normalise the path on the client side.
-      const returnedPath =
-        hasTransform && data.signedURL.includes('/object/sign/')
-          ? data.signedURL.replace('/object/sign/', '/render/image/sign/')
-          : data.signedURL
-
-      // `returnedPath` contains a `token` query parameter, so append extra params with `&` only
-      // when we actually have something to add.
+      // `data.signedURL` contains a `token` query parameter, so append extra params with `&`
+      // only when we actually have something to add.
       const signedUrl = encodeURI(
-        `${this.url}${returnedPath}${queryString ? `&${queryString}` : ''}`
+        `${this.url}${data.signedURL}${queryString ? `&${queryString}` : ''}`
       )
 
       return { signedUrl }
