@@ -132,6 +132,16 @@ CREATE FUNCTION public.void_func()
 RETURNS void AS $$
 $$ LANGUAGE SQL;
 
+create function public.echo_bigint_as_text(bigint_param bigint)
+returns text as $$
+  select bigint_param::text;
+$$ language sql immutable;
+
+create function public.extract_jsonb_bigint_as_text(payload jsonb)
+returns text as $$
+  select payload->>'id';
+$$ language sql immutable;
+
 -- Extensions schema already exists in Supabase CLI
 create extension if not exists postgis schema extensions;
 

@@ -318,7 +318,9 @@ export default abstract class PostgrestBuilder<
           res = await _fetch(this.url.toString(), {
             method: this.method,
             headers: requestHeaders,
-            body: JSON.stringify(this.body),
+            body: JSON.stringify(this.body, (_, value) =>
+              typeof value === 'bigint' ? value.toString() : value
+            ),
             signal: this.signal,
           })
         } catch (fetchError: any) {
