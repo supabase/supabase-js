@@ -1,3 +1,13 @@
+## 2.103.1 (2026-04-15)
+
+### 🩹 Fixes
+
+- **postgrest:** handle bigint rpc ([#2245](https://github.com/supabase/supabase-js/pull/2245))
+
+### ❤️ Thank You
+
+- Vaibhav @7ttp
+
 ## 2.103.0 (2026-04-09)
 
 ### 🚀 Features
