@@ -1,3 +1,16 @@
+## 2.103.2 (2026-04-15)
+
+### 🩹 Fixes
+
+- **misc:** add explicit return types to toJSON methods for JSR compat ([#2252](https://github.com/supabase/supabase-js/pull/2252))
+- **auth:** remove Prettify wrapper from exported types for TypeDoc expansion ([#2250](https://github.com/supabase/supabase-js/pull/2250))
+- **auth:** include Cloudflare error codes in NETWORK_ERROR_CODES ([#2239](https://github.com/supabase/supabase-js/pull/2239))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+- Vansh Sharma @Vansh1811
+
 ## 2.103.1 (2026-04-15)
 
 ### 🩹 Fixes
