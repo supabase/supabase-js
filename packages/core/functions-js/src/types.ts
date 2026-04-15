@@ -35,7 +35,7 @@ export class FunctionsError extends Error {
     this.context = context
   }
 
-  toJSON() {
+  toJSON(): { name: string; message: string; context: any } {
     return {
       name: this.name,
       message: this.message,
