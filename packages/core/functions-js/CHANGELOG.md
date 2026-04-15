@@ -1,3 +1,13 @@
+## 2.103.2 (2026-04-15)
+
+### 🩹 Fixes
+
+- **misc:** add explicit return types to toJSON methods for JSR compat ([#2252](https://github.com/supabase/supabase-js/pull/2252))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+
 ## 2.103.1 (2026-04-15)
 
 This was a version bump only for @supabase/functions-js to align it with other projects, there were no code changes.
