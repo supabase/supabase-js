@@ -25,3 +25,19 @@ export function setHeader(
   result[name] = value
   return result
 }
+
+/**
+ * Normalizes all header keys to lowercase with case-insensitive deduplication.
+ * When duplicate keys exist (differing only in case), the last value wins.
+ * Does not mutate the input object.
+ *
+ * @param headers - Headers object to normalize
+ * @returns New headers object with all keys lowercased
+ */
+export function normalizeHeaders(headers: Record<string, string>): Record<string, string> {
+  const result: Record<string, string> = {}
+  for (const [key, value] of Object.entries(headers)) {
+    result[key.toLowerCase()] = value
+  }
+  return result
+}
