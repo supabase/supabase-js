@@ -32,7 +32,12 @@ export class AuthError extends Error {
     this.code = code
   }
 
-  toJSON() {
+  toJSON(): {
+    name: string
+    message: string
+    status: number | undefined
+    code: ErrorCode | (string & {}) | undefined
+  } {
     return {
       name: this.name,
       message: this.message,
@@ -188,7 +193,13 @@ export class AuthImplicitGrantRedirectError extends CustomAuthError {
     this.details = details
   }
 
-  toJSON() {
+  toJSON(): {
+    name: string
+    message: string
+    status: number | undefined
+    code: ErrorCode | (string & {}) | undefined
+    details: { error: string; code: string } | null
+  } {
     return {
       ...super.toJSON(),
       details: this.details,
@@ -220,7 +231,13 @@ export class AuthPKCEGrantCodeExchangeError extends CustomAuthError {
     this.details = details
   }
 
-  toJSON() {
+  toJSON(): {
+    name: string
+    message: string
+    status: number | undefined
+    code: ErrorCode | (string & {}) | undefined
+    details: { error: string; code: string } | null
+  } {
     return {
       ...super.toJSON(),
       details: this.details,
@@ -307,7 +324,13 @@ export class AuthWeakPasswordError extends CustomAuthError {
     this.reasons = reasons
   }
 
-  toJSON() {
+  toJSON(): {
+    name: string
+    message: string
+    status: number | undefined
+    code: ErrorCode | (string & {}) | undefined
+    reasons: WeakPasswordReasons[]
+  } {
     return {
       ...super.toJSON(),
       reasons: this.reasons,
