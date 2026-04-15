@@ -35,7 +35,10 @@ export type RequestMethodType = 'GET' | 'POST' | 'PUT' | 'DELETE'
 const _getErrorMessage = (err: any): string =>
   err.msg || err.message || err.error_description || err.error || JSON.stringify(err)
 
-const NETWORK_ERROR_CODES = [502, 503, 504]
+// 502, 503, 504: Standard server/gateway errors
+// 520-524, 530: Cloudflare-specific error codes (web server down, connection timed out, etc.)
+// These are infrastructure errors and should not cause session invalidation.
+const NETWORK_ERROR_CODES = [502, 503, 504, 520, 521, 522, 523, 524, 530]
 
 export async function handleError(error: unknown) {
   if (!looksLikeFetchResponse(error)) {
