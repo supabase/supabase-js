@@ -1,3 +1,17 @@
+## 2.103.1 (2026-04-15)
+
+### 🩹 Fixes
+
+- **auth:** add toJSON to AuthError for correct JSON serialization ([#2238](https://github.com/supabase/supabase-js/pull/2238))
+- **postgrest:** handle bigint rpc ([#2245](https://github.com/supabase/supabase-js/pull/2245))
+- **storage:** add toJSON to StorageError for correct JSON serialization ([#2246](https://github.com/supabase/supabase-js/pull/2246))
+- **storage:** apply empty transform check to download and getPublicUrl ([#2219](https://github.com/supabase/supabase-js/pull/2219))
+
+### ❤️ Thank You
+
+- oniani1
+- Vaibhav @7ttp
+
 ## 2.103.0 (2026-04-09)
 
 ### 🚀 Features

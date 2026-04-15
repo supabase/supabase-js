@@ -1,3 +1,13 @@
+## 2.103.1 (2026-04-15)
+
+### 🩹 Fixes
+
+- **auth:** add toJSON to AuthError for correct JSON serialization ([#2238](https://github.com/supabase/supabase-js/pull/2238))
+
+### ❤️ Thank You
+
+- oniani1
+
 ## 2.103.0 (2026-04-09)
 
 This was a version bump only for @supabase/auth-js to align it with other projects, there were no code changes.

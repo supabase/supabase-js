@@ -1,3 +1,14 @@
+## 2.103.1 (2026-04-15)
+
+### 🩹 Fixes
+
+- **storage:** apply empty transform check to download and getPublicUrl ([#2219](https://github.com/supabase/supabase-js/pull/2219))
+- **storage:** add toJSON to StorageError for correct JSON serialization ([#2246](https://github.com/supabase/supabase-js/pull/2246))
+
+### ❤️ Thank You
+
+- oniani1
+
 ## 2.103.0 (2026-04-09)
 
 ### 🚀 Features
