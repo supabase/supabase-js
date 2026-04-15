@@ -1,4 +1,5 @@
 import { StorageApiError, StorageUnknownError, ErrorNamespace } from './errors'
+import { setHeader } from './headers'
 import { isPlainObject, resolveResponse } from './helpers'
 import { FetchParameters } from '../types'
 
@@ -104,7 +105,7 @@ const _getRequestParams = (
       }
     }
 
-    params.headers = setRequestHeader(headers, 'Content-Type', contentType ?? 'application/json')
+    params.headers = setHeader(headers, 'Content-Type', contentType ?? 'application/json')
     params.body = JSON.stringify(body)
   } else {
     params.body = body
@@ -115,19 +116,6 @@ const _getRequestParams = (
   }
 
   return { ...params, ...parameters }
-}
-
-function setRequestHeader(headers: Record<string, string>, name: string, value: string) {
-  const nextHeaders = { ...headers }
-
-  for (const key of Object.keys(nextHeaders)) {
-    if (key.toLowerCase() === name.toLowerCase()) {
-      delete nextHeaders[key]
-    }
-  }
-
-  nextHeaders[name] = value
-  return nextHeaders
 }
 
 /**
