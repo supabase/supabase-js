@@ -1,3 +1,13 @@
+## 2.103.3 (2026-04-16)
+
+### 🩹 Fixes
+
+- **realtime:** throw Error objects instead of bare strings ([#2256](https://github.com/supabase/supabase-js/pull/2256))
+
+### ❤️ Thank You
+
+- oniani1
+
 ## 2.103.2 (2026-04-15)
 
 This was a version bump only for @supabase/realtime-js to align it with other projects, there were no code changes.
