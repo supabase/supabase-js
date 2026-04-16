@@ -251,7 +251,9 @@ export default class RealtimeChannel {
     this.private = this.params.config.private || false
 
     if (!this.private && this.params.config?.broadcast?.replay) {
-      throw `tried to use replay on public channel '${this.topic}'. It must be a private channel.`
+      throw new Error(
+        `tried to use replay on public channel '${this.topic}'. It must be a private channel.`
+      )
     }
   }
 
@@ -736,7 +738,7 @@ export default class RealtimeChannel {
     opts: { timeout?: number } = {}
   ): Promise<{ success: true } | { success: false; status: number; error: string }> {
     if (payload === undefined || payload === null) {
-      return Promise.reject('Payload is required for httpSend()')
+      return Promise.reject(new Error('Payload is required for httpSend()'))
     }
 
     const headers: Record<string, string> = {

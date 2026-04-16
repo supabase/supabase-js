@@ -546,7 +546,7 @@ describe('httpSend', () => {
         if (hasToken) await testSetup.client.setAuth()
         const channel = testSetup.client.channel('topic')
 
-        await expect(channel.httpSend('test', undefined as any)).rejects.toBe(
+        await expect(channel.httpSend('test', undefined as any)).rejects.toThrow(
           'Payload is required for httpSend()'
         )
       })
@@ -556,7 +556,7 @@ describe('httpSend', () => {
         if (hasToken) await testSetup.client.setAuth()
         const channel = testSetup.client.channel('topic')
 
-        await expect(channel.httpSend('test', null as any)).rejects.toBe(
+        await expect(channel.httpSend('test', null as any)).rejects.toThrow(
           'Payload is required for httpSend()'
         )
       })

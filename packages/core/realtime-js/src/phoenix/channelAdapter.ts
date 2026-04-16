@@ -77,7 +77,9 @@ export default class ChannelAdapter {
     try {
       push = this.channel.push(event, payload, timeout)
     } catch (error) {
-      throw `tried to push '${event}' to '${this.channel.topic}' before joining. Use channel.subscribe() before pushing events`
+      throw new Error(
+        `tried to push '${event}' to '${this.channel.topic}' before joining. Use channel.subscribe() before pushing events`
+      )
     }
 
     if (this.channel.pushBuffer.length > MAX_PUSH_BUFFER_SIZE) {
