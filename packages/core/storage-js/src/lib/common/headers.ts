@@ -1,10 +1,10 @@
 /**
  * Sets a header with case-insensitive deduplication.
  * Removes any existing headers whose name matches (case-insensitive),
- * then sets the new key/value. Does not mutate the input object.
+ * then sets the value under the lowercase key. Does not mutate the input object.
  *
  * @param headers - Existing headers object
- * @param name - Header name to set
+ * @param name - Header name to set (stored as lowercase)
  * @param value - Header value
  * @returns New headers object with the header set
  */
@@ -22,7 +22,7 @@ export function setHeader(
     }
   }
 
-  result[name] = value
+  result[nameLower] = value
   return result
 }
 

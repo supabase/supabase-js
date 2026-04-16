@@ -1,23 +1,22 @@
 import { normalizeHeaders, setHeader } from '../../src/lib/common/headers'
 
 describe('setHeader', () => {
-  it('sets a new header', () => {
+  it('sets a new header with lowercase key', () => {
     const result = setHeader({}, 'Content-Type', 'application/json')
-    expect(result).toEqual({ 'Content-Type': 'application/json' })
+    expect(result).toEqual({ 'content-type': 'application/json' })
   })
 
   it('replaces an existing header with the same case', () => {
-    const result = setHeader({ 'Content-Type': 'text/plain' }, 'Content-Type', 'application/json')
-    expect(result).toEqual({ 'Content-Type': 'application/json' })
+    const result = setHeader({ 'content-type': 'text/plain' }, 'content-type', 'application/json')
+    expect(result).toEqual({ 'content-type': 'application/json' })
   })
 
-  it('replaces an existing header with different case', () => {
+  it('replaces an existing header with different case and normalizes key to lowercase', () => {
     const result = setHeader({ 'content-type': 'text/plain' }, 'Content-Type', 'application/json')
-    expect(result).toEqual({ 'Content-Type': 'application/json' })
-    expect(result).not.toHaveProperty('content-type')
+    expect(result).toEqual({ 'content-type': 'application/json' })
   })
 
-  it('removes all case variants and sets one canonical key', () => {
+  it('removes all case variants and sets one lowercase canonical key', () => {
     const headers: Record<string, string> = {}
     // Simulate duplicate keys by building with Object.assign
     Object.assign(headers, {
@@ -26,8 +25,7 @@ describe('setHeader', () => {
     })
 
     const result = setHeader(headers, 'CONTENT-TYPE', 'application/json')
-    expect(Object.keys(result).filter((k) => k.toLowerCase() === 'content-type')).toHaveLength(1)
-    expect(result['CONTENT-TYPE']).toBe('application/json')
+    expect(result).toEqual({ 'content-type': 'application/json' })
   })
 
   it('does not mutate the input object', () => {
@@ -35,8 +33,8 @@ describe('setHeader', () => {
     const result = setHeader(original, 'Content-Type', 'application/json')
 
     expect(original['Content-Type']).toBe('text/plain')
-    expect(result['Content-Type']).toBe('application/json')
-    expect(result['Authorization']).toBe('Bearer token')
+    expect(result['content-type']).toBe('application/json')
+    expect(result).not.toHaveProperty('Content-Type')
   })
 
   it('preserves other headers when replacing', () => {
@@ -46,7 +44,7 @@ describe('setHeader', () => {
       'application/json'
     )
     expect(result).toEqual({
-      'Content-Type': 'application/json',
+      'content-type': 'application/json',
       authorization: 'Bearer token',
       'x-custom': 'value',
     })
@@ -60,10 +58,26 @@ describe('setHeader', () => {
     })
 
     const result = setHeader(headers, 'Content-Length', '42')
-    expect(result['Content-Length']).toBe('42')
-    // The unrelated content-type duplicates are untouched
+    expect(result).toEqual({
+      'content-type': 'text/plain',
+      'Content-Type': 'text/html',
+      'content-length': '42',
+    })
+  })
+
+  it('ensures no duplicate when setting an unrelated header with pre-existing duplicates', () => {
+    const headers: Record<string, string> = {}
+    Object.assign(headers, {
+      'content-type': 'text/plain',
+      'Content-Type': 'text/html',
+    })
+
+    const result = setHeader(headers, 'content-length', '42')
+    expect(result['content-length']).toBe('42')
+    // setHeader only deduplicates the header being set;
+    // pre-existing duplicates of other headers are preserved as-is
     const contentTypeKeys = Object.keys(result).filter((k) => k.toLowerCase() === 'content-type')
-    expect(contentTypeKeys.length).toBeGreaterThanOrEqual(1)
+    expect(contentTypeKeys).toHaveLength(2)
   })
 })
 

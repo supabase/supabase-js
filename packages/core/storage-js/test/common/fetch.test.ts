@@ -123,7 +123,7 @@ describe('Common Fetch', () => {
 
         expect(mockFetch).toHaveBeenCalledWith('http://test.com/api', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'content-type': 'application/json' },
           body: JSON.stringify(requestBody),
         })
         expect(result).toEqual(responseData)
@@ -146,7 +146,7 @@ describe('Common Fetch', () => {
         expect(mockFetch).toHaveBeenCalledWith('http://test.com/api', {
           method: 'POST',
           headers: {
-            'Content-Type': 'application/json',
+            'content-type': 'application/json',
             Authorization: 'Bearer token',
           },
           body: JSON.stringify(requestBody),
@@ -174,7 +174,7 @@ describe('Common Fetch', () => {
           method: 'POST',
           headers: {
             Authorization: 'Bearer token',
-            'Content-Type': 'application/vnd.custom+json',
+            'content-type': 'application/vnd.custom+json',
           },
           body: JSON.stringify(requestBody),
         })
@@ -215,7 +215,7 @@ describe('Common Fetch', () => {
 
         expect(mockFetch).toHaveBeenCalledWith('http://test.com/api', {
           method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'content-type': 'application/json' },
           body: JSON.stringify(requestBody),
         })
         expect(result).toEqual(responseData)
@@ -255,7 +255,7 @@ describe('Common Fetch', () => {
 
         expect(mockFetch).toHaveBeenCalledWith('http://test.com/api', {
           method: 'DELETE',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'content-type': 'application/json' },
           body: JSON.stringify(requestBody),
         })
         expect(result).toEqual(responseData)
@@ -277,7 +277,7 @@ describe('Common Fetch', () => {
 
         expect(mockFetch).toHaveBeenCalledWith('http://test.com/api', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'content-type': 'application/json' },
           body: JSON.stringify(requestBody),
           duplex: 'half',
         })
