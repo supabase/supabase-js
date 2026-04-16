@@ -56,7 +56,7 @@ jobs:
           app-id: ${{ secrets.DOGFOOD_APP_ID }}
           private-key: ${{ secrets.DOGFOOD_APP_PRIVATE_KEY }}
           owner: supabase
-          repositories: supabase,multiplayer.dev,platform,tests,realtime,ssr,helper-scripts,embeddings-generator,dbdev
+          repositories: supabase,multiplayer.dev,platform,tests,realtime,ssr,helper-scripts,dbdev
 
       - name: Check if actor is member of admin or sdk team
         id: team-check
@@ -135,11 +135,6 @@ jobs:
               },
               {
                 repo: 'helper-scripts',
-                workflow: 'update-supabase-js.yml',
-                inputs: { version, source },
-              },
-              {
-                repo: 'embeddings-generator',
                 workflow: 'update-supabase-js.yml',
                 inputs: { version, source },
               },
