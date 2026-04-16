@@ -1,3 +1,15 @@
+## 2.103.3 (2026-04-16)
+
+### 🩹 Fixes
+
+- **realtime:** throw Error objects instead of bare strings ([#2256](https://github.com/supabase/supabase-js/pull/2256))
+- **storage:** correct signedUrl type to allow null in createSignedUrls ([#2254](https://github.com/supabase/supabase-js/pull/2254))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+- oniani1
+
 ## 2.103.2 (2026-04-15)
 
 ### 🩹 Fixes

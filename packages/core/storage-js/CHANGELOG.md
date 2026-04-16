@@ -1,3 +1,13 @@
+## 2.103.3 (2026-04-16)
+
+### 🩹 Fixes
+
+- **storage:** correct signedUrl type to allow null in createSignedUrls ([#2254](https://github.com/supabase/supabase-js/pull/2254))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+
 ## 2.103.2 (2026-04-15)
 
 ### 🩹 Fixes
