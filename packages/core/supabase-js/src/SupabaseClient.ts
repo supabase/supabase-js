@@ -271,7 +271,7 @@ export default class SupabaseClient<
    * ```ts
    * import { createClient } from '@supabase/supabase-js'
    *
-   * const supabase = createClient('https://xyzcompany.supabase.co', 'public-anon-key')
+   * const supabase = createClient('https://xyzcompany.supabase.co', 'publishable-or-anon-key')
    *
    * const { data } = await supabase.from('profiles').select('*')
    * ```

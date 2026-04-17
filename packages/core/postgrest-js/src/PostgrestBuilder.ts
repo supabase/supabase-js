@@ -98,7 +98,7 @@ export default abstract class PostgrestBuilder<
    *
    * const builder = new PostgrestQueryBuilder(
    *   new URL('https://xyzcompany.supabase.co/rest/v1/users'),
-   *   { headers: new Headers({ apikey: 'public-anon-key' }) }
+   *   { headers: new Headers({ apikey: 'publishable-or-anon-key' }) }
    * )
    * ```
    *
@@ -110,7 +110,7 @@ export default abstract class PostgrestBuilder<
    *
    * const builder = new PostgrestQueryBuilder(
    *   new URL('https://xyzcompany.supabase.co/rest/v1/users'),
-   *   { headers: new Headers({ apikey: 'public-anon-key' }) }
+   *   { headers: new Headers({ apikey: 'publishable-or-anon-key' }) }
    * )
    * ```
    */

@@ -25,7 +25,7 @@ export class FunctionsClient {
    * ```ts
    * import { createClient } from '@supabase/supabase-js'
    *
-   * const supabase = createClient('https://xyzcompany.supabase.co', 'public-anon-key')
+   * const supabase = createClient('https://xyzcompany.supabase.co', 'publishable-or-anon-key')
    * const { data, error } = await supabase.functions.invoke('hello-world')
    * ```
    *
@@ -36,7 +36,7 @@ export class FunctionsClient {
    * import { FunctionsClient, FunctionRegion } from '@supabase/functions-js'
    *
    * const functions = new FunctionsClient('https://xyzcompany.supabase.co/functions/v1', {
-   *   headers: { apikey: 'public-anon-key' },
+   *   headers: { apikey: 'publishable-or-anon-key' },
    *   region: FunctionRegion.UsEast1,
    * })
    * ```

@@ -62,7 +62,7 @@ export default class PostgrestClient<
    * ```ts
    * import { createClient } from '@supabase/supabase-js'
    *
-   * const supabase = createClient('https://xyzcompany.supabase.co', 'public-anon-key')
+   * const supabase = createClient('https://xyzcompany.supabase.co', 'publishable-or-anon-key')
    * const { data, error } = await supabase.from('profiles').select('*')
    * ```
    *
@@ -77,7 +77,7 @@ export default class PostgrestClient<
    * import { PostgrestClient } from '@supabase/postgrest-js'
    *
    * const postgrest = new PostgrestClient('https://xyzcompany.supabase.co/rest/v1', {
-   *   headers: { apikey: 'public-anon-key' },
+   *   headers: { apikey: 'publishable-or-anon-key' },
    *   schema: 'public',
    *   timeout: 30000, // 30 second timeout
    * })

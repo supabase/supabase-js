@@ -50,7 +50,7 @@ export default class PostgrestQueryBuilder<
    *
    * const query = new PostgrestQueryBuilder(
    *   new URL('https://xyzcompany.supabase.co/rest/v1/users'),
-   *   { headers: { apikey: 'public-anon-key' }, retry: true }
+   *   { headers: { apikey: 'publishable-or-anon-key' }, retry: true }
    * )
    * ```
    */

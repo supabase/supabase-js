@@ -39,7 +39,7 @@ export type {
  * ```ts
  * import { createClient } from '@supabase/supabase-js'
  *
- * const supabase = createClient('https://xyzcompany.supabase.co', 'public-anon-key')
+ * const supabase = createClient('https://xyzcompany.supabase.co', 'publishable-or-anon-key')
  * const { data, error } = await supabase.from('profiles').select('*')
  * ```
  */

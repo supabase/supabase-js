@@ -17,7 +17,7 @@ export class StorageClient extends StorageBucketApi {
    * ```ts
    * import { createClient } from '@supabase/supabase-js'
    *
-   * const supabase = createClient('https://xyzcompany.supabase.co', 'public-anon-key')
+   * const supabase = createClient('https://xyzcompany.supabase.co', 'publishable-or-anon-key')
    * const avatars = supabase.storage.from('avatars')
    * ```
    *
@@ -26,7 +26,7 @@ export class StorageClient extends StorageBucketApi {
    * import { StorageClient } from '@supabase/storage-js'
    *
    * const storage = new StorageClient('https://xyzcompany.supabase.co/storage/v1', {
-   *   apikey: 'public-anon-key',
+   *   apikey: 'publishable-or-anon-key',
    * })
    * const avatars = storage.from('avatars')
    * ```
