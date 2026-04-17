@@ -5,6 +5,7 @@ import {
   isStorageError,
 } from '../lib/common/errors'
 import { get, head, post, put, remove, Fetch } from '../lib/common/fetch'
+import { setHeader } from '../lib/common/headers'
 import { recursiveToCamel } from '../lib/common/helpers'
 import BaseApiClient from '../lib/common/BaseApiClient'
 import {
@@ -130,7 +131,9 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
       }
 
       if (fileOptions?.headers) {
-        headers = { ...headers, ...fileOptions.headers }
+        for (const [key, value] of Object.entries(fileOptions.headers)) {
+          headers = setHeader(headers, key, value)
+        }
       }
 
       const cleanPath = this._removeEmptyFolders(path)
