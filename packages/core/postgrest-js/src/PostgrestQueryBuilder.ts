@@ -44,7 +44,15 @@ export default class PostgrestQueryBuilder<
    * @param options.urlLengthLimit - Maximum URL length before warning
    * @param options.retry - Enable automatic retries for transient errors (default: true)
    *
-   * @example Creating a Postgrest query builder
+   * @example Using supabase-js (recommended)
+   * ```ts
+   * import { createClient } from '@supabase/supabase-js'
+   *
+   * const supabase = createClient('https://xyzcompany.supabase.co', 'publishable-or-anon-key')
+   * const { data, error } = await supabase.from('users').select('*')
+   * ```
+   *
+   * @example Standalone import for bundle-sensitive environments
    * ```ts
    * import { PostgrestQueryBuilder } from '@supabase/postgrest-js'
    *
