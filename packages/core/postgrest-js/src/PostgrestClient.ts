@@ -58,15 +58,12 @@ export default class PostgrestClient<
    *   When enabled, idempotent requests (GET, HEAD, OPTIONS) that fail with network
    *   errors or HTTP 503/520 responses will be automatically retried up to 3 times
    *   with exponential backoff (1s, 2s, 4s). Defaults to `true`.
-   * @example
+   * @example Using supabase-js (recommended)
    * ```ts
-   * import { PostgrestClient } from '@supabase/postgrest-js'
+   * import { createClient } from '@supabase/supabase-js'
    *
-   * const postgrest = new PostgrestClient('https://xyzcompany.supabase.co/rest/v1', {
-   *   headers: { apikey: 'public-anon-key' },
-   *   schema: 'public',
-   *   timeout: 30000, // 30 second timeout
-   * })
+   * const supabase = createClient('https://xyzcompany.supabase.co', 'publishable-or-anon-key')
+   * const { data, error } = await supabase.from('profiles').select('*')
    * ```
    *
    * @category Database
@@ -75,25 +72,14 @@ export default class PostgrestClient<
    * - A `timeout` option (in milliseconds) can be set to automatically abort requests that take too long.
    * - A `urlLengthLimit` option (default: 8000) can be set to control when URL length warnings are included in error messages for aborted requests.
    *
-   * @example Creating a Postgrest client
+   * @example Standalone import for bundle-sensitive environments
    * ```ts
    * import { PostgrestClient } from '@supabase/postgrest-js'
    *
    * const postgrest = new PostgrestClient('https://xyzcompany.supabase.co/rest/v1', {
-   *   headers: { apikey: 'public-anon-key' },
-   *   schema: 'public',
-   * })
-   * ```
-   *
-   * @example With timeout
-   * ```ts
-   * import { PostgrestClient } from '@supabase/postgrest-js'
-   *
-   * const postgrest = new PostgrestClient('https://xyzcompany.supabase.co/rest/v1', {
-   *   headers: { apikey: 'public-anon-key' },
+   *   headers: { apikey: 'publishable-or-anon-key' },
    *   schema: 'public',
    *   timeout: 30000, // 30 second timeout
-   *   retry: false, // Disable automatic retries
    * })
    * ```
    */

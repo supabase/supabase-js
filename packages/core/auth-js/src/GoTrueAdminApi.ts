@@ -57,7 +57,15 @@ export default class GoTrueAdminApi {
   /**
    * Creates an admin API client that can be used to manage users and OAuth clients.
    *
-   * @example
+   * @example Using supabase-js (recommended)
+   * ```ts
+   * import { createClient } from '@supabase/supabase-js'
+   *
+   * const supabase = createClient('https://xyzcompany.supabase.co', 'secret-or-service-role-key')
+   * const { data, error } = await supabase.auth.admin.listUsers()
+   * ```
+   *
+   * @example Standalone import for bundle-sensitive environments
    * ```ts
    * import { GoTrueAdminApi } from '@supabase/auth-js'
    *

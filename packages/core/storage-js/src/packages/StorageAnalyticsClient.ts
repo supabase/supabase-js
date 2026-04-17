@@ -31,8 +31,18 @@ export default class StorageAnalyticsClient extends BaseApiClient<StorageError> 
    * @param headers - HTTP headers to include in requests
    * @param fetch - Optional custom fetch implementation
    *
-   * @example Creating a StorageAnalyticsClient instance
+   * @example Using supabase-js (recommended)
    * ```typescript
+   * import { createClient } from '@supabase/supabase-js'
+   *
+   * const supabase = createClient('https://xyzcompany.supabase.co', 'publishable-or-anon-key')
+   * const { data, error } = await supabase.storage.analytics.listBuckets()
+   * ```
+   *
+   * @example Standalone import for bundle-sensitive environments
+   * ```typescript
+   * import { StorageAnalyticsClient } from '@supabase/storage-js'
+   *
    * const client = new StorageAnalyticsClient(url, headers)
    * ```
    */

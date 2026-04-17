@@ -200,12 +200,23 @@ export default class RealtimeClient {
    *
    * @category Realtime
    *
-   * @example Example for a public channel
+   * @example Using supabase-js (recommended)
+   * ```ts
+   * import { createClient } from '@supabase/supabase-js'
+   *
+   * const supabase = createClient('https://xyzcompany.supabase.co', 'publishable-or-anon-key')
+   * const channel = supabase.channel('room1')
+   * channel
+   *   .on('broadcast', { event: 'cursor-pos' }, (payload) => console.log(payload))
+   *   .subscribe()
+   * ```
+   *
+   * @example Standalone import for bundle-sensitive environments
    * ```ts
    * import RealtimeClient from '@supabase/realtime-js'
    *
    * const client = new RealtimeClient('https://xyzcompany.supabase.co/realtime/v1', {
-   *   params: { apikey: 'public-anon-key' },
+   *   params: { apikey: 'publishable-or-anon-key' },
    * })
    * client.connect()
    * ```

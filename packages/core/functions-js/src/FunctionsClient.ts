@@ -21,24 +21,22 @@ export class FunctionsClient {
   /**
    * Creates a new Functions client bound to an Edge Functions URL.
    *
-   * @example
+   * @example Using supabase-js (recommended)
    * ```ts
-   * import { FunctionsClient, FunctionRegion } from '@supabase/functions-js'
+   * import { createClient } from '@supabase/supabase-js'
    *
-   * const functions = new FunctionsClient('https://xyzcompany.supabase.co/functions/v1', {
-   *   headers: { apikey: 'public-anon-key' },
-   *   region: FunctionRegion.UsEast1,
-   * })
+   * const supabase = createClient('https://xyzcompany.supabase.co', 'publishable-or-anon-key')
+   * const { data, error } = await supabase.functions.invoke('hello-world')
    * ```
    *
    * @category Functions
    *
-   * @example Creating a Functions client
+   * @example Standalone import for bundle-sensitive environments
    * ```ts
    * import { FunctionsClient, FunctionRegion } from '@supabase/functions-js'
    *
    * const functions = new FunctionsClient('https://xyzcompany.supabase.co/functions/v1', {
-   *   headers: { apikey: 'public-anon-key' },
+   *   headers: { apikey: 'publishable-or-anon-key' },
    *   region: FunctionRegion.UsEast1,
    * })
    * ```

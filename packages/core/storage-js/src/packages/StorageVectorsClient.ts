@@ -90,8 +90,18 @@ export class StorageVectorsClient extends VectorBucketApi {
    * @param options.headers - Optional headers (for example `Authorization`) applied to every request.
    * @param options.fetch - Optional custom `fetch` implementation for non-browser runtimes.
    *
-   * @example Creating a StorageVectorsClient instance
+   * @example Using supabase-js (recommended)
    * ```typescript
+   * import { createClient } from '@supabase/supabase-js'
+   *
+   * const supabase = createClient('https://xyzcompany.supabase.co', 'publishable-or-anon-key')
+   * const bucket = supabase.storage.vectors.from('embeddings-prod')
+   * ```
+   *
+   * @example Standalone import for bundle-sensitive environments
+   * ```typescript
+   * import { StorageVectorsClient } from '@supabase/storage-js'
+   *
    * const client = new StorageVectorsClient(url, options)
    * ```
    */

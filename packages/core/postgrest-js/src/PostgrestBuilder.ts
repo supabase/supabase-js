@@ -92,25 +92,23 @@ export default abstract class PostgrestBuilder<
   /**
    * Creates a builder configured for a specific PostgREST request.
    *
-   * @example
+   * @example Using supabase-js (recommended)
    * ```ts
-   * import { PostgrestQueryBuilder } from '@supabase/postgrest-js'
+   * import { createClient } from '@supabase/supabase-js'
    *
-   * const builder = new PostgrestQueryBuilder(
-   *   new URL('https://xyzcompany.supabase.co/rest/v1/users'),
-   *   { headers: new Headers({ apikey: 'public-anon-key' }) }
-   * )
+   * const supabase = createClient('https://xyzcompany.supabase.co', 'publishable-or-anon-key')
+   * const { data, error } = await supabase.from('users').select('*')
    * ```
    *
    * @category Database
    *
-   * @example Creating a Postgrest query builder
+   * @example Standalone import for bundle-sensitive environments
    * ```ts
    * import { PostgrestQueryBuilder } from '@supabase/postgrest-js'
    *
    * const builder = new PostgrestQueryBuilder(
    *   new URL('https://xyzcompany.supabase.co/rest/v1/users'),
-   *   { headers: new Headers({ apikey: 'public-anon-key' }) }
+   *   { headers: new Headers({ apikey: 'publishable-or-anon-key' }) }
    * )
    * ```
    */
