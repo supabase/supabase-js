@@ -13,7 +13,15 @@ export class StorageClient extends StorageBucketApi {
    * Creates a client for Storage buckets, files, analytics, and vectors.
    *
    * @category File Buckets
-   * @example Creating a Storage client
+   * @example Using supabase-js (recommended)
+   * ```ts
+   * import { createClient } from '@supabase/supabase-js'
+   *
+   * const supabase = createClient('https://xyzcompany.supabase.co', 'public-anon-key')
+   * const avatars = supabase.storage.from('avatars')
+   * ```
+   *
+   * @example Standalone import for bundle-sensitive environments
    * ```ts
    * import { StorageClient } from '@supabase/storage-js'
    *

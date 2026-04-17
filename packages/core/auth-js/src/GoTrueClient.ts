@@ -285,7 +285,15 @@ export default class GoTrueClient {
   /**
    * Create a new client for use in the browser.
    *
-   * @example
+   * @example Using supabase-js (recommended)
+   * ```ts
+   * import { createClient } from '@supabase/supabase-js'
+   *
+   * const supabase = createClient('https://xyzcompany.supabase.co', 'public-anon-key')
+   * const { data, error } = await supabase.auth.getUser()
+   * ```
+   *
+   * @example Standalone import for bundle-sensitive environments
    * ```ts
    * import { GoTrueClient } from '@supabase/auth-js'
    *
