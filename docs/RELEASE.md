@@ -6,8 +6,10 @@ This repo uses a two-branch model to support parallel v2 maintenance and v3 deve
 
 | Branch    | Role                           | Default? | PR target for                     |
 | --------- | ------------------------------ | -------- | --------------------------------- |
-| `develop` | v3 features, next prereleases  | Yes      | Features (`feat:`)                |
+| `develop` | v3 features, next prereleases  | Yes      | All features (`feat:`, `feat!:`)  |
 | `master`  | v2 stable + canary prereleases | No       | Fixes (`fix:`), chores (`chore:`) |
+
+> **Feature workflow:** Non-breaking features (`feat:`) land on `develop` and are patchbacked to `master` as needed for v2 minor releases. Breaking features (`feat!:`) stay on `develop` until v3 ships.
 
 ```mermaid
 graph LR
