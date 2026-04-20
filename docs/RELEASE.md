@@ -1,5 +1,9 @@
 # Release Workflows
 
+**TL;DR:** Two branches — `develop` (default, v3 features, publishes `@next`) and `master` (v2 fixes, publishes `@canary` and `@latest`). Fixes on master auto-sync to develop. Features on develop can be cherry-picked to master via the `patchback-master` label. Stable releases are manual from master.
+
+---
+
 ## Branch Model
 
 This repo uses a two-branch model to support parallel v2 maintenance and v3 development:
@@ -307,49 +311,19 @@ flowchart LR
 
 ## Configuration
 
-### `.next-base-version`
-
-A single-line file at the repo root containing the base version for next prereleases (currently `3.0.0`). Read by `publish.yml` when publishing from `develop`.
-
-### Release scripts
-
-| Script                      | Purpose                                                                                                                   |
-| --------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| `scripts/release-canary.ts` | Handles both canary (master) and next (develop) prereleases. Accepts optional `--base-version`, `--preid`, `--tag` flags. |
-| `scripts/release-stable.ts` | Handles stable releases. Creates release branch, changelog PR, publishes with `latest` tag.                               |
-| `scripts/release-beta.ts`   | Handles beta releases from feature branches. Requires explicit version.                                                   |
-| `scripts/utils.ts`          | Shared helpers: `getLastStableTag()` finds latest stable semver tag, `getArg()` parses CLI flags.                         |
-
-### Workflow files
-
-| Workflow              | Trigger                                          | Purpose                                           |
-| --------------------- | ------------------------------------------------ | ------------------------------------------------- |
-| `publish.yml`         | Push to `develop`/`master` + `workflow_dispatch` | CI, canary/next prereleases, stable/beta releases |
-| `sync-develop.yml`    | Push to `master` + `workflow_dispatch`           | Merges master into develop                        |
-| `patchback.yml`       | PR closed/labeled on `develop`                   | Cherry-picks to master                            |
-| `preview-release.yml` | PRs touching package code (automatic)            | PR preview packages                               |
-| `ci.yml`              | Pull requests                                    | CI for PRs (calls ci-core + ci-supabase-js)       |
-
----
-
-## npm Dist-Tags Summary
-
-| Tag      | Source branch | Version format   | Trigger      | Install                              |
-| -------- | ------------- | ---------------- | ------------ | ------------------------------------ |
-| `next`   | `develop`     | `3.0.0-next.X`   | Auto on push | `npm i @supabase/supabase-js@next`   |
-| `canary` | `master`      | `2.x.x-canary.X` | Auto on push | `npm i @supabase/supabase-js@canary` |
-| `latest` | `master`      | `2.x.x`          | Manual       | `npm i @supabase/supabase-js@latest` |
-| `beta`   | `feature/*`   | `x.x.x-beta.X`   | Manual       | `npm i @supabase/supabase-js@beta`   |
+- **`.next-base-version`** — contains `3.0.0`, read by `publish.yml` for next prereleases from `develop`
+- **`scripts/release-canary.ts`** — handles both canary and next prereleases (optional `--base-version`, `--preid`, `--tag` flags)
+- **`scripts/release-stable.ts`** — stable releases, creates changelog PR
+- **`scripts/release-beta.ts`** — beta releases from feature branches
 
 ---
 
 ## Permissions & Security
 
-- Canary and next releases use a **GitHub App token** for automation (tagging, pushing)
-- Stable and beta releases are restricted to **`@supabase/admin` or `@supabase/sdk`** team members
+- Automated releases (canary, next, sync) use a **GitHub App token** — the app must be a **bypass actor** in branch protection for `develop` and `master`
+- Manual releases (stable, beta) are restricted to **`@supabase/admin`** or **`@supabase/sdk`** team members
 - npm publishing uses **OIDC trusted publishing** (provenance)
-- The GitHub App must be a **bypass actor** in branch protection for both `develop` and `master` (for sync-develop pushes, release branch creation)
-- Slack notifications go to **`#team-sdk`** on sync/patchback failures and release failures/successes
+- Slack notifications go to **`#team-sdk`** on failures
 
 ---
 
