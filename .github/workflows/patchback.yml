@@ -47,6 +47,9 @@ jobs:
 
           BRANCH="patchback/${PR_NUMBER}"
 
+          # Delete existing patchback branch if a previous run left one behind
+          git push origin --delete "$BRANCH" 2>/dev/null || true
+
           git checkout -b "$BRANCH"
 
           # Fetch the merge commit from develop
