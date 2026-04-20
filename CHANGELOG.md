@@ -1,3 +1,13 @@
+## 2.104.0 (2026-04-20)
+
+### 🚀 Features
+
+- **storage:** extract shared header normalization utility ([#2251](https://github.com/supabase/supabase-js/pull/2251))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+
 ## 2.103.3 (2026-04-16)
 
 ### 🩹 Fixes
