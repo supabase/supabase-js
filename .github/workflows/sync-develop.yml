@@ -1,0 +1,108 @@
+name: Sync master into develop
+
+# Hourly sync of master into develop to keep v3 development up to date with v2 fixes.
+# On conflict, notifies #team-sdk on Slack.
+# Based on platform's deploy_production_prep.yml.
+
+on:
+  schedule:
+    - cron: '0 * * * *' # every hour
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sync-develop
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    name: Sync master into develop
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check if develop is locked
+        id: check-lock
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            try {
+              const res = await github.rest.repos.getBranchProtection({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                branch: 'develop'
+              });
+              const isLocked = res.data.lock_branch?.enabled || false;
+              if (isLocked) {
+                console.log('develop branch is locked — skipping sync (a release is likely in progress)');
+              }
+              core.setOutput('is-locked', isLocked.toString());
+            } catch (e) {
+              // If branch protection is not set up yet, proceed with sync
+              console.log('Could not check branch protection, proceeding with sync:', e.message);
+              core.setOutput('is-locked', 'false');
+            }
+
+      - name: Generate GitHub App token
+        if: steps.check-lock.outputs.is-locked != 'true'
+        id: app-token
+        uses: actions/create-github-app-token@f8d387b68d61c58ab83c6c016672934102569859 # v3.0.0
+        with:
+          app-id: ${{ secrets.APP_ID }}
+          private-key: ${{ secrets.PRIVATE_KEY }}
+
+      - name: Checkout develop
+        if: steps.check-lock.outputs.is-locked != 'true'
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        with:
+          ref: develop
+          fetch-depth: 0
+          token: ${{ steps.app-token.outputs.token }}
+
+      - name: Merge master into develop
+        if: steps.check-lock.outputs.is-locked != 'true'
+        id: merge
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git fetch origin master
+          if git merge-base --is-ancestor origin/master HEAD; then
+            echo "develop is already up to date with master"
+          else
+            if git merge origin/master --no-edit; then
+              git push origin develop
+            else
+              echo "merge-failed=true" >> $GITHUB_OUTPUT
+              exit 1
+            fi
+          fi
+
+  notify-sync-failure:
+    name: Notify Sync Failure
+    needs: [sync]
+    if: always() && needs.sync.result == 'failure'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Notify SDK team
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_CLIENT_LIBS_WEBHOOK }}
+          RUN_URL: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          COMPARE_URL: https://github.com/${{ github.repository }}/compare/develop...master
+        run: |
+          curl -sS --fail-with-body -X POST "$SLACK_WEBHOOK" \
+            -H 'Content-Type: application/json' \
+            -d "$(cat <<EOF
+          {
+            "channel": "#team-sdk",
+            "username": "gha-failures-notifier",
+            "icon_emoji": ":warning:",
+            "attachments": [{
+              "color": "danger",
+              "title": "Branch Sync Failed (supabase-js)",
+              "text": "Failed to merge \`master\` into \`develop\`.\n\nThis likely means there are merge conflicts that need manual resolution.\n<${COMPARE_URL}|Compare branches> · <${RUN_URL}|View logs>",
+              "footer": "sync-develop.yml"
+            }]
+          }
+          EOF
+              )"
