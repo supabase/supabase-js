@@ -20,6 +20,8 @@ jobs:
   sync:
     name: Sync master into develop
     runs-on: ubuntu-latest
+    # Skip sync when the push is a patchback merge — that commit already exists on develop
+    if: ${{ !contains(github.event.head_commit.message, '[patchback]') }}
     steps:
       - name: Generate GitHub App token
         id: app-token
