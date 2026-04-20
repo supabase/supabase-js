@@ -21,31 +21,7 @@ jobs:
     name: Sync master into develop
     runs-on: ubuntu-latest
     steps:
-      - name: Check if develop is locked
-        id: check-lock
-        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            try {
-              const res = await github.rest.repos.getBranchProtection({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                branch: 'develop'
-              });
-              const isLocked = res.data.lock_branch?.enabled || false;
-              if (isLocked) {
-                console.log('develop branch is locked — skipping sync (a release is likely in progress)');
-              }
-              core.setOutput('is-locked', isLocked.toString());
-            } catch (e) {
-              // If branch protection is not set up yet, proceed with sync
-              console.log('Could not check branch protection, proceeding with sync:', e.message);
-              core.setOutput('is-locked', 'false');
-            }
-
       - name: Generate GitHub App token
-        if: steps.check-lock.outputs.is-locked != 'true'
         id: app-token
         uses: actions/create-github-app-token@f8d387b68d61c58ab83c6c016672934102569859 # v3.0.0
         with:
@@ -53,7 +29,6 @@ jobs:
           private-key: ${{ secrets.PRIVATE_KEY }}
 
       - name: Checkout develop
-        if: steps.check-lock.outputs.is-locked != 'true'
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
         with:
           ref: develop
@@ -61,7 +36,6 @@ jobs:
           token: ${{ steps.app-token.outputs.token }}
 
       - name: Merge master into develop
-        if: steps.check-lock.outputs.is-locked != 'true'
         id: merge
         run: |
           git config user.name "github-actions[bot]"

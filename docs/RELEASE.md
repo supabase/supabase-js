@@ -55,7 +55,7 @@ All packages share a single version number (fixed versioning) and are released t
 | **Canary**  | Auto (push) | `master`    | `canary` | `2.x.x-canary.X` | `release-canary.ts` |
 | **Stable**  | Manual      | `master`    | `latest` | `2.x.x`          | `release-stable.ts` |
 | **Beta**    | Manual      | `feature/*` | `beta`   | `x.x.x-beta.X`   | `release-beta.ts`   |
-| **Preview** | Label on PR | any         | -        | -                | pkg.pr.new          |
+| **Preview** | Auto (PR)   | any         | -        | -                | pkg.pr.new          |
 
 ---
 
@@ -184,14 +184,14 @@ npm install @supabase/supabase-js@beta
 ### Preview Releases (PR-based)
 
 **Workflow:** `preview-release.yml`
-**Trigger:** PR with `trigger: preview` label
+**Trigger:** Every PR that touches package code (automatic, no label needed)
 
-1. Contributor asks maintainer to add the `trigger: preview` label
-2. Workflow builds affected packages and publishes via [pkg.pr.new](https://pkg.pr.new)
-3. Automated comment with install instructions appears on the PR
+1. PR is opened or updated with changes to `packages/core/**`
+2. Workflow builds all packages and publishes via [pkg.pr.new](https://pkg.pr.new)
+3. Integration tests run against the preview packages
 
 ```bash
-npm install https://pkg.pr.new/@supabase/supabase-js@[pr-number]
+npm install https://pkg.pr.new/@supabase/supabase-js@[commit-hash]
 ```
 
 ---
@@ -206,19 +206,17 @@ Keeps `develop` up to date with v2 fixes merged to `master`.
 
 ```mermaid
 flowchart TD
-  A[Push to master] --> B{develop branch locked?}
-  B -- Yes --> C[Skip sync]
-  B -- No --> D[Checkout develop]
-  D --> E{"master already<br/>ancestor of develop?"}
-  E -- Yes --> F[Already up to date]
-  E -- No --> G["git merge origin/master"]
-  G --> H{Conflict?}
-  H -- No --> I[Push to develop]
-  H -- Yes --> J["Slack #team-sdk<br/>with compare link"]
-  J --> K[Human resolves manually]
+  A[Push to master] --> B[Checkout develop]
+  B --> C{"master already<br/>ancestor of develop?"}
+  C -- Yes --> D[Already up to date]
+  C -- No --> E["git merge origin/master"]
+  E --> F{Conflict?}
+  F -- No --> G[Push to develop]
+  F -- Yes --> H["Slack #team-sdk<br/>with compare link"]
+  H --> I[Human resolves manually]
 ```
 
-The branch-lock check prevents interference with in-progress releases. The workflow uses a GitHub App token to push directly to the protected `develop` branch.
+The workflow uses a GitHub App token to push directly to the protected `develop` branch.
 
 ### patchback.yml (develop -> master)
 
@@ -329,7 +327,7 @@ A single-line file at the repo root containing the base version for next prerele
 | `publish.yml`         | Push to `develop`/`master` + `workflow_dispatch` | CI, canary/next prereleases, stable/beta releases |
 | `sync-develop.yml`    | Push to `master` + `workflow_dispatch`           | Merges master into develop                        |
 | `patchback.yml`       | PR closed/labeled on `develop`                   | Cherry-picks to master                            |
-| `preview-release.yml` | PR with `trigger: preview` label                 | PR preview packages                               |
+| `preview-release.yml` | PRs touching package code (automatic)            | PR preview packages                               |
 | `ci.yml`              | Pull requests                                    | CI for PRs (calls ci-core + ci-supabase-js)       |
 
 ---
@@ -361,7 +359,7 @@ A single-line file at the repo root containing the base version for next prerele
 
 1. **Target the right branch**: features -> `develop`, fixes/chores -> `master`
 2. **Use conventional commits** with scope: `fix(auth):`, `feat(realtime):`, `chore(repo):`
-3. **Request preview releases** for complex PRs by asking for the `trigger: preview` label
+3. **Preview releases** are automatic on every PR that touches package code
 
 ### For maintainers
 
