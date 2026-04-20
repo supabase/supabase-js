@@ -1,12 +1,12 @@
 name: Sync master into develop
 
-# Hourly sync of master into develop to keep v3 development up to date with v2 fixes.
+# Syncs master into develop after every push to master (e.g. merged fix PRs).
 # On conflict, notifies #team-sdk on Slack.
 # Based on platform's deploy_production_prep.yml.
 
 on:
-  schedule:
-    - cron: '0 * * * *' # every hour
+  push:
+    branches: [master]
   workflow_dispatch:
 
 permissions:

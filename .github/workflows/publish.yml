@@ -4,7 +4,7 @@ name: Publish releases
 
 on:
   push:
-    branches: [develop]
+    branches: [develop, master]
     paths-ignore:
       - '*.md'
       - 'docs/**'
@@ -344,16 +344,16 @@ jobs:
   # ==========================================
 
   release-canary:
-    name: Release Canary
+    name: Release Prerelease
     runs-on: ubuntu-latest
     needs: [ci-core, ci-supabase-js]
     permissions:
       contents: read
       id-token: write
-    # Only run on master branch pushes, and only if all CI jobs succeeded
+    # Run on develop or master branch pushes, only if all CI jobs succeeded
     if: |
-      github.ref == 'refs/heads/develop' &&
       github.event_name == 'push' &&
+      (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/master') &&
       needs.ci-core.result == 'success' &&
       needs.ci-supabase-js.result == 'success'
     steps:
@@ -386,11 +386,17 @@ jobs:
           git config --global user.name "supabase-releaser[bot]"
           git config --global user.email "supabase-releaser[bot]@users.noreply.github.com"
 
-      - name: Release canary version
+      - name: Release prerelease version
         id: release
         run: |
-          echo "Running nx release..."
-          npm run release-canary
+          if [[ "${{ github.ref }}" == "refs/heads/develop" ]]; then
+            BASE_VERSION=$(cat .next-base-version | tr -d '[:space:]')
+            echo "Publishing v3 next prerelease (base: ${BASE_VERSION})..."
+            npm run release-canary -- --base-version "$BASE_VERSION" --preid next --tag next
+          else
+            echo "Publishing v2 canary prerelease..."
+            npm run release-canary
+          fi
         env:
           NPM_CONFIG_PROVENANCE: true
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
