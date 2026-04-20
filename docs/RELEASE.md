@@ -37,7 +37,7 @@ graph LR
 
 ### How branches stay in sync
 
-Fixes merged to `master` are automatically merged into `develop` by the `sync-develop.yml` workflow (triggered on every push to `master`). This keeps v3 development up to date with all v2 fixes.
+Fixes merged to `master` are automatically merged into `develop` by the `sync-develop.yml` workflow (triggered on every push to `master`). This keeps v3 development up to date with all v2 fixes. The sync is **skipped** when the push comes from a patchback merge (detected by `[patchback]` in the commit message), since that commit already exists on develop.
 
 Features on `develop` that also need to ship as a v2 release can be cherry-picked to `master` using the **patchback** workflow (label a merged PR with `patchback-master`).
 
@@ -207,17 +207,20 @@ npm install https://pkg.pr.new/@supabase/supabase-js@[commit-hash]
 Keeps `develop` up to date with v2 fixes merged to `master`.
 
 **Trigger:** Every push to `master` + manual `workflow_dispatch`
+**Skipped when:** The commit message contains `[patchback]` (the commit already exists on develop)
 
 ```mermaid
 flowchart TD
-  A[Push to master] --> B[Checkout develop]
-  B --> C{"master already<br/>ancestor of develop?"}
-  C -- Yes --> D[Already up to date]
-  C -- No --> E["git merge origin/master"]
-  E --> F{Conflict?}
-  F -- No --> G[Push to develop]
-  F -- Yes --> H["Slack #team-sdk<br/>with compare link"]
-  H --> I[Human resolves manually]
+  A[Push to master] --> B{"Commit message<br/>contains [patchback]?"}
+  B -- Yes --> C[Skip — already on develop]
+  B -- No --> D[Checkout develop]
+  D --> E{"master already<br/>ancestor of develop?"}
+  E -- Yes --> F[Already up to date]
+  E -- No --> G["git merge origin/master"]
+  G --> H{Conflict?}
+  H -- No --> I[Push to develop]
+  H -- Yes --> J["Slack #team-sdk<br/>with compare link"]
+  J --> K[Human resolves manually]
 ```
 
 The workflow uses a GitHub App token to push directly to the protected `develop` branch.
@@ -237,7 +240,7 @@ flowchart TD
   E --> F["Open PR to master:<br/>[patchback] Original Title"]
   F --> G[Request review from original author]
   G --> H[Human reviews + merges]
-  H --> I["Triggers canary + sync-develop"]
+  H --> I["Triggers canary (sync-develop skipped)"]
   D -- Yes --> J["Slack #team-sdk<br/>with conflict details"]
   J --> K[Human resolves manually]
 ```
@@ -290,7 +293,7 @@ flowchart LR
 2. Add `patchback-master` label to the merged PR
 3. Patchback workflow opens cherry-pick PR to `master`
 4. Review + merge patchback PR
-5. Canary auto-publishes from master
+5. Canary auto-publishes from master (sync-develop is skipped — commit already on develop)
 6. Trigger stable release with `minor`
 
 ### Emergency v2 fix
