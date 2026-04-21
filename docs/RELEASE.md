@@ -290,11 +290,21 @@ flowchart LR
 ```
 
 1. Feature PR merged to `develop` (next prerelease publishes)
-2. Add `patchback-master` label to the merged PR
-3. Patchback workflow opens cherry-pick PR to `master`
-4. Review + merge patchback PR
-5. Canary auto-publishes from master (sync-develop is skipped — commit already on develop)
-6. Trigger stable release with `minor`
+2. Reviewer/maintainer adds the **`v2-minor`** label as a staging marker (bookkeeping only, no automation)
+3. On the next batch day (see [Release cadence](#release-cadence)), a maintainer applies `patchback-master` to each `v2-minor`-labeled merged PR
+4. Patchback workflow opens one cherry-pick PR per labeled PR against `master`
+5. Review + merge each patchback PR (canary auto-publishes per merge; sync-develop skipped — commit already on develop)
+6. Once all patchbacks are merged and the last canary is green, trigger stable release with `minor` — one stable covering the whole batch
+
+### Release cadence
+
+To keep v2 releases predictable:
+
+- **Patches** (v2 fixes on `master`): any weekday Mon–Fri, as fixes land
+- **Minor** (v2 feats batched via patchback): **Monday primary**, **Wednesday fallback** if enough features accumulated since Monday. **Never Thursday or Friday.**
+- **Major**: only when v3 ships
+
+The `v2-minor` label is the week-long staging marker; `patchback-master` is applied in batch on the release day. See the [SDK deployment playbook](https://github.com/supabase/playbooks/blob/main/playbooks/client-libs/deployment-playbook.md) for the full operational routine.
 
 ### Emergency v2 fix
 
@@ -340,10 +350,10 @@ flowchart LR
 
 ### For maintainers
 
-1. **v2 patch release**: merge fix to master, verify canary, trigger stable with `patch`
-2. **v2 minor release**: patchback features from develop to master, trigger stable with `minor`
-3. **Patchback**: add `patchback-master` label to any merged develop PR that should also ship in v2
-4. **Monitor sync-develop**: if Slack reports a conflict, resolve it promptly to keep develop current
+1. **v2 patch release**: merge fix to master, verify canary, trigger stable with `patch` (any weekday)
+2. **v2 minor release**: batch-apply `patchback-master` to all `v2-minor`-labeled develop PRs on Monday (or Wednesday), merge patchback PRs, then trigger stable with `minor` once — see [Release cadence](#release-cadence)
+3. **Staging label**: apply `v2-minor` at merge time to any non-breaking develop feat PR that should also ship in v2
+4. **Monitor sync-develop / patchback**: Slack alerts on conflict. If trivial, resolve same day. If not, drop from this week's minor and defer
 5. **Beta workflow**: use feature branches + beta releases for experimental work that isn't ready for develop yet
 
 ### For emergency releases
