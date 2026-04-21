@@ -1,12 +1,16 @@
 import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http'
-import { NodeSDK } from '@opentelemetry/sdk-node'
-import { Resource } from '@opentelemetry/resources'
-import { ATTR_SERVICE_NAME } from '@opentelemetry/semantic-conventions'
+import otelSdk from '@opentelemetry/sdk-node'
+import otelResources from '@opentelemetry/resources'
+import otelSemconv from '@opentelemetry/semantic-conventions'
 import { createClient } from '@supabase/supabase-js'
 import { trace } from '@opentelemetry/api'
 
+const { NodeSDK } = otelSdk
+const { resourceFromAttributes } = otelResources
+const { ATTR_SERVICE_NAME } = otelSemconv
+
 const sdk = new NodeSDK({
-  resource: new Resource({
+  resource: resourceFromAttributes({
     [ATTR_SERVICE_NAME]: 'supabase-trace-test',
   }),
   traceExporter: new OTLPTraceExporter({

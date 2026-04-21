@@ -1,20 +1,27 @@
 #!/usr/bin/env node
 /**
  * Diagnostic test to understand trace propagation behavior
+ *
+ * Updated to match the current API (enabled/respectSamplingDecision only)
  */
 
 import { trace, context, propagation } from '@opentelemetry/api'
-import { NodeSDK } from '@opentelemetry/sdk-node'
-import { Resource } from '@opentelemetry/resources'
-import { ATTR_SERVICE_NAME } from '@opentelemetry/semantic-conventions'
-import { ConsoleSpanExporter } from '@opentelemetry/sdk-trace-node'
+import otelSdk from '@opentelemetry/sdk-node'
+import otelResources from '@opentelemetry/resources'
+import otelSemconv from '@opentelemetry/semantic-conventions'
+import otelTrace from '@opentelemetry/sdk-trace-node'
 import { createClient } from '@supabase/supabase-js'
 
-console.log('🔍 Diagnostic Test for Trace Propagation\n')
+const { NodeSDK } = otelSdk
+const { resourceFromAttributes } = otelResources
+const { ATTR_SERVICE_NAME } = otelSemconv
+const { ConsoleSpanExporter } = otelTrace
+
+console.log('Diagnostic Test for Trace Propagation\n')
 
 // Initialize OpenTelemetry
 const sdk = new NodeSDK({
-  resource: new Resource({
+  resource: resourceFromAttributes({
     [ATTR_SERVICE_NAME]: 'diagnostic-test',
   }),
   traceExporter: new ConsoleSpanExporter(),
@@ -23,11 +30,11 @@ const sdk = new NodeSDK({
 sdk.start()
 
 // Test if OTel API is working
-console.log('1️⃣ Testing OpenTelemetry API...')
+console.log('1. Testing OpenTelemetry API...')
 const tracer = trace.getTracer('test')
 
 await tracer.startActiveSpan('test-span', async (span) => {
-  console.log('   ✅ Span created successfully')
+  console.log('   Span created successfully')
   console.log(`   Trace ID: ${span.spanContext().traceId}`)
   console.log(`   Span ID: ${span.spanContext().spanId}`)
 
@@ -45,7 +52,7 @@ await tracer.startActiveSpan('test-span', async (span) => {
 console.log('')
 
 // Test trace propagation with detailed logging
-console.log('2️⃣ Testing tracing package directly...')
+console.log('2. Testing tracing package directly...')
 
 // Import the tracing utilities directly
 const { extractTraceContext, shouldPropagateToTarget, getDefaultPropagationTargets } = await import(
@@ -55,17 +62,8 @@ const { extractTraceContext, shouldPropagateToTarget, getDefaultPropagationTarge
 console.log('   Testing extractTraceContext()...')
 
 await tracer.startActiveSpan('extraction-test', async (span) => {
-  // Try to extract without custom extractor
-  const extracted = extractTraceContext()
+  const extracted = await extractTraceContext()
   console.log(`   Result: ${extracted ? JSON.stringify(extracted, null, 2) : 'null'}`)
-
-  // Try with custom extractor
-  const extractedCustom = extractTraceContext({
-    customExtractor: () => ({
-      traceparent: '00-test123-test456-01',
-    }),
-  })
-  console.log(`   Custom extractor result: ${extractedCustom ? 'SUCCESS' : 'FAILED'}`)
 
   span.end()
 })
@@ -73,7 +71,7 @@ await tracer.startActiveSpan('extraction-test', async (span) => {
 console.log('')
 
 // Test target validation
-console.log('3️⃣ Testing target validation...')
+console.log('3. Testing target validation...')
 const targets = getDefaultPropagationTargets('https://myproject.supabase.co')
 console.log('   Default targets:', targets)
 
@@ -86,13 +84,13 @@ const testUrls = [
 
 testUrls.forEach((url) => {
   const shouldPropagate = shouldPropagateToTarget(url, targets)
-  console.log(`   ${shouldPropagate ? '✅' : '❌'} ${url}`)
+  console.log(`   ${shouldPropagate ? 'ALLOWED' : 'BLOCKED'} ${url}`)
 })
 
 console.log('')
 
 // Test with real Supabase client
-console.log('4️⃣ Testing with Supabase client...')
+console.log('4. Testing with Supabase client...')
 
 // Intercept fetch to see what headers are sent
 const fetchCalls = []
@@ -117,25 +115,19 @@ global.fetch = async (input, init) => {
   })
 }
 
-const supabase = createClient('https://test.supabase.co', 'test-key', {
-  tracePropagation: {
-    mode: 'auto',
-    customExtractor: () => {
-      console.log('   🔧 Custom extractor called!')
-      return {
-        traceparent: '00-diagnostic-test-trace-id-1234567890123456-01',
-        tracestate: 'test=value',
-      }
-    },
-  },
-})
+const supabase = createClient('https://test.supabase.co', 'test-key')
 
-console.log('   Making request with custom extractor...')
-try {
-  await supabase.from('test').select('*').limit(1)
-} catch (err) {
-  // Expected
-}
+console.log('   Making request with active span...')
+
+await tracer.startActiveSpan('client-test', async (span) => {
+  try {
+    await supabase.from('test').select('*').limit(1)
+  } catch (err) {
+    // Expected
+  }
+
+  span.end()
+})
 
 console.log(`   Total fetch calls: ${fetchCalls.length}`)
 fetchCalls.forEach((call, i) => {
@@ -152,17 +144,16 @@ fetchCalls.forEach((call, i) => {
 
 console.log('')
 console.log('='.repeat(80))
-console.log('📊 DIAGNOSTIC SUMMARY')
+console.log('DIAGNOSTIC SUMMARY')
 console.log('='.repeat(80))
 console.log(`
 Expected results:
-✅ OpenTelemetry spans should be created
-✅ Manual extraction should return trace context
-✅ Custom extractor should work
-✅ Target validation should match *.supabase.co domains
-✅ Supabase client with custom extractor should propagate headers
+- OpenTelemetry spans should be created
+- Manual extraction should return trace context
+- Target validation should match *.supabase.co domains
+- Supabase client with active span should propagate headers
 
-If trace headers are present in the fetch calls, the feature is working! 🎉
+If trace headers are present in the fetch calls, the feature is working!
 `)
 
 await sdk.shutdown()
