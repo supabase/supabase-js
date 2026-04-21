@@ -350,6 +350,9 @@ jobs:
     permissions:
       contents: read
       id-token: write
+    concurrency:
+      group: release-${{ github.ref }}
+      cancel-in-progress: false
     # Run on develop or master branch pushes, only if all CI jobs succeeded
     if: |
       github.event_name == 'push' &&
