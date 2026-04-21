@@ -346,3 +346,104 @@ const postgrestWithOptions = new PostgrestClient<DatabaseWithOptions>(REST_URL)
     }[]
   >(result.data)
 }
+
+// `.not(col, 'is', null)` narrows nullable column to non-nullable in result (#1360)
+{
+  // Basic narrowing: message goes from `string | null` to `string`
+  {
+    const result = await postgrest.from('messages').select('id, message').not('message', 'is', null)
+    if (result.error) {
+      throw new Error(result.error.message)
+    }
+    expectType<TypeEqual<typeof result.data, { id: number; message: string }[]>>(true)
+  }
+
+  // Narrowing with .single()
+  {
+    const result = await postgrest
+      .from('messages')
+      .select('id, message')
+      .not('message', 'is', null)
+      .single()
+    if (result.error) {
+      throw new Error(result.error.message)
+    }
+    expectType<TypeEqual<typeof result.data, { id: number; message: string }>>(true)
+  }
+
+  // Narrowing with .maybeSingle()
+  {
+    const result = await postgrest
+      .from('messages')
+      .select('id, message')
+      .not('message', 'is', null)
+      .maybeSingle()
+    if (result.error) {
+      throw new Error(result.error.message)
+    }
+    expectType<TypeEqual<typeof result.data, { id: number; message: string } | null>>(true)
+  }
+
+  // Chaining multiple .not() calls narrows both columns
+  {
+    const result = await postgrest
+      .from('messages')
+      .select('id, message, data')
+      .not('message', 'is', null)
+      .not('data', 'is', null)
+    if (result.error) {
+      throw new Error(result.error.message)
+    }
+    const item = result.data[0]
+    expectType<number>(item.id)
+    expectType<string>(item.message)
+    expectType<Json>(item.data)
+  }
+
+  // Non-nullable column: type stays the same
+  {
+    const result = await postgrest
+      .from('messages')
+      .select('id, username')
+      .not('username', 'is', null)
+    if (result.error) {
+      throw new Error(result.error.message)
+    }
+    expectType<TypeEqual<typeof result.data, { id: number; username: string }[]>>(true)
+  }
+
+  // Other operators do NOT narrow
+  {
+    const result = await postgrest
+      .from('messages')
+      .select('id, message')
+      .not('message', 'eq', 'hello')
+    if (result.error) {
+      throw new Error(result.error.message)
+    }
+    expectType<TypeEqual<typeof result.data, { id: number; message: string | null }[]>>(true)
+  }
+
+  // Dynamic string column: falls through to untyped overload, no narrowing
+  {
+    const col: string = 'message'
+    const result = await postgrest.from('messages').select('id, message').not(col, 'is', null)
+    if (result.error) {
+      throw new Error(result.error.message)
+    }
+    expectType<TypeEqual<typeof result.data, { id: number; message: string | null }[]>>(true)
+  }
+
+  // Chaining filters after narrowing preserves narrowed type
+  {
+    const result = await postgrest
+      .from('messages')
+      .select('id, message')
+      .not('message', 'is', null)
+      .eq('id', 1)
+    if (result.error) {
+      throw new Error(result.error.message)
+    }
+    expectType<TypeEqual<typeof result.data, { id: number; message: string }[]>>(true)
+  }
+}
