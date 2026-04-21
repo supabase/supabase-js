@@ -136,6 +136,21 @@ import type {
   UserResponse,
   VerifyOtpParams,
   Web3Credentials,
+  AuthPasskeyApi,
+  SignInWithPasskeyCredentials,
+  RegisterPasskeyCredentials,
+  VerifyPasskeyRegistrationParams,
+  StartPasskeyAuthenticationParams,
+  VerifyPasskeyAuthenticationParams,
+  PasskeyUpdateParams,
+  PasskeyDeleteParams,
+  AuthPasskeyRegistrationOptionsResponse,
+  AuthPasskeyRegistrationVerifyResponse,
+  AuthPasskeyAuthenticationOptionsResponse,
+  AuthPasskeyAuthenticationVerifyResponse,
+  AuthPasskeyListResponse,
+  AuthPasskeyUpdateResponse,
+  AuthPasskeyDeleteResponse,
 } from './lib/types'
 import {
   createSiweMessage,
@@ -146,10 +161,14 @@ import {
   toHex,
 } from './lib/web3/ethereum'
 import {
+  createCredential,
   deserializeCredentialCreationOptions,
   deserializeCredentialRequestOptions,
+  getCredential,
   serializeCredentialCreationResponse,
   serializeCredentialRequestResponse,
+  browserSupportsWebAuthn,
+  webAuthnAbortService,
   WebAuthnApi,
 } from './lib/webauthn'
 import {
@@ -212,6 +231,11 @@ export default class GoTrueClient {
    * Used to implement the authorization code flow on the consent page.
    */
   oauth: AuthOAuthServerApi
+  /**
+   * Namespace for passkey methods.
+   * Includes lower-level two-step registration/authentication and passkey management.
+   */
+  passkey: AuthPasskeyApi
   /**
    * The storage key used to identify the values saved in localStorage
    */
@@ -372,6 +396,16 @@ export default class GoTrueClient {
       denyAuthorization: this._denyAuthorization.bind(this),
       listGrants: this._listOAuthGrants.bind(this),
       revokeGrant: this._revokeOAuthGrant.bind(this),
+    }
+
+    this.passkey = {
+      startRegistration: this._startPasskeyRegistration.bind(this),
+      verifyRegistration: this._verifyPasskeyRegistration.bind(this),
+      startAuthentication: this._startPasskeyAuthentication.bind(this),
+      verifyAuthentication: this._verifyPasskeyAuthentication.bind(this),
+      list: this._listPasskeys.bind(this),
+      update: this._updatePasskey.bind(this),
+      delete: this._deletePasskey.bind(this),
     }
 
     if (this.persistSession) {
@@ -5899,6 +5933,379 @@ export default class GoTrueClient {
         },
         error: null,
       }
+    } catch (error) {
+      if (isAuthError(error)) {
+        return this._returnResult({ data: null, error })
+      }
+      throw error
+    }
+  }
+
+  // --- Passkey Methods ---
+
+  /**
+   * Sign in with a passkey. Handles the full WebAuthn ceremony:
+   * 1. Fetches authentication challenge from server
+   * 2. Prompts user via navigator.credentials.get()
+   * 3. Verifies credential with server and creates session
+   */
+  async signInWithPasskey(
+    credentials?: SignInWithPasskeyCredentials
+  ): Promise<AuthPasskeyAuthenticationVerifyResponse> {
+    try {
+      if (!browserSupportsWebAuthn()) {
+        return this._returnResult({
+          data: null,
+          error: new AuthUnknownError('Browser does not support WebAuthn', null),
+        })
+      }
+
+      // 1. Get challenge options from server
+      const { data: options, error: optionsError } = await this._startPasskeyAuthentication({
+        options: { captchaToken: credentials?.options?.captchaToken },
+      })
+      if (optionsError || !options) {
+        return this._returnResult({ data: null, error: optionsError })
+      }
+
+      // 2. Deserialize and prompt user via browser WebAuthn API
+      const publicKeyOptions = deserializeCredentialRequestOptions(options.options)
+      const signal = credentials?.options?.signal ?? webAuthnAbortService.createNewAbortSignal()
+      const { data: credential, error: credentialError } = await getCredential({
+        publicKey: publicKeyOptions,
+        signal,
+      })
+      if (credentialError || !credential) {
+        return this._returnResult({
+          data: null,
+          error: credentialError ?? new AuthUnknownError('WebAuthn ceremony failed', null),
+        })
+      }
+
+      // 3. Serialize and verify with server
+      const serialized = serializeCredentialRequestResponse(credential)
+      return this._verifyPasskeyAuthentication({
+        challengeId: options.challenge_id,
+        credential: serialized,
+      })
+    } catch (error) {
+      if (isAuthError(error)) {
+        return this._returnResult({ data: null, error })
+      }
+      throw error
+    }
+  }
+
+  /**
+   * Register a passkey for the current authenticated user. Handles the full WebAuthn ceremony:
+   * 1. Fetches registration challenge from server
+   * 2. Prompts user via navigator.credentials.create()
+   * 3. Verifies credential with server
+   *
+   * Requires an active session.
+   */
+  async registerPasskey(
+    credentials?: RegisterPasskeyCredentials
+  ): Promise<AuthPasskeyRegistrationVerifyResponse> {
+    try {
+      if (!browserSupportsWebAuthn()) {
+        return this._returnResult({
+          data: null,
+          error: new AuthUnknownError('Browser does not support WebAuthn', null),
+        })
+      }
+
+      // 1. Get challenge options from server
+      const { data: options, error: optionsError } = await this._startPasskeyRegistration()
+      if (optionsError || !options) {
+        return this._returnResult({ data: null, error: optionsError })
+      }
+
+      // 2. Deserialize and prompt user via browser WebAuthn API
+      const publicKeyOptions = deserializeCredentialCreationOptions(options.options)
+      const signal = credentials?.options?.signal ?? webAuthnAbortService.createNewAbortSignal()
+      const { data: credential, error: credentialError } = await createCredential({
+        publicKey: publicKeyOptions,
+        signal,
+      })
+      if (credentialError || !credential) {
+        return this._returnResult({
+          data: null,
+          error: credentialError ?? new AuthUnknownError('WebAuthn ceremony failed', null),
+        })
+      }
+
+      // 3. Serialize and verify with server
+      const serialized = serializeCredentialCreationResponse(credential)
+      return this._verifyPasskeyRegistration({
+        challengeId: options.challenge_id,
+        credential: serialized,
+      })
+    } catch (error) {
+      if (isAuthError(error)) {
+        return this._returnResult({ data: null, error })
+      }
+      throw error
+    }
+  }
+
+  /**
+   * Start passkey registration for the current authenticated user.
+   * Returns WebAuthn credential creation options to pass to navigator.credentials.create().
+   */
+  private async _startPasskeyRegistration(): Promise<AuthPasskeyRegistrationOptionsResponse> {
+    try {
+      return await this._useSession(async (result) => {
+        const {
+          data: { session },
+          error: sessionError,
+        } = result
+        if (sessionError) {
+          return this._returnResult({ data: null, error: sessionError })
+        }
+        if (!session) {
+          return this._returnResult({ data: null, error: new AuthSessionMissingError() })
+        }
+        const { data, error } = await _request(
+          this.fetch,
+          'POST',
+          `${this.url}/passkeys/registration/options`,
+          {
+            headers: this.headers,
+            jwt: session.access_token,
+            body: {},
+          }
+        )
+        if (error) {
+          return this._returnResult({ data: null, error })
+        }
+        return this._returnResult({ data, error: null })
+      })
+    } catch (error) {
+      if (isAuthError(error)) {
+        return this._returnResult({ data: null, error })
+      }
+      throw error
+    }
+  }
+
+  /**
+   * Verify passkey registration with the credential response.
+   * The credentialResponse should be the serialized output of navigator.credentials.create().
+   */
+  private async _verifyPasskeyRegistration(
+    params: VerifyPasskeyRegistrationParams
+  ): Promise<AuthPasskeyRegistrationVerifyResponse> {
+    try {
+      return await this._useSession(async (result) => {
+        const {
+          data: { session },
+          error: sessionError,
+        } = result
+        if (sessionError) {
+          return this._returnResult({ data: null, error: sessionError })
+        }
+        if (!session) {
+          return this._returnResult({ data: null, error: new AuthSessionMissingError() })
+        }
+        const { data, error } = await _request(
+          this.fetch,
+          'POST',
+          `${this.url}/passkeys/registration/verify`,
+          {
+            headers: this.headers,
+            jwt: session.access_token,
+            body: {
+              challenge_id: params.challengeId,
+              credential: params.credential,
+            },
+          }
+        )
+        if (error) {
+          return this._returnResult({ data: null, error })
+        }
+        return this._returnResult({ data, error: null })
+      })
+    } catch (error) {
+      if (isAuthError(error)) {
+        return this._returnResult({ data: null, error })
+      }
+      throw error
+    }
+  }
+
+  /**
+   * Start passkey authentication.
+   * Returns WebAuthn credential request options to pass to navigator.credentials.get().
+   */
+  private async _startPasskeyAuthentication(
+    params?: StartPasskeyAuthenticationParams
+  ): Promise<AuthPasskeyAuthenticationOptionsResponse> {
+    try {
+      const { data, error } = await _request(
+        this.fetch,
+        'POST',
+        `${this.url}/passkeys/authentication/options`,
+        {
+          headers: this.headers,
+          body: {
+            gotrue_meta_security: { captcha_token: params?.options?.captchaToken },
+          },
+        }
+      )
+      if (error) {
+        return this._returnResult({ data: null, error })
+      }
+      return this._returnResult({ data, error: null })
+    } catch (error) {
+      if (isAuthError(error)) {
+        return this._returnResult({ data: null, error })
+      }
+      throw error
+    }
+  }
+
+  /**
+   * Verify passkey authentication and create a session.
+   * The credential should be the serialized output of navigator.credentials.get().
+   */
+  private async _verifyPasskeyAuthentication(
+    params: VerifyPasskeyAuthenticationParams
+  ): Promise<AuthPasskeyAuthenticationVerifyResponse> {
+    try {
+      const { data, error } = await _request(
+        this.fetch,
+        'POST',
+        `${this.url}/passkeys/authentication/verify`,
+        {
+          headers: this.headers,
+          body: {
+            challenge_id: params.challengeId,
+            credential: params.credential,
+          },
+          xform: _sessionResponse,
+        }
+      )
+      if (error) {
+        return this._returnResult({ data: null, error })
+      }
+      if (data.session) {
+        await this._saveSession(data.session)
+        await this._notifyAllSubscribers('SIGNED_IN', data.session)
+      }
+      return this._returnResult({ data, error: null })
+    } catch (error) {
+      if (isAuthError(error)) {
+        return this._returnResult({ data: null, error })
+      }
+      throw error
+    }
+  }
+
+  /**
+   * List all passkeys for the current user.
+   */
+  private async _listPasskeys(): Promise<AuthPasskeyListResponse> {
+    try {
+      return await this._useSession(async (result) => {
+        const {
+          data: { session },
+          error: sessionError,
+        } = result
+        if (sessionError) {
+          return this._returnResult({ data: null, error: sessionError })
+        }
+        if (!session) {
+          return this._returnResult({ data: null, error: new AuthSessionMissingError() })
+        }
+        const { data, error } = await _request(this.fetch, 'GET', `${this.url}/passkeys`, {
+          headers: this.headers,
+          jwt: session.access_token,
+          xform: (data: any) => ({ data, error: null }),
+        })
+        if (error) {
+          return this._returnResult({ data: null, error })
+        }
+        return this._returnResult({ data, error: null })
+      })
+    } catch (error) {
+      if (isAuthError(error)) {
+        return this._returnResult({ data: null, error })
+      }
+      throw error
+    }
+  }
+
+  /**
+   * Update a passkey.
+   */
+  private async _updatePasskey(params: PasskeyUpdateParams): Promise<AuthPasskeyUpdateResponse> {
+    try {
+      return await this._useSession(async (result) => {
+        const {
+          data: { session },
+          error: sessionError,
+        } = result
+        if (sessionError) {
+          return this._returnResult({ data: null, error: sessionError })
+        }
+        if (!session) {
+          return this._returnResult({ data: null, error: new AuthSessionMissingError() })
+        }
+        const { data, error } = await _request(
+          this.fetch,
+          'PATCH',
+          `${this.url}/passkeys/${params.passkeyId}`,
+          {
+            headers: this.headers,
+            jwt: session.access_token,
+            body: { friendly_name: params.friendlyName },
+          }
+        )
+        if (error) {
+          return this._returnResult({ data: null, error })
+        }
+        return this._returnResult({ data, error: null })
+      })
+    } catch (error) {
+      if (isAuthError(error)) {
+        return this._returnResult({ data: null, error })
+      }
+      throw error
+    }
+  }
+
+  /**
+   * Delete a passkey.
+   */
+  private async _deletePasskey(params: PasskeyDeleteParams): Promise<AuthPasskeyDeleteResponse> {
+    try {
+      return await this._useSession(async (result) => {
+        const {
+          data: { session },
+          error: sessionError,
+        } = result
+        if (sessionError) {
+          return this._returnResult({ data: null, error: sessionError })
+        }
+        if (!session) {
+          return this._returnResult({ data: null, error: new AuthSessionMissingError() })
+        }
+        const { error } = await _request(
+          this.fetch,
+          'DELETE',
+          `${this.url}/passkeys/${params.passkeyId}`,
+          {
+            headers: this.headers,
+            jwt: session.access_token,
+            noResolveJson: true,
+          }
+        )
+        if (error) {
+          return this._returnResult({ data: null, error })
+        }
+        return this._returnResult({ data: null, error: null })
+      })
     } catch (error) {
       if (isAuthError(error)) {
         return this._returnResult({ data: null, error })

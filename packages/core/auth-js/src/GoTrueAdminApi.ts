@@ -32,6 +32,11 @@ import {
   ListCustomProvidersParams,
   CustomProviderResponse,
   CustomProviderListResponse,
+  GoTrueAdminPasskeyApi,
+  AuthPasskeyAdminListParams,
+  AuthPasskeyAdminDeleteParams,
+  AuthPasskeyListResponse,
+  AuthPasskeyDeleteResponse,
 } from './lib/types'
 import { AuthError, isAuthError } from './lib/errors'
 
@@ -47,6 +52,9 @@ export default class GoTrueAdminApi {
 
   /** Contains all custom OIDC/OAuth provider administration methods. */
   customProviders: GoTrueAdminCustomProvidersApi
+
+  /** Contains all passkey administration methods. */
+  passkey: GoTrueAdminPasskeyApi
 
   protected url: string
   protected headers: {
@@ -107,6 +115,10 @@ export default class GoTrueAdminApi {
       getProvider: this._getCustomProvider.bind(this),
       updateProvider: this._updateCustomProvider.bind(this),
       deleteProvider: this._deleteCustomProvider.bind(this),
+    }
+    this.passkey = {
+      listPasskeys: this._adminListPasskeys.bind(this),
+      deletePasskey: this._adminDeletePasskey.bind(this),
     }
   }
 
@@ -1169,6 +1181,58 @@ export default class GoTrueAdminApi {
         headers: this.headers,
         noResolveJson: true,
       })
+      return { data: null, error: null }
+    } catch (error) {
+      if (isAuthError(error)) {
+        return { data: null, error }
+      }
+      throw error
+    }
+  }
+
+  /**
+   * Lists all passkeys for a user.
+   *
+   * This function should only be called on a server. Never expose your secret key in the browser.
+   */
+  private async _adminListPasskeys(
+    params: AuthPasskeyAdminListParams
+  ): Promise<AuthPasskeyListResponse> {
+    validateUUID(params.userId)
+
+    try {
+      return await _request(
+        this.fetch,
+        'GET',
+        `${this.url}/admin/users/${params.userId}/passkeys`,
+        { headers: this.headers, xform: (data: any) => ({ data, error: null }) }
+      )
+    } catch (error) {
+      if (isAuthError(error)) {
+        return { data: null, error }
+      }
+      throw error
+    }
+  }
+
+  /**
+   * Deletes a user's passkey.
+   *
+   * This function should only be called on a server. Never expose your secret key in the browser.
+   */
+  private async _adminDeletePasskey(
+    params: AuthPasskeyAdminDeleteParams
+  ): Promise<AuthPasskeyDeleteResponse> {
+    validateUUID(params.userId)
+    validateUUID(params.passkeyId)
+
+    try {
+      await _request(
+        this.fetch,
+        'DELETE',
+        `${this.url}/admin/users/${params.userId}/passkeys/${params.passkeyId}`,
+        { headers: this.headers, noResolveJson: true }
+      )
       return { data: null, error: null }
     } catch (error) {
       if (isAuthError(error)) {
