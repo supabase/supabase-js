@@ -1,6 +1,6 @@
 name: CI (Pull Requests)
 # This workflow runs on pull requests only.
-# For master branch CI, see publish.yml which calls the same reusable workflows.
+# For develop/master branch CI, see publish.yml which calls the same reusable workflows.
 
 on:
   pull_request:

@@ -1,0 +1,84 @@
+name: Sync master into develop
+
+# Syncs master into develop after every push to master (e.g. merged fix PRs).
+# On conflict, notifies #team-sdk on Slack.
+# Based on platform's deploy_production_prep.yml.
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sync-develop
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    name: Sync master into develop
+    runs-on: ubuntu-latest
+    # Skip sync when the push is a patchback merge — that commit already exists on develop
+    if: ${{ !contains(github.event.head_commit.message, '[patchback]') }}
+    steps:
+      - name: Generate GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@f8d387b68d61c58ab83c6c016672934102569859 # v3.0.0
+        with:
+          app-id: ${{ secrets.APP_ID }}
+          private-key: ${{ secrets.PRIVATE_KEY }}
+
+      - name: Checkout develop
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        with:
+          ref: develop
+          fetch-depth: 0
+          token: ${{ steps.app-token.outputs.token }}
+
+      - name: Merge master into develop
+        id: merge
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git fetch origin master
+          if git merge-base --is-ancestor origin/master HEAD; then
+            echo "develop is already up to date with master"
+          else
+            if git merge origin/master --no-edit; then
+              git push origin develop
+            else
+              echo "merge-failed=true" >> $GITHUB_OUTPUT
+              exit 1
+            fi
+          fi
+
+  notify-sync-failure:
+    name: Notify Sync Failure
+    needs: [sync]
+    if: always() && needs.sync.result == 'failure'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Notify SDK team
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_CLIENT_LIBS_WEBHOOK }}
+          RUN_URL: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          COMPARE_URL: https://github.com/${{ github.repository }}/compare/develop...master
+        run: |
+          curl -sS --fail-with-body -X POST "$SLACK_WEBHOOK" \
+            -H 'Content-Type: application/json' \
+            -d "$(cat <<EOF
+          {
+            "channel": "#team-sdk",
+            "username": "gha-failures-notifier",
+            "icon_emoji": ":warning:",
+            "attachments": [{
+              "color": "danger",
+              "title": "Branch Sync Failed (supabase-js)",
+              "text": "Failed to merge \`master\` into \`develop\`.\n\nThis likely means there are merge conflicts that need manual resolution.\n<${COMPARE_URL}|Compare branches> · <${RUN_URL}|View logs>",
+              "footer": "sync-develop.yml"
+            }]
+          }
+          EOF
+              )"
