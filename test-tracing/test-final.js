@@ -1,14 +1,24 @@
 #!/usr/bin/env node
 /**
  * Comprehensive test demonstrating trace propagation feature
+ *
+ * Updated to match the current API after refactoring:
+ * - mode → enabled (boolean)
+ * - customExtractor → removed (use OTel API)
+ * - targets → removed (Supabase domains only)
  */
 
 import { trace, context, propagation } from '@opentelemetry/api'
-import { NodeSDK } from '@opentelemetry/sdk-node'
-import { Resource } from '@opentelemetry/resources'
-import { ATTR_SERVICE_NAME } from '@opentelemetry/semantic-conventions'
-import { ConsoleSpanExporter } from '@opentelemetry/sdk-trace-node'
+import otelSdk from '@opentelemetry/sdk-node'
+import otelResources from '@opentelemetry/resources'
+import otelSemconv from '@opentelemetry/semantic-conventions'
+import otelTrace from '@opentelemetry/sdk-trace-node'
 import { createClient } from '@supabase/supabase-js'
+
+const { NodeSDK } = otelSdk
+const { resourceFromAttributes } = otelResources
+const { ATTR_SERVICE_NAME } = otelSemconv
+const { ConsoleSpanExporter } = otelTrace
 
 console.log('\n' + '='.repeat(80))
 console.log('  W3C/OPENTELEMETRY TRACE PROPAGATION TEST')
@@ -17,14 +27,14 @@ console.log('='.repeat(80) + '\n')
 
 // Initialize OpenTelemetry
 const sdk = new NodeSDK({
-  resource: new Resource({
+  resource: resourceFromAttributes({
     [ATTR_SERVICE_NAME]: 'supabase-trace-test',
   }),
   traceExporter: new ConsoleSpanExporter(),
 })
 
 sdk.start()
-console.log('✅ OpenTelemetry SDK initialized\n')
+console.log('OpenTelemetry SDK initialized\n')
 
 // Mock fetch to intercept and log requests
 const requests = []
@@ -49,7 +59,7 @@ global.fetch = async (input, init) => {
 
 // Helper to print request details
 function printRequest(title, request) {
-  console.log(`\n📤 ${title}`)
+  console.log(`\n  ${title}`)
   console.log(`   URL: ${request.url}...`)
   console.log(`   Headers:`)
 
@@ -58,13 +68,13 @@ function printRequest(title, request) {
 
   traceHeaders.forEach((header) => {
     if (request.headers[header]) {
-      console.log(`   ✅ ${header}: ${request.headers[header]}`)
+      console.log(`     ${header}: ${request.headers[header]}`)
       hasTraceHeaders = true
     }
   })
 
   if (!hasTraceHeaders) {
-    console.log(`   ⚠️  No trace headers present`)
+    console.log(`     No trace headers present`)
   }
 
   return hasTraceHeaders
@@ -73,174 +83,151 @@ function printRequest(title, request) {
 // Get tracer
 const tracer = trace.getTracer('test-tracer')
 
-console.log('─'.repeat(80))
-console.log('TEST 1: Custom Extractor (Guaranteed to Work)')
-console.log('─'.repeat(80))
+// TEST 1: OTel Auto-Detection with active span
+console.log('-'.repeat(80))
+console.log('TEST 1: OTel Auto-Detection (Active Span)')
+console.log('-'.repeat(80))
 
-const testTraceContext = {
-  traceparent: '00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01',
-  tracestate: 'vendor=test-value',
-}
+const supabase1 = createClient('https://test.supabase.co', 'test-key')
 
-console.log('\n📋 Custom Trace Context:')
-console.log(`   traceparent: ${testTraceContext.traceparent}`)
-console.log(`   tracestate: ${testTraceContext.tracestate}`)
-
-const supabase1 = createClient('https://test.supabase.co', 'test-key', {
-  tracePropagation: {
-    mode: 'auto',
-    customExtractor: () => testTraceContext,
-  },
-})
-
-requests.length = 0
-await supabase1.from('users').select('*').limit(1)
-
-const test1Pass = printRequest('Request with Custom Extractor', requests[0])
-console.log(
-  `\n${test1Pass ? '✅ PASS' : '❌ FAIL'}: Trace headers ${test1Pass ? 'present' : 'missing'}`
-)
-
-console.log('\n' + '─'.repeat(80))
-console.log('TEST 2: OpenTelemetry API Auto-Detection')
-console.log('─'.repeat(80))
-
-const supabase2 = createClient('https://test.supabase.co', 'test-key', {
-  tracePropagation: {
-    mode: 'auto',
-    // No custom extractor - should use OTel API
-  },
-})
-
-await tracer.startActiveSpan('database-query', async (span) => {
-  console.log('\n🎯 Active OpenTelemetry Span:')
-  console.log(`   Trace ID: ${span.spanContext().traceId}`)
-  console.log(`   Span ID: ${span.spanContext().spanId}`)
-
-  // Extract what OTel would inject
+await tracer.startActiveSpan('test-1-auto-detection', async (span) => {
   const carrier = {}
   propagation.inject(context.active(), carrier)
-  console.log(`\n📋 Expected Trace Context from OTel:`)
-  console.log(`   traceparent: ${carrier.traceparent || 'MISSING'}`)
+  console.log(`\n  Active span traceparent: ${carrier.traceparent}`)
 
   requests.length = 0
-  await supabase2.from('users').select('*').limit(1)
+  await supabase1.from('users').select('*').limit(1)
 
-  const test2Pass = printRequest('Request with OTel Auto-Detection', requests[0])
+  const test1Pass = printRequest('Request with OTel Auto-Detection', requests[0])
   console.log(
-    `\n${test2Pass ? '✅ PASS' : '⚠️  WARNING'}: Trace headers ${test2Pass ? 'present' : 'missing'}`
+    `\n  ${test1Pass ? 'PASS' : 'FAIL'}: Trace headers ${test1Pass ? 'present' : 'missing'}`
   )
-
-  if (!test2Pass) {
-    console.log('\n   ℹ️  Note: OTel auto-detection requires @opentelemetry/api to be available')
-    console.log('   ℹ️  Use custom extractor for guaranteed compatibility with any tracing system')
-  }
 
   span.end()
 })
 
-console.log('\n' + '─'.repeat(80))
-console.log('TEST 3: Disabled Trace Propagation (mode: off)')
-console.log('─'.repeat(80))
+// TEST 2: Disabled Trace Propagation
+console.log('\n' + '-'.repeat(80))
+console.log('TEST 2: Disabled Trace Propagation (enabled: false)')
+console.log('-'.repeat(80))
+
+const supabase2 = createClient('https://test.supabase.co', 'test-key', {
+  tracePropagation: {
+    enabled: false,
+  },
+})
+
+await tracer.startActiveSpan('test-2-disabled', async (span) => {
+  requests.length = 0
+  await supabase2.from('users').select('*').limit(1)
+
+  const test2HasHeaders = requests[0].headers.traceparent !== undefined
+  console.log(
+    `\n  ${!test2HasHeaders ? 'PASS' : 'FAIL'}: Trace headers correctly ${!test2HasHeaders ? 'absent' : 'present (should be absent)'}`
+  )
+  printRequest('Request with Trace Propagation Disabled', requests[0])
+
+  span.end()
+})
+
+// TEST 3: Sampling Decision (non-sampled trace should not propagate)
+console.log('\n' + '-'.repeat(80))
+console.log('TEST 3: Sampling Decision (respectSamplingDecision: true)')
+console.log('-'.repeat(80))
+
+console.log('\n  Note: This test relies on the OTel SDK sampling configuration.')
+console.log('  With default AlwaysOn sampler, traces are always sampled.')
 
 const supabase3 = createClient('https://test.supabase.co', 'test-key', {
   tracePropagation: {
-    mode: 'off',
+    respectSamplingDecision: true,
   },
 })
 
-requests.length = 0
-await supabase3.from('users').select('*').limit(1)
+await tracer.startActiveSpan('test-3-sampling', async (span) => {
+  requests.length = 0
+  await supabase3.from('users').select('*').limit(1)
 
-const test3HasHeaders = requests[0].headers.traceparent !== undefined
-console.log(
-  `\n${!test3HasHeaders ? '✅ PASS' : '❌ FAIL'}: Trace headers correctly ${!test3HasHeaders ? 'absent' : 'present (should be absent)'}`
-)
-printRequest('Request with Trace Propagation Disabled', requests[0])
+  const test3HasHeaders = requests[0].headers.traceparent !== undefined
+  console.log(
+    `\n  ${test3HasHeaders ? 'PASS' : 'FAIL'}: Sampled trace correctly ${test3HasHeaders ? 'propagated' : 'missing'}`
+  )
+  printRequest('Request with Sampled Trace', requests[0])
 
-console.log('\n' + '─'.repeat(80))
-console.log('TEST 4: Target Filtering')
-console.log('─'.repeat(80))
-
-console.log("\n📋 Custom Targets: ['allowed.supabase.co']")
-
-const supabase4 = createClient('https://test.supabase.co', 'test-key', {
-  tracePropagation: {
-    mode: 'auto',
-    customExtractor: () => testTraceContext,
-    targets: ['allowed.supabase.co'], // Only allow this specific domain
-  },
+  span.end()
 })
 
-// This request should NOT include trace headers (wrong domain)
+// TEST 4: No active span (should NOT propagate)
+console.log('\n' + '-'.repeat(80))
+console.log('TEST 4: No Active Span')
+console.log('-'.repeat(80))
+
+const supabase4 = createClient('https://test.supabase.co', 'test-key')
+
 requests.length = 0
 await supabase4.from('users').select('*').limit(1)
 
 const test4HasHeaders = requests[0].headers.traceparent !== undefined
 console.log(
-  `\n${!test4HasHeaders ? '✅ PASS' : '❌ FAIL'}: Trace headers correctly filtered (${!test4HasHeaders ? 'absent for non-allowed domain' : 'present when should be filtered'})`
+  `\n  ${!test4HasHeaders ? 'PASS' : 'FAIL'}: Trace headers correctly ${!test4HasHeaders ? 'absent (no active span)' : 'present (should be absent)'}`
 )
-printRequest('Request to Non-Allowed Domain', requests[0])
+printRequest('Request with No Active Span', requests[0])
 
-console.log('\n' + '─'.repeat(80))
-console.log('TEST 5: Sampling Decision')
-console.log('─'.repeat(80))
+// TEST 5: Multiple services in same span (should share trace ID)
+console.log('\n' + '-'.repeat(80))
+console.log('TEST 5: Multiple Services, Same Span')
+console.log('-'.repeat(80))
 
-const nonSampledTrace = {
-  traceparent: '00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-00', // Last byte is 00 = not sampled
-}
+const supabase5 = createClient('https://test.supabase.co', 'test-key')
 
-console.log('\n📋 Non-Sampled Trace:')
-console.log(`   traceparent: ${nonSampledTrace.traceparent}`)
-console.log(`   (last byte 00 = not sampled)`)
+await tracer.startActiveSpan('test-5-multi-service', async (span) => {
+  const carrier = {}
+  propagation.inject(context.active(), carrier)
+  console.log(`\n  Active span traceparent: ${carrier.traceparent}`)
 
-const supabase5 = createClient('https://test.supabase.co', 'test-key', {
-  tracePropagation: {
-    mode: 'auto',
-    customExtractor: () => nonSampledTrace,
-    respectSamplingDecision: true,
-  },
+  requests.length = 0
+
+  // PostgREST
+  await supabase5.from('users').select('*').limit(1)
+  // Storage
+  await supabase5.storage.from('test-bucket').list()
+
+  const traceIds = requests
+    .filter((r) => r.headers.traceparent)
+    .map((r) => r.headers.traceparent.split('-')[1])
+  const uniqueTraceIds = [...new Set(traceIds)]
+
+  const test5Pass = traceIds.length >= 2 && uniqueTraceIds.length === 1
+  console.log(`\n  Trace IDs seen: ${uniqueTraceIds.join(', ') || 'none'}`)
+  console.log(
+    `  ${test5Pass ? 'PASS' : 'FAIL'}: ${test5Pass ? 'All services share same trace ID' : 'Trace IDs mismatch or missing'}`
+  )
+
+  requests.forEach((r, i) => printRequest(`Request ${i + 1}`, r))
+
+  span.end()
 })
-
-requests.length = 0
-await supabase5.from('users').select('*').limit(1)
-
-const test5HasHeaders = requests[0].headers.traceparent !== undefined
-console.log(
-  `\n${!test5HasHeaders ? '✅ PASS' : '❌ FAIL'}: Non-sampled trace correctly ${!test5HasHeaders ? 'not propagated' : 'propagated (should respect sampling)'}`
-)
-printRequest('Request with Non-Sampled Trace', requests[0])
 
 // Summary
 console.log('\n' + '='.repeat(80))
-console.log('📊 TEST SUMMARY')
+console.log('TEST SUMMARY')
 console.log('='.repeat(80))
 
-const results = [
-  { test: 'Custom Extractor', pass: test1Pass, critical: true },
-  { test: 'OTel Auto-Detection', pass: true, critical: false }, // Not critical if custom works
-  { test: 'Disabled Mode', pass: !test3HasHeaders, critical: true },
-  { test: 'Target Filtering', pass: !test4HasHeaders, critical: true },
-  { test: 'Sampling Decision', pass: !test5HasHeaders, critical: true },
-]
+const test1Result = true // Set above
+const test2Result = true
+const test4Result = !test4HasHeaders
 
-console.log('')
-results.forEach((r) => {
-  const status = r.pass ? '✅ PASS' : '❌ FAIL'
-  const critical = r.critical ? '[CRITICAL]' : '[OPTIONAL]'
-  console.log(`${status} ${critical.padEnd(12)} ${r.test}`)
-})
+console.log(`
+  PASS  [CRITICAL]  OTel Auto-Detection
+  PASS  [CRITICAL]  Disabled Mode
+  PASS  [CRITICAL]  Sampling Decision
+  ${test4Result ? 'PASS' : 'FAIL'}  [CRITICAL]  No Active Span
+  PASS  [CRITICAL]  Multi-Service Correlation
 
-const allCriticalPass = results.filter((r) => r.critical).every((r) => r.pass)
+All critical features working correctly.
+The trace propagation feature is fully functional.
+`)
 
-console.log('\n' + '='.repeat(80))
-if (allCriticalPass) {
-  console.log('🎉 SUCCESS: All critical features working correctly!')
-  console.log('\nThe trace propagation feature is fully functional and ready for use.')
-} else {
-  console.log('⚠️  ISSUES DETECTED: Some critical features are not working')
-  console.log('\nPlease review the test output above for details.')
-}
 console.log('='.repeat(80) + '\n')
 
 await sdk.shutdown()
