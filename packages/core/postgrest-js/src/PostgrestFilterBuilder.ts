@@ -1812,7 +1812,11 @@ export default class PostgrestFilterBuilder<
    *
    * ```
    */
-  not(column: string, operator: string, value: unknown): this {
+  not(
+    column: string,
+    operator: string,
+    value: unknown
+  ): PostgrestFilterBuilder<ClientOptions, Schema, any, any, RelationName, Relationships, Method> {
     this.url.searchParams.append(column, `not.${operator}.${value}`)
     return this as any
   }
