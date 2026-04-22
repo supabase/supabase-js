@@ -367,6 +367,56 @@ describe('Supabase Integration Tests', () => {
       // Socket was never disconnected — channelB joined on the existing connection
       expect(supabase.realtime.isConnected()).toBe(true)
     }, 20000)
+
+    test('socket disconnects after removeChannel when no channels remain', async () => {
+      await new Promise<void>((resolve, reject) => {
+        const timeout = setTimeout(
+          () => reject(new Error('Timeout waiting for subscription')),
+          8000
+        )
+        channel.subscribe((status) => {
+          if (status === 'SUBSCRIBED') {
+            clearTimeout(timeout)
+            resolve()
+          }
+        })
+      })
+
+      expect(supabase.realtime.isConnected()).toBe(true)
+
+      await supabase.removeChannel(channel)
+      // Deferred disconnect is scheduled — socket still open
+      expect(supabase.realtime.isConnected()).toBe(true)
+
+      // Wait for deferred disconnect (2 * heartbeatIntervalMs = 1000 ms)
+      await new Promise((resolve) => setTimeout(resolve, 1200))
+      expect(supabase.realtime.isConnected()).toBe(false)
+    }, 15000)
+
+    test('socket disconnects after channel.unsubscribe() when no channels remain', async () => {
+      await new Promise<void>((resolve, reject) => {
+        const timeout = setTimeout(
+          () => reject(new Error('Timeout waiting for subscription')),
+          8000
+        )
+        channel.subscribe((status) => {
+          if (status === 'SUBSCRIBED') {
+            clearTimeout(timeout)
+            resolve()
+          }
+        })
+      })
+
+      expect(supabase.realtime.isConnected()).toBe(true)
+
+      await channel.unsubscribe()
+      // Deferred disconnect is scheduled — socket still open
+      expect(supabase.realtime.isConnected()).toBe(true)
+
+      // Wait for deferred disconnect (2 * heartbeatIntervalMs = 1000 ms)
+      await new Promise((resolve) => setTimeout(resolve, 1200))
+      expect(supabase.realtime.isConnected()).toBe(false)
+    }, 15000)
   })
 })
 
