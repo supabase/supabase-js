@@ -321,9 +321,13 @@ export default abstract class PostgrestBuilder<
             ),
             signal: this.signal,
           })
-        } catch (fetchError: any) {
+        } catch (fetchError) {
           // Never retry aborted requests
-          if (fetchError?.name === 'AbortError' || fetchError?.code === 'ABORT_ERR') {
+          if (
+            fetchError instanceof Error &&
+            (fetchError.name === 'AbortError' ||
+              ('code' in fetchError && (fetchError as { code?: string }).code === 'ABORT_ERR'))
+          ) {
             throw fetchError
           }
 

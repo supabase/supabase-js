@@ -50,7 +50,7 @@ describe('WebSocketFactory', () => {
     test('detects native WebSocket', () => {
       const env = (WebSocketFactory as any).detectEnvironment()
       expect(env.type).toBe('native')
-      expect(env.constructor).toBe(MockWebSocket)
+      expect(env.wsConstructor).toBe(MockWebSocket)
     })
 
     test('checks if WebSocket is supported', () => {
@@ -68,7 +68,7 @@ describe('WebSocketFactory', () => {
     test('detects globalThis WebSocket', () => {
       const env = (WebSocketFactory as any).detectEnvironment()
       expect(env.type).toBe('native')
-      expect(env.constructor).toBe(MockWebSocket)
+      expect(env.wsConstructor).toBe(MockWebSocket)
     })
 
     afterEach(() => {
@@ -87,7 +87,7 @@ describe('WebSocketFactory', () => {
     test('detects global WebSocket', () => {
       const env = (WebSocketFactory as any).detectEnvironment()
       expect(env.type).toBe('native')
-      expect(env.constructor).toBe(MockWebSocket)
+      expect(env.wsConstructor).toBe(MockWebSocket)
     })
 
     afterEach(() => {
@@ -229,7 +229,7 @@ describe('WebSocketFactory', () => {
 
       const env = (WebSocketFactory as any).detectEnvironment()
       expect(env.type).toBe('native')
-      expect(env.constructor).toBe(MockWebSocket)
+      expect(env.wsConstructor).toBe(MockWebSocket)
 
       delete (globalThis as any).WebSocket
     })
@@ -296,7 +296,7 @@ describe('WebSocketFactory', () => {
 
       const env = (WebSocketFactory as any).detectEnvironment()
       expect(env.type).toBe('native')
-      expect(env.constructor).toBe(MockWebSocket)
+      expect(env.wsConstructor).toBe(MockWebSocket)
     })
 
     test('handles missing native WebSocket in Node.js 22+', () => {

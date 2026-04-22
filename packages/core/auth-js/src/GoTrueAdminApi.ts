@@ -860,7 +860,7 @@ export default class GoTrueAdminApi {
         `${this.url}/admin/users/${params.userId}/factors`,
         {
           headers: this.headers,
-          xform: (factors: any) => {
+          xform: (factors: unknown) => {
             return { data: { factors }, error: null }
           },
         }
@@ -953,7 +953,7 @@ export default class GoTrueAdminApi {
       return await _request(this.fetch, 'POST', `${this.url}/admin/oauth/clients`, {
         body: params,
         headers: this.headers,
-        xform: (client: any) => {
+        xform: (client: unknown) => {
           return { data: client, error: null }
         },
       })
@@ -976,7 +976,7 @@ export default class GoTrueAdminApi {
     try {
       return await _request(this.fetch, 'GET', `${this.url}/admin/oauth/clients/${clientId}`, {
         headers: this.headers,
-        xform: (client: any) => {
+        xform: (client: unknown) => {
           return { data: client, error: null }
         },
       })
@@ -1003,7 +1003,7 @@ export default class GoTrueAdminApi {
       return await _request(this.fetch, 'PUT', `${this.url}/admin/oauth/clients/${clientId}`, {
         body: params,
         headers: this.headers,
-        xform: (client: any) => {
+        xform: (client: unknown) => {
           return { data: client, error: null }
         },
       })
@@ -1084,8 +1084,9 @@ export default class GoTrueAdminApi {
       return await _request(this.fetch, 'GET', `${this.url}/admin/custom-providers`, {
         headers: this.headers,
         query,
-        xform: (data: any) => {
-          return { data: { providers: data?.providers ?? [] }, error: null }
+        xform: (data: unknown) => {
+          const d = data as Record<string, any>
+          return { data: { providers: d?.providers ?? [] }, error: null }
         },
       })
     } catch (error) {
@@ -1114,7 +1115,7 @@ export default class GoTrueAdminApi {
       return await _request(this.fetch, 'POST', `${this.url}/admin/custom-providers`, {
         body: params,
         headers: this.headers,
-        xform: (provider: any) => {
+        xform: (provider: unknown) => {
           return { data: provider, error: null }
         },
       })
@@ -1135,7 +1136,7 @@ export default class GoTrueAdminApi {
     try {
       return await _request(this.fetch, 'GET', `${this.url}/admin/custom-providers/${identifier}`, {
         headers: this.headers,
-        xform: (provider: any) => {
+        xform: (provider: unknown) => {
           return { data: provider, error: null }
         },
       })
@@ -1165,7 +1166,7 @@ export default class GoTrueAdminApi {
       return await _request(this.fetch, 'PUT', `${this.url}/admin/custom-providers/${identifier}`, {
         body: params,
         headers: this.headers,
-        xform: (provider: any) => {
+        xform: (provider: unknown) => {
           return { data: provider, error: null }
         },
       })
