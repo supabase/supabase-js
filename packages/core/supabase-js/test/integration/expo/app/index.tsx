@@ -8,19 +8,46 @@ const TEST_ANON_KEY =
 
 interface IndexProps {
   vsn?: string
+  throttleTest?: boolean
 }
 
-export default function Index({ vsn = '1.0.0' }: IndexProps) {
+export default function Index({ vsn = '1.0.0', throttleTest = false }: IndexProps) {
   const [realtimeStatus, setRealtimeStatus] = useState<string | null>(null)
   const [receivedMessage, setReceivedMessage] = useState<string | null>(null)
+  const [throttleSubscribed, setThrottleSubscribed] = useState(0)
+  const throttleChannelCount = 5
 
   useEffect(() => {
     const supabase = createClient(SUPABASE_URL, TEST_ANON_KEY, {
       realtime: {
         heartbeatIntervalMs: 500,
         vsn: vsn,
+        ...(throttleTest ? { subscriptionWarnings: { joinRatePerSecond: 3, joinDelayMs: 50 } } : {}),
       }
     })
+
+    if (throttleTest) {
+      const channels = Array.from({ length: throttleChannelCount }, (_, i) =>
+        supabase.channel(`throttle-expo-${vsn}-${i}`, {
+          config: { broadcast: { ack: true, self: true } }
+        })
+      )
+
+      let count = 0
+      channels.forEach((channel) => {
+        channel.subscribe((status) => {
+          if (status === 'SUBSCRIBED') {
+            count++
+            setThrottleSubscribed(count)
+          }
+        })
+      })
+
+      return () => {
+        channels.forEach((ch) => ch.unsubscribe())
+        supabase.realtime.disconnect()
+      }
+    }
 
     const channel = supabase.channel(`realtime:public:todos-${vsn}`, {
       config: { broadcast: { ack: true, self: true } }
@@ -50,7 +77,7 @@ export default function Index({ vsn = '1.0.0' }: IndexProps) {
       channel.unsubscribe()
       supabase.realtime.disconnect()
     }
-  }, [vsn])
+  }, [vsn, throttleTest])
 
   return (
     <View
@@ -64,6 +91,8 @@ export default function Index({ vsn = '1.0.0' }: IndexProps) {
       <Text testID="vsn">{vsn}</Text>
       <Text testID="realtime_status">{realtimeStatus || ''}</Text>
       <Text testID="received_message">{receivedMessage || ''}</Text>
+      <Text testID="throttle_subscribed">{String(throttleSubscribed)}</Text>
+      <Text testID="throttle_channel_count">{String(throttleChannelCount)}</Text>
     </View>
   )
 }

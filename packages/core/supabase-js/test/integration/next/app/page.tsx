@@ -4,15 +4,44 @@ import { Suspense, useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useSearchParams } from 'next/navigation'
 
+const THROTTLE_CHANNEL_COUNT = 5
+
 function HomeContent() {
   const searchParams = useSearchParams()
   const vsn = searchParams.get('vsn') || '1.0.0'
+  const throttleTest = searchParams.get('throttle') === 'true'
 
   const supabase = createClient(vsn)
   const [realtimeStatus, setRealtimeStatus] = useState<string | null>(null)
   const [receivedMessage, setReceivedMessage] = useState<string | null>(null)
+  const [throttleSubscribed, setThrottleSubscribed] = useState(0)
 
   useEffect(() => {
+    if (throttleTest) {
+      const throttleClient = createClient(vsn, {
+        realtime: { heartbeatIntervalMs: 500, vsn, subscriptionWarnings: { joinRatePerSecond: 3, joinDelayMs: 50 } },
+      })
+      const channels = Array.from({ length: THROTTLE_CHANNEL_COUNT }, (_, i) =>
+        throttleClient.channel(`throttle-next-${vsn}-${i}`, {
+          config: { broadcast: { ack: true, self: true } }
+        })
+      )
+
+      let count = 0
+      channels.forEach((channel) => {
+        channel.subscribe((status) => {
+          if (status === 'SUBSCRIBED') {
+            count++
+            setThrottleSubscribed(count)
+          }
+        })
+      })
+
+      return () => {
+        channels.forEach((ch) => ch.unsubscribe())
+      }
+    }
+
     const channel = supabase.channel(`realtime:public:test-${vsn}`, {
       config: { broadcast: { ack: true, self: true } }
     })
@@ -39,7 +68,7 @@ function HomeContent() {
     return () => {
       channel.unsubscribe()
     }
-  }, [vsn])
+  }, [vsn, throttleTest])
 
   return (
     <div>
@@ -48,6 +77,8 @@ function HomeContent() {
       {receivedMessage && (
         <div data-testid="received_message">{receivedMessage}</div>
       )}
+      <div data-testid="throttle_subscribed">{throttleSubscribed}</div>
+      <div data-testid="throttle_channel_count">{THROTTLE_CHANNEL_COUNT}</div>
     </div>
   )
 }

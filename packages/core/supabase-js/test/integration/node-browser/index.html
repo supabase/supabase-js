@@ -138,6 +138,43 @@
           log('setTimeout calls: ' + JSON.stringify(timeoutCalls))
           log('setInterval calls: ' + JSON.stringify(intervalCalls))
         }, 3000)
+
+        // Throttle test: create channels above rate limit and verify all subscribe
+        if (urlParams.get('throttle') === 'true') {
+          log('Starting throttle test...')
+          const throttleClient = createClient(
+            'http://127.0.0.1:54321',
+            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0',
+            {
+              realtime: {
+                transport: window.WebSocket,
+                heartbeatIntervalMs: 500,
+                vsn: vsn,
+                subscriptionWarnings: { joinRatePerSecond: 3, joinDelayMs: 50 },
+              },
+            }
+          )
+
+          const channelCount = 5
+          let throttleSubscribed = 0
+          const throttleChannels = []
+
+          for (let i = 0; i < channelCount; i++) {
+            const ch = throttleClient.channel('throttle-browser-' + vsn + '-' + i, {
+              config: { broadcast: { ack: true, self: true } },
+            })
+            ch.subscribe((status) => {
+              if (status === 'SUBSCRIBED') {
+                throttleSubscribed++
+                log('Throttle channel subscribed: ' + throttleSubscribed + '/' + channelCount)
+                if (throttleSubscribed === channelCount) {
+                  log('Throttle test complete: all channels subscribed')
+                }
+              }
+            })
+            throttleChannels.push(ch)
+          }
+        }
       } catch (error) {
         log('Error in WebSocket test: ' + error.message)
         log('Error stack: ' + error.stack)

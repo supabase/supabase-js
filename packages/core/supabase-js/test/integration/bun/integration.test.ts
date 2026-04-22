@@ -120,6 +120,49 @@ test('should get current user', async () => {
   expect(data.user!.email).toBe(email)
 })
 
+versions.forEach((vsn) => {
+  describe(`Realtime throttle with vsn ${vsn}`, () => {
+    test('should subscribe all channels even when rate is exceeded', async () => {
+      const client = createClient(SUPABASE_URL, ANON_KEY, {
+        realtime: {
+          heartbeatIntervalMs: 500,
+          vsn,
+          subscriptionWarnings: { joinRatePerSecond: 3, joinDelayMs: 50 },
+        },
+      })
+
+      const channelCount = 5
+      const channels = Array.from({ length: channelCount }, (_, i) =>
+        client.channel(`throttle-${vsn}-${i}-${Date.now()}`, {
+          config: { broadcast: { ack: true, self: true } },
+        })
+      )
+
+      const subscribed: string[] = []
+
+      channels.forEach((channel) => {
+        channel.subscribe((status) => {
+          if (status === 'SUBSCRIBED') subscribed.push(channel.topic)
+        })
+      })
+
+      let attempts = 0
+      while (subscribed.length < channelCount) {
+        if (attempts > 300)
+          throw new Error(
+            `Only ${subscribed.length}/${channelCount} channels subscribed after throttle delay`
+          )
+        await new Promise((resolve) => setTimeout(resolve, 100))
+        attempts++
+      }
+
+      expect(subscribed.length).toBe(channelCount)
+
+      await client.removeAllChannels()
+    }, 35000)
+  })
+})
+
 test('should handle invalid credentials', async () => {
   await supabase.auth.signOut()
   const email = `bun-invalid-${Date.now()}@example.com`

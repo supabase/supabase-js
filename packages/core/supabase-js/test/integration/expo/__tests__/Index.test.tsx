@@ -9,6 +9,33 @@ describe('Index', () => {
   const versions = [{ vsn: '1.0.0' }, { vsn: '2.0.0' }]
 
   versions.forEach(({ vsn }) => {
+    describe(`Realtime throttle with vsn: ${vsn}`, () => {
+      it('should subscribe all channels even when rate is exceeded', async () => {
+        const { getByTestId, unmount } = render(<Index vsn={vsn} throttleTest={true} />)
+
+        await waitFor(
+          () => {
+            const subscribed = parseInt(getByTestId('throttle_subscribed').props.children, 10)
+            const total = parseInt(getByTestId('throttle_channel_count').props.children, 10)
+            expect(subscribed).toBe(total)
+          },
+          {
+            timeout: 30000,
+            interval: 500,
+            onTimeout: (error) => {
+              const subscribed = getByTestId('throttle_subscribed').props.children
+              const total = getByTestId('throttle_channel_count').props.children
+              throw new Error(
+                `Timeout: only ${subscribed}/${total} channels subscribed with vsn ${vsn}. ${error.message}`
+              )
+            },
+          }
+        )
+
+        unmount()
+      }, 35000)
+    })
+
     describe(`Realtime with vsn: ${vsn}`, () => {
       it('should display SUBSCRIBED status when realtime connection is established', async () => {
         const { getByTestId, unmount } = render(<Index vsn={vsn} />)

@@ -1,6 +1,7 @@
 import { createBrowserClient } from '@supabase/ssr'
+import type { SupabaseClientOptions } from '@supabase/supabase-js'
 
-export function createClient(vsn: string = '1.0.0') {
+export function createClient(vsn: string = '1.0.0', extraOptions: Partial<SupabaseClientOptions<'public'>> = {}) {
   return createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL || 'http://127.0.0.1:54321',
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
@@ -9,7 +10,8 @@ export function createClient(vsn: string = '1.0.0') {
       realtime: {
         heartbeatIntervalMs: 500,
         vsn: vsn,
-      }
+      },
+      ...extraOptions,
     }
   )
 }

@@ -11,6 +11,11 @@ import {
 } from './lib/constants'
 
 import Serializer from './lib/serializer'
+import {
+  RateLimiter,
+  DEFAULT_SUBSCRIPTION_WARNING_CONFIG,
+  type SubscriptionWarningConfig,
+} from './lib/rate-limiter'
 import { httpEndpointURL } from './lib/transformers'
 import RealtimeChannel from './RealtimeChannel'
 import type { RealtimeChannelOptions } from './RealtimeChannel'
@@ -72,6 +77,7 @@ export type RealtimeClientOptions = {
   worker?: boolean
   workerUrl?: string
   accessToken?: () => Promise<string | null>
+  subscriptionWarnings?: Partial<SubscriptionWarningConfig> | false
 }
 
 const WORKER_SCRIPT = `
@@ -177,6 +183,7 @@ export default class RealtimeClient {
   private _authPromise: Promise<void> | null = null
   private _workerHeartbeatTimer: HeartbeatTimer = undefined
   private _pendingWorkerHeartbeatRef: string | null = null
+  private _rateLimiter: RateLimiter | null = null
 
   /**
    * Initializes the Socket.
@@ -234,6 +241,13 @@ export default class RealtimeClient {
     this.httpEndpoint = httpEndpointURL(endPoint)
 
     this.fetch = this._resolveFetch(options?.fetch)
+
+    if (options?.subscriptionWarnings !== false) {
+      this._rateLimiter = new RateLimiter({
+        ...DEFAULT_SUBSCRIPTION_WARNING_CONFIG,
+        ...options?.subscriptionWarnings,
+      })
+    }
   }
 
   /**
@@ -423,11 +437,26 @@ export default class RealtimeClient {
     if (!exists) {
       const chan = new RealtimeChannel(`realtime:${topic}`, params, this)
       this.channels.push(chan)
-
       return chan
     } else {
       return exists
     }
+  }
+
+  /**
+   * Records a channel join attempt for rate limit tracking.
+   * Called by RealtimeChannel.subscribe() before initiating the join.
+   * @internal
+   */
+  _recordChannelJoin(): number {
+    if (!this._rateLimiter) return 0
+
+    this._rateLimiter.recordJoin()
+    const { warning, delayMs } = this._rateLimiter.evaluate()
+    if (warning) {
+      this.log('warn', warning.message)
+    }
+    return delayMs
   }
 
   /**
