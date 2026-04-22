@@ -9,6 +9,7 @@ import {
   GenerateLinkResponse,
   User,
   UserResponse,
+  WeakPassword,
 } from './types'
 import {
   AuthApiError,
@@ -19,6 +20,30 @@ import {
 } from './errors'
 
 export type Fetch = typeof fetch
+
+/** Raw session data from GoTrue server response. */
+interface GoTrueSessionData {
+  access_token?: string
+  refresh_token?: string
+  expires_in?: number
+  expires_at?: number
+  user?: User
+  [key: string]: any // server returns additional fields (token_type, provider_token, etc.) copied into Session
+}
+
+/** Raw session data that includes weak password info (password sign-in endpoints). */
+interface GoTrueSessionPasswordData extends GoTrueSessionData {
+  weak_password?: WeakPassword
+}
+
+/** Raw user data — either `{ user: User }` or the User object itself. */
+interface GoTrueUserData {
+  user?: User
+  [key: string]: any // data may BE the User directly (fallback path)
+}
+
+/** Raw generate-link data — link properties + User fields flattened into one object. */
+type GoTrueGenerateLinkData = GenerateLinkProperties & Record<string, any>
 
 export interface FetchOptions {
   headers?: {
@@ -139,7 +164,7 @@ interface GotrueRequestOptions extends FetchOptions {
   /**
    * Function that transforms api response from gotrue into a desirable / standardised format
    */
-  xform?: (data: unknown) => any
+  xform?: (data: any) => any
 }
 
 export async function _request(
@@ -218,54 +243,50 @@ async function _handleRequest(
   }
 }
 
-export function _sessionResponse(data: unknown): AuthResponse {
-  const d = data as Record<string, any>
+export function _sessionResponse(data: GoTrueSessionData): AuthResponse {
   let session = null
-  if (hasSession(d)) {
-    session = { ...d } as Session
+  if (hasSession(data)) {
+    session = { ...data } as Session
 
-    if (!d.expires_at) {
-      session.expires_at = expiresAt(d.expires_in)
+    if (!data.expires_at) {
+      session.expires_at = expiresAt(data.expires_in!)
     }
   }
 
-  const user: User = d.user ?? (d as User)
+  const user: User = data.user ?? (data as User)
   return { data: { session, user }, error: null }
 }
 
-export function _sessionResponsePassword(data: unknown): AuthResponsePassword {
-  const d = data as Record<string, any>
+export function _sessionResponsePassword(data: GoTrueSessionPasswordData): AuthResponsePassword {
   const response = _sessionResponse(data) as AuthResponsePassword
 
   if (
     !response.error &&
-    d.weak_password &&
-    typeof d.weak_password === 'object' &&
-    Array.isArray(d.weak_password.reasons) &&
-    d.weak_password.reasons.length &&
-    d.weak_password.message &&
-    typeof d.weak_password.message === 'string' &&
-    d.weak_password.reasons.reduce((a: boolean, i: unknown) => a && typeof i === 'string', true)
+    data.weak_password &&
+    typeof data.weak_password === 'object' &&
+    Array.isArray(data.weak_password.reasons) &&
+    data.weak_password.reasons.length &&
+    data.weak_password.message &&
+    typeof data.weak_password.message === 'string' &&
+    data.weak_password.reasons.reduce((a: boolean, i: unknown) => a && typeof i === 'string', true)
   ) {
-    response.data.weak_password = d.weak_password
+    response.data.weak_password = data.weak_password
   }
 
   return response
 }
 
-export function _userResponse(data: unknown): UserResponse {
-  const d = data as Record<string, any>
-  const user: User = d.user ?? (d as User)
+export function _userResponse(data: GoTrueUserData): UserResponse {
+  const user: User = data.user ?? (data as User)
   return { data: { user }, error: null }
 }
 
-export function _ssoResponse(data: unknown): SSOResponse {
+export function _ssoResponse(data: Record<string, any>): SSOResponse {
   return { data, error: null } as SSOResponse
 }
 
-export function _generateLinkResponse(data: unknown): GenerateLinkResponse {
-  const d = data as Record<string, any>
-  const { action_link, email_otp, hashed_token, redirect_to, verification_type, ...rest } = d
+export function _generateLinkResponse(data: GoTrueGenerateLinkData): GenerateLinkResponse {
+  const { action_link, email_otp, hashed_token, redirect_to, verification_type, ...rest } = data
 
   const properties: GenerateLinkProperties = {
     action_link,
@@ -285,8 +306,8 @@ export function _generateLinkResponse(data: unknown): GenerateLinkResponse {
   }
 }
 
-export function _noResolveJsonResponse(data: unknown): Response {
-  return data as Response
+export function _noResolveJsonResponse(data: Response): Response {
+  return data
 }
 
 /**
@@ -294,6 +315,6 @@ export function _noResolveJsonResponse(data: unknown): Response {
  * @param data A response object
  * @returns true if a session is in the response
  */
-function hasSession(data: Record<string, any>): boolean {
-  return data.access_token && data.refresh_token && data.expires_in
+function hasSession(data: GoTrueSessionData): boolean {
+  return !!data.access_token && !!data.refresh_token && !!data.expires_in
 }

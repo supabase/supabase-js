@@ -5569,7 +5569,7 @@ export default class GoTrueClient {
           {
             headers: this.headers,
             jwt: session.access_token,
-            xform: (data: unknown) => ({ data, error: null }),
+            xform: (data: any) => ({ data, error: null }),
           }
         )
       })
@@ -5613,7 +5613,7 @@ export default class GoTrueClient {
             headers: this.headers,
             jwt: session.access_token,
             body: { action: 'approve' },
-            xform: (data: unknown) => ({ data, error: null }),
+            xform: (data: any) => ({ data, error: null }),
           }
         )
 
@@ -5666,7 +5666,7 @@ export default class GoTrueClient {
             headers: this.headers,
             jwt: session.access_token,
             body: { action: 'deny' },
-            xform: (data: unknown) => ({ data, error: null }),
+            xform: (data: any) => ({ data, error: null }),
           }
         )
 
@@ -5711,7 +5711,7 @@ export default class GoTrueClient {
         return await _request(this.fetch, 'GET', `${this.url}/user/oauth/grants`, {
           headers: this.headers,
           jwt: session.access_token,
-          xform: (data: unknown) => ({ data, error: null }),
+          xform: (data: any) => ({ data, error: null }),
         })
       })
     } catch (error) {
