@@ -23,6 +23,7 @@ export default class PostgrestError extends Error {
    */
   constructor(context: { message: string; details: string; hint: string; code: string }) {
     super(context.message)
+        Object.defineProperty(this, 'message', { value: context.message, enumerable: true, writable: true, configurable: true })
     this.name = 'PostgrestError'
     this.details = context.details
     this.hint = context.hint
