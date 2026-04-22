@@ -7,7 +7,7 @@
     "outDir": "dist/cjs",
     "rootDir": ".",
     "sourceMap": true,
-    "target": "ES2017",
+    "target": "ES2020",
     "lib": ["ES2022"],
 
     "strict": true,
@@ -18,6 +18,8 @@
     "forceConsistentCasingInFileNames": true,
     "stripInternal": true,
     "noImplicitOverride": false,
-    "isolatedModules": false
+    "isolatedModules": false,
+    "types": ["jest", "node"],
+    "skipLibCheck": true
   }
 }
