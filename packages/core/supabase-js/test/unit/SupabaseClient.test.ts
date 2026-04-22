@@ -446,6 +446,23 @@ describe('SupabaseClient', () => {
         })
       })
 
+      test('should propagate custom fetch to realtime client', async () => {
+        const mockFetch = jest.fn().mockResolvedValue({
+          ok: true,
+          json: () => Promise.resolve({}),
+        })
+
+        const client = createClient(URL, KEY, {
+          global: { fetch: mockFetch },
+        })
+
+        // Call realtime's fetch directly to verify custom fetch was propagated
+        // @ts-ignore accessing private property to verify fetch propagation
+        await client.realtime.fetch('http://example.com')
+
+        expect(mockFetch).toHaveBeenCalled()
+      })
+
       test('should use supabaseKey fallback in fetchWithAuth', async () => {
         const mockFetch = jest.fn().mockResolvedValue({
           ok: true,
