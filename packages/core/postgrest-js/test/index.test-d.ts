@@ -388,16 +388,16 @@ const postgrestWithOptions = new PostgrestClient<DatabaseWithOptions>(REST_URL)
   {
     const result = await postgrest
       .from('messages')
-      .select('id, message, data')
+      .select('id, message, blurb_message')
       .not('message', 'is', null)
-      .not('data', 'is', null)
+      .not('blurb_message', 'is', null)
     if (result.error) {
       throw new Error(result.error.message)
     }
     const item = result.data[0]
     expectType<number>(item.id)
     expectType<string>(item.message)
-    expectType<Json>(item.data)
+    expectType<string>(item.blurb_message)
   }
 
   // Non-nullable column: type stays the same
