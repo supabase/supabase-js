@@ -328,6 +328,7 @@ export default class SupabaseClient<
     this.realtime = this._initRealtimeClient({
       headers: this.headers,
       accessToken: this._getAccessToken.bind(this),
+      fetch: this.fetch,
       ...settings.realtime,
     })
     if (this.accessToken) {
