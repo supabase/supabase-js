@@ -87,7 +87,7 @@ export function parseParametersFromURL(href: string) {
       hashSearchParams.forEach((value, key) => {
         result[key] = value
       })
-    } catch (e: any) {
+    } catch (_e) {
       // hash is not a query string
     }
   }
@@ -235,7 +235,7 @@ export function retryable<T>(
             accept(result)
             return
           }
-        } catch (e: any) {
+        } catch (e) {
           if (!isRetryable(attempt, e)) {
             reject(e)
             return
@@ -329,7 +329,7 @@ export function parseResponseAPIVersion(response: Response) {
   try {
     const date = new Date(`${apiVersion}T00:00:00.0Z`)
     return date
-  } catch (e: any) {
+  } catch (_e) {
     return null
   }
 }

@@ -3,6 +3,7 @@ import { expiresAt, looksLikeFetchResponse, parseResponseAPIVersion } from './he
 import {
   AuthResponse,
   AuthResponsePassword,
+  Session,
   SSOResponse,
   GenerateLinkProperties,
   GenerateLinkResponse,
@@ -32,8 +33,16 @@ export interface FetchParameters {
 
 export type RequestMethodType = 'GET' | 'POST' | 'PUT' | 'DELETE'
 
-const _getErrorMessage = (err: any): string =>
-  err.msg || err.message || err.error_description || err.error || JSON.stringify(err)
+const _getErrorMessage = (err: unknown): string => {
+  if (typeof err === 'object' && err !== null) {
+    const e = err as Record<string, unknown>
+    if (typeof e.msg === 'string') return e.msg
+    if (typeof e.message === 'string') return e.message
+    if (typeof e.error_description === 'string') return e.error_description
+    if (typeof e.error === 'string') return e.error
+  }
+  return JSON.stringify(err)
+}
 
 // 502, 503, 504: Standard server/gateway errors
 // 520-524, 530: Cloudflare-specific error codes (web server down, connection timed out, etc.)
@@ -53,7 +62,7 @@ export async function handleError(error: unknown) {
   let data: any
   try {
     data = await error.json()
-  } catch (e: any) {
+  } catch (e) {
     throw new AuthUnknownError(_getErrorMessage(e), e)
   }
 
@@ -130,7 +139,7 @@ interface GotrueRequestOptions extends FetchOptions {
   /**
    * Function that transforms api response from gotrue into a desirable / standardised format
    */
-  xform?: (data: any) => any
+  xform?: (data: unknown) => any
 }
 
 export async function _request(
@@ -181,7 +190,7 @@ async function _handleRequest(
 ): Promise<any> {
   const requestParams = _getRequestParams(method, options, parameters, body)
 
-  let result: any
+  let result: Response
 
   try {
     result = await fetcher(url, {
@@ -204,55 +213,59 @@ async function _handleRequest(
 
   try {
     return await result.json()
-  } catch (e: any) {
+  } catch (e) {
     await handleError(e)
   }
 }
 
-export function _sessionResponse(data: any): AuthResponse {
+export function _sessionResponse(data: unknown): AuthResponse {
+  const d = data as Record<string, any>
   let session = null
-  if (hasSession(data)) {
-    session = { ...data }
+  if (hasSession(d)) {
+    session = { ...d } as Session
 
-    if (!data.expires_at) {
-      session.expires_at = expiresAt(data.expires_in)
+    if (!d.expires_at) {
+      session.expires_at = expiresAt(d.expires_in)
     }
   }
 
-  const user: User = data.user ?? (data as User)
+  const user: User = d.user ?? (d as User)
   return { data: { session, user }, error: null }
 }
 
-export function _sessionResponsePassword(data: any): AuthResponsePassword {
+export function _sessionResponsePassword(data: unknown): AuthResponsePassword {
+  const d = data as Record<string, any>
   const response = _sessionResponse(data) as AuthResponsePassword
 
   if (
     !response.error &&
-    data.weak_password &&
-    typeof data.weak_password === 'object' &&
-    Array.isArray(data.weak_password.reasons) &&
-    data.weak_password.reasons.length &&
-    data.weak_password.message &&
-    typeof data.weak_password.message === 'string' &&
-    data.weak_password.reasons.reduce((a: boolean, i: any) => a && typeof i === 'string', true)
+    d.weak_password &&
+    typeof d.weak_password === 'object' &&
+    Array.isArray(d.weak_password.reasons) &&
+    d.weak_password.reasons.length &&
+    d.weak_password.message &&
+    typeof d.weak_password.message === 'string' &&
+    d.weak_password.reasons.reduce((a: boolean, i: unknown) => a && typeof i === 'string', true)
   ) {
-    response.data.weak_password = data.weak_password
+    response.data.weak_password = d.weak_password
   }
 
   return response
 }
 
-export function _userResponse(data: any): UserResponse {
-  const user: User = data.user ?? (data as User)
+export function _userResponse(data: unknown): UserResponse {
+  const d = data as Record<string, any>
+  const user: User = d.user ?? (d as User)
   return { data: { user }, error: null }
 }
 
-export function _ssoResponse(data: any): SSOResponse {
-  return { data, error: null }
+export function _ssoResponse(data: unknown): SSOResponse {
+  return { data, error: null } as SSOResponse
 }
 
-export function _generateLinkResponse(data: any): GenerateLinkResponse {
-  const { action_link, email_otp, hashed_token, redirect_to, verification_type, ...rest } = data
+export function _generateLinkResponse(data: unknown): GenerateLinkResponse {
+  const d = data as Record<string, any>
+  const { action_link, email_otp, hashed_token, redirect_to, verification_type, ...rest } = d
 
   const properties: GenerateLinkProperties = {
     action_link,
@@ -262,7 +275,7 @@ export function _generateLinkResponse(data: any): GenerateLinkResponse {
     verification_type,
   }
 
-  const user: User = { ...rest }
+  const user = { ...rest } as User
   return {
     data: {
       properties,
@@ -272,8 +285,8 @@ export function _generateLinkResponse(data: any): GenerateLinkResponse {
   }
 }
 
-export function _noResolveJsonResponse(data: any): Response {
-  return data
+export function _noResolveJsonResponse(data: unknown): Response {
+  return data as Response
 }
 
 /**
@@ -281,6 +294,6 @@ export function _noResolveJsonResponse(data: any): Response {
  * @param data A response object
  * @returns true if a session is in the response
  */
-function hasSession(data: any): boolean {
+function hasSession(data: Record<string, any>): boolean {
   return data.access_token && data.refresh_token && data.expires_in
 }
