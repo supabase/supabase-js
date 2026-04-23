@@ -271,11 +271,11 @@ describe('getAlgorithm', () => {
 describe('getCodeChallengeAndMethod', () => {
   const testCases = [
     {
-      name: 'should append /PASSWORD_RECOVERY to stored code_verifier',
+      name: 'should append /recovery to stored code_verifier',
       isPasswordRecovery: true,
     },
     {
-      name: 'should not append /PASSWORD_RECOVERY for other flows',
+      name: 'should not append /recovery for other flows',
       isPasswordRecovery: false,
     },
   ]
@@ -297,9 +297,9 @@ describe('getCodeChallengeAndMethod', () => {
     expect(setItemCall[0]).toBe('test-storage-key-code-verifier')
     const storedValue = JSON.parse(setItemCall[1])
     if (isPasswordRecovery) {
-      expect(storedValue).toContain('/PASSWORD_RECOVERY')
+      expect(storedValue).toContain('/recovery')
     } else {
-      expect(storedValue).not.toContain('/PASSWORD_RECOVERY')
+      expect(storedValue).not.toContain('/recovery')
     }
     expect(codeChallenge).toBeDefined()
     expect(codeChallengeMethod).toBeDefined()

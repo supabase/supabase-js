@@ -1835,7 +1835,10 @@ export default class GoTrueClient {
       }
       if (data.session) {
         await this._saveSession(data.session)
-        await this._notifyAllSubscribers('SIGNED_IN', data.session)
+        await this._notifyAllSubscribers(
+          redirectType === 'recovery' ? 'PASSWORD_RECOVERY' : 'SIGNED_IN',
+          data.session
+        )
       }
       return this._returnResult({ data: { ...data, redirectType: redirectType ?? null }, error })
     } catch (error) {
@@ -3584,7 +3587,10 @@ export default class GoTrueClient {
 
         window.history.replaceState(window.history.state, '', url.toString())
 
-        return { data: { session: data.session, redirectType: null }, error: null }
+        return {
+          data: { session: data.session, redirectType: data.redirectType ?? null },
+          error: null,
+        }
       }
 
       const {
