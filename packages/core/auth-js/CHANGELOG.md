@@ -1,3 +1,13 @@
+## 2.104.1 (2026-04-23)
+
+### 🩹 Fixes
+
+- **auth:** emit PASSWORD_RECOVERY event for PKCE recovery flows ([#2272](https://github.com/supabase/supabase-js/pull/2272))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+
 ## 2.104.0 (2026-04-20)
 
 This was a version bump only for @supabase/auth-js to align it with other projects, there were no code changes.

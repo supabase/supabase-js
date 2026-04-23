@@ -1,3 +1,13 @@
+## 2.104.1 (2026-04-23)
+
+### 🩹 Fixes
+
+- **supabase:** propagate custom fetch to realtime client ([#2267](https://github.com/supabase/supabase-js/pull/2267))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+
 ## 2.104.0 (2026-04-20)
 
 This was a version bump only for @supabase/supabase-js to align it with other projects, there were no code changes.
