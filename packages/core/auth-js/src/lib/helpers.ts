@@ -304,7 +304,7 @@ export async function getCodeChallengeAndMethod(
   const codeVerifier = generatePKCEVerifier()
   let storedCodeVerifier = codeVerifier
   if (isPasswordRecovery) {
-    storedCodeVerifier += '/PASSWORD_RECOVERY'
+    storedCodeVerifier += '/recovery'
   }
   await setItemAsync(storage, `${storageKey}-code-verifier`, storedCodeVerifier)
   const codeChallenge = await generatePKCEChallenge(codeVerifier)
