@@ -180,6 +180,27 @@ export type GoTrueClientOptions = {
    * @default false
    */
   skipAutoInitialize?: boolean
+
+  /**
+   * Opt-in flags for experimental features. These APIs may change without
+   * notice and are disabled by default.
+   *
+   * @experimental
+   */
+  experimental?: ExperimentalFeatureFlags
+}
+
+export type ExperimentalFeatureFlags = {
+  /**
+   * Enables passkey support:
+   *   - `auth.signInWithPasskey()`, `auth.registerPasskey()`
+   *   - `auth.passkey.*`
+   *   - `auth.admin.passkey.*`
+   *
+   * Defaults to `false`. Calling any passkey method while this flag is
+   * disabled throws a descriptive error at call time.
+   */
+  passkey?: boolean
 }
 
 const WeakPasswordReasons = ['length', 'characters', 'pwned'] as const

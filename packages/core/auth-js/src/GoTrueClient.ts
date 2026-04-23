@@ -33,6 +33,7 @@ import {
   _userResponse,
 } from './lib/fetch'
 import {
+  assertPasskeyExperimentalEnabled,
   decodeJWT,
   deepClone,
   Deferred,
@@ -137,6 +138,7 @@ import type {
   VerifyOtpParams,
   Web3Credentials,
   AuthPasskeyApi,
+  ExperimentalFeatureFlags,
   SignInWithPasskeyCredentials,
   RegisterPasskeyCredentials,
   VerifyPasskeyRegistrationParams,
@@ -195,6 +197,7 @@ const DEFAULT_OPTIONS: Omit<
   throwOnError: false,
   lockAcquireTimeout: 5000, // 5 seconds
   skipAutoInitialize: false,
+  experimental: {},
 }
 
 async function lockNoOp<R>(name: string, acquireTimeout: number, fn: () => Promise<R>): Promise<R> {
@@ -234,6 +237,8 @@ export default class GoTrueClient {
   /**
    * Namespace for passkey methods.
    * Includes lower-level two-step registration/authentication and passkey management.
+   *
+   * Requires `auth.experimental.passkey: true`; otherwise all methods throw.
    */
   passkey: AuthPasskeyApi
   /**
@@ -297,6 +302,11 @@ export default class GoTrueClient {
   protected pendingInLock: Promise<any>[] = []
   protected throwOnError: boolean
   protected lockAcquireTimeout: number
+  /**
+   * Opt-in flags for experimental features. Defaults to an empty object.
+   * See `GoTrueClientOptions.experimental`.
+   */
+  protected experimental: ExperimentalFeatureFlags
 
   /**
    * Used to broadcast state change events to other tabs listening.
@@ -350,10 +360,12 @@ export default class GoTrueClient {
 
     this.persistSession = settings.persistSession
     this.autoRefreshToken = settings.autoRefreshToken
+    this.experimental = settings.experimental ?? {}
     this.admin = new GoTrueAdminApi({
       url: settings.url,
       headers: settings.headers,
       fetch: settings.fetch,
+      experimental: this.experimental,
     })
 
     this.url = settings.url
@@ -5948,10 +5960,13 @@ export default class GoTrueClient {
    * 1. Fetches authentication challenge from server
    * 2. Prompts user via navigator.credentials.get()
    * 3. Verifies credential with server and creates session
+   *
+   * Requires `auth.experimental.passkey: true`.
    */
   async signInWithPasskey(
     credentials?: SignInWithPasskeyCredentials
   ): Promise<AuthPasskeyAuthenticationVerifyResponse> {
+    assertPasskeyExperimentalEnabled(this.experimental)
     try {
       if (!browserSupportsWebAuthn()) {
         return this._returnResult({
@@ -6002,11 +6017,12 @@ export default class GoTrueClient {
    * 2. Prompts user via navigator.credentials.create()
    * 3. Verifies credential with server
    *
-   * Requires an active session.
+   * Requires an active session. Requires `auth.experimental.passkey: true`.
    */
   async registerPasskey(
     credentials?: RegisterPasskeyCredentials
   ): Promise<AuthPasskeyRegistrationVerifyResponse> {
+    assertPasskeyExperimentalEnabled(this.experimental)
     try {
       if (!browserSupportsWebAuthn()) {
         return this._returnResult({
@@ -6054,6 +6070,7 @@ export default class GoTrueClient {
    * Returns WebAuthn credential creation options to pass to navigator.credentials.create().
    */
   private async _startPasskeyRegistration(): Promise<AuthPasskeyRegistrationOptionsResponse> {
+    assertPasskeyExperimentalEnabled(this.experimental)
     try {
       return await this._useSession(async (result) => {
         const {
@@ -6096,6 +6113,7 @@ export default class GoTrueClient {
   private async _verifyPasskeyRegistration(
     params: VerifyPasskeyRegistrationParams
   ): Promise<AuthPasskeyRegistrationVerifyResponse> {
+    assertPasskeyExperimentalEnabled(this.experimental)
     try {
       return await this._useSession(async (result) => {
         const {
@@ -6141,6 +6159,7 @@ export default class GoTrueClient {
   private async _startPasskeyAuthentication(
     params?: StartPasskeyAuthenticationParams
   ): Promise<AuthPasskeyAuthenticationOptionsResponse> {
+    assertPasskeyExperimentalEnabled(this.experimental)
     try {
       const { data, error } = await _request(
         this.fetch,
@@ -6172,6 +6191,7 @@ export default class GoTrueClient {
   private async _verifyPasskeyAuthentication(
     params: VerifyPasskeyAuthenticationParams
   ): Promise<AuthPasskeyAuthenticationVerifyResponse> {
+    assertPasskeyExperimentalEnabled(this.experimental)
     try {
       const { data, error } = await _request(
         this.fetch,
@@ -6206,6 +6226,7 @@ export default class GoTrueClient {
    * List all passkeys for the current user.
    */
   private async _listPasskeys(): Promise<AuthPasskeyListResponse> {
+    assertPasskeyExperimentalEnabled(this.experimental)
     try {
       return await this._useSession(async (result) => {
         const {
@@ -6240,6 +6261,7 @@ export default class GoTrueClient {
    * Update a passkey.
    */
   private async _updatePasskey(params: PasskeyUpdateParams): Promise<AuthPasskeyUpdateResponse> {
+    assertPasskeyExperimentalEnabled(this.experimental)
     try {
       return await this._useSession(async (result) => {
         const {
@@ -6279,6 +6301,7 @@ export default class GoTrueClient {
    * Delete a passkey.
    */
   private async _deletePasskey(params: PasskeyDeleteParams): Promise<AuthPasskeyDeleteResponse> {
+    assertPasskeyExperimentalEnabled(this.experimental)
     try {
       return await this._useSession(async (result) => {
         const {

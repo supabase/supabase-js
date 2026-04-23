@@ -552,6 +552,7 @@ export default class SupabaseClient<
       lock,
       debug,
       throwOnError,
+      experimental,
     }: SupabaseAuthClientOptions,
     headers?: Record<string, string>,
     fetch?: Fetch
@@ -573,6 +574,7 @@ export default class SupabaseClient<
       lock,
       debug,
       throwOnError,
+      experimental,
       fetch,
       // auth checks if there is a custom authorizaiton header using this flag
       // so it knows whether to return an error when getUser is called with no session

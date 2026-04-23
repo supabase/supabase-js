@@ -5,7 +5,7 @@ import {
   _request,
   _userResponse,
 } from './lib/fetch'
-import { resolveFetch, validateUUID } from './lib/helpers'
+import { assertPasskeyExperimentalEnabled, resolveFetch, validateUUID } from './lib/helpers'
 import {
   AdminUserAttributes,
   GenerateLinkParams,
@@ -37,6 +37,7 @@ import {
   AuthPasskeyAdminDeleteParams,
   AuthPasskeyListResponse,
   AuthPasskeyDeleteResponse,
+  ExperimentalFeatureFlags,
 } from './lib/types'
 import { AuthError, isAuthError } from './lib/errors'
 
@@ -53,7 +54,11 @@ export default class GoTrueAdminApi {
   /** Contains all custom OIDC/OAuth provider administration methods. */
   customProviders: GoTrueAdminCustomProvidersApi
 
-  /** Contains all passkey administration methods. */
+  /**
+   * Contains all passkey administration methods.
+   *
+   * Requires `auth.experimental.passkey: true`; otherwise all methods throw.
+   */
   passkey: GoTrueAdminPasskeyApi
 
   protected url: string
@@ -61,6 +66,7 @@ export default class GoTrueAdminApi {
     [key: string]: string
   }
   protected fetch: Fetch
+  protected experimental: ExperimentalFeatureFlags
 
   /**
    * Creates an admin API client that can be used to manage users and OAuth clients.
@@ -87,16 +93,19 @@ export default class GoTrueAdminApi {
     url = '',
     headers = {},
     fetch,
+    experimental,
   }: {
     url: string
     headers?: {
       [key: string]: string
     }
     fetch?: Fetch
+    experimental?: ExperimentalFeatureFlags
   }) {
     this.url = url
     this.headers = headers
     this.fetch = resolveFetch(fetch)
+    this.experimental = experimental ?? {}
     this.mfa = {
       listFactors: this._listFactors.bind(this),
       deleteFactor: this._deleteFactor.bind(this),
@@ -1194,10 +1203,13 @@ export default class GoTrueAdminApi {
    * Lists all passkeys for a user.
    *
    * This function should only be called on a server. Never expose your secret key in the browser.
+   *
+   * Requires `auth.experimental.passkey: true`.
    */
   private async _adminListPasskeys(
     params: AuthPasskeyAdminListParams
   ): Promise<AuthPasskeyListResponse> {
+    assertPasskeyExperimentalEnabled(this.experimental)
     validateUUID(params.userId)
 
     try {
@@ -1219,10 +1231,13 @@ export default class GoTrueAdminApi {
    * Deletes a user's passkey.
    *
    * This function should only be called on a server. Never expose your secret key in the browser.
+   *
+   * Requires `auth.experimental.passkey: true`.
    */
   private async _adminDeletePasskey(
     params: AuthPasskeyAdminDeleteParams
   ): Promise<AuthPasskeyDeleteResponse> {
+    assertPasskeyExperimentalEnabled(this.experimental)
     validateUUID(params.userId)
     validateUUID(params.passkeyId)
 
