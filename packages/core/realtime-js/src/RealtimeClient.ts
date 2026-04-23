@@ -532,6 +532,7 @@ export default class RealtimeClient {
   _remove(channel: RealtimeChannel) {
     this.channels = this.channels.filter((c) => c.topic !== channel.topic)
     if (this.channels.length === 0) {
+      this.log('transport', 'no channels remaining, scheduling disconnect')
       this._schedulePendingDisconnect()
     }
   }
@@ -540,20 +541,27 @@ export default class RealtimeClient {
   private _schedulePendingDisconnect() {
     this._cancelPendingDisconnect()
     if (this._disconnectOnEmptyChannelsAfterMs === 0) {
+      this.log('transport', 'disconnecting immediately - no channels')
       this.disconnect()
       return
     }
     this._pendingDisconnectTimer = setTimeout(() => {
       this._pendingDisconnectTimer = null
       if (this.channels.length === 0) {
+        this.log('transport', 'deferred disconnect fired - no channels, disconnecting')
         this.disconnect()
       }
     }, this._disconnectOnEmptyChannelsAfterMs)
+    this.log(
+      'transport',
+      `deferred disconnect scheduled in ${this._disconnectOnEmptyChannelsAfterMs}ms`
+    )
   }
 
   /** @internal */
   private _cancelPendingDisconnect() {
     if (this._pendingDisconnectTimer !== null) {
+      this.log('transport', 'pending disconnect cancelled - channel activity detected')
       clearTimeout(this._pendingDisconnectTimer)
       this._pendingDisconnectTimer = null
     }
