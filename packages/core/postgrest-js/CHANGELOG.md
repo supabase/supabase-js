@@ -1,3 +1,13 @@
+## 2.104.1 (2026-04-23)
+
+### 🩹 Fixes
+
+- **postgrest:** restore runtime test files to tstyche scope ([#2266](https://github.com/supabase/supabase-js/pull/2266))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+
 ## 2.104.0 (2026-04-20)
 
 This was a version bump only for @supabase/postgrest-js to align it with other projects, there were no code changes.
