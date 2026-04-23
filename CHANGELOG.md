@@ -1,3 +1,15 @@
+## 2.104.1 (2026-04-23)
+
+### 🩹 Fixes
+
+- **auth:** emit PASSWORD_RECOVERY event for PKCE recovery flows ([#2272](https://github.com/supabase/supabase-js/pull/2272))
+- **postgrest:** restore runtime test files to tstyche scope ([#2266](https://github.com/supabase/supabase-js/pull/2266))
+- **supabase:** propagate custom fetch to realtime client ([#2267](https://github.com/supabase/supabase-js/pull/2267))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+
 ## 2.104.0 (2026-04-20)
 
 ### 🚀 Features
