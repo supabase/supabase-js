@@ -417,6 +417,38 @@ describe('Supabase Integration Tests', () => {
       await new Promise((resolve) => setTimeout(resolve, 1200))
       expect(supabase.realtime.isConnected()).toBe(false)
     }, 15000)
+
+    test('removeAllChannels disconnects socket immediately', async () => {
+      const channelA = supabase.channel(`${channelName}-a`)
+      const channelB = supabase.channel(`${channelName}-b`)
+
+      await Promise.all([
+        new Promise<void>((resolve, reject) => {
+          const timeout = setTimeout(() => reject(new Error('Timeout waiting for channelA')), 8000)
+          channelA.subscribe((status) => {
+            if (status === 'SUBSCRIBED') {
+              clearTimeout(timeout)
+              resolve()
+            }
+          })
+        }),
+        new Promise<void>((resolve, reject) => {
+          const timeout = setTimeout(() => reject(new Error('Timeout waiting for channelB')), 8000)
+          channelB.subscribe((status) => {
+            if (status === 'SUBSCRIBED') {
+              clearTimeout(timeout)
+              resolve()
+            }
+          })
+        }),
+      ])
+
+      expect(supabase.realtime.isConnected()).toBe(true)
+
+      await supabase.removeAllChannels()
+      // removeAllChannels is an explicit teardown — no deferred timer, disconnect is immediate
+      expect(supabase.realtime.isConnected()).toBe(false)
+    }, 20000)
   })
 })
 
