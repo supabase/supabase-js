@@ -138,6 +138,89 @@ describe('channel', () => {
   )
 })
 
+describe('deferred disconnect', () => {
+  test('does not disconnect immediately when last channel removed via removeChannel', async () => {
+    testSetup.cleanup()
+    testSetup = setupRealtimeTest({ useFakeTimers: true })
+    const disconnectSpy = vi.spyOn(testSetup.client, 'disconnect')
+
+    const channel = testSetup.client.channel('topic')
+    await testSetup.client.removeChannel(channel)
+
+    expect(disconnectSpy).not.toHaveBeenCalled()
+  })
+
+  test('disconnects after disconnectOnEmptyChannelsAfterMs when channels stay empty', async () => {
+    testSetup.cleanup()
+    testSetup = setupRealtimeTest({ useFakeTimers: true, disconnectOnEmptyChannelsAfterMs: 200 })
+    const disconnectSpy = vi.spyOn(testSetup.client, 'disconnect')
+
+    const channel = testSetup.client.channel('topic')
+    await testSetup.client.removeChannel(channel)
+
+    expect(disconnectSpy).not.toHaveBeenCalled()
+    vi.advanceTimersByTime(200)
+    expect(disconnectSpy).toHaveBeenCalledOnce()
+  })
+
+  test('cancels pending disconnect when a new channel is created before timer fires', async () => {
+    testSetup.cleanup()
+    testSetup = setupRealtimeTest({ useFakeTimers: true, disconnectOnEmptyChannelsAfterMs: 200 })
+    const disconnectSpy = vi.spyOn(testSetup.client, 'disconnect')
+
+    const channel = testSetup.client.channel('topic')
+    await testSetup.client.removeChannel(channel)
+
+    // Create new channel before timer fires
+    testSetup.client.channel('new-topic')
+
+    vi.advanceTimersByTime(300)
+    expect(disconnectSpy).not.toHaveBeenCalled()
+  })
+
+  test('direct channel.unsubscribe() also triggers deferred disconnect', async () => {
+    testSetup.cleanup()
+    testSetup = setupRealtimeTest({ useFakeTimers: true, disconnectOnEmptyChannelsAfterMs: 200 })
+    testSetup.connect()
+    await testSetup.socketConnected()
+
+    const disconnectSpy = vi.spyOn(testSetup.client, 'disconnect')
+    const channel = testSetup.client.channel('topic')
+    channel.subscribe()
+    await waitForChannelSubscribed(channel)
+
+    await channel.unsubscribe()
+
+    expect(disconnectSpy).not.toHaveBeenCalled()
+    vi.advanceTimersByTime(200)
+    expect(disconnectSpy).toHaveBeenCalledOnce()
+  })
+
+  test('disconnectOnEmptyChannelsAfterMs: 0 disconnects immediately', async () => {
+    testSetup.cleanup()
+    testSetup = setupRealtimeTest({ disconnectOnEmptyChannelsAfterMs: 0 })
+    const disconnectSpy = vi.spyOn(testSetup.client, 'disconnect')
+
+    const channel = testSetup.client.channel('topic')
+    await testSetup.client.removeChannel(channel)
+
+    expect(disconnectSpy).toHaveBeenCalledOnce()
+  })
+
+  test('removeAllChannels still disconnects immediately', async () => {
+    testSetup.cleanup()
+    testSetup = setupRealtimeTest({ useFakeTimers: true, disconnectOnEmptyChannelsAfterMs: 200 })
+    const disconnectSpy = vi.spyOn(testSetup.client, 'disconnect')
+
+    testSetup.client.channel('chan1').subscribe()
+    testSetup.client.channel('chan2').subscribe()
+
+    await testSetup.client.removeAllChannels()
+
+    expect(disconnectSpy).toHaveBeenCalledOnce()
+  })
+})
+
 describe('leaveOpenTopic', () => {
   test('enforces client to subscribe to unique topics', async () => {
     const logSpy = vi.fn()
