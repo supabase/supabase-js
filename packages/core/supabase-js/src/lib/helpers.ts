@@ -29,12 +29,14 @@ export function applySettingDefaults<
     auth: authOptions,
     realtime: realtimeOptions,
     global: globalOptions,
+    tracePropagation: tracePropagationOptions,
   } = options
   const {
     db: DEFAULT_DB_OPTIONS,
     auth: DEFAULT_AUTH_OPTIONS,
     realtime: DEFAULT_REALTIME_OPTIONS,
     global: DEFAULT_GLOBAL_OPTIONS,
+    tracePropagation: DEFAULT_TRACE_PROPAGATION_OPTIONS,
   } = defaults
 
   const result: Required<SupabaseClientOptions<SchemaName>> = {
@@ -58,6 +60,14 @@ export function applySettingDefaults<
         ...(DEFAULT_GLOBAL_OPTIONS?.headers ?? {}),
         ...(globalOptions?.headers ?? {}),
       },
+    },
+    tracePropagation: {
+      enabled:
+        tracePropagationOptions?.enabled ?? DEFAULT_TRACE_PROPAGATION_OPTIONS?.enabled ?? true,
+      respectSamplingDecision:
+        tracePropagationOptions?.respectSamplingDecision ??
+        DEFAULT_TRACE_PROPAGATION_OPTIONS?.respectSamplingDecision ??
+        true,
     },
     accessToken: async () => '',
   }
