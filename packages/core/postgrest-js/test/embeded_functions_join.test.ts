@@ -204,6 +204,18 @@ describe('embeded functions select', () => {
           },
           {
             "all_user_messages": [],
+            "username": "jsonusernull",
+          },
+          {
+            "all_user_messages": [],
+            "username": "jsonuserobj",
+          },
+          {
+            "all_user_messages": [],
+            "username": "jsonusermissing",
+          },
+          {
+            "all_user_messages": [],
             "username": "dragarcia",
           },
         ],
@@ -274,6 +286,18 @@ describe('embeded functions select', () => {
           {
             "all_user_messages": [],
             "username": "jsonuser",
+          },
+          {
+            "all_user_messages": [],
+            "username": "jsonusernull",
+          },
+          {
+            "all_user_messages": [],
+            "username": "jsonuserobj",
+          },
+          {
+            "all_user_messages": [],
+            "username": "jsonusermissing",
           },
           {
             "all_user_messages": [],
@@ -351,6 +375,18 @@ describe('embeded functions select', () => {
           },
           {
             "all_user_messages": [],
+            "username": "jsonusernull",
+          },
+          {
+            "all_user_messages": [],
+            "username": "jsonuserobj",
+          },
+          {
+            "all_user_messages": [],
+            "username": "jsonusermissing",
+          },
+          {
+            "all_user_messages": [],
             "username": "dragarcia",
           },
         ],
@@ -405,6 +441,18 @@ describe('embeded functions select', () => {
           {
             "setof_rows_one": null,
             "username": "jsonuser",
+          },
+          {
+            "setof_rows_one": null,
+            "username": "jsonusernull",
+          },
+          {
+            "setof_rows_one": null,
+            "username": "jsonuserobj",
+          },
+          {
+            "setof_rows_one": null,
+            "username": "jsonusermissing",
           },
           {
             "setof_rows_one": null,
@@ -470,6 +518,27 @@ describe('embeded functions select', () => {
               "username": null,
             },
             "username": "jsonuser",
+          },
+          {
+            "returns_row": {
+              "id": null,
+              "username": null,
+            },
+            "username": "jsonusernull",
+          },
+          {
+            "returns_row": {
+              "id": null,
+              "username": null,
+            },
+            "username": "jsonuserobj",
+          },
+          {
+            "returns_row": {
+              "id": null,
+              "username": null,
+            },
+            "username": "jsonusermissing",
           },
           {
             "returns_row": {
@@ -576,6 +645,24 @@ describe('embeded functions select', () => {
               "username": null,
             },
             "username": "jsonuser",
+          },
+          {
+            "user_called_profile": {
+              "username": null,
+            },
+            "username": "jsonusernull",
+          },
+          {
+            "user_called_profile": {
+              "username": null,
+            },
+            "username": "jsonuserobj",
+          },
+          {
+            "user_called_profile": {
+              "username": null,
+            },
+            "username": "jsonusermissing",
           },
           {
             "user_called_profile": {
@@ -742,6 +829,18 @@ describe('embeded functions select', () => {
           },
           {
             "user_messages": [],
+            "username": "jsonusernull",
+          },
+          {
+            "user_messages": [],
+            "username": "jsonuserobj",
+          },
+          {
+            "user_messages": [],
+            "username": "jsonusermissing",
+          },
+          {
+            "user_messages": [],
             "username": "dragarcia",
           },
         ],
@@ -820,6 +919,18 @@ describe('embeded functions select', () => {
           {
             "active_user_messages": [],
             "username": "jsonuser",
+          },
+          {
+            "active_user_messages": [],
+            "username": "jsonusernull",
+          },
+          {
+            "active_user_messages": [],
+            "username": "jsonuserobj",
+          },
+          {
+            "active_user_messages": [],
+            "username": "jsonusermissing",
           },
           {
             "active_user_messages": [],
@@ -908,6 +1019,18 @@ describe('embeded functions select', () => {
           },
           {
             "recent_messages": [],
+            "username": "jsonusernull",
+          },
+          {
+            "recent_messages": [],
+            "username": "jsonuserobj",
+          },
+          {
+            "recent_messages": [],
+            "username": "jsonusermissing",
+          },
+          {
+            "recent_messages": [],
             "username": "dragarcia",
           },
         ],
@@ -989,6 +1112,18 @@ describe('embeded functions select', () => {
           },
           {
             "recent_messages": [],
+            "username": "jsonusernull",
+          },
+          {
+            "recent_messages": [],
+            "username": "jsonuserobj",
+          },
+          {
+            "recent_messages": [],
+            "username": "jsonusermissing",
+          },
+          {
+            "recent_messages": [],
             "username": "dragarcia",
           },
         ],
@@ -1063,6 +1198,18 @@ describe('embeded functions select', () => {
           {
             "user_messages": [],
             "username": "jsonuser",
+          },
+          {
+            "user_messages": [],
+            "username": "jsonusernull",
+          },
+          {
+            "user_messages": [],
+            "username": "jsonuserobj",
+          },
+          {
+            "user_messages": [],
+            "username": "jsonusermissing",
           },
           {
             "user_messages": [],
@@ -1240,6 +1387,27 @@ describe('embeded functions select', () => {
               "id": null,
               "username": null,
             },
+            "username": "jsonusernull",
+          },
+          {
+            "profile": {
+              "id": null,
+              "username": null,
+            },
+            "username": "jsonuserobj",
+          },
+          {
+            "profile": {
+              "id": null,
+              "username": null,
+            },
+            "username": "jsonusermissing",
+          },
+          {
+            "profile": {
+              "id": null,
+              "username": null,
+            },
             "username": "dragarcia",
           },
         ],
@@ -1291,6 +1459,18 @@ describe('embeded functions select', () => {
           {
             "profile": null,
             "username": "jsonuser",
+          },
+          {
+            "profile": null,
+            "username": "jsonusernull",
+          },
+          {
+            "profile": null,
+            "username": "jsonuserobj",
+          },
+          {
+            "profile": null,
+            "username": "jsonusermissing",
           },
           {
             "profile": null,
